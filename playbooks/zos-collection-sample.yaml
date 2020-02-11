@@ -1,0 +1,108 @@
+###############################################################################
+# Copyright (c) IBM Corporation 2020
+###############################################################################
+
+###############################################################################
+# This sample playbook demonstrates using various modules included in the 
+# Red Hat Ansible Certified Content for IBM Z core collection.
+#
+# Usage:
+#  ansible-playbook -i <inventory> <playbook>
+#
+# Example:
+#  ansible-playbook -i inventory zos-collection-sample.yaml
+#
+###############################################################################
+
+---
+- hosts: all
+  collections:
+    - ibm.ibm_zos_core
+  gather_facts: no
+
+  environment:
+    "{{ environment_vars }}"
+
+  tasks:
+
+    # Ping the host
+    - name: Ping host - {{ inventory_hostname }}
+      ping:
+      register: result
+
+    - name: Response
+      debug:
+        msg: "Ping result returned: {{ result.ping }}"
+
+    - name: Ensure JCL folder exists to hold JCL
+      file:
+        path: /tmp/ansible/jcl
+        state: directory
+
+    - name: Write HELLO JCL to system
+      shell: "echo {{ lookup('file', playbook_dir + '/files/HELLO.jcl') | quote }} > /tmp/ansible/jcl/HELLO"
+      changed_when: true
+
+    - name: Submit HELLO jcl program  
+      zos_job_submit:
+        src: /tmp/ansible/jcl/HELLO
+        location: USS
+        wait: True
+
+    - name: Query submitted job 'HELLO'
+      zos_job_query:
+        job_name: HELLO
+      register: result
+
+    - name: Response
+      debug:
+        msg: "Query submitted job 'HELLO' result: {{ result }}"
+
+    - name: Get HELLO job output
+      zos_job_output:
+        job_name: "HELLO"
+      register: result
+
+    - name: Response
+      debug:
+        msg: "Get the job output of submitted job 'HELLO' result: {{ result }}"
+
+    - name: Remove HELLO JCL and supporting folder from z/OS target node
+      file:
+        path: /tmp/ansible/jcl
+        state: absent
+
+    # Create a data set
+    - name: Create a PDS data set 'USER.PRIVATE.TEST'
+      zos_data_set:
+        name: USER.PRIVATE.TEST
+        type: pds
+        size: 5M
+        format: fb
+        record_length: 25
+        replace: yes
+      register: result
+
+    - name: Response
+      debug:
+        msg: "Create a PDS data set 'USER.PRIVATE.TEST' result: {{ result }}"
+
+    # Validate data set Created
+    - name: Check for data set 'USER.PRIVATE.TEST'
+      command: "dls USER.PRIVATE.TEST"
+      register: result
+      changed_when: true
+
+    - name: Response
+      debug:
+        msg: "Check for data set 'USER.PRIVATE.TEST' returned {{ result }}"
+
+    # Delete data set
+    - name: Delete data set 'USER.PRIVATE.TEST'
+      zos_data_set:
+        name: USER.PRIVATE.TEST
+        state: absent
+      register: result
+    - name: Response
+      debug:
+        msg: "Delete data set 'USER.PRIVATE.TEST' returned: {{ result }}"

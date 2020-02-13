@@ -16,26 +16,26 @@ Collections as part of the broader offering __Red Hat® Ansible Certified Conten
 on Galaxy and later made available as certified content and accessable through Automation Hub. 
 
 # Features
-The The IBM Z core collection includes [connection plugins](https://github.com/ansible-collections/ibm_zos_core/tree/v0.0.2/plugins/connection/), [action plugins](https://github.com/ansible-collections/ibm_zos_core/tree/v0.0.2/plugins/action/), [modules](https://github.com/ansible-collections/ibm_zos_core/tree/v0.0.2/plugins/modules/), [sample playbooks](https://github.com/ansible-collections/ibm_zos_core/tree/v0.0.2/playbooks/), and ansible-doc to automate tasks on Z.  
+The The IBM Z core collection includes [connection plugins](https://github.com/ansible-collections/ibm_zos_core/tree/v0.0.3/plugins/connection/), [action plugins](https://github.com/ansible-collections/ibm_zos_core/tree/v0.0.3/plugins/action/), [modules](https://github.com/ansible-collections/ibm_zos_core/tree/v0.0.3/plugins/modules/), [sample playbooks](https://github.com/ansible-collections/ibm_zos_core/tree/v0.0.3/playbooks/), and ansible-doc to automate tasks on Z.  
 
 # Plugins
 
 ## Action
-* [normal](https://github.com/ansible-collections/ibm_zos_core/blob/v0.0.2/docs/README-zos-rexx-connection-plugin.md): A fork of [Ansible _normal.py_ action plugin](https://github.com/ansible/ansible/blob/devel/lib/ansible/plugins/action/normal.py) that is modified to allow a conditional shebang line in REXX modules.
-* [zos_job_submit](https://github.com/ansible-collections/ibm_zos_core/blob/v0.0.2/docs/README-zos-job-submit.md): Used to submit a job from the controller and optionally monitor for completion.  
+* [normal](https://github.com/ansible-collections/ibm_zos_core/blob/v0.0.3/docs/README-zos-rexx-connection-plugin.md): A fork of [Ansible _normal.py_ action plugin](https://github.com/ansible/ansible/blob/devel/lib/ansible/plugins/action/normal.py) that is modified to allow a conditional shebang line in REXX modules.
+* [zos_job_submit](https://github.com/ansible-collections/ibm_zos_core/blob/v0.0.3/docs/README-zos-job-submit.md): Used to submit a job from the controller and optionally monitor for completion.  
 
 ## Connection
-* [zos_ssh](https://github.com/ansible-collections/ibm_zos_core/blob/v0.0.2/docs/README-zos-rexx-connection-plugin.md): Enables the Ansible controller to communicate to a Z target machine by using ssh with the added support to transfer ASCII as EBCDIC when transferring REXX modules. The connection plugin was forked from the [Ansible _ssh.py_ connection plugin](https://github.com/ansible/ansible/blob/480b106d6535978ae6ecab68b40942ca4fa914a0/lib/ansible/plugins/connection/ssh.py). 
+* [zos_ssh](https://github.com/ansible-collections/ibm_zos_core/blob/v0.0.3/docs/README-zos-rexx-connection-plugin.md): Enables the Ansible controller to communicate to a Z target machine by using ssh with the added support to transfer ASCII as EBCDIC when transferring REXX modules. The connection plugin was forked from the [Ansible _ssh.py_ connection plugin](https://github.com/ansible/ansible/blob/480b106d6535978ae6ecab68b40942ca4fa914a0/lib/ansible/plugins/connection/ssh.py). 
 
 # Modules 
-*  [zos_data_set](https://github.com/ansible-collections/ibm_zos_core/blob/v0.0.2/docs/README-zos-data-set.md): Create, delete, and manage attributes for data sets.
-*  [zos_job_query](https://github.com/ansible-collections/ibm_zos_core/blob/v0.0.2/docs/README-zos-job-query.md): Query Z for a list of jobs.
-*  [zos_job_submit](https://github.com/ansible-collections/ibm_zos_core/blob/v0.0.2/docs/README-zos-job-submit.md): Submit a job and optionally monitor for completion.
-*  [zos_job_output](https://github.com/ansible-collections/ibm_zos_core/blob/v0.0.2/docs/README-zos-job-output.md): Capture the job output for a submitted job.
+*  [zos_data_set](https://github.com/ansible-collections/ibm_zos_core/blob/v0.0.3/docs/README-zos-data-set.md): Create, delete, and manage attributes for data sets.
+*  [zos_job_query](https://github.com/ansible-collections/ibm_zos_core/blob/v0.0.3/docs/README-zos-job-query.md): Query Z for a list of jobs.
+*  [zos_job_submit](https://github.com/ansible-collections/ibm_zos_core/blob/v0.0.3/docs/README-zos-job-submit.md): Submit a job and optionally monitor for completion.
+*  [zos_job_output](https://github.com/ansible-collections/ibm_zos_core/blob/v0.0.3/docs/README-zos-job-output.md): Capture the job output for a submitted job.
 
 # Playbooks
-[Sample playbooks](https://github.com/ansible-collections/ibm_zos_core/tree/v0.0.2/playbooks/) are included that demonstrate how to use the collection content in the `ibm_zos_core` collection.  
-See the [playbooks README](https://github.com/ansible-collections/ibm_zos_core/blob/v0.0.2/playbooks/README.md) for detailed instructions and configuration information.
+[Sample playbooks](https://github.com/ansible-collections/ibm_zos_core/tree/v0.0.3/playbooks/) are included that demonstrate how to use the collection content in the `ibm_zos_core` collection.  
+See the [playbooks README](https://github.com/ansible-collections/ibm_zos_core/blob/v0.0.3/playbooks/README.md) for detailed instructions and configuration information.
 
 # Requirements
 
@@ -51,9 +51,9 @@ The following nodes require specific versions of software:
 * [OpenSSH](https://www.openssh.com/)
 
 ## Managed node (target)
-* [Python](https://github.com/ansible-collections/ibm_zos_core/blob/v0.0.2/docs/README-python-zos.md): 3.6 or later
+* [Python](https://github.com/ansible-collections/ibm_zos_core/blob/v0.0.3/docs/README-python-zos.md): 3.6 or later
 * [z/OS](https://www.ibm.com/support/knowledgecenter/SSLTBW_2.2.0/com.ibm.zos.v2r2/zos-v2r2-home.html): V02.02.00 or later
-* [IBM Z Open Automation Utilities](https://github.com/ansible-collections/ibm_zos_core/blob/v0.0.2/docs/README-ZOAU.md): 1.0.1 (PTF UI66957 or later)
+* [IBM Z Open Automation Utilities](https://github.com/ansible-collections/ibm_zos_core/blob/v0.0.3/docs/README-ZOAU.md): 1.0.1 (PTF UI66957 or later)
 * [OpenSSH](https://www.openssh.com/) 
 
 # Installation

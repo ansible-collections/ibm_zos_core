@@ -5,7 +5,7 @@ namespace: ibm
 name: ibm_zos_core 
 
 # The collection version
-version: 0.0.2
+version: 0.0.3
 
 # Collection README file
 readme: README.md

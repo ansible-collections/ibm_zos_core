@@ -5,7 +5,7 @@ namespace: ibm
 name: ibm_zos_core 
 
 # The collection version
-version: 0.0.1
+version: 0.0.2
 
 # Collection README file
 readme: README.md
@@ -26,8 +26,8 @@ description: The Red Hat Ansible Certified Content for IBM Z core collection inc
 # Portions of this collection are licensed under GNU General Public License Version 3.0
 # and portions of this collection are licensed under Apache License, Version 2.0
 license:
-  - L(GNU General Public License Version 3.0,https://spdx.org/licenses/GPL-3.0-only.html)
-  - L(Apache License, Version 2.0, https://spdx.org/licenses/Apache-2.0.html)
+   - "GPL-3.0-only"
+   - "Apache-2.0"
 
 # Tags
 tags: [ibm,z,zos,z_os,core,zos_core,red_hat_ansible_certified_cotent_for_ibm_z,data_set,jcl,uss,mvs] 

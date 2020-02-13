@@ -41,7 +41,7 @@ The value for property __ansible_python_interpreter__ is the target host python 
 For more information on python configuration requirements on z/OS, refer to [Ansible FAQ: Running on z/OS](https://docs.ansible.com/ansible/latest/reference_appendices/faq.html).
    
 ## Group Vars
-Although you can store variables in the inventory file, storing separate host and group variables files may help you organize your variable values more easily. Included with the sample playbook is a sample variable file located in [./group_vars/all.yml](https://github.com/ansible-collections/ibm_zos_core/blob/v0.0.1/playbooks/group_vars/all.yml).
+Although you can store variables in the inventory file, storing separate host and group variables files may help you organize your variable values more easily. Included with the sample playbook is a sample variable file located in [./group_vars/all.yml](https://github.com/ansible-collections/ibm_zos_core/blob/v0.0.2/playbooks/group_vars/all.yml).
 
 The value for property __BPXK_AUTOCVT__ must be configured to `ON`.   
 

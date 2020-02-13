@@ -1,10 +1,22 @@
+# IBM Z Core Collection
+
+The IBM Z core collection referred to as `ibm_zos_core` is part of the broader offering __Red Hat® Ansible Certified Content for IBM Z__ 
+where `ibm_zos_core` supports tasks  such as creating data sets, submitting jobs, querying jobs, and retrieving job output.  
+
+The IBM Z core collection includes connection plugins, action plugins, modules, sample playbooks, and ansible-doc to 
+automate tasks on Z.  
+
 # Red Hat Ansible Certified Content for IBM Z
-__Red Hat® Ansible Certified Content for IBM Z__ provides the ability to connect IBM Z® to clients' wider enterprise automation strategy through the Ansible Automation Platform ecosystem. The __Red Hat Ansible Certified Content for IBM Z core collection__ (`ibm_zos_core`) enables development and operations to automate on Z by providing Ansible support for tasks such as creating data sets, submitting jobs, querying jobs, and retrieving job output.  
+__Red Hat® Ansible Certified Content for IBM Z__ provides the ability to connect IBM Z® to clients' wider enterprise 
+automation strategy through the Ansible Automation Platform ecosystem. This enables development and operations to 
+automate on Z through a seamless, unified workflow orchestration with configuration management, provisioning, and 
+application deployment in one easy-to-use platform.  
+
+Collections as part of the broader offering __Red Hat® Ansible Certified Content for IBM Z__ will initially be made available
+on Galaxy and later made available as certified content and accessable through Automation Hub. 
 
 # Features
-The __Red Hat Ansible Certified Content for IBM Z core collection__ `ibm_zos_core` includes [connection plugins](https://github.com/ansible-collections/ibm_zos_core/tree/v0.0.2/plugins/connection/), [action plugins](https://github.com/ansible-collections/ibm_zos_core/tree/v0.0.2/plugins/action/), [modules](https://github.com/ansible-collections/ibm_zos_core/tree/v0.0.2/plugins/modules/), [sample playbooks](https://github.com/ansible-collections/ibm_zos_core/tree/v0.0.2/playbooks/), and ansible-doc to automate tasks on Z.  
-
-These features enable a seamless, unified workflow orchestration with configuration management, provisioning, and application deployment in one easy-to-use platform. 
+The The IBM Z core collection includes [connection plugins](https://github.com/ansible-collections/ibm_zos_core/tree/v0.0.2/plugins/connection/), [action plugins](https://github.com/ansible-collections/ibm_zos_core/tree/v0.0.2/plugins/action/), [modules](https://github.com/ansible-collections/ibm_zos_core/tree/v0.0.2/plugins/modules/), [sample playbooks](https://github.com/ansible-collections/ibm_zos_core/tree/v0.0.2/playbooks/), and ansible-doc to automate tasks on Z.  
 
 # Plugins
 
@@ -83,10 +95,17 @@ Installed collection content:
 
 You can use the `-p` option with `anasible-galaxy` to specify the installation path such as `ansible-galaxy collection install ibm.ibm_zos_core -p /home/ansible/collections`. For more information on installing collections with Ansible Galaxy, see [Installing collections](https://docs.ansible.com/ansible/latest/user_guide/collections_using.html#installing-collections-with-ansible-galaxy). 
 
-## Automation Hub and private Galaxy server
-You can use the [ansible-galaxy](https://docs.ansible.com/ansible/latest/cli/ansible-galaxy.html) command with option `install` to install a collection on your system (control node) hosted in Hub or a private Galaxy server.  
+## Private Galaxy server
 
-By default, the `ansible-galaxy` command uses https://galaxy.ansible.com as the Galaxy server when you install a collection. The `ansible-galaxy` client can be configured to point to _HUB_ or other servers, such as a privately running Galaxy server, by configuring the server list in the `ansible.cfg` file.  
+Configuring access to a private Galaxy server follows the same instructions that you would configure your client to point to
+Automation Hub. When hosting a private Galaxy server or pointing to Hub, available content is not always consistent with 
+what is avaialable on the community Galaxy server. 
+
+You can use the [ansible-galaxy](https://docs.ansible.com/ansible/latest/cli/ansible-galaxy.html) command with 
+option `install` to install a collection on your system (control node) hosted in Automation Hub or a private Galaxy server.  
+
+By default, the `ansible-galaxy` command uses https://galaxy.ansible.com as the Galaxy server when you install a collection. 
+The `ansible-galaxy` client can be configured to point to _HUB_ or other servers, such as a privately running Galaxy server, by configuring the server list in the `ansible.cfg` file.  
 
 Ansible searches for `ansible.cfg` in these locations in this order:
 * ANSIBLE_CONFIG (environment variable if set)

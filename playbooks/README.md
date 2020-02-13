@@ -3,12 +3,12 @@ An [Ansible playbook](https://docs.ansible.com/ansible/latest/user_guide/playboo
 
 Included in __Red Hat Ansible Certified Content for IBM Z core collection__ is a playbooks directory that will contain any number of sample playbooks that with little modification to the __inventory__, __ansible config__ and __group_vars__ can be run with the `ansible-playbook` command. 
 
-You can find the playbook content that is included with the collection where the collection was installed, please refer back to the [installation documentation](../README.md#installation). In the following examples, this documment will refer to the installation path as `~/.ansible/collections/ibm/ibm_zos_core`. 
+You can find the playbook content that is included with the collection where the collection was installed, please refer back to the [installation documentation](https://github.com/ansible-collections/ibm_zos_core/blob/v0.0.2/README.md#installation). In the following examples, this documment will refer to the installation path as `~/.ansible/collections/ibm/ibm_zos_core`. 
 
 # Sample Playbook Configuration and Setup
 
 ## Ansible Config
-Ansible config `ansible.cfg` can override nearly all `ansible-playbook` configurations. Also included in the [playbooks/](./) directory is a sample `ansible.cfg` that with little modificaton can supplement `ansible-playbook`.
+Ansible config `ansible.cfg` can override nearly all `ansible-playbook` configurations. Also included in the [playbooks/](https://github.com/ansible-collections/ibm_zos_core/tree/v0.0.2/playbooks) directory is a sample `ansible.cfg` that with little modificaton can supplement `ansible-playbook`.
 
 In the sample `ansible.cfg`, the only required configuration is:   
 `pipelining = True`
@@ -18,7 +18,7 @@ For more information about available configurations for `ansible.cfg`, read the 
 ## Inventory
 Ansible works with multiple managed nodes (hosts) at the same time, using a list or group of lists know as an [inventory](https://docs.ansible.com/ansible/latest/user_guide/intro_inventory.html). Once the inventory is defined, you can use [patterns](https://docs.ansible.com/ansible/latest/user_guide/intro_patterns.html#intro-patterns) to select the hosts, or groups, you want Ansible to run against.
 
-Included in the  [playbooks/](./) directory is a sample [inventory](./inventory) file that with little modification can be used to manage your nodes. This inventory file should be included when running the sample playbook. 
+Included in the  [playbooks/](https://github.com/ansible-collections/ibm_zos_core/tree/v0.0.2/playbooks) directory is a sample [inventory](https://github.com/ansible-collections/ibm_zos_core/blob/v0.0.2/playbooks/inventory) file that with little modification can be used to manage your nodes. This inventory file should be included when running the sample playbook. 
 
 ```
 zsystem:
@@ -41,7 +41,7 @@ The value for property __ansible_python_interpreter__ is the target host python 
 For more information on python configuration requirements on z/OS, refer to [Ansible FAQ: Running on z/OS](https://docs.ansible.com/ansible/latest/reference_appendices/faq.html).
    
 ## Group Vars
-Although you can store variables in the inventory file, storing separate host and group variables files may help you organize your variable values more easily. Included with the sample playbook is a sample variable file located in [./group_vars/all.yml](./group_vars/all.yml).
+Although you can store variables in the inventory file, storing separate host and group variables files may help you organize your variable values more easily. Included with the sample playbook is a sample variable file located in [./group_vars/all.yml](https://github.com/ansible-collections/ibm_zos_core/blob/v0.0.1/playbooks/group_vars/all.yml).
 
 The value for property __BPXK_AUTOCVT__ must be configured to `ON`.   
 

@@ -204,6 +204,21 @@ data_set_type:
 	returned: success
 	type: str
 	sample: PDSE
+rc:
+    description: The return code returned by a process executed on the remote z/OS system
+    returned: failure
+    type: str
+    sample: 12
+stdout:
+    description: The stdout of a command executed on the target z/OS system
+    returned: failure
+    type: str
+    sample: DATA SET 'USER.PROCLIB' NOT IN CATALOG
+stderr:
+    description: The stderr of a command executed on the target z/OS system
+    returned: failure
+    type: str
+    sample: TypeError: 'int' object is not callable
 '''
 
 
@@ -261,7 +276,7 @@ def _fetch_zos_data_set(zos_data_set, is_binary, fetch_member=False):
     if fetch_member:
         rc, out, err = _run_command("cat \"//'{}'\"".format(zos_data_set))
         if rc != 0:
-            _fail_json(msg="Failed to read data set member for data set {}\n stdout: {}\nstderr: {}".format(zos_data_set, out, err))
+            _fail_json(msg="Failed to read data set member for data set {}".format(zos_data_set), rc=rc, stdout=out, stderr=err)
         content = out
     else:
         content = Datasets.read(zos_data_set)
@@ -303,7 +318,7 @@ def _copy_vsam_to_temp_data_set(ds_name):
             Datasets.delete(out_ds)
         
         if rc != 0:
-            _fail_json(msg="Non-zero return code received while executing MVSCmd to copy VSAM data set {}\nReturn code: {}".format(ds_name, rc))
+            _fail_json(msg="Non-zero return code received while executing MVSCmd to copy VSAM data set {}".format(ds_name), rc=rc)
         
         _fail_json(msg="Failed to call IDCAMS to copy VSAM data set {} to sequential data set: {}".format(ds_name, str(err)))
 
@@ -354,7 +369,7 @@ def _recatalog_data_set(ds_name, volume, vsam=False):
     try:
         rc = MVSCmd.execute_authorized(pgm="idcams", args='', dds=dd_statements)
         if rc != 0:
-            _fail_json(msg="Non-zero return code received while executing MVSCmd to recatalog {}\nReturn code: {}".format(ds_name, rc))
+            _fail_json(msg="Non-zero return code received while executing MVSCmd to recatalog {}".format(ds_name), rc=rc)
     
     except Exception as err:
         _fail_json(msg="Failed to call IDCAMS to recatalog data set {}: {}".format(ds_name, str(err)))
@@ -373,13 +388,13 @@ def _uncatalog_data_set(ds_name, vsam=False):
     
     rc, out, err = _run_command(cmd)
     if rc != 0:
-        _fail_json(msg="Unable to uncatalog data set {}\n stdout: {}\n stderr: {}".format(ds_name, out, err))
+        _fail_json(msg="Unable to uncatalog data set {}".format(ds_name), rc=rc, stdout=out, stderr=err)
 
 def _convert_from_ebcdic_to_ascii(data):
     """ Convert encoding from EBCDIC to ASCII """
     rc, out, err = _run_command("iconv -f IBM-1047 -t ISO8859-1", data=data)
     if rc != 0:
-        _fail_json(msg="Unable to convert from EBCDIC to ASCII\n stdout: {}\n stderr: {}".format(out, err))
+        _fail_json(msg="Unable to convert from EBCDIC to ASCII", rc=rc, stdout=out, stderr=err)
     return out
 
 def _get_checksum(data):
@@ -405,7 +420,7 @@ def _determine_data_set_type(ds_name):
             msg = "Dataset {} may already be open by another user. Close the dataset and try again.".format(ds_name)
         else:
             msg = "Unable to determine data set type for data set {}.".format(ds_name)
-        _fail_json(msg=msg + "\nstdout: {}\n stderr: {}".format(out, err))
+        _fail_json(msg=msg, rc=rc, stdout=out, stderr=err)
     
     ds_search = re.search("(-|--)DSORG(|-)\n(.*)", out)
     if ds_search:
@@ -418,7 +433,7 @@ def _fetch_pdse(src):
     temp_dir = tempfile.mkdtemp()    
     rc, out, err = _run_command("cp \"//'{}'\" {}".format(src, temp_dir))
     if rc != 0:
-        _fail_json(msg="Error copying partitioned data set to USS\n stdout: {}\n stderr: {}".format(out, err))
+        _fail_json(msg="Error copying partitioned data set to USS", rc=rc, stdout=out, stderr=err)
     
     result['pds_path'] = temp_dir
     return result

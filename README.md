@@ -1,18 +1,13 @@
 # IBM Z Core Collection
 
-The IBM Z core collection referred to as `ibm_zos_core` is part of the broader offering __Red Hat® Ansible Certified Content for IBM Z__ 
-where `ibm_zos_core` supports tasks  such as creating data sets, submitting jobs, querying jobs, and retrieving job output.  
-
-The IBM Z core collection includes connection plugins, action plugins, modules, sample playbooks, and ansible-doc to 
-automate tasks on Z.  
+The IBM Z core collection, referred to as `ibm_zos_core`, is part of the broader offering __Red Hat® Ansible Certified Content for IBM Z__. `ibm_zos_core` supports tasks such as creating data sets, submitting jobs, querying jobs, and retrieving job output.  
 
 # Red Hat Ansible Certified Content for IBM Z
 __Red Hat® Ansible Certified Content for IBM Z__ provides the ability to connect IBM Z® to clients' wider enterprise 
-automation strategy through the Ansible Automation Platform ecosystem. This enables development and operations to 
-automate on Z through a seamless, unified workflow orchestration with configuration management, provisioning, and 
+automation strategy through the Ansible Automation Platform ecosystem. This enables development and operations automation on Z through a seamless, unified workflow orchestration with configuration management, provisioning, and 
 application deployment in one easy-to-use platform.  
 
-Collections as part of the broader offering __Red Hat® Ansible Certified Content for IBM Z__ will initially be made available
+Collections, as part of the broader offering __Red Hat® Ansible Certified Content for IBM Z__, will initially be made available
 on Galaxy and later made available as certified content and accessable through Automation Hub. 
 
 # Features
@@ -22,15 +17,15 @@ The The IBM Z core collection includes [connection plugins](https://github.com/a
 
 ## Action
 * [normal](https://github.com/ansible-collections/ibm_zos_core/blob/v0.0.3/docs/README-zos-rexx-connection-plugin.md): A fork of [Ansible _normal.py_ action plugin](https://github.com/ansible/ansible/blob/devel/lib/ansible/plugins/action/normal.py) that is modified to allow a conditional shebang line in REXX modules.
-* [zos_job_submit](https://github.com/ansible-collections/ibm_zos_core/blob/v0.0.3/docs/README-zos-job-submit.md): Used to submit a job from the controller and optionally monitor for completion.  
+* [zos_job_submit](https://github.com/ansible-collections/ibm_zos_core/blob/v0.0.3/docs/README-zos-job-submit.md): Used to submit a job from the controller and optionally monitor for job completion.  
 
 ## Connection
-* [zos_ssh](https://github.com/ansible-collections/ibm_zos_core/blob/v0.0.3/docs/README-zos-rexx-connection-plugin.md): Enables the Ansible controller to communicate to a Z target machine by using ssh with the added support to transfer ASCII as EBCDIC when transferring REXX modules. The connection plugin was forked from the [Ansible _ssh.py_ connection plugin](https://github.com/ansible/ansible/blob/480b106d6535978ae6ecab68b40942ca4fa914a0/lib/ansible/plugins/connection/ssh.py). 
+* [zos_ssh](https://github.com/ansible-collections/ibm_zos_core/blob/v0.0.3/docs/README-zos-rexx-connection-plugin.md): Enables the Ansible controller to communicate to a Z target machine by using ssh, with the added support to transfer ASCII as EBCDIC when transferring REXX modules. This connection plugin was forked from the [Ansible _ssh.py_ connection plugin](https://github.com/ansible/ansible/blob/480b106d6535978ae6ecab68b40942ca4fa914a0/lib/ansible/plugins/connection/ssh.py). 
 
 # Modules 
 *  [zos_data_set](https://github.com/ansible-collections/ibm_zos_core/blob/v0.0.3/docs/README-zos-data-set.md): Create, delete, and manage attributes for data sets.
 *  [zos_job_query](https://github.com/ansible-collections/ibm_zos_core/blob/v0.0.3/docs/README-zos-job-query.md): Query Z for a list of jobs.
-*  [zos_job_submit](https://github.com/ansible-collections/ibm_zos_core/blob/v0.0.3/docs/README-zos-job-submit.md): Submit a job and optionally monitor for completion.
+*  [zos_job_submit](https://github.com/ansible-collections/ibm_zos_core/blob/v0.0.3/docs/README-zos-job-submit.md): Submit a job and optionally monitor for its completion.
 *  [zos_job_output](https://github.com/ansible-collections/ibm_zos_core/blob/v0.0.3/docs/README-zos-job-output.md): Capture the job output for a submitted job.
 
 # Playbooks
@@ -41,7 +36,7 @@ See the [playbooks README](https://github.com/ansible-collections/ibm_zos_core/b
 
 A control node is any machine with Ansible installed. From the control node, you can run commands and playbooks from a laptop, desktop, or server machine. However, you cannot run them on a Windows machine. 
 
-A managed node is often referred as a target node or host and is the node that is managed by Ansible. Ansible does not need not be installed on a managed node, but SSH must be eanabled. 
+A managed node is often referred to as a target node, or host, and is the node that is managed by Ansible. Ansible does not need not need to be installed on a managed node, but SSH must be eanabled.
 
 The following nodes require specific versions of software:
 
@@ -97,7 +92,7 @@ You can use the `-p` option with `anasible-galaxy` to specify the installation p
 
 ## Private Galaxy server
 
-Configuring access to a private Galaxy server follows the same instructions that you would configure your client to point to
+Configuring access to a private Galaxy server follows the same instructions that you would use to configure your client to point to
 Automation Hub. When hosting a private Galaxy server or pointing to Hub, available content is not always consistent with 
 what is avaialable on the community Galaxy server. 
 
@@ -167,7 +162,7 @@ Created collection for ibm.ibm_zos_core at /Users/user/git/ibm/zos-ansible/ibm_z
 __Note__: If you build the collection with Ansible version 2.9 or earlier, you will see the following warning that you can ignore.
 `[WARNING]: Found unknown keys in collection galaxy.yml at '/Users/user/git/ibm/zos-ansible/ibm_zos_core/galaxy.yml': build_ignore`
 
-You can use the `-p` option with `anasible-galaxy` to specify the installation path, for example, `ansible-galaxy collection install ibm-ibm_zos_core-0.0.2.tar.gz -p /home/ansible/collections`. For more information, see [Installing collections with Ansible Galaxy] (https://docs.ansible.com/ansible/latest/user_guide/collections_using.html#installing-collections-with-ansible-galaxy). 
+You can use the `-p` option with `anasible-galaxy` to specify the installation path, for example, `ansible-galaxy collection install ibm-ibm_zos_core-0.0.2.tar.gz -p /home/ansible/collections`. For more information, see [Installing collections with Ansible Galaxy](https://docs.ansible.com/ansible/latest/user_guide/collections_using.html#installing-collections-with-ansible-galaxy). 
 
 3. Install the locally built collection:
 ```
@@ -207,7 +202,7 @@ In Ansible 2.9, the `collections` keyword was added and reduces the need to refe
 ```
 
 ## ansible-doc
-Modules included in this collection provide additional documentation that is similar to a UNIX or UNIX-like operating system man page (manual page). This documentation an be accessed from the command line by using the `ansible-doc` command.
+Modules included in this collection provide additional documentation that is similar to a UNIX, or UNIX-like, operating system man page (manual page). This documentation can be accessed from the command line by using the `ansible-doc` command.
 
 Here's how to use the Ansible-supplied command after you install the _Red Hat Ansible Certified Content for IBM Z core collection_:
 `ansible-doc ibm.ibm_zos_core.zos_data_set`
@@ -239,13 +234,13 @@ OPTIONS (= is mandatory):
 * [Getting started Ansible guide](https://docs.ansible.com/ansible/latest/user_guide/intro_getting_started.html).
 
 # Contributing
-Currently we are not accepting community contributions. Periodically review this content on when and how contributions could be contributed.   
+Currently we are not accepting community contributions. Though, you may periodically review this content to learn when and how contributions can be made in the future.
 
 # Copyright
 © Copyright IBM Corporation 2020  
 
 # License
-Portions of this collection are licensed under [GNU General Public License, Version 3.0](https://opensource.org/licenses/GPL-3.0), 
-and portions of this collection are licensed under [Apache License, Version 2.0](https://opensource.org/licenses/Apache-2.0).
+Some portions of this collection are licensed under [GNU General Public License, Version 3.0](https://opensource.org/licenses/GPL-3.0), 
+and other portions of this collection are licensed under [Apache License, Version 2.0](https://opensource.org/licenses/Apache-2.0).
 See individual files for applicable licenses.
 

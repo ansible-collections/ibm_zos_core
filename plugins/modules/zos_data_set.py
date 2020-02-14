@@ -113,17 +113,7 @@ options:
         type: list
         required: false
         version_added: "2.9"
-notes:
-    - This module only supports z/OS distributions.
-requirements:
-    - Z Open Automation Utilities
-    - Python 3.6 or higher 
-    - z/OS USS tsocmd command 
-    - |
-      Set the following environment variables for the playbook:
-        `_BPXK_AUTOCVT=ON`
-        `ZOAU_ROOT=/usr/lpp/IBM/zoautil`
-        `PYTHONPATH=${ZOAU_ROOT}/lib/`
+
 '''
 EXAMPLES = r'''
 - name: Create a sequential data set if it does not exist

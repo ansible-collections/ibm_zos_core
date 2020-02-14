@@ -125,10 +125,10 @@ options:
     default: true
   encoding:
     description:
-    - Indicats the encoding of the file or data set on the local machine. 
+    - Indicates the encoding of the file or data set on the local machine. 
     - If set to C(ASCII), the module will not convert the encoding to EBCDIC.
     - If set to C(EBCDIC), the module will convert the encoding of the file or data
-      set before copying to destination.
+      set to EBCDIC before copying to destination.
     - Only valid if I(is_binary=false)
     type: str
     default: EBCDIC
@@ -141,10 +141,15 @@ author:
 '''
 
 EXAMPLES = r'''
-- name: Copy a single file to a PS
+- name: Copy a local file to a sequential data set
   zos_copy:
-    src: /src/myfiles/test.ps
-    dest: zoscopy.ps
+    src: /tmp/sample_seq_data_set
+    dest: SAMPLE.SEQ.DATA.SET
+
+- name: Copy a local file to a USS location
+  zos_copy:
+    src: /tmp/test.log
+    dest: /tmp/test.log
 
 - name: Copy a single file to a PDS member
   zos_copy:
@@ -161,10 +166,6 @@ EXAMPLES = r'''
     src: /src/myfiles/test.uss
     dest: /u/userid
     isUSS: True
-- name: Copy folder contents recursively
-  win_copy:
-    src: files/temp_files/
-    dest: C:\Temp
 '''
 
 RETURN = r'''

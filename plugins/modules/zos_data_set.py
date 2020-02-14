@@ -12,7 +12,7 @@ ANSIBLE_METADATA = {
 DOCUMENTATION=r'''
 ---
 module: zos_data_set
-short_description: Create, replace, and delete data sets
+short_description: Create and set attributes for data sets
 description:
     - Create, delete and set attributes of data sets.
     - When forcing data set replacement, contents will not be preserved.
@@ -29,14 +29,12 @@ options:
         description:
             - The final state desired for specified data set. 
             - >
-              If absent, it will ensure that the data set is not present on the system.
+              If `absent`, will ensure the data set is not present on the system.
               Note that `absent` will not cause `zos_data_set` to fail if data set does not exist as the state did not change. 
             - >
               If `present`, will ensure the data set is present on the system.
-              Note that absent will not cause the zos_data_set to fail if data set does not exist because the state did not change. 
-              If present, it will ensure that the data set is present on the system. 
-              Note that present will not replace an existing data set by default even when the attributes do not match your desired data set. 
-              If replacement behavior is required, see the options replace and unsafe_writes.
+              Note that `present` will not replace an existing data set by default, even when the attributes do not match our desired data set.
+              If replacement behavior is desired, see the options `replace` and `unsafe_writes`.
         required: false
         default: present
         choices:
@@ -98,15 +96,12 @@ options:
         version_added: "2.9"
     replace:
         description:
-            - When replace is true and state is present, the existing data set matching name will be replaced.
-            - If `replace` is `true`, all data in the original data set will be lost.
+            - When `replace` is `true`, and `state` is `present`, existing data set matching name will be replaced.
             - > 
-              Replacement is performed by allocating a new data set with your desired attibutes to ensure that space is available. 
-              Then, the original data set is removed, and your new data set is moved to the original data set name. 
-              In cases where this method of replacement might fail due to lack of space or other issues, 
-              unsafe_writes can be specified to force delete and create without the intermediate data set creation. 
-              Note that this is more unlikely to leave data sets in an inconsistent state. 
-              Use unsafe_writes with caution.
+              Replacement is performed by deleting the existing data set and creating a new data set with the desired 
+              attributes in the old data set's place. This may lead to an inconsistent state if data set creations fails 
+              after the old data set is deleted.
+            - If `replace` is `true`, all data in the original data set will be lost.
         type: bool
         required: false
         default: false
@@ -118,6 +113,7 @@ options:
         type: list
         required: false
         version_added: "2.9"
+
 '''
 EXAMPLES = r'''
 - name: Create a sequential data set if it does not exist
@@ -212,11 +208,9 @@ EXAMPLES = r'''
 RETURN='''
 original_message:
     description: The original list of parameters and arguments, plus any defaults used.
-    returned: always
     type: dict
 message:
     description: The output message that the sample module generates
-    returned: success
     type: dict
     stdout:
         description: The output from the module
@@ -226,7 +220,6 @@ message:
         type: str
 changed: 
     description: Indicates if any changes were made during module operation.
-    returned: always
     type: bool
 '''
 from ansible.module_utils.basic import AnsibleModule
@@ -406,8 +399,8 @@ def record_length(arg_val, params):
     arg_val = DEFAULT_RECORD_LENGTHS.get(params.get('format'), None) if not arg_val else int(arg_val)
     if arg_val == None:
         return None
-    if not re.match(r'[1-9][0-9]*', str(arg_val)) or (arg_val < 1 or arg_val > 32768):
-        raise ValueError('Value {0} is invalid for record_length argument. record_length must be between 1 and 32768 bytes.'.format(arg_val))
+    if not re.match(r'[0-9]*', str(arg_val)) or (arg_val < 0 or arg_val > 32768):
+        raise ValueError('Value {0} is invalid for record_length argument. record_length must be between 0 and 32768 bytes.'.format(arg_val))
     return arg_val
 
 def data_set_format(arg_val, params):
@@ -517,15 +510,15 @@ def ensure_data_set_member_absent(name):
     return False
 
 def data_set_exists(name):
-    rc, stdout, stderr = run_command('tsocmd "listcat entries(\'{}\') name"'.format(name))
-    if rc == 0 and re.search(r'-\s'+ re.escape(name) +r'\n\s+in-cat', stdout, re.IGNORECASE):
-        return True
-    return False
+    rc, stdout, stderr = run_command('head "//\'{}\'"'.format(name))
+    if stderr and 'EDC5049I' in stderr:
+        return False
+    return True
 
 def data_set_member_exists(name):
     """Checks for existence of data set member."""
     # parsed_data_set = re.match(r'^((?:(?:[A-Z]{1}[A-Z0-9]{0,7})(?:[.]{1})){1,21}[A-Z]{1}[A-Z0-9]{0,7})\(([A-Z]{1}[A-Z0-9]{0,7})\)$', name, re.IGNORECASE)
-    rc, stdout, stderr = run_command('cat "//\'{}\'"'.format(name))
+    rc, stdout, stderr = run_command('head "//\'{}\'"'.format(name))
     if rc != 0 or (stderr and 'EDC5067I' in stderr):
         return False
     return True

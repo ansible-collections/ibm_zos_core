@@ -241,6 +241,7 @@ from ansible.module_utils.basic import AnsibleModule
 import argparse
 import re
 from traceback import format_exc
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import BetterArgParser
 from zoautil_py import OperatorCmd
 
 def run_module():
@@ -250,7 +251,26 @@ def run_module():
         message_id=dict(type='str',required=False),
         jobname=dict(type='str',required=False)
     )
-
+    
+    arg_defs=dict(
+        request_number_list = dict(
+            arg_type=request_number_list_type,
+            required=False,
+            default=['all']
+        ),
+        system=dict(
+            arg_type=system_type,
+            required=False
+        ),
+        message_id=dict(
+            arg_type=message_id_type,
+            required=False
+        ),
+        jobname=dict(
+            arg_type=jobname_type,
+            required=False
+        )
+    )
 
     result = dict(
         changed=False,
@@ -267,8 +287,9 @@ def run_module():
     if module.check_mode:
         return result
     try:
-        validate_parameters(module.params)
-        requests = find_required_request(module.params)
+        parser = BetterArgParser(arg_defs)
+        new_params = parser.parse_args(module.params)
+        requests = find_required_request(new_params)
         if requests:
             result['requests_count'] = len(requests)
     except Error as e:
@@ -280,22 +301,31 @@ def run_module():
     result['requests'] = requests
     module.exit_json(**result)
 
-def validate_parameters(params):
-    request_number_list = params.get('request_number_list')
-    for value in request_number_list:
+def request_number_list_type(arg_val, params):
+    for value in arg_val:
         if value and value !='all':
             validate_parameters_based_on_regex(value,'^[0-9]{2,}$')
-    regex_pair = {
-        'system': '^[a-zA-Z0-9]{1,8}$',
-        'message_id': '^[a-zA-Z0-9]{1,8}$',
-        'jobname': '^[a-zA-Z0-9]{1,8}$'
-        }
-    for option,regex in regex_pair.items():
-        value = params.get(option)
-        if value and value!='*':
-            value = value.strip('*')
-            validate_parameters_based_on_regex(value,regex)
 
+def system_type(arg_val, params):
+    if arg_val and arg_val!='*':
+        arg_val = arg_val.strip('*')
+    value=arg_val
+    regex='^[a-zA-Z0-9]{1,8}$'
+    validate_parameters_based_on_regex(value,regex)
+
+def message_id_type(arg_val, params):
+    if arg_val and arg_val!='*':
+        arg_val = arg_val.strip('*')
+    value=arg_val
+    regex='^[a-zA-Z0-9]{1,8}$'
+    validate_parameters_based_on_regex(value,regex)
+
+def jobname_type(arg_val, params):
+    if arg_val and arg_val!='*':
+        arg_val = arg_val.strip('*')
+    value=arg_val
+    regex='^[a-zA-Z0-9]{1,8}$'
+    validate_parameters_based_on_regex(value,regex)
 
 
 def validate_parameters_based_on_regex(value,regex):

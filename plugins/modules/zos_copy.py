@@ -150,11 +150,18 @@ EXAMPLES = r'''
   zos_copy:
     src: /tmp/test.log
     dest: /tmp/test.log
+    is_uss: true
 
-- name: Copy a single file to a PDS member
+- name: If local_follow=true, the module will follow the symbolic link specified in src
   zos_copy:
-    src: /src/myfiles/test.pds
-    dest: zoscopy.pds
+    src: /path/to/link
+    dest: /path/to/uss/location
+    is_uss: true
+
+- name: Copy a local file to a PDS member
+  zos_copy:
+    src: /path/to/local/file
+    dest: SAMPLE.PDSE(member_name)
 
 - name: Copy a single file to a VSAM(KSDS)
   zos_copy:

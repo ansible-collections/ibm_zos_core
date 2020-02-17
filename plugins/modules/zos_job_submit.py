@@ -271,6 +271,7 @@ from time import sleep
 from os import chmod, path
 from tempfile import NamedTemporaryFile
 import re
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import job_output
 
 ZOAUTIL_TEMP_USS = "/tmp/ansible-temp-1"
 ZOAUTIL_TEMP_USS2 = "/tmp/ansible-temp-2"
@@ -331,34 +332,37 @@ def copy_rexx_and_run(script,src,vol,module):
     rc, stdout, stderr = module.run_command(['./' + scriptName, src, vol], cwd=pathName)
     return rc, stdout, stderr
 
-def get_job_info(jobId, return_output):
+def get_job_info(module, jobId, return_output):
     result = dict()
     try:
         output = query_jobs_status(jobId)
     except SubmitJCLError as e:
         raise SubmitJCLError(e.msg)
-    dds = Jobs.list_dds(job_id=jobId)
-    joboutput = []
+    # dds = Jobs.list_dds(job_id=jobId)
+    # joboutput = []
     if return_output is True:
-        for item in dds:
-            dataset = item.get("dataset")
-            stepname = item.get("stepname")
-            content = Jobs.read_output(jobId, stepname, dataset)
-            joboutput.append({
-                'stepname': stepname,
-                'ddname': dataset,
-                'content': content,
-            })
-        result['ddnames'] = joboutput
-    else:
-        result['ddnames'] = None
+        result = job_output(module, job_id=jobId)
+        # for item in dds:
+        #     dataset = item.get("dataset")
+        #     stepname = item.get("stepname")
+        #     content = Jobs.read_output(jobId, stepname, dataset)
+        #     joboutput.append({
+        #         'stepname': stepname,
+        #         'ddname': dataset,
+        #         'content': content,
+        #     })
+        # result['ddnames'] = joboutput
+        
+    # else:
+    #     result['ddnames'] = None
 
-    ret_code = parsing_job(output[0])
+    # # ret_code = parsing_job(output[0])
 
-    result['job_id'] = jobId
+    # result['job_id'] = jobId
     result['changed'] = True
-    result['job_name'] = output[0].get("name")
-    result['ret_code'] = ret_code
+    # result['job_name'] = output[0].get("name")
+    # result['ret_code'] = ret_code
+    
 
     return result
 
@@ -543,10 +547,11 @@ def run_module():
                 break
 
     try:
-        result = get_job_info(jobId, return_output)
+        result = get_job_info(module, jobId, return_output)
     except SubmitJCLError as e:
         module.fail_json(msg=e.msg, **result)
-
+    except Exception as e:
+        module.fail_json(msg=e.msg, **result)
     result['duration'] = duration
     if duration == wait_time_s:
         results['message'] = {'msg': 'Submit JCL operation succeeded but it is a long running job. Timeout is '+ str(wait_time_s)+' seconds.'}

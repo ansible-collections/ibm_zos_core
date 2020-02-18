@@ -116,9 +116,15 @@ jobs:
                 msg:
                     description: Holds the return code (eg. "CC 0000")
                     type: str
-        return_code:
-            description: return code converted to integer value
-            type: int
+                msg_code: 
+                    description: Holds the return code string (eg. "00", "S0C4")
+                    type: str
+                msg_txt: 
+                    description: Holds additional information related to the job that may be useful to the user.
+                    type: str
+                code: 
+                    description: return code converted to integer value (when possible)
+                    type: int
 changed:
   description: Indicates if any changes were made during module operation
   type: bool

@@ -132,11 +132,18 @@ jobs:
       type: dict
       contains:
         msg:
-          description: Holds the return code (eg. "CC 0000")
-          type: str
-    return_code:
-      description: return code converted to integer value
-      type: int
+            description: Holds the return code (eg. "CC 0000")
+            type: str
+        msg_code: 
+            description: Holds the return code string (eg. "00", "S0C4")
+            type: str
+        msg_txt: 
+            description: Holds additional information related to the job that may be useful to the user.
+            type: str
+        code: 
+            description: return code converted to integer value (when possible)
+            type: int
+
 
 changed:
   description: Indicates if any changes were made during module operation
@@ -304,10 +311,7 @@ def get_job_info(module, jobId, return_output):
 
     if return_output is True:
         result = job_output(module, job_id=jobId)
-
     result['changed'] = True
-
-    
 
     return result
 
@@ -403,7 +407,7 @@ def run_module():
         location=dict(type='str', required=True),
         encoding=dict(type='str', required=False, default='UTF-8'),
         volume=dict(type='str', required=False),
-        return_output=dict(type='bool', required=False, default='True'),
+        return_output=dict(type='bool', required=False, default=True),
         wait_time_s=dict(type='int', required=False),
         max_rc=dict(type='int', required=False)
     )
@@ -478,7 +482,7 @@ def run_module():
             module.fail_json(msg='Location is not valid. DATA_SET, USS, and LOCAL is supported.', **result)
 
     except SubmitJCLError as e:
-        module.fail_json(msg=e.msg, **result)
+        module.fail_json(msg=str(e), **result)
     if jobId == None or jobId == '':
         result['job_id'] = jobId
         module.fail_json(msg='JOB ID RETURNED IS None. PLEASE CHECK WHETHER THE JCL IS CORRECT.', **result)
@@ -488,7 +492,7 @@ def run_module():
         try:
             waitJob = query_jobs_status(jobId)
         except SubmitJCLError as e:
-            module.fail_json(msg=e.msg, **result)
+            module.fail_json(msg=str(e), **result)
         while waitJob[0].get('status') == "AC":  # AC means in progress
             sleep(1)
             duration = duration + 1
@@ -501,18 +505,18 @@ def run_module():
     try:
         result = get_job_info(module, jobId, return_output)
         if wait == True and return_output == True and max_rc != None:
-            assert_valid_return_code(max_rc, result.get('jobs')[0].get('return_code'))
+            assert_valid_return_code(max_rc, result.get('jobs')[0].get('ret_code').get('code'))
     except SubmitJCLError as e:
         module.fail_json(msg=str(e), **result)
     except Exception as e:
         module.fail_json(msg=str(e), **result)
     result['duration'] = duration
     if duration == wait_time_s:
-        results['message'] = {'msg': 'Submit JCL operation succeeded but it is a long running job. Timeout is '+ str(wait_time_s)+' seconds.'}
-
-    results['changed'] = True
-    # results['jobs'] = jobs
-    module.exit_json(**results)
+        result['message'] = {'stdout': 'Submit JCL operation succeeded but it is a long running job. Timeout is '+ str(wait_time_s)+' seconds.'}
+    else:
+        result['message'] = {'stdout': 'Submit JCL operation succeeded.'}
+    result['changed'] = True
+    module.exit_json(**result)
 
 
 class Error(Exception):

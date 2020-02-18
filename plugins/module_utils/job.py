@@ -35,7 +35,10 @@ def job_output(module, job_id='', owner='', job_name='', dd_name=''):
             'Failed to retrieve job output. No job output found.')
     job_detail_json = json.loads(out, strict=False)
     for job in job_detail_json.get('jobs'):
-        job['return_code'] = _get_return_code_num(job.get('ret_code', {}).get('msg', ''))
+        job['ret_code'] = {} if job.get('ret_code') == None else job.get('ret_code')
+        job['ret_code']['code'] = _get_return_code_num(job.get('ret_code', {}).get('msg', ''))
+        job['ret_code']['msg_code'] = _get_return_code_str(job.get('ret_code', {}).get('msg', ''))
+        job['ret_code']['msg_txt'] = ''
     return job_detail_json
 
 
@@ -221,4 +224,20 @@ def _get_return_code_num(rc_str):
     match = re.search(r'\s*CC\s*([0-9]+)', rc_str)
     if match:
         rc = int(match.group(1))
+    return rc
+
+def _get_return_code_str(rc_str):
+    """Parse an intestrger return code from
+    z/OS job output return code string.
+    
+    Arguments:
+        rc_str {str} -- The return code message from z/OS job log (eg. "CC 0000" or "ABEND")
+    
+    Returns:
+        Union[str, NoneType] -- Returns string RC or ABEND code if possible, if not returns NoneType
+    """
+    rc = None
+    match = re.search(r'(?:\s*CC\s*([0-9]+))|(?:ABEND(\s*(?:S|U)[0-9]+))', rc_str)
+    if match:
+        rc = match.group(1)
     return rc

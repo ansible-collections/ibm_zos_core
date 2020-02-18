@@ -64,7 +64,7 @@ EXAMPLES = r'''
     ddname: "?"
 '''
 RETURN = '''
-zos_job_output:
+jobs:
     description: list of job output.
     returned: success
     type: list[dict]
@@ -81,7 +81,7 @@ zos_job_output:
         class:
             description: class
             type: str
-        content-type:
+        content_type:
             description: content type
             type: str
         ddnames:
@@ -91,7 +91,7 @@ zos_job_output:
                 ddname:
                     description: data definition name
                     type: str
-                record-count:
+                record_count:
                     description: record count
                     type: int
                 id:
@@ -103,12 +103,25 @@ zos_job_output:
                 procstep:
                     description: proc step
                     type: str
-                byte-count:
+                byte_count:
                     description: byte count
                     type: int
                 content:
                     description: ddname content
                     type: list[str]
+        ret_code:
+            description: return code output taken directly from job log
+            type: dict
+            contains:
+                msg:
+                    description: Holds the return code (eg. "CC 0000")
+                    type: str
+        return_code:
+            description: return code converted to integer value
+            type: int
+changed:
+  description: Indicates if any changes were made during module operation
+  type: bool
 '''
 
 import json
@@ -137,10 +150,11 @@ def run_module():
         module.fail_json(msg="Please provide a job_id or job_name or owner")
 
     try:
-        job_detail_json = job_output(module, job_id, owner, job_name, ddname)
+        results = job_output(module, job_id, owner, job_name, ddname)
+        results['changed'] = False
     except Exception as e:
         module.fail_json(msg=str(e))
-    module.exit_json(zos_job_output=job_detail_json)
+    module.exit_json(**results)
 
 
 def main():

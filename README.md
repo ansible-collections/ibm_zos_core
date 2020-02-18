@@ -27,7 +27,7 @@ The The IBM Z core collection includes [connection plugins](https://github.com/a
 *  [zos_job_query](https://github.com/ansible-collections/ibm_zos_core/blob/v0.0.3/docs/README-zos-job-query.md): Query Z for a list of jobs.
 *  [zos_job_submit](https://github.com/ansible-collections/ibm_zos_core/blob/v0.0.3/docs/README-zos-job-submit.md): Submit a job and optionally monitor for its completion.
 *  [zos_job_output](https://github.com/ansible-collections/ibm_zos_core/blob/v0.0.3/docs/README-zos-job-output.md): Capture the job output for a submitted job.
-*   zos-operator-openquestion: Display outstanding messages requiring operator action.
+
 # Playbooks
 [Sample playbooks](https://github.com/ansible-collections/ibm_zos_core/tree/v0.0.3/playbooks/) are included that demonstrate how to use the collection content in the `ibm_zos_core` collection.  
 See the [playbooks README](https://github.com/ansible-collections/ibm_zos_core/blob/v0.0.3/playbooks/README.md) for detailed instructions and configuration information.

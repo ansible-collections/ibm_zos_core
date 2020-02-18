@@ -1,18 +1,17 @@
 # -*- coding: utf-8 -*-
 ANSIBLE_METADATA = {
-    'metadata_version': '1.3',
+    'metadata_version': '1.1',
     'status': ['preview'],
-    'supported_by': 'Ping Xiao'
+    'supported_by': 'community'
 }
 
-DOCUMENTATION = '''
+DOCUMENTATION =r'''
 ---
 module: zos_operator_outstanding_action
 short_description: display outstanding messages requiring operator action
 description:
     - Get list of outstanding messages requiring operator action given one or more conditions
 author: "Ping Xiao (@xiaoping)"
-deprecated: []
 options:
   request_number_list:
     description:
@@ -43,34 +42,34 @@ notes:
   - check_mode is supported but in the case of this module, it never changs the system state so always return False
 '''
 
-EXAMPLES = '''
+EXAMPLES =r'''
 # Task(s) is a call to an ansible module, basically an action needing to be accomplished
 - name: Get all outstanding messages requiring operator action
   zos_operator_outstanding_action:
     request_number_list: 
         - all
 - Sample result('requests' field):
-[
-    {
-        'number': '001', 
-        'type': 'R', 
-        'system': 'MV27', 
-        'job_id': 'STC01537', 
-        'message_text': '*399 HWSC0000I *IMS CONNECT READY* IM5HCONN', 
-        'jobname': 'IM5HCONN', 
-        'message_id': 'HWSC0000I'
-    },
-    {
-        'number': '002', 
-        'type': 'R', 
-        'system': 'MV27', 
-        'job_id': 'STC01533', 
-        'message_text': '*400 DFS3139I IMS INITIALIZED, AUTOMATIC RESTART PROCEEDING IM5H', 
-        'jobname': 'IM5HCTRL', 
-        'message_id': 'DFS3139I'
-    }
-    ...
-]
+    [
+        {
+            'number': '001', 
+            'type': 'R', 
+            'system': 'MV27', 
+            'job_id': 'STC01537', 
+            'message_text': '*399 HWSC0000I *IMS CONNECT READY* IM5HCONN', 
+            'jobname': 'IM5HCONN', 
+            'message_id': 'HWSC0000I'
+        },
+        {
+            'number': '002', 
+            'type': 'R', 
+            'system': 'MV27', 
+            'job_id': 'STC01533', 
+            'message_text': '*400 DFS3139I IMS INITIALIZED, AUTOMATIC RESTART PROCEEDING IM5H', 
+            'jobname': 'IM5HCTRL', 
+            'message_id': 'DFS3139I'
+        }
+        ...
+    ]
 - name: Get outstanding messages given the question number
   zos_operator_outstanding_action:
     request_number_list:
@@ -78,7 +77,7 @@ EXAMPLES = '''
         - 008
         - 009
 - Sample result('requests' field):
-[
+  [
     {
         'number': '010',
         'type': 'R',
@@ -105,12 +104,13 @@ EXAMPLES = '''
         'jobname': 'NETVIEW',
         'message_id': 'DSI802A'
     }
+  ]
 - name: To display all outstanding messages issued on system MV2H
   zos_operator_outstanding_action:
       system: mv2h
 - Sample result('requests' field):
-[
-   {
+  [
+    {
         'number': '101',
         'type': 'R', 
         'system': 'MV2H',
@@ -127,12 +127,12 @@ EXAMPLES = '''
         'jobname': 'NETVIEW',
         'message_id': 'DSI802A'
     }
-]
+  ]
 - name: To display all outstanding messages whose job name begin with im5 
   zos_operator_outstanding_action:
       jobname: im5*
 - Sample result('requests' field):
-[
+  [
     {
         'number': '088',
         'type': 'R',
@@ -151,12 +151,12 @@ EXAMPLES = '''
         'jobname': 'IM5FCONN',
         'message_id': 'HWSC0000I'
     }
-]
+  ]
 - name: To display the outstanding messages whose message id begin with dsi*
   zos_operator_outstanding_action:
       message_id: dsi*
 - Sample result('requests' field):
-[
+  [
     {
         'number': '086',
         'type': 'R', 'system':
@@ -175,14 +175,14 @@ EXAMPLES = '''
         'jobname': 'MQNVIEW', 
         'message_id': 'DSI802A'
     }
-]
+  ]
 - name: Get outstanding messages given the various conditions
   zos_operator_outstanding_action:
     jobname: mq*
     message_id: dsi*
     system: mv29
 - Sample result('requests' field):
-[
+  [
     {
         'number': '070',
         'type': 'R',
@@ -192,7 +192,7 @@ EXAMPLES = '''
         'jobname': 'MQNVIEW', 
         'message_id': 'DSI802A'
     }
-]
+  ]
 '''
 RETURN = '''
 changed:
@@ -205,35 +205,16 @@ failed:
     type: bool
 message:
     description: Return if the operator command been issued successfully
+    returned: success
     type: str
 requests_count:
     description: The count of the outstanding messages
+    returned: success
     type: int
 requests:
     description: The list of the outstanding messages
+    returned: success
     type: list[dict]
-    sample:
-    [
-        {
-            'number': '009', //the open question numbers
-            'type': 'R', //The type of the request, default is 'R'
-            'system': 'MV2C', //The system name
-            'job_id': 'STC13367', //The job identifier
-            'message_text': '*009 DFS3139I IMS INITIALIZED, AUTOMATIC RESTART PROCEEDING IM4A', //The mssage text for the request
-            'jobname': 'IM4ACTRL', //The name of the job which issued the action message
-            'message_id': 'DFS3139I' //The message identifier for the action message awaiting a reply
-        }, 
-        {
-            'number': '010', 
-            'type': 'R', 
-            'system': 'MV2C', 
-            'job_id': 'STC13369', 
-            'message_text': '*010 DFS3139I IMS INITIALIZED, AUTOMATIC RESTART PROCEEDING IM5A', 
-            'jobname': 'IM5ACTRL', 
-            'message_id': 'DFS3139I'
-        }
-        ...
-    ]
 '''
 
 
@@ -243,6 +224,7 @@ import re
 from traceback import format_exc
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import BetterArgParser
 from zoautil_py import OperatorCmd
+
 
 def run_module():
     module_args = dict(
@@ -304,7 +286,8 @@ def run_module():
 def request_number_list_type(arg_val, params):
     for value in arg_val:
         if value and value !='all':
-            validate_parameters_based_on_regex(value,'^[0-9]{2,}$')
+            validate_parameters_based_on_regex(str(value),'^[0-9]{2,}$')
+    return arg_val
 
 def system_type(arg_val, params):
     if arg_val and arg_val!='*':
@@ -312,6 +295,7 @@ def system_type(arg_val, params):
     value=arg_val
     regex='^[a-zA-Z0-9]{1,8}$'
     validate_parameters_based_on_regex(value,regex)
+    return arg_val
 
 def message_id_type(arg_val, params):
     if arg_val and arg_val!='*':
@@ -319,6 +303,7 @@ def message_id_type(arg_val, params):
     value=arg_val
     regex='^[a-zA-Z0-9]{1,8}$'
     validate_parameters_based_on_regex(value,regex)
+    return arg_val
 
 def jobname_type(arg_val, params):
     if arg_val and arg_val!='*':
@@ -326,14 +311,16 @@ def jobname_type(arg_val, params):
     value=arg_val
     regex='^[a-zA-Z0-9]{1,8}$'
     validate_parameters_based_on_regex(value,regex)
+    return arg_val
 
 
 def validate_parameters_based_on_regex(value,regex):
     pattern = re.compile(regex)
     if pattern.search(value):
-        return true
+        pass
     else:
         raise ValidationError(str(value))
+    return value
 
 
 

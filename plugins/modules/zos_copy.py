@@ -72,7 +72,7 @@ options:
       different than the source.
     - If C(false), the file will only be transferred if the destination does not exist.
     type: bool
-    default: yes
+    default: true
   mode:
     description:
     - The permission of the destination file or directory.
@@ -84,7 +84,7 @@ options:
     - If C(false), it will search for src at local machine.
     - If C(true), it will go to the remote/target machine for the src.
     type: bool
-    default: no
+    default: false
   local_follow:
     description:
     - This flag indicates that filesystem links in the source tree, if they exist, 
@@ -125,13 +125,26 @@ options:
     default: true
   encoding:
     description:
-    - Indicates the encoding of the file or data set on the local machine. 
+    - Indicates the encoding of the file or data set on the remote machine. 
     - If set to C(ASCII), the module will not convert the encoding to EBCDIC.
     - If set to C(EBCDIC), the module will convert the encoding of the file or data
       set to EBCDIC before copying to destination.
     - Only valid if I(is_binary=false)
     type: str
     default: EBCDIC
+  checksum:
+    description:
+    - SHA1 checksum of the file being copied.
+    - Used to validate that the copy of the file or data set was successful.
+    - If this is not provided and I(validate=true), Ansible will use local calculated
+      checksum of the src file.
+    type: str
+  validate:
+    description:
+    - Verrify that the copy operation was successful by comparing the source and
+      destination checksum.
+    type: bool
+    default: true
 notes:
 - Currently zos_copy does not support copying symbolic links from both local to
   remote and remote to remote.
@@ -143,14 +156,29 @@ author:
 EXAMPLES = r'''
 - name: Copy a local file to a sequential data set
   zos_copy:
-    src: /tmp/sample_seq_data_set
+    src: /path/to/sample_seq_data_set
     dest: SAMPLE.SEQ.DATA.SET
 
 - name: Copy a local file to a USS location
   zos_copy:
-    src: /tmp/test.log
+    src: /path/to/test.log
     dest: /tmp/test.log
     is_uss: true
+
+- name: Copy a local ASCII encoded file and convert to EBCDIC
+  zos_copy:
+    src: /path/to/file.txt
+    dest: /tmp/file.txt
+    encoding: EBCDIC
+    is_uss: true
+
+- name: Copy file with owner and permission
+  zos_copy:
+    src: /path/to/foo.conf
+    dest: /etc/foo.conf
+    owner: foo
+    group: foo
+    mode: '0644'
 
 - name: If local_follow=true, the module will follow the symbolic link specified in src
   zos_copy:
@@ -158,49 +186,126 @@ EXAMPLES = r'''
     dest: /path/to/uss/location
     is_uss: true
 
-- name: Copy a local file to a PDS member
+- name: Copy a local file to a PDS member and validate checksum
   zos_copy:
     src: /path/to/local/file
-    dest: SAMPLE.PDSE(member_name)
+    dest: HLQ.SAMPLE.PDSE(member_name)
+    validate: true
 
 - name: Copy a single file to a VSAM(KSDS)
   zos_copy:
-    src: /src/myfiles/test.pds
-    dest: zoscopy.vsam
+    src: /path/to/local/file
+    dest: HLQ.SAMPLE.VSAM
+    is_vsam: true
 
-- name: Copy a single file to a USS file
+- name: Copy inline content to a sequential dataset and replace existing data
   zos_copy:
-    src: /src/myfiles/test.uss
-    dest: /u/userid
-    isUSS: True
+    content: 'Hello World'
+    dest: SAMPLE.SEQ.DATA.SET
+    force: true
+
+- name: Copy a USS file to a sequential data set
+  zos_copy:
+    src: /path/to/remote/uss/file
+    dest: SAMPLE.SEQ.DATA.SET
+    remote_src: true
+
+- name: Copy a binary file to an uncataloged PDSE member
+  zos_copy:
+    src: /path/to/binary/file
+    dest: HLQ.SAMPLE.PDSE(member_name)
+    is_binary: true
+    is_catalog: false
+    volume: SCR03
+
+- name: Copy a local file and take a backup of the existing file
+  zos_copy: 
+    src: /path/to/local/file
+    dest: /path/to/dest
+    backup: true
+
+- name: Copy a PDS(E) on remote system to a new PDS(E)
+  zos_copy:
+    src: HLQ.SAMPLE.PDSE
+    dest: HLQ.NEW.PDSE
+    remote_src: true
+
+- name: Copy a PDS(E) on remote system to an existing PDS(E) replacing the original
+  zos_copy:
+    src: HLQ.SAMPLE.PDSE
+    dest: HLQ.EXISTING.PDSE
+    remote_src: true
+    force: true
+
+- name: Copy a PDS(E) member to a new PDS(E) member. Replace if it already exists
+  zos_copy:
+    src: HLQ.SAMPLE.PDSE(member_name)
+    dest: HLQ.NEW.PDSE(member_name)
+    force: true
+    remote_src: true
 '''
 
 RETURN = r'''
-backup_file:
-    description: Name of the backup file that was created.
-    returned: if backup=yes
-    type: str
-    sample: 11540.20150212-220915.bak
 dest:
     description: Destination file/path or MVS data set name.
-    returned: changed
+    returned: success
     type: str
-    sample: IBMUSER.TEST.PS
+    sample: SAMPLE.SEQ.DATA.SET
 src:
     description: Source file used for the copy on the target machine.
     returned: changed
     type: str
-    sample: /home/httpd/.ansible/tmp/ansible-tmp-1423796390.97-147729857856000/source
+    sample: /path/to/source.log
 checksum:
     description: SHA1 checksum of the file after running copy.
-    returned: success, src is a file
+    returned: success
     type: str
     sample: 6e642bb8dd5c2e027bf21dd923337cbb4214f827
+md5sum:
+    description: MD5 checksum of the file or data set after running copy
+    returned: when supported
+    type: str
+    sample: 2a5aeecc61dc98c4d780b14b330e3282
+backup_file:
+    description: Name of the backup file or data set that was created.
+    returned: changed and if backup=true
+    type: str
+    sample: 11540.20150212-220915.bak
+gid:
+    description: Group id of the file, after execution
+    returned: success and if is_uss=true
+    type: int
+    sample: 100
+group:
+    description: Group of the file, after execution
+    returned: success and if is_uss=true
+    type: str
+    sample: httpd
+owner:
+    description: Owner of the file, after execution
+    returned: success and if is_uss=true
+    type: str
+    sample: httpd
+uid:
+    description: Owner id of the file, after execution
+    returned: success and if is_uss=true
+    type: int
+    sample: 100
+mode:
+    description: Permissions of the target, after execution
+    returned: success and if is_uss=true
+    type: str
+    sample: 0644
 size:
     description: Size of the target, after execution.
     returned: changed, src is a file
-    type: int(BYTES)
+    type: int
     sample: 1220
+state:
+    description: State of the target, after execution
+    returned: success and if is_uss=true
+    type: str
+    sample: file
 '''
 
 import errno
@@ -215,6 +320,9 @@ import shutil
 import stat
 import tempfile
 import traceback
+import subprocess
+import time    
+import codecs
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.common.process import get_bin_path
@@ -223,19 +331,10 @@ from ansible.module_utils.six import PY3
 
 from zoautil_py import MVSCmd, Datasets
 from zoautil_py.types import DDStatement
-import subprocess
-import time      # generate a random temp data set name 
-import codecs
 
 # The AnsibleModule object
 module = None
 
-
-class AnsibleModuleError(Exception):
-    def __init__(self, results):
-        self.results = results
-
-#From Blake
 def ascii_to_ebcdic(src, dest):
     tempf = tempfile.NamedTemporaryFile().name
     b_tempf = to_bytes(tempf, errors='surrogate_or_strict')
@@ -246,8 +345,9 @@ def ascii_to_ebcdic(src, dest):
         stdout += request.communicate()
     return stdout
 
-# Allocate data sets: sysin and sysprint for IDCAMS
+
 def create_temp_ds_name(LLQ):
+    """ Allocate data sets: sysin and sysprint for IDCAMS """
     temp_ds_hlq  = Datasets.hlq()
     current_date  = time.strftime("D%y%m%d", time.localtime())
     current_time  = time.strftime("T%H%M%S", time.localtime())
@@ -255,12 +355,9 @@ def create_temp_ds_name(LLQ):
     
     return temp_data_set
 
-# Delete temp data sets
-def delete_temp_ds(tempDS):
-    Datasets.delete(tempDS)
 
-# Check vsam data set using ZOAU API
 def vsam_exists_or_not(DSname):
+    """ Check vsam data set using ZOAU API """
     check_rc      = False
     check_vsam_rc = -1
     sysin_ds_name = create_temp_ds_name('sysin')
@@ -291,13 +388,14 @@ def vsam_exists_or_not(DSname):
         msg = "Failed to call IDCAMS to check the data set %s" % Dsname
         module.fail_json(msg=msg)
     
-    delete_temp_ds(sysin_ds_name)
-    delete_temp_ds(sysprint_ds_name)
+    Datasets.delete(sysin_ds_name)
+    Datasets.delete(sysprint_ds_name)
 
     return check_rc, reclen, hiurba
 
-# check non-vsam data set exist or not 
+
 def data_set_exists_or_not(DSname):
+    """ check non-vsam data set exist or not  """
     check_rc = False
     try:
         check_rc = Datasets.exists(DSname)
@@ -305,8 +403,9 @@ def data_set_exists_or_not(DSname):
         print('')
     return check_rc
 
-# check uncataloged data set exist or not
+
 def uncatalog_data_set_exists_or_not(Dsname, volume):
+    """ check uncataloged data set exist or not """
     check_rc = False
     sysprint_ds_name = create_temp_ds_name('sysprint')
     sysin_ds_name = create_temp_ds_name('sysin')
@@ -333,8 +432,8 @@ def uncatalog_data_set_exists_or_not(Dsname, volume):
     if Datasets.read(sysprint_ds_name).find(Dsname) != -1:
        check_rc = True
     
-    delete_temp_ds(sysin_ds_name)
-    delete_temp_ds(sysprint_ds_name)
+    Datasets.delete(sysin_ds_name)
+    Datasets.delete(sysprint_ds_name)
 
     return check_rc
 
@@ -380,13 +479,9 @@ def copy_to_vsam(src, VSAMname):
     
     if copy_vsam_rc == 0:
         copy_rc = True
-        
-    #if not copy_rc:
-    #   err_msg = (Datasets.read(sysprint_ds_name))
-    #   print("Failed when copying")
     
-    delete_temp_ds(sysin_ds_name)
-    delete_temp_ds(sysprint_ds_name)
+    Datasets.delete(sysin_ds_name)
+    Datasets.delete(sysprint_ds_name)
     return copy_rc 
 
 def size_of_ps(Dsname):
@@ -486,7 +581,7 @@ def main():
             Datasets.create(tempPS, "SEQ", "", "FB", "", int(reclen))
             copy_to_ps(b_src, tempPS, encoding)
             copy_rc = copy_to_vsam(tempPS, dsname)
-            delete_temp_ds(tempPS)
+            Datasets.delete(tempPS)
             if copy_rc: 
                 #check_rc = vsam_exists_or_not(dsname)
                 check_rc, reclen, size = vsam_exists_or_not(dsname)
@@ -513,6 +608,10 @@ def main():
         dest=dest, changed=changed, msg=msg
         )
         module.fail_json(msg=msg) 
+
+class AnsibleModuleError(Exception):
+    def __init__(self, msg):
+        super.__init__(msg)
 
 if __name__ == '__main__':
     main()

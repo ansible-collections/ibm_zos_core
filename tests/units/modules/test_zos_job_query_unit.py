@@ -8,7 +8,7 @@ from mock import MagicMock
 import pytest
 from pytest_mock import mocker
 
-IMPORT_NAME = 'ansible_collections_ibm_zos_core.plugins.modules.zos_job_query'
+IMPORT_NAME = 'ibm_zos_core.plugins.modules.zos_job_query'
 
 dummy_dict1 = {
     'job_name': 'iyk*'

@@ -43,7 +43,8 @@ def test_job_submit_PDS(ansible_zos_module):
     results = hosts.all.zos_job_submit(src='{}(SAMPLE)'.format(DATA_SET_NAME), location="DATA_SET", wait=True)
     hosts.all.file(path=TEMP_PATH, state='absent')
     for result in results.contacted.values():
-        assert result.get('jobs')[0].get('ret_code').get('code') == '0000'
+        assert result.get('jobs')[0].get('ret_code').get('msg_code') == '0000'
+        assert result.get('jobs')[0].get('ret_code').get('code') == 0
         assert result.get('changed') == True
 
 def test_job_submit_USS(ansible_zos_module):
@@ -53,7 +54,8 @@ def test_job_submit_USS(ansible_zos_module):
     results = hosts.all.zos_job_submit(src='{}/SAMPLE'.format(TEMP_PATH), location="USS", wait=True, volume=None)
     hosts.all.file(path=TEMP_PATH, state='absent')
     for result in results.contacted.values():
-        assert result.get('jobs')[0].get('ret_code').get('code') == '0000'
+        assert result.get('jobs')[0].get('ret_code').get('msg_code') == '0000'
+        assert result.get('jobs')[0].get('ret_code').get('code') == 0
         assert result.get('changed') == True
 
 def test_job_submit_LOCAL(ansible_zos_module):
@@ -65,7 +67,9 @@ def test_job_submit_LOCAL(ansible_zos_module):
     
     for result in results.contacted.values():
         print(result)
-        assert result.get('jobs')[0].get('ret_code').get('code') == '0000'
+        assert result.get('jobs')[0].get('ret_code').get('msg_code') == '0000'
+        assert result.get('jobs')[0].get('ret_code').get('code') == 0
+
         assert result.get('changed') == True
 
 # * currently don't have volume support from ZOAU python API, so this will not be reproduceable 

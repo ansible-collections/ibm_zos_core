@@ -196,43 +196,129 @@ EXAMPLES = '''
 
 EXAMPLE RESULTS:
 "jobs": [
+{
+    "class": "R",
+    "content_type": "JOB",
+    "ddnames": [
     {
-        "job_id": "JOB32881",
-        "job_name": "TEST",
-        "changed": true,
-        "failed": false,
-        "duration": 0,
-        "ddnames": [
-            {
-                "ddname": "JESMSGLG",
-                "step_name": "JES2",
-                "content": [
-                    "J E S 2  J O B  L O G  --  S Y S T E M  M V 2 C  --  N O D E ...."
-                ]
-            },
-            {
-                "ddname": "JESJCL",
-                "step_name": "JES2",
-                "content": [
-                    "1 //TEST JOB                       JOB32881"
-                ]
-            },
-            {
-                "ddname": "JESYSMSG",
-                "step_name": "JES2",
-                "content": [
-                    "ICH70001I TESTER"
-                ]
-            }
+        "byte_count": "775",
+        "content": [
+        "1                       J E S 2  J O B  L O G  --  S Y S T E M  S T L 1  --  N O D E  S T L 1            ",
+        "0 ",
+        " 10.25.48 JOB00134 ---- TUESDAY,   18 FEB 2020 ----",
+        " 10.25.48 JOB00134  IRR010I  USERID OMVSADM  IS ASSIGNED TO THIS JOB.",
+        " 10.25.48 JOB00134  $HASP375 JES2     ESTIMATED  LINES EXCEEDED",
+        " 10.25.48 JOB00134  ICH70001I OMVSADM  LAST ACCESS AT 10:25:47 ON TUESDAY, FEBRUARY 18, 2020",
+        " 10.25.48 JOB00134  $HASP375 HELLO    ESTIMATED  LINES EXCEEDED",
+        " 10.25.48 JOB00134  $HASP373 HELLO    STARTED - INIT 3    - CLASS R        - SYS STL1",
+        " 10.25.48 JOB00134  SMF000I  HELLO       STEP0001    IEBGENER    0000",
+        " 10.25.48 JOB00134  $HASP395 HELLO    ENDED - RC=0000",
+        "0------ JES2 JOB STATISTICS ------",
+        "-  18 FEB 2020 JOB EXECUTION DATE",
+        "-           16 CARDS READ",
+        "-           59 SYSOUT PRINT RECORDS",
+        "-            0 SYSOUT PUNCH RECORDS",
+        "-            6 SYSOUT SPOOL KBYTES",
+        "-         0.00 MINUTES EXECUTION TIME"
         ],
-        "ret_code": {
-            "msg": "CC 0000",
-            "code": "0000",
-            "msg_detail": "Submit JCL operation succeeded",
-        },
-        "return_code": 0,
+        "ddname": "JESMSGLG",
+        "id": "2",
+        "procstep": "",
+        "record_count": "17",
+        "stepname": "JES2"
     },
+    {
+        "byte_count": "574",
+        "content": [
+        "         1 //HELLO    JOB (T043JM,JM00,1,0,0,0),'HELLO WORLD - JRM',CLASS=R,       JOB00134",
+        "           //             MSGCLASS=X,MSGLEVEL=1,NOTIFY=S0JM                                ",
+        "           //*                                                                             ",
+        "           //* PRINT \"HELLO WORLD\" ON JOB OUTPUT                                           ",
+        "           //*                                                                             ",
+        "           //* NOTE THAT THE EXCLAMATION POINT IS INVALID EBCDIC FOR JCL                   ",
+        "           //*   AND WILL CAUSE A JCL ERROR                                                ",
+        "           //*                                                                             ",
+        "         2 //STEP0001 EXEC PGM=IEBGENER                                                    ",
+        "         3 //SYSIN    DD DUMMY                                                             ",
+        "         4 //SYSPRINT DD SYSOUT=*                                                          ",
+        "         5 //SYSUT1   DD *                                                                 ",
+        "         6 //SYSUT2   DD SYSOUT=*                                                          ",
+        "         7 //                                                                              "
+        ],
+        "ddname": "JESJCL",
+        "id": "3",
+        "procstep": "",
+        "record_count": "14",
+        "stepname": "JES2"
+    },
+    {
+        "byte_count": "1066",
+        "content": [
+        " ICH70001I OMVSADM  LAST ACCESS AT 10:25:47 ON TUESDAY, FEBRUARY 18, 2020",
+        " IEF236I ALLOC. FOR HELLO STEP0001",
+        " IEF237I DMY  ALLOCATED TO SYSIN",
+        " IEF237I JES2 ALLOCATED TO SYSPRINT",
+        " IEF237I JES2 ALLOCATED TO SYSUT1",
+        " IEF237I JES2 ALLOCATED TO SYSUT2",
+        " IEF142I HELLO STEP0001 - STEP WAS EXECUTED - COND CODE 0000",
+        " IEF285I   OMVSADM.HELLO.JOB00134.D0000102.?            SYSOUT        ",
+        " IEF285I   OMVSADM.HELLO.JOB00134.D0000101.?            SYSIN         ",
+        " IEF285I   OMVSADM.HELLO.JOB00134.D0000103.?            SYSOUT        ",
+        " IEF373I STEP/STEP0001/START 2020049.1025",
+        " IEF032I STEP/STEP0001/STOP  2020049.1025 ",
+        "         CPU:     0 HR  00 MIN  00.00 SEC    SRB:     0 HR  00 MIN  00.00 SEC    ",
+        "         VIRT:    60K  SYS:   240K  EXT:        0K  SYS:    11548K",
+        "         ATB- REAL:                     8K  SLOTS:                     0K",
+        "              VIRT- ALLOC:      10M SHRD:       0M",
+        " IEF375I  JOB/HELLO   /START 2020049.1025",
+        " IEF033I  JOB/HELLO   /STOP  2020049.1025 ",
+        "         CPU:     0 HR  00 MIN  00.00 SEC    SRB:     0 HR  00 MIN  00.00 SEC    "
+        ],
+        "ddname": "JESYSMSG",
+        "id": "4",
+        "procstep": "",
+        "record_count": "19",
+        "stepname": "JES2"
+    },
+    {
+        "byte_count": "251",
+        "content": [
+        "1DATA SET UTILITY - GENERATE                                                                       PAGE 0001             ",
+        "-IEB352I WARNING: ONE OR MORE OF THE OUTPUT DCB PARMS COPIED FROM INPUT                                                  ",
+        "                                                                                                                         ",
+        " PROCESSING ENDED AT EOD                                                                                                 "
+        ],
+        "ddname": "SYSPRINT",
+        "id": "102",
+        "procstep": "",
+        "record_count": "4",
+        "stepname": "STEP0001"
+    },
+    {
+        "byte_count": "49",
+        "content": [
+        " HELLO, WORLD                                                                    "
+        ],
+        "ddname": "SYSUT2",
+        "id": "103",
+        "procstep": "",
+        "record_count": "1",
+        "stepname": "STEP0001"
+    }
+    ],
+    "job_id": "JOB00134",
+    "job_name": "HELLO",
+    "owner": "OMVSADM",
+    "ret_code": {
+    "code": 0,
+    "msg": "CC 0000",
+    "msg_code": "0000",
+    "msg_txt": ""
+    },
+    "subsystem": "STL1"
+}
 ]
+
 '''
 
 from ansible.module_utils.basic import *

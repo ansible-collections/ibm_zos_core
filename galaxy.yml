@@ -30,7 +30,7 @@ license:
    - "Apache-2.0"
 
 # Tags
-tags: [ibm,z,zos,z_os,core,zos_core,red_hat_ansible_certified_cotent_for_ibm_z,data_set,jcl,uss,mvs] 
+tags: [ibm,z,zos,z_os,core,zos_core,red_hat_ansible_certified_content_for_ibm_z,data_set,jcl,uss,mvs] 
 
 # Collections that this collection requires to be installed for it to be usable.
 # dependencies: {} # This collection depends on no other collections

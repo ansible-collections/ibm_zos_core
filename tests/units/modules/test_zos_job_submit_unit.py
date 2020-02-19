@@ -8,7 +8,7 @@ import unittest
 from unittest.mock import MagicMock, Mock
 import pytest
 
-IMPORT_NAME = 'ansible_collections_ibm_zos_core.plugins.modules.zos_jes_job_submit'
+IMPORT_NAME = 'ibm_zos_core.plugins.modules.zos_job_submit'
 
 
 

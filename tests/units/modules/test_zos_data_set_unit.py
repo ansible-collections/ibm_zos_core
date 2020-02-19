@@ -15,7 +15,7 @@ from mock import call
 # TODO: add back in testcases for currently removed safe and unsafe data set write functionality
 
 # Used my some mock modules, should match import directly below
-IMPORT_NAME = 'ansible_collections_ibm_zos_core.plugins.modules.zos_data_set'
+IMPORT_NAME = 'ibm_zos_core.plugins.modules.zos_data_set'
 
 
 # * Tests for create_data_set()

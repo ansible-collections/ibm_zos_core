@@ -6,7 +6,7 @@
 import pytest
 from unittest.mock import MagicMock, Mock
 
-IMPORT_NAME = 'ansible_collections_ibm_zos_core.plugins.modules.zos_job_output'
+IMPORT_NAME = 'ibm_zos_core.plugins.modules.zos_job_output'
 
 dummy_return_dict = (
     0, '{"jobs":[{"changed":"false","class":"","content-type":"STC","ddnames":[],"failed":"false","job_id":"STC02502","job_name":"TCPIP","owner":"TCPIP","ret_code":{"msg":"CC 0000"},"subsystem":"S0W1"}]}', '')

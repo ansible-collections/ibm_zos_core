@@ -9,7 +9,11 @@ See [Installing and configuring ZOA Utilities](https://www.ibm.com/support/knowl
 * See the [fix list](https://www.ibm.com/support/pages/fix-list-ibm-z-open-automation-utilities) for ZOAU.
 * The latest PTF when this document was authored is __UI66957__.
 
+<<<<<<< HEAD
 __Note__: [Python 3.6 for z/OS](https://github.com/ansible-collections/ibm_zos_core/blob/v0.0.3/docs/README-python-zos.md) is required by ZOAU.
+=======
+__Note__: [Python 3.6 for z/OS](https://github.com/ansible-collections/ibm_zos_core/blob/master/docs/README-python-zos.md) is required by ZOAU.
+>>>>>>> master
 
 # Copyright
 © Copyright IBM Corporation 2020  

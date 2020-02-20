@@ -64,7 +64,11 @@ EXAMPLES = r'''
     ddname: "?"
 '''
 RETURN = '''
+<<<<<<< HEAD
 zos_job_output:
+=======
+jobs:
+>>>>>>> master
     description: list of job output.
     returned: success
     type: list[dict]
@@ -81,7 +85,11 @@ zos_job_output:
         class:
             description: class
             type: str
+<<<<<<< HEAD
         content-type:
+=======
+        content_type:
+>>>>>>> master
             description: content type
             type: str
         ddnames:
@@ -91,7 +99,11 @@ zos_job_output:
                 ddname:
                     description: data definition name
                     type: str
+<<<<<<< HEAD
                 record-count:
+=======
+                record_count:
+>>>>>>> master
                     description: record count
                     type: int
                 id:
@@ -103,20 +115,51 @@ zos_job_output:
                 procstep:
                     description: proc step
                     type: str
+<<<<<<< HEAD
                 byte-count:
+=======
+                byte_count:
+>>>>>>> master
                     description: byte count
                     type: int
                 content:
                     description: ddname content
                     type: list[str]
+<<<<<<< HEAD
+=======
+        ret_code:
+            description: return code output taken directly from job log
+            type: dict
+            contains:
+                msg:
+                    description: Holds the return code (eg. "CC 0000")
+                    type: str
+                msg_code: 
+                    description: Holds the return code string (eg. "00", "S0C4")
+                    type: str
+                msg_txt: 
+                    description: Holds additional information related to the job that may be useful to the user.
+                    type: str
+                code: 
+                    description: return code converted to integer value (when possible)
+                    type: int
+changed:
+  description: Indicates if any changes were made during module operation
+  type: bool
+>>>>>>> master
 '''
 
 import json
 from ansible.module_utils.basic import AnsibleModule
+<<<<<<< HEAD
+=======
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import job_output
+>>>>>>> master
 from os import chmod, path, remove
 from tempfile import NamedTemporaryFile
 
 
+<<<<<<< HEAD
 def get_job_json(jobid, owner, jobname, ddname, module):
     get_job_detail_json_rexx = """/* REXX */
 arg options
@@ -273,6 +316,8 @@ def _copy_temp_file(content):
     return dirname, scriptname
 
 
+=======
+>>>>>>> master
 def run_module():
     module_args = dict(
         job_id=dict(type='str', required=False),
@@ -283,6 +328,7 @@ def run_module():
 
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
 
+<<<<<<< HEAD
     job_id = module.params.get("job_id")
     job_name = module.params.get("job_name")
     owner = module.params.get("owner")
@@ -306,6 +352,22 @@ def run_module():
 
 class Error(Exception):
     pass
+=======
+    job_id = module.params.get("job_id") or ""
+    job_name = module.params.get("job_name") or ""
+    owner = module.params.get("owner") or ""
+    ddname = module.params.get("ddname") or ""
+
+    if not job_id and not job_name and not owner:
+        module.fail_json(msg="Please provide a job_id or job_name or owner")
+
+    try:
+        results = job_output(module, job_id, owner, job_name, ddname)
+        results['changed'] = False
+    except Exception as e:
+        module.fail_json(msg=str(e))
+    module.exit_json(**results)
+>>>>>>> master
 
 
 def main():

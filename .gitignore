@@ -195,3 +195,5 @@ dmypy.json
 
 # Development files
 hosts
+
+.keep

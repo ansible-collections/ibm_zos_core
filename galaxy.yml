@@ -5,7 +5,11 @@ namespace: ibm
 name: ibm_zos_core 
 
 # The collection version
+<<<<<<< HEAD
 version: 0.0.3
+=======
+version: 0.0.4
+>>>>>>> master
 
 # Collection README file
 readme: README.md
@@ -30,7 +34,11 @@ license:
    - "Apache-2.0"
 
 # Tags
+<<<<<<< HEAD
+tags: [ibm,z,zos,z_os,core,zos_core,red_hat_ansible_certified_content_for_ibm_z,data_set,jcl,uss,mvs] 
+=======
 tags: [ibm,z,zos,z_os,core,zos_core,red_hat_ansible_certified_cotent_for_ibm_z,data_set,jcl,uss,mvs] 
+>>>>>>> master
 
 # Collections that this collection requires to be installed for it to be usable.
 # dependencies: {} # This collection depends on no other collections

@@ -7,7 +7,11 @@ ANSIBLE_METADATA = {'metadata_version': '1.1',
                     'status': ['preview'],
                     'supported_by': 'community'}
 
+<<<<<<< HEAD
 DOCUMENTATION=r'''
+=======
+DOCUMENTATION='''
+>>>>>>> master
 module: zos_job_submit
 author: Xiao Yuan Ma <bjmaxy@cn.ibm.com>
 short_description: The zos_job_submit module allows you to submit a job and optionally monitor for its execution.
@@ -20,11 +24,19 @@ options:
   src:
     required: true
     description:
+<<<<<<< HEAD
       - The source directory or data set containing the JCL to submit. 
       - It could be Physical sequential data set or a partitioned data set qualified 
         by a member or a path. (e.g "USER.TEST","USER.JCL(TEST)")
       - Or an USS file. (e.g "/u/tester/demo/sample.jcl")
       - Or an LOCAL file in ansible control node.(e.g "/User/tester/ansible-playbook/sample.jcl") 
+=======
+      - The source directory or data set containing the JCL to submit.
+      - It could be Physical sequential data set or a partitioned data set qualified
+        by a member or a path. (e.g "USER.TEST","USER.JCL(TEST)")
+      - Or an USS file. (e.g "/u/tester/demo/sample.jcl")
+      - Or an LOCAL file in ansible control node.(e.g "/User/tester/ansible-playbook/sample.jcl")
+>>>>>>> master
   location:
     required: true
     default: DATA_SET
@@ -37,12 +49,17 @@ options:
       - DATA_SET can be a PDS, PDSE, or sequential data set.
       - LOCAL means locally to the ansible control node.
   wait:
+<<<<<<< HEAD
     required: false 
+=======
+    required: false
+>>>>>>> master
     choices:
       - true
       - false
     description:
       - Wait for the Job to finish and capture the output. Default is false.
+<<<<<<< HEAD
       - User can specify the wait time in option duration_s, default is 60s. 
   wait_time_s:
     required: false 
@@ -55,12 +72,34 @@ options:
     choices:
       - true
       - false 
+=======
+      - User can specify the wait time in option duration_s, default is 60s.
+  wait_time_s:
+    required: false
+    type: int
+    description:
+      - When wait is true, the module will wait for a maximum of 60s by default.
+      - User can set the wait time manually in this option.
+  max_rc:
+    required: false
+    type: int
+    description:
+      - Specifies the maximum return code  for the submitted job that should be allowed without failing the module.
+      - max_rc is only checked when wait=True, otherwise, it is ignored.
+  return_output:
+    required: false
+    default: true
+    choices:
+      - true
+      - false
+>>>>>>> master
     description:
       - Whether to print the DD output.
       - If false, null will be returned in ddnames field.
   volume:
     required: false
     description:
+<<<<<<< HEAD
       - The volume serial (VOLSER) where the data set resides. The option 
         is required only when the data set is not catalogued on the system. 
         Ignored for USS and LOCAL.
@@ -68,6 +107,15 @@ options:
     required: false
     default: UTF-8 
     choices: 
+=======
+      - The volume serial (VOLSER) where the data set resides. The option
+        is required only when the data set is not catalogued on the system.
+        Ignored for USS and LOCAL.
+  encoding:
+    required: false
+    default: UTF-8
+    choices:
+>>>>>>> master
       - UTF-8
       - ASCII
       - ISO-8859-1
@@ -75,6 +123,7 @@ options:
       - IBM-037
       - IBM-1047
     description:
+<<<<<<< HEAD
       - The encoding of the local file on the ansible control node. 
       - If it is UTF-8, ASCII, ISO-8859-1, the file will be converted to EBCDIC on the z/OS platform. 
       - If it is EBCDIC, IBM-037, IBM-1047, the file will be unchanged when submitted on the z/OS platform. 
@@ -263,6 +312,245 @@ EXAMPLE RESULTS:
          },
       },
    ]
+=======
+      - The encoding of the local file on the ansible control node.
+      - If it is UTF-8, ASCII, ISO-8859-1, the file will be converted to EBCDIC on the z/OS platform.
+      - If it is EBCDIC, IBM-037, IBM-1047, the file will be unchanged when submitted on the z/OS platform.
+'''
+
+RETURN = '''
+jobs:
+  description: The list of jobs that matches the job name or job id and optionally the owner
+  returned: success
+  type: list[dict]
+  contains:
+    job_name:
+      description: job name
+      type: str
+    job_id:
+      description: job name
+      type: str
+    duration:
+      description: duration
+      type: int
+    ddnames:
+      description: all ddnames
+      type: list[dict]
+      contains:
+        ddname:
+          description: data definition name
+          type: str
+        record_count:
+          description: record count
+          type: int
+        id:
+          description: id
+          type: str
+        stepname:
+          description: step name
+          type: str
+        procstep:
+          description: proc step
+          type: str
+        byte_count:
+          description: byte count
+          type: int
+        content:
+          description: ddname content
+          type: list[str]
+    ret_code:
+      description: return code output taken directly from job log
+      type: dict
+      contains:
+        msg:
+            description: Holds the return code (eg. "CC 0000")
+            type: str
+        msg_code: 
+            description: Holds the return code string (eg. "00", "S0C4")
+            type: str
+        msg_txt: 
+            description: Holds additional information related to the job that may be useful to the user.
+            type: str
+        code: 
+            description: return code converted to integer value (when possible)
+            type: int
+
+
+changed:
+  description: Indicates if any changes were made during module operation
+  type: bool
+message:
+  description: The output message that the sample module generates
+  returned: success
+  type: str
+'''
+
+EXAMPLES = '''
+- name: Submit the JCL
+  zos_job_submit:
+    src: TEST.UTILs(SAMPLE)
+    location: DATA_SET
+    wait: false
+    volume:
+  register: response
+
+- name: Submit USS job
+  zos_job_submit:
+    src: /u/tester/demo/sample.jcl
+    location: USS
+    wait: false
+    volume:
+    return_output: false
+
+- name: Submit LOCAL job
+  zos_job_submit:
+    src: /Users/maxy/ansible-playbooks/provision/sample.jcl
+    location: LOCAL
+    wait: false
+    encoding: UTF-8
+    volume:
+
+- name: Submit uncatalogued PDS job
+  zos_job_submit:
+    src: TEST.UNCATLOG.JCL(SAMPLE)
+    location: DATA_SET
+    wait: false
+    volume: P2SS01
+
+- name: Submit long running PDS job, and wait for the job to finish
+  zos_job_submit:
+    src: TEST.UTILs(LONGRUN)
+    location: DATA_SET
+    wait: true
+    wait_time_s: 30
+ 
+
+EXAMPLE RESULTS:
+"jobs": [
+{
+    "class": "R",
+    "content_type": "JOB",
+    "ddnames": [
+    {
+        "byte_count": "775",
+        "content": [
+        "1                       J E S 2  J O B  L O G  --  S Y S T E M  S T L 1  --  N O D E  S T L 1            ",
+        "0 ",
+        " 10.25.48 JOB00134 ---- TUESDAY,   18 FEB 2020 ----",
+        " 10.25.48 JOB00134  IRR010I  USERID OMVSADM  IS ASSIGNED TO THIS JOB.",
+        " 10.25.48 JOB00134  $HASP375 JES2     ESTIMATED  LINES EXCEEDED",
+        " 10.25.48 JOB00134  ICH70001I OMVSADM  LAST ACCESS AT 10:25:47 ON TUESDAY, FEBRUARY 18, 2020",
+        " 10.25.48 JOB00134  $HASP375 HELLO    ESTIMATED  LINES EXCEEDED",
+        " 10.25.48 JOB00134  $HASP373 HELLO    STARTED - INIT 3    - CLASS R        - SYS STL1",
+        " 10.25.48 JOB00134  SMF000I  HELLO       STEP0001    IEBGENER    0000",
+        " 10.25.48 JOB00134  $HASP395 HELLO    ENDED - RC=0000",
+        "0------ JES2 JOB STATISTICS ------",
+        "-  18 FEB 2020 JOB EXECUTION DATE",
+        "-           16 CARDS READ",
+        "-           59 SYSOUT PRINT RECORDS",
+        "-            0 SYSOUT PUNCH RECORDS",
+        "-            6 SYSOUT SPOOL KBYTES",
+        "-         0.00 MINUTES EXECUTION TIME"
+        ],
+        "ddname": "JESMSGLG",
+        "id": "2",
+        "procstep": "",
+        "record_count": "17",
+        "stepname": "JES2"
+    },
+    {
+        "byte_count": "574",
+        "content": [
+        "         1 //HELLO    JOB (T043JM,JM00,1,0,0,0),'HELLO WORLD - JRM',CLASS=R,       JOB00134",
+        "           //             MSGCLASS=X,MSGLEVEL=1,NOTIFY=S0JM                                ",
+        "           //*                                                                             ",
+        "           //* PRINT \"HELLO WORLD\" ON JOB OUTPUT                                           ",
+        "           //*                                                                             ",
+        "           //* NOTE THAT THE EXCLAMATION POINT IS INVALID EBCDIC FOR JCL                   ",
+        "           //*   AND WILL CAUSE A JCL ERROR                                                ",
+        "           //*                                                                             ",
+        "         2 //STEP0001 EXEC PGM=IEBGENER                                                    ",
+        "         3 //SYSIN    DD DUMMY                                                             ",
+        "         4 //SYSPRINT DD SYSOUT=*                                                          ",
+        "         5 //SYSUT1   DD *                                                                 ",
+        "         6 //SYSUT2   DD SYSOUT=*                                                          ",
+        "         7 //                                                                              "
+        ],
+        "ddname": "JESJCL",
+        "id": "3",
+        "procstep": "",
+        "record_count": "14",
+        "stepname": "JES2"
+    },
+    {
+        "byte_count": "1066",
+        "content": [
+        " ICH70001I OMVSADM  LAST ACCESS AT 10:25:47 ON TUESDAY, FEBRUARY 18, 2020",
+        " IEF236I ALLOC. FOR HELLO STEP0001",
+        " IEF237I DMY  ALLOCATED TO SYSIN",
+        " IEF237I JES2 ALLOCATED TO SYSPRINT",
+        " IEF237I JES2 ALLOCATED TO SYSUT1",
+        " IEF237I JES2 ALLOCATED TO SYSUT2",
+        " IEF142I HELLO STEP0001 - STEP WAS EXECUTED - COND CODE 0000",
+        " IEF285I   OMVSADM.HELLO.JOB00134.D0000102.?            SYSOUT        ",
+        " IEF285I   OMVSADM.HELLO.JOB00134.D0000101.?            SYSIN         ",
+        " IEF285I   OMVSADM.HELLO.JOB00134.D0000103.?            SYSOUT        ",
+        " IEF373I STEP/STEP0001/START 2020049.1025",
+        " IEF032I STEP/STEP0001/STOP  2020049.1025 ",
+        "         CPU:     0 HR  00 MIN  00.00 SEC    SRB:     0 HR  00 MIN  00.00 SEC    ",
+        "         VIRT:    60K  SYS:   240K  EXT:        0K  SYS:    11548K",
+        "         ATB- REAL:                     8K  SLOTS:                     0K",
+        "              VIRT- ALLOC:      10M SHRD:       0M",
+        " IEF375I  JOB/HELLO   /START 2020049.1025",
+        " IEF033I  JOB/HELLO   /STOP  2020049.1025 ",
+        "         CPU:     0 HR  00 MIN  00.00 SEC    SRB:     0 HR  00 MIN  00.00 SEC    "
+        ],
+        "ddname": "JESYSMSG",
+        "id": "4",
+        "procstep": "",
+        "record_count": "19",
+        "stepname": "JES2"
+    },
+    {
+        "byte_count": "251",
+        "content": [
+        "1DATA SET UTILITY - GENERATE                                                                       PAGE 0001             ",
+        "-IEB352I WARNING: ONE OR MORE OF THE OUTPUT DCB PARMS COPIED FROM INPUT                                                  ",
+        "                                                                                                                         ",
+        " PROCESSING ENDED AT EOD                                                                                                 "
+        ],
+        "ddname": "SYSPRINT",
+        "id": "102",
+        "procstep": "",
+        "record_count": "4",
+        "stepname": "STEP0001"
+    },
+    {
+        "byte_count": "49",
+        "content": [
+        " HELLO, WORLD                                                                    "
+        ],
+        "ddname": "SYSUT2",
+        "id": "103",
+        "procstep": "",
+        "record_count": "1",
+        "stepname": "STEP0001"
+    }
+    ],
+    "job_id": "JOB00134",
+    "job_name": "HELLO",
+    "owner": "OMVSADM",
+    "ret_code": {
+    "code": 0,
+    "msg": "CC 0000",
+    "msg_code": "0000",
+    "msg_txt": ""
+    },
+    "subsystem": "STL1"
+}
+]
+
+>>>>>>> master
 '''
 
 from ansible.module_utils.basic import *
@@ -271,6 +559,10 @@ from time import sleep
 from os import chmod, path
 from tempfile import NamedTemporaryFile
 import re
+<<<<<<< HEAD
+=======
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import job_output
+>>>>>>> master
 
 ZOAUTIL_TEMP_USS = "/tmp/ansible-temp-1"
 ZOAUTIL_TEMP_USS2 = "/tmp/ansible-temp-2"
@@ -331,12 +623,17 @@ def copy_rexx_and_run(script,src,vol,module):
     rc, stdout, stderr = module.run_command(['./' + scriptName, src, vol], cwd=pathName)
     return rc, stdout, stderr
 
+<<<<<<< HEAD
 def get_job_info(jobId, return_output):
+=======
+def get_job_info(module, jobId, return_output):
+>>>>>>> master
     result = dict()
     try:
         output = query_jobs_status(jobId)
     except SubmitJCLError as e:
         raise SubmitJCLError(e.msg)
+<<<<<<< HEAD
     dds = Jobs.list_dds(job_id=jobId)
     joboutput = []
     if return_output is True:
@@ -359,6 +656,12 @@ def get_job_info(jobId, return_output):
     result['changed'] = True
     result['job_name'] = output[0].get("name")
     result['ret_code'] = ret_code
+=======
+
+    if return_output is True:
+        result = job_output(module, job_id=jobId)
+    result['changed'] = True
+>>>>>>> master
 
     return result
 
@@ -440,6 +743,14 @@ def parsing_job(job_raw):
 
     return ret_code
 
+<<<<<<< HEAD
+=======
+def assert_valid_return_code(max_rc, found_rc):
+    if found_rc == None or max_rc < int(found_rc):
+        raise SubmitJCLError('')
+        
+
+>>>>>>> master
 def run_module():
     location_type = {'DATA_SET', 'USS', 'LOCAL', None}
 
@@ -449,8 +760,14 @@ def run_module():
         location=dict(type='str', required=True),
         encoding=dict(type='str', required=False, default='UTF-8'),
         volume=dict(type='str', required=False),
+<<<<<<< HEAD
         return_output=dict(type='bool', required=False, default='True'),
         wait_time_s=dict(type='int', required=False)
+=======
+        return_output=dict(type='bool', required=False, default=True),
+        wait_time_s=dict(type='int', required=False),
+        max_rc=dict(type='int', required=False)
+>>>>>>> master
     )
 
     module = AnsibleModule(
@@ -470,7 +787,11 @@ def run_module():
     results = dict(
         jobs=[]
     )
+<<<<<<< HEAD
     jobs = []
+=======
+
+>>>>>>> master
 
     location = module.params.get("location")
     volume = module.params.get("volume")
@@ -478,7 +799,12 @@ def run_module():
     src = module.params.get('src')
     return_output = module.params.get('return_output')
     wait_time_s = module.params.get('wait_time_s')
+<<<<<<< HEAD
 
+=======
+    max_rc = module.params.get('max_rc')
+    
+>>>>>>> master
     if wait_time_s is None:
         wait_time_s = POLLING_THRESHOLD
     else:
@@ -522,7 +848,11 @@ def run_module():
             module.fail_json(msg='Location is not valid. DATA_SET, USS, and LOCAL is supported.', **result)
 
     except SubmitJCLError as e:
+<<<<<<< HEAD
         module.fail_json(msg=e.msg, **result)
+=======
+        module.fail_json(msg=str(e), **result)
+>>>>>>> master
     if jobId == None or jobId == '':
         result['job_id'] = jobId
         module.fail_json(msg='JOB ID RETURNED IS None. PLEASE CHECK WHETHER THE JCL IS CORRECT.', **result)
@@ -532,7 +862,11 @@ def run_module():
         try:
             waitJob = query_jobs_status(jobId)
         except SubmitJCLError as e:
+<<<<<<< HEAD
             module.fail_json(msg=e.msg, **result)
+=======
+            module.fail_json(msg=str(e), **result)
+>>>>>>> master
         while waitJob[0].get('status') == "AC":  # AC means in progress
             sleep(1)
             duration = duration + 1
@@ -543,6 +877,7 @@ def run_module():
                 break
 
     try:
+<<<<<<< HEAD
         result = get_job_info(jobId, return_output)
     except SubmitJCLError as e:
         module.fail_json(msg=e.msg, **result)
@@ -555,6 +890,22 @@ def run_module():
     results['changed'] = True
     results['jobs'] = jobs
     module.exit_json(**results)
+=======
+        result = get_job_info(module, jobId, return_output)
+        if wait == True and return_output == True and max_rc != None:
+            assert_valid_return_code(max_rc, result.get('jobs')[0].get('ret_code').get('code'))
+    except SubmitJCLError as e:
+        module.fail_json(msg=str(e), **result)
+    except Exception as e:
+        module.fail_json(msg=str(e), **result)
+    result['duration'] = duration
+    if duration == wait_time_s:
+        result['message'] = {'stdout': 'Submit JCL operation succeeded but it is a long running job. Timeout is '+ str(wait_time_s)+' seconds.'}
+    else:
+        result['message'] = {'stdout': 'Submit JCL operation succeeded.'}
+    result['changed'] = True
+    module.exit_json(**result)
+>>>>>>> master
 
 
 class Error(Exception):

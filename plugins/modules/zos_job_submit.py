@@ -7,11 +7,7 @@ ANSIBLE_METADATA = {'metadata_version': '1.1',
                     'status': ['preview'],
                     'supported_by': 'community'}
 
-<<<<<<< HEAD
-DOCUMENTATION=r'''
-=======
 DOCUMENTATION='''
->>>>>>> master
 module: zos_job_submit
 author: Xiao Yuan Ma <bjmaxy@cn.ibm.com>
 short_description: The zos_job_submit module allows you to submit a job and optionally monitor for its execution.
@@ -24,19 +20,11 @@ options:
   src:
     required: true
     description:
-<<<<<<< HEAD
-      - The source directory or data set containing the JCL to submit. 
-      - It could be Physical sequential data set or a partitioned data set qualified 
-        by a member or a path. (e.g "USER.TEST","USER.JCL(TEST)")
-      - Or an USS file. (e.g "/u/tester/demo/sample.jcl")
-      - Or an LOCAL file in ansible control node.(e.g "/User/tester/ansible-playbook/sample.jcl") 
-=======
       - The source directory or data set containing the JCL to submit.
       - It could be Physical sequential data set or a partitioned data set qualified
         by a member or a path. (e.g "USER.TEST","USER.JCL(TEST)")
       - Or an USS file. (e.g "/u/tester/demo/sample.jcl")
       - Or an LOCAL file in ansible control node.(e.g "/User/tester/ansible-playbook/sample.jcl")
->>>>>>> master
   location:
     required: true
     default: DATA_SET
@@ -49,30 +37,12 @@ options:
       - DATA_SET can be a PDS, PDSE, or sequential data set.
       - LOCAL means locally to the ansible control node.
   wait:
-<<<<<<< HEAD
-    required: false 
-=======
     required: false
->>>>>>> master
     choices:
       - true
       - false
     description:
       - Wait for the Job to finish and capture the output. Default is false.
-<<<<<<< HEAD
-      - User can specify the wait time in option duration_s, default is 60s. 
-  wait_time_s:
-    required: false 
-    type: int
-    description:
-      - When wait is true, the module will wait for a maximum of 60s by default. 
-      - User can set the wait time manually in this option. 
-  return_output:
-    required: false 
-    choices:
-      - true
-      - false 
-=======
       - User can specify the wait time in option duration_s, default is 60s.
   wait_time_s:
     required: false
@@ -92,22 +62,12 @@ options:
     choices:
       - true
       - false
->>>>>>> master
     description:
       - Whether to print the DD output.
       - If false, null will be returned in ddnames field.
   volume:
     required: false
     description:
-<<<<<<< HEAD
-      - The volume serial (VOLSER) where the data set resides. The option 
-        is required only when the data set is not catalogued on the system. 
-        Ignored for USS and LOCAL.
-  encoding:
-    required: false
-    default: UTF-8 
-    choices: 
-=======
       - The volume serial (VOLSER) where the data set resides. The option
         is required only when the data set is not catalogued on the system.
         Ignored for USS and LOCAL.
@@ -115,7 +75,6 @@ options:
     required: false
     default: UTF-8
     choices:
->>>>>>> master
       - UTF-8
       - ASCII
       - ISO-8859-1
@@ -123,196 +82,6 @@ options:
       - IBM-037
       - IBM-1047
     description:
-<<<<<<< HEAD
-      - The encoding of the local file on the ansible control node. 
-      - If it is UTF-8, ASCII, ISO-8859-1, the file will be converted to EBCDIC on the z/OS platform. 
-      - If it is EBCDIC, IBM-037, IBM-1047, the file will be unchanged when submitted on the z/OS platform. 
-'''
-
-RETURN = '''
-zos_job_output:
-    description: list of job output.
-    returned: success
-    type: list[dict]
-    contains:
-        job_id:
-            description: job ID
-            type: str
-        job_name:
-            description: job name
-            type: str
-        subsystem:
-            description: subsystem
-            type: str
-        class:
-            description: class
-            type: str
-        content-type:
-            description: content type
-            type: str
-        ddnames:
-            description: list of data definition name
-            type: list[dict]
-            contains:
-                ddname:
-                    description: data definition name
-                    type: str
-                record-count:
-                    description: record count
-                    type: int
-                id:
-                    description: id
-                    type: str
-                stepname:
-                    description: step name
-                    type: str
-                procstep:
-                    description: proc step
-                    type: str
-                byte-count:
-                    description: byte count
-                    type: int
-                content:
-                    description: ddname content
-                    type: list[str]
-'''
-
-RETURN = r'''
-jobs:
-    description: The list of jobs that matches the job name or job id and optionally the owner
-    returned: success
-    type: list[dict]
-    contains:
-       job_name:
-          description: job name
-          type: str
-       job_id:
-          description: job name
-          type: str
-       change:
-          description: change
-          type: bool
-       failed:
-          description: failed
-          type: bool
-       duration:
-          description: duration
-          type: int
-       ddnames:
-           description: all ddnames
-           type: list[dict]
-           contains:
-               ddname:
-                 description: ddname
-                 type: str
-               step_name:
-                  description: step name
-                  type: str
-               content:
-                  description: conetent
-                  type: str
-               ret_code: 
-                   description: return code
-                   type: list[dict]
-                   contains:
-                      msg:
-                        description: contains
-                        type: str
-                      code:
-                        description: code
-                        type: str
-                      msg_details: 
-                        description: message
-                        type: str
-changed: 
-    description: Indicates if any changes were made during module operation
-    type: bool  
-message:
-    description: The output message that the sample module generates
-    returned: success
-    type: str 
-
-'''
-
-EXAMPLES = r'''
-  - name: Submit the JCL 
-    zos_job_submit:
-       src: TEST.UTILs(SAMPLE)
-       location: DATA_SET
-       wait: false
-       volume:
-    register: response
-  
-  - name: Submit USS job
-    zos_job_submit:
-        src: /u/tester/demo/sample.jcl
-        location: USS
-        wait: false
-        volume:
-        return_output: false
-  
-  - name: Submit LOCAL job
-    zos_job_submit:
-      src: /Users/maxy/ansible-playbooks/provision/sample.jcl
-      location: LOCAL
-      wait: false
-      encoding: UTF-8
-      volume:
-  
-  - name: Submit uncatalogued PDS job
-    zos_job_submit:
-       src: TEST.UNCATLOG.JCL(SAMPLE)
-       location: DATA_SET
-       wait: false
-       volume: P2SS01
-  
-  - name: Submit long running PDS job, and wait for the job to finish
-    zos_job_submit:
-       src: TEST.UTILs(LONGRUN)
-       location: DATA_SET
-       wait: true  
-       wait_time_s: 30    
-
-EXAMPLE RESULTS:
-     "msg": {
-         "jobs":[
-      {
-         "job_id":"JOB32881",
-         "job_name":"TEST",
-         "changed":true,
-         "failed":false,
-         "duration":0,
-         "ddnames":[
-            {
-               "ddname":"JESMSGLG",
-               "step_name":"JES2",
-               "content":[
-                  "J E S 2  J O B  L O G  --  S Y S T E M  M V 2 C  --  N O D E ...."
-               ]
-            },
-            {
-               "ddname":"JESJCL",
-               "step_name":"JES2",
-               "content":[
-                  "1 //TEST JOB                       JOB32881"
-               ]
-            },
-            {
-               "ddname":"JESYSMSG",
-               "step_name":"JES2",
-               "content":[
-                  "ICH70001I TESTER"
-               ]
-            }
-         ],
-         "ret_code":{
-            "msg":  "CC 0000" ,
-            "code": "0000" ,
-            "msg_detail": "Submit JCL operation succeeded",
-         },
-      },
-   ]
-=======
       - The encoding of the local file on the ansible control node.
       - If it is UTF-8, ASCII, ISO-8859-1, the file will be converted to EBCDIC on the z/OS platform.
       - If it is EBCDIC, IBM-037, IBM-1047, the file will be unchanged when submitted on the z/OS platform.
@@ -550,7 +319,6 @@ EXAMPLE RESULTS:
 }
 ]
 
->>>>>>> master
 '''
 
 from ansible.module_utils.basic import *
@@ -559,10 +327,7 @@ from time import sleep
 from os import chmod, path
 from tempfile import NamedTemporaryFile
 import re
-<<<<<<< HEAD
-=======
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import job_output
->>>>>>> master
 
 ZOAUTIL_TEMP_USS = "/tmp/ansible-temp-1"
 ZOAUTIL_TEMP_USS2 = "/tmp/ansible-temp-2"
@@ -623,45 +388,16 @@ def copy_rexx_and_run(script,src,vol,module):
     rc, stdout, stderr = module.run_command(['./' + scriptName, src, vol], cwd=pathName)
     return rc, stdout, stderr
 
-<<<<<<< HEAD
-def get_job_info(jobId, return_output):
-=======
 def get_job_info(module, jobId, return_output):
->>>>>>> master
     result = dict()
     try:
         output = query_jobs_status(jobId)
     except SubmitJCLError as e:
         raise SubmitJCLError(e.msg)
-<<<<<<< HEAD
-    dds = Jobs.list_dds(job_id=jobId)
-    joboutput = []
-    if return_output is True:
-        for item in dds:
-            dataset = item.get("dataset")
-            stepname = item.get("stepname")
-            content = Jobs.read_output(jobId, stepname, dataset)
-            joboutput.append({
-                'stepname': stepname,
-                'ddname': dataset,
-                'content': content,
-            })
-        result['ddnames'] = joboutput
-    else:
-        result['ddnames'] = None
-
-    ret_code = parsing_job(output[0])
-
-    result['job_id'] = jobId
-    result['changed'] = True
-    result['job_name'] = output[0].get("name")
-    result['ret_code'] = ret_code
-=======
 
     if return_output is True:
         result = job_output(module, job_id=jobId)
     result['changed'] = True
->>>>>>> master
 
     return result
 
@@ -743,14 +479,11 @@ def parsing_job(job_raw):
 
     return ret_code
 
-<<<<<<< HEAD
-=======
 def assert_valid_return_code(max_rc, found_rc):
     if found_rc == None or max_rc < int(found_rc):
         raise SubmitJCLError('')
         
 
->>>>>>> master
 def run_module():
     location_type = {'DATA_SET', 'USS', 'LOCAL', None}
 
@@ -760,14 +493,9 @@ def run_module():
         location=dict(type='str', required=True),
         encoding=dict(type='str', required=False, default='UTF-8'),
         volume=dict(type='str', required=False),
-<<<<<<< HEAD
-        return_output=dict(type='bool', required=False, default='True'),
-        wait_time_s=dict(type='int', required=False)
-=======
         return_output=dict(type='bool', required=False, default=True),
         wait_time_s=dict(type='int', required=False),
         max_rc=dict(type='int', required=False)
->>>>>>> master
     )
 
     module = AnsibleModule(
@@ -787,11 +515,7 @@ def run_module():
     results = dict(
         jobs=[]
     )
-<<<<<<< HEAD
-    jobs = []
-=======
 
->>>>>>> master
 
     location = module.params.get("location")
     volume = module.params.get("volume")
@@ -799,12 +523,8 @@ def run_module():
     src = module.params.get('src')
     return_output = module.params.get('return_output')
     wait_time_s = module.params.get('wait_time_s')
-<<<<<<< HEAD
-
-=======
     max_rc = module.params.get('max_rc')
     
->>>>>>> master
     if wait_time_s is None:
         wait_time_s = POLLING_THRESHOLD
     else:
@@ -848,11 +568,7 @@ def run_module():
             module.fail_json(msg='Location is not valid. DATA_SET, USS, and LOCAL is supported.', **result)
 
     except SubmitJCLError as e:
-<<<<<<< HEAD
-        module.fail_json(msg=e.msg, **result)
-=======
         module.fail_json(msg=str(e), **result)
->>>>>>> master
     if jobId == None or jobId == '':
         result['job_id'] = jobId
         module.fail_json(msg='JOB ID RETURNED IS None. PLEASE CHECK WHETHER THE JCL IS CORRECT.', **result)
@@ -862,11 +578,7 @@ def run_module():
         try:
             waitJob = query_jobs_status(jobId)
         except SubmitJCLError as e:
-<<<<<<< HEAD
-            module.fail_json(msg=e.msg, **result)
-=======
             module.fail_json(msg=str(e), **result)
->>>>>>> master
         while waitJob[0].get('status') == "AC":  # AC means in progress
             sleep(1)
             duration = duration + 1
@@ -877,20 +589,6 @@ def run_module():
                 break
 
     try:
-<<<<<<< HEAD
-        result = get_job_info(jobId, return_output)
-    except SubmitJCLError as e:
-        module.fail_json(msg=e.msg, **result)
-
-    result['duration'] = duration
-    if duration == wait_time_s:
-        results['message'] = {'msg': 'Submit JCL operation succeeded but it is a long running job. Timeout is '+ str(wait_time_s)+' seconds.'}
-
-    jobs.append(result)
-    results['changed'] = True
-    results['jobs'] = jobs
-    module.exit_json(**results)
-=======
         result = get_job_info(module, jobId, return_output)
         if wait == True and return_output == True and max_rc != None:
             assert_valid_return_code(max_rc, result.get('jobs')[0].get('ret_code').get('code'))
@@ -905,7 +603,6 @@ def run_module():
         result['message'] = {'stdout': 'Submit JCL operation succeeded.'}
     result['changed'] = True
     module.exit_json(**result)
->>>>>>> master
 
 
 class Error(Exception):

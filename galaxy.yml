@@ -2,14 +2,10 @@
 namespace: ibm
 
 # Red Hat Ansible Certified Content for IBM Z
-name: ibm_zos_core 
+name: ibm_zos_core
 
 # The collection version
-<<<<<<< HEAD
-version: 0.0.3
-=======
 version: 0.0.4
->>>>>>> master
 
 # Collection README file
 readme: README.md
@@ -30,15 +26,24 @@ description: The Red Hat Ansible Certified Content for IBM Z core collection inc
 # Portions of this collection are licensed under GNU General Public License Version 3.0
 # and portions of this collection are licensed under Apache License, Version 2.0
 license:
-   - "GPL-3.0-only"
-   - "Apache-2.0"
+  - "GPL-3.0-only"
+  - "Apache-2.0"
 
 # Tags
-<<<<<<< HEAD
-tags: [ibm,z,zos,z_os,core,zos_core,red_hat_ansible_certified_content_for_ibm_z,data_set,jcl,uss,mvs] 
-=======
-tags: [ibm,z,zos,z_os,core,zos_core,red_hat_ansible_certified_cotent_for_ibm_z,data_set,jcl,uss,mvs] 
->>>>>>> master
+tags:
+  [
+    ibm,
+    z,
+    zos,
+    z_os,
+    core,
+    zos_core,
+    red_hat_ansible_certified_content_for_ibm_z,
+    data_set,
+    jcl,
+    uss,
+    mvs,
+  ]
 
 # Collections that this collection requires to be installed for it to be usable.
 # dependencies: {} # This collection depends on no other collections
@@ -47,7 +52,7 @@ tags: [ibm,z,zos,z_os,core,zos_core,red_hat_ansible_certified_cotent_for_ibm_z,d
 repository: https://github.com/ansible-collections/ibm_zos_core
 
 # The URL to any online docs
-documentation: https://github.com/ansible-collections/ibm_zos_core/wiki 
+documentation: https://github.com/ansible-collections/ibm_zos_core/wiki
 
 # The URL to the homepage of the collection/project
 # homepage: https://www.ibm.com/it-infrastructure/z/

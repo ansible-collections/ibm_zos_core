@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+# Copyright (c) IBM Corporation 2019, 2020
+# Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
 ANSIBLE_METADATA = {
     'metadata_version': '1.1',
@@ -96,14 +98,18 @@ options:
     required: false
     default: "true"
     choices: [ "true", "false" ]
-requirements: 
-    - Z Open Automation Utilities
-    - Python 3.6 or higher
+  wait_s:
+    description:
+      - The time (in seconds) to wait for an uncataloged data set to be recataloged
+    required: false
+    default: 10
+    type: int
 notes:
     - When fetching PDS(E) and VSAM data sets, temporary storage will be used on the remote
       z/OS system. After the PDS(E) or VSAM data set is successfully transferred, the temprorary
       data set will deleted. The size of the temporary storage will correspond to the size of
-      PDS(E) or VSAM data set being fetched.
+      PDS(E) or VSAM data set being fetched. If module executation fails, the temporary storage 
+      will be cleaned.
     - To prevent redundancy, additional checksum validation will not be done when fetching PDS(E) 
       because data integrity checks are done through the transfer methods used. As a result, the module 
       response will not include C(checksum) parameter. 
@@ -144,7 +150,7 @@ EXAMPLES = r'''
     src: /tmp/somefile
     dest: /tmp/
     flat: true
-    validate_checksum: no
+    validate_checksum: false
     is_uss: true
     fail_on_missing: true
 
@@ -153,10 +159,11 @@ EXAMPLES = r'''
     src: USER.TEST.VSAM
     dest: /tmp/
     flat: true
-    use_qualifier: no
+    use_qualifier: false
     is_vsam: true
-    is_catalog: no
+    is_catalog: false
     volume: SCR03
+    wait_s: 15
 
 - name: Fetch a PDS member named 'data'
   zos_fetch:
@@ -171,6 +178,7 @@ EXAMPLES = r'''
     flat: true
     isCatalog: false
     volume: SCR03
+    wait_s: 5
 '''
 
 RETURNS = r'''
@@ -486,6 +494,7 @@ def run_module():
             is_vsam              = dict(required=False, default=False, type='bool'),
             encoding            = dict(required=False, choices=['ASCII', 'EBCDIC'], type='str'),
             is_uss               = dict(required=False, default=False, type='bool'),
+            wait_s              = dict(required=False, default=10, type='int'),
             use_qualifier        = dict(required=False, default=True, type='bool'),
             _fetch_member       = dict(required=False, type='bool')
         )
@@ -495,6 +504,7 @@ def run_module():
     b_src               = to_bytes(src)
     encoding            = module.params.get('encoding')
     volume 	            = module.params.get('volume')
+    wait_s              = module.params.get('wait_s') 
     fail_on_missing     = boolean(module.params.get('fail_on_missing'), strict=False)
     validate_checksum   = boolean(module.params.get('validate_checksum'), strict=False)
     is_uss               = boolean(module.params.get('is_uss'), strict=False)
@@ -520,18 +530,8 @@ def run_module():
             _fail_json(msg=str(err))
     
         _recatalog_data_set(ds_name, volume, vsam=is_vsam)
-        ds_type = None
-        rec_attempts = 0
-        while rec_attempts < 10:
-            try:
-                ds_type = _determine_data_set_type(ds_name)
-            except UncatalogedDatasetError:
-                pass
-            if ds_type:
-                break
-            time.sleep(5)
-            rec_attempts += 1
-        
+        time.sleep(wait_s)
+        ds_type = _determine_data_set_type(ds_name)
         if not ds_type:
             _fail_json(msg="Could not determine data set type") 
     

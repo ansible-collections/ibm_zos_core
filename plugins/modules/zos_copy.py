@@ -1,7 +1,5 @@
-# -*- coding: utf-8 -*-
-
-# Copyright: (c) 2015, Jon Hawkesworth (@jhawkesworth) <figs@unity.demon.co.uk>
-# Copyright: (c) 2017, Ansible Project
+# -*- coding: utf-8 -*-​
+# Copyright (c) IBM Corporation 2019, 2020
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 ANSIBLE_METADATA = {'metadata_version': '1.1',
@@ -12,9 +10,9 @@ DOCUMENTATION = r'''
 ---
 module: zos_copy
 version_added: '0.0.3'
-short_description: Copy a data set from local or remote machine to remote machine.
+short_description: Copy a data set from a local or remote machine to another remote machine.
 description:
-    - The C(zos_copy) module copies a USS file or a data set from the local or 
+    - The M(zos_copy) module copies a file or data set from a local or a
       remote machine to a location on the remote machine.
     - Use the M(zos_fetch) module to copy files or data sets from remote locations
       to local machine.
@@ -23,35 +21,35 @@ options:
     description:
     - Local path to a file to copy to the remote z/OS system; can be absolute or
       relative.
-    - If I(remote_src=true), name of the file, data set or data set member 
-      on remote z/OS system.
-    - If path is a directory and the destination is a PDS(E), all the files in it 
-      would to be copied to a PDS(E).
-    - If path is a directory, it is copied (including the source folder name)
+    - If I(remote_src=true), then src must be the name of the file, data set
+      or data set member on remote z/OS system.
+    - If the path is a directory, and the destination is a PDS(E), all the files
+      in it would be copied to a PDS(E).
+    - If the path is a directory, it is copied (including the source folder name)
       recursively to C(dest).
-    - If path is a directory and ends with "/", only the inside contents of
+    - If the path is a directory and ends with "/", only the inside contents of
       that directory are copied to the destination. Otherwise, if it does not
       end with "/", the directory itself with all contents is copied.
-    - If path is a file and dest ends with "/", the file is copied to the
+    - If the path is a file and dest ends with "/", the file is copied to the
       folder with the same filename.
     - Required unless using C(content).
     type: str
   dest:
     description:
     - Remote absolute path or data set where the file should be copied to.
-    - Destination can be a USS location separated with ‘/’ 
+    - Destination can be a USS location separated with ‘/’
       or MVS location separated with ‘.’.
     - If C(src) is a directory, this must be a directory or a PDS(E).
     - If C(dest) is a nonexistent path, it will be created.
     - If C(src) and C(dest) are files and if the parent directory of C(dest)
-      doesn't exist, then the task will fail. 
-    - If C(dest) is a PDS, PDS(E) or VSAM, the copy module will only copy into 
+      doesn't exist, then the task will fail.
+    - If C(dest) is a PDS, PDS(E), or VSAM, the copy module will only copy into
       already allocated resource.
     type: str
     required: yes
   content:
     description:
-    - When used instead of C(src), sets the contents of a file or data set 
+    - When used instead of C(src), sets the contents of a file or data set
       directly to the specified value.
     - Works only when C(dest) is a USS file or sequential data set.
     - This is for simple values, for anything complex or with formatting please
@@ -68,7 +66,7 @@ options:
     default: false
   force:
     description:
-    - If C(true), the remote file or data set will be replaced when contents are 
+    - If C(true), the remote file or data set will be replaced when contents are
       different than the source.
     - If C(false), the file will only be transferred if the destination does not exist.
     type: bool
@@ -87,13 +85,13 @@ options:
     default: false
   local_follow:
     description:
-    - This flag indicates that filesystem links in the source tree, if they exist, 
+    - This flag indicates that filesystem links in the source tree, if they exist,
       should be followed.
     type: bool
     default: true
   is_uss:
     description:
-    - Specifies whether C(dest) is a USS location. 
+    - Specifies whether C(dest) is a USS location.
     - If C(false), it indicates that the destination is an MVS data set.
     type: bool
     default: false
@@ -109,8 +107,8 @@ options:
     default: false
   is_catalog:
     description:
-    - Indicates whether the destination data set is cataloged. If it is not cataloged, 
-      the data set will be recataloged before copying. After the data set has been 
+    - Indicates whether the destination data set is cataloged. If it is not cataloged,
+      the data set will be recataloged before copying. After the data set has been
       successfully copied, the destination data set will be uncataloged.
     type: bool
     default: true
@@ -125,7 +123,7 @@ options:
     default: true
   encoding:
     description:
-    - Indicates the encoding of the file or data set on the remote machine. 
+    - Indicates the encoding of the file or data set on the remote machine.
     - If set to C(ASCII), the module will not convert the encoding to EBCDIC.
     - If set to C(EBCDIC), the module will convert the encoding of the file or data
       set to EBCDIC before copying to destination.
@@ -145,12 +143,9 @@ options:
       destination checksum.
     type: bool
     default: true
-notes:
-- Currently zos_copy does not support copying symbolic links from both local to
-  remote and remote to remote.
 author:
   - Asif Mahmud <asif.mahmud@ibm.com>
-  - Luke Zhao
+  - Luke Zhao <zlbjlu@cn.ibm.com>
 '''
 
 EXAMPLES = r'''
@@ -158,20 +153,17 @@ EXAMPLES = r'''
   zos_copy:
     src: /path/to/sample_seq_data_set
     dest: SAMPLE.SEQ.DATA.SET
-
 - name: Copy a local file to a USS location
   zos_copy:
     src: /path/to/test.log
     dest: /tmp/test.log
     is_uss: true
-
 - name: Copy a local ASCII encoded file and convert to EBCDIC
   zos_copy:
     src: /path/to/file.txt
     dest: /tmp/file.txt
     encoding: EBCDIC
     is_uss: true
-
 - name: Copy file with owner and permission
   zos_copy:
     src: /path/to/foo.conf
@@ -179,37 +171,31 @@ EXAMPLES = r'''
     owner: foo
     group: foo
     mode: '0644'
-
 - name: If local_follow=true, the module will follow the symbolic link specified in src
   zos_copy:
     src: /path/to/link
     dest: /path/to/uss/location
     is_uss: true
-
 - name: Copy a local file to a PDS member and validate checksum
   zos_copy:
     src: /path/to/local/file
     dest: HLQ.SAMPLE.PDSE(member_name)
     validate: true
-
 - name: Copy a single file to a VSAM(KSDS)
   zos_copy:
     src: /path/to/local/file
     dest: HLQ.SAMPLE.VSAM
     is_vsam: true
-
 - name: Copy inline content to a sequential dataset and replace existing data
   zos_copy:
     content: 'Hello World'
     dest: SAMPLE.SEQ.DATA.SET
     force: true
-
 - name: Copy a USS file to a sequential data set
   zos_copy:
     src: /path/to/remote/uss/file
     dest: SAMPLE.SEQ.DATA.SET
     remote_src: true
-
 - name: Copy a binary file to an uncataloged PDSE member
   zos_copy:
     src: /path/to/binary/file
@@ -217,26 +203,22 @@ EXAMPLES = r'''
     is_binary: true
     is_catalog: false
     volume: SCR03
-
 - name: Copy a local file and take a backup of the existing file
-  zos_copy: 
+  zos_copy:
     src: /path/to/local/file
     dest: /path/to/dest
     backup: true
-
 - name: Copy a PDS(E) on remote system to a new PDS(E)
   zos_copy:
     src: HLQ.SAMPLE.PDSE
     dest: HLQ.NEW.PDSE
     remote_src: true
-
-- name: Copy a PDS(E) on remote system to an existing PDS(E) replacing the original
+- name: Copy a PDS(E) on remote system to an existing PDS(E), replacing the original
   zos_copy:
     src: HLQ.SAMPLE.PDSE
     dest: HLQ.EXISTING.PDSE
     remote_src: true
     force: true
-
 - name: Copy a PDS(E) member to a new PDS(E) member. Replace if it already exists
   zos_copy:
     src: HLQ.SAMPLE.PDSE(member_name)
@@ -335,15 +317,12 @@ from zoautil_py.types import DDStatement
 # The AnsibleModule object
 module = None
 
-def ascii_to_ebcdic(src, dest):
-    tempf = tempfile.NamedTemporaryFile().name
-    b_tempf = to_bytes(tempf, errors='surrogate_or_strict')
-    with open(b_tempf, 'w+b') as ftemp:
-        request = subprocess.Popen(['iconv', '-f', 'ISO8859-1', '-t', 'IBM-1047', src], stdout=ftemp)
-        stdout = request.communicate()
-        request = subprocess.Popen(['mv', b_tempf, dest], stdout=subprocess.PIPE)
-        stdout += request.communicate()
-    return stdout
+def ascii_to_ebcdic(src, content):
+    conv_cmd = "iconv -f ISO8859-1 -t IBM-1047"
+    rc, out, err = module.run_command(conv_cmd, data=content)
+    if rc != 0:
+        module.fail_json(msg="Unable to convert encoding of {} to EBCDIC".format(src))
+    return out
 
 
 def create_temp_ds_name(LLQ):
@@ -356,7 +335,7 @@ def create_temp_ds_name(LLQ):
     return temp_data_set
 
 
-def vsam_exists_or_not(DSname):
+def vsam_exists_or_not(ds_name):
     """ Check vsam data set using ZOAU API """
     check_rc      = False
     check_vsam_rc = -1
@@ -366,7 +345,7 @@ def vsam_exists_or_not(DSname):
     Datasets.create(sysin_ds_name, "SEQ")
     Datasets.create(sysprint_ds_name, "SEQ", "", "FB", "",133)
 
-    listcat_sysin = ' LISTCAT ENT(' + DSname + ') ALL'
+    listcat_sysin = ' LISTCAT ENT(' + ds_name + ') ALL'
     Datasets.write(sysin_ds_name, listcat_sysin)
     dd_statements = []
     dd_statements.append(DDStatement(ddName="sysin", dataset=sysin_ds_name))
@@ -374,7 +353,7 @@ def vsam_exists_or_not(DSname):
     try:
         check_vsam_rc = MVSCmd.execute_authorized(pgm="idcams", args="", dds=dd_statements)
     except:
-        msg = "Failed to call IDCAMS to check the data set %s" % Dsname
+        msg = "Failed to call IDCAMS to check the data set {}".format(ds_name)
         module.fail_json(msg=msg)
     
     if check_vsam_rc == 0:
@@ -385,7 +364,7 @@ def vsam_exists_or_not(DSname):
         reclen     = ''.join(re.findall(r'\d+', findReclen[0]))
         hiurba     = ''.join(re.findall(r'\d+', findHiurba[0]))
     else:
-        msg = "Failed to call IDCAMS to check the data set %s" % Dsname
+        msg = "Failed to call IDCAMS to check the data set {}".format(ds_name)
         module.fail_json(msg=msg)
     
     Datasets.delete(sysin_ds_name)
@@ -394,17 +373,17 @@ def vsam_exists_or_not(DSname):
     return check_rc, reclen, hiurba
 
 
-def data_set_exists_or_not(DSname):
+def data_set_exists_or_not(ds_name):
     """ check non-vsam data set exist or not  """
     check_rc = False
     try:
-        check_rc = Datasets.exists(DSname)
+        check_rc = Datasets.exists(ds_name)
     except:
         print('')
     return check_rc
 
 
-def uncatalog_data_set_exists_or_not(Dsname, volume):
+def uncatalog_data_set_exists_or_not(ds_name, volume):
     """ check uncataloged data set exist or not """
     check_rc = False
     sysprint_ds_name = create_temp_ds_name('sysprint')
@@ -416,7 +395,7 @@ def uncatalog_data_set_exists_or_not(Dsname, volume):
     adrdssu_sysin = ''' DUMP DATASET(INCLUDE( %s ) - 
        BY((CATLG,EQ,NO)))   - 
        SHR OUTDD(LIST)      - 
-       LOGINDYNAM((%s)) ''' % (Dsname, volume)
+       LOGINDYNAM((%s)) ''' % (ds_name, volume)
     
     Datasets.write(sysin_ds_name, adrdssu_sysin)
     dd_statements = []
@@ -426,10 +405,10 @@ def uncatalog_data_set_exists_or_not(Dsname, volume):
     try:
         check_uc_rc = MVSCmd.execute_authorized(pgm="adrdssu", args="TYPRUN=NORUN", dds=dd_statements)
     except:
-        msg = "Failed to call ADRDSSU to check the data set %s" % Dsname
+        msg = "Failed to call ADRDSSU to check the data set {}".format(ds_name)
         module.fail_json(msg=msg)
 
-    if Datasets.read(sysprint_ds_name).find(Dsname) != -1:
+    if Datasets.read(sysprint_ds_name).find(ds_name) != -1:
        check_rc = True
     
     Datasets.delete(sysin_ds_name)
@@ -484,134 +463,106 @@ def copy_to_vsam(src, VSAMname):
     Datasets.delete(sysprint_ds_name)
     return copy_rc 
 
-def size_of_ps(Dsname):
-    ds = Dsname.rsplit('.',1)[0]
+def size_of_ps(ds_name):
+    ds = ds_name.rsplit('.',1)[0]
     output = Datasets.list("%s.*" % ds, verbose=True).split('\n')
     for item in output:
-        if item.find(Dsname) != -1:
+        if item.find(ds_name) != -1:
             size = re.sub(r"\s{2,}", " ", item)
             rba = size.split(' ')[-2]   
     return rba
 
-def main():
+def _determine_data_set_type(ds_name):
+    rc, out, err = module.run_command("tsocmd \"LISTDS '{}'\"".format(ds_name))
+    if "NOT IN CATALOG" in out:
+        raise UncatalogedDatasetError(ds_name)
+    if "INVALID DATA SET NAME" in out:
+        return 'USS'
+    
+    if rc != 0:
+        msg = None
+        if "ALREADY IN USE" in out:
+            msg = "Dataset {} may already be open by another user. Close the dataset and try again.".format(ds_name)
+        else:
+            msg = "Unable to determine data set type for data set {}.".format(ds_name)
+        module.fail_json(msg=msg, rc=rc, stdout=out, stderr=err)
+    
+    ds_search = re.search("(-|--)DSORG(|-)\n(.*)", out)
+    if ds_search:
+        return ds_search.group(3).split()[-1].strip()
+    return None
+        
 
+def main():
     global module
 
     module = AnsibleModule(
         argument_spec          = dict(
-            src                = dict(type='path'),
-            dest               = dict(type='str'),
-            basename           = dict(type='str'),
-            isUSS              = dict(type='bool', default=False), 
-            isVSAM             = dict(type='bool', default=False),
-            useQualifier       = dict(type='bool', default=True), 
-            isBinary           = dict(type='bool', default=False),
-            isCatalog          = dict(type='bool', default=True), 
-            volume             = dict(type='str', default=''),
+            src                = dict(required=True, type='path'),
+            dest               = dict(required=True, type='path'),
+            is_uss             = dict(type='bool', default=False), 
+            is_vsam            = dict(type='bool', default=False),
+            use_qualifier      = dict(type='bool', default=False), 
+            is_binary          = dict(type='bool', default=False),
+            is_catalog         = dict(type='bool', default=True), 
+            volume             = dict(type='str'),
             encoding           = dict(type='str', default='EBCDIC',choices=['EBCDIC','ASCII']),
-        ),
-        add_file_common_args   = True,
-        supports_check_mode    = True,
+            content            = dict(type='str', no_log=True),
+            backup             = dict(type='bool', default=False),
+            force              = dict(type='bool', default=True),
+            validate           = dict(type='bool', default=False),
+            remote_src         = dict(type='bool', default=False),
+            checksum           = dict(type='str'),
+            _local_data        = dict(type='str'),
+            _size              = dict(type='int')
+        )
     )
 
     src                = module.params['src']
     b_src              = to_bytes(src, errors='surrogate_or_strict')
     dest               = module.params['dest']
     b_dest             = to_bytes(dest, errors='surrogate_or_strict')
-    isUSS              = module.params['isUSS']
-    mode               = module.params['mode']
-    owner              = module.params['owner']
-    group              = module.params['group']
+    is_uss             = module.params['is_uss']
     remote_src         = module.params['remote_src']
-    isVSAM             = module.params['isVSAM']
-    useQualifier       = module.params['useQualifier']
-    isBinary           = module.params['isBinary']
-    isCatalog          = module.params['isCatalog']
+    is_vsam            = module.params['is_vsam']
+    use_qualifier      = module.params['use_qualifier']
+    is_binary          = module.params['is_binary']
+    is_catalog         = module.params['is_catalog']
     volume             = module.params['volume']
     encoding           = module.params['encoding']
-    basename           = module.params['basename']
-    dsname             = ''
+    content            = module.params['content']
+    validate           = module.params['validate']
+    ds_name            = ''
     size               = ''
 
     check_rc           = False
     copy_rc            = False
     changed            = False
 
-    if not os.path.exists(b_src):
-        module.fail_json(msg="Source %s not found" % (src))
-    if not os.access(b_src, os.R_OK):
-        module.fail_json(msg="Source %s not readable" % (src))
+    if remote_src:
+        if not os.path.exists(b_src):
+            module.fail_json(msg="Source %s not found" % (src))
+        if not os.access(b_src, os.R_OK):
+            module.fail_json(msg="Source %s not readable" % (src))
 
-    if os.path.isdir(b_src):
-        dest = os.path.join(src, basename)
-        b_src = to_bytes(dest, errors='surrogate_or_strict')
+    try:
+        ds_type = _determine_data_set_type(src)
+    except UncatalogedDatasetError as err:
+        rc = Datasets.create(dest, 'SEQ', module.params['_size'], 'FB')
+        if rc != 0:
+            module.fail_json("Unable to allocate data set to copy {}".format(src))
+        Datasets.write(dest, ascii_to_ebcdic(src, module.params['_local_data']))
 
-    if isUSS:
-        ascii_to_ebcdic(b_src, b_src)
-        response = dict(dest=dest, changed=changed, mode=mode)
-        module.exit_json(meta=response)
-    else:
-        #ascii_to_ebcdic(b_src, b_src)
-        if useQualifier:
-            hlq = Datasets.hlq()
-            dsname = hlq + '.' + dest.upper()
-    
-    # Based on the parameter isCatalog is on or not, to check the data set exists or not.
-    # For uncataloged data set, the parameter volume is required.
-    # For VSAM data set(KSDS), it must be cataloged.
-    if isCatalog:
-        check_rc = data_set_exists_or_not(dsname)
-        if isVSAM:
-            check_rc, reclen, hiurba = vsam_exists_or_not(dsname.upper())
-    else:
-        if volume == "":
-            msg = "Please specify the volume for the UNCATALOGED dataset: %s." % dsname
-            module.fail_json(msg=msg, dest=dsname)
-        else:
-            check_rc = uncatalog_data_set_exists_or_not(dsname, volume.upper())
-    
-    # Based on the check result, continue the copy 
-    # For VSAM data set, two steps is required to finish the copy:
-    #   1) create a temp ps, and copy to this temp ps first
-    #   2) copy the temp ps to the target VSAM data set
-    
-    if check_rc:
-        if isVSAM:
-            tempPS = create_temp_ds_name('tempps')
-            Datasets.create(tempPS, "SEQ", "", "FB", "", int(reclen))
-            copy_to_ps(b_src, tempPS, encoding)
-            copy_rc = copy_to_vsam(tempPS, dsname)
-            Datasets.delete(tempPS)
-            if copy_rc: 
-                #check_rc = vsam_exists_or_not(dsname)
-                check_rc, reclen, size = vsam_exists_or_not(dsname)
-        else:
-            copy_rc = copy_to_ps(b_src, dsname, encoding)
-            if copy_rc:
-                size = size_of_ps(dsname)
-    else:
-        msg = dsname + " does not exist."
-        module.fail_json(msg=msg)
-    
-   
-    if copy_rc:
-        msg = "Data in %s has been successfully copied into %s" % (b_src, dsname)
-        changed = True
-        res_args['dest']    = dsname 
-        res_args['changed'] = changed
-        res_args['size']    = size
-
-        module.exit_json(**res_args)
-    else:
-        msg = 'failed'
-        res_args = dict(
-        dest=dest, changed=changed, msg=msg
-        )
-        module.fail_json(msg=msg) 
+    res_args = dict(src=src, dest=dest, changd=True)
+    module.exit_json(**res_args)
 
 class AnsibleModuleError(Exception):
     def __init__(self, msg):
         super.__init__(msg)
+
+class UncatalogedDatasetError(Exception):
+    def __init__(self, ds_name):
+        super().__init__("Data set {} is not in catalog. If you would like to copy to the data set, please specify its volume".format(ds_name))
 
 if __name__ == '__main__':
     main()

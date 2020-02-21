@@ -412,7 +412,9 @@ def _determine_data_set_type(ds_name):
         raise UncatalogedDatasetError(ds_name)
 
     if "INVALID DATA SET NAME" in out:
-        return 'USS'
+        if os.path.exists(ds_name) and os.path.isfile(ds_name):
+            return 'USS'
+        _fail_json(msg="The file {} does not exist".format(ds_name))
     
     if rc != 0:
         msg = None

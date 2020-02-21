@@ -78,10 +78,11 @@ options:
     choices: ["true", "false" ]
   encoding:
     description:
-      - Indicates the encoding of the existing resource on the remote z/OS system.
+      - The encoding of the existing file or data set on the remote z/OS system.
         Setting the value to "ASCII" will not convert the encoding before transfer,
-        whereas the default value of "EBCDIC" will convert the temp file content on
-        z/OS to ASCII before transfer
+        whereas the default value of "EBCDIC" will convert the encoding of the file
+        or data set to ASCII before transfer. Note that the conversion to ASCII does
+        not affect the existing file or data set.
     required: false
     default: "EBCDIC"
     choices: ["ASCII", "EBCDIC" ]

@@ -10,7 +10,7 @@ DOCUMENTATION = r'''
 ---
 module: zos_copy
 version_added: '0.0.3'
-short_description: Copy a data set from a local or remote machine to another remote machine.
+short_description: Copy data sets or files to remote z/OS systems
 description:
     - The M(zos_copy) module copies a file or data set from a local or a
       remote machine to a location on the remote machine.
@@ -305,6 +305,7 @@ import traceback
 import subprocess
 import time    
 import codecs
+import hashlib
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.common.process import get_bin_path
@@ -491,6 +492,17 @@ def _determine_data_set_type(ds_name):
     if ds_search:
         return ds_search.group(3).split()[-1].strip()
     return None
+
+def _get_checksum(data):
+    """ Calculate checksum for the given data """
+    digest = hashlib.sha1()
+    data = to_bytes(data, errors='surrogate_or_strict')
+    digest.update(data)
+    return digest.hexdigest()
+
+def _get_mvs_checksum(ds_name):
+    return _get_checksum(Datasets.read(ds_name))
+
         
 
 def main():
@@ -514,7 +526,8 @@ def main():
             remote_src         = dict(type='bool', default=False),
             checksum           = dict(type='str'),
             _local_data        = dict(type='str'),
-            _size              = dict(type='int')
+            _size              = dict(type='int'),
+            _local_checksum    = dict(type='str')
         )
     )
 
@@ -532,6 +545,7 @@ def main():
     encoding           = module.params['encoding']
     content            = module.params['content']
     validate           = module.params['validate']
+    _local_checksum    = module.params['_local_checksum']
     ds_name            = ''
     size               = ''
 
@@ -539,26 +553,38 @@ def main():
     copy_rc            = False
     changed            = False
 
+
     if remote_src:
         if not os.path.exists(b_src):
-            module.fail_json(msg="Source %s not found" % (src))
+            module.fail_json(msg="Source {} does not exist".format(src))
         if not os.access(b_src, os.R_OK):
-            module.fail_json(msg="Source %s not readable" % (src))
-
+            module.fail_json(msg="Source {} not readable".format(src))
+    
+    remote_checksum = None
+    new_checksum = None
     try:
-        ds_type = _determine_data_set_type(src)
+        ds_type = _determine_data_set_type(dest)
+        remote_checksum = _get_mvs_checksum(dest)
     except UncatalogedDatasetError as err:
-        rc = Datasets.create(dest, 'SEQ', module.params['_size'], 'FB')
+        rc = Datasets.create(dest, "SEQ", str(module.params['_size']), "FB")
         if rc != 0:
             module.fail_json("Unable to allocate data set to copy {}".format(src))
-        Datasets.write(dest, ascii_to_ebcdic(src, module.params['_local_data']))
+    Datasets.write(dest, ascii_to_ebcdic(src, module.params['_local_data']))
 
-    res_args = dict(src=src, dest=dest, changd=True)
+    if validate:
+        new_checksum = _get_mvs_checksum(dest)
+        if remote_checksum != new_checksum:
+            changed = True
+        elif new_checksum != _local_checksum:
+            module.fail_json(msg="Checksum mismatch", checksum=new_checksum, local_checksum=_local_checksum, changed=changed)
+                  
+
+    res_args = dict(src=src, dest=dest, changed=changed, checksum=new_checksum)
     module.exit_json(**res_args)
 
 class AnsibleModuleError(Exception):
     def __init__(self, msg):
-        super.__init__(msg)
+        super().__init__(msg)
 
 class UncatalogedDatasetError(Exception):
     def __init__(self, ds_name):

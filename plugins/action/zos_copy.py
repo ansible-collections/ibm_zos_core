@@ -16,7 +16,7 @@ from ansible.errors import AnsibleError, AnsibleFileNotFound
 from ansible.module_utils._text import to_bytes, to_native, to_text
 from ansible.module_utils.parsing.convert_bool import boolean
 from ansible.plugins.action import ActionBase
-from ansible.utils.hashing import checksum
+from ansible.utils.hashing import checksum as file_checksum
 from ansible.utils.vars import merge_hash
 
 
@@ -85,17 +85,16 @@ class ActionModule(ActionBase):
         if not remote_src:
             if not os.path.exists(b_src):
                 result['msg'] = "The local file {} does not exist".format(src)
-            if not os.access(b_src, os.R_OK):
-                result['msg'] = "The local file {} does not appropriate read permisssion".format(src)
+            elif not os.access(b_src, os.R_OK):
+                result['msg'] = "The local file {} does not have appropriate read permisssion".format(src)
         
         if result.get('msg'):
-            result.update(src=src, dest=dest, changed=False)
+            result.update(src=src, dest=dest, changed=False, failed=True)
             return result
         
         content = _read_file(src)
+        local_checksum = file_checksum(src)
         new_module_args = dict((k,v) for k,v in self._task.args.items())
-        new_module_args.update(_local_data=content, _size=len(content.encode('utf-8')))
+        new_module_args.update(_local_data=content, _size=len(content.encode('utf-8')), _local_checksum=local_checksum)
         result.update(self._execute_module(module_name='zos_copy', module_args=new_module_args, task_vars=task_vars))
-        ch = checksum(src)
-
         return result

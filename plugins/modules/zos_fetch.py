@@ -94,10 +94,9 @@ options:
     choices: [ "true", "false" ]
   use_qualifier:
     description:
-      - Indicates whether the data set high level qualifier should be used 
-        when fetching
+      - Indicates whether the data set high level qualifier should be used when fetching
     required: false
-    default: "true"
+    default: "false"
     choices: [ "true", "false" ]
   wait_s:
     description:
@@ -128,7 +127,6 @@ EXAMPLES = r'''
     src: SOME.DATA.SET
     dest: /tmp/
     flat: true
-    useQaulifier: false
 
 - name: Fetch a PDS as binary and store in /tmp/SOME.PDS.DATASET
   zos_fetch:
@@ -136,7 +134,6 @@ EXAMPLES = r'''
 	dest: /tmp/
 	flat: true
 	is_binary: true
-	use_qualifier: false
 
 - name: Fetch a unix file without converting from EBCDIC to ASCII. Fail if file is missing
   zos_fetch:
@@ -160,7 +157,6 @@ EXAMPLES = r'''
     src: USER.TEST.VSAM
     dest: /tmp/
     flat: true
-    use_qualifier: false
     is_vsam: true
     is_catalog: false
     volume: SCR03
@@ -177,7 +173,7 @@ EXAMPLES = r'''
     src: USER.TEST.SEQ
     dest: /tmp/
     flat: true
-    isCatalog: false
+    is_catalog: false
     volume: SCR03
     wait_s: 5
 '''
@@ -486,17 +482,17 @@ def run_module():
         argument_spec = dict(
             src                 = dict(required=True, type='path'),
             dest                = dict(required=True, type='path'),
-            is_catalog           = dict(required=False, default=True, type='bool'),
+            is_catalog          = dict(required=False, default=True, type='bool'),
             volume              = dict(required=False, type='str'),
             fail_on_missing     = dict(required=False, default=False, choices=[True, False], type='str'),
             validate_checksum   = dict(required=False, default=True, choices=[True, False], type='str'),
             flat                = dict(required=False, default=True, choices=[True, False], type='str'),
-            is_binary            = dict(required=False, default=False, type='bool'),
-            is_vsam              = dict(required=False, default=False, type='bool'),
+            is_binary           = dict(required=False, default=False, type='bool'),
+            is_vsam             = dict(required=False, default=False, type='bool'),
             encoding            = dict(required=False, choices=['ASCII', 'EBCDIC'], type='str'),
-            is_uss               = dict(required=False, default=False, type='bool'),
+            is_uss              = dict(required=False, default=False, type='bool'),
             wait_s              = dict(required=False, default=10, type='int'),
-            use_qualifier        = dict(required=False, default=True, type='bool'),
+            use_qualifier       = dict(required=False, default=False, type='bool'),
             _fetch_member       = dict(required=False, type='bool')
         )
     )
@@ -504,15 +500,15 @@ def run_module():
     src                 = module.params.get('src', None)
     b_src               = to_bytes(src)
     encoding            = module.params.get('encoding')
-    volume 	            = module.params.get('volume')
+    volume              = module.params.get('volume')
     wait_s              = module.params.get('wait_s') 
     fail_on_missing     = boolean(module.params.get('fail_on_missing'), strict=False)
     validate_checksum   = boolean(module.params.get('validate_checksum'), strict=False)
-    is_uss               = boolean(module.params.get('is_uss'), strict=False)
-    is_binary            = boolean(module.params.get('is_binary'), strict=False)
-    is_vsam 	            = boolean(module.params.get('is_vsam'), strict=False)
-    is_catalog           = boolean(module.params.get('is_catalog'), strict=False)
-    use_qualifier        = boolean(module.params.get('use_qualifier'), strict=False)
+    is_uss              = boolean(module.params.get('is_uss'), strict=False)
+    is_binary           = boolean(module.params.get('is_binary'), strict=False)
+    is_vsam 	        = boolean(module.params.get('is_vsam'), strict=False)
+    is_catalog          = boolean(module.params.get('is_catalog'), strict=False)
+    use_qualifier       = boolean(module.params.get('use_qualifier'), strict=False)
     _fetch_member       = boolean(module.params.get('_fetch_member'), strict=False)
 
     _validate_params(src, is_binary, encoding, is_catalog, volume, is_uss, _fetch_member)

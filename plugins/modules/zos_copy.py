@@ -577,9 +577,14 @@ def main():
             changed = True
         elif new_checksum != _local_checksum:
             module.fail_json(msg="Checksum mismatch", checksum=new_checksum, local_checksum=_local_checksum, changed=changed)
-                  
 
-    res_args = dict(src=src, dest=dest, changed=changed, checksum=new_checksum)
+    res_args = dict(
+        src=src, 
+        dest=dest, 
+        changed=changed, 
+        checksum=_get_mvs_checksum(dest), 
+        size="{} Bytes".format(module.params['_size'])
+    )
     module.exit_json(**res_args)
 
 class AnsibleModuleError(Exception):

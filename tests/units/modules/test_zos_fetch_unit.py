@@ -17,7 +17,6 @@ MODULE_IMPORT = "ansible_collections_ibm_zos_core.plugins.modules.zos_fetch"
 BASIC_MODULE = 'ansible.module_utils.basic.AnsibleModule'
 
 # Test fetch USS file
-
 test_data = [
     ('/path/to/file.txt', True, False),
     ('/path/to/file.log', False, False)
@@ -51,13 +50,13 @@ def test_fetch_zos_data_set(zos_import_mocker, zos_data_set, is_binary, return_v
 
 
 test_data = [
-    ('test1.test.test2', True, (0,'',''), 0),
-    ('test.test1.test2', False, (1,'','stderr'), 1),
-    ('test.test1.test2', False, (-1,'','stderr'), 1)
+    ('test1.test.test2', (0,'',''), 0),
+    ('test.test1.test2', (1,'','stderr'), 1),
+    ('test.test1.test2', (-1,'','stderr'), 1)
 ]
 
 @pytest.mark.parametrize("ds_name,vsam,return_value,expected", test_data)
-def test_uncatalog_data_set(zos_import_mocker, ds_name, vsam, return_value, expected):
+def test_uncatalog_data_set(zos_import_mocker, ds_name, return_value, expected):
     mocker, importer = zos_import_mocker
     module = importer(MODULE_IMPORT)
     mocker.patch(MODULE_IMPORT + '._run_command', create=True, return_value=return_value)

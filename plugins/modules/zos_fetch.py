@@ -17,6 +17,10 @@ short_description: Fetches data from remote z/OS system to local machine
 description:
   - The M(zos_fetch) module copies a file on the z/OS system to the local machine. 
     Use the M(zos_copy) module to copy files from local machine to the remote z/OS system.
+  - When fetching a sequential data set, the destination file name will be the same as 
+    the data set name.
+  - When fetching a PDS/PDS(E), the destination will be a directory with the same name
+    as the PDS/PDS(E)
 author: Asif Mahmud <asif.mahmud@ibm.com>
 options:
   src:
@@ -68,14 +72,6 @@ options:
     required: false
     default: "false"
     choices: [ "true", "false" ]
-  is_vsam:
-    description:
-      - Indicates whether the data set to be fetched is a VSAM data set. If I(is_vsam=true), 
-        it uses the IDCAMS utility to copy the VSAM data into a temporary data set, which is 
-        then fetched to the local machine. The temporary data set is deleted afterwards.
-    required: false
-    default: "false"
-    choices: ["true", "false" ]
   encoding:
     description:
       - The encoding of the existing file or data set on the remote z/OS system.
@@ -86,12 +82,6 @@ options:
     required: false
     default: "EBCDIC"
     choices: ["ASCII", "EBCDIC" ]
-  is_uss: 
-    description:
-      - Specifies if the file to be fetched resides on the Unix System Services
-    required: false
-    default: "false"    
-    choices: [ "true", "false" ]
   use_qualifier:
     description:
       - Indicates whether the data set high level qualifier should be used when fetching
@@ -113,6 +103,8 @@ notes:
     - To prevent redundancy, additional checksum validation will not be done when fetching PDS(E) 
       because data integrity checks are done through the transfer methods used. As a result, the module 
       response will not include C(checksum) parameter. 
+    - A VSAM data set is always assumed to be in catalog. If an uncataloged VSAM data set needs to 
+      be fetched, it should be cataloged first.
 '''
 
 EXAMPLES = r'''
@@ -157,7 +149,6 @@ EXAMPLES = r'''
     src: USER.TEST.VSAM
     dest: /tmp/
     flat: true
-    is_vsam: true
     is_catalog: false
     volume: SCR03
     wait_s: 15
@@ -350,21 +341,14 @@ def _fetch_vsam(src, validate_checksum, is_binary):
     
     return content, checksum
 
-def _recatalog_data_set(ds_name, volume, vsam=False):
+def _recatalog_data_set(ds_name, volume):
     """ Recatalog an uncataloged data set """
     sysin_ds_name = _create_temp_data_set_name('SYSIN')
     Datasets.create(sysin_ds_name, 'SEQ')
-
-    if vsam:
-        idcams_sysin = ''' DEFINE CLUSTER -
-            (NAME({}) -
-            VOLUME({}) -
-            RECATALOG) '''.format(ds_name, volume)
-    else:
-        idcams_sysin = ''' DEFINE NVSAM -
-            (NAME({}) -
-            VOLUMES({}) - 
-            DEVT(SYSDA)) '''.format(ds_name, volume)
+    idcams_sysin = ''' DEFINE NVSAM -
+        (NAME({}) -
+        VOLUMES({}) - 
+        DEVT(SYSDA)) '''.format(ds_name, volume)
 
     Datasets.write(sysin_ds_name, idcams_sysin)
     dd_statements = []
@@ -384,14 +368,9 @@ def _recatalog_data_set(ds_name, volume, vsam=False):
 
     return ds_name
 
-def _uncatalog_data_set(ds_name, vsam=False):
+def _uncatalog_data_set(ds_name):
     """ Uncatalog a data set """
-    if vsam:
-        cmd = "tsocmd \"DELETE '{}' CLUSTER NOSCRATCH NOPURGE\"".format(ds_name)
-    else:
-        cmd = "tsocmd \"ALLOC DA('{}') REUSE OLD UNCATALOG\"".format(ds_name)
-    
-    rc, out, err = _run_command(cmd)
+    rc, out, err = _run_command("tsocmd \"ALLOC DA('{}') REUSE OLD UNCATALOG\"".format(ds_name))
     if rc != 0:
         _fail_json(msg="Unable to uncatalog data set {}".format(ds_name), rc=rc, stdout=out, stderr=err)
 
@@ -488,7 +467,6 @@ def run_module():
             validate_checksum   = dict(required=False, default=True, choices=[True, False], type='str'),
             flat                = dict(required=False, default=True, choices=[True, False], type='str'),
             is_binary           = dict(required=False, default=False, type='bool'),
-            is_vsam             = dict(required=False, default=False, type='bool'),
             encoding            = dict(required=False, choices=['ASCII', 'EBCDIC'], type='str'),
             is_uss              = dict(required=False, default=False, type='bool'),
             wait_s              = dict(required=False, default=10, type='int'),
@@ -506,7 +484,6 @@ def run_module():
     validate_checksum   = boolean(module.params.get('validate_checksum'), strict=False)
     is_uss              = boolean(module.params.get('is_uss'), strict=False)
     is_binary           = boolean(module.params.get('is_binary'), strict=False)
-    is_vsam 	        = boolean(module.params.get('is_vsam'), strict=False)
     is_catalog          = boolean(module.params.get('is_catalog'), strict=False)
     use_qualifier       = boolean(module.params.get('use_qualifier'), strict=False)
     _fetch_member       = boolean(module.params.get('_fetch_member'), strict=False)
@@ -514,7 +491,7 @@ def run_module():
     _validate_params(src, is_binary, encoding, is_catalog, volume, is_uss, _fetch_member)
 
     res_args = dict()
-    if (not is_uss or '/' not in src) and use_qualifier:
+    if (not is_uss) and use_qualifier:
         src = Datasets.hlq() + '.' + src
     
     ds_name = src if not _fetch_member else src[:src.find('(')]
@@ -526,7 +503,7 @@ def run_module():
         if is_catalog or fail_on_missing:
             _fail_json(msg=str(err))
     
-        _recatalog_data_set(ds_name, volume, vsam=is_vsam)
+        _recatalog_data_set(ds_name, volume)
         time.sleep(wait_s)
         ds_type = _determine_data_set_type(ds_name)
         if not ds_type:
@@ -567,13 +544,13 @@ def run_module():
         res_args['content'] = content
 
     # VSAM dataset
-    elif is_vsam:
+    elif ds_type == 'VSAM':
         content, checksum = _fetch_vsam(src, validate_checksum, is_binary)
         res_args['checksum'] = checksum
         res_args['content'] = content
 
     if not is_catalog:
-        _uncatalog_data_set(ds_name, vsam=is_vsam)
+        _uncatalog_data_set(ds_name)
     
     res_args['file'] = src
     res_args['ds_type'] = ds_type

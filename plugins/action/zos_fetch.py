@@ -67,9 +67,7 @@ class ActionModule(ActionBase):
         encoding            = self._task.args.get('encoding')
         volume              = self._task.args.get('volume')
         flat                = _process_boolean(self._task.args.get('flat'), default=False)
-        is_uss               = _process_boolean(self._task.args.get('is_uss'))
         is_binary            = _process_boolean(self._task.args.get('is_binary'))
-        is_vsam              = _process_boolean(self._task.args.get('is_vsam'))
         validate_checksum   = _process_boolean(self._task.args.get('validate_checksum'), default=True)
 
         if not isinstance(src, string_types):
@@ -87,6 +85,7 @@ class ActionModule(ActionBase):
             result['failed'] = True
             return result
         
+        is_uss = True if '/' in src else False
         ds_type = None
         fetch_member = False
         try:
@@ -129,7 +128,7 @@ class ActionModule(ActionBase):
                 dest = os.path.join(base_dir, member)
             
             new_module_args = dict((k,v) for k,v in self._task.args.items())
-            new_module_args.update({'_fetch_member': fetch_member})
+            new_module_args.update({'_fetch_member': fetch_member, 'is_uss': is_uss})
             fetch_res = self._execute_module(module_name='zos_fetch', module_args=new_module_args, task_vars=task_vars)
             
             if fetch_res.get('msg'):
@@ -140,7 +139,7 @@ class ActionModule(ActionBase):
             ds_type = fetch_res.get('ds_type')
             src = fetch_res['file']
 
-            if is_vsam or is_uss or ds_type == 'PS':
+            if ds_type == 'VSAM' or ds_type == 'PS' or is_uss:
                 fetch_ds = self._transfer_from_uss(dest, task_vars, fetch_res, 
                                         binary_mode=is_binary, validate_checksum=validate_checksum)
                 result.update(fetch_ds)
@@ -153,10 +152,6 @@ class ActionModule(ActionBase):
                     fetch_pds = self._transfer_pds(dest, task_vars, fetch_res, binary_mode=is_binary)
                 
                 result.update(fetch_pds)
-            
-            elif ds_type == 'VSAM':   # VSAM data set
-                result['msg'] = "VSAM data set detected but is_vsam parameter is False. Make sure you are fetching the correct file"
-                result['failed'] = True
             
             else:
                 result['msg'] = "The data set type '{}' is not currently supported".format(ds_type)

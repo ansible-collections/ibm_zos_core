@@ -141,6 +141,9 @@ do ix=1 to isfrows
         Say ']'
         Say '}'
         end
+        else do
+            linecount = linecount + JDS_RECCNT.jx
+        end
     end
     Say ']'
     end

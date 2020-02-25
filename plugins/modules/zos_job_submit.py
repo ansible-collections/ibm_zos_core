@@ -395,8 +395,12 @@ def get_job_info(module, jobId, return_output):
     except SubmitJCLError as e:
         raise SubmitJCLError(e.msg)
 
-    if return_output is True:
-        result = job_output(module, job_id=jobId)
+    result = job_output(module, job_id=jobId)
+
+    if not return_output:
+        for job in result.get('jobs', []):
+            job['ddnames'] = []
+    
     result['changed'] = True
 
     return result

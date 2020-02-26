@@ -8,7 +8,6 @@ from ansible.plugins.action import ActionBase
 from ansible.errors import AnsibleError
 from ansible.module_utils._text import to_bytes, to_text
 import os
-from tempfile import mktemp
 
 
 class ActionModule(ActionBase):

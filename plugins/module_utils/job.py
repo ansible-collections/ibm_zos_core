@@ -3,7 +3,7 @@
 
 from tempfile import NamedTemporaryFile
 from os import chmod, path, remove
-from stat import S_IEXEC, S_IREAD
+from stat import S_IEXEC, S_IREAD, S_IWRITE 
 import json
 import re
 
@@ -183,7 +183,7 @@ Return translate(string, '4040'x, '1525'x)
         tmp = NamedTemporaryFile(delete=True)
         with open(tmp.name, 'w') as f:
             f.write(get_job_detail_json_rexx)
-        chmod(tmp.name, S_IEXEC | S_IREAD)
+        chmod(tmp.name, S_IEXEC | S_IREAD | S_IWRITE)
         args = [jobid_param, owner_param,
             jobname_param, ddname_param]
 

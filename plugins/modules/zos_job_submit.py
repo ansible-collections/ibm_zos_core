@@ -329,7 +329,7 @@ from os import chmod, path
 from tempfile import NamedTemporaryFile
 import re
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import job_output
-from stat import S_IEXEC, S_IREAD
+from stat import S_IEXEC, S_IREAD, S_IWRITE
 
 """time between job query checks to see if a job has completed, default 1 second"""
 POLLING_INTERVAL = 1
@@ -381,7 +381,7 @@ def copy_rexx_and_run(script,src,vol,module):
     tmp_file = NamedTemporaryFile(delete=delete_on_close)
     with open(tmp_file.name, 'w') as f:
         f.write(script)
-    chmod(tmp_file.name, stat.S_IEXEC | stat.S_IREAD)
+    chmod(tmp_file.name, stat.S_IEXEC | stat.S_IREAD | S_IWRITE)
     pathName = path.dirname(tmp_file.name)
     scriptName = path.basename(tmp_file.name)
     rc, stdout, stderr = module.run_command(['./' + scriptName, src, vol], cwd=pathName)

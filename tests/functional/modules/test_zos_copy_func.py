@@ -36,7 +36,7 @@ def test_copy_to_non_existing_sequential_data_set(ansible_zos_module):
     dest = 'USER.TEST.SEQ'
     params = dict(src=source_path,dest=dest)
     copy_result = hosts.all.zos_copy(**params)
-    verify_copy = hosts.all.shell(cmd="cat \"{}\"".format(dest), executable="/usr/lpp/rsusr/ported/bin/bash")
+    verify_copy = hosts.all.shell(cmd="cat \"//'{}'\" > /dev/null 2>/dev/null".format(dest), executable="/usr/lpp/rsusr/ported/bin/bash")
     try:
         for cp_res in copy_result.contacted.values():
             assert cp_res.get('module_stderr') == False
@@ -56,11 +56,15 @@ def test_copy_to_existing_sequential_data_set(ansible_zos_module):
     hosts.all.zos_data_set(name=dest, type='seq', state='present')
     params = dict(src=source_path, dest=dest)
     copy_result = hosts.all.zos_copy(**params)
+    verify_copy = hosts.all.shell(cmd="cat \"//'{}'\" > /dev/null 2>/dev/null".format(dest), executable="/usr/lpp/rsusr/ported/bin/bash")
     dest_path = '/tmp/TERRY.IMSV14.ADFSBASE'
     try:
         for cp_res in copy_result.contacted.values():
             assert cp_res.get('module_stderr') == False
             assert cp_res.get('changed') == True
+        for v_cp in verify_copy.constants.values():
+            assert v_cp.get('rc') == 0
+            assert v_cp.get('stdout') != ""
         
     finally:
         os.remove(source_path)
@@ -79,7 +83,7 @@ def test_copy_to_non_existing_partitioned_data_set(ansible_zos_module):
     dest = 'USER.TEST.PDS'
     params = dict(src=source_path, dest=dest)
     copy_result = hosts.all.zos_copy(**params)
-    verify_copy = hosts.all.shell(cmd="tsocmd \"LISTDS '{}'\"".format(dest), executable="/usr/lpp/rsusr/ported/bin/bash")
+    verify_copy = hosts.all.shell(cmd="tsocmd \"LISTDS '{}'\" > /dev/null 2>/dev/null".format(dest), executable="/usr/lpp/rsusr/ported/bin/bash")
     try:
         for cp_res in copy_result.contacted.values():
             assert cp_res.get('module_stderr') == False
@@ -98,7 +102,7 @@ def test_copy_to_existing_partitioned_data_set(ansible_zos_module):
     hosts.all.zos_data_set(name=dest, type='pds', size='5M', format='fba', record_length=25)
     hosts.all.zos_data_set(name=dest + '(data)', type='MEMBER', replace='yes')
     copy_result = hosts.all.zos_copy(**params)
-    verify_copy = hosts.all.shell(cmd="tsocmd \"LISTDS '{}'\"".format(dest), executable="/usr/lpp/rsusr/ported/bin/bash")
+    verify_copy = hosts.all.shell(cmd="tsocmd \"LISTDS '{}'\" > /dev/null 2>/dev/null".format(dest), executable="/usr/lpp/rsusr/ported/bin/bash")
     try:
         for cp_res in copy_result.contacted.values():
             assert cp_res.get('module_stderr') == False
@@ -120,7 +124,7 @@ def test_copy_to_existing_partitioned_data_set_member_replace(ansible_zos_module
     hosts.all.zos_data_set(name=dest[:dest.find('(')], type='pds', size='5M', format='fba', record_length=25)
     hosts.all.zos_data_set(name=dest, type='MEMBER', replace='yes')
     copy_result = hosts.all.zos_copy(**params)
-    verify_copy = hosts.all.shell(cmd="cat \"{}\"".format(dest), executable="/usr/lpp/rsusr/ported/bin/bash")
+    verify_copy = hosts.all.shell(cmd="cat \"//'{}'\" > /dev/null 2>/dev/null".format(dest), executable="/usr/lpp/rsusr/ported/bin/bash")
     try:
         for cp_res in copy_result.contacted.values():
             assert cp_res.get('module_stderr') == False

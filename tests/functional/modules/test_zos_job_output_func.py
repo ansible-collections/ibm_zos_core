@@ -29,7 +29,7 @@ def test_zos_job_output_no_job_id(ansible_zos_module):
     for result in results.contacted.values():
         print(result)
         assert result.get('changed') is False
-        assert result.get('zos_job_output') is not None
+        assert result.get('jobs') is not None
 
 
 def test_zos_job_output_no_job_name(ansible_zos_module):
@@ -38,7 +38,7 @@ def test_zos_job_output_no_job_name(ansible_zos_module):
     for result in results.contacted.values():
         print(result)
         assert result.get('changed') is False
-        assert result.get('zos_job_output') is not None
+        assert result.get('jobs') is not None
 
 
 def test_zos_job_output_no_owner(ansible_zos_module):
@@ -47,7 +47,7 @@ def test_zos_job_output_no_owner(ansible_zos_module):
     for result in results.contacted.values():
         print(result)
         assert result.get('changed') is False
-        assert result.get('zos_job_output') is not None
+        assert result.get('jobs') is not None
 
 
 def test_zos_job_output_reject(ansible_zos_module):
@@ -68,4 +68,4 @@ def test_zos_job_output_job_exists(ansible_zos_module):
     results = hosts.all.zos_job_output(job_name='SAMPLE')
     for result in results.contacted.values():
         assert result.get('changed') is False
-        assert result.get('zos_job_output') is not None
+        assert result.get('jobs') is not None

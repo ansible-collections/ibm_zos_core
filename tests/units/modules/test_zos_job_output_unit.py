@@ -6,7 +6,7 @@
 import pytest
 from unittest.mock import MagicMock, Mock
 
-IMPORT_NAME = 'ibm_zos_core.plugins.modules.zos_job_output'
+IMPORT_NAME = 'ibm_zos_core.plugins.module_utils.job'
 
 dummy_return_dict = (
     0, '{"jobs":[{"changed":"false","class":"","content-type":"STC","ddnames":[],"failed":"false","job_id":"STC02502","job_name":"TCPIP","owner":"TCPIP","ret_code":{"msg":"CC 0000"},"subsystem":"S0W1"}]}', '')
@@ -26,7 +26,7 @@ def test_job_out(zos_import_mocker, job_id, job_name, owner, ddname, zoau_return
     module = MagicMock()
     module.run_command = Mock(return_value=zoau_return_value)
     try:
-        jobs.get_job_json(job_id, job_name, owner, ddname, module)
+        jobs._get_job_json_str(module, job_id, job_name, owner, ddname)
     except RuntimeError:
         passed = False
     assert passed == expected

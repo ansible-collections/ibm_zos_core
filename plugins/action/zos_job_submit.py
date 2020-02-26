@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2019, 2020 
+# Copyright (c) IBM Corporation 2019, 2020
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import (absolute_import, division, print_function)
@@ -8,12 +8,12 @@ from ansible.plugins.action import ActionBase
 from ansible.errors import AnsibleError
 from ansible.module_utils._text import to_bytes, to_text
 import os
+from tempfile import mktemp
 
-ZOAU_TEMP_USS = '/tmp/ansible-temp-1'
+
 class ActionModule(ActionBase):
 
     def run(self, tmp=None, task_vars=None):
-
         ''' handler for file transfer operations '''
         if task_vars is None:
             task_vars = dict()
@@ -27,10 +27,16 @@ class ActionModule(ActionBase):
         if module_args['location'] == 'LOCAL':
 
             source = self._task.args.get('src', None)
-            dest = ZOAU_TEMP_USS
+
+            # Get a temporary file on the managed node
+            dest_path = self._execute_module(
+                module_name='tempfile',
+                module_args={},
+                task_vars=task_vars,
+            ).get('path')
 
             result['failed'] = True
-            if source is None or dest is None:
+            if source is None or dest_path is None:
                 result['msg'] = "src and dest are required"
             elif source is not None and source.endswith("/"):
                 result['msg'] = "src must be a file"
@@ -67,12 +73,13 @@ class ActionModule(ActionBase):
                 self._remove_tmp_path(tmp)
                 return result
 
-            if self._connection._shell.path_has_trailing_slash(dest):
-                dest_file = self._connection._shell.join_path(dest, source_rel)
-            else:
-                dest_file = self._connection._shell.join_path(dest)
+            # if self._connection._shell.path_has_trailing_slash(dest):
+            #     dest_file = self._connection._shell.join_path(dest, source_rel)
+            # else:
+            dest_file = self._connection._shell.join_path(dest_path)
 
-            dest_status = self._execute_remote_stat(dest_file, all_vars=task_vars, follow=False)
+            dest_status = self._execute_remote_stat(
+                dest_file, all_vars=task_vars, follow=False)
 
             if dest_status['exists'] and dest_status['isdir']:
                 self._remove_tmp_path(tmp)
@@ -81,7 +88,6 @@ class ActionModule(ActionBase):
                 return result
 
             tmp_src = self._connection._shell.join_path(tmp, 'source')
-
 
             remote_path = None
             remote_path = self._transfer_file(source_full, tmp_src)
@@ -92,12 +98,13 @@ class ActionModule(ActionBase):
             result = {}
             copy_module_args = {}
             module_args = self._task.args.copy()
+            module_args['temp_file'] = dest_path
 
             copy_module_args.update(
                 dict(
                     src=tmp_src,
-                    dest=dest,
-                    mode='0755',
+                    dest=dest_path,
+                    mode='0600',
                     _original_basename=source_rel,
                 )
             )
@@ -123,7 +130,5 @@ class ActionModule(ActionBase):
                     task_vars=task_vars,
                 )
             )
-
-
 
         return result

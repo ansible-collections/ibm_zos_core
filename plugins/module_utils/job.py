@@ -3,6 +3,7 @@
 
 from tempfile import NamedTemporaryFile
 from os import chmod, path, remove
+from stat import S_IEXEC, S_IREAD
 import json
 import re
 
@@ -170,48 +171,27 @@ Parse Arg string
 Return translate(string, '4040'x, '1525'x)
 """
     try:
-        dirname, scriptname = _write_script(get_job_detail_json_rexx)
+        
+        # dirname, scriptname = _write_script(get_job_detail_json_rexx)
         if dd_name is None or dd_name == '?':
             dd_name = ''
         jobid_param = 'jobid=' + job_id
         owner_param = 'owner=' + owner
         jobname_param = 'jobname=' + job_name
         ddname_param = 'ddname=' + dd_name
-        cmd = [dirname + '/' + scriptname, jobid_param, owner_param,
-               jobname_param, ddname_param]
+        
+        tmp = NamedTemporaryFile(delete=True)
+        with open(tmp.name, 'w') as f:
+            f.write(get_job_detail_json_rexx)
+        chmod(tmp.name, S_IEXEC | S_IREAD)
+        args = [jobid_param, owner_param,
+            jobname_param, ddname_param]
 
-        rc, out, err = module.run_command(args=" ".join(cmd),
-                                          cwd=dirname,
-                                          use_unsafe_shell=True)
+        cmd = [tmp.name, ' '.join(args)]
+        rc, out, err = module.run_command(args=cmd)
     except Exception:
         raise
-    finally:
-        remove(dirname + "/" + scriptname)
     return rc, out, err
-
-
-def _write_script(content):
-    """Write a script to the filesystem.
-    This includes writing and setting the execute bit.
-
-    Arguments:
-        content {str} -- The contents of the script
-
-    Returns:
-        tuple[str, str] -- The directory and script names
-    """
-    delete_on_close = False
-    try:
-        tmp_file = NamedTemporaryFile(delete=delete_on_close)
-        with open(tmp_file.name, 'w') as f:
-            f.write(content)
-        chmod(tmp_file.name, 0o755)
-        dirname = path.dirname(tmp_file.name)
-        scriptname = path.basename(tmp_file.name)
-    except Exception:
-        remove(tmp_file)
-        raise
-    return dirname, scriptname
 
 def _get_return_code_num(rc_str):
     """Parse an integer return code from

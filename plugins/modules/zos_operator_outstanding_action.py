@@ -8,14 +8,14 @@ ANSIBLE_METADATA = {
 DOCUMENTATION =r'''
 ---
 module: zos_operator_outstanding_action
-short_description: display outstanding messages requiring operator action
+short_description: Display outstanding messages requiring operator action.
 description:
-    - Get list of outstanding messages requiring operator action given one or more conditions
+    - Get a list of outstanding messages requiring operator action given one or more conditions.
 author: "Ping Xiao (@xiaoping)"
 options:
   request_number_list:
     description:
-      - Parameter to specify question number or list of numbers.
+      - Parameter that specifies a question number, or a list of numbers.
     type: list
     required: False
     default: ['all']
@@ -27,45 +27,45 @@ options:
     default: False
   message_id:
     description:
-      - The message identifier for the action message awaiting a reply
+      - The message identifier for the action message awaiting a reply.
     type: str
     required: False
     default: False
   jobname:
     description:
-      - The name of the job which issued the action message
+      - The name of the job which issued the action message.
     type: str
     required: False
     default: False
 seealso: [zos_operator]
 notes:
-  - check_mode is supported but in the case of this module, it never changs the system state so always return False
+  - check_mode is supported, but in the case of this module, it never changs the system state so always return False.
 '''
 
 EXAMPLES =r'''
 # Task(s) is a call to an ansible module, basically an action needing to be accomplished
 - name: Get all outstanding messages requiring operator action
   zos_operator_outstanding_action:
-    request_number_list: 
+    request_number_list:
         - all
 - Sample result('requests' field):
     [
         {
-            'number': '001', 
-            'type': 'R', 
-            'system': 'MV27', 
-            'job_id': 'STC01537', 
-            'message_text': '*399 HWSC0000I *IMS CONNECT READY* IM5HCONN', 
-            'jobname': 'IM5HCONN', 
+            'number': '001',
+            'type': 'R',
+            'system': 'MV27',
+            'job_id': 'STC01537',
+            'message_text': '*399 HWSC0000I *IMS CONNECT READY* IM5HCONN',
+            'jobname': 'IM5HCONN',
             'message_id': 'HWSC0000I'
         },
         {
-            'number': '002', 
-            'type': 'R', 
-            'system': 'MV27', 
-            'job_id': 'STC01533', 
-            'message_text': '*400 DFS3139I IMS INITIALIZED, AUTOMATIC RESTART PROCEEDING IM5H', 
-            'jobname': 'IM5HCTRL', 
+            'number': '002',
+            'type': 'R',
+            'system': 'MV27',
+            'job_id': 'STC01533',
+            'message_text': '*400 DFS3139I IMS INITIALIZED, AUTOMATIC RESTART PROCEEDING IM5H',
+            'jobname': 'IM5HCTRL',
             'message_id': 'DFS3139I'
         }
         ...
@@ -83,10 +83,10 @@ EXAMPLES =r'''
         'type': 'R',
         'system': 'MV2I',
         'job_id': 'STC15833',
-        'message_text': '*133 VAMP 0670 : ENTER COMMAND FOR IYCIZVMP', 
+        'message_text': '*133 VAMP 0670 : ENTER COMMAND FOR IYCIZVMP',
         'jobname': 'VAMP',
         'message_id': 'VAMP'
-    }, 
+    },
     {
         'number': '008',
         'type': 'R',
@@ -95,7 +95,7 @@ EXAMPLES =r'''
         'message_text': '*116 VAMP 0670 : ENTER COMMAND FOR IYDCZVMP',
         'jobname': 'VAMP',
         'message_id': 'VAMP'
-    }, 
+    },
     {
         'number': '009',
         'type': 'R',
@@ -112,23 +112,23 @@ EXAMPLES =r'''
   [
     {
         'number': '101',
-        'type': 'R', 
+        'type': 'R',
         'system': 'MV2H',
         'job_id': 'STC15413',
         'message_text': '*101 VAMP 0670 : ENTER COMMAND FOR IYDBZVMP',
         'jobname': 'VAMP',
         'message_id': 'VAMP'
-    }, 
+    },
     {
         'number': '113',
-        'type': 'R', 
+        'type': 'R',
         'system': 'MV2H',
-        'message_text': '*113 DSI802A IYDCN    REPLY WITH VALID NCCF SYSTEM OPERATOR COMMAND', 
+        'message_text': '*113 DSI802A IYDCN    REPLY WITH VALID NCCF SYSTEM OPERATOR COMMAND',
         'jobname': 'NETVIEW',
         'message_id': 'DSI802A'
     }
   ]
-- name: To display all outstanding messages whose job name begin with im5 
+- name: To display all outstanding messages whose job name begin with im5
   zos_operator_outstanding_action:
       jobname: im5*
 - Sample result('requests' field):
@@ -138,13 +138,13 @@ EXAMPLES =r'''
         'type': 'R',
         'system': 'MV2D',
         'job_id': 'STC15113',
-        'message_text': '*088 DFS3139I IMS INITIALIZED, AUTOMATIC RESTART PROCEEDING IM5F', 
+        'message_text': '*088 DFS3139I IMS INITIALIZED, AUTOMATIC RESTART PROCEEDING IM5F',
         'jobname': 'IM5FCTRL',
         'message_id': 'DFS3139I
-    }, 
+    },
     {
         'number': '087',
-        'type': 'R', 
+        'type': 'R',
         'system': 'MV2D',
         'job_id': 'STC15175',
         'message_text': '*087 HWSC0000I *IMS CONNECT READY* IM5FCONN',
@@ -163,16 +163,16 @@ EXAMPLES =r'''
         'MV2D', 'job_id':
         'STC15120', 'message_text':
         '*086 DSI802A IYM2D    REPLY WITH VALID NCCF SYSTEM OPERATOR COMMAND',
-        'jobname': 'MQNVIEW', 
+        'jobname': 'MQNVIEW',
         'message_id': 'DSI802A'
-    }, 
+    },
     {
         'number': '070',
         'type': 'R',
         'system': 'MV29',
         'job_id': 'STC14852',
         'message_text': '*070 DSI802A IYM29    REPLY WITH VALID NCCF SYSTEM OPERATOR COMMAND',
-        'jobname': 'MQNVIEW', 
+        'jobname': 'MQNVIEW',
         'message_id': 'DSI802A'
     }
   ]
@@ -189,7 +189,7 @@ EXAMPLES =r'''
         'system': 'MV29',
         'job_id': 'STC14852',
         'message_text': '*070 DSI802A IYM29    REPLY WITH VALID NCCF SYSTEM OPERATOR COMMAND',
-        'jobname': 'MQNVIEW', 
+        'jobname': 'MQNVIEW',
         'message_id': 'DSI802A'
     }
   ]
@@ -233,7 +233,7 @@ def run_module():
         message_id=dict(type='str',required=False),
         jobname=dict(type='str',required=False)
     )
-    
+
     arg_defs=dict(
         request_number_list = dict(
             arg_type=request_number_list_type,
@@ -425,7 +425,7 @@ def parse_result_a(result):
 def parse_result_b(result):
     # using d r,a,jn
     dict_temp = {}
-    list = []    
+    list = []
     lines = result.split('\n')
     regex = re.compile(r'\s+')
     for index,line in enumerate(lines):
@@ -449,7 +449,7 @@ def merge_list(list_a,list_b):
                 dict_z.update(dict_b)
                 merged_list.append(dict_z)
     return merged_list
-     
+
 
 class Error(Exception):
     pass

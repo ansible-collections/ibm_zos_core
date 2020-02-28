@@ -13,13 +13,13 @@ DOCUMENTATION = '''
 ---
 module: zos_ping
 version_added: 2.9
-short_description: Try to connect to zOS host, verify a usable z/OS Web Client enablement toolkit,
-  iconv and usable python and return C(pong) on success and warning if usable Python is not found
+short_description: Try to connect to a z/OS host, verify a usable z/OS Web Client Enablement Toolkit,
+  iconv, and usable python. Returns C(pong) on success, and a warning if a usable Python is not found.
 description:
-  - A trivial test module, this module always returns C(pong) on successful contact. It does not make sense
-    in playbooks, but it is useful from C(/usr/bin/ansible) to verify the ability to login and check if system
-    has prerequisite.
-  - This is NOT ICMP ping, this is just a trivial test module that requires z/OS Web Client enablement toolkit,
+  - A trivial test module, this module always returns C(pong) upon successful contact. It does not make sense
+    in playbooks, but it is useful from C(/usr/bin/ansible) to verify the ability to login and check if the system
+    has prerequisites.
+  - This is NOT ICMP ping, this is just a trivial test module that requires the z/OS Web Client Enablement Toolkit,
     iconv and usable python on z/OS."
   - The "zos_ssh" conection plugin must be used for this module to function correctly
 
@@ -37,10 +37,10 @@ EXAMPLES = '''
 
 RETURN = '''
 ping:
-  description: Should contain the value "pong" on success 
+  description: Should contain the value "pong" on success.
   type: str
 warnings: In case usable Python is not found
-  description: List of warnings returned from stderr when performing resource checks
+  description: List of warnings returned from stderr when performing resource checks.
   type: list
   elements: str
 '''
@@ -70,10 +70,10 @@ If (retC <> 0) Then Do
                 errmsg = stderr.index || ESC_N
                 'Write' 2 'errmsg' length(errmsg)
             End
-    End        
+    End
     Exit(retC)
 End
-/* Load z/OS Web Client enablement toolkit to verify system has z/OS Web Client enablement toolkit installed */ Call hwtcalls "on"
+/* Load z/OS Web Client Enablement Toolkit to verify system has z/OS Web Client enablement toolkit installed */ Call hwtcalls "on"
 Address hwtjson 'hwtConst returnCode resbuf.'
 If (rc <> 0 | returnCode <> HWTJ_OK) Then Do
     retC = rc

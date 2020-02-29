@@ -321,7 +321,7 @@ EXAMPLE RESULTS:
 
 '''
 
-from ansible.module_utils.basic import *
+from ansible.module_utils.basic import AnsibleModule
 from pipes import quote
 from zoautil_py import Jobs
 from time import sleep

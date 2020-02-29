@@ -229,7 +229,6 @@ from zoautil_py import Datasets
 from collections import OrderedDict
 from math import ceil
 import tempfile
-import os
 
 # * Make AnsibleModule module object global to
 # * simplify use of run_command in functions

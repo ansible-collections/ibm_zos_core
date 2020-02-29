@@ -325,7 +325,7 @@ from ansible.module_utils.basic import AnsibleModule
 from pipes import quote
 from zoautil_py import Jobs
 from time import sleep
-from os import chmod, path
+from os import chmod, path, remove
 from tempfile import NamedTemporaryFile
 import re
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import job_output
@@ -336,15 +336,17 @@ POLLING_INTERVAL = 1
 POLLING_COUNT = 60
 POLLING_THRESHOLD = 60
 
+
 def submit_pds_jcl(src):
     """ A wrapper around zoautil_py Jobs submit to raise exceptions on failure. """
     jobId = Jobs.submit(src)
     if jobId == None:
-        raise SubmitJCLError('SUBMIT JOB FAILED: ' + 'NO JOB ID IS RETURNED. PLEASE CHECK THE JCL.')
+        raise SubmitJCLError('SUBMIT JOB FAILED: ' +
+                             'NO JOB ID IS RETURNED. PLEASE CHECK THE JCL.')
     return jobId
 
 
-def submit_uss_jcl(src,module):
+def submit_uss_jcl(src, module):
     """ Submit uss jcl. Use uss command submit -j jclfile. """
     rc, stdout, stderr = module.run_command(['submit', '-j', src])
     if rc != 0:
@@ -353,13 +355,15 @@ def submit_uss_jcl(src,module):
         raise SubmitJCLError('SUBMIT JOB FAILED: ' + stderr)
     if 'Not accepted by JES' in stderr:
         raise SubmitJCLError('SUBMIT JOB FAILED: ' + stderr)
-    if stdout !=  '':
+    if stdout != '':
         jobId = stdout.replace("\n", "").strip()
     else:
-        raise SubmitJCLError('SUBMIT JOB FAILED: ' + 'NO JOB ID IS RETURNED. PLEASE CHECK THE JCL.')
+        raise SubmitJCLError('SUBMIT JOB FAILED: ' +
+                             'NO JOB ID IS RETURNED. PLEASE CHECK THE JCL.')
     return jobId
 
-def submit_jcl_in_volume(src,vol,module):
+
+def submit_jcl_in_volume(src, vol, module):
     script = """/*REXX*/                                     
 ARG P1 P2                                              
 ADDRESS TSO                                            
@@ -372,20 +376,24 @@ SAY X
     if 'Error' in stdout:
         raise SubmitJCLError('SUBMIT JOB FAILED: ' + stdout)
     elif '' == stdout:
-        raise SubmitJCLError('SUBMIT JOB FAILED, NO JOB ID IS RETURNED : ' + stdout)
+        raise SubmitJCLError(
+            'SUBMIT JOB FAILED, NO JOB ID IS RETURNED : ' + stdout)
     jobId = stdout.replace("\n", "").strip()
     return jobId
 
-def copy_rexx_and_run(script,src,vol,module):
+
+def copy_rexx_and_run(script, src, vol, module):
     delete_on_close = True
     tmp_file = NamedTemporaryFile(delete=delete_on_close)
     with open(tmp_file.name, 'w') as f:
         f.write(script)
-    chmod(tmp_file.name, stat.S_IEXEC | stat.S_IREAD | S_IWRITE)
+    chmod(tmp_file.name, S_IEXEC | S_IREAD | S_IWRITE)
     pathName = path.dirname(tmp_file.name)
     scriptName = path.basename(tmp_file.name)
-    rc, stdout, stderr = module.run_command(['./' + scriptName, src, vol], cwd=pathName)
+    rc, stdout, stderr = module.run_command(
+        ['./' + scriptName, src, vol], cwd=pathName)
     return rc, stdout, stderr
+
 
 def get_job_info(module, jobId, return_output):
     result = dict()
@@ -399,10 +407,11 @@ def get_job_info(module, jobId, return_output):
     if not return_output:
         for job in result.get('jobs', []):
             job['ddnames'] = []
-    
+
     result['changed'] = True
 
     return result
+
 
 def query_jobs_status(jobId):
     timeout = 10
@@ -415,11 +424,13 @@ def query_jobs_status(jobId):
         except IndexError:
             pass
         except Exception as e:
-            raise SubmitJCLError(str(e) +'''
+            raise SubmitJCLError(str(e) + '''
             The output is ''' + output)
     if output == None and timeout == 0:
-        raise SubmitJCLError('THE JOB CAN NOT BE QUERIED FROM JES (TIMEOUT=10s). PLEASE CHECK THE ZOS SYSTEM. IT IS SLOW TO RESPONSE.')
+        raise SubmitJCLError(
+            'THE JOB CAN NOT BE QUERIED FROM JES (TIMEOUT=10s). PLEASE CHECK THE ZOS SYSTEM. IT IS SLOW TO RESPONSE.')
     return output
+
 
 def parsing_job(job_raw):
     ret_code = {}
@@ -482,10 +493,11 @@ def parsing_job(job_raw):
 
     return ret_code
 
+
 def assert_valid_return_code(max_rc, found_rc):
     if found_rc == None or max_rc < int(found_rc):
         raise SubmitJCLError('')
-        
+
 
 def run_module():
     location_type = {'DATA_SET', 'USS', 'LOCAL', None}
@@ -520,7 +532,6 @@ def run_module():
         jobs=[]
     )
 
-
     location = module.params.get("location")
     volume = module.params.get("volume")
     wait = module.params.get("wait")
@@ -532,12 +543,13 @@ def run_module():
     temp_file = module.params.get('temp_file')
     if temp_file:
         temp_file_2 = NamedTemporaryFile(delete=True)
-        
+
     if wait_time_s is None:
         wait_time_s = POLLING_THRESHOLD
     else:
         if wait_time_s <= 0:
-            module.fail_json(msg='The option wait_time_s is not valid it just be greater than 0.', **result)
+            module.fail_json(
+                msg='The option wait_time_s is not valid it just be greater than 0.', **result)
 
     DSN_REGEX = r'^(([A-Z]{1}[A-Z0-9]{0,7})([.]{1})){1,21}[A-Z]{1}[A-Z0-9]{0,7}([(]([A-Z]{1}[A-Z0-9]{0,7})[)]){0,1}?$'
 
@@ -555,7 +567,8 @@ def run_module():
                     else:
                         jobId = submit_jcl_in_volume(src, volume, module)
                 else:
-                    module.fail_json(msg='The parameter src for data set is not a valid name pattern. Please check the src input.', **result)
+                    module.fail_json(
+                        msg='The parameter src for data set is not a valid name pattern. Please check the src input.', **result)
             elif location == 'USS':
                 jobId = submit_uss_jcl(src, module)
             else:
@@ -563,26 +576,31 @@ def run_module():
                 encoding = module.params.get('encoding')
                 if encoding == 'EBCDIC' or encoding == 'IBM-037' or encoding == 'IBM-1047':
                     jobId = submit_uss_jcl(temp_file, module)
-                elif encoding == 'UTF-8' or encoding == 'ISO-8859-1' or encoding == 'ASCII' or encoding == None:  ## 'UTF-8' 'ASCII' encoding will be converted.
+                # 'UTF-8' 'ASCII' encoding will be converted.
+                elif encoding == 'UTF-8' or encoding == 'ISO-8859-1' or encoding == 'ASCII' or encoding == None:
                     (conv_rc, stdout, stderr) = module.run_command('iconv -f ISO8859-1 -t IBM-1047 %s > %s' % (quote(temp_file), quote(temp_file_2.name)),
-                                                               use_unsafe_shell=True)
+                                                                   use_unsafe_shell=True)
                     if conv_rc == 0:
                         jobId = submit_uss_jcl(temp_file_2.name, module)
                     else:
-                        module.fail_json(msg='The Local file encoding conversion failed. Please check the source file.'+ stderr, **result)
+                        module.fail_json(
+                            msg='The Local file encoding conversion failed. Please check the source file.' + stderr, **result)
                 else:
-                    module.fail_json(msg='The Local file encoding format is not supported. The supported encoding is UTF-8, ASCII, ISO-8859-1, EBCDIC, IBM-037, IBM-1047. Default is UTF-8. ', **result)
+                    module.fail_json(
+                        msg='The Local file encoding format is not supported. The supported encoding is UTF-8, ASCII, ISO-8859-1, EBCDIC, IBM-037, IBM-1047. Default is UTF-8. ', **result)
         else:
-            module.fail_json(msg='Location is not valid. DATA_SET, USS, and LOCAL is supported.', **result)
+            module.fail_json(
+                msg='Location is not valid. DATA_SET, USS, and LOCAL is supported.', **result)
 
     except SubmitJCLError as e:
         module.fail_json(msg=str(e), **result)
     if jobId == None or jobId == '':
         result['job_id'] = jobId
-        module.fail_json(msg='JOB ID RETURNED IS None. PLEASE CHECK WHETHER THE JCL IS CORRECT.', **result)
+        module.fail_json(
+            msg='JOB ID RETURNED IS None. PLEASE CHECK WHETHER THE JCL IS CORRECT.', **result)
 
     result['job_id'] = jobId
-    if wait==True:
+    if wait == True:
         try:
             waitJob = query_jobs_status(jobId)
         except SubmitJCLError as e:
@@ -599,17 +617,19 @@ def run_module():
     try:
         result = get_job_info(module, jobId, return_output)
         if wait == True and return_output == True and max_rc != None:
-            assert_valid_return_code(max_rc, result.get('jobs')[0].get('ret_code').get('code'))
+            assert_valid_return_code(max_rc, result.get(
+                'jobs')[0].get('ret_code').get('code'))
     except SubmitJCLError as e:
         module.fail_json(msg=str(e), **result)
     except Exception as e:
         module.fail_json(msg=str(e), **result)
     finally:
         if temp_file:
-            os.remove(temp_file)
+            remove(temp_file)
     result['duration'] = duration
     if duration == wait_time_s:
-        result['message'] = {'stdout': 'Submit JCL operation succeeded but it is a long running job. Timeout is '+ str(wait_time_s)+' seconds.'}
+        result['message'] = {
+            'stdout': 'Submit JCL operation succeeded but it is a long running job. Timeout is ' + str(wait_time_s)+' seconds.'}
     else:
         result['message'] = {'stdout': 'Submit JCL operation succeeded.'}
     result['changed'] = True
@@ -622,7 +642,8 @@ class Error(Exception):
 
 class SubmitJCLError(Error):
     def __init__(self, jobs):
-        self.msg = 'An error occurred during submission of jobs "{0}"'.format(jobs)
+        self.msg = 'An error occurred during submission of jobs "{0}"'.format(
+            jobs)
 
 
 def main():

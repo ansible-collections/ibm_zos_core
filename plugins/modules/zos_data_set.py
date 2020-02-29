@@ -222,6 +222,8 @@ changed:
     description: Indicates if any changes were made during module operation.
     type: bool
 '''
+
+
 from ansible.module_utils.basic import AnsibleModule
 from traceback import format_exc
 import re
@@ -262,7 +264,7 @@ DEFAULT_RECORD_LENGTHS = {
     'U': 0,
 }
 
-# Module args mapped to equivalent ZOAU data set create args 
+# Module args mapped to equivalent ZOAU data set create args
 ZOAU_DS_CREATE_ARGS = {
     'name': 'name',
     'type': 'type',
@@ -275,39 +277,43 @@ ZOAU_DS_CREATE_ARGS = {
 
 # ------------- Functions to validate arguments ------------- #
 
+
 def get_individual_data_set_parameters(params):
     """Builds a list of data set parameters
     to be used in future operations.
-    
+
     Arguments:
         params {dict} -- The parameters from
         Ansible's AnsibleModule object module.params.
-    
+
     Raises:
         ValueError: Raised if top-level parameters "name" 
         and "batch" are both provided.
         ValueError: Raised if neither top-level parameters "name" 
         or "batch" are provided.
-    
+
     Returns:
         [list] -- A list of dicts where each list item
         represents one data set. Each dictionary holds the parameters
         (passed to the zos_data_set module) for the data set which it represents.
     """
     if params.get('name') and params.get('batch'):
-        raise ValueError('Top-level parameters "name" and "batch" are mutually exclusive.')
+        raise ValueError(
+            'Top-level parameters "name" and "batch" are mutually exclusive.')
     elif not params.get('name') and not params.get('batch'):
-        raise ValueError('One of the following parameters is required: "name", "batch".')
+        raise ValueError(
+            'One of the following parameters is required: "name", "batch".')
     if params.get('name'):
         data_sets_parameter_list = [params]
     else:
         data_sets_parameter_list = params.get('batch')
     return data_sets_parameter_list
 
+
 def process_special_parameters(original_params, param_handlers):
     """Perform checks, validation, and value modification
     on parameters.
-    
+
     Arguments:
         original_params {Dict} -- The parameters from
         Ansible's AnsibleModule object module.params.
@@ -320,9 +326,9 @@ def process_special_parameters(original_params, param_handlers):
         process_special_parameters. Handlers are ran sequentially 
         based on their ordering in param_handlers. If a parameter is dependent on the 
         final value of another parameter, make sure they are ordered accordingly.
-        
+
         Example of param_handlers::
-        
+
         def record_length(arg_val, params):
             lengths = {
                 'VB': 80,
@@ -335,16 +341,16 @@ def process_special_parameters(original_params, param_handlers):
             if not re.match(r'[1-9][0-9]*', arg_val) or (value < 1 or value > 32768):
                 raise ValueError('Value {0} is invalid for record_length argument. record_length must be between 1 and 32768 bytes.'.format(arg_val))
             return value
-            
+
         module = AnsibleModule(
             argument_spec=module_args,
             supports_check_mode=True
         )    
-            
+
         parameter_handlers = OrderedDict()
         parameter_handlers['format'] = data_set_format
         parameter_handlers['record_length'] = record_length
-    
+
         process_special_parameters(module.params, parameter_handlers)
     Returns:
         Dict -- A dictionary containing the updated parameters.
@@ -357,15 +363,18 @@ def process_special_parameters(original_params, param_handlers):
             parameters[key] = value
     return parameters
 
+
 def data_set_name(arg_val, params):
     """Validates provided data set name(s) are valid.
     Returns a list containing the name(s) of data sets."""
     dsnames = generate_name_list(arg_val)
-    for dsname in dsnames: 
+    for dsname in dsnames:
         if not re.match(r'^(?:(?:[A-Z]{1}[A-Z0-9]{0,7})(?:[.]{1})){1,21}[A-Z]{1}[A-Z0-9]{0,7}$', dsname, re.IGNORECASE):
             if not (re.match(r'^(?:(?:[A-Z]{1}[A-Z0-9]{0,7})(?:[.]{1})){1,21}[A-Z]{1}[A-Z0-9]{0,7}\([A-Z]{1}[A-Z0-9]{0,7}\)$', dsname, re.IGNORECASE) and params.get('type') == 'MEMBER'):
-                raise ValueError('Value {0} is invalid for data set argument.'.format(dsname))
+                raise ValueError(
+                    'Value {0} is invalid for data set argument.'.format(dsname))
     return dsnames
+
 
 def data_set_size(arg_val, params):
     """Validates provided data set size is valid.
@@ -376,10 +385,13 @@ def data_set_size(arg_val, params):
         return None
     match = re.match(r'([1-9][0-9]*)(M|G|K|TRK|CYL)', arg_val, re.IGNORECASE)
     if not match:
-        raise ValueError('Value {0} is invalid for size argument. Valid size measurements are "K", "M", "G", "TRK" or "CYL".'.format(arg_val))
+        raise ValueError(
+            'Value {0} is invalid for size argument. Valid size measurements are "K", "M", "G", "TRK" or "CYL".'.format(arg_val))
     if re.match(r'TRK|CYL', match.group(2), re.IGNORECASE):
-        arg_val = str(convert_size_to_kilobytes(int(match.group(1)), match.group(2).upper())) + 'K'
+        arg_val = str(convert_size_to_kilobytes(
+            int(match.group(1)), match.group(2).upper())) + 'K'
     return arg_val
+
 
 def data_class(arg_val, params):
     """Validates provided data class is of valid length.
@@ -387,20 +399,25 @@ def data_class(arg_val, params):
     if params.get('state') == 'absent' or not arg_val:
         return None
     if len(arg_val) < 1 or len(arg_val) > 8:
-        raise ValueError('Value {0} is invalid for data_class argument. data_class must be at least 1 and at most 8 characters.'.format(arg_val))
+        raise ValueError(
+            'Value {0} is invalid for data_class argument. data_class must be at least 1 and at most 8 characters.'.format(arg_val))
     return arg_val
+
 
 def record_length(arg_val, params):
     """Validates provided record length is valid.
     Returns the record length as integer."""
     if params.get('state') == 'absent':
         return None
-    arg_val = DEFAULT_RECORD_LENGTHS.get(params.get('format'), None) if not arg_val else int(arg_val)
+    arg_val = DEFAULT_RECORD_LENGTHS.get(params.get(
+        'format'), None) if not arg_val else int(arg_val)
     if arg_val == None:
         return None
     if not re.match(r'[0-9]*', str(arg_val)) or (arg_val < 0 or arg_val > 32768):
-        raise ValueError('Value {0} is invalid for record_length argument. record_length must be between 0 and 32768 bytes.'.format(arg_val))
+        raise ValueError(
+            'Value {0} is invalid for record_length argument. record_length must be between 0 and 32768 bytes.'.format(arg_val))
     return arg_val
+
 
 def data_set_format(arg_val, params):
     """Validates data set format is valid.
@@ -408,13 +425,16 @@ def data_set_format(arg_val, params):
     if params.get('state') == 'absent':
         return None
     if arg_val == None and params.get('record_length') != None:
-        raise ValueError('format must be provided when providing record_length.')
+        raise ValueError(
+            'format must be provided when providing record_length.')
     if arg_val == None:
         return None
     formats = '|'.join(DATA_SET_FORMATS)
     if not re.match(formats, arg_val, re.IGNORECASE):
-        raise ValueError('Value {0} is invalid for format argument. format must be of of the following: {1}.'.format(arg_val, ', '.join(DATA_SET_FORMATS)))
+        raise ValueError('Value {0} is invalid for format argument. format must be of of the following: {1}.'.format(
+            arg_val, ', '.join(DATA_SET_FORMATS)))
     return arg_val.upper()
+
 
 def key_offset(arg_val, params):
     """Validates data set offset is valid.
@@ -422,13 +442,16 @@ def key_offset(arg_val, params):
     if params.get('state') == 'absent':
         return None
     if params.get('type') == 'KSDS' and arg_val == None:
-        raise ValueError('key_offset is required when requesting KSDS data set.')
+        raise ValueError(
+            'key_offset is required when requesting KSDS data set.')
     if arg_val == None:
         return None
     arg_val = int(arg_val)
     if not re.match(r'[0-9]+', str(arg_val)):
-        raise ValueError('Value {0} is invalid for offset argument. offset must be between 0 and length of object - 1.'.format(arg_val))
+        raise ValueError(
+            'Value {0} is invalid for offset argument. offset must be between 0 and length of object - 1.'.format(arg_val))
     return arg_val
+
 
 def data_set_type(arg_val, params):
     """Validates data set type is valid.
@@ -439,7 +462,8 @@ def data_set_type(arg_val, params):
         return None
     types = '|'.join(DATA_SET_TYPES)
     if not re.match(types, arg_val, re.IGNORECASE):
-        raise ValueError('Value {0} is invalid for type argument. type must be of of the following: {1}.'.format(arg_val, ', '.join(DATA_SET_TYPES)))
+        raise ValueError('Value {0} is invalid for type argument. type must be of of the following: {1}.'.format(
+            arg_val, ', '.join(DATA_SET_TYPES)))
     return arg_val.upper()
 
 
@@ -452,12 +476,14 @@ def perform_data_set_operations(name, state, **extra_args):
         if state == 'present' and extra_args.get('type') != 'MEMBER':
             changed = ensure_data_set_present(dsname, **extra_args) or changed
         elif state == 'present' and extra_args.get('type') == 'MEMBER':
-            changed = ensure_data_set_member_present(dsname, **extra_args) or changed
+            changed = ensure_data_set_member_present(
+                dsname, **extra_args) or changed
         elif extra_args.get('type') != 'MEMBER':
             changed = ensure_data_set_absent(dsname) or changed
         else:
             changed = ensure_data_set_member_absent(dsname) or changed
     return changed
+
 
 def generate_name_list(name):
     """ Generate a list of data set names to perform operation on.
@@ -466,7 +492,8 @@ def generate_name_list(name):
         name = [name]
     name = [str(x) for x in name if len(str(x)) > 0]
     return name
-        
+
+
 def ensure_data_set_present(name, replace, **extra_args):
     """Creates data set if it does not already exist.
     The replace argument is used to determine behavior when data set already
@@ -480,6 +507,7 @@ def ensure_data_set_present(name, replace, **extra_args):
         create_data_set(name, ds_create_args)
     return True
 
+
 def ensure_data_set_absent(name):
     """Deletes provided data set if it exists.
     Returns a boolean indicating if changes were made. """
@@ -489,6 +517,8 @@ def ensure_data_set_absent(name):
     return False
 
 # ? should we do additional check to ensure member was actually created?
+
+
 def ensure_data_set_member_present(name, replace, **extra_args):
     """Creates data set member if it does not already exist.
     The replace argument is used to determine behavior when data set already
@@ -500,6 +530,7 @@ def ensure_data_set_member_present(name, replace, **extra_args):
     create_data_set_member(name)
     return True
 
+
 def ensure_data_set_member_absent(name):
     """Deletes provided data set member if it exists.
     Returns a boolean indicating if changes were made."""
@@ -508,11 +539,13 @@ def ensure_data_set_member_absent(name):
         return True
     return False
 
+
 def data_set_exists(name):
     rc, stdout, stderr = run_command('head "//\'{}\'"'.format(name))
     if stderr and 'EDC5049I' in stderr:
         return False
     return True
+
 
 def data_set_member_exists(name):
     """Checks for existence of data set member."""
@@ -531,13 +564,16 @@ def data_set_member_exists(name):
     # return False
 
 # TODO: determine if better to move original to new name and create in place instead of deleting and moving
+
+
 def replace_data_set(name, extra_args):
     """ Attempt to replace an existing data set. """
     delete_data_set(name)
     create_data_set(name, extra_args)
     return
 
-def rename_args_for_zoau(args = {}):
+
+def rename_args_for_zoau(args={}):
     """ Renames module arguments to match those desired by zoautil_py data set create method. 
     Returns a dictionary with renamed args. """
     ds_create_args = {}
@@ -546,12 +582,14 @@ def rename_args_for_zoau(args = {}):
             ds_create_args[zoau_arg_name] = args.get(module_arg_name)
     return ds_create_args
 
-def create_data_set(name, extra_args = {}):
+
+def create_data_set(name, extra_args={}):
     """ A wrapper around zoautil_py data set create to raise exceptions on failure. """
     rc = Datasets.create(name, **extra_args)
     if rc > 0:
         raise DatasetCreateError(name, rc)
     return
+
 
 def delete_data_set(name):
     """ A wrapper around zoautil_py data set delete to raise exceptions on failure. """
@@ -559,6 +597,7 @@ def delete_data_set(name):
     if rc > 0:
         raise DatasetDeleteError(name, rc)
     return
+
 
 def create_data_set_member(name):
     """Create a data set member if the partitioned data set exists.
@@ -568,10 +607,12 @@ def create_data_set_member(name):
     if not base_dsname or not data_set_exists(base_dsname):
         raise DatasetNotFoundError(name)
     tmp_file = tempfile.NamedTemporaryFile(delete=True)
-    rc, stdout, stderr = run_command('cp {} "//\'{}\'"'.format(tmp_file.name, name))
+    rc, stdout, stderr = run_command(
+        'cp {} "//\'{}\'"'.format(tmp_file.name, name))
     if rc != 0:
         raise DatasetMemberCreateError(name, rc)
     return
+
 
 def delete_data_set_member(name):
     """ A wrapper around zoautil_py data set delete_members to raise exceptions on failure. """
@@ -579,7 +620,8 @@ def delete_data_set_member(name):
     if rc > 0:
         raise DatasetMemberDeleteError(name, rc)
     return
-    
+
+
 def convert_size_to_kilobytes(old_size, old_size_unit):
     """Convert unsupported size unit to KB.
     Assumes 3390 disk type."""
@@ -591,11 +633,13 @@ def convert_size_to_kilobytes(old_size, old_size_unit):
     if old_size_unit == 'TRK':
         new_size = ceil((old_size*TRK)/KB)
     elif old_size_unit == 'CYL':
-        new_size = ceil((old_size*CYL)/KB) 
+        new_size = ceil((old_size*CYL)/KB)
     return new_size
 
 # TODO: Add back safe data set replacement when issues are resolved
-def run_module():    
+
+
+def run_module():
     # TODO: add logic to handle aliases during parsing
     module_args = dict(
         # Used for batch data set args
@@ -609,7 +653,7 @@ def run_module():
                 state=dict(
                     type='str',
                     default='present',
-                    choices=['present','absent']
+                    choices=['present', 'absent']
                 ),
                 type=dict(
                     type='str',
@@ -624,14 +668,14 @@ def run_module():
                     required=False,
                 ),
                 data_class=dict(
-                    type='str', 
-                    required=False, 
+                    type='str',
+                    required=False,
                 ),
                 record_length=dict(
-                    type='int', 
+                    type='int',
                 ),
                 # NEEDS FIX FROM ZOAUTIL
-                
+
                 # key_offset=dict(
                 #     type='int',
                 #     required=False,
@@ -654,7 +698,7 @@ def run_module():
         state=dict(
             type='str',
             default='present',
-            choices=['present','absent']
+            choices=['present', 'absent']
         ),
         type=dict(
             type='str',
@@ -669,14 +713,14 @@ def run_module():
             required=False,
         ),
         data_class=dict(
-            type='str', 
-            required=False, 
+            type='str',
+            required=False,
         ),
         record_length=dict(
-            type='int', 
+            type='int',
         ),
         # NEEDS FIX FROM ZOAUTIL
-        
+
         # key_offset=dict(
         #     type='int',
         #     required=False,
@@ -698,23 +742,23 @@ def run_module():
         message=''
     )
 
-    # * Make module object global to avoid passing 
+    # * Make module object global to avoid passing
     # * through multiple functions
     global run_command
-    
+
     module = AnsibleModule(
         argument_spec=module_args,
         supports_check_mode=True
     )
     run_command = module.run_command
-    
+
     result['original_message'] = module.params
 
     if module.check_mode:
         if module.params.get('replace'):
             result['changed'] = True
         return result
-    
+
     parameter_handlers = OrderedDict()
     parameter_handlers['type'] = data_set_type
     parameter_handlers['data_class'] = data_class
@@ -723,48 +767,64 @@ def run_module():
     parameter_handlers['size'] = data_set_size
     # parameter_handlers['key_offset'] = key_offset
     parameter_handlers['record_length'] = record_length
-    
+
     try:
         data_set_param_list = get_individual_data_set_parameters(module.params)
-        
+
         for data_set_params in data_set_param_list:
-            parameters = process_special_parameters(data_set_params, parameter_handlers)
-            result['changed'] = perform_data_set_operations(**parameters) or result.get('changed', False)
+            parameters = process_special_parameters(
+                data_set_params, parameter_handlers)
+            result['changed'] = perform_data_set_operations(
+                **parameters) or result.get('changed', False)
     except Error as e:
         module.fail_json(msg=e.msg, **result)
     except Exception as e:
         trace = format_exc()
-        module.fail_json(msg='An unexpected error occurred: {0}'.format(trace), **result)
+        module.fail_json(
+            msg='An unexpected error occurred: {0}'.format(trace), **result)
 
-    result['message'] = {'stdout': 'Desired data set operation(s) succeeded.', 'stderr': ''}
-    
+    result['message'] = {
+        'stdout': 'Desired data set operation(s) succeeded.', 'stderr': ''}
+
     module.exit_json(**result)
+
 
 class Error(Exception):
     pass
 
+
 class DatasetDeleteError(Error):
     def __init__(self, data_set, rc):
-        self.msg = 'An error occurred during deletion of data set "{0}". RC={1}'.format(data_set, rc)
+        self.msg = 'An error occurred during deletion of data set "{0}". RC={1}'.format(
+            data_set, rc)
+
 
 class DatasetCreateError(Error):
     def __init__(self, data_set, rc):
-        self.msg = 'An error occurred during creation of data set "{0}". RC={1}'.format(data_set, rc)
-        
+        self.msg = 'An error occurred during creation of data set "{0}". RC={1}'.format(
+            data_set, rc)
+
+
 class DatasetMemberDeleteError(Error):
     def __init__(self, data_set, rc):
-        self.msg = 'An error occurred during deletion of data set member"{0}". RC={1}'.format(data_set, rc)
-        
+        self.msg = 'An error occurred during deletion of data set member"{0}". RC={1}'.format(
+            data_set, rc)
+
+
 class DatasetMemberCreateError(Error):
     def __init__(self, data_set, rc):
-        self.msg = 'An error occurred during creation of data set member"{0}". RC={1}'.format(data_set, rc)
-        
+        self.msg = 'An error occurred during creation of data set member"{0}". RC={1}'.format(
+            data_set, rc)
+
+
 class DatasetNotFoundError(Error):
     def __init__(self, dataset):
         self.msg = 'The data set "{0}" could not be located.'.format(dataset)
-        
+
+
 def main():
     run_module()
+
 
 if __name__ == '__main__':
     main()

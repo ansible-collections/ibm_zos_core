@@ -3,6 +3,7 @@
 # Copyright (c) IBM Corporation 2019, 2020
 # Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
+
 ANSIBLE_METADATA = {
     'metadata_version': '1.1',
     'status': ['preview'],
@@ -39,7 +40,7 @@ options:
     required: False
 seealso: []
 notes:
-  - check_mode is supported but in the case of this module, it never changs the system state so always return False
+  - check_mode is supported but in the case of this module, it never changes the system state so always return False
 '''
 
 EXAMPLES = '''
@@ -106,13 +107,14 @@ EXAMPLES = '''
     }]
 
 '''
+
 RETURN = '''
 changed:
     description: True if the state was changed, otherwise False
     returned: always
     type: bool
 failed:                
-    description: True if zos_job_query failed, othewise False
+    description: True if zos_job_query failed, otherwise False
     returned: always
     type: bool
 jobs:
@@ -191,22 +193,27 @@ def validate_arguments(params):
     owner = params.get('owner')
     if job_name_in or job_id:
         if job_name_in and job_name_in != '*':
-            job_name_pattern = re.compile(r'^[a-zA-Z$#@%][0-9a-zA-Z$#@%]{0,7}$')
-            job_name_pattern_with_star = re.compile(r'^[a-zA-Z$#@%][0-9a-zA-Z$#@%]{0,6}\*$')
+            job_name_pattern = re.compile(
+                r'^[a-zA-Z$#@%][0-9a-zA-Z$#@%]{0,7}$')
+            job_name_pattern_with_star = re.compile(
+                r'^[a-zA-Z$#@%][0-9a-zA-Z$#@%]{0,6}\*$')
             m = job_name_pattern.search(job_name_in)
             n = job_name_pattern_with_star.search(job_name_in)
-            if m or n :
+            if m or n:
                 pass
             else:
-                raise RuntimeError('Failed to validate the job name: ' +job_name_in)
-        if job_id :
+                raise RuntimeError(
+                    'Failed to validate the job name: ' + job_name_in)
+        if job_id:
             job_id_pattern = re.compile('(JOB|TSU|STC)[0-9]{5}$')
             if not job_id_pattern.search(job_id):
-                raise RuntimeError('Failed to validate the job id: ' +job_id)
+                raise RuntimeError('Failed to validate the job id: ' + job_id)
     else:
-        raise RuntimeError('Argument Error:Either job name(s) or job id is required')
+        raise RuntimeError(
+            'Argument Error:Either job name(s) or job id is required')
     if job_id and owner:
-        raise RuntimeError('Argument Error:job id can not be co-exist with owner')
+        raise RuntimeError(
+            'Argument Error:job id can not be co-exist with owner')
 
 
 def query_jobs(params):
@@ -217,12 +224,14 @@ def query_jobs(params):
     if job_id:
         jobs = Jobs.list(job_id=job_id)
     elif owner:
-        jobs = Jobs.list(owner = owner, job_name=job_name_in)
+        jobs = Jobs.list(owner=owner, job_name=job_name_in)
     else:
         jobs = Jobs.list(job_name=job_name_in)
     if not jobs:
-        raise RuntimeError('List FAILED! no such job name been found: ' + job_name_in)
+        raise RuntimeError(
+            'List FAILED! no such job name been found: ' + job_name_in)
     return jobs
+
 
 def parsing_jobs(jobs_raw):
     jobs = []
@@ -237,45 +246,45 @@ def parsing_jobs(jobs_raw):
             # status = 'Completed normally'
             ret_code = {
                 'msg': status_raw+' '+job.get('return'),
-                'code':job.get('return') 
-                }
+                'code': job.get('return')
+            }
         elif status_raw == 'ABEND':
             # status = 'Ended abnormally'
             ret_code = {
                 'msg': status_raw + ' ' + job.get('return'),
-                'code':job.get('return')
+                'code': job.get('return')
             }
         elif 'ABENDU' in status_raw:
             # status = 'Ended abnormally'
             if job.get('return') == '?':
                 ret_code = {
-                'msg': status_raw,
-                'code':status_raw[5:]
+                    'msg': status_raw,
+                    'code': status_raw[5:]
                 }
             else:
                 ret_code = {
-                'msg': status_raw,
-                'code':job.get('return')
+                    'msg': status_raw,
+                    'code': job.get('return')
                 }
         elif 'CANCELED' or 'JCLERR' in status_raw:
             # status = status_raw
             ret_code = {
                 'msg': status_raw,
-                'code':'null'
+                'code': 'null'
             }
         else:
             # status = 'Unknown'
             ret_code = {
                 'msg': status_raw,
-                'code':job.get('return')
+                'code': job.get('return')
             }
         job_dict = {
-            'job_name':job.get('name'),
-            'owner':job.get('owner'),
-            'job_id':job.get('id'),
+            'job_name': job.get('name'),
+            'owner': job.get('owner'),
+            'job_id': job.get('id'),
             # 'job_status':status,
-            'ret_code':ret_code
-            }
+            'ret_code': ret_code
+        }
         jobs.append(job_dict)
     return jobs
 

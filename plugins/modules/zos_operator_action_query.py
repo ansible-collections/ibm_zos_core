@@ -1,4 +1,9 @@
 # -*- coding: utf-8 -*-
+
+# Copyright (c) IBM Corporation 2019, 2020
+# Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
+
+
 ANSIBLE_METADATA = {
     'metadata_version': '1.1',
     'status': ['preview'],
@@ -7,37 +12,30 @@ ANSIBLE_METADATA = {
 
 DOCUMENTATION =r'''
 ---
-module: zos_operator_openquestion
+module: zos_operator_action_query
 short_description: Display outstanding messages requiring operator action.
 description:
     - Get a list of outstanding messages requiring operator action given one or more conditions.
-author: "Ping Xiao (@xiaoping)"
+author: Ping Xiao <xiaoping@cn.ibm.com>
 options:
-  request_number_list:
-    description:
-      - Parameter that specifies a question number, or a list of numbers.
-    type: list
-    elements: int
-    required: false
-    default: []
   system:
     description:
-      - Filter messages for a system. If the system name is not specified, all system messages in SYSPLEX will be returned. Wild cards are not supported.
+        Return outstanding messages requiring operator action awaiting a reply for a particular system. 
+        If the system name is not specified, all outstanding messages for that system and for 
+        the local systems attached to it are returned. Wildcards are unsupported.
     type: str
     required: false
-    default: false
   message_id:
     description:
-      - The message identifier for the action message awaiting a reply.
+        Return outstanding messages requiring operator action awaiting a reply for a particular message 
+        identifier. A trailing asterisk (*) wildcard is supported. 
     type: str
     required: false
-    default: false
-  jobname:
+  job_name:
     description:
-      - The name of the job which issued the action message.
+      - Return outstanding messages requiring operator action awaiting a reply for a particular job name .
     type: str
     required: false
-    default: false
 seealso: 
 - module: zos_operator
 notes:
@@ -45,77 +43,105 @@ notes:
 '''
 
 EXAMPLES =r'''
-# Task(s) is a call to an ansible module, basically an action needing to be accomplished
-- name: Get all outstanding messages requiring operator action
-  zos_operator_openquestion:
-
-- name: Get outstanding messages given the question number
-  zos_operator_openquestion:
-    request_number_list:
-        - '010'
-        - '008'
-        - '009'
-
-- name: To display all outstanding messages issued on system MV2H
-  zos_operator_openquestion:
+- name: Display all outstanding messages issued on system MV2H
+  zos_operator_outstanding_action:
       system: mv2h
 
-- name: To display all outstanding messages whose job name begin with im5
-  zos_operator_openquestion:
-      jobname: im5*
+- name: Display all outstanding messages whose job name begin with im5
+  zos_operator_outstanding_action:
+      job_name: im5*
 
-- name: To display the outstanding messages whose message id begin with dsi*
-  zos_operator_openquestion:
+- name: Display all outstanding messages whose message id begin with dsi*
+  zos_operator_outstanding_action:
       message_id: dsi*
 
-- name: Get outstanding messages given the various conditions
-  zos_operator_openquestion:
-    jobname: mq*
-    message_id: dsi*
-    system: mv29
+- name: Display all outstanding messages given job_name, message_id, system
+  zos_operator_outstanding_action:
+      job_name: mq*
+      message_id: dsi*
+      system: mv29
 '''
-RETURN = '''
-changed:
-    description: true if the state was changed, otherwise false
+
+RETURN = r'''
+original_message:
+    description: The original list of parameters and arguments and any defaults used.
+    returned: always
+    type: dict
+changed: 
+      description: Indicates if any changes were made during module operation. Given operator 
+      action commands query for messages, True is always returned unless either a module or 
+      command failure has occurred. 
     returned: always
     type: bool
-    sample: 'false'
-failed:
-    description: true if run operator command failed, othewise false
-    returned: always
-    type: bool
-    sample: 'true'
-requests_count:
-    description: The count of the outstanding messages
+count:
+    description: The total number of outstanding messages.
     returned: success
     type: int
-    sample: '10'
-requests:
+result:
     description: The list of the outstanding messages
     returned: success
     type: list[dict]
-    sample:[
-            {
-                'number': '086',
-                'type': 'R', 'system':
-                'MV2D', 'job_id':
-                'STC15120', 'message_text':
-                '*086 DSI802A IYM2D    REPLY WITH VALID NCCF SYSTEM OPERATOR COMMAND',
-                'jobname': 'MQNVIEW',
-                'message_id': 'DSI802A'
-            },
-            {
-                'number': '070',
-                'type': 'R',
-                'system': 'MV29',
-                'job_id': 'STC14852',
-                'message_text': '*070 DSI802A IYM29    REPLY WITH VALID NCCF SYSTEM OPERATOR COMMAND',
-                'jobname': 'MQNVIEW',
-                'message_id': 'DSI802A'
-            }
-          ]
+    contains:
+        number:
+            description: The message identification number
+            returned: success
+            type: int
+            sample: 001
+        type:
+            description: The action type,'R' means request
+            returned: success
+            type: str
+            sample: R
+        system:
+            description: System on which the outstanding message requiring operator action awaiting a reply.
+            returned: success
+            type: str
+            sample: MV27
+        job_id: 
+            description: Job identifier for the outstanding message requiring operator action awaiting a reply.
+            returned: success
+            type: str
+            sample: STC01537
+        message_text:
+            description: Job identifier for outstanding message requiring operator action awaiting a reply.
+            returned: success
+            type: str
+            sample: *399 HWSC0000I *IMS CONNECT READY* IM5HCONN
+        job_name: 
+            description: Job name for outstanding message requiring operator action awaiting a reply.
+            returned: success
+            type: str
+            sample: IM5HCONN
+        message_id: 
+            description: Message identifier for outstanding message requiring operator action awaiting a reply.
+            returned: success
+            type: str
+            sample: HWSC0000I
+    sample:
+        {
+            "result": 
+            [
+                {
+                    "number": '001',
+                    "type": 'R',
+                    "system": 'MV27',
+                    "job_id": 'STC01537',
+                    "message_text": '*399 HWSC0000I *IMS CONNECT READY* IM5HCONN',
+                    "job_name": 'IM5HCONN',
+                    "message_id": 'HWSC0000I'
+                    },
+                    {
+                    "number": '002',
+                    "type": 'R',
+                    "system": 'MV27',
+                    "job_id": 'STC01533',
+                    "message_text": '*400 DFS3139I IMS INITIALIZED, AUTOMATIC RESTART PROCEEDING IM5H',
+                    "job_name": 'IM5HCTRL',
+                    "message_id": 'DFS3139I'
+                }
+            ]
+        }
 '''
-
 
 from ansible.module_utils.basic import AnsibleModule
 import argparse
@@ -124,21 +150,14 @@ from traceback import format_exc
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import BetterArgParser
 from zoautil_py import OperatorCmd
 
-
 def run_module():
     module_args = dict(
-        request_number_list=dict(type='list', required=False,default=[]),
         system=dict(type='str',required=False),
         message_id=dict(type='str',required=False),
-        jobname=dict(type='str',required=False)
+        job_name=dict(type='str',required=False)
     )
 
     arg_defs=dict(
-        request_number_list = dict(
-            arg_type=request_number_list_type,
-            required=False,
-            default=[]
-        ),
         system=dict(
             arg_type=system_type,
             required=False
@@ -147,13 +166,13 @@ def run_module():
             arg_type=message_id_type,
             required=False
         ),
-        jobname=dict(
-            arg_type=jobname_type,
+        job_name=dict(
+            arg_type=job_name_type,
             required=False
         )
     )
 
-    result = dict(
+    results = dict(
         changed=False,
         original_message=''
     )
@@ -163,28 +182,22 @@ def run_module():
         supports_check_mode=True
     )
 
-    result['original_message'] = module.params
+    results['original_message'] = module.params
     if module.check_mode:
-        return result
+        return results
     try:
         parser = BetterArgParser(arg_defs)
         new_params = parser.parse_args(module.params)
         requests = find_required_request(new_params)
         if requests:
-            result['requests_count'] = len(requests)
+            results['count'] = len(requests)
     except Error as e:
-        module.fail_json(msg=e.msg, **result)
+        module.fail_json(msg=e.msg, **results)
     except Exception as e:
         trace = format_exc()
         module.fail_json(msg='An unexpected error occurred: {0}'.format(trace), **result)
-    result['requests'] = requests
-    module.exit_json(**result)
-
-def request_number_list_type(arg_val, params):
-    for value in arg_val:
-        if value :
-            validate_parameters_based_on_regex(str(value),'^[0-9]{2,}$')
-    return arg_val
+    results['result'] = requests
+    module.exit_json(**results)
 
 def system_type(arg_val, params):
     if arg_val and arg_val!='*':
@@ -202,14 +215,13 @@ def message_id_type(arg_val, params):
     validate_parameters_based_on_regex(value,regex)
     return arg_val
 
-def jobname_type(arg_val, params):
+def job_name_type(arg_val, params):
     if arg_val and arg_val!='*':
         arg_val = arg_val.strip('*')
     value=arg_val
     regex='^[a-zA-Z0-9]{1,8}$'
     validate_parameters_based_on_regex(value,regex)
     return arg_val
-
 
 def validate_parameters_based_on_regex(value,regex):
     pattern = re.compile(regex)
@@ -220,18 +232,22 @@ def validate_parameters_based_on_regex(value,regex):
     return value
 
 
-
 def find_required_request(params):
+    """find the request given the options provided."""
     merged_list = create_merge_list()
     requests = filter_requests(merged_list,params)
     if requests:
         pass
     else:
-        message='There is no such request given the condition, check your command or update your filter'
+        message='There is no such request given the condition, check your command or update your options.'
         raise OperatorCmdError(message)
     return requests
 
 def create_merge_list():
+    """merge the return lists that execute both 'd r,a,s' and 'd r,a,jn'
+    'd r,a,s' response like: "742 R MV28     JOB57578 &742 ARC0055A REPLY 'GO' OR 'CANCEL'"
+    'd r,a,jn' response like:"742 R FVFNT29H &742 ARC0055A REPLY 'GO' OR 'CANCEL'"
+    so we need merge the result so that to get a full list of information given a condition"""
     operator_cmd_a = 'd r,a,s'
     operator_cmd_b = 'd r,a,jn'
     message_a = execute_command(operator_cmd_a)
@@ -242,23 +258,15 @@ def create_merge_list():
     return merged_list
 
 def filter_requests(merged_list,params):
-    request_number_list = params.get('request_number_list')
+    """filter the request given the params provided."""
     system = params.get('system')
     message_id = params.get('message_id')
-    jobname = params.get('jobname')
-    newlist=[]
-    if request_number_list:
-        for number in request_number_list:
-            for dict in merged_list:
-                if dict.get('number') == str(number):
-                    newlist.append(dict)
-                    break
-    else:
-        newlist = merged_list
+    job_name = params.get('job_name')
+    newlist = merged_list
     if system:
         newlist = handle_conditions(newlist,'system',system.upper().strip('*'))
-    if jobname:
-        newlist = handle_conditions(newlist,'jobname',jobname.upper().strip('*'))
+    if job_name:
+        newlist = handle_conditions(newlist,'job_name',job_name.upper().strip('*'))
     if message_id:
         newlist = handle_conditions(newlist,'message_id',message_id.upper().strip('*'))
     return newlist
@@ -277,10 +285,14 @@ def execute_command(operator_cmd):
     rc = rc_message.get('rc')
     message = rc_message.get('message')
     if rc > 0:
-        raise OperatorCmdError(message.split('\n'))
+        raise OperatorCmdError(message)
     return message
 
 def parse_result_a(result):
+    """parsing the result that coming from command 'd r,a,s', there are usually two format:
+    line with job_id: 810 R MV2D     JOB58389 &810 ARC0055A REPLY 'GO' OR 'CANCEL'  or
+    line without job_id: 574 R MV28              *574 IXG312E OFFLOAD DELAYED FOR..
+    also some of the request contains multiple lines, we need to handle that as well"""
     dict_temp = {}
     list = []
     request_temp=''
@@ -290,7 +302,9 @@ def parse_result_a(result):
 
     for index,line in enumerate(lines):
         line = line.strip()
+        #handle pattern"742 R FVFNT29H &742 ARC0055A REPLY 'GO' OR 'CANCEL'"
         pattern_without_job_id = re.compile(r'\s*[0-9]{2,}\s[A-Z]{1}\s[a-zA-Z0-9]{1,8}')
+        # handle pattern "742 R MV28     JOB57578 &742 ARC0055A REPLY 'GO' OR 'CANCEL'"
         pattern_with_job_id = re.compile(r'\s*[0-9]{2,}\s[A-Z]{1}\s[A-Z0-9]{1,8}\s+[A-Z0-9]{1,8}\s')
         m = pattern_without_job_id.search(line)
         n = pattern_with_job_id.search(line)
@@ -320,19 +334,20 @@ def parse_result_a(result):
 
 
 def parse_result_b(result):
-    # using d r,a,jn
+    """parsing the result that coming from command 'd r,a,jn' the main purpose to use this command is 
+    to get the job_name and message id, which is not included in 'd r,a,s' """
     dict_temp = {}
     list = []
     lines = result.split('\n')
     regex = re.compile(r'\s+')
     for index,line in enumerate(lines):
         line = line.strip()
-        pattern_with_jobname = re.compile(r'\s*[0-9]{2,}\s[A-Z]{1}\s[A-Z0-9]{1,8}\s+')
-        m = pattern_with_jobname.search(line)
+        pattern_with_job_name = re.compile(r'\s*[0-9]{2,}\s[A-Z]{1}\s[A-Z0-9]{1,8}\s+')
+        m = pattern_with_job_name.search(line)
         if m:
             elements = regex.split(line,5)
             # 215 R IM5GCONN *215 HWSC0000I *IMS CONNECT READY*  IM5GCONN
-            dict_temp = {'number':elements[0],'jobname':elements[2],'message_id':elements[4]}
+            dict_temp = {'number':elements[0],'job_name':elements[2],'message_id':elements[4]}
             list.append(dict_temp)
             continue
     return list
@@ -358,7 +373,6 @@ class ValidationError(Error):
 class OperatorCmdError(Error):
     def __init__(self, message):
         self.msg = 'An error occurred during issue the operator command, the response is "{0}"'.format(message)
-
 
 def main():
     run_module()

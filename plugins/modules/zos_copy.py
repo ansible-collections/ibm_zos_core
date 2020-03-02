@@ -16,6 +16,9 @@ description:
       remote machine to a location on the remote machine.
     - Use the M(zos_fetch) module to copy files or data sets from remote locations
       to local machine.
+authors:
+  - Asif Mahmud <asif.mahmud@ibm.com>
+  - Luke Zhao <zlbjlu@cn.ibm.com>
 options:
   src:
     description:
@@ -143,9 +146,15 @@ options:
       destination checksum.
     type: bool
     default: true
-author:
-  - Asif Mahmud <asif.mahmud@ibm.com>
-  - Luke Zhao <zlbjlu@cn.ibm.com>
+  wait_s:
+    description:
+      - The time (in seconds) to wait for an uncataloged data set to be recataloged
+    required: false
+    default: 10
+    type: int
+notes:
+    - All VSAM data sets are assumed to be cataloged. When trying to copy to an
+      uncataloged VSAM data set, it must be recataloged first.
 '''
 
 EXAMPLES = r'''
@@ -203,6 +212,7 @@ EXAMPLES = r'''
     is_binary: true
     is_catalog: false
     volume: SCR03
+    wait_s: 15
 - name: Copy a local file and take a backup of the existing file
   zos_copy:
     src: /path/to/local/file
@@ -306,6 +316,8 @@ import subprocess
 import time    
 import codecs
 import hashlib
+import string
+import random
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.common.process import get_bin_path
@@ -313,7 +325,7 @@ from ansible.module_utils._text import to_bytes, to_native
 from ansible.module_utils.six import PY3
 
 from zoautil_py import MVSCmd, Datasets
-from zoautil_py.types import DDStatement
+from zoautil_py import types
 
 # The AnsibleModule object
 module = None
@@ -326,22 +338,19 @@ def ascii_to_ebcdic(src, content):
     return out
 
 
-def create_temp_ds_name(LLQ):
-    """ Allocate data sets: sysin and sysprint for IDCAMS """
-    temp_ds_hlq  = Datasets.hlq()
-    current_date  = time.strftime("D%y%m%d", time.localtime())
-    current_time  = time.strftime("T%H%M%S", time.localtime())
-    temp_data_set = temp_ds_hlq + '.' + current_date + '.' + current_time + '.' + LLQ
-    
-    return temp_data_set
+def _create_temp_data_set_name(LLQ):
+    """ Create a temporary data set name """
+    chars = string.ascii_uppercase
+    HLQ2 = ''.join(random.choice(chars) for i in range(5))
+    return Datasets.hlq() + '.' + HLQ2 + '.' + LLQ
 
 
 def vsam_exists_or_not(ds_name):
     """ Check vsam data set using ZOAU API """
     check_rc      = False
     check_vsam_rc = -1
-    sysin_ds_name = create_temp_ds_name('sysin')
-    sysprint_ds_name = create_temp_ds_name('sysprint')
+    sysin_ds_name = _create_temp_data_set_name('sysin')
+    sysprint_ds_name = _create_temp_data_set_name('sysprint')
 
     Datasets.create(sysin_ds_name, "SEQ")
     Datasets.create(sysprint_ds_name, "SEQ", "", "FB", "",133)
@@ -349,8 +358,8 @@ def vsam_exists_or_not(ds_name):
     listcat_sysin = ' LISTCAT ENT(' + ds_name + ') ALL'
     Datasets.write(sysin_ds_name, listcat_sysin)
     dd_statements = []
-    dd_statements.append(DDStatement(ddName="sysin", dataset=sysin_ds_name))
-    dd_statements.append(DDStatement(ddName="sysprint", dataset=sysprint_ds_name))
+    dd_statements.append(types.DDStatement(ddName="sysin", dataset=sysin_ds_name))
+    dd_statements.append(types.DDStatement(ddName="sysprint", dataset=sysprint_ds_name))
     try:
         check_vsam_rc = MVSCmd.execute_authorized(pgm="idcams", args="", dds=dd_statements)
     except:
@@ -387,8 +396,8 @@ def data_set_exists_or_not(ds_name):
 def uncatalog_data_set_exists_or_not(ds_name, volume):
     """ check uncataloged data set exist or not """
     check_rc = False
-    sysprint_ds_name = create_temp_ds_name('sysprint')
-    sysin_ds_name = create_temp_ds_name('sysin')
+    sysprint_ds_name = _create_temp_data_set_name('sysprint')
+    sysin_ds_name = _create_temp_data_set_name('sysin')
     
     Datasets.create(sysprint_ds_name, "SEQ", "", "FB", "",133)
     Datasets.create(sysin_ds_name, "SEQ")
@@ -400,9 +409,9 @@ def uncatalog_data_set_exists_or_not(ds_name, volume):
     
     Datasets.write(sysin_ds_name, adrdssu_sysin)
     dd_statements = []
-    dd_statements.append(DDStatement(ddName="list", dataset="dummy"))
-    dd_statements.append(DDStatement(ddName="sysprint", dataset=sysprint_ds_name))
-    dd_statements.append(DDStatement(ddName="sysin", dataset=sysin_ds_name))
+    dd_statements.append(types.DDStatement(ddName="list", dataset="dummy"))
+    dd_statements.append(types.DDStatement(ddName="sysprint", dataset=sysprint_ds_name))
+    dd_statements.append(types.DDStatement(ddName="sysin", dataset=sysin_ds_name))
     try:
         check_uc_rc = MVSCmd.execute_authorized(pgm="adrdssu", args="TYPRUN=NORUN", dds=dd_statements)
     except:
@@ -437,8 +446,8 @@ def copy_to_ps(src, PSname, encoding):
 def copy_to_vsam(src, VSAMname):
     copy_rc      = False
     copy_vsam_rc = -1
-    sysin_ds_name = create_temp_ds_name('sysin')
-    sysprint_ds_name = create_temp_ds_name('sysprint')
+    sysin_ds_name = _create_temp_data_set_name('sysin')
+    sysprint_ds_name = _create_temp_data_set_name('sysprint')
 
     Datasets.create(sysin_ds_name, "SEQ")
     Datasets.create(sysprint_ds_name, "SEQ", "", "FB", "",133)
@@ -447,10 +456,10 @@ def copy_to_vsam(src, VSAMname):
     Datasets.write(sysin_ds_name, repro_sysin)
     
     dd_statements = []
-    dd_statements.append(DDStatement(ddName="sysin", dataset=sysin_ds_name))
-    dd_statements.append(DDStatement(ddName="input", dataset=src))
-    dd_statements.append(DDStatement(ddName="output", dataset=VSAMname))
-    dd_statements.append(DDStatement(ddName="sysprint", dataset=sysprint_ds_name))
+    dd_statements.append(types.DDStatement(ddName="sysin", dataset=sysin_ds_name))
+    dd_statements.append(types.DDStatement(ddName="input", dataset=src))
+    dd_statements.append(types.DDStatement(ddName="output", dataset=VSAMname))
+    dd_statements.append(types.DDStatement(ddName="sysprint", dataset=sysprint_ds_name))
     try:
         copy_vsam_rc = MVSCmd.execute_authorized(pgm="idcams", args="", dds=dd_statements)
     except:
@@ -493,6 +502,33 @@ def _determine_data_set_type(ds_name):
         return ds_search.group(3).split()[-1].strip()
     return None
 
+def _recatalog_data_set(ds_name, volume):
+    """ Recatalog an uncataloged data set """
+    sysin_ds_name = _create_temp_data_set_name('SYSIN')
+    Datasets.create(sysin_ds_name, 'SEQ')
+    idcams_sysin = ''' DEFINE NVSAM -
+        (NAME({}) -
+        VOLUMES({}) - 
+        DEVT(SYSDA)) '''.format(ds_name, volume)
+
+    Datasets.write(sysin_ds_name, idcams_sysin)
+    dd_statements = []
+    dd_statements.append(types.DDStatement(ddName="sysin", dataset=sysin_ds_name))
+    dd_statements.append(types.DDStatement(ddName="sysprint", dataset='*'))
+
+    try:
+        rc = MVSCmd.execute_authorized(pgm="idcams", args='', dds=dd_statements)
+        if rc != 0:
+            module.fail_json(msg="Non-zero return code received while executing MVSCmd to recatalog {}".format(ds_name), rc=rc)
+    
+    except Exception as err:
+        module.fail_json(msg="Failed to call IDCAMS to recatalog data set {}: {}".format(ds_name, str(err)))
+    
+    finally:
+        Datasets.delete(sysin_ds_name) 
+
+    return ds_name
+
 def _get_checksum(data):
     """ Calculate checksum for the given data """
     digest = hashlib.sha1()
@@ -503,7 +539,17 @@ def _get_checksum(data):
 def _get_mvs_checksum(ds_name):
     return _get_checksum(Datasets.read(ds_name))
 
-        
+def _copy_to_ps(src, dest, data, validate=True, local_checksum=None):
+    rc = Datasets.write(dest, ascii_to_ebcdic(src, data))
+    if rc != 0:
+        module.fail_json(msg="Unable to write content to destination {}".format(dest))
+    if validate:
+        remote_checksum = _get_mvs_checksum(dest)
+        new_checksum = _get_mvs_checksum(dest)
+        if remote_checksum != new_checksum:
+            changed = True
+        elif new_checksum != local_checksum:
+            module.fail_json(msg="Checksum mismatch", checksum=new_checksum, local_checksum=local_checksum, changed=changed)
 
 def main():
     global module
@@ -525,6 +571,7 @@ def main():
             validate           = dict(type='bool', default=False),
             remote_src         = dict(type='bool', default=False),
             checksum           = dict(type='str'),
+            wait_s             = dict(type='int', default=10),
             _local_data        = dict(type='str'),
             _size              = dict(type='int'),
             _local_checksum    = dict(type='str')
@@ -545,6 +592,7 @@ def main():
     encoding           = module.params['encoding']
     content            = module.params['content']
     validate           = module.params['validate']
+    wait_s             = module.params['wait_s']
     _local_checksum    = module.params['_local_checksum']
     ds_name            = ''
     size               = ''
@@ -559,24 +607,30 @@ def main():
             module.fail_json(msg="Source {} does not exist".format(src))
         if not os.access(b_src, os.R_OK):
             module.fail_json(msg="Source {} not readable".format(src))
-    
-    remote_checksum = None
-    new_checksum = None
+
     try:
         ds_type = _determine_data_set_type(dest)
-        remote_checksum = _get_mvs_checksum(dest)
     except UncatalogedDatasetError as err:
-        rc = Datasets.create(dest, "SEQ", str(module.params['_size']), "FB")
-        if rc != 0:
-            module.fail_json("Unable to allocate data set to copy {}".format(src))
-    Datasets.write(dest, ascii_to_ebcdic(src, module.params['_local_data']))
+        if not is_catalog:
+            _recatalog_data_set(dest)
+            time.sleep(wait_s)
+            ds_type = _determine_data_set_type(dest)
+        else:
+            rc = Datasets.create(dest, "SEQ", size, "FB")
+            if rc != 0:
+                module.fail_json("Unable to allocate data set to copy {}".format(src))
+    
+    # Copy to sequential data set
+    if ds_type == 'PS':
+        _copy_to_ps(src, dest, module.params['_local_data'], module.params['_local_checksum'])
 
-    if validate:
-        new_checksum = _get_mvs_checksum(dest)
-        if remote_checksum != new_checksum:
-            changed = True
-        elif new_checksum != _local_checksum:
-            module.fail_json(msg="Checksum mismatch", checksum=new_checksum, local_checksum=_local_checksum, changed=changed)
+    # Copy to partitioned data set
+    elif ds_type in ('PO', 'PDSE', 'PE'):
+        pass
+        #_copy_to_pdse()
+
+    remote_checksum = None
+    new_checksum = None
 
     res_args = dict(
         src=src, 

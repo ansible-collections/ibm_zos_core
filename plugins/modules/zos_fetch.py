@@ -112,7 +112,6 @@ EXAMPLES = r'''
   zos_fetch:
     src: /tmp/somefile
     dest: /tmp/fetched
-    is_uss: true
 
 - name: Fetch a sequential data set and store in /tmp/SOME.DATA.SET
   zos_fetch:
@@ -131,7 +130,6 @@ EXAMPLES = r'''
   zos_fetch:
     src: /tmp/somefile
     dest: /tmp/
-    is_uss: true
 	encoding: ASCII
 	fail_on_missing: true
 
@@ -141,7 +139,6 @@ EXAMPLES = r'''
     dest: /tmp/
     flat: true
     validate_checksum: false
-    is_uss: true
     fail_on_missing: true
 
 - name: Fetch an uncataloged VSAM data set

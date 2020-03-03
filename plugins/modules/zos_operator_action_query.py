@@ -38,8 +38,6 @@ options:
     required: false
 seealso: 
 - module: zos_operator
-notes:
-  - check_mode is supported, but in the case of this module, it never changs the system state so always return false.
 '''
 
 EXAMPLES =r'''
@@ -179,12 +177,10 @@ def run_module():
 
     module = AnsibleModule(
         argument_spec=module_args,
-        supports_check_mode=True
+        supports_check_mode=False
     )
 
     results['original_message'] = module.params
-    if module.check_mode:
-        return results
     try:
         parser = BetterArgParser(arg_defs)
         new_params = parser.parse_args(module.params)

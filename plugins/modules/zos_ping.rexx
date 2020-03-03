@@ -13,19 +13,17 @@ DOCUMENTATION = '''
 ---
 module: zos_ping
 version_added: 2.9
-short_description: Try to connect to a z/OS host, verify a usable z/OS Web Client Enablement Toolkit,
-  iconv, and usable python. Returns C(pong) on success, and a warning if a usable Python is not found.
+short_description: Determine if required and optional dependencies are present on the target host.
 description:
-  - A trivial test module, this module always returns C(pong) upon successful contact. It does not make sense
-    in playbooks, but it is useful from C(/usr/bin/ansible) to verify the ability to login and check if the system
-    has prerequisites.
-  - This is NOT ICMP ping, this is just a trivial test module that requires the z/OS Web Client Enablement Toolkit,
-    iconv and usable python on z/OS."
-  - The "zos_ssh" conection plugin must be used for this module to function correctly
-
+  - M(zos_ping) verifies the presence of z/OS Web Client Enablement Toolkit,
+    iconv, and Python.
+  - M(zos_ping) returns C(pong) when the target host is not missing any required dependencies.
+  - If the target host is missing optional dependencies, the M(zos_ping) will return one or more warning messages.
+  - If a required dependency is missing from the target host, an explanatory message will be returned with the module failure.
+  - The M(zos_ssh) conection plugin must be used for this module to function correctly.
 author:
-  - Vijay Katoch
-  - Blake Becker (minor changes)
+  - Vijay Katoch <vijayka@us.ibm.com>
+  - Blake Becker <blake.becker@ibm.com>
 
 '''
 
@@ -39,7 +37,7 @@ RETURN = '''
 ping:
   description: Should contain the value "pong" on success.
   type: str
-warnings: In case usable Python is not found
+warnings:
   description: List of warnings returned from stderr when performing resource checks.
   type: list
   elements: str

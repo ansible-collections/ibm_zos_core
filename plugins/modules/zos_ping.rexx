@@ -20,7 +20,7 @@ description:
   - M(zos_ping) returns C(pong) when the target host is not missing any required dependencies.
   - If the target host is missing optional dependencies, the M(zos_ping) will return one or more warning messages.
   - If a required dependency is missing from the target host, an explanatory message will be returned with the module failure.
-  - The M(zos_ssh) conection plugin must be used for this module to function correctly.
+  - The M(zos_ssh) connection plugin must be used for this module to function correctly.
 author:
   - Vijay Katoch <vijayka@us.ibm.com>
   - Blake Becker <blake.becker@ibm.com>
@@ -55,14 +55,14 @@ If (argFile = '') Then Do
     failModule('Internal Error: JSON argument file missing' || ESC_N, "", 16)
 End
 newArgFile1 = argFile || 1
-/* Check for iconv utility by conversting the JSON argument file form ASCII to EBCDIC */
+/* Check for iconv utility by converting the JSON argument file form ASCII to EBCDIC */
 retC = bpxwunix('iconv -f ISO8859-1 -t IBM-1047 ' argFile,,stdout.,stderr.)
 
 If (retC <> 0) Then Do
     failModule('Command iconv not found.', stderr, retC)
 End
 
-/* Load z/OS Web Client Enablement Toolkit to verify system has z/OS Web Client enablement toolkit installed */ Call hwtcalls "on"
+/* Load z/OS Web Client Enablement Toolkit to verify system has z/OS Web Client Enablement toolkit installed */ Call hwtcalls "on"
 Address hwtjson 'hwtConst returnCode resbuf.'
 If (rc <> 0 | returnCode <> HWTJ_OK) Then Do
     retC = rc

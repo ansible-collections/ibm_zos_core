@@ -51,52 +51,34 @@ Parse Arg argFile .
 pythonName       = 'Python'
 majVersionPython = 3
 minVersionPython = 6
+warningJsonList = ''
 
 If (argFile = '') Then Do
-    errmsg = 'Internal Error: JSON argument file missing' || ESC_N
-    Call Syscalls 'ON'
-    Address Syscall
-        'Write' 2 'errmsg' length(errmsg)
-    Exit(16)
+    failModule('Internal Error: JSON argument file missing' || ESC_N, "", 16)
 End
 newArgFile1 = argFile || 1
 /* Check for iconv utility by conversting the JSON argument file form ASCII to EBCDIC */
-retC = bpxwunix('iconv -f ISO8859-1 -t IBM-1047' argFile,,stdout.,stderr.)
+retC = bpxwunix('iconv -f ISO8859-1 -t IBM-1047 ' argFile,,stdout.,stderr.)
+
 If (retC <> 0) Then Do
-    If (stderr. <> 0) Then Do
-        Call Syscalls 'ON'
-        Address Syscall
-            Do index=1 To stderr.0
-                errmsg = stderr.index || ESC_N
-                'Write' 2 'errmsg' length(errmsg)
-            End
-    End
-    Exit(retC)
+    failModule('Command iconv not found.', stderr, retC)
 End
+
 /* Load z/OS Web Client Enablement Toolkit to verify system has z/OS Web Client enablement toolkit installed */ Call hwtcalls "on"
 Address hwtjson 'hwtConst returnCode resbuf.'
 If (rc <> 0 | returnCode <> HWTJ_OK) Then Do
     retC = rc
     errmsg = 'Error: Unable to start JSON Parser may be due to missing',
              'z/OS Web Client enablement toolkit.' || ESC_N
-    Call Syscalls 'ON'
-    Address Syscall
-        'Write' 2 'errmsg' length(errmsg)
-    Exit(retC)
+    failModule(errmsg, "", retC)
 End
-
-warningJsonList = ''
 
 /* Check for Python version eg: 'Python 3.6.9' */
 retC = bpxwunix('python3 --version',, out., err.)
 If (err.0 > 0) Then Do
-    warningJsonList = ',"warnings":['
     Do index=1 To err.0
-        warningJsonList = warningJsonList || '"Python Warning: ' || err.index || '"'
-        If (index < err.0) Then
-            warningJsonList = warningJsonList || ','
+        warningJsonList = addWarningToList(warningJsonList, 'Python Warning: ' || err.index)
     End
-    warningJsonList = warningJsonList || ']'
 End
 Else Do
     If (out.0 > 0) Then Do
@@ -104,11 +86,11 @@ Else Do
         parse Var version majVer '.' minVer '.' micVer
         If (pythonName == strip(name)) Then Do
             If (majVer < majVersionPython | minVer < minVersionPython) Then Do
-                warningJsonList = ',"warnings": ["Python Warning: Python not up to the level to support z/OS modules"]'
+                warningJsonList = addWarningToList(warningJsonList, "Python Warning: Python not up to the level to support z/OS modules")
             End
         End
         Else Do
-            warningJsonList = ',"warnings": ["Python Warning: Incorrect Python Found"]'
+            warningJsonList = addWarningToList(warningJsonList, "Python Warning: Incorrect Python Found")
         End
     End
 End
@@ -116,8 +98,30 @@ End
 retJson = '{"changed":false,"ping": "pong","failed":false'
 /* Construct a JSON list for warnings */
 If (warningJsonList <> '') Then
-    retJson = retJson || warningJsonList
+    retJson = retJson || ',"warnings": [' || warningJsonList  || ']'
 retJson = retJson || '}'
 
 Say retJson
 Exit(0)
+
+
+/* Build a comma separated list of warnings */
+addWarningToList:
+PARSE ARG warningList, warning
+if (warningList <> '') Then
+warningList = warningist || ','
+warningList = warningList || '"' || warning || '"'
+return warningList
+
+
+/* Fail the module when unacceptable situation has occurred */
+failModule:
+PARSE ARG output,stderr,retC
+Address Syscall
+'Write' 2 'output' length(output)
+Do index=1 To stderr.0
+    errmsg = stderr.index || ESC_N
+    'Write' 2 'errmsg' length(errmsg)
+End
+Exit(retC)
+return

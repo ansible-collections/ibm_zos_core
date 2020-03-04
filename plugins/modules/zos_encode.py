@@ -386,6 +386,7 @@ def mvs_convert_encoding_prev(src, dest, ds_type_src, ds_type_dest, from_encodin
                     f1_temp = NamedTemporaryFile(delete=False)
                     temp_src = f1_temp.name
                     rc, stdout, stderr = copy_ps2uss(temp_ps, temp_src, module)
+                    delete_temp_ds(temp_ps)
                     if rc:
                         err_msg = 'Faild when coping to USS file: {}'.format(stderr)
     if ds_type_dest == 'PS' or ds_type_dest == 'VSAM':
@@ -407,6 +408,7 @@ def mvs_convert_encoding_prev(src, dest, ds_type_src, ds_type_dest, from_encodin
                         rc, stdout, stderr = copy_uss2mvs(temp_dest, temp_ps, 'PS', module)
                         if not rc:
                             err_msg = copy_vsam_ps(temp_ps, dest.upper(), module)
+                            delete_temp_ds(temp_ps)
                             if not err_msg:
                                 convert_rc = True
                 else:
@@ -415,7 +417,6 @@ def mvs_convert_encoding_prev(src, dest, ds_type_src, ds_type_dest, from_encodin
                         convert_rc = True
                     else:
                         err_msg = 'Failed when copying back to the MVS data set {}: {}'.format(dest, stderr)
-    delete_temp_ds(temp_ps)
     return convert_rc, err_msg
     
 def uss_file_backup(src, module):

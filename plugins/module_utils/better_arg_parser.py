@@ -1,3 +1,11 @@
+# Copyright (c) IBM Corporation 2020
+# Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
+
+
+from __future__ import absolute_import, division, print_function
+
+__metaclass__ = type
+
 from collections import OrderedDict, defaultdict
 import types
 import re
@@ -5,17 +13,32 @@ import re
 # TODO: add some additional type checking and error messages to parser
 # TODO: validate provided arguments are valid with other args
 # TODO: add mututally exclusive parameter
-    # ? maybe list of lists at arg level?
+# ? maybe list of lists at arg level?
+
 
 class BetterArg(object):
-    def __init__(self, arg_parser, name, elements=None, options=None, aliases=[], dependencies=[], required=False, default=None, choices=[], arg_type='str'):
+    def __init__(
+        self,
+        arg_parser,
+        name,
+        elements=None,
+        options=None,
+        aliases=[],
+        dependencies=[],
+        required=False,
+        default=None,
+        choices=[],
+        arg_type="str",
+    ):
         """Holds all of the attributes that define a particular argument.
         A BetterArg object can contain nested BetterArg objects.
 
         Arguments:
             object {object} -- The most base class type.
-            arg_parser {BetterArgParser} -- The instance of BetterArgParser used to create the BetterArg.
-            Used to call BetterArgParser.handle_args() when nested BetterArg objects need to be defined.
+            arg_parser {BetterArgParser} -- The instance of BetterArgParser
+            used to create the BetterArg.
+            Used to call BetterArgParser.handle_args() when nested BetterArg
+            objects need to be defined.
             name {str} -- The name of the argument to define.
 
         Keyword Arguments:
@@ -58,15 +81,14 @@ class BetterArgHandler(object):
         self.arg_defs = arg_defs
         self.arg_def = arg_defs.get(arg_name)
         self.contents = contents
-        self.resolved_dependencies = self.build_resolved_dependency_dict(
-            resolved_args)
+        self.resolved_dependencies = self.build_resolved_dependency_dict(resolved_args)
         # TODO: determine if we should optioanlly allow top-level args to be passed
         self.type_handlers = {
-            'dict': self._dict_type,
-            'list': self._list_type,
-            'str': self._str_type,
-            'bool': self._bool_type,
-            'int': self._int_type
+            "dict": self._dict_type,
+            "list": self._list_type,
+            "str": self._str_type,
+            "bool": self._bool_type,
+            "int": self._int_type,
         }
 
     def handle_arg(self):
@@ -100,12 +122,16 @@ class BetterArgHandler(object):
         updated_contents = []
         if BetterArgHandler.is_function(self.arg_def.elements):
             for item in contents:
-                updated_contents.append(self.arg_def.elements(
-                    item, self.resolved_dependencies))
+                updated_contents.append(
+                    self.arg_def.elements(item, self.resolved_dependencies)
+                )
         elif self.type_handlers.get(self.arg_def.elements):
             for item in contents:
-                updated_contents.append(self.type_handlers.get(
-                    self.arg_def.elements)(item, self.resolved_dependencies))
+                updated_contents.append(
+                    self.type_handlers.get(self.arg_def.elements)(
+                        item, self.resolved_dependencies
+                    )
+                )
         contents = updated_contents
         return contents
 
@@ -124,7 +150,8 @@ class BetterArgHandler(object):
         updated_contents = {}
         for key, value in contents.items():
             handler = BetterArgHandler(
-                key, value, updated_contents, self.arg_def.options)
+                key, value, updated_contents, self.arg_def.options
+            )
             updated_value = handler.handle_arg()
             updated_contents[key] = updated_value
         contents = updated_contents
@@ -147,7 +174,8 @@ class BetterArgHandler(object):
         """
         if not isinstance(contents, str):
             raise ValueError(
-                'Invalid argument type for "{}". expected "str"'.format(contents))
+                'Invalid argument type for "{}". expected "str"'.format(contents)
+            )
         return contents
 
     def _int_type(self, contents, resolve_dependencies):
@@ -165,9 +193,10 @@ class BetterArgHandler(object):
         Returns:
             int -- The arguments contents after any necessary operations.
         """
-        if not re.match(r'[0-9]+', str(contents)):
+        if not re.match(r"[0-9]+", str(contents)):
             raise ValueError(
-                'Invalid argument type for "{}". expected "int"'.format(contents))
+                'Invalid argument type for "{}". expected "int"'.format(contents)
+            )
         return int(contents)
 
     def _bool_type(self, contents, resolve_dependencies):
@@ -187,7 +216,8 @@ class BetterArgHandler(object):
         """
         if not isinstance(contents, bool):
             raise ValueError(
-                'Invalid argument type for "{}". expected "bool"'.format(contents))
+                'Invalid argument type for "{}". expected "bool"'.format(contents)
+            )
         return contents
 
     @staticmethod
@@ -210,10 +240,14 @@ class BetterArgHandler(object):
         """
         if BetterArgHandler.is_function(self.arg_def.required):
             self.arg_def.required = self.arg_def.required(
-                self.contents, self.resolved_dependencies)
-        if self.contents == None and self.arg_def.required == True and self.arg_def.default == None:
-            raise ValueError(
-                'Missing required argument {}'.format(self.arg_name))
+                self.contents, self.resolved_dependencies
+            )
+        if (
+            self.contents is None
+            and self.arg_def.required is True
+            and self.arg_def.default is None
+        ):
+            raise ValueError("Missing required argument {}".format(self.arg_name))
         return
 
     # TODO: add additional skips when argument type should never use default even when set
@@ -228,7 +262,8 @@ class BetterArgHandler(object):
         new_contents = None
         if BetterArgHandler.is_function(self.arg_def.default):
             new_contents = self.arg_def.default(
-                self.contents, self.resolved_dependencies)
+                self.contents, self.resolved_dependencies
+            )
         else:
             new_contents = self.arg_def.default
         self.contents = new_contents
@@ -236,13 +271,17 @@ class BetterArgHandler(object):
 
     def _resolve_choices(self):
         """Verify the argument contents are a valid choice when list of choices is provided. 
-        
+
         Raises:
             ValueError: The provided value is not a valid choice.
         """
         if self.arg_def.choices and len(self.arg_def.choices) > 0:
             if self.contents not in self.arg_def.choices:
-                raise ValueError('Provided value: {} for arg: {} is not in a valid choice. Choices: {}'.format(self.contents, self.arg_name, ', '.join(self.arg_def.choices)))
+                raise ValueError(
+                    "Provided value: {} for arg: {} is not in a valid choice. Choices: {}".format(
+                        self.contents, self.arg_name, ", ".join(self.arg_def.choices)
+                    )
+                )
 
     def _resolve_arg_type(self):
         """Perform type-specific operations for an argument.
@@ -258,10 +297,15 @@ class BetterArgHandler(object):
         if BetterArgHandler.is_function(self.arg_def.arg_type):
             return self.arg_def.arg_type(self.contents, self.resolved_dependencies)
         elif self.type_handlers.get(self.arg_def.arg_type):
-            return self.type_handlers.get(self.arg_def.arg_type)(self.contents, self.resolved_dependencies)
+            return self.type_handlers.get(self.arg_def.arg_type)(
+                self.contents, self.resolved_dependencies
+            )
         else:
-            raise ValueError('Provided arg_type "{}" for argument "{}" is invalid.'.format(
-                self.arg_name, self.arg_def.arg_type))
+            raise ValueError(
+                'Provided arg_type "{}" for argument "{}" is invalid.'.format(
+                    self.arg_name, self.arg_def.arg_type
+                )
+            )
 
     # ? resolved_args should be a dict?
     def build_resolved_dependency_dict(self, resolved_args):
@@ -277,8 +321,7 @@ class BetterArgHandler(object):
         """
         resolved_dependencies = {}
         for dependency in self.arg_def.dependencies:
-            resolved_dependencies[dependency] = resolved_args.get(
-                dependency)
+            resolved_dependencies[dependency] = resolved_args.get(dependency)
         return resolved_dependencies
 
 
@@ -312,8 +355,7 @@ class BetterArgParser(object):
         # self.aliases = {}
         for key, value in arg_dict.items():
             args[key] = BetterArg(self, key, **value)
-            self.aliases = self._add_alias(
-                key, value.get('aliases', []), self.aliases)
+            self.aliases = self._add_alias(key, value.get("aliases", []), self.aliases)
         args = self._swap_alias_for_real_names(args, self.aliases)
         self._assert_no_invalid_dependencies(args)
         args = self._sort_args_by_dependencies(args)
@@ -334,8 +376,7 @@ class BetterArgParser(object):
         parsed_args = {}
         arg_dict = self._swap_alias_for_real_names(arg_dict, self.aliases)
         for key in self.args:
-            handler = BetterArgHandler(
-                key, arg_dict.get(key), parsed_args, self.args)
+            handler = BetterArgHandler(key, arg_dict.get(key), parsed_args, self.args)
             updated_value = handler.handle_arg()
             parsed_args[key] = updated_value
         return parsed_args
@@ -343,25 +384,28 @@ class BetterArgParser(object):
     def _add_alias(self, arg_name, arg_aliases=[], aliases={}):
         """Add alias to an alias dictionary that can be
         used to simplify alias->name determinations.
-        
+
         Arguments:
             arg_name {str} -- the name of the argument
-        
+
         Keyword Arguments:
             arg_aliases {list[str]} -- The list of aliases for the argument name (default: {[]})
             aliases {dict} -- The dictionary containing all of the currently defined aliases. (default: {{}})
-        
+
         Raises:
             ValueError: When conflicting aliases are found.
-        
+
         Returns:
             dict -- The updated dict of aliases
         """
         arg_aliases.append(arg_name)
         for alternate_name in arg_aliases:
             if aliases.get(alternate_name, arg_name) != arg_name:
-                raise ValueError('Conflicting aliases "{}" and "{}" found for name "{}"'.format(
-                    aliases.get(alternate_name), alternate_name, arg_name))
+                raise ValueError(
+                    'Conflicting aliases "{}" and "{}" found for name "{}"'.format(
+                        aliases.get(alternate_name), alternate_name, arg_name
+                    )
+                )
             aliases[alternate_name] = arg_name
         return aliases
 
@@ -387,13 +431,13 @@ class BetterArgParser(object):
     def _assert_no_invalid_dependencies(self, args):
         """Verify that no dependencies are requested
         that do not have an argument with matching name.
-        
+
         Arguments:
             args {dict[str, BetterArg]} -- All of the BetterArg argument definitions for current argument depth.
-        
+
         Raises:
             ValueError: When invalid dependency found.
-        
+
         Returns:
             bool -- Always returns True when no invalid dependencies found.
         """
@@ -403,17 +447,20 @@ class BetterArgParser(object):
             dependencies += value.dependencies
         bad_dependencies = list(set(dependencies) - set(valid_names))
         if bad_dependencies:
-            raise ValueError('One or more invalid dependencies found: {}'.format(
-                ', '.join(bad_dependencies)))
+            raise ValueError(
+                "One or more invalid dependencies found: {}".format(
+                    ", ".join(bad_dependencies)
+                )
+            )
         return True
 
     def _sort_args_by_dependencies(self, args):
         """Sort arguments based on their dependencies to other arguments.
         Used with _dependency_sort_helper() to implement topographical sorting.
-        
+
         Arguments:
             args {dict[str, BetterArg]} -- All of the BetterArg argument definitions for current argument depth.
-        
+
         Returns:
             OrderedDict[str, BetterArg] -- All of the BetterArg argument definitions for current argument depth,
             sorted based on dependencies.
@@ -424,11 +471,14 @@ class BetterArgParser(object):
         for name in args:
             if not visited.get(name):
                 self._dependency_sort_helper(
-                    args, name, visited, dependencies, ordered_arg_defs)
+                    args, name, visited, dependencies, ordered_arg_defs
+                )
         args = ordered_arg_defs
         return args
 
-    def _dependency_sort_helper(self, args, name, visited, dependencies, ordered_arg_defs):
+    def _dependency_sort_helper(
+        self, args, name, visited, dependencies, ordered_arg_defs
+    ):
         """Recursive helper function for _sort_args_by_dependencies().
         Used with _sort_args_by_dependencies() to implement topographical sorting.
 
@@ -447,24 +497,26 @@ class BetterArgParser(object):
             RuntimeError: When cyclic dependencies are found
         """
         visited[name] = True
-        dependencies[name] = {dep_name: True for dep_name in args.get(
-            name).dependencies}
+        dependencies[name] = {
+            dep_name: True for dep_name in args.get(name).dependencies
+        }
         # TODO: fix dependency cycles
         if self._has_cycle(args):
-            raise RuntimeError('Cyclic dependency found.')
+            raise RuntimeError("Cyclic dependency found.")
         for dependency_name in args.get(name).dependencies:
             if not visited.get(dependency_name):
                 self._dependency_sort_helper(
-                    args, dependency_name, visited, dependencies, ordered_arg_defs)
+                    args, dependency_name, visited, dependencies, ordered_arg_defs
+                )
         ordered_arg_defs[name] = args.get(name)
         return
 
     def _has_cycle(self, args):
         """Determines if cyclic dependencies exist between arguments.
-        
+
         Arguments:
             args {dict[str, BetterArg]} -- All of the BetterArg argument definitions for current argument depth.
-        
+
         Returns:
             bool -- True if cycle exists False otherwise
         """
@@ -477,7 +529,8 @@ class BetterArgParser(object):
         for name, value in args.items():
             for dependency_name in value.dependencies:
                 graph[arg_name_to_num.get(name)].append(
-                    arg_name_to_num.get(dependency_name))
+                    arg_name_to_num.get(dependency_name)
+                )
         for i in arg_name_to_num.values():
             if not visited[i]:
                 if self._is_cyclic_helper(i, visited, stack, graph):
@@ -486,23 +539,23 @@ class BetterArgParser(object):
 
     def _is_cyclic_helper(self, i, visited, stack, graph):
         """Works with _has_cycle() to determine if cyclic dependencies exist between arguments.
-        
+
         Arguments:
             i {integer} -- The index for the current argument
             visited {list[bool]} -- Maintains a record of which arguments have been visited
             stack {list[bool]} -- Used with visited to identify cycles.
             graph {defaultdict[list]} -- The graph representing our argument dependencies as numbers
-        
+
         Returns:
             bool -- True if cycle exists, False otherwise
         """
         visited[i] = True
         stack[i] = True
         for neighbor in graph[i]:
-            if visited[neighbor] == False:
+            if visited[neighbor] is False:
                 if self._is_cyclic_helper(neighbor, visited, stack, graph):
                     return True
-            elif stack[neighbor] == True:
+            elif stack[neighbor] is True:
                 return True
         stack[i] = False
         return False

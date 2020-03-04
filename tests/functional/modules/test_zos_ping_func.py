@@ -8,4 +8,4 @@ def test_job_submit_PDS(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_ping()
     for result in results.contacted.values():
-        assert result.get('ping') == 'pong'
+        assert result.get("ping") == "pong"

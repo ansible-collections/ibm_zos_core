@@ -7,10 +7,12 @@ import sys
 from mock import MagicMock
 import importlib
 
+
 def pytest_addoption(parser):
     """ Add CLI options and modify optons for pytest-ansible where needed. """
     parser.addoption("--zinventory", "-Z", action="store", default="test_config.yml",
                      help="Absolute path to YAML file containing inventory info for functional testing.")
+
 
 @pytest.fixture(scope="session")
 def z_python_interpreter(request):
@@ -30,7 +32,7 @@ def ansible_zos_module(request, z_python_interpreter):
     # next two lines perform similar action to ansible_adhoc fixture
     plugin = request.config.pluginmanager.getplugin("ansible")
     adhoc = plugin.initialize(request.config, request, **inventory)
-    # * Inject our environment 
+    # * Inject our environment
     hosts = adhoc['options']['inventory_manager']._inventory.hosts
     for host in hosts.values():
         host.vars['ansible_python_interpreter'] = interpreter
@@ -61,4 +63,3 @@ def zos_import_mocker(mocker):
             newimp = [importlib.import_module(x) for x in imports]
         return newimp
     yield (mocker, perform_imports)
-

@@ -456,7 +456,7 @@ def _determine_data_set_type(ds_name, fail_on_missing=True):
             return 'USS'
         elif fail_on_missing:
             _fail_json(
-                msg="The file {} does not exist".format(ds_name),
+                msg="The USS file {} does not exist".format(ds_name),
                 stdout=out,
                 stderr=err,
                 ret_code=rc
@@ -470,7 +470,6 @@ def _determine_data_set_type(ds_name, fail_on_missing=True):
             msg = "Dataset {} may already be open by another user. Close the dataset and try again.".format(ds_name)
         else:
             msg = "Unable to determine data set type for data set {}.".format(ds_name)
-        
         _fail_json(msg=msg, stdout=out, stderr=err, ret_code=rc)
     
     ds_search = re.search("(-|--)DSORG(|-)\n(.*)", out)

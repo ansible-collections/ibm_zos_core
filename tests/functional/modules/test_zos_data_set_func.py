@@ -44,7 +44,6 @@ def data_set_typesset_creation_when_present_no_replace(ansible_zos_module, dstyp
     )
     pprint(vars(results))
     for result in results.contacted.values():
-        assert result.get("original_message").get("state") == "present"
         assert result.get("changed") is False
         assert result.get("module_stderr") is None
 
@@ -59,7 +58,6 @@ def test_data_set_creation_when_present_replace(ansible_zos_module, dstype):
         name="imstestl.ims1.test05", state="present", type=dstype, replace=True
     )
     for result in results.contacted.values():
-        assert result.get("original_message").get("state") == "present"
         assert result.get("changed") is True
         assert result.get("module_stderr") is None
 
@@ -72,7 +70,6 @@ def test_data_set_creation_when_absent(ansible_zos_module, dstype):
         name="imstestl.ims1.test05", state="present", type=dstype
     )
     for result in results.contacted.values():
-        assert result.get("original_message").get("state") == "present"
         assert result.get("changed") is True
         assert result.get("module_stderr") is None
 
@@ -83,7 +80,6 @@ def test_data_set_deletion_when_present(ansible_zos_module, dstype):
     hosts.all.zos_data_set(name="imstestl.ims1.test05", state="present", type=dstype)
     results = hosts.all.zos_data_set(name="imstestl.ims1.test05", state="absent")
     for result in results.contacted.values():
-        assert result.get("original_message").get("state") == "absent"
         assert result.get("changed") is True
         assert result.get("module_stderr") is None
 
@@ -93,7 +89,6 @@ def test_data_set_deletion_when_absent(ansible_zos_module):
     hosts.all.zos_data_set(name="imstestl.ims1.test05", state="absent")
     results = hosts.all.zos_data_set(name="imstestl.ims1.test05", state="absent")
     for result in results.contacted.values():
-        assert result.get("original_message").get("state") == "absent"
         assert result.get("changed") is False
         assert result.get("module_stderr") is None
 
@@ -142,7 +137,6 @@ def test_repeated_operations(ansible_zos_module):
     )
 
     for result in results.contacted.values():
-        assert result.get("original_message").get("state") == "present"
         assert result.get("changed") is True
         assert result.get("module_stderr") is None
 
@@ -155,7 +149,6 @@ def test_repeated_operations(ansible_zos_module):
     )
 
     for result in results.contacted.values():
-        assert result.get("original_message").get("state") == "present"
         assert result.get("changed") is True
         assert result.get("module_stderr") is None
 
@@ -164,14 +157,12 @@ def test_repeated_operations(ansible_zos_module):
     )
 
     for result in results.contacted.values():
-        assert result.get("original_message").get("state") == "present"
         assert result.get("changed") is True
         assert result.get("module_stderr") is None
 
     results = hosts.all.zos_data_set(name="USER.PRIVATE.TEST4(testme)", type="MEMBER")
 
     for result in results.contacted.values():
-        assert result.get("original_message").get("state") == "present"
         assert result.get("changed") is False
         assert result.get("module_stderr") is None
 
@@ -180,7 +171,6 @@ def test_repeated_operations(ansible_zos_module):
     )
 
     for result in results.contacted.values():
-        assert result.get("original_message").get("state") == "absent"
         assert result.get("changed") is True
         assert result.get("module_stderr") is None
 
@@ -189,6 +179,5 @@ def test_repeated_operations(ansible_zos_module):
     )
 
     for result in results.contacted.values():
-        assert result.get("original_message").get("state") == "absent"
         assert result.get("changed") is False
         assert result.get("module_stderr") is None

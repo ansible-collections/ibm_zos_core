@@ -75,7 +75,6 @@ class ActionModule(ActionBase):
         flat                = _process_boolean(self._task.args.get('flat'), default=False)
         is_binary           = _process_boolean(self._task.args.get('is_binary'))
         validate_checksum   = _process_boolean(self._task.args.get('validate_checksum'), default=True)
-        fail_on_missing     = _process_boolean(self._task.args.get('fail_on_missing'), default=True) 
 
         msg = None
         if not isinstance(src, string_types):

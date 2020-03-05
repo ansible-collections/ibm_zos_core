@@ -20,16 +20,16 @@ description:
   - When fetching a sequential data set, the destination file name will be the same as 
     the data set name.
   - When fetching a PDS/PDS(E), the destination will be a directory with the same name
-    as the PDS/PDS(E)
+    as the PDS/PDS(E).
 author: Asif Mahmud <asif.mahmud@ibm.com>
 options:
   src:
     description:
-      - Name of PDS, PDS(E) members, VSAM data set, USS file path
+      - Name of PDS, PDS(E) members, VSAM data set, USS file path.
     required: true
   dest:
     description:
-      - Local path where the file or data set will be stored
+      - Local path where the file or data set will be stored.
     required: true
   is_catalog:
     description:
@@ -41,7 +41,7 @@ options:
     choices: [ "true", "false" ]
   volume:
     description:
-      - Name of the volume when I(is_catalog=false)
+      - Name of the volume when I(is_catalog=false).
     required: false
   fail_on_missing:
     description:
@@ -49,7 +49,7 @@ options:
         If the data set is uncataloged and I(is_catalog=false), then the task 
         will not fail and will attempt to fetch the uncataloged data set.
     required: false
-    default: "false"
+    default: "true"
     choices: [ "true", "false" ]
   validate_checksum:
     description:
@@ -59,38 +59,36 @@ options:
     choices: [ "true", "false" ]
   flat: 
     description:
-      - Override the default behavior of appending
-        hostname/path/to/file to the destination. If dest ends with '/', it
-        will use the basename of the source file, similar to the copy module.
-        Obviously this is only handy if the filenames are unique.
+      - Override the default behavior of appending hostname/path/to/file to the destination. 
+        If set to "false", the file or data set will be fetched to the destination directory
+        without appending remote hostname to the destination. Refer to the M(fetch) module 
+        for a more detailed description of this parameter.
     required: false
     default: "true"
     choices: [ "true", "false" ]
   is_binary:
     description:
-      - Specifies if the file being fetched is a binary
+      - Specifies if the file being fetched is a binary.
     required: false
     default: "false"
     choices: [ "true", "false" ]
   encoding:
     description:
-      - The encoding of the existing file or data set on the remote z/OS system.
-        Setting the value to "ASCII" will not convert the encoding before transfer,
-        whereas the default value of "EBCDIC" will convert the encoding of the file
-        or data set to ASCII before transfer. Note that the conversion to ASCII does
-        not affect the existing file or data set.
+      - If set to "EBCDIC", the encoding of source file or data set will be converted to ASCII before 
+        being transferred to local machine. If set to "ASCII", the encoding will not be converted.
     required: false
     default: "EBCDIC"
     choices: ["ASCII", "EBCDIC" ]
   use_qualifier:
     description:
-      - Indicates whether the data set high level qualifier should be used when fetching
+      - Indicates whether the data set high level qualifier should be used when fetching.
     required: false
     default: "false"
     choices: [ "true", "false" ]
-  wait_s:
+  wait_time_s:
     description:
-      - The time (in seconds) to wait for an uncataloged data set to be recataloged
+      - The time (in seconds) to wait for an uncataloged data set to be recataloged. The 
+        module will wait for a maximum of 10 seconds by default. Only valid if I(is_catalog=false).
     required: false
     default: 10
     type: int
@@ -105,6 +103,8 @@ notes:
       response will not include C(checksum) parameter. 
     - A VSAM data set is always assumed to be in catalog. If an uncataloged VSAM data set needs to 
       be fetched, it should be cataloged first.
+seealso:
+   - fetch
 '''
 
 EXAMPLES = r'''
@@ -126,20 +126,19 @@ EXAMPLES = r'''
 	flat: true
 	is_binary: true
 
-- name: Fetch a unix file without converting from EBCDIC to ASCII. Fail if file is missing
+- name: Fetch a unix file without converting from EBCDIC to ASCII. Don't fail if file is missing
   zos_fetch:
     src: /tmp/somefile
     dest: /tmp/
 	encoding: ASCII
-	fail_on_missing: true
+	fail_on_missing: false
 
-- name: Fetch a unix file and don't validate its checksum. Fail if the file is missing
+- name: Fetch a unix file and don't validate its checksum.
   zos_fetch:
     src: /tmp/somefile
     dest: /tmp/
     flat: true
     validate_checksum: false
-    fail_on_missing: true
 
 - name: Fetch an uncataloged VSAM data set
   zos_fetch:
@@ -148,7 +147,7 @@ EXAMPLES = r'''
     flat: true
     is_catalog: false
     volume: SCR03
-    wait_s: 15
+    wait_time_s: 15
 
 - name: Fetch a PDS member named 'data'
   zos_fetch:
@@ -163,10 +162,30 @@ EXAMPLES = r'''
     flat: true
     is_catalog: false
     volume: SCR03
-    wait_s: 5
+    wait_time_s: 5
 '''
 
 RETURNS = r'''
+message:
+    description: The output message returned from this module.
+    type: dict
+    returned: always
+    msg:
+        description: Message returned by the module
+        type: str
+        sample: The data set was fetched successfully
+    stdout:
+        description: The stdout from a USS command or MVS command, if applicable
+        type: str
+        sample: DATA SET 'USER.PROCLIB' NOT IN CATALOG.
+    stderr:
+        description: The stderr of a USS command or MVS command, if applicable
+        type: str
+        sample: TypeError: 'int' object is not callable.
+    ret_code:
+        description: The return code of a USS command or MVS command, if applicable
+        type: int
+        sample: 0
 file:
 	description: The source file path on remote machine
 	returned: success
@@ -177,11 +196,11 @@ dest:
 	returned: success
 	type: str
 	sample: /tmp/SOME.DATA.SET
-transfer_mode:
+is_binary:
 	description: Indicates which transfer mode was used to fetch the file (binary or text)
 	returned: success
-	type: str
-	sample: binary
+	type: bool
+	sample: True
 encoding:
 	description: The encoding of the fetched file
 	returned: success
@@ -197,21 +216,17 @@ data_set_type:
 	returned: success
 	type: str
 	sample: PDSE
-rc:
-    description: The return code returned by a process executed on the remote z/OS system
-    returned: failure
+note:
+    description: Notice of module failure when C(fail_on_missing) is false
+    returned: failure and fail_on_missing=false
     type: str
-    sample: 12
-stdout:
-    description: The stdout of a command executed on the target z/OS system
-    returned: failure
-    type: str
-    sample: DATA SET 'USER.PROCLIB' NOT IN CATALOG
-stderr:
-    description: The stderr of a command executed on the target z/OS system
-    returned: failure
-    type: str
-    sample: TypeError: 'int' object is not callable
+    sample: The data set USER.PROCLIB does not exist. No data was fetched.
+changed:
+    description: Indicates if any changes were made during the module operation.
+    A change is considered to have been made if the checksum of the fetched file
+    or data set is different to the local file checksum.
+    returned: always
+    type: bool
 '''
 
 
@@ -260,7 +275,12 @@ def _fetch_uss_file(src, validate_checksum, is_binary):
                 checksum = _get_checksum(content)
    
     except (FileNotFoundError, IOError, OSError) as err:
-        _fail_json(msg=str(err))
+        _fail_json(
+            msg=str(err),
+            stdout="",
+            stderr="",
+            ret_code=None
+        )
     
     return content, checksum
 
@@ -269,7 +289,12 @@ def _fetch_zos_data_set(zos_data_set, is_binary, fetch_member=False):
     if fetch_member:
         rc, out, err = _run_command("cat \"//'{}'\"".format(zos_data_set))
         if rc != 0:
-            _fail_json(msg="Failed to read data set member for data set {}".format(zos_data_set), rc=rc, stdout=out, stderr=err)
+            _fail_json(
+                msg="Failed to read data set member for data set {}".format(zos_data_set),
+                stdout=out,
+                stderr=err,
+                ret_code=rc
+            )
         content = out
     else:
         content = Datasets.read(zos_data_set)
@@ -311,9 +336,18 @@ def _copy_vsam_to_temp_data_set(ds_name):
             Datasets.delete(out_ds)
         
         if rc != 0:
-            _fail_json(msg="Non-zero return code received while executing MVSCmd to copy VSAM data set {}".format(ds_name), rc=rc)
-        
-        _fail_json(msg="Failed to call IDCAMS to copy VSAM data set {} to sequential data set: {}".format(ds_name, str(err)))
+            _fail_json(
+                msg="Non-zero return code received while executing MVSCmd to copy VSAM data set {}".format(ds_name),
+                stdout="",
+                stderr="",
+                ret_code=rc
+            )
+        _fail_json(
+            msg="Failed to call IDCAMS to copy VSAM data set {} to sequential data set".format(ds_name),
+            stdout="",
+            stderr=str(err),
+            ret_code=0
+        )
 
     finally:
         Datasets.delete(sysprint)
@@ -330,8 +364,13 @@ def _fetch_vsam(src, validate_checksum, is_binary):
         content = ''
     
     rc = Datasets.delete(temp_ds)
-    if rc > 0:
-        _fail_json(msg="Unable to delete data set {}".format(temp_ds))
+    if rc != 0:
+        _fail_json(
+            msg="Unable to delete data set {}".format(temp_ds),
+            stdout="",
+            stderr="",
+            ret_code=rc
+        )
     
     if validate_checksum:
         checksum = _get_checksum(content)
@@ -355,10 +394,20 @@ def _recatalog_data_set(ds_name, volume):
     try:
         rc = MVSCmd.execute_authorized(pgm="idcams", args='', dds=dd_statements)
         if rc != 0:
-            _fail_json(msg="Non-zero return code received while executing MVSCmd to recatalog {}".format(ds_name), rc=rc)
+            _fail_json(
+                msg="Non-zero return code received while executing MVSCmd to recatalog {}".format(ds_name),
+                stdout="",
+                stderr="",
+                ret_code=rc
+            )
     
     except Exception as err:
-        _fail_json(msg="Failed to call IDCAMS to recatalog data set {}: {}".format(ds_name, str(err)))
+        _fail_json(
+            msg="Failed to call IDCAMS to recatalog data set {}".format(ds_name),
+            stdout="",
+            stderr=str(err),
+            ret_code=0
+        )
     
     finally:
         Datasets.delete(sysin_ds_name) 
@@ -369,13 +418,23 @@ def _uncatalog_data_set(ds_name):
     """ Uncatalog a data set """
     rc, out, err = _run_command("tsocmd \"ALLOC DA('{}') REUSE OLD UNCATALOG\"".format(ds_name))
     if rc != 0:
-        _fail_json(msg="Unable to uncatalog data set {}".format(ds_name), rc=rc, stdout=out, stderr=err)
+        _fail_json(
+            msg="Unable to uncatalog data set {}".format(ds_name),
+            stdout=out,
+            stderr=err,
+            ret_code=rc
+        )
 
 def _convert_from_ebcdic_to_ascii(data):
     """ Convert encoding from EBCDIC to ASCII """
     rc, out, err = _run_command("iconv -f IBM-1047 -t ISO8859-1", data=data)
     if rc != 0:
-        _fail_json(msg="Unable to convert from EBCDIC to ASCII", rc=rc, stdout=out, stderr=err)
+        _fail_json(
+            msg="Unable to convert from EBCDIC to ASCII",
+            stdout=out,
+            stderr=err,
+            ret_code=rc
+        )
     return out
 
 def _get_checksum(data):
@@ -385,7 +444,7 @@ def _get_checksum(data):
     digest.update(data)
     return digest.hexdigest()
 
-def _determine_data_set_type(ds_name):
+def _determine_data_set_type(ds_name, fail_on_missing=True):
     """ Use the LISTDS utility to determine the type of a given data set """
     rc, out, err = _run_command("tsocmd \"LISTDS '{}'\"".format(ds_name))
 
@@ -395,15 +454,24 @@ def _determine_data_set_type(ds_name):
     if "INVALID DATA SET NAME" in out:
         if os.path.exists(ds_name) and os.path.isfile(ds_name):
             return 'USS'
-        _fail_json(msg="The file {} does not exist".format(ds_name))
-    
+        elif fail_on_missing:
+            _fail_json(
+                msg="The file {} does not exist".format(ds_name),
+                stdout=out,
+                stderr=err,
+                ret_code=rc
+            )
+        else:
+            module.exit_json(note="The USS file {} does not exist. No data was fetched.".format(ds_name))
+
     if rc != 0:
         msg = None
         if "ALREADY IN USE" in out:
             msg = "Dataset {} may already be open by another user. Close the dataset and try again.".format(ds_name)
         else:
             msg = "Unable to determine data set type for data set {}.".format(ds_name)
-        _fail_json(msg=msg, rc=rc, stdout=out, stderr=err)
+        
+        _fail_json(msg=msg, stdout=out, stderr=err, ret_code=rc)
     
     ds_search = re.search("(-|--)DSORG(|-)\n(.*)", out)
     if ds_search:
@@ -416,7 +484,12 @@ def _fetch_pdse(src):
     temp_dir = tempfile.mkdtemp()    
     rc, out, err = _run_command("cp \"//'{}'\" {}".format(src, temp_dir))
     if rc != 0:
-        _fail_json(msg="Error copying partitioned data set to USS", rc=rc, stdout=out, stderr=err)
+        _fail_json(
+            msg="Error copying partitioned data set to USS",
+            stdout=out,
+            stderr=err,
+            ret_code=rc
+        )
     
     result['pds_path'] = temp_dir
     return result
@@ -426,7 +499,12 @@ def _fetch_ps(src, validate_checksum, is_binary):
     checksum = None
     content = _fetch_zos_data_set(src, is_binary)
     if not content:
-        _fail_json(msg="Error fetching sequential data set {}".format(src))
+        _fail_json(
+            msg="Error fetching sequential data set {}".format(src),
+            stdout="",
+            stderr="",
+            ret_code=None
+        )
     if validate_checksum:
         checksum = _get_checksum(content)
     return content, checksum
@@ -449,7 +527,7 @@ def _validate_params(src, is_binary, encoding, is_catalog, volume, is_uss, _fetc
         msg = "Invalid data set name provided"
 
     if msg:
-        _fail_json(msg=msg)
+        _fail_json(msg=msg, stdout="", stderr="", ret_code=None)
 
 
 def run_module():
@@ -460,13 +538,13 @@ def run_module():
             dest                = dict(required=True, type='path'),
             is_catalog          = dict(required=False, default=True, type='bool'),
             volume              = dict(required=False, type='str'),
-            fail_on_missing     = dict(required=False, default=False, choices=[True, False], type='str'),
+            fail_on_missing     = dict(required=False, default=True, choices=[True, False], type='str'),
             validate_checksum   = dict(required=False, default=True, choices=[True, False], type='str'),
             flat                = dict(required=False, default=True, choices=[True, False], type='str'),
             is_binary           = dict(required=False, default=False, type='bool'),
             encoding            = dict(required=False, choices=['ASCII', 'EBCDIC'], type='str'),
             is_uss              = dict(required=False, default=False, type='bool'),
-            wait_s              = dict(required=False, default=10, type='int'),
+            wait_time_s         = dict(required=False, default=10, type='int'),
             use_qualifier       = dict(required=False, default=False, type='bool'),
             _fetch_member       = dict(required=False, type='bool')
         )
@@ -476,7 +554,7 @@ def run_module():
     b_src               = to_bytes(src)
     encoding            = module.params.get('encoding')
     volume              = module.params.get('volume')
-    wait_s              = module.params.get('wait_s') 
+    wait_time_s         = module.params.get('wait_time_s') 
     fail_on_missing     = boolean(module.params.get('fail_on_missing'), strict=False)
     validate_checksum   = boolean(module.params.get('validate_checksum'), strict=False)
     is_uss              = boolean(module.params.get('is_uss'), strict=False)
@@ -494,29 +572,27 @@ def run_module():
     ds_name = src if not _fetch_member else src[:src.find('(')]
     
     try:
-        ds_type = _determine_data_set_type(ds_name)
+        ds_type = _determine_data_set_type(ds_name, fail_on_missing)
     
     except UncatalogedDatasetError as err:
-        if is_catalog or fail_on_missing:
-            _fail_json(msg=str(err))
+        if is_catalog and fail_on_missing:
+            _fail_json(msg=str(err), stdout="", stderr="", ret_code=None)
     
         _recatalog_data_set(ds_name, volume)
-        time.sleep(wait_s)
+        time.sleep(wait_time_s)
         ds_type = _determine_data_set_type(ds_name)
         if not ds_type:
-            _fail_json(msg="Could not determine data set type") 
+            _fail_json(msg="Could not determine data set type", stdout="", stderr="", ret_code=None) 
     
-
     if ds_type in MVS_DS_TYPES and not Datasets.exists(src):
-        res_args['msg'] = "The MVS data set {} does not exist".format(src)
-        
-    elif ds_type == 'USS' and not os.path.exists(b_src):
-        res_args['msg'] = "The file {} does not exist".format(src)
-        
-    if res_args.get('msg'):
         if fail_on_missing:
-            _fail_json(**res_args)
-        module.exit_json(**res_args)
+            _fail_json(
+                msg="The MVS data set {} does not exist".format(src), 
+                stdout="", 
+                stderr="", 
+                ret_code=None
+            )
+        module.exit_json(note="The data set {} does not exist. No data was fetched.")
 
     # Fetch sequential dataset
     if ds_type == 'PS':

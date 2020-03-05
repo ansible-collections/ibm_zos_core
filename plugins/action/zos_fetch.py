@@ -25,10 +25,16 @@ def _update_result(result, src, dest, ds_type, binary_mode=False, encoding='EBCD
     }
     updated_result = dict((k,v) for k,v in result.items())
     updated_result.update({
+        'message': {
+            'msg': "The {} was fetched successfully".format("file" if ds_type == 'USS' else "data set"),
+            'stdout': "",
+            'stderr': "",
+            'ret_code': 0
+        },
         'file': src,
         'dest': dest,
         'data_set_type': data_set_types[ds_type],
-        'transfer_mode': 'binary' if binary_mode else 'text',
+        'is_binary': binary_mode
     })
     if not binary_mode:
         updated_result.update({'encoding': encoding})
@@ -67,100 +73,115 @@ class ActionModule(ActionBase):
         encoding            = self._task.args.get('encoding')
         volume              = self._task.args.get('volume')
         flat                = _process_boolean(self._task.args.get('flat'), default=False)
-        is_binary            = _process_boolean(self._task.args.get('is_binary'))
+        is_binary           = _process_boolean(self._task.args.get('is_binary'))
         validate_checksum   = _process_boolean(self._task.args.get('validate_checksum'), default=True)
+        fail_on_missing     = _process_boolean(self._task.args.get('fail_on_missing'), default=True) 
 
+        msg = None
         if not isinstance(src, string_types):
-            result['msg'] = "Invalid type supplied for 'source' option, it must be a string"
+            msg = "Invalid type supplied for 'source' option, it must be a string"
         if not isinstance(dest, string_types):
-            result['msg'] = "Invalid type supplied for 'destination' option, it must be a string"
+            msg = "Invalid type supplied for 'destination' option, it must be a string"
         if encoding and not isinstance(encoding, string_types):
-            result['msg'] = "Invalid type supplied for 'encoding' option, it must be a string"
+            msg = "Invalid type supplied for 'encoding' option, it must be a string"
         if volume and not isinstance(volume, string_types):
-            result['msg'] = "Invalid type supplied for 'volume' option, it must be a string"
+            msg = "Invalid type supplied for 'volume' option, it must be a string"
         if src is None or dest is None:
-            result['msg'] = "Source and destination are required"
+            msg = "Source and destination are required"
 
-        if result.get('msg'):
+        if msg:
+            result['message'] = dict(msg=msg, stdout="", stderr="", ret_code=None)
             result['failed'] = True
             return result
         
         is_uss = True if '/' in src else False
         ds_type = None
         fetch_member = False
-        try:
-            src = self._connection._shell.join_path(src)
-            src = self._remote_expand_user(src)
+        src = self._connection._shell.join_path(src)
+        src = self._remote_expand_user(src)
 
-            if src.endswith(')'):
-                fetch_member = True
+        if src.endswith(')'):
+            fetch_member = True
 
-            # calculate the destination name
-            if os.path.sep not in self._connection._shell.join_path('a', ''):
-                src = self._connection._shell._unquote(src)
-                source_local = src.replace('\\', '/')
-            else:
-                source_local = src
+        # calculate the destination name
+        if os.path.sep not in self._connection._shell.join_path('a', ''):
+            src = self._connection._shell._unquote(src)
+            source_local = src.replace('\\', '/')
+        else:
+            source_local = src
 
-            dest = os.path.expanduser(dest)
-            if flat:
-                if os.path.isdir(to_bytes(dest, errors='surrogate_or_strict')) and not dest.endswith(os.sep):
-                    result['msg'] = "dest is an existing directory, use a trailing slash if you want to fetch src into that directory"
-                    result['file'] = dest
-                    result['failed'] = True
-                    return result
-                if dest.endswith(os.sep):
-                    base = os.path.basename(source_local)
-                    dest = os.path.join(dest, base)
-                if not dest.startswith("/"):
-                    dest = self._loader.path_dwim(dest)
-            else:
-                if 'inventory_hostname' in task_vars:
-                    target_name = task_vars['inventory_hostname']
-                else:
-                    target_name = self._play_context.remote_addr
-                dest = "{}/{}/{}".format(self._loader.path_dwim(dest), target_name, source_local)
-
-            dest = dest.replace("//", "/")
-            if fetch_member:
-                member = src[ src.find('(') + 1 : src.find(')') ]
-                base_dir = os.path.dirname(dest)
-                dest = os.path.join(base_dir, member)
-            
-            new_module_args = dict((k,v) for k,v in self._task.args.items())
-            new_module_args.update({'_fetch_member': fetch_member, 'is_uss': is_uss})
-            fetch_res = self._execute_module(module_name='zos_fetch', module_args=new_module_args, task_vars=task_vars)
-            
-            if fetch_res.get('msg'):
-                result['msg'] = fetch_res['msg']
-                result['failed'] = fetch_res.get('failed')
-                return result
-            
-            ds_type = fetch_res.get('ds_type')
-            src = fetch_res['file']
-
-            if ds_type == 'VSAM' or ds_type == 'PS' or is_uss:
-                fetch_ds = self._transfer_from_uss(dest, task_vars, fetch_res, 
-                                        binary_mode=is_binary, validate_checksum=validate_checksum)
-                result.update(fetch_ds)
-                 
-            elif ds_type in ('PO', 'PDSE', 'PE'):
-                if fetch_member:
-                    fetch_pds = self._transfer_from_uss(dest, task_vars, fetch_res, 
-                                        binary_mode=is_binary, validate_checksum=validate_checksum)
-                else:    
-                    fetch_pds = self._transfer_pds(dest, task_vars, fetch_res, binary_mode=is_binary)
-                
-                result.update(fetch_pds)
-            
-            else:
-                result['msg'] = "The data set type '{}' is not currently supported".format(ds_type)
+        dest = os.path.expanduser(dest)
+        if flat:
+            if os.path.isdir(to_bytes(dest, errors='surrogate_or_strict')) and not dest.endswith(os.sep):
+                result['message'] = dict(msg="dest is an existing directory, use a trailing slash if you want to fetch src into that directory",
+                                            stdout="",
+                                            stderr="",
+                                            ret_code=None
+                                    )
                 result['failed'] = True
-            
-        finally:
-            if not result.get('msg'):
-                result = _update_result(result, src, dest, ds_type, 
-                            binary_mode=is_binary, encoding=encoding if encoding else 'EBCDIC')
+                return result
+            if dest.endswith(os.sep):
+                base = os.path.basename(source_local)
+                dest = os.path.join(dest, base)
+            if not dest.startswith("/"):
+                dest = self._loader.path_dwim(dest)
+        else:
+            if 'inventory_hostname' in task_vars:
+                target_name = task_vars['inventory_hostname']
+            else:
+                target_name = self._play_context.remote_addr
+            dest = "{}/{}/{}".format(self._loader.path_dwim(dest), target_name, source_local)
+
+        dest = dest.replace("//", "/")
+        if fetch_member:
+            member = src[ src.find('(') + 1 : src.find(')') ]
+            base_dir = os.path.dirname(dest)
+            dest = os.path.join(base_dir, member)
+        
+        new_module_args = dict((k,v) for k,v in self._task.args.items())
+        new_module_args.update({'_fetch_member': fetch_member, 'is_uss': is_uss})
+        fetch_res = self._execute_module(module_name='zos_fetch', module_args=new_module_args, task_vars=task_vars)
+        
+        if fetch_res.get('msg'):
+            result['message'] = dict(stdout=fetch_res['stdout'], 
+                                    stderr=fetch_res['stderr'], 
+                                    ret_code=fetch_res['ret_code'],
+                                    msg=fetch_res['msg']
+                                )
+            result['failed'] = fetch_res.get('failed')
+            return result
+        
+        elif fetch_res.get('note'):
+            result['note'] = fetch_res.get('note')
+            return result
+        
+        ds_type = fetch_res.get('ds_type')
+        src = fetch_res['file']
+
+        if ds_type == 'VSAM' or ds_type == 'PS' or is_uss:
+            fetch_ds = self._transfer_from_uss(dest, task_vars, fetch_res, 
+                                    binary_mode=is_binary, validate_checksum=validate_checksum)
+            result.update(fetch_ds)
+                
+        elif ds_type in ('PO', 'PDSE', 'PE'):
+            if fetch_member:
+                fetch_pds = self._transfer_from_uss(dest, task_vars, fetch_res, 
+                                    binary_mode=is_binary, validate_checksum=validate_checksum)
+            else:    
+                fetch_pds = self._transfer_pds(dest, task_vars, fetch_res, binary_mode=is_binary)
+            result.update(fetch_pds)
+        
+        else:
+            result['message'] = dict(msg="The data set type '{}' is not currently supported".format(ds_type),
+                                    stdout="",
+                                    stderr="",
+                                    ret_code=None
+                                )
+            result['failed'] = True
+            return result
+        
+        result = _update_result(result, src, dest, ds_type, 
+                    binary_mode=is_binary, encoding=encoding if encoding else 'EBCDIC')
         
         return result
 

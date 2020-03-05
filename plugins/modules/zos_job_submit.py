@@ -322,15 +322,14 @@ EXAMPLE RESULTS:
 '''
 
 from ansible.module_utils.basic import *
+from pipes import quote
 from zoautil_py import Jobs
 from time import sleep
 from os import chmod, path
 from tempfile import NamedTemporaryFile
 import re
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import job_output
-
-ZOAUTIL_TEMP_USS = "/tmp/ansible-temp-1"
-ZOAUTIL_TEMP_USS2 = "/tmp/ansible-temp-2"
+from stat import S_IEXEC, S_IREAD, S_IWRITE
 
 """time between job query checks to see if a job has completed, default 1 second"""
 POLLING_INTERVAL = 1
@@ -382,7 +381,7 @@ def copy_rexx_and_run(script,src,vol,module):
     tmp_file = NamedTemporaryFile(delete=delete_on_close)
     with open(tmp_file.name, 'w') as f:
         f.write(script)
-    chmod(tmp_file.name, 0o755)
+    chmod(tmp_file.name, stat.S_IEXEC | stat.S_IREAD | S_IWRITE)
     pathName = path.dirname(tmp_file.name)
     scriptName = path.basename(tmp_file.name)
     rc, stdout, stderr = module.run_command(['./' + scriptName, src, vol], cwd=pathName)
@@ -395,8 +394,12 @@ def get_job_info(module, jobId, return_output):
     except SubmitJCLError as e:
         raise SubmitJCLError(e.msg)
 
-    if return_output is True:
-        result = job_output(module, job_id=jobId)
+    result = job_output(module, job_id=jobId)
+
+    if not return_output:
+        for job in result.get('jobs', []):
+            job['ddnames'] = []
+
     result['changed'] = True
 
     return result
@@ -495,7 +498,8 @@ def run_module():
         volume=dict(type='str', required=False),
         return_output=dict(type='bool', required=False, default=True),
         wait_time_s=dict(type='int', required=False),
-        max_rc=dict(type='int', required=False)
+        max_rc=dict(type='int', required=False),
+        temp_file=dict(type='path', required=False)
     )
 
     module = AnsibleModule(
@@ -524,7 +528,11 @@ def run_module():
     return_output = module.params.get('return_output')
     wait_time_s = module.params.get('wait_time_s')
     max_rc = module.params.get('max_rc')
-    
+    # get temporary file names for copied files
+    temp_file = module.params.get('temp_file')
+    if temp_file:
+        temp_file_2 = NamedTemporaryFile(delete=True)
+
     if wait_time_s is None:
         wait_time_s = POLLING_THRESHOLD
     else:
@@ -554,12 +562,12 @@ def run_module():
                 # For local file, it has been copied to the temp directory in action plugin.
                 encoding = module.params.get('encoding')
                 if encoding == 'EBCDIC' or encoding == 'IBM-037' or encoding == 'IBM-1047':
-                    jobId = submit_uss_jcl(ZOAUTIL_TEMP_USS, module)
+                    jobId = submit_uss_jcl(temp_file, module)
                 elif encoding == 'UTF-8' or encoding == 'ISO-8859-1' or encoding == 'ASCII' or encoding == None:  ## 'UTF-8' 'ASCII' encoding will be converted.
-                    (conv_rc, stdout, stderr) = module.run_command('iconv -f ISO8859-1 -t IBM-1047 %s > %s' % (ZOAUTIL_TEMP_USS, ZOAUTIL_TEMP_USS2),
+                    (conv_rc, stdout, stderr) = module.run_command('iconv -f ISO8859-1 -t IBM-1047 %s > %s' % (quote(temp_file), quote(temp_file_2.name)),
                                                                use_unsafe_shell=True)
                     if conv_rc == 0:
-                        jobId = submit_uss_jcl(ZOAUTIL_TEMP_USS2, module)
+                        jobId = submit_uss_jcl(temp_file_2.name, module)
                     else:
                         module.fail_json(msg='The Local file encoding conversion failed. Please check the source file.'+ stderr, **result)
                 else:
@@ -596,6 +604,9 @@ def run_module():
         module.fail_json(msg=str(e), **result)
     except Exception as e:
         module.fail_json(msg=str(e), **result)
+    finally:
+        if temp_file:
+            os.remove(temp_file)
     result['duration'] = duration
     if duration == wait_time_s:
         result['message'] = {'stdout': 'Submit JCL operation succeeded but it is a long running job. Timeout is '+ str(wait_time_s)+' seconds.'}

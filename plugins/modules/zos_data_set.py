@@ -565,18 +565,13 @@ def create_data_set_member(name):
     """Create a data set member if the partitioned data set exists.
     Also used to overwrite a data set member if empty replacement is desired.
     Raises DatasetNotFoundError if data set cannot be found."""
-    try:
-        base_dsname = name.split('(')[0]
-        if not base_dsname or not data_set_exists(base_dsname):
-            raise DatasetNotFoundError(name)
-        tmp_file = tempfile.NamedTemporaryFile(delete=False)
-        rc, stdout, stderr = run_command('cp {} "//\'{}\'"'.format(tmp_file.name, name))
-        if rc != 0:
-            raise DatasetMemberCreateError(name, rc)
-    except Exception:
-        raise
-    finally:
-        os.remove(tmp_file.name)
+    base_dsname = name.split('(')[0]
+    if not base_dsname or not data_set_exists(base_dsname):
+        raise DatasetNotFoundError(name)
+    tmp_file = tempfile.NamedTemporaryFile(delete=True)
+    rc, stdout, stderr = run_command('cp {} "//\'{}\'"'.format(tmp_file.name, name))
+    if rc != 0:
+        raise DatasetMemberCreateError(name, rc)
     return
 
 def delete_data_set_member(name):

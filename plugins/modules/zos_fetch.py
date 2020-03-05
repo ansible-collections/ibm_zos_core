@@ -346,7 +346,7 @@ def _copy_vsam_to_temp_data_set(ds_name):
             msg="Failed to call IDCAMS to copy VSAM data set {} to sequential data set".format(ds_name),
             stdout="",
             stderr=str(err),
-            ret_code=0
+            ret_code=rc
         )
 
     finally:
@@ -406,7 +406,7 @@ def _recatalog_data_set(ds_name, volume):
             msg="Failed to call IDCAMS to recatalog data set {}".format(ds_name),
             stdout="",
             stderr=str(err),
-            ret_code=0
+            ret_code=rc
         )
     
     finally:

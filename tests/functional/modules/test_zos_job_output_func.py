@@ -3,11 +3,13 @@
 # Copyright (c) IBM Corporation 2019, 2020
 # Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
-from __future__ import absolute_import, division
+from __future__ import (absolute_import, division, print_function)
+
+__metaclass__ = type
+
 from shellescape import quote
 import tempfile
 
-__metaclass__ = type
 
 JCL_FILE_CONTENTS = """//HELLO    JOB (T043JM,JM00,1,0,0,0),'HELLO WORLD - JRM',CLASS=R,
 //             MSGCLASS=X,MSGLEVEL=1,NOTIFY=S0JM

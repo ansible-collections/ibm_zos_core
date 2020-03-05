@@ -2,7 +2,7 @@
 # Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
 
-from __future__ import absolute_import, division, print_function
+from __future__ import (absolute_import, division, print_function)
 
 __metaclass__ = type
 
@@ -23,11 +23,11 @@ class BetterArg(object):
         name,
         elements=None,
         options=None,
-        aliases=[],
-        dependencies=[],
+        aliases=None,
+        dependencies=None,
         required=False,
         default=None,
-        choices=[],
+        choices=None,
         arg_type="str",
     ):
         """Holds all of the attributes that define a particular argument.
@@ -42,15 +42,30 @@ class BetterArg(object):
             name {str} -- The name of the argument to define.
 
         Keyword Arguments:
-            elements {Union[str, function]} -- Used to specify the expected type for each list element when the arg_type is 'list'. (default: {None})
-            options {dict} -- When arg_type or elements = 'dict', a dictionary containing details for a nested group of arguments should be provided. (default: {None})
-            aliases {list[str]} -- A list of alternative names that can be used to refer to the argument. (default: {[]})
-            dependencies {list} -- A list of arguments that should be resolved before parsing this argument. (default: {[]})
-            required {Union[bool, function]} -- Determines if later parsing should fail when no value is provided for the argument. Not necessary if default is provided. (default: {False})
-            default {Union[str, int, bool, function]} -- The default value that the argument should be set to when none is provided. (default: {None})
+            elements {Union[str, function]} -- Used to specify the expected
+            type for each list element when the arg_type is 'list'. (default: {None})
+            options {dict} -- When arg_type or elements = 'dict', a dictionary
+            containing details for a nested group of arguments should be
+            provided. (default: {None})
+            aliases {list[str]} -- A list of alternative names that can be
+            used to refer to the argument. (default: {[]})
+            dependencies {list} -- A list of arguments that should be resolved
+            before parsing this argument. (default: {[]})
+            required {Union[bool, function]} -- Determines if later parsing
+            should fail when no value is provided for the argument. Not necessary if
+            default is provided. (default: {False})
+            default {Union[str, int, bool, function]} -- The default value that the
+            argument should be set to when none is provided. (default: {None})
             choices {list[Union[str, int, bool]]} -- The list of valid contents for the argument.
             arg_type {Union[str, function]} -- The type the argument contents should be. (default: {'str'})
         """
+
+        if aliases is None:
+            aliases = []
+        if dependencies is None:
+            dependencies = []
+        if choices is None:
+            choices = []
         self.arg_parser = arg_parser
         self.name = name
         self.elements = elements
@@ -67,15 +82,19 @@ class BetterArg(object):
 
 class BetterArgHandler(object):
     def __init__(self, arg_name, contents, resolved_args, arg_defs):
-        """Sets, formats and validates an argument and its contents based on its 
+        """Sets, formats and validates an argument and its contents based on its
         matching BetterArg object.
 
         Arguments:
             object {object} -- The most base class type.
             arg_name {str} -- The name of the argument.
-            contents {dict} -- The argument contents to be handled by the argument's BetterArg object
-            resolved_args {dict} -- Contains all of the dependencies and their contents, which have already been handled by a BetterArgHandler, for use during current arguments handling operations.
-            arg_defs {dict[str, BetterArg]} -- All of the BetterArg argument definitions for current argument depth.
+            contents {dict} -- The argument contents to be handled by the
+            argument's BetterArg object
+            resolved_args {dict} -- Contains all of the dependencies and their
+            contents, which have already been handled by a BetterArgHandler, for use
+            during current arguments handling operations.
+            arg_defs {dict[str, BetterArg]} -- All of the BetterArg argument
+            definitions for current argument depth.
         """
         self.arg_name = arg_name
         self.arg_defs = arg_defs
@@ -100,7 +119,7 @@ class BetterArgHandler(object):
         # self._verify_valid_arg()
         self._resolve_required()
         self.contents = self._resolve_default()
-        if self.contents != None:
+        if self.contents is not None:
             # ? is this the best way to handle this?
             self.contents = self._resolve_arg_type()
             self._resolve_choices()
@@ -111,10 +130,9 @@ class BetterArgHandler(object):
 
         Arguments:
             contents {list[Union[int, str, bool, dict]]} -- The contents of the argument.
-            resolved_dependencies {dict} -- Contains all of the dependencies and their contents, 
+            resolved_dependencies {dict} -- Contains all of the dependencies and their contents,
             which have already been handled,
             for use during current arguments handling operations.
-
         Returns:
             list[Union[int, str, bool, dict]] -- The arguments contents after any necessary operations.
         """
@@ -140,7 +158,7 @@ class BetterArgHandler(object):
 
         Arguments:
             contents {dict} -- The contents of the argument.
-            resolved_dependencies {dict} -- Contains all of the dependencies and their contents, 
+            resolved_dependencies {dict} -- Contains all of the dependencies and their contents,
             which have already been handled,
             for use during current arguments handling operations.
 
@@ -162,7 +180,7 @@ class BetterArgHandler(object):
 
         Arguments:
             contents {str} -- The contents of the argument.
-            resolved_dependencies {dict} -- Contains all of the dependencies and their contents, 
+            resolved_dependencies {dict} -- Contains all of the dependencies and their contents,
             which have already been handled,
             for use during current arguments handling operations.
 
@@ -174,7 +192,7 @@ class BetterArgHandler(object):
         """
         if not isinstance(contents, str):
             raise ValueError(
-                'Invalid argument type for "{}". expected "str"'.format(contents)
+                'Invalid argument type for "{0}". expected "str"'.format(contents)
             )
         return contents
 
@@ -183,7 +201,7 @@ class BetterArgHandler(object):
 
         Arguments:
             contents {Union[int, str]} -- The contents of the argument.
-            resolved_dependencies {dict} -- Contains all of the dependencies and their contents, 
+            resolved_dependencies {dict} -- Contains all of the dependencies and their contents,
             which have already been handled,
             for use during current arguments handling operations.
 
@@ -195,7 +213,7 @@ class BetterArgHandler(object):
         """
         if not re.match(r"[0-9]+", str(contents)):
             raise ValueError(
-                'Invalid argument type for "{}". expected "int"'.format(contents)
+                'Invalid argument type for "{0}". expected "int"'.format(contents)
             )
         return int(contents)
 
@@ -204,19 +222,18 @@ class BetterArgHandler(object):
 
         Arguments:
             contents {bool} -- The contents of the argument.
-            resolved_dependencies {dict} -- Contains all of the dependencies and their contents, 
+            resolved_dependencies {dict} -- Contains all of the dependencies and their contents,
             which have already been handled,
             for use during current arguments handling operations.
 
         Raises:
             ValueError: When contents is invalid argument type
-
         Returns:
             bool -- The arguments contents after any necessary operations.
         """
         if not isinstance(contents, bool):
             raise ValueError(
-                'Invalid argument type for "{}". expected "bool"'.format(contents)
+                'Invalid argument type for "{0}". expected "bool"'.format(contents)
             )
         return contents
 
@@ -247,7 +264,7 @@ class BetterArgHandler(object):
             and self.arg_def.required is True
             and self.arg_def.default is None
         ):
-            raise ValueError("Missing required argument {}".format(self.arg_name))
+            raise ValueError("Missing required argument {0}".format(self.arg_name))
         return
 
     # TODO: add additional skips when argument type should never use default even when set
@@ -257,7 +274,7 @@ class BetterArgHandler(object):
         Returns:
             Union[str, int, bool, list, dict] -- The updated contents of the argument.
         """
-        if self.contents != None:
+        if self.contents is not None:
             return self.contents
         new_contents = None
         if BetterArgHandler.is_function(self.arg_def.default):
@@ -270,7 +287,7 @@ class BetterArgHandler(object):
         return self.contents
 
     def _resolve_choices(self):
-        """Verify the argument contents are a valid choice when list of choices is provided. 
+        """Verify the argument contents are a valid choice when list of choices is provided.
 
         Raises:
             ValueError: The provided value is not a valid choice.
@@ -278,14 +295,14 @@ class BetterArgHandler(object):
         if self.arg_def.choices and len(self.arg_def.choices) > 0:
             if self.contents not in self.arg_def.choices:
                 raise ValueError(
-                    "Provided value: {} for arg: {} is not in a valid choice. Choices: {}".format(
+                    "Provided value: {0} for arg: {1} is not in a valid choice. Choices: {2}".format(
                         self.contents, self.arg_name, ", ".join(self.arg_def.choices)
                     )
                 )
 
     def _resolve_arg_type(self):
         """Perform type-specific operations for an argument.
-        This may include manipulating argument contents and/or 
+        This may include manipulating argument contents and/or
         any necessary validation.
 
         Raises:
@@ -302,7 +319,7 @@ class BetterArgHandler(object):
             )
         else:
             raise ValueError(
-                'Provided arg_type "{}" for argument "{}" is invalid.'.format(
+                'Provided arg_type "{0}" for argument "{1}" is invalid.'.format(
                     self.arg_name, self.arg_def.arg_type
                 )
             )
@@ -310,7 +327,7 @@ class BetterArgHandler(object):
     # ? resolved_args should be a dict?
     def build_resolved_dependency_dict(self, resolved_args):
         """Gather all arguments for which the current argument has
-        a dependency. These dependency arguments should already be 
+        a dependency. These dependency arguments should already be
         resolved by the time this method is called.
 
         Arguments:
@@ -341,12 +358,12 @@ class BetterArgParser(object):
 
     def handle_args(self, arg_dict):
         """Handles argument definition operations.
-        Builds dict of BetterArg objects based on argument 
+        Builds dict of BetterArg objects based on argument
         definitions, swaps out alias names, and sorts and verifies no
         invalid or cyclic dependencies exist.
 
         Arguments:
-            arg_dict {dict} -- The argument definitions used to generate BetterArg objects. 
+            arg_dict {dict} -- The argument definitions used to generate BetterArg objects.
 
         Returns:
             OrderedDict[str, BetterArg] -- The defined arguments, sorted based on their dependencies.
@@ -362,12 +379,12 @@ class BetterArgParser(object):
         return args
 
     def parse_args(self, arg_dict):
-        """Parse provided argument values using corresponding 
+        """Parse provided argument values using corresponding
         BetterArg argument definition.
 
         Arguments:
-            arg_dict {dict} -- The arguments to parse where key=argument name/alias 
-            and value=argument contents 
+            arg_dict {dict} -- The arguments to parse where key=argument name/alias
+            and value=argument contents
 
         Returns:
             dict -- The arguments with alias names swapped for real names
@@ -381,7 +398,7 @@ class BetterArgParser(object):
             parsed_args[key] = updated_value
         return parsed_args
 
-    def _add_alias(self, arg_name, arg_aliases=[], aliases={}):
+    def _add_alias(self, arg_name, arg_aliases=None, aliases=None):
         """Add alias to an alias dictionary that can be
         used to simplify alias->name determinations.
 
@@ -389,8 +406,8 @@ class BetterArgParser(object):
             arg_name {str} -- the name of the argument
 
         Keyword Arguments:
-            arg_aliases {list[str]} -- The list of aliases for the argument name (default: {[]})
-            aliases {dict} -- The dictionary containing all of the currently defined aliases. (default: {{}})
+            arg_aliases {list[str]} -- The list of aliases for the argument name (default: {None})
+            aliases {dict} -- The dictionary containing all of the currently defined aliases. (default: {None})
 
         Raises:
             ValueError: When conflicting aliases are found.
@@ -398,11 +415,15 @@ class BetterArgParser(object):
         Returns:
             dict -- The updated dict of aliases
         """
+        if arg_aliases is None:
+            arg_aliases = []
+        if aliases is None:
+            aliases = {}
         arg_aliases.append(arg_name)
         for alternate_name in arg_aliases:
             if aliases.get(alternate_name, arg_name) != arg_name:
                 raise ValueError(
-                    'Conflicting aliases "{}" and "{}" found for name "{}"'.format(
+                    'Conflicting aliases "{0}" and "{1}" found for name "{2}"'.format(
                         aliases.get(alternate_name), alternate_name, arg_name
                     )
                 )
@@ -416,7 +437,7 @@ class BetterArgParser(object):
 
         Arguments:
             args {dict} -- Arguments for BetterArgParser to parse
-            aliases {dict} -- The dictionary containing all of the currently defined aliases. 
+            aliases {dict} -- The dictionary containing all of the currently defined aliases.
 
         Returns:
             dict -- The contents from provided argument where they keys
@@ -448,7 +469,7 @@ class BetterArgParser(object):
         bad_dependencies = list(set(dependencies) - set(valid_names))
         if bad_dependencies:
             raise ValueError(
-                "One or more invalid dependencies found: {}".format(
+                "One or more invalid dependencies found: {0}".format(
                     ", ".join(bad_dependencies)
                 )
             )

@@ -3,6 +3,10 @@
 # Copyright (c) IBM Corporation 2019, 2020
 # Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
+from __future__ import (absolute_import, division, print_function)
+
+__metaclass__ = type
+
 import sys
 import unittest
 from unittest.mock import MagicMock, Mock
@@ -12,7 +16,7 @@ IMPORT_NAME = 'ibm_zos_core.plugins.modules.zos_job_submit'
 
 
 class DummyModule(object):
-    """Used in place of Ansible's module 
+    """Used in place of Ansible's module
     so we can easily mock the desired behavior."""
 
     def __init__(self, rc, stdout, stderr):
@@ -73,8 +77,8 @@ return_tuple1 = (0, 'JOB12345', '')
 return_tuple2 = (0, '', 'Not accepted by JES')
 
 test_data_PDS_in_volume = [
-    ('BJMAXY.UNCATLOG.JCL(SAMPLE)',  '', return_tuple1, True),
-    ('BJMAXY.UNCATLOG.JCL(SAMPLE)',  'P2SS01', return_tuple2, False),
+    ('BJMAXY.UNCATLOG.JCL(SAMPLE)', '', return_tuple1, True),
+    ('BJMAXY.UNCATLOG.JCL(SAMPLE)', 'P2SS01', return_tuple2, False),
 ]
 @pytest.mark.parametrize("src, volume, return_value, expected", test_data_PDS_in_volume)
 def test_submit_jcl_in_volume(zos_import_mocker, src, volume, return_value, expected):

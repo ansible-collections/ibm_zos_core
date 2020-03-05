@@ -3,7 +3,9 @@
 # Copyright (c) IBM Corporation 2019, 2020
 # Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
-from __future__ import absolute_import, division
+from __future__ import (absolute_import, division, print_function)
+
+__metaclass__ = type
 
 import os
 import sys
@@ -15,7 +17,6 @@ import ansible.utils
 import pytest
 from pprint import pprint
 
-__metaclass__ = type
 
 # TODO: determine if data set names need to be more generic for testcases
 # TODO: add additional tests to check additional data set creation parameter combinations
@@ -115,8 +116,8 @@ def test_batch_data_set_and_member_creation(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_data_set(
         batch=[
-            {"name": "imstestl.ims1.test05", "type": "pds",},
-            {"name": "imstestl.ims1.test05(newmem1)", "type": "member",},
+            {"name": "imstestl.ims1.test05", "type": "pds", },
+            {"name": "imstestl.ims1.test05(newmem1)", "type": "member", },
             {
                 "name": "imstestl.ims1.test05(newmem2)",
                 "type": "member",
@@ -191,4 +192,3 @@ def test_repeated_operations(ansible_zos_module):
         assert result.get("original_message").get("state") == "absent"
         assert result.get("changed") is False
         assert result.get("module_stderr") is None
-

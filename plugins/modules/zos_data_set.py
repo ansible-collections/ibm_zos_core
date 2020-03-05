@@ -4,7 +4,7 @@
 # Copyright (c) IBM Corporation 2019, 2020
 # Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
-from __future__ import absolute_import, division, print_function
+from __future__ import (absolute_import, division, print_function)
 
 __metaclass__ = type
 
@@ -102,8 +102,8 @@ options:
     description:
       - When `replace` is `true`, and `state` is `present`, existing data set matching name will be replaced.
       - >
-        Replacement is performed by deleting the existing data set and creating a new data set with the desired 
-        attributes in the old data set's place. This may lead to an inconsistent state if data set creations fails 
+        Replacement is performed by deleting the existing data set and creating a new data set with the desired
+        attributes in the old data set's place. This may lead to an inconsistent state if data set creations fails
         after the old data set is deleted.
       - If `replace` is `true`, all data in the original data set will be lost.
     type: bool
@@ -156,19 +156,19 @@ EXAMPLES = r"""
   zos_data_set:
     name: user.private.libs
     type: esds
-    
+
 - name: Create an RRDS data set with data class MYDATA if it does not exist
   zos_data_set:
     name: user.private.libs
     type: rrds
     data_class: mydata
-       
+
 
 - name: Delete a data set if it exists
   zos_data_set:
     name: user.private.libs
     state: absent
-    
+
 - name: Write a member to existing PDS, replace if member exists
   zos_data_set:
     name: user.private.libs(mydata)
@@ -184,8 +184,8 @@ EXAMPLES = r"""
   zos_data_set:
     name: user.private.libs(mydata)
     state: absent
-    type: MEMBER   
-    
+    type: MEMBER
+
 - name: Create multiple partitioned data sets and add one or more members to each
   zos_data_set:
     batch:
@@ -291,9 +291,9 @@ def get_individual_data_set_parameters(params):
         Ansible's AnsibleModule object module.params.
 
     Raises:
-        ValueError: Raised if top-level parameters "name" 
+        ValueError: Raised if top-level parameters "name"
         and "batch" are both provided.
-        ValueError: Raised if neither top-level parameters "name" 
+        ValueError: Raised if neither top-level parameters "name"
         or "batch" are provided.
 
     Returns:
@@ -352,7 +352,7 @@ def process_special_parameters(original_params, param_handlers):
         module = AnsibleModule(
             argument_spec=module_args,
             supports_check_mode=True
-        )    
+        )
 
         parameter_handlers = OrderedDict()
         parameter_handlers['format'] = data_set_format
@@ -457,7 +457,7 @@ def data_set_format(arg_val, params):
     Returns uppercase data set format."""
     if params.get("state") == "absent":
         return None
-    if arg_val is None and params.get("record_length") != None:
+    if arg_val is None and params.get("record_length") is not None:
         raise ValueError("format must be provided when providing record_length.")
     if arg_val is None:
         return None
@@ -509,7 +509,7 @@ def data_set_type(arg_val, params):
 
 # ------ Functions to determine default arguments based on provided args ----- #
 def perform_data_set_operations(name, state, **extra_args):
-    """ Calls functions to perform desired operations on 
+    """ Calls functions to perform desired operations on
     one or more data sets. Returns boolean indicating if changes were made. """
     changed = False
     for dsname in name:
@@ -614,8 +614,10 @@ def replace_data_set(name, extra_args):
     return
 
 
-def rename_args_for_zoau(args={}):
-    """ Renames module arguments to match those desired by zoautil_py data set create method. 
+def rename_args_for_zoau(args=None):
+    if args is None:
+        args = {}
+    """ Renames module arguments to match those desired by zoautil_py data set create method.
     Returns a dictionary with renamed args. """
     ds_create_args = {}
     for module_arg_name, zoau_arg_name in ZOAU_DS_CREATE_ARGS.items():
@@ -624,8 +626,10 @@ def rename_args_for_zoau(args={}):
     return ds_create_args
 
 
-def create_data_set(name, extra_args={}):
+def create_data_set(name, extra_args=None):
     """ A wrapper around zoautil_py data set create to raise exceptions on failure. """
+    if extra_args is None:
+        extra_args = {}
     rc = Datasets.create(name, **extra_args)
     if rc > 0:
         raise DatasetCreateError(name, rc)
@@ -648,7 +652,7 @@ def create_data_set_member(name):
     if not base_dsname or not data_set_exists(base_dsname):
         raise DatasetNotFoundError(name)
     tmp_file = tempfile.NamedTemporaryFile(delete=True)
-    rc, stdout, stderr = run_command("cp {} \"//'{}'\"".format(tmp_file.name, name))
+    rc, stdout, stderr = run_command("cp {0} \"//'{1}'\"".format(tmp_file.name, name))
     if rc != 0:
         raise DatasetMemberCreateError(name, rc)
     return

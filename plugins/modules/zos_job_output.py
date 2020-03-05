@@ -4,7 +4,7 @@
 # Copyright (c) IBM Corporation 2019, 2020
 # Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
-from __future__ import absolute_import, division, print_function
+from __future__ import (absolute_import, division, print_function)
 
 __metaclass__ = type
 
@@ -26,7 +26,7 @@ description:
   - The owner can be specific such as "IBMUSER", or one that uses a pattern like "*".
   - If there is no ddname, or if ddname="?", output of all the ddnames under the given job will be displayed.
 version_added: "2.9"
-author: "Jack Ho"
+author: "Jack Ho (@jacklotusho)"
 options:
   job_id:
     description:
@@ -37,11 +37,13 @@ options:
   job_name:
     description:
       - job name. (e.g "TCPIP", "C*")
+    type: str
     required: false
     version_added: "2.9"
   owner:
     description:
       - The owner who runs job. (e.g "IBMUSER", "*")
+    type: str
     required: false
     version_added: "2.9"
   ddname:
@@ -75,7 +77,8 @@ RETURN = """
 jobs:
   description: list of job output.
   returned: success
-  type: list[dict]
+  type: list
+  elements: dict
   contains:
     job_id:
       description: job ID
@@ -94,7 +97,8 @@ jobs:
       type: str
     ddnames:
       description: list of data definition name
-      type: list[dict]
+      type: list
+      elements: dict
       contains:
         ddname:
           description: data definition name
@@ -116,7 +120,8 @@ jobs:
           type: int
         content:
           description: ddname content
-          type: list[str]
+          type: list
+          elements: str
     ret_code:
       description: return code output taken directly from job log
       type: dict
@@ -136,6 +141,7 @@ jobs:
 changed:
   description: Indicates if any changes were made during module operation
   type: bool
+  returned: on success
 """
 
 from ansible.module_utils.basic import AnsibleModule

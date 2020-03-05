@@ -4,7 +4,7 @@
 # Copyright (c) IBM Corporation 2019, 2020
 # Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
-from __future__ import absolute_import, division, print_function
+from __future__ import (absolute_import, division, print_function)
 
 __metaclass__ = type
 
@@ -98,7 +98,8 @@ RETURN = """
 jobs:
   description: The list of jobs that matches the job name or job id and optionally the owner
   returned: success
-  type: list[dict]
+  type: list
+  elements: dict
   contains:
     job_name:
       description: job name
@@ -111,7 +112,8 @@ jobs:
       type: int
     ddnames:
       description: all ddnames
-      type: list[dict]
+      type: list
+      elements: dict
       contains:
         ddname:
           description: data definition name
@@ -133,7 +135,8 @@ jobs:
           type: int
         content:
           description: ddname content
-          type: list[str]
+          type: list
+          elements: str
     ret_code:
       description: return code output taken directly from job log
       type: dict
@@ -154,6 +157,7 @@ jobs:
 changed:
   description: Indicates if any changes were made during module operation
   type: bool
+  returned: success
 message:
   description: The output message that the sample module generates
   returned: success
@@ -248,7 +252,7 @@ def submit_jcl_in_volume(src, vol, module):
     script = """/*REXX*/
 ARG P1 P2
 ADDRESS TSO
-CALL BPXWDYN "ALLOC DA('"P1"') FI(TEST) SHR VOL("P2")" 
+CALL BPXWDYN "ALLOC DA('"P1"') FI(TEST) SHR VOL("P2")"
 ADDRESS MVS "EXECIO * DISKR TEST (STEM A."
 X = SUBMIT('A.')
 SAY X
@@ -485,7 +489,10 @@ def run_module():
                         )
                 else:
                     module.fail_json(
-                        msg="The Local file encoding format is not supported. The supported encoding is UTF-8, ASCII, ISO-8859-1, EBCDIC, IBM-037, IBM-1047. Default is UTF-8. ",
+                        msg=(
+                            "The Local file encoding format is not supported."
+                            "The supported encoding is UTF-8, ASCII, ISO-8859-1, EBCDIC, IBM-037, IBM-1047. Default is UTF-8."
+                        ),
                         **result
                     )
         else:
@@ -520,7 +527,7 @@ def run_module():
 
     try:
         result = get_job_info(module, jobId, return_output)
-        if wait is True and return_output is True and max_rc != None:
+        if wait is True and return_output is True and max_rc is not None:
             assert_valid_return_code(
                 max_rc, result.get("jobs")[0].get("ret_code").get("code")
             )

@@ -4,7 +4,7 @@
 # Copyright (c) IBM Corporation 2019, 2020
 # Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
-from __future__ import absolute_import, division, print_function
+from __future__ import (absolute_import, division, print_function)
 
 __metaclass__ = type
 
@@ -28,19 +28,19 @@ author: "Ping Xiao (@xiaopingBJ)"
 options:
   job_name:
     description: The job name to query
-    type: String
+    type: str
     required: False
     default: "*"
   owner:
     description:
       - Identifies the owner of the job.
-    type: String
+    type: str
     required: False
     default: <the current user>
   job_id:
     description:
       - The job number that has been assigned to the job. These normally begin with STC, JOB, TSU and are followed by 5 digits.
-    type: String
+    type: str
     required: False
 seealso: []
 notes:
@@ -131,14 +131,28 @@ failed:
 jobs:
   description: The list z/OS job(s) and the current status of the job(s)
   returned: success
-  type: list[dict]
-  sample:
-    - job_name: str
-    - owner: str
-    - job_id: str
-    - ret_code: dict
-        - msg:str
-        - code:str
+  type: list
+  elements: dict
+  contains:
+    job_name:
+      description: The name of the job
+      type: str
+    owner:
+      description: The owner of the job
+      type: str
+    job_id:
+      description: The ID of the job
+      type: str
+    ret_code:
+      description: The return code information for the job
+      type: dict
+      contains:
+        msg:
+          description: Holds the return code (eg. "CC 0000")
+          type: str
+        code:
+          description: Holds the return code string (eg. "00", "S0C4")
+          type: str
 message:
   description: Message returned on failure
   type: str

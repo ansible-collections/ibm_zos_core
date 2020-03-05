@@ -581,7 +581,7 @@ def ensure_data_set_member_absent(name):
 
 
 def data_set_exists(name):
-    rc, stdout, stderr = run_command("head \"//'{}'\"".format(name))
+    rc, stdout, stderr = run_command("head \"//'{0}'\"".format(name))
     if stderr and "EDC5049I" in stderr:
         return False
     return True
@@ -590,7 +590,7 @@ def data_set_exists(name):
 def data_set_member_exists(name):
     """Checks for existence of data set member."""
     # parsed_data_set = re.match(r'^((?:(?:[A-Z]{1}[A-Z0-9]{0,7})(?:[.]{1})){1,21}[A-Z]{1}[A-Z0-9]{0,7})\(([A-Z]{1}[A-Z0-9]{0,7})\)$', name, re.IGNORECASE)
-    rc, stdout, stderr = run_command("head \"//'{}'\"".format(name))
+    rc, stdout, stderr = run_command("head \"//'{0}'\"".format(name))
     if rc != 0 or (stderr and "EDC5067I" in stderr):
         return False
     return True

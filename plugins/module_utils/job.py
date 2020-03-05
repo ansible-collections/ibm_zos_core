@@ -35,7 +35,7 @@ def job_output(module, job_id="", owner="", job_name="", dd_name=""):
     rc, out, err = _get_job_json_str(module, job_id, owner, job_name, dd_name)
     if rc != 0:
         raise RuntimeError(
-            "Failed to retrieve job output. RC: {} Error: {}".format(str(rc), str(err))
+            "Failed to retrieve job output. RC: {0} Error: {1}".format(str(rc), str(err))
         )
     if not out:
         raise RuntimeError("Failed to retrieve job output. No job output found.")

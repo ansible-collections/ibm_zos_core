@@ -66,10 +66,10 @@ def test_zos_job_output_job_exists(ansible_zos_module):
     hosts = ansible_zos_module
     hosts.all.file(path=TEMP_PATH, state="directory")
     hosts.all.shell(
-        cmd="echo {} > {}/SAMPLE".format(quote(JCL_FILE_CONTENTS), TEMP_PATH)
+        cmd="echo {0} > {1}/SAMPLE".format(quote(JCL_FILE_CONTENTS), TEMP_PATH)
     )
     hosts.all.zos_job_submit(
-        src="{}/SAMPLE".format(TEMP_PATH), location="USS", wait=True, volume=None
+        src="{0}/SAMPLE".format(TEMP_PATH), location="USS", wait=True, volume=None
     )
     hosts.all.file(path=TEMP_PATH, state="absent")
     results = hosts.all.zos_job_output(job_name="SAMPLE")

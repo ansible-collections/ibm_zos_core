@@ -162,4 +162,4 @@ Variables available for module zos_ds:
 | `type`          | The data set type to be used when creating a data set (for example, "PDSE").                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | no       |
 
 # Copyright
-© Copyright IBM Corporation 2020  
+Â© Copyright IBM Corporation 2020

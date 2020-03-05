@@ -12,9 +12,8 @@
 ################################################################################
 
 environment_vars:
-    _BPXK_AUTOCVT: ON
-    ZOAU_ROOT: '/usr/lpp/IBM/zoautil'
-    PYTHONPATH: '/usr/lpp/IBM/zoautil/lib'
-    LIBPATH: '/usr/lpp/IBM/zoautil/lib/:/usr/lpp/rsusr/python36/lib:/usr/lib:/lib:.'
-    PATH: '/usr/lpp/IBM/zoautil/bin;/usr/lpp/rsusr/python36/bin/python'
-        
+  _BPXK_AUTOCVT: ON
+  ZOAU_ROOT: "/usr/lpp/IBM/zoautil"
+  PYTHONPATH: "/usr/lpp/IBM/zoautil/lib"
+  LIBPATH: "/usr/lpp/IBM/zoautil/lib/:/usr/lpp/rsusr/python36/lib:/usr/lib:/lib:."
+  PATH: "/usr/lpp/IBM/zoautil/bin;/usr/lpp/rsusr/python36/bin/python"

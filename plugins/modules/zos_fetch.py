@@ -121,17 +121,17 @@ EXAMPLES = r'''
 
 - name: Fetch a PDS as binary and store in /tmp/SOME.PDS.DATASET
   zos_fetch:
-	src: SOME.PDS.DATASET
-	dest: /tmp/
-	flat: true
-	is_binary: true
+    src: SOME.PDS.DATASET
+    dest: /tmp/
+    flat: true
+    is_binary: true
 
 - name: Fetch a unix file without converting from EBCDIC to ASCII. Don't fail if file is missing
   zos_fetch:
     src: /tmp/somefile
     dest: /tmp/
-	encoding: ASCII
-	fail_on_missing: false
+    encoding: ASCII
+    fail_on_missing: false
 
 - name: Fetch a unix file and don't validate its checksum.
   zos_fetch:
@@ -187,35 +187,35 @@ message:
         type: int
         sample: 0
 file:
-	description: The source file path on remote machine
-	returned: success
-	type: str
-	sample: SOME.DATA.SET
+    description: The source file path on remote machine
+    returned: success
+    type: str
+    sample: SOME.DATA.SET
 dest: 
-	description: The destination file path on controlling machine
-	returned: success
-	type: str
-	sample: /tmp/SOME.DATA.SET
+    description: The destination file path on controlling machine
+    returned: success
+    type: str
+    sample: /tmp/SOME.DATA.SET
 is_binary:
-	description: Indicates which transfer mode was used to fetch the file (binary or text)
-	returned: success
-	type: bool
-	sample: True
+    description: Indicates which transfer mode was used to fetch the file (binary or text)
+    returned: success
+    type: bool
+    sample: True
 encoding:
-	description: The encoding of the fetched file
-	returned: success
-	type: str
-	sample: ascii
+    description: The encoding of the fetched file
+    returned: success
+    type: str
+    sample: ascii
 checksum:
-	description: The SHA1 checksum of the fetched file
-	returned: success
-	type: str
-	sample: 33ab5639bfd8e7b95eb1d8d0b87781d4ffea4d5d
+    description: The SHA1 checksum of the fetched file
+    returned: success
+    type: str
+    sample: 33ab5639bfd8e7b95eb1d8d0b87781d4ffea4d5d
 data_set_type:
-	description: Indidcates the fetched file's data set type
-	returned: success
-	type: str
-	sample: PDSE
+    description: Indidcates the fetched file's data set type
+    returned: success
+    type: str
+    sample: PDSE
 note:
     description: Notice of module failure when C(fail_on_missing) is false
     returned: failure and fail_on_missing=false

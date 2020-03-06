@@ -2,13 +2,14 @@
 # Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
 from collections import OrderedDict, defaultdict
 import types
 import re
+from os import path
 
 # TODO: add some additional type checking and error messages to parser
 # TODO: validate provided arguments are valid with other args
@@ -108,6 +109,12 @@ class BetterArgHandler(object):
             "str": self._str_type,
             "bool": self._bool_type,
             "int": self._int_type,
+            "path": self._path_type,
+            "data_set": self._data_set_type,
+            "data_set_base": self._data_set_base_type,
+            "data_set_member": self._data_set_member_type,
+            "qualifier": self._qualifier_type,
+            "volume": self._volume_type,
         }
 
     def handle_arg(self):
@@ -211,7 +218,7 @@ class BetterArgHandler(object):
         Returns:
             int -- The arguments contents after any necessary operations.
         """
-        if not re.match(r"[0-9]+", str(contents)):
+        if not re.fullmatch(r"[0-9]+", str(contents)):
             raise ValueError(
                 'Invalid argument type for "{0}". expected "int"'.format(contents)
             )
@@ -236,6 +243,142 @@ class BetterArgHandler(object):
                 'Invalid argument type for "{0}". expected "bool"'.format(contents)
             )
         return contents
+
+    def _path_type(self, contents, resolve_dependencies):
+        """Resolver for path type arguments
+
+        Arguments:
+            contents {bool} -- The contents of the argument.
+            resolved_dependencies {dict} -- Contains all of the dependencies and their contents,
+            which have already been handled,
+            for use during current arguments handling operations.
+
+        Raises:
+            ValueError: When contents is invalid argument type
+        Returns:
+            str -- The arguments contents after any necessary operations.
+        """
+        if not path.isabs(str(contents)):
+            raise ValueError(
+                'Invalid argument type for "{0}". expected "path"'.format(contents)
+            )
+        return str(contents)
+
+    def _data_set_type(self, contents, resolve_dependencies):
+        """Resolver for data_set type arguments.
+
+        Arguments:
+            contents {bool} -- The contents of the argument.
+            resolved_dependencies {dict} -- Contains all of the dependencies and their contents,
+            which have already been handled,
+            for use during current arguments handling operations.
+
+        Raises:
+            ValueError: When contents is invalid argument type
+        Returns:
+            str -- The arguments contents after any necessary operations.
+        """
+        if not re.fullmatch(
+            r"^(?:(?:[A-Z]{1}[A-Z0-9]{0,7})(?:[.]{1})){1,21}[A-Z]{1}[A-Z0-9]{0,7}(?:\([A-Z]{1}[A-Z0-9]{0,7}\)){0,1}$",
+            str(contents),
+            re.IGNORECASE,
+        ):
+            raise ValueError(
+                'Invalid argument type for "{0}". expected "data_set"'.format(contents)
+            )
+        return str(contents)
+
+    def _data_set_base_type(self, contents, resolve_dependencies):
+        """Resolver for data_set_base type arguments
+
+        Arguments:
+            contents {bool} -- The contents of the argument.
+            resolved_dependencies {dict} -- Contains all of the dependencies and their contents,
+            which have already been handled,
+            for use during current arguments handling operations.
+
+        Raises:
+            ValueError: When contents is invalid argument type
+        Returns:
+            str -- The arguments contents after any necessary operations.
+        """
+        if not re.fullmatch(
+            r"^(?:(?:[A-Z]{1}[A-Z0-9]{0,7})(?:[.]{1})){1,21}[A-Z]{1}[A-Z0-9]{0,7}$",
+            str(contents),
+            re.IGNORECASE,
+        ):
+            raise ValueError(
+                'Invalid argument type for "{0}". expected "data_set_base"'.format(
+                    contents
+                )
+            )
+        return str(contents)
+
+    def _data_set_member_type(self, contents, resolve_dependencies):
+        """Resolver for data_set_member type arguments
+
+        Arguments:
+            contents {bool} -- The contents of the argument.
+            resolved_dependencies {dict} -- Contains all of the dependencies and their contents,
+            which have already been handled,
+            for use during current arguments handling operations.
+
+        Raises:
+            ValueError: When contents is invalid argument type
+        Returns:
+            str -- The arguments contents after any necessary operations.
+        """
+        if not re.fullmatch(
+            r"^(?:(?:[A-Z]{1}[A-Z0-9]{0,7})(?:[.]{1})){1,21}[A-Z]{1}[A-Z0-9]{0,7}\([A-Z]{1}[A-Z0-9]{0,7}\)$",
+            str(contents),
+            re.IGNORECASE,
+        ):
+            raise ValueError(
+                'Invalid argument type for "{0}". expected "data_set_member"'.format(
+                    contents
+                )
+            )
+        return str(contents)
+
+    def _qualifier_type(self, contents, resolve_dependencies):
+        """Resolver for qualifier type arguments
+
+        Arguments:
+            contents {bool} -- The contents of the argument.
+            resolved_dependencies {dict} -- Contains all of the dependencies and their contents,
+            which have already been handled,
+            for use during current arguments handling operations.
+
+        Raises:
+            ValueError: When contents is invalid argument type
+        Returns:
+            str -- The arguments contents after any necessary operations.
+        """
+        if not re.fullmatch(r"^[A-Z]{1}[A-Z0-9]{0,7}$", str(contents), re.IGNORECASE,):
+            raise ValueError(
+                'Invalid argument type for "{0}". expected "qualifier"'.format(contents)
+            )
+        return str(contents)
+
+    def _volume_type(self, contents, resolve_dependencies):
+        """Resolver for volume type arguments
+
+        Arguments:
+            contents {bool} -- The contents of the argument.
+            resolved_dependencies {dict} -- Contains all of the dependencies and their contents,
+            which have already been handled,
+            for use during current arguments handling operations.
+
+        Raises:
+            ValueError: When contents is invalid argument type
+        Returns:
+            str -- The arguments contents after any necessary operations.
+        """
+        if not re.fullmatch(r"^[A-Z0-9]{1,8}$", str(contents), re.IGNORECASE,):
+            raise ValueError(
+                'Invalid argument type for "{0}". expected "volume"'.format(contents)
+            )
+        return str(contents)
 
     @staticmethod
     def is_function(some_var):

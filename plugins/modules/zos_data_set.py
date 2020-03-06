@@ -345,7 +345,7 @@ def process_special_parameters(original_params, param_handlers):
                 value = lengths.get(params.get('format'), 80)
             else:
                 value = int(arg_val)
-            if not re.match(r'[1-9][0-9]*', arg_val) or (value < 1 or value > 32768):
+            if not re.fullmatch(r'[1-9][0-9]*', arg_val) or (value < 1 or value > 32768):
                 raise ValueError('Value {0} is invalid for record_length argument. record_length must be between 1 and 32768 bytes.'.format(arg_val))
             return value
 
@@ -376,13 +376,13 @@ def data_set_name(arg_val, params):
     Returns a list containing the name(s) of data sets."""
     dsnames = generate_name_list(arg_val)
     for dsname in dsnames:
-        if not re.match(
+        if not re.fullmatch(
             r"^(?:(?:[A-Z]{1}[A-Z0-9]{0,7})(?:[.]{1})){1,21}[A-Z]{1}[A-Z0-9]{0,7}$",
             dsname,
             re.IGNORECASE,
         ):
             if not (
-                re.match(
+                re.fullmatch(
                     r"^(?:(?:[A-Z]{1}[A-Z0-9]{0,7})(?:[.]{1})){1,21}[A-Z]{1}[A-Z0-9]{0,7}\([A-Z]{1}[A-Z0-9]{0,7}\)$",
                     dsname,
                     re.IGNORECASE,
@@ -402,14 +402,14 @@ def data_set_size(arg_val, params):
         return None
     if arg_val is None:
         return None
-    match = re.match(r"([1-9][0-9]*)(M|G|K|TRK|CYL)", arg_val, re.IGNORECASE)
+    match = re.fullmatch(r"([1-9][0-9]*)(M|G|K|TRK|CYL)", arg_val, re.IGNORECASE)
     if not match:
         raise ValueError(
             'Value {0} is invalid for size argument. Valid size measurements are "K", "M", "G", "TRK" or "CYL".'.format(
                 arg_val
             )
         )
-    if re.match(r"TRK|CYL", match.group(2), re.IGNORECASE):
+    if re.fullmatch(r"TRK|CYL", match.group(2), re.IGNORECASE):
         arg_val = (
             str(convert_size_to_kilobytes(int(match.group(1)), match.group(2).upper()))
             + "K"
@@ -443,7 +443,7 @@ def record_length(arg_val, params):
     )
     if arg_val is None:
         return None
-    if not re.match(r"[0-9]*", str(arg_val)) or (arg_val < 0 or arg_val > 32768):
+    if not re.fullmatch(r"[0-9]*", str(arg_val)) or (arg_val < 0 or arg_val > 32768):
         raise ValueError(
             "Value {0} is invalid for record_length argument. record_length must be between 0 and 32768 bytes.".format(
                 arg_val
@@ -462,7 +462,7 @@ def data_set_format(arg_val, params):
     if arg_val is None:
         return None
     formats = "|".join(DATA_SET_FORMATS)
-    if not re.match(formats, arg_val, re.IGNORECASE):
+    if not re.fullmatch(formats, arg_val, re.IGNORECASE):
         raise ValueError(
             "Value {0} is invalid for format argument. format must be of of the following: {1}.".format(
                 arg_val, ", ".join(DATA_SET_FORMATS)
@@ -481,7 +481,7 @@ def key_offset(arg_val, params):
     if arg_val is None:
         return None
     arg_val = int(arg_val)
-    if not re.match(r"[0-9]+", str(arg_val)):
+    if not re.fullmatch(r"[0-9]+", str(arg_val)):
         raise ValueError(
             "Value {0} is invalid for offset argument. offset must be between 0 and length of object - 1.".format(
                 arg_val
@@ -498,7 +498,7 @@ def data_set_type(arg_val, params):
     if arg_val is None:
         return None
     types = "|".join(DATA_SET_TYPES)
-    if not re.match(types, arg_val, re.IGNORECASE):
+    if not re.fullmatch(types, arg_val, re.IGNORECASE):
         raise ValueError(
             "Value {0} is invalid for type argument. type must be of of the following: {1}.".format(
                 arg_val, ", ".join(DATA_SET_TYPES)
@@ -589,7 +589,7 @@ def data_set_exists(name):
 
 def data_set_member_exists(name):
     """Checks for existence of data set member."""
-    # parsed_data_set = re.match(r'^((?:(?:[A-Z]{1}[A-Z0-9]{0,7})(?:[.]{1})){1,21}[A-Z]{1}[A-Z0-9]{0,7})\(([A-Z]{1}[A-Z0-9]{0,7})\)$', name, re.IGNORECASE)
+    # parsed_data_set = re.fullmatch(r'^((?:(?:[A-Z]{1}[A-Z0-9]{0,7})(?:[.]{1})){1,21}[A-Z]{1}[A-Z0-9]{0,7})\(([A-Z]{1}[A-Z0-9]{0,7})\)$', name, re.IGNORECASE)
     rc, stdout, stderr = run_command("head \"//'{0}'\"".format(name))
     if rc != 0 or (stderr and "EDC5067I" in stderr):
         return False

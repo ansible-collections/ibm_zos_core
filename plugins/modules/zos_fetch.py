@@ -31,23 +31,9 @@ options:
     description:
       - Local path where the file or data set will be stored.
     required: true
-  is_catalog:
-    description:
-      - Specifies if the data set is cataloged. When trying to fetch an 
-        uncataloged data set, this parameter must be set to false and the 
-        volume where the data set is stored must be provided. Default is true.
-    required: false
-    default: "true"
-    choices: [ "true", "false" ]
-  volume:
-    description:
-      - Name of the volume when I(is_catalog=false).
-    required: false
   fail_on_missing:
     description:
       - When set to true, the task will fail if the source file is missing. 
-        If the data set is uncataloged and I(is_catalog=false), then the task 
-        will not fail and will attempt to fetch the uncataloged data set.
     required: false
     default: "true"
     choices: [ "true", "false" ]
@@ -85,13 +71,6 @@ options:
     required: false
     default: "false"
     choices: [ "true", "false" ]
-  wait_time_s:
-    description:
-      - The time (in seconds) to wait for an uncataloged data set to be recataloged. The 
-        module will wait for a maximum of 10 seconds by default. Only valid if I(is_catalog=false).
-    required: false
-    default: 10
-    type: int
 notes:
     - When fetching PDS(E) and VSAM data sets, temporary storage will be used on the remote
       z/OS system. After the PDS(E) or VSAM data set is successfully transferred, the temprorary
@@ -101,10 +80,11 @@ notes:
     - To prevent redundancy, additional checksum validation will not be done when fetching PDS(E) 
       because data integrity checks are done through the transfer methods used. As a result, the module 
       response will not include C(checksum) parameter. 
-    - A VSAM data set is always assumed to be in catalog. If an uncataloged VSAM data set needs to 
+    - All data sets are always assumed to be in catalog. If an uncataloged data set needs to 
       be fetched, it should be cataloged first.
 seealso:
    - fetch
+   - copy
 '''
 
 EXAMPLES = r'''
@@ -140,29 +120,17 @@ EXAMPLES = r'''
     flat: true
     validate_checksum: false
 
-- name: Fetch an uncataloged VSAM data set
+- name: Fetch a VSAM data set
   zos_fetch:
     src: USER.TEST.VSAM
     dest: /tmp/
     flat: true
-    is_catalog: false
-    volume: SCR03
-    wait_time_s: 15
 
 - name: Fetch a PDS member named 'data'
   zos_fetch:
     src: USER.TEST.PDS(data)
     dest: /tmp/
     flat: true
-
-- name: Fetch an uncataloged sequential data set
-  zos_fetch:
-    src: USER.TEST.SEQ
-    dest: /tmp/
-    flat: true
-    is_catalog: false
-    volume: SCR03
-    wait_time_s: 5
 '''
 
 RETURNS = r'''
@@ -377,42 +345,42 @@ def _fetch_vsam(src, validate_checksum, is_binary):
     
     return content, checksum
 
-def _recatalog_data_set(ds_name, volume):
-    """ Recatalog an uncataloged data set """
-    sysin_ds_name = _create_temp_data_set_name('SYSIN')
-    Datasets.create(sysin_ds_name, 'SEQ')
-    idcams_sysin = ''' DEFINE NVSAM -
-        (NAME({}) -
-        VOLUMES({}) - 
-        DEVT(SYSDA)) '''.format(ds_name, volume)
+# def _recatalog_data_set(ds_name, volume):
+#     """ Recatalog an uncataloged data set """
+#     sysin_ds_name = _create_temp_data_set_name('SYSIN')
+#     Datasets.create(sysin_ds_name, 'SEQ')
+#     idcams_sysin = ''' DEFINE NVSAM -
+#         (NAME({}) -
+#         VOLUMES({}) - 
+#         DEVT(SYSDA)) '''.format(ds_name, volume)
 
-    Datasets.write(sysin_ds_name, idcams_sysin)
-    dd_statements = []
-    dd_statements.append(types.DDStatement(ddName="sysin", dataset=sysin_ds_name))
-    dd_statements.append(types.DDStatement(ddName="sysprint", dataset='*'))
+#     Datasets.write(sysin_ds_name, idcams_sysin)
+#     dd_statements = []
+#     dd_statements.append(types.DDStatement(ddName="sysin", dataset=sysin_ds_name))
+#     dd_statements.append(types.DDStatement(ddName="sysprint", dataset='*'))
 
-    try:
-        rc = MVSCmd.execute_authorized(pgm="idcams", args='', dds=dd_statements)
-        if rc != 0:
-            _fail_json(
-                msg="Non-zero return code received while executing MVSCmd to recatalog {}".format(ds_name),
-                stdout="",
-                stderr="",
-                ret_code=rc
-            )
+#     try:
+#         rc = MVSCmd.execute_authorized(pgm="idcams", args='', dds=dd_statements)
+#         if rc != 0:
+#             _fail_json(
+#                 msg="Non-zero return code received while executing MVSCmd to recatalog {}".format(ds_name),
+#                 stdout="",
+#                 stderr="",
+#                 ret_code=rc
+#             )
     
-    except Exception as err:
-        _fail_json(
-            msg="Failed to call IDCAMS to recatalog data set {}".format(ds_name),
-            stdout="",
-            stderr=str(err),
-            ret_code=rc
-        )
+#     except Exception as err:
+#         _fail_json(
+#             msg="Failed to call IDCAMS to recatalog data set {}".format(ds_name),
+#             stdout="",
+#             stderr=str(err),
+#             ret_code=rc
+#         )
     
-    finally:
-        Datasets.delete(sysin_ds_name) 
+#     finally:
+#         Datasets.delete(sysin_ds_name) 
 
-    return ds_name
+#     return ds_name
 
 def _uncatalog_data_set(ds_name):
     """ Uncatalog a data set """
@@ -513,15 +481,13 @@ def _validate_dsname(ds_name):
     dsn_regex = "^(([A-Z]{1}[A-Z0-9]{0,7})([.]{1})){1,21}[A-Z]{1}[A-Z0-9]{0,7}$"
     return re.match(dsn_regex, ds_name[:ds_name.find('(')]) 
 
-def _validate_params(src, is_binary, encoding, is_catalog, volume, is_uss, _fetch_member):
+def _validate_params(src, is_binary, encoding, is_uss, _fetch_member):
     """ Ensure the module parameters are valid """ 
     msg = None
     if is_binary and encoding is not None:
         msg = "Encoding parameter is not valid for binary transfer"
     if encoding and (encoding != 'EBCDIC' and encoding != 'ASCII'):
         msg = "Invalid value supplied for 'encoding' option, it must be either EBCDIC or ASCII"
-    if not is_catalog  and not volume:
-        msg = "Volume not provided for uncataloged data set"
     if not is_uss and not _validate_dsname(src):
         msg = "Invalid data set name provided"
 
@@ -535,15 +501,12 @@ def run_module():
         argument_spec = dict(
             src                 = dict(required=True, type='path'),
             dest                = dict(required=True, type='path'),
-            is_catalog          = dict(required=False, default=True, type='bool'),
-            volume              = dict(required=False, type='str'),
             fail_on_missing     = dict(required=False, default=True, choices=[True, False], type='str'),
             validate_checksum   = dict(required=False, default=True, choices=[True, False], type='str'),
             flat                = dict(required=False, default=True, choices=[True, False], type='str'),
             is_binary           = dict(required=False, default=False, type='bool'),
             encoding            = dict(required=False, choices=['ASCII', 'EBCDIC'], type='str'),
             is_uss              = dict(required=False, default=False, type='bool'),
-            wait_time_s         = dict(required=False, default=10, type='int'),
             use_qualifier       = dict(required=False, default=False, type='bool'),
             _fetch_member       = dict(required=False, type='bool')
         )
@@ -552,17 +515,14 @@ def run_module():
     src                 = module.params.get('src', None)
     b_src               = to_bytes(src)
     encoding            = module.params.get('encoding')
-    volume              = module.params.get('volume')
-    wait_time_s         = module.params.get('wait_time_s') 
     fail_on_missing     = boolean(module.params.get('fail_on_missing'), strict=False)
     validate_checksum   = boolean(module.params.get('validate_checksum'), strict=False)
     is_uss              = boolean(module.params.get('is_uss'), strict=False)
     is_binary           = boolean(module.params.get('is_binary'), strict=False)
-    is_catalog          = boolean(module.params.get('is_catalog'), strict=False)
     use_qualifier       = boolean(module.params.get('use_qualifier'), strict=False)
     _fetch_member       = boolean(module.params.get('_fetch_member'), strict=False)
 
-    _validate_params(src, is_binary, encoding, is_catalog, volume, is_uss, _fetch_member)
+    _validate_params(src, is_binary, encoding, is_uss, _fetch_member)
 
     res_args = dict()
     if (not is_uss) and use_qualifier:
@@ -572,16 +532,14 @@ def run_module():
     
     try:
         ds_type = _determine_data_set_type(ds_name, fail_on_missing)
-    
-    except UncatalogedDatasetError as err:
-        if is_catalog and fail_on_missing:
-            _fail_json(msg=str(err), stdout="", stderr="", ret_code=None)
-    
-        _recatalog_data_set(ds_name, volume)
-        time.sleep(wait_time_s)
-        ds_type = _determine_data_set_type(ds_name)
         if not ds_type:
             _fail_json(msg="Could not determine data set type", stdout="", stderr="", ret_code=None) 
+    
+    except UncatalogedDatasetError as err:
+        if fail_on_missing:
+            _fail_json(msg=str(err), stdout="", stderr="", ret_code=None)
+        module.exit_json(note="The data set is not cataloged. No data was fetched")
+        
     
     if ds_type in MVS_DS_TYPES and not Datasets.exists(src):
         if fail_on_missing:
@@ -620,9 +578,6 @@ def run_module():
         content, checksum = _fetch_vsam(src, validate_checksum, is_binary)
         res_args['checksum'] = checksum
         res_args['content'] = content
-
-    if not is_catalog:
-        _uncatalog_data_set(ds_name)
     
     res_args['file'] = src
     res_args['ds_type'] = ds_type
@@ -632,7 +587,7 @@ def run_module():
 
 class UncatalogedDatasetError(Exception):
     def __init__(self, ds_name):
-        super().__init__("Data set {} is not in catalog. If you would like to fetch the data set, please specify its volume".format(ds_name))
+        super().__init__("Data set {} is not in catalog. If you would like to fetch the data set, please catalog it first".format(ds_name))
 
 def main():
     run_module()

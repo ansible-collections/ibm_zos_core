@@ -3,7 +3,8 @@
 # Copyright (c) IBM Corporation 2019, 2020
 # Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
-from __future__ import (absolute_import, division)
+from __future__ import (absolute_import, division, print_function)
+
 __metaclass__ = type
 
 
@@ -37,7 +38,7 @@ def test_create_data_set_various_args(zos_import_mocker, dsname, args, return_va
     ds = importer(IMPORT_NAME)
     passed = True
     mocker.patch('zoautil_py.Datasets.create',
-                create=True, return_value=return_value)
+                 create=True, return_value=return_value)
     try:
         ds.create_data_set(dsname, args)
     except ds.DatasetCreateError:
@@ -117,7 +118,7 @@ def test_delete_data_set_handle_rc(zos_import_mocker, dsname, return_value, expe
     ds = importer(IMPORT_NAME)
     passed = True
     mocker.patch('zoautil_py.Datasets.delete',
-                create=True, return_value=return_value)
+                 create=True, return_value=return_value)
     try:
         ds.delete_data_set(dsname)
     except ds.DatasetDeleteError:
@@ -168,16 +169,16 @@ test_data = [
 
     ({'invalidname': 'tester'}, {}),
     ({'invalidname': 'tester',
-    'invalidname2': 'tester2'}, {}),
+      'invalidname2': 'tester2'}, {}),
     ({'key_offset': 500}, {'offset': 500}),
     ({'key_offset': 500,
-    'type': 'pds',
-    'data_class': 'class1',
-    'record_length': 1024},
-    {'offset': 500,
-    'class_name': 'class1',
-    'length': 1024,
-    'type': 'pds'}),
+      'type': 'pds',
+      'data_class': 'class1',
+      'record_length': 1024},
+     {'offset': 500,
+      'class_name': 'class1',
+      'length': 1024,
+      'type': 'pds'}),
 ]
 @pytest.mark.parametrize("args,expected", test_data)
 def test_rename_args_for_zoau(zos_import_mocker, args, expected):
@@ -251,7 +252,7 @@ def test_rename_args_for_zoau(zos_import_mocker, args, expected):
 #     with pytest.raises(Exception) as e:
 #         ds.replace_data_set(name=name,
 #                         extra_args=extra_args)
-#     assert isinstance(e, ds.DatasetCreateError) == False
+#     assert isinstance(e, ds.DatasetCreateError) is False
 
 
 # def test_replace_data_set_safe_writes_create_temp_fail(zos_import_mocker):
@@ -421,7 +422,7 @@ def test_ensure_data_set_absent_exists_prior_delete_succeeds(zos_import_mocker):
         IMPORT_NAME), create=True, return_value=0)
     result = ds.ensure_data_set_absent(name)
     assert patched_delete.call_count == 1
-    assert result == True
+    assert result is True
 
 
 def test_ensure_data_set_absent_does_not_exist_prior(zos_import_mocker):
@@ -434,7 +435,7 @@ def test_ensure_data_set_absent_does_not_exist_prior(zos_import_mocker):
         IMPORT_NAME), create=True, return_value=0)
     result = ds.ensure_data_set_absent(name)
     assert patched_delete.call_count == 0
-    assert result == False
+    assert result is False
 
 
 def test_ensure_data_set_absent_exists_prior_delete_fails(zos_import_mocker):
@@ -466,7 +467,7 @@ def test_ensure_data_set_present_exists_prior_no_replace(zos_import_mocker):
         name=name, replace=replace)
     assert patched_replace.call_count == 0
     assert patched_create.call_count == 0
-    assert result == False
+    assert result is False
 
 
 def test_ensure_data_set_present_exists_prior_no_replace_unsafe_writes(zos_import_mocker):
@@ -485,7 +486,7 @@ def test_ensure_data_set_present_exists_prior_no_replace_unsafe_writes(zos_impor
         name=name, replace=replace)
     assert patched_replace.call_count == 0
     assert patched_create.call_count == 0
-    assert result == False
+    assert result is False
 
 
 def test_ensure_data_set_present_does_not_exist_prior_no_replace(zos_import_mocker):
@@ -504,7 +505,7 @@ def test_ensure_data_set_present_does_not_exist_prior_no_replace(zos_import_mock
         name=name, replace=replace)
     assert patched_replace.call_count == 0
     assert patched_create.call_count == 1
-    assert result == True
+    assert result is True
 
 
 def test_ensure_data_set_present_does_not_exist_prior_replace(zos_import_mocker):
@@ -523,7 +524,7 @@ def test_ensure_data_set_present_does_not_exist_prior_replace(zos_import_mocker)
         name=name, replace=replace)
     assert patched_replace.call_count == 0
     assert patched_create.call_count == 1
-    assert result == True
+    assert result is True
 
 
 def test_ensure_data_set_present_exists_prior_replace_safe_writes_succeeds(zos_import_mocker):
@@ -542,7 +543,7 @@ def test_ensure_data_set_present_exists_prior_replace_safe_writes_succeeds(zos_i
         name=name, replace=replace)
     assert patched_replace.call_count == 1
     assert patched_create.call_count == 0
-    assert result == True
+    assert result is True
 
 
 # def test_ensure_data_set_present_exists_prior_replace_safe_writes_fails(zos_import_mocker):
@@ -608,7 +609,7 @@ def test_ensure_data_set_present_exists_prior_replace_safe_writes_succeeds(zos_i
 #         name=name, replace=replace)
 #     assert patched_delete.call_count == 1
 #     assert patched_create.call_count == 2
-#     assert result == True
+#     assert result is True
 
 
 # def test_ensure_data_set_present_exists_prior_replace_unsafe_writes_fails(zos_import_mocker):
@@ -635,8 +636,8 @@ def test_ensure_data_set_present_exists_prior_replace_safe_writes_succeeds(zos_i
 
 # * Testing perform_data_set_operations()
 
-# Commented out test_data items are no longer valid because 
-# perform_data_set_operations() now expects to be provided a list of data sets 
+# Commented out test_data items are no longer valid because
+# perform_data_set_operations() now expects to be provided a list of data sets
 test_data = [
     # ('somename', 'present', 1, 0),
     # ('', 'present', 0, 0),
@@ -689,7 +690,7 @@ def test_perform_data_set_operations_dict_unpacking(zos_import_mocker, args):
     ds = importer(IMPORT_NAME)
     mocker.patch(
         '{0}.data_set_exists'.format(
-        IMPORT_NAME), create=True, return_value=True)
+            IMPORT_NAME), create=True, return_value=True)
     patched_create = mocker.patch('{0}.create_data_set'.format(
         IMPORT_NAME), create=True, return_value=0)
     patched_delete = mocker.patch('{0}.delete_data_set'.format(

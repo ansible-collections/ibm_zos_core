@@ -3,13 +3,24 @@
 # Copyright (c) IBM Corporation 2019, 2020
 # Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
+from __future__ import (absolute_import, division, print_function)
+
+__metaclass__ = type
+
 import pytest
 from unittest.mock import MagicMock, Mock
 
 IMPORT_NAME = 'ibm_zos_core.plugins.module_utils.job'
 
 dummy_return_dict = (
-    0, '{"jobs":[{"changed":"false","class":"","content-type":"STC","ddnames":[],"failed":"false","job_id":"STC02502","job_name":"TCPIP","owner":"TCPIP","ret_code":{"msg":"CC 0000"},"subsystem":"S0W1"}]}', '')
+    0,
+    (
+        '{"jobs":[{"changed":"false","class":"","content-type":"STC","ddnames":[],'
+        '"failed":"false","job_id":"STC02502","job_name":"TCPIP","owner":"TCPIP",'
+        '"ret_code":{"msg":"CC 0000"},"subsystem":"S0W1"}]}'
+    ),
+    ''
+)
 no_job_return_dict = (0, '{"jobs":[]}', '')
 
 test_data = [

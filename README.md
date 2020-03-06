@@ -272,5 +272,5 @@ Currently we are not accepting community contributions. Though, you may periodic
 # License
 
 Some portions of this collection are licensed under [GNU General Public License, Version 3.0](https://opensource.org/licenses/GPL-3.0),
-and other portions of this collection are licensed under [Apache License, Version 2.0](https://opensource.org/licenses/Apache-2.0).
+other portions of this collection are licensed under [Apache License, Version 2.0](https://opensource.org/licenses/Apache-2.0) and [The MIT License](https://opensource.org/licenses/MIT).
 See individual files for applicable licenses.

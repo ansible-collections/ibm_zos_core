@@ -12,6 +12,7 @@ import re
 from os import path
 
 # TODO: add some additional type checking and error messages to parser
+# TODO: add "allow empty" parameter for each argument
 # TODO: validate provided arguments are valid with other args
 # TODO: add mututally exclusive parameter
 # ? maybe list of lists at arg level?
@@ -114,6 +115,7 @@ class BetterArgHandler(object):
             "data_set_base": self._data_set_base_type,
             "data_set_member": self._data_set_member_type,
             "qualifier": self._qualifier_type,
+            "qualifier_pattern": self._qualifier_pattern,
             "volume": self._volume_type,
         }
 
@@ -357,6 +359,32 @@ class BetterArgHandler(object):
         if not re.fullmatch(r"^[A-Z]{1}[A-Z0-9]{0,7}$", str(contents), re.IGNORECASE,):
             raise ValueError(
                 'Invalid argument type for "{0}". expected "qualifier"'.format(contents)
+            )
+        return str(contents)
+
+    def _qualifier_pattern(self, contents, resolve_dependencies):
+        """Resolver for qualifier_pattern type arguments
+
+        Arguments:
+            contents {bool} -- The contents of the argument.
+            resolved_dependencies {dict} -- Contains all of the dependencies and their contents,
+            which have already been handled,
+            for use during current arguments handling operations.
+
+        Raises:
+            ValueError: When contents is invalid argument type
+        Returns:
+            str -- The arguments contents after any necessary operations.
+        """
+        if not re.fullmatch(
+            r"^(?:[A-Z]{1}[A-Z0-9]{0,7})|(?:\*{1})|(?:[A-Z]{1}[A-Z0-9]{0,6}\*{1})$",
+            str(contents),
+            re.IGNORECASE,
+        ):
+            raise ValueError(
+                'Invalid argument type for "{0}". expected "qualifier_pattern"'.format(
+                    contents
+                )
             )
         return str(contents)
 

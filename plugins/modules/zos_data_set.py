@@ -4,7 +4,7 @@
 # Copyright (c) IBM Corporation 2019, 2020
 # Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
@@ -233,7 +233,6 @@ from math import ceil
 from collections import OrderedDict
 from zoautil_py import Datasets
 import re
-from traceback import format_exc
 from ansible.module_utils.basic import AnsibleModule
 
 # * Make AnsibleModule module object global to
@@ -735,7 +734,7 @@ def run_module():
         # )
     )
 
-    result = dict(changed=False, original_message="", message="")
+    result = dict(changed=False, message="")
 
     # * Make module object global to avoid passing
     # * through multiple functions
@@ -767,12 +766,9 @@ def run_module():
                 "changed", False
             )
     except Error as e:
-        module.fail_json(msg=e.msg, **result)
+        module.fail_json(msg=repr(e), **result)
     except Exception as e:
-        trace = format_exc()
-        module.fail_json(
-            msg="An unexpected error occurred: {0}".format(trace), **result
-        )
+        module.fail_json(msg=repr(e), **result)
 
     result["message"] = {
         "stdout": "Desired data set operation(s) succeeded.",

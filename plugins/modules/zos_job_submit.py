@@ -4,7 +4,7 @@
 # Copyright (c) IBM Corporation 2019, 2020
 # Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
@@ -285,8 +285,8 @@ def get_job_info(module, jobId, return_output):
     result = dict()
     try:
         output = query_jobs_status(jobId)
-    except SubmitJCLError as e:
-        raise SubmitJCLError(e.msg)
+    except SubmitJCLError:
+        raise
 
     result = job_output(module, job_id=jobId)
 
@@ -311,7 +311,7 @@ def query_jobs_status(jobId):
             pass
         except Exception as e:
             raise SubmitJCLError(
-                str(e)
+                repr(e)
                 + """
             The output is """
                 + output
@@ -533,7 +533,7 @@ def run_module():
                     **result
                 )
     except SubmitJCLError as e:
-        module.fail_json(msg=str(e), **result)
+        module.fail_json(msg=repr(e), **result)
     if jobId is None or jobId == "":
         result["job_id"] = jobId
         module.fail_json(
@@ -546,7 +546,7 @@ def run_module():
         try:
             waitJob = query_jobs_status(jobId)
         except SubmitJCLError as e:
-            module.fail_json(msg=str(e), **result)
+            module.fail_json(msg=repr(e), **result)
         while waitJob[0].get("status") == "AC":  # AC means in progress
             sleep(1)
             duration = duration + 1
@@ -563,9 +563,9 @@ def run_module():
                 max_rc, result.get("jobs")[0].get("ret_code").get("code")
             )
     except SubmitJCLError as e:
-        module.fail_json(msg=str(e), **result)
+        module.fail_json(msg=repr(e), **result)
     except Exception as e:
-        module.fail_json(msg=str(e), **result)
+        module.fail_json(msg=repr(e), **result)
     finally:
         if temp_file:
             remove(temp_file)

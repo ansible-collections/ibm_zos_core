@@ -3,6 +3,10 @@
 # Copyright (c) IBM Corporation 2019, 2020
 # Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
+from __future__ import (absolute_import, division, print_function)
+
+__metaclass__ = type
+
 import sys
 import unittest
 from unittest.mock import MagicMock, Mock
@@ -11,11 +15,10 @@ import pytest
 IMPORT_NAME = 'ibm_zos_core.plugins.modules.zos_job_submit'
 
 
-
 class DummyModule(object):
-    """Used in place of Ansible's module 
+    """Used in place of Ansible's module
     so we can easily mock the desired behavior."""
-    
+
     def __init__(self, rc, stdout, stderr):
         self.rc = 0
         self.stdout = stdout
@@ -23,6 +26,7 @@ class DummyModule(object):
 
     def run_command(self, *args, **kwargs):
         return (self.rc, self.stdout, self.stderr)
+
 
 # class TestSubmit(unittest.TestCase):
 '''src, return_value, expected'''
@@ -38,7 +42,8 @@ def test_submit_pds_jcl(zos_import_mocker, src, return_value, expected):
     mocker, importer = zos_import_mocker
     jobs = importer(IMPORT_NAME)
     passed = True
-    mocker.patch('zoautil_py.Jobs.submit', create=True, return_value=return_value)
+    mocker.patch('zoautil_py.Jobs.submit', create=True,
+                 return_value=return_value)
     try:
         jobs.submit_pds_jcl(src)
     except jobs.SubmitJCLError:
@@ -48,8 +53,8 @@ def test_submit_pds_jcl(zos_import_mocker, src, return_value, expected):
 
 '''stdin, stdout, stderr, pid, returncode'''
 
-comm_return_tuple1 = (0,'JOB12345', '')
-comm_return_tuple2 = (0,'', 'Not accepted by JES')
+comm_return_tuple1 = (0, 'JOB12345', '')
+comm_return_tuple2 = (0, '', 'Not accepted by JES')
 
 test_data_USS = [
     ('/u/test/sample.jcl', comm_return_tuple1, True),
@@ -60,21 +65,20 @@ def test_submit_uss_jcl(zos_import_mocker, src, return_value, expected):
     mocker, importer = zos_import_mocker
     jobs = importer(IMPORT_NAME)
     passed = True
-    module = DummyModule(*return_value)    
+    module = DummyModule(*return_value)
     try:
-        jobs.submit_uss_jcl(src,module)
+        jobs.submit_uss_jcl(src, module)
     except jobs.SubmitJCLError:
         passed = False
     assert passed == expected
-
 
 
 return_tuple1 = (0, 'JOB12345', '')
 return_tuple2 = (0, '', 'Not accepted by JES')
 
 test_data_PDS_in_volume = [
-    ('BJMAXY.UNCATLOG.JCL(SAMPLE)',  '', return_tuple1, True),
-    ('BJMAXY.UNCATLOG.JCL(SAMPLE)',  'P2SS01', return_tuple2, False),
+    ('BJMAXY.UNCATLOG.JCL(SAMPLE)', '', return_tuple1, True),
+    ('BJMAXY.UNCATLOG.JCL(SAMPLE)', 'P2SS01', return_tuple2, False),
 ]
 @pytest.mark.parametrize("src, volume, return_value, expected", test_data_PDS_in_volume)
 def test_submit_jcl_in_volume(zos_import_mocker, src, volume, return_value, expected):
@@ -83,7 +87,7 @@ def test_submit_jcl_in_volume(zos_import_mocker, src, volume, return_value, expe
     passed = True
     module = DummyModule(*return_value)
     mocker.patch('{0}.copy_rexx_and_run'.format(
-        IMPORT_NAME), create=True, return_value=return_value)    
+        IMPORT_NAME), create=True, return_value=return_value)
     try:
         jobs.submit_jcl_in_volume(src, volume, module)
     except jobs.SubmitJCLError:

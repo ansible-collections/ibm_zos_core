@@ -1,10 +1,15 @@
 # Copyright (c) IBM Corporation 2019, 2020
 # Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
+from __future__ import (absolute_import, division, print_function)
+
+__metaclass__ = type
+
 import os
 import stat
 import uuid
 from collections import OrderedDict
+
 # ? should we just use yaml and accept the unordered dict?
 # * oyaml is a drop-in replacement for pyyaml that preserves dict
 # * ordering, this is useful in our use case since we define environment variables as
@@ -14,6 +19,7 @@ from collections import OrderedDict
 from oyaml import safe_load
 
 # TODO: Add/enhance error handling
+
 
 class ZTestHelper(object):
     """ ZTestHelper provides helper methods to deal with added complexities when testing against a z/OS system. """
@@ -29,15 +35,15 @@ class ZTestHelper(object):
     def from_yaml_file(cls, path):
         """ Reads arguments from a YAML file to create an instance of ZTestHelper.  """
         testvars = {}
-        with open(path, 'r') as varfile:
+        with open(path, "r") as varfile:
             testvars = safe_load(varfile)
         return cls(**testvars)
 
     def get_inventory_info(self):
         """ Returns dictionary containing basic info needed to generate a single-host inventory file. """
         inventory_info = {
-            'user': self._user,
-            'inventory': '{0},'.format(self._host),
+            "user": self._user,
+            "inventory": "{0},".format(self._host),
         }
         inventory_info.update(self._extra_args)
         return inventory_info
@@ -45,9 +51,8 @@ class ZTestHelper(object):
     def build_interpreter_string(self):
         """ Builds wrapper to be used for python calls in pytest fixtures with needed environment variables.
         This is useful in situations where no environment variables are assumed to be set. """
-        interpreter_string = ''
+        interpreter_string = ""
         for key, value in self._environment.items():
-            interpreter_string += 'export {0}={1} ;'.format(key, value) 
+            interpreter_string += "export {0}={1} ;".format(key, value)
         interpreter_string += self._python_path
         return interpreter_string
-

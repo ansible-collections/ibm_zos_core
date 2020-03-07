@@ -231,7 +231,11 @@ changed:
 import tempfile
 from math import ceil
 from collections import OrderedDict
-from zoautil_py import Datasets
+
+try:
+    from zoautil_py import Datasets
+except Exception:
+    Datasets = ""
 import re
 from ansible.module_utils.basic import AnsibleModule
 

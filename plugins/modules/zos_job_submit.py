@@ -206,7 +206,11 @@ EXAMPLES = """
 
 from ansible.module_utils.basic import AnsibleModule
 from pipes import quote
-from zoautil_py import Jobs
+
+try:
+    from zoautil_py import Jobs
+except Exception:
+    Jobs = ""
 from time import sleep
 from os import chmod, path, remove
 from tempfile import NamedTemporaryFile

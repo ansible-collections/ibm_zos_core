@@ -3,7 +3,7 @@
 # Copyright (c) IBM Corporation 2020
 # Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
@@ -52,7 +52,6 @@ def test_default_top_level():
     arg_defs = dict(state=dict(arg_type="str", default="present"))
     parser = BetterArgParser(arg_defs)
     result = parser.parse_args({})
-    print(result)
     assert result.get("state") == "present"
 
 
@@ -68,7 +67,6 @@ def test_required_top_level_with_default():
     arg_defs = dict(name=dict(arg_type="str", required=True, default=default_name))
     parser = BetterArgParser(arg_defs)
     result = parser.parse_args({})
-    print(result)
     assert result.get("name") == default_name
 
 
@@ -99,7 +97,6 @@ def test_unknown_arg_ignore():
     arg_defs = dict(name=dict(arg_type="str", required=True, default=default_name))
     parser = BetterArgParser(arg_defs)
     result = parser.parse_args({"otherarg": "testing"})
-    print(result)
     assert "otherarg" not in result.keys()
 
 
@@ -135,7 +132,6 @@ def test_str_type_validation_success(arg_val):
     arg_defs = dict(name=dict(arg_type="str", required=True,))
     parser = BetterArgParser(arg_defs)
     result = parser.parse_args({"name": arg_val})
-    print(result)
     assert result.get("name") == arg_val
 
 
@@ -156,7 +152,6 @@ def test_int_type_validation_success(arg_val):
     arg_defs = dict(somenum=dict(arg_type="int", required=True,))
     parser = BetterArgParser(arg_defs)
     result = parser.parse_args({"somenum": arg_val})
-    print(result)
     assert result.get("somenum") == int(arg_val)
 
 
@@ -173,7 +168,6 @@ def test_bool_type_validation_success(arg_val):
     arg_defs = dict(somebool=dict(arg_type="bool", required=True,))
     parser = BetterArgParser(arg_defs)
     result = parser.parse_args({"somebool": arg_val})
-    print(result)
     assert result.get("somebool") == arg_val
 
 
@@ -211,7 +205,6 @@ def test_basic_user_provided_type_func(arg_type, expected):
     arg_defs = dict(someval=dict(arg_type=arg_type, required=True,))
     parser = BetterArgParser(arg_defs)
     result = parser.parse_args({"someval": expected})
-    print(result)
     assert result.get("someval") == expected
 
 
@@ -234,8 +227,7 @@ def test_user_provided_type_func_with_dependencies():
     )
     parser = BetterArgParser(arg_defs)
     result = parser.parse_args({"uppername": "dadafasdf", "verifier": "doesntmatter"})
-    print(result)
-    assert result.get("verifier") == True
+    assert result.get("verifier")
 
 
 def test_user_provided_type_func_with_dependencies_make_fail():
@@ -258,9 +250,8 @@ def test_dependent_required():
         ),
     )
     parser = BetterArgParser(arg_defs)
-    result = parser.parse_args({"uppername": "dadafasdf",})
-    print(result)
-    assert result.get("verifier") == None
+    result = parser.parse_args({"uppername": "dadafasdf"})
+    assert result.get("verifier") is None
 
 
 def test_dependent_required_fail():
@@ -272,8 +263,7 @@ def test_dependent_required_fail():
     )
     parser = BetterArgParser(arg_defs)
     with pytest.raises(ValueError):
-        result = parser.parse_args({"uppername": "DAFASDFA",})
-        print(result)
+        result = parser.parse_args({"uppername": "DAFASDFA"})
 
 
 @pytest.mark.parametrize(
@@ -287,16 +277,14 @@ def test_dependent_default(arg_val, expected):
         ),
     )
     parser = BetterArgParser(arg_defs)
-    result = parser.parse_args({"uppername": arg_val,})
-    print(result)
+    result = parser.parse_args({"uppername": arg_val})
     assert result.get("verifier") == expected
 
 
 def test_list_of_strings_success():
     arg_defs = dict(names=dict(arg_type="list", elements="str", required=True,))
     parser = BetterArgParser(arg_defs)
-    result = parser.parse_args({"names": ["name1", "name2", "name3", "name4"],})
-    print(result)
+    result = parser.parse_args({"names": ["name1", "name2", "name3", "name4"]})
     assert len(result.get("names")) == 4
 
 
@@ -304,9 +292,7 @@ def test_list_of_strings_failure():
     arg_defs = dict(names=dict(arg_type="list", elements="str", required=True,))
     parser = BetterArgParser(arg_defs)
     with pytest.raises(ValueError):
-        parser.parse_args(
-            {"names": [1, True, "name3", "name4"],}
-        )
+        parser.parse_args({"names": [1, True, "name3", "name4"]})
 
 
 def test_list_of_strings_function_for_arg_type_success():
@@ -314,8 +300,7 @@ def test_list_of_strings_function_for_arg_type_success():
         names=dict(arg_type="list", elements=make_uppercase, required=True,)
     )
     parser = BetterArgParser(arg_defs)
-    result = parser.parse_args({"names": ["name1", "name2", "name3", "name4"],})
-    print(result)
+    result = parser.parse_args({"names": ["name1", "name2", "name3", "name4"]})
     assert len(result.get("names")) == 4
     for name in result.get("names"):
         assert name == name.upper()
@@ -342,7 +327,6 @@ def test_list_of_dicts_success():
             ]
         }
     )
-    print(result)
     assert len(result.get("people")) == 3
 
 
@@ -372,7 +356,6 @@ def test_list_of_dicts_nested_function_arg_type():
             ]
         }
     )
-    print(result)
     assert len(result.get("people")) == 4
     for person in result.get("people"):
         if person.get("age"):
@@ -405,7 +388,6 @@ def test_dict_of_dict():
             }
         }
     )
-    print(result)
     assert result.get("person").get("address").get("number") == 555
 
 
@@ -485,3 +467,51 @@ def test_choices_fail():
     with pytest.raises(ValueError):
         parser.parse_args({"person": "bob"})
 
+
+arg_defs = dict(
+    name=dict(
+        arg_type="str", required=True, default="samplename", dependencies=["time"]
+    ),
+    date=dict(arg_type="str", default="may 1, 2020", dependencies=["name"]),
+    time=dict(arg_type="int", default="3945297", dependencies=["date"]),
+)
+
+
+def test_second_level_defaults():
+    arg_defs = dict(
+        name=dict(arg_type="str", required=True, default="samplename"),
+        date=dict(
+            arg_type="dict",
+            options=dict(
+                month=dict(arg_type="str", default="hello"),
+                day=dict(arg_type="int", default=1),
+            ),
+        ),
+    )
+    parser = BetterArgParser(arg_defs)
+    result = parser.parse_args({"name": "blake", "date": {"month": "may"}})
+    assert result.get("date").get("day") is not None
+
+
+def test_mutually_exclusive_parameters_two_values_set_top_level():
+    arg_defs = dict(
+        name=dict(arg_type="str", required=True, default="samplename"),
+        date=dict(arg_type="str", default="may 1, 2020"),
+        time=dict(arg_type="int", default="3945297"),
+        mutually_exclusive=[["date", "time"]],
+    )
+    parser = BetterArgParser(arg_defs)
+    with pytest.raises(ValueError):
+        parser.parse_args({"date": "tuesday", "time": 5000})
+
+
+def test_mutually_exclusive_parameters_two_values_set_top_level_defaults():
+    arg_defs = dict(
+        name=dict(arg_type="str", required=True, default="samplename"),
+        date=dict(arg_type="str", default="may 1, 2020"),
+        time=dict(arg_type="int", default="3945297"),
+        mutually_exclusive=[["date", "time"]],
+    )
+    parser = BetterArgParser(arg_defs)
+    with pytest.raises(ValueError):
+        parser.parse_args({})

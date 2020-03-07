@@ -13,9 +13,10 @@ from os import path
 
 # TODO: add some additional type checking and error messages to parser
 # TODO: add "allow empty" parameter for each argument
-# TODO: validate provided arguments are valid with other args
-# TODO: add mututally exclusive parameter
+# TODO: add mutually exclusive parameter
 # ? maybe list of lists at arg level?
+
+DUMMY_ARG_NAME = "argholder"
 
 
 class BetterArg(object):
@@ -30,6 +31,7 @@ class BetterArg(object):
         required=False,
         default=None,
         choices=None,
+        mutually_exclusive=None,
         arg_type="str",
     ):
         """Holds all of the attributes that define a particular argument.
@@ -59,15 +61,18 @@ class BetterArg(object):
             default {Union[str, int, bool, function]} -- The default value that the
             argument should be set to when none is provided. (default: {None})
             choices {list[Union[str, int, bool]]} -- The list of valid contents for the argument.
+            mutually_exclusive {list[list[str]]} -- A list containing lists of mutually exclusive argument names. 
+            (default: {None})
             arg_type {Union[str, function]} -- The type the argument contents should be. (default: {'str'})
         """
-
         if aliases is None:
             aliases = []
         if dependencies is None:
             dependencies = []
         if choices is None:
             choices = []
+        if mutually_exclusive is None:
+            mutually_exclusive = []
         self.arg_parser = arg_parser
         self.name = name
         self.elements = elements
@@ -80,6 +85,9 @@ class BetterArg(object):
         self.arg_type = arg_type
         if options:
             self.options = self.arg_parser.handle_args(options)
+            self.mutually_exclusive = self.arg_parser.handle_mutually_exclusive_args(
+                mutually_exclusive
+            )
 
 
 class BetterArgHandler(object):
@@ -103,7 +111,7 @@ class BetterArgHandler(object):
         self.arg_def = arg_defs.get(arg_name)
         self.contents = contents
         self.resolved_dependencies = self.build_resolved_dependency_dict(resolved_args)
-        # TODO: determine if we should optioanlly allow top-level args to be passed
+        # TODO: determine if we should optionally allow top-level args to be passed
         self.type_handlers = {
             "dict": self._dict_type,
             "list": self._list_type,
@@ -115,7 +123,7 @@ class BetterArgHandler(object):
             "data_set_base": self._data_set_base_type,
             "data_set_member": self._data_set_member_type,
             "qualifier": self._qualifier_type,
-            "qualifier_pattern": self._qualifier_pattern,
+            "qualifier_pattern": self._qualifier_pattern_type,
             "volume": self._volume_type,
         }
 
@@ -125,7 +133,7 @@ class BetterArgHandler(object):
         Returns:
             dict -- The arguments contents after any necessary operations.
         """
-        # self._verify_valid_arg()
+
         self._resolve_required()
         self.contents = self._resolve_default()
         if self.contents is not None:
@@ -175,13 +183,15 @@ class BetterArgHandler(object):
             dict -- The arguments contents after any necessary operations.
         """
         updated_contents = {}
-        for key, value in contents.items():
+        # for key, value in contents.items():
+        for key in self.arg_def.options:
             handler = BetterArgHandler(
-                key, value, updated_contents, self.arg_def.options
+                key, contents.get(key), updated_contents, self.arg_def.options
             )
             updated_value = handler.handle_arg()
             updated_contents[key] = updated_value
         contents = updated_contents
+        self._assert_mutually_exclusive(contents)
         return contents
 
     def _str_type(self, contents, resolve_dependencies):
@@ -362,7 +372,7 @@ class BetterArgHandler(object):
             )
         return str(contents)
 
-    def _qualifier_pattern(self, contents, resolve_dependencies):
+    def _qualifier_pattern_type(self, contents, resolve_dependencies):
         """Resolver for qualifier_pattern type arguments
 
         Arguments:
@@ -512,6 +522,21 @@ class BetterArgHandler(object):
             resolved_dependencies[dependency] = resolved_args.get(dependency)
         return resolved_dependencies
 
+    # TODO: reduce complexity of this function
+    def _assert_mutually_exclusive(self, contents):
+        for name, name_list in self.arg_def.mutually_exclusive.items():
+            arg = contents.get(name)
+            if arg is None:
+                continue
+            for exclusive_name in name_list:
+                if contents.get(exclusive_name) is not None:
+                    raise ValueError(
+                        "Mutually exclusive arguments {0} and {1} both have values.".format(
+                            name, exclusive_name
+                        )
+                    )
+        return
+
 
 class BetterArgParser(object):
     def __init__(self, arg_dict):
@@ -525,7 +550,14 @@ class BetterArgParser(object):
             and value = BetterArg object
         """
         self.aliases = {}
-        self.args = self.handle_args(arg_dict)
+        # self.args = self.handle_args(arg_dict)
+        mutually_exclusive = arg_dict.get("mutually_exclusive")
+        arg_dict.pop("mutually_exclusive", None)
+        argholder = dict(
+            arg_type="dict", mutually_exclusive=mutually_exclusive, options=arg_dict,
+        )
+        self.args = OrderedDict()
+        self.args[DUMMY_ARG_NAME] = BetterArg(self, DUMMY_ARG_NAME, **argholder)
 
     def handle_args(self, arg_dict):
         """Handles argument definition operations.
@@ -540,10 +572,10 @@ class BetterArgParser(object):
             OrderedDict[str, BetterArg] -- The defined arguments, sorted based on their dependencies.
         """
         args = {}
-        # self.aliases = {}
         for key, value in arg_dict.items():
             args[key] = BetterArg(self, key, **value)
             self.aliases = self._add_alias(key, value.get("aliases", []), self.aliases)
+
         args = self._swap_alias_for_real_names(args, self.aliases)
         self._assert_no_invalid_dependencies(args)
         args = self._sort_args_by_dependencies(args)
@@ -563,10 +595,16 @@ class BetterArgParser(object):
         """
         parsed_args = {}
         arg_dict = self._swap_alias_for_real_names(arg_dict, self.aliases)
+        arg_dict_wrapper = {}
+        arg_dict_wrapper[DUMMY_ARG_NAME] = arg_dict
         for key in self.args:
-            handler = BetterArgHandler(key, arg_dict.get(key), parsed_args, self.args)
+            handler = BetterArgHandler(
+                key, arg_dict_wrapper.get(key), parsed_args, self.args
+            )
             updated_value = handler.handle_arg()
             parsed_args[key] = updated_value
+
+        parsed_args = updated_value
         return parsed_args
 
     def _add_alias(self, arg_name, arg_aliases=None, aliases=None):
@@ -619,6 +657,42 @@ class BetterArgParser(object):
             renamed_args[aliases.get(alias_name)] = value
         args = renamed_args
         return args
+
+    def handle_mutually_exclusive_args(self, mutually_exclusive):
+        self._assert_mutually_exclusive_args_structure(mutually_exclusive)
+        mutually_exclusive_param_dict = defaultdict(list)
+        for exclusives in mutually_exclusive:
+            for index, item in enumerate(exclusives):
+                mutually_exclusive_param_dict[item] = mutually_exclusive_param_dict[
+                    item
+                ] + [x for i, x in enumerate(exclusives) if i != index]
+        return mutually_exclusive_param_dict
+
+    def _assert_mutually_exclusive_args_structure(self, mutually_exclusive):
+        """Used to enforce structure of mutually_exclusive argument.
+
+        Arguments:
+            mutually_exclusive {list[list[str]]} -- The mutually exclusive argument to validate.
+
+        Raises:
+            ValueError: When not in proper format.
+        """
+        try:
+            if isinstance(mutually_exclusive, list):
+                for exclusives in mutually_exclusive:
+                    if isinstance(exclusives, list):
+                        for item in exclusives:
+                            if not isinstance(item, str):
+                                raise ValueError
+                    else:
+                        raise ValueError
+            elif mutually_exclusive is not None:
+                raise ValueError
+        except ValueError:
+            raise ValueError(
+                "Mutually exclusive arguments must be provided as a list of lists of strings."
+            )
+        return
 
     def _assert_no_invalid_dependencies(self, args):
         """Verify that no dependencies are requested

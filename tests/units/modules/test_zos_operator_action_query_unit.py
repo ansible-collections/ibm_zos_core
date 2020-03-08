@@ -21,26 +21,26 @@ IMPORT_NAME = 'ansible_collections_ibm_zos_core.plugins.modules.zos_operator_act
 dummy_dict1 = {
 }
 
-dummy_dict3 = {
+dummy_dict2 = {
     'system': 'mv2c'
 }
 
 
-dummy_dict4 = {
+dummy_dict3 = {
     'message_id': 'DFH*'
 }
 
-dummy_dict5_uppercase = {
+dummy_dict4_uppercase = {
     'message_id': 'DFH*',
     'system': 'MV28'
 }
 
-dummy_dict5_lowercase = {
+dummy_dict4_lowercase = {
     'message_id': 'DFH*',
     'system': 'mv28'
 }
 
-dummy_dict6 = {
+dummy_dict5 = {
       'system': 'mv27',
       'message_id': 'DFS*',
       'job_name': 'IM5H*'
@@ -78,11 +78,11 @@ operator_result3 = {
 
 test_data = [
     (dummy_dict1, True),
+    (dummy_dict2, True),
     (dummy_dict3, True),
-    (dummy_dict4, True),
-    (dummy_dict5_uppercase, True),
-    (dummy_dict5_lowercase, True),
-    (dummy_dict6, True),
+    (dummy_dict4_uppercase, True),
+    (dummy_dict4_lowercase, True),
+    (dummy_dict5, True),
     (dummy_dict_invalid_message, False),
     (dummy_dict_invalid_job_name, False),
     (dummy_dict_invalid_system, False)
@@ -93,87 +93,8 @@ def test_zos_operator_action_query_various_args(zos_import_mocker, args, expecte
     mocker, importer = zos_import_mocker
     zos_operator_action_query = importer(IMPORT_NAME)
     passed = True
-    mocker.patch('zoautil_py.OperatorCmd.execute',
-                create=True, side_effect=[operator_result1,operator_result2])
     try:
-        zos_operator_action_query.find_required_request(args)
-    except zos_operator_action_query.Error:
+        zos_operator_action_query.parse_params(args)
+    except Exception:
         passed = False
-    except TypeError as e:
-        # MagicMock throws TypeError when input args is None
-        # But if it gets that far we consider it passed
-        if 'MagicMock' not in str(e):
-            passed = False
     assert passed == expected
-
-def test__zos_operator_action_query_failed_to_run_first_operator_command(zos_import_mocker):
-    mocker, importer = zos_import_mocker
-    passed = False
-    params = {}
-    zos_operator_action_query = importer(IMPORT_NAME)
-    mocker.patch('zoautil_py.OperatorCmd.execute',
-                create=True, side_effect=[operator_result3,operator_result2])
-    try:
-        zos_operator_action_query.find_required_request(params)
-    except zos_operator_action_query.OperatorCmdError:
-        passed = True
-    assert passed == True
-
-def test__zos_operator_action_query_failed_to_run_second_operator_command(zos_import_mocker):
-    mocker, importer = zos_import_mocker
-    passed = False
-    params = {}
-    zos_operator_action_query = importer(IMPORT_NAME)
-    mocker.patch('zoautil_py.OperatorCmd.execute',
-                create=True, side_effect=[operator_result1,operator_result3])
-    try:
-        zos_operator_action_query.find_required_request(params)
-    except zos_operator_action_query.OperatorCmdError:
-        passed = True
-    assert passed == True
-
-def test__zos_operator_action_query_failed_to_run_all_operator_command(zos_import_mocker):
-    mocker, importer = zos_import_mocker
-    passed = False
-    params = {}
-    zos_operator_action_query = importer(IMPORT_NAME)
-    mocker.patch('zoautil_py.OperatorCmd.execute',
-                create=True, side_effect=[operator_result3,operator_result3])
-    try:
-        zos_operator_action_query.find_required_request(params)
-    except zos_operator_action_query.OperatorCmdError:
-        passed = True
-    assert passed == True
-
-def test__zos_operator_action_query_missing_all_params(zos_import_mocker):
-    mocker, importer = zos_import_mocker
-    passed = True
-    zos_operator_action_query = importer(IMPORT_NAME)
-    params={}
-    mocker.patch('zoautil_py.OperatorCmd.execute',
-                create=True, side_effect=[operator_result1,operator_result2])
-    list = []
-    try:
-        list= zos_operator_action_query.find_required_request(params)
-    except zos_operator_action_query.OperatorCmdError:
-        pass
-    assert len(list) != 0
-
-
-def test__zos_operator_action_query_empty_list(zos_import_mocker):
-    mocker, importer = zos_import_mocker
-    operator_result = {
-    'rc': 0,
-    'message': 'abcde eedfx ddessdf dddess'
-    }
-    list = []
-    passed = False
-    params = {}
-    zos_operator_action_query = importer(IMPORT_NAME)
-    mocker.patch('zoautil_py.OperatorCmd.execute',
-                create=True, return_value=operator_result)
-    try:
-        list = zos_operator_action_query.find_required_request(params)
-    except zos_operator_action_query.OperatorCmdError:
-        passed = False
-    assert len(list) == 0

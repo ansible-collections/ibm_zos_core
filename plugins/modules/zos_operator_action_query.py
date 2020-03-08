@@ -61,10 +61,6 @@ EXAMPLES =r'''
 '''
 
 RETURN = r'''
-original_message:
-    description: The original list of parameters and arguments and any defaults used.
-    returned: always
-    type: dict
 changed: 
       description: Indicates if any changes were made during module operation. Given operator 
       action commands query for messages, True is always returned unless either a module or 
@@ -155,6 +151,29 @@ def run_module():
         job_name=dict(type='str',required=False)
     )
 
+    results = dict(
+        changed=False
+    )
+
+    module = AnsibleModule(
+        argument_spec=module_args,
+        supports_check_mode=False
+    )
+
+    try:
+        new_params = parse_params(module.params)
+        requests = find_required_request(new_params)
+        if requests:
+            results['count'] = len(requests)
+    except Error as e:
+        module.fail_json(msg=e.msg, **results)
+    except Exception as e:
+        trace = format_exc()
+        module.fail_json(msg='An unexpected error occurred: {0}'.format(trace), **result)
+    results['result'] = requests
+    module.exit_json(**results)
+
+def parse_params(params):
     arg_defs=dict(
         system=dict(
             arg_type=system_type,
@@ -169,32 +188,11 @@ def run_module():
             required=False
         )
     )
+    parser = BetterArgParser(arg_defs)
+    new_params = parser.parse_args(params)
+    return new_params
 
-    results = dict(
-        changed=False,
-        original_message=''
-    )
-
-    module = AnsibleModule(
-        argument_spec=module_args,
-        supports_check_mode=False
-    )
-
-    results['original_message'] = module.params
-    try:
-        parser = BetterArgParser(arg_defs)
-        new_params = parser.parse_args(module.params)
-        requests = find_required_request(new_params)
-        if requests:
-            results['count'] = len(requests)
-    except Error as e:
-        module.fail_json(msg=e.msg, **results)
-    except Exception as e:
-        trace = format_exc()
-        module.fail_json(msg='An unexpected error occurred: {0}'.format(trace), **result)
-    results['result'] = requests
-    module.exit_json(**results)
-
+    parser = BetterArgParser(arg_defs)
 def system_type(arg_val, params):
     if arg_val and arg_val!='*':
         arg_val = arg_val.strip('*')

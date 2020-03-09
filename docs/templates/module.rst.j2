@@ -1,0 +1,332 @@
+:github_url: https://github.com/ansible-collections/ibm_zos_core/blob/dev/plugins/modules/{{ module }}.py
+
+.. _{{ module }}_module:
+
+{# ------------------------------------------------------------------------ #}
+{# Generate the title based on the module name and doc description          #}
+{# ------------------------------------------------------------------------ #}
+
+{% set title = module + ' -- ' + short_description | rst_ify %}
+{{ title }}
+{{ '=' * title | length }}
+
+{# Disble this syle formatting in leu of list style #}
+{#    {%   for desc in description %}
+    {{ desc | rst_ify }}
+
+    {%   endfor %}
+#}
+
+{# ------------------------------------------------------------------------ #}
+{# Generate top level links                                                 #}
+{# ------------------------------------------------------------------------ #}
+
+.. contents::
+   :local:
+   :depth: 1
+   
+{# ------------------------------------------------------------------------ #}
+{# Generate the synopsis based on the doc description                       #}
+{# ------------------------------------------------------------------------ #}
+
+Synopsis
+--------
+{% if description -%}
+
+{%   for desc in description %}
+- {{ desc | rst_ify }}
+{%   endfor %}
+
+{% endif %}
+
+{# ------------------------------------------------------------------------ #}
+{# Parse options and format function                                        #}
+{# ------------------------------------------------------------------------ #}
+
+{% macro option_desc(opts, level) %}
+{%   for name, spec in opts | dictsort recursive %}
+{%     set req = "required" if spec.required else "optional" %}
+
+{# if its a boolean we need to convert to a string for html #} 
+{% if spec.type == 'bool' %}
+     {% set default_str = (spec.default | string | lower ) %}
+{% else %}
+     {% set default = ", default: " + spec.default if spec.default else "" %}
+{% endif %}
+
+{# {{ "  " * level }}{{ name }} ({{ req }}) #}
+{{ "  " * level }}{{ name }}
+{%     for para in spec.description %}
+  {{ "  " * level }}{{ para | rst_ify }}
+
+{%     endfor %}
+
+  {{ "  " * level }}| **retquired**: {{ spec.required | default("false") }}
+  {{ "  " * level }}| **type**: {{ spec.type | default("str") }}
+{%     if spec.default %}
+  {{ "  " * level }}| **default**: {{ spec.default }}
+{%     endif %}
+{%     if spec.choices %}
+  {{ "  " * level }}| **choices**: {{ ", ".join(spec.choices) }}
+{%     endif %}
+
+{%     if spec.suboptions %}
+{{ option_desc(spec.suboptions, level + 1) }}
+{%     endif %}
+{%   endfor %}
+{% endmacro %}
+
+{# ------------------------------------------------------------- #}
+{# Generate the options doc                                      #}
+{# ------------------------------------------------------------- #}
+
+{% if options -%}
+Parameters
+----------
+
+{{ option_desc(options, 0) }}
+{% endif %}
+
+{# ------------------------------------------------------------- #}
+{# Generate the sample doc                                       #}
+{# ------------------------------------------------------------- #}
+
+Examples
+--------
+
+.. code-block:: yaml+jinja
+
+{{ examples | indent(3, True) }}
+
+
+{# ------------------------------------------------------------- #}
+{# Generate the notes doc                                        #}
+{# ------------------------------------------------------------- #}
+
+{% if notes -%}
+Notes
+-----
+
+.. note::
+{%   for note in notes %}
+   {{ note | rst_ify }}
+
+{%   endfor %}
+{% endif %}
+
+{# ------------------------------------------------------------- #}
+{# Generate the set also doc                                     #}
+{# ------------------------------------------------------------- #}
+
+{% if seealso -%}
+See Also
+--------
+
+.. seealso::
+
+{% for item in seealso %}
+   - :ref:`{{ item.module }}_module`
+{% endfor %}
+{% endif %}
+
+{# ------------------------------------------------------------- #}
+{# Return doc macro                                              #}
+{# ------------------------------------------------------------- #}
+
+{% macro result_desc(results, level) %}
+{%   for name, spec in results.items() %}
+ {%     set ret = spec.returned %}
+{%     set typ = spec.type | default("any") %}
+{%     set sample = spec.sample %}
+{%     set elm = spec.elements %}
+{%     set con = spec.contains %}
+{#{{ "  " * level }}{{ name }} ({{ spec.returned }}), {{ typ }}, {{ sample }})#}
+{{ "  " * level }}{{ name }} 
+  {{ "  " * level }}{{ spec.description | rst_ify }}
+
+  {{ "  " * level }}| **returned**: {{ spec.returned | default("success") }}
+  {{ "  " * level }}| **type**: {{ spec.type }}
+  
+{% if spec.sample %}
+
+{{ "  " * level }}| **sample**:
+
+.. code-block:: yaml+jinja
+
+{{ spec.sample | indent(3, True) }}
+
+{%     endif %}
+
+{% if spec.contains %}
+{{ result_desc(spec.contains, level + 1) }}
+{%     endif %}
+{%   endfor %}
+{% endmacro %}
+
+
+{% macro result_desc2(results, level) %}
+   {% for entry in results %}
+   
+      {%  set _description  = results[entry].description %}
+      {%  set _returned     = results[entry].returned %}
+      {%  set _type         = results[entry].type %}
+      {%  set _contains     = results[entry].contains %}
+      {%  set _sample       = results[entry].sample %}
+
+      {{ entry |  rst_ify }}
+      {{ "  " * 3 }}| {{ _description }}
+
+      {{ "  " * 3 }}| **returned**: {{ _returned }}
+      {{ "  " * 3 }}| **type**: {{ _type  }}
+
+      {% if _contains %}
+        {% for prop in _contains %}
+   
+            {%  set prop_description  = _contains[prop].description %}
+            {%  set prop_returned     = _contains[prop].returned %}
+            {%  set prop_type         = _contains[prop].type %}
+            {%  set prop_sample       = _contains[prop].sample %}
+
+            {{ prop |  rst_ify }}
+            {{ "  " * 5 }}| {{ prop_description }}
+
+            {{ "  " * 5 }}| **returned**: {{ prop_returned }}
+            {{ "  " * 5 }}| **type**: {{ prop_type  }}
+            {% if prop_sample %}
+                {% if prop_sample is iterable %}
+            
+                **{{ prop }}** **sample**: ::
+
+                        {{ prop_sample | tojson }}
+                    
+                {% else %}
+                    {{ "  " * 5 }}| **sample**: {{ prop_sample  }}
+                {% endif %}
+            {% endif %}
+        {% endfor  %}
+
+      {% if _sample %}
+       
+      **{{ entry }}** **sample**: ::
+
+                {{ _sample | tojson  }}
+
+      {% endif %}
+      
+    {% endif %}
+      
+   {% endfor %}
+{% endmacro %}
+
+
+{% macro result_desc3(results, level) %}
+   {% for entry in results %}
+   
+      {%  set _description  = results[entry].description %}
+      {%  set _returned     = results[entry].returned %}
+      {%  set _type         = results[entry].type %}
+      {%  set _contains     = results[entry].contains %}
+      {%  set _sample       = results[entry].sample %}
+
+      {{ entry | indent(level, True) }}
+      {{ "  " * level }}| {{ _description }}
+      
+      {{ "  " * level }}| **returned**: {{ _returned }}
+      {{ "  " * level }}| **type**: {{ _type  }}
+
+      {% if _sample %}
+      {% if _sample is iterable %}
+
+      {{ "  " * level }}**{{ entry }}** **sample**: ::
+
+                       {{ _sample | tojson }}
+      {% else %}
+      {{ "  " * level }}| **sample**: {{ _sample |tojson  }}
+      {% endif %}
+      {% endif %}
+
+      {% if _contains %}
+        {{ result_desc3(_contains, level + 1) }}
+      {% endif %}
+
+      {% endfor  %}
+  {% endmacro %}
+{# ------------------------------------------------------------- #}
+{# Generate the return values doc                                #}
+{# ------------------------------------------------------------- #}
+
+{% if returndocs -%}
+Return Values
+-------------
+
+{{ result_desc3(returndocs, 3) }}
+{% endif %}
+
+{#
+{% if returndocs -%}
+Return Values
+-------------
+
+{% for entry in returndocs %}
+   {{ "  " * 1 }}{{ entry }} 
+   {%  set ret_description = returndocs[entry].description %}
+   {%  set ret_returned = returndocs[entry].returned %}
+   {%  set ret_type = returndocs[entry].type %}
+   {%  set ret_sample = returndocs[entry].sample %}
+   {%  set ret_contains = returndocs[entry].contains %}
+   
+
+    {% if ret_description %}
+        {{ "  " * 1 }}{{ ret_description }}
+    {% endif %}
+
+    {% if ret_returned %}
+        {{ "  " * 1 }}{{ ret_returned }}
+    {% endif %}
+
+    {% if ret_type %}
+        {{ "  " * 1 }}{{ ret_type }}
+    {% endif %}
+
+    {% if ret_sample %}
+        {{ "  " * 1 }}{{ ret_sample }}
+    {% endif %}
+
+    {% if ret_contains %}
+        {% for field in ret_contains %}
+
+           {%  set field_description = ret_contains[field].description %}
+           {%  set field_returned = ret_contains[field].returned %}
+           {%  set field_type = ret_contains[field].type %}
+           {%  set field_sample = ret_contains[field].sample %}
+           {%  set field_contains = ret_contains[field].contains %}
+
+            {% if field_description %}
+                {{ "  " * 2 }}{{ field_description }}
+            {% endif %}
+
+            {% if field_returned %}
+                {{ "  " * 2 }}{{ field_returned }}
+            {% endif %}
+
+            {% if field_type %}
+                {{ "  " * 2 }}{{ field_type }}
+            {% endif %}
+
+            {% if field_sample %}
+               
+                        {{ field_sample | tojson | indent(3, True) }}
+
+
+                
+            {% endif %}
+
+        {%   endfor %}
+           
+
+
+    {% endif %}
+{%   endfor %}
+
+{% endif %}
+#}

@@ -34,9 +34,9 @@ options:
   owner:
     description:
       - Identifies the owner of the job.
+      - Defaults to the current user
     type: str
     required: False
-    default: <the current user>
   job_id:
     description:
       - The job number that has been assigned to the job. These normally begin with STC, JOB, TSU and are followed by 5 digits.
@@ -178,12 +178,10 @@ import re
 def run_module():
 
     module_args = dict(
-        job_name=dict(type="str", required=False),
+        job_name=dict(type="str", required=False, default="*"),
         owner=dict(type="str", required=False),
         job_id=dict(type="str", required=False),
     )
-
-    parameter_defaults = {"job_name": "*"}
 
     result = dict(changed=False, original_message="", message="")
 
@@ -193,9 +191,6 @@ def run_module():
         return result
 
     try:
-        for key, value in parameter_defaults.items():
-            if not module.params.get(key):
-                module.params[key] = value
         validate_arguments(module.params)
         jobs_raw = query_jobs(module.params)
         jobs = parsing_jobs(jobs_raw)

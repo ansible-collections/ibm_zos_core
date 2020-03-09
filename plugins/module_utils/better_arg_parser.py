@@ -61,7 +61,7 @@ class BetterArg(object):
             default {Union[str, int, bool, function]} -- The default value that the
             argument should be set to when none is provided. (default: {None})
             choices {list[Union[str, int, bool]]} -- The list of valid contents for the argument.
-            mutually_exclusive {list[list[str]]} -- A list containing lists of mutually exclusive argument names. 
+            mutually_exclusive {list[list[str]]} -- A list containing lists of mutually exclusive argument names.
             (default: {None})
             arg_type {Union[str, function]} -- The type the argument contents should be. (default: {'str'})
         """
@@ -756,7 +756,8 @@ class BetterArgParser(object):
             dependencies {dict[str, dict[str, bool]]} -- Each outer key represents one argument where the
             value is a dictionary with key=name of argument outer key argument is dependent on. Boolean value
             is always true and is a placeholder.
-            ordered_arg_defs {dict[str, BetterArg]} -- argument definitions from arg_defs sorted based on their dependencies,
+            ordered_arg_defs {dict[str, BetterArg]} -- argument definitions
+            from arg_defs sorted based on their dependencies,
             output is in the reverse of the order desired. Reverse sorting is handled in _sort_args_by_dependencies().
 
         Raises:

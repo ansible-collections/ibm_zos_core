@@ -26,6 +26,7 @@ version_added: "2.9"
 options:
   src:
     required: true
+    type: str
     description:
       - The source directory or data set containing the JCL to submit.
       - It could be Physical sequential data set or a partitioned data set qualified
@@ -33,8 +34,8 @@ options:
       - Or an USS file. (e.g "/u/tester/demo/sample.jcl")
       - Or an LOCAL file in ansible control node.(e.g "/User/tester/ansible-playbook/sample.jcl")
   location:
-    required: true
     default: DATA_SET
+    type: str
     choices:
       - DATA_SET
       - USS
@@ -45,9 +46,7 @@ options:
       - LOCAL means locally to the ansible control node.
   wait:
     required: false
-    choices:
-      - true
-      - false
+    type: bool
     description:
       - Wait for the Job to finish and capture the output. Default is false.
       - User can specify the wait time in option duration_s, default is 60s.
@@ -66,14 +65,13 @@ options:
   return_output:
     required: false
     default: true
-    choices:
-      - true
-      - false
+    type: bool
     description:
       - Whether to print the DD output.
       - If false, null will be returned in ddnames field.
   volume:
     required: false
+    type: str
     description:
       - The volume serial (VOLSER) where the data set resides. The option
         is required only when the data set is not catalogued on the system.
@@ -81,6 +79,7 @@ options:
   encoding:
     required: false
     default: UTF-8
+    type: str
     choices:
       - UTF-8
       - ASCII
@@ -422,8 +421,14 @@ def run_module():
     module_args = dict(
         src=dict(type="str", required=True),
         wait=dict(type="bool", required=False),
-        location=dict(type="str", required=True, options=["DATA_SET", "USS", "LOCAL"]),
-        encoding=dict(type="str", required=False, default="UTF-8"),
+        location=dict(
+            type="str", default="DATA_SET", choices=["DATA_SET", "USS", "LOCAL"],
+        ),
+        encoding=dict(
+            type="str",
+            default="UTF-8",
+            choices=["UTF-8", "ASCII", "ISO-8859-1", "EBCDIC", "IBM-037", "IBM-1047"],
+        ),
         volume=dict(type="str", required=False),
         return_output=dict(type="bool", required=False, default=True),
         wait_time_s=dict(type="int", required=False),
@@ -437,7 +442,7 @@ def run_module():
         src=dict(arg_type=data_set_or_path_type, required=True),
         wait=dict(arg_type="bool", required=False),
         location=dict(
-            arg_type="str", required=True, choices=["DATA_SET", "USS", "LOCAL"]
+            arg_type="str", default="DATA_SET", choices=["DATA_SET", "USS", "LOCAL"],
         ),
         encoding=dict(arg_type=encoding_type, default="UTF-8"),
         volume=dict(arg_type="volume", required=False),
@@ -488,7 +493,7 @@ def run_module():
     # calculate the job elapse time
     duration = 0
     try:
-        if location == "DATA_SET" or location is None:
+        if location == "DATA_SET":
             data_set_name_pattern = re.compile(DSN_REGEX, re.IGNORECASE)
             check = data_set_name_pattern.fullmatch(src)
             if check:

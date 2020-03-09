@@ -26,8 +26,9 @@ options:
   name:
     description:
       - The name of the data set being managed. (e.g "USER.TEST")
+      - Name field is required unless using batch option
     type: str
-    required: true
+    required: false
     version_added: "2.9"
   state:
     description:
@@ -40,6 +41,7 @@ options:
         Note that `present` will not replace an existing data set by default, even when the attributes do not match our desired data set.
         If replacement behavior is desired, see the options `replace` and `unsafe_writes`.
     required: false
+    type: str
     default: present
     choices:
       - present
@@ -51,6 +53,7 @@ options:
       - MEMBER expects to be used with an existing partitioned data set.
       - Choices are case-insensitive.
     required: false
+    type: str
     choices:
       - ESDS
       - RRDS
@@ -83,6 +86,7 @@ options:
       - VBA
       - U
     default: FB
+    type: str
     version_added: "2.9"
   data_class:
     description:
@@ -94,9 +98,9 @@ options:
     description:
       - The logical record length. (e.g 80)
       - For variable data sets, the length must include the 4-byte prefix area.
+      - Defaults vary depending on format. If FB/FBA 80, if VB/VBA 137, if U 0
     type: int
     required: false
-    default: if FB/FBA 80, if VB/VBA 137, if U 0
     version_added: "2.9"
   replace:
     description:
@@ -115,8 +119,101 @@ options:
       - Batch can be used to perform operations on multiple data sets in a single module call.
       - Each item in the list expects the same options as zos_data_set.
     type: list
+    elements: dict
     required: false
     version_added: "2.9"
+    suboptions:
+      name:
+        description:
+          - The name of the data set being managed. (e.g "USER.TEST")
+        type: str
+        required: true
+        version_added: "2.9"
+      state:
+        description:
+          - The final state desired for specified data set.
+          - >
+            If `absent`, will ensure the data set is not present on the system.
+            Note that `absent` will not cause `zos_data_set` to fail if data set does not exist as the state did not change.
+          - >
+            If `present`, will ensure the data set is present on the system.
+            Note that `present` will not replace an existing data set by default, even when the attributes do not match our desired data set.
+            If replacement behavior is desired, see the options `replace` and `unsafe_writes`.
+        required: false
+        type: str
+        default: present
+        choices:
+          - present
+          - absent
+        version_added: "2.9"
+      type:
+        description:
+          - The data set type to be used when creating a data set. (e.g "pdse")
+          - MEMBER expects to be used with an existing partitioned data set.
+          - Choices are case-insensitive.
+        required: false
+        type: str
+        choices:
+          - ESDS
+          - RRDS
+          - LDS
+          - SEQ
+          - PDS
+          - PDSE
+          - MEMBER
+        version_added: "2.9"
+      size:
+        description:
+          - The size of the data set (e.g "5M")
+          - Valid units of size are "K", "M", "G", "CYL" and "TRK"
+          - Note that "CYL" and "TRK" follow size conventions for 3390 disk types (56,664 bytes/TRK & 849,960 bytes/CYL)
+          - The "CYL" and "TRK" units are converted to bytes and rounded up to the nearest "K" measurement.
+          - Ensure there is no space between the numeric size and unit.
+        type: str
+        required: false
+        default: 5M
+        version_added: "2.9"
+      format:
+        description:
+          - The format of the data set. (e.g "FB")
+          - Choices are case-insensitive.
+        required: false
+        type: str
+        choices:
+          - FB
+          - VB
+          - FBA
+          - VBA
+          - U
+        default: FB
+        version_added: "2.9"
+      data_class:
+        description:
+          - The data class name (required for SMS-managed data sets)
+        type: str
+        required: false
+        version_added: "2.9"
+      record_length:
+        description:
+          - The logical record length. (e.g 80)
+          - For variable data sets, the length must include the 4-byte prefix area.
+          - Defaults vary depending on format. If FB/FBA 80, if VB/VBA 137, if U 0
+        type: int
+        required: false
+        version_added: "2.9"
+      replace:
+        description:
+          - When `replace` is `true`, and `state` is `present`, existing data set matching name will be replaced.
+          - >
+            Replacement is performed by deleting the existing data set and creating a new data set with the desired
+            attributes in the old data set's place. This may lead to an inconsistent state if data set creations fails
+            after the old data set is deleted.
+          - If `replace` is `true`, all data in the original data set will be lost.
+        type: bool
+        required: false
+        default: false
+        version_added: "2.9"
+
 """
 EXAMPLES = r"""
 - name: Create a sequential data set if it does not exist

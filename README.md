@@ -95,10 +95,10 @@ Installed collection content:
 │              ├── docs/
 │              ├── playbooks/
 │              ├── plugins/
-│                  ├── action/
-│                  ├── connection/
-│                  ├── module_utils/
-│                  └── modules/
+│                  ├── action/
+│                  ├── connection/
+│                  ├── module_utils/
+│                  └── modules/
 ```
 
 You can use the `-p` option with `ansible-galaxy` to specify the installation path such as `ansible-galaxy collection install ibm.ibm_zos_core -p /home/ansible/collections`. For more information on installing collections with Ansible Galaxy, see [Installing collections](https://docs.ansible.com/ansible/latest/user_guide/collections_using.html#installing-collections-with-ansible-galaxy).
@@ -272,5 +272,5 @@ Currently we are not accepting community contributions. Though, you may periodic
 # License
 
 Some portions of this collection are licensed under [GNU General Public License, Version 3.0](https://opensource.org/licenses/GPL-3.0),
-other portions of this collection are licensed under [Apache License, Version 2.0](https://opensource.org/licenses/Apache-2.0) and [The MIT License](https://opensource.org/licenses/MIT).
+and other portions of this collection are licensed under [Apache License, Version 2.0](https://opensource.org/licenses/Apache-2.0).
 See individual files for applicable licenses.

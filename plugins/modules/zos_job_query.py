@@ -173,6 +173,7 @@ except Exception:
     Jobs = ""
 from ansible.module_utils.basic import AnsibleModule
 import re
+from time import sleep
 
 
 def run_module():
@@ -244,8 +245,9 @@ def query_jobs(params, count=0):
                 "List FAILED! no such job name been found: " + job_name_in
             )
     except IndexError:
-        if count > 3:
+        if count > 12:
             raise
+        sleep(0.25)
         count += 1
         jobs = query_jobs(params, count)
     return jobs

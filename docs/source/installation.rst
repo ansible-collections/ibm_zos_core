@@ -1,7 +1,7 @@
 Installation
 ============
-You have several options when you are ready to install the **IBM Z Core
-Collection** which are Ansible Galaxy, Ansible Hub and local build.
+You have several options you may use to install the **IBM Z Core
+Collection**. These are Ansible Galaxy, Ansible Hub, and a local build.
 
 For more information on installing collections, see `using collections`_.
 
@@ -57,7 +57,7 @@ After installation, the collection content will resemble this hierarchy: :
 
 
 You can use the `-p` option with `ansible-galaxy` to specify the installation
-path such as:
+path, such as:
 
 .. code-block:: sh
 
@@ -95,10 +95,10 @@ Ansible searches for ``ansible.cfg`` in these locations in this order:
 
 To configure a Galaxy server list in the ansible.cfg file:
 
-  * Add the server_list option under the [galaxy] section to one or more server names
-  * Create a new section for each server name
-  * Set the url option for each server name
-  * Set the auth_url option for each server name
+  * Add the server_list option under the [galaxy] section to one or more server names.
+  * Create a new section for each server name.
+  * Set the url option for each server name.
+  * Set the auth_url option for each server name.
   * Set the API token for each server name. For more information on API tokens, see `Get API token from the version dropdown to copy your API token`_.
 
 .. _Get API token from the version dropdown to copy your API token:

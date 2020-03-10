@@ -3,7 +3,7 @@
 # Copyright (c) IBM Corporation 2019, 2020
 # Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
@@ -26,31 +26,31 @@ HELLO, WORLD
 TEMP_PATH = "/tmp/ansible/jcl"
 
 
-def test_zos_job_output_no_job_id(ansible_zos_module):
-    hosts = ansible_zos_module
-    results = hosts.all.zos_job_output(job_id="NO_JOBID")
-    for result in results.contacted.values():
-        print(result)
-        assert result.get("changed") is False
-        assert result.get("jobs") is not None
+# def test_zos_job_output_no_job_id(ansible_zos_module):
+#     hosts = ansible_zos_module
+#     results = hosts.all.zos_job_output(job_id="NO_JOBID")
+#     for result in results.contacted.values():
+#         print(result)
+#         assert result.get("changed") is False
+#         assert result.get("jobs") is not None
 
 
-def test_zos_job_output_no_job_name(ansible_zos_module):
-    hosts = ansible_zos_module
-    results = hosts.all.zos_job_output(job_name="NO_JOBNAME")
-    for result in results.contacted.values():
-        print(result)
-        assert result.get("changed") is False
-        assert result.get("jobs") is not None
+# def test_zos_job_output_no_job_name(ansible_zos_module):
+#     hosts = ansible_zos_module
+#     results = hosts.all.zos_job_output(job_name="NO_JOBNAME")
+#     for result in results.contacted.values():
+#         print(result)
+#         assert result.get("changed") is False
+#         assert result.get("jobs") is not None
 
 
-def test_zos_job_output_no_owner(ansible_zos_module):
-    hosts = ansible_zos_module
-    results = hosts.all.zos_job_output(owner="NO_OWNER")
-    for result in results.contacted.values():
-        print(result)
-        assert result.get("changed") is False
-        assert result.get("jobs") is not None
+# def test_zos_job_output_no_owner(ansible_zos_module):
+#     hosts = ansible_zos_module
+#     results = hosts.all.zos_job_output(owner="NO_OWNER")
+#     for result in results.contacted.values():
+#         print(result)
+#         assert result.get("changed") is False
+#         assert result.get("jobs") is not None
 
 
 def test_zos_job_output_reject(ansible_zos_module):

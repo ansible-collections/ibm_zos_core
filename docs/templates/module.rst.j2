@@ -43,7 +43,7 @@ Synopsis
 {# Parse options and format function                                        #}
 {# ------------------------------------------------------------------------ #}
 
-{% macro option_desc(opts, level) %}
+{% macro option_generation(opts, level) %}
 {%   for name, spec in opts | dictsort recursive %}
 {%     set req = "required" if spec.required else "optional" %}
 
@@ -54,7 +54,6 @@ Synopsis
      {% set default = ", default: " + spec.default if spec.default else "" %}
 {% endif %}
 
-{# {{ "  " * level }}{{ name }} ({{ req }}) #}
 {{ "  " * level }}{{ name }}
 {%     for para in spec.description %}
   {{ "  " * level }}{{ para | rst_ify }}
@@ -71,7 +70,7 @@ Synopsis
 {%     endif %}
 
 {%     if spec.suboptions %}
-{{ option_desc(spec.suboptions, level + 1) }}
+{{ option_generation(spec.suboptions, level + 1) }}
 {%     endif %}
 {%   endfor %}
 {% endmacro %}
@@ -84,7 +83,7 @@ Synopsis
 Parameters
 ----------
 
-{{ option_desc(options, 0) }}
+{{ option_generation(options, 0) }}
 {% endif %}
 
 {# ------------------------------------------------------------- #}
@@ -133,93 +132,7 @@ See Also
 {# Return doc macro                                              #}
 {# ------------------------------------------------------------- #}
 
-{% macro result_desc(results, level) %}
-{%   for name, spec in results.items() %}
- {%     set ret = spec.returned %}
-{%     set typ = spec.type | default("any") %}
-{%     set sample = spec.sample %}
-{%     set elm = spec.elements %}
-{%     set con = spec.contains %}
-{#{{ "  " * level }}{{ name }} ({{ spec.returned }}), {{ typ }}, {{ sample }})#}
-{{ "  " * level }}{{ name }} 
-  {{ "  " * level }}{{ spec.description | rst_ify }}
-
-  {{ "  " * level }}| **returned**: {{ spec.returned | default("success") }}
-  {{ "  " * level }}| **type**: {{ spec.type }}
-  
-{% if spec.sample %}
-
-{{ "  " * level }}| **sample**:
-
-.. code-block:: yaml+jinja
-
-{{ spec.sample | indent(3, True) }}
-
-{%     endif %}
-
-{% if spec.contains %}
-{{ result_desc(spec.contains, level + 1) }}
-{%     endif %}
-{%   endfor %}
-{% endmacro %}
-
-
-{% macro result_desc2(results, level) %}
-   {% for entry in results %}
-   
-      {%  set _description  = results[entry].description %}
-      {%  set _returned     = results[entry].returned %}
-      {%  set _type         = results[entry].type %}
-      {%  set _contains     = results[entry].contains %}
-      {%  set _sample       = results[entry].sample %}
-
-      {{ entry |  rst_ify }}
-      {{ "  " * 3 }}| {{ _description }}
-
-      {{ "  " * 3 }}| **returned**: {{ _returned }}
-      {{ "  " * 3 }}| **type**: {{ _type  }}
-
-      {% if _contains %}
-        {% for prop in _contains %}
-   
-            {%  set prop_description  = _contains[prop].description %}
-            {%  set prop_returned     = _contains[prop].returned %}
-            {%  set prop_type         = _contains[prop].type %}
-            {%  set prop_sample       = _contains[prop].sample %}
-
-            {{ prop |  rst_ify }}
-            {{ "  " * 5 }}| {{ prop_description }}
-
-            {{ "  " * 5 }}| **returned**: {{ prop_returned }}
-            {{ "  " * 5 }}| **type**: {{ prop_type  }}
-            {% if prop_sample %}
-                {% if prop_sample is iterable %}
-            
-                **{{ prop }}** **sample**: ::
-
-                        {{ prop_sample | tojson }}
-                    
-                {% else %}
-                    {{ "  " * 5 }}| **sample**: {{ prop_sample  }}
-                {% endif %}
-            {% endif %}
-        {% endfor  %}
-
-      {% if _sample %}
-       
-      **{{ entry }}** **sample**: ::
-
-                {{ _sample | tojson  }}
-
-      {% endif %}
-      
-    {% endif %}
-      
-   {% endfor %}
-{% endmacro %}
-
-
-{% macro result_desc3(results, level) %}
+{% macro result_generation(results, level) %}
    {% for entry in results %}
    
       {%  set _description  = results[entry].description %}
@@ -246,7 +159,7 @@ See Also
       {% endif %}
 
       {% if _contains %}
-        {{ result_desc3(_contains, level + 1) }}
+        {{ result_generation(_contains, level + 1) }}
       {% endif %}
 
       {% endfor  %}
@@ -259,74 +172,6 @@ See Also
 Return Values
 -------------
 
-{{ result_desc3(returndocs, 3) }}
+{{ result_generation(returndocs, 3) }}
 {% endif %}
 
-{#
-{% if returndocs -%}
-Return Values
--------------
-
-{% for entry in returndocs %}
-   {{ "  " * 1 }}{{ entry }} 
-   {%  set ret_description = returndocs[entry].description %}
-   {%  set ret_returned = returndocs[entry].returned %}
-   {%  set ret_type = returndocs[entry].type %}
-   {%  set ret_sample = returndocs[entry].sample %}
-   {%  set ret_contains = returndocs[entry].contains %}
-   
-
-    {% if ret_description %}
-        {{ "  " * 1 }}{{ ret_description }}
-    {% endif %}
-
-    {% if ret_returned %}
-        {{ "  " * 1 }}{{ ret_returned }}
-    {% endif %}
-
-    {% if ret_type %}
-        {{ "  " * 1 }}{{ ret_type }}
-    {% endif %}
-
-    {% if ret_sample %}
-        {{ "  " * 1 }}{{ ret_sample }}
-    {% endif %}
-
-    {% if ret_contains %}
-        {% for field in ret_contains %}
-
-           {%  set field_description = ret_contains[field].description %}
-           {%  set field_returned = ret_contains[field].returned %}
-           {%  set field_type = ret_contains[field].type %}
-           {%  set field_sample = ret_contains[field].sample %}
-           {%  set field_contains = ret_contains[field].contains %}
-
-            {% if field_description %}
-                {{ "  " * 2 }}{{ field_description }}
-            {% endif %}
-
-            {% if field_returned %}
-                {{ "  " * 2 }}{{ field_returned }}
-            {% endif %}
-
-            {% if field_type %}
-                {{ "  " * 2 }}{{ field_type }}
-            {% endif %}
-
-            {% if field_sample %}
-               
-                        {{ field_sample | tojson | indent(3, True) }}
-
-
-                
-            {% endif %}
-
-        {%   endfor %}
-           
-
-
-    {% endif %}
-{%   endfor %}
-
-{% endif %}
-#}

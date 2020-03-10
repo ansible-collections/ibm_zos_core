@@ -1,0 +1,293 @@
+:github_url: https://github.com/ansible-collections/ibm_zos_core/blob/dev/plugins/modules/zos_data_set.py
+
+.. _zos_data_set_module:
+
+
+zos_data_set -- Create and set attributes for data sets
+=======================================================
+
+
+
+.. contents::
+   :local:
+   :depth: 1
+   
+
+Synopsis
+--------
+- Create, delete and set attributes of data sets.
+- When forcing data set replacement, contents will not be preserved.
+
+
+
+
+
+Parameters
+----------
+
+
+ 
+     
+batch
+  Batch can be used to perform operations on multiple data sets in a single module call.
+
+  Each item in the list expects the same options as zos_data_set.
+
+
+  | **retquired**: False
+  | **type**: list
+
+
+ 
+     
+data_class
+  The data class name (required for SMS-managed data sets)
+
+
+  | **retquired**: False
+  | **type**: str
+
+
+ 
+     
+format
+  The format of the data set. (e.g “FB”)
+
+  Choices are case-insensitive.
+
+
+  | **retquired**: False
+  | **type**: str
+  | **default**: FB
+  | **choices**: FB, VB, FBA, VBA, U
+
+
+ 
+     
+name
+  The name of the data set being managed. (e.g “USER.TEST”)
+
+
+  | **retquired**: True
+  | **type**: str
+
+
+ 
+     
+record_length
+  The logical record length. (e.g 80)
+
+  For variable data sets, the length must include the 4-byte prefix area.
+
+
+  | **retquired**: False
+  | **type**: int
+  | **default**: if FB/FBA 80, if VB/VBA 137, if U 0
+
+
+ 
+     
+replace
+  When `replace` is `true`, and `state` is `present`, existing data set matching name will be replaced.
+
+  Replacement is performed by deleting the existing data set and creating a new data set with the desired  attributes in the old data set's place. This may lead to an inconsistent state if data set creations fails  after the old data set is deleted.
+
+
+  If `replace` is `true`, all data in the original data set will be lost.
+
+
+  | **retquired**: False
+  | **type**: bool
+
+
+ 
+     
+size
+  The size of the data set (e.g “5M”)
+
+  Valid units of size are "K", "M", "G", "CYL" and "TRK"
+
+  Note that "CYL" and "TRK" follow size conventions for 3390 disk types (56,664 bytes/TRK & 849,960 bytes/CYL)
+
+  The "CYL" and "TRK" units are converted to bytes and rounded up to the nearest "K" measurement.
+
+  Ensure there is no space between the numeric size and unit.
+
+
+  | **retquired**: False
+  | **type**: str
+  | **default**: 5M
+
+
+ 
+     
+state
+  The final state desired for specified data set.
+
+  If `absent`, will ensure the data set is not present on the system. Note that `absent` will not cause `zos_data_set` to fail if data set does not exist as the state did not change. 
+
+
+  If `present`, will ensure the data set is present on the system. Note that `present` will not replace an existing data set by default, even when the attributes do not match our desired data set. If replacement behavior is desired, see the options `replace` and `unsafe_writes`.
+
+
+
+  | **retquired**: False
+  | **type**: str
+  | **default**: present
+  | **choices**: present, absent
+
+
+ 
+     
+type
+  The data set type to be used when creating a data set. (e.g “pdse”)
+
+  MEMBER expects to be used with an existing partitioned data set.
+
+  Choices are case-insensitive.
+
+
+  | **retquired**: False
+  | **type**: str
+  | **choices**: ESDS, RRDS, LDS, SEQ, PDS, PDSE, MEMBER
+
+
+
+
+Examples
+--------
+
+.. code-block:: yaml+jinja
+
+   
+   - name: Create a sequential data set if it does not exist
+     zos_data_set:
+       name: user.private.libs
+       type: seq
+       state: present
+
+   - name: Create a PDS data set if it does not exist
+     zos_data_set:
+       name: user.private.libs
+       type: pds
+       size: 5M
+       format: fba
+       record_length: 25
+
+   - name: Attempt to replace a data set if it exists
+     zos_data_set:
+       name: user.private.libs
+       type: pds
+       size: 5M
+       format: u
+       record_length: 25
+       replace: yes
+
+   - name: Attempt to replace a data set if it exists, allow unsafe_writes
+     zos_data_set:
+       name: user.private.libs
+       type: pds
+       size: 5M
+       format: fb
+       record_length: 25
+       replace: yes
+       unsafe_writes: yes
+
+   - name: Create an ESDS data set is it does not exist
+     zos_data_set:
+       name: user.private.libs
+       type: esds
+       
+   - name: Create an RRDS data set with data class MYDATA if it does not exist
+     zos_data_set:
+       name: user.private.libs
+       type: rrds
+       data_class: mydata
+          
+
+   - name: Delete a data set if it exists
+     zos_data_set:
+       name: user.private.libs
+       state: absent
+       
+   - name: Write a member to existing PDS, replace if member exists
+     zos_data_set:
+       name: user.private.libs(mydata)
+       type: MEMBER
+       replace: yes
+
+   - name: Write a member to existing PDS, do not replace if member exists
+     zos_data_set:
+       name: user.private.libs(mydata)
+       type: MEMBER
+
+   - name: Remove a member from existing PDS if it exists
+     zos_data_set:
+       name: user.private.libs(mydata)
+       state: absent
+       type: MEMBER   
+       
+   - name: Create multiple partitioned data sets and add one or more members to each
+     zos_data_set:
+       batch:
+         - name:  user.private.libs1
+           type: PDS
+           size: 5M
+           format: fb
+           replace: yes
+         - name:  user.private.libs2
+           type: PDSE
+           size: 10CYL
+           format: fb
+           replace: yes
+           unsafe_writes: yes
+         - name: user.private.libs1(member1)
+           type: MEMBER
+         - name: user.private.libs2(member1)
+           type: MEMBER
+           replace: yes
+         - name: user.private.libs2(member2)
+           type: MEMBER
+
+
+
+
+
+
+
+
+
+Return Values
+-------------
+
+      
+                              
+         original_message
+            | The original list of parameters and arguments, plus any defaults used.
+      
+            | **returned**: 
+            | **type**: dict
+
+      
+      
+         
+                              
+         message
+            | The output message that the sample module generates
+      
+            | **returned**: 
+            | **type**: dict
+
+      
+      
+         
+                              
+         changed
+            | Indicates if any changes were made during module operation.
+      
+            | **returned**: 
+            | **type**: bool
+
+      
+      
+        

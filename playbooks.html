@@ -1,0 +1,341 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Playbooks &mdash; IBM Z Core Collection 1.0.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Contributing" href="community_guides.html" />
+    <link rel="prev" title="zos_data_set – Create and set attributes for data sets" href="modules/zos_data_set.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> IBM Z Core Collection
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Using IBM Z Core Collection</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Reference</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="plugins.html">Plugins</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">Modules</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Playbooks</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#playbook-documentation">Playbook Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#sample-configuration-and-setup">Sample Configuration and Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#inventory">Inventory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#group-vars">Group_vars</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#run-the-playbook">Run the playbook</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption"><span class="caption-text">Community guides</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="community_guides.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="community_guides.html#helpful-links">Helpful Links</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Requirements</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="requirements.html">Requirements</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Appendices</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="release_notes.html">Releases</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">IBM Z Core Collection</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Playbooks</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            
+              <a href="https://github.com/ansible-collections/ibm_zos_core/blob/master/docs/source/playbooks.rst" class="fa fa-github"> Edit on GitHub</a>
+            
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="playbooks">
+<h1>Playbooks<a class="headerlink" href="#playbooks" title="Permalink to this headline">¶</a></h1>
+<p>Sample playbooks are <strong>included</strong> that demonstrate how to use the collection
+content in the ibm_zos_core collection.</p>
+<div class="section" id="playbook-documentation">
+<h2>Playbook Documentation<a class="headerlink" href="#playbook-documentation" title="Permalink to this headline">¶</a></h2>
+<p>An <a class="reference external" href="https://docs.ansible.com/ansible/latest/user_guide/playbooks_intro.html#playbooks-intro">Ansible playbook</a> consists of organized instructions that define work for
+a managed node (hosts) to be managed with Ansible.</p>
+<p>Included in the <strong>IBM Z Core Collection</strong> is a <a class="reference external" href="https://github.com/ansible-collections/ibm_zos_core/tree/master/playbooks">playbooks directory</a> that
+contains a sample playbook that with some modification to the <strong>inventory</strong>,
+<strong>ansible.cfg</strong> and <strong>group_vars</strong> can be run with the``ansible-playbook``
+command.</p>
+<p>You can find the playbook content that is included with the collection where
+the collection was installed, please refer back to the
+<a class="reference external" href="installation.html">installation documentation</a>. In the following examples, this document will
+refer to the installation path as <code class="docutils literal notranslate"><span class="pre">~/.ansible/collections/ibm/ibm_zos_core</span></code>.</p>
+</div>
+<div class="section" id="sample-configuration-and-setup">
+<h2>Sample Configuration and Setup<a class="headerlink" href="#sample-configuration-and-setup" title="Permalink to this headline">¶</a></h2>
+<p>Ansible config file <cite>ansible.cfg</cite> can override nearly all
+<code class="docutils literal notranslate"><span class="pre">ansible-playbook</span></code> configurations. Also included in the
+<a class="reference external" href="https://github.com/ansible-collections/ibm_zos_core/tree/master/playbooks">playbooks directory</a> is a sample <a class="reference external" href="https://github.com/ansible-collections/ibm_zos_core/blob/master/playbooks/ansible.cfg">ansible.cfg</a> that with little
+modification can supplement <code class="docutils literal notranslate"><span class="pre">ansible-playbook</span></code>.</p>
+<p>In the sample <a class="reference external" href="https://github.com/ansible-collections/ibm_zos_core/blob/master/playbooks/ansible.cfg">ansible.cfg</a>, the only required configuration is:
+<code class="docutils literal notranslate"><span class="pre">pipelining</span> <span class="pre">=</span> <span class="pre">True</span></code></p>
+<p>For more information about available configurations for <code class="docutils literal notranslate"><span class="pre">ansible.cfg</span></code>, read
+the Ansible documentation on <a class="reference external" href="https://docs.ansible.com/ansible/latest/reference_appendices/config.html#ansible-configuration-settings-locations">Ansible configuration settings</a>.</p>
+</div>
+<div class="section" id="inventory">
+<h2>Inventory<a class="headerlink" href="#inventory" title="Permalink to this headline">¶</a></h2>
+<p>Ansible works with multiple managed nodes (hosts) at the same time, using a
+list or group of lists know as an <a class="reference external" href="https://docs.ansible.com/ansible/latest/user_guide/intro_inventory.html">inventory</a>. Once the inventory is defined,
+you can use <a class="reference external" href="https://docs.ansible.com/ansible/latest/user_guide/intro_patterns.html#intro-patterns">patterns</a> to select the hosts, or groups, you want Ansible to run
+against.</p>
+<p>Included in the <a class="reference external" href="https://github.com/ansible-collections/ibm_zos_core/tree/master/playbooks">playbooks directory</a> is a <a class="reference external" href="https://github.com/ansible-collections/ibm_zos_core/blob/master/playbooks/inventory">sample inventory</a> file that with
+little modification can be used to manage your nodes. This inventory file
+should be included when running the sample playbook.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">zsystem</span><span class="p">:</span>
+  <span class="nt">hosts</span><span class="p">:</span>
+    <span class="nt">zvm</span><span class="p">:</span>
+      <span class="nt">ansible_host</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">zos_target_address</span>
+      <span class="nt">ansible_user</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">zos_target_username</span>
+      <span class="nt">ansible_python_interpreter</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">path_to_python_interpreter_binary_on_zos_target</span>
+</pre></div>
+</div>
+<p>The value for property <strong>ansible_host</strong> is the hostname of the manage node, for
+example, <code class="docutils literal notranslate"><span class="pre">ansible_host:</span> <span class="pre">ec33017A.vmec.svl.ibm.com</span></code></p>
+<p>The value for property <strong>zos_target_username</strong> is the user name to use when
+connecting to the host, for example, <code class="docutils literal notranslate"><span class="pre">ansible_user:</span> <span class="pre">omvsadm</span></code></p>
+<p>The value for property <strong>ansible_python_interpreter</strong> is the target host python
+path. This is useful for systems with more than one Python installation, or
+when Python is not located at in the default location <strong>/usr/bin/python</strong>, for
+example, <code class="docutils literal notranslate"><span class="pre">ansible_python_interpreter:</span> <span class="pre">/usr/lpp/rsusr/python36/bin/python</span></code></p>
+<p>For more information on python configuration requirements on z/OS, refer to
+Ansible FAQ, <a class="reference external" href="https://docs.ansible.com/ansible/latest/reference_appendices/faq.html">Running on zOS</a>.</p>
+</div>
+<div class="section" id="group-vars">
+<h2>Group_vars<a class="headerlink" href="#group-vars" title="Permalink to this headline">¶</a></h2>
+<p>Although you can store variables in the inventory file, storing separate host
+and group variables files may help you organize your variable values more
+easily. Included with the sample playbook is a sample variable file <a class="reference external" href="https://github.com/ansible-collections/ibm_zos_core/blob/master/playbooks/group_vars/all.yml">all.yml</a>.</p>
+<p>The value for property <strong>BPXK_AUTOCVT</strong> must be configured to <code class="docutils literal notranslate"><span class="pre">ON</span></code>.</p>
+<p>The value for property <strong>ZOAU_ROOT</strong> is the ZOA Utilities install root path,
+for example, <code class="docutils literal notranslate"><span class="pre">/usr/lpp/IBM/zoautil</span></code>.</p>
+<p>The value for property <strong>PYTHONPATH</strong> is the ZOA Utilities Python library path,
+for example, <code class="docutils literal notranslate"><span class="pre">/usr/lpp/IBM/zoautil/lib/</span></code>.</p>
+<p>The value for property <strong>LIBPATH</strong> is both the path to the python libraries on
+the target and the ZOA Utilities Python library path separated by
+semi-colons <code class="docutils literal notranslate"><span class="pre">:</span></code>, for example,
+<code class="docutils literal notranslate"><span class="pre">/usr/lpp/IBM/zoautil/lib/:/usr/lpp/rsusr/python36/lib:/lib:/usr/lib:.</span></code></p>
+<p>The value for property <strong>PATH</strong> is the ZOA utilities BIN path and Python
+interpreter path, for example, <code class="docutils literal notranslate"><span class="pre">/usr/lpp/IBM/zoautil/bin;/usr/bin/python</span></code>.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">environment_vars</span><span class="p">:</span>
+   <span class="nt">_BPXK_AUTOCVT</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ON</span>
+   <span class="nt">ZOAU_ROOT</span><span class="p">:</span> <span class="s">&#39;/usr/lpp/IBM/zoautil&#39;</span>
+   <span class="nt">PYTHONPATH</span><span class="p">:</span> <span class="s">&#39;/usr/lpp/IBM/zoautil/lib&#39;</span>
+   <span class="nt">LIBPATH</span><span class="p">:</span> <span class="s">&#39;/usr/lpp/IBM/zoautil/lib/:/usr/lpp/rsusr/python36/lib:/usr/lib:/lib:.&#39;</span>
+   <span class="nt">PATH</span><span class="p">:</span> <span class="s">&#39;/usr/lpp/IBM/zoautil/bin;/usr/lpp/rsusr/python36/bin/python&#39;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="run-the-playbook">
+<h2>Run the playbook<a class="headerlink" href="#run-the-playbook" title="Permalink to this headline">¶</a></h2>
+<p>Access the sample Ansible playbook, ensure you are within the collection
+playbooks directory where the sample files are included,
+<code class="docutils literal notranslate"><span class="pre">~/.ansible/collections/ibm/ibm_zos_core/playbooks/</span></code></p>
+<p>Use the Ansible command <code class="docutils literal notranslate"><span class="pre">ansible-playbook</span></code> to run the sample playbook, the
+command syntax is <code class="docutils literal notranslate"><span class="pre">ansible-playbook</span> <span class="pre">-i</span> <span class="pre">&lt;inventory&gt;</span> <span class="pre">&lt;playbook&gt;</span></code>, for example,
+<code class="docutils literal notranslate"><span class="pre">ansible-playbook</span> <span class="pre">-i</span> <span class="pre">inventory</span> <span class="pre">zos-collection-sample.yaml</span></code></p>
+<p>This command assumes the controllers public SSH key has been shared with the
+managed node. If you want to avoid entering a username and password each time,
+copy the SSH public key to the managed node using the <code class="docutils literal notranslate"><span class="pre">ssh-copy-id</span></code> command,
+for example, <code class="docutils literal notranslate"><span class="pre">ssh-copy-id</span> <span class="pre">-i</span> <span class="pre">~/.ssh/mykey.pub</span> <span class="pre">user&#64;&lt;hostname&gt;</span></code>.</p>
+<p>Alternatively, you can use the <code class="docutils literal notranslate"><span class="pre">--ask-pass</span></code> option to be prompted for the
+users password each time a playbook is run, for example,
+<code class="docutils literal notranslate"><span class="pre">ansible-playbook</span> <span class="pre">-i</span> <span class="pre">inventory</span> <span class="pre">zos-collection-sample.yaml</span> <span class="pre">--ask-pass</span></code>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<ul class="simple">
+<li><p>Using <code class="docutils literal notranslate"><span class="pre">--ask-pass</span></code> is not recommended because it will hinder performance.</p></li>
+<li><p>Using <code class="docutils literal notranslate"><span class="pre">--ask-pass</span></code> requires <code class="docutils literal notranslate"><span class="pre">sshpass</span></code> be installed on the controller,
+for further reference, see the <a class="reference external" href="https://linux.die.net/man/1/sshpass">ask-pass documentation</a>.</p></li>
+</ul>
+</div>
+<p>Optionally, during playbook execution, console logging verbosity can be
+configured. This is helpful in situations where communication is failing and
+you want more detail. To adjust logging verbosity, append more letter <cite>v</cite>’s,
+for example, <cite>-v</cite>, <cite>-vv</cite>, <cite>-vvv</cite>, or <cite>-vvvv</cite>.</p>
+<p>Each letter <cite>v</cite> increases logging verbosity similar to traditional logging
+levels INFO, WARN, ERROR, DEBUG.</p>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="community_guides.html" class="btn btn-neutral float-right" title="Contributing" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="modules/zos_data_set.html" class="btn btn-neutral float-left" title="zos_data_set – Create and set attributes for data sets" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, IBM
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

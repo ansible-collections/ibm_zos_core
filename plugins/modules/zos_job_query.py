@@ -227,19 +227,27 @@ def validate_arguments(params):
         raise RuntimeError("Argument Error:job id can not be co-exist with owner")
 
 
-def query_jobs(params):
+def query_jobs(params, count=0):
     job_name_in = params.get("job_name")
     job_id = params.get("job_id")
     owner = params.get("owner")
     jobs = []
-    if job_id:
-        jobs = Jobs.list(job_id=job_id)
-    elif owner:
-        jobs = Jobs.list(owner=owner, job_name=job_name_in)
-    else:
-        jobs = Jobs.list(job_name=job_name_in)
-    if not jobs:
-        raise RuntimeError("List FAILED! no such job name been found: " + job_name_in)
+    try:
+        if job_id:
+            jobs = Jobs.list(job_id=job_id)
+        elif owner:
+            jobs = Jobs.list(owner=owner, job_name=job_name_in)
+        else:
+            jobs = Jobs.list(job_name=job_name_in)
+        if not jobs:
+            raise RuntimeError(
+                "List FAILED! no such job name been found: " + job_name_in
+            )
+    except IndexError:
+        if count > 3:
+            raise
+        count += 1
+        jobs = query_jobs(params, count)
     return jobs
 
 

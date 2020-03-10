@@ -4,7 +4,7 @@
 # Copyright (c) IBM Corporation 2019, 2020
 # Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
@@ -34,9 +34,9 @@ options:
   owner:
     description:
       - Identifies the owner of the job.
+      - Defaults to the current user
     type: str
     required: False
-    default: <the current user>
   job_id:
     description:
       - The job number that has been assigned to the job. These normally begin with STC, JOB, TSU and are followed by 5 digits.
@@ -167,21 +167,22 @@ original_message:
   returned: always
 """
 
-
-from zoautil_py import Jobs
+try:
+    from zoautil_py import Jobs
+except Exception:
+    Jobs = ""
 from ansible.module_utils.basic import AnsibleModule
 import re
+from time import sleep
 
 
 def run_module():
 
     module_args = dict(
-        job_name=dict(type="str", required=False),
+        job_name=dict(type="str", required=False, default="*"),
         owner=dict(type="str", required=False),
         job_id=dict(type="str", required=False),
     )
-
-    parameter_defaults = {"job_name": "*"}
 
     result = dict(changed=False, original_message="", message="")
 
@@ -191,9 +192,6 @@ def run_module():
         return result
 
     try:
-        for key, value in parameter_defaults.items():
-            if not module.params.get(key):
-                module.params[key] = value
         validate_arguments(module.params)
         jobs_raw = query_jobs(module.params)
         jobs = parsing_jobs(jobs_raw)
@@ -230,19 +228,28 @@ def validate_arguments(params):
         raise RuntimeError("Argument Error:job id can not be co-exist with owner")
 
 
-def query_jobs(params):
+def query_jobs(params, count=0):
     job_name_in = params.get("job_name")
     job_id = params.get("job_id")
     owner = params.get("owner")
     jobs = []
-    if job_id:
-        jobs = Jobs.list(job_id=job_id)
-    elif owner:
-        jobs = Jobs.list(owner=owner, job_name=job_name_in)
-    else:
-        jobs = Jobs.list(job_name=job_name_in)
-    if not jobs:
-        raise RuntimeError("List FAILED! no such job name been found: " + job_name_in)
+    try:
+        if job_id:
+            jobs = Jobs.list(job_id=job_id)
+        elif owner:
+            jobs = Jobs.list(owner=owner, job_name=job_name_in)
+        else:
+            jobs = Jobs.list(job_name=job_name_in)
+        if not jobs:
+            raise RuntimeError(
+                "List FAILED! no such job name been found: " + job_name_in
+            )
+    except IndexError:
+        if count > 12:
+            raise
+        sleep(0.25)
+        count += 1
+        jobs = query_jobs(params, count)
     return jobs
 
 

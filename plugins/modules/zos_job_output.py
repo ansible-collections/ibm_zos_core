@@ -4,7 +4,7 @@
 # Copyright (c) IBM Corporation 2019, 2020
 # Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
@@ -159,10 +159,10 @@ def run_module():
 
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
 
-    job_id = module.params.get("job_id") or ""
-    job_name = module.params.get("job_name") or ""
-    owner = module.params.get("owner") or ""
-    ddname = module.params.get("ddname") or ""
+    job_id = module.params.get("job_id")
+    job_name = module.params.get("job_name")
+    owner = module.params.get("owner")
+    ddname = module.params.get("ddname")
 
     if not job_id and not job_name and not owner:
         module.fail_json(msg="Please provide a job_id or job_name or owner")
@@ -171,7 +171,7 @@ def run_module():
         results = job_output(module, job_id, owner, job_name, ddname)
         results["changed"] = False
     except Exception as e:
-        module.fail_json(msg=str(e))
+        module.fail_json(msg=repr(e))
     module.exit_json(**results)
 
 

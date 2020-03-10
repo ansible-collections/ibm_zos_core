@@ -187,6 +187,7 @@ dmypy.json
 
 # Visual Studio Code workspace configuration files
 .vscode/*
+.vscode/
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
@@ -195,5 +196,6 @@ dmypy.json
 
 # Development files
 hosts
-
+.ansible-test/
 .keep
+shell_exploits.txt

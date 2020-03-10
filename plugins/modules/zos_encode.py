@@ -60,7 +60,6 @@ EXAMPLES = '''
 - name: Convert data encoding (EBCDIC to ASCII) from a Unix file to the same file 
   zos_encode:
     src: ./zos_encode/test.data
-    dest: 
     from_encoding: IBM-1047
     to_encoding: ISO8859-1
 
@@ -68,6 +67,8 @@ EXAMPLES = '''
   copy:
     src: ./zos_encode/test.data 
     dest: /user/zos_encode_out/test.data
+    from_encoding: IBM-1047
+    to_encoding: ISO8859-1
     backup: yes
 
 - name: Convert data encoding (EBCDIC to ASCII) from a Unix file to a different file 
@@ -151,8 +152,8 @@ EXAMPLES = '''
   zos_encode:
     src: USER.TEST.VS
     dest: /u/zos_encode/test
-    from_encoding: ISO8859-1
-    to_encoding: IBM-1047
+    from_encoding: IBM-1047
+    to_encoding: ISO8859-1
 
 - name: Convert data encoding (EBCDIC to ASCII) from a VSAM data set to a sequential data set
   zos_encode:

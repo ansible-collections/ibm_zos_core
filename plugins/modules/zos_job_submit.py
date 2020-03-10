@@ -4,7 +4,7 @@
 # Copyright (c) IBM Corporation 2019, 2020
 # Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
@@ -19,13 +19,14 @@ module: zos_job_submit
 author: "Xiao Yuan Ma (@bjmaxy)"
 short_description: The zos_job_submit module allows you to submit a job and optionally monitor for its execution.
 description:
-  - Submit JCL from DATS_SET , USS, or LOCAL location.
+  - Submit JCL from DATA_SET , USS, or LOCAL location.
   - Optionally wait for the job output until the job finishes.
   - For the uncatalogued dataset, specify the volume serial number.
 version_added: "2.9"
 options:
   src:
     required: true
+    type: str
     description:
       - The source directory or data set containing the JCL to submit.
       - It could be Physical sequential data set or a partitioned data set qualified
@@ -33,8 +34,8 @@ options:
       - Or an USS file. (e.g "/u/tester/demo/sample.jcl")
       - Or an LOCAL file in ansible control node.(e.g "/User/tester/ansible-playbook/sample.jcl")
   location:
-    required: true
     default: DATA_SET
+    type: str
     choices:
       - DATA_SET
       - USS
@@ -45,9 +46,7 @@ options:
       - LOCAL means locally to the ansible control node.
   wait:
     required: false
-    choices:
-      - true
-      - false
+    type: bool
     description:
       - Wait for the Job to finish and capture the output. Default is false.
       - User can specify the wait time in option duration_s, default is 60s.
@@ -66,14 +65,13 @@ options:
   return_output:
     required: false
     default: true
-    choices:
-      - true
-      - false
+    type: bool
     description:
       - Whether to print the DD output.
       - If false, null will be returned in ddnames field.
   volume:
     required: false
+    type: str
     description:
       - The volume serial (VOLSER) where the data set resides. The option
         is required only when the data set is not catalogued on the system.
@@ -81,6 +79,7 @@ options:
   encoding:
     required: false
     default: UTF-8
+    type: str
     choices:
       - UTF-8
       - ASCII
@@ -206,12 +205,19 @@ EXAMPLES = """
 
 from ansible.module_utils.basic import AnsibleModule
 from pipes import quote
-from zoautil_py import Jobs
+
+try:
+    from zoautil_py import Jobs
+except Exception:
+    Jobs = ""
 from time import sleep
 from os import chmod, path, remove
 from tempfile import NamedTemporaryFile
 import re
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import job_output
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
+    BetterArgParser,
+)
 from stat import S_IEXEC, S_IREAD, S_IWRITE
 
 """time between job query checks to see if a job has completed, default 1 second"""
@@ -282,8 +288,8 @@ def get_job_info(module, jobId, return_output):
     result = dict()
     try:
         output = query_jobs_status(jobId)
-    except SubmitJCLError as e:
-        raise SubmitJCLError(e.msg)
+    except SubmitJCLError:
+        raise
 
     result = job_output(module, job_id=jobId)
 
@@ -308,7 +314,7 @@ def query_jobs_status(jobId):
             pass
         except Exception as e:
             raise SubmitJCLError(
-                str(e)
+                repr(e)
                 + """
             The output is """
                 + output
@@ -387,14 +393,42 @@ def assert_valid_return_code(max_rc, found_rc):
         raise SubmitJCLError("")
 
 
+def data_set_or_path_type(contents, resolve_dependencies):
+    if not re.fullmatch(
+        r"^(?:(?:[A-Z]{1}[A-Z0-9]{0,7})(?:[.]{1})){1,21}[A-Z]{1}[A-Z0-9]{0,7}(?:\([A-Z]{1}[A-Z0-9]{0,7}\)){0,1}$",
+        str(contents),
+        re.IGNORECASE,
+    ):
+        if not path.isabs(str(contents)):
+            raise ValueError(
+                'Invalid argument type for "{0}". expected "data_set" or "path"'.format(
+                    contents
+                )
+            )
+    return str(contents)
+
+
+def encoding_type(contents, resolve_dependencies):
+    if not re.fullmatch(r"^[A-Z0-9-]{2,}$", str(contents), re.IGNORECASE,):
+        raise ValueError(
+            'Invalid argument type for "{0}". expected "encoding"'.format(contents)
+        )
+    return str(contents)
+
+
 def run_module():
-    location_type = {"DATA_SET", "USS", "LOCAL", None}
 
     module_args = dict(
         src=dict(type="str", required=True),
         wait=dict(type="bool", required=False),
-        location=dict(type="str", required=True),
-        encoding=dict(type="str", required=False, default="UTF-8"),
+        location=dict(
+            type="str", default="DATA_SET", choices=["DATA_SET", "USS", "LOCAL"],
+        ),
+        encoding=dict(
+            type="str",
+            default="UTF-8",
+            choices=["UTF-8", "ASCII", "ISO-8859-1", "EBCDIC", "IBM-037", "IBM-1047"],
+        ),
         volume=dict(type="str", required=False),
         return_output=dict(type="bool", required=False, default=True),
         wait_time_s=dict(type="int", required=False),
@@ -403,6 +437,24 @@ def run_module():
     )
 
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
+
+    arg_defs = dict(
+        src=dict(arg_type=data_set_or_path_type, required=True),
+        wait=dict(arg_type="bool", required=False),
+        location=dict(
+            arg_type="str", default="DATA_SET", choices=["DATA_SET", "USS", "LOCAL"],
+        ),
+        encoding=dict(arg_type=encoding_type, default="UTF-8"),
+        volume=dict(arg_type="volume", required=False),
+        return_output=dict(arg_type="bool", default=True),
+        wait_time_s=dict(arg_type="int", required=False),
+        max_rc=dict(arg_type="int", required=False),
+        temp_file=dict(arg_type="path", required=False),
+    )
+
+    parser = BetterArgParser(arg_defs)
+    parsed_args = parser.parse_args(module.params)
+
     result = dict(
         changed=False,
         job_id="",
@@ -413,17 +465,17 @@ def run_module():
         job_status="",
         message="",
     )
-    results = dict(jobs=[])
+    # results = dict(jobs=[])
 
-    location = module.params.get("location")
-    volume = module.params.get("volume")
-    wait = module.params.get("wait")
-    src = module.params.get("src")
-    return_output = module.params.get("return_output")
-    wait_time_s = module.params.get("wait_time_s")
-    max_rc = module.params.get("max_rc")
+    location = parsed_args.get("location")
+    volume = parsed_args.get("volume")
+    wait = parsed_args.get("wait")
+    src = parsed_args.get("src")
+    return_output = parsed_args.get("return_output")
+    wait_time_s = parsed_args.get("wait_time_s")
+    max_rc = parsed_args.get("max_rc")
     # get temporary file names for copied files
-    temp_file = module.params.get("temp_file")
+    temp_file = parsed_args.get("temp_file")
     if temp_file:
         temp_file_2 = NamedTemporaryFile(delete=True)
 
@@ -441,68 +493,56 @@ def run_module():
     # calculate the job elapse time
     duration = 0
     try:
-
-        if location in location_type:
-            if location == "DATA_SET" or location is None:
-                data_set_name_pattern = re.compile(DSN_REGEX, re.IGNORECASE)
-                check = data_set_name_pattern.search(src)
-                if check:
-                    if volume is None or volume == "":
-                        jobId = submit_pds_jcl(src)
-                    else:
-                        jobId = submit_jcl_in_volume(src, volume, module)
+        if location == "DATA_SET":
+            data_set_name_pattern = re.compile(DSN_REGEX, re.IGNORECASE)
+            check = data_set_name_pattern.fullmatch(src)
+            if check:
+                if volume is None or volume == "":
+                    jobId = submit_pds_jcl(src)
                 else:
-                    module.fail_json(
-                        msg="The parameter src for data set is not a valid name pattern. Please check the src input.",
-                        **result
-                    )
-            elif location == "USS":
-                jobId = submit_uss_jcl(src, module)
+                    jobId = submit_jcl_in_volume(src, volume, module)
             else:
-                # For local file, it has been copied to the temp directory in action plugin.
-                encoding = module.params.get("encoding")
-                if (
-                    encoding == "EBCDIC"
-                    or encoding == "IBM-037"
-                    or encoding == "IBM-1047"
-                ):
-                    jobId = submit_uss_jcl(temp_file, module)
-                # 'UTF-8' 'ASCII' encoding will be converted.
-                elif (
-                    encoding == "UTF-8"
-                    or encoding == "ISO-8859-1"
-                    or encoding == "ASCII"
-                    or encoding is None
-                ):
-                    (conv_rc, stdout, stderr) = module.run_command(
-                        "iconv -f ISO8859-1 -t IBM-1047 %s > %s"
-                        % (quote(temp_file), quote(temp_file_2.name)),
-                        use_unsafe_shell=True,
-                    )
-                    if conv_rc == 0:
-                        jobId = submit_uss_jcl(temp_file_2.name, module)
-                    else:
-                        module.fail_json(
-                            msg="The Local file encoding conversion failed. Please check the source file."
-                            + stderr,
-                            **result
-                        )
+                module.fail_json(
+                    msg="The parameter src for data set is not a valid name pattern. Please check the src input.",
+                    **result
+                )
+        elif location == "USS":
+            jobId = submit_uss_jcl(src, module)
+        else:
+            # For local file, it has been copied to the temp directory in action plugin.
+            encoding = parsed_args.get("encoding")
+            if encoding == "EBCDIC" or encoding == "IBM-037" or encoding == "IBM-1047":
+                jobId = submit_uss_jcl(temp_file, module)
+            # 'UTF-8' 'ASCII' encoding will be converted.
+            elif (
+                encoding == "UTF-8"
+                or encoding == "ISO-8859-1"
+                or encoding == "ASCII"
+                or encoding is None
+            ):
+                (conv_rc, stdout, stderr) = module.run_command(
+                    "iconv -f ISO8859-1 -t IBM-1047 %s > %s"
+                    % (quote(temp_file), quote(temp_file_2.name)),
+                    use_unsafe_shell=True,
+                )
+                if conv_rc == 0:
+                    jobId = submit_uss_jcl(temp_file_2.name, module)
                 else:
                     module.fail_json(
-                        msg=(
-                            "The Local file encoding format is not supported."
-                            "The supported encoding is UTF-8, ASCII, ISO-8859-1, EBCDIC, IBM-037, IBM-1047. Default is UTF-8."
-                        ),
+                        msg="The Local file encoding conversion failed. Please check the source file."
+                        + stderr,
                         **result
                     )
-        else:
-            module.fail_json(
-                msg="Location is not valid. DATA_SET, USS, and LOCAL is supported.",
-                **result
-            )
-
+            else:
+                module.fail_json(
+                    msg=(
+                        "The Local file encoding format is not supported."
+                        "The supported encoding is UTF-8, ASCII, ISO-8859-1, EBCDIC, IBM-037, IBM-1047. Default is UTF-8."
+                    ),
+                    **result
+                )
     except SubmitJCLError as e:
-        module.fail_json(msg=str(e), **result)
+        module.fail_json(msg=repr(e), **result)
     if jobId is None or jobId == "":
         result["job_id"] = jobId
         module.fail_json(
@@ -515,7 +555,7 @@ def run_module():
         try:
             waitJob = query_jobs_status(jobId)
         except SubmitJCLError as e:
-            module.fail_json(msg=str(e), **result)
+            module.fail_json(msg=repr(e), **result)
         while waitJob[0].get("status") == "AC":  # AC means in progress
             sleep(1)
             duration = duration + 1
@@ -532,9 +572,9 @@ def run_module():
                 max_rc, result.get("jobs")[0].get("ret_code").get("code")
             )
     except SubmitJCLError as e:
-        module.fail_json(msg=str(e), **result)
+        module.fail_json(msg=repr(e), **result)
     except Exception as e:
-        module.fail_json(msg=str(e), **result)
+        module.fail_json(msg=repr(e), **result)
     finally:
         if temp_file:
             remove(temp_file)

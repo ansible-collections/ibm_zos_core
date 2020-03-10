@@ -511,7 +511,7 @@ class Connection(ConnectionBase):
             pstring += "-%s" % connection
         if pid:
             pstring += "-%s" % to_text(pid)
-        m = hashlib.sha1()
+        m = hashlib.sha256()
         m.update(to_bytes(pstring))
         digest = m.hexdigest()
         cpath = "%(directory)s/" + digest[:10]

@@ -79,7 +79,7 @@ def test_job_submit_LOCAL(ansible_zos_module):
         f.write(JCL_FILE_CONTENTS)
     hosts = ansible_zos_module
     results = hosts.all.zos_job_submit(
-        src=tmp_file.name, location="LOCAL", wait=True, volume=""
+        src=tmp_file.name, location="LOCAL", wait=True
     )
 
     for result in results.contacted.values():

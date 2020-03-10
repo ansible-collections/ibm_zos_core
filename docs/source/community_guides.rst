@@ -2,7 +2,7 @@ Contributing
 ============
 
 Currently we are not accepting community contributions. Though, you may
-periodically review this content to learn when and how contributions can be
+periodically review this content to learn when, and how, contributions can be
 made in the future.
 
 Helpful Links

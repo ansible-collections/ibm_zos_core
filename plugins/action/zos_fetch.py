@@ -113,9 +113,9 @@ class ActionModule(ActionBase):
         if flat:
             if os.path.isdir(to_bytes(dest, errors='surrogate_or_strict')) and not dest.endswith(os.sep):
                 result['message'] = dict(msg="dest is an existing directory, use a trailing slash if you want to fetch src into that directory",
-                                            stdout="",
-                                            stderr="",
-                                            ret_code=None
+                                        stdout="",
+                                        stderr="",
+                                        ret_code=None
                                     )
                 result['failed'] = True
                 return result
@@ -158,16 +158,16 @@ class ActionModule(ActionBase):
         src = fetch_res['file']
 
         if ds_type == 'VSAM' or ds_type == 'PS' or is_uss:
-            fetch_ds = self._transfer_from_uss(dest, task_vars, fetch_res, 
+            fetch_ds = self._transfer_from_uss(dest, task_vars, fetch_res['content'], fetch_res['checksum'], 
                                     binary_mode=is_binary, validate_checksum=validate_checksum)
             result.update(fetch_ds)
                 
         elif ds_type in ('PO', 'PDSE', 'PE'):
             if fetch_member:
-                fetch_pds = self._transfer_from_uss(dest, task_vars, fetch_res, 
+                fetch_pds = self._transfer_from_uss(dest, task_vars, fetch_res['content'], fetch_res['checksum'],  
                                     binary_mode=is_binary, validate_checksum=validate_checksum)
             else:    
-                fetch_pds = self._transfer_pds(dest, task_vars, fetch_res, binary_mode=is_binary)
+                fetch_pds = self._transfer_pds(dest, task_vars, fetch_res['pds_path'], binary_mode=is_binary)
             result.update(fetch_pds)
         
         else:
@@ -186,7 +186,7 @@ class ActionModule(ActionBase):
 
 
     # Transfer PDS from remote z/OS machine to the local machine
-    def _transfer_pds(self, dest, task_vars, fetch_res, binary_mode=False):
+    def _transfer_pds(self, dest, task_vars, pds_path, binary_mode=False):
         result = dict()
         try:
             ansible_user = self._play_context.remote_user
@@ -195,9 +195,9 @@ class ActionModule(ActionBase):
             
             if binary_mode:
                 cmd = ['sftp', ansible_user + '@' + ansible_host]
-                stdin = "get -r {} {}".format(fetch_res['pds_path'], dest).encode()
+                stdin = "get -r {} {}".format(pds_path, dest).encode()
             else:
-                cmd = ['scp', '-r', ansible_user + '@' + ansible_host + ':' + fetch_res['pds_path'], dest]
+                cmd = ['scp', '-r', ansible_user + '@' + ansible_host + ':' + pds_path, dest]
 
             transfer_pds = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             out, err = transfer_pds.communicate(stdin)
@@ -208,15 +208,15 @@ class ActionModule(ActionBase):
             result['changed'] = True
         
         finally:
-            self._connection.exec_command("rm -r {}".format(fetch_res['pds_path']))
+            self._connection.exec_command("rm -r {}".format(pds_path))
 
         return result
 
       
     # Transfer USS files or sequential data sets to the local machine 
-    def _transfer_from_uss(self, dest, task_vars, fetch_res, binary_mode=False, validate_checksum=True):
+    def _transfer_from_uss(self, dest, task_vars, content, checksum, binary_mode=False, validate_checksum=True):
         result = dict()
-        content = fetch_res['content']
+        new_content = content
         
         if binary_mode:
             write_mode = 'wb'
@@ -226,17 +226,17 @@ class ActionModule(ActionBase):
             except FileNotFoundError:
                 local_checksum = None
             
-            content = base64.b64decode(content)
+            new_content = base64.b64decode(content)
         else:
             write_mode = 'w'
             local_checksum = checksum(dest)
         
         if validate_checksum:
-            remote_checksum = fetch_res['checksum']
+            remote_checksum = checksum
             
             if remote_checksum != local_checksum:
-                _write_content_to_file(dest, content, write_mode)
-                new_checksum = checksum_s(fetch_res['content'])
+                _write_content_to_file(dest, new_content, write_mode)
+                new_checksum = checksum_s(content)
                 
                 if remote_checksum != new_checksum:
                     result.update(dict(msg='Checksum mismatch',checksum=new_checksum,
@@ -247,7 +247,7 @@ class ActionModule(ActionBase):
                 result['changed'] = False
                 result['checksum'] = remote_checksum
         else:
-            _write_content_to_file(dest, content, write_mode) 
+            _write_content_to_file(dest, new_content, write_mode) 
             result['changed'] = True
         
         return result

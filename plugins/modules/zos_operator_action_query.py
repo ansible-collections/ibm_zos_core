@@ -71,7 +71,7 @@ count:
     description: The total number of outstanding messages.
     returned: success
     type: int
-result:
+actions:
     description: The list of the outstanding messages
     returned: success
     type: list[dict]
@@ -113,7 +113,7 @@ result:
             sample: HWSC0000I
     sample:
         {
-            "result": 
+            "actions": 
             [
                 {
                     "number": '001',
@@ -151,7 +151,7 @@ def run_module():
         job_name=dict(type='str',required=False)
     )
 
-    results = dict(
+    result = dict(
         changed=False
     )
 
@@ -164,14 +164,14 @@ def run_module():
         new_params = parse_params(module.params)
         requests = find_required_request(new_params)
         if requests:
-            results['count'] = len(requests)
+            result['count'] = len(requests)
     except Error as e:
-        module.fail_json(msg=e.msg, **results)
+        module.fail_json(msg=e.msg, **result)
     except Exception as e:
         trace = format_exc()
         module.fail_json(msg='An unexpected error occurred: {0}'.format(trace), **result)
-    results['result'] = requests
-    module.exit_json(**results)
+    result['actions'] = requests
+    module.exit_json(**result)
 
 def parse_params(params):
     arg_defs=dict(

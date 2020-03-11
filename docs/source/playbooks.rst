@@ -1,7 +1,7 @@
 Playbooks
 =========
 
-Sample playbooks are **included** that demonstrate how to use the collection
+The sample playbooks that are **included** demonstrate how to use the collection
 content in the ibm_zos_core collection.
 
 Playbook Documentation
@@ -12,7 +12,7 @@ a managed node (hosts) to be managed with Ansible.
 
 Included in the **IBM Z Core Collection** is a `playbooks directory`_ that
 contains a sample playbook that with some modification to the **inventory**,
-**ansible.cfg** and **group_vars** can be run with the``ansible-playbook``
+**ansible.cfg** and **group_vars** can be run with the ``ansible-playbook``
 command.
 
 You can find the playbook content that is included with the collection where

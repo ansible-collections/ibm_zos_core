@@ -161,11 +161,11 @@ class ActionModule(ActionBase):
         mvs_ds = ds_type in ('PO', 'PDSE', 'PE')
         
         if ds_type == 'VSAM' or ds_type == 'PS' or is_uss or (fetch_member and mvs_ds):
-            fetch_content = self._transfer_from_uss(dest, task_vars, fetch_res['content'], fetch_res['checksum'], 
+            fetch_content = self._fetch_non_partitioned_data_set(dest, task_vars, fetch_res['content'], fetch_res['checksum'], 
                                     binary_mode=is_binary, validate_checksum=validate_checksum)
         
         elif mvs_ds:   
-            fetch_content = self._transfer_pds(dest, task_vars, fetch_res['pds_path'], binary_mode=is_binary)
+            fetch_content = self._fetch_partitioned_data_set(dest, task_vars, fetch_res['pds_path'], binary_mode=is_binary)
         
         else:
             result['message'] = dict(msg="The data set type '{}' is not currently supported".format(ds_type),
@@ -185,8 +185,7 @@ class ActionModule(ActionBase):
         return result
 
 
-    # Transfer PDS from remote z/OS machine to the local machine
-    def _transfer_pds(self, dest, task_vars, pds_path, binary_mode=False):
+    def _fetch_partitioned_data_set(self, dest, task_vars, pds_path, binary_mode=False):
         result = dict()
         try:
             ansible_user = self._play_context.remote_user
@@ -213,8 +212,7 @@ class ActionModule(ActionBase):
         return result
 
       
-    # Transfer USS files or sequential data sets to the local machine 
-    def _transfer_from_uss(self, dest, task_vars, content, checksum, binary_mode=False, validate_checksum=True):
+    def _fetch_non_partitioned_data_set(self, dest, task_vars, content, checksum, binary_mode=False, validate_checksum=True):
         result = dict()
         new_content = content
         

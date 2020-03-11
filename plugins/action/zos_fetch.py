@@ -157,18 +157,15 @@ class ActionModule(ActionBase):
         ds_type = fetch_res.get('ds_type')
         src = fetch_res['file']
 
-        if ds_type == 'VSAM' or ds_type == 'PS' or is_uss:
-            fetch_ds = self._transfer_from_uss(dest, task_vars, fetch_res['content'], fetch_res['checksum'], 
+        fetch_content = None
+        mvs_ds = ds_type in ('PO', 'PDSE', 'PE')
+        
+        if ds_type == 'VSAM' or ds_type == 'PS' or is_uss or (fetch_member and mvs_ds):
+            fetch_content = self._transfer_from_uss(dest, task_vars, fetch_res['content'], fetch_res['checksum'], 
                                     binary_mode=is_binary, validate_checksum=validate_checksum)
-            result.update(fetch_ds)
-                
-        elif ds_type in ('PO', 'PDSE', 'PE'):
-            if fetch_member:
-                fetch_pds = self._transfer_from_uss(dest, task_vars, fetch_res['content'], fetch_res['checksum'],  
-                                    binary_mode=is_binary, validate_checksum=validate_checksum)
-            else:    
-                fetch_pds = self._transfer_pds(dest, task_vars, fetch_res['pds_path'], binary_mode=is_binary)
-            result.update(fetch_pds)
+        
+        elif mvs_ds:   
+            fetch_content = self._transfer_pds(dest, task_vars, fetch_res['pds_path'], binary_mode=is_binary)
         
         else:
             result['message'] = dict(msg="The data set type '{}' is not currently supported".format(ds_type),
@@ -178,6 +175,9 @@ class ActionModule(ActionBase):
                                 )
             result['failed'] = True
             return result
+
+        if fetch_content:
+            result.update(fetch_content)
         
         result = _update_result(result, src, dest, ds_type, 
                     binary_mode=is_binary, encoding=encoding if encoding else 'EBCDIC')

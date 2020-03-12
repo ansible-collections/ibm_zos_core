@@ -1,6 +1,6 @@
-# IBM Z Core Collection
+# IBM z/OS Core Collection
 
-The IBM Z core collection, referred to as `ibm_zos_core`, is part of the broader offering **Red Hat® Ansible Certified Content for IBM Z**. `ibm_zos_core` supports tasks such as creating data sets, submitting jobs, querying jobs, and retrieving job output.
+The IBM z/OS Core Collection, referred to as `ibm_zos_core`, is part of the broader offering __Red Hat® Ansible Certified Content for IBM Z__. `ibm_zos_core` supports tasks such as creating data sets, submitting jobs, querying jobs, and retrieving job output.  
 
 # Red Hat Ansible Certified Content for IBM Z
 
@@ -12,8 +12,7 @@ Collections, as part of the broader offering **Red Hat® Ansible Certified Conte
 on Galaxy and later made available as certified content and accessible through Automation Hub.
 
 # Features
-
-The The IBM Z core collection includes [connection plugins](https://github.com/ansible-collections/ibm_zos_core/tree/master/plugins/connection/), [action plugins](https://github.com/ansible-collections/ibm_zos_core/tree/master/plugins/action/), [modules](https://github.com/ansible-collections/ibm_zos_core/tree/master/plugins/modules/), [sample playbooks](https://github.com/ansible-collections/ibm_zos_core/tree/master/playbooks/), and ansible-doc to automate tasks on Z.
+The The IBM z/OS Core Collection includes [connection plugins](https://github.com/ansible-collections/ibm_zos_core/tree/master/plugins/connection/), [action plugins](https://github.com/ansible-collections/ibm_zos_core/tree/master/plugins/action/), [modules](https://github.com/ansible-collections/ibm_zos_core/tree/master/plugins/modules/), [sample playbooks](https://github.com/ansible-collections/ibm_zos_core/tree/master/playbooks/), and ansible-doc to automate tasks on Z.  
 
 # Plugins
 
@@ -60,8 +59,7 @@ The following nodes require specific versions of software:
 - [OpenSSH](https://www.openssh.com/)
 
 # Installation
-
-You have several options when you are ready to install the Red Hat Ansible Certified Content for IBM Z core collection that includes Ansible Galaxy, Ansible Hub, and local. For more information on installing collections, see [Using collections](https://docs.ansible.com/ansible/latest/user_guide/collections_using.html).
+You have several options when you are ready to install the IBM z/OS Core Collection that includes Ansible Galaxy, Ansible Hub, and local. For more information on installing collections, see [Using collections](https://docs.ansible.com/ansible/latest/user_guide/collections_using.html).
 
 ## Ansible Galaxy
 
@@ -69,8 +67,7 @@ You can use the [ansible-galaxy](https://docs.ansible.com/ansible/latest/cli/ans
 
 Galaxy enables you to quickly configure your automation project with content from the Ansible community. Galaxy provides prepackaged units of work known as collections.
 
-Here's an example command for installing the Red Hat Ansible Certified Content for IBM Z core collection:
-
+Here's an example command for installing the Red Hat Ansible Certified Content for IBM z/OS Core Collection:
 ```
 ansible-galaxy collection install ibm.ibm_zos_core
 ```
@@ -231,7 +228,7 @@ In Ansible 2.9, the `collections` keyword was added and reduces the need to refe
 
 Modules included in this collection provide additional documentation that is similar to a UNIX, or UNIX-like, operating system man page (manual page). This documentation can be accessed from the command line by using the `ansible-doc` command.
 
-Here's how to use the Ansible-supplied command after you install the _Red Hat Ansible Certified Content for IBM Z core collection_:
+Here's how to use the Ansible-supplied command after you install the _IBM z/OS Core Collection_:
 `ansible-doc ibm.ibm_zos_core.zos_data_set`
 
 ```

@@ -580,7 +580,9 @@ def run_module():
         from_encoding = from_encoding,
         to_encoding   = to_encoding,
         src           = src,
-        dest          = dest
+        dest          = dest,
+        backup        = backup,
+        backup_file   = backup_file
     )
 
     ''' Check input code set is valid or not '''

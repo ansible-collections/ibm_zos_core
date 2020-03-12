@@ -554,8 +554,6 @@ def run_module():
         from_encoding = dict(type='str', default='IBM-1047'),
         to_encoding   = dict(type='str', default='ISO8859-1'),
         backup        = dict(type='bool', default=False),
-        is_catalog    = dict(type='bool', default=True),
-        volume        = dict(type='str')
     )
     module = AnsibleModule(
         argument_spec       = module_args,
@@ -566,8 +564,6 @@ def run_module():
     backup        = module.params.get('backup')
     from_encoding = module.params.get('from_encoding').upper()
     to_encoding   = module.params.get('to_encoding').upper()
-    is_catalog    = module.params.get('is_catalog')
-    volume        = module.params.get('volume')
     backup_file   = None
     changed       = False
     is_uss_src    = False

@@ -1,7 +1,7 @@
 Plugins
 =======
 
-Plugins that come with **IBM Z Core Collection** augment Ansible’s core
+Plugins that come with **IBM z/OS Core Collection** augment Ansible’s core
 functionality. Ansible uses a plugin architecture to enable a rich, flexible
 and expandable feature set.
 
@@ -9,6 +9,7 @@ Action
 ------
 
 * `normal`_: A fork of Ansible `normal.py`_ action plugin that is modified to allow a conditional shebang line in REXX modules.
+
 * `zos_job_submit`_: Used to submit a job from the controller and optionally monitor for job completion.
 
 .. _normal:

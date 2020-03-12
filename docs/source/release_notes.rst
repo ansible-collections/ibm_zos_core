@@ -27,8 +27,8 @@ Notes:
 
 * Update recommended
 * Includes fixes to modules zos_job_output and zos_job_submit
-  * Improved buffer utilization
-  * Optimized JSON response
+* Improved buffer utilization
+* Optimized JSON response
 * Functional test cases for all modules
 * Updated document references
 

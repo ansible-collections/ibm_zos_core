@@ -3,7 +3,7 @@ Requirements
 
 A control node is any machine with Ansible installed. From the control node,
 you can run commands and playbooks from a laptop, desktop, or server machine.
-However, you cannot run **IBM Z Core Collection** on a Windows machine.
+However, you cannot run **IBM z/OS Core Collection** on a Windows machine.
 
 A managed node is often referred to as a target node, or host, and is the node
 that is managed by Ansible. Ansible does not need not need to be installed on
@@ -35,7 +35,7 @@ Managed node
 * `OpenSSH`_
 
 .. _Python on Z:
-   
+   requirements.html#id1
 .. _zOS:
    https://www.ibm.com/support/knowledgecenter/SSLTBW_2.2.0/com.ibm.zos.v2r2/zos-v2r2-home.html
 

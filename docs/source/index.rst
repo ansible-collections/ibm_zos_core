@@ -2,7 +2,7 @@
 
 .. toctree::
    :maxdepth: 2
-   :caption: Using IBM Z Core Collection
+   :caption: Getting Started
 
    installation
    quickstart

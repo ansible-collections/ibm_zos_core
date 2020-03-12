@@ -1,7 +1,7 @@
 IBM z/OS Core Collection
 ========================
 
-The IBM z/OS Core Collection, referred to as `ibm*zos*core`, is part of the
+The IBM z/OS Core Collection, referred to as **ibm_zos_core**, is part of the
 broader offering **Red Hat® Ansible Certified Content for IBM Z**.
 `ibm*zos*core` supports tasks such as creating data sets, submitting jobs,
 querying jobs, and retrieving job output.

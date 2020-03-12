@@ -11,7 +11,7 @@ __metaclass__ = type
 import pytest
 
 from ansible.module_utils.basic import AnsibleModule
-from mock import call, mock_open, patch
+from mock import call, mock_open, patch 
 
 MODULE_IMPORT = "ansible_collections_ibm_zos_core.plugins.modules.zos_fetch"
 BASIC_MODULE = 'ansible.module_utils.basic.AnsibleModule'

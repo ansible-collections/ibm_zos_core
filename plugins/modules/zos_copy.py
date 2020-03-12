@@ -2,6 +2,9 @@
 # Copyright (c) IBM Corporation 2019, 2020
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
+from __future__ import (absolute_import, division, print_function)
+__metaclass__ = type
+
 ANSIBLE_METADATA = {'metadata_version': '1.1',
                     'status': ['stableinterface'],
                     'supported_by': 'community'}
@@ -426,6 +429,7 @@ def uncatalog_data_set_exists_or_not(ds_name, volume):
 
     return check_rc
 
+
 def copy_to_ps(src, PSname, encoding):
     copy_rc = False
     tempf = codecs.open(src, 'r', encoding='ascii')
@@ -442,6 +446,7 @@ def copy_to_ps(src, PSname, encoding):
     if copy_ps_rc == 0:
         copy_rc = True
     return copy_rc
+
 
 def copy_to_vsam(src, VSAMname):
     copy_rc      = False
@@ -473,6 +478,7 @@ def copy_to_vsam(src, VSAMname):
     Datasets.delete(sysprint_ds_name)
     return copy_rc 
 
+
 def size_of_ps(ds_name):
     ds = ds_name.rsplit('.',1)[0]
     output = Datasets.list("%s.*" % ds, verbose=True).split('\n')
@@ -481,6 +487,7 @@ def size_of_ps(ds_name):
             size = re.sub(r"\s{2,}", " ", item)
             rba = size.split(' ')[-2]   
     return rba
+
 
 def _determine_data_set_type(ds_name):
     rc, out, err = module.run_command("tsocmd \"LISTDS '{}'\"".format(ds_name))
@@ -501,6 +508,7 @@ def _determine_data_set_type(ds_name):
     if ds_search:
         return ds_search.group(3).split()[-1].strip()
     return None
+
 
 def _recatalog_data_set(ds_name, volume):
     """ Recatalog an uncataloged data set """
@@ -529,6 +537,7 @@ def _recatalog_data_set(ds_name, volume):
 
     return ds_name
 
+
 def _get_checksum(data):
     """ Calculate checksum for the given data """
     digest = hashlib.sha1()
@@ -538,6 +547,7 @@ def _get_checksum(data):
 
 def _get_mvs_checksum(ds_name):
     return _get_checksum(Datasets.read(ds_name))
+
 
 def _copy_to_ps(src, dest, data, validate=True, local_checksum=None):
     rc = Datasets.write(dest, ascii_to_ebcdic(src, data))
@@ -550,6 +560,16 @@ def _copy_to_ps(src, dest, data, validate=True, local_checksum=None):
             changed = True
         elif new_checksum != local_checksum:
             module.fail_json(msg="Checksum mismatch", checksum=new_checksum, local_checksum=local_checksum, changed=changed)
+
+
+def _copy_to_pdse(src_dir, dest, copy_member=False):
+    if (not Datasets.exists(dest)):
+        Datasets.create()
+    rc, out, err =  module.run_command("cp {} //'{}'".format(src_dir, dest))
+    if rc != 0:
+        module.fail_json(msg="Unable to copy to data set {}".format(dest))
+        
+
 
 def main():
     global module
@@ -628,6 +648,10 @@ def main():
     elif ds_type in ('PO', 'PDSE', 'PE'):
         pass
         #_copy_to_pdse()
+
+    elif ds_type == 'VSAM':
+        pass
+        # _copy_to_vsam
 
     remote_checksum = None
     new_checksum = None

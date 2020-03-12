@@ -6,7 +6,7 @@
 # LICENSE: [GNU General Public License version 3](https://opensource.org/licenses/GPL-3.0)
 
 from __future__ import (absolute_import, division, print_function)
-__metaclass__ = type__metaclass__ = type
+__metaclass__ = type
 
 import pytest
 

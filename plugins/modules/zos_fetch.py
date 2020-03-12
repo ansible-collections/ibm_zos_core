@@ -19,9 +19,9 @@ module: zos_fetch
 version_added: 1.0
 short_description: Fetches data from remote z/OS system to local machine
 description:
-  - The M(zos_fetch) module copies a file on the z/OS system to the local machine. 
+  - The M(zos_fetch) module copies a file on the z/OS system to the local machine.
     Use the M(zos_copy) module to copy files from local machine to the remote z/OS system.
-  - When fetching a sequential data set, the destination file name will be the same as 
+  - When fetching a sequential data set, the destination file name will be the same as
     the data set name.
   - When fetching a PDS/PDS(E), the destination will be a directory with the same name
     as the PDS/PDS(E).
@@ -37,21 +37,21 @@ options:
     required: true
   fail_on_missing:
     description:
-      - When set to true, the task will fail if the source file is missing. 
+      - When set to true, the task will fail if the source file is missing.
     required: false
     default: "true"
     choices: [ "true", "false" ]
   validate_checksum:
     description:
-      - Verify that the source and destination checksums match after the files are fetched. 
+      - Verify that the source and destination checksums match after the files are fetched.
     required: false
     default: "true"
     choices: [ "true", "false" ]
-  flat: 
+  flat:
     description:
-      - Override the default behavior of appending hostname/path/to/file to the destination. 
+      - Override the default behavior of appending hostname/path/to/file to the destination.
         If set to "false", the file or data set will be fetched to the destination directory
-        without appending remote hostname to the destination. Refer to the M(fetch) module 
+        without appending remote hostname to the destination. Refer to the M(fetch) module
         for a more detailed description of this parameter.
     required: false
     default: "true"
@@ -79,11 +79,11 @@ notes:
     - When fetching PDS(E) and VSAM data sets, temporary storage will be used on the remote
       z/OS system. After the PDS(E) or VSAM data set is successfully transferred, the temprorary
       data set will deleted. The size of the temporary storage will correspond to the size of
-      PDS(E) or VSAM data set being fetched. If module executation fails, the temporary storage 
+      PDS(E) or VSAM data set being fetched. If module executation fails, the temporary storage
       will be cleaned.
-    - To prevent redundancy, additional checksum validation will not be done when fetching PDS(E) 
+    - To prevent redundancy, additional checksum validation will not be done when fetching PDS(E)
       because data integrity checks are done through the transfer methods used. As a result, the module 
-      response will not include C(checksum) parameter. 
+      response will not include C(checksum) parameter.
     - All data sets are always assumed to be in catalog. If an uncataloged data set needs to 
       be fetched, it should be cataloged first.
 seealso:
@@ -163,7 +163,7 @@ file:
     returned: success
     type: str
     sample: SOME.DATA.SET
-dest: 
+dest:
     description: The destination file path on controlling machine
     returned: success
     type: str

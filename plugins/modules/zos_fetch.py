@@ -229,9 +229,11 @@ def _fail_json(**kwargs):
     """ Wrapper around AnsibleModule.fail_json """
     module.fail_json(**kwargs)
 
+
 def _run_command(cmd, **kwargs):
     """ Wrapper around AnsibleModule.run_command """
     return module.run_command(cmd, **kwargs)
+
 
 def _fetch_uss_file(src, validate_checksum, is_binary):
     """ Read a USS file and return its contents """
@@ -256,6 +258,7 @@ def _fetch_uss_file(src, validate_checksum, is_binary):
     
     return content, checksum
 
+
 def _fetch_zos_data_set(zos_data_set, is_binary, fetch_member=False):
     """ Read a sequential data set and return its contents """
     if fetch_member:
@@ -276,11 +279,13 @@ def _fetch_zos_data_set(zos_data_set, is_binary, fetch_member=False):
         return base64.b64encode(content.encode())
     return content
 
+
 def _create_temp_data_set_name(LLQ):
     """ Create a temporary data set name """
     chars = string.ascii_uppercase
     HLQ2 = ''.join(random.choice(chars) for i in range(5))
     return Datasets.hlq() + '.' + HLQ2 + '.' + LLQ
+
 
 def _copy_vsam_to_temp_data_set(ds_name):
     """ Copy VSAM data set to a temporary sequential data set """
@@ -306,7 +311,7 @@ def _copy_vsam_to_temp_data_set(ds_name):
     except Exception as err:
         if Datasets.exists(out_ds):
             Datasets.delete(out_ds)
-        
+
         if rc != 0:
             _fail_json(
                 msg="Non-zero return code received while executing MVSCmd to copy VSAM data set {}".format(ds_name),
@@ -327,6 +332,7 @@ def _copy_vsam_to_temp_data_set(ds_name):
 
     return out_ds
 
+
 def _fetch_vsam(src, validate_checksum, is_binary):
     """ Fetch a VSAM data set """
     checksum = None
@@ -334,7 +340,7 @@ def _fetch_vsam(src, validate_checksum, is_binary):
     content = _fetch_zos_data_set(temp_ds, is_binary)
     if content is None:
         content = ''
-    
+
     rc = Datasets.delete(temp_ds)
     if rc != 0:
         _fail_json(
@@ -343,10 +349,10 @@ def _fetch_vsam(src, validate_checksum, is_binary):
             stderr="",
             ret_code=rc
         )
-    
+
     if validate_checksum:
         checksum = _get_checksum(content)
-    
+
     return content, checksum
 
 # def _recatalog_data_set(ds_name, volume):
@@ -409,12 +415,14 @@ def _convert_from_ebcdic_to_ascii(data):
         )
     return out
 
+
 def _get_checksum(data):
     """ Calculate checksum for the given data """
     digest = hashlib.sha1()
     data = to_bytes(data, errors='surrogate_or_strict')
     digest.update(data)
     return digest.hexdigest()
+
 
 def _determine_data_set_type(ds_name, fail_on_missing=True):
     """ Use the LISTDS utility to determine the type of a given data set """
@@ -443,11 +451,12 @@ def _determine_data_set_type(ds_name, fail_on_missing=True):
         else:
             msg = "Unable to determine data set type for data set {}.".format(ds_name)
         _fail_json(msg=msg, stdout=out, stderr=err, ret_code=rc)
-    
+
     ds_search = re.search("(-|--)DSORG(|-)\n(.*)", out)
     if ds_search:
         return ds_search.group(3).split()[-1].strip()
     return None
+
 
 def _fetch_pdse(src):
     """ Fetch a partitioned data set """
@@ -465,6 +474,7 @@ def _fetch_pdse(src):
     result['pds_path'] = temp_dir
     return result
 
+
 def _fetch_ps(src, validate_checksum, is_binary):
     """ Fetch a sequential data set """
     checksum = None
@@ -480,10 +490,12 @@ def _fetch_ps(src, validate_checksum, is_binary):
         checksum = _get_checksum(content)
     return content, checksum
 
+
 def _validate_dsname(ds_name):
     """ Validate the name of a given data set """
     dsn_regex = "^(([A-Z]{1}[A-Z0-9]{0,7})([.]{1})){1,21}[A-Z]{1}[A-Z0-9]{0,7}$"
     return re.match(dsn_regex, ds_name[:ds_name.find('(')]) 
+
 
 def _validate_params(src, is_binary, encoding, is_uss, _fetch_member):
     """ Ensure the module parameters are valid """ 
@@ -516,35 +528,34 @@ def run_module():
         )
     )
 
-    src                 = module.params.get('src', None)
-    b_src               = to_bytes(src)
-    encoding            = module.params.get('encoding')
-    fail_on_missing     = boolean(module.params.get('fail_on_missing'), strict=False)
-    validate_checksum   = boolean(module.params.get('validate_checksum'), strict=False)
-    is_uss              = boolean(module.params.get('is_uss'), strict=False)
-    is_binary           = boolean(module.params.get('is_binary'), strict=False)
-    use_qualifier       = boolean(module.params.get('use_qualifier'), strict=False)
-    _fetch_member       = boolean(module.params.get('_fetch_member'), strict=False)
+    src = module.params.get('src', None)
+    b_src = to_bytes(src)
+    encoding = module.params.get('encoding')
+    fail_on_missing = boolean(module.params.get('fail_on_missing'), strict=False)
+    validate_checksum = boolean(module.params.get('validate_checksum'), strict=False)
+    is_uss = boolean(module.params.get('is_uss'), strict=False)
+    is_binary = boolean(module.params.get('is_binary'), strict=False)
+    use_qualifier = boolean(module.params.get('use_qualifier'), strict=False)
+    _fetch_member = boolean(module.params.get('_fetch_member'), strict=False)
 
     _validate_params(src, is_binary, encoding, is_uss, _fetch_member)
 
     res_args = dict()
     if (not is_uss) and use_qualifier:
         src = Datasets.hlq() + '.' + src
-    
+
     ds_name = src if not _fetch_member else src[:src.find('(')]
-    
+
     try:
         ds_type = _determine_data_set_type(ds_name, fail_on_missing)
         if not ds_type:
             _fail_json(msg="Could not determine data set type", stdout="", stderr="", ret_code=None) 
-    
+
     except UncatalogedDatasetError as err:
         if fail_on_missing:
             _fail_json(msg=str(err), stdout="", stderr="", ret_code=None)
         module.exit_json(note="The data set is not cataloged. No data was fetched")
-        
-    
+
     if ds_type in MVS_DS_TYPES and not Datasets.exists(src):
         if fail_on_missing:
             _fail_json(
@@ -582,7 +593,7 @@ def run_module():
         content, checksum = _fetch_vsam(src, validate_checksum, is_binary)
         res_args['checksum'] = checksum
         res_args['content'] = content
-    
+
     res_args['file'] = src
     res_args['ds_type'] = ds_type
     module.exit_json(**res_args)
@@ -592,6 +603,7 @@ def run_module():
 class UncatalogedDatasetError(Exception):
     def __init__(self, ds_name):
         super().__init__("Data set {} is not in catalog. If you would like to fetch the data set, please catalog it first".format(ds_name))
+
 
 def main():
     run_module()

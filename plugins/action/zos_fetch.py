@@ -31,7 +31,7 @@ def _update_result(result, src, dest, ds_type, binary_mode=False, encoding='EBCD
         'VSAM': "VSAM",
         'USS': "Unix"
     }
-    updated_result = dict((k,v) for k,v in result.items())
+    updated_result = dict((k, v) for k, v in result.items())
     updated_result.update({
         'message': {
             'msg': "The {} was fetched successfully".format("file" if ds_type == 'USS' else "data set"),
@@ -46,20 +46,18 @@ def _update_result(result, src, dest, ds_type, binary_mode=False, encoding='EBCD
     })
     if not binary_mode:
         updated_result.update({'encoding': encoding})
-    
     return updated_result
-    
+
 
 def _write_content_to_file(filename, content, write_mode):
     os.makedirs(os.path.dirname(filename), exist_ok=True)
-    try:    
+    try:
         with open(filename, write_mode) as outfile:
             outfile.write(content)
     except UnicodeEncodeError as err:
         raise AnsibleError('''Error writing to destination {} due to encoding issues.
-                               If it is a binary file, make sure to set 
+                               If it is a binary file, make sure to set
                                'is_binary' parameter to 'true'; stderr: {}'''.format(filename, err))
-    
     except (IOError, OSError) as err:
         raise AnsibleError("Error writing to destination {}: {}".format(filename, err))
 
@@ -75,14 +73,14 @@ class ActionModule(ActionBase):
     def run(self, tmp=None, task_vars=None):
         result = super(ActionModule, self).run(tmp, task_vars)
         del tmp
-        
-        src                 = self._task.args.get('src')
-        dest                = self._task.args.get('dest')
-        encoding            = self._task.args.get('encoding')
-        volume              = self._task.args.get('volume')
-        flat                = _process_boolean(self._task.args.get('flat'), default=False)
-        is_binary           = _process_boolean(self._task.args.get('is_binary'))
-        validate_checksum   = _process_boolean(self._task.args.get('validate_checksum'), default=True)
+
+        src = self._task.args.get('src')
+        dest = self._task.args.get('dest')
+        encoding = self._task.args.get('encoding')
+        volume = self._task.args.get('volume')
+        flat = _process_boolean(self._task.args.get('flat'), default=False)
+        is_binary = _process_boolean(self._task.args.get('is_binary'))
+        validate_checksum = _process_boolean(self._task.args.get('validate_checksum'), default=True)
 
         msg = None
         if not isinstance(src, string_types):
@@ -100,7 +98,7 @@ class ActionModule(ActionBase):
             result['message'] = dict(msg=msg, stdout="", stderr="", ret_code=None)
             result['failed'] = True
             return result
-        
+
         is_uss = True if '/' in src else False
         ds_type = None
         fetch_member = False
@@ -144,11 +142,11 @@ class ActionModule(ActionBase):
             member = src[ src.find('(') + 1 : src.find(')') ]
             base_dir = os.path.dirname(dest)
             dest = os.path.join(base_dir, member)
-        
+
         new_module_args = dict((k,v) for k,v in self._task.args.items())
         new_module_args.update({'_fetch_member': fetch_member, 'is_uss': is_uss})
         fetch_res = self._execute_module(module_name='zos_fetch', module_args=new_module_args, task_vars=task_vars)
-        
+
         if fetch_res.get('msg'):
             result['message'] = dict(stdout=fetch_res['stdout'], 
                                     stderr=fetch_res['stderr'], 
@@ -157,24 +155,24 @@ class ActionModule(ActionBase):
                                 )
             result['failed'] = fetch_res.get('failed')
             return result
-        
+
         elif fetch_res.get('note'):
             result['note'] = fetch_res.get('note')
             return result
-        
+
         ds_type = fetch_res.get('ds_type')
         src = fetch_res['file']
 
         fetch_content = None
         mvs_ds = ds_type in ('PO', 'PDSE', 'PE')
-        
+
         if ds_type == 'VSAM' or ds_type == 'PS' or is_uss or (fetch_member and mvs_ds):
             fetch_content = self._fetch_non_partitioned_data_set(dest, task_vars, fetch_res['content'], fetch_res['checksum'], 
                                     binary_mode=is_binary, validate_checksum=validate_checksum)
-        
+
         elif mvs_ds:   
             fetch_content = self._fetch_partitioned_data_set(dest, task_vars, fetch_res['pds_path'], binary_mode=is_binary)
-        
+
         else:
             result['message'] = dict(msg="The data set type '{}' is not currently supported".format(ds_type),
                                     stdout="",
@@ -183,7 +181,7 @@ class ActionModule(ActionBase):
                                 )
             result['failed'] = True
             return result
-        
+
         return _update_result(dict(list(result.items()) + list(fetch_content.items())), src, dest, ds_type, 
                             binary_mode=is_binary, encoding=encoding if encoding else 'EBCDIC')
 
@@ -194,7 +192,7 @@ class ActionModule(ActionBase):
             ansible_user = self._play_context.remote_user
             ansible_host = self._play_context.remote_addr
             stdin = None
-            
+
             if binary_mode:
                 cmd = ['sftp', ansible_user + '@' + ansible_host]
                 stdin = to_bytes("get -r {} {}".format(pds_path, dest))
@@ -203,22 +201,20 @@ class ActionModule(ActionBase):
 
             transfer_pds = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             out, err = transfer_pds.communicate(stdin)
-            
+
             if transfer_pds.returncode != 0:
                 raise AnsibleError("Error transferring PDS from remote z/OS system\n stdout: {}\n stderr: {}".format(out, err))
-            
+
             result['changed'] = True
-        
         finally:
             self._connection.exec_command("rm -r {}".format(pds_path))
-
         return result
 
       
     def _fetch_non_partitioned_data_set(self, dest, task_vars, content, checksum, binary_mode=False, validate_checksum=True):
         result = dict()
         new_content = content
-        
+
         if binary_mode:
             write_mode = 'wb'
             try:
@@ -226,19 +222,15 @@ class ActionModule(ActionBase):
                 local_checksum = checksum_s(base64.b64encode(local_data))
             except FileNotFoundError:
                 local_checksum = None
-            
             new_content = base64.b64decode(content)
         else:
             write_mode = 'w'
             local_checksum = checksum_d(dest)
-        
         if validate_checksum:
             remote_checksum = checksum
-            
             if remote_checksum != local_checksum:
                 _write_content_to_file(dest, new_content, write_mode)
                 new_checksum = checksum_s(content)
-                
                 if remote_checksum != new_checksum:
                     result.update(dict(msg='Checksum mismatch',checksum=new_checksum,
                                     remote_checksum=remote_checksum, failed=True))
@@ -250,6 +242,5 @@ class ActionModule(ActionBase):
         else:
             _write_content_to_file(dest, new_content, write_mode) 
             result['changed'] = True
-        
         return result
         

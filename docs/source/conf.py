@@ -48,7 +48,9 @@ html_context = {
     "conf_py_path": "/docs/source/",
 }
 
-# Not using these now but can see the doc here for them: https://sphinx-rtd-theme.readthedocs.io/en/latest/configuring.html and https://sphinx-rtd-theme.readthedocs.io/en/stable/
+# Not using these now but can see the doc here for them:
+# https://sphinx-rtd-theme.readthedocs.io/en/latest/configuring.html and 
+# https://sphinx-rtd-theme.readthedocs.io/en/stable/
 html_theme_options = {
     # 'canonical_url': '',
     # 'analytics_id': 'UA-XXXXXXX-1',  #  Provided by Google in your dashboard

@@ -10,7 +10,8 @@ from ansible.module_utils.six import string_types
 from ansible.module_utils.parsing.convert_bool import boolean
 from ansible.plugins.action import ActionBase
 from ansible.errors import AnsibleError
-from ansible.utils.hashing import checksum, checksum_s
+from ansible.utils.hashing import checksum as checksum_d
+from ansible.utils.hashing import checksum_s
 
 
 # Create return parameters
@@ -222,7 +223,7 @@ class ActionModule(ActionBase):
             new_content = base64.b64decode(content)
         else:
             write_mode = 'w'
-            local_checksum = checksum(dest)
+            local_checksum = checksum_d(dest)
         
         if validate_checksum:
             remote_checksum = checksum

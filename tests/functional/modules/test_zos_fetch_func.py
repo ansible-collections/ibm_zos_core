@@ -17,52 +17,6 @@ from ansible.utils.hashing import checksum
 __metaclass__ = type
 
 
-def test_fetch_uncataloged_partitioned_data_set(ansible_zos_module):
-    hosts = ansible_zos_module
-    params = dict(
-        src='TERRY.IMSV14.ADFSBASE', 
-        dest='/tmp/', 
-        flat=True,
-        use_qualifier=False,
-        is_catalog=False,
-        volume='SDV001'
-    )
-    results = hosts.all.zos_fetch(**params)
-    dest_path = '/tmp/TERRY.IMSV14.ADFSBASE'
-    try:
-        for result in results.contacted.values():
-            assert result.get('changed') == True
-            assert result.get('data_set_type') == 'Partitioned'
-            assert result.get('module_stderr') == None
-            assert os.path.exists(dest_path)
-            assert os.path.isdir(dest_path)
-    finally:
-        if os.path.exists(dest_path):
-            shutil.rmtree(dest_path)
-
-def test_fetch_uncataloged_partitioned_data_set_member(ansible_zos_module):
-    hosts = ansible_zos_module
-    params = dict(
-        src='TERRY.IMSV14.ADFSCLST(BPEAACC0)', 
-        dest='/tmp/', 
-        flat=True,
-        use_qualifier=False,
-        is_catalog=False,
-        volume='SDV001'
-    )
-    results = hosts.all.zos_fetch(**params)
-    dest_path = '/tmp/BPEAACC0'
-    try:
-        for result in results.contacted.values():
-            assert result.get('changed') == True
-            assert result.get('data_set_type') == 'Partitioned'
-            assert result.get('module_stderr') == None
-            assert os.path.exists(dest_path)
-            assert os.path.isfile(dest_path)
-    finally:
-        if os.path.exists(dest_path):
-            os.remove(dest_path)
-
 def test_fetch_uss_file_not_present_on_local_machine(ansible_zos_module):
     hosts = ansible_zos_module
     params = dict(
@@ -272,4 +226,26 @@ def test_fetch_sequential_data_set_in_binary_mode(ansible_zos_module):
     finally:
         if os.path.exists(dest_path):
             os.remove(dest_path)
+
+def test_fetch_partitioned_data_set_binary_mode(ansible_zos_module):
+    hosts = ansible_zos_module
+    params = dict(
+        src='IMSTESTL.COMN91', 
+        dest='/tmp/', 
+        flat=True,
+        is_binary=True
+    )
+    results = hosts.all.zos_fetch(**params)
+    dest_path = '/tmp/IMSTESTL.COMN91'
+    try:
+        for result in results.contacted.values():
+            assert result.get('changed') == True
+            assert result.get('data_set_type') == 'Partitioned'
+            assert result.get('module_stderr') == None
+            assert result.get('is_binary') == True
+            assert os.path.exists(dest_path)
+            assert os.path.isdir(dest_path)
+    finally:
+        if os.path.exists(dest_path):
+            shutil.rmtree(dest_path)
 

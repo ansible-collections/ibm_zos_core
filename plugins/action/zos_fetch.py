@@ -175,14 +175,9 @@ class ActionModule(ActionBase):
                                 )
             result['failed'] = True
             return result
-
-        if fetch_content:
-            result.update(fetch_content)
         
-        result = _update_result(result, src, dest, ds_type, 
-                    binary_mode=is_binary, encoding=encoding if encoding else 'EBCDIC')
-        
-        return result
+        return _update_result(dict(list(result.items()) + list(fetch_content.items())), src, dest, ds_type, 
+                            binary_mode=is_binary, encoding=encoding if encoding else 'EBCDIC')
 
 
     def _fetch_partitioned_data_set(self, dest, task_vars, pds_path, binary_mode=False):
@@ -194,7 +189,7 @@ class ActionModule(ActionBase):
             
             if binary_mode:
                 cmd = ['sftp', ansible_user + '@' + ansible_host]
-                stdin = "get -r {} {}".format(pds_path, dest).encode()
+                stdin = to_bytes("get -r {} {}".format(pds_path, dest))
             else:
                 cmd = ['scp', '-r', ansible_user + '@' + ansible_host + ':' + pds_path, dest]
 

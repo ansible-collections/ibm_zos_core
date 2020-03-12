@@ -50,22 +50,6 @@ def test_fetch_zos_data_set(zos_import_mocker, zos_data_set, is_binary, return_v
 
 
 test_data = [
-    ('test1.test.test2', (0,'',''), 0),
-    ('test.test1.test2', (1,'','stderr'), 1),
-    ('test.test1.test2', (-1,'','stderr'), 1)
-]
-
-@pytest.mark.parametrize("ds_name,vsam,return_value,expected", test_data)
-def test_uncatalog_data_set(zos_import_mocker, ds_name, return_value, expected):
-    mocker, importer = zos_import_mocker
-    module = importer(MODULE_IMPORT)
-    mocker.patch(MODULE_IMPORT + '._run_command', create=True, return_value=return_value)
-    patched_method = mocker.patch(MODULE_IMPORT + '._fail_json', create=True)
-    module._uncatalog_data_set(ds_name, vsam)
-    assert patched_method.call_count == expected
-
-
-test_data = [
     ('test1.test.test2', (0,'PS',''), 0),
     ('test.test1.test2', (1,'NOT IN CATALOG',''), 0),
     ('test.test1.test2', (-1,'INVALID DATA SET NAME',''), 0),

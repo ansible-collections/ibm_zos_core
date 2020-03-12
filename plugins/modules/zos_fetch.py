@@ -386,16 +386,16 @@ def _fetch_vsam(src, validate_checksum, is_binary):
 
 #     return ds_name
 
-def _uncatalog_data_set(ds_name):
-    """ Uncatalog a data set """
-    rc, out, err = _run_command("tsocmd \"ALLOC DA('{}') REUSE OLD UNCATALOG\"".format(ds_name))
-    if rc != 0:
-        _fail_json(
-            msg="Unable to uncatalog data set {}".format(ds_name),
-            stdout=out,
-            stderr=err,
-            ret_code=rc
-        )
+# def _uncatalog_data_set(ds_name):
+#     """ Uncatalog a data set """
+#     rc, out, err = _run_command("tsocmd \"ALLOC DA('{}') REUSE OLD UNCATALOG\"".format(ds_name))
+#     if rc != 0:
+#         _fail_json(
+#             msg="Unable to uncatalog data set {}".format(ds_name),
+#             stdout=out,
+#             stderr=err,
+#             ret_code=rc
+#         )
 
 def _convert_from_ebcdic_to_ascii(data):
     """ Convert encoding from EBCDIC to ASCII """

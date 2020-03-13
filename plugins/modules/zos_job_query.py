@@ -14,7 +14,7 @@ ANSIBLE_METADATA = {
     "supported_by": "community",
 }
 
-DOCUMENTATION =r'''
+DOCUMENTATION = r'''
 ---
 module: zos_job_query
 short_description: Query job(s) and status.
@@ -26,7 +26,7 @@ description:
 author: "Ping Xiao (@xiaopingBJ)"
 options:
   job_name:
-    description: 
+    description:
        - The job name to query.
     type: str
     required: False
@@ -36,16 +36,16 @@ options:
       - Identifies the owner of the job.
     type: str
     required: False
-    deafault: Current user
+    deafault: "$USER"
   job_id:
     description:
-      - The job number that has been assigned to the job. These normally begin 
+      - The job number that has been assigned to the job. These normally begin
         with STC, JOB, TSU and are followed by 5 digits.
     type: str
     required: False
 '''
 
-EXAMPLES =r'''
+EXAMPLES = r'''
 - name: list zos jobs with a jobname 'IYK3ZNA1'
   zos_job_query:
     job_name: "IYK3ZNA1"
@@ -65,14 +65,14 @@ EXAMPLES =r'''
     owner: BROWNAD
 '''
 
-RETURN =r'''
+RETURN = r'''
 changed:
-  description: 
+  description:
      True if the state was changed, otherwise False.
   returned: always
   type: bool
 jobs:
-  description: 
+  description:
      The list of z/OS job(s) and status.
   returned: success
   type: list
@@ -99,12 +99,12 @@ jobs:
       type: dict
       contains:
         msg:
-          description: 
+          description:
             Return code or abend resulting from the job submission.
           type: str
           sample: CC 0000
         code:
-          description: 
+          description:
              Return code converted to integer value (when possible)
           type: int
           sample: 00
@@ -127,7 +127,7 @@ jobs:
         },
     ]
 message:
-  description: 
+  description:
      Message returned on failure.
   type: str
   returned: failure

@@ -33,7 +33,6 @@ installed in ``~/.ansible/collections``, see the sample output.
    https://docs.ansible.com/ansible/latest/cli/ansible-galaxy.html
 
 .. code-block:: sh
-   :emphasize-lines: 3
 
    Process install dependency map
    Starting collection install process

@@ -355,53 +355,6 @@ def _fetch_vsam(src, validate_checksum, is_binary):
 
     return content, checksum
 
-# def _recatalog_data_set(ds_name, volume):
-#     """ Recatalog an uncataloged data set """
-#     sysin_ds_name = _create_temp_data_set_name('SYSIN')
-#     Datasets.create(sysin_ds_name, 'SEQ')
-#     idcams_sysin = ''' DEFINE NVSAM -
-#         (NAME({}) -
-#         VOLUMES({}) - 
-#         DEVT(SYSDA)) '''.format(ds_name, volume)
-
-#     Datasets.write(sysin_ds_name, idcams_sysin)
-#     dd_statements = []
-#     dd_statements.append(types.DDStatement(ddName="sysin", dataset=sysin_ds_name))
-#     dd_statements.append(types.DDStatement(ddName="sysprint", dataset='*'))
-
-#     try:
-#         rc = MVSCmd.execute_authorized(pgm="idcams", args='', dds=dd_statements)
-#         if rc != 0:
-#             _fail_json(
-#                 msg="Non-zero return code received while executing MVSCmd to recatalog {}".format(ds_name),
-#                 stdout="",
-#                 stderr="",
-#                 ret_code=rc
-#             )
-    
-#     except Exception as err:
-#         _fail_json(
-#             msg="Failed to call IDCAMS to recatalog data set {}".format(ds_name),
-#             stdout="",
-#             stderr=str(err),
-#             ret_code=rc
-#         )
-    
-#     finally:
-#         Datasets.delete(sysin_ds_name) 
-
-#     return ds_name
-
-# def _uncatalog_data_set(ds_name):
-#     """ Uncatalog a data set """
-#     rc, out, err = _run_command("tsocmd \"ALLOC DA('{}') REUSE OLD UNCATALOG\"".format(ds_name))
-#     if rc != 0:
-#         _fail_json(
-#             msg="Unable to uncatalog data set {}".format(ds_name),
-#             stdout=out,
-#             stderr=err,
-#             ret_code=rc
-#         )
 
 def _convert_from_ebcdic_to_ascii(data):
     """ Convert encoding from EBCDIC to ASCII """

@@ -118,11 +118,12 @@ class ActionModule(ActionBase):
         dest = os.path.expanduser(dest)
         if flat:
             if os.path.isdir(to_bytes(dest, errors='surrogate_or_strict')) and not dest.endswith(os.sep):
-                result['message'] = dict(msg="dest is an existing directory, use a trailing slash if you want to fetch src into that directory",
-                                        stdout="",
-                                        stderr="",
-                                        ret_code=None
-                                    )
+                result['message'] = dict(
+                    msg="dest is an existing directory, use a trailing slash if you want to fetch src into that directory",
+                    stdout="",
+                    stderr="",
+                    ret_code=None
+                )
                 result['failed'] = True
                 return result
             if dest.endswith(os.sep):
@@ -148,11 +149,12 @@ class ActionModule(ActionBase):
         fetch_res = self._execute_module(module_name='zos_fetch', module_args=new_module_args, task_vars=task_vars)
 
         if fetch_res.get('msg'):
-            result['message'] = dict(stdout=fetch_res['stdout'], 
-                                    stderr=fetch_res['stderr'], 
-                                    ret_code=fetch_res['ret_code'],
-                                    msg=fetch_res['msg']
-                                )
+            result['message'] = dict(
+                stdout=fetch_res['stdout'], 
+                stderr=fetch_res['stderr'], 
+                ret_code=fetch_res['ret_code'],
+                msg=fetch_res['msg']
+            )
             result['failed'] = fetch_res.get('failed')
             return result
 
@@ -174,11 +176,12 @@ class ActionModule(ActionBase):
             fetch_content = self._fetch_partitioned_data_set(dest, task_vars, fetch_res['pds_path'], binary_mode=is_binary)
 
         else:
-            result['message'] = dict(msg="The data set type '{}' is not currently supported".format(ds_type),
-                                    stdout="",
-                                    stderr="",
-                                    ret_code=None
-                                )
+            result['message'] = dict(
+                msg="The data set type '{}' is not currently supported".format(ds_type),
+                stdout="",
+                stderr="",
+                ret_code=None
+            )
             result['failed'] = True
             return result
 

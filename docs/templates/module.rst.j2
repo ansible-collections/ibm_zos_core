@@ -50,6 +50,8 @@ Synopsis
 {# if its a boolean we need to convert to a string for html #} 
 {% if spec.type == 'bool' %}
      {% set default_str = (spec.default | string | lower ) %}
+{% elif spec.type == 'int' %}
+     {% set default_str = (spec.default | string ) %}
 {% else %}
      {% set default = ", default: " + spec.default if spec.default else "" %}
 {% endif %}

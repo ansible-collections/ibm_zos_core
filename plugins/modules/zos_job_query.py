@@ -17,7 +17,7 @@ ANSIBLE_METADATA = {
 DOCUMENTATION = r'''
 ---
 module: zos_job_query
-short_description: Query job(s) and status.
+short_description: Query job(s) and status
 description:
   - List z/OS job(s) and the current status of the job(s).
   - Uses owner to filter the jobs by the job owner.
@@ -34,7 +34,7 @@ options:
   owner:
     description:
       - Identifies the owner of the job.
-      - If no owner is set, the default set is 'none' and all jobs will be
+      - If no owner is set, the default set is 'none' and all jobs will be  
         queried.
     type: str
     required: False

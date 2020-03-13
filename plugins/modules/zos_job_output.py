@@ -14,21 +14,21 @@ ANSIBLE_METADATA = {
     "supported_by": "community",
 }
 
-DOCUMENTATION =r'''
+DOCUMENTATION = r"""
 ---
 module: zos_job_output
 short_description: Display job output.
 description:
-  - Display the z/OS job output for a given criteria (Job id/Job name/owner) 
+  - Display the z/OS job output for a given criteria (Job id/Job name/owner)
     with/without a data definition name as a filter.
   - At least provide a job id/job name/owner.
-  - The job id can be specific such as "STC02560", or one that uses a pattern 
+  - The job id can be specific such as "STC02560", or one that uses a pattern
     such as "STC*" or "*".
-  - The job name can be specific such as "TCPIP", or one that uses a pattern 
+  - The job name can be specific such as "TCPIP", or one that uses a pattern
     such as "TCP*" or "*".
-  - The owner can be specific such as "IBMUSER", or one that uses a pattern 
+  - The owner can be specific such as "IBMUSER", or one that uses a pattern
     like "*".
-  - If there is no ddname, or if ddname="?", output of all the ddnames under 
+  - If there is no ddname, or if ddname="?", output of all the ddnames under
     the given job will be displayed.
 version_added: "2.9"
 author: "Jack Ho (@jacklotusho)"
@@ -54,7 +54,7 @@ options:
       - Data definition name. (e.g "JESJCL", "?")
     type: str
     required: false
-'''
+"""
 
 EXAMPLES = r"""
 - name: Job output with ddname
@@ -74,16 +74,16 @@ EXAMPLES = r"""
     ddname: "?"
 """
 
-RETURN =r'''
+RETURN = r"""
 jobs:
-  description: 
+  description:
       List of jobs output
   returned: success
   type: list
   elements: dict
   contains:
     job_id:
-      description: 
+      description:
          The z/OS job ID of the job containing the spool file.
       type: str
       sample: JOB00134
@@ -92,29 +92,29 @@ jobs:
          The name of the batch job.
       type: str
       sample: HELLO
-    subsystem: 
+    subsystem:
       description:
-         The job entry subsystem that MVS uses to do work. 
+         The job entry subsystem that MVS uses to do work.
       type: str
       sample: STL1
     class:
-      description: 
+      description:
          Identifies the data set used in a system output data set, usually called a sysout data set.
       type: str
       sample:
     content_type:
-      description: 
+      description:
          Type of address space.
       type: str
       sample: JOB
     ddnames:
-      description: 
+      description:
          Data definition names.
       type: list
       elements: dict
       contains:
         ddname:
-          description: 
+          description:
              Data definition name.
           type: str
           sample: JESMSGLG
@@ -124,19 +124,19 @@ jobs:
           type: int
           sample: 17
         id:
-          description: 
+          description:
              Unique job id assigned to the job by JES
           type: str
           sample: 2
         stepname:
-          description: 
-              A step name is name that identifies the job step so that other 
-              JCL statements or the operating system can refer to it. 
+          description:
+              A step name is name that identifies the job step so that other
+              JCL statements or the operating system can refer to it.
           type: str
           sample: JES2
         procstep:
           description:
-             Identifies the set of statements inside JCL grouped together to 
+             Identifies the set of statements inside JCL grouped together to
              perform a particular function.
           type: str
           sample: PROC1
@@ -171,23 +171,23 @@ jobs:
       type: dict
       contains:
         msg:
-          description: 
+          description:
             Return code or abend resulting from the job submission.
           type: str
           sample: CC 0000
         msg_code:
-          description: 
+          description:
             Return code extracted from the `msg` so that it can better
             evaluated. For example , ABEND(S0C4) would yield ""S0C4".
           type: str
           sample: S0C4
         msg_txt:
-          description: 
+          description:
              Returns additional information related to the job.
           type: str
           sample: "No job can be located with this job name: HELLO"
         code:
-          description: 
+          description:
              Return code converted to integer value (when possible)
           type: int
           sample: 00
@@ -321,11 +321,11 @@ jobs:
       }
   ]
 changed:
-    description: 
+    description:
       Indicates if any changes were made during module operation
     type: bool
     returned: on success
-'''
+"""
 
 
 from ansible.module_utils.basic import AnsibleModule

@@ -30,7 +30,7 @@ options:
     type: str
     description:
       - The source directory or data set containing the JCL to submit.
-      - It could be physical sequential data set or a partitioned data set 
+      - It could be physical sequential data set or a partitioned data set
         qualified by a member or a path. (e.g "USER.TEST","USER.JCL(TEST)")
       - Or an USS file. (e.g "/u/tester/demo/sample.jcl")
       - Or an LOCAL file in ansible control node.
@@ -69,7 +69,7 @@ options:
     description:
       - Specifies the maximum return code for the submitted job that should be
         allowed without failing the module.
-      - The ``max_rc`` is only checked when ``wait=true``, otherwise, it is 
+      - The ``max_rc`` is only checked when ``wait=true``, otherwise, it is
         ignored.
   return_output:
     required: false
@@ -123,7 +123,7 @@ jobs:
       type: str
       sample: HELLO
     duration:
-      description: The total lapsed time the JCL ran for. 
+      description: The total lapsed time the JCL ran for.
       type: int
       sample: 0
     ddnames:

@@ -34,9 +34,10 @@ options:
   owner:
     description:
       - Identifies the owner of the job.
+      - If no owner is set, the default set is 'none' and all jobs will be
+        queried.
     type: str
     required: False
-    default: "$USER"
   job_id:
     description:
       - The job number that has been assigned to the job. These normally begin

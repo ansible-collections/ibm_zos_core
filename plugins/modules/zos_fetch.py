@@ -130,9 +130,9 @@ EXAMPLES = r'''
     dest: /tmp/
     flat: true
 
-- name: Fetch a PDS member named 'data'
+- name: Fetch a PDS member named 'DATA'
   zos_fetch:
-    src: USER.TEST.PDS(data)
+    src: USER.TEST.PDS(DATA)
     dest: /tmp/
     flat: true
 '''

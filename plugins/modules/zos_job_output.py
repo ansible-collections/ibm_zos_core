@@ -17,7 +17,7 @@ ANSIBLE_METADATA = {
 DOCUMENTATION = r"""
 ---
 module: zos_job_output
-short_description: Display job output.
+short_description: Display job output
 description:
   - Display the z/OS job output for a given criteria (Job id/Job name/owner)
     with/without a data definition name as a filter.

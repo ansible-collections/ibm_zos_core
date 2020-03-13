@@ -23,17 +23,17 @@ clean:
 
 	rm -rf source/modules
 	echo "Deleted directory source/modules"
-
+	echo "Completed HTML text generation, run 'make ibm_zos_core'"
 ibm_zos_core: 
 	mkdir build
 	mkdir -p source/modules
 	mv ../plugins/modules/__init__.py ../plugins/modules/__init__.py.skip
 	ansible-doc-extractor --template templates/module.rst.j2 source/modules ../plugins/modules/*.py
-	echo "Completed restructured text generation, run Make HTML"
+	echo "Completed restructured text generation, run 'make html'"
 	mv ../plugins/modules/__init__.py.skip ../plugins/modules/__init__.py
 
 # Catch-all target: route all unknown targets to Sphinx using the new
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
 %: Makefile
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
-	 echo "Completed HTML text generation, run Make view"
+	 echo "Completed HTML text generation, run 'make view'"

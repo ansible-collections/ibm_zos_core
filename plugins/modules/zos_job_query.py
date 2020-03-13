@@ -152,7 +152,7 @@ def run_module():
         job_id=dict(type="str", required=False),
     )
 
-    result = dict(changed=False, original_message="", message="")
+    result = dict(changed=False, message="")
 
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
 
@@ -165,7 +165,6 @@ def run_module():
         jobs = parsing_jobs(jobs_raw)
     except Exception as e:
         module.fail_json(msg=e, **result)
-    result["original_message"] = module.params["job_name"]
     result["jobs"] = jobs
     module.exit_json(**result)
 

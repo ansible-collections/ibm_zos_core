@@ -36,7 +36,7 @@ options:
       - Identifies the owner of the job.
     type: str
     required: False
-    deafault: "$USER"
+    default: "$USER"
   job_id:
     description:
       - The job number that has been assigned to the job. These normally begin

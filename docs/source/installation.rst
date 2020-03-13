@@ -193,7 +193,6 @@ To build a collection from the git repository:
       In the output of collection installation, note the installation path to access the sample playbook:
 
       .. code-block:: sh
-         :emphasize-lines: 3
 
          Process install dependency map
          Starting collection install process

@@ -10,14 +10,14 @@ import tempfile
 
 __metaclass__ = type
 
-uss_file         = '/u/imstestl/zos_encode/ebcdic.txt'
-uss_dest_file    = '/u/imstestl/zos_encode_out/ascii.txt'
-uss_path         = '/u/imstestl/zos_encode'
-uss_dest_path    = '/u/imstestl/zos_encode_out'
-mvs_ps           = 'imstestl.zoautest.ps'
-mvs_pds          = 'imstestl.zoautest.pds'
-mvs_pds_member   = 'imstestl.zoautest.pds(test)'
-mvs_vs           = 'imstestl.zoautest.vs'
+uss_file         = '/u/imstest1/zos_encode/ebcdic.txt'
+uss_dest_file    = '/u/imstest1/zos_encode_out/ascii.txt'
+uss_path         = '/u/imstest1/zos_encode'
+uss_dest_path    = '/u/imstest1/zos_encode_out'
+mvs_ps           = 'imstest1.zoautest.ps'
+mvs_pds          = 'imstest1.zoautest.pds'
+mvs_pds_member   = 'imstest1.zoautest.pds(test)'
+mvs_vs           = 'imstest1.zoautest.vs'
 from_encoding    = 'IBM-1047'
 invalid_encoding = 'EBCDIC'
 to_encoding      = 'ISO8859-1'
@@ -259,3 +259,28 @@ def test_uss_encoding_conversion_mvs_ps2mvs_pds_member(ansible_zos_module):
         assert result.get('backup_file') == None
         assert result.get('changed') == True
 
+def test_uss_encoding_conversion_mvs_vs2mvs_pds_member(ansible_zos_module):
+    hosts = ansible_zos_module
+    results = hosts.all.zos_encode(src=mvs_vs, dest=mvs_pds_member, from_encoding=from_encoding, to_encoding=to_encoding)
+    pprint(vars(results))
+    for result in results.contacted.values():
+        assert result.get('src') == mvs_vs
+        assert result.get('dest') == mvs_pds_member
+        assert result.get('from_encoding') == from_encoding
+        assert result.get('to_encoding') == to_encoding
+        assert result.get('backup') == False
+        assert result.get('backup_file') == None
+        assert result.get('changed') == True
+
+def test_uss_encoding_conversion_mvs_ps2mvs_vs(ansible_zos_module):
+    hosts = ansible_zos_module
+    results = hosts.all.zos_encode(src=mvs_ps, dest=mvs_vs, from_encoding=from_encoding, to_encoding=to_encoding)
+    pprint(vars(results))
+    for result in results.contacted.values():
+        assert result.get('src') == mvs_ps
+        assert result.get('dest') == mvs_vs
+        assert result.get('from_encoding') == from_encoding
+        assert result.get('to_encoding') == to_encoding
+        assert result.get('backup') == False
+        assert result.get('backup_file') == None
+        assert result.get('changed') == True

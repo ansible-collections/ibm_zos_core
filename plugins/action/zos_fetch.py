@@ -140,18 +140,18 @@ class ActionModule(ActionBase):
 
         dest = dest.replace("//", "/")
         if fetch_member:
-            member = src[ src.find('(') + 1 : src.find(')') ]
+            member = src[src.find('(') + 1:src.find(')')]
             base_dir = os.path.dirname(dest)
             dest = os.path.join(base_dir, member)
 
-        new_module_args = dict((k,v) for k,v in self._task.args.items())
+        new_module_args = dict((k, v) for k, v in self._task.args.items())
         new_module_args.update({'_fetch_member': fetch_member, 'is_uss': is_uss})
         fetch_res = self._execute_module(module_name='zos_fetch', module_args=new_module_args, task_vars=task_vars)
 
         if fetch_res.get('msg'):
             result['message'] = dict(
-                stdout=fetch_res['stdout'], 
-                stderr=fetch_res['stderr'], 
+                stdout=fetch_res['stdout'],
+                stderr=fetch_res['stderr'],
                 ret_code=fetch_res['ret_code'],
                 msg=fetch_res['msg']
             )
@@ -169,10 +169,12 @@ class ActionModule(ActionBase):
         mvs_ds = ds_type in ('PO', 'PDSE', 'PE')
 
         if ds_type == 'VSAM' or ds_type == 'PS' or is_uss or (fetch_member and mvs_ds):
-            fetch_content = self._fetch_non_partitioned_data_set(dest, task_vars, fetch_res['content'], fetch_res['checksum'], 
-                                    binary_mode=is_binary, validate_checksum=validate_checksum)
+            fetch_content = self._fetch_non_partitioned_data_set(
+                dest, task_vars, fetch_res['content'], fetch_res['checksum'],
+                binary_mode=is_binary, validate_checksum=validate_checksum
+            )
 
-        elif mvs_ds:   
+        elif mvs_ds:
             fetch_content = self._fetch_partitioned_data_set(dest, task_vars, fetch_res['pds_path'], binary_mode=is_binary)
 
         else:
@@ -185,9 +187,10 @@ class ActionModule(ActionBase):
             result['failed'] = True
             return result
 
-        return _update_result(dict(list(result.items()) + list(fetch_content.items())), src, dest, ds_type, 
-                            binary_mode=is_binary, encoding=encoding if encoding else 'EBCDIC')
-
+        return _update_result(
+            dict(list(result.items()) + list(fetch_content.items())),
+            src, dest, ds_type, binary_mode=is_binary, encoding=encoding if encoding else 'EBCDIC'
+        )
 
     def _fetch_partitioned_data_set(self, dest, task_vars, pds_path, binary_mode=False):
         result = dict()
@@ -213,7 +216,6 @@ class ActionModule(ActionBase):
             self._connection.exec_command("rm -r {}".format(pds_path))
         return result
 
-      
     def _fetch_non_partitioned_data_set(self, dest, task_vars, content, checksum, binary_mode=False, validate_checksum=True):
         result = dict()
         new_content = content
@@ -235,15 +237,15 @@ class ActionModule(ActionBase):
                 _write_content_to_file(dest, new_content, write_mode)
                 new_checksum = checksum_s(content)
                 if remote_checksum != new_checksum:
-                    result.update(dict(msg='Checksum mismatch',checksum=new_checksum,
-                                    remote_checksum=remote_checksum, failed=True))
+                    result.update(
+                        dict(msg='Checksum mismatch', checksum=new_checksum, remote_checksum=remote_checksum, failed=True)
+                    )
                 else:
                     result.update(dict(checksum=new_checksum, changed=True, remote_checksum=remote_checksum))
             else:
                 result['changed'] = False
                 result['checksum'] = remote_checksum
         else:
-            _write_content_to_file(dest, new_content, write_mode) 
+            _write_content_to_file(dest, new_content, write_mode)
             result['changed'] = True
         return result
-        

@@ -11,7 +11,7 @@ __metaclass__ = type
 import pytest
 
 from ansible.module_utils.basic import AnsibleModule
-from mock import call, mock_open, patch 
+from mock import call, mock_open, patch
 
 MODULE_IMPORT = "ansible_collections_ibm_zos_core.plugins.modules.zos_fetch"
 BASIC_MODULE = 'ansible.module_utils.basic.AnsibleModule'
@@ -22,6 +22,7 @@ test_data = [
     ('/path/to/file.log', False, False)
 ]
 
+
 @pytest.mark.parametrize("src,validate_checksum,is_binary", test_data)
 def test_fetch_uss_file(zos_import_mocker, src, validate_checksum, is_binary):
     mocker, importer = zos_import_mocker
@@ -29,7 +30,6 @@ def test_fetch_uss_file(zos_import_mocker, src, validate_checksum, is_binary):
     patched_method = mocker.patch(MODULE_IMPORT + '._fail_json', create=True)
     with patch(MODULE_IMPORT + '.open', mock_open(), create=True):
         module._fetch_uss_file(src, validate_checksum, is_binary)
-    
     assert patched_method.call_count == 0
 
 
@@ -38,6 +38,7 @@ test_data = [
     ('some.data.set', True, 'dummy data', 0),
     ('some.data.set', False, None, 1)
 ]
+
 
 @pytest.mark.parametrize("zos_data_set,is_binary,return_value,expected", test_data)
 def test_fetch_zos_data_set(zos_import_mocker, zos_data_set, is_binary, return_value, expected):
@@ -50,11 +51,12 @@ def test_fetch_zos_data_set(zos_import_mocker, zos_data_set, is_binary, return_v
 
 
 test_data = [
-    ('test1.test.test2', (0,'PS',''), 0),
-    ('test.test1.test2', (1,'NOT IN CATALOG',''), 0),
-    ('test.test1.test2', (-1,'INVALID DATA SET NAME',''), 0),
-    ('test.test1.test2', (-1,'garbage',''), 1)
+    ('test1.test.test2', (0, 'PS', ''), 0),
+    ('test.test1.test2', (1, 'NOT IN CATALOG', ''), 0),
+    ('test.test1.test2', (-1, 'INVALID DATA SET NAME', ''), 0),
+    ('test.test1.test2', (-1, 'garbage', ''), 1)
 ]
+
 
 @pytest.mark.parametrize("ds_name,return_value,expected", test_data)
 def test_determine_data_set_type(zos_import_mocker, ds_name, return_value, expected):
@@ -75,6 +77,7 @@ test_data = [
     ('test1.test.test2', 'temp.data.set', 'dummy data', 2, 1)
 ]
 
+
 @pytest.mark.parametrize("src,temp_ds,content,del_rc,expected", test_data)
 def test_fetch_vsam(zos_import_mocker, src, temp_ds, content, del_rc, expected):
     mocker, importer = zos_import_mocker
@@ -87,11 +90,11 @@ def test_fetch_vsam(zos_import_mocker, src, temp_ds, content, del_rc, expected):
     assert patched_method.call_count == expected
 
 
-
 test_data = [
-    ('test1.test.test2', False, (0,'',''), 0),
-    ('test1.test.test2(member)', True, (1,'','stderr'), 1)
+    ('test1.test.test2', False, (0, '', ''), 0),
+    ('test1.test.test2(member)', True, (1, '', 'stderr'), 1)
 ]
+
 
 @pytest.mark.parametrize("src,fetch_member,return_value,expected", test_data)
 def test_fetch_pdse(zos_import_mocker, src, fetch_member, return_value, expected):
@@ -107,6 +110,8 @@ test_data = [
     ('test1.test.test2', 'dummy data', 0),
     ('test1.test.test2', None, 1)
 ]
+
+
 @pytest.mark.parametrize("src,return_value,expected", test_data)
 def test_fetch_ps(zos_import_mocker, src, return_value, expected):
     mocker, importer = zos_import_mocker
@@ -124,6 +129,8 @@ test_data = [
     ('ABC..XYZ', False),
     ('1DATA.HELLO', False)
 ]
+
+
 @pytest.mark.parametrize("src,expected", test_data)
 def test_validate_dsname(zos_import_mocker, src, expected):
     mocker, importer = zos_import_mocker
@@ -140,6 +147,7 @@ test_data = [
     ('1TESTER.TEST.TEST1', True, 'EBCDIC', True, None, False, 1),
 ]
 
+
 @pytest.mark.parametrize("src,is_binary,encoding,is_catalog,volume,is_uss,expected", test_data)
 def test_validate_params(zos_import_mocker, src, is_binary, encoding, is_catalog, volume, is_uss, expected):
     mocker, importer = zos_import_mocker
@@ -147,8 +155,3 @@ def test_validate_params(zos_import_mocker, src, is_binary, encoding, is_catalog
     patched_method = mocker.patch(MODULE_IMPORT + '._fail_json', create=True)
     module._validate_params(src, is_binary, encoding, is_catalog, volume, is_uss)
     assert patched_method.call_count == expected
-
-
-
-    
-

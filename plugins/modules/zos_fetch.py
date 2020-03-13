@@ -49,10 +49,11 @@ options:
     choices: [ "true", "false" ]
   flat:
     description:
-      - Override the default behavior of appending hostname/path/to/file to the destination.
-        If set to "false", the file or data set will be fetched to the destination directory
-        without appending remote hostname to the destination. Refer to the M(fetch) module
-        for a more detailed description of this parameter.
+      - Override the default behavior of appending hostname/path/to/file to the
+        destination. If set to "false", the file or data set will be fetched to
+        the destination directory without appending remote hostname to the
+        destination. Refer to the M(fetch) module for a more detailed description
+        of this parameter.
     required: false
     default: "true"
     choices: [ "true", "false" ]
@@ -64,8 +65,9 @@ options:
     choices: [ "true", "false" ]
   encoding:
     description:
-      - If set to "EBCDIC", the encoding of source file or data set will be converted to ASCII before 
-        being transferred to local machine. If set to "ASCII", the encoding will not be converted.
+      - If set to "EBCDIC", the encoding of source file or data set will be converted
+        to ASCII before being transferred to local machine. If set to "ASCII", the
+        encoding will not be converted.
     required: false
     default: "EBCDIC"
     choices: ["ASCII", "EBCDIC" ]
@@ -77,14 +79,14 @@ options:
     choices: [ "true", "false" ]
 notes:
     - When fetching PDS(E) and VSAM data sets, temporary storage will be used on the remote
-      z/OS system. After the PDS(E) or VSAM data set is successfully transferred, the temprorary
-      data set will deleted. The size of the temporary storage will correspond to the size of
-      PDS(E) or VSAM data set being fetched. If module executation fails, the temporary storage
-      will be cleaned.
-    - To prevent redundancy, additional checksum validation will not be done when fetching PDS(E)
-      because data integrity checks are done through the transfer methods used. As a result, the module 
-      response will not include C(checksum) parameter.
-    - All data sets are always assumed to be in catalog. If an uncataloged data set needs to 
+      z/OS system. After the PDS(E) or VSAM data set is successfully transferred, the
+      temprorary data set will deleted. The size of the temporary storage will correspond
+      to the size of PDS(E) or VSAM data set being fetched. If module executation fails,
+      the temporary storage will be cleaned.
+    - To prevent redundancy, additional checksum validation will not be done when fetching
+      PDS(E) because data integrity checks are done through the transfer methods used.
+      As a result, the module response will not include C(checksum) parameter.
+    - All data sets are always assumed to be in catalog. If an uncataloged data set needs to
       be fetched, it should be cataloged first.
 seealso:
    - fetch
@@ -244,10 +246,8 @@ def _fetch_uss_file(src, validate_checksum, is_binary):
             content = infile.read()
             if is_binary:
                 content = base64.b64encode(content)
-            
             if validate_checksum:
                 checksum = _get_checksum(content)
-   
     except (FileNotFoundError, IOError, OSError) as err:
         _fail_json(
             msg=str(err),
@@ -255,7 +255,6 @@ def _fetch_uss_file(src, validate_checksum, is_binary):
             stderr="",
             ret_code=None
         )
-    
     return content, checksum
 
 
@@ -273,7 +272,6 @@ def _fetch_zos_data_set(zos_data_set, is_binary, fetch_member=False):
         content = out
     else:
         content = Datasets.read(zos_data_set)
-    
     if is_binary:
         content = content.encode('utf-8', 'surrogateescape').decode('utf-8', 'replace')
         return base64.b64encode(content.encode())
@@ -295,7 +293,7 @@ def _copy_vsam_to_temp_data_set(ds_name):
 
     Datasets.create(sysin, 'SEQ')
     Datasets.create(out_ds, 'SEQ')
-    Datasets.create(sysprint, "SEQ", "", "FB", "",133)
+    Datasets.create(sysprint, "SEQ", "", "FB", "", 133)
 
     repro_sysin = ' REPRO INFILE(INPUT)  OUTFILE(OUTPUT) '
     Datasets.write(sysin, repro_sysin)
@@ -380,10 +378,8 @@ def _get_checksum(data):
 def _determine_data_set_type(ds_name, fail_on_missing=True):
     """ Use the LISTDS utility to determine the type of a given data set """
     rc, out, err = _run_command("tsocmd \"LISTDS '{}'\"".format(ds_name))
-
     if "NOT IN CATALOG" in out:
         raise UncatalogedDatasetError(ds_name)
-
     if "INVALID DATA SET NAME" in out:
         if os.path.exists(ds_name) and os.path.isfile(ds_name):
             return 'USS'
@@ -396,7 +392,6 @@ def _determine_data_set_type(ds_name, fail_on_missing=True):
             )
         else:
             module.exit_json(note="The USS file {} does not exist. No data was fetched.".format(ds_name))
-
     if rc != 0:
         msg = None
         if "ALREADY IN USE" in out:
@@ -404,7 +399,6 @@ def _determine_data_set_type(ds_name, fail_on_missing=True):
         else:
             msg = "Unable to determine data set type for data set {}.".format(ds_name)
         _fail_json(msg=msg, stdout=out, stderr=err, ret_code=rc)
-
     ds_search = re.search("(-|--)DSORG(|-)\n(.*)", out)
     if ds_search:
         return ds_search.group(3).split()[-1].strip()
@@ -414,7 +408,7 @@ def _determine_data_set_type(ds_name, fail_on_missing=True):
 def _fetch_pdse(src):
     """ Fetch a partitioned data set """
     result = dict()
-    temp_dir = tempfile.mkdtemp()    
+    temp_dir = tempfile.mkdtemp()
     rc, out, err = _run_command("cp \"//'{}'\" {}".format(src, temp_dir))
     if rc != 0:
         _fail_json(
@@ -423,7 +417,7 @@ def _fetch_pdse(src):
             stderr=err,
             ret_code=rc
         )
-    
+
     result['pds_path'] = temp_dir
     return result
 
@@ -447,11 +441,11 @@ def _fetch_ps(src, validate_checksum, is_binary):
 def _validate_dsname(ds_name):
     """ Validate the name of a given data set """
     dsn_regex = "^(([A-Z]{1}[A-Z0-9]{0,7})([.]{1})){1,21}[A-Z]{1}[A-Z0-9]{0,7}$"
-    return re.match(dsn_regex, ds_name[:ds_name.find('(')]) 
+    return re.match(dsn_regex, ds_name[:ds_name.find('(')])
 
 
 def _validate_params(src, is_binary, encoding, is_uss, _fetch_member):
-    """ Ensure the module parameters are valid """ 
+    """ Ensure the module parameters are valid """
     msg = None
     if is_binary and encoding is not None:
         msg = "Encoding parameter is not valid for binary transfer"
@@ -467,17 +461,17 @@ def _validate_params(src, is_binary, encoding, is_uss, _fetch_member):
 def run_module():
     global module
     module = AnsibleModule(
-        argument_spec = dict(
-            src                 = dict(required=True, type='path'),
-            dest                = dict(required=True, type='path'),
-            fail_on_missing     = dict(required=False, default=True, choices=[True, False], type='str'),
-            validate_checksum   = dict(required=False, default=True, choices=[True, False], type='str'),
-            flat                = dict(required=False, default=True, choices=[True, False], type='str'),
-            is_binary           = dict(required=False, default=False, type='bool'),
-            encoding            = dict(required=False, choices=['ASCII', 'EBCDIC'], type='str'),
-            is_uss              = dict(required=False, default=False, type='bool'),
-            use_qualifier       = dict(required=False, default=False, type='bool'),
-            _fetch_member       = dict(required=False, type='bool')
+        argument_spec=dict(
+            src=dict(required=True, type='path'),
+            dest=dict(required=True, type='path'),
+            fail_on_missing=dict(required=False, default=True, choices=[True, False], type='str'),
+            validate_checksum=dict(required=False, default=True, choices=[True, False], type='str'),
+            flat=dict(required=False, default=True, choices=[True, False], type='str'),
+            is_binary=dict(required=False, default=False, type='bool'),
+            encoding=dict(required=False, choices=['ASCII', 'EBCDIC'], type='str'),
+            is_uss=dict(required=False, default=False, type='bool'),
+            use_qualifier=dict(required=False, default=False, type='bool'),
+            _fetch_member=dict(required=False, type='bool')
         )
     )
 
@@ -502,7 +496,7 @@ def run_module():
     try:
         ds_type = _determine_data_set_type(ds_name, fail_on_missing)
         if not ds_type:
-            _fail_json(msg="Could not determine data set type", stdout="", stderr="", ret_code=None) 
+            _fail_json(msg="Could not determine data set type", stdout="", stderr="", ret_code=None)
 
     except UncatalogedDatasetError as err:
         if fail_on_missing:
@@ -512,9 +506,9 @@ def run_module():
     if ds_type in MVS_DS_TYPES and not Datasets.exists(src):
         if fail_on_missing:
             _fail_json(
-                msg="The MVS data set {} does not exist".format(src), 
-                stdout="", 
-                stderr="", 
+                msg="The MVS data set {} does not exist".format(src),
+                stdout="",
+                stderr="",
                 ret_code=None
             )
         module.exit_json(note="The data set {} does not exist. No data was fetched.")
@@ -550,7 +544,6 @@ def run_module():
     res_args['file'] = src
     res_args['ds_type'] = ds_type
     module.exit_json(**res_args)
-
 
 
 class UncatalogedDatasetError(Exception):

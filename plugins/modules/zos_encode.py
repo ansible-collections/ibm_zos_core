@@ -332,8 +332,7 @@ def copy_vsam_ps(vsam, ps, module):
     cmd = 'echo "{}" | mvscmdauth --pgm=idcams --sysprint=stdout --sysin=stdin'.format(repro_cmd)
     rc, stdout, stderr = run_command(cmd, module)
     if rc:
-        err_msg = 'Failed when copying VSAM data set {} to a temporary data set: {}'.format(vsam, stderr)
-    return err_msg
+        err_msg = 'Failed when copying from the data set {} to a temporary data set: {}'.format(vsam, stdout)
 
 def copy_uss2mvs(src, dest, ds_type, module):
     if ds_type == 'PO':

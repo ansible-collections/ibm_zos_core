@@ -144,7 +144,7 @@ jobs:
           sample: 17
         id:
           description:
-             Unique job id assigned to the job by JES
+             The file ID
           type: str
           sample: 2
         stepname:

@@ -1,14 +1,21 @@
 # Copyright (c) IBM Corporation 2019, 2020
 # Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
+from __future__ import absolute_import, division, print_function
+
+__metaclass__ = type
+
 from tempfile import NamedTemporaryFile
 from os import chmod, path, remove
 from stat import S_IEXEC, S_IREAD, S_IWRITE
 import json
 import re
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
+    BetterArgParser,
+)
 
 
-def job_output(module, job_id='', owner='', job_name='', dd_name=''):
+def job_output(module, job_id=None, owner=None, job_name=None, dd_name=None):
     """Get the output from a z/OS job based on various search criteria.
 
     Arguments:
@@ -27,27 +34,48 @@ def job_output(module, job_id='', owner='', job_name='', dd_name=''):
     Returns:
         dict[str, list[dict]] -- The output information for a given job.
     """
+
+    arg_defs = dict(
+        job_id=dict(arg_type="qualifier_pattern"),
+        owner=dict(arg_type="qualifier_pattern"),
+        job_name=dict(arg_type="qualifier_pattern"),
+        dd_name=dict(arg_type=_ddname_pattern),
+    )
+
+    parser = BetterArgParser(arg_defs)
+    parsed_args = parser.parse_args(
+        {"job_id": job_id, "owner": owner, "job_name": job_name, "dd_name": dd_name}
+    )
+
+    job_id = parsed_args.get("job_id") or ""
+    job_name = parsed_args.get("job_name") or ""
+    owner = parsed_args.get("owner") or ""
+    ddname = parsed_args.get("ddname") or ""
+
     job_detail_json = {}
     rc, out, err = _get_job_json_str(module, job_id, owner, job_name, dd_name)
     if rc != 0:
         raise RuntimeError(
-            'Failed to retrieve job output. RC: {} Error: {}'.format(str(rc), str(err)))
+            "Failed to retrieve job output. RC: {0} Error: {1}".format(
+                str(rc), str(err)
+            )
+        )
     if not out:
-        raise RuntimeError(
-            'Failed to retrieve job output. No job output found.')
+        raise RuntimeError("Failed to retrieve job output. No job output found.")
     job_detail_json = json.loads(out, strict=False)
-    for job in job_detail_json.get('jobs'):
-        job['ret_code'] = {} if job.get(
-            'ret_code') == None else job.get('ret_code')
-        job['ret_code']['code'] = _get_return_code_num(
-            job.get('ret_code', {}).get('msg', ''))
-        job['ret_code']['msg_code'] = _get_return_code_str(
-            job.get('ret_code', {}).get('msg', ''))
-        job['ret_code']['msg_txt'] = ''
+    for job in job_detail_json.get("jobs"):
+        job["ret_code"] = {} if job.get("ret_code") is None else job.get("ret_code")
+        job["ret_code"]["code"] = _get_return_code_num(
+            job.get("ret_code", {}).get("msg", "")
+        )
+        job["ret_code"]["msg_code"] = _get_return_code_str(
+            job.get("ret_code", {}).get("msg", "")
+        )
+        job["ret_code"]["msg_txt"] = ""
     return job_detail_json
 
 
-def _get_job_json_str(module, job_id='', owner='', job_name='', dd_name=''):
+def _get_job_json_str(module, job_id="", owner="", job_name="", dd_name=""):
     """Generate JSON output string containing Job info from SDSF.
     Writes a temporary REXX script to the USS filesystem to gather output.
 
@@ -176,21 +204,20 @@ Return translate(string, '4040'x, '1525'x)
 """
     try:
 
-        if dd_name is None or dd_name == '?':
-            dd_name = ''
-        jobid_param = 'jobid=' + job_id
-        owner_param = 'owner=' + owner
-        jobname_param = 'jobname=' + job_name
-        ddname_param = 'ddname=' + dd_name
+        if dd_name is None or dd_name == "?":
+            dd_name = ""
+        jobid_param = "jobid=" + job_id
+        owner_param = "owner=" + owner
+        jobname_param = "jobname=" + job_name
+        ddname_param = "ddname=" + dd_name
 
         tmp = NamedTemporaryFile(delete=True)
-        with open(tmp.name, 'w') as f:
+        with open(tmp.name, "w") as f:
             f.write(get_job_detail_json_rexx)
         chmod(tmp.name, S_IEXEC | S_IREAD | S_IWRITE)
-        args = [jobid_param, owner_param,
-                jobname_param, ddname_param]
+        args = [jobid_param, owner_param, jobname_param, ddname_param]
 
-        cmd = [tmp.name, ' '.join(args)]
+        cmd = [tmp.name, " ".join(args)]
         rc, out, err = module.run_command(args=cmd)
     except Exception:
         raise
@@ -208,7 +235,7 @@ def _get_return_code_num(rc_str):
         Union[int, NoneType] -- Returns integer RC if possible, if not returns NoneType
     """
     rc = None
-    match = re.search(r'\s*CC\s*([0-9]+)', rc_str)
+    match = re.search(r"\s*CC\s*([0-9]+)", rc_str)
     if match:
         rc = int(match.group(1))
     return rc
@@ -225,8 +252,32 @@ def _get_return_code_str(rc_str):
         Union[str, NoneType] -- Returns string RC or ABEND code if possible, if not returns NoneType
     """
     rc = None
-    match = re.search(
-        r'(?:\s*CC\s*([0-9]+))|(?:ABEND\s*((?:S|U)[0-9]+))', rc_str)
+    match = re.search(r"(?:\s*CC\s*([0-9]+))|(?:ABEND\s*((?:S|U)[0-9]+))", rc_str)
     if match:
         rc = match.group(1) or match.group(2)
     return rc
+
+
+def _ddname_pattern(contents, resolve_dependencies):
+    """Resolver for ddname_pattern type arguments
+
+    Arguments:
+        contents {bool} -- The contents of the argument.
+        resolved_dependencies {dict} -- Contains all of the dependencies and their contents,
+        which have already been handled,
+        for use during current arguments handling operations.
+
+    Raises:
+        ValueError: When contents is invalid argument type
+    Returns:
+        str -- The arguments contents after any necessary operations.
+    """
+    if not re.fullmatch(
+        r"^(?:[A-Z]{1}[A-Z0-9]{0,7})|(?:\?{1})$", str(contents), re.IGNORECASE,
+    ):
+        raise ValueError(
+            'Invalid argument type for "{0}". expected "ddname_pattern"'.format(
+                contents
+            )
+        )
+    return str(contents)

@@ -22,8 +22,8 @@ description:
   - If a required dependency is missing from the target host, an explanatory message will be returned with the module failure.
   - The M(zos_ssh) connection plugin must be used for this module to function correctly.
 author:
-  - Vijay Katoch <vijayka@us.ibm.com>
-  - Blake Becker <blake.becker@ibm.com>
+  - "Vijay Katoch"
+  - "Blake Becker (@blakeinate)"
 
 '''
 

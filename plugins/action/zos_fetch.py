@@ -34,7 +34,7 @@ def _update_result(result, src, dest, ds_type, binary_mode=False, encoding='EBCD
     updated_result = dict((k, v) for k, v in result.items())
     updated_result.update({
         'message': {
-            'msg': "The {} was fetched successfully".format("file" if ds_type == 'USS' else "data set"),
+            'msg': "The {0} was fetched successfully".format("file" if ds_type == 'USS' else "data set"),
             'stdout': "",
             'stderr': "",
             'ret_code': 0
@@ -55,11 +55,11 @@ def _write_content_to_file(filename, content, write_mode):
         with open(filename, write_mode) as outfile:
             outfile.write(content)
     except UnicodeEncodeError as err:
-        raise AnsibleError('''Error writing to destination {} due to encoding issues.
+        raise AnsibleError('''Error writing to destination {0} due to encoding issues.
                                If it is a binary file, make sure to set
-                               'is_binary' parameter to 'true'; stderr: {}'''.format(filename, err))
+                               'is_binary' parameter to 'true'; stderr: {1}'''.format(filename, err))
     except (IOError, OSError) as err:
-        raise AnsibleError("Error writing to destination {}: {}".format(filename, err))
+        raise AnsibleError("Error writing to destination {0}: {1}".format(filename, err))
 
 
 def _process_boolean(arg, default=False):
@@ -136,7 +136,7 @@ class ActionModule(ActionBase):
                 target_name = task_vars['inventory_hostname']
             else:
                 target_name = self._play_context.remote_addr
-            dest = "{}/{}/{}".format(self._loader.path_dwim(dest), target_name, source_local)
+            dest = "{0}/{1}/{2}".format(self._loader.path_dwim(dest), target_name, source_local)
 
         dest = dest.replace("//", "/")
         if fetch_member:
@@ -179,7 +179,7 @@ class ActionModule(ActionBase):
 
         else:
             result['message'] = dict(
-                msg="The data set type '{}' is not currently supported".format(ds_type),
+                msg="The data set type '{0}' is not currently supported".format(ds_type),
                 stdout="",
                 stderr="",
                 ret_code=None
@@ -201,7 +201,7 @@ class ActionModule(ActionBase):
 
             if binary_mode:
                 cmd = ['sftp', ansible_user + '@' + ansible_host]
-                stdin = to_bytes("get -r {} {}".format(pds_path, dest))
+                stdin = to_bytes("get -r {0} {1}".format(pds_path, dest))
             else:
                 cmd = ['scp', '-r', ansible_user + '@' + ansible_host + ':' + pds_path, dest]
 
@@ -209,11 +209,11 @@ class ActionModule(ActionBase):
             out, err = transfer_pds.communicate(stdin)
 
             if transfer_pds.returncode != 0:
-                raise AnsibleError("Error transferring PDS from remote z/OS system\n stdout: {}\n stderr: {}".format(out, err))
+                raise AnsibleError("Error transferring PDS from remote z/OS system\n stdout: {0}\n stderr: {1}".format(out, err))
 
             result['changed'] = True
         finally:
-            self._connection.exec_command("rm -r {}".format(pds_path))
+            self._connection.exec_command("rm -r {0}".format(pds_path))
         return result
 
     def _fetch_non_partitioned_data_set(self, dest, task_vars, content, checksum, binary_mode=False, validate_checksum=True):

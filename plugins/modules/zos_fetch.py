@@ -25,7 +25,7 @@ description:
     the data set name.
   - When fetching a PDS/PDS(E), the destination will be a directory with the same name
     as the PDS/PDS(E).
-author: Asif Mahmud <asif.mahmud@ibm.com>
+author: "Asif Mahmud (@asifmahmud)"
 options:
   src:
     description:
@@ -88,9 +88,6 @@ notes:
       As a result, the module response will not include C(checksum) parameter.
     - All data sets are always assumed to be in catalog. If an uncataloged data set needs to
       be fetched, it should be cataloged first.
-seealso:
-   - fetch
-   - copy
 '''
 
 EXAMPLES = r'''
@@ -261,10 +258,10 @@ def _fetch_uss_file(src, validate_checksum, is_binary):
 def _fetch_zos_data_set(zos_data_set, is_binary, fetch_member=False):
     """ Read a sequential data set and return its contents """
     if fetch_member:
-        rc, out, err = _run_command("cat \"//'{}'\"".format(zos_data_set))
+        rc, out, err = _run_command("cat \"//'{0}'\"".format(zos_data_set))
         if rc != 0:
             _fail_json(
-                msg="Failed to read data set member for data set {}".format(zos_data_set),
+                msg="Failed to read data set member for data set {0}".format(zos_data_set),
                 stdout=out,
                 stderr=err,
                 ret_code=rc
@@ -312,13 +309,13 @@ def _copy_vsam_to_temp_data_set(ds_name):
 
         if rc != 0:
             _fail_json(
-                msg="Non-zero return code received while executing MVSCmd to copy VSAM data set {}".format(ds_name),
+                msg="Non-zero return code received while executing MVSCmd to copy VSAM data set {0}".format(ds_name),
                 stdout="",
                 stderr="",
                 ret_code=rc
             )
         _fail_json(
-            msg="Failed to call IDCAMS to copy VSAM data set {} to sequential data set".format(ds_name),
+            msg="Failed to call IDCAMS to copy VSAM data set {0} to sequential data set".format(ds_name),
             stdout="",
             stderr=str(err),
             ret_code=rc
@@ -342,7 +339,7 @@ def _fetch_vsam(src, validate_checksum, is_binary):
     rc = Datasets.delete(temp_ds)
     if rc != 0:
         _fail_json(
-            msg="Unable to delete data set {}".format(temp_ds),
+            msg="Unable to delete data set {0}".format(temp_ds),
             stdout="",
             stderr="",
             ret_code=rc
@@ -377,7 +374,7 @@ def _get_checksum(data):
 
 def _determine_data_set_type(ds_name, fail_on_missing=True):
     """ Use the LISTDS utility to determine the type of a given data set """
-    rc, out, err = _run_command("tsocmd \"LISTDS '{}'\"".format(ds_name))
+    rc, out, err = _run_command("tsocmd \"LISTDS '{0}'\"".format(ds_name))
     if "NOT IN CATALOG" in out:
         raise UncatalogedDatasetError(ds_name)
     if "INVALID DATA SET NAME" in out:
@@ -385,19 +382,19 @@ def _determine_data_set_type(ds_name, fail_on_missing=True):
             return 'USS'
         elif fail_on_missing:
             _fail_json(
-                msg="The USS file {} does not exist".format(ds_name),
+                msg="The USS file {0} does not exist".format(ds_name),
                 stdout=out,
                 stderr=err,
                 ret_code=rc
             )
         else:
-            module.exit_json(note="The USS file {} does not exist. No data was fetched.".format(ds_name))
+            module.exit_json(note="The USS file {0} does not exist. No data was fetched.".format(ds_name))
     if rc != 0:
         msg = None
         if "ALREADY IN USE" in out:
-            msg = "Dataset {} may already be open by another user. Close the dataset and try again.".format(ds_name)
+            msg = "Dataset {0} may already be open by another user. Close the dataset and try again.".format(ds_name)
         else:
-            msg = "Unable to determine data set type for data set {}.".format(ds_name)
+            msg = "Unable to determine data set type for data set {0}.".format(ds_name)
         _fail_json(msg=msg, stdout=out, stderr=err, ret_code=rc)
     ds_search = re.search("(-|--)DSORG(|-)\n(.*)", out)
     if ds_search:
@@ -409,7 +406,7 @@ def _fetch_pdse(src):
     """ Fetch a partitioned data set """
     result = dict()
     temp_dir = tempfile.mkdtemp()
-    rc, out, err = _run_command("cp \"//'{}'\" {}".format(src, temp_dir))
+    rc, out, err = _run_command("cp \"//'{0}'\" {1}".format(src, temp_dir))
     if rc != 0:
         _fail_json(
             msg="Error copying partitioned data set to USS",
@@ -428,7 +425,7 @@ def _fetch_ps(src, validate_checksum, is_binary):
     content = _fetch_zos_data_set(src, is_binary)
     if not content:
         _fail_json(
-            msg="Error fetching sequential data set {}".format(src),
+            msg="Error fetching sequential data set {0}".format(src),
             stdout="",
             stderr="",
             ret_code=None
@@ -506,12 +503,12 @@ def run_module():
     if ds_type in MVS_DS_TYPES and not Datasets.exists(src):
         if fail_on_missing:
             _fail_json(
-                msg="The MVS data set {} does not exist".format(src),
+                msg="The MVS data set {0} does not exist".format(src),
                 stdout="",
                 stderr="",
                 ret_code=None
             )
-        module.exit_json(note="The data set {} does not exist. No data was fetched.")
+        module.exit_json(note="The data set {0} does not exist. No data was fetched.".format(src))
 
     # Fetch sequential dataset
     if ds_type == 'PS':
@@ -548,7 +545,7 @@ def run_module():
 
 class UncatalogedDatasetError(Exception):
     def __init__(self, ds_name):
-        super().__init__("Data set {} is not in catalog. If you would like to fetch the data set, please catalog it first".format(ds_name))
+        super().__init__("Data set {0} is not in catalog. If you would like to fetch the data set, please catalog it first".format(ds_name))
 
 
 def main():

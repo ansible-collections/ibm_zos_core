@@ -48,7 +48,7 @@ and ansible-doc to automate tasks on Z.
     https://github.com/ansible-collections/ibm_zos_core/tree/master/playbooks/
 
 
-For guides and reference, please visit the documentation site.
+For guides and reference, please visit `the documentation site`_.
 
 .. _the documentation site:
     https://ansible-collections.github.io/ibm_zos_core/

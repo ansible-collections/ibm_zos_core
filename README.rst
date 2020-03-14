@@ -3,7 +3,7 @@ IBM z/OS Core Collection
 
 The IBM z/OS Core Collection, referred to as **ibm_zos_core**, is part of the
 broader offering **Red Hat® Ansible Certified Content for IBM Z**.
-`ibm*zos*core` supports tasks such as creating data sets, submitting jobs,
+``ibm_zos_core`` supports tasks such as creating data sets, submitting jobs,
 querying jobs, and retrieving job output.
 
 Red Hat Ansible Certified Content for IBM Z
@@ -48,6 +48,11 @@ and ansible-doc to automate tasks on Z.
     https://github.com/ansible-collections/ibm_zos_core/tree/master/playbooks/
 
 
+For guides and reference, please visit `the documentation site`_.
+
+.. _the documentation site:
+    https://ansible-collections.github.io/ibm_zos_core/
+
 Copyright
 =========
 
@@ -63,10 +68,10 @@ collection are licensed under `Apache License, Version 2.0`_.
 See individual files for applicable licenses.
 
 .. _GNU General Public License, Version 3.0:
-   https://opensource.org/licenses/GPL-3.0
+    https://opensource.org/licenses/GPL-3.0
 
 .. _Apache License, Version 2.0:
-   https://opensource.org/licenses/Apache-2.0
+    https://opensource.org/licenses/Apache-2.0
 
 
 .. ....................................

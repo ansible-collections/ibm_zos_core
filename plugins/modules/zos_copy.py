@@ -1,3 +1,4 @@
+#!/usr/bin/python
 # -*- coding: utf-8 -*-​
 # Copyright (c) IBM Corporation 2019, 2020
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
@@ -19,9 +20,8 @@ description:
       remote machine to a location on the remote machine.
     - Use the M(zos_fetch) module to copy files or data sets from remote locations
       to local machine.
-authors:
-  - Asif Mahmud <asif.mahmud@ibm.com>
-  - Luke Zhao <zlbjlu@cn.ibm.com>
+    - If destination is a USS file, it is highly recommended to use the M(copy) module.
+author: "Asif Mahmud (@asifmahmud)"
 options:
   src:
     description:
@@ -95,33 +95,11 @@ options:
       should be followed.
     type: bool
     default: true
-  is_uss:
-    description:
-    - Specifies whether C(dest) is a USS location.
-    - If C(false), it indicates that the destination is an MVS data set.
-    type: bool
-    default: false
-  is_vsam:
-    description:
-    - If C(true), indicates that the destination is a VSAM data set.
-    type: bool
-    default: false
   is_binary:
     description:
     - If C(true), indicates that the file or data set to be copied is a binary file/data set.
     type: bool
     default: false
-  is_catalog:
-    description:
-    - Indicates whether the destination data set is cataloged. If it is not cataloged,
-      the data set will be recataloged before copying. After the data set has been
-      successfully copied, the destination data set will be uncataloged.
-    type: bool
-    default: true
-  volume:
-    description:
-    - Name of the volume if I(is_catalog=false).
-    type: str
   use_qualifier:
     description:
     - Add user qualifier to data sets.
@@ -149,15 +127,9 @@ options:
       destination checksum.
     type: bool
     default: true
-  wait_s:
-    description:
-      - The time (in seconds) to wait for an uncataloged data set to be recataloged
-    required: false
-    default: 10
-    type: int
 notes:
-    - All VSAM data sets are assumed to be cataloged. When trying to copy to an
-      uncataloged VSAM data set, it must be recataloged first.
+    - All data sets are assumed to be in catalog. When trying to copy to an
+      uncataloged data set, it must be cataloged first.
 '''
 
 EXAMPLES = r'''
@@ -169,13 +141,11 @@ EXAMPLES = r'''
   zos_copy:
     src: /path/to/test.log
     dest: /tmp/test.log
-    is_uss: true
 - name: Copy a local ASCII encoded file and convert to EBCDIC
   zos_copy:
     src: /path/to/file.txt
     dest: /tmp/file.txt
     encoding: EBCDIC
-    is_uss: true
 - name: Copy file with owner and permission
   zos_copy:
     src: /path/to/foo.conf
@@ -187,7 +157,6 @@ EXAMPLES = r'''
   zos_copy:
     src: /path/to/link
     dest: /path/to/uss/location
-    is_uss: true
 - name: Copy a local file to a PDS member and validate checksum
   zos_copy:
     src: /path/to/local/file
@@ -197,7 +166,6 @@ EXAMPLES = r'''
   zos_copy:
     src: /path/to/local/file
     dest: HLQ.SAMPLE.VSAM
-    is_vsam: true
 - name: Copy inline content to a sequential dataset and replace existing data
   zos_copy:
     content: 'Hello World'
@@ -213,9 +181,6 @@ EXAMPLES = r'''
     src: /path/to/binary/file
     dest: HLQ.SAMPLE.PDSE(member_name)
     is_binary: true
-    is_catalog: false
-    volume: SCR03
-    wait_s: 15
 - name: Copy a local file and take a backup of the existing file
   zos_copy:
     src: /path/to/local/file
@@ -510,34 +475,6 @@ def _determine_data_set_type(ds_name):
     return None
 
 
-def _recatalog_data_set(ds_name, volume):
-    """ Recatalog an uncataloged data set """
-    sysin_ds_name = _create_temp_data_set_name('SYSIN')
-    Datasets.create(sysin_ds_name, 'SEQ')
-    idcams_sysin = ''' DEFINE NVSAM -
-        (NAME({}) -
-        VOLUMES({}) - 
-        DEVT(SYSDA)) '''.format(ds_name, volume)
-
-    Datasets.write(sysin_ds_name, idcams_sysin)
-    dd_statements = []
-    dd_statements.append(types.DDStatement(ddName="sysin", dataset=sysin_ds_name))
-    dd_statements.append(types.DDStatement(ddName="sysprint", dataset='*'))
-
-    try:
-        rc = MVSCmd.execute_authorized(pgm="idcams", args='', dds=dd_statements)
-        if rc != 0:
-            module.fail_json(msg="Non-zero return code received while executing MVSCmd to recatalog {}".format(ds_name), rc=rc)
-    
-    except Exception as err:
-        module.fail_json(msg="Failed to call IDCAMS to recatalog data set {}: {}".format(ds_name, str(err)))
-    
-    finally:
-        Datasets.delete(sysin_ds_name) 
-
-    return ds_name
-
-
 def _get_checksum(data):
     """ Calculate checksum for the given data """
     digest = hashlib.sha1()
@@ -575,51 +512,41 @@ def main():
     global module
 
     module = AnsibleModule(
-        argument_spec          = dict(
-            src                = dict(required=True, type='path'),
-            dest               = dict(required=True, type='path'),
-            is_uss             = dict(type='bool', default=False), 
-            is_vsam            = dict(type='bool', default=False),
-            use_qualifier      = dict(type='bool', default=False), 
-            is_binary          = dict(type='bool', default=False),
-            is_catalog         = dict(type='bool', default=True), 
-            volume             = dict(type='str'),
-            encoding           = dict(type='str', default='EBCDIC',choices=['EBCDIC','ASCII']),
-            content            = dict(type='str', no_log=True),
-            backup             = dict(type='bool', default=False),
-            force              = dict(type='bool', default=True),
-            validate           = dict(type='bool', default=False),
-            remote_src         = dict(type='bool', default=False),
-            checksum           = dict(type='str'),
-            wait_s             = dict(type='int', default=10),
-            _local_data        = dict(type='str'),
-            _size              = dict(type='int'),
-            _local_checksum    = dict(type='str')
+        argument_spec=dict(
+            src=dict(required=True, type='path'),
+            dest=dict(required=True, type='path'),
+            use_qualifier=dict(type='bool', default=False), 
+            is_binary=dict(type='bool', default=False),
+            encoding=dict(type='str', default='EBCDIC',choices=['EBCDIC','ASCII']),
+            content=dict(type='str', no_log=True),
+            backup=dict(type='bool', default=False),
+            force=dict(type='bool', default=True),
+            validate=dict(type='bool', default=False),
+            remote_src=dict(type='bool', default=False),
+            checksum=dict(type='str'),
+            _local_data=dict(type='str'),
+            _size=dict(type='int'),
+            _local_checksum=dict(type='str')
         )
     )
 
-    src                = module.params['src']
-    b_src              = to_bytes(src, errors='surrogate_or_strict')
-    dest               = module.params['dest']
-    b_dest             = to_bytes(dest, errors='surrogate_or_strict')
-    is_uss             = module.params['is_uss']
-    remote_src         = module.params['remote_src']
-    is_vsam            = module.params['is_vsam']
-    use_qualifier      = module.params['use_qualifier']
-    is_binary          = module.params['is_binary']
-    is_catalog         = module.params['is_catalog']
-    volume             = module.params['volume']
-    encoding           = module.params['encoding']
-    content            = module.params['content']
-    validate           = module.params['validate']
-    wait_s             = module.params['wait_s']
-    _local_checksum    = module.params['_local_checksum']
-    ds_name            = ''
-    size               = ''
+    src = module.params['src']
+    b_src = to_bytes(src, errors='surrogate_or_strict')
+    dest = module.params['dest']
+    b_dest = to_bytes(dest, errors='surrogate_or_strict')
+    remote_src = module.params['remote_src']
+    use_qualifier = module.params['use_qualifier']
+    is_binary = module.params['is_binary']
+    encoding = module.params['encoding']
+    content = module.params['content']
+    validate = module.params['validate']
+    _local_checksum = module.params['_local_checksum']
+    ds_name = ''
+    size = ''
 
-    check_rc           = False
-    copy_rc            = False
-    changed            = False
+    check_rc = False
+    copy_rc = False
+    changed = False
 
 
     if remote_src:
@@ -631,14 +558,11 @@ def main():
     try:
         ds_type = _determine_data_set_type(dest)
     except UncatalogedDatasetError as err:
-        if not is_catalog:
-            _recatalog_data_set(dest)
-            time.sleep(wait_s)
-            ds_type = _determine_data_set_type(dest)
-        else:
-            rc = Datasets.create(dest, "SEQ", size, "FB")
-            if rc != 0:
-                module.fail_json("Unable to allocate data set to copy {}".format(src))
+        module.fail_json(msg=str(err))
+
+    rc = Datasets.create(dest, "SEQ", size, "FB")
+    if rc != 0:
+        module.fail_json("Unable to allocate data set to copy {}".format(src))
     
     # Copy to sequential data set
     if ds_type == 'PS':
@@ -671,7 +595,7 @@ class AnsibleModuleError(Exception):
 
 class UncatalogedDatasetError(Exception):
     def __init__(self, ds_name):
-        super().__init__("Data set {} is not in catalog. If you would like to copy to the data set, please specify its volume".format(ds_name))
+        super().__init__("Data set {} is not in catalog. If you would like to copy to the data set, please catalog it first".format(ds_name))
 
 if __name__ == '__main__':
     main()

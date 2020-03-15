@@ -3,7 +3,7 @@
 ###############################################################################
 
 ###############################################################################
-# This sample playbook demonstrates using various modules included in the 
+# This sample playbook demonstrates using various modules included in the
 # Red Hat Ansible Certified Content for IBM Z core collection.
 #
 # Usage:
@@ -20,11 +20,9 @@
     - ibm.ibm_zos_core
   gather_facts: no
 
-  environment:
-    "{{ environment_vars }}"
+  environment: "{{ environment_vars }}"
 
   tasks:
-
     # Ping the host
     - name: Ping host - {{ inventory_hostname }}
       ping:
@@ -43,7 +41,7 @@
       shell: "echo {{ lookup('file', playbook_dir + '/files/HELLO.jcl') | quote }} > /tmp/ansible/jcl/HELLO"
       changed_when: true
 
-    - name: Submit HELLO jcl program  
+    - name: Submit HELLO jcl program
       zos_job_submit:
         src: /tmp/ansible/jcl/HELLO
         location: USS

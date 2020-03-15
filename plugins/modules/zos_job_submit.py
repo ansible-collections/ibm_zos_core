@@ -1,73 +1,95 @@
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 # Copyright (c) IBM Corporation 2019, 2020
 # Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+from __future__ import absolute_import, division, print_function
 
-DOCUMENTATION=r'''
+__metaclass__ = type
+
+ANSIBLE_METADATA = {
+    "metadata_version": "1.1",
+    "status": ["preview"],
+    "supported_by": "community",
+}
+
+DOCUMENTATION = r"""
 module: zos_job_submit
-author: Xiao Yuan Ma <bjmaxy@cn.ibm.com>
-short_description: The zos_job_submit module allows you to submit a job and optionally monitor for its execution.
+author: "Xiao Yuan Ma (@bjmaxy)"
+short_description: Submit JCL
 description:
-  - Submit JCL from DATS_SET , USS, or LOCAL location.
-  - Optionally wait for the job output until the job finishes.
-  - For the uncatalogued dataset, specify the volume serial number.
+    - Submit JCL from DATA_SET , USS, or LOCAL location.
+    - Submit a job and optionally monitor for its execution
+    - Optionally wait for the job output until the job finishes.
+    - For the uncataloged dataset, specify the volume serial number.
 version_added: "2.9"
 options:
   src:
     required: true
+    type: str
     description:
-      - The source directory or data set containing the JCL to submit. 
-      - It could be Physical sequential data set or a partitioned data set qualified 
-        by a member or a path. (e.g "USER.TEST","USER.JCL(TEST)")
+      - The source directory or data set containing the JCL to submit.
+      - It could be physical sequential data set or a partitioned data set
+        qualified by a member or a path. (e.g "USER.TEST","USER.JCL(TEST)")
       - Or an USS file. (e.g "/u/tester/demo/sample.jcl")
-      - Or an LOCAL file in ansible control node.(e.g "/User/tester/ansible-playbook/sample.jcl") 
+      - Or an LOCAL file in ansible control node.
+        (e.g "/User/tester/ansible-playbook/sample.jcl")
   location:
     required: true
     default: DATA_SET
+    type: str
     choices:
       - DATA_SET
       - USS
       - LOCAL
     description:
-      - The JCL location. Usually it's DATA_SET or USS or LOCAL, Default DATA_SET.
+      - The JCL location. Supported options are DATA_SET, USS or LOCAL.
       - DATA_SET can be a PDS, PDSE, or sequential data set.
+      - USS means the JCL location is located in Unix System Services (USS).
       - LOCAL means locally to the ansible control node.
   wait:
-    required: false 
-    choices:
-      - true
-      - false
+    required: false
+    default: false
+    type: bool
     description:
       - Wait for the Job to finish and capture the output. Default is false.
-      - User can specify the wait time in option duration_s, default is 60s. 
+      - User can specify the wait time, see option ``duration_s``.
   wait_time_s:
-    required: false 
+    required: false
+    default: 60
     type: int
     description:
-      - When wait is true, the module will wait for a maximum of 60s by default. 
-      - User can set the wait time manually in this option. 
+      - When wait is true, the module will wait for a maximum of 60 seconds by
+        default.
+      - User can set the wait time manually in this option.
+  max_rc:
+    required: false
+    type: int
+    description:
+      - Specifies the maximum return code for the submitted job that should be
+        allowed without failing the module.
+      - The ``max_rc`` is only checked when ``wait=true``, otherwise, it is
+        ignored.
   return_output:
-    required: false 
-    choices:
-      - true
-      - false 
+    required: false
+    default: true
+    type: bool
     description:
       - Whether to print the DD output.
-      - If false, null will be returned in ddnames field.
+      - If false, an empty list will be returned in ddnames field.
   volume:
     required: false
+    type: str
     description:
-      - The volume serial (VOLSER) where the data set resides. The option 
-        is required only when the data set is not catalogued on the system. 
+      - The volume serial (VOLSER) where the data set resides. The option
+        is required only when the data set is not cataloged on the system.
         Ignored for USS and LOCAL.
   encoding:
     required: false
-    default: UTF-8 
-    choices: 
+    default: UTF-8
+    type: str
+    choices:
       - UTF-8
       - ASCII
       - ISO-8859-1
@@ -75,297 +97,488 @@ options:
       - IBM-037
       - IBM-1047
     description:
-      - The encoding of the local file on the ansible control node. 
-      - If it is UTF-8, ASCII, ISO-8859-1, the file will be converted to EBCDIC on the z/OS platform. 
-      - If it is EBCDIC, IBM-037, IBM-1047, the file will be unchanged when submitted on the z/OS platform. 
-'''
+      - The encoding of the local JCL file on the ansible control node.
+      - If it is UTF-8, ASCII, ISO-8859-1, the file will be converted to EBCDIC
+        on the z/OS platform.
+      - If it is EBCDIC, IBM-037, IBM-1047, the file will be unchanged when
+        submitted on the z/OS platform.
+"""
 
-RETURN = '''
-zos_job_output:
-    description: list of job output.
-    returned: success
-    type: list[dict]
-    contains:
-        job_id:
-            description: job ID
-            type: str
-        job_name:
-            description: job name
-            type: str
-        subsystem:
-            description: subsystem
-            type: str
-        class:
-            description: class
-            type: str
-        content-type:
-            description: content type
-            type: str
-        ddnames:
-            description: list of data definition name
-            type: list[dict]
-            contains:
-                ddname:
-                    description: data definition name
-                    type: str
-                record-count:
-                    description: record count
-                    type: int
-                id:
-                    description: id
-                    type: str
-                stepname:
-                    description: step name
-                    type: str
-                procstep:
-                    description: proc step
-                    type: str
-                byte-count:
-                    description: byte count
-                    type: int
-                content:
-                    description: ddname content
-                    type: list[str]
-'''
-
-RETURN = r'''
+RETURN = r"""
 jobs:
-    description: The list of jobs that matches the job name or job id and optionally the owner
-    returned: success
-    type: list[dict]
-    contains:
-       job_name:
-          description: job name
+  description:
+     List of jobs output
+  returned: success
+  type: list
+  elements: dict
+  contains:
+    job_id:
+      description:
+         The z/OS job ID of the job containing the spool file.
+      type: str
+      sample: JOB00134
+    job_name:
+      description:
+         The name of the batch job.
+      type: str
+      sample: HELLO
+    duration:
+      description: The total lapsed time the JCL ran for.
+      type: int
+      sample: 0
+    ddnames:
+      description:
+         Data definition names.
+      type: list
+      elements: dict
+      contains:
+        ddname:
+          description:
+             Data definition name.
           type: str
-       job_id:
-          description: job name
-          type: str
-       change:
-          description: change
-          type: bool
-       failed:
-          description: failed
-          type: bool
-       duration:
-          description: duration
+          sample: JESMSGLG
+        record_count:
+          description:
+              Count of the number of lines in a print data set.
           type: int
-       ddnames:
-           description: all ddnames
-           type: list[dict]
-           contains:
-               ddname:
-                 description: ddname
-                 type: str
-               step_name:
-                  description: step name
-                  type: str
-               content:
-                  description: conetent
-                  type: str
-               ret_code: 
-                   description: return code
-                   type: list[dict]
-                   contains:
-                      msg:
-                        description: contains
-                        type: str
-                      code:
-                        description: code
-                        type: str
-                      msg_details: 
-                        description: message
-                        type: str
-changed: 
-    description: Indicates if any changes were made during module operation
-    type: bool  
+          sample: 17
+        id:
+          description:
+             The file ID
+          type: str
+          sample: 2
+        stepname:
+          description:
+              A step name is name that identifies the job step so that other
+              JCL statements or the operating system can refer to it.
+          type: str
+          sample: JES2
+        procstep:
+          description:
+             Identifies the set of statements inside JCL grouped together to
+             perform a particular function.
+          type: str
+          sample: PROC1
+        byte_count:
+          description:
+              Byte size in a print data set.
+          type: int
+          sample: 574
+        content:
+          description:
+             The ddname content.
+          type: list[str]
+          sample:
+             [ "         1 //HELLO    JOB (T043JM,JM00,1,0,0,0),'HELLO WORLD - JRM',CLASS=R,       JOB00134",
+               "           //             MSGCLASS=X,MSGLEVEL=1,NOTIFY=S0JM                                ",
+               "           //*                                                                             ",
+               "           //* PRINT \"HELLO WORLD\" ON JOB OUTPUT                                          ",
+               "           //*                                                                             ",
+               "           //* NOTE THAT THE EXCLAMATION POINT IS INVALID EBCDIC FOR JCL                   ",
+               "           //*   AND WILL CAUSE A JCL ERROR                                                ",
+               "           //*                                                                             ",
+               "         2 //STEP0001 EXEC PGM=IEBGENER                                                    ",
+               "         3 //SYSIN    DD DUMMY                                                             ",
+               "         4 //SYSPRINT DD SYSOUT=*                                                          ",
+               "         5 //SYSUT1   DD *                                                                 ",
+               "         6 //SYSUT2   DD SYSOUT=*                                                          ",
+               "         7 //                                                                              "
+             ]
+    ret_code:
+      description:
+         Return code output collected from job log.
+      type: dict
+      contains:
+        msg:
+          description:
+            Return code or abend resulting from the job submission.
+          type: str
+          sample: CC 0000
+        msg_code:
+          description:
+            Return code extracted from the `msg` so that it can better
+            evaluated. For example , ABEND(S0C4) would yield ""S0C4".
+          type: str
+          sample: S0C4
+        msg_txt:
+          description:
+             Returns additional information related to the job.
+          type: str
+          sample: "No job can be located with this job name: HELLO"
+        code:
+          description:
+             Return code converted to integer value (when possible)
+          type: int
+          sample: 00
+      sample:
+         - "code": 0
+         -  "msg": "CC 0000"
+         - "msg_code": "0000"
+         - "msg_txt": ""
+  sample:
+     [
+          {
+              "class": "K",
+              "content_type": "JOB",
+              "ddnames": [
+                  {
+                      "byte_count": "677",
+                      "content": [
+                          "1                       J E S 2  J O B  L O G  --  S Y S T E M  S T L 1  --  N O D E  S T L 1            ",
+                          "0 ",
+                          " 12.50.08 JOB00361 ---- FRIDAY,    13 MAR 2020 ----",
+                          " 12.50.08 JOB00361  IRR010I  USERID OMVSADM  IS ASSIGNED TO THIS JOB.",
+                          " 12.50.08 JOB00361  ICH70001I OMVSADM  LAST ACCESS AT 12:50:03 ON FRIDAY, MARCH 13, 2020",
+                          " 12.50.08 JOB00361  $HASP373 DBDGEN00 STARTED - INIT 15   - CLASS K        - SYS STL1",
+                          " 12.50.08 JOB00361  SMF000I  DBDGEN00    C           ASMA90      0000",
+                          " 12.50.09 JOB00361  SMF000I  DBDGEN00    L           IEWL        0000",
+                          " 12.50.09 JOB00361  $HASP395 DBDGEN00 ENDED - RC=0000",
+                          "0------ JES2 JOB STATISTICS ------",
+                          "-  13 MAR 2020 JOB EXECUTION DATE",
+                          "-           28 CARDS READ",
+                          "-          158 SYSOUT PRINT RECORDS",
+                          "-            0 SYSOUT PUNCH RECORDS",
+                          "-           12 SYSOUT SPOOL KBYTES",
+                          "-         0.00 MINUTES EXECUTION TIME"
+                      ],
+                      "ddname": "JESMSGLG",
+                      "id": "2",
+                      "procstep": "",
+                      "record_count": "16",
+                      "stepname": "JES2"
+                  },
+                  {
+                      "byte_count": "2136",
+                      "content": [
+                          "         1 //DBDGEN00 JOB MSGLEVEL=1,MSGCLASS=E,CLASS=K,                           JOB00361",
+                          "           //   LINES=999999,TIME=1440,REGION=0M,                                          ",
+                          "           //   MEMLIMIT=NOLIMIT                                                           ",
+                          "         2 /*JOBPARM  SYSAFF=*                                                             ",
+                          "           //*                                                                             ",
+                          "         3 //DBDGEN   PROC MBR=TEMPNAME                                                    ",
+                          "           //C        EXEC PGM=ASMA90,                                                     ",
+                          "           //             PARM='OBJECT,NODECK,NOLIST'                                      ",
+                          "           //SYSLIB   DD DISP=SHR,                                                         ",
+                          "           //      DSN=IMSBLD.I15RTSMM.SDFSMAC                                             ",
+                          "           //SYSLIN   DD DISP=(NEW,PASS),RECFM=F,LRECL=80,BLKSIZE=80,                      ",
+                          "           //         UNIT=SYSDA,SPACE=(CYL,(10,5),RLSE,,)                                 ",
+                          "           //SYSUT1   DD DISP=(NEW,DELETE),UNIT=SYSDA,SPACE=(CYL,                          ",
+                          "           //         (10,5),,,)                                                           ",
+                          "           //SYSPRINT DD SYSOUT=*                                                          ",
+                          "           //L        EXEC PGM=IEWL,                                                       ",
+                          "           //             PARM='XREF,NOLIST',                                              ",
+                          "           //             COND=(0,LT,C)                                                    ",
+                          "           //SYSLMOD  DD DISP=SHR,                                                         ",
+                          "           //      DSN=IMSTESTL.IMS1.DBDLIB(&MBR)                                          ",
+                          "           //SYSLIN   DD DSN=*.C.SYSLIN,DISP=(OLD,DELETE)                                  ",
+                          "           //SYSPRINT DD SYSOUT=*                                                          ",
+                          "           //*                                                                             ",
+                          "           //         PEND                                                                 ",
+                          "         4 //DLORD6   EXEC DBDGEN,                                                         ",
+                          "           //             MBR=DLORD6                                                       ",
+                          "         5 ++DBDGEN   PROC MBR=TEMPNAME                                                    ",
+                          "         6 ++C        EXEC PGM=ASMA90,                                                     ",
+                          "           ++             PARM='OBJECT,NODECK,NOLIST'                                      ",
+                          "         7 ++SYSLIB   DD DISP=SHR,                                                         ",
+                          "           ++      DSN=IMSBLD.I15RTSMM.SDFSMAC                                             ",
+                          "         8 ++SYSLIN   DD DISP=(NEW,PASS),RECFM=F,LRECL=80,BLKSIZE=80,                      ",
+                          "           ++         UNIT=SYSDA,SPACE=(CYL,(10,5),RLSE,,)                                 ",
+                          "         9 ++SYSUT1   DD DISP=(NEW,DELETE),UNIT=SYSDA,SPACE=(CYL,                          ",
+                          "           ++         (10,5),,,)                                                           ",
+                          "        10 ++SYSPRINT DD SYSOUT=*                                                          ",
+                          "        11 //SYSIN    DD DISP=SHR,                                                         ",
+                          "           //      DSN=IMSTESTL.IMS1.DBDSRC(DLORD6)                                        ",
+                          "        12 ++L        EXEC PGM=IEWL,                                                       ",
+                          "           ++             PARM='XREF,NOLIST',                                              ",
+                          "           ++             COND=(0,LT,C)                                                    ",
+                          "        13 ++SYSLMOD  DD DISP=SHR,                                                         ",
+                          "           ++      DSN=IMSTESTL.IMS1.DBDLIB(&MBR)                                          ",
+                          "           IEFC653I SUBSTITUTION JCL - DISP=SHR,DSN=IMSTESTL.IMS1.DBDLIB(DLORD6)",
+                          "        14 ++SYSLIN   DD DSN=*.C.SYSLIN,DISP=(OLD,DELETE)                                  ",
+                          "        15 ++SYSPRINT DD SYSOUT=*                                                          ",
+                          "           ++*                                                                             "
+                      ],
+                      "ddname": "JESJCL",
+                      "id": "3",
+                      "procstep": "",
+                      "record_count": "47",
+                      "stepname": "JES2"
+                  },
+                  {
+                      "byte_count": "2414",
+                      "content": [
+                          "  STMT NO. MESSAGE",
+                          "         4 IEFC001I PROCEDURE DBDGEN WAS EXPANDED USING INSTREAM PROCEDURE DEFINITION",
+                          " ICH70001I OMVSADM  LAST ACCESS AT 12:50:03 ON FRIDAY, MARCH 13, 2020",
+                          " IEF236I ALLOC. FOR DBDGEN00 C DLORD6",
+                          " IEF237I 083C ALLOCATED TO SYSLIB",
+                          " IGD100I 0940 ALLOCATED TO DDNAME SYSLIN   DATACLAS (        )",
+                          " IGD100I 0942 ALLOCATED TO DDNAME SYSUT1   DATACLAS (        )",
+                          " IEF237I JES2 ALLOCATED TO SYSPRINT",
+                          " IEF237I 01A0 ALLOCATED TO SYSIN",
+                          " IEF142I DBDGEN00 C DLORD6 - STEP WAS EXECUTED - COND CODE 0000",
+                          " IEF285I   IMSBLD.I15RTSMM.SDFSMAC                      KEPT          ",
+                          " IEF285I   VOL SER NOS= IMSBG2.                            ",
+                          " IEF285I   SYS20073.T125008.RA000.DBDGEN00.R0101894     PASSED        ",
+                          " IEF285I   VOL SER NOS= 000000.                            ",
+                          " IEF285I   SYS20073.T125008.RA000.DBDGEN00.R0101895     DELETED       ",
+                          " IEF285I   VOL SER NOS= 333333.                            ",
+                          " IEF285I   OMVSADM.DBDGEN00.JOB00361.D0000101.?         SYSOUT        ",
+                          " IEF285I   IMSTESTL.IMS1.DBDSRC                         KEPT          ",
+                          " IEF285I   VOL SER NOS= USER03.                            ",
+                          " IEF373I STEP/C       /START 2020073.1250",
+                          " IEF032I STEP/C       /STOP  2020073.1250 ",
+                          "         CPU:     0 HR  00 MIN  00.03 SEC    SRB:     0 HR  00 MIN  00.00 SEC    ",
+                          "         VIRT:   252K  SYS:   240K  EXT:  1876480K  SYS:    11896K",
+                          "         ATB- REAL:                  1048K  SLOTS:                     0K",
+                          "              VIRT- ALLOC:      14M SHRD:       0M",
+                          " IEF236I ALLOC. FOR DBDGEN00 L DLORD6",
+                          " IEF237I 01A0 ALLOCATED TO SYSLMOD",
+                          " IEF237I 0940 ALLOCATED TO SYSLIN",
+                          " IEF237I JES2 ALLOCATED TO SYSPRINT",
+                          " IEF142I DBDGEN00 L DLORD6 - STEP WAS EXECUTED - COND CODE 0000",
+                          " IEF285I   IMSTESTL.IMS1.DBDLIB                         KEPT          ",
+                          " IEF285I   VOL SER NOS= USER03.                            ",
+                          " IEF285I   SYS20073.T125008.RA000.DBDGEN00.R0101894     DELETED       ",
+                          " IEF285I   VOL SER NOS= 000000.                            ",
+                          " IEF285I   OMVSADM.DBDGEN00.JOB00361.D0000102.?         SYSOUT        ",
+                          " IEF373I STEP/L       /START 2020073.1250",
+                          " IEF032I STEP/L       /STOP  2020073.1250 ",
+                          "         CPU:     0 HR  00 MIN  00.00 SEC    SRB:     0 HR  00 MIN  00.00 SEC    ",
+                          "         VIRT:    92K  SYS:   256K  EXT:     1768K  SYS:    11740K",
+                          "         ATB- REAL:                  1036K  SLOTS:                     0K",
+                          "              VIRT- ALLOC:      11M SHRD:       0M",
+                          " IEF375I  JOB/DBDGEN00/START 2020073.1250",
+                          " IEF033I  JOB/DBDGEN00/STOP  2020073.1250 ",
+                          "         CPU:     0 HR  00 MIN  00.03 SEC    SRB:     0 HR  00 MIN  00.00 SEC    "
+                      ],
+                      "ddname": "JESYSMSG",
+                      "id": "4",
+                      "procstep": "",
+                      "record_count": "44",
+                      "stepname": "JES2"
+                  },
+                  {
+                      "byte_count": "1896",
+                      "content": [
+                          "1z/OS V2 R2 BINDER     12:50:08 FRIDAY MARCH 13, 2020                                                                    ",
+                          " BATCH EMULATOR  JOB(DBDGEN00) STEP(DLORD6  ) PGM= IEWL      PROCEDURE(L       )                                         ",
+                          " IEW2278I B352 INVOCATION PARAMETERS - XREF,NOLIST                                                                       ",
+                          " IEW2650I 5102 MODULE ENTRY NOT PROVIDED.  ENTRY DEFAULTS TO SECTION DLORD6.                                             ",
+                          "                                                                                                                         ",
+                          "                                                                                                                         ",
+                          "1                                       C R O S S - R E F E R E N C E  T A B L E                                         ",
+                          "                                        _________________________________________                                        ",
+                          "                                                                                                                         ",
+                          " TEXT CLASS = B_TEXT                                                                                                     ",
+                          "                                                                                                                         ",
+                          " ---------------  R E F E R E N C E  --------------------------  T A R G E T  -------------------------------------------",
+                          "   CLASS                            ELEMENT       |                                            ELEMENT                  |",
+                          "   OFFSET SECT/PART(ABBREV)          OFFSET  TYPE | SYMBOL(ABBREV)   SECTION (ABBREV)           OFFSET CLASS NAME       |",
+                          "                                                  |                                                                     |",
+                          "                                        *** E N D  O F  C R O S S  R E F E R E N C E ***                                 ",
+                          "1z/OS V2 R2 BINDER     12:50:08 FRIDAY MARCH 13, 2020                                                                    ",
+                          " BATCH EMULATOR  JOB(DBDGEN00) STEP(DLORD6  ) PGM= IEWL      PROCEDURE(L       )                                         ",
+                          " IEW2850I F920 DLORD6 HAS BEEN SAVED WITH AMODE  24 AND RMODE    24.  ENTRY POINT NAME IS DLORD6.                        ",
+                          " IEW2231I 0481 END OF SAVE PROCESSING.                                                                                   ",
+                          " IEW2008I 0F03 PROCESSING COMPLETED.  RETURN CODE =  0.                                                                  ",
+                          "                                                                                                                         ",
+                          "                                                                                                                         ",
+                          "                                                                                                                         ",
+                          "1----------------------                                                                                                  ",
+                          " MESSAGE SUMMARY REPORT                                                                                                  ",
+                          " ----------------------                                                                                                  ",
+                          "  TERMINAL MESSAGES      (SEVERITY = 16)                                                                                 ",
+                          "  NONE                                                                                                                   ",
+                          "                                                                                                                         ",
+                          "  SEVERE MESSAGES        (SEVERITY = 12)                                                                                 ",
+                          "  NONE                                                                                                                   ",
+                          "                                                                                                                         ",
+                          "  ERROR MESSAGES         (SEVERITY = 08)                                                                                 ",
+                          "  NONE                                                                                                                   ",
+                          "                                                                                                                         ",
+                          "  WARNING MESSAGES       (SEVERITY = 04)                                                                                 ",
+                          "  NONE                                                                                                                   ",
+                          "                                                                                                                         ",
+                          "  INFORMATIONAL MESSAGES (SEVERITY = 00)                                                                                 ",
+                          "  2008  2231  2278  2650  2850                                                                                           ",
+                          "                                                                                                                         ",
+                          "                                                                                                                         ",
+                          "  **** END OF MESSAGE SUMMARY REPORT ****                                                                                ",
+                          "                                                                                                                         "
+                      ],
+                      "ddname": "SYSPRINT",
+                      "id": "102",
+                      "procstep": "L",
+                      "record_count": "45",
+                      "stepname": "DLORD6"
+                  }
+              ],
+              "job_id": "JOB00361",
+              "job_name": "DBDGEN00",
+              "owner": "OMVSADM",
+              "ret_code": {
+                  "code": 0,
+                  "msg": "CC 0000",
+                  "msg_code": "0000",
+                  "msg_txt": ""
+              },
+              "subsystem": "STL1"
+          }
+     ]
+changed:
+  description: Indicates if any changes were made during module operation.
+  type: bool
+  returned: success
 message:
-    description: The output message that the sample module generates
-    returned: success
-    type: str 
+  description: The output message that the sample module generates.
+  returned: success
+  type: str
+  sample: Submit JCL operation succeeded.
+"""
 
-'''
+EXAMPLES = r"""
+- name: Submit the JCL
+  zos_job_submit:
+    src: TEST.UTILs(SAMPLE)
+    location: DATA_SET
+    wait: false
+    volume:
+  register: response
 
-EXAMPLES = r'''
-  - name: Submit the JCL 
-    zos_job_submit:
-       src: TEST.UTILs(SAMPLE)
-       location: DATA_SET
-       wait: false
-       volume:
-    register: response
-  
-  - name: Submit USS job
-    zos_job_submit:
-        src: /u/tester/demo/sample.jcl
-        location: USS
-        wait: false
-        volume:
-        return_output: false
-  
-  - name: Submit LOCAL job
-    zos_job_submit:
-      src: /Users/maxy/ansible-playbooks/provision/sample.jcl
-      location: LOCAL
-      wait: false
-      encoding: UTF-8
-      volume:
-  
-  - name: Submit uncatalogued PDS job
-    zos_job_submit:
-       src: TEST.UNCATLOG.JCL(SAMPLE)
-       location: DATA_SET
-       wait: false
-       volume: P2SS01
-  
-  - name: Submit long running PDS job, and wait for the job to finish
-    zos_job_submit:
-       src: TEST.UTILs(LONGRUN)
-       location: DATA_SET
-       wait: true  
-       wait_time_s: 30    
+- name: Submit USS job
+  zos_job_submit:
+    src: /u/tester/demo/sample.jcl
+    location: USS
+    wait: false
+    volume:
+    return_output: false
 
-EXAMPLE RESULTS:
-     "msg": {
-         "jobs":[
-      {
-         "job_id":"JOB32881",
-         "job_name":"TEST",
-         "changed":true,
-         "failed":false,
-         "duration":0,
-         "ddnames":[
-            {
-               "ddname":"JESMSGLG",
-               "step_name":"JES2",
-               "content":[
-                  "J E S 2  J O B  L O G  --  S Y S T E M  M V 2 C  --  N O D E ...."
-               ]
-            },
-            {
-               "ddname":"JESJCL",
-               "step_name":"JES2",
-               "content":[
-                  "1 //TEST JOB                       JOB32881"
-               ]
-            },
-            {
-               "ddname":"JESYSMSG",
-               "step_name":"JES2",
-               "content":[
-                  "ICH70001I TESTER"
-               ]
-            }
-         ],
-         "ret_code":{
-            "msg":  "CC 0000" ,
-            "code": "0000" ,
-            "msg_detail": "Submit JCL operation succeeded",
-         },
-      },
-   ]
-'''
+- name: Submit LOCAL job
+  zos_job_submit:
+    src: /Users/maxy/ansible-playbooks/provision/sample.jcl
+    location: LOCAL
+    wait: false
+    encoding: UTF-8
+    volume:
 
-from ansible.module_utils.basic import *
-from zoautil_py import Jobs
+- name: Submit uncatalogued PDS job
+  zos_job_submit:
+    src: TEST.UNCATLOG.JCL(SAMPLE)
+    location: DATA_SET
+    wait: false
+    volume: P2SS01
+
+- name: Submit long running PDS job, and wait for the job to finish
+  zos_job_submit:
+    src: TEST.UTILs(LONGRUN)
+    location: DATA_SET
+    wait: true
+    wait_time_s: 30
+"""
+
+from ansible.module_utils.basic import AnsibleModule
+from pipes import quote
+
+try:
+    from zoautil_py import Jobs
+except Exception:
+    Jobs = ""
 from time import sleep
-from os import chmod, path
+from os import chmod, path, remove
 from tempfile import NamedTemporaryFile
 import re
-
-ZOAUTIL_TEMP_USS = "/tmp/ansible-temp-1"
-ZOAUTIL_TEMP_USS2 = "/tmp/ansible-temp-2"
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import job_output
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
+    BetterArgParser,
+)
+from stat import S_IEXEC, S_IREAD, S_IWRITE
 
 """time between job query checks to see if a job has completed, default 1 second"""
 POLLING_INTERVAL = 1
 POLLING_COUNT = 60
-POLLING_THRESHOLD = 60
+
 
 def submit_pds_jcl(src):
     """ A wrapper around zoautil_py Jobs submit to raise exceptions on failure. """
     jobId = Jobs.submit(src)
-    if jobId == None:
-        raise SubmitJCLError('SUBMIT JOB FAILED: ' + 'NO JOB ID IS RETURNED. PLEASE CHECK THE JCL.')
+    if jobId is None:
+        raise SubmitJCLError(
+            "SUBMIT JOB FAILED: " + "NO JOB ID IS RETURNED. PLEASE CHECK THE JCL."
+        )
     return jobId
 
 
-def submit_uss_jcl(src,module):
+def submit_uss_jcl(src, module):
     """ Submit uss jcl. Use uss command submit -j jclfile. """
-    rc, stdout, stderr = module.run_command(['submit', '-j', src])
+    rc, stdout, stderr = module.run_command(["submit", "-j", src])
     if rc != 0:
-        raise SubmitJCLError('SUBMIT JOB FAILED:  Stderr :' + stderr)
-    if 'Error' in stderr:
-        raise SubmitJCLError('SUBMIT JOB FAILED: ' + stderr)
-    if 'Not accepted by JES' in stderr:
-        raise SubmitJCLError('SUBMIT JOB FAILED: ' + stderr)
-    if stdout !=  '':
+        raise SubmitJCLError("SUBMIT JOB FAILED:  Stderr :" + stderr)
+    if "Error" in stderr:
+        raise SubmitJCLError("SUBMIT JOB FAILED: " + stderr)
+    if "Not accepted by JES" in stderr:
+        raise SubmitJCLError("SUBMIT JOB FAILED: " + stderr)
+    if stdout != "":
         jobId = stdout.replace("\n", "").strip()
     else:
-        raise SubmitJCLError('SUBMIT JOB FAILED: ' + 'NO JOB ID IS RETURNED. PLEASE CHECK THE JCL.')
+        raise SubmitJCLError(
+            "SUBMIT JOB FAILED: " + "NO JOB ID IS RETURNED. PLEASE CHECK THE JCL."
+        )
     return jobId
 
-def submit_jcl_in_volume(src,vol,module):
-    script = """/*REXX*/                                     
-ARG P1 P2                                              
-ADDRESS TSO                                            
-CALL BPXWDYN "ALLOC DA('"P1"') FI(TEST) SHR VOL("P2")" 
-ADDRESS MVS "EXECIO * DISKR TEST (STEM A."             
-X = SUBMIT('A.')                                       
-SAY X                                                  
+
+def submit_jcl_in_volume(src, vol, module):
+    script = """/*REXX*/
+ARG P1 P2
+ADDRESS TSO
+CALL BPXWDYN "ALLOC DA('"P1"') FI(TEST) SHR VOL("P2")"
+ADDRESS MVS "EXECIO * DISKR TEST (STEM A."
+X = SUBMIT('A.')
+SAY X
 """
     rc, stdout, stderr = copy_rexx_and_run(script, src, vol, module)
-    if 'Error' in stdout:
-        raise SubmitJCLError('SUBMIT JOB FAILED: ' + stdout)
-    elif '' == stdout:
-        raise SubmitJCLError('SUBMIT JOB FAILED, NO JOB ID IS RETURNED : ' + stdout)
+    if "Error" in stdout:
+        raise SubmitJCLError("SUBMIT JOB FAILED: " + stdout)
+    elif "" == stdout:
+        raise SubmitJCLError("SUBMIT JOB FAILED, NO JOB ID IS RETURNED : " + stdout)
     jobId = stdout.replace("\n", "").strip()
     return jobId
 
-def copy_rexx_and_run(script,src,vol,module):
+
+def copy_rexx_and_run(script, src, vol, module):
     delete_on_close = True
     tmp_file = NamedTemporaryFile(delete=delete_on_close)
-    with open(tmp_file.name, 'w') as f:
+    with open(tmp_file.name, "w") as f:
         f.write(script)
-    chmod(tmp_file.name, 0o755)
+    chmod(tmp_file.name, S_IEXEC | S_IREAD | S_IWRITE)
     pathName = path.dirname(tmp_file.name)
     scriptName = path.basename(tmp_file.name)
-    rc, stdout, stderr = module.run_command(['./' + scriptName, src, vol], cwd=pathName)
+    rc, stdout, stderr = module.run_command(["./" + scriptName, src, vol], cwd=pathName)
     return rc, stdout, stderr
 
-def get_job_info(jobId, return_output):
+
+def get_job_info(module, jobId, return_output):
     result = dict()
     try:
         output = query_jobs_status(jobId)
-    except SubmitJCLError as e:
-        raise SubmitJCLError(e.msg)
-    dds = Jobs.list_dds(job_id=jobId)
-    joboutput = []
-    if return_output is True:
-        for item in dds:
-            dataset = item.get("dataset")
-            stepname = item.get("stepname")
-            content = Jobs.read_output(jobId, stepname, dataset)
-            joboutput.append({
-                'stepname': stepname,
-                'ddname': dataset,
-                'content': content,
-            })
-        result['ddnames'] = joboutput
-    else:
-        result['ddnames'] = None
+    except SubmitJCLError:
+        raise
 
-    ret_code = parsing_job(output[0])
+    result = job_output(module, job_id=jobId)
 
-    result['job_id'] = jobId
-    result['changed'] = True
-    result['job_name'] = output[0].get("name")
-    result['ret_code'] = ret_code
+    if not return_output:
+        for job in result.get("jobs", []):
+            job["ddnames"] = []
+
+    result["changed"] = True
 
     return result
+
 
 def query_jobs_status(jobId):
     timeout = 10
     output = None
-    while output == None and timeout > 0:
+    while output is None and timeout > 0:
         try:
             output = Jobs.list(job_id=jobId)
             sleep(1)
@@ -373,188 +586,269 @@ def query_jobs_status(jobId):
         except IndexError:
             pass
         except Exception as e:
-            raise SubmitJCLError(str(e) +'''
-            The output is ''' + output)
-    if output == None and timeout == 0:
-        raise SubmitJCLError('THE JOB CAN NOT BE QUERIED FROM JES (TIMEOUT=10s). PLEASE CHECK THE ZOS SYSTEM. IT IS SLOW TO RESPONSE.')
+            raise SubmitJCLError(
+                repr(e)
+                + """
+            The output is """
+                + output
+            )
+    if output is None and timeout == 0:
+        raise SubmitJCLError(
+            "THE JOB CAN NOT BE QUERIED FROM JES (TIMEOUT=10s). PLEASE CHECK THE ZOS SYSTEM. IT IS SLOW TO RESPONSE."
+        )
     return output
+
 
 def parsing_job(job_raw):
     ret_code = {}
-    status_raw = job_raw.get('status')
-    if 'AC' in status_raw:
+    status_raw = job_raw.get("status")
+    if "AC" in status_raw:
         # the job is active
         ret_code = {
-            'msg': 'ACTIVE',
-            'code': 'null',
-            'msg_detail': 'Submit JCL operation succeeded.The job is still running.'
+            "msg": "ACTIVE",
+            "code": "null",
+            "msg_detail": "Submit JCL operation succeeded.The job is still running.",
         }
-    elif 'CC' in status_raw:
+    elif "CC" in status_raw:
         # status = 'Completed normally'
         ret_code = {
-            'msg': status_raw + ' ' + job_raw.get('return'),
-            'code': job_raw.get('return'),
-            'msg_detail': 'Submit JCL operation succeeded.'
+            "msg": status_raw + " " + job_raw.get("return"),
+            "code": job_raw.get("return"),
+            "msg_detail": "Submit JCL operation succeeded.",
         }
-    elif status_raw == 'ABEND':
+    elif status_raw == "ABEND":
         # status = 'Ended abnormally'
         ret_code = {
-            'msg': status_raw + ' ' + job_raw.get('return'),
-            'code': job_raw.get('return'),
-            'msg_detail': 'Submit JCL operation succeeded. But the job is ended abnormally.'
+            "msg": status_raw + " " + job_raw.get("return"),
+            "code": job_raw.get("return"),
+            "msg_detail": "Submit JCL operation succeeded. But the job is ended abnormally.",
         }
-    elif 'ABENDU' in status_raw:
+    elif "ABENDU" in status_raw:
         # status = 'Ended abnormally'
-        if job_raw.get('return') == '?':
+        if job_raw.get("return") == "?":
             ret_code = {
-                'msg': status_raw,
-                'code': status_raw[5:],
-                'msg_detail': 'Submit JCL operation succeeded but the job is ended abnormally'
+                "msg": status_raw,
+                "code": status_raw[5:],
+                "msg_detail": "Submit JCL operation succeeded but the job is ended abnormally",
             }
         else:
             ret_code = {
-                'msg': status_raw,
-                'code': job_raw.get('return'),
-                'msg_detail': 'Submit JCL operation succeeded but the job is ended abnormally.'
+                "msg": status_raw,
+                "code": job_raw.get("return"),
+                "msg_detail": "Submit JCL operation succeeded but the job is ended abnormally.",
             }
-    elif 'CANCELED' in status_raw:
+    elif "CANCELED" in status_raw:
         # status = status_raw
         ret_code = {
-            'msg': status_raw,
-            'code': 'null',
-            'msg_detail': 'Submit JCL operation succeeded but the job was canceled.'
+            "msg": status_raw,
+            "code": "null",
+            "msg_detail": "Submit JCL operation succeeded but the job was canceled.",
         }
-    elif 'JCLERR' in status_raw:
+    elif "JCLERR" in status_raw:
         ret_code = {
-            'msg': 'JCL ERROR',
-            'code': 'null',
-            'msg_detail': 'Submit JCL operation succeeded but the job has a JCL ERROR.'
+            "msg": "JCL ERROR",
+            "code": "null",
+            "msg_detail": "Submit JCL operation succeeded but the job has a JCL ERROR.",
         }
     else:
         # status = 'Unknown'
         ret_code = {
-            'msg': status_raw,
-            'code': job_raw.get('return'),
-            'msg_detail': 'Submit JCL operation succeeded. Please check the job status.'
+            "msg": status_raw,
+            "code": job_raw.get("return"),
+            "msg_detail": "Submit JCL operation succeeded. Please check the job status.",
         }
 
     return ret_code
 
+
+def assert_valid_return_code(max_rc, found_rc):
+    if found_rc is None or max_rc < int(found_rc):
+        raise SubmitJCLError("")
+
+
+def data_set_or_path_type(contents, resolve_dependencies):
+    if not re.fullmatch(
+        r"^(?:(?:[A-Z]{1}[A-Z0-9]{0,7})(?:[.]{1})){1,21}[A-Z]{1}[A-Z0-9]{0,7}(?:\([A-Z]{1}[A-Z0-9]{0,7}\)){0,1}$",
+        str(contents),
+        re.IGNORECASE,
+    ):
+        if not path.isabs(str(contents)):
+            raise ValueError(
+                'Invalid argument type for "{0}". expected "data_set" or "path"'.format(
+                    contents
+                )
+            )
+    return str(contents)
+
+
+def encoding_type(contents, resolve_dependencies):
+    if not re.fullmatch(r"^[A-Z0-9-]{2,}$", str(contents), re.IGNORECASE,):
+        raise ValueError(
+            'Invalid argument type for "{0}". expected "encoding"'.format(contents)
+        )
+    return str(contents)
+
+
 def run_module():
-    location_type = {'DATA_SET', 'USS', 'LOCAL', None}
 
     module_args = dict(
-        src=dict(type='str', required=True),
-        wait=dict(type='bool', required=False),
-        location=dict(type='str', required=True),
-        encoding=dict(type='str', required=False, default='UTF-8'),
-        volume=dict(type='str', required=False),
-        return_output=dict(type='bool', required=False, default='True'),
-        wait_time_s=dict(type='int', required=False)
+        src=dict(type="str", required=True),
+        wait=dict(type="bool", required=False),
+        location=dict(
+            type="str", default="DATA_SET", choices=["DATA_SET", "USS", "LOCAL"],
+        ),
+        encoding=dict(
+            type="str",
+            default="UTF-8",
+            choices=["UTF-8", "ASCII", "ISO-8859-1", "EBCDIC", "IBM-037", "IBM-1047"],
+        ),
+        volume=dict(type="str", required=False),
+        return_output=dict(type="bool", required=False, default=True),
+        wait_time_s=dict(type="int", default=60),
+        max_rc=dict(type="int", required=False),
+        temp_file=dict(type="path", required=False),
     )
 
-    module = AnsibleModule(
-        argument_spec=module_args,
-        supports_check_mode=True
-    )
-    result = dict(
-        changed=False,
-        job_id='',
-        job_name='',
-        return_code=8,
-        ddnames='This is a default job output.',
-        duration=0,
-        job_status='',
-        message=''
-    )
-    results = dict(
-        jobs=[]
-    )
-    jobs = []
+    module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
 
-    location = module.params.get("location")
-    volume = module.params.get("volume")
-    wait = module.params.get("wait")
-    src = module.params.get('src')
-    return_output = module.params.get('return_output')
-    wait_time_s = module.params.get('wait_time_s')
+    arg_defs = dict(
+        src=dict(arg_type=data_set_or_path_type, required=True),
+        wait=dict(arg_type="bool", required=False),
+        location=dict(
+            arg_type="str", default="DATA_SET", choices=["DATA_SET", "USS", "LOCAL"],
+        ),
+        encoding=dict(arg_type=encoding_type, default="UTF-8"),
+        volume=dict(arg_type="volume", required=False),
+        return_output=dict(arg_type="bool", default=True),
+        wait_time_s=dict(arg_type="int", required=False, default=60),
+        max_rc=dict(arg_type="int", required=False),
+        temp_file=dict(arg_type="path", required=False),
+    )
 
-    if wait_time_s is None:
-        wait_time_s = POLLING_THRESHOLD
-    else:
-        if wait_time_s <= 0:
-            module.fail_json(msg='The option wait_time_s is not valid it just be greater than 0.', **result)
+    parser = BetterArgParser(arg_defs)
+    parsed_args = parser.parse_args(module.params)
 
-    DSN_REGEX = r'^(([A-Z]{1}[A-Z0-9]{0,7})([.]{1})){1,21}[A-Z]{1}[A-Z0-9]{0,7}([(]([A-Z]{1}[A-Z0-9]{0,7})[)]){0,1}?$'
+    result = dict(changed=False)
+
+    location = parsed_args.get("location")
+    volume = parsed_args.get("volume")
+    wait = parsed_args.get("wait")
+    src = parsed_args.get("src")
+    return_output = parsed_args.get("return_output")
+    wait_time_s = parsed_args.get("wait_time_s")
+    max_rc = parsed_args.get("max_rc")
+    # get temporary file names for copied files
+    temp_file = parsed_args.get("temp_file")
+    if temp_file:
+        temp_file_2 = NamedTemporaryFile(delete=True)
+
+    if wait_time_s <= 0:
+        module.fail_json(
+            msg="The option wait_time_s is not valid it just be greater than 0.",
+            **result
+        )
+
+    DSN_REGEX = r"^(([A-Z]{1}[A-Z0-9]{0,7})([.]{1})){1,21}[A-Z]{1}[A-Z0-9]{0,7}([(]([A-Z]{1}[A-Z0-9]{0,7})[)]){0,1}?$"
 
     # calculate the job elapse time
     duration = 0
     try:
-
-        if location in location_type:
-            if location == 'DATA_SET' or location == None:
-                data_set_name_pattern = re.compile(DSN_REGEX, re.IGNORECASE)
-                check = data_set_name_pattern.search(src)
-                if check:
-                    if volume == None or volume == '':
-                        jobId = submit_pds_jcl(src)
-                    else:
-                        jobId = submit_jcl_in_volume(src, volume, module)
+        if location == "DATA_SET":
+            data_set_name_pattern = re.compile(DSN_REGEX, re.IGNORECASE)
+            check = data_set_name_pattern.fullmatch(src)
+            if check:
+                if volume is None or volume == "":
+                    jobId = submit_pds_jcl(src)
                 else:
-                    module.fail_json(msg='The parameter src for data set is not a valid name pattern. Please check the src input.', **result)
-            elif location == 'USS':
-                jobId = submit_uss_jcl(src, module)
+                    jobId = submit_jcl_in_volume(src, volume, module)
             else:
-                # For local file, it has been copied to the temp directory in action plugin.
-                encoding = module.params.get('encoding')
-                if encoding == 'EBCDIC' or encoding == 'IBM-037' or encoding == 'IBM-1047':
-                    jobId = submit_uss_jcl(ZOAUTIL_TEMP_USS, module)
-                elif encoding == 'UTF-8' or encoding == 'ISO-8859-1' or encoding == 'ASCII' or encoding == None:  ## 'UTF-8' 'ASCII' encoding will be converted.
-                    (conv_rc, stdout, stderr) = module.run_command('iconv -f ISO8859-1 -t IBM-1047 %s > %s' % (ZOAUTIL_TEMP_USS, ZOAUTIL_TEMP_USS2),
-                                                               use_unsafe_shell=True)
-                    if conv_rc == 0:
-                        jobId = submit_uss_jcl(ZOAUTIL_TEMP_USS2, module)
-                    else:
-                        module.fail_json(msg='The Local file encoding conversion failed. Please check the source file.'+ stderr, **result)
-                else:
-                    module.fail_json(msg='The Local file encoding format is not supported. The supported encoding is UTF-8, ASCII, ISO-8859-1, EBCDIC, IBM-037, IBM-1047. Default is UTF-8. ', **result)
+                module.fail_json(
+                    msg="The parameter src for data set is not a valid name pattern. Please check the src input.",
+                    **result
+                )
+        elif location == "USS":
+            jobId = submit_uss_jcl(src, module)
         else:
-            module.fail_json(msg='Location is not valid. DATA_SET, USS, and LOCAL is supported.', **result)
-
+            # For local file, it has been copied to the temp directory in action plugin.
+            encoding = parsed_args.get("encoding")
+            if encoding == "EBCDIC" or encoding == "IBM-037" or encoding == "IBM-1047":
+                jobId = submit_uss_jcl(temp_file, module)
+            # 'UTF-8' 'ASCII' encoding will be converted.
+            elif (
+                encoding == "UTF-8"
+                or encoding == "ISO-8859-1"
+                or encoding == "ASCII"
+                or encoding is None
+            ):
+                (conv_rc, stdout, stderr) = module.run_command(
+                    "iconv -f ISO8859-1 -t IBM-1047 %s > %s"
+                    % (quote(temp_file), quote(temp_file_2.name)),
+                    use_unsafe_shell=True,
+                )
+                if conv_rc == 0:
+                    jobId = submit_uss_jcl(temp_file_2.name, module)
+                else:
+                    module.fail_json(
+                        msg="The Local file encoding conversion failed. Please check the source file."
+                        + stderr,
+                        **result
+                    )
+            else:
+                module.fail_json(
+                    msg=(
+                        "The Local file encoding format is not supported."
+                        "The supported encoding is UTF-8, ASCII, ISO-8859-1, EBCDIC, IBM-037, IBM-1047. Default is UTF-8."
+                    ),
+                    **result
+                )
     except SubmitJCLError as e:
-        module.fail_json(msg=e.msg, **result)
-    if jobId == None or jobId == '':
-        result['job_id'] = jobId
-        module.fail_json(msg='JOB ID RETURNED IS None. PLEASE CHECK WHETHER THE JCL IS CORRECT.', **result)
+        module.fail_json(msg=repr(e), **result)
+    if jobId is None or jobId == "":
+        result["job_id"] = jobId
+        module.fail_json(
+            msg="JOB ID RETURNED IS None. PLEASE CHECK WHETHER THE JCL IS CORRECT.",
+            **result
+        )
 
-    result['job_id'] = jobId
-    if wait==True:
+    result["job_id"] = jobId
+    if wait is True:
         try:
             waitJob = query_jobs_status(jobId)
         except SubmitJCLError as e:
-            module.fail_json(msg=e.msg, **result)
-        while waitJob[0].get('status') == "AC":  # AC means in progress
+            module.fail_json(msg=repr(e), **result)
+        while waitJob[0].get("status") == "AC":  # AC means in progress
             sleep(1)
             duration = duration + 1
             waitJob = Jobs.list(job_id=jobId)
-            if waitJob[0].get('status') == "CC":   # CC means completed
+            if waitJob[0].get("status") == "CC":  # CC means completed
                 break
-            if duration == wait_time_s:    # Long running task. timeout return
+            if duration == wait_time_s:  # Long running task. timeout return
                 break
 
     try:
-        result = get_job_info(jobId, return_output)
+        result = get_job_info(module, jobId, return_output)
+        if wait is True and return_output is True and max_rc is not None:
+            assert_valid_return_code(
+                max_rc, result.get("jobs")[0].get("ret_code").get("code")
+            )
     except SubmitJCLError as e:
-        module.fail_json(msg=e.msg, **result)
-
-    result['duration'] = duration
+        module.fail_json(msg=repr(e), **result)
+    except Exception as e:
+        module.fail_json(msg=repr(e), **result)
+    finally:
+        if temp_file:
+            remove(temp_file)
+    result["duration"] = duration
     if duration == wait_time_s:
-        results['message'] = {'msg': 'Submit JCL operation succeeded but it is a long running job. Timeout is '+ str(wait_time_s)+' seconds.'}
-
-    jobs.append(result)
-    results['changed'] = True
-    results['jobs'] = jobs
-    module.exit_json(**results)
+        result["message"] = {
+            "stdout": "Submit JCL operation succeeded but it is a long running job. Timeout is "
+            + str(wait_time_s)
+            + " seconds."
+        }
+    else:
+        result["message"] = {"stdout": "Submit JCL operation succeeded."}
+    result["changed"] = True
+    module.exit_json(**result)
 
 
 class Error(Exception):
@@ -570,5 +864,5 @@ def main():
     run_module()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

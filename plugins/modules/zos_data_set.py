@@ -44,6 +44,8 @@ options:
     choices:
       - present
       - absent
+      - cataloged
+      - uncataloged
     version_added: "2.9"
   type:
     description:
@@ -90,7 +92,7 @@ options:
     description:
       - The data class name (required for SMS-managed data sets)
     type: str
-    required: false
+    required: true
     version_added: "2.9"
   record_length:
     description:
@@ -100,12 +102,29 @@ options:
     type: int
     required: false
     version_added: "2.9"
+  volume:
+    description:
+      - >
+        The name of the volume where the data set is located.
+        I(volume) is not used to specify the volume where a data set should be created.
+      - >
+        If I(volume) is provided when I(state=present), and the data set is not found in the catalog,
+        M(zos_data_set) will check the volume table of contents to see if the data set exists.
+        If the data set does exist, it will be cataloged.
+      - >
+        If I(volume) is provided when I(state=absent) and the data set is not found in the catalog,
+        M(zos_data_set) will check the volume table of contents to see if the data set exists.
+        If the data set does exist, it will be cataloged and promptly removed from the system.
+      - I(volume) is required when I(state=cataloged)
+    type: str
+    required: false
+    version_added: "2.9"
   replace:
     description:
       - When I(replace=True), and I(state=present), existing data set matching I(name) will be replaced.
       - >
         Replacement is performed by deleting the existing data set and creating a new data set with the same name and desired
-        attributes. This may lead to an inconsistent state if data set creations fails
+        attributes. This may lead to an inconsistent state if data set creations fails.
         after the old data set is deleted.
       - If I(replace=True), all data in the original data set will be lost.
     type: bool
@@ -123,7 +142,7 @@ options:
       name:
         description:
           - The name of the data set being managed. (e.g C(USER.TEST))
-          - Name field is required unless using batch option
+          - Name field is required unless using batch option.
         type: str
         required: true
         version_added: "2.9"
@@ -185,9 +204,9 @@ options:
         version_added: "2.9"
       data_class:
         description:
-          - The data class name (required for SMS-managed data sets)
+          - The data class name.
         type: str
-        required: false
+        required: true
         version_added: "2.9"
       record_length:
         description:
@@ -197,12 +216,29 @@ options:
         type: int
         required: false
         version_added: "2.9"
+      volume:
+        description:
+          - >
+            The name of the volume where the data set is located.
+            I(volume) is not used to specify the volume where a data set should be created.
+          - >
+            If I(volume) is provided when I(state=present), and the data set is not found in the catalog,
+            M(zos_data_set) will check the volume table of contents to see if the data set exists.
+            If the data set does exist, it will be cataloged.
+          - >
+            If I(volume) is provided when I(state=absent) and the data set is not found in the catalog,
+            M(zos_data_set) will check the volume table of contents to see if the data set exists.
+            If the data set does exist, it will be cataloged and promptly removed from the system.
+          - I(volume) is required when I(state=cataloged)
+        type: str
+        required: false
+        version_added: "2.9"
       replace:
         description:
           - When I(replace=True), and I(state=present), existing data set matching I(name) will be replaced.
           - >
-            Replacement is performed by deleting the existing data set and creating a new data set with the same name and desired
-            attributes. This may lead to an inconsistent state if data set creations fails
+            Replacement is performed by deleting the existing data set and creating a new data set with
+            the same name and desired attributes. This may lead to an inconsistent state if data set creations fails.
             after the old data set is deleted.
           - If I(replace=True), all data in the original data set will be lost.
         type: bool
@@ -235,6 +271,16 @@ EXAMPLES = r"""
     record_length: 25
     replace: yes
 
+- name: Attempt to replace a data set if it exists. If not found in catalog, check if on volume 222222 and catalog if found.
+  zos_data_set:
+    name: user.private.libs
+    type: pds
+    size: 5M
+    format: u
+    record_length: 25
+    volume: "222222"
+    replace: yes
+
 - name: Create an ESDS data set is it does not exist
   zos_data_set:
     name: user.private.libs
@@ -246,11 +292,16 @@ EXAMPLES = r"""
     type: rrds
     data_class: mydata
 
-
 - name: Delete a data set if it exists
   zos_data_set:
     name: user.private.libs
     state: absent
+
+- name: Delete a data set if it exists. If data set not cataloged, check on volume 222222 for the data set, then catalog and delete if found.
+  zos_data_set:
+    name: user.private.libs
+    state: absent
+    volume: "222222"
 
 - name: Write a member to existing PDS, replace if member exists
   zos_data_set:
@@ -284,6 +335,17 @@ EXAMPLES = r"""
         replace: yes
       - name: user.private.libs2(member2)
         type: MEMBER
+
+- name: Catalog a data set present on volume 222222 if it is uncataloged.
+  zos_data_set:
+    name: user.private.libs
+    state: cataloged
+    volume: "222222"
+
+- name: Uncatalog a data set if it is cataloged.
+  zos_data_set:
+    name: user.private.libs
+    state: uncataloged
 """
 RETURN = r"""
 message:
@@ -311,6 +373,7 @@ from collections import OrderedDict
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.vtoc import (
     VolumeTableOfContents,
 )
+from time import sleep
 
 try:
     from zoautil_py import Datasets, types, MVSCmd
@@ -359,25 +422,28 @@ ZOAU_DS_CREATE_ARGS = {
 }
 
 VSAM_CATALOG_COMMAND_NOT_INDEXED = """ DEFINE CLUSTER -
-(NAME('{0}') -
-VOLUMES({1}) -
-RECATALOG -
-{2}) -
-DATA(NAME('{0}.DATA'))"""
+    (NAME('{0}') -
+    VOLUMES({1}) -
+    RECATALOG -
+    {2}) -
+  DATA( -
+    NAME('{0}.DATA'))
+"""
 
 VSAM_CATALOG_COMMAND_INDEXED = """ DEFINE CLUSTER -
-(NAME('{0}') -
-VOLUMES({1}) -
-RECATALOG -
-{2}) -
-DATA(NAME('{0}.DATA')) -
-INDEX(NAME('{0}.INDEX'))"""
+    (NAME('{0}') -
+    VOLUMES({1}) -
+    RECATALOG -
+    {2}) -
+  DATA( -
+    NAME('{0}.DATA')) -
+  INDEX( -
+    NAME('{0}.INDEX'))
+"""
 
 NON_VSAM_UNCATALOG_COMMAND = " UNCATLG DSNAME={0}"
 
-VSAM_UNCATALOG_COMMAND = """ DELETE -
-'{0}' -
-NOSCRATCH"""
+VSAM_UNCATALOG_COMMAND = " DELETE '{0}' NOSCRATCH"
 # ------------- Functions to validate arguments ------------- #
 
 
@@ -624,6 +690,11 @@ def convert_size_to_kilobytes(old_size, old_size_unit):
 
 class DataSetHandler(object):
     def __init__(self, module):
+        """Handles various data set operations.
+
+        Arguments:
+            module {AnsibleModule} -- The AnsibleModule object created in the module.
+        """
         self.module = module
 
     def perform_data_set_operations(self, name, state, **extra_args):
@@ -701,7 +772,7 @@ class DataSetHandler(object):
             volume {str} -- The volume on which the data set should exist.
 
         Returns:
-            bool -- If changes were made
+            bool -- If changes were made.
         """
         if not self._is_in_vtoc(name, volume):
             raise DatasetCatalogError(
@@ -720,7 +791,7 @@ class DataSetHandler(object):
             name {str} -- The data set name to ensure is uncataloged.
 
         Returns:
-            bool -- If changes were made
+            bool -- If changes were made.
         """
         if self._data_set_cataloged(name):
             self._uncatalog_data_set(name)
@@ -728,6 +799,14 @@ class DataSetHandler(object):
         return False
 
     def _data_set_cataloged(self, name):
+        """Determine if a data set is in catalog.
+
+        Arguments:
+            name {str} -- The data set name to check if cataloged.
+
+        Returns:
+            bool -- If data is is cataloged.
+        """
         stdin = " LISTCAT ENTRIES('{0}')".format(name)
         rc, stdout, stderr = self.module.run_command(
             "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=stdin
@@ -737,6 +816,17 @@ class DataSetHandler(object):
         return False
 
     def _data_set_exists(self, name, volume=None):
+        """Determine if a data set exists.
+        This will check the catalog in addition to
+        the volume table of contents.
+
+        Arguments:
+            name {str} -- The data set name to check if exists.
+            volume {str} -- The volume the data set may reside on.
+
+        Returns:
+            bool -- If data is found.
+        """
         if self._data_set_cataloged(name):
             return True
         elif volume is not None:
@@ -744,13 +834,30 @@ class DataSetHandler(object):
         return False
 
     def _data_set_member_exists(self, name):
-        """Checks for existence of data set member."""
+        """Checks for existence of data set member.
+
+        Arguments:
+            name {str} -- The data set name including member.
+
+        Returns:
+            bool -- If data set member exists.
+        """
         rc, stdout, stderr = self.module.run_command("head \"//'{0}'\"".format(name))
         if rc != 0 or (stderr and "EDC5067I" in stderr):
             return False
         return True
 
     def _attempt_catalog_if_necessary(self, name, volume):
+        """Attempts to catalog a data set if not already cataloged.
+
+        Arguments:
+            name {str} -- The name of the data set.
+            volume {str} -- The volume the data set may reside on.
+
+        Returns:
+            bool -- Whether the data set is now present.
+            bool -- Whether changes were made.
+        """
         changed = False
         present = False
         if self._data_set_cataloged(name):
@@ -762,6 +869,15 @@ class DataSetHandler(object):
         return present, changed
 
     def _is_in_vtoc(self, name, volume):
+        """Determines if data set is in a volume's table of contents.
+
+        Arguments:
+            name {str} -- The name of the data set to search for.
+            volume {str} -- The volume to search the table of contents of.
+
+        Returns:
+            bool -- If data set was found in table of contents for volume.
+        """
         vtoc = VolumeTableOfContents(self.module)
         data_sets = vtoc.get_volume_entry(volume)
         data_set = VolumeTableOfContents.find_data_set_in_volume_output(name, data_sets)
@@ -776,16 +892,28 @@ class DataSetHandler(object):
         return False
 
     def _replace_data_set(self, name, extra_args):
-        """ Attempt to replace an existing data set. """
+        """Attempts to replace an existing data set.
+
+        Arguments:
+            name {str} -- The name of the data set to replace.
+            extra_args {dict} -- Any additional arguments.
+        """
         self._delete_data_set(name)
         self._create_data_set(name, extra_args)
         return
 
     def _rename_args_for_zoau(self, args=None):
+        """Renames module arguments to match those desired by
+        zoautil_py data set create method.
+
+        Keyword Arguments:
+            args {dict} -- The arguments for data set operations. (default: {None})
+
+        Returns:
+            dict -- The original dictionary with keys replaced to match ZOAU requirements.
+        """
         if args is None:
             args = {}
-        """ Renames module arguments to match those desired by zoautil_py data set create method.
-        Returns a dictionary with renamed args. """
         ds_create_args = {}
         for module_arg_name, zoau_arg_name in ZOAU_DS_CREATE_ARGS.items():
             if args.get(module_arg_name):
@@ -843,6 +971,16 @@ class DataSetHandler(object):
             self._catalog_non_vsam_data_set(name, volume)
 
     def _catalog_non_vsam_data_set(self, name, volume):
+        """Catalog a non-VSAM data set.
+
+        Arguments:
+            name {str} -- The data set to catalog.
+            volume {str} -- The volume the data set resides on.
+
+        Raises:
+            DatasetCatalogError: When attempt at catalog fails.
+        """
+
         idcams_input = """ DEFINE NVSAM -
             (NAME('{0}') -
             VOLUMES({1}) -
@@ -850,8 +988,8 @@ class DataSetHandler(object):
             name, volume
         )
         try:
-            temp_data_set_name = self._create_temp_data_set()
-            Datasets.write(temp_data_set_name, idcams_input)
+            temp_data_set_name = self._create_temp_data_set(name.split(".")[0])
+            self._write_data_set(temp_data_set_name, idcams_input)
             dd_statements = []
             dd_statements.append(
                 types.DDStatement(ddName="sysin", dataset=temp_data_set_name)
@@ -866,14 +1004,21 @@ class DataSetHandler(object):
             Datasets.delete(temp_data_set_name)
         return
 
-    def _catalog_vsam_data_set(
-        self, name, volume,
-    ):
+    def _catalog_vsam_data_set(self, name, volume):
+        """Catalog a VSAM data set.
+
+        Arguments:
+            name {str} -- The data set to catalog.
+            volume {str} -- The volume the data set resides on.
+
+        Raises:
+            DatasetCatalogError: When attempt at catalog fails.
+        """
         data_set_name = name.upper()
         data_set_volume = volume.upper()
         success = False
         try:
-            temp_data_set_name = self._create_temp_data_set()
+            temp_data_set_name = self._create_temp_data_set(name.split(".")[0])
             command_rc = 0
             for data_set_type in ["", "LINEAR", "INDEXED", "NONINDEXED", "NUMBERED"]:
                 if data_set_type != "INDEXED":
@@ -885,7 +1030,7 @@ class DataSetHandler(object):
                         data_set_name, data_set_volume, data_set_type
                     )
 
-                Datasets.write(temp_data_set_name, command)
+                self._write_data_set(temp_data_set_name, command)
                 dd_statements = []
                 dd_statements.append(
                     types.DDStatement(ddName="sysin", dataset=temp_data_set_name)
@@ -908,6 +1053,11 @@ class DataSetHandler(object):
         return
 
     def _uncatalog_data_set(self, name):
+        """Uncatalog a data set.
+
+        Arguments:
+            name {str} -- The name of the data set to uncatalog.
+        """
         if self._is_data_set_vsam(name):
             self._uncatalog_vsam_data_set(name)
         else:
@@ -915,10 +1065,18 @@ class DataSetHandler(object):
         return
 
     def _uncatalog_non_vsam_data_set(self, name):
+        """Uncatalog a non-VSAM data set.
+
+        Arguments:
+            name {str} -- The name of the data set to uncatalog.
+
+        Raises:
+            DatasetUncatalogError: When uncataloging fails.
+        """
         iehprogm_input = NON_VSAM_UNCATALOG_COMMAND.format(name)
         try:
-            temp_data_set_name = self._create_temp_data_set()
-            Datasets.write(temp_data_set_name, iehprogm_input)
+            temp_data_set_name = self._create_temp_data_set(name.split(".")[0])
+            self._write_data_set(temp_data_set_name, iehprogm_input)
             dd_statements = []
             dd_statements.append(
                 types.DDStatement(ddName="sysin", dataset=temp_data_set_name)
@@ -934,10 +1092,18 @@ class DataSetHandler(object):
         return
 
     def _uncatalog_vsam_data_set(self, name):
+        """Uncatalog a VSAM data set.
+
+        Arguments:
+            name {str} -- The name of the data set to uncatalog.
+
+        Raises:
+            DatasetUncatalogError: When uncataloging fails.
+        """
         idcams_input = VSAM_UNCATALOG_COMMAND.format(name)
         try:
-            temp_data_set_name = self._create_temp_data_set()
-            Datasets.write(temp_data_set_name, idcams_input)
+            temp_data_set_name = self._create_temp_data_set(name.split(".")[0])
+            self._write_data_set(temp_data_set_name, idcams_input)
             dd_statements = []
             dd_statements.append(
                 types.DDStatement(ddName="sysin", dataset=temp_data_set_name)
@@ -953,37 +1119,101 @@ class DataSetHandler(object):
         return
 
     def _is_data_set_vsam(self, name, volume=None):
+        """Determine a given data set is VSAM. If volume is not provided,
+        then LISTCAT will be used to check data set info. If volume is provided,
+        then VTOC will be used to check data set info.
+
+        Arguments:
+            name {str} -- The name of the data set.
+
+        Keyword Arguments:
+            volume {str} -- The name of the volume. (default: {None})
+
+        Returns:
+            bool -- If the data set is VSAM.
+        """
         if not volume:
-            return self._is_data_set_vsam_from_listds(name)
+            return self._is_data_set_vsam_from_listcat(name)
         return self._is_data_set_vsam_from_vtoc(name, volume)
 
     def _is_data_set_vsam_from_vtoc(self, name, volume):
+        """Use VTOC to determine if a given data set is VSAM.
+
+        Arguments:
+            name {str} -- The name of the data set.
+            volume {str} -- The volume name whose table of contents will be searched.
+
+        Returns:
+            bool -- If the data set is VSAM.
+        """
         vtoc = VolumeTableOfContents(self.module)
         data_sets = vtoc.get_volume_entry(volume)
-        data_set = VolumeTableOfContents.find_data_set_in_volume_output(name, data_sets)
+        vsam_name = name + ".DATA"
+        data_set = VolumeTableOfContents.find_data_set_in_volume_output(
+            vsam_name, data_sets
+        )
         if data_set is None:
-            vsam_name = name + ".data"
             data_set = VolumeTableOfContents.find_data_set_in_volume_output(
-                vsam_name, data_sets
+                name, data_sets
             )
         if data_set is not None:
             if data_set.get("data_set_organization", "") == "VS":
                 return True
         return False
 
-    def _is_data_set_vsam_from_listds(self, name):
-        stdin = " LISTDS '{0}'".format(name)
+    def _is_data_set_vsam_from_listcat(self, name):
+        """Use LISTCAT command to determine if a given data set is VSAM.
+
+        Arguments:
+            name {str} -- The name of the data set.
+
+        Returns:
+            bool -- If the data set is VSAM.
+        """
+        stdin = " LISTCAT ENTRIES('{0}')".format(name)
         rc, stdout, stderr = self.module.run_command(
             "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=stdin
         )
-        if re.search(r"[ ]+VSAM[ ]*\n", stdout):
+        if re.search(r"^0CLUSTER[ ]+-+[ ]+" + name + r"[ ]*$", stdout, re.MULTILINE):
             return True
         return False
 
-    def _create_temp_data_set(self):
-        temp_data_set_name = Datasets.temp_name()
-        Datasets.create(temp_data_set_name, "SEQ")
+    def _create_temp_data_set(self, hlq):
+        """Create a temporary data set.
+
+        Arguments:
+            hlq {str} -- The HLQ to use for the temporary data set's name.
+
+        Returns:
+            str -- The name of the temporary data set.
+        """
+        temp_data_set_name = Datasets.temp_name(hlq)
+        self._create_data_set(
+            temp_data_set_name,
+            {"type": "SEQ", "size": "5M", "format": "FB", "length": 80},
+        )
         return temp_data_set_name
+
+    def _write_data_set(self, name, contents):
+        """Write text to a data set.
+
+        Arguments:
+            name {str} -- The name of the data set.
+            contents {str} -- The text to write to the data set.
+
+        Raises:
+            DatasetWriteError: When write to the data set fails.
+        """
+        # rc = Datasets.write(name, contents)
+        temp = tempfile.NamedTemporaryFile(delete=False)
+        with open(temp.name, "w") as f:
+            f.write(contents)
+        rc, stdout, stderr = self.module.run_command(
+            "cp -O u {0} \"//'{1}'\"".format(temp.name, name)
+        )
+        if rc != 0:
+            raise DatasetWriteError(name, rc, stderr)
+        return
 
 
 # TODO: Add back safe data set replacement when issues are resolved
@@ -1145,6 +1375,14 @@ class DatasetUncatalogError(Error):
             data_set, rc
         )
         super(DatasetUncatalogError, self).__init__(self.msg)
+
+
+class DatasetWriteError(Error):
+    def __init__(self, data_set, rc, message=""):
+        self.msg = 'An error occurred during write of data set "{0}". RC={1}. {2}'.format(
+            data_set, rc, message
+        )
+        super(DatasetWriteError, self).__init__(self.msg)
 
 
 def main():

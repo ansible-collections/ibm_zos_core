@@ -22,7 +22,7 @@ Galaxy enables you to quickly configure your automation project with content
 from the Ansible community. Galaxy provides prepackaged units of work known as
 collections.
 
-Here's an example command for installing the **IBM z/OS Core Collection**:
+Here's an example command for installing the **IBM z/OS core collection**:
 
 .. code-block:: sh
 

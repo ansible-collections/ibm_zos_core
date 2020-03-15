@@ -7,7 +7,7 @@ Requirements
 
 A control node is any machine with Ansible installed. From the control node,
 you can run commands and playbooks from a laptop, desktop, or server machine.
-However, you cannot run **IBM z/OS Core Collection** on a Windows machine.
+However, you cannot run **IBM z/OS core collection** on a Windows machine.
 
 A managed node is often referred to as a target node, or host, and is the node
 that is managed by Ansible. Ansible does not need not need to be installed on

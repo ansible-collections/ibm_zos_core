@@ -6,7 +6,7 @@ Playbooks
 =========
 
 The sample playbooks that are **included** demonstrate how to use the
-collection content in the ibm_zos_core collection.
+collection content in the IBM z/OS core collection.
 
 Playbook Documentation
 ----------------------

@@ -33,7 +33,7 @@ Control node
 Managed node
 ------------
 
-* `Python on Z`_: 3.6 or later
+* `Python on Z`_: 3.5 or later
 * `zOS`_: V02.02.00 or later
 * `IBM Z Open Automation Utilities`_ (ZOAU)
 * `OpenSSH`_

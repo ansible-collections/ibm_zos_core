@@ -373,7 +373,6 @@ from collections import OrderedDict
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.vtoc import (
     VolumeTableOfContents,
 )
-from time import sleep
 
 try:
     from zoautil_py import Datasets, types, MVSCmd
@@ -444,6 +443,7 @@ VSAM_CATALOG_COMMAND_INDEXED = """ DEFINE CLUSTER -
 NON_VSAM_UNCATALOG_COMMAND = " UNCATLG DSNAME={0}"
 
 VSAM_UNCATALOG_COMMAND = " DELETE '{0}' NOSCRATCH"
+
 # ------------- Functions to validate arguments ------------- #
 
 
@@ -695,6 +695,7 @@ class DataSetHandler(object):
         Arguments:
             module {AnsibleModule} -- The AnsibleModule object created in the module.
         """
+
         self.module = module
 
     def perform_data_set_operations(self, name, state, **extra_args):

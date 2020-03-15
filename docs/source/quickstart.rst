@@ -1,3 +1,7 @@
+.. ...........................................................................
+.. © Copyright IBM Corporation 2020                                          .
+.. ...........................................................................
+
 Quickstart
 ==========
 
@@ -44,15 +48,15 @@ to refer to the collection repeatedly. For example, you can use the
 z/OS Connection Plugin
 ----------------------
 
-Since EBCDIC encoding is used on z/OS, custom plugins are needed to determine 
+Since EBCDIC encoding is used on z/OS, custom plugins are needed to determine
 the correct transport method when targeting a z/OS system.
 
-The zos_ssh.py connection plugin is a fork of the default ssh.py plugin with 
+The zos_ssh.py connection plugin is a fork of the default ssh.py plugin with
 added functionality for checking if a module is written in REXX.
 
 Since REXX scripts need to be in EBCDIC encoding to run, they need to be
 handled differently during transfer. If the string
-``__ANSIBLE_ENCODE_EBCDIC__`` is found on the first line of the module, the 
+``__ANSIBLE_ENCODE_EBCDIC__`` is found on the first line of the module, the
 module is transferred to the target system using SCP. Otherwise, SFTP is used.
 SCP treats files as text, automatically encoding as EBCDIC at transfer time.
 SFTP treats files as binary, performing no encoding changes.
@@ -113,8 +117,5 @@ to `Ansible guide`_.
 .. _Ansible guide:
    https://docs.ansible.com/ansible/latest/cli/ansible-doc.html#ansible-doc
 
-.. ....................................
-.. Copyright                          .
-.. © Copyright IBM Corporation 2020   .
-.. ....................................
+
 

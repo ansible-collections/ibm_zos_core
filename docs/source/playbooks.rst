@@ -1,8 +1,12 @@
+.. ...........................................................................
+.. © Copyright IBM Corporation 2020                                          .
+.. ...........................................................................
+
 Playbooks
 =========
 
-The sample playbooks that are **included** demonstrate how to use the collection
-content in the ibm_zos_core collection.
+The sample playbooks that are **included** demonstrate how to use the
+collection content in the ibm_zos_core collection.
 
 Playbook Documentation
 ----------------------
@@ -77,7 +81,7 @@ connecting to the host, for example, ``ansible_user: omvsadm``
 
 The value for property **ansible_python_interpreter** is the target host python
 path. This is useful for systems with more than one Python installation, or
-when Python is not located at in the default location **/usr/bin/python**, for 
+when Python is not located at in the default location **/usr/bin/python**, for
 example, ``ansible_python_interpreter: /usr/lpp/rsusr/python36/bin/python``
 
 For more information on python configuration requirements on z/OS, refer to
@@ -165,10 +169,7 @@ levels INFO, WARN, ERROR, DEBUG.
 .. _ask-pass documentation:
    https://linux.die.net/man/1/sshpass
 
-.. ....................................
-.. Copyright                          .
-.. © Copyright IBM Corporation 2020   .
-.. ....................................
+
 
 
 

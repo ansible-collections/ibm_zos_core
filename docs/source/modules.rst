@@ -1,3 +1,7 @@
+.. ...........................................................................
+.. © Copyright IBM Corporation 2020                                          .
+.. ...........................................................................
+
 Modules
 =======
 
@@ -22,8 +26,5 @@ certain modules accept and what values they expect those parameters to be.
 
    modules/*
 
-.. ....................................
-.. Copyright                          .
-.. © Copyright IBM Corporation 2020   .
-.. ....................................
+
 

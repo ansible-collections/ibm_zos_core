@@ -1,3 +1,7 @@
+##############################################################################
+# © Copyright IBM Corporation 2020                                           #
+##############################################################################
+
 # Configuration file for the Sphinx documentation builder.
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
@@ -68,6 +72,3 @@ html_context = {
 #      'titles_only': False
 # }
 
-#####################################
-# © Copyright IBM Corporation 2020  #
-#####################################

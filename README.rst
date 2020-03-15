@@ -1,3 +1,8 @@
+.. ...........................................................................
+.. Copyright                                                                 .
+.. © Copyright IBM Corporation 2020                                          .
+.. ...........................................................................
+
 IBM z/OS Core Collection
 ========================
 
@@ -74,7 +79,3 @@ See individual files for applicable licenses.
     https://opensource.org/licenses/Apache-2.0
 
 
-.. ....................................
-.. Copyright                          .
-.. © Copyright IBM Corporation 2020   .
-.. ....................................

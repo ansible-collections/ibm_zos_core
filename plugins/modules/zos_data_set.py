@@ -25,7 +25,7 @@ author: "Blake Becker (@blakeinate)"
 options:
   name:
     description:
-      - The name of the data set being managed. (e.g "USER.TEST")
+      - The name of the data set being managed. (e.g C(USER.TEST))
       - Name field is required unless using batch option
     type: str
     required: false
@@ -33,13 +33,11 @@ options:
   state:
     description:
       - The final state desired for specified data set.
-      - >
-        If `absent`, will ensure the data set is not present on the system.
-        Note that `absent` will not cause `zos_data_set` to fail if data set does not exist as the state did not change.
-      - >
-        If `present`, will ensure the data set is present on the system.
-        Note that `present` will not replace an existing data set by default, even when the attributes do not match our desired data set.
-        If replacement behavior is desired, see the options `replace` and `unsafe_writes`.
+      - If I(state=absent) and the data set does not exist on the managed node, no action taken, returns successful with I(changed=False).
+      - If I(state=absent) and the data set does exist on the managed node, remove the data set, returns successful with I(changed=True).
+      - If I(state=present) and the data set does not exist on the managed node, create the data set, returns successful with I(changed=True).
+      - If I(state=present) and I(replace=True) and the data set is present on the managed node, delete the data set and create the data set with the desired attributes, returns successful with I(changed=True).
+      - If I(state=present) and I(replace=False) and the data set is present on the managed node, no action taken, returns successful with I(changed=False).
     required: false
     type: str
     default: present
@@ -49,7 +47,7 @@ options:
     version_added: "2.9"
   type:
     description:
-      - The data set type to be used when creating a data set. (e.g "pdse")
+      - The data set type to be used when creating a data set. (e.g C(pdse))
       - MEMBER expects to be used with an existing partitioned data set.
       - Choices are case-insensitive.
     required: false
@@ -65,10 +63,10 @@ options:
     version_added: "2.9"
   size:
     description:
-      - The size of the data set (e.g "5M")
-      - Valid units of size are "K", "M", "G", "CYL" and "TRK"
-      - Note that "CYL" and "TRK" follow size conventions for 3390 disk types (56,664 bytes/TRK & 849,960 bytes/CYL)
-      - The "CYL" and "TRK" units are converted to bytes and rounded up to the nearest "K" measurement.
+      - The size of the data set (e.g C(5M))
+      - Valid units of size are C(K), C(M), C(G), C(CYL), and C(TRK)
+      - Note that C(CYL) and C(TRK) follow size conventions for 3390 disk types (56,664 bytes/TRK & 849,960 bytes/CYL)
+      - The C(CYL) and C(TRK) units are converted to bytes and rounded up to the nearest C(K) measurement.
       - Ensure there is no space between the numeric size and unit.
     type: str
     required: false
@@ -76,7 +74,7 @@ options:
     version_added: "2.9"
   format:
     description:
-      - The format of the data set. (e.g "FB")
+      - The format of the data set. (e.g C(FB))
       - Choices are case-insensitive.
     required: false
     choices:
@@ -96,7 +94,7 @@ options:
     version_added: "2.9"
   record_length:
     description:
-      - The logical record length. (e.g 80)
+      - The logical record length. (e.g C(80))
       - For variable data sets, the length must include the 4-byte prefix area.
       - Defaults vary depending on format. If FB/FBA 80, if VB/VBA 137, if U 0
     type: int
@@ -104,12 +102,12 @@ options:
     version_added: "2.9"
   replace:
     description:
-      - When `replace` is `true`, and `state` is `present`, existing data set matching name will be replaced.
+      - When I(replace=True), and I(state=present), existing data set matching I(name) will be replaced.
       - >
-        Replacement is performed by deleting the existing data set and creating a new data set with the desired
-        attributes in the old data set's place. This may lead to an inconsistent state if data set creations fails
+        Replacement is performed by deleting the existing data set and creating a new data set with the same name and desired
+        attributes. This may lead to an inconsistent state if data set creations fails
         after the old data set is deleted.
-      - If `replace` is `true`, all data in the original data set will be lost.
+      - If I(replace=True), all data in the original data set will be lost.
     type: bool
     required: false
     default: false
@@ -117,7 +115,6 @@ options:
   batch:
     description:
       - Batch can be used to perform operations on multiple data sets in a single module call.
-      - Each item in the list expects the same options as zos_data_set.
     type: list
     elements: dict
     required: false
@@ -125,20 +122,19 @@ options:
     suboptions:
       name:
         description:
-          - The name of the data set being managed. (e.g "USER.TEST")
+          - The name of the data set being managed. (e.g C(USER.TEST))
+          - Name field is required unless using batch option
         type: str
         required: true
         version_added: "2.9"
       state:
         description:
           - The final state desired for specified data set.
-          - >
-            If `absent`, will ensure the data set is not present on the system.
-            Note that `absent` will not cause `zos_data_set` to fail if data set does not exist as the state did not change.
-          - >
-            If `present`, will ensure the data set is present on the system.
-            Note that `present` will not replace an existing data set by default, even when the attributes do not match our desired data set.
-            If replacement behavior is desired, see the options `replace` and `unsafe_writes`.
+          - If I(state=absent) and the data set does not exist on the managed node, no action taken, returns successful with I(changed=False).
+          - If I(state=absent) and the data set does exist on the managed node, remove the data set, returns successful with I(changed=True).
+          - If I(state=present) and the data set does not exist on the managed node, create the data set, returns successful with I(changed=True).
+          - If I(state=present) and I(replace=True) and the data set is present on the managed node, delete the data set and create the data set with the desired attributes, returns successful with I(changed=True).
+          - If I(state=present) and I(replace=False) and the data set is present on the managed node, no action taken, returns successful with I(changed=False).
         required: false
         type: str
         default: present
@@ -148,7 +144,7 @@ options:
         version_added: "2.9"
       type:
         description:
-          - The data set type to be used when creating a data set. (e.g "pdse")
+          - The data set type to be used when creating a data set. (e.g C(pdse))
           - MEMBER expects to be used with an existing partitioned data set.
           - Choices are case-insensitive.
         required: false
@@ -164,10 +160,10 @@ options:
         version_added: "2.9"
       size:
         description:
-          - The size of the data set (e.g "5M")
-          - Valid units of size are "K", "M", "G", "CYL" and "TRK"
-          - Note that "CYL" and "TRK" follow size conventions for 3390 disk types (56,664 bytes/TRK & 849,960 bytes/CYL)
-          - The "CYL" and "TRK" units are converted to bytes and rounded up to the nearest "K" measurement.
+          - The size of the data set (e.g C(5M))
+          - Valid units of size are C(K), C(M), C(G), C(CYL), and C(TRK)
+          - Note that C(CYL) and C(TRK) follow size conventions for 3390 disk types (56,664 bytes/TRK & 849,960 bytes/CYL)
+          - The C(CYL) and C(TRK) units are converted to bytes and rounded up to the nearest C(K) measurement.
           - Ensure there is no space between the numeric size and unit.
         type: str
         required: false
@@ -175,10 +171,9 @@ options:
         version_added: "2.9"
       format:
         description:
-          - The format of the data set. (e.g "FB")
+          - The format of the data set. (e.g C(FB))
           - Choices are case-insensitive.
         required: false
-        type: str
         choices:
           - FB
           - VB
@@ -186,6 +181,7 @@ options:
           - VBA
           - U
         default: FB
+        type: str
         version_added: "2.9"
       data_class:
         description:
@@ -195,7 +191,7 @@ options:
         version_added: "2.9"
       record_length:
         description:
-          - The logical record length. (e.g 80)
+          - The logical record length. (e.g C(80))
           - For variable data sets, the length must include the 4-byte prefix area.
           - Defaults vary depending on format. If FB/FBA 80, if VB/VBA 137, if U 0
         type: int
@@ -203,12 +199,12 @@ options:
         version_added: "2.9"
       replace:
         description:
-          - When `replace` is `true`, and `state` is `present`, existing data set matching name will be replaced.
+          - When I(replace=True), and I(state=present), existing data set matching I(name) will be replaced.
           - >
-            Replacement is performed by deleting the existing data set and creating a new data set with the desired
-            attributes in the old data set's place. This may lead to an inconsistent state if data set creations fails
+            Replacement is performed by deleting the existing data set and creating a new data set with the same name and desired
+            attributes. This may lead to an inconsistent state if data set creations fails
             after the old data set is deleted.
-          - If `replace` is `true`, all data in the original data set will be lost.
+          - If I(replace=True), all data in the original data set will be lost.
         type: bool
         required: false
         default: false
@@ -238,16 +234,6 @@ EXAMPLES = r"""
     format: u
     record_length: 25
     replace: yes
-
-- name: Attempt to replace a data set if it exists, allow unsafe_writes
-  zos_data_set:
-    name: user.private.libs
-    type: pds
-    size: 5M
-    format: fb
-    record_length: 25
-    replace: yes
-    unsafe_writes: yes
 
 - name: Create an ESDS data set is it does not exist
   zos_data_set:
@@ -291,12 +277,6 @@ EXAMPLES = r"""
         size: 5M
         format: fb
         replace: yes
-      - name:  user.private.libs2
-        type: PDSE
-        size: 10CYL
-        format: fb
-        replace: yes
-        unsafe_writes: yes
       - name: user.private.libs1(member1)
         type: MEMBER
       - name: user.private.libs2(member1)
@@ -328,17 +308,16 @@ changed:
 import tempfile
 from math import ceil
 from collections import OrderedDict
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.vtoc import (
+    VolumeTableOfContents,
+)
 
 try:
-    from zoautil_py import Datasets
+    from zoautil_py import Datasets, types, MVSCmd
 except Exception:
     Datasets = ""
 import re
 from ansible.module_utils.basic import AnsibleModule
-
-# * Make AnsibleModule module object global to
-# * simplify use of run_command in functions
-run_command = None
 
 # CONSTANTS
 DATA_SET_TYPES = [
@@ -379,6 +358,26 @@ ZOAU_DS_CREATE_ARGS = {
     "key_offset": "offset",
 }
 
+VSAM_CATALOG_COMMAND_NOT_INDEXED = """ DEFINE CLUSTER -
+(NAME('{0}') -
+VOLUMES({1}) -
+RECATALOG -
+{2}) -
+DATA(NAME('{0}.DATA'))"""
+
+VSAM_CATALOG_COMMAND_INDEXED = """ DEFINE CLUSTER -
+(NAME('{0}') -
+VOLUMES({1}) -
+RECATALOG -
+{2}) -
+DATA(NAME('{0}.DATA')) -
+INDEX(NAME('{0}.INDEX'))"""
+
+NON_VSAM_UNCATALOG_COMMAND = " UNCATLG DSNAME={0}"
+
+VSAM_UNCATALOG_COMMAND = """ DELETE -
+'{0}' -
+NOSCRATCH"""
 # ------------- Functions to validate arguments ------------- #
 
 
@@ -446,7 +445,8 @@ def process_special_parameters(original_params, param_handlers):
             else:
                 value = int(arg_val)
             if not re.fullmatch(r'[1-9][0-9]*', arg_val) or (value < 1 or value > 32768):
-                raise ValueError('Value {0} is invalid for record_length argument. record_length must be between 1 and 32768 bytes.'.format(arg_val))
+                raise ValueError(('Value {0} is invalid for record_length argument.'
+                 'record_length must be between 1 and 32768 bytes.').format(arg_val))
             return value
 
         module = AnsibleModule(
@@ -474,25 +474,24 @@ def process_special_parameters(original_params, param_handlers):
 def data_set_name(arg_val, params):
     """Validates provided data set name(s) are valid.
     Returns a list containing the name(s) of data sets."""
-    dsnames = generate_name_list(arg_val)
-    for dsname in dsnames:
-        if not re.fullmatch(
-            r"^(?:(?:[A-Z]{1}[A-Z0-9]{0,7})(?:[.]{1})){1,21}[A-Z]{1}[A-Z0-9]{0,7}$",
-            dsname,
-            re.IGNORECASE,
+    dsname = arg_val
+    if not re.fullmatch(
+        r"^(?:(?:[A-Z]{1}[A-Z0-9]{0,7})(?:[.]{1})){1,21}[A-Z]{1}[A-Z0-9]{0,7}$",
+        dsname,
+        re.IGNORECASE,
+    ):
+        if not (
+            re.fullmatch(
+                r"^(?:(?:[A-Z]{1}[A-Z0-9]{0,7})(?:[.]{1})){1,21}[A-Z]{1}[A-Z0-9]{0,7}\([A-Z]{1}[A-Z0-9]{0,7}\)$",
+                dsname,
+                re.IGNORECASE,
+            )
+            and params.get("type") == "MEMBER"
         ):
-            if not (
-                re.fullmatch(
-                    r"^(?:(?:[A-Z]{1}[A-Z0-9]{0,7})(?:[.]{1})){1,21}[A-Z]{1}[A-Z0-9]{0,7}\([A-Z]{1}[A-Z0-9]{0,7}\)$",
-                    dsname,
-                    re.IGNORECASE,
-                )
-                and params.get("type") == "MEMBER"
-            ):
-                raise ValueError(
-                    "Value {0} is invalid for data set argument.".format(dsname)
-                )
-    return dsnames
+            raise ValueError(
+                "Value {0} is invalid for data set argument.".format(dsname)
+            )
+    return dsname.upper()
 
 
 def data_set_size(arg_val, params):
@@ -524,9 +523,10 @@ def data_class(arg_val, params):
         return None
     if len(arg_val) < 1 or len(arg_val) > 8:
         raise ValueError(
-            "Value {0} is invalid for data_class argument. data_class must be at least 1 and at most 8 characters.".format(
-                arg_val
-            )
+            (
+                "Value {0} is invalid for data_class argument. "
+                "data_class must be at least 1 and at most 8 characters."
+            ).format(arg_val)
         )
     return arg_val
 
@@ -607,165 +607,6 @@ def data_set_type(arg_val, params):
     return arg_val.upper()
 
 
-# ------ Functions to determine default arguments based on provided args ----- #
-def perform_data_set_operations(name, state, **extra_args):
-    """ Calls functions to perform desired operations on
-    one or more data sets. Returns boolean indicating if changes were made. """
-    changed = False
-    for dsname in name:
-        if state == "present" and extra_args.get("type") != "MEMBER":
-            changed = ensure_data_set_present(dsname, **extra_args) or changed
-        elif state == "present" and extra_args.get("type") == "MEMBER":
-            changed = ensure_data_set_member_present(dsname, **extra_args) or changed
-        elif extra_args.get("type") != "MEMBER":
-            changed = ensure_data_set_absent(dsname) or changed
-        else:
-            changed = ensure_data_set_member_absent(dsname) or changed
-    return changed
-
-
-def generate_name_list(name):
-    """ Generate a list of data set names to perform operation on.
-    Will remove empty arguments and convert arguments to strings. """
-    if not isinstance(name, list):
-        name = [name]
-    name = [str(x) for x in name if len(str(x)) > 0]
-    return name
-
-
-def ensure_data_set_present(name, replace, **extra_args):
-    """Creates data set if it does not already exist.
-    The replace argument is used to determine behavior when data set already
-    exists. Returns a boolean indicating if changes were made. """
-    ds_create_args = rename_args_for_zoau(extra_args)
-    if data_set_exists(name):
-        if not replace:
-            return False
-        replace_data_set(name, ds_create_args)
-    else:
-        create_data_set(name, ds_create_args)
-    return True
-
-
-def ensure_data_set_absent(name):
-    """Deletes provided data set if it exists.
-    Returns a boolean indicating if changes were made. """
-    if data_set_exists(name):
-        delete_data_set(name)
-        return True
-    return False
-
-
-# ? should we do additional check to ensure member was actually created?
-
-
-def ensure_data_set_member_present(name, replace, **extra_args):
-    """Creates data set member if it does not already exist.
-    The replace argument is used to determine behavior when data set already
-    exists. Returns a boolean indicating if changes were made."""
-    if data_set_member_exists(name):
-        if not replace:
-            return False
-        delete_data_set_member(name)
-    create_data_set_member(name)
-    return True
-
-
-def ensure_data_set_member_absent(name):
-    """Deletes provided data set member if it exists.
-    Returns a boolean indicating if changes were made."""
-    if data_set_member_exists(name):
-        delete_data_set_member(name)
-        return True
-    return False
-
-
-def data_set_exists(name):
-    rc, stdout, stderr = run_command("head \"//'{0}'\"".format(name))
-    if stderr and "EDC5049I" in stderr:
-        return False
-    return True
-
-
-def data_set_member_exists(name):
-    """Checks for existence of data set member."""
-    # parsed_data_set = re.fullmatch(r'^((?:(?:[A-Z]{1}[A-Z0-9]{0,7})(?:[.]{1})){1,21}[A-Z]{1}[A-Z0-9]{0,7})\(([A-Z]{1}[A-Z0-9]{0,7})\)$', name, re.IGNORECASE)
-    rc, stdout, stderr = run_command("head \"//'{0}'\"".format(name))
-    if rc != 0 or (stderr and "EDC5067I" in stderr):
-        return False
-    return True
-
-    # response = Datasets.list_members(parsed_data_set.group(1))
-    # member_name = parsed_data_set.group(2)
-    # members = response.split('\\n') if response else []
-    # for member in members:
-    #     if member.strip().upper() == member_name.upper():
-    #         return True
-    # return False
-
-
-# TODO: determine if better to move original to new name and create in place instead of deleting and moving
-
-
-def replace_data_set(name, extra_args):
-    """ Attempt to replace an existing data set. """
-    delete_data_set(name)
-    create_data_set(name, extra_args)
-    return
-
-
-def rename_args_for_zoau(args=None):
-    if args is None:
-        args = {}
-    """ Renames module arguments to match those desired by zoautil_py data set create method.
-    Returns a dictionary with renamed args. """
-    ds_create_args = {}
-    for module_arg_name, zoau_arg_name in ZOAU_DS_CREATE_ARGS.items():
-        if args.get(module_arg_name):
-            ds_create_args[zoau_arg_name] = args.get(module_arg_name)
-    return ds_create_args
-
-
-def create_data_set(name, extra_args=None):
-    """ A wrapper around zoautil_py data set create to raise exceptions on failure. """
-    if extra_args is None:
-        extra_args = {}
-    rc = Datasets.create(name, **extra_args)
-    if rc > 0:
-        raise DatasetCreateError(name, rc)
-    return
-
-
-def delete_data_set(name):
-    """ A wrapper around zoautil_py data set delete to raise exceptions on failure. """
-    rc = Datasets.delete(name)
-    if rc > 0:
-        raise DatasetDeleteError(name, rc)
-    return
-
-
-def create_data_set_member(name):
-    """Create a data set member if the partitioned data set exists.
-    Also used to overwrite a data set member if empty replacement is desired.
-    Raises DatasetNotFoundError if data set cannot be found."""
-    base_dsname = name.split("(")[0]
-    if not base_dsname or not data_set_exists(base_dsname):
-        raise DatasetNotFoundError(name)
-    tmp_file = tempfile.NamedTemporaryFile(delete=True)
-    rc, stdout, stderr = run_command("cp {0} \"//'{1}'\"".format(tmp_file.name, name))
-    if rc != 0:
-        raise DatasetMemberCreateError(name, rc)
-    return
-
-
-def delete_data_set_member(name):
-    """ A wrapper around zoautil_py data set delete_members to raise exceptions on failure. """
-    rc = Datasets.delete_members(name)
-    if rc > 0:
-        raise DatasetMemberDeleteError(name, rc)
-    return
-
-
 def convert_size_to_kilobytes(old_size, old_size_unit):
     """Convert unsupported size unit to KB.
     Assumes 3390 disk type."""
@@ -781,6 +622,370 @@ def convert_size_to_kilobytes(old_size, old_size_unit):
     return new_size
 
 
+class DataSetHandler(object):
+    def __init__(self, module):
+        self.module = module
+
+    def perform_data_set_operations(self, name, state, **extra_args):
+        """ Calls functions to perform desired operations on
+        one or more data sets. Returns boolean indicating if changes were made. """
+        changed = False
+        if state == "present" and extra_args.get("type") != "MEMBER":
+            changed = self._ensure_data_set_present(name, **extra_args)
+        elif state == "present" and extra_args.get("type") == "MEMBER":
+            changed = self._ensure_data_set_member_present(name, **extra_args)
+        elif state == "absent" and extra_args.get("type") != "MEMBER":
+            changed = self._ensure_data_set_absent(name, **extra_args)
+        elif state == "absent" and extra_args.get("type") == "MEMBER":
+            changed = self._ensure_data_set_member_absent(name)
+        elif state == "cataloged":
+            changed = self._ensure_data_set_cataloged(name, extra_args.get("volume"))
+        elif state == "uncataloged":
+            changed = self._ensure_data_set_uncataloged(name)
+        return changed
+
+    def _ensure_data_set_present(self, name, replace, **extra_args):
+        """Creates data set if it does not already exist.
+        The replace argument is used to determine behavior when data set already
+        exists. Returns a boolean indicating if changes were made. """
+        ds_create_args = self._rename_args_for_zoau(extra_args)
+        present, changed = self._attempt_catalog_if_necessary(
+            name, extra_args.get("volume")
+        )
+        if present:
+            if not replace:
+                return changed
+            self._replace_data_set(name, ds_create_args)
+        else:
+            self._create_data_set(name, ds_create_args)
+        return True
+
+    def _ensure_data_set_absent(self, name, **extra_args):
+        """Deletes provided data set if it exists.
+        Returns a boolean indicating if changes were made. """
+        present, changed = self._attempt_catalog_if_necessary(
+            name, extra_args.get("volume")
+        )
+        if present:
+            self._delete_data_set(name)
+            return True
+        return False
+
+    # ? should we do additional check to ensure member was actually created?
+
+    def _ensure_data_set_member_present(self, name, replace, **extra_args):
+        """Creates data set member if it does not already exist.
+        The replace argument is used to determine behavior when data set already
+        exists. Returns a boolean indicating if changes were made."""
+        if self._data_set_member_exists(name):
+            if not replace:
+                return False
+            self._delete_data_set_member(name)
+        self._create_data_set_member(name)
+        return True
+
+    def _ensure_data_set_member_absent(self, name):
+        """Deletes provided data set member if it exists.
+        Returns a boolean indicating if changes were made."""
+        if self._data_set_member_exists(name):
+            self._delete_data_set_member(name)
+            return True
+        return False
+
+    def _ensure_data_set_cataloged(self, name, volume):
+        """Ensure a data set is cataloged. Data set can initially
+        be in cataloged or uncataloged state when this function is called.
+
+        Arguments:
+            name {str} -- The data set name to ensure is cataloged.
+            volume {str} -- The volume on which the data set should exist.
+
+        Returns:
+            bool -- If changes were made
+        """
+        if not self._is_in_vtoc(name, volume):
+            raise DatasetCatalogError(
+                name, volume, "-1", "Data set was not found in VTOC. Unable to catalog."
+            )
+        if self._data_set_cataloged(name):
+            return False
+        self._catalog_data_set(name, volume)
+        return True
+
+    def _ensure_data_set_uncataloged(self, name):
+        """Ensure a data set is uncataloged. Data set can initially
+        be in cataloged or uncataloged state when this function is called.
+
+        Arguments:
+            name {str} -- The data set name to ensure is uncataloged.
+
+        Returns:
+            bool -- If changes were made
+        """
+        if self._data_set_cataloged(name):
+            self._uncatalog_data_set(name)
+            return True
+        return False
+
+    def _data_set_cataloged(self, name):
+        stdin = " LISTCAT ENTRIES('{0}')".format(name)
+        rc, stdout, stderr = self.module.run_command(
+            "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=stdin
+        )
+        if re.search(r"-\s" + name + r"\s*\n\s+IN-CAT", stdout):
+            return True
+        return False
+
+    def _data_set_exists(self, name, volume=None):
+        if self._data_set_cataloged(name):
+            return True
+        elif volume is not None:
+            return self._is_in_vtoc(name, volume)
+        return False
+
+    def _data_set_member_exists(self, name):
+        """Checks for existence of data set member."""
+        rc, stdout, stderr = self.module.run_command("head \"//'{0}'\"".format(name))
+        if rc != 0 or (stderr and "EDC5067I" in stderr):
+            return False
+        return True
+
+    def _attempt_catalog_if_necessary(self, name, volume):
+        changed = False
+        present = False
+        if self._data_set_cataloged(name):
+            present = True
+        elif volume is not None and self._is_in_vtoc(name, volume):
+            self._catalog_data_set(name, volume)
+            changed = True
+            present = True
+        return present, changed
+
+    def _is_in_vtoc(self, name, volume):
+        vtoc = VolumeTableOfContents(self.module)
+        data_sets = vtoc.get_volume_entry(volume)
+        data_set = VolumeTableOfContents.find_data_set_in_volume_output(name, data_sets)
+        if data_set is not None:
+            return True
+        vsam_name = name + ".data"
+        vsam_data_set = VolumeTableOfContents.find_data_set_in_volume_output(
+            vsam_name, data_sets
+        )
+        if vsam_data_set is not None:
+            return True
+        return False
+
+    def _replace_data_set(self, name, extra_args):
+        """ Attempt to replace an existing data set. """
+        self._delete_data_set(name)
+        self._create_data_set(name, extra_args)
+        return
+
+    def _rename_args_for_zoau(self, args=None):
+        if args is None:
+            args = {}
+        """ Renames module arguments to match those desired by zoautil_py data set create method.
+        Returns a dictionary with renamed args. """
+        ds_create_args = {}
+        for module_arg_name, zoau_arg_name in ZOAU_DS_CREATE_ARGS.items():
+            if args.get(module_arg_name):
+                ds_create_args[zoau_arg_name] = args.get(module_arg_name)
+        return ds_create_args
+
+    def _create_data_set(self, name, extra_args=None):
+        """ A wrapper around zoautil_py data set create to raise exceptions on failure. """
+        if extra_args is None:
+            extra_args = {}
+        rc = Datasets.create(name, **extra_args)
+        if rc > 0:
+            raise DatasetCreateError(name, rc)
+        return
+
+    def _delete_data_set(self, name):
+        """ A wrapper around zoautil_py data set delete to raise exceptions on failure. """
+        rc = Datasets.delete(name)
+        if rc > 0:
+            raise DatasetDeleteError(name, rc)
+        return
+
+    def _create_data_set_member(self, name):
+        """Create a data set member if the partitioned data set exists.
+        Also used to overwrite a data set member if empty replacement is desired.
+        Raises DatasetNotFoundError if data set cannot be found."""
+        base_dsname = name.split("(")[0]
+        if not base_dsname or not self._data_set_cataloged(base_dsname):
+            raise DatasetNotFoundError(name)
+        tmp_file = tempfile.NamedTemporaryFile(delete=True)
+        rc, stdout, stderr = self.module.run_command(
+            "cp {0} \"//'{1}'\"".format(tmp_file.name, name)
+        )
+        if rc != 0:
+            raise DatasetMemberCreateError(name, rc)
+        return
+
+    def _delete_data_set_member(self, name):
+        """ A wrapper around zoautil_py data set delete_members to raise exceptions on failure. """
+        rc = Datasets.delete_members(name)
+        if rc > 0:
+            raise DatasetMemberDeleteError(name, rc)
+        return
+
+    def _catalog_data_set(self, name, volume):
+        """Catalog an uncataloged data set
+
+        Arguments:
+            name {str} -- The name of the data set to catalog
+            volume {str} -- The volume the data set resides on
+        """
+        if self._is_data_set_vsam(name, volume):
+            self._catalog_vsam_data_set(name, volume)
+        else:
+            self._catalog_non_vsam_data_set(name, volume)
+
+    def _catalog_non_vsam_data_set(self, name, volume):
+        idcams_input = """ DEFINE NVSAM -
+            (NAME('{0}') -
+            VOLUMES({1}) -
+            DEVT(3390)) """.format(
+            name, volume
+        )
+        try:
+            temp_data_set_name = self._create_temp_data_set()
+            Datasets.write(temp_data_set_name, idcams_input)
+            dd_statements = []
+            dd_statements.append(
+                types.DDStatement(ddName="sysin", dataset=temp_data_set_name)
+            )
+            dd_statements.append(types.DDStatement(ddName="sysprint", dataset="*"))
+            rc = MVSCmd.execute_authorized(pgm="idcams", args="", dds=dd_statements)
+            if rc != 0:
+                raise DatasetCatalogError(name, volume, rc)
+        except Exception:
+            raise
+        finally:
+            Datasets.delete(temp_data_set_name)
+        return
+
+    def _catalog_vsam_data_set(
+        self, name, volume,
+    ):
+        data_set_name = name.upper()
+        data_set_volume = volume.upper()
+        success = False
+        try:
+            temp_data_set_name = self._create_temp_data_set()
+            command_rc = 0
+            for data_set_type in ["", "LINEAR", "INDEXED", "NONINDEXED", "NUMBERED"]:
+                if data_set_type != "INDEXED":
+                    command = VSAM_CATALOG_COMMAND_NOT_INDEXED.format(
+                        data_set_name, data_set_volume, data_set_type
+                    )
+                else:
+                    command = VSAM_CATALOG_COMMAND_INDEXED.format(
+                        data_set_name, data_set_volume, data_set_type
+                    )
+
+                Datasets.write(temp_data_set_name, command)
+                dd_statements = []
+                dd_statements.append(
+                    types.DDStatement(ddName="sysin", dataset=temp_data_set_name)
+                )
+                dd_statements.append(types.DDStatement(ddName="sysprint", dataset="*"))
+                command_rc = MVSCmd.execute_authorized(
+                    pgm="idcams", args="", dds=dd_statements
+                )
+                if command_rc == 0:
+                    success = True
+                    break
+            if not success:
+                raise DatasetCatalogError(
+                    name, volume, command_rc, "Attempt to catalog VSAM data set failed."
+                )
+        except Exception:
+            raise
+        finally:
+            Datasets.delete(temp_data_set_name)
+        return
+
+    def _uncatalog_data_set(self, name):
+        if self._is_data_set_vsam(name):
+            self._uncatalog_vsam_data_set(name)
+        else:
+            self._uncatalog_non_vsam_data_set(name)
+        return
+
+    def _uncatalog_non_vsam_data_set(self, name):
+        iehprogm_input = NON_VSAM_UNCATALOG_COMMAND.format(name)
+        try:
+            temp_data_set_name = self._create_temp_data_set()
+            Datasets.write(temp_data_set_name, iehprogm_input)
+            dd_statements = []
+            dd_statements.append(
+                types.DDStatement(ddName="sysin", dataset=temp_data_set_name)
+            )
+            dd_statements.append(types.DDStatement(ddName="sysprint", dataset="*"))
+            rc = MVSCmd.execute_authorized(pgm="iehprogm", args="", dds=dd_statements)
+            if rc != 0:
+                raise DatasetUncatalogError(name, rc)
+        except Exception:
+            raise
+        finally:
+            Datasets.delete(temp_data_set_name)
+        return
+
+    def _uncatalog_vsam_data_set(self, name):
+        idcams_input = VSAM_UNCATALOG_COMMAND.format(name)
+        try:
+            temp_data_set_name = self._create_temp_data_set()
+            Datasets.write(temp_data_set_name, idcams_input)
+            dd_statements = []
+            dd_statements.append(
+                types.DDStatement(ddName="sysin", dataset=temp_data_set_name)
+            )
+            dd_statements.append(types.DDStatement(ddName="sysprint", dataset="*"))
+            rc = MVSCmd.execute_authorized(pgm="idcams", args="", dds=dd_statements)
+            if rc != 0:
+                raise DatasetUncatalogError(name, rc)
+        except Exception:
+            raise
+        finally:
+            Datasets.delete(temp_data_set_name)
+        return
+
+    def _is_data_set_vsam(self, name, volume=None):
+        if not volume:
+            return self._is_data_set_vsam_from_listds(name)
+        return self._is_data_set_vsam_from_vtoc(name, volume)
+
+    def _is_data_set_vsam_from_vtoc(self, name, volume):
+        vtoc = VolumeTableOfContents(self.module)
+        data_sets = vtoc.get_volume_entry(volume)
+        data_set = VolumeTableOfContents.find_data_set_in_volume_output(name, data_sets)
+        if data_set is None:
+            vsam_name = name + ".data"
+            data_set = VolumeTableOfContents.find_data_set_in_volume_output(
+                vsam_name, data_sets
+            )
+        if data_set is not None:
+            if data_set.get("data_set_organization", "") == "VS":
+                return True
+        return False
+
+    def _is_data_set_vsam_from_listds(self, name):
+        stdin = " LISTDS '{0}'".format(name)
+        rc, stdout, stderr = self.module.run_command(
+            "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=stdin
+        )
+        if re.search(r"[ ]+VSAM[ ]*\n", stdout):
+            return True
+        return False
+
+    def _create_temp_data_set(self):
+        temp_data_set_name = Datasets.temp_name()
+        Datasets.create(temp_data_set_name, "SEQ")
+        return temp_data_set_name
+
+
 # TODO: Add back safe data set replacement when issues are resolved
 
 
@@ -792,9 +997,11 @@ def run_module():
             type="list",
             elements="dict",
             options=dict(
-                name=dict(required=True,),
+                name=dict(type="str", required=True,),
                 state=dict(
-                    type="str", default="present", choices=["present", "absent"]
+                    type="str",
+                    default="present",
+                    choices=["present", "absent", "cataloged", "uncataloged"],
                 ),
                 type=dict(type="str", required=False,),
                 size=dict(type="str", required=False),
@@ -808,6 +1015,7 @@ def run_module():
                 #     aliases=['offset']
                 # ),
                 replace=dict(type="bool", default=False,),
+                volume=dict(type="str", required=False)
                 # unsafe_writes=dict(
                 #     type='bool',
                 #     default=False
@@ -816,7 +1024,11 @@ def run_module():
         ),
         # For individual data set args
         name=dict(type="str"),
-        state=dict(type="str", default="present", choices=["present", "absent"]),
+        state=dict(
+            type="str",
+            default="present",
+            choices=["present", "absent", "cataloged", "uncataloged"],
+        ),
         type=dict(type="str", required=False,),
         size=dict(type="str", required=False),
         format=dict(type="str", required=False,),
@@ -829,6 +1041,7 @@ def run_module():
         #     aliases=['offset']
         # ),
         replace=dict(type="bool", default=False,),
+        volume=dict(type="str", required=False),
         # unsafe_writes=dict(
         #     type='bool',
         #     default=False
@@ -837,12 +1050,7 @@ def run_module():
 
     result = dict(changed=False, message="")
 
-    # * Make module object global to avoid passing
-    # * through multiple functions
-    global run_command
-
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
-    run_command = module.run_command
 
     if module.check_mode:
         if module.params.get("replace"):
@@ -863,9 +1071,10 @@ def run_module():
 
         for data_set_params in data_set_param_list:
             parameters = process_special_parameters(data_set_params, parameter_handlers)
-            result["changed"] = perform_data_set_operations(**parameters) or result.get(
-                "changed", False
-            )
+            data_set_handler = DataSetHandler(module)
+            result["changed"] = data_set_handler.perform_data_set_operations(
+                **parameters
+            ) or result.get("changed", False)
     except Error as e:
         module.fail_json(msg=repr(e), **result)
     except Exception as e:
@@ -880,7 +1089,8 @@ def run_module():
 
 
 class Error(Exception):
-    pass
+    def __init__(self, *args):
+        super(Error, self).__init__(*args)
 
 
 class DatasetDeleteError(Error):
@@ -888,6 +1098,7 @@ class DatasetDeleteError(Error):
         self.msg = 'An error occurred during deletion of data set "{0}". RC={1}'.format(
             data_set, rc
         )
+        super(DatasetDeleteError, self).__init__(self.msg)
 
 
 class DatasetCreateError(Error):
@@ -895,6 +1106,7 @@ class DatasetCreateError(Error):
         self.msg = 'An error occurred during creation of data set "{0}". RC={1}'.format(
             data_set, rc
         )
+        super(DatasetCreateError, self).__init__(self.msg)
 
 
 class DatasetMemberDeleteError(Error):
@@ -902,6 +1114,7 @@ class DatasetMemberDeleteError(Error):
         self.msg = 'An error occurred during deletion of data set member"{0}". RC={1}'.format(
             data_set, rc
         )
+        super(DatasetMemberDeleteError, self).__init__(self.msg)
 
 
 class DatasetMemberCreateError(Error):
@@ -909,11 +1122,29 @@ class DatasetMemberCreateError(Error):
         self.msg = 'An error occurred during creation of data set member"{0}". RC={1}'.format(
             data_set, rc
         )
+        super(DatasetMemberCreateError, self).__init__(self.msg)
 
 
 class DatasetNotFoundError(Error):
-    def __init__(self, dataset):
-        self.msg = 'The data set "{0}" could not be located.'.format(dataset)
+    def __init__(self, data_set):
+        self.msg = 'The data set "{0}" could not be located.'.format(data_set)
+        super(DatasetNotFoundError, self).__init__(self.msg)
+
+
+class DatasetCatalogError(Error):
+    def __init__(self, data_set, volume, rc, message=""):
+        self.msg = 'An error occurred during cataloging of data set "{0}" on volume "{1}". RC={2}. {3}'.format(
+            data_set, volume, rc, message
+        )
+        super(DatasetCatalogError, self).__init__(self.msg)
+
+
+class DatasetUncatalogError(Error):
+    def __init__(self, data_set, rc):
+        self.msg = 'An error occurred during uncatalog of data set "{0}". RC={1}'.format(
+            data_set, rc
+        )
+        super(DatasetUncatalogError, self).__init__(self.msg)
 
 
 def main():

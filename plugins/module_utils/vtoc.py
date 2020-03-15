@@ -34,6 +34,13 @@ class VolumeTableOfContents(object):
                 break
         return data_set
 
+    @staticmethod
+    def find_data_set_in_volume_output(data_set_name, data_sets):
+        for data_set in data_sets:
+            if data_set.get("data_set_name") == data_set_name.upper():
+                return data_set
+        return None
+
     def _iehlist(self, dd, stdin):
         response = None
         rc, stdout, stderr = self.module.run_command(
@@ -248,4 +255,5 @@ class VolumeTableOfContents(object):
 class VolumeTableOfContentsError(Exception):
     def __init__(self, msg=""):
         self.msg = "An error occurred during VTOC parsing or retrieval. {0}".format(msg)
+        super(VolumeTableOfContentsError, self).__init__(self.msg)
 

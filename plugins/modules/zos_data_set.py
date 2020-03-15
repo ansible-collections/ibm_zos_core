@@ -33,11 +33,22 @@ options:
   state:
     description:
       - The final state desired for specified data set.
-      - If I(state=absent) and the data set does not exist on the managed node, no action taken, returns successful with I(changed=False).
-      - If I(state=absent) and the data set does exist on the managed node, remove the data set, returns successful with I(changed=True).
-      - If I(state=present) and the data set does not exist on the managed node, create the data set, returns successful with I(changed=True).
-      - If I(state=present) and I(replace=True) and the data set is present on the managed node, delete the data set and create the data set with the desired attributes, returns successful with I(changed=True).
-      - If I(state=present) and I(replace=False) and the data set is present on the managed node, no action taken, returns successful with I(changed=False).
+      - >
+        If I(state=absent) and the data set does not exist on the managed node,
+        no action taken, returns successful with I(changed=False).
+      - >
+        If I(state=absent) and the data set does exist on the managed node,
+        remove the data set, returns successful with I(changed=True).
+      - >
+        If I(state=present) and the data set does not exist on the managed node,
+        create the data set, returns successful with I(changed=True).
+      - >
+        If I(state=present) and I(replace=True) and the data set is present on
+        the managed node, delete the data set and create the data set with the
+        desired attributes, returns successful with I(changed=True).
+      - >
+        If I(state=present) and I(replace=False) and the data set is present
+        on the managed node, no action taken, returns successful with I(changed=False).
     required: false
     type: str
     default: present
@@ -90,9 +101,10 @@ options:
     version_added: "2.9"
   data_class:
     description:
-      - The data class name (required for SMS-managed data sets)
+      - The data class name.
+      - Required for SMS managed data sets.
     type: str
-    required: true
+    required: false
     version_added: "2.9"
   record_length:
     description:
@@ -149,11 +161,22 @@ options:
       state:
         description:
           - The final state desired for specified data set.
-          - If I(state=absent) and the data set does not exist on the managed node, no action taken, returns successful with I(changed=False).
-          - If I(state=absent) and the data set does exist on the managed node, remove the data set, returns successful with I(changed=True).
-          - If I(state=present) and the data set does not exist on the managed node, create the data set, returns successful with I(changed=True).
-          - If I(state=present) and I(replace=True) and the data set is present on the managed node, delete the data set and create the data set with the desired attributes, returns successful with I(changed=True).
-          - If I(state=present) and I(replace=False) and the data set is present on the managed node, no action taken, returns successful with I(changed=False).
+          - >
+            If I(state=absent) and the data set does not exist on the managed node,
+            no action taken, returns successful with I(changed=False).
+          - >
+            If I(state=absent) and the data set does exist on the managed node,
+            remove the data set, returns successful with I(changed=True).
+          - >
+            If I(state=present) and the data set does not exist on the managed node,
+            create the data set, returns successful with I(changed=True).
+          - >
+            If I(state=present) and I(replace=True) and the data set is present on
+            the managed node, delete the data set and create the data set with the
+            desired attributes, returns successful with I(changed=True).
+          - >
+            If I(state=present) and I(replace=False) and the data set is present
+            on the managed node, no action taken, returns successful with I(changed=False).
         required: false
         type: str
         default: present
@@ -205,8 +228,9 @@ options:
       data_class:
         description:
           - The data class name.
+          - Required for SMS managed data sets.
         type: str
-        required: true
+        required: false
         version_added: "2.9"
       record_length:
         description:
@@ -530,14 +554,14 @@ def process_special_parameters(original_params, param_handlers):
     """
     parameters = {}
     for key, value in param_handlers.items():
-        parameters[key] = value(original_params.get(key), parameters)
+        parameters[key] = value(original_params.get(key), parameters, original_params)
     for key, value in original_params.items():
         if key not in parameters:
             parameters[key] = value
     return parameters
 
 
-def data_set_name(arg_val, params):
+def data_set_name(arg_val, params, original_params):
     """Validates provided data set name(s) are valid.
     Returns a list containing the name(s) of data sets."""
     dsname = arg_val
@@ -560,7 +584,7 @@ def data_set_name(arg_val, params):
     return dsname.upper()
 
 
-def data_set_size(arg_val, params):
+def data_set_size(arg_val, params, original_params):
     """Validates provided data set size is valid.
     Returns the data set size. """
     if params.get("state") == "absent":
@@ -582,7 +606,7 @@ def data_set_size(arg_val, params):
     return arg_val
 
 
-def data_class(arg_val, params):
+def data_class(arg_val, params, original_params):
     """Validates provided data class is of valid length.
     Returns the data class. """
     if params.get("state") == "absent" or not arg_val:
@@ -597,7 +621,7 @@ def data_class(arg_val, params):
     return arg_val
 
 
-def record_length(arg_val, params):
+def record_length(arg_val, params, original_params):
     """Validates provided record length is valid.
     Returns the record length as integer."""
     if params.get("state") == "absent":
@@ -618,7 +642,7 @@ def record_length(arg_val, params):
     return arg_val
 
 
-def data_set_format(arg_val, params):
+def data_set_format(arg_val, params, original_params):
     """Validates data set format is valid.
     Returns uppercase data set format."""
     if params.get("state") == "absent":
@@ -637,7 +661,7 @@ def data_set_format(arg_val, params):
     return arg_val.upper()
 
 
-def key_offset(arg_val, params):
+def key_offset(arg_val, params, original_params):
     """Validates data set offset is valid.
     Returns data set offset as integer."""
     if params.get("state") == "absent":
@@ -656,7 +680,7 @@ def key_offset(arg_val, params):
     return arg_val
 
 
-def data_set_type(arg_val, params):
+def data_set_type(arg_val, params, original_params):
     """Validates data set type is valid.
     Returns uppercase data set type."""
     if params.get("state") == "absent":
@@ -669,6 +693,20 @@ def data_set_type(arg_val, params):
             "Value {0} is invalid for type argument. type must be of of the following: {1}.".format(
                 arg_val, ", ".join(DATA_SET_TYPES)
             )
+        )
+    return arg_val.upper()
+
+
+def volume(arg_val, params, original_params):
+    """Validates volume is valid.
+    Returns uppercase volume."""
+    if arg_val is None:
+        if original_params.get("state") == "cataloged":
+            raise ValueError("Volume is required when state==cataloged.")
+        return None
+    if not re.fullmatch(r"^[A-Z0-9]{1,6}$", str(arg_val), re.IGNORECASE,):
+        raise ValueError(
+            'Invalid argument type for "{0}". expected "volume"'.format(arg_val)
         )
     return arg_val.upper()
 
@@ -1218,7 +1256,7 @@ class DataSetHandler(object):
 
 
 # TODO: Add back safe data set replacement when issues are resolved
-
+# TODO: switch argument parsing over to BetterArgParser
 
 def run_module():
     # TODO: add logic to handle aliases during parsing
@@ -1296,6 +1334,7 @@ def run_module():
     parameter_handlers["size"] = data_set_size
     # parameter_handlers['key_offset'] = key_offset
     parameter_handlers["record_length"] = record_length
+    parameter_handlers["volume"] = volume
 
     try:
         data_set_param_list = get_individual_data_set_parameters(module.params)

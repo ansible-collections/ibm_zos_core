@@ -68,8 +68,14 @@ class VolumeTableOfContents(object):
         lines = data_set_string.split("\n")
         data_set_info = {}
         regex_for_rows = [
-            r"(0-*DATA SET NAME-*\s+)(SER NO\s+)(SEQNO\s+)(DATE.CRE\s+)(DATE.EXP\s+)(DATE.REF\s+)(EXT\s+)(DSORG\s+)(RECFM\s+)(OPTCD\s+)(BLKSIZE[ ]*)",
-            r"(0SMS.IND\s+)(LRECL\s+)(KEYLEN\s+)(INITIAL ALLOC\s+)(2ND ALLOC\s+)(EXTEND\s+)(LAST BLK\(T-R-L\)\s+)(DIR.REM\s+)(F2 OR F3\(C-H-R\)\s+)(DSCB\(C-H-R\)[ ]*)",
+            (
+                r"(0-*DATA SET NAME-*\s+)(SER NO\s+)(SEQNO\s+)(DATE.CRE\s+)(DATE.EXP\s+)"
+                r"(DATE.REF\s+)(EXT\s+)(DSORG\s+)(RECFM\s+)(OPTCD\s+)(BLKSIZE[ ]*)"
+            ),
+            (
+                r"(0SMS.IND\s+)(LRECL\s+)(KEYLEN\s+)(INITIAL ALLOC\s+)(2ND ALLOC\s+)"
+                r"(EXTEND\s+)(LAST BLK\(T-R-L\)\s+)(DIR.REM\s+)(F2 OR F3\(C-H-R\)\s+)(DSCB\(C-H-R\)[ ]*)"
+            ),
             r"([ ]*EATTR[ ]*)",
         ]
         data_set_info.update(
@@ -93,9 +99,8 @@ class VolumeTableOfContents(object):
                 fields = [[fields[0]]]
             count = 0
             for field in fields[0]:
-                table_data[field.strip(" -0")] = data_row[
-                    count : count + len(field)
-                ].strip()
+                end = count + len(field)
+                table_data[field.strip(" -0")] = data_row[count:end].strip()
                 count += len(field)
         table_data = self._format_table_data(table_data)
         return table_data
@@ -225,7 +230,7 @@ class VolumeTableOfContents(object):
                 *[str(len(x)) for x in header_group]
             )
             if index > 0:
-                group_regex = "(?:{}){{0,1}}".format(group_regex)
+                group_regex = "(?:{0}){{0,1}}".format(group_regex)
             extent_regex += group_regex
         extent_regex += "$"
         return extent_regex
@@ -256,4 +261,3 @@ class VolumeTableOfContentsError(Exception):
     def __init__(self, msg=""):
         self.msg = "An error occurred during VTOC parsing or retrieval. {0}".format(msg)
         super(VolumeTableOfContentsError, self).__init__(self.msg)
-

@@ -412,7 +412,7 @@ class BetterArgHandler(object):
         Returns:
             str -- The arguments contents after any necessary operations.
         """
-        if not re.fullmatch(r"^[A-Z0-9]{1,8}$", str(contents), re.IGNORECASE,):
+        if not re.fullmatch(r"^[A-Z0-9]{1,6}$", str(contents), re.IGNORECASE,):
             raise ValueError(
                 'Invalid argument type for "{0}". expected "volume"'.format(contents)
             )

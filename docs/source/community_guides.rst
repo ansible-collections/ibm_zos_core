@@ -5,9 +5,14 @@
 Contributing
 ============
 
-Currently we are not accepting community contributions. Though, you may
-periodically review this content to learn when, and how, contributions can be
+Currently we are not accepting community contributions. Though, we encourage
+opening `git issues`_ for bugs, comments or feature requests.
+
+Periodically review this content to learn when, and how, contributions can be
 made in the future.
+
+.. _git issues:
+   https://github.com/ansible-collections/ibm_zos_core/issues
 
 Helpful Links
 =============

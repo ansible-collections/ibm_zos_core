@@ -86,7 +86,7 @@ documentation can be accessed from the command line by using the
 ``ansible-doc`` command.
 
 Here's how to use the ``ansible-doc`` command after you have installed the
-**IBM z/OS Core Collection**: ``ansible-doc ibm.ibm_zos_core.zos_data_set``
+**IBM z/OS core collection**: ``ansible-doc ibm.ibm_zos_core.zos_data_set``
 
 .. code-block:: sh
 

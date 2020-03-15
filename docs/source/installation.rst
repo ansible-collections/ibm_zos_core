@@ -5,7 +5,8 @@
 Installation
 ============
 You have several options you may use to install the **IBM Z Core
-Collection**. These are Ansible Galaxy, Ansible Hub, and a local build.
+Collection**. These are Ansible Galaxy, Ansible Automation Hub, and a local
+build.
 
 For more information on installing collections, see `using collections`_.
 
@@ -22,7 +23,7 @@ Galaxy enables you to quickly configure your automation project with content
 from the Ansible community. Galaxy provides prepackaged units of work known as
 collections.
 
-Here's an example command for installing the **IBM z/OS Core Collection**:
+Here's an example command for installing the **IBM z/OS core collection**:
 
 .. code-block:: sh
 

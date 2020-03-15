@@ -1,3 +1,7 @@
+.. ...........................................................................
+.. © Copyright IBM Corporation 2020                                          .
+.. ...........................................................................
+
 Installation
 ============
 You have several options you may use to install the **IBM Z Core
@@ -198,8 +202,5 @@ To build a collection from the git repository:
          Starting collection install process
          Installing 'ibm.ibm_zos_core:0.0.4' to '/Users/user/.ansible/collections/ansible_collections/ibm/ibm_zos_core'
 
-.. ....................................
-.. Copyright                          .
-.. © Copyright IBM Corporation 2020   .
-.. ....................................
+
 

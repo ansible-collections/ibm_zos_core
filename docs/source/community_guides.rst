@@ -1,3 +1,7 @@
+.. ...........................................................................
+.. © Copyright IBM Corporation 2020                                          .
+.. ...........................................................................
+
 Contributing
 ============
 
@@ -13,7 +17,4 @@ Helpful Links
 .. _Ansible guide:
    https://docs.ansible.com/ansible/latest/user_guide/intro_getting_started.html
 
-.. ....................................
-.. Copyright                          .
-.. © Copyright IBM Corporation 2020   .
-.. ....................................
+

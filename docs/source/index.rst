@@ -1,3 +1,7 @@
+.. ...........................................................................
+.. © Copyright IBM Corporation 2020                                          .
+.. ...........................................................................
+
 IBM z/OS Core Collection
 ========================
 
@@ -105,8 +109,3 @@ See individual files for applicable licenses.
    :caption: Appendices
 
    release_notes
-
-.. ....................................
-.. Copyright                          .
-.. © Copyright IBM Corporation 2020   .
-.. ....................................

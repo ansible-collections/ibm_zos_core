@@ -1,7 +1,7 @@
 # Copyright (c) IBM Corporation 2019, 2020
 # Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
@@ -44,12 +44,8 @@ def ansible_zos_module(request, z_python_interpreter):
     # * Inject our environment
     hosts = adhoc["options"]["inventory_manager"]._inventory.hosts
     for host in hosts.values():
-<<<<<<< HEAD
-        host.vars['ansible_python_interpreter'] = interpreter
-=======
         host.vars["ansible_python_interpreter"] = interpreter
         host.vars["ansible_connection"] = "zos_ssh"
->>>>>>> aa5db2f... Repo updates to satisfy ansible-test sanity testing requirements (#19)
     yield adhoc
 
 

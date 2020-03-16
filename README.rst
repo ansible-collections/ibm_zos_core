@@ -35,8 +35,8 @@ Features
 ========
 
 The IBM z/OS core collection includes `connection plugins`_,
-`action plugins`_, `modules`_, `sample playbooks`_, `action plugins`_
-and ansible-doc to automate tasks on z/OS.
+`action plugins`_, `modules`_, `sample playbooks`_ and ansible-doc to
+automate tasks on z/OS.
 
 .. _connection plugins:
    https://github.com/ansible-collections/ibm_zos_core/tree/master/plugins/connection/

@@ -1,15 +1,15 @@
 .. ...........................................................................
-.. Copyright                                                                 .
 .. © Copyright IBM Corporation 2020                                          .
 .. ...........................................................................
 
 IBM z/OS core collection
 ========================
 
-The IBM z/OS core collection, referred to as **ibm_zos_core**, is part of the
-broader offering **Red Hat® Ansible Certified Content for IBM Z**.
-``ibm_zos_core`` supports tasks such as creating data sets, submitting jobs,
-querying jobs, and retrieving job output.
+The **IBM z/OS core collection**, also represented as **ibm_zos_core** in this
+document, is part of the broader offering
+**Red Hat® Ansible Certified Content for IBM Z**. IBM z/OS core collection
+supports tasks such as creating data sets, submitting jobs, querying jobs, and
+retrieving job output.
 
 Red Hat Ansible Certified Content for IBM Z
 ===========================================
@@ -21,17 +21,22 @@ automation on Z through a seamless, unified workflow orchestration with
 configuration management, provisioning, and application deployment in one
 easy-to-use platform.
 
-Collections, as part of the broader offering
-**Red Hat® Ansible Certified Content for IBM Z**, will initially be made
-available on Galaxy and later made available as certified content and
-accessible through Automation Hub.
+IBM z/OS core collection, as part of the broader offering
+**Red Hat® Ansible Certified Content for IBM Z**, will be available on both,
+Galaxy as community supported and Automation Hub with enterprise support.
+
+For **guides** and **reference**, please visit `the documentation site`_.
+
+.. _the documentation site:
+   https://ansible-collections.github.io/ibm_zos_core/
+
 
 Features
 ========
 
-The IBM z/OS core collection includes `connection plugins`_ ,
-`action plugins`_ , `modules`_ , `sample playbooks`_ , `action plugins`_
-and ansible-doc to automate tasks on Z.
+The IBM z/OS core collection includes `connection plugins`_,
+`action plugins`_, `modules`_, `sample playbooks`_, `action plugins`_
+and ansible-doc to automate tasks on z/OS.
 
 .. _connection plugins:
    https://github.com/ansible-collections/ibm_zos_core/tree/master/plugins/connection/
@@ -41,22 +46,7 @@ and ansible-doc to automate tasks on Z.
     https://github.com/ansible-collections/ibm_zos_core/tree/master/plugins/modules/
 .. _sample playbooks:
     https://github.com/ansible-collections/ibm_zos_core/tree/master/playbooks/
-.. _action plugins:
-    https://github.com/ansible-collections/ibm_zos_core/tree/master/plugins/action/
-.. _modules:
-    https://github.com/ansible-collections/ibm_zos_core/tree/master/plugins/modules/
-.. _sample playbooks:
-    https://github.com/ansible-collections/ibm_zos_core/tree/master/playbooks/
-.. _modules:
-    https://github.com/ansible-collections/ibm_zos_core/tree/master/plugins/modules/
-.. _sample playbooks:
-    https://github.com/ansible-collections/ibm_zos_core/tree/master/playbooks/
 
-
-For guides and reference, please visit `the documentation site`_.
-
-.. _the documentation site:
-    https://ansible-collections.github.io/ibm_zos_core/
 
 Copyright
 =========

@@ -59,7 +59,7 @@ list or group of lists know as an `inventory`_. Once the inventory is defined,
 you can use `patterns`_ to select the hosts, or groups, you want Ansible to run
 against.
 
-Included in the `playbooks directory`_ is a `sample inventory`_ file that with
+Included in the `playbooks directory`_ is a `sample inventory file`_ that with
 little modification can be used to manage your nodes. This inventory file
 should be included when running the sample playbook.
 
@@ -91,7 +91,7 @@ Ansible `FAQ`_.
    https://docs.ansible.com/ansible/latest/user_guide/intro_inventory.html
 .. _patterns:
    https://docs.ansible.com/ansible/latest/user_guide/intro_patterns.html#intro-patterns
-.. _sample inventory:
+.. _sample inventory file:
    https://github.com/ansible-collections/ibm_zos_core/blob/master/playbooks/inventory
 .. _FAQ:
    https://docs.ansible.com/ansible/latest/reference_appendices/faq.html#running-on-z-os
@@ -138,11 +138,11 @@ interpreter path, for example,
 Run the playbook
 ----------------
 
-Access the sample Ansible playbook, ensure you are within the collection
+Access the sample Ansible playbook and ensure you are within the collection
 playbooks directory where the sample files are included,
 ``~/.ansible/collections/ibm/ibm_zos_core/playbooks/``.
 
-Use the Ansible command ``ansible-playbook`` to run the sample playbook, the
+Use the Ansible command ``ansible-playbook`` to run the sample playbook.  The
 command syntax is ``ansible-playbook -i <inventory> <playbook>``, for example,
 ``ansible-playbook -i inventory zos-collection-sample.yaml``.
 

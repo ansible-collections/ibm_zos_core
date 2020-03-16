@@ -33,24 +33,24 @@ Control node
 Managed node
 ------------
 
-* `Python on Z`_: 3.5 or later
-* `zOS`_: V02.02.00 or later
+* `Python on z/OS`_: 3.6 or later
+* `z/OS`_: V02.02.00 or later
 * `IBM Z Open Automation Utilities`_ (ZOAU)
-* `zOS OpenSSH`_
+* `z/OS OpenSSH`_
 
-.. _Python on Z:
+.. _Python on z/OS:
    requirements.html#id1
-.. _zOS:
+.. _z/OS:
    https://www.ibm.com/support/knowledgecenter/SSLTBW_2.2.0/com.ibm.zos.v2r2/zos-v2r2-home.html
 
 .. _IBM Z Open Automation Utilities:
    requirements.html#id1
 
-.. _zOS OpenSSH:
+.. _z/OS OpenSSH:
    https://www.ibm.com/support/knowledgecenter/SSLTBW_2.2.0/com.ibm.zos.v2r2.e0za100/ch1openssh.htm
 
-Python on Z
------------
+Python on z/OS
+--------------
 
 If the Ansible target is z/OS, you must install a python distribution ported
 for this platform. Rocket Software is currently the preferred version for z/OS.

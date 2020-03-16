@@ -21,7 +21,7 @@ automation on Z through a seamless, unified workflow orchestration with
 configuration management, provisioning, and application deployment in one
 easy-to-use platform.
 
-Collections, as part of the broader offering
+IBM z/OS core collection, as part of the broader offering
 **Red Hat® Ansible Certified Content for IBM Z**, will be available on both,
 Galaxy as community supported and Automation Hub with enterprise support. 
 
@@ -36,16 +36,6 @@ and ansible-doc to automate tasks on z/OS.
    https://github.com/ansible-collections/ibm_zos_core/tree/master/plugins/connection/
 .. _action plugins:
    https://github.com/ansible-collections/ibm_zos_core/tree/master/plugins/action/
-.. _modules:
-    https://github.com/ansible-collections/ibm_zos_core/tree/master/plugins/modules/
-.. _sample playbooks:
-    https://github.com/ansible-collections/ibm_zos_core/tree/master/playbooks/
-.. _action plugins:
-    https://github.com/ansible-collections/ibm_zos_core/tree/master/plugins/action/
-.. _modules:
-    https://github.com/ansible-collections/ibm_zos_core/tree/master/plugins/modules/
-.. _sample playbooks:
-    https://github.com/ansible-collections/ibm_zos_core/tree/master/playbooks/
 .. _modules:
     https://github.com/ansible-collections/ibm_zos_core/tree/master/plugins/modules/
 .. _sample playbooks:

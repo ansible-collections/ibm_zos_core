@@ -36,7 +36,7 @@ Managed node
 * `Python on Z`_: 3.5 or later
 * `zOS`_: V02.02.00 or later
 * `IBM Z Open Automation Utilities`_ (ZOAU)
-* `OpenSSH`_
+* `zOS OpenSSH`_
 
 .. _Python on Z:
    requirements.html#id1
@@ -46,6 +46,8 @@ Managed node
 .. _IBM Z Open Automation Utilities:
    requirements.html#id1
 
+.. _zOS OpenSSH:
+   https://www.ibm.com/support/knowledgecenter/SSLTBW_2.2.0/com.ibm.zos.v2r2.e0za100/ch1openssh.htm
 
 Python on Z
 -----------
@@ -77,12 +79,13 @@ ZOAU
 
 IBM Z Open Automation Utilities provide support for executing automation tasks
 on z/OS. With ZOAU, you can run traditional MVS commands, such as IEBCOPY,
-IDCAMS, and IKJEFT01.
+IDCAMS, and IKJEFT01, as well as perform a number of data set operations
+in the scripting language of your choice.
 
 **Installation**
 
-* For ZOAU FMID, program directory, fix list, latest PTF, installation and
-  configuration refer the `product page`_.
+* For the ZOAU FMID, program directory, fix list, latest PTF, installation
+  and configuration, refer to the ZOAU `product page`_.
 
 .. _product page:
    https://www.ibm.com/support/knowledgecenter/en/SSKFYE_1.0.0/welcome_zoautil.html

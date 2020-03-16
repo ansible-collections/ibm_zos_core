@@ -1,11 +1,12 @@
 # IBM collection namespace
 namespace: ibm
 
-# Red Hat Ansible Certified Content for IBM Z
+# Red Hat Ansible Certified Content for IBM Z 
+# IBM z/OS core collection
 name: ibm_zos_core
 
 # The collection version
-version: 1.0.0
+version: 1.0.0-beta
 
 # Collection README file
 readme: README.md

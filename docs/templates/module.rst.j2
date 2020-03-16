@@ -151,19 +151,21 @@ See Also
       {{ "  " * level }}| {{ _description }}
       
       {% if _returned %}
-      {{ "  " * level }}| **returned**: {{ _returned }}
+{{ "  " * level }}| **returned**: {{ _returned }}
       {% endif %}
       
       {{ "  " * level }}| **type**: {{ _type  }}
 
       {% if _sample %}
-      {% if _sample is iterable %}
+      {% if _type != 'str' and _type != 'int' %}
 
-      {{ "  " * level }}**{{ entry }}** **sample**: ::
+      {{ "  " * level }}**sample**: ::
 
                        {{ _sample | tojson }}
       {% else %}
-      {{ "  " * level }}| **sample**: {{ _sample |tojson  }}
+      
+      {{ "  " * level }}| **sample**: {{ _sample }}
+      
       {% endif %}
       {% endif %}
 

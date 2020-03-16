@@ -85,7 +85,7 @@ in the scripting language of your choice.
 **Installation**
 
 * For the ZOAU FMID, program directory, fix list, latest PTF, installation
-and configuration, refer to the ZOAU `product page`_.
+  and configuration, refer to the ZOAU `product page`_.
 
 .. _product page:
    https://www.ibm.com/support/knowledgecenter/en/SSKFYE_1.0.0/welcome_zoautil.html

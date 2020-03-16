@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Plugins &mdash; IBM Z Core Collection 1.0.0 documentation</title>
+  <title>Plugins &mdash; IBM z/OS core collection 1.0.0 documentation</title>
   
 
   
@@ -50,7 +50,7 @@
           
 
           
-            <a href="index.html" class="icon icon-home"> IBM Z Core Collection
+            <a href="index.html" class="icon icon-home"> IBM z/OS core collection
           
 
           
@@ -80,7 +80,7 @@
               
             
             
-              <p class="caption"><span class="caption-text">Using IBM Z Core Collection</span></p>
+              <p class="caption"><span class="caption-text">Getting Started</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart</a></li>
@@ -121,7 +121,7 @@
       <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">IBM Z Core Collection</a>
+          <a href="index.html">IBM z/OS core collection</a>
         
       </nav>
 
@@ -175,20 +175,20 @@
             
   <div class="section" id="plugins">
 <h1>Plugins<a class="headerlink" href="#plugins" title="Permalink to this headline">¶</a></h1>
-<p>Plugins that come with <strong>IBM Z Core Collection</strong> augment Ansible’s core
+<p>Plugins that come with the <strong>IBM z/OS core collection</strong> augment Ansible’s core
 functionality. Ansible uses a plugin architecture to enable a rich, flexible
 and expandable feature set.</p>
 <div class="section" id="action">
 <h2>Action<a class="headerlink" href="#action" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
-<li><p><a class="reference external" href="https://github.com/ansible-collections/ibm_zos_core/blob/master/docs/README-zos-rexx-connection-plugin.md">normal</a>: A fork of Ansible <a class="reference external" href="https://github.com/ansible/ansible/blob/devel/lib/ansible/plugins/action/normal.py">normal.py</a> action plugin that is modified to allow a conditional shebang line in REXX modules.</p></li>
-<li><p><a class="reference external" href="https://github.com/ansible-collections/ibm_zos_core/blob/master/docs/README-zos-job-submit.md">zos_job_submit</a>: Used to submit a job from the controller and optionally monitor for job completion.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">normal</span></code>: A fork of Ansible <a class="reference external" href="https://github.com/ansible/ansible/blob/devel/lib/ansible/plugins/action/normal.py">normal.py</a> action plugin that is modified to allow a conditional shebang line in REXX modules.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">zos_job_submit</span></code>: Used to <a class="reference external" href="modules/zos_job_submit.html">submit a job</a> from the controller and optionally monitor for job completion.</p></li>
 </ul>
 </div>
 <div class="section" id="connection">
 <h2>Connection<a class="headerlink" href="#connection" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
-<li><p><a class="reference external" href="https://github.com/ansible-collections/ibm_zos_core/blob/master/docs/README-zos-rexx-connection-plugin.md">zos_ssh</a>: Enables the Ansible controller to communicate to a Z target machine by using ssh, with the added support to transfer ASCII as EBCDIC when transferring REXX modules. This connection plugin was forked from the Ansible <a class="reference external" href="https://github.com/ansible/ansible/blob/devel/lib/ansible/plugins/connection/ssh.py">ssh.py</a> connection plugin.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">zos_ssh</span></code>: Enables the Ansible controller to communicate to a z/OS target machine by using ssh, with the added support to transfer ASCII as EBCDIC when transferring REXX modules. This connection plugin was forked from the Ansible <a class="reference external" href="https://github.com/ansible/ansible/blob/devel/lib/ansible/plugins/connection/ssh.py">ssh.py</a> connection plugin.</p></li>
 <li><p>For further reference, see the <a class="reference external" href="quickstart.html#z-os-connection-plugin">zos_ssh quickstart</a> guide.</p></li>
 </ul>
 </div>

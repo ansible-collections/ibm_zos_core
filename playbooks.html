@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Playbooks &mdash; IBM Z Core Collection 1.0.0 documentation</title>
+  <title>Playbooks &mdash; IBM z/OS core collection 1.0.0 documentation</title>
   
 
   
@@ -36,7 +36,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Contributing" href="community_guides.html" />
-    <link rel="prev" title="zos_data_set – Create and set attributes for data sets" href="modules/zos_data_set.html" /> 
+    <link rel="prev" title="zos_job_submit – Submit JCL" href="modules/zos_job_submit.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -50,7 +50,7 @@
           
 
           
-            <a href="index.html" class="icon icon-home"> IBM Z Core Collection
+            <a href="index.html" class="icon icon-home"> IBM z/OS core collection
           
 
           
@@ -80,7 +80,7 @@
               
             
             
-              <p class="caption"><span class="caption-text">Using IBM Z Core Collection</span></p>
+              <p class="caption"><span class="caption-text">Getting Started</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart</a></li>
@@ -124,7 +124,7 @@
       <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">IBM Z Core Collection</a>
+          <a href="index.html">IBM z/OS core collection</a>
         
       </nav>
 
@@ -178,15 +178,15 @@
             
   <div class="section" id="playbooks">
 <h1>Playbooks<a class="headerlink" href="#playbooks" title="Permalink to this headline">¶</a></h1>
-<p>Sample playbooks are <strong>included</strong> that demonstrate how to use the collection
-content in the ibm_zos_core collection.</p>
+<p>The sample playbooks that are <strong>included</strong> demonstrate how to use the
+collection content in the IBM z/OS core collection.</p>
 <div class="section" id="playbook-documentation">
 <h2>Playbook Documentation<a class="headerlink" href="#playbook-documentation" title="Permalink to this headline">¶</a></h2>
 <p>An <a class="reference external" href="https://docs.ansible.com/ansible/latest/user_guide/playbooks_intro.html#playbooks-intro">Ansible playbook</a> consists of organized instructions that define work for
 a managed node (hosts) to be managed with Ansible.</p>
-<p>Included in the <strong>IBM Z Core Collection</strong> is a <a class="reference external" href="https://github.com/ansible-collections/ibm_zos_core/tree/master/playbooks">playbooks directory</a> that
+<p>Included in the <strong>IBM z/OS core collection</strong> is a <a class="reference external" href="https://github.com/ansible-collections/ibm_zos_core/tree/master/playbooks">playbooks directory</a> that
 contains a sample playbook that with some modification to the <strong>inventory</strong>,
-<strong>ansible.cfg</strong> and <strong>group_vars</strong> can be run with the``ansible-playbook``
+<strong>ansible.cfg</strong> and <strong>group_vars</strong> can be run with the <code class="docutils literal notranslate"><span class="pre">ansible-playbook</span></code>
 command.</p>
 <p>You can find the playbook content that is included with the collection where
 the collection was installed, please refer back to the
@@ -210,7 +210,7 @@ the Ansible documentation on <a class="reference external" href="https://docs.an
 list or group of lists know as an <a class="reference external" href="https://docs.ansible.com/ansible/latest/user_guide/intro_inventory.html">inventory</a>. Once the inventory is defined,
 you can use <a class="reference external" href="https://docs.ansible.com/ansible/latest/user_guide/intro_patterns.html#intro-patterns">patterns</a> to select the hosts, or groups, you want Ansible to run
 against.</p>
-<p>Included in the <a class="reference external" href="https://github.com/ansible-collections/ibm_zos_core/tree/master/playbooks">playbooks directory</a> is a <a class="reference external" href="https://github.com/ansible-collections/ibm_zos_core/blob/master/playbooks/inventory">sample inventory</a> file that with
+<p>Included in the <a class="reference external" href="https://github.com/ansible-collections/ibm_zos_core/tree/master/playbooks">playbooks directory</a> is a <a class="reference external" href="https://github.com/ansible-collections/ibm_zos_core/blob/master/playbooks/inventory">sample inventory file</a> that with
 little modification can be used to manage your nodes. This inventory file
 should be included when running the sample playbook.</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">zsystem</span><span class="p">:</span>
@@ -224,19 +224,20 @@ should be included when running the sample playbook.</p>
 <p>The value for property <strong>ansible_host</strong> is the hostname of the manage node, for
 example, <code class="docutils literal notranslate"><span class="pre">ansible_host:</span> <span class="pre">ec33017A.vmec.svl.ibm.com</span></code></p>
 <p>The value for property <strong>zos_target_username</strong> is the user name to use when
-connecting to the host, for example, <code class="docutils literal notranslate"><span class="pre">ansible_user:</span> <span class="pre">omvsadm</span></code></p>
+connecting to the host, for example, <code class="docutils literal notranslate"><span class="pre">ansible_user:</span> <span class="pre">omvsadm</span></code>.</p>
 <p>The value for property <strong>ansible_python_interpreter</strong> is the target host python
 path. This is useful for systems with more than one Python installation, or
 when Python is not located at in the default location <strong>/usr/bin/python</strong>, for
 example, <code class="docutils literal notranslate"><span class="pre">ansible_python_interpreter:</span> <span class="pre">/usr/lpp/rsusr/python36/bin/python</span></code></p>
 <p>For more information on python configuration requirements on z/OS, refer to
-Ansible FAQ, <a class="reference external" href="https://docs.ansible.com/ansible/latest/reference_appendices/faq.html">Running on zOS</a>.</p>
+Ansible <a class="reference external" href="https://docs.ansible.com/ansible/latest/reference_appendices/faq.html#running-on-z-os">FAQ</a>.</p>
 </div>
 <div class="section" id="group-vars">
 <h2>Group_vars<a class="headerlink" href="#group-vars" title="Permalink to this headline">¶</a></h2>
 <p>Although you can store variables in the inventory file, storing separate host
 and group variables files may help you organize your variable values more
-easily. Included with the sample playbook is a sample variable file <a class="reference external" href="https://github.com/ansible-collections/ibm_zos_core/blob/master/playbooks/group_vars/all.yml">all.yml</a>.</p>
+easily. Included with the sample playbook is a sample variables
+file <a class="reference external" href="https://github.com/ansible-collections/ibm_zos_core/blob/master/playbooks/group_vars/all.yml">all.yml</a>.</p>
 <p>The value for property <strong>BPXK_AUTOCVT</strong> must be configured to <code class="docutils literal notranslate"><span class="pre">ON</span></code>.</p>
 <p>The value for property <strong>ZOAU_ROOT</strong> is the ZOA Utilities install root path,
 for example, <code class="docutils literal notranslate"><span class="pre">/usr/lpp/IBM/zoautil</span></code>.</p>
@@ -245,9 +246,10 @@ for example, <code class="docutils literal notranslate"><span class="pre">/usr/l
 <p>The value for property <strong>LIBPATH</strong> is both the path to the python libraries on
 the target and the ZOA Utilities Python library path separated by
 semi-colons <code class="docutils literal notranslate"><span class="pre">:</span></code>, for example,
-<code class="docutils literal notranslate"><span class="pre">/usr/lpp/IBM/zoautil/lib/:/usr/lpp/rsusr/python36/lib:/lib:/usr/lib:.</span></code></p>
+<code class="docutils literal notranslate"><span class="pre">/usr/lpp/IBM/zoautil/lib/:/usr/lpp/rsusr/python36/lib:/lib:/usr/lib:.</span></code>.</p>
 <p>The value for property <strong>PATH</strong> is the ZOA utilities BIN path and Python
-interpreter path, for example, <code class="docutils literal notranslate"><span class="pre">/usr/lpp/IBM/zoautil/bin;/usr/bin/python</span></code>.</p>
+interpreter path, for example,
+<code class="docutils literal notranslate"><span class="pre">/usr/lpp/IBM/zoautil/bin;/usr/lpp/rsusr/python36/bin/python</span></code>.</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">environment_vars</span><span class="p">:</span>
    <span class="nt">_BPXK_AUTOCVT</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ON</span>
    <span class="nt">ZOAU_ROOT</span><span class="p">:</span> <span class="s">&#39;/usr/lpp/IBM/zoautil&#39;</span>
@@ -259,12 +261,12 @@ interpreter path, for example, <code class="docutils literal notranslate"><span 
 </div>
 <div class="section" id="run-the-playbook">
 <h2>Run the playbook<a class="headerlink" href="#run-the-playbook" title="Permalink to this headline">¶</a></h2>
-<p>Access the sample Ansible playbook, ensure you are within the collection
+<p>Access the sample Ansible playbook and ensure you are within the collection
 playbooks directory where the sample files are included,
-<code class="docutils literal notranslate"><span class="pre">~/.ansible/collections/ibm/ibm_zos_core/playbooks/</span></code></p>
-<p>Use the Ansible command <code class="docutils literal notranslate"><span class="pre">ansible-playbook</span></code> to run the sample playbook, the
+<code class="docutils literal notranslate"><span class="pre">~/.ansible/collections/ibm/ibm_zos_core/playbooks/</span></code>.</p>
+<p>Use the Ansible command <code class="docutils literal notranslate"><span class="pre">ansible-playbook</span></code> to run the sample playbook.  The
 command syntax is <code class="docutils literal notranslate"><span class="pre">ansible-playbook</span> <span class="pre">-i</span> <span class="pre">&lt;inventory&gt;</span> <span class="pre">&lt;playbook&gt;</span></code>, for example,
-<code class="docutils literal notranslate"><span class="pre">ansible-playbook</span> <span class="pre">-i</span> <span class="pre">inventory</span> <span class="pre">zos-collection-sample.yaml</span></code></p>
+<code class="docutils literal notranslate"><span class="pre">ansible-playbook</span> <span class="pre">-i</span> <span class="pre">inventory</span> <span class="pre">zos-collection-sample.yaml</span></code>.</p>
 <p>This command assumes the controllers public SSH key has been shared with the
 managed node. If you want to avoid entering a username and password each time,
 copy the SSH public key to the managed node using the <code class="docutils literal notranslate"><span class="pre">ssh-copy-id</span></code> command,
@@ -300,7 +302,7 @@ levels INFO, WARN, ERROR, DEBUG.</p>
         <a href="community_guides.html" class="btn btn-neutral float-right" title="Contributing" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="modules/zos_data_set.html" class="btn btn-neutral float-left" title="zos_data_set – Create and set attributes for data sets" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="modules/zos_job_submit.html" class="btn btn-neutral float-left" title="zos_job_submit – Submit JCL" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   

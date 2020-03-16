@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Requirements &mdash; IBM Z Core Collection 1.0.0 documentation</title>
+  <title>Requirements &mdash; IBM z/OS core collection 1.0.0 documentation</title>
   
 
   
@@ -50,7 +50,7 @@
           
 
           
-            <a href="index.html" class="icon icon-home"> IBM Z Core Collection
+            <a href="index.html" class="icon icon-home"> IBM z/OS core collection
           
 
           
@@ -80,7 +80,7 @@
               
             
             
-              <p class="caption"><span class="caption-text">Using IBM Z Core Collection</span></p>
+              <p class="caption"><span class="caption-text">Getting Started</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart</a></li>
@@ -101,7 +101,7 @@
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Requirements</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#control-node">Control node</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#managed-node">Managed node</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#id1">Python on Z</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id1">Python on z/OS</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#zoau">ZOAU</a></li>
 </ul>
 </li>
@@ -123,7 +123,7 @@
       <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">IBM Z Core Collection</a>
+          <a href="index.html">IBM z/OS core collection</a>
         
       </nav>
 
@@ -179,7 +179,7 @@
 <h1>Requirements<a class="headerlink" href="#requirements" title="Permalink to this headline">¶</a></h1>
 <p>A control node is any machine with Ansible installed. From the control node,
 you can run commands and playbooks from a laptop, desktop, or server machine.
-However, you cannot run <strong>IBM Z Core Collection</strong> on a Windows machine.</p>
+However, you cannot run <strong>IBM z/OS core collection</strong> on a Windows machine.</p>
 <p>A managed node is often referred to as a target node, or host, and is the node
 that is managed by Ansible. Ansible does not need not need to be installed on
 a managed node, but SSH must be enabled.</p>
@@ -195,14 +195,14 @@ a managed node, but SSH must be enabled.</p>
 <div class="section" id="managed-node">
 <h2>Managed node<a class="headerlink" href="#managed-node" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
-<li><p><a class="reference external" href="https://www.ibm.com/support/knowledgecenter/SSLTBW_2.2.0/com.ibm.zos.v2r2/zos-v2r2-home.html">Python on Z</a>: 3.6 or later</p></li>
-<li><p><a class="reference external" href="https://www.ibm.com/support/knowledgecenter/SSLTBW_2.2.0/com.ibm.zos.v2r2/zos-v2r2-home.html">zOS</a>: V02.02.00 or later</p></li>
+<li><p><a class="reference external" href="requirements.html#id1">Python on z/OS</a>: 3.6 or later</p></li>
+<li><p><a class="reference external" href="https://www.ibm.com/support/knowledgecenter/SSLTBW_2.2.0/com.ibm.zos.v2r2/zos-v2r2-home.html">z/OS</a>: V02.02.00 or later</p></li>
 <li><p><a class="reference external" href="requirements.html#id1">IBM Z Open Automation Utilities</a> (ZOAU)</p></li>
-<li><p><a class="reference external" href="https://www.openssh.com/">OpenSSH</a></p></li>
+<li><p><a class="reference external" href="https://www.ibm.com/support/knowledgecenter/SSLTBW_2.2.0/com.ibm.zos.v2r2.e0za100/ch1openssh.htm">z/OS OpenSSH</a></p></li>
 </ul>
 </div>
 <div class="section" id="id1">
-<h2>Python on Z<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
+<h2>Python on z/OS<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
 <p>If the Ansible target is z/OS, you must install a python distribution ported
 for this platform. Rocket Software is currently the preferred version for z/OS.</p>
 <p><strong>Installation</strong></p>
@@ -223,11 +223,12 @@ extract it according the instructions in the installation files.</p></li>
 <h2>ZOAU<a class="headerlink" href="#zoau" title="Permalink to this headline">¶</a></h2>
 <p>IBM Z Open Automation Utilities provide support for executing automation tasks
 on z/OS. With ZOAU, you can run traditional MVS commands, such as IEBCOPY,
-IDCAMS, and IKJEFT01.</p>
+IDCAMS, and IKJEFT01, as well as perform a number of data set operations
+in the scripting language of your choice.</p>
 <p><strong>Installation</strong></p>
 <ul class="simple">
-<li><p>For ZOAU FMID, program directory, fix list, latest PTF, installation and
-configuration refer the <a class="reference external" href="https://www.ibm.com/support/knowledgecenter/en/SSKFYE_1.0.0/welcome_zoautil.html">product page</a>.</p></li>
+<li><p>For the ZOAU FMID, program directory, fix list, latest PTF, installation
+and configuration, refer to the ZOAU <a class="reference external" href="https://www.ibm.com/support/knowledgecenter/en/SSKFYE_1.0.0/welcome_zoautil.html">product page</a>.</p></li>
 </ul>
 </div>
 </div>

@@ -16,7 +16,7 @@ ANSIBLE_METADATA = {
 
 DOCUMENTATION = r"""
 module: zos_data_set
-short_description: Create and set data set attributes
+short_description: Manage data sets
 description:
   - Create, delete and set attributes of data sets.
   - When forcing data set replacement, contents will not be preserved.
@@ -76,9 +76,9 @@ options:
     version_added: "2.9"
   size:
     description:
-      - The size of the data set (e.g C(5M))
-      - Valid units of size are C(K), C(M), C(G), C(CYL), and C(TRK)
-      - Note that C(CYL) and C(TRK) follow size conventions for 3390 disk types (56,664 bytes/TRK & 849,960 bytes/CYL)
+      - The size of the data set (e.g C(5M)).
+      - Valid units of size are C(K), C(M), C(G), C(CYL), and C(TRK).
+      - Note that C(CYL) and C(TRK) follow size conventions for 3390 disk types (56,664 bytes/TRK & 849,960 bytes/CYL).
       - The C(CYL) and C(TRK) units are converted to bytes and rounded up to the nearest C(K) measurement.
       - Ensure there is no space between the numeric size and unit.
     type: str
@@ -108,7 +108,7 @@ options:
     version_added: "2.9"
   record_length:
     description:
-      - The logical record length. (e.g C(80))
+      - The logical record length (e.g C(80)).
       - For variable data sets, the length must include the 4-byte prefix area.
       - Defaults vary depending on format. If FB/FBA 80, if VB/VBA 137, if U 0
     type: int
@@ -262,7 +262,7 @@ options:
           - When I(replace=True), and I(state=present), existing data set matching I(name) will be replaced.
           - >
             Replacement is performed by deleting the existing data set and creating a new data set with
-            the same name and desired attributes. This may lead to an inconsistent state if data set creations fails.
+            the same name and desired attributes. This may lead to an inconsistent state if data set creations fails
             after the old data set is deleted.
           - If I(replace=True), all data in the original data set will be lost.
         type: bool

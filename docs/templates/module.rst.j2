@@ -66,7 +66,7 @@ Synopsis
 
 {%     endfor %}
 
-  {{ "  " * level }}| **retquired**: {{ spec.required | default("false") }}
+  {{ "  " * level }}| **required**: {{ spec.required | default("false") }}
   {{ "  " * level }}| **type**: {{ spec.type | default("str") }}
 {%     if spec.default %}
   {{ "  " * level }}| **default**: {{ spec.default }}
@@ -150,7 +150,10 @@ See Also
       {{ entry | indent(level, True) }}
       {{ "  " * level }}| {{ _description }}
       
+      {% if _returned %}
       {{ "  " * level }}| **returned**: {{ _returned }}
+      {% endif %}
+      
       {{ "  " * level }}| **type**: {{ _type  }}
 
       {% if _sample %}

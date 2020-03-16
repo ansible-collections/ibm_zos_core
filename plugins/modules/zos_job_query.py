@@ -17,7 +17,7 @@ ANSIBLE_METADATA = {
 DOCUMENTATION = r'''
 ---
 module: zos_job_query
-short_description: Query job(s) and status
+short_description: Query job status
 description:
   - List z/OS job(s) and the current status of the job(s).
   - Uses owner to filter the jobs by the job owner.
@@ -91,7 +91,7 @@ jobs:
       sample: BROWNAD
     job_id:
       description:
-         Unique job id assigned to the job by JES
+         Unique job id assigned to the job by JES.
       type: str
       sample: JOB01427
     ret_code:
@@ -106,7 +106,7 @@ jobs:
           sample: CC 0000
         code:
           description:
-             Return code converted to integer value (when possible)
+             Return code converted to integer value (when possible).
           type: int
           sample: 00
       sample:

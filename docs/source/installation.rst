@@ -4,9 +4,10 @@
 
 Installation
 ============
-You have several options you may use to install the **IBM Z Core
-Collection**. These are Ansible Galaxy, Ansible Automation Hub, and a local
-build.
+
+You have several options you may use to install the
+**IBM z/OS Core Collection**. These are Ansible Galaxy, 
+Ansible Automation Hub, and a local build.
 
 For more information on installing collections, see `using collections`_.
 
@@ -16,8 +17,8 @@ For more information on installing collections, see `using collections`_.
 Ansible Galaxy
 --------------
 
-You can use the `ansible-galaxy`_ command with the option install to install
-a collection on your system (control node) hosted in Galaxy.
+You can use the `ansible-galaxy`_ command with the option ``install`` to 
+install a collection on your system (control node) hosted in Galaxy.
 
 Galaxy enables you to quickly configure your automation project with content
 from the Ansible community. Galaxy provides prepackaged units of work known as
@@ -41,7 +42,7 @@ installed in ``~/.ansible/collections``, see the sample output.
 
    Process install dependency map
    Starting collection install process
-   Installing 'ibm.ibm_zos_core:0.0.4' to '/Users/user/.ansible/collections/ansible_collections/ibm/ibm_zos_core'
+   Installing 'ibm.ibm_zos_core:1.0.0' to '/Users/user/.ansible/collections/ansible_collections/ibm/ibm_zos_core'
 
 After installation, the collection content will resemble this hierarchy: :
 
@@ -80,13 +81,13 @@ that you would use to configure your client to point to Automation Hub. When
 hosting a private Galaxy server or pointing to Hub, available content is not
 always consistent with what is available on the community Galaxy server.
 
-You can use the `ansible-galaxy`_ command with option `install` to install a
-collection on your system (control node) hosted in Automation Hub or a private
-Galaxy server.
+You can use the `ansible-galaxy`_ command with the option ``install`` to 
+install a collection on your system (control node) hosted in Automation Hub 
+or a private Galaxy server.
 
 By default, the ``ansible-galaxy`` command is configured to access
 ``https://galaxy.ansible.com`` as the Galaxy server when you install a
-collection. The `ansible-galaxy` client can be configured to point to HUB or
+collection. The `ansible-galaxy` client can be configured to point to Hub or
 other servers, such as a privately running Galaxy server, by configuring the
 server list in the ``ansible.cfg`` file.
 
@@ -102,6 +103,9 @@ To configure a Galaxy server list in the ansible.cfg file:
   * Add the server_list option under the [galaxy] section to one or more server names.
   * Create a new section for each server name.
   * Set the url option for each server name.
+
+For Automation Hub, you additionally need to:
+
   * Set the auth_url option for each server name.
   * Set the API token for each server name. For more information on API tokens, see `Get API token from the version dropdown to copy your API token`_.
 
@@ -130,13 +134,13 @@ running Galaxy server, and Galaxy:
    token=private_token
 
 For more configuration information, see
-`configuring the ansible-galaxy client`_ and Ansible Configuration Settings.
+`configuring the ansible-galaxy client`_ and `Ansible Configuration Settings`_.
 
 .. _configuring the ansible-galaxy client:
-   https://cloud.redhat.com/ansible/automation-hub/token/
+   https://docs.ansible.com/ansible/latest/user_guide/collections_using.html#configuring-the-ansible-galaxy-client
 
-.. _ansible configuration Settings:
-   https://cloud.redhat.com/ansible/automation-hub/token/
+.. _Ansible configuration Settings:
+   https://docs.ansible.com/ansible/latest/reference_appendices/config.html
 
 
 Local build
@@ -146,8 +150,8 @@ You can use the ``ansible-galaxy collection install`` command to install a
 collection built from source. To build your own collection, you must clone the
 Git repository, build the collection archive, and install the collection. The
 ``ansible-galaxy collection build`` command packages the collection into an
-archive that can later be installed locally without having to use Hub or Galaxy
-.
+archive that can later be installed locally without having to use Hub or
+Galaxy.
 
 To build a collection from the git repository:
 
@@ -159,7 +163,7 @@ To build a collection from the git repository:
 
       .. note::
          * Collection archive names will change depending on the release version.
-         * They adhere to this convention **<namespace>-<collection>-<version>.tar.gz**, for example, **ibm-ibm_zos_core-0.0.4.tar.gz**
+         * They adhere to this convention **<namespace>-<collection>-<version>.tar.gz**, for example, **ibm-ibm_zos_core-1.0.0.tar.gz**
 
 
    2. Build the collection by running the ``ansible-galaxy collection build``
@@ -175,25 +179,18 @@ To build a collection from the git repository:
       .. code-block:: sh
 
          $ ansible-galaxy collection build
-         Created collection for ibm.ibm_zos_core at /Users/user/git/ibm/zos-ansible/ibm_zos_core/ibm-ibm_zos_core-0.0.4.tar.gz
-
-      You can use the ``-p`` option with ``ansible-galaxy`` to specify the
-      installation path, for example, ``ansible-galaxy collection install ibm-ibm_zos_core-0.0.4.tar.gz -p /home/ansible/collections``.
-
-      For more information, see `installing collections with Ansible Galaxy`_.
+         Created collection for ibm.ibm_zos_core at /Users/user/git/ibm/zos-ansible/ibm_zos_core/ibm-ibm_zos_core-1.0.0.tar.gz
 
       .. note::
          * If you build the collection with Ansible version 2.9 or earlier, you will see the following warning that you can ignore.
          * [WARNING]: Found unknown keys in collection galaxy.yml at '/Users/user/git/ibm/zos-ansible/ibm_zos_core/galaxy.yml': build_ignore
 
-      .. _installing collections with Ansible Galaxy:
-         https://docs.ansible.com/ansible/latest/user_guide/collections_using.html#installing-collections-with-ansible-galaxy
 
    3. Install the locally built collection:
 
       .. code-block:: sh
 
-         $ ansible-galaxy collection install ibm-ibm_zos_core-0.0.4.tar.gz
+         $ ansible-galaxy collection install ibm-ibm_zos_core-1.0.0.tar.gz
 
       In the output of collection installation, note the installation path to access the sample playbook:
 
@@ -201,7 +198,13 @@ To build a collection from the git repository:
 
          Process install dependency map
          Starting collection install process
-         Installing 'ibm.ibm_zos_core:0.0.4' to '/Users/user/.ansible/collections/ansible_collections/ibm/ibm_zos_core'
+         Installing 'ibm.ibm_zos_core:1.0.0' to '/Users/user/.ansible/collections/ansible_collections/ibm/ibm_zos_core'
 
+      You can use the ``-p`` option with ``ansible-galaxy`` to specify the
+      installation path, for example, ``ansible-galaxy collection install ibm-ibm_zos_core-1.0.0.tar.gz -p /home/ansible/collections``.
 
+      For more information, see `installing collections with Ansible Galaxy`_.
+
+      .. _installing collections with Ansible Galaxy:
+         https://docs.ansible.com/ansible/latest/user_guide/collections_using.html#installing-collections-with-ansible-galaxy
 

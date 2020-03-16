@@ -8,7 +8,7 @@ Contributing
 Currently we are not accepting community contributions. Though, we encourage
 opening `git issues`_ for bugs, comments or feature requests.
 
-Periodically review this content to learn when, and how, contributions can be
+Periodically review this content to learn when and how contributions can be
 made in the future.
 
 .. _git issues:

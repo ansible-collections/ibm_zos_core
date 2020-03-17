@@ -209,7 +209,7 @@ class ActionModule(ActionBase):
             out, err = transfer_pds.communicate(stdin)
 
             if transfer_pds.returncode != 0:
-                raise AnsibleError("Error transferring PDS from remote z/OS system\n stdout: {0}\n stderr: {1}".format(out, err))
+                raise AnsibleError("Error transferring PDS from remote z/OS system; stdout: {0}; stderr: {1}".format(out, err))
 
             result['changed'] = True
         finally:

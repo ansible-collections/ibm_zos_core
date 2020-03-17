@@ -439,7 +439,7 @@ def _fetch_ps(src, validate_checksum, is_binary):
 def _validate_dsname(ds_name):
     """ Validate the name of a given data set """
     dsn_regex = "^(([A-Z]{1}[A-Z0-9]{0,7})([.]{1})){1,21}[A-Z]{1}[A-Z0-9]{0,7}$"
-    return re.match(dsn_regex, ds_name[:ds_name.find('(')])
+    return re.match(dsn_regex, ds_name if '(' not in ds_name else ds_name[:ds_name.find('(')])
 
 
 def _validate_params(src, is_binary, encoding, is_uss, _fetch_member):

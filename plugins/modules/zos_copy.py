@@ -287,10 +287,13 @@ import hashlib
 import string
 import random
 
+
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.common.process import get_bin_path
 from ansible.module_utils._text import to_bytes, to_native
 from ansible.module_utils.six import PY3
+
+from math import ceil
 
 from zoautil_py import MVSCmd, Datasets
 from zoautil_py import types
@@ -351,16 +354,6 @@ def vsam_exists_or_not(ds_name):
     return check_rc, reclen, hiurba
 
 
-def data_set_exists_or_not(ds_name):
-    """ check non-vsam data set exist or not  """
-    check_rc = False
-    try:
-        check_rc = Datasets.exists(ds_name)
-    except:
-        print('')
-    return check_rc
-
-
 def uncatalog_data_set_exists_or_not(ds_name, volume):
     """ check uncataloged data set exist or not """
     check_rc = False
@@ -393,24 +386,6 @@ def uncatalog_data_set_exists_or_not(ds_name, volume):
     Datasets.delete(sysprint_ds_name)
 
     return check_rc
-
-
-def copy_to_ps(src, PSname, encoding):
-    copy_rc = False
-    tempf = codecs.open(src, 'r', encoding='ascii')
-    for line in tempf:
-        line_bytes = (re.split(b'\n', line.encode('ascii')))
-        for record in line_bytes:
-            if record != b'':
-                rec = record.decode('ascii')
-                try:  
-                    copy_ps_rc = Datasets.write(PSname, rec, append=True)
-                except:
-                    msg = "Failed to copy to the data set %s" % PSname
-                    module.fail_json(msg=msg)
-    if copy_ps_rc == 0:
-        copy_rc = True
-    return copy_rc
 
 
 def copy_to_vsam(src, VSAMname):
@@ -454,6 +429,10 @@ def size_of_ps(ds_name):
     return rba
 
 
+def _allocate_vsam(ds_name):
+    pass
+
+
 def _determine_data_set_type(ds_name):
     rc, out, err = module.run_command("tsocmd \"LISTDS '{}'\"".format(ds_name))
     if "NOT IN CATALOG" in out:
@@ -482,11 +461,12 @@ def _get_checksum(data):
     digest.update(data)
     return digest.hexdigest()
 
+
 def _get_mvs_checksum(ds_name):
     return _get_checksum(Datasets.read(ds_name))
 
 
-def _copy_to_ps(src, dest, data, validate=True, local_checksum=None):
+def _copy_to_seq(src, dest, data, validate=True, local_checksum=None):
     rc = Datasets.write(dest, ascii_to_ebcdic(src, data))
     if rc != 0:
         module.fail_json(msg="Unable to write content to destination {}".format(dest))
@@ -500,12 +480,24 @@ def _copy_to_ps(src, dest, data, validate=True, local_checksum=None):
 
 
 def _copy_to_pdse(src_dir, dest, copy_member=False):
-    if (not Datasets.exists(dest)):
-        Datasets.create()
-    rc, out, err =  module.run_command("cp {} //'{}'".format(src_dir, dest))
+    path, dirs, files = next(os.walk(src_dir))
+    cmd = "cp"
+    for file in files:
+        cmd += " {0}/{1}".format(path, file.upper()[:file.find('.')])
+    
+    cmd += " \"//'{0}'\"".format(dest)
+    rc, out, err =  module.run_command(cmd)
     if rc != 0:
         module.fail_json(msg="Unable to copy to data set {}".format(dest))
-        
+
+
+def _create_data_set(src, ds_name, ds_type, size, d_blocks=None):
+    if (ds_type in ("SEQ", "PDS", "PDSE")):
+        rc = Datasets.create(ds_name, ds_type, size, "FB", directory_blocks=d_blocks)
+        if rc != 0:
+            module.fail_json("Unable to allocate destination data set to copy {}".format(src))
+    else:
+        _allocate_vsam(ds_name)
 
 
 def main():
@@ -517,6 +509,7 @@ def main():
             dest=dict(required=True, type='path'),
             use_qualifier=dict(type='bool', default=False), 
             is_binary=dict(type='bool', default=False),
+            is_vsam=dict(type='bool', default=False),
             encoding=dict(type='str', default='EBCDIC',choices=['EBCDIC','ASCII']),
             content=dict(type='str', no_log=True),
             backup=dict(type='bool', default=False),
@@ -524,30 +517,35 @@ def main():
             validate=dict(type='bool', default=False),
             remote_src=dict(type='bool', default=False),
             checksum=dict(type='str'),
+            is_uss=dict(type='bool'),
+            is_pds=dict(type='bool'),
             _local_data=dict(type='str'),
             _size=dict(type='int'),
-            _local_checksum=dict(type='str')
+            _local_checksum=dict(type='str'),
+            _pds_path=dict(type='str'),
+            _max_file_size=dict(type='int'),
+            _num_files=dict(type='int')
         )
     )
 
-    src = module.params['src']
+    src = module.params.get('src')
     b_src = to_bytes(src, errors='surrogate_or_strict')
-    dest = module.params['dest']
+    dest = module.params.get('dest')
     b_dest = to_bytes(dest, errors='surrogate_or_strict')
-    remote_src = module.params['remote_src']
-    use_qualifier = module.params['use_qualifier']
-    is_binary = module.params['is_binary']
-    encoding = module.params['encoding']
-    content = module.params['content']
-    validate = module.params['validate']
-    _local_checksum = module.params['_local_checksum']
-    ds_name = ''
-    size = ''
-
-    check_rc = False
-    copy_rc = False
-    changed = False
-
+    remote_src = module.params.get('remote_src')
+    use_qualifier = module.params.get('use_qualifier')
+    is_binary = module.params.get('is_binary')
+    is_vsam = module.params.get('is_vsam')
+    encoding = module.params.get('encoding')
+    content = module.params.get('content')
+    validate = module.params.get('validate')
+    is_uss = module.params.get('is_uss'),
+    is_pds = module.params.get('is_pds'),
+    _local_checksum = module.params.get('_local_checksum')
+    _pds_path = module.params.get("_pds_path")
+    _size = module.params.get('_size')
+    _max_file_size = module.params.get('_max_file_size')
+    _num_files = module.params.get('_num_files')
 
     if remote_src:
         if not os.path.exists(b_src):
@@ -558,20 +556,26 @@ def main():
     try:
         ds_type = _determine_data_set_type(dest)
     except UncatalogedDatasetError as err:
-        module.fail_json(msg=str(err))
-
-    rc = Datasets.create(dest, "SEQ", size, "FB")
-    if rc != 0:
-        module.fail_json("Unable to allocate data set to copy {}".format(src))
+        if is_pds:
+            ds_type = "PDSE"
+            size = _max_file_size * _num_files
+            d_blocks = 1 if _num_files < 6 else ceil(_num_files/6)
+        elif is_vsam:
+            ds_type = "VSAM"
+        else:
+            ds_type = "SEQ"
+            size = _size
+        _create_data_set(src, dest, ds_type, size, d_blocks=d_blocks)
     
     # Copy to sequential data set
-    if ds_type == 'PS':
-        _copy_to_ps(src, dest, module.params['_local_data'], module.params['_local_checksum'])
+    if ds_type == "SEQ":
+        local_data = module.params.get('_local_data')
+        local_checksum = module.params.get('_local_checksum')
+        _copy_to_seq(src, dest, local_data, local_checksum)
 
     # Copy to partitioned data set
-    elif ds_type in ('PO', 'PDSE', 'PE'):
-        pass
-        #_copy_to_pdse()
+    elif ds_type in ('PDS', 'PDSE'):
+        _copy_to_pdse(_pds_path, dest)
 
     elif ds_type == 'VSAM':
         pass
@@ -585,13 +589,10 @@ def main():
         dest=dest, 
         changed=changed, 
         checksum=_get_mvs_checksum(dest), 
-        size="{} Bytes".format(module.params['_size'])
+        size="{} Bytes".format(module.params.get('_size'))
     )
     module.exit_json(**res_args)
 
-class AnsibleModuleError(Exception):
-    def __init__(self, msg):
-        super().__init__(msg)
 
 class UncatalogedDatasetError(Exception):
     def __init__(self, ds_name):

@@ -83,6 +83,7 @@ class ActionModule(ActionBase):
 
         is_uss = '/' in dest
         is_pds = os.path.isdir(b_src)
+        copy_member = '(' in src
 
         if not remote_src:
             if not os.path.exists(b_src):
@@ -106,7 +107,7 @@ class ActionModule(ActionBase):
                     result['msg'] = "Subdirectory found inside source directory"
                     result.update(src=src, dest=dest, changed=False, failed=True)
                     return result
-        
+
                 num_files = len(files)
                 max_file_size = _get_max_file_size(src)
                 temp_dir = self._transfer_local_dir_to_remote_machine(src, binary_mode=is_binary)
@@ -122,7 +123,7 @@ class ActionModule(ActionBase):
                     _size=pathlib.Path(src).stat().st_size, 
                     _local_checksum=local_checksum
                 )
-            new_module_args.update(is_uss=is_uss, is_pds=is_pds)
+            new_module_args.update(is_uss=is_uss, is_pds=is_pds, _copy_member=copy_member)
             result.update(self._execute_module(module_name='zos_copy', module_args=new_module_args, task_vars=task_vars))        
 
         finally:
@@ -130,8 +131,6 @@ class ActionModule(ActionBase):
                 self._connection.exec_command("rm -r {0}".format(temp_dir))
 
         return result
-
-
 
     def _transfer_local_dir_to_remote_machine(self, src, binary_mode=False):
         ansible_user = self._play_context.remote_user

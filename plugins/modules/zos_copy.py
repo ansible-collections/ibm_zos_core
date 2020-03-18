@@ -275,6 +275,7 @@ import hashlib
 import string
 import random
 import math
+import tempfile
 
 
 from ansible.module_utils.basic import AnsibleModule
@@ -303,7 +304,7 @@ def _create_temp_data_set_name(LLQ):
     return Datasets.hlq() + '.' + HLQ2 + '.' + LLQ
 
 
-def _copy_to_vsam(content, size, ds_name):
+def _copy_to_vsam(content, size, ds_name, remote_src=False):
     sysin_ds_name = _create_temp_data_set_name('sysin')
     sysprint_ds_name = _create_temp_data_set_name('sysprint')
     temp_ds_name = _create_temp_data_set_name('temp')
@@ -406,7 +407,7 @@ def _get_mvs_checksum(ds_name):
     return _get_checksum(Datasets.read(ds_name))
 
 
-def _copy_to_seq(src, dest, data, validate=True, local_checksum=None):
+def _copy_to_seq(src, dest, data, validate=True, local_checksum=None, remote_src=False):
     rc = Datasets.write(dest, _ascii_to_ebcdic(src, data))
     if rc != 0:
         module.fail_json(msg="Unable to write content to destination {}".format(dest))
@@ -419,14 +420,18 @@ def _copy_to_seq(src, dest, data, validate=True, local_checksum=None):
             module.fail_json(msg="Checksum mismatch", checksum=new_checksum, local_checksum=local_checksum, changed=changed)
 
 
-def _copy_to_pdse(src_dir, dest, copy_member=False):
-    path, dirs, files = next(os.walk(src_dir))
-    cmd = "cp"
-    for file in files:
-        file = file if '.' not in file else file[:file.rfind('.')]
-        cmd += " {0}/{1}".format(path, file)
-    
-    cmd += " \"//'{0}'\"".format(dest)
+def _copy_to_pdse(src_dir, dest, copy_member=False, remote_src=False, src_file=None):
+    cmd = None
+    if copy_member:
+        cmd = "cp {0} \"//'{}'\"".format(src_file, dest)
+    else:
+        path, dirs, files = next(os.walk(src_dir))
+        cmd = "cp"
+        for file in files:
+            file = file if '.' not in file else file[:file.rfind('.')]
+            cmd += " {0}/{1}".format(path, file)
+        
+        cmd += " \"//'{0}'\"".format(dest)
     rc, out, err = module.run_command(cmd)
     if rc != 0:
         module.fail_json(msg="Unable to copy to data set {}".format(dest))
@@ -465,7 +470,8 @@ def main():
             _local_checksum=dict(type='str'),
             _pds_path=dict(type='str'),
             _max_file_size=dict(type='int'),
-            _num_files=dict(type='int')
+            _num_files=dict(type='int'),
+            _copy_member=dict(type='bool')
         )
     )
 
@@ -488,6 +494,7 @@ def main():
     _size = module.params.get('_size')
     _max_file_size = module.params.get('_max_file_size')
     _num_files = module.params.get('_num_files')
+    _copy_member = module.params.get('_copy_member')
 
     changed = False
 
@@ -505,7 +512,7 @@ def main():
         if is_pds:
             ds_type = "PDSE"
             size = _max_file_size * _num_files
-            d_blocks = 1 if _num_files < 6 else math.ceil(_num_files/6)
+            d_blocks = math.ceil(_num_files/6)
         elif is_vsam:
             ds_type = "VSAM"
         else:
@@ -516,15 +523,32 @@ def main():
     
     # Copy to sequential data set
     if ds_type in ('SEQ', 'PS'):
-        _copy_to_seq(src, dest, _local_data, _local_checksum)
+        _copy_to_seq(
+            src, 
+            dest, 
+            _local_data, 
+            validate=validate, 
+            local_checksum=_local_checksum, 
+            remote_src=remote_src
+        )
 
     # Copy to partitioned data set
-    elif ds_type in ('PDS', 'PDSE', 'PE', 'PO', 'PO-E'):
-        _copy_to_pdse(_pds_path, dest)
+    elif ds_type in ('PDS', 'PDSE', 'PE', 'PO'):
+        temp_file = None
+        if _copy_member:
+            fd, temp_file = tempfile.mkstemp()
+            write_mode = 'wb' if is_binary else 'w'
+            with os.fdopen(fd, write_mode) as tmp:
+                tmp.write(_local_data)
+        try:
+            _copy_to_pdse(_pds_path, dest, _copy_member=_copy_member, remote_src=remote_src, src_file=temp_file)
+        finally:
+            if temp_file and os.path.exists(temp_file):
+                os.remove(temp_file)
 
     # Copy to VSAM data set
     else:
-        _copy_to_vsam(_local_data, _size, dest)
+        _copy_to_vsam(_local_data, _size, dest, remote_src=remote_src)
 
     remote_checksum = None
     new_checksum = None

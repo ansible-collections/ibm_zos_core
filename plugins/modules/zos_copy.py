@@ -233,27 +233,27 @@ backup_file:
     sample: 11540.20150212-220915.bak
 gid:
     description: Group id of the file, after execution
-    returned: success and if is_uss=true
+    returned: success and if dest is USS
     type: int
     sample: 100
 group:
     description: Group of the file, after execution
-    returned: success and if is_uss=true
+    returned: success and if dest is USS
     type: str
     sample: httpd
 owner:
     description: Owner of the file, after execution
-    returned: success and if is_uss=true
+    returned: success and if dest is USS
     type: str
     sample: httpd
 uid:
     description: Owner id of the file, after execution
-    returned: success and if is_uss=true
+    returned: success and if dest is USS
     type: int
     sample: 100
 mode:
     description: Permissions of the target, after execution
-    returned: success and if is_uss=true
+    returned: success and if dest is USS
     type: str
     sample: 0644
 size:
@@ -263,29 +263,18 @@ size:
     sample: 1220
 state:
     description: State of the target, after execution
-    returned: success and if is_uss=true
+    returned: success and if dest is USS
     type: str
     sample: file
 '''
 
-import errno
-import filecmp
-import grp
 import os
 import re
 import os.path
-import platform
-import pwd
-import shutil
-import stat
-import tempfile
-import traceback
-import subprocess
-import time    
-import codecs
 import hashlib
 import string
 import random
+import math
 
 
 from ansible.module_utils.basic import AnsibleModule
@@ -293,15 +282,13 @@ from ansible.module_utils.common.process import get_bin_path
 from ansible.module_utils._text import to_bytes, to_native
 from ansible.module_utils.six import PY3
 
-from math import ceil
-
 from zoautil_py import MVSCmd, Datasets
 from zoautil_py import types
 
 # The AnsibleModule object
 module = None
 
-def ascii_to_ebcdic(src, content):
+def _ascii_to_ebcdic(src, content):
     conv_cmd = "iconv -f ISO8859-1 -t IBM-1047"
     rc, out, err = module.run_command(conv_cmd, data=content)
     if rc != 0:
@@ -316,121 +303,74 @@ def _create_temp_data_set_name(LLQ):
     return Datasets.hlq() + '.' + HLQ2 + '.' + LLQ
 
 
-def vsam_exists_or_not(ds_name):
-    """ Check vsam data set using ZOAU API """
-    check_rc      = False
-    check_vsam_rc = -1
+def _copy_to_vsam(content, size, ds_name):
     sysin_ds_name = _create_temp_data_set_name('sysin')
     sysprint_ds_name = _create_temp_data_set_name('sysprint')
+    temp_ds_name = _create_temp_data_set_name('temp')
 
     Datasets.create(sysin_ds_name, "SEQ")
     Datasets.create(sysprint_ds_name, "SEQ", "", "FB", "",133)
-
-    listcat_sysin = ' LISTCAT ENT(' + ds_name + ') ALL'
-    Datasets.write(sysin_ds_name, listcat_sysin)
-    dd_statements = []
-    dd_statements.append(types.DDStatement(ddName="sysin", dataset=sysin_ds_name))
-    dd_statements.append(types.DDStatement(ddName="sysprint", dataset=sysprint_ds_name))
-    try:
-        check_vsam_rc = MVSCmd.execute_authorized(pgm="idcams", args="", dds=dd_statements)
-    except:
-        msg = "Failed to call IDCAMS to check the data set {}".format(ds_name)
-        module.fail_json(msg=msg)
-    
-    if check_vsam_rc == 0:
-        check_rc   = True
-        output     = Datasets.read(sysprint_ds_name)
-        findReclen = re.findall(r'MAXLRECL-*\d+', output)
-        findHiurba = re.findall(r'HI-U-RBA-*\d+', output)
-        reclen     = ''.join(re.findall(r'\d+', findReclen[0]))
-        hiurba     = ''.join(re.findall(r'\d+', findHiurba[0]))
-    else:
-        msg = "Failed to call IDCAMS to check the data set {}".format(ds_name)
-        module.fail_json(msg=msg)
-    
-    Datasets.delete(sysin_ds_name)
-    Datasets.delete(sysprint_ds_name)
-
-    return check_rc, reclen, hiurba
-
-
-def uncatalog_data_set_exists_or_not(ds_name, volume):
-    """ check uncataloged data set exist or not """
-    check_rc = False
-    sysprint_ds_name = _create_temp_data_set_name('sysprint')
-    sysin_ds_name = _create_temp_data_set_name('sysin')
-    
-    Datasets.create(sysprint_ds_name, "SEQ", "", "FB", "",133)
-    Datasets.create(sysin_ds_name, "SEQ")
-    
-    adrdssu_sysin = ''' DUMP DATASET(INCLUDE( %s ) - 
-       BY((CATLG,EQ,NO)))   - 
-       SHR OUTDD(LIST)      - 
-       LOGINDYNAM((%s)) ''' % (ds_name, volume)
-    
-    Datasets.write(sysin_ds_name, adrdssu_sysin)
-    dd_statements = []
-    dd_statements.append(types.DDStatement(ddName="list", dataset="dummy"))
-    dd_statements.append(types.DDStatement(ddName="sysprint", dataset=sysprint_ds_name))
-    dd_statements.append(types.DDStatement(ddName="sysin", dataset=sysin_ds_name))
-    try:
-        check_uc_rc = MVSCmd.execute_authorized(pgm="adrdssu", args="TYPRUN=NORUN", dds=dd_statements)
-    except:
-        msg = "Failed to call ADRDSSU to check the data set {}".format(ds_name)
-        module.fail_json(msg=msg)
-
-    if Datasets.read(sysprint_ds_name).find(ds_name) != -1:
-       check_rc = True
-    
-    Datasets.delete(sysin_ds_name)
-    Datasets.delete(sysprint_ds_name)
-
-    return check_rc
-
-
-def copy_to_vsam(src, VSAMname):
-    copy_rc      = False
-    copy_vsam_rc = -1
-    sysin_ds_name = _create_temp_data_set_name('sysin')
-    sysprint_ds_name = _create_temp_data_set_name('sysprint')
-
-    Datasets.create(sysin_ds_name, "SEQ")
-    Datasets.create(sysprint_ds_name, "SEQ", "", "FB", "",133)
+    Datasets.create(temp_ds_name, "SEQ", str(size), "FB")
 
     repro_sysin = ' REPRO INFILE(INPUT) OUTFILE(OUTPUT) '
     Datasets.write(sysin_ds_name, repro_sysin)
     
     dd_statements = []
     dd_statements.append(types.DDStatement(ddName="sysin", dataset=sysin_ds_name))
-    dd_statements.append(types.DDStatement(ddName="input", dataset=src))
-    dd_statements.append(types.DDStatement(ddName="output", dataset=VSAMname))
+    dd_statements.append(types.DDStatement(ddName="input", dataset=temp_ds_name))
+    dd_statements.append(types.DDStatement(ddName="output", dataset=ds_name))
     dd_statements.append(types.DDStatement(ddName="sysprint", dataset=sysprint_ds_name))
     try:
-        copy_vsam_rc = MVSCmd.execute_authorized(pgm="idcams", args="", dds=dd_statements)
-    except:
-        msg = "Failed to call IDCAMS to copy the data set %s" % VSAMname
+        rc = MVSCmd.execute_authorized(pgm="idcams", args="", dds=dd_statements)
+        if rc != 0:
+            module.fail_json(msg="Non-zero return code received while copying to VSAM")
+    except Exception as err:
+        module.fail_json(msg="Failed to call IDCAMS to copy the data set {0}".format(ds_name))
+
+    finally:
+        Datasets.delete(sysin_ds_name)
+        Datasets.delete(sysprint_ds_name)
+        Datasets.delete(temp_ds_name)
+    
+    return ds_name 
+
+
+def _allocate_vsam(ds_name, size):
+    volume = "000000"
+    max_size = 16777215
+    allocation_size = math.ceil(size/1048576)
+    
+    if allocation_size > max_size:
+        msg = ''' Size of data exceeds maximum allowed allocation size for VSAM.
+                  Maximum size allowed: {0} Megabytes, given data size: {1} Megabytes 
+                '''.format(max_size, allocation_size)
         module.fail_json(msg=msg)
+
+    sysin_ds_name = _create_temp_data_set_name('sysin')
+    Datasets.create(sysin_ds_name, "SEQ")
     
-    if copy_vsam_rc == 0:
-        copy_rc = True
+    define_sysin = ''' DEFINE CLUSTER (NAME({0})  -
+   	                    VOLUMES({1})) -                           
+                        DATA (NAME({0}.DATA) -
+	                    MEGABYTES({2}, 5)) -
+                        INDEX (NAME({0}.INDEX)) '''.format(ds_name, volume, allocation_size)
     
-    Datasets.delete(sysin_ds_name)
-    Datasets.delete(sysprint_ds_name)
-    return copy_rc 
+    Datasets.write(sysin_ds_name, define_sysin)
+    dd_statements = []
+    dd_statements.append(types.DDStatement(ddName="sysin", dataset=sysin_ds_name))
+    dd_statements.append(types.DDStatement(ddName="sysprint", dataset='*'))
 
+    try:
+        rc = MVSCmd.execute_authorized(pgm="idcams", args="", dds=dd_statements)
+        if rc != 0:
+            module.fail_json(msg="Non-zero return code received while trying to allocate VSAM")
+    except Exception as err:
+        module.fail_json(msg="Failed to call IDCAMS to allocate VSAM data set")
+    finally:
+        if Datasets.exists(sysin_ds_name):
+            Datasets.delete(sysin_ds_name)
 
-def size_of_ps(ds_name):
-    ds = ds_name.rsplit('.',1)[0]
-    output = Datasets.list("%s.*" % ds, verbose=True).split('\n')
-    for item in output:
-        if item.find(ds_name) != -1:
-            size = re.sub(r"\s{2,}", " ", item)
-            rba = size.split(' ')[-2]   
-    return rba
-
-
-def _allocate_vsam(ds_name):
-    pass
+    return ds_name
 
 
 def _determine_data_set_type(ds_name):
@@ -467,7 +407,7 @@ def _get_mvs_checksum(ds_name):
 
 
 def _copy_to_seq(src, dest, data, validate=True, local_checksum=None):
-    rc = Datasets.write(dest, ascii_to_ebcdic(src, data))
+    rc = Datasets.write(dest, _ascii_to_ebcdic(src, data))
     if rc != 0:
         module.fail_json(msg="Unable to write content to destination {}".format(dest))
     if validate:
@@ -483,10 +423,11 @@ def _copy_to_pdse(src_dir, dest, copy_member=False):
     path, dirs, files = next(os.walk(src_dir))
     cmd = "cp"
     for file in files:
-        cmd += " {0}/{1}".format(path, file.upper()[:file.find('.')])
+        file = file if '.' not in file else file[:file.rfind('.')]
+        cmd += " {0}/{1}".format(path, file)
     
     cmd += " \"//'{0}'\"".format(dest)
-    rc, out, err =  module.run_command(cmd)
+    rc, out, err = module.run_command(cmd)
     if rc != 0:
         module.fail_json(msg="Unable to copy to data set {}".format(dest))
 
@@ -497,7 +438,7 @@ def _create_data_set(src, ds_name, ds_type, size, d_blocks=None):
         if rc != 0:
             module.fail_json("Unable to allocate destination data set to copy {}".format(src))
     else:
-        _allocate_vsam(ds_name)
+        _allocate_vsam(ds_name, size)
 
 
 def main():
@@ -539,13 +480,16 @@ def main():
     encoding = module.params.get('encoding')
     content = module.params.get('content')
     validate = module.params.get('validate')
-    is_uss = module.params.get('is_uss'),
-    is_pds = module.params.get('is_pds'),
+    is_uss = module.params.get('is_uss')
+    is_pds = module.params.get('is_pds')
     _local_checksum = module.params.get('_local_checksum')
+    _local_data = module.params.get('_local_data')
     _pds_path = module.params.get("_pds_path")
     _size = module.params.get('_size')
     _max_file_size = module.params.get('_max_file_size')
     _num_files = module.params.get('_num_files')
+
+    changed = False
 
     if remote_src:
         if not os.path.exists(b_src):
@@ -555,40 +499,41 @@ def main():
 
     try:
         ds_type = _determine_data_set_type(dest)
-    except UncatalogedDatasetError as err:
+    except UncatalogedDatasetError:
+        d_blocks = None
+        size = _size
         if is_pds:
             ds_type = "PDSE"
             size = _max_file_size * _num_files
-            d_blocks = 1 if _num_files < 6 else ceil(_num_files/6)
+            d_blocks = 1 if _num_files < 6 else math.ceil(_num_files/6)
         elif is_vsam:
             ds_type = "VSAM"
         else:
             ds_type = "SEQ"
-            size = _size
+
         _create_data_set(src, dest, ds_type, size, d_blocks=d_blocks)
+        changed = True
     
     # Copy to sequential data set
-    if ds_type == "SEQ":
-        local_data = module.params.get('_local_data')
-        local_checksum = module.params.get('_local_checksum')
-        _copy_to_seq(src, dest, local_data, local_checksum)
+    if ds_type in ('SEQ', 'PS'):
+        _copy_to_seq(src, dest, _local_data, _local_checksum)
 
     # Copy to partitioned data set
-    elif ds_type in ('PDS', 'PDSE'):
+    elif ds_type in ('PDS', 'PDSE', 'PE', 'PO', 'PO-E'):
         _copy_to_pdse(_pds_path, dest)
 
-    elif ds_type == 'VSAM':
-        pass
-        # _copy_to_vsam
+    # Copy to VSAM data set
+    else:
+        _copy_to_vsam(_local_data, _size, dest)
 
     remote_checksum = None
     new_checksum = None
 
     res_args = dict(
-        src=src, 
-        dest=dest, 
-        changed=changed, 
-        checksum=_get_mvs_checksum(dest), 
+        src=src,
+        dest=dest,
+        changed=changed,
+        checksum=_get_mvs_checksum(dest),
         size="{} Bytes".format(module.params.get('_size'))
     )
     module.exit_json(**res_args)
@@ -597,6 +542,7 @@ def main():
 class UncatalogedDatasetError(Exception):
     def __init__(self, ds_name):
         super().__init__("Data set {} is not in catalog. If you would like to copy to the data set, please catalog it first".format(ds_name))
+
 
 if __name__ == '__main__':
     main()

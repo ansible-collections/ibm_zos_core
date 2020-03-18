@@ -39,12 +39,12 @@ def _process_boolean(arg, default=False):
         return default
 
 
-def _get_max_file_size(src):
-    sizes = []
+def _get_dir_size(src):
+    size = 0
     path, dirs, files = next(os.walk(src))
     for file in files:
-        sizes.append(pathlib.Path(path + "/" + file).stat().st_size)
-    return max(sizes)
+        size += pathlib.Path(path + "/" + file).stat().st_size
+    return size
 
 
 def _create_temp_dir_name(src):
@@ -108,11 +108,9 @@ class ActionModule(ActionBase):
                     result.update(src=src, dest=dest, changed=False, failed=True)
                     return result
 
-                num_files = len(files)
-                max_file_size = _get_max_file_size(src)
                 temp_dir = self._transfer_local_dir_to_remote_machine(src, binary_mode=is_binary)
                 new_module_args = dict((k, v) for k, v in self._task.args.items())
-                new_module_args.update(_num_files=num_files, _max_file_size=max_file_size, _pds_path=temp_dir)
+                new_module_args.update(_size=_get_dir_size(src), _pds_path=temp_dir)
 
             else:
                 content = _read_file(src)

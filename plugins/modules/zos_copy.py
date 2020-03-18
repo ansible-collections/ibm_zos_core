@@ -469,7 +469,6 @@ def main():
             _size=dict(type='int'),
             _local_checksum=dict(type='str'),
             _pds_path=dict(type='str'),
-            _max_file_size=dict(type='int'),
             _num_files=dict(type='int'),
             _copy_member=dict(type='bool')
         )
@@ -490,10 +489,9 @@ def main():
     is_pds = module.params.get('is_pds')
     _local_checksum = module.params.get('_local_checksum')
     _local_data = module.params.get('_local_data')
-    _pds_path = module.params.get("_pds_path")
-    _size = module.params.get('_size')
-    _max_file_size = module.params.get('_max_file_size')
+    _pds_path = module.params.get('_pds_path')
     _num_files = module.params.get('_num_files')
+    _size = module.params.get('_size')
     _copy_member = module.params.get('_copy_member')
 
     changed = False
@@ -508,17 +506,15 @@ def main():
         ds_type = _determine_data_set_type(dest)
     except UncatalogedDatasetError:
         d_blocks = None
-        size = _size
         if is_pds:
             ds_type = "PDSE"
-            size = _max_file_size * _num_files
             d_blocks = math.ceil(_num_files/6)
         elif is_vsam:
             ds_type = "VSAM"
         else:
             ds_type = "SEQ"
 
-        _create_data_set(src, dest, ds_type, size, d_blocks=d_blocks)
+        _create_data_set(src, dest, ds_type, _size, d_blocks=d_blocks)
         changed = True
     
     # Copy to sequential data set

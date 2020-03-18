@@ -9,7 +9,7 @@ name: ibm_zos_core
 version: 1.0.0
 
 # Collection README file
-readme: README.rst
+readme: README.md
 
 # Contributors
 authors:
@@ -40,7 +40,6 @@ tags:
     core,
     zos_core,
     ibm_zos_core,
-    red_hat_ansible_certified_content_for_ibm_z,
     data_set,
     jcl,
     uss,

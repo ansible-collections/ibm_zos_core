@@ -17,10 +17,10 @@ ANSIBLE_METADATA = {
 DOCUMENTATION = r'''
 ---
 module: zos_fetch
-version_added: 1.0
+version_added: '1.0.1'
 short_description: Fetches data from remote z/OS system to local machine
 description:
-  - The M(zos_fetch) module copies a file on the z/OS system to the local machine.
+  - This module copies a file or data set from a remote z/OS system to the local machine.
     Use the M(zos_copy) module to copy files from local machine to the remote z/OS system.
   - When fetching a sequential data set, the destination file name will be the same as
     the data set name.
@@ -41,13 +41,13 @@ options:
       - When set to true, the task will fail if the source file is missing.
     required: false
     default: "true"
-    choices: [ "true", "false" ]
+    type: bool
   validate_checksum:
     description:
       - Verify that the source and destination checksums match after the files are fetched.
     required: false
     default: "true"
-    choices: [ "true", "false" ]
+    type: bool
   flat:
     description:
       - Override the default behavior of appending hostname/path/to/file to the
@@ -57,13 +57,13 @@ options:
         of this parameter.
     required: false
     default: "true"
-    choices: [ "true", "false" ]
+    type: bool
   is_binary:
     description:
       - Specifies if the file being fetched is a binary.
     required: false
     default: "false"
-    choices: [ "true", "false" ]
+    type: bool
   encoding:
     description:
       - If set to "EBCDIC", the encoding of source file or data set will be converted
@@ -77,7 +77,7 @@ options:
       - Indicates whether the data set high level qualifier should be used when fetching.
     required: false
     default: "false"
-    choices: [ "true", "false" ]
+    type: bool
 notes:
     - When fetching PDS(E) and VSAM data sets, temporary storage will be used on the remote
       z/OS system. After the PDS(E) or VSAM data set is successfully transferred, the
@@ -89,6 +89,10 @@ notes:
       As a result, the module response will not include C(checksum) parameter.
     - All data sets are always assumed to be in catalog. If an uncataloged data set needs to
       be fetched, it should be cataloged first.
+seealso:
+- module: fetch
+- module: zos_copy
+- module: copy
 '''
 
 EXAMPLES = r'''
@@ -137,27 +141,34 @@ EXAMPLES = r'''
     flat: true
 '''
 
-RETURNS = r'''
+RETURN = r'''
 message:
     description: The output message returned from this module.
     type: dict
     returned: always
-    msg:
+    contains:
+      msg:
         description: Message returned by the module
         type: str
         sample: The data set was fetched successfully
-    stdout:
+      stdout:
         description: The stdout from a USS command or MVS command, if applicable
         type: str
-        sample: DATA SET 'USER.PROCLIB' NOT IN CATALOG.
-    stderr:
+        sample: DATA SET 'USER.PROCLIB' NOT IN CATALOG
+      stderr:
         description: The stderr of a USS command or MVS command, if applicable
         type: str
-        sample: TypeError: 'int' object is not callable.
-    ret_code:
+        sample: File /tmp/result.log not found
+      ret_code:
         description: The return code of a USS command or MVS command, if applicable
         type: int
-        sample: 0
+        sample: 8
+    sample:
+      - "msg": "Failed to read data set member for data set USER.TEST.PROCLIB"
+      - "stdout": "DATA SET 'USER.TEST.PROCLIB' NOT IN CATALOG"
+      - "stderr": ""
+      - "ret_code": 1
+        
 file:
     description: The source file path on remote machine
     returned: success
@@ -195,8 +206,6 @@ note:
     sample: The data set USER.PROCLIB does not exist. No data was fetched.
 changed:
     description: Indicates if any changes were made during the module operation.
-    A change is considered to have been made if the checksum of the fetched file
-    or data set is different to the local file checksum.
     returned: always
     type: bool
 '''
@@ -352,7 +361,7 @@ def _fetch_vsam(src, validate_checksum, is_binary):
     return content, checksum
 
 
-def _convert_from_ebcdic_to_ascii(data):
+def _ebcdic_to_ascii(data):
     """ Convert encoding from EBCDIC to ASCII """
     rc, out, err = _run_command("iconv -f IBM-1047 -t ISO8859-1", data=data)
     if rc != 0:
@@ -462,9 +471,9 @@ def run_module():
         argument_spec=dict(
             src=dict(required=True, type='path'),
             dest=dict(required=True, type='path'),
-            fail_on_missing=dict(required=False, default=True, choices=[True, False], type='str'),
-            validate_checksum=dict(required=False, default=True, choices=[True, False], type='str'),
-            flat=dict(required=False, default=True, choices=[True, False], type='str'),
+            fail_on_missing=dict(required=False, default=True, type='bool'),
+            validate_checksum=dict(required=False, default=True, type='bool'),
+            flat=dict(required=False, default=True, type='bool'),
             is_binary=dict(required=False, default=False, type='bool'),
             encoding=dict(required=False, choices=['ASCII', 'EBCDIC'], type='str'),
             is_uss=dict(required=False, default=False, type='bool'),

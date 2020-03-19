@@ -17,6 +17,7 @@ import subprocess
 #from ansible.constants import mk_boolean as boolean
 from ansible.errors import AnsibleError, AnsibleFileNotFound
 from ansible.module_utils._text import to_bytes, to_native, to_text
+from ansible.module_utils.six import string_types
 from ansible.module_utils.parsing.convert_bool import boolean
 from ansible.plugins.action import ActionBase
 from ansible.utils.hashing import checksum as file_checksum
@@ -53,6 +54,12 @@ def _create_temp_dir_name(src):
     return "/tmp/ansible-playbook-{0}-{1}/{2}".format(current_date, current_time, src)
 
 
+def _validate_dsname(ds_name):
+    """ Validate the name of a given data set """
+    dsn_regex = "^(([A-Z]{1}[A-Z0-9]{0,7})([.]{1})){1,21}[A-Z]{1}[A-Z0-9]{0,7}$"
+    return re.match(dsn_regex, ds_name if '(' not in ds_name else ds_name[:ds_name.find('(')])
+
+
 class ActionModule(ActionBase):
     def run(self, tmp=None, task_vars=None):
         ''' handler for file transfer operations '''
@@ -81,18 +88,45 @@ class ActionModule(ActionBase):
         owner = self._task.args.get('owner', None)
         group = self._task.args.get('group', None)
 
+        if src is None or dest is None:
+            result['msg'] = "Source and destination are required"
+        elif not isinstance(src, string_types):
+            result['msg'] = "Invalid type supplied for 'source' option, it must be a string"
+        elif not isinstance(dest, string_types):
+            result['msg'] = "Invalid type supplied for 'destination' option, it must be a string"
+        elif not isinstance (content, string_types):
+            result['msg'] = "Invalid type supplied for 'content' option, it must be a string"
+        elif encoding and not isinstance(encoding, string_types):
+            result['msg'] = "Invalid type supplied for 'encoding' option, it must be a string"
+        elif content and src:
+            result['msg'] = "Only 'content' or 'src' can be provided. Not both"
+        elif local_follow and not os.path.islink(src):
+            result['msg'] = "The provided source is not a symbolic link"
+
         is_uss = '/' in dest
         is_pds = os.path.isdir(b_src)
         copy_member = '(' in src
 
+        if not is_uss:
+            if mode or owner or group:
+                result['msg'] = "Cannot specify 'mode', 'owner' or 'group' for MVS destination"
+            elif not _validate_dsname(dest):
+                result['msg'] = "Invalid destination data set name provided"
+
         if not remote_src:
             if not os.path.exists(b_src):
-                result['msg'] = "The local file {} does not exist".format(src)
+                result['msg'] = "The local file {0} does not exist".format(src)
             elif not os.access(b_src, os.R_OK):
-                result['msg'] = "The local file {} does not have appropriate read permisssion".format(src)
-            if result.get('msg'):
-                result.update(src=src, dest=dest, changed=False, failed=True)
-                return result
+                result['msg'] = "The local file {0} does not have appropriate read permisssion".format(src)
+            elif '(' in src or ')' in src:
+                result['msg'] = "Invalid source name provided"
+
+        if remote_src and not _validate_dsname(src):
+            result['msg'] = "Invalid source data set name provided"
+        
+        if result.get('msg'):
+            result.update(src=src, dest=dest, changed=False, failed=True)
+            return result
 
         try:
             if is_uss:

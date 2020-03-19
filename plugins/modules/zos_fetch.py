@@ -168,7 +168,6 @@ message:
       - "stdout": "DATA SET 'USER.TEST.PROCLIB' NOT IN CATALOG"
       - "stderr": ""
       - "ret_code": 1
-        
 file:
     description: The source file path on remote machine
     returned: success

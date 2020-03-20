@@ -1,4 +1,3 @@
-#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 # Copyright (c) IBM Corporation 2019, 2020
@@ -25,7 +24,9 @@ __metaclass__ = type
 
 def test_zos_operator_action_query_goldenpath(ansible_zos_module):
     hosts = ansible_zos_module
+    passed = True
     results = hosts.all.zos_operator_action_query()
     for result in results.contacted.values():
-        if result.get('actions') == None:
-                assert False
+        if result.get('actions') is None:
+            passed = False
+     assert passed == True

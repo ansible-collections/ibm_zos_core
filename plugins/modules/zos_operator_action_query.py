@@ -363,12 +363,12 @@ def parse_result_a(result):
                 continue
             if m:
                 elements = line.split(' ', 3)
-                dict_temp = {'number': elements[0], 'type': elements[1], 'system':e lements[2]}
+                dict_temp = {'number': elements[0], 'type': elements[1], 'system': elements[2]}
                 request_temp = elements[3].strip()
                 continue
         else:
             if request_temp:
-                request_temp = request_temp + ' '+ line
+                request_temp = request_temp + ' ' + line
     return list
 
 
@@ -388,7 +388,7 @@ def parse_result_b(result):
         if m:
             elements = regex.split(line, 5)
             # 215 R IM5GCONN *215 HWSC0000I *IMS CONNECT READY*  IM5GCONN
-            dict_temp = {'number': elements[0],' job_name': elements[2], 'message_id': elements[4]}
+            dict_temp = {'number': elements[0], ' job_name': elements[2], 'message_id': elements[4]}
             list.append(dict_temp)
             continue
     return list

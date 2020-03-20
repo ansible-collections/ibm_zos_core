@@ -27,7 +27,5 @@ def test_zos_operator_action_query_goldenpath(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_operator_action_query()
     for result in results.contacted.values():
-            if result['changed'] not False:
-                    assert True
-            if result.get('actions') not None:
-                    assert True
+        if result.get('actions') == None:
+                assert False

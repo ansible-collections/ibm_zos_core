@@ -228,7 +228,7 @@ def parse_params(params):
 
 
 def system_type(arg_val, params):
-    if arg_val and arg_val! = '*':
+    if arg_val and arg_val != '*':
         arg_val = arg_val.strip('*')
     value = arg_val
     regex = '^[a-zA-Z0-9]{1,8}$'
@@ -237,7 +237,7 @@ def system_type(arg_val, params):
 
 
 def message_id_type(arg_val, params):
-    if arg_val and arg_val! = '*':
+    if arg_val and arg_val != '*':
         arg_val = arg_val.strip('*')
     value = arg_val
     regex= '^[a-zA-Z0-9]{1,8}$'
@@ -246,7 +246,7 @@ def message_id_type(arg_val, params):
 
 
 def job_name_type(arg_val, params):
-    if arg_val and arg_val! = '*':
+    if arg_val and arg_val != '*':
         arg_val = arg_val.strip('*')
     value = arg_val
     regex = '^[a-zA-Z0-9]{1,8}$'

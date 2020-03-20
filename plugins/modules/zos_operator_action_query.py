@@ -177,13 +177,13 @@ except Exception:
 
 
 def run_module():
-    module_args=dict(
+    module_args = dict(
         system=dict(type='str', required=False),
         message_id=dict(type='str', required=False),
         job_name=dict(type='str', required=False)
     )
 
-    result=dict(
+    result = dict(
         changed=False
     )
 
@@ -208,7 +208,7 @@ def run_module():
 
 
 def parse_params(params):
-    arg_defs=dict(
+    arg_defs = dict(
         system=dict(
             arg_type=system_type,
             required=False
@@ -232,7 +232,7 @@ def system_type(arg_val, params):
         arg_val = arg_val.strip('*')
     value = arg_val
     regex = '^[a-zA-Z0-9]{1,8}$'
-    validate_parameters_based_on_regex(value,regex)
+    validate_parameters_based_on_regex(value, regex)
     return arg_val
 
 
@@ -240,8 +240,8 @@ def message_id_type(arg_val, params):
     if arg_val and arg_val != '*':
         arg_val = arg_val.strip('*')
     value = arg_val
-    regex= '^[a-zA-Z0-9]{1,8}$'
-    validate_parameters_based_on_regex(value,regex)
+    regex = '^[a-zA-Z0-9]{1,8}$'
+    validate_parameters_based_on_regex(value, regex)
     return arg_val
 
 
@@ -250,11 +250,11 @@ def job_name_type(arg_val, params):
         arg_val = arg_val.strip('*')
     value = arg_val
     regex = '^[a-zA-Z0-9]{1,8}$'
-    validate_parameters_based_on_regex(value,regex)
+    validate_parameters_based_on_regex(value, regex)
     return arg_val
 
 
-def validate_parameters_based_on_regex(value,regex):
+def validate_parameters_based_on_regex(value, regex):
     pattern = re.compile(regex)
     if pattern.search(value):
         pass
@@ -266,11 +266,11 @@ def validate_parameters_based_on_regex(value,regex):
 def find_required_request(params):
     """Find the request given the options provided."""
     merged_list = create_merge_list()
-    requests = filter_requests(merged_list,params)
+    requests = filter_requests(merged_list, params)
     if requests:
         pass
     else:
-        message='There is no such request given the condition, check your command or update your options.'
+        message = 'There is no such request given the condition, check your command or update your options.'
         raise OperatorCmdError(message)
     return requests
 
@@ -287,11 +287,11 @@ def create_merge_list():
     message_b = execute_command(operator_cmd_b)
     list_a = parse_result_a(message_a)
     list_b = parse_result_b(message_b)
-    merged_list = merge_list(list_a,list_b)
+    merged_list = merge_list(list_a, list_b)
     return merged_list
 
 
-def filter_requests(merged_list,params):
+def filter_requests(merged_list, params):
     """filter the request given the params provided."""
     system = params.get('system')
     message_id = params.get('message_id')
@@ -305,7 +305,8 @@ def filter_requests(merged_list,params):
         newlist = handle_conditions(newlist, 'message_id', message_id.upper().strip('*'))
     return newlist
 
-def handle_conditions(list,condition_type,condition_values):
+
+def handle_conditions(list, condition_type, condition_values):
     regex = re.compile(condition_values)
     newlist = []
     for dict in list:
@@ -338,16 +339,16 @@ def parse_result_a(result):
     lines = result.split('\n')
     regex = re.compile(r'\s+')
 
-    for index,line in enumerate(lines):
+    for index, line in enumerate(lines):
         line = line.strip()
-        #handle pattern"742 R FVFNT29H &742 ARC0055A REPLY 'GO' OR 'CANCEL'"
+        # handle pattern"742 R FVFNT29H &742 ARC0055A REPLY 'GO' OR 'CANCEL'"
         pattern_without_job_id = re.compile(r'\s*[0-9]{2,}\s[A-Z]{1}\s[a-zA-Z0-9]{1,8}')
         # handle pattern "742 R MV28     JOB57578 &742 ARC0055A REPLY 'GO' OR 'CANCEL'"
         pattern_with_job_id = re.compile(r'\s*[0-9]{2,}\s[A-Z]{1}\s[A-Z0-9]{1,8}\s+[A-Z0-9]{1,8}\s')
         m = pattern_without_job_id.search(line)
         n = pattern_with_job_id.search(line)
 
-        if index == (len(lines)-1):
+        if index == (len(lines) - 1):
             end_flag = True
         if n or m or end_flag:
             if request_temp:
@@ -356,18 +357,18 @@ def parse_result_a(result):
                 request_temp = ''
                 dict_temp = {}
             if n:
-                elements = regex.split(line,4)
-                dict_temp = {'number':elements[0], 'type':elements[1], 'system':elements[2], 'job_id':elements[3]}
+                elements = regex.split(line, 4)
+                dict_temp = {'number': elements[0], 'type': elements[1], 'system': elements[2], 'job_id': elements[3]}
                 request_temp = elements[4].strip()
                 continue
             if m:
-                elements = line.split(' ',3)
-                dict_temp = {'number':elements[0], 'type':elements[1], 'system':elements[2]}
+                elements = line.split(' ', 3)
+                dict_temp = {'number': elements[0], 'type': elements[1], 'system':e lements[2]}
                 request_temp = elements[3].strip()
                 continue
         else:
             if request_temp:
-                request_temp = request_temp +' '+line
+                request_temp = request_temp + ' '+ line
     return list
 
 
@@ -380,20 +381,20 @@ def parse_result_b(result):
     list = []
     lines = result.split('\n')
     regex = re.compile(r'\s+')
-    for index,line in enumerate(lines):
+    for index, line in enumerate(lines):
         line = line.strip()
         pattern_with_job_name = re.compile(r'\s*[0-9]{2,}\s[A-Z]{1}\s[A-Z0-9]{1,8}\s+')
         m = pattern_with_job_name.search(line)
         if m:
-            elements = regex.split(line,5)
+            elements = regex.split(line, 5)
             # 215 R IM5GCONN *215 HWSC0000I *IMS CONNECT READY*  IM5GCONN
-            dict_temp = {'number':elements[0],' job_name':elements[2], 'message_id':elements[4]}
+            dict_temp = {'number': elements[0],' job_name': elements[2], 'message_id': elements[4]}
             list.append(dict_temp)
             continue
     return list
 
 
-def merge_list(list_a,list_b):
+def merge_list(list_a, list_b):
     merged_list = []
     for dict_a in list_a:
         for dict_b in list_b:

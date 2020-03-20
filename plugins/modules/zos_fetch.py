@@ -216,13 +216,11 @@ changed:
 
 import os
 import base64
-import subprocess
 import hashlib
 import random
 import string
 import re
 import tempfile
-import time
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils._text import to_bytes
@@ -449,25 +447,6 @@ def _fetch_ps(src, validate_checksum, is_binary):
     return content, checksum
 
 
-def data_set_or_path_type(src, resolve_dependencies):
-    if not re.fullmatch(
-        r"^(?:(?:[A-Z]{1}[A-Z0-9]{0,7})(?:[.]{1})){1,21}[A-Z]{1}[A-Z0-9]{0,7}(?:\([A-Z]{1}[A-Z0-9]{0,7}\)){0,1}$",
-        str(src),
-        re.IGNORECASE
-    ):
-        if not os.path.isabs(str(src)):
-            raise ValueError('Invalid argument type for source. expected "data_set" or "path"')
-    return str(src)
-
-
-def encoding_type(encoding, resolve_dependencies):
-    if not re.fullmatch(r"^[A-Z0-9-]{2,}$", str(encoding), re.IGNORECASE):
-        raise ValueError(
-            'Invalid argument type for "{0}". expected "encoding"'.format(encoding)
-        )
-    return str(encoding)
-
-
 def _validate_params(src, is_binary, encoding, _fetch_member):
     """ Ensure the module parameters are valid """
     msg = None
@@ -496,12 +475,12 @@ def run_module():
     )
 
     arg_def = dict(
-        src=dict(arg_type=data_set_or_path_type, required=True),
+        src=dict(arg_type='data_set_or_path_type', required=True),
         dest=dict(arg_type='path', required=True),
         fail_on_missing=dict(arg_type='bool', required=False, default=True),
         validate_checksum=dict(arg_type='bool', required=False, default=True),
         is_binary=dict(arg_type='bool', required=False, default=False),
-        encoding=dict(arg_type=encoding_type, required=False),
+        encoding=dict(arg_type='encoding_type', required=False),
         use_qualifier=dict(arg_type='bool', required=False, default=False)
     )
 

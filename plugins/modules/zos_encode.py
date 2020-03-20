@@ -250,9 +250,16 @@ def listdsi_data_set(ds, module):
             cioca  = int(''.join(re.findall(r'\d+', find_cioca[0])))
         if find_trkoca:
             trkoca = int(''.join(re.findall(r'\d+', find_trkoca[0])))
+        
+        # VSAM data sets space evaluation
+        # Step01. Get the number of records in each VSAM CI
+        # Step02. The CI used by the VSAM data set
+        # Step03. The CA used by the VSAM data set
+        # Step04. Calculate the VSAM data set space using the CA number
         rec_in_ci = floor((cisize - cisize * freeci - 10) / reclen)
         ci_num    = ceil(recnum / rec_in_ci)
         ca_num    = ceil(ci_num / (cioca * (1 - freeca)))
+        # This value will be used when repro a VSAM data set to a temporary PS
         # For 3390, 56664 bytes / track
         space_u   = ceil(ca_num * trkoca * 566664 / 1024)
     else:
@@ -354,6 +361,8 @@ def copy_pds2uss(src, temp_src, module):
     return rc, stdout, stderr
 
 def uss_convert_encoding_prev(src, dest, from_encoding, to_encoding, module):
+    ''' For mulitiple files conversion, such as a USS path or MVS PDS data set,
+    use this method firstly to split them to a single file and then do the conversion'''
     convert_rc = False
     err_msg    = None
     if not path.isfile(src):
@@ -381,22 +390,26 @@ def uss_convert_encoding_prev(src, dest, from_encoding, to_encoding, module):
     return convert_rc, err_msg
 
 def mvs_convert_encoding_prev(src, dest, ds_type_src, ds_type_dest, from_encoding, to_encoding, module):
+    ''' If the src or the dest is an MVS data set, this method is used to copy it to a USS file firstly'''
     convert_rc = False
     err_msg    = None
     temp_src   = src
     temp_dest  = dest
+    
     if ds_type_src == 'PS':
         f0_temp = NamedTemporaryFile(delete=False)
         temp_src = f0_temp.name
         rc, stdout, stderr = copy_ps2uss(src, temp_src, module)
         if rc:
             err_msg = 'Faild when coping to USS file: {}'.format(stderr)
+    
     if ds_type_src == 'PO':
         d0_temp = TemporaryDirectory()
         temp_src = d0_temp.name
         rc, stdout, stderr = copy_pds2uss(src, temp_src, module)
         if rc:
             err_msg = 'Faild when coping to USS file: {}'.format(stderr)
+    
     if ds_type_src == 'VSAM':
         err_msg, reclen, space_u = listdsi_data_set(src, module)
         if not err_msg:
@@ -410,6 +423,7 @@ def mvs_convert_encoding_prev(src, dest, ds_type_src, ds_type_dest, from_encodin
                     delete_temp_ds(temp_ps)
                     if rc:
                         err_msg = 'Faild when coping to USS file: {}'.format(stderr)
+
     if ds_type_dest == 'PS' or ds_type_dest == 'VSAM':
         f_temp = NamedTemporaryFile(delete=False)
         temp_dest = f_temp.name
@@ -455,9 +469,15 @@ def mvs_file_backup(src, module):
     err_msg      = None
     ds           = src.upper()
     dsn          = ds
+    # If the data set is a PDS member, the whole PDS will be backup
     if '(' in dsn:
         dsn      = ds[0:ds.rfind('(',1)]
     current_date = time.strftime("D%y%m%d", time.localtime())
+    # If there are more than 30 characters in the data set name,
+    # the name of the backup data set will be the original data set name 
+    # with a '@' in the second qualifier to the last
+    # The original: A.B.C.D   
+    # The backup: A.B.@.D
     if len(dsn) <= 30:
         bk_dsn   = '{}.BAK.{}'.format(dsn, current_date)
     else:
@@ -514,7 +534,7 @@ def check_mvs_dataset(ds, module):
     return check_rc, ds_type, err_msg
     
 def check_file(file, mvspat, module):
-    ''' check file is a Unix file or an MVS data set '''
+    ''' check file is a Unix file/path or an MVS data set '''
     is_uss  = False
     is_mvs  = False
     ds_type = None
@@ -565,6 +585,9 @@ def run_module():
     to_encoding   = module.params.get('to_encoding').upper()
     backup_file   = None
     changed       = False
+
+    # is_uss_src(dest) to determine whether the src(dest) is a USS file/path or not
+    # is_mvs_src(dest) to determine whether the src(dest) is a MVS data set or not
     is_uss_src    = False
     is_mvs_src    = False
     is_uss_dest   = False
@@ -584,7 +607,9 @@ def run_module():
         backup_file   = backup_file
     )
 
-    ''' Check input code set is valid or not '''
+    # Check input code set is valid or not
+    # If the value specified in from_encoding or to_encoding is not in the code_set, exit with an error message
+    # If the values specified in from_encoding and to_encoding are the same, exit with an message
     code_set = get_codeset(module)
     if not(from_encoding in code_set and to_encoding in code_set):
         err_msg = "Invalid codeset: Please check the value of the from_encoding or to_encoding!"
@@ -593,10 +618,13 @@ def run_module():
         err_msg = "The value of the from_encoding and to_encoding are the same, no need to do the conversion!"
         exit_when_exception(err_msg, result, module)
 
-    ''' Check src/dest is a USS file or an MVS data set '''
+    # Check the src is a USS file/path or an MVS data set
     is_uss_src, is_mvs_src, ds_type_src, err_msg = check_file(src, mvspat, module)
     if err_msg:
             exit_when_exception(err_msg, result, module)
+    
+    # Check the dest is a USS file/path or an MVS data set
+    # if the dest is not specified, the value in the src will be used
     if not dest:
             dest = src
             is_uss_dest  = is_uss_src
@@ -608,15 +636,23 @@ def run_module():
             exit_when_exception(err_msg, result, module)
     result['dest'] = dest
     
+    # Check if the dest is required to be backup before conversion
     if backup:
-        if is_uss_src:
-            backup_file, err_msg = uss_file_backup(src, module)
+        if is_uss_dest:
+            backup_file, err_msg = uss_file_backup(dest, module)
         else:
-            backup_file, err_msg = mvs_file_backup(src, module)
+            backup_file, err_msg = mvs_file_backup(dest, module)
         if err_msg:
             exit_when_exception(err_msg, result, module)
     result['backup_file'] = backup_file
 
+    # Encoding conversion logic
+    # There are two big permutations:
+    # 1） Both the src and the dest are the USS files or paths
+    # 2) The other permutations: 
+    #    - USS to MVS
+    #    - MVS to USS
+    #    - MVS to MVS
     if is_uss_src and is_uss_dest:
         convert_rc, err_msg = uss_convert_encoding_prev(src, dest, from_encoding, to_encoding, module)
     else:

@@ -177,19 +177,19 @@ except Exception:
 
 
 def run_module():
-    module_args = dict(
-        system = dict(type='str', required=False),
-        message_id = dict(type='str', required=False),
-        job_name = dict(type='str', required=False)
+    module_args=dict(
+        system=dict(type='str', required=False),
+        message_id=dict(type='str', required=False),
+        job_name=dict(type='str', required=False)
     )
 
-    result = dict(
-        changed = False
+    result=dict(
+        changed=False
     )
 
     module = AnsibleModule(
-        argument_spec = module_args,
-        supports_check_mode = False
+        argument_spec=module_args,
+        supports_check_mode=False
     )
 
     try:
@@ -198,7 +198,7 @@ def run_module():
         if requests:
             result['count'] = len(requests)
     except Error as e:
-        module.fail_json(msg = e.msg, **result)
+        module.fail_json(msg=e.msg, **result)
     except Exception as e:
         trace = format_exc()
         module.fail_json(msg='An unexpected error occurred: {0}'.format(trace), **result)
@@ -206,48 +206,53 @@ def run_module():
     result['actions'] = requests
     module.exit_json(**result)
 
+
 def parse_params(params):
-    arg_defs = dict(
-        system = dict(
-            arg_type = system_type,
-            required = False
+    arg_defs=dict(
+        system=dict(
+            arg_type=system_type,
+            required=False
         ),
-        message_id = dict(
-            arg_type = message_id_type,
-            required = False
+        message_id=dict(
+            arg_type=message_id_type,
+            required=False
         ),
-        job_name = dict(
-            arg_type = job_name_type,
-            required = False
+        job_name=dict(
+            arg_type=job_name_type,
+            required=False
         )
     )
     parser = BetterArgParser(arg_defs)
     new_params = parser.parse_args(params)
     return new_params
 
+
 def system_type(arg_val, params):
-    if arg_val and arg_val!='*':
+    if arg_val and arg_val! = '*':
         arg_val = arg_val.strip('*')
-    value=arg_val
-    regex='^[a-zA-Z0-9]{1,8}$'
+    value = arg_val
+    regex = '^[a-zA-Z0-9]{1,8}$'
     validate_parameters_based_on_regex(value,regex)
     return arg_val
 
+
 def message_id_type(arg_val, params):
-    if arg_val and arg_val!='*':
+    if arg_val and arg_val! = '*':
         arg_val = arg_val.strip('*')
     value = arg_val
     regex= '^[a-zA-Z0-9]{1,8}$'
     validate_parameters_based_on_regex(value,regex)
     return arg_val
 
+
 def job_name_type(arg_val, params):
-    if arg_val and arg_val!='*':
+    if arg_val and arg_val! = '*':
         arg_val = arg_val.strip('*')
-    value=arg_val
-    regex='^[a-zA-Z0-9]{1,8}$'
+    value = arg_val
+    regex = '^[a-zA-Z0-9]{1,8}$'
     validate_parameters_based_on_regex(value,regex)
     return arg_val
+
 
 def validate_parameters_based_on_regex(value,regex):
     pattern = re.compile(regex)
@@ -256,6 +261,7 @@ def validate_parameters_based_on_regex(value,regex):
     else:
         raise ValidationError(str(value))
     return value
+
 
 def find_required_request(params):
     """Find the request given the options provided."""
@@ -267,6 +273,7 @@ def find_required_request(params):
         message='There is no such request given the condition, check your command or update your options.'
         raise OperatorCmdError(message)
     return requests
+
 
 def create_merge_list():
     """Merge the return lists that execute both 'd r,a,s' and 'd r,a,jn'.
@@ -282,6 +289,7 @@ def create_merge_list():
     list_b = parse_result_b(message_b)
     merged_list = merge_list(list_a,list_b)
     return merged_list
+
 
 def filter_requests(merged_list,params):
     """filter the request given the params provided."""

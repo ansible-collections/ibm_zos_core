@@ -108,14 +108,11 @@ class ActionModule(ActionBase):
             result['failed'] = True
             return result
 
-        is_uss = True if '/' in src else False
+        is_uss = '/' in src
         ds_type = None
-        fetch_member = False
+        fetch_member = src.endswith(')')
         src = self._connection._shell.join_path(src)
         src = self._remote_expand_user(src)
-
-        if src.endswith(')'):
-            fetch_member = True
 
         # calculate the destination name
         if os.path.sep not in self._connection._shell.join_path('a', ''):
@@ -153,9 +150,7 @@ class ActionModule(ActionBase):
             base_dir = os.path.dirname(dest)
             dest = os.path.join(base_dir, member)
 
-        new_module_args = dict((k, v) for k, v in self._task.args.items())
-        new_module_args.update({'_fetch_member': fetch_member, '_is_uss': is_uss})
-        fetch_res = self._execute_module(module_name='zos_fetch', module_args=new_module_args, task_vars=task_vars)
+        fetch_res = self._execute_module(module_name='zos_fetch', module_args=self._task.args, task_vars=task_vars)
 
         if fetch_res.get('msg'):
             result['message'] = dict(

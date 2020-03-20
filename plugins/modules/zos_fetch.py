@@ -491,9 +491,7 @@ def run_module():
             flat=dict(required=False, default=True, type='bool'),
             is_binary=dict(required=False, default=False, type='bool'),
             encoding=dict(required=False, choices=['ASCII', 'EBCDIC'], type='str', default="EBCDIC"),
-            _is_uss=dict(required=False, type='bool'),
-            use_qualifier=dict(required=False, default=False, type='bool'),
-            _fetch_member=dict(required=False, type='bool')
+            use_qualifier=dict(required=False, default=False, type='bool')
         )
     )
 
@@ -502,7 +500,6 @@ def run_module():
         dest=dict(arg_type='path', required=True),
         fail_on_missing=dict(arg_type='bool', required=False, default=True),
         validate_checksum=dict(arg_type='bool', required=False, default=True),
-        flat=dict(arg_type='bool', required=False, default=True),
         is_binary=dict(arg_type='bool', required=False, default=False),
         encoding=dict(arg_type=encoding_type, required=False),
         use_qualifier=dict(arg_type='bool', required=False, default=False)
@@ -516,10 +513,11 @@ def run_module():
     encoding = parsed_args.get('encoding')
     fail_on_missing = boolean(parsed_args.get('fail_on_missing'), strict=False)
     validate_checksum = boolean(parsed_args.get('validate_checksum'), strict=False)
-    _is_uss = boolean(parsed_args.get('_is_uss'), strict=False)
     is_binary = boolean(parsed_args.get('is_binary'), strict=False)
     use_qualifier = boolean(parsed_args.get('use_qualifier'), strict=False)
-    _fetch_member = boolean(parsed_args.get('_fetch_member'), strict=False)
+
+    _is_uss = '/' in src
+    _fetch_member = src.endswith(')')
 
     _validate_params(src, is_binary, encoding, _fetch_member)
 

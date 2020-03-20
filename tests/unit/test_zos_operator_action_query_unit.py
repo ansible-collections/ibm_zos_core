@@ -14,7 +14,7 @@ import sys
 from mock import call
 
 # Used my some mock modules, should match import directly below
-IMPORT_NAME = 'ansible_collections_ibm_zos_core.plugins.modules.zos_operator_action_query'
+IMPORT_NAME = 'ibm_zos_core.plugins.modules.zos_operator_action_query'
 
 
 # * Tests for zos_operator_action_query

@@ -439,7 +439,7 @@ class BetterArgHandler(object):
             str(contents),
             re.IGNORECASE
         ):
-            if not os.path.isabs(str(contents)):
+            if not path.isabs(str(contents)):
                 raise ValueError('Invalid argument type for source. expected "data_set" or "path"')
         return str(contents)
 

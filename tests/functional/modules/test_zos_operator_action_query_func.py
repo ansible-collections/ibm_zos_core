@@ -29,4 +29,4 @@ def test_zos_operator_action_query_goldenpath(ansible_zos_module):
     for result in results.contacted.values():
         if result.get('actions') is None:
             passed = False
-     assert passed == True
+            assert passed == True

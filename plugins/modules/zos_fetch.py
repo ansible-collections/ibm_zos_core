@@ -32,10 +32,12 @@ options:
     description:
       - Name of PDS, PDS(E) members, VSAM data set, USS file path.
     required: true
+    type: str
   dest:
     description:
       - Local path where the file or data set will be stored.
     required: true
+    type: str
   fail_on_missing:
     description:
       - When set to true, the task will fail if the source file is missing.
@@ -72,6 +74,7 @@ options:
     required: false
     default: "EBCDIC"
     choices: ["ASCII", "EBCDIC" ]
+    type: str
   use_qualifier:
     description:
       - Indicates whether the data set high level qualifier should be used when fetching.

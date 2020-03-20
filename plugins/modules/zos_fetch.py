@@ -224,8 +224,13 @@ import time
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils._text import to_bytes
 from ansible.module_utils.parsing.convert_bool import boolean
-from zoautil_py import Datasets, MVSCmd
-from zoautil_py import types
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import BetterArgParser
+try:
+    from zoautil_py import Datasets, MVSCmd, types
+except Exception:
+    Datasets = ""
+    MVSCmd = ""
+    types = ""
 
 
 # Ansible module object
@@ -447,6 +452,25 @@ def _validate_dsname(ds_name):
     return re.match(dsn_regex, ds_name if '(' not in ds_name else ds_name[:ds_name.find('(')])
 
 
+def data_set_or_path_type(src, resolve_dependencies):
+    if not re.fullmatch(
+        r"^(?:(?:[A-Z]{1}[A-Z0-9]{0,7})(?:[.]{1})){1,21}[A-Z]{1}[A-Z0-9]{0,7}(?:\([A-Z]{1}[A-Z0-9]{0,7}\)){0,1}$",
+        str(src),
+        re.IGNORECASE
+    ):
+        if not os.path.isabs(str(src)):
+            raise ValueError('Invalid argument type for source. expected "data_set" or "path"')
+    return str(src)
+
+
+def encoding_type(encoding, resolve_dependencies):
+    if not re.fullmatch(r"^[A-Z0-9-]{2,}$", str(encoding), re.IGNORECASE):
+        raise ValueError(
+            'Invalid argument type for "{0}". expected "encoding"'.format(encoding)
+        )
+    return str(encoding)
+
+
 def _validate_params(src, is_binary, encoding, is_uss, _fetch_member):
     """ Ensure the module parameters are valid """
     msg = None
@@ -478,15 +502,29 @@ def run_module():
         )
     )
 
-    src = module.params.get('src', None)
+    arg_def = dict(
+        src=dict(arg_type=data_set_or_path_type, required=True),
+        dest=dict(arg_type='path', required=True),
+        fail_on_missing=dict(arg_type='bool', required=False, default=True),
+        validate_checksum=dict(arg_type='bool', required=False, default=True),
+        flat=dict(arg_type='bool', required=False, default=True),
+        is_binary=dict(arg_type='bool', required=False, default=False),
+        encoding=dict(arg_type=encoding_type, required=False),
+        use_qualifier=dict(arg_type='bool', required=False, default=False)
+    )
+
+    parser = BetterArgParser(arg_def)
+    parsed_args = parser.parsed_args(module.params)
+
+    src = parsed_args.get('src', None)
     b_src = to_bytes(src)
-    encoding = module.params.get('encoding')
-    fail_on_missing = boolean(module.params.get('fail_on_missing'), strict=False)
-    validate_checksum = boolean(module.params.get('validate_checksum'), strict=False)
-    is_uss = boolean(module.params.get('is_uss'), strict=False)
-    is_binary = boolean(module.params.get('is_binary'), strict=False)
-    use_qualifier = boolean(module.params.get('use_qualifier'), strict=False)
-    _fetch_member = boolean(module.params.get('_fetch_member'), strict=False)
+    encoding = parsed_args.get('encoding')
+    fail_on_missing = boolean(parsed_args.get('fail_on_missing'), strict=False)
+    validate_checksum = boolean(parsed_args.get('validate_checksum'), strict=False)
+    is_uss = boolean(parsed_args.get('is_uss'), strict=False)
+    is_binary = boolean(parsed_args.get('is_binary'), strict=False)
+    use_qualifier = boolean(parsed_args.get('use_qualifier'), strict=False)
+    _fetch_member = boolean(parsed_args.get('_fetch_member'), strict=False)
 
     _validate_params(src, is_binary, encoding, is_uss, _fetch_member)
 

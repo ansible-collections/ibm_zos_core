@@ -37,7 +37,7 @@ options:
     description:
       - Local path where the file or data set will be stored.
     required: true
-    type: str
+    type: path
   fail_on_missing:
     description:
       - When set to true, the task will fail if the source file is missing.
@@ -449,12 +449,6 @@ def _fetch_ps(src, validate_checksum, is_binary):
     return content, checksum
 
 
-def _validate_dsname(ds_name):
-    """ Validate the name of a given data set """
-    dsn_regex = "^(([A-Z]{1}[A-Z0-9]{0,7})([.]{1})){1,21}[A-Z]{1}[A-Z0-9]{0,7}$"
-    return re.match(dsn_regex, ds_name if '(' not in ds_name else ds_name[:ds_name.find('(')])
-
-
 def data_set_or_path_type(src, resolve_dependencies):
     if not re.fullmatch(
         r"^(?:(?:[A-Z]{1}[A-Z0-9]{0,7})(?:[.]{1})){1,21}[A-Z]{1}[A-Z0-9]{0,7}(?:\([A-Z]{1}[A-Z0-9]{0,7}\)){0,1}$",
@@ -474,15 +468,13 @@ def encoding_type(encoding, resolve_dependencies):
     return str(encoding)
 
 
-def _validate_params(src, is_binary, encoding, is_uss, _fetch_member):
+def _validate_params(src, is_binary, encoding, _fetch_member):
     """ Ensure the module parameters are valid """
     msg = None
     if is_binary and encoding is not None:
         msg = "Encoding parameter is not valid for binary transfer"
     if encoding and (encoding != 'EBCDIC' and encoding != 'ASCII'):
         msg = "Invalid value supplied for 'encoding' option, it must be either EBCDIC or ASCII"
-    if not is_uss and not _validate_dsname(src):
-        msg = "Invalid data set name provided"
 
     if msg:
         _fail_json(msg=msg, stdout="", stderr="", ret_code=None)
@@ -492,14 +484,14 @@ def run_module():
     global module
     module = AnsibleModule(
         argument_spec=dict(
-            src=dict(required=True, type='path'),
+            src=dict(required=True, type='str'),
             dest=dict(required=True, type='path'),
             fail_on_missing=dict(required=False, default=True, type='bool'),
             validate_checksum=dict(required=False, default=True, type='bool'),
             flat=dict(required=False, default=True, type='bool'),
             is_binary=dict(required=False, default=False, type='bool'),
-            encoding=dict(required=False, choices=['ASCII', 'EBCDIC'], type='str'),
-            is_uss=dict(required=False, default=False, type='bool'),
+            encoding=dict(required=False, choices=['ASCII', 'EBCDIC'], type='str', default="EBCDIC"),
+            _is_uss=dict(required=False, type='bool'),
             use_qualifier=dict(required=False, default=False, type='bool'),
             _fetch_member=dict(required=False, type='bool')
         )
@@ -524,15 +516,15 @@ def run_module():
     encoding = parsed_args.get('encoding')
     fail_on_missing = boolean(parsed_args.get('fail_on_missing'), strict=False)
     validate_checksum = boolean(parsed_args.get('validate_checksum'), strict=False)
-    is_uss = boolean(parsed_args.get('is_uss'), strict=False)
+    _is_uss = boolean(parsed_args.get('_is_uss'), strict=False)
     is_binary = boolean(parsed_args.get('is_binary'), strict=False)
     use_qualifier = boolean(parsed_args.get('use_qualifier'), strict=False)
     _fetch_member = boolean(parsed_args.get('_fetch_member'), strict=False)
 
-    _validate_params(src, is_binary, encoding, is_uss, _fetch_member)
+    _validate_params(src, is_binary, encoding, _fetch_member)
 
     res_args = dict()
-    if (not is_uss) and use_qualifier:
+    if (not _is_uss) and use_qualifier:
         src = Datasets.hlq() + '.' + src
 
     ds_name = src if not _fetch_member else src[:src.find('(')]
@@ -574,7 +566,7 @@ def run_module():
             res_args['pds_path'] = result['pds_path']
 
     # USS file
-    elif is_uss:
+    elif _is_uss:
         content, checksum = _fetch_uss_file(src, validate_checksum, is_binary)
         res_args['checksum'] = checksum
         res_args['content'] = content

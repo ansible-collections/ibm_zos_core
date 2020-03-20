@@ -51,7 +51,7 @@ def _update_result(result, src, dest, ds_type, binary_mode=False, encoding='EBCD
 
 
 def _write_content_to_file(filename, content, write_mode):
-    """ Write the given content to a file indicated by filename. 
+    """ Write the given content to a file indicated by filename.
         Use indicated write mode while writing to this file.
         If filename contains a path with non-existent directories,
         those directories should be created.
@@ -154,7 +154,7 @@ class ActionModule(ActionBase):
             dest = os.path.join(base_dir, member)
 
         new_module_args = dict((k, v) for k, v in self._task.args.items())
-        new_module_args.update({'_fetch_member': fetch_member, 'is_uss': is_uss})
+        new_module_args.update({'_fetch_member': fetch_member, '_is_uss': is_uss})
         fetch_res = self._execute_module(module_name='zos_fetch', module_args=new_module_args, task_vars=task_vars)
 
         if fetch_res.get('msg'):
@@ -204,7 +204,7 @@ class ActionModule(ActionBase):
     def _fetch_remote_dir(self, dest, task_vars, pds_path, binary_mode=False):
         """ Transfer a directory from USS to local machine.
             If the directory is to be transferred in binary mode, SFTP will be used.
-            Otherwise, SCP will be used. After the transfer is complete, the USS 
+            Otherwise, SCP will be used. After the transfer is complete, the USS
             durectory will be removed.
         """
         result = dict()

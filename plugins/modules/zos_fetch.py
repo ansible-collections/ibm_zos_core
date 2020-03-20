@@ -298,9 +298,12 @@ def _copy_vsam_to_temp_data_set(ds_name):
     out_ds = _create_temp_data_set_name('OUTPUT')
     sysprint = _create_temp_data_set_name('SYSPRINT')
 
-    Datasets.create(sysin, 'SEQ')
-    Datasets.create(out_ds, 'SEQ')
-    Datasets.create(sysprint, "SEQ", "", "FB", "", 133)
+    try:
+        Datasets.create(sysin, "SEQ")
+        Datasets.create(out_ds, "SEQ")
+        Datasets.create(sysprint, "SEQ", "", "FB", "", 133)
+    except Exception as err:
+        module.fail_json(msg="Unable to create temporary data sets to write DD statements: {0}".format(str(err)))
 
     repro_sysin = ' REPRO INFILE(INPUT)  OUTFILE(OUTPUT) '
     Datasets.write(sysin, repro_sysin)

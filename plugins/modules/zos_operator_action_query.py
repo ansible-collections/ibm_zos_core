@@ -1,8 +1,12 @@
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 # Copyright (c) IBM Corporation 2019, 2020
 # Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
+from __future__ import absolute_import, division, print_function
+
+__metaclass__ = type
 
 ANSIBLE_METADATA = {
     'metadata_version': '1.1',
@@ -10,7 +14,7 @@ ANSIBLE_METADATA = {
     'supported_by': 'community'
 }
 
-DOCUMENTATION =r'''
+DOCUMENTATION = r'''
 ---
 module: zos_operator_action_query
 short_description: Display operator action messages
@@ -49,7 +53,7 @@ seealso:
 - module: zos_operator
 '''
 
-EXAMPLES =r'''
+EXAMPLES = r'''
 - name: Display all outstanding messages issued on system MV2H
   zos_operator_outstanding_action:
       system: mv2h
@@ -110,7 +114,7 @@ actions:
             returned: on success
             type: str
             sample: MV27
-        job_id: 
+        job_id:
             description:
                 Job identifier for the outstanding message requiring operator
                 action awaiting a reply.
@@ -131,7 +135,7 @@ actions:
             returned: success
             type: str
             sample: IM5HCONN
-        message_id: 
+        message_id:
             description:
                 Message identifier for outstanding message requiring operator
                 action awaiting a reply.
@@ -165,22 +169,27 @@ from ansible.module_utils.basic import AnsibleModule
 import re
 from traceback import format_exc
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import BetterArgParser
-from zoautil_py import OperatorCmd
+
+try:
+    from zoautil_py import OperatorCmd
+except Exception:
+    OperatorCmd = ""
+
 
 def run_module():
     module_args = dict(
-        system=dict(type='str',required=False),
-        message_id=dict(type='str',required=False),
-        job_name=dict(type='str',required=False)
+        system = dict(type='str', required=False),
+        message_id = dict(type='str', required=False),
+        job_name = dict(type='str', required=False)
     )
 
     result = dict(
-        changed=False
+        changed = False
     )
 
     module = AnsibleModule(
-        argument_spec=module_args,
-        supports_check_mode=False
+        argument_spec = module_args,
+        supports_check_mode = False
     )
 
     try:
@@ -189,26 +198,27 @@ def run_module():
         if requests:
             result['count'] = len(requests)
     except Error as e:
-        module.fail_json(msg=e.msg, **result)
+        module.fail_json(msg = e.msg, **result)
     except Exception as e:
         trace = format_exc()
         module.fail_json(msg='An unexpected error occurred: {0}'.format(trace), **result)
+
     result['actions'] = requests
     module.exit_json(**result)
 
 def parse_params(params):
-    arg_defs=dict(
-        system=dict(
-            arg_type=system_type,
-            required=False
+    arg_defs = dict(
+        system = dict(
+            arg_type = system_type,
+            required = False
         ),
-        message_id=dict(
-            arg_type=message_id_type,
-            required=False
+        message_id = dict(
+            arg_type = message_id_type,
+            required = False
         ),
-        job_name=dict(
-            arg_type=job_name_type,
-            required=False
+        job_name = dict(
+            arg_type = job_name_type,
+            required = False
         )
     )
     parser = BetterArgParser(arg_defs)
@@ -226,8 +236,8 @@ def system_type(arg_val, params):
 def message_id_type(arg_val, params):
     if arg_val and arg_val!='*':
         arg_val = arg_val.strip('*')
-    value=arg_val
-    regex='^[a-zA-Z0-9]{1,8}$'
+    value = arg_val
+    regex= '^[a-zA-Z0-9]{1,8}$'
     validate_parameters_based_on_regex(value,regex)
     return arg_val
 
@@ -280,11 +290,11 @@ def filter_requests(merged_list,params):
     job_name = params.get('job_name')
     newlist = merged_list
     if system:
-        newlist = handle_conditions(newlist,'system',system.upper().strip('*'))
+        newlist = handle_conditions(newlist, 'system', system.upper().strip('*'))
     if job_name:
-        newlist = handle_conditions(newlist,'job_name',job_name.upper().strip('*'))
+        newlist = handle_conditions(newlist, 'job_name', job_name.upper().strip('*'))
     if message_id:
-        newlist = handle_conditions(newlist,'message_id',message_id.upper().strip('*'))
+        newlist = handle_conditions(newlist, 'message_id', message_id.upper().strip('*'))
     return newlist
 
 def handle_conditions(list,condition_type,condition_values):
@@ -296,6 +306,7 @@ def handle_conditions(list,condition_type,condition_values):
             newlist.append(dict)
     return newlist
 
+
 def execute_command(operator_cmd):
     rc_message = OperatorCmd.execute(operator_cmd)
     rc = rc_message.get('rc')
@@ -303,6 +314,7 @@ def execute_command(operator_cmd):
     if rc > 0:
         raise OperatorCmdError(message)
     return message
+
 
 def parse_result_a(result):
     """parsing the result that coming from command 'd r,a,s',
@@ -313,7 +325,7 @@ def parse_result_a(result):
 
     dict_temp = {}
     list = []
-    request_temp=''
+    request_temp = ''
     end_flag = False
     lines = result.split('\n')
     regex = re.compile(r'\s+')
@@ -331,18 +343,18 @@ def parse_result_a(result):
             end_flag = True
         if n or m or end_flag:
             if request_temp:
-                dict_temp['message_text']=request_temp
+                dict_temp['message_text'] = request_temp
                 list.append(dict_temp)
-                request_temp=''
+                request_temp = ''
                 dict_temp = {}
             if n:
                 elements = regex.split(line,4)
-                dict_temp = {'number':elements[0],'type':elements[1],'system':elements[2],'job_id':elements[3]}
+                dict_temp = {'number':elements[0], 'type':elements[1], 'system':elements[2], 'job_id':elements[3]}
                 request_temp = elements[4].strip()
                 continue
             if m:
                 elements = line.split(' ',3)
-                dict_temp = {'number':elements[0],'type':elements[1],'system':elements[2]}
+                dict_temp = {'number':elements[0], 'type':elements[1], 'system':elements[2]}
                 request_temp = elements[3].strip()
                 continue
         else:
@@ -367,10 +379,11 @@ def parse_result_b(result):
         if m:
             elements = regex.split(line,5)
             # 215 R IM5GCONN *215 HWSC0000I *IMS CONNECT READY*  IM5GCONN
-            dict_temp = {'number':elements[0],'job_name':elements[2],'message_id':elements[4]}
+            dict_temp = {'number':elements[0],' job_name':elements[2], 'message_id':elements[4]}
             list.append(dict_temp)
             continue
     return list
+
 
 def merge_list(list_a,list_b):
     merged_list = []
@@ -386,16 +399,20 @@ def merge_list(list_a,list_b):
 class Error(Exception):
     pass
 
+
 class ValidationError(Error):
     def __init__(self, message):
         self.msg = 'An error occurred during validate the input parameters: "{0}"'.format(message)
+
 
 class OperatorCmdError(Error):
     def __init__(self, message):
         self.msg = 'An error occurred during issue the operator command, the response is "{0}"'.format(message)
 
+
 def main():
     run_module()
+
 
 if __name__ == '__main__':
     main()

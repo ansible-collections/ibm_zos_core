@@ -436,13 +436,6 @@ def _fetch_ps(src, validate_checksum, is_binary):
     """ Fetch a sequential data set """
     checksum = None
     content = _fetch_zos_data_set(src, is_binary)
-    if not content:
-        _fail_json(
-            msg="Error fetching sequential data set {0}".format(src),
-            stdout="",
-            stderr="",
-            ret_code=None
-        )
     if validate_checksum:
         checksum = _get_checksum(content)
     return content, checksum

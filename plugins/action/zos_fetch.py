@@ -23,6 +23,7 @@ from ansible.utils.hashing import checksum_s
 
 # Create return parameters
 def _update_result(result, src, dest, ds_type, binary_mode=False, encoding='EBCDIC'):
+    """ Helper function to update output result with the provided values """
     data_set_types = {
         'PS': "Sequential",
         'PO': "Partitioned",
@@ -50,6 +51,11 @@ def _update_result(result, src, dest, ds_type, binary_mode=False, encoding='EBCD
 
 
 def _write_content_to_file(filename, content, write_mode):
+    """ Write the given content to a file indicated by filename. 
+        Use indicated write mode while writing to this file.
+        If filename contains a path with non-existent directories,
+        those directories should be created.
+    """
     os.makedirs(os.path.dirname(filename), exist_ok=True)
     try:
         with open(filename, write_mode) as outfile:
@@ -63,6 +69,9 @@ def _write_content_to_file(filename, content, write_mode):
 
 
 def _process_boolean(arg, default=False):
+    """ Return boolean representation of arg.
+        If arg is None, return the default value
+    """
     try:
         return boolean(arg)
     except TypeError:
@@ -119,7 +128,7 @@ class ActionModule(ActionBase):
         if flat:
             if os.path.isdir(to_bytes(dest, errors='surrogate_or_strict')) and not dest.endswith(os.sep):
                 result['message'] = dict(
-                    msg="dest is an existing directory, use a trailing slash if you want to fetch src into that directory",
+                    msg="dest is an existing directory, append a forward slash to the dest if you want to fetch src into that directory",
                     stdout="",
                     stderr="",
                     ret_code=None
@@ -169,13 +178,13 @@ class ActionModule(ActionBase):
         mvs_ds = ds_type in ('PO', 'PDSE', 'PE')
 
         if ds_type == 'VSAM' or ds_type == 'PS' or is_uss or (fetch_member and mvs_ds):
-            fetch_content = self._fetch_non_partitioned_data_set(
+            fetch_content = self._write_remote_data_to_local_file(
                 dest, task_vars, fetch_res['content'], fetch_res['checksum'],
                 binary_mode=is_binary, validate_checksum=validate_checksum
             )
 
         elif mvs_ds:
-            fetch_content = self._fetch_partitioned_data_set(dest, task_vars, fetch_res['pds_path'], binary_mode=is_binary)
+            fetch_content = self._fetch_remote_dir(dest, task_vars, fetch_res['pds_path'], binary_mode=is_binary)
 
         else:
             result['message'] = dict(
@@ -192,7 +201,12 @@ class ActionModule(ActionBase):
             src, dest, ds_type, binary_mode=is_binary, encoding=encoding if encoding else 'EBCDIC'
         )
 
-    def _fetch_partitioned_data_set(self, dest, task_vars, pds_path, binary_mode=False):
+    def _fetch_remote_dir(self, dest, task_vars, pds_path, binary_mode=False):
+        """ Transfer a directory from USS to local machine.
+            If the directory is to be transferred in binary mode, SFTP will be used.
+            Otherwise, SCP will be used. After the transfer is complete, the USS 
+            durectory will be removed.
+        """
         result = dict()
         try:
             ansible_user = self._play_context.remote_user
@@ -216,15 +230,17 @@ class ActionModule(ActionBase):
             self._connection.exec_command("rm -r {0}".format(pds_path))
         return result
 
-    def _fetch_non_partitioned_data_set(self, dest, task_vars, content, checksum, binary_mode=False, validate_checksum=True):
+    def _write_remote_data_to_local_file(self, dest, task_vars, content, checksum, binary_mode=False, validate_checksum=True):
+        """ Write fetched content to local file """
         result = dict()
         new_content = content
 
         if binary_mode:
             write_mode = 'wb'
             try:
-                local_data = open(dest, 'rb').read()
-                local_checksum = checksum_s(base64.b64encode(local_data))
+                with open(dest, 'rb') as tmp:
+                    local_data = tmp.read()
+                    local_checksum = checksum_s(base64.b64encode(local_data))
             except FileNotFoundError:
                 local_checksum = None
             new_content = base64.b64decode(content)

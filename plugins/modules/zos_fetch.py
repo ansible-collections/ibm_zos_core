@@ -17,8 +17,8 @@ ANSIBLE_METADATA = {
 DOCUMENTATION = r'''
 ---
 module: zos_fetch
-version_added: '1.0.1'
-short_description: Fetches data from remote z/OS system to local machine
+version_added: "2.9"
+short_description: Fetch data from z/OS
 description:
   - This module copies a file or data set from a remote z/OS system to the local machine.
     Use the M(zos_copy) module to copy files from local machine to the remote z/OS system.
@@ -93,6 +93,7 @@ seealso:
 - module: fetch
 - module: zos_copy
 - module: copy
+- module: zos_data_set
 '''
 
 EXAMPLES = r'''
@@ -507,7 +508,7 @@ def run_module():
     except UncatalogedDatasetError as err:
         if fail_on_missing:
             _fail_json(msg=str(err), stdout="", stderr="", ret_code=None)
-        module.exit_json(note="The data set is not cataloged. No data was fetched")
+        module.exit_json(note="Datasets must be cataloged for data to be fetched. No data was fetched")
 
     if ds_type in MVS_DS_TYPES and not Datasets.exists(src):
         if fail_on_missing:

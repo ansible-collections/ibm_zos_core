@@ -13,30 +13,39 @@ ANSIBLE_METADATA = {
 DOCUMENTATION =r'''
 ---
 module: zos_operator_action_query
-short_description: Display outstanding messages requiring operator action.
+short_description: Display operator action messages
 description:
-    - Get a list of outstanding messages requiring operator action given one or more conditions.
-author: Ping Xiao <xiaoping@cn.ibm.com>
+    - Get a list of outstanding messages requiring operator action given one or
+    more conditions.
+author: "Ping Xiao (@xiaopingBJ)"
 options:
   system:
     description:
-        Return outstanding messages requiring operator action awaiting a reply for a particular system. 
-        If the system name is not specified, all outstanding messages for that system and for 
-        the local systems attached to it are returned. Wildcards are unsupported.
+        - Return outstanding messages requiring operator action awaiting a
+        reply for a particular system.
+        - If the system name is not specified, all outstanding messages for
+        that system and for the local systems attached to it are returned.
+        - A trailing asterisk, (*) wildcard is supported.
     type: str
     required: false
   message_id:
     description:
-        Return outstanding messages requiring operator action awaiting a reply for a particular message 
-        identifier. A trailing asterisk (*) wildcard is supported. 
+        - Return outstanding messages requiring operator action awaiting a
+        reply for a particular message identifier.
+        - If the message identifier is not specified, all outstanding messages
+        for all message identifiers are returned.
+        - A trailing asterisk, (*) wildcard is supported.
     type: str
     required: false
   job_name:
     description:
-      - Return outstanding messages requiring operator action awaiting a reply for a particular job name .
+      - Return outstanding messages requiring operator action awaiting a reply
+      for a particular job name.
+      - If the message job name is not specified, all outstanding messages
+      for all job names are returned.
     type: str
     required: false
-seealso: 
+seealso:
 - module: zos_operator
 '''
 
@@ -61,84 +70,96 @@ EXAMPLES =r'''
 '''
 
 RETURN = r'''
-changed: 
-      description: Indicates if any changes were made during module operation. Given operator 
-      action commands query for messages, True is always returned unless either a module or 
-      command failure has occurred. 
+changed:
+    description:
+        Indicates if any changes were made during module operation. Given
+        operator action commands query for messages, True is always returned
+        unless either a module or command failure has occurred.
     returned: always
     type: bool
 count:
-    description: The total number of outstanding messages.
-    returned: success
+    description:
+        The total number of outstanding messages.
+    returned: on success
     type: int
 actions:
-    description: The list of the outstanding messages
+    description:
+        The list of the outstanding messages.
     returned: success
-    type: list[dict]
+    type: list
+    elements: dict
     contains:
         number:
-            description: The message identification number
-            returned: success
+            description:
+                The message identification number.
+            returned: on success
             type: int
             sample: 001
         type:
-            description: The action type,'R' means request
-            returned: success
+            description:
+                The action type,'R' means request.
+            returned: on success
             type: str
             sample: R
         system:
-            description: System on which the outstanding message requiring operator action awaiting a reply.
-            returned: success
+            description:
+                System on which the outstanding message requiring operator
+                action awaiting a reply.
+            returned: on success
             type: str
             sample: MV27
         job_id: 
-            description: Job identifier for the outstanding message requiring operator action awaiting a reply.
-            returned: success
+            description:
+                Job identifier for the outstanding message requiring operator
+                action awaiting a reply.
+            returned: on success
             type: str
             sample: STC01537
         message_text:
-            description: Job identifier for outstanding message requiring operator action awaiting a reply.
+            description:
+                Job identifier for outstanding message requiring operator
+                action awaiting a reply.
             returned: success
             type: str
             sample: *399 HWSC0000I *IMS CONNECT READY* IM5HCONN
-        job_name: 
-            description: Job name for outstanding message requiring operator action awaiting a reply.
+        job_name:
+            description:
+                Job name for outstanding message requiring operator action
+                awaiting a reply.
             returned: success
             type: str
             sample: IM5HCONN
         message_id: 
-            description: Message identifier for outstanding message requiring operator action awaiting a reply.
+            description:
+                Message identifier for outstanding message requiring operator
+                action awaiting a reply.
             returned: success
             type: str
             sample: HWSC0000I
     sample:
-        {
-            "actions": 
-            [
-                {
-                    "number": '001',
-                    "type": 'R',
-                    "system": 'MV27',
-                    "job_id": 'STC01537',
-                    "message_text": '*399 HWSC0000I *IMS CONNECT READY* IM5HCONN',
-                    "job_name": 'IM5HCONN',
-                    "message_id": 'HWSC0000I'
-                    },
-                    {
-                    "number": '002',
-                    "type": 'R',
-                    "system": 'MV27',
-                    "job_id": 'STC01533',
-                    "message_text": '*400 DFS3139I IMS INITIALIZED, AUTOMATIC RESTART PROCEEDING IM5H',
-                    "job_name": 'IM5HCTRL',
-                    "message_id": 'DFS3139I'
-                }
-            ]
-        }
+        [
+            {
+                "number": '001',
+                "type": 'R',
+                "system": 'MV27',
+                "job_id": 'STC01537',
+                "message_text": '*399 HWSC0000I *IMS CONNECT READY* IM5HCONN',
+                "job_name": 'IM5HCONN',
+                "message_id": 'HWSC0000I'
+            },
+            {
+                "number": '002',
+                "type": 'R',
+                "system": 'MV27',
+                "job_id": 'STC01533',
+                "message_text": '*400 DFS3139I IMS INITIALIZED, AUTOMATIC RESTART PROCEEDING IM5H',
+                "job_name": 'IM5HCTRL',
+                "message_id": 'DFS3139I'
+            }
+        ]
 '''
 
 from ansible.module_utils.basic import AnsibleModule
-import argparse
 import re
 from traceback import format_exc
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import BetterArgParser
@@ -192,7 +213,6 @@ def parse_params(params):
     new_params = parser.parse_args(params)
     return new_params
 
-    parser = BetterArgParser(arg_defs)
 def system_type(arg_val, params):
     if arg_val and arg_val!='*':
         arg_val = arg_val.strip('*')
@@ -225,9 +245,8 @@ def validate_parameters_based_on_regex(value,regex):
         raise ValidationError(str(value))
     return value
 
-
 def find_required_request(params):
-    """find the request given the options provided."""
+    """Find the request given the options provided."""
     merged_list = create_merge_list()
     requests = filter_requests(merged_list,params)
     if requests:
@@ -238,10 +257,11 @@ def find_required_request(params):
     return requests
 
 def create_merge_list():
-    """merge the return lists that execute both 'd r,a,s' and 'd r,a,jn'
-    'd r,a,s' response like: "742 R MV28     JOB57578 &742 ARC0055A REPLY 'GO' OR 'CANCEL'"
+    """Merge the return lists that execute both 'd r,a,s' and 'd r,a,jn'.
+    For example, if we have:
+    'd r,a,s' response like: "742 R MV28     JOB57578 &742 ARC0055A REPLY 'GO'OR 'CANCEL'"
     'd r,a,jn' response like:"742 R FVFNT29H &742 ARC0055A REPLY 'GO' OR 'CANCEL'"
-    so we need merge the result so that to get a full list of information given a condition"""
+    the results will be merged so that a full list of information returned on condition"""
     operator_cmd_a = 'd r,a,s'
     operator_cmd_b = 'd r,a,jn'
     message_a = execute_command(operator_cmd_a)
@@ -283,10 +303,12 @@ def execute_command(operator_cmd):
     return message
 
 def parse_result_a(result):
-    """parsing the result that coming from command 'd r,a,s', there are usually two format:
-    line with job_id: 810 R MV2D     JOB58389 &810 ARC0055A REPLY 'GO' OR 'CANCEL'  or
-    line without job_id: 574 R MV28              *574 IXG312E OFFLOAD DELAYED FOR..
-    also some of the request contains multiple lines, we need to handle that as well"""
+    """parsing the result that coming from command 'd r,a,s',
+    there are usually two formats:
+     - line with job_id: 810 R MV2D     JOB58389 &810 ARC0055A REPLY 'GO' OR 'CANCEL'
+     - line without job_id: 574 R MV28              *574 IXG312E OFFLOAD DELAYED FOR..
+    also the request contains multiple lines, we need to handle that as well"""
+
     dict_temp = {}
     list = []
     request_temp=''
@@ -304,7 +326,7 @@ def parse_result_a(result):
         n = pattern_with_job_id.search(line)
 
         if index == (len(lines)-1):
-            endflag = True
+            end_flag = True
         if n or m or end_flag:
             if request_temp:
                 dict_temp['message_text']=request_temp
@@ -328,8 +350,10 @@ def parse_result_a(result):
 
 
 def parse_result_b(result):
-    """parsing the result that coming from command 'd r,a,jn' the main purpose to use this command is 
-    to get the job_name and message id, which is not included in 'd r,a,s' """
+    """Parse the result that comes from command 'd r,a,jn', the main purpose
+    to use this command is to get the job_name and message id, which is not
+    included in 'd r,a,s' """
+
     dict_temp = {}
     list = []
     lines = result.split('\n')

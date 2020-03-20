@@ -21,7 +21,7 @@ short_description: Display operator action messages
 description:
   - Get a list of outstanding messages requiring operator action given one or
     more conditions.
-author: "Ping Xiao (@xiaopingBJ)"
+author: "Ping Xiao (@xiaoping8385)"
 options:
   system:
     description:

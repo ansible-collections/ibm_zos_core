@@ -269,7 +269,7 @@ class ActionModule(ActionBase):
                 cmd = ['sftp', ansible_user + '@' + ansible_host]
                 stdin = to_bytes("get -r {0} {1}".format(pds_path, dest))
             else:
-                remote_path = ansible_user+'@'+ansible_host+':'+pds_path
+                remote_path = ansible_user + '@' + ansible_host + ':' + pds_path
                 cmd = ['scp', '-r', remote_path, dest]
 
             transfer_pds = subprocess.Popen(

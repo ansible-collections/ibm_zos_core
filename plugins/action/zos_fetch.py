@@ -151,7 +151,7 @@ class ActionModule(ActionBase):
             dest = os.path.join(base_dir, member)
 
         fetch_res = self._execute_module(module_name='zos_fetch', module_args=self._task.args, task_vars=task_vars)
-
+        
         if fetch_res.get('msg'):
             result['message'] = dict(
                 stdout=fetch_res['stdout'],

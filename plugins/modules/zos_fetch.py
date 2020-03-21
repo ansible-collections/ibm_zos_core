@@ -484,8 +484,10 @@ def run_module():
         use_qualifier=dict(arg_type='bool', required=False, default=False)
     )
 
-    parser = BetterArgParser(arg_def)
-    parsed_args = parser.parsed_args(module.params)
+    try:
+        parsed_args = BetterArgParser(arg_def).parse_args(module.params)
+    except ValueError as err:
+        _fail_json(msg="Parameter verification failed", stdout="", stderr=str(err), ret_code=None)
 
     src = parsed_args.get('src', None)
     b_src = to_bytes(src)

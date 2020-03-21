@@ -111,6 +111,10 @@ class ActionModule(ActionBase):
         )
 
         msg = None
+
+        if src is None or dest is None:
+            msg = "Source and destination are required"
+
         if not isinstance(src, string_types):
             msg = '''Invalid type supplied for 'source' option, \
                 it must be a string'''
@@ -122,9 +126,6 @@ class ActionModule(ActionBase):
         if encoding and not isinstance(encoding, string_types):
             msg = '''Invalid type supplied for 'encoding' option, \
                 it must be a string'''
-
-        if src is None or dest is None:
-            msg = "Source and destination are required"
 
         if msg:
             result['message'] = dict(

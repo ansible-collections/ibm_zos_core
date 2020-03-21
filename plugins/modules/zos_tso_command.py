@@ -17,53 +17,66 @@ module: zos_tso_command
 author: "Xiao Yuan Ma (@bjmaxym)"
 short_description: Execute a TSO command
 description:
-    - Execute a TSO command on the target z/OS system with the provided options and receive a structured response.
+    - Execute a TSO command on the target z/OS system with the provided options
+      and receive a structured response.
 options:
   command:
-      description:
+    description:
         - The TSO command to execute on the target z/OS system.
-      required: true
-      type: str
-   auth:
-      required: false
-      type: bool
-      default: false
-      description:
-         - Instruct whether this command should run authorized or not.
-         - If set to true, the command will be run as APF authorized,
+    required: true
+    type: str
+  auth:
+    required: false
+    type: bool
+    default: false
+    description:
+        - Instruct whether this command should run authorized or not.
+        - If set to true, the command will be run as APF authorized,
            otherwise the command runs as unauthorized.
 '''
 
 RETURN = r'''
 result:
     description:
-    returned:
-    type: list
-    elements: dict
+        Result
+    returned: always
+    type: dict
+    contains:
         ret_code:
-            description: return code output received from the TSO command
-            returned:
-            type: list[dict]
+          description:
+            Return code output received from the TSO command
+          returned: always
+          type: dict
+          contains:
             code:
-                description: Holds the return code
+                description:
+                    Return code converted to integer value (when possible).
                 returned: always
                 type: int
                 sample: 0
             msg_code:
-                description: Holds the return code string
-                returned:always
+                description:
+                    Return code extracted from the `msg` so that it can better
+                    evaluated. For example , ABEND(S0C4) would yield ""S0C4".
+                returned: always
                 type: str
                 sample: 0
             msg_txt:
-                description: Holds additional information related to the job that may be useful to the user.
+                description:
+                    Returns additional information related to the job.
                 type: str
                 sample: "Received return code 08, please configure IMS Connect"
+        sample:
+            - "code": 0
+            -  "msg": "CC 0000"
+            - "msg_code": "0000"
+            - "msg_txt":
         content:
-            description: The response resulting from the execution of the TSO command
+            description:
+                The response resulting from the execution of the TSO command
             returned: success
             type: list[str]
             sample:
-               - >
                [ "NO MODEL DATA SET                                                OMVSADM",
                  "TERMUACC                                                                ",
                  "SUBGROUP(S)= VSAMDSET SYSCTLG  BATCH    SASS     MASS     IMSGRP1       ",
@@ -77,6 +90,7 @@ message:
        The output message returned from this module.
     type: dict
     returned: always
+    contains:
         msg:
             description:
                Message returned by the module
@@ -103,29 +117,30 @@ changed:
         returned unless either a module or command failure has occurred.
     returned: always
     type: bool
-
-Result sample:
-    {
-        "result":{
-        "ret_code":{
-            "code":0,
-            "msg_code":"0",
-            "msg_txt":"",
-        },
-        "content" : [
-            "'IDC0550I ENTRY (A) TEST.HILL3.TEST DELETED",
-        ]},
-        "message":{
-            "msg": "The TSO command execution succeeded.",
-            "stderr":"delete 'TEST.HILL3.TEST'",
-            "stdout":"'IDC0550I ENTRY (A) TEST.HILL3.TEST DELETED'"
-        },
-        "original_message": {
-            "auth": null,
-            "command": "delete 'TEST.HILL3.TEST'"
-        },
-        "changed": false,
-    }
+    sample:
+        [
+            {
+                "result":{
+                "ret_code":{
+                    "code":0,
+                    "msg_code":"0",
+                    "msg_txt":"",
+                },
+                "content" : [
+                    "'IDC0550I ENTRY (A) TEST.HILL3.TEST DELETED",
+                ]},
+                "message":{
+                    "msg": "The TSO command execution succeeded.",
+                    "stderr":"delete 'TEST.HILL3.TEST'",
+                    "stdout":"'IDC0550I ENTRY (A) TEST.HILL3.TEST DELETED'"
+                },
+                "original_message": {
+                    "auth": null,
+                    "command": "delete 'TEST.HILL3.TEST'"
+                },
+                "changed": false,
+            }
+        ]
 '''
 
 EXAMPLES = r'''

@@ -432,7 +432,12 @@ def _copy_to_seq(src, dest, data, validate=True, local_checksum=None, remote_src
             if remote_checksum != new_checksum:
                 changed = True
             if new_checksum != local_checksum:
-                module.fail_json(msg="Checksum mismatch", checksum=new_checksum, local_checksum=local_checksum, changed=changed)
+                module.fail_json(
+                    msg="Checksum mismatch", 
+                    checksum=new_checksum, 
+                    local_checksum=local_checksum, 
+                    changed=changed
+                )
 
 
 def _copy_to_pdse(src_dir, dest, copy_member=False, remote_src=False, src_file=None):

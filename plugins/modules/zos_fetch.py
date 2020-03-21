@@ -285,7 +285,7 @@ def _fetch_zos_data_set(zos_data_set, is_binary, fetch_member=False):
         if rc != 0:
             _fail_json(
                 msg='''Failed to read data set member for \
-                data set {0}'''.format(zos_data_set),
+                    data set {0}'''.format(zos_data_set),
                 stdout=out,
                 stderr=err,
                 ret_code=rc
@@ -319,7 +319,7 @@ def _copy_vsam_to_temp_data_set(ds_name):
     except Exception as err:
         module.fail_json(
             msg='''Unable to create temporary data sets to write \
-            DD statements: {0}'''.format(str(err))
+                DD statements: {0}'''.format(str(err))
         )
 
     repro_sysin = ' REPRO INFILE(INPUT)  OUTFILE(OUTPUT) '
@@ -340,14 +340,14 @@ def _copy_vsam_to_temp_data_set(ds_name):
         if rc != 0:
             _fail_json(
                 msg='''Non-zero return code received while executing MVSCmd \
-                to copy VSAM data set {0}'''.format(ds_name),
+                    to copy VSAM data set {0}'''.format(ds_name),
                 stdout="",
                 stderr="",
                 ret_code=rc
             )
         _fail_json(
             msg='''Failed to call IDCAMS to copy VSAM data set {0} to \
-            sequential data set'''.format(ds_name),
+                sequential data set'''.format(ds_name),
             stdout="",
             stderr=str(err),
             ret_code=rc
@@ -422,16 +422,16 @@ def _determine_data_set_type(ds_name, fail_on_missing=True):
         else:
             module.exit_json(
                 note='''The USS file {0} does not exist. \
-                No data was fetched.'''.format(ds_name)
+                    No data was fetched.'''.format(ds_name)
             )
     if rc != 0:
         msg = None
         if "ALREADY IN USE" in out:
             msg = '''Dataset {0} may already be open by another user. \
-            Close the dataset and try again.'''.format(ds_name)
+                Close the dataset and try again.'''.format(ds_name)
         else:
             msg = '''Unable to determine data set type for \
-            data set {0}.'''.format(ds_name)
+                data set {0}.'''.format(ds_name)
         _fail_json(msg=msg, stdout=out, stderr=err, ret_code=rc)
 
     ds_search = re.search("(-|--)DSORG(|-)\n(.*)", out)
@@ -473,7 +473,7 @@ def _validate_params(src, is_binary, encoding, _fetch_member):
         msg = "Encoding parameter is not valid for binary transfer"
     if encoding and (encoding != 'EBCDIC' and encoding != 'ASCII'):
         msg = '''Invalid value supplied for 'encoding' option, \
-        it must be either EBCDIC or ASCII'''
+            it must be either EBCDIC or ASCII'''
 
     if msg:
         _fail_json(msg=msg, stdout="", stderr="", ret_code=None)
@@ -592,7 +592,7 @@ def run_module():
             _fail_json(msg=str(err), stdout="", stderr="", ret_code=None)
         module.exit_json(
             note='''Datasets must be cataloged for data to be fetched. \
-            No data was fetched'''
+                No data was fetched'''
         )
 
     if ds_type in MVS_DS_TYPES and not Datasets.exists(src):
@@ -605,7 +605,7 @@ def run_module():
             )
         module.exit_json(
             note='''The data set {0} does not exist. \
-            No data was fetched.'''.format(src)
+                No data was fetched.'''.format(src)
         )
 
     # Fetch sequential dataset
@@ -643,8 +643,10 @@ def run_module():
 
 class UncatalogedDatasetError(Exception):
     def __init__(self, ds_name):
-        super().__init__('''Data set {0} is not in catalog. If you would \
-        like to fetch the data set, please catalog it first'''.format(ds_name))
+        super().__init__(
+            '''Data set {0} is not in catalog. If you would like to fetch the \
+                data set, please catalog it first'''.format(ds_name)
+        )
 
 
 def main():

@@ -75,8 +75,9 @@ def _write_content_to_file(filename, content, write_mode):
             'true'; stderr: {1}'''.format(filename, err)
         )
     except (IOError, OSError) as err:
-        raise AnsibleError('''Error writing to \
-            destination {0}: {1}'''.format(filename, err))
+        raise AnsibleError(
+            "Error writing to destination {0}: {1}".format(filename, err)
+        )
 
 
 def _process_boolean(arg, default=False):
@@ -158,8 +159,8 @@ class ActionModule(ActionBase):
             ):
                 result['message'] = dict(
                     msg='''dest is an existing directory, append a forward \
-                    slash to the dest if you want to fetch src into that \
-                    directory''',
+                        slash to the dest if you want to fetch src into that \
+                        directory''',
                     stdout="",
                     stderr="",
                     ret_code=None
@@ -236,7 +237,7 @@ class ActionModule(ActionBase):
         else:
             result['message'] = dict(
                 msg='''The data set type '{0}' is not \
-                currently supported'''.format(ds_type),
+                    currently supported'''.format(ds_type),
                 stdout="",
                 stderr="",
                 ret_code=None
@@ -278,8 +279,10 @@ class ActionModule(ActionBase):
             out, err = transfer_pds.communicate(stdin)
 
             if transfer_pds.returncode != 0:
-                raise AnsibleError('''Error transferring PDS from remote z/OS \
-                system; stdout: {0}; stderr: {1}'''.format(out, err))
+                raise AnsibleError(
+                    '''Error transferring PDS from remote z/OS system; \
+                        stdout: {0}; stderr: {1}'''.format(out, err)
+                )
 
             result['changed'] = True
         finally:

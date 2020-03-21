@@ -51,4 +51,3 @@ def test_zos_operator_goldenpath_with_debug_verbose(ansible_zos_module):
         assert result['rc'] == 0
         assert result.get("changed") is True
         assert result.get("content") is not None
-

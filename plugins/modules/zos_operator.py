@@ -45,13 +45,14 @@ EXAMPLES = r'''
   zos_operator:
     cmd: 'd u,all'
 
-- name: Execute an operator command to show active jobs with verbose information
+- name: Execute an operator command to show active jobs with verbose
+  information
   zos_operator:
     cmd: 'd u,all'
     verbose: true
 
 - name: Execute an operator command to show active jobs with verbose and debug
-information
+  information
   zos_operator:
     cmd: 'd u,all'
     verbose: true
@@ -63,7 +64,8 @@ result:
     description:
        Result that is returned from executing the operator command
     returned: success
-    type: list[dict]
+    type: list
+    elements: dict
     contains:
         rc:
             description:
@@ -138,7 +140,7 @@ def run_module():
 
 def parse_params(params):
     arg_defs = dict(
-        cmd = dict(
+        cmd=dict(
             arg_type='str',
             required=True
         ),
@@ -165,20 +167,22 @@ def run_operator_command(params):
     rc = rc_message.get('rc')
     message = rc_message.get('message')
     if rc > 0:
-        raise OperatorCmdError(command,message.split('\n') if message else message)
+        raise OperatorCmdError(command, message.split('\n') if message else message)
     return rc_message
 
 
 class Error(Exception):
     pass
 
+
 class OperatorCmdError(Error):
-    def __init__(self, cmd,message):
+    def __init__(self, cmd, message):
         self.msg = 'An error occurred during issue the operator command "{0}", the response is "{1}"'.format(cmd,message)
 
 
 def main():
     run_module()
+
 
 if __name__ == '__main__':
     main()

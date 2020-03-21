@@ -58,13 +58,14 @@ test_data = [
     (dummy_dict5, False)
 ]
 
+
 @pytest.mark.parametrize("args,expected", test_data)
-def test_zos_opreator_various_args(zos_import_mocker,args, expected):
+def test_zos_opreator_various_args(zos_import_mocker, args, expected):
     mocker, importer = zos_import_mocker
     zos_operator = importer(IMPORT_NAME)
     passed = True
     try:
         zos_operator.parse_params(args)
     except Exception as e:
-          passed = False
+        passed = False
     assert passed == expected

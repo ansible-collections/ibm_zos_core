@@ -22,8 +22,15 @@ from ansible.utils.hashing import checksum_s
 
 
 # Create return parameters
-def _update_result(result, src, dest, ds_type, binary_mode=False, encoding='EBCDIC'):
+def _update_result(
+        result,
+        src,
+        dest,
+        ds_type,
+        binary_mode=False,
+        encoding='EBCDIC'):
     """ Helper function to update output result with the provided values """
+
     data_set_types = {
         'PS': "Sequential",
         'PO': "Partitioned",
@@ -32,10 +39,11 @@ def _update_result(result, src, dest, ds_type, binary_mode=False, encoding='EBCD
         'VSAM': "VSAM",
         'USS': "Unix"
     }
+    file_or_ds = "file" if ds_type == 'USS' else "data set"
     updated_result = dict((k, v) for k, v in result.items())
     updated_result.update({
         'message': {
-            'msg': "The {0} was fetched successfully".format("file" if ds_type == 'USS' else "data set"),
+            'msg': "The {0} was fetched successfully".format(file_or_ds),
             'stdout': "",
             'stderr': "",
             'ret_code': 0
@@ -61,11 +69,14 @@ def _write_content_to_file(filename, content, write_mode):
         with open(filename, write_mode) as outfile:
             outfile.write(content)
     except UnicodeEncodeError as err:
-        raise AnsibleError('''Error writing to destination {0} due to encoding issues.
-                               If it is a binary file, make sure to set
-                               'is_binary' parameter to 'true'; stderr: {1}'''.format(filename, err))
+        raise AnsibleError(
+            '''Error writing to destination {0} due to encoding issues. \
+            If it is a binary file, make sure to set 'is_binary' parameter to \
+            'true'; stderr: {1}'''.format(filename, err)
+        )
     except (IOError, OSError) as err:
-        raise AnsibleError("Error writing to destination {0}: {1}".format(filename, err))
+        raise AnsibleError('''Error writing to \
+            destination {0}: {1}'''.format(filename, err))
 
 
 def _process_boolean(arg, default=False):
@@ -87,24 +98,45 @@ class ActionModule(ActionBase):
         dest = self._task.args.get('dest')
         encoding = self._task.args.get('encoding')
         volume = self._task.args.get('volume')
-        flat = _process_boolean(self._task.args.get('flat'), default=False)
-        is_binary = _process_boolean(self._task.args.get('is_binary'))
-        validate_checksum = _process_boolean(self._task.args.get('validate_checksum'), default=True)
+        flat = _process_boolean(
+            self._task.args.get('flat'),
+            default=False
+        )
+        is_binary = _process_boolean(
+            self._task.args.get('is_binary')
+        )
+        validate_checksum = _process_boolean(
+            self._task.args.get('validate_checksum'),
+            default=True
+        )
 
         msg = None
         if not isinstance(src, string_types):
-            msg = "Invalid type supplied for 'source' option, it must be a string"
+            msg = '''Invalid type supplied for 'source' option, \
+                it must be a string'''
+
         if not isinstance(dest, string_types):
-            msg = "Invalid type supplied for 'destination' option, it must be a string"
+            msg = '''Invalid type supplied for 'destination' option, \
+                it must be a string'''
+
         if encoding and not isinstance(encoding, string_types):
-            msg = "Invalid type supplied for 'encoding' option, it must be a string"
+            msg = '''Invalid type supplied for 'encoding' option, \
+                it must be a string'''
+
         if volume and not isinstance(volume, string_types):
-            msg = "Invalid type supplied for 'volume' option, it must be a string"
+            msg = '''Invalid type supplied for 'volume' option, \
+                it must be a string'''
+
         if src is None or dest is None:
             msg = "Source and destination are required"
 
         if msg:
-            result['message'] = dict(msg=msg, stdout="", stderr="", ret_code=None)
+            result['message'] = dict(
+                msg=msg,
+                stdout="",
+                stderr="",
+                ret_code=None
+            )
             result['failed'] = True
             return result
 
@@ -123,9 +155,14 @@ class ActionModule(ActionBase):
 
         dest = os.path.expanduser(dest)
         if flat:
-            if os.path.isdir(to_bytes(dest, errors='surrogate_or_strict')) and not dest.endswith(os.sep):
+            if (
+                os.path.isdir(to_bytes(dest, errors='surrogate_or_strict')) and
+                not dest.endswith(os.sep)
+            ):
                 result['message'] = dict(
-                    msg="dest is an existing directory, append a forward slash to the dest if you want to fetch src into that directory",
+                    msg='''dest is an existing directory, append a forward \
+                    slash to the dest if you want to fetch src into that \
+                    directory''',
                     stdout="",
                     stderr="",
                     ret_code=None
@@ -142,7 +179,11 @@ class ActionModule(ActionBase):
                 target_name = task_vars['inventory_hostname']
             else:
                 target_name = self._play_context.remote_addr
-            dest = "{0}/{1}/{2}".format(self._loader.path_dwim(dest), target_name, source_local)
+            dest = "{0}/{1}/{2}".format(
+                self._loader.path_dwim(dest),
+                target_name,
+                source_local
+            )
 
         dest = dest.replace("//", "/")
         if fetch_member:
@@ -150,7 +191,11 @@ class ActionModule(ActionBase):
             base_dir = os.path.dirname(dest)
             dest = os.path.join(base_dir, member)
 
-        fetch_res = self._execute_module(module_name='zos_fetch', module_args=self._task.args, task_vars=task_vars)
+        fetch_res = self._execute_module(
+            module_name='zos_fetch',
+            module_args=self._task.args,
+            task_vars=task_vars
+        )
 
         if fetch_res.get('msg'):
             result['message'] = dict(
@@ -172,18 +217,29 @@ class ActionModule(ActionBase):
         fetch_content = None
         mvs_ds = ds_type in ('PO', 'PDSE', 'PE')
 
-        if ds_type == 'VSAM' or ds_type == 'PS' or is_uss or (fetch_member and mvs_ds):
+        if (
+            ds_type == 'VSAM' or
+            ds_type == 'PS' or
+            is_uss or
+            (fetch_member and mvs_ds)
+        ):
             fetch_content = self._write_remote_data_to_local_file(
                 dest, task_vars, fetch_res['content'], fetch_res['checksum'],
                 binary_mode=is_binary, validate_checksum=validate_checksum
             )
 
         elif mvs_ds:
-            fetch_content = self._fetch_remote_dir(dest, task_vars, fetch_res['pds_path'], binary_mode=is_binary)
+            fetch_content = self._fetch_remote_dir(
+                dest,
+                task_vars,
+                fetch_res['pds_path'],
+                binary_mode=is_binary
+            )
 
         else:
             result['message'] = dict(
-                msg="The data set type '{0}' is not currently supported".format(ds_type),
+                msg='''The data set type '{0}' is not \
+                currently supported'''.format(ds_type),
                 stdout="",
                 stderr="",
                 ret_code=None
@@ -193,14 +249,15 @@ class ActionModule(ActionBase):
 
         return _update_result(
             dict(list(result.items()) + list(fetch_content.items())),
-            src, dest, ds_type, binary_mode=is_binary, encoding=encoding if encoding else 'EBCDIC'
+            src, dest, ds_type, binary_mode=is_binary,
+            encoding=encoding if encoding else 'EBCDIC'
         )
 
     def _fetch_remote_dir(self, dest, task_vars, pds_path, binary_mode=False):
         """ Transfer a directory from USS to local machine.
-            If the directory is to be transferred in binary mode, SFTP will be used.
-            Otherwise, SCP will be used. After the transfer is complete, the USS
-            durectory will be removed.
+            If the directory is to be transferred in binary mode, SFTP will be
+            used. Otherwise, SCP will be used. After the transfer is complete,
+            the USS directory will be removed.
         """
         result = dict()
         try:
@@ -212,21 +269,37 @@ class ActionModule(ActionBase):
                 cmd = ['sftp', ansible_user + '@' + ansible_host]
                 stdin = to_bytes("get -r {0} {1}".format(pds_path, dest))
             else:
-                cmd = ['scp', '-r', ansible_user + '@' + ansible_host + ':' + pds_path, dest]
+                remote_path = ansible_user+'@'+ansible_host+':'+pds_path
+                cmd = ['scp', '-r', remote_path, dest]
 
-            transfer_pds = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            transfer_pds = subprocess.Popen(
+                cmd,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE
+            )
             out, err = transfer_pds.communicate(stdin)
 
             if transfer_pds.returncode != 0:
-                raise AnsibleError("Error transferring PDS from remote z/OS system; stdout: {0}; stderr: {1}".format(out, err))
+                raise AnsibleError('''Error transferring PDS from remote z/OS \
+                system; stdout: {0}; stderr: {1}'''.format(out, err))
 
             result['changed'] = True
         finally:
             self._connection.exec_command("rm -r {0}".format(pds_path))
         return result
 
-    def _write_remote_data_to_local_file(self, dest, task_vars, content, checksum, binary_mode=False, validate_checksum=True):
+    def _write_remote_data_to_local_file(
+        self,
+        dest,
+        task_vars,
+        content,
+        checksum,
+        binary_mode=False,
+        validate_checksum=True
+    ):
         """ Write fetched content to local file """
+
         result = dict()
         new_content = content
 
@@ -249,10 +322,21 @@ class ActionModule(ActionBase):
                 new_checksum = checksum_s(content)
                 if remote_checksum != new_checksum:
                     result.update(
-                        dict(msg='Checksum mismatch', checksum=new_checksum, remote_checksum=remote_checksum, failed=True)
+                        dict(
+                            msg='Checksum mismatch',
+                            checksum=new_checksum,
+                            remote_checksum=remote_checksum,
+                            failed=True
+                        )
                     )
                 else:
-                    result.update(dict(checksum=new_checksum, changed=True, remote_checksum=remote_checksum))
+                    result.update(
+                        dict(
+                            checksum=new_checksum,
+                            changed=True,
+                            remote_checksum=remote_checksum
+                        )
+                    )
             else:
                 result['changed'] = False
                 result['checksum'] = remote_checksum

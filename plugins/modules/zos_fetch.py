@@ -20,12 +20,13 @@ module: zos_fetch
 version_added: "2.9"
 short_description: Fetch data from z/OS
 description:
-  - This module copies a file or data set from a remote z/OS system to the local machine.
-    Use the M(zos_copy) module to copy files from local machine to the remote z/OS system.
-  - When fetching a sequential data set, the destination file name will be the same as
-    the data set name.
-  - When fetching a PDS/PDS(E), the destination will be a directory with the same name
-    as the PDS/PDS(E).
+  - This module copies a file or data set from a remote z/OS system to the
+    local machine. Use the M(zos_copy) module to copy files from local machine
+    to the remote z/OS system.
+  - When fetching a sequential data set, the destination file name will be the
+    same as the data set name.
+  - When fetching a PDS/PDS(E), the destination will be a directory with the
+    same name as the PDS/PDS(E).
 author: "Asif Mahmud (@asifmahmud)"
 options:
   src:
@@ -46,7 +47,8 @@ options:
     type: bool
   validate_checksum:
     description:
-      - Verify that the source and destination checksums match after the files are fetched.
+      - Verify that the source and destination checksums match after the files
+        are fetched.
     required: false
     default: "true"
     type: bool
@@ -55,8 +57,8 @@ options:
       - Override the default behavior of appending hostname/path/to/file to the
         destination. If set to "false", the file or data set will be fetched to
         the destination directory without appending remote hostname to the
-        destination. Refer to the M(fetch) module for a more detailed description
-        of this parameter.
+        destination. Refer to the M(fetch) module for a more detailed
+        description of this parameter.
     required: false
     default: "true"
     type: bool
@@ -68,30 +70,33 @@ options:
     type: bool
   encoding:
     description:
-      - If set to "EBCDIC", the encoding of source file or data set will be converted
-        to ASCII before being transferred to local machine. If set to "ASCII", the
-        encoding will not be converted.
+      - If set to "EBCDIC", the encoding of source file or data set will be
+        converted to ASCII before being transferred to local machine. If set to
+        "ASCII", the encoding will not be converted.
     required: false
     default: "EBCDIC"
     choices: ["ASCII", "EBCDIC" ]
     type: str
   use_qualifier:
     description:
-      - Indicates whether the data set high level qualifier should be used when fetching.
+      - Indicates whether the data set high level qualifier should be used when
+        fetching.
     required: false
     default: "false"
     type: bool
 notes:
-    - When fetching PDS(E) and VSAM data sets, temporary storage will be used on the remote
-      z/OS system. After the PDS(E) or VSAM data set is successfully transferred, the
-      temprorary data set will deleted. The size of the temporary storage will correspond
-      to the size of PDS(E) or VSAM data set being fetched. If module executation fails,
-      the temporary storage will be cleaned.
-    - To prevent redundancy, additional checksum validation will not be done when fetching
-      PDS(E) because data integrity checks are done through the transfer methods used.
-      As a result, the module response will not include C(checksum) parameter.
-    - All data sets are always assumed to be in catalog. If an uncataloged data set needs to
-      be fetched, it should be cataloged first.
+    - When fetching PDS(E) and VSAM data sets, temporary storage will be used
+      on the remote z/OS system. After the PDS(E) or VSAM data set is
+      successfully transferred, the temprorary data set will deleted. The size
+      of the temporary storage will correspond to the size of PDS(E) or VSAM
+      data set being fetched. If module executation fails, the temporary
+      storage will be cleaned.
+    - To prevent redundancy, additional checksum validation will not be done
+      when fetching PDS(E) because data integrity checks are done through the
+      transfer methods used. As a result, the module response will not include
+      C(checksum) parameter.
+    - All data sets are always assumed to be in catalog. If an uncataloged data
+      set needs to be fetched, it should be cataloged first.
 seealso:
 - module: fetch
 - module: zos_copy
@@ -100,7 +105,7 @@ seealso:
 '''
 
 EXAMPLES = r'''
-- name: Fetch file from USS and store into /tmp/fetched/host.example.com/tmp/somefile
+- name: Fetch file from USS and store into /tmp/fetched/hostname/tmp/somefile
   zos_fetch:
     src: /tmp/somefile
     dest: /tmp/fetched
@@ -118,14 +123,14 @@ EXAMPLES = r'''
     flat: true
     is_binary: true
 
-- name: Fetch a unix file without converting from EBCDIC to ASCII. Don't fail if file is missing
+- name: Fetch a unix file without converting from EBCDIC to ASCII
   zos_fetch:
     src: /tmp/somefile
     dest: /tmp/
     encoding: ASCII
     fail_on_missing: false
 
-- name: Fetch a unix file and don't validate its checksum.
+- name: Fetch a unix file and don't validate its checksum
   zos_fetch:
     src: /tmp/somefile
     dest: /tmp/
@@ -156,15 +161,15 @@ message:
         type: str
         sample: The data set was fetched successfully
       stdout:
-        description: The stdout from a USS command or MVS command, if applicable
+        description: The stdout from a USS command or MVS command
         type: str
         sample: DATA SET 'USER.PROCLIB' NOT IN CATALOG
       stderr:
-        description: The stderr of a USS command or MVS command, if applicable
+        description: The stderr of a USS command or MVS command
         type: str
         sample: File /tmp/result.log not found
       ret_code:
-        description: The return code of a USS command or MVS command, if applicable
+        description: The return code of a USS command or MVS command
         type: int
         sample: 8
     sample:
@@ -183,7 +188,7 @@ dest:
     type: str
     sample: /tmp/SOME.DATA.SET
 is_binary:
-    description: Indicates which transfer mode was used to fetch the file (binary or text)
+    description: Indicates which transfer mode was used to fetch the file
     returned: success
     type: bool
     sample: True
@@ -208,7 +213,7 @@ note:
     type: str
     sample: The data set USER.PROCLIB does not exist. No data was fetched.
 changed:
-    description: Indicates if any changes were made during the module operation.
+    description: Indicates if any changes were made during the module operation
     returned: always
     type: bool
 '''
@@ -225,7 +230,9 @@ import tempfile
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils._text import to_bytes
 from ansible.module_utils.parsing.convert_bool import boolean
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import BetterArgParser
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
+    better_arg_parser
+)
 try:
     from zoautil_py import Datasets, MVSCmd, types
 except Exception:
@@ -277,7 +284,8 @@ def _fetch_zos_data_set(zos_data_set, is_binary, fetch_member=False):
         rc, out, err = _run_command("cat \"//'{0}'\"".format(zos_data_set))
         if rc != 0:
             _fail_json(
-                msg="Failed to read data set member for data set {0}".format(zos_data_set),
+                msg='''Failed to read data set member for \
+                data set {0}'''.format(zos_data_set),
                 stdout=out,
                 stderr=err,
                 ret_code=rc
@@ -286,8 +294,8 @@ def _fetch_zos_data_set(zos_data_set, is_binary, fetch_member=False):
     else:
         content = Datasets.read(zos_data_set)
     if is_binary:
-        content = content.encode('utf-8', 'surrogateescape').decode('utf-8', 'replace')
-        return base64.b64encode(content.encode())
+        content = content.encode('utf-8', 'surrogateescape')
+        return base64.b64encode(content.decode('utf-8', 'replace').encode())
     return content
 
 
@@ -309,7 +317,10 @@ def _copy_vsam_to_temp_data_set(ds_name):
         Datasets.create(out_ds, "SEQ")
         Datasets.create(sysprint, "SEQ", "", "FB", "", 133)
     except Exception as err:
-        module.fail_json(msg="Unable to create temporary data sets to write DD statements: {0}".format(str(err)))
+        module.fail_json(
+            msg='''Unable to create temporary data sets to write \
+            DD statements: {0}'''.format(str(err))
+        )
 
     repro_sysin = ' REPRO INFILE(INPUT)  OUTFILE(OUTPUT) '
     Datasets.write(sysin, repro_sysin)
@@ -328,13 +339,15 @@ def _copy_vsam_to_temp_data_set(ds_name):
 
         if rc != 0:
             _fail_json(
-                msg="Non-zero return code received while executing MVSCmd to copy VSAM data set {0}".format(ds_name),
+                msg='''Non-zero return code received while executing MVSCmd \
+                to copy VSAM data set {0}'''.format(ds_name),
                 stdout="",
                 stderr="",
                 ret_code=rc
             )
         _fail_json(
-            msg="Failed to call IDCAMS to copy VSAM data set {0} to sequential data set".format(ds_name),
+            msg='''Failed to call IDCAMS to copy VSAM data set {0} to \
+            sequential data set'''.format(ds_name),
             stdout="",
             stderr=str(err),
             ret_code=rc
@@ -407,14 +420,20 @@ def _determine_data_set_type(ds_name, fail_on_missing=True):
                 ret_code=rc
             )
         else:
-            module.exit_json(note="The USS file {0} does not exist. No data was fetched.".format(ds_name))
+            module.exit_json(
+                note='''The USS file {0} does not exist. \
+                No data was fetched.'''.format(ds_name)
+            )
     if rc != 0:
         msg = None
         if "ALREADY IN USE" in out:
-            msg = "Dataset {0} may already be open by another user. Close the dataset and try again.".format(ds_name)
+            msg = '''Dataset {0} may already be open by another user. \
+            Close the dataset and try again.'''.format(ds_name)
         else:
-            msg = "Unable to determine data set type for data set {0}.".format(ds_name)
+            msg = '''Unable to determine data set type for \
+            data set {0}.'''.format(ds_name)
         _fail_json(msg=msg, stdout=out, stderr=err, ret_code=rc)
+
     ds_search = re.search("(-|--)DSORG(|-)\n(.*)", out)
     if ds_search:
         return ds_search.group(3).split()[-1].strip()
@@ -453,7 +472,8 @@ def _validate_params(src, is_binary, encoding, _fetch_member):
     if is_binary and encoding is not None:
         msg = "Encoding parameter is not valid for binary transfer"
     if encoding and (encoding != 'EBCDIC' and encoding != 'ASCII'):
-        msg = "Invalid value supplied for 'encoding' option, it must be either EBCDIC or ASCII"
+        msg = '''Invalid value supplied for 'encoding' option, \
+        it must be either EBCDIC or ASCII'''
 
     if msg:
         _fail_json(msg=msg, stdout="", stderr="", ret_code=None)
@@ -463,14 +483,45 @@ def run_module():
     global module
     module = AnsibleModule(
         argument_spec=dict(
-            src=dict(required=True, type='str'),
-            dest=dict(required=True, type='path'),
-            fail_on_missing=dict(required=False, default=True, type='bool'),
-            validate_checksum=dict(required=False, default=True, type='bool'),
-            flat=dict(required=False, default=True, type='bool'),
-            is_binary=dict(required=False, default=False, type='bool'),
-            encoding=dict(required=False, choices=['ASCII', 'EBCDIC'], type='str', default="EBCDIC"),
-            use_qualifier=dict(required=False, default=False, type='bool')
+            src=dict(
+                required=True,
+                type='str'
+            ),
+            dest=dict(
+                required=True,
+                type='path'
+            ),
+            fail_on_missing=dict(
+                required=False,
+                default=True,
+                type='bool'
+            ),
+            validate_checksum=dict(
+                required=False,
+                default=True,
+                type='bool'
+            ),
+            flat=dict(
+                required=False,
+                default=True,
+                type='bool'
+            ),
+            is_binary=dict(
+                required=False,
+                default=False,
+                type='bool'
+            ),
+            encoding=dict(
+                required=False,
+                choices=['ASCII', 'EBCDIC'],
+                type='str',
+                default="EBCDIC"
+            ),
+            use_qualifier=dict(
+                required=False,
+                default=False,
+                type='bool'
+            )
         )
     )
 
@@ -485,17 +536,35 @@ def run_module():
     )
 
     try:
-        parsed_args = BetterArgParser(arg_def).parse_args(module.params)
+        parser = better_arg_parser.BetterArgParser(arg_def)
+        parsed_args = parser.parse_args(module.params)
     except ValueError as err:
-        _fail_json(msg="Parameter verification failed", stdout="", stderr=str(err), ret_code=None)
+        _fail_json(
+            msg="Parameter verification failed",
+            stdout="",
+            stderr=str(err),
+            ret_code=None
+        )
 
     src = parsed_args.get('src', None)
     b_src = to_bytes(src)
     encoding = parsed_args.get('encoding')
-    fail_on_missing = boolean(parsed_args.get('fail_on_missing'), strict=False)
-    validate_checksum = boolean(parsed_args.get('validate_checksum'), strict=False)
-    is_binary = boolean(parsed_args.get('is_binary'), strict=False)
-    use_qualifier = boolean(parsed_args.get('use_qualifier'), strict=False)
+    fail_on_missing = boolean(
+        parsed_args.get('fail_on_missing'),
+        strict=False
+    )
+    validate_checksum = boolean(
+        parsed_args.get('validate_checksum'),
+        strict=False
+    )
+    is_binary = boolean(
+        parsed_args.get('is_binary'),
+        strict=False
+    )
+    use_qualifier = boolean(
+        parsed_args.get('use_qualifier'),
+        strict=False
+    )
 
     _is_uss = '/' in src
     _fetch_member = src.endswith(')')
@@ -511,12 +580,20 @@ def run_module():
     try:
         ds_type = _determine_data_set_type(ds_name, fail_on_missing)
         if not ds_type:
-            _fail_json(msg="Could not determine data set type", stdout="", stderr="", ret_code=None)
+            _fail_json(
+                msg="Could not determine data set type",
+                stdout="",
+                stderr="",
+                ret_code=None
+            )
 
     except UncatalogedDatasetError as err:
         if fail_on_missing:
             _fail_json(msg=str(err), stdout="", stderr="", ret_code=None)
-        module.exit_json(note="Datasets must be cataloged for data to be fetched. No data was fetched")
+        module.exit_json(
+            note='''Datasets must be cataloged for data to be fetched. \
+            No data was fetched'''
+        )
 
     if ds_type in MVS_DS_TYPES and not Datasets.exists(src):
         if fail_on_missing:
@@ -526,7 +603,10 @@ def run_module():
                 stderr="",
                 ret_code=None
             )
-        module.exit_json(note="The data set {0} does not exist. No data was fetched.".format(src))
+        module.exit_json(
+            note='''The data set {0} does not exist. \
+            No data was fetched.'''.format(src)
+        )
 
     # Fetch sequential dataset
     if ds_type == 'PS':
@@ -563,7 +643,8 @@ def run_module():
 
 class UncatalogedDatasetError(Exception):
     def __init__(self, ds_name):
-        super().__init__("Data set {0} is not in catalog. If you would like to fetch the data set, please catalog it first".format(ds_name))
+        super().__init__('''Data set {0} is not in catalog. If you would \
+        like to fetch the data set, please catalog it first'''.format(ds_name))
 
 
 def main():

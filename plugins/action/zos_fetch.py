@@ -123,10 +123,6 @@ class ActionModule(ActionBase):
             msg = '''Invalid type supplied for 'encoding' option, \
                 it must be a string'''
 
-        if volume and not isinstance(volume, string_types):
-            msg = '''Invalid type supplied for 'volume' option, \
-                it must be a string'''
-
         if src is None or dest is None:
             msg = "Source and destination are required"
 

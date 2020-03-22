@@ -5,8 +5,9 @@
 # Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
 from __future__ import absolute_import, division, print_function
-from traceback import format_exc
 from ansible.module_utils.basic import AnsibleModule
+from traceback import format_exc
+
 
 __metaclass__ = type
 
@@ -149,7 +150,7 @@ changed:
 EXAMPLES = r'''
 - name: Execute TSO command: allocate a new dataset.
   zos_tso_command:
-    command: alloc da('TEST.HILL3.TEST') like('TEST.HILL3')
+    command: "alloc da('TEST.HILL3.TEST') like('TEST.HILL3')"
 
 - name: Execute TSO command: delete an existing dataset.
   zos_tso_command:
@@ -171,7 +172,7 @@ def run_tso_command(command, auth, module):
             so use ZOAU command mvscmdauth to run authorized command.
             """
             rc, stdout, stderr = module.run_command("echo " + command +
-                               "| mvscmdauth --pgm=IKJEFT01 --sysprint=* --systsprt=* --systsin=stdin", use_unsafe_shell=True)
+                                                    "| mvscmdauth --pgm=IKJEFT01 --sysprint=* --systsprt=* --systsin=stdin", use_unsafe_shell=True)
         else:
             rc, stdout, stderr = module.run_command(['tso', command])
 

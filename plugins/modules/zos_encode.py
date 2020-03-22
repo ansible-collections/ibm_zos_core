@@ -1,175 +1,192 @@
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 # Copyright (c) IBM Corporation 2019, 2020
 # Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
+from __future__ import absolute_import, division, print_function
+
+__metaclass__ = type
+
 ANSIBLE_METADATA = {'metadata_version': '1.1',
                     'status': ['preview'],
                     'supported_by': 'community'}
 
-DOCUMENTATION = '''
+DOCUMENTATION = r'''
 module: zos_encode
-author: Zhao Lu <zlbjlu@cn.ibm.com>
-short_description: Convert text encoding from ASCII to EBCDIC and EBCDIC to ASCII
+author: "Zhao Lu (@yourfuwa2015)"
+short_description: Convert the encoding of characters
 description:
-    - Convert text encoding located on a Unix file or path, MVS PS(sequential data set), PDS/E and KSDS(VSAM data set)
-    - Convert text encoding from ASCII to EBCDIC and EBCDIC to ASCII
-    - For uncatalogged data set, catalog it before conversion is required, see zos_dataset module to do the catalog.
+    - Converts the encoding of characters read from either Unix System Services
+      (USS), PS(sequential data set), PDS/E or KSDS(VSAM data set).
 options:
   from_encoding:
-    required: true
     description:
-    - It indicates the encoding of the input file or data set
-    - Both ASCII(ISO8859-1) and EBCDIC(IBM-1047) are supported now
+        - This describes the encoding of the C(src).
+        - Both ASCII(ISO8859-1) and EBCDIC(IBM-1047) are supported.
+    required: true
     type: String
     default: IBM-1047
   to_encoding:
-    required: true
     description:
-    - This indicates the encoding of the output file or data set
-    - Both ASCII(ISO8859-1) and EBCDIC(IBM-1047) are supported now
+        - This describes the encoding of the C(dest).
+        - Both ASCII(ISO8859-1) and EBCDIC(IBM-1047) are supported.
+    required: true
     type: String
     default: ISO8859-1
   src:
-    required: true
     description:
-    - It is the location of the data
-    - It can be a Unix file or path
-    - It can be an MVS data set(PS, PDS/E, VSAM)
+        - This is the location of the data residing in a Unix file, Unix
+          path, PS(sequential data set), PDS/E or KSDS(VSAM data set) to
+          be encoded.
+    required: true
     type: str
   dest:
-    required: false
     description:
-    - It is the location of the data after the encoding conversion
-    - It can be a Unix file or path 
-    - It can be an MVS data set(PS, PDS/E, VSAM)
-    - If length of the file name in src is more the 8 characters, name will be truncated when converting to a PDS
+        - This is the destination of where the data should be written to
+          after it has been encoded.
+        - This destinamtion can be a Unix file, Unix path,
+          PS(sequential data set), PDS/E or KSDS(VSAM data set)
+        - If length of the file name in src is more the 8 characters, name will
+          be truncated when converting to a PDS ????
+    required: false
     type: str
   backup:
-    required: false
     description:
-      - Create a backup file or data set so you can get the original file back
-        if there is any error in the conversion
-      - if src is a Unix file or path, backup file name patter like this: path/src_name.test.1.d20200305-t104849.pax.Z
-      - if src is an MVS data set， backup file name patter like this: src_name.BAK.D200305 
+      - Create a backup file of the original before encoding.
+      - Create a backup data set of the original before encoding.
+      - If the src is a Unix file or Unix path, the backup pattern
+        will append path/src_name.test.1.d20200305-t104849.pax.Z
+      - If src is an MVS data set，the backup pattern will be like this
+        src_name.BAK.D200305.
+    required: false
     type: bool
     default: false
+notes:
+    - All data sets are always assumed to be in catalog. If an uncataloged data
+      set needs to be encoded, it should be cataloged first.
+seealso:
+- module: zos_data_set
 '''
 
-EXAMPLES = '''
-- name: Convert data encoding (EBCDIC to ASCII) from a Unix file to the same file 
+EXAMPLES = r'''
+- name: Convert data encoding (EBCDIC to ASCII) from a Unix file to the same
+  file
   zos_encode:
     src: ./zos_encode/test.data
     from_encoding: IBM-1047
     to_encoding: ISO8859-1
 
-- name: Convert data encoding (EBCDIC to ASCII) from a Unix file to another file and backing up the original
+- name: Convert encoding for a Unix file and backup the source
   copy:
-    src: ./zos_encode/test.data 
+    src: ./zos_encode/test.data
     dest: /user/zos_encode_out/test.data
     from_encoding: IBM-1047
     to_encoding: ISO8859-1
     backup: yes
 
-- name: Convert data encoding (EBCDIC to ASCII) from a Unix file to a different file 
+- name: Convert encoding from a Unix file to another Unix file
   zos_encode:
     src: ./zos_encode/test.data
     dest: ./zos_encode/test.out
     from_encoding: IBM-1047
     to_encoding: ISO8859-1
 
-- name: Convert data encoding (EBCDIC to ASCII) from a Unix file to a Unix path
+- name: Convert encoding from a Unix file to a Unix path
   zos_encode:
     src: /u/user1/zos_encode/test.data
     dest: /u/user1/zos_encode_out/
     from_encoding: IBM-1047
     to_encoding: ISO8859-1
-    
-- name: Convert data encoding (ASCII to EBCDIC) from a Unix path to a different Unix path
+
+- name: Convert encoding from a Unix path to a different Unix path
   zos_encode:
     src: ./zos_encode
     dest: ./zos_encode_out
     from_encoding: ISO8859-1
     to_encoding: IBM-1047
-    
-- name: Convert data encoding (EBCDIC to ASCII) from a Unix file to a sequential data set
+
+- name: Convert encoding from a Unix file to a sequential data set
   zos_encode:
     src: ./zos_encode/test
-    dest: USER.TEST.PS 
+    dest: USER.TEST.PS
     from_encoding: IBM-1047
     to_encoding: ISO8859-1
 
-- name: Convert data encoding (ASCII to EBCDIC) from a Unix path to a partitioned data set (extend)
+- name: Convert encoding from a Unix path to a partitioned data set (extend)
   zos_encode:
     src: /u/zos_encode
     dest: USER.TEST.PDS
     from_encoding: ISO8859-1
     to_encoding: IBM-1047
 
-- name: Convert data encoding (ASCII to EBCDIC) from a Unix file to a member in partitioned data set
+- name: Convert encoding from a Unix file to a member in partitioned data set
   zos_encode:
     src: /u/zos_encode/test
     dest: USER.TEST.PDS(TESTO)
     from_encoding: ISO8859-1
     to_encoding: IBM-1047
 
-- name: Convert data encoding (EBCDIC to ASCII) from a sequential data set to a Unix file
+- name: Convert encoding from a sequential data set to a Unix file
   zos_encode:
-    src: USER.TEST.PS 
+    src: USER.TEST.PS
     dest: ./zos_encode/test
     from_encoding: IBM-1047
     to_encoding: ISO8859-1
 
-- name: Convert data encoding (ASCII to EBCDIC) from a partitioned data set (extend) to a Unix path
+- name: Convert encoding from a partitioned data set (extend) to a Unix path
   zos_encode:
     src: USER.TEST.PDS
     dest: /u/zos_encode
     from_encoding: ISO8859-1
     to_encoding: IBM-1047
 
-- name: Convert data encoding (ASCII to EBCDIC) from a sequential data set to a different sequential data set
+- name: Convert  encoding from a sequential data set to a different sequential
+  data set
   zos_encode:
     src: USER.TEST.PS
     dest: USER.TEST1.PS
     from_encoding: ISO8859-1
     to_encoding: IBM-1047
 
-- name: Convert data encoding (EBCDIC to ASCII) from a sequential data set to a partitioned data set (extended)
+- name: Convert encoding from a sequential data set to a partitioned data
+  set (extended)
   zos_encode:
     src: USER.TEST.PS
     dest: USER.TEST1.PDS
     from_encoding: IBM-1047
     to_encoding: ISO8859-1
 
-- name: Convert data encoding (ASCII to EBCDIC) from a Unix file to a VSAM data set
+- name: Convert encoding from a Unix file to a VSAM data set
   zos_encode:
     src: /u/zos_encode/test
     dest: USER.TEST.VS
     from_encoding: ISO8859-1
     to_encoding: IBM-1047
 
-- name: Convert data encoding (EBCDIC to ASCII) from a VSAM data set to a Unix file
+- name: Convert data encoding (EBCDIC to ASCII) from a VSAM data set to a
+  Unix file
   zos_encode:
     src: USER.TEST.VS
     dest: /u/zos_encode/test
     from_encoding: IBM-1047
     to_encoding: ISO8859-1
 
-- name: Convert data encoding (EBCDIC to ASCII) from a VSAM data set to a sequential data set
+- name: Convert encoding from a VSAM data set to a sequential data set
   zos_encode:
     src: USER.TEST.VS
     dest: USER.TEST.PS
     from_encoding: IBM-1047
     to_encoding: ISO8859-1
 
-- name: Convert data encoding (ASCII to EBCDIC) from a sequential data set to a VSAM data set
+- name: Convert encoding from a sequential data set to a VSAM data set
   zos_encode:
     src: USER.TEST.PS
     dest: USER.TEST.VS
     from_encoding: ISO8859-1
     to_encoding: IBM-1047
 
-- name: Convert data encoding (ASCII to EBCDIC) from a sequential data set to a VSAM data set
+- name: Convert encoding from a sequential data set to a VSAM data set
   zos_encode:
     src: USER.TEST.PS
     dest: USER.TEST.VS
@@ -178,25 +195,26 @@ EXAMPLES = '''
 
 '''
 
-RETURN = '''
+RETURN = r'''
 from_encoding:
-    description: The encoding of the input file or data set
+    description:
+        The encoding of the input file or data set
     returned: always
-    type： str
+    type: str
     sample: IBM-1047
 to_encoding:
-    returned: always
     description: The encoding of the output file or data set
-    type： str
+    returned: always
+    type: str
     sample: ISO8859-1
 src:
     description: The name of the input file or data set
     returned: always
-    type： str
+    type: str
 dest:
     description: The name of the output file or data set
     returned: always
-    type： str
+    type: str
 backup_file:
     description: Name of backup file created
     returned: changed and if backup=yes
@@ -250,7 +268,7 @@ def listdsi_data_set(ds, module):
             cioca  = int(''.join(re.findall(r'\d+', find_cioca[0])))
         if find_trkoca:
             trkoca = int(''.join(re.findall(r'\d+', find_trkoca[0])))
-        
+
         # VSAM data sets space evaluation
         # Step01. Get the number of records in each VSAM CI
         # Step02. The CI used by the VSAM data set
@@ -301,7 +319,7 @@ def uss_convert_encoding(src, dest, from_encoding, to_encoding, module):
             convert_rc = True
     else:
         err_msg = 'Failed when calling iconv commad: {}'.format(stderr)
-    return convert_rc, err_msg 
+    return convert_rc, err_msg
 
 def get_codeset(module):
     ''' To use USS command 'iconv -l' to get the current code set list '''
@@ -312,14 +330,14 @@ def get_codeset(module):
         code_set_list = list(filter(None, re.split(r'[\n|\t]', stdout)))
         code_set = [c for i, c in enumerate(code_set_list) if i > 0 and i % 2 == 0]
     return code_set
-    
+
 def create_temp_ds_name(llq):
     temp_ds_hlq = Datasets.hlq()
     current_date = time.strftime("D%y%m%d", time.localtime())
     current_time = time.strftime("T%H%M%S", time.localtime())
     temp_dataset = temp_ds_hlq + '.' + current_date + '.' + current_time + '.' + llq
     return temp_dataset
-    
+
 def delete_temp_ds(temp_ds):
     Datasets.delete(temp_ds)
 
@@ -331,7 +349,7 @@ def temp_data_set(reclen, space_u):
     if rc:
         err_msg = 'Failed when creating a temporary sequential data set: {}'.format(stderr)
     return err_msg, temp_ps
-    
+
 def copy_vsam_ps(vsam, ps, module):
     err_msg = None
     repro_cmd = '''  REPRO INDATASET({}) -
@@ -343,7 +361,7 @@ def copy_vsam_ps(vsam, ps, module):
 
 def copy_uss2mvs(src, dest, ds_type, module):
     if ds_type == 'PO':
-        tempdir = path.join(src, '*') 
+        tempdir = path.join(src, '*')
         cp_uss2mvs = 'cp -CM -F rec {} "//\'{}\'" '.format(tempdir, dest)
     else:
         cp_uss2mvs = 'cp -F rec {} "//\'{}\'" '.format(src, dest)
@@ -443,13 +461,13 @@ def mvs_convert_encoding_prev(src, dest, ds_type_src, ds_type_dest, from_encodin
                             if not err_msg:
                                 convert_rc = True
                 else:
-                    rc, stdout, stderr = copy_uss2mvs(temp_dest, dest, ds_type_dest, module) 
+                    rc, stdout, stderr = copy_uss2mvs(temp_dest, dest, ds_type_dest, module)
                     if not rc:
                         convert_rc = True
                     else:
                         err_msg = 'Failed when copying back to the MVS data set {}: {}'.format(dest, stderr)
     return convert_rc, err_msg
-    
+
 def uss_file_backup(src, module):
     err_msg  = None
     src_name = path.abspath(src)
@@ -472,7 +490,7 @@ def mvs_file_backup(src, module):
     # If there are more than 30 characters in the data set name,
     # the name of the backup data set will be the original data set name 
     # with a '@' in the second qualifier to the last
-    # The original: A.B.C.D   
+    # The original: A.B.C.D
     # The backup: A.B.@.D
     if len(dsn) <= 30:
         bk_dsn   = '{}.BAK.{}'.format(dsn, current_date)
@@ -528,7 +546,7 @@ def check_mvs_dataset(ds, module):
         if ' NOT IN CATALOG ' in stdout:
             err_msg = "Data set {} is not catalogged, please check the name again.".format(ds)
     return check_rc, ds_type, err_msg
-    
+
 def check_file(file, mvspat, module):
     ''' check file is a Unix file/path or an MVS data set '''
     is_uss  = False
@@ -546,7 +564,7 @@ def check_file(file, mvspat, module):
                 dsn  = ds[0:ds.rfind('(',1)]
                 mem  = ''.join(re.findall(r'[(](.*?)[)]', ds))
                 rc, ds_type, err_msg = check_mvs_dataset(dsn, module)
-                if rc:  
+                if rc:
                     if ds_type == 'PO':
                         is_mvs, err_msg = check_pds_member(dsn, mem)
                         ds_type = 'PS'
@@ -617,7 +635,7 @@ def run_module():
     is_uss_src, is_mvs_src, ds_type_src, err_msg = check_file(src, mvspat, module)
     if err_msg:
             exit_when_exception(err_msg, result, module)
-    
+
     # Check the dest is a USS file/path or an MVS data set
     # if the dest is not specified, the value in the src will be used
     if not dest:
@@ -630,7 +648,7 @@ def run_module():
         if err_msg:
             exit_when_exception(err_msg, result, module)
     result['dest'] = dest
-    
+
     # Check if the dest is required to be backup before conversion
     if backup:
         if is_uss_dest:
@@ -644,7 +662,7 @@ def run_module():
     # Encoding conversion logic
     # There are two big permutations:
     # 1） Both the src and the dest are the USS files or paths
-    # 2) The other permutations: 
+    # 2) The other permutations:
     #    - USS to MVS
     #    - MVS to USS
     #    - MVS to MVS

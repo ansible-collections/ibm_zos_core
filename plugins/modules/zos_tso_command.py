@@ -145,7 +145,7 @@ changed:
 '''
 
 EXAMPLES = r'''
-- name: Execute TSO command: allocate a new dataset
+- name: Execute TSO command allocate a new dataset
   zos_tso_command:
       command: alloc da('TEST.HILL3.TEST') like('TEST.HILL3')
 

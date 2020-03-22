@@ -149,11 +149,11 @@ EXAMPLES = r'''
   zos_tso_command:
       command: alloc da('TEST.HILL3.TEST') like('TEST.HILL3')
 
-- name: Execute TSO command: delete an existing dataset
+- name: Execute TSO command delete an existing dataset
   zos_tso_command:
       command: delete 'TEST.HILL3.TEST'
 
-- name: Execute TSO command: list user TESTUSER tso information
+- name: Execute TSO command list user TESTUSER tso information
   zos_tso_command:
       command: LU TESTUSER
       auth: true

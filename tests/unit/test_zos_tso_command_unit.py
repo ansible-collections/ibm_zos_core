@@ -1,9 +1,9 @@
-# Copyright (c) 2019, 2020 Xiao Yuan Ma <bjmaxy@cn.ibm.com>
-# Copyright (c) 2020 Blake Becker <blake.becker@ibm.com>
-# Copyright (c) IBM Corporation 2020
-# LICENSE: [GNU General Public License version 3](https://opensource.org/licenses/GPL-3.0)
+# -*- coding: utf-8 -*-
 
-from __future__ import (absolute_import, division, print_function)
+# Copyright (c) IBM Corporation 2019, 2020
+# Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
+
+from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
@@ -29,12 +29,13 @@ class DummyModule(object):
 
 test_data_success = [
     ("delete da('bjmaxy.hill3.test') like('bjmaxy.hill3')",
-    'IDC0550I ENTRY (A) BJMAXY.HILL3.TEST DELETED\\n0\\n',
-    "delete 'BJMAXY.HILL3.TEST'\\n\" ",0,True),
+     'IDC0550I ENTRY (A) BJMAXY.HILL3.TEST DELETED\\n0\\n',
+     "delete 'BJMAXY.HILL3.TEST'\\n\" ", 0, True),
 ]
 
+
 @pytest.mark.parametrize("command, stdout, stderr,rc, expected", test_data_success)
-def test_run_tso_command_success(zos_import_mocker, command, stdout, stderr,rc, expected):
+def test_run_tso_command_success(zos_import_mocker, command, stdout, stderr, rc, expected):
     mocker, importer = zos_import_mocker
     tso_cmd = importer(IMPORT_NAME)
     module = DummyModule(rc, stdout, stderr)
@@ -47,13 +48,18 @@ def test_run_tso_command_success(zos_import_mocker, command, stdout, stderr,rc, 
         passed = False
     assert passed == expected
 
+
 test_data_failure1 = [
     ("alloc da('bjmaxy.hill3.test') like('bjmaxy.hill3')",
-    "IKJ56893I DATA SET BJMAXY.HILL3.TEST NOT ALLOCATED+\nIGD17101I DATA SET BJMAXY.HILL3.TEST\nNOT DEFINED BECAUSE DUPLICATE NAME EXISTS IN CATALOG\nRETURN CODE IS 8 REASON CODE IS 38 IGG0CLEH\n12\n",
-    "alloc da('bjmaxy.hill3.test') like('bjmaxy.hill3')\nRC(12)\n",12,True),
+     "IKJ56893I DATA SET BJMAXY.HILL3.TEST NOT ALLOCATED+\nIGD17101I DATA \
+     SET BJMAXY.HILL3.TEST\nNOT DEFINED BECAUSE DUPLICATE NAME EXISTS IN \
+     CATALOG\nRETURN CODE IS 8 REASON CODE IS 38 IGG0CLEH\n12\n",
+     "alloc da('bjmaxy.hill3.test') like('bjmaxy.hill3')\nRC(12)\n", 12, True),
 ]
+
+
 @pytest.mark.parametrize("command, stdout, stderr,rc, expected", test_data_failure1)
-def test_run_tso_command_failure1(mocker, command, stdout, stderr,rc, expected):
+def test_run_tso_command_failure1(mocker, command, stdout, stderr, rc, expected):
     mocker, importer = zos_import_mocker
     tso_cmd = importer(IMPORT_NAME)
     module = DummyModule(rc, stdout, stderr)
@@ -70,10 +76,12 @@ def test_run_tso_command_failure1(mocker, command, stdout, stderr,rc, expected):
 
 
 test_data_failure = [
-    ("LISTGRP", "NOT AUTHORIZED TO LIST BASE INFORMATION FOR GROUP TSOUSER","",4,False),
+    ("LISTGRP", "NOT AUTHORIZED TO LIST BASE INFORMATION FOR GROUP TSOUSER", "", 4, False),
 ]
+
+
 @pytest.mark.parametrize("command, stdout, stderr,rc, expected", test_data_failure)
-def test_run_tso_command_failure(mocker, command, stdout, stderr,rc, expected):
+def test_run_tso_command_failure(mocker, command, stdout, stderr, rc, expected):
     mocker, importer = zos_import_mocker
     tso_cmd = importer(IMPORT_NAME)
     module = DummyModule(rc, stdout, stderr)

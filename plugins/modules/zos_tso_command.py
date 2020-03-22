@@ -174,13 +174,14 @@ def run_tso_command(command, auth, module):
             even when the return code is 0,
             so use ZOAU command mvscmdauth to run authorized command.
             """
-            rc, stdout, stderr = module.run_command("echo "+command+"| mvscmdauth --pgm=IKJEFT01 --sysprint=* --systsprt=* --systsin=stdin", use_unsafe_shell=True)
+            rc, stdout, stderr = module.run_command("echo " + command +
+            "| mvscmdauth --pgm=IKJEFT01 --sysprint=* --systsprt=* --systsin=stdin", use_unsafe_shell = True)
         else:
             rc, stdout, stderr = module.run_command(['tso', command])
 
     except Exception as e:
         raise e
-    return (stdout, stderr, rc )
+    return (stdout, stderr, rc)
 
 
 def run_module():
@@ -202,7 +203,7 @@ def run_module():
 
     command = module.params.get("command")
     auth = module.params.get("auth")
-    if command == None or command.strip() == "":
+    if command is None or command.strip() == "":
         module.fail_json(msg='The "command" provided was null or an empty string.', **result)
 
     try:
@@ -241,6 +242,7 @@ def run_module():
 
 class Error(Exception):
     pass
+
 
 def main():
     run_module()

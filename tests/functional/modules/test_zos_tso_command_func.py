@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import (absolute_import, division, print_function)
+# Copyright (c) IBM Corporation 2019, 2020
+# Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
+
+from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
@@ -45,7 +48,8 @@ __metaclass__ = type
 #           ATGACMD   MVS5BEG   CMDISSUE  ATGOMATC  IOEAGFMT  DIAGNOSE
 #           CSFDPKDS  NEWPWPH   RACLINK   IRRDPI00
 
-# The golden path test
+
+# The happy path test
 # Run tso command to allocate a dataset like an existing one.
 def test_zos_tso_command(ansible_zos_module):
     hosts = ansible_zos_module
@@ -53,25 +57,28 @@ def test_zos_tso_command(ansible_zos_module):
     results = hosts.all.zos_tso_command(command="alloc da('bjmaxy.hill3.test') like('bjmaxy.hill3')")
     for result in results.contacted.values():
         assert result.get('result')['ret_code'].get('code') == 0
-        assert result.get('changed') == True
+        assert result.get('changed') is True
 
-# The golden path test
+
+# The positive path test
 # Run tso command to delete an existing dataset.
 def test_zos_tso_command_2(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_tso_command(command="delete 'bjmaxy.hill3.test'")
     for result in results.contacted.values():
         assert result.get('result')['ret_code'].get('code')  == 0
-        assert result.get('changed') == True
+        assert result.get('changed') is True
 
-#The golden path test
+
+#The positive path test
 # Run an authorized tso command
 def test_zos_tso_command_3(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_tso_command(command="LU BJMAXY", auth=True)
     for result in results.contacted.values():
         assert result.get('result')['ret_code'].get('code')  == 0
-        assert result.get('changed') == True
+        assert result.get('changed') is True
+
 
 # The failure test
 # The input command is empty.
@@ -79,7 +86,8 @@ def test_zos_tso_command_failure2(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_tso_command(command="")
     for result in results.contacted.values():
-        assert result.get('changed') == False
+        assert result.get('changed') is False
+
 
 # The failure test
 # The input auth is not true or false.
@@ -87,7 +95,8 @@ def test_zos_tso_command_failure3(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_tso_command(command="LU BJMAXY",auth='aaaa')
     for result in results.contacted.values():
-        assert result.get('changed') == False
+        assert result.get('changed') is False
+
 
 # The failure test
 # The input command is no-existing command, the module return rc 255.
@@ -96,5 +105,5 @@ def test_zos_tso_command_failure4(ansible_zos_module):
     results = hosts.all.zos_tso_command(command="xxxxxx")
     for result in results.contacted.values():
         assert result.get('result')['ret_code'].get('code') == 255
-        assert result.get('changed') == False
+        assert result.get('changed') is False
 

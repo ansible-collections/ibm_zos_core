@@ -93,7 +93,7 @@ def test_zos_tso_command_failure2(ansible_zos_module):
 # The input auth is not true or false.
 def test_zos_tso_command_failure3(ansible_zos_module):
     hosts = ansible_zos_module
-    results = hosts.all.zos_tso_command(command="LU BJMAXY",auth='aaaa')
+    results = hosts.all.zos_tso_command(command="LU BJMAXY", auth='aaaa')
     for result in results.contacted.values():
         assert result.get('changed') is False
 

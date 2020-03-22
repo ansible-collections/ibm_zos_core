@@ -5,6 +5,8 @@
 # Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
 from __future__ import absolute_import, division, print_function
+from traceback import format_exc
+from ansible.module_utils.basic import AnsibleModule
 
 __metaclass__ = type
 
@@ -145,26 +147,19 @@ changed:
 '''
 
 EXAMPLES = r'''
-  - name: Execute TSO command: allocate a new dataset.
-    zos_tso_command:
-        command: alloc da('TEST.HILL3.TEST') like('TEST.HILL3')
+- name: Execute TSO command: allocate a new dataset.
+  zos_tso_command:
+    command: alloc da('TEST.HILL3.TEST') like('TEST.HILL3')
 
-  - name: Execute TSO command: delete an existing dataset.
-    zos_tso_command:
-        command: delete 'TEST.HILL3.TEST'
+- name: Execute TSO command: delete an existing dataset.
+  zos_tso_command:
+    command: delete 'TEST.HILL3.TEST'
 
-  - name: Execute TSO command: list user TESTUSER tso information.
-    zos_tso_command:
-        command: LU TESTUSER
-        auth: true
+- name: Execute TSO command: list user TESTUSER tso information.
+  zos_tso_command:
+    command: LU TESTUSER
+    auth: true
 '''
-
-
-from ansible.module_utils.basic import AnsibleModule
-from traceback import format_exc
-
-
-# ------------- Functions to run tso command ------------- #
 
 
 def run_tso_command(command, auth, module):
@@ -176,7 +171,7 @@ def run_tso_command(command, auth, module):
             so use ZOAU command mvscmdauth to run authorized command.
             """
             rc, stdout, stderr = module.run_command("echo " + command +
-              "| mvscmdauth --pgm=IKJEFT01 --sysprint=* --systsprt=* --systsin=stdin", use_unsafe_shell=True)
+                               "| mvscmdauth --pgm=IKJEFT01 --sysprint=* --systsprt=* --systsin=stdin", use_unsafe_shell=True)
         else:
             rc, stdout, stderr = module.run_command(['tso', command])
 
@@ -205,7 +200,8 @@ def run_module():
     command = module.params.get("command")
     auth = module.params.get("auth")
     if command is None or command.strip() == "":
-        module.fail_json(msg='The "command" provided was null or an empty string.', **result)
+        module.fail_json(
+            msg='The "command" provided was null or an empty string.', **result)
 
     try:
         stdout, stderr, rc = run_tso_command(command, auth, module)
@@ -238,7 +234,8 @@ def run_module():
         module.fail_json(msg=e.msg, **result)
     except Exception as e:
         trace = format_exc()
-        module.fail_json(msg="An unexpected error occurred: {0}".format(trace), **result)
+        module.fail_json(
+            msg="An unexpected error occurred: {0}".format(trace), **result)
 
 
 class Error(Exception):

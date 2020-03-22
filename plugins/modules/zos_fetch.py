@@ -231,7 +231,7 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils._text import to_bytes
 from ansible.module_utils.parsing.convert_bool import boolean
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
-    better_arg_parser
+    better_arg_parser, data_set_utils
 )
 try:
     from zoautil_py import Datasets, MVSCmd, types
@@ -405,10 +405,12 @@ def _get_checksum(data):
 
 
 def _determine_data_set_type(ds_name, fail_on_missing=True):
-    """ Use the LISTDS utility to determine the type of a given data set """
-    rc, out, err = _run_command("tsocmd \"LISTDS '{0}'\"".format(ds_name))
-    if "NOT IN CATALOG" in out:
+    """ Determine the type of a given data set """
+    ds_utils = data_set_utils.DataSetUtils(ds_name)
+    ds_type = ds_utils.get_data_set_type()
+    if not ds_type:
         raise UncatalogedDatasetError(ds_name)
+    
     if "INVALID DATA SET NAME" in out:
         if os.path.exists(ds_name) and os.path.isfile(ds_name):
             return 'USS'

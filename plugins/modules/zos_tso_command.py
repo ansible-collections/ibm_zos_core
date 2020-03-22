@@ -1,3 +1,4 @@
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 # Copyright (c) IBM Corporation 2019, 2020
@@ -175,7 +176,7 @@ def run_tso_command(command, auth, module):
             so use ZOAU command mvscmdauth to run authorized command.
             """
             rc, stdout, stderr = module.run_command("echo " + command +
-            "| mvscmdauth --pgm=IKJEFT01 --sysprint=* --systsprt=* --systsin=stdin", use_unsafe_shell = True)
+              "| mvscmdauth --pgm=IKJEFT01 --sysprint=* --systsprt=* --systsin=stdin", use_unsafe_shell=True)
         else:
             rc, stdout, stderr = module.run_command(['tso', command])
 

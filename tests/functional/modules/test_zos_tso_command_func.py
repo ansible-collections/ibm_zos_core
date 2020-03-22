@@ -53,7 +53,7 @@ __metaclass__ = type
 # Run tso command to allocate a dataset like an existing one.
 def test_zos_tso_command(ansible_zos_module):
     hosts = ansible_zos_module
-#     results = hosts.all.zos_tso_command(command="alloc da('imstestl.ims1.test10') like('imstestl.ims1.test05')")
+    # results = hosts.all.zos_tso_command(command="alloc da('imstestl.ims1.test10') like('imstestl.ims1.test05')")
     results = hosts.all.zos_tso_command(command="alloc da('bjmaxy.hill3.test') like('bjmaxy.hill3')")
     for result in results.contacted.values():
         assert result.get('result')['ret_code'].get('code') == 0
@@ -66,17 +66,17 @@ def test_zos_tso_command_2(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_tso_command(command="delete 'bjmaxy.hill3.test'")
     for result in results.contacted.values():
-        assert result.get('result')['ret_code'].get('code')  == 0
+        assert result.get('result')['ret_code'].get('code') == 0
         assert result.get('changed') is True
 
 
-#The positive path test
+# The positive path test
 # Run an authorized tso command
 def test_zos_tso_command_3(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_tso_command(command="LU BJMAXY", auth=True)
     for result in results.contacted.values():
-        assert result.get('result')['ret_code'].get('code')  == 0
+        assert result.get('result')['ret_code'].get('code') == 0
         assert result.get('changed') is True
 
 
@@ -106,4 +106,3 @@ def test_zos_tso_command_failure4(ansible_zos_module):
     for result in results.contacted.values():
         assert result.get('result')['ret_code'].get('code') == 255
         assert result.get('changed') is False
-

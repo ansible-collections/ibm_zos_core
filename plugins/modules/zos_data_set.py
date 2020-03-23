@@ -813,13 +813,14 @@ class DataSetHandler(object):
         Returns:
             bool -- If changes were made.
         """
-        if not self._is_in_vtoc(name, volume):
-            raise DatasetCatalogError(
-                name, volume, "-1", "Data set was not found in VTOC. Unable to catalog."
-            )
         if self._data_set_cataloged(name):
             return False
-        self._catalog_data_set(name, volume)
+        try:
+            self._catalog_data_set(name, volume)
+        except DatasetCatalogError:
+            raise DatasetCatalogError(
+                name, volume, "-1", "Data set was not found. Unable to catalog."
+            )
         return True
 
     def _ensure_data_set_uncataloged(self, name):
@@ -901,10 +902,15 @@ class DataSetHandler(object):
         present = False
         if self._data_set_cataloged(name):
             present = True
-        elif volume is not None and self._is_in_vtoc(name, volume):
-            self._catalog_data_set(name, volume)
-            changed = True
-            present = True
+        elif volume is not None:
+            errors = False
+            try:
+                self._catalog_data_set(name, volume)
+            except DatasetCatalogError:
+                errors = True
+            if not errors:
+                changed = True
+                present = True
         return present, changed
 
     def _is_in_vtoc(self, name, volume):
@@ -1019,23 +1025,16 @@ class DataSetHandler(object):
         Raises:
             DatasetCatalogError: When attempt at catalog fails.
         """
-
-        idcams_input = """ DEFINE NVSAM -
-            (NAME('{0}') -
-            VOLUMES({1}) -
-            DEVT(3390)) """.format(
-            name, volume
-        )
+        iehprogm_input = self._build_non_vsam_catalog_command(name, volume)
         try:
             temp_data_set_name = self._create_temp_data_set(name.split(".")[0])
-            self._write_data_set(temp_data_set_name, idcams_input)
-            dd_statements = []
-            dd_statements.append(
-                types.DDStatement(ddName="sysin", dataset=temp_data_set_name)
+            self._write_data_set(temp_data_set_name, iehprogm_input)
+            rc, stdout, stderr = self.module.run_command(
+                "mvscmdauth --pgm=iehprogm --sysprint=* --sysin={0}".format(
+                    temp_data_set_name
+                )
             )
-            dd_statements.append(types.DDStatement(ddName="sysprint", dataset="*"))
-            rc = MVSCmd.execute_authorized(pgm="idcams", args="", dds=dd_statements)
-            if rc != 0:
+            if rc != 0 or "NORMAL END OF TASK RETURNED" not in stdout:
                 raise DatasetCatalogError(name, volume, rc)
         except Exception:
             raise
@@ -1116,13 +1115,12 @@ class DataSetHandler(object):
         try:
             temp_data_set_name = self._create_temp_data_set(name.split(".")[0])
             self._write_data_set(temp_data_set_name, iehprogm_input)
-            dd_statements = []
-            dd_statements.append(
-                types.DDStatement(ddName="sysin", dataset=temp_data_set_name)
+            rc, stdout, stderr = self.module.run_command(
+                "mvscmdauth --pgm=iehprogm --sysprint=* --sysin={0}".format(
+                    temp_data_set_name
+                )
             )
-            dd_statements.append(types.DDStatement(ddName="sysprint", dataset="*"))
-            rc = MVSCmd.execute_authorized(pgm="iehprogm", args="", dds=dd_statements)
-            if rc != 0:
+            if rc != 0 or "NORMAL END OF TASK RETURNED" not in stdout:
                 raise DatasetUncatalogError(name, rc)
         except Exception:
             raise
@@ -1160,7 +1158,8 @@ class DataSetHandler(object):
     def _is_data_set_vsam(self, name, volume=None):
         """Determine a given data set is VSAM. If volume is not provided,
         then LISTCAT will be used to check data set info. If volume is provided,
-        then VTOC will be used to check data set info.
+        then VTOC will be used to check data set info. If not in VTOC
+        may not return accurate information.
 
         Arguments:
             name {str} -- The name of the data set.
@@ -1254,9 +1253,29 @@ class DataSetHandler(object):
             raise DatasetWriteError(name, rc, stderr)
         return
 
+    def _build_non_vsam_catalog_command(self, name, volume):
+        """Build the command string to use
+        for non-VSAM data set catalog operation.
+        This is necessary because IEHPROGM required
+        strict formatting when spanning multiple lines.
+
+        Arguments:
+            name {str} -- The data set to catalog.
+            volume {str} -- The volume the data set resides on.
+
+        Returns:
+            str -- The command string formatted for use with IEHPROGM.
+        """
+        command_part_1 = "    CATLG DSNAME={0},".format(name)
+        command_part_2 = "               VOL=3390=({0})".format(volume)
+        command_part_1 = "{line: <{max_len}}".format(line=command_part_1, max_len=71)
+        command_part_1 += "X"
+        return command_part_1 + "\n" + command_part_2
+
 
 # TODO: Add back safe data set replacement when issues are resolved
 # TODO: switch argument parsing over to BetterArgParser
+
 
 def run_module():
     # TODO: add logic to handle aliases during parsing

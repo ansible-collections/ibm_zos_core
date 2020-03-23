@@ -182,7 +182,13 @@ class DataSetUtils(object):
 
         Returns:
             dict -- Dictionary containing the output parameters of LISTDS
+
+        Raises:
+            DatasetBusyError: When the data set is being edited by another user
         """
+        if (re.findall(r"ALREADY IN USE", output)):
+            raise DatasetBusyError(self.data_set)
+
         result = dict()
         result['exists'] = (
             len(re.findall(r"NOT IN CATALOG", output)) == 0 or
@@ -218,4 +224,11 @@ class DataSetUtils(object):
 class MVSCmdExecError(Exception):
     def __init__(self, rc):
         self.msg = "Unable to execute MVSCmd; Return code: {0}".format(rc)
+        super().__init__(msg)
+
+
+class DatasetBusyError(Exception):
+    def __init__(self, data_set):
+        self.msg = '''Dataset {0} may already be open by another user. \
+                Close the dataset and try again.'''.format(data_set)
         super().__init__(msg)

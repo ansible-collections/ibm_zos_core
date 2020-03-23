@@ -1,3 +1,7 @@
+{# ------------------------------------------------------------------------ #}
+{# © Copyright IBM Corporation 2020                                         #}
+{# ------------------------------------------------------------------------ #}
+
 :github_url: https://github.com/ansible-collections/ibm_zos_core/blob/dev/plugins/modules/{{ module }}.py
 
 .. _{{ module }}_module:
@@ -62,7 +66,7 @@ Synopsis
 
 {%     endfor %}
 
-  {{ "  " * level }}| **retquired**: {{ spec.required | default("false") }}
+  {{ "  " * level }}| **required**: {{ spec.required | default("false") }}
   {{ "  " * level }}| **type**: {{ spec.type | default("str") }}
 {%     if spec.default %}
   {{ "  " * level }}| **default**: {{ spec.default }}
@@ -146,17 +150,22 @@ See Also
       {{ entry | indent(level, True) }}
       {{ "  " * level }}| {{ _description }}
       
-      {{ "  " * level }}| **returned**: {{ _returned }}
+      {% if _returned %}
+{{ "  " * level }}| **returned**: {{ _returned }}
+      {% endif %}
+      
       {{ "  " * level }}| **type**: {{ _type  }}
 
       {% if _sample %}
-      {% if _sample is iterable %}
+      {% if _type != 'str' and _type != 'int' %}
 
-      {{ "  " * level }}**{{ entry }}** **sample**: ::
+      {{ "  " * level }}**sample**: ::
 
                        {{ _sample | tojson }}
       {% else %}
-      {{ "  " * level }}| **sample**: {{ _sample |tojson  }}
+      
+      {{ "  " * level }}| **sample**: {{ _sample }}
+      
       {% endif %}
       {% endif %}
 

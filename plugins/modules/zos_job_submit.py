@@ -20,7 +20,7 @@ author: "Xiao Yuan Ma (@bjmaxy)"
 short_description: Submit JCL
 description:
     - Submit JCL from DATA_SET , USS, or LOCAL location.
-    - Submit a job and optionally monitor for its execution
+    - Submit a job and optionally monitor for its execution.
     - Optionally wait for the job output until the job finishes.
     - For the uncataloged dataset, specify the volume serial number.
 version_added: "2.9"
@@ -107,7 +107,7 @@ options:
 RETURN = r"""
 jobs:
   description:
-     List of jobs output
+     List of jobs output.
   returned: success
   type: list
   elements: dict
@@ -144,7 +144,7 @@ jobs:
           sample: 17
         id:
           description:
-             Unique job id assigned to the job by JES
+             The file ID.
           type: str
           sample: 2
         stepname:
@@ -197,7 +197,7 @@ jobs:
         msg_code:
           description:
             Return code extracted from the `msg` so that it can better
-            evaluated. For example , ABEND(S0C4) would yield ""S0C4".
+            evaluated. For example, ABEND(S0C4) would yield ""S0C4".
           type: str
           sample: S0C4
         msg_txt:
@@ -207,7 +207,7 @@ jobs:
           sample: "No job can be located with this job name: HELLO"
         code:
           description:
-             Return code converted to integer value (when possible)
+             Return code converted to integer value (when possible).
           type: int
           sample: 00
       sample:

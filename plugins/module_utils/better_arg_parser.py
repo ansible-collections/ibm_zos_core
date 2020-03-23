@@ -125,6 +125,8 @@ class BetterArgHandler(object):
             "qualifier": self._qualifier_type,
             "qualifier_pattern": self._qualifier_pattern_type,
             "volume": self._volume_type,
+            "data_set_or_path_type": self._data_set_or_path_type,
+            "encoding_type": self._encoding_type
         }
 
     def handle_arg(self):
@@ -412,9 +414,52 @@ class BetterArgHandler(object):
         Returns:
             str -- The arguments contents after any necessary operations.
         """
-        if not re.fullmatch(r"^[A-Z0-9]{1,8}$", str(contents), re.IGNORECASE,):
+        if not re.fullmatch(r"^[A-Z0-9]{1,6}$", str(contents), re.IGNORECASE,):
             raise ValueError(
                 'Invalid argument type for "{0}". expected "volume"'.format(contents)
+            )
+        return str(contents)
+
+    def _data_set_or_path_type(self, contents, resolve_dependencies):
+        """Resolver for data_set_or_path type arguments
+
+        Arguments:
+            contents {bool} -- The contents of the argument.
+            resolved_dependencies {dict} -- Contains all of the dependencies and their contents,
+            which have already been handled,
+            for use during current arguments handling operations.
+
+        Raises:
+            ValueError: When contents is invalid argument type
+        Returns:
+            str -- The arguments contents after any necessary operations.
+        """
+        if not re.fullmatch(
+            r"^(?:(?:[A-Z]{1}[A-Z0-9]{0,7})(?:[.]{1})){1,21}[A-Z]{1}[A-Z0-9]{0,7}(?:\([A-Z]{1}[A-Z0-9]{0,7}\)){0,1}$",
+            str(contents),
+            re.IGNORECASE
+        ):
+            if not path.isabs(str(contents)):
+                raise ValueError('Invalid argument type for source. expected "data_set" or "path"')
+        return str(contents)
+
+    def _encoding_type(self, contents, resolve_dependencies):
+        """Resolver for encoding type arguments
+
+        Arguments:
+            contents {bool} -- The contents of the argument.
+            resolved_dependencies {dict} -- Contains all of the dependencies and their contents,
+            which have already been handled,
+            for use during current arguments handling operations.
+
+        Raises:
+            ValueError: When contents is invalid argument type
+        Returns:
+            str -- The arguments contents after any necessary operations.
+        """
+        if not re.fullmatch(r"^[A-Z0-9-]{2,}$", str(contents), re.IGNORECASE):
+            raise ValueError(
+                'Invalid argument type for "{0}". expected "encoding"'.format(contents)
             )
         return str(contents)
 

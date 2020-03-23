@@ -756,8 +756,14 @@ class DataSetHandler(object):
 
     def _ensure_data_set_present(self, name, replace, **extra_args):
         """Creates data set if it does not already exist.
-        The replace argument is used to determine behavior when data set already
-        exists. Returns a boolean indicating if changes were made. """
+
+        Arguments:
+            name {str} -- The name of the data set to ensure is present.
+            replace {bool} -- Used to determine behavior when data set already exists.
+
+        Returns:
+            bool -- Indicates if changes were made.
+        """
         ds_create_args = self._rename_args_for_zoau(extra_args)
         present, changed = self._attempt_catalog_if_necessary(
             name, extra_args.get("volume")
@@ -772,7 +778,13 @@ class DataSetHandler(object):
 
     def _ensure_data_set_absent(self, name, **extra_args):
         """Deletes provided data set if it exists.
-        Returns a boolean indicating if changes were made. """
+
+        Arguments:
+            name {str} -- The name of the data set to ensure is absent.
+
+        Returns:
+            bool -- Indicates if changes were made.
+        """
         present, changed = self._attempt_catalog_if_necessary(
             name, extra_args.get("volume")
         )
@@ -785,8 +797,15 @@ class DataSetHandler(object):
 
     def _ensure_data_set_member_present(self, name, replace, **extra_args):
         """Creates data set member if it does not already exist.
-        The replace argument is used to determine behavior when data set already
-        exists. Returns a boolean indicating if changes were made."""
+
+        Arguments:
+            name {str} -- The name of the data set to ensure is present.
+            replace {bool} -- Used to determine behavior when data set already
+        exists.
+
+        Returns:
+            bool -- Indicates if changes were made.
+        """
         if self._data_set_member_exists(name):
             if not replace:
                 return False
@@ -966,7 +985,15 @@ class DataSetHandler(object):
         return ds_create_args
 
     def _create_data_set(self, name, extra_args=None):
-        """ A wrapper around zoautil_py data set create to raise exceptions on failure. """
+        """A wrapper around zoautil_py
+        Dataset.create() to raise exceptions on failure.
+
+        Arguments:
+            name {str} -- The name of the data set to create.
+
+        Raises:
+            DatasetCreateError: When data set creation fails.
+        """
         if extra_args is None:
             extra_args = {}
         rc = Datasets.create(name, **extra_args)
@@ -975,7 +1002,15 @@ class DataSetHandler(object):
         return
 
     def _delete_data_set(self, name):
-        """ A wrapper around zoautil_py data set delete to raise exceptions on failure. """
+        """A wrapper around zoautil_py
+        Dataset.delete() to raise exceptions on failure.
+
+        Arguments:
+            name {str} -- The name of the data set to delete.
+
+        Raises:
+            DatasetDeleteError: When data set deletion fails.
+        """
         rc = Datasets.delete(name)
         if rc > 0:
             raise DatasetDeleteError(name, rc)
@@ -984,7 +1019,14 @@ class DataSetHandler(object):
     def _create_data_set_member(self, name):
         """Create a data set member if the partitioned data set exists.
         Also used to overwrite a data set member if empty replacement is desired.
-        Raises DatasetNotFoundError if data set cannot be found."""
+
+        Arguments:
+            name {str} -- The data set name, including member name, to create.
+
+        Raises:
+            DatasetNotFoundError: If data set cannot be found.
+            DatasetMemberCreateError: If member creation fails.
+        """
         base_dsname = name.split("(")[0]
         if not base_dsname or not self._data_set_cataloged(base_dsname):
             raise DatasetNotFoundError(name)
@@ -997,7 +1039,15 @@ class DataSetHandler(object):
         return
 
     def _delete_data_set_member(self, name):
-        """ A wrapper around zoautil_py data set delete_members to raise exceptions on failure. """
+        """A wrapper around zoautil_py
+        Dataset.delete_members() to raise exceptions on failure.
+
+        Arguments:
+            name {str} -- The name of the data set, including member name, to delete.
+
+        Raises:
+            DatasetMemberDeleteError: When data set member deletion fails.
+        """
         rc = Datasets.delete_members(name)
         if rc > 0:
             raise DatasetMemberDeleteError(name, rc)

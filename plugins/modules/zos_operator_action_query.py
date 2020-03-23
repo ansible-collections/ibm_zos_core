@@ -47,6 +47,7 @@ options:
         for a particular job name.
       - If the message job name is not specified, all outstanding messages
         for all job names are returned.
+      - A trailing asterisk, (*) wildcard is supported.
     type: str
     required: false
 seealso:

@@ -19,36 +19,45 @@ short_description: Convert the encoding of characters
 description:
     - Converts the encoding of characters read from either Unix System Services
       (USS), PS(sequential data set), PDS/E or KSDS(VSAM data set).
+    - Write the data read out to either Unix System Services
+      (USS), PS(sequential data set), PDS/E or KSDS(VSAM data set).
 options:
   from_encoding:
     description:
         - This describes the encoding of the C(src).
-        - Both ASCII(ISO8859-1) and EBCDIC(IBM-1047) are supported.
-    required: true
-    type: String
+        - Supported charsets rely on the target version, the most common
+          charsets are supported.
+    required: false
+    type: str
     default: IBM-1047
   to_encoding:
     description:
         - This describes the encoding of the C(dest).
-        - Both ASCII(ISO8859-1) and EBCDIC(IBM-1047) are supported.
-    required: true
-    type: String
+        - Supported charsets rely on the target version, the most common
+          charsets are supported.
+    required: false
+    type: str
     default: ISO8859-1
   src:
     description:
-        - This is the location of the data residing in a Unix file, Unix
-          path, PS(sequential data set), PDS/E or KSDS(VSAM data set) to
+        - The location of the data residing in a Unix file, Unix
+          directory, PS(sequential data set), PDS/E or KSDS(VSAM data set) to
           be encoded.
+        - If the source is a Unix directory all files will be encoding it is
+          to the user to avoid files that should not be encoded such as binary
+          files
     required: true
     type: str
   dest:
     description:
         - This is the destination of where the data should be written to
           after it has been encoded.
-        - This destinamtion can be a Unix file, Unix path,
-          PS(sequential data set), PDS/E or KSDS(VSAM data set)
+        - If the C(dest) is not specified the C(src) will be overwritten with
+          the selected charset.
+        - This destination can be a Unix file, Unix path,
+          PS(sequential data set), PDS/E or KSDS(VSAM data set).
         - If length of the file name in src is more the 8 characters, name will
-          be truncated when converting to a PDS ????
+          be truncated when converting to a PDS.
     required: false
     type: str
   backup:
@@ -70,78 +79,86 @@ seealso:
 '''
 
 EXAMPLES = r'''
-- name: Convert data encoding (EBCDIC to ASCII) from a Unix file to the same
-  file
+- name: Convert file encoding src IBM-1047 to src encoding ISO8859-1.
   zos_encode:
     src: ./zos_encode/test.data
     from_encoding: IBM-1047
     to_encoding: ISO8859-1
 
-- name: Convert encoding for a Unix file and backup the source
-  copy:
+- name: Convert file encoding src IBM-1047 to dest encoding ISO8859-1
+  with backup.
+  zos_encode:
     src: ./zos_encode/test.data
     dest: /user/zos_encode_out/test.data
     from_encoding: IBM-1047
     to_encoding: ISO8859-1
     backup: yes
 
-- name: Convert encoding from a Unix file to another Unix file
+- name: Convert file encoding src IBM-1047 to dest encoding ISO8859-1.
   zos_encode:
     src: ./zos_encode/test.data
     dest: ./zos_encode/test.out
     from_encoding: IBM-1047
     to_encoding: ISO8859-1
 
-- name: Convert encoding from a Unix file to a Unix path
+- name: Convert file encoding src IBM-1047 to directory dest
+  encoding ISO8859-1
   zos_encode:
     src: /u/user1/zos_encode/test.data
     dest: /u/user1/zos_encode_out/
     from_encoding: IBM-1047
     to_encoding: ISO8859-1
 
-- name: Convert encoding from a Unix path to a different Unix path
+- name: Convert directory files encoding src ISO8859-1 to directory dest
+  encoding IBM-1047
   zos_encode:
     src: ./zos_encode
     dest: ./zos_encode_out
     from_encoding: ISO8859-1
     to_encoding: IBM-1047
 
-- name: Convert encoding from a Unix file to a sequential data set
+- name: Convert file encoding src IBM-1047 to sequential data set dest
+  encoding ISO8859-1
   zos_encode:
     src: ./zos_encode/test
     dest: USER.TEST.PS
     from_encoding: IBM-1047
     to_encoding: ISO8859-1
 
-- name: Convert encoding from a Unix path to a partitioned data set (extend)
+- name: Convert file encoding src ISO8859-1 to partitioned data set
+  dest encoding IBM-1047
   zos_encode:
     src: /u/zos_encode
     dest: USER.TEST.PDS
     from_encoding: ISO8859-1
     to_encoding: IBM-1047
 
-- name: Convert encoding from a Unix file to a member in partitioned data set
+- name: Convert file encoding src ISO8859-1 to partitioned data set member
+  dest encoding IBM-1047
   zos_encode:
     src: /u/zos_encode/test
     dest: USER.TEST.PDS(TESTO)
     from_encoding: ISO8859-1
     to_encoding: IBM-1047
 
-- name: Convert encoding from a sequential data set to a Unix file
+- name: Convert encoding sequential data set src IBM-1047 to file
+  dest encoding ISO8859-1
   zos_encode:
     src: USER.TEST.PS
     dest: ./zos_encode/test
     from_encoding: IBM-1047
     to_encoding: ISO8859-1
 
-- name: Convert encoding from a partitioned data set (extend) to a Unix path
+- name: Convert encoding partitioned data set (extend) to file file
+  dest IBM-1047
   zos_encode:
     src: USER.TEST.PDS
     dest: /u/zos_encode
     from_encoding: ISO8859-1
     to_encoding: IBM-1047
 
-- name: Convert  encoding from a sequential data set to a different sequential
+- name: Convert encoding sequential data set src ISO8859-1 to
+  sequential data set dest encoding IBM-1047
   data set
   zos_encode:
     src: USER.TEST.PS
@@ -149,44 +166,48 @@ EXAMPLES = r'''
     from_encoding: ISO8859-1
     to_encoding: IBM-1047
 
-- name: Convert encoding from a sequential data set to a partitioned data
-  set (extended)
+- name: Convert encoding sequential data set src IBM-1047 to partitioned data
+  set (extended) dest encoding ISO8859-1
   zos_encode:
     src: USER.TEST.PS
     dest: USER.TEST1.PDS
     from_encoding: IBM-1047
     to_encoding: ISO8859-1
 
-- name: Convert encoding from a Unix file to a VSAM data set
+- name: Convert file encoding src ISO8859-1 to VSAM data set dest
+  encoding IBM-1047
   zos_encode:
     src: /u/zos_encode/test
     dest: USER.TEST.VS
     from_encoding: ISO8859-1
     to_encoding: IBM-1047
 
-- name: Convert data encoding (EBCDIC to ASCII) from a VSAM data set to a
-  Unix file
+- name: Convert file encoding src IBM-1047 data to VSAM data set dest
+  encoding ISO8859-1
   zos_encode:
     src: USER.TEST.VS
     dest: /u/zos_encode/test
     from_encoding: IBM-1047
     to_encoding: ISO8859-1
 
-- name: Convert encoding from a VSAM data set to a sequential data set
+- name: Convert VSAM data set encoding src IBM-1047 to sequential data set
+  dest encoding ISO8859-1
   zos_encode:
     src: USER.TEST.VS
     dest: USER.TEST.PS
     from_encoding: IBM-1047
     to_encoding: ISO8859-1
 
-- name: Convert encoding from a sequential data set to a VSAM data set
+- name: Convert sequential data set encoding src ISO8859-1 to a VSAM data set
+  dest encoding IBM-1047
   zos_encode:
     src: USER.TEST.PS
     dest: USER.TEST.VS
     from_encoding: ISO8859-1
     to_encoding: IBM-1047
 
-- name: Convert encoding from a sequential data set to a VSAM data set
+- name: Convert sequential data set encoding src ISO8859-1 to VSAM data set
+  dest encoding IBM-1047
   zos_encode:
     src: USER.TEST.PS
     dest: USER.TEST.VS
@@ -237,8 +258,8 @@ from ansible.module_utils.basic import AnsibleModule
 from zoautil_py import Datasets
 
 def listdsi_data_set(ds, module):
-    ''' To call zOAU mvscmdauth to invoke IDCAMS LISTCAT command to get the record length and space used 
-        Then estimate the space used by the VSAM data set 
+    ''' Invoke IDCAMS LISTCAT command to get the record length and space used.
+        Then estimate the space used by the VSAM data set.
     '''
     err_msg  = None
     reclen   = 0
@@ -281,16 +302,16 @@ def listdsi_data_set(ds, module):
         # For 3390, 56664 bytes / track
         space_u   = ceil(ca_num * trkoca * 566664 / 1024)
     else:
-        err_msg = "Failed when getting the data set info for {}: {}".format(ds, stderr)
+        err_msg = "Unable to obtain data set information for {}: {}".format(ds, stderr)
     return err_msg, reclen, space_u
 
 def exit_when_exception(err_msg, result, module):
-    ''' To call Ansible module.fail_json to exit with a warning messge '''
+    ''' Call Ansible module.fail_json to exit with a warning message '''
     result['msg'] = err_msg
     module.fail_json(**result)
 
 def run_command(cmd, module):
-    ''' To call Ansible module.run_command to execute command in USS '''
+    ''' Call Ansible module.run_command to execute command in USS '''
     try:
         rc, stdout, stderr = module.run_command(cmd, use_unsafe_shell=True)
     except:
@@ -302,13 +323,16 @@ def uss_convert_encoding(src, dest, from_encoding, to_encoding, module):
     ''' Convert the encoding of the data in a USS file '''
     convert_rc = False
     err_msg    = None
+
     if not src == dest:
         temp_f = dest
     else:
         f_temp = NamedTemporaryFile(delete=False)
         temp_f = f_temp.name
+
     conv_cmd = 'iconv -f {} -t {} {} > {}'.format(from_encoding, to_encoding, src, temp_f)
     rc, stdout, stderr = run_command(conv_cmd, module)
+
     if not rc:
         if not (temp_f == dest):
             mv_cmd = ['mv', temp_f, dest]
@@ -322,7 +346,7 @@ def uss_convert_encoding(src, dest, from_encoding, to_encoding, module):
     return convert_rc, err_msg
 
 def get_codeset(module):
-    ''' To use USS command 'iconv -l' to get the current code set list '''
+    ''' Get the list of supported encodings from the  USS command 'iconv -l' '''
     code_set = None
     iconvl_cmd = ['iconv', '-l']
     rc, stdout, stderr = run_command(iconvl_cmd, module)
@@ -379,14 +403,15 @@ def copy_pds2uss(src, temp_src, module):
     return rc, stdout, stderr
 
 def uss_convert_encoding_prev(src, dest, from_encoding, to_encoding, module):
-    ''' For mulitiple files conversion, such as a USS path or MVS PDS data set,
-    use this method firstly to split them to a single file and then do the conversion'''
+    ''' For multiple file conversion, such as a USS path or MVS PDS data set,
+    use this method to split them to a single file and then do the conversion'''
     convert_rc = False
     err_msg    = None
+
     if not path.isfile(src):
         for (dirname, subshere, fileshere) in walk(src):
             if len(fileshere) == 0:
-                err_msg = 'Directory {} is empty. Please check!'.format(src)
+                err_msg = 'Directory {} is empty. Please update the path.'.format(src)
             elif len(fileshere) == 1:
                 src = path.join(dirname, fileshere[0])
                 if not path.isfile(dest):
@@ -408,7 +433,7 @@ def uss_convert_encoding_prev(src, dest, from_encoding, to_encoding, module):
     return convert_rc, err_msg
 
 def mvs_convert_encoding_prev(src, dest, ds_type_src, ds_type_dest, from_encoding, to_encoding, module):
-    ''' If the src or the dest is an MVS data set, this method is used to copy it to a USS file firstly'''
+    ''' If the src or the dest is an MVS data set, this method is used to copy it to a USS first'''
     convert_rc = False
     err_msg    = None
     temp_src   = src
@@ -488,7 +513,7 @@ def mvs_file_backup(src, module):
         dsn      = ds[0:ds.rfind('(',1)]
     current_date = time.strftime("D%y%m%d", time.localtime())
     # If there are more than 30 characters in the data set name,
-    # the name of the backup data set will be the original data set name 
+    # the name of the backup data set will be the original data set name
     # with a '@' in the second qualifier to the last
     # The original: A.B.C.D
     # The backup: A.B.@.D

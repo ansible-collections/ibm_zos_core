@@ -114,12 +114,6 @@ EXAMPLES = r'''
     flat: true
     is_binary: true
 
-- name: Fetch a unix file without converting from EBCDIC to ASCII
-  zos_fetch:
-    src: /tmp/somefile
-    dest: /tmp/
-    fail_on_missing: false
-
 - name: Fetch a unix file and don't validate its checksum
   zos_fetch:
     src: /tmp/somefile

@@ -12,12 +12,38 @@ import ansible.constants
 import ansible.errors
 import ansible.utils
 import pytest
-from pprint import pprint
 
 __metaclass__ = type
 
 
-def test_zos_operator_goldenpath(ansible_zos_module):
+def test_zos_operator_various_command(ansible_zos_module):
+    test_data = [
+            ("d a", 0, True),
+            ("k s", 0, True),
+            ("d r,l",0,True),
+            ("d parmlib",0,True),
+            ("SEND 'list ready',NOW",0,True),
+            ]
+    for item in test_data:
+            command = item[0]
+            expected_rc = item[1]
+            changed = item[2]
+            hosts = ansible_zos_module
+            results = hosts.all.zos_operator(cmd=command)
+            for result in results.contacted.values():
+                assert result['rc'] == expected_rc
+                assert result.get("changed") is changed
+
+
+def test_zos_operator_invalid_command(ansible_zos_module):
+    hosts = ansible_zos_module
+    results = hosts.all.zos_operator(cmd='invalid,command', verbose=False, debug=False)
+    for result in results.contacted.values():
+        assert result.get("changed") is False
+        assert result.get("exception") is not None
+
+
+def test_zos_operator_positive_path(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_operator(cmd='d u,all', verbose=False, debug=False)
     for result in results.contacted.values():
@@ -26,7 +52,7 @@ def test_zos_operator_goldenpath(ansible_zos_module):
         assert result.get("content") is not None
 
 
-def test_zos_operator_goldenpath_with_verbose(ansible_zos_module):
+def test_zos_operator_positive_path_verbose(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_operator(cmd='d u,all', verbose=True, debug=False)
     for result in results.contacted.values():

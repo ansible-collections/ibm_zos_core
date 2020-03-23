@@ -18,21 +18,21 @@ __metaclass__ = type
 
 def test_zos_operator_various_command(ansible_zos_module):
     test_data = [
-            ("d a", 0, True),
-            ("k s", 0, True),
-            ("d r,l",0,True),
-            ("d parmlib",0,True),
-            ("SEND 'list ready',NOW",0,True),
-            ]
+        ("d a", 0, True), 
+        ("k s", 0, True), 
+        ("d r,l", 0, True), 
+        ("d parmlib", 0, True),
+        ("SEND 'list ready',NOW", 0, True)
+        ]
     for item in test_data:
-            command = item[0]
-            expected_rc = item[1]
-            changed = item[2]
-            hosts = ansible_zos_module
-            results = hosts.all.zos_operator(cmd=command)
-            for result in results.contacted.values():
-                assert result['rc'] == expected_rc
-                assert result.get("changed") is changed
+        command = item[0]
+        expected_rc = item[1]
+        changed = item[2]
+        hosts = ansible_zos_module
+        results = hosts.all.zos_operator(cmd=command)
+        for result in results.contacted.values():
+        assert result['rc'] == expected_rc
+        assert result.get("changed") is changed
 
 
 def test_zos_operator_invalid_command(ansible_zos_module):

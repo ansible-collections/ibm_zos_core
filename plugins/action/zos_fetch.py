@@ -27,8 +27,7 @@ def _update_result(
         src,
         dest,
         ds_type,
-        binary_mode=False,
-        encoding='EBCDIC'):
+        binary_mode=False):
     """ Helper function to update output result with the provided values """
 
     data_set_types = {
@@ -53,8 +52,6 @@ def _update_result(
         'data_set_type': data_set_types[ds_type],
         'is_binary': binary_mode
     })
-    if not binary_mode:
-        updated_result.update({'encoding': encoding})
     return updated_result
 
 
@@ -70,9 +67,11 @@ def _write_content_to_file(filename, content, write_mode):
             outfile.write(content)
     except UnicodeEncodeError as err:
         raise AnsibleError(
-            '''Error writing to destination {0} due to encoding issues. \
-            If it is a binary file, make sure to set 'is_binary' parameter to \
-            'true'; stderr: {1}'''.format(filename, err)
+            (
+                "Error writing to destination {0} due to encoding issues. "
+                "If it is a binary file, make sure to set 'is_binary' parameter"
+                " to true'; stderr: {1}".format(filename, err)
+            )
         )
     except (IOError, OSError) as err:
         raise AnsibleError(
@@ -97,7 +96,6 @@ class ActionModule(ActionBase):
 
         src = self._task.args.get('src')
         dest = self._task.args.get('dest')
-        encoding = self._task.args.get('encoding')
         volume = self._task.args.get('volume')
         flat = _process_boolean(
             self._task.args.get('flat'),
@@ -117,16 +115,16 @@ class ActionModule(ActionBase):
             msg = "Source and destination are required"
 
         if not isinstance(src, string_types):
-            msg = '''Invalid type supplied for 'source' option, \
-                it must be a string'''
+            msg = (
+                "Invalid type supplied for 'source' option, "
+                "it must be a string"
+            )
 
         if not isinstance(dest, string_types):
-            msg = '''Invalid type supplied for 'destination' option, \
-                it must be a string'''
-
-        if encoding and not isinstance(encoding, string_types):
-            msg = '''Invalid type supplied for 'encoding' option, \
-                it must be a string'''
+            msg = (
+                "Invalid type supplied for 'destination' option, "
+                "it must be a string"
+            )
 
         if msg:
             result['message'] = dict(
@@ -158,9 +156,11 @@ class ActionModule(ActionBase):
                 not dest.endswith(os.sep)
             ):
                 result['message'] = dict(
-                    msg='''dest is an existing directory, append a forward \
-                        slash to the dest if you want to fetch src into that \
-                        directory''',
+                    msg=(
+                        "dest is an existing directory, append a forward "
+                        "slash to the dest if you want to fetch src into "
+                        "that directory"
+                    ),
                     stdout="",
                     stderr="",
                     ret_code=None
@@ -236,8 +236,10 @@ class ActionModule(ActionBase):
 
         else:
             result['message'] = dict(
-                msg='''The data set type '{0}' is not \
-                    currently supported'''.format(ds_type),
+                msg=(
+                    "The data set type '{0}' is not"
+                    " currently supported".format(ds_type)
+                ),
                 stdout="",
                 stderr="",
                 ret_code=None
@@ -247,8 +249,7 @@ class ActionModule(ActionBase):
 
         return _update_result(
             dict(list(result.items()) + list(fetch_content.items())),
-            src, dest, ds_type, binary_mode=is_binary,
-            encoding=encoding if encoding else 'EBCDIC'
+            src, dest, ds_type, binary_mode=is_binary
         )
 
     def _fetch_remote_dir(self, dest, task_vars, pds_path, binary_mode=False):
@@ -280,8 +281,10 @@ class ActionModule(ActionBase):
 
             if transfer_pds.returncode != 0:
                 raise AnsibleError(
-                    '''Error transferring PDS from remote z/OS system; \
-                        stdout: {0}; stderr: {1}'''.format(out, err)
+                    (
+                        "Error transferring PDS from remote z/OS system; "
+                        "stdout: {0}; stderr: {1}".format(out, err)
+                    )
                 )
 
             result['changed'] = True

@@ -5,6 +5,9 @@ from __future__ import absolute_import, division, print_function
 
 import re
 from os import path
+from random import choice
+from string import ascii_uppercase
+
 try:
     from zoautil_py import Datasets, MVSCmd, types
 except Exception:
@@ -14,8 +17,8 @@ except Exception:
 
 __metaclass__ = type
 
-LISTDS_COMMAND = "LISTDS {0}"
-LISTCAT_COMMAND = "LISTCAT ENT({0}) ALL"
+LISTDS_COMMAND = " LISTDS '{0}' "
+LISTCAT_COMMAND = " LISTCAT ENT({0}) ALL "
 
 
 class DataSetUtils(object):
@@ -28,10 +31,11 @@ class DataSetUtils(object):
             data_set {str} -- Name of the input data set
         """
         self.data_set = data_set
-        self.ds_info = self._gather_data_set_info(self.data_set)
+        self.ds_info = self._gather_data_set_info()
 
     def data_set_exists(self):
-        """Determines whether the input data set exists.
+        """Determines whether the input data set exists. The input data
+        set can be VSAM or non-VSAM.
 
         Returns:
             bool -- If the data set was found
@@ -55,8 +59,42 @@ class DataSetUtils(object):
         """
         return self.ds_info.get('dsorg')
 
+    @staticmethod
+    def create_temp_data_set(
+            LLQ,
+            ds_type="SEQ",
+            size="5M",
+            ds_format="FB",
+            lrecl=80
+            ):
+        """Creates a temporary data set with the given low level qualifier.
+
+        Arguments:
+            LLQ {str} -- Low Level Qualifier to be used for temporary data set
+            ds_type {str} -- The data set type, default: Sequential
+            size {str} -- The size of the data set, default: 5M
+            format {str} -- The record format of the data set, default: FB
+            lrecl {int} -- The record length of the data set, default: 80
+
+        Returns:
+            str -- Name of the created data set
+
+        Raises:
+            OSError: When non-zero return code is received
+            from Datasets.create()
+        """
+        chars = ascii_uppercase
+        HLQ2 = ''.join(choice(chars) for i in range(5))
+        temp_ds_name = Datasets.hlq() + '.' + HLQ2 + '.' + LLQ
+
+        rc = Datasets.create(temp_ds_name, ds_type, size, ds_format, "", lrecl)
+        if rc != 0:
+            raise OSError("Unable to create temporary data set")
+
+        return temp_ds_name
+
     def get_data_set_volume(self):
-        """Retrieves the volume of the input data set is stored.
+        """Retrieves the volume name where the input data set is stored.
 
         Returns:
             str -- Volume where the data set is stored
@@ -65,12 +103,12 @@ class DataSetUtils(object):
         return self.ds_info.get('volser')
 
     def get_data_set_lrecl(self):
-        """Retrieves the record length of the input data set. LRECL specifies
-        the length, in bytes, of each record in the data set.
+        """Retrieves the record length of the input data set. Record length
+        specifies the length, in bytes, of each record in the data set.
 
         Returns:
             int -- The record length, in bytes, of each record
-            None -- If the data set does not exist
+            None -- If the data set does not exist or the data is VSAM
         """
         return self.ds_info.get('lrecl')
 
@@ -79,7 +117,7 @@ class DataSetUtils(object):
 
         Returns:
             str -- Record format
-            None -- If the data set does not exist
+            None -- If the data set does not exist or the data set is VSAM
 
         Possible return values:
             'F'   -- Fixed
@@ -92,45 +130,29 @@ class DataSetUtils(object):
         """
         return self.ds_info.get('recfm')
 
-    @staticmethod
-    def create_temp_data_set(HLQ):
-        """Creates a temporary data set with the given high level qualifier
-
-        Returns:
-            str -- Name of the created data set
-
-        Raises:
-            OSError: When non-zero return code is received
-            from Datasets.create()
-        """
-        temp_ds_name = Datasets.temp_name(HLQ)
-        rc = Datasets.create(
-            temp_ds_name,
-            {"type": "SEQ", "size": "5M", "format": "FB", "length": 80}
-        )
-        if rc != 0:
-            raise OSError(
-                "Unable to create temprary data set while executing IDCAMS"
-            )
-
-        return temp_ds_name
-
     def _gather_data_set_info(self):
         """Retrieves information about the input data set using LISTDS and
-        LISTCAT commands
+        LISTCAT commands.
 
         Returns:
             dict -- Dictionary containing data set attributes
         """
         result = dict()
-        listds_out = self._run_mvs_cmd('ikjeft01', LISTDS_COMMAND.format(self.data_set))
-        listcat_out = self._run_mvs_cmd('idcams', LISTCAT_COMMAND.format(self.data_set))
+        try:
+            listds_out = self._run_mvs_cmd('ikjeft01', LISTDS_COMMAND.format(self.data_set))
+            listcat_out = self._run_mvs_cmd('idcams', LISTCAT_COMMAND.format(self.data_set))
+        except Exception:
+            raise
         result.update(self._process_listds_output(listds_out))
         result.update(self._process_listcat_output(listcat_out))
         return result
 
     def _run_mvs_cmd(self, pgm, input_cmd):
-        """Executes MVSCmd with the given program and input command
+        """Executes MVSCmd with the given program and input command.
+
+        Arguments:
+            pgm {str} -- The name of the MVS program to execute
+            input_cmd {str} -- The command to execute
 
         Returns:
             str -- The generated 'sysprint' of the executed command
@@ -142,17 +164,17 @@ class DataSetUtils(object):
             MVSCmdExecError: When non-zero return code is received while
             executing MVSCmd
         """
+        sysin_ds = self.create_temp_data_set('SYSIN')
+        sysprint_ds = self.create_temp_data_set('SYSPRINT')
         try:
-            HLQ = self.data_set.split(".")[0]
-            sysin_ds = self.create_temp_data_set(HLQ)
-            sysprint_ds = self.create_temp_data_set(HLQ)
             rc = Datasets.write(sysin_ds, input_cmd)
-            if rc != 0:
+            if rc > 0:
                 raise IOError(
-                    "Unable to write content to temporary dataset while \
-                    executing IDCAMS"
+                    (
+                        "Unable to write content to temporary dataset while "
+                        "executing MVSCmd"
+                    )
                 )
-
             if pgm == 'ikjeft01':
                 sysin = 'systsin'
                 sysprint = 'systsprt'
@@ -180,6 +202,9 @@ class DataSetUtils(object):
     def _process_listds_output(self, output):
         """Parses the output generated by LISTDS command.
 
+        Arguments:
+            output {str} -- The output of LISTDS command
+
         Returns:
             dict -- Dictionary containing the output parameters of LISTDS
 
@@ -196,12 +221,13 @@ class DataSetUtils(object):
         )
 
         if result.get('exists'):
-            ds_search = re.search(r"(-|--)DSORG(|-)\n(.*)", output, re.MULTILINE)
+            ds_search = re.search(r"(-|--)DSORG(-\s*|\s*)\n(.*)", output, re.MULTILINE)
             if ds_search:
                 ds_params = ds_search.group(3).split()
                 result['dsorg'] = ds_params[-1]
-                result['recfm'] = ds_params[1]
-                result['lrecl'] = ds_params[2]
+                if result.get('dsorg') != "VSAM":
+                    result['recfm'] = ds_params[0]
+                    result['lrecl'] = ds_params[1]
 
             elif (path.isfile(self.data_set) or path.isdir(self.data_set)):
                 result['dsorg'] = 'USS'
@@ -209,6 +235,9 @@ class DataSetUtils(object):
 
     def _process_listcat_output(self, output):
         """Parses the output generated by LISTCAT command.
+
+        Arguments:
+            output {str} -- The output of LISTCAT command
 
         Returns:
             dict -- Dictionary containing the output parameters of LISTCAT
@@ -223,12 +252,14 @@ class DataSetUtils(object):
 
 class MVSCmdExecError(Exception):
     def __init__(self, rc):
-        self.msg = "Unable to execute MVSCmd; Return code: {0}".format(rc)
-        super().__init__(msg)
+        self.msg = "Failure during execution of MVSCmd; Return code: {0}".format(rc)
+        super().__init__(self.msg)
 
 
 class DatasetBusyError(Exception):
     def __init__(self, data_set):
-        self.msg = '''Dataset {0} may already be open by another user. \
-                Close the dataset and try again.'''.format(data_set)
-        super().__init__(msg)
+        self.msg = (
+            "Dataset {0} may already be open by another user. "
+            "Close the dataset and try again".format(data_set)
+        )
+        super().__init__(self.msg)

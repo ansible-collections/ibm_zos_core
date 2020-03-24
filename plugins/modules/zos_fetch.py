@@ -226,9 +226,9 @@ module = None
 MVS_DS_TYPES = frozenset({'PS', 'PO', 'PDSE', 'PE'})
 
 
-def _fail_json(**kwargs):
+def _fail_json(msg="", stdout="", stderr="", ret_code=None):
     """ Wrapper for AnsibleModule.fail_json """
-    module.fail_json(**kwargs)
+    module.fail_json(msg=msg, stdout=stdout, stderr=stderr, ret_code=ret_code)
 
 
 def _run_command(cmd, **kwargs):
@@ -248,12 +248,7 @@ def _fetch_uss_file(src, validate_checksum, is_binary):
             if validate_checksum:
                 checksum = _get_checksum(content)
     except (FileNotFoundError, IOError, OSError) as err:
-        _fail_json(
-            msg=str(err),
-            stdout="",
-            stderr="",
-            ret_code=None
-        )
+        _fail_json(msg=str(err))
     return content, checksum
 
 
@@ -289,7 +284,6 @@ def _copy_vsam_to_temp_data_set(ds_name):
     except OSError as err:
         _fail_json(
             msg="Unable to create temporary data set while executing MVSCmd",
-            stdout="",
             stderr=str(err)
         )
 
@@ -314,8 +308,6 @@ def _copy_vsam_to_temp_data_set(ds_name):
                     "Non-zero return code received while executing MVSCmd "
                     "to copy VSAM data set {0}".format(ds_name)
                 ),
-                stdout="",
-                stderr="",
                 ret_code=rc
             )
         _fail_json(
@@ -323,7 +315,6 @@ def _copy_vsam_to_temp_data_set(ds_name):
                 "Failed to call IDCAMS to copy VSAM data set {0} to "
                 "sequential data set".format(ds_name)
             ),
-            stdout="",
             stderr=str(err),
             ret_code=rc
         )
@@ -346,10 +337,7 @@ def _fetch_vsam(src, validate_checksum, is_binary):
     rc = Datasets.delete(temp_ds)
     if rc != 0:
         _fail_json(
-            msg="Unable to delete data set {0}".format(temp_ds),
-            stdout="",
-            stderr="",
-            ret_code=rc
+            msg="Unable to delete data set {0}".format(temp_ds),ret_code=rc
         )
 
     if validate_checksum:
@@ -419,12 +407,7 @@ def run_module():
         parser = better_arg_parser.BetterArgParser(arg_def)
         parsed_args = parser.parse_args(module.params)
     except ValueError as err:
-        _fail_json(
-            msg="Parameter verification failed",
-            stdout="",
-            stderr=str(err),
-            ret_code=None
-        )
+        _fail_json(msg="Parameter verification failed", stderr=str(err))
 
     src = parsed_args.get('src', None)
     b_src = to_bytes(src)
@@ -434,14 +417,8 @@ def run_module():
     use_qualifier = boolean(parsed_args.get('use_qualifier'))
 
     res_args = dict()
-    _is_uss = '/' in src
     _fetch_member = src.endswith(')')
-
-    if (not _is_uss) and use_qualifier:
-        src = Datasets.hlq() + '.' + src
-
     ds_name = src if not _fetch_member else src[:src.find('(')]
-
     try:
         ds_utils = data_set_utils.DataSetUtils(ds_name)
         if not ds_utils.data_set_exists():
@@ -450,33 +427,24 @@ def run_module():
                     msg=(
                         "The data set {0} does not exist or is "
                         "uncataloged".format(src)
-                    ),
-                    stdout="",
-                    stderr="",
-                    ret_code=None
+                    )
                 )
             module.exit_json(
                 note=(
-                    "Datasets must be cataloged for data to be fetched. "
-                    "No data was fetched"
+                    "Source {0} was not found. No data was fetched".format(src)
                 )
             )
-
         ds_type = ds_utils.get_data_set_type()
         if not ds_type:
-            _fail_json(
-                msg="Unable to determine data set type",
-                stdout="",
-                stderr="",
-                ret_code=None
-            )
+            _fail_json(msg="Unable to determine data set type")
+
     except Exception as err:
         _fail_json(
-            msg="Error while gathering data set information",
-            stdout="",
-            stderr=str(err),
-            ret_code=None
+            msg="Error while gathering data set information", stderr=str(err)
         )
+
+    if (not ds_type == 'USS') and use_qualifier:
+        src = Datasets.hlq() + '.' + src
 
     # Fetch sequential dataset
     if ds_type == 'PS':
@@ -495,7 +463,11 @@ def run_module():
             res_args['pds_path'] = result['pds_path']
 
     # USS file
-    elif _is_uss:
+    elif ds_type == 'USS':
+        if not os.access(b_src, os.R_OK):
+            _fail_json(
+                msg="File {0} does not have appropriate read permission".format(src)
+            )
         content, checksum = _fetch_uss_file(src, validate_checksum, is_binary)
         res_args['checksum'] = checksum
         res_args['content'] = content

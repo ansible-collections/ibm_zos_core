@@ -334,7 +334,7 @@ def test_fetch_partitioned_data_set_member_empty(ansible_zos_module):
         hosts.all.zos_data_set(name=pds_name, state='absent')
 
 
-def test_fetch_uss_file_continue_if_missing(ansible_zos_module):
+def test_fetch_missing_uss_file_does_not_fail(ansible_zos_module):
     hosts = ansible_zos_module
     params = dict(
         src='/tmp/dummy_file_on_remote_host',
@@ -343,10 +343,24 @@ def test_fetch_uss_file_continue_if_missing(ansible_zos_module):
         fail_on_missing=False
     )
     results = hosts.all.zos_fetch(**params)
-    dest_path = '/tmp/profile'
     try:
         for result in results.contacted.values():
             assert result.get('changed') is False
             assert result.get('failed') is False
-            assert result.get('data_set_type') == 'Unix'
+            assert result.get('module_stderr') is None
+
+
+def test_fetch_missing_mvs_data_set_does_not_fail(ansible_zos_module):
+    hosts = ansible_zos_module
+    params = dict(
+        src='FETCH.TEST.DATA.SET',
+        dest='/tmp/',
+        flat=True,
+        fail_on_missing=False
+    )
+    results = hosts.all.zos_fetch(**params)
+    try:
+        for result in results.contacted.values():
+            assert result.get('changed') is False
+            assert result.get('failed') is False
             assert result.get('module_stderr') is None

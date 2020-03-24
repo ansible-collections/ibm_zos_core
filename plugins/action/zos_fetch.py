@@ -189,6 +189,8 @@ class ActionModule(ActionBase):
             )
 
         dest = dest.replace("//", "/")
+        # If a data set member is being fetched, extract the member name
+        # from src and update dest path with the member name
         if fetch_member:
             member = src[src.find('(') + 1:src.find(')')]
             base_dir = os.path.dirname(dest)

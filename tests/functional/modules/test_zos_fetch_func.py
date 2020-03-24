@@ -499,3 +499,22 @@ def test_fetch_uss_file_insufficient_write_permission_fails(ansible_zos_module):
             assert result.get('module_stderr') is not None
 
 
+def test_fetch_pds_dir_insufficient_write_permission_fails(ansible_zos_module):
+    hosts = ansible_zos_module
+    dest_path = "/tmp/IMSTESTL.COMNUC"
+    os.mkdir(dest_path)
+    os.chmod(dest_path, stat.S_IREAD)
+    params = dict(
+        src='IMSTESTL.COMNUC',
+        dest='/tmp/',
+        flat=True
+    )
+    results = hosts.all.zos_fetch(**params)
+    try:
+        for result in results.contacted.values():
+            assert result.get('changed') is False
+            assert result.get('failed') is True
+            assert result.get('module_stderr') is not None
+    finally:
+        if os.path.exists(dest_path):
+            shutil.rmtree(dest_path)

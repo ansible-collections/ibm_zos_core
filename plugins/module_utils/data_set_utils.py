@@ -7,6 +7,7 @@ import re
 from os import path
 from random import choice
 from string import ascii_uppercase
+from ansible.module_utils._text import to_bytes
 
 try:
     from zoautil_py import Datasets, MVSCmd, types
@@ -31,23 +32,27 @@ class DataSetUtils(object):
             data_set {str} -- Name of the input data set
         """
         self.data_set = data_set
-        self.ds_info = self._gather_data_set_info()
+        self.uss_path = '/' in data_set
+        if not self.uss_path:
+            self.ds_info = self._gather_data_set_info()
 
     def data_set_exists(self):
         """Determines whether the input data set exists. The input data
         set can be VSAM or non-VSAM.
 
         Returns:
-            bool -- If the data set was found
+            bool -- If the data set exists
         """
+        if self.uss_path:
+            return path.exists(to_bytes(self.data_set))
         return self.ds_info.get('exists')
 
     def get_data_set_type(self):
         """Retrieves the data set type of the input data set.
 
         Returns:
-            str -- Type of the input data set.
-            None -- If the data set does not exist
+            str  -- Type of the input data set.
+            None -- If the data set does not exist or a non-existent USS file
 
         Possible return values:
             'PS'   -- Physical Sequential
@@ -55,8 +60,10 @@ class DataSetUtils(object):
             'VSAM' -- Virtual Storage Access Method
             'DA'   -- Direct Access
             'IS'   -- Indexed Sequential
-            'USS'  -- Unix file or directory
+            'USS'  -- USS file or directory
         """
+        if self.uss_path and self.data_set_exists():
+            return 'USS'
         return self.ds_info.get('dsorg')
 
     @staticmethod
@@ -99,7 +106,14 @@ class DataSetUtils(object):
         Returns:
             str -- Volume where the data set is stored
             None -- If the data set does not exist
+        
+        Raises:
+            AttributeError -- When input data set is a USS file or directory
         """
+        if self.uss_path:
+            raise AttributeError(
+                "USS file or directory has no attribute 'Volume'"
+            )
         return self.ds_info.get('volser')
 
     def get_data_set_lrecl(self):
@@ -108,8 +122,15 @@ class DataSetUtils(object):
 
         Returns:
             int -- The record length, in bytes, of each record
-            None -- If the data set does not exist or the data is VSAM
+            None -- If the data set does not exist or the data set is VSAM
+
+        Raises:
+            AttributeError -- When input data set is a USS file or directory
         """
+        if self.uss_path:
+            raise AttributeError(
+                "USS file or directory has no attribute 'lrecl'"
+            )
         return self.ds_info.get('lrecl')
 
     def get_data_set_recfm(self):
@@ -118,6 +139,9 @@ class DataSetUtils(object):
         Returns:
             str -- Record format
             None -- If the data set does not exist or the data set is VSAM
+
+        Raises:
+            AttributeError -- When input data set is a USS file or directory
 
         Possible return values:
             'F'   -- Fixed
@@ -128,6 +152,10 @@ class DataSetUtils(object):
             'VBS' -- Variable Blocked Spanned
             'VS'  -- Variable Spanned
         """
+        if self.uss_path:
+            raise AttributeError(
+                "USS file or directory has no attribute 'recfm'"
+            )
         return self.ds_info.get('recfm')
 
     def _gather_data_set_info(self):
@@ -215,10 +243,7 @@ class DataSetUtils(object):
             raise DatasetBusyError(self.data_set)
 
         result = dict()
-        result['exists'] = (
-            len(re.findall(r"NOT IN CATALOG", output)) == 0 or
-            path.exists(self.data_set)
-        )
+        result['exists'] = len(re.findall(r"NOT IN CATALOG", output)) == 0
 
         if result.get('exists'):
             ds_search = re.search(r"(-|--)DSORG(-\s*|\s*)\n(.*)", output, re.MULTILINE)
@@ -228,9 +253,6 @@ class DataSetUtils(object):
                 if result.get('dsorg') != "VSAM":
                     result['recfm'] = ds_params[0]
                     result['lrecl'] = ds_params[1]
-
-            elif (path.isfile(self.data_set) or path.isdir(self.data_set)):
-                result['dsorg'] = 'USS'
         return result
 
     def _process_listcat_output(self, output):

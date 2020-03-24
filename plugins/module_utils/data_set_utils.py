@@ -106,7 +106,7 @@ class DataSetUtils(object):
         Returns:
             str -- Volume where the data set is stored
             None -- If the data set does not exist
-        
+
         Raises:
             AttributeError -- When input data set is a USS file or directory
         """

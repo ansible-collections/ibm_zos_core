@@ -6,6 +6,7 @@ import os
 import sys
 import warnings
 import shutil
+import stat
 
 import ansible.constants
 import ansible.errors
@@ -16,6 +17,11 @@ from ansible.utils.hashing import checksum
 
 __metaclass__ = type
 
+
+DUMMY_DATA = '''DUMMY DATA == LINE 01 ==
+DUMMY DATA == LINE 02 ==
+DUMMY DATA == LINE 03 ==
+'''
 
 def test_fetch_uss_file_not_present_on_local_machine(ansible_zos_module):
     hosts = ansible_zos_module
@@ -78,26 +84,6 @@ def test_fetch_uss_file_present_on_local_machine(ansible_zos_module):
             assert result.get('module_stderr') is None
     finally:
         os.remove(dest_path)
-
-
-def test_fetch_ascii_encoded_uss_file(ansible_zos_module):
-    hosts = ansible_zos_module
-    params = dict(
-        src='/etc/profile',
-        dest='/tmp/',
-        flat=True
-    )
-    results = hosts.all.zos_fetch(**params)
-    dest_path = '/tmp/profile'
-    try:
-        for result in results.contacted.values():
-            assert result.get('changed') is True
-            assert result.get('data_set_type') == 'Unix'
-            assert result.get('module_stderr') is None
-            assert result.get('encoding') == 'ASCII'
-    finally:
-        if os.path.exists(dest_path):
-            os.remove(dest_path)
 
 
 def test_fetch_sequential_data_set_fixed_block(ansible_zos_module):
@@ -350,6 +336,21 @@ def test_fetch_missing_uss_file_does_not_fail(ansible_zos_module):
             assert result.get('module_stderr') is None
 
 
+def test_fetch_missing_uss_file_fails(ansible_zos_module):
+    hosts = ansible_zos_module
+    params = dict(
+        src='/tmp/dummy_file_on_remote_host',
+        dest='/tmp/',
+        flat=True
+    )
+    results = hosts.all.zos_fetch(**params)
+    try:
+        for result in results.contacted.values():
+            assert result.get('changed') is False
+            assert result.get('failed') is True
+            assert result.get('module_stderr') is not None
+
+
 def test_fetch_missing_mvs_data_set_does_not_fail(ansible_zos_module):
     hosts = ansible_zos_module
     params = dict(
@@ -364,3 +365,137 @@ def test_fetch_missing_mvs_data_set_does_not_fail(ansible_zos_module):
             assert result.get('changed') is False
             assert result.get('failed') is False
             assert result.get('module_stderr') is None
+
+
+def test_fetch_partitioned_data_set_member_missing_fails(ansible_zos_module):
+    hosts = ansible_zos_module
+    params = dict(
+        src='IMSTESTL.COMNUC(DUMMY)',
+        dest='/tmp/',
+        flat=True
+    )
+    results = hosts.all.zos_fetch(**params)
+    try:
+        for result in results.contacted.values():
+            assert result.get('changed') is False
+            assert result.get('failed') is True
+            assert result.get('module_stderr') is not None
+            assert result.get('message').get('ret_code') != 0
+            assert result.get('message').get('stderr') != ""
+
+
+def test_fetch_mvs_data_set_missing_fails(ansible_zos_module):
+    hosts = ansible_zos_module
+    params = dict(
+        src='ZOS.FETCH.TEST.PDS',
+        dest='/tmp/',
+        flat=True
+    )
+    results = hosts.all.zos_fetch(**params)
+    try:
+        for result in results.contacted.values():
+            assert result.get('changed') is False
+            assert result.get('failed') is True
+            assert result.get('module_stderr') is not None
+
+
+def test_fetch_sequential_data_set_replace_on_local_machine(ansible_zos_module):
+    hosts = ansible_zos_module
+    ds_name = 'IMSTESTL.IMS01.DDCHKPT'
+    dest_path = "/tmp/" + ds_name
+    with open(dest_path, 'w') as infile:
+        infile.write(DUMMY_DATA)
+
+    local_checksum = checksum(dest_path)
+    params = dict(
+        src=ds_name,
+        dest='/tmp/',
+        flat=True
+    )
+    results = hosts.all.zos_fetch(**params)
+    try:
+        for result in results.contacted.values():
+            assert result.get('changed') is True
+            assert result.get('failed') is False
+            assert result.get('module_stderr') is None
+            assert checksum(dest_path) != local_checksum
+    finally:
+        if os.path.exists(dest_path):
+            os.remove(dest_path)
+
+
+def test_fetch_partitioned_data_set_replace_on_local_machine(ansible_zos_module):
+    hosts = ansible_zos_module
+    pds_name = "ZOS.FETCH.TEST.PDS"
+    dest_path = "/tmp/" + pds_name
+    hosts.all.zos_data_set(
+        name=pds_name,
+        type='pds',
+        size='5M',
+        format='fba',
+        record_length=25
+    )
+    hosts.all.zos_data_set(
+        name=pds_name + "(MYDATA)",
+        type='MEMBER',
+        replace='yes'
+    )
+    os.mkdir(dest_path)
+    with open(dest_path + "/MYDATA", 'w') as infile:
+        infile.write(DUMMY_DATA)
+
+    local_checksum = checksum(dest_path + "/MYDATA")
+    params = dict(
+        src=pds_name,
+        dest='/tmp/',
+        flat=True
+    )
+    results = hosts.all.zos_fetch(**params)
+    try:
+        for result in results.contacted.values():
+            assert result.get('changed') is True
+            assert result.get('failed') is False
+            assert result.get('module_stderr') is None
+            assert checksum(dest_path + "/MYDATA") != local_checksum
+    finally:
+        if os.path.exists(dest_path):
+            shutil.rmtree(dest_path)
+        hosts.all.zos_data_set(name=pds_name, state='absent')
+
+
+def test_fetch_uss_file_insufficient_write_permission_fails(ansible_zos_module):
+    hosts = ansible_zos_module
+    dest_path = "/tmp/profile"
+    with open(dest_path, 'w'): pass
+    os.chmod(dest_path, stat.S_IREAD)
+    params = dict(
+        src='/etc/profile',
+        dest='/tmp/',
+        flat=True
+    )
+    results = hosts.all.zos_fetch(**params)
+    try:
+        for result in results.contacted.values():
+            assert result.get('changed') is False
+            assert result.get('failed') is True
+            assert result.get('module_stderr') is not None
+
+
+def test_fetch_uss_file_insufficient_write_permission_fails(ansible_zos_module):
+    hosts = ansible_zos_module
+    dest_path = "/tmp/profile"
+    with open(dest_path, 'w'): pass
+    os.chmod(dest_path, stat.S_IREAD)
+    params = dict(
+        src='/etc/profile',
+        dest='/tmp/',
+        flat=True
+    )
+    results = hosts.all.zos_fetch(**params)
+    try:
+        for result in results.contacted.values():
+            assert result.get('changed') is False
+            assert result.get('failed') is True
+            assert result.get('module_stderr') is not None
+
+

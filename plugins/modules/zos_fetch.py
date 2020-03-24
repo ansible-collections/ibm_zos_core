@@ -27,6 +27,8 @@ description:
     same as the data set name.
   - When fetching a PDS/PDS(E), the destination will be a directory with the
     same name as the PDS/PDS(E).
+  - Files that already exist at dest will be overwritten if they are different 
+    than the src.
 author: "Asif Mahmud (@asifmahmud)"
 options:
   src:

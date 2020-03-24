@@ -77,6 +77,11 @@ def _write_content_to_file(filename, content, write_mode):
         raise AnsibleError(
             "Error writing to destination {0}: {1}".format(filename, err)
         )
+    except PermissionError as err:
+        raise AnsibleError(
+            ("Insufficient write permission to destination {0}:"
+            "{1}".format(filename, str(err)))
+        )
 
 
 def _process_boolean(arg, default=False):

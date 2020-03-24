@@ -443,13 +443,13 @@ def mvs_convert_encoding_prev(src, dest, ds_type_src, ds_type_dest, from_encodin
         temp_src = f0_temp.name
         rc, stdout, stderr = copy_ps2uss(src, temp_src, module)
         if rc:
-            err_msg = 'Faild when coping to USS file: {}'.format(stderr)
+            err_msg = 'Failed when coping to USS file: {}'.format(stderr)
     if ds_type_src == 'PO':
         d0_temp = TemporaryDirectory()
         temp_src = d0_temp.name
         rc, stdout, stderr = copy_pds2uss(src, temp_src, module)
         if rc:
-            err_msg = 'Faild when coping to USS file: {}'.format(stderr)
+            err_msg = 'Failed when coping to USS file: {}'.format(stderr)
     if ds_type_src == 'VSAM':
         err_msg, reclen, space_u = listdsi_data_set(src, module)
         if not err_msg:
@@ -462,7 +462,7 @@ def mvs_convert_encoding_prev(src, dest, ds_type_src, ds_type_dest, from_encodin
                     rc, stdout, stderr = copy_ps2uss(temp_ps, temp_src, module)
                     delete_temp_ds(temp_ps)
                     if rc:
-                        err_msg = 'Faild when coping to USS file: {}'.format(stderr)
+                        err_msg = 'Failed when coping to USS file: {}'.format(stderr)
     if ds_type_dest == 'PS' or ds_type_dest == 'VSAM':
         f_temp = NamedTemporaryFile(delete=False)
         temp_dest = f_temp.name

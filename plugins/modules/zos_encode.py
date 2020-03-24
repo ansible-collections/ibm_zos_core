@@ -569,7 +569,7 @@ def check_mvs_dataset(ds, module):
             ds_type = 'VSAM'
     else:
         if ' NOT IN CATALOG ' in stdout:
-            err_msg = "Data set {} is not catalogged, please check the name again.".format(ds)
+            err_msg = "Data set {} is not cataloged, please check data set provided in the src option.".format(ds)
     return check_rc, ds_type, err_msg
 
 def check_file(file, mvspat, module):
@@ -602,7 +602,7 @@ def check_file(file, mvspat, module):
         else:
             is_uss = path.exists(path.abspath(file))
             if not is_uss:
-                err_msg = "The file {} is neither an existing Unix file nor an invalid MVS data set.".format(file)
+                err_msg = "Unable to determine the src {} as a Unix file or data set.".format(file)
     return is_uss, is_mvs, ds_type, err_msg
 
 def run_module():
@@ -685,9 +685,9 @@ def run_module():
     result['backup_file'] = backup_file
 
     # Encoding conversion logic
-    # There are two big permutations:
-    # 1） Both the src and the dest are the USS files or paths
-    # 2) The other permutations:
+    # There are two permutations:
+    # 1）Both src and dest can be USS files or paths
+    # 2) The other can be a permutation of the following:
     #    - USS to MVS
     #    - MVS to USS
     #    - MVS to MVS

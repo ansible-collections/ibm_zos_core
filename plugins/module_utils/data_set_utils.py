@@ -169,7 +169,7 @@ class DataSetUtils(object):
             dict -- Dictionary containing data set attributes
         """
         result = dict()
-        
+
         try:
             listds_out = self._run_mvs_cmd('IKJEFT01', LISTDS_COMMAND.format(self.data_set))
             listcat_out = self._run_mvs_cmd('IDCAMS', LISTCAT_COMMAND.format(self.data_set))
@@ -199,7 +199,7 @@ class DataSetUtils(object):
         if pgm == "IKJEFT01":
             sysprint = "systsprt"
             sysin = "systsin"
-        
+
         rc, out, err = self.module.run_command(
             "mvscmdauth --pgm={0} --{1}=* --{2}=stdin".format(pgm, sysprint, sysin),
             data=input_cmd

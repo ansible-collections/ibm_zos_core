@@ -439,7 +439,7 @@ def run_module():
             msg="Error while gathering data set information", stderr=str(err)
         )
 
-    if (not ds_type == 'USS') and use_qualifier:
+    if use_qualifier:
         src = Datasets.hlq() + '.' + src
 
     # Fetch sequential dataset

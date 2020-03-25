@@ -484,15 +484,10 @@ class BetterArgHandler(object):
         Raises:
             ValueError: When no value or defaults are provided for a required argument.
         """
+        required = self.arg_def.required
         if BetterArgHandler.is_function(self.arg_def.required):
-            self.arg_def.required = self._call_arg_function(
-                self.arg_def.required, self.contents
-            )
-        if (
-            self.contents is None
-            and self.arg_def.required is True
-            and self.arg_def.default is None
-        ):
+            required = self._call_arg_function(self.arg_def.required, self.contents)
+        if self.contents is None and required is True and self.arg_def.default is None:
             raise ValueError("Missing required argument {0}".format(self.arg_name))
         return
 

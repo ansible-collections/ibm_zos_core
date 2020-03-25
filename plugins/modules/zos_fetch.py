@@ -355,7 +355,8 @@ def _fetch_pdse(src):
     rc, out, err = _run_command("cp \"//'{0}'\" {1}".format(src, temp_dir))
     if rc != 0:
         _fail_json(
-            msg="Error copying partitioned data set to USS",
+            msg=("Error copying partitioned data set to USS. Make sure the PDS"
+                "/PDS(E) is not empty"),
             stdout=out,
             stderr=err,
             ret_code=rc
@@ -369,6 +370,8 @@ def _fetch_ps(src, validate_checksum, is_binary):
     """ Fetch a sequential data set """
     checksum = None
     content = _fetch_zos_data_set(src, is_binary)
+    if content is None:
+        content = ""
     if validate_checksum:
         checksum = _get_checksum(content)
     return content, checksum

@@ -60,9 +60,9 @@ def _write_content_to_file(filename, content, write_mode):
         Use indicated write mode while writing to this file.
         If filename contains a path with non-existent directories,
         those directories should be created.
-    """
-    os.makedirs(os.path.dirname(filename), exist_ok=True)
+    """      
     try:
+        os.makedirs(os.path.dirname(filename), exist_ok=True)  
         with open(filename, write_mode) as outfile:
             outfile.write(content)
     except UnicodeEncodeError as err:
@@ -73,14 +73,14 @@ def _write_content_to_file(filename, content, write_mode):
                 " to true'; stderr: {1}".format(filename, err)
             )
         )
+    except PermissionError as err:
+        raise AnsibleError(
+            ("Insufficient write permission for destination {0}:"
+            "{1}".format(filename, str(err)))
+        )
     except (IOError, OSError) as err:
         raise AnsibleError(
             "Error writing to destination {0}: {1}".format(filename, err)
-        )
-    except PermissionError as err:
-        raise AnsibleError(
-            ("Insufficient write permission to destination {0}:"
-            "{1}".format(filename, str(err)))
         )
 
 
@@ -219,7 +219,7 @@ class ActionModule(ActionBase):
                 ret_code=fetch_res.get('ret_code'),
                 msg=fetch_res.get('msg')
             )
-            result['failed'] = fetch_res.get('failed')
+            result['failed'] = True
             return result
 
         elif fetch_res.get('note'):

@@ -8,10 +8,8 @@ __metaclass__ = type
 import os
 import subprocess
 import base64
-import hashlib
-import string
-import errno
 
+from hashlib import sha256
 from ansible.module_utils._text import to_bytes
 from ansible.module_utils.six import string_types
 from ansible.module_utils.parsing.convert_bool import boolean
@@ -266,6 +264,18 @@ class ActionModule(ActionBase):
             result['failed'] = True
             return result
 
+        if fetch_content.get('msg'):
+            result['message'] = dict(
+                stdout="",
+                stderr="",
+                ret_code=None,
+                msg=fetch_content.get('msg')
+            )
+            result['failed'] = True
+            result['checksum'] = fetch_content.get('checksum')
+            result['remote_checksum'] = fetch_content.get('remote_checksum')
+            return result
+
         return _update_result(
             dict(list(result.items()) + list(fetch_content.items())),
             src, dest, ds_type, binary_mode=is_binary
@@ -330,18 +340,18 @@ class ActionModule(ActionBase):
             try:
                 with open(dest, 'rb') as tmp:
                     local_data = tmp.read()
-                    local_checksum = checksum_s(base64.b64encode(local_data))
+                    local_checksum = checksum_s(base64.b64encode(local_data), hash_func=sha256)
             except FileNotFoundError:
                 local_checksum = None
             new_content = base64.b64decode(content)
         else:
             write_mode = 'w'
-            local_checksum = checksum_d(dest)
+            local_checksum = checksum_d(dest, hash_func=sha256)
         if validate_checksum:
             remote_checksum = checksum
             if remote_checksum != local_checksum:
                 _write_content_to_file(dest, new_content, write_mode)
-                new_checksum = checksum_s(content)
+                new_checksum = checksum_s(content, hash_func=sha256)
                 if remote_checksum != new_checksum:
                     result.update(
                         dict(

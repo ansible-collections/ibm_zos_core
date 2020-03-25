@@ -179,10 +179,10 @@ is_binary:
     type: bool
     sample: True
 checksum:
-    description: The SHA1 checksum of the fetched file
+    description: The SHA256 checksum of the fetched file
     returned: success and src is a non-partitioned data set
     type: str
-    sample: 33ab5639bfd8e7b95eb1d8d0b87781d4ffea4d5d
+    sample: 8d320d5f68b048fc97559d771ede68b37a71e8374d1d678d96dcfa2b2da7a64e
 md5sum:
     description: The MD5 hash of the fetched file
     returned: success and src is a USS file
@@ -370,7 +370,7 @@ def _fetch_ps(src, validate_checksum, is_binary):
 
 def _get_checksum(data):
     """ Calculate checksum for the given data """
-    digest = hashlib.sha1()
+    digest = hashlib.sha256()
     data = to_bytes(data, errors='surrogate_or_strict')
     digest.update(data)
     return digest.hexdigest()

@@ -756,8 +756,14 @@ class DataSetHandler(object):
 
     def _ensure_data_set_present(self, name, replace, **extra_args):
         """Creates data set if it does not already exist.
-        The replace argument is used to determine behavior when data set already
-        exists. Returns a boolean indicating if changes were made. """
+
+        Arguments:
+            name {str} -- The name of the data set to ensure is present.
+            replace {bool} -- Used to determine behavior when data set already exists.
+
+        Returns:
+            bool -- Indicates if changes were made.
+        """
         ds_create_args = self._rename_args_for_zoau(extra_args)
         present, changed = self._attempt_catalog_if_necessary(
             name, extra_args.get("volume")
@@ -772,7 +778,13 @@ class DataSetHandler(object):
 
     def _ensure_data_set_absent(self, name, **extra_args):
         """Deletes provided data set if it exists.
-        Returns a boolean indicating if changes were made. """
+
+        Arguments:
+            name {str} -- The name of the data set to ensure is absent.
+
+        Returns:
+            bool -- Indicates if changes were made.
+        """
         present, changed = self._attempt_catalog_if_necessary(
             name, extra_args.get("volume")
         )
@@ -785,8 +797,15 @@ class DataSetHandler(object):
 
     def _ensure_data_set_member_present(self, name, replace, **extra_args):
         """Creates data set member if it does not already exist.
-        The replace argument is used to determine behavior when data set already
-        exists. Returns a boolean indicating if changes were made."""
+
+        Arguments:
+            name {str} -- The name of the data set to ensure is present.
+            replace {bool} -- Used to determine behavior when data set already
+        exists.
+
+        Returns:
+            bool -- Indicates if changes were made.
+        """
         if self._data_set_member_exists(name):
             if not replace:
                 return False
@@ -813,13 +832,14 @@ class DataSetHandler(object):
         Returns:
             bool -- If changes were made.
         """
-        if not self._is_in_vtoc(name, volume):
-            raise DatasetCatalogError(
-                name, volume, "-1", "Data set was not found in VTOC. Unable to catalog."
-            )
         if self._data_set_cataloged(name):
             return False
-        self._catalog_data_set(name, volume)
+        try:
+            self._catalog_data_set(name, volume)
+        except DatasetCatalogError:
+            raise DatasetCatalogError(
+                name, volume, "-1", "Data set was not found. Unable to catalog."
+            )
         return True
 
     def _ensure_data_set_uncataloged(self, name):
@@ -901,10 +921,15 @@ class DataSetHandler(object):
         present = False
         if self._data_set_cataloged(name):
             present = True
-        elif volume is not None and self._is_in_vtoc(name, volume):
-            self._catalog_data_set(name, volume)
-            changed = True
-            present = True
+        elif volume is not None:
+            errors = False
+            try:
+                self._catalog_data_set(name, volume)
+            except DatasetCatalogError:
+                errors = True
+            if not errors:
+                changed = True
+                present = True
         return present, changed
 
     def _is_in_vtoc(self, name, volume):
@@ -960,7 +985,15 @@ class DataSetHandler(object):
         return ds_create_args
 
     def _create_data_set(self, name, extra_args=None):
-        """ A wrapper around zoautil_py data set create to raise exceptions on failure. """
+        """A wrapper around zoautil_py
+        Dataset.create() to raise exceptions on failure.
+
+        Arguments:
+            name {str} -- The name of the data set to create.
+
+        Raises:
+            DatasetCreateError: When data set creation fails.
+        """
         if extra_args is None:
             extra_args = {}
         rc = Datasets.create(name, **extra_args)
@@ -969,7 +1002,15 @@ class DataSetHandler(object):
         return
 
     def _delete_data_set(self, name):
-        """ A wrapper around zoautil_py data set delete to raise exceptions on failure. """
+        """A wrapper around zoautil_py
+        Dataset.delete() to raise exceptions on failure.
+
+        Arguments:
+            name {str} -- The name of the data set to delete.
+
+        Raises:
+            DatasetDeleteError: When data set deletion fails.
+        """
         rc = Datasets.delete(name)
         if rc > 0:
             raise DatasetDeleteError(name, rc)
@@ -978,7 +1019,14 @@ class DataSetHandler(object):
     def _create_data_set_member(self, name):
         """Create a data set member if the partitioned data set exists.
         Also used to overwrite a data set member if empty replacement is desired.
-        Raises DatasetNotFoundError if data set cannot be found."""
+
+        Arguments:
+            name {str} -- The data set name, including member name, to create.
+
+        Raises:
+            DatasetNotFoundError: If data set cannot be found.
+            DatasetMemberCreateError: If member creation fails.
+        """
         base_dsname = name.split("(")[0]
         if not base_dsname or not self._data_set_cataloged(base_dsname):
             raise DatasetNotFoundError(name)
@@ -991,7 +1039,15 @@ class DataSetHandler(object):
         return
 
     def _delete_data_set_member(self, name):
-        """ A wrapper around zoautil_py data set delete_members to raise exceptions on failure. """
+        """A wrapper around zoautil_py
+        Dataset.delete_members() to raise exceptions on failure.
+
+        Arguments:
+            name {str} -- The name of the data set, including member name, to delete.
+
+        Raises:
+            DatasetMemberDeleteError: When data set member deletion fails.
+        """
         rc = Datasets.delete_members(name)
         if rc > 0:
             raise DatasetMemberDeleteError(name, rc)
@@ -1019,23 +1075,16 @@ class DataSetHandler(object):
         Raises:
             DatasetCatalogError: When attempt at catalog fails.
         """
-
-        idcams_input = """ DEFINE NVSAM -
-            (NAME('{0}') -
-            VOLUMES({1}) -
-            DEVT(3390)) """.format(
-            name, volume
-        )
+        iehprogm_input = self._build_non_vsam_catalog_command(name, volume)
         try:
             temp_data_set_name = self._create_temp_data_set(name.split(".")[0])
-            self._write_data_set(temp_data_set_name, idcams_input)
-            dd_statements = []
-            dd_statements.append(
-                types.DDStatement(ddName="sysin", dataset=temp_data_set_name)
+            self._write_data_set(temp_data_set_name, iehprogm_input)
+            rc, stdout, stderr = self.module.run_command(
+                "mvscmdauth --pgm=iehprogm --sysprint=* --sysin={0}".format(
+                    temp_data_set_name
+                )
             )
-            dd_statements.append(types.DDStatement(ddName="sysprint", dataset="*"))
-            rc = MVSCmd.execute_authorized(pgm="idcams", args="", dds=dd_statements)
-            if rc != 0:
+            if rc != 0 or "NORMAL END OF TASK RETURNED" not in stdout:
                 raise DatasetCatalogError(name, volume, rc)
         except Exception:
             raise
@@ -1116,13 +1165,12 @@ class DataSetHandler(object):
         try:
             temp_data_set_name = self._create_temp_data_set(name.split(".")[0])
             self._write_data_set(temp_data_set_name, iehprogm_input)
-            dd_statements = []
-            dd_statements.append(
-                types.DDStatement(ddName="sysin", dataset=temp_data_set_name)
+            rc, stdout, stderr = self.module.run_command(
+                "mvscmdauth --pgm=iehprogm --sysprint=* --sysin={0}".format(
+                    temp_data_set_name
+                )
             )
-            dd_statements.append(types.DDStatement(ddName="sysprint", dataset="*"))
-            rc = MVSCmd.execute_authorized(pgm="iehprogm", args="", dds=dd_statements)
-            if rc != 0:
+            if rc != 0 or "NORMAL END OF TASK RETURNED" not in stdout:
                 raise DatasetUncatalogError(name, rc)
         except Exception:
             raise
@@ -1160,7 +1208,8 @@ class DataSetHandler(object):
     def _is_data_set_vsam(self, name, volume=None):
         """Determine a given data set is VSAM. If volume is not provided,
         then LISTCAT will be used to check data set info. If volume is provided,
-        then VTOC will be used to check data set info.
+        then VTOC will be used to check data set info. If not in VTOC
+        may not return accurate information.
 
         Arguments:
             name {str} -- The name of the data set.
@@ -1254,9 +1303,29 @@ class DataSetHandler(object):
             raise DatasetWriteError(name, rc, stderr)
         return
 
+    def _build_non_vsam_catalog_command(self, name, volume):
+        """Build the command string to use
+        for non-VSAM data set catalog operation.
+        This is necessary because IEHPROGM required
+        strict formatting when spanning multiple lines.
+
+        Arguments:
+            name {str} -- The data set to catalog.
+            volume {str} -- The volume the data set resides on.
+
+        Returns:
+            str -- The command string formatted for use with IEHPROGM.
+        """
+        command_part_1 = "    CATLG DSNAME={0},".format(name)
+        command_part_2 = "               VOL=3390=({0})".format(volume)
+        command_part_1 = "{line: <{max_len}}".format(line=command_part_1, max_len=71)
+        command_part_1 += "X"
+        return command_part_1 + "\n" + command_part_2
+
 
 # TODO: Add back safe data set replacement when issues are resolved
 # TODO: switch argument parsing over to BetterArgParser
+
 
 def run_module():
     # TODO: add logic to handle aliases during parsing

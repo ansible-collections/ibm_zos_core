@@ -193,7 +193,6 @@ class DataSetUtils(object):
             MVSCmdExecError: When non-zero return code is received while
             executing MVSCmd
         """
-        mvs_cmd = "mvscmd"
         sysprint = "sysprint"
         sysin = "sysin"
         if pgm == "IKJEFT01":

@@ -18,21 +18,22 @@ short_description: Copy data sets or files to remote z/OS systems
 description:
     - The M(zos_copy) module copies a file or data set from a local or a
       remote machine to a location on the remote machine.
-    - Use the M(zos_fetch) module to copy files or data sets from remote locations
-      to local machine.
-    - If destination is a USS file, it is highly recommended to use the M(copy) module.
+    - Use the M(zos_fetch) module to copy files or data sets from remote 
+      locations to local machine.
+    - If destination is a USS file, it is highly recommended to use the 
+      M(copy) module.
 author: "Asif Mahmud (@asifmahmud)"
 options:
   src:
     description:
-    - Local path to a file to copy to the remote z/OS system; can be absolute or
-      relative.
+    - Local path to a file to copy to the remote z/OS system; can be absolute 
+      or relative.
     - If I(remote_src=true), then src must be the name of the file, data set
       or data set member on remote z/OS system.
-    - If the path is a directory, and the destination is a PDS(E), all the files
-      in it would be copied to a PDS(E).
-    - If the path is a directory, it is copied (including the source folder name)
-      recursively to C(dest).
+    - If the path is a directory, and the destination is a PDS(E), all the 
+      files in it would be copied to a PDS(E).
+    - If the path is a directory, it is copied (including the source folder 
+      name) recursively to C(dest).
     - If the path is a directory and ends with "/", only the inside contents of
       that directory are copied to the destination. Otherwise, if it does not
       end with "/", the directory itself with all contents is copied.
@@ -64,17 +65,19 @@ options:
   backup:
     description:
     - Determine whether a backup should be created.
-    - When set to C(true), create a backup file including the timestamp information
-      so you can get the original file back if you somehow clobbered it incorrectly.
+    - When set to C(true), create a backup file including the timestamp 
+      information so you can get the original file back if you somehow 
+      clobbered it incorrectly.
     - No backup is taken when I(remote_src=False) and multiple files are being
       copied.
     type: bool
     default: false
   force:
     description:
-    - If C(true), the remote file or data set will be replaced when contents are
-      different than the source.
-    - If C(false), the file will only be transferred if the destination does not exist.
+    - If C(true), the remote file or data set will be replaced when contents 
+      are different than the source.
+    - If C(false), the file will only be transferred if the destination does 
+      not exist.
     type: bool
     default: true
   mode:
@@ -91,13 +94,14 @@ options:
     default: false
   local_follow:
     description:
-    - This flag indicates that filesystem links in the source tree, if they exist,
-      should be followed.
+    - This flag indicates that filesystem links in the source tree, if they 
+      exist, should be followed.
     type: bool
     default: true
   is_binary:
     description:
-    - If C(true), indicates that the file or data set to be copied is a binary file/data set.
+    - If C(true), indicates that the file or data set to be copied is a 
+      binary file/data set. 
     type: bool
     default: false
   use_qualifier:
@@ -109,22 +113,22 @@ options:
     description:
     - Indicates the encoding of the file or data set on the remote machine.
     - If set to C(ASCII), the module will not convert the encoding to EBCDIC.
-    - If set to C(EBCDIC), the module will convert the encoding of the file or data
-      set to EBCDIC before copying to destination.
+    - If set to C(EBCDIC), the module will convert the encoding of the file or 
+      data set to EBCDIC before copying to destination.
     - Only valid if I(is_binary=false)
     type: str
     default: EBCDIC
   checksum:
     description:
-    - SHA1 checksum of the file being copied.
+    - SHA256 checksum of the file being copied.
     - Used to validate that the copy of the file or data set was successful.
-    - If this is not provided and I(validate=true), Ansible will use local calculated
-      checksum of the src file.
+    - If this is not provided and I(validate=true), Ansible will use local 
+      calculated checksum of the src file.
     type: str
   validate:
     description:
-    - Verrify that the copy operation was successful by comparing the source and
-      destination checksum.
+    - Verrify that the copy operation was successful by comparing the source 
+      and destination checksum.
     type: bool
     default: true
 notes:
@@ -146,17 +150,18 @@ EXAMPLES = r'''
     src: /path/to/file.txt
     dest: /tmp/file.txt
     encoding: EBCDIC
-- name: Copy file with owner and permission
+- name: Copy file with owner and permission details
   zos_copy:
     src: /path/to/foo.conf
     dest: /etc/foo.conf
     owner: foo
     group: foo
     mode: '0644'
-- name: If local_follow=true, the module will follow the symbolic link specified in src
+- name: Module will follow the symbolic link specified in src
   zos_copy:
     src: /path/to/link
     dest: /path/to/uss/location
+    local_follow: true
 - name: Copy a local file to a PDS member and validate checksum
   zos_copy:
     src: /path/to/local/file
@@ -168,7 +173,7 @@ EXAMPLES = r'''
     dest: HLQ.SAMPLE.VSAM
 - name: Copy inline content to a sequential dataset and replace existing data
   zos_copy:
-    content: 'Hello World'
+    content: 'Inline content to be copied'
     dest: SAMPLE.SEQ.DATA.SET
     force: true
 - name: Copy a USS file to a sequential data set
@@ -176,7 +181,7 @@ EXAMPLES = r'''
     src: /path/to/remote/uss/file
     dest: SAMPLE.SEQ.DATA.SET
     remote_src: true
-- name: Copy a binary file to an uncataloged PDSE member
+- name: Copy a binary file to a PDSE member
   zos_copy:
     src: /path/to/binary/file
     dest: HLQ.SAMPLE.PDSE(member_name)

@@ -21,12 +21,11 @@ from ansible.utils.hashing import checksum as checksum_d
 from ansible.utils.hashing import checksum_s
 
 
-# Create return parameters
 def _update_result(
         result,
         src,
         dest,
-        ds_type,
+        ds_type="USS",
         binary_mode=False):
     """ Helper function to update output result with the provided values """
 
@@ -56,8 +55,8 @@ def _update_result(
 
 
 def _write_content_to_file(filename, content, write_mode):
-    """ Write the given content to a file indicated by filename.
-        Use indicated write mode while writing to this file.
+    """ Writes the given content to a file indicated by filename.
+        Uses indicated write mode while writing to this file.
         If filename contains a path with non-existent directories,
         those directories should be created.
     """
@@ -104,35 +103,26 @@ class ActionModule(ActionBase):
         src = self._task.args.get('src')
         dest = self._task.args.get('dest')
         volume = self._task.args.get('volume')
-        flat = _process_boolean(
-            self._task.args.get('flat'),
-            default=False
-        )
-        is_binary = _process_boolean(
-            self._task.args.get('is_binary')
-        )
+        flat = _process_boolean(self._task.args.get('flat'), default=False)
+        is_binary = _process_boolean(self._task.args.get('is_binary'))
         validate_checksum = _process_boolean(
             self._task.args.get('validate_checksum'),
             default=True
         )
 
         msg = None
-
         if src is None or dest is None:
             msg = "Source and destination are required"
-
         if not isinstance(src, string_types):
             msg = (
                 "Invalid type supplied for 'source' option, "
                 "it must be a string"
             )
-
         if not isinstance(dest, string_types):
             msg = (
                 "Invalid type supplied for 'destination' option, "
                 "it must be a string"
             )
-
         if msg:
             result['message'] = dict(
                 msg=msg,
@@ -143,7 +133,6 @@ class ActionModule(ActionBase):
             result['failed'] = True
             return result
 
-        is_uss = '/' in src
         ds_type = None
         fetch_member = src.endswith(')')
         src = self._connection._shell.join_path(src)
@@ -191,6 +180,18 @@ class ActionModule(ActionBase):
             )
 
         dest = dest.replace("//", "/")
+
+        if '/' in src:
+            # Assuming a USS file as '/' is not a valid character for
+            # an MVS data set name
+            # Use Ansible fetch module to fetch USS files
+            fetch_action = self._get_fetch_action_plugin()
+            mvs_args = frozenset({'is_binary', 'use_qualifier'})
+            fetch_action._task.args = dict(
+                (k, v) for k, v in self._task.args.items() if k not in mvs_args
+            )
+            return _update_result(fetch_action.run(task_vars=task_vars), src, dest)
+
         # If a data set member is being fetched, extract the member name
         # from src and update dest path with the member name
         if fetch_member:
@@ -237,7 +238,6 @@ class ActionModule(ActionBase):
         if (
             ds_type == 'VSAM' or
             ds_type == 'PS' or
-            is_uss or
             (fetch_member and mvs_ds)
         ):
             fetch_content = self._write_remote_data_to_local_file(
@@ -366,3 +366,13 @@ class ActionModule(ActionBase):
             _write_content_to_file(dest, new_content, write_mode)
             result['changed'] = True
         return result
+
+    def _get_fetch_action_plugin(self):
+        return (self._shared_loader_obj.action_loader.get(
+            'fetch',
+            task=self._task.copy(),
+            connection=self._connection,
+            play_context=self._play_context,
+            loader=self._loader,
+            templar=self._templar,
+            shared_loader_obj=self._shared_loader_obj))

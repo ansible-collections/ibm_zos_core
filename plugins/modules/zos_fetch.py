@@ -180,9 +180,14 @@ is_binary:
     sample: True
 checksum:
     description: The SHA1 checksum of the fetched file
-    returned: success
+    returned: success and src is a non-partitioned data set
     type: str
     sample: 33ab5639bfd8e7b95eb1d8d0b87781d4ffea4d5d
+md5sum:
+    description: The MD5 hash of the fetched file
+    returned: success and src is a USS file
+    type: str
+    sample: 9011901c4b1bba2fa8b73b0409af8a10
 data_set_type:
     description: Indidcates the fetched file's data set type
     returned: success
@@ -236,22 +241,6 @@ def _fail_json(msg="", stdout="", stderr="", ret_code=None):
 def _run_command(cmd, **kwargs):
     """ Wrapper for AnsibleModule.run_command """
     return module.run_command(cmd, **kwargs)
-
-
-def _fetch_uss_file(src, validate_checksum, is_binary):
-    """ Read a USS file and return its contents """
-    read_mode = 'rb' if is_binary else 'r'
-    content = checksum = None
-    try:
-        with open(src, read_mode) as infile:
-            content = infile.read()
-            if is_binary:
-                content = base64.b64encode(content)
-            if validate_checksum:
-                checksum = _get_checksum(content)
-    except (FileNotFoundError, IOError, OSError) as err:
-        _fail_json(msg=str(err))
-    return content, checksum
 
 
 def _fetch_zos_data_set(zos_data_set, is_binary, fetch_member=False):
@@ -468,16 +457,6 @@ def run_module():
         else:
             result = _fetch_pdse(src)
             res_args['pds_path'] = result['pds_path']
-
-    # USS file
-    elif ds_type == 'USS':
-        if not os.access(b_src, os.R_OK):
-            _fail_json(
-                msg="File {0} does not have appropriate read permission".format(src)
-            )
-        content, checksum = _fetch_uss_file(src, validate_checksum, is_binary)
-        res_args['checksum'] = checksum
-        res_args['content'] = content
 
     # VSAM dataset
     elif ds_type == 'VSAM':

@@ -36,7 +36,7 @@ def _update_result(
         'PDSE': "Partitioned Extended",
         'PE': "Partitioned Extended",
         'VSAM': "VSAM",
-        'USS': "Unix"
+        'USS': "USS"
     }
     file_or_ds = "file" if ds_type == 'USS' else "data set"
     updated_result = dict((k, v) for k, v in result.items())
@@ -196,18 +196,28 @@ class ActionModule(ActionBase):
             base_dir = os.path.dirname(dest)
             dest = os.path.join(base_dir, member)
 
-        fetch_res = self._execute_module(
-            module_name='zos_fetch',
-            module_args=self._task.args,
-            task_vars=task_vars
-        )
+        try:
+            fetch_res = self._execute_module(
+                module_name='zos_fetch',
+                module_args=self._task.args,
+                task_vars=task_vars
+            )
+        except Exception as err:
+            result['message'] = dict(
+                msg="Failure during module execution",
+                stdout="",
+                stderr=str(err),
+                ret_code=None,
+            )
+            result['failed'] = True
+            return result
 
         if fetch_res.get('msg'):
             result['message'] = dict(
-                stdout=fetch_res['stdout'],
-                stderr=fetch_res['stderr'],
-                ret_code=fetch_res['ret_code'],
-                msg=fetch_res['msg']
+                stdout=fetch_res.get('stdout'),
+                stderr=fetch_res.get('stderr'),
+                ret_code=fetch_res.get('ret_code'),
+                msg=fetch_res.get('msg')
             )
             result['failed'] = fetch_res.get('failed')
             return result

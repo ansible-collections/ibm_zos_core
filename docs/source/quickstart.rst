@@ -12,11 +12,11 @@ following topics.
 .. _installation:
    installation.html
 
-Collection ibm_zos_core
------------------------
+ibm_zos_core
+------------
 
 After the collection is installed, you can access collection content for a
-playbook by referencing the name space ``ibm`` and collections fully qualified
+playbook by referencing the namespace ``ibm`` and collection's fully qualified
 name ``ibm_zos_core``, for example:
 
 .. code-block:: yaml
@@ -31,7 +31,7 @@ name ``ibm_zos_core``, for example:
 
 In Ansible 2.9, the ``collections`` keyword was added and reduces the need
 to refer to the collection repeatedly. For example, you can use the
-`collections` keyword in your playbook:
+``collections`` keyword in your playbook:
 
 .. code-block:: yaml
 
@@ -86,7 +86,7 @@ documentation can be accessed from the command line by using the
 ``ansible-doc`` command.
 
 Here's how to use the ``ansible-doc`` command after you have installed the
-**IBM z/OS Core Collection**: ``ansible-doc ibm.ibm_zos_core.zos_data_set``
+**IBM z/OS core collection**: ``ansible-doc ibm.ibm_zos_core.zos_data_set``
 
 .. code-block:: sh
 

@@ -7,7 +7,7 @@
 
 # -- Project information -----------------------------------------------------
 
-project = 'IBM z/OS Core Collection'
+project = 'IBM z/OS core collection'
 copyright = '2020, IBM'
 author = 'IBM'
 
@@ -71,4 +71,3 @@ html_context = {
 #      'includehidden': True,
 #      'titles_only': False
 # }
-

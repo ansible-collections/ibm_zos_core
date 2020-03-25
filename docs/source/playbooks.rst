@@ -6,7 +6,7 @@ Playbooks
 =========
 
 The sample playbooks that are **included** demonstrate how to use the
-collection content in the ibm_zos_core collection.
+collection content in the IBM z/OS core collection.
 
 Playbook Documentation
 ----------------------
@@ -14,7 +14,7 @@ Playbook Documentation
 An `Ansible playbook`_ consists of organized instructions that define work for
 a managed node (hosts) to be managed with Ansible.
 
-Included in the **IBM z/OS Core Collection** is a `playbooks directory`_ that
+Included in the **IBM z/OS core collection** is a `playbooks directory`_ that
 contains a sample playbook that with some modification to the **inventory**,
 **ansible.cfg** and **group_vars** can be run with the ``ansible-playbook``
 command.
@@ -59,7 +59,7 @@ list or group of lists know as an `inventory`_. Once the inventory is defined,
 you can use `patterns`_ to select the hosts, or groups, you want Ansible to run
 against.
 
-Included in the `playbooks directory`_ is a `sample inventory`_ file that with
+Included in the `playbooks directory`_ is a `sample inventory file`_ that with
 little modification can be used to manage your nodes. This inventory file
 should be included when running the sample playbook.
 
@@ -77,7 +77,7 @@ The value for property **ansible_host** is the hostname of the manage node, for
 example, ``ansible_host: ec33017A.vmec.svl.ibm.com``
 
 The value for property **zos_target_username** is the user name to use when
-connecting to the host, for example, ``ansible_user: omvsadm``
+connecting to the host, for example, ``ansible_user: omvsadm``.
 
 The value for property **ansible_python_interpreter** is the target host python
 path. This is useful for systems with more than one Python installation, or
@@ -85,16 +85,16 @@ when Python is not located at in the default location **/usr/bin/python**, for
 example, ``ansible_python_interpreter: /usr/lpp/rsusr/python36/bin/python``
 
 For more information on python configuration requirements on z/OS, refer to
-Ansible FAQ, `Running on zOS`_.
+Ansible `FAQ`_.
 
 .. _inventory:
    https://docs.ansible.com/ansible/latest/user_guide/intro_inventory.html
 .. _patterns:
    https://docs.ansible.com/ansible/latest/user_guide/intro_patterns.html#intro-patterns
-.. _sample inventory:
+.. _sample inventory file:
    https://github.com/ansible-collections/ibm_zos_core/blob/master/playbooks/inventory
-.. _Running on zOS:
-   https://docs.ansible.com/ansible/latest/reference_appendices/faq.html
+.. _FAQ:
+   https://docs.ansible.com/ansible/latest/reference_appendices/faq.html#running-on-z-os
 
 
 Group_vars
@@ -102,7 +102,8 @@ Group_vars
 
 Although you can store variables in the inventory file, storing separate host
 and group variables files may help you organize your variable values more
-easily. Included with the sample playbook is a sample variable file `all.yml`_.
+easily. Included with the sample playbook is a sample variables
+file `all.yml`_.
 
 The value for property **BPXK_AUTOCVT** must be configured to ``ON``.
 
@@ -115,10 +116,11 @@ for example, ``/usr/lpp/IBM/zoautil/lib/``.
 The value for property **LIBPATH** is both the path to the python libraries on
 the target and the ZOA Utilities Python library path separated by
 semi-colons ``:``, for example,
-``/usr/lpp/IBM/zoautil/lib/:/usr/lpp/rsusr/python36/lib:/lib:/usr/lib:.``
+``/usr/lpp/IBM/zoautil/lib/:/usr/lpp/rsusr/python36/lib:/lib:/usr/lib:.``.
 
 The value for property **PATH** is the ZOA utilities BIN path and Python
-interpreter path, for example, ``/usr/lpp/IBM/zoautil/bin;/usr/bin/python``.
+interpreter path, for example,
+``/usr/lpp/IBM/zoautil/bin;/usr/lpp/rsusr/python36/bin/python``.
 
 .. code-block:: yaml
 
@@ -136,13 +138,13 @@ interpreter path, for example, ``/usr/lpp/IBM/zoautil/bin;/usr/bin/python``.
 Run the playbook
 ----------------
 
-Access the sample Ansible playbook, ensure you are within the collection
+Access the sample Ansible playbook and ensure you are within the collection
 playbooks directory where the sample files are included,
-``~/.ansible/collections/ibm/ibm_zos_core/playbooks/``
+``~/.ansible/collections/ibm/ibm_zos_core/playbooks/``.
 
-Use the Ansible command ``ansible-playbook`` to run the sample playbook, the
+Use the Ansible command ``ansible-playbook`` to run the sample playbook.  The
 command syntax is ``ansible-playbook -i <inventory> <playbook>``, for example,
-``ansible-playbook -i inventory zos-collection-sample.yaml``
+``ansible-playbook -i inventory zos-collection-sample.yaml``.
 
 This command assumes the controllers public SSH key has been shared with the
 managed node. If you want to avoid entering a username and password each time,

@@ -118,7 +118,6 @@ def test_alias_resolution(provided_args):
     )
     parser = BetterArgParser(arg_defs)
     result = parser.parse_args(provided_args)
-    print(result)
     result_simple = [str(x) for x in result.values()]
     for val in provided_args.values():
         assert str(val) in result_simple
@@ -538,7 +537,6 @@ def test_custom_defined_values_top_level():
     assert result.get("name") == "BLAKE"
     result = parser.parse_args({"name": "john"})
     assert result.get("name") == "john"
-    print(result)
 
 
 def test_custom_defined_values_top_level_required():

@@ -422,7 +422,7 @@ def run_module():
     _fetch_member = src.endswith(')')
     ds_name = src if not _fetch_member else src[:src.find('(')]
     try:
-        ds_utils = data_set_utils.DataSetUtils(ds_name)
+        ds_utils = data_set_utils.DataSetUtils(module, ds_name)
         if not ds_utils.data_set_exists():
             if fail_on_missing:
                 _fail_json(

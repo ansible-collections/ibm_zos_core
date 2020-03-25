@@ -27,7 +27,7 @@ description:
     same as the data set name.
   - When fetching a PDS/PDS(E), the destination will be a directory with the
     same name as the PDS/PDS(E).
-  - Files that already exist at dest will be overwritten if they are different 
+  - Files that already exist at dest will be overwritten if they are different
     than the src.
 author: "Asif Mahmud (@asifmahmud)"
 options:
@@ -339,7 +339,7 @@ def _fetch_vsam(src, validate_checksum, is_binary):
     rc = Datasets.delete(temp_ds)
     if rc != 0:
         _fail_json(
-            msg="Unable to delete data set {0}".format(temp_ds),ret_code=rc
+            msg="Unable to delete data set {0}".format(temp_ds), ret_code=rc
         )
 
     if validate_checksum:
@@ -355,8 +355,10 @@ def _fetch_pdse(src):
     rc, out, err = _run_command("cp \"//'{0}'\" {1}".format(src, temp_dir))
     if rc != 0:
         _fail_json(
-            msg=("Error copying partitioned data set to USS. Make sure the PDS"
-                "/PDS(E) is not empty"),
+            msg=(
+                "Error copying partitioned data set to USS. Make sure the PDS"
+                "/PDS(E) is not empty"
+            ),
             stdout=out,
             stderr=err,
             ret_code=rc

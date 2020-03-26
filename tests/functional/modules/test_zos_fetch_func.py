@@ -281,8 +281,8 @@ def test_fetch_partitioned_data_set_empty_fails(ansible_zos_module):
     results = hosts.all.zos_fetch(**params)
     try:
         for result in results.contacted.values():
-            assert result.get('message')
-            assert result.get('message').get('stderr') != ""
+            assert result.get('msg')
+            assert result.get('stderr') != ""
     finally:
         hosts.all.zos_data_set(name=pds_name, state='absent')
 
@@ -352,7 +352,7 @@ def test_fetch_missing_uss_file_fails(ansible_zos_module):
                 " or is uncataloged")
     try:
         for result in results.contacted.values():
-            assert result.get('message').get('msg') == fail_msg
+            assert result.get('msg') == fail_msg
     except Exception:
         raise
 
@@ -386,7 +386,8 @@ def test_fetch_partitioned_data_set_member_missing_fails(ansible_zos_module):
     results = hosts.all.zos_fetch(**params)
     try:
         for result in results.contacted.values():
-            assert result.get('message').get('stderr') != ""
+            assert result.get('msg')
+            assert result.get('stderr') != ""
     except Exception:
         raise
 
@@ -401,8 +402,8 @@ def test_fetch_mvs_data_set_missing_fails(ansible_zos_module):
     results = hosts.all.zos_fetch(**params)
     try:
         for result in results.contacted.values():
-            assert result.get('message')
-            assert result.get('message').get('stderr') != ""
+            assert result.get('msg')
+            assert result.get('stderr') != ""
             assert not os.path.exists('/tmp/ZOS.FETCH.TEST.PDS')
     except Exception:
         raise

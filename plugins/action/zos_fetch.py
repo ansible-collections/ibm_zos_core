@@ -38,12 +38,6 @@ def _update_result(
     file_or_ds = "file" if ds_type == 'USS' else "data set"
     updated_result = dict((k, v) for k, v in result.items())
     updated_result.update({
-        'message': {
-            'msg': "The {0} was fetched successfully".format(file_or_ds),
-            'stdout': "",
-            'stderr': "",
-            'ret_code': 0
-        },
         'file': src,
         'dest': dest,
         'data_set_type': data_set_types[ds_type],
@@ -122,12 +116,7 @@ class ActionModule(ActionBase):
                 "it must be a string"
             )
         if msg:
-            result['message'] = dict(
-                msg=msg,
-                stdout="",
-                stderr="",
-                ret_code=None
-            )
+            result['msg'] = msg
             result['failed'] = True
             return result
 
@@ -149,15 +138,10 @@ class ActionModule(ActionBase):
                 os.path.isdir(to_bytes(dest, errors='surrogate_or_strict')) and
                 not dest.endswith(os.sep)
             ):
-                result['message'] = dict(
-                    msg=(
-                        "dest is an existing directory, append a forward "
-                        "slash to the dest if you want to fetch src into "
-                        "that directory"
-                    ),
-                    stdout="",
-                    stderr="",
-                    ret_code=None
+                result['msg'] = (
+                    "dest is an existing directory, append a forward "
+                    "slash to the dest if you want to fetch src into "
+                    "that directory"
                 )
                 result['failed'] = True
                 return result
@@ -204,22 +188,15 @@ class ActionModule(ActionBase):
                 task_vars=task_vars
             )
         except Exception as err:
-            result['message'] = dict(
-                msg="Failure during module execution",
-                stdout="",
-                stderr=str(err),
-                ret_code=None,
-            )
+            result['msg'] = "Failure during module execution"
+            result['stderr'] = str(err)
             result['failed'] = True
             return result
 
         if fetch_res.get('msg'):
-            result['message'] = dict(
-                stdout=fetch_res.get('stdout'),
-                stderr=fetch_res.get('stderr'),
-                ret_code=fetch_res.get('ret_code'),
-                msg=fetch_res.get('msg')
-            )
+            result['msg'] = fetch_res.get('msg')
+            result['stdout'] = fetch_res.get('stdout')
+            result['stderr'] = fetch_res.get('stderr')
             result['failed'] = True
             return result
 
@@ -252,28 +229,16 @@ class ActionModule(ActionBase):
             )
 
         else:
-            result['message'] = dict(
-                msg=(
-                    "The data set type '{0}' is not"
-                    " currently supported".format(ds_type)
-                ),
-                stdout="",
-                stderr="",
-                ret_code=None
+            result['msg'] = (
+                "The data set type '{0}' is not"
+                " currently supported".format(ds_type)
             )
             result['failed'] = True
             return result
 
         if fetch_content.get('msg'):
-            result['message'] = dict(
-                stdout="",
-                stderr="",
-                ret_code=None,
-                msg=fetch_content.get('msg')
-            )
+            result.update(fetch_content)
             result['failed'] = True
-            result['checksum'] = fetch_content.get('checksum')
-            result['remote_checksum'] = fetch_content.get('remote_checksum')
             return result
 
         return _update_result(

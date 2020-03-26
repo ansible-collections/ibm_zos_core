@@ -137,32 +137,6 @@ EXAMPLES = r'''
 '''
 
 RETURN = r'''
-message:
-    description: The output message returned from this module.
-    type: dict
-    returned: always
-    contains:
-      msg:
-        description: Message returned by the module
-        type: str
-        sample: The data set was fetched successfully
-      stdout:
-        description: The stdout from a USS command or MVS command
-        type: str
-        sample: DATA SET 'USER.PROCLIB' NOT IN CATALOG
-      stderr:
-        description: The stderr of a USS command or MVS command
-        type: str
-        sample: File /tmp/result.log not found
-      ret_code:
-        description: The return code of a USS command or MVS command
-        type: int
-        sample: 8
-    sample:
-      - "msg": "Failed to read data set member for data set USER.TEST.PROCLIB"
-      - "stdout": "DATA SET 'USER.TEST.PROCLIB' NOT IN CATALOG"
-      - "stderr": ""
-      - "ret_code": 1
 file:
     description: The source file path on remote machine
     returned: success
@@ -202,6 +176,26 @@ changed:
     description: Indicates if any changes were made during the module operation
     returned: always
     type: bool
+msg:
+    description: Message returned by the module
+    returned: failure
+    type: str
+    sample: The data set was fetched successfully
+stdout:
+    description: The stdout from a USS command or MVS command, if applicable
+    returned: failure
+    type: str
+    sample: DATA SET 'USER.PROCLIB' NOT IN CATALOG
+stderr:
+    description: The stderr of a USS command or MVS command, if applicable
+    returned: failure
+    type: str
+    sample: File /tmp/result.log not found
+ret_code:
+    description: The return code of a USS command or MVS command, if applicable
+    returned: failure
+    type: int
+    sample: 8
 '''
 
 
@@ -233,9 +227,9 @@ module = None
 MVS_DS_TYPES = frozenset({'PS', 'PO', 'PDSE', 'PE'})
 
 
-def _fail_json(msg="", stdout="", stderr="", ret_code=None):
+def _fail_json(**kwargs):
     """ Wrapper for AnsibleModule.fail_json """
-    module.fail_json(msg=msg, stdout=stdout, stderr=stderr, ret_code=ret_code)
+    module.fail_json(**kwargs)
 
 
 def _run_command(cmd, **kwargs):

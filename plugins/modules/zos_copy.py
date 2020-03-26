@@ -282,6 +282,10 @@ import random
 import math
 import tempfile
 
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
+    better_arg_parser, data_set_utils
+)
+
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.common.process import get_bin_path
@@ -301,50 +305,46 @@ def _ascii_to_ebcdic(src, content):
     conv_cmd = "iconv -f ISO8859-1 -t IBM-1047"
     rc, out, err = module.run_command(conv_cmd, data=content)
     if rc != 0:
-        module.fail_json(msg="Unable to convert encoding of {} to EBCDIC".format(src))
+        module.fail_json(
+          msg="Unable to convert encoding of {} to EBCDIC".format(src)
+        )
     return out
 
 
-def _create_temp_data_set_name(LLQ):
-    """ Create a temporary data set name """
-    chars = string.ascii_uppercase
-    HLQ2 = ''.join(random.choice(chars) for i in range(5))
-    return Datasets.hlq() + '.' + HLQ2 + '.' + LLQ
-
-
 def _copy_to_ds(ds_name, size=None, content=None, remote_src=False, src_ds=None):
-    sysin_ds_name = _create_temp_data_set_name('sysin')
-    sysprint_ds_name = _create_temp_data_set_name('sysprint')
     if not remote_src:
-        temp_ds_name = _create_temp_data_set_name('temp')
-        Datasets.create(temp_ds_name, "SEQ", str(size), "FB")
+        temp_ds_name = data_set_utils.DataSetUtils.create_temp_data_set(
+            "TEMP", size=str(size)
+        )
         Datasets.write(temp_ds_name, _ascii_to_ebcdic(content))
-
-    Datasets.create(sysin_ds_name, "SEQ")
-    Datasets.create(sysprint_ds_name, "SEQ", "", "FB", "",133)
-
-    repro_sysin = ' REPRO INFILE(INPUT) OUTFILE(OUTPUT) '
-    Datasets.write(sysin_ds_name, repro_sysin)
-    
-    dd_statements = []
-    dd_statements.append(types.DDStatement(ddName="sysin", dataset=sysin_ds_name))
-    dd_statements.append(types.DDStatement(ddName="input", dataset=src_ds if remote_src else temp_ds_name))
-    dd_statements.append(types.DDStatement(ddName="output", dataset=ds_name))
-    dd_statements.append(types.DDStatement(ddName="sysprint", dataset=sysprint_ds_name))
+    repro_cmd = "  REPRO INFILE({0}) OUTFILE({1})".format(temp_ds_name, ds_name)
     try:
-        rc = MVSCmd.execute_authorized(pgm="idcams", args="", dds=dd_statements)
-        if rc != 0:
-            module.fail_json(msg="Non-zero return code received while copying to VSAM")
-    except Exception as err:
-        module.fail_json(msg="Failed to call IDCAMS to copy the data set {0}".format(ds_name))
-
+        sysprint = _run_mvs_command("IDCAMS", repro_cmd)
     finally:
-        Datasets.delete(sysin_ds_name)
-        Datasets.delete(sysprint_ds_name)
-        if Datasets.exist(temp_ds_name):
+        if Datasets.exists(temp_ds_name):
             Datasets.delete(temp_ds_name)
-    
-    return ds_name 
+
+
+def _run_mvs_command(pgm, cmd):
+    sysprint = "sysprint"
+    sysin = "sysin"
+    pgm = pgm.upper()
+    if pgm == "IKJEFT01":
+        sysprint = "systsprt"
+        sysin = "systsin"
+
+    rc, out, err = module.run_command(
+        "mvscmdauth --pgm={0} --{1}=* --{2}=stdin".format(pgm, sysprint, sysin),
+        data=cmd
+    )
+    if rc != 0:
+        module.fail_json(
+            msg="Non-zero return code received while executing mvscmd",
+            stdout=out,
+            stderr=err,
+            ret_code=rc
+        )
+    return out
 
 
 def _allocate_vsam(ds_name, size):
@@ -353,62 +353,28 @@ def _allocate_vsam(ds_name, size):
     allocation_size = math.ceil(size/1048576)
     
     if allocation_size > max_size:
-        msg = ''' Size of data exceeds maximum allowed allocation size for VSAM.
-                  Maximum size allowed: {0} Megabytes, given data size: {1} Megabytes 
-                '''.format(max_size, allocation_size)
+        msg = ("Size of data exceeds maximum allowed allocation size for VSAM."
+               "Maximum size allowed: {0} Megabytes, given data size: {1}"
+               " Megabytes".format(max_size, allocation_size))
         module.fail_json(msg=msg)
-
-    sysin_ds_name = _create_temp_data_set_name('sysin')
-    Datasets.create(sysin_ds_name, "SEQ")
-    
+  
     define_sysin = ''' DEFINE CLUSTER (NAME({0})  -
    	                    VOLUMES({1})) -                           
                         DATA (NAME({0}.DATA) -
 	                    MEGABYTES({2}, 5)) -
-                        INDEX (NAME({0}.INDEX)) '''.format(ds_name, volume, allocation_size)
-    
-    Datasets.write(sysin_ds_name, define_sysin)
-    dd_statements = []
-    dd_statements.append(types.DDStatement(ddName="sysin", dataset=sysin_ds_name))
-    dd_statements.append(types.DDStatement(ddName="sysprint", dataset='*'))
+                        INDEX (NAME({0}.INDEX)) '''.format(
+                            ds_name, volume, allocation_size
+                        )
 
     try:
-        rc = MVSCmd.execute_authorized(pgm="idcams", args="", dds=dd_statements)
-        if rc != 0:
-            module.fail_json(msg="Non-zero return code received while trying to allocate VSAM")
+        sysprint = _run_mvs_command("IDCAMS", define_sysin)
     except Exception as err:
         module.fail_json(msg="Failed to call IDCAMS to allocate VSAM data set")
-    finally:
-        if Datasets.exists(sysin_ds_name):
-            Datasets.delete(sysin_ds_name)
-
-    return ds_name
-
-
-def _determine_data_set_type(ds_name):
-    rc, out, err = module.run_command("tsocmd \"LISTDS '{}'\"".format(ds_name))
-    if "NOT IN CATALOG" in out:
-        raise UncatalogedDatasetError(ds_name)
-    if "INVALID DATA SET NAME" in out and '/' in ds_name:
-        return 'USS'
-    
-    if rc != 0:
-        msg = None
-        if "ALREADY IN USE" in out:
-            msg = "Dataset {} may already be open by another user. Close the dataset and try again.".format(ds_name)
-        else:
-            msg = "Unable to determine data set type for data set {}.".format(ds_name)
-        module.fail_json(msg=msg, rc=rc, stdout=out, stderr=err)
-    
-    ds_search = re.search("(-|--)DSORG(|-)\n(.*)", out)
-    if ds_search:
-        return ds_search.group(3).split()[-1].strip()
-    return None
 
 
 def _get_checksum(data):
     """ Calculate checksum for the given data """
-    digest = hashlib.sha1()
+    digest = hashlib.sha256()
     data = to_bytes(data, errors='surrogate_or_strict')
     digest.update(data)
     return digest.hexdigest()
@@ -522,9 +488,12 @@ def main():
 
     if remote_src:
         try:
-            src_ds_type = _determine_data_set_type(src)
+            src_ds_type = data_set_utils.DataSetUtils(src).get_data_set_type()
         except UncatalogedDatasetError:
-            module.fail_json(msg="The data set {0} is either uncataloged or does not exist".format(src))
+            module.fail_json(
+                msg=("The data set {0} is either uncataloged or does not"
+                    " exist".format(src))
+            )
 
         if src_ds_type == 'USS':
             if not os.path.exists(b_src):
@@ -533,7 +502,7 @@ def main():
                 module.fail_json(msg="Source file {0} is not readable".format(src))
 
     try:
-        dest_ds_type = _determine_data_set_type(dest)
+        dest_ds_type = data_set_utils.DataSetUtils(dest).get_data_set_type()
     except UncatalogedDatasetError:
         d_blocks = None
         if is_pds:

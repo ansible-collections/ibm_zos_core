@@ -131,7 +131,9 @@ class ActionModule(ActionBase):
         try:
             if is_uss:
                 copy_action = self._get_copy_action_plugin()
-                mvs_args = frozenset({'is_vsam', 'use_qualifier', 'encoding', 'is_binary'})
+                mvs_args = frozenset(
+                    {'is_vsam', 'use_qualifier', 'encoding', 'is_binary'}
+                )
                 copy_action._task.args = dict((k, v) for k, v in self._task.args.items() if k not in mvs_args)
                 return copy_action.run(task_vars=task_vars)
 

@@ -16,8 +16,6 @@ import ansible.errors
 import ansible.utils
 import pytest
 
-__metaclass__ = type
-
 # For the authorized command, you can get the list form Z/os system using command "D IKJTSO,AUTHCMD" in sdsf.
 # For example:
 # IKJ738I TSO/E PARMLIB SETTINGS : 737

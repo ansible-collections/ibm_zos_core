@@ -37,110 +37,26 @@ options:
 '''
 
 RETURN = r'''
-result:
+rc:
     description:
-        Result
+        The return code returned from the execution of the TSO command.
     returned: always
-    type: dict
-    contains:
-        ret_code:
-          description:
-            Return code output received from the TSO command
-          returned: always
-          type: dict
-          contains:
-            code:
-                description:
-                    Return code converted to integer value (when possible).
-                returned: always
-                type: int
-                sample: 0
-            msg_code:
-                description:
-                    Return code extracted from the `msg` so that it can better
-                    evaluated. For example , ABEND(S0C4) would yield ""S0C4".
-                returned: always
-                type: str
-                sample: 0
-            msg_txt:
-                description:
-                    Returns additional information related to the job.
-                type: str
-                sample: "Received return code 08, please configure IMS Connect"
-        sample:
-            - "code": 0
-            -  "msg": "CC 0000"
-            - "msg_code": "0000"
-            - "msg_txt":
-        content:
-            description:
-                The response resulting from the execution of the TSO command
-            returned: success
-            type: list[str]
-            sample:
-               [ "NO MODEL DATA SET                                                OMVSADM",
-                 "TERMUACC                                                                ",
-                 "SUBGROUP(S)= VSAMDSET SYSCTLG  BATCH    SASS     MASS     IMSGRP1       ",
-                 "             IMSGRP2  IMSGRP3  DSNCAT   DSN120   J42      M63           ",
-                 "             J91      J09      J97      J93      M82      D67           ",
-                 "             D52      M12      CCG      D17      M32      IMSVS         ",
-                 "             DSN210   DSN130   RAD      CATLG4   VCAT     CSP           ",
-                ]
-message:
+    type: int
+    sample: 0
+content:
     description:
-       The output message returned from this module.
-    type: dict
-    returned: always
-    contains:
-        msg:
-            description:
-               Message returned by the module
-            type: str
-            sample: The TSO command execution succeeded.
-        stdout:
-            description:
-               The output from the module
-            type: str
-            sample: The operator command has been issued successfully
-        stderr:
-            description:
-               Any error text from the module
-            type: str
-            sample: An exception has occurred.
-original_message:
-    description: The original list of parameters and arguments and any defaults used.
-    returned: always
-    type: dict
-changed:
-    description:
-        Indicates if any changes were made during module operation. Given TSO
-        commands can introduce change and unknown to the module, True is always
-        returned unless either a module or command failure has occurred.
-    returned: always
-    type: bool
+        The response resulting from the execution of the TSO command
+    returned: on success
+    type: list[str]
     sample:
         [
-            {
-                "result":{
-                "ret_code":{
-                    "code":0,
-                    "msg_code":"0",
-                    "msg_txt":"",
-                },
-                "content" : [
-                    "'IDC0550I ENTRY (A) TEST.HILL3.TEST DELETED",
-                ]},
-                "message":{
-                    "msg": "The TSO command execution succeeded.",
-                    "stderr":"delete 'TEST.HILL3.TEST'",
-                    "stdout":"'IDC0550I ENTRY (A) TEST.HILL3.TEST DELETED'"
-                },
-                "original_message": {
-                    "auth": null,
-                    "command": "delete 'TEST.HILL3.TEST'"
-                },
-                "changed": false,
-            }
+            "NO MODEL DATA SET                                                OMVSADM",
+            "TERMUACC                                                                ",
+             "SUBGROUP(S)= VSAMDSET SYSCTLG  BATCH    SASS     MASS     IMSGRP1       ",
+             "             IMSGRP2  IMSGRP3  DSNCAT   DSN120   J42      M63           ",
+             "             J91      J09      J97      J93      M82      D67           ",
+             "             D52      M12      CCG      D17      M32      IMSVS         ",
+             "             DSN210   DSN130   RAD      CATLG4   VCAT     CSP           ",
         ]
 '''
 
@@ -167,9 +83,9 @@ def run_tso_command(command, auth, module):
     try:
         if auth:
             """When I issue tsocmd command to run authorized command,
-            it always returns error BPXW9047I select error,BPXW9018I read error
-            even when the return code is 0,
-            so use ZOAU command mvscmdauth to run authorized command.
+            it always returns error BPXW9047I select error,BPXW9018I
+            read error even when the return code is 0, so use ZOAU
+            command mvscmdauth to run authorized command.
             """
             rc, stdout, stderr = module.run_command("echo " + command +
                                                     "| mvscmdauth --pgm=IKJEFT01 --sysprint=* --systsprt=* --systsin=stdin", use_unsafe_shell=True)

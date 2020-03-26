@@ -191,7 +191,17 @@ stderr:
     returned: failure
     type: str
     sample: File /tmp/result.log not found
-ret_code:
+stdout_lines:
+    description: List of strings containing individual lines from stdout
+    returned: failure
+    type: list
+    sample: ["LISTDS USER.TEST.PDS", "USER.TEST.PDS NOT IN CATALOG"]
+stderr_lines:
+    description: List of strings containing individual lines from stderr
+    returned: failure
+    type: list
+    sample: ["Unable to traverse PDS", "File "//'USER.TEST.PDS'" not found"]
+rc:
     description: The return code of a USS command or MVS command, if applicable
     returned: failure
     type: int
@@ -199,12 +209,8 @@ ret_code:
 '''
 
 
-import os
 import base64
 import hashlib
-import random
-import string
-import re
 import tempfile
 
 from ansible.module_utils.basic import AnsibleModule
@@ -247,9 +253,8 @@ def _fetch_zos_data_set(zos_data_set, is_binary, fetch_member=False):
                     "Failed to read data set member for "
                     "data set {0}".format(zos_data_set)
                 ),
-                stdout=out,
-                stderr=err,
-                ret_code=rc
+                stdout=out, stderr=err, stdout_lines=out.splitlines(),
+                stderr_lines=err.splitlines(), rc=rc
             )
         content = out
     else:
@@ -293,15 +298,14 @@ def _copy_vsam_to_temp_data_set(ds_name):
                     "Non-zero return code received while executing MVSCmd "
                     "to copy VSAM data set {0}".format(ds_name)
                 ),
-                ret_code=rc
+                rc=rc
             )
         _fail_json(
             msg=(
                 "Failed to call IDCAMS to copy VSAM data set {0} to "
                 "sequential data set".format(ds_name)
             ),
-            stderr=str(err),
-            ret_code=rc
+            stderr=str(err), rc=rc
         )
 
     finally:
@@ -322,7 +326,7 @@ def _fetch_vsam(src, validate_checksum, is_binary):
     rc = Datasets.delete(temp_ds)
     if rc != 0:
         _fail_json(
-            msg="Unable to delete data set {0}".format(temp_ds), ret_code=rc
+            msg="Unable to delete data set {0}".format(temp_ds), rc=rc
         )
 
     if validate_checksum:
@@ -342,9 +346,8 @@ def _fetch_pdse(src):
                 "Error copying partitioned data set to USS. Make sure the PDS"
                 "/PDS(E) is not empty"
             ),
-            stdout=out,
-            stderr=err,
-            ret_code=rc
+            stdout=out, stderr=err, stdout_lines=out.splitlines(),
+            stderr_lines=err.splitlines(), rc=rc
         )
 
     result['pds_path'] = temp_dir

@@ -463,14 +463,6 @@ def run_module():
     module.exit_json(**res_args)
 
 
-class UncatalogedDatasetError(Exception):
-    def __init__(self, ds_name):
-        super().__init__(
-            ("Data set {0} is not in catalog. If you would like to fetch the "
-                "data set, please catalog it first".format(ds_name))
-        )
-
-
 def main():
     run_module()
 

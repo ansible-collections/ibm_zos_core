@@ -237,9 +237,7 @@ class ActionModule(ActionBase):
             return result
 
         if fetch_content.get('msg'):
-            result.update(fetch_content)
-            result['failed'] = True
-            return result
+            return fetch_content
 
         return _update_result(
             dict(list(result.items()) + list(fetch_content.items())),
@@ -305,7 +303,10 @@ class ActionModule(ActionBase):
             try:
                 with open(dest, 'rb') as tmp:
                     local_data = tmp.read()
-                    local_checksum = checksum_s(base64.b64encode(local_data), hash_func=sha256)
+                    local_checksum = checksum_s(
+                        base64.b64encode(local_data),
+                        hash_func=sha256
+                    )
             except FileNotFoundError:
                 local_checksum = None
             new_content = base64.b64decode(content)

@@ -118,7 +118,7 @@ def run_module():
     auth = module.params.get("auth")
     if command is None or command.strip() == "":
         module.fail_json(
-            msg='The "command" provided was null or an empty string.', **result)
+            msg='Please provided a valid value for option "command".', **result)
 
     try:
         stdout, stderr, rc = run_tso_command(command, auth, module)

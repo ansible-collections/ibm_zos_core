@@ -482,23 +482,6 @@ def _create_data_set(src, ds_name, ds_type, size, d_blocks=None):
         _allocate_vsam(ds_name, size)
 
 
-def _is_uncataloged(err):
-    return "NOT IN CATALOG" in str(err)
-
-
-def _get_err_msg(err, data_set):
-    if _is_uncataloged(err):
-        return ("The source {0} is either uncataloged or does not"
-                    " exist".format(data_set))
-
-    elif "ALREADY IN USE" in str(err):
-        return (
-            "Dataset {0} may already be open by another user. "
-            "Close the dataset and try again".format(data_set)
-        )
-    return "Error while gathering information for data set {0}".format(data_set)
-
-
 def main():
     global module
 
@@ -554,15 +537,15 @@ def main():
             src_ds_utils = data_set_utils.DataSetUtils(module, src)
             src_ds_type = src_ds_utils.get_data_set_type()
         except Exception as err:
-            module.fail_json(msg=_get_err_msg(err, src))
+            module.fail_json(msg=str(err))
 
     try:
         dest_ds_utils = data_set_utils.DataSetUtils(module, dest)
         dest_ds_type = dest_ds_utils.get_data_set_type()
     except Exception as err:
-        if not _is_uncataloged(err):
-            module.fail_json(msg=_get_err_msg(err, dest))
+        module.fail_json(msg=str(err))
     
+    if not dest_ds_type:
         d_blocks = None
         if is_pds:
             dest_ds_type = "PDSE"

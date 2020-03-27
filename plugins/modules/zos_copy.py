@@ -196,13 +196,13 @@ EXAMPLES = r'''
     src: HLQ.SAMPLE.PDSE
     dest: HLQ.NEW.PDSE
     remote_src: true
-- name: Copy a PDS(E) on remote system to an existing PDS(E), replacing the original
+- name: Copy a PDS(E) on remote system to a PDS(E), replacing the original
   zos_copy:
     src: HLQ.SAMPLE.PDSE
     dest: HLQ.EXISTING.PDSE
     remote_src: true
     force: true
-- name: Copy a PDS(E) member to a new PDS(E) member. Replace if it already exists
+- name: Copy PDS(E) member to a new PDS(E) member. Replace if it already exists
   zos_copy:
     src: HLQ.SAMPLE.PDSE(member_name)
     dest: HLQ.NEW.PDSE(member_name)
@@ -283,7 +283,7 @@ import math
 import tempfile
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
-    better_arg_parser, data_set_utils
+    better_arg_parser, data_set_utils, vtoc
 )
 
 
@@ -319,13 +319,13 @@ def _copy_to_ds(ds_name, size=None, content=None, remote_src=False, src_ds=None)
         Datasets.write(temp_ds_name, _ascii_to_ebcdic(content))
     repro_cmd = "  REPRO INFILE({0}) OUTFILE({1})".format(temp_ds_name, ds_name)
     try:
-        sysprint = _run_mvs_command("IDCAMS", repro_cmd)
+        sysprint = _run_mvs_command("IDCAMS", repro_cmd, authorized=True)
     finally:
         if Datasets.exists(temp_ds_name):
             Datasets.delete(temp_ds_name)
 
 
-def _run_mvs_command(pgm, cmd):
+def _run_mvs_command(pgm, cmd, dd=None, authorized=False):
     sysprint = "sysprint"
     sysin = "sysin"
     pgm = pgm.upper()
@@ -333,9 +333,16 @@ def _run_mvs_command(pgm, cmd):
         sysprint = "systsprt"
         sysin = "systsin"
 
+    mvs_cmd = "mvscmd"
+    if authorized:
+        mvs_cmd += "auth"
+    mvs_cmd += " --pgm={0} --{1}=* --{2}=stdin"
+    if dd:
+        for k, v in dd.items():
+            mvs_cmd += " --{0}={1}".format(k, v)
+    
     rc, out, err = module.run_command(
-        "mvscmdauth --pgm={0} --{1}=* --{2}=stdin".format(pgm, sysprint, sysin),
-        data=cmd
+        mvs_cmd.format(pgm, sysprint, sysin), data=cmd
     )
     if rc != 0:
         module.fail_json(
@@ -384,7 +391,15 @@ def _get_mvs_checksum(ds_name):
     return _get_checksum(Datasets.read(ds_name))
 
 
-def _copy_to_seq(src, dest, data, validate=True, local_checksum=None, remote_src=False, src_ds_type=None):
+def _copy_to_seq(
+    src, 
+    dest, 
+    data, 
+    validate=True, 
+    local_checksum=None, 
+    remote_src=False, 
+    src_ds_type=None
+):
     if remote_src:
         cmd = None
         if src_ds_type == 'USS':
@@ -397,7 +412,9 @@ def _copy_to_seq(src, dest, data, validate=True, local_checksum=None, remote_src
         remote_checksum = _get_mvs_checksum(dest)
         rc = Datasets.write(dest, _ascii_to_ebcdic(src, data))
         if rc != 0:
-            module.fail_json(msg="Unable to write content to destination {}".format(dest))
+            module.fail_json(
+                msg="Unable to write content to destination {}".format(dest)
+            )
         if validate:
             new_checksum = _get_mvs_checksum(dest)
             if remote_checksum != new_checksum:
@@ -411,27 +428,56 @@ def _copy_to_seq(src, dest, data, validate=True, local_checksum=None, remote_src
                 )
 
 
-def _copy_to_pdse(src_dir, dest, copy_member=False, remote_src=False, src_file=None):
-    cmd = None
+def _copy_remote_pdse(src_ds, dest, copy_member=False):
     if copy_member:
-        cmd = "cp {0} \"//'{}'\"".format(src_file, dest)
+        rc, out, err = module.run_command(
+            "cp \"//{}\" \"//{}\"".format(src_ds, dest)
+        )
+        if rc != 0:
+            module.fail_json(
+                msg="Unable to copy partitioned data set member",
+                stdout=out,
+                stderr=err,
+                rc=rc
+            )
     else:
-        path, dirs, files = next(os.walk(src_dir))
-        cmd = "cp"
-        for file in files:
-            file = file if '.' not in file else file[:file.rfind('.')]
-            cmd += " {0}/{1}".format(path, file)
-        cmd += " \"//'{0}'\"".format(dest)
-    rc, out, err = module.run_command(cmd)
-    if rc != 0:
-        module.fail_json(msg="Unable to copy to data set {}".format(dest))
+        dds = dict(OUTPUT=dest, INPUT=src_ds)
+        copy_cmd = "   COPY OUTDD=OUTPUT,INDD=((INPUT,R))"
+        sysprint = _run_mvs_command("IEBCOPY", copy_cmd, dds)
+
+
+def _copy_to_pdse(
+    src_dir, 
+    dest, 
+    copy_member=False, 
+    remote_src=False, 
+    src_file=None
+):
+    if remote_src:
+        _copy_remote_pdse(src_dir, dest, copy_member=copy_member)
+    else:
+        cmd = None
+        if copy_member:
+            cmd = "cp {0} \"//'{}'\"".format(src_file, dest)
+        else:
+            path, dirs, files = next(os.walk(src_dir))
+            cmd = "cp"
+            for file in files:
+                file = file if '.' not in file else file[:file.rfind('.')]
+                cmd += " {0}/{1}".format(path, file)
+            cmd += " \"//'{0}'\"".format(dest)
+        rc, out, err = module.run_command(cmd)
+        if rc != 0:
+            module.fail_json(msg="Unable to copy to data set {}".format(dest))
 
 
 def _create_data_set(src, ds_name, ds_type, size, d_blocks=None):
     if (ds_type in MVS_PARTITIONED.union(MVS_SEQ)):
         rc = Datasets.create(ds_name, ds_type, size, "FB", directory_blocks=d_blocks)
         if rc != 0:
-            module.fail_json("Unable to allocate destination data set to copy {}".format(src))
+            module.fail_json(
+                "Unable to allocate destination data set to copy {}".format(src)
+            )
     else:
         _allocate_vsam(ds_name, size)
 
@@ -441,8 +487,8 @@ def main():
 
     module = AnsibleModule(
         argument_spec=dict(
-            src=dict(required=True, type='path'),
-            dest=dict(required=True, type='path'),
+            src=dict(required=True, type='str'),
+            dest=dict(required=True, type='str'),
             use_qualifier=dict(type='bool', default=False), 
             is_binary=dict(type='bool', default=False),
             is_vsam=dict(type='bool', default=False),
@@ -485,29 +531,44 @@ def main():
     _copy_member = module.params.get('_copy_member')
 
     changed = False
+    src_ds_utils = data_set_utils.DataSetUtils(module, src)
+    dest_ds_utils = data_set_utils.DataSetUtils(module, dest)
+    src_vtoc = None
 
     if remote_src:
+        src_vtoc = vtoc.VolumeTableOfContents(module)
         try:
-            src_ds_type = data_set_utils.DataSetUtils(src).get_data_set_type()
-        except UncatalogedDatasetError:
+            src_ds_type = src_ds_utils.get_data_set_type()
+            src_ds_recfm = src_ds_utils.get_data_set_recfm()
+            src_ds_volume = src_ds_utils.get_data_set_volume()
+            
+        except Exception as err:
             module.fail_json(
-                msg=("The data set {0} is either uncataloged or does not"
+                msg="Error while gathering source data set information",
+                stderr=str(err)
+            )
+        if not src_ds_type:
+            module.fail_json(
+                msg=("The source {0} is either uncataloged or does not"
                     " exist".format(src))
             )
 
-        if src_ds_type == 'USS':
-            if not os.path.exists(b_src):
-                module.fail_json(msg="Source file {0} does not exist".format(src))
-            if not os.access(b_src, os.R_OK):
-                module.fail_json(msg="Source file {0} is not readable".format(src))
-
     try:
-        dest_ds_type = data_set_utils.DataSetUtils(dest).get_data_set_type()
-    except UncatalogedDatasetError:
+        dest_ds_type = dest_ds_utils.get_data_set_type()
+        dest_ds_recfm = dest_ds_utils.get_data_set_recfm()
+    except Exception as err:
+        module.fail_json(
+            msg="Error while gathering destination data set information",
+            stderr=str(err)
+        )
+    if not dest_ds_type:
         d_blocks = None
         if is_pds:
             dest_ds_type = "PDSE"
-            d_blocks = math.ceil(_num_files/6)
+            if remote_src:
+                d_blocks = None
+            else:
+                d_blocks = math.ceil(_num_files/6)
         elif is_vsam:
             dest_ds_type = "VSAM"
         else:
@@ -537,7 +598,13 @@ def main():
             with os.fdopen(fd, write_mode) as tmp:
                 tmp.write(_local_data)
         try:
-            _copy_to_pdse(_pds_path, dest, copy_member=_copy_member, remote_src=remote_src, src_file=temp_file)
+            _copy_to_pdse(
+                src if remote_src else _pds_path, 
+                dest, 
+                copy_member=_copy_member, 
+                remote_src=remote_src, 
+                src_file=temp_file
+            )
         finally:
             if temp_file and os.path.exists(temp_file):
                 os.remove(temp_file)
@@ -561,7 +628,10 @@ def main():
 
 class UncatalogedDatasetError(Exception):
     def __init__(self, ds_name):
-        super().__init__("Data set {} is not in catalog. If you would like to copy to the data set, please catalog it first".format(ds_name))
+        super().__init__(
+            ("Data set {} is not in catalog. If you would like to copy to "
+             "the data set, please catalog it first".format(ds_name))
+        )
 
 
 if __name__ == '__main__':

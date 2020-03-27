@@ -77,7 +77,7 @@ class ActionModule(ActionBase):
         backup = _process_boolean(self._task.args.get('backup'), default=False)
         force = _process_boolean(self._task.args.get('force'), default=True)
         validate = _process_boolean(self._task.args.get('validate'), default=True)
-        local_follow = _process_boolean(self._task.args.get('local_follow'), default=True)
+        local_follow = _process_boolean(self._task.args.get('local_follow'), default=False)
         remote_src = _process_boolean(self._task.args.get('remote_src'), default=False)
         use_qualifier = _process_boolean(self._task.args.get('use_qualifier', True), default=False)
         is_binary = _process_boolean(self._task.args.get('is_binary'), default=False)
@@ -94,7 +94,7 @@ class ActionModule(ActionBase):
             result['msg'] = "Invalid type supplied for 'source' option, it must be a string"
         elif not isinstance(dest, string_types):
             result['msg'] = "Invalid type supplied for 'destination' option, it must be a string"
-        elif not isinstance (content, string_types):
+        elif content and isinstance (content, string_types):
             result['msg'] = "Invalid type supplied for 'content' option, it must be a string"
         elif encoding and not isinstance(encoding, string_types):
             result['msg'] = "Invalid type supplied for 'encoding' option, it must be a string"
@@ -105,7 +105,9 @@ class ActionModule(ActionBase):
 
         is_uss = '/' in dest
         is_pds = os.path.isdir(b_src)
-        copy_member = '(' in src
+        copy_member = '(' in src and src.endswith(')')
+        new_module_args = dict((k, v) for k, v in self._task.args.items())
+
 
         if not is_uss:
             if mode or owner or group:
@@ -134,34 +136,45 @@ class ActionModule(ActionBase):
                 mvs_args = frozenset(
                     {'is_vsam', 'use_qualifier', 'encoding', 'is_binary'}
                 )
-                copy_action._task.args = dict((k, v) for k, v in self._task.args.items() if k not in mvs_args)
+                copy_action._task.args = dict(
+                    (k, v) for k, v in self._task.args.items() if k not in mvs_args
+                )
                 return copy_action.run(task_vars=task_vars)
 
-            if is_pds:
-                _, dirs, files = next(os.walk(src))
-                if len(dirs) > 0:
-                    result['msg'] = "Subdirectory found inside source directory"
-                    result.update(src=src, dest=dest, changed=False, failed=True)
-                    return result
+            if not remote_src:
+                if is_pds:
+                    _, dirs, files = next(os.walk(src))
+                    if len(dirs) > 0:
+                        result['msg'] = "Subdirectory found inside source directory"
+                        result.update(src=src, dest=dest, changed=False, failed=True)
+                        return result
 
-                temp_dir = self._transfer_local_dir_to_remote_machine(src, binary_mode=is_binary)
-                new_module_args = dict((k, v) for k, v in self._task.args.items())
-                new_module_args.update(_size=_get_dir_size(src), _pds_path=temp_dir)
+                    temp_dir = self._transfer_local_dir_to_remote_machine(
+                        src, 
+                        binary_mode=is_binary
+                    )
+                    new_module_args.update(_size=_get_dir_size(src), _pds_path=temp_dir)
 
-            else:
-                content = _read_file(src)
-                local_checksum = file_checksum(src)
-                new_module_args = dict((k,v) for k,v in self._task.args.items())
-                new_module_args.update(
-                    _local_data=content, 
-                    _size=pathlib.Path(src).stat().st_size, 
-                    _local_checksum=local_checksum
-                )
+                else:
+                    content = _read_file(src)
+                    local_checksum = file_checksum(src)
+                    new_module_args = dict((k,v) for k,v in self._task.args.items())
+                    new_module_args.update(
+                        _local_data=content, 
+                        _size=pathlib.Path(src).stat().st_size, 
+                        _local_checksum=local_checksum
+                    )
             new_module_args.update(is_uss=is_uss, is_pds=is_pds, _copy_member=copy_member)
-            result.update(self._execute_module(module_name='zos_copy', module_args=new_module_args, task_vars=task_vars))        
+            result.update(
+                self._execute_module(
+                    module_name='zos_copy', 
+                    module_args=new_module_args, 
+                    task_vars=task_vars
+                )
+            )        
 
         finally:
-            if is_pds:
+            if not remote_src and is_pds:
                 self._connection.exec_command("rm -r {0}".format(temp_dir))
 
         return result

@@ -29,7 +29,8 @@ class DataSetUtils(object):
         to be cataloged.
 
         Arguments:
-            module {AnsibleModule} -- The AnsibleModule object from currently running module.
+            module {AnsibleModule} -- The AnsibleModule object from currently
+                                      running module.
             data_set {str} -- Name of the input data set
         """
         self.module = module
@@ -192,6 +193,8 @@ class DataSetUtils(object):
         Raises:
             MVSCmdExecError: When non-zero return code is received while
             executing MVSCmd
+
+            DatasetBusyError: When the data set is being edited by another user
         """
         sysprint = "sysprint"
         sysin = "sysin"
@@ -203,7 +206,11 @@ class DataSetUtils(object):
             "mvscmdauth --pgm={0} --{1}=* --{2}=stdin".format(pgm, sysprint, sysin),
             data=input_cmd
         )
-        if rc != 0:
+        if (re.findall(r"ALREADY IN USE", out)):
+            raise DatasetBusyError(self.data_set)
+        if (re.findall(r"NOT IN CATALOG", out)):
+            self.ds_info['exists'] = False
+        elif rc != 0:
             raise MVSCmdExecError(rc, out, err)
         return out
 
@@ -215,16 +222,8 @@ class DataSetUtils(object):
 
         Returns:
             dict -- Dictionary containing the output parameters of LISTDS
-
-        Raises:
-            DatasetBusyError: When the data set is being edited by another user
         """
-        if (re.findall(r"ALREADY IN USE", output)):
-            raise DatasetBusyError(self.data_set)
-
         result = dict()
-        result['exists'] = len(re.findall(r"NOT IN CATALOG", output)) == 0
-
         if result.get('exists'):
             ds_search = re.search(r"(-|--)DSORG(-\s*|\s*)\n(.*)", output, re.MULTILINE)
             if ds_search:

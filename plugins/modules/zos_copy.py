@@ -482,8 +482,12 @@ def _create_data_set(src, ds_name, ds_type, size, d_blocks=None):
         _allocate_vsam(ds_name, size)
 
 
+def _is_uncataloged(err):
+    return "NOT IN CATALOG" in str(err)
+
+
 def _get_err_msg(err, data_set):
-    if "NOT IN CATALOG" in str(err):
+    if _is_uncataloged(err):
         return ("The source {0} is either uncataloged or does not"
                     " exist".format(data_set))
 
@@ -556,15 +560,13 @@ def main():
         dest_ds_utils = data_set_utils.DataSetUtils(module, dest)
         dest_ds_type = dest_ds_utils.get_data_set_type()
     except Exception as err:
-        module.fail_json(msg=_get_err_msg(err, dest))
-    if not dest_ds_type:
+        if not _is_uncataloged(err):
+            module.fail_json(msg=_get_err_msg(err, dest))
+    
         d_blocks = None
         if is_pds:
             dest_ds_type = "PDSE"
-            if remote_src:
-                d_blocks = None
-            else:
-                d_blocks = math.ceil(_num_files/6)
+            d_blocks = math.ceil(_num_files/6)
         elif is_vsam:
             dest_ds_type = "VSAM"
         else:
@@ -617,7 +619,8 @@ def main():
         dest=dest,
         changed=changed,
         checksum=_get_mvs_checksum(dest),
-        size="{} Bytes".format(module.params.get('_size'))
+        size="{} Bytes".format(module.params.get('_size')),
+        ds_type = dest_ds_type
     )
     module.exit_json(**res_args)
 

@@ -24,6 +24,33 @@ from ansible.utils.hashing import checksum as file_checksum
 from ansible.utils.vars import merge_hash
 
 
+def _update_result(
+        result,
+        src,
+        dest,
+        ds_type="USS",
+        binary_mode=False):
+    """ Helper function to update output result with the provided values """
+
+    data_set_types = {
+        'PS': "Sequential",
+        'PO': "Partitioned",
+        'PDSE': "Partitioned Extended",
+        'PE': "Partitioned Extended",
+        'VSAM': "VSAM",
+        'USS': "USS"
+    }
+    file_or_ds = "file" if ds_type == 'USS' else "data set"
+    updated_result = dict((k, v) for k, v in result.items())
+    updated_result.update({
+        'file': src,
+        'dest': dest,
+        'data_set_type': data_set_types[ds_type],
+        'is_binary': binary_mode
+    })
+    return updated_result
+
+
 def _read_file(src, is_binary=False):
     read_mode = 'rb' if is_binary else 'r'
     try:
@@ -165,13 +192,23 @@ class ActionModule(ActionBase):
                         _local_checksum=local_checksum
                     )
             new_module_args.update(is_uss=is_uss, is_pds=is_pds, _copy_member=copy_member)
-            result.update(
+            copy_res = (
                 self._execute_module(
                     module_name='zos_copy', 
                     module_args=new_module_args, 
                     task_vars=task_vars
                 )
-            )        
+            )
+            if copy_res.get('msg'):
+                result['msg'] = copy_res.get('msg')
+                result['stdout'] = copy_res.get('stdout')
+                result['stderr'] = copy_res.get('stderr')
+                result['rc'] = copy_res.get('rc')
+                return result
+
+            result.update(
+                _update_result(result, src, dest, copy_res['ds_type'], is_binary)
+            )  
 
         finally:
             if not remote_src and is_pds:

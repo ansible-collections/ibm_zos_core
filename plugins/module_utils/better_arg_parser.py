@@ -10,11 +10,9 @@ from collections import OrderedDict, defaultdict
 import types
 import re
 from os import path
+from inspect import signature
 
-# TODO: add some additional type checking and error messages to parser
 # TODO: add "allow empty" parameter for each argument
-# TODO: add mutually exclusive parameter
-# ? maybe list of lists at arg level?
 
 DUMMY_ARG_NAME = "argholder"
 
@@ -33,6 +31,7 @@ class BetterArg(object):
         choices=None,
         mutually_exclusive=None,
         arg_type="str",
+        **kwargs
     ):
         """Holds all of the attributes that define a particular argument.
         A BetterArg object can contain nested BetterArg objects.
@@ -88,6 +87,7 @@ class BetterArg(object):
             self.mutually_exclusive = self.arg_parser.handle_mutually_exclusive_args(
                 mutually_exclusive
             )
+        self.kwargs = kwargs
 
 
 class BetterArgHandler(object):
@@ -126,7 +126,7 @@ class BetterArgHandler(object):
             "qualifier_pattern": self._qualifier_pattern_type,
             "volume": self._volume_type,
             "data_set_or_path_type": self._data_set_or_path_type,
-            "encoding_type": self._encoding_type
+            "encoding_type": self._encoding_type,
         }
 
     def handle_arg(self):
@@ -160,8 +160,9 @@ class BetterArgHandler(object):
         if BetterArgHandler.is_function(self.arg_def.elements):
             for item in contents:
                 updated_contents.append(
-                    self.arg_def.elements(item, self.resolved_dependencies)
+                    self._call_arg_function(self.arg_def.elements, item)
                 )
+
         elif self.type_handlers.get(self.arg_def.elements):
             for item in contents:
                 updated_contents.append(
@@ -437,10 +438,12 @@ class BetterArgHandler(object):
         if not re.fullmatch(
             r"^(?:(?:[A-Z]{1}[A-Z0-9]{0,7})(?:[.]{1})){1,21}[A-Z]{1}[A-Z0-9]{0,7}(?:\([A-Z]{1}[A-Z0-9]{0,7}\)){0,1}$",
             str(contents),
-            re.IGNORECASE
+            re.IGNORECASE,
         ):
             if not path.isabs(str(contents)):
-                raise ValueError('Invalid argument type for source. expected "data_set" or "path"')
+                raise ValueError(
+                    'Invalid argument type for source. expected "data_set" or "path"'
+                )
         return str(contents)
 
     def _encoding_type(self, contents, resolve_dependencies):
@@ -481,15 +484,10 @@ class BetterArgHandler(object):
         Raises:
             ValueError: When no value or defaults are provided for a required argument.
         """
+        required = self.arg_def.required
         if BetterArgHandler.is_function(self.arg_def.required):
-            self.arg_def.required = self.arg_def.required(
-                self.contents, self.resolved_dependencies
-            )
-        if (
-            self.contents is None
-            and self.arg_def.required is True
-            and self.arg_def.default is None
-        ):
+            required = self._call_arg_function(self.arg_def.required, self.contents)
+        if self.contents is None and required is True and self.arg_def.default is None:
             raise ValueError("Missing required argument {0}".format(self.arg_name))
         return
 
@@ -504,9 +502,7 @@ class BetterArgHandler(object):
             return self.contents
         new_contents = None
         if BetterArgHandler.is_function(self.arg_def.default):
-            new_contents = self.arg_def.default(
-                self.contents, self.resolved_dependencies
-            )
+            new_contents = self._call_arg_function(self.arg_def.default, self.contents)
         else:
             new_contents = self.arg_def.default
         self.contents = new_contents
@@ -538,7 +534,7 @@ class BetterArgHandler(object):
             Union[str, int, bool, list, dict] -- The argument's contents after any necessary processing by type handler.
         """
         if BetterArgHandler.is_function(self.arg_def.arg_type):
-            return self.arg_def.arg_type(self.contents, self.resolved_dependencies)
+            return self._call_arg_function(self.arg_def.arg_type, self.contents)
         elif self.type_handlers.get(self.arg_def.arg_type):
             return self.type_handlers.get(self.arg_def.arg_type)(
                 self.contents, self.resolved_dependencies
@@ -569,6 +565,17 @@ class BetterArgHandler(object):
 
     # TODO: reduce complexity of this function
     def _assert_mutually_exclusive(self, contents):
+        """Assert none of the provided arguments
+        break mutual exclusivity.
+
+        Arguments:
+            contents {dict} -- Argument dict for level of arguments.
+            Need to determine if any 2 or more of the arguments in the
+            dict are breaking mutual exclusivity rules.
+
+        Raises:
+            ValueError: When two or more mutually exclusive arguments are found.
+        """
         for name, name_list in self.arg_def.mutually_exclusive.items():
             arg = contents.get(name)
             if arg is None:
@@ -581,6 +588,34 @@ class BetterArgHandler(object):
                         )
                     )
         return
+
+    def _call_arg_function(self, arg_function, contents):
+        """Call a function with the correct number
+        of arguments.
+
+        Arguments:
+            arg_function {function} -- The function to call.
+            contents {Union[str,list,dict,int,bool]} -- The argument contents to pass to the function.
+
+        Raises:
+            ValueError: When the provided function's number of parameters do not match BetterArgParser spec.
+
+        Returns:
+            ?? -- Returns the result of the function call.
+        """
+        func_args = signature(arg_function).parameters
+        if len(func_args) == 2:
+            return arg_function(contents, self.resolved_dependencies)
+        elif len(func_args) == 3:
+            return arg_function(
+                contents, self.resolved_dependencies, self.arg_def.kwargs
+            )
+        else:
+            raise ValueError(
+                "Provided function {0} for argument {1} has invalid number of parameters.".format(
+                    arg_function, self.arg_name
+                )
+            )
 
 
 class BetterArgParser(object):
@@ -704,6 +739,17 @@ class BetterArgParser(object):
         return args
 
     def handle_mutually_exclusive_args(self, mutually_exclusive):
+        """Format mutually exclusive argument definitions. Into dictionary
+        for simplified exclusivity checking.
+
+        Arguments:
+            mutually_exclusive {list[list[str]]} -- List of lists containing mutually exclusive arguments.
+
+        Returns:
+            dict -- Dict where key is the mutually exclusive
+            argument name and value is a list of all arguments
+            it is mutually exclusive with.
+        """
         self._assert_mutually_exclusive_args_structure(mutually_exclusive)
         mutually_exclusive_param_dict = defaultdict(list)
         for exclusives in mutually_exclusive:

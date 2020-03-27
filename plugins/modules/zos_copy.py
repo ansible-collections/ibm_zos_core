@@ -482,6 +482,19 @@ def _create_data_set(src, ds_name, ds_type, size, d_blocks=None):
         _allocate_vsam(ds_name, size)
 
 
+def _get_err_msg(err, data_set):
+    if "NOT IN CATALOG" in str(err):
+        return ("The source {0} is either uncataloged or does not"
+                    " exist".format(data_set))
+
+    elif "ALREADY IN USE" in str(err):
+        return (
+            "Dataset {0} may already be open by another user. "
+            "Close the dataset and try again".format(data_set)
+        )
+    return "Error while gathering information for data set {0}".format(data_set)
+
+
 def main():
     global module
 
@@ -531,36 +544,19 @@ def main():
     _copy_member = module.params.get('_copy_member')
 
     changed = False
-    src_ds_utils = data_set_utils.DataSetUtils(module, src)
-    dest_ds_utils = data_set_utils.DataSetUtils(module, dest)
-    src_vtoc = None
 
     if remote_src:
-        src_vtoc = vtoc.VolumeTableOfContents(module)
         try:
+            src_ds_utils = data_set_utils.DataSetUtils(module, src)
             src_ds_type = src_ds_utils.get_data_set_type()
-            src_ds_recfm = src_ds_utils.get_data_set_recfm()
-            src_ds_volume = src_ds_utils.get_data_set_volume()
-            
         except Exception as err:
-            module.fail_json(
-                msg="Error while gathering source data set information",
-                stderr=str(err)
-            )
-        if not src_ds_type:
-            module.fail_json(
-                msg=("The source {0} is either uncataloged or does not"
-                    " exist".format(src))
-            )
+            module.fail_json(msg=_get_err_msg(err, src))
 
     try:
+        dest_ds_utils = data_set_utils.DataSetUtils(module, dest)
         dest_ds_type = dest_ds_utils.get_data_set_type()
-        dest_ds_recfm = dest_ds_utils.get_data_set_recfm()
     except Exception as err:
-        module.fail_json(
-            msg="Error while gathering destination data set information",
-            stderr=str(err)
-        )
+        module.fail_json(msg=_get_err_msg(err, dest))
     if not dest_ds_type:
         d_blocks = None
         if is_pds:

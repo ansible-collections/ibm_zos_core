@@ -273,8 +273,7 @@ def _copy_vsam_to_temp_data_set(ds_name):
         sysprint = data_set_utils.DataSetUtils.create_temp_data_set('SYSPRINT')
     except OSError as err:
         _fail_json(
-            msg="Unable to create temporary data set while executing MVSCmd",
-            stderr=str(err)
+            msg=str(err)
         )
 
     repro_sysin = ' REPRO INFILE(INPUT)  OUTFILE(OUTPUT) '
@@ -432,9 +431,7 @@ def run_module():
             _fail_json(msg="Unable to determine data set type")
 
     except Exception as err:
-        _fail_json(
-            msg="Error while gathering data set information", stderr=str(err)
-        )
+        _fail_json(msg=str(err))
 
     if use_qualifier:
         src = Datasets.hlq() + '.' + src

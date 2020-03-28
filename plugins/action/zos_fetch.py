@@ -190,6 +190,7 @@ class ActionModule(ActionBase):
         except Exception as err:
             result['msg'] = "Failure during module execution"
             result['stderr'] = str(err)
+            result['stderr_lines'] = str(err).splitlines()
             result['failed'] = True
             return result
 
@@ -197,6 +198,8 @@ class ActionModule(ActionBase):
             result['msg'] = fetch_res.get('msg')
             result['stdout'] = fetch_res.get('stdout')
             result['stderr'] = fetch_res.get('stderr')
+            result['stdout_lines'] = fetch_res.get('stdout_lines')
+            result['stderr_lines'] = fetch_res.get('stderr_lines')
             result['failed'] = True
             return result
 
@@ -272,14 +275,15 @@ class ActionModule(ActionBase):
             out, err = transfer_pds.communicate(stdin)
 
             if transfer_pds.returncode != 0:
-                raise AnsibleError(
-                    (
-                        "Error transferring PDS from remote z/OS system; "
-                        "stdout: {0}; stderr: {1}".format(out, err)
-                    )
-                )
-
-            result['changed'] = True
+                result['msg'] = "Error transferring PDS from remote z/OS system"
+                result['stdout'] = out,
+                result['stderr'] = err
+                result['rc'] = transfer_pds.returncode
+                result['stdout_lines'] = out.splitlines()
+                result['stderr_lines'] = err.splitlines()
+                result['failed'] = True
+            else:
+                result['changed'] = True
         finally:
             self._connection.exec_command("rm -r {0}".format(pds_path))
         return result

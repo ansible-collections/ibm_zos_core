@@ -57,7 +57,7 @@ options:
   flat:
     description:
       - Override the default behavior of appending hostname/path/to/file to the
-        destination. If set to "false", the file or data set will be fetched to
+        destination. If set to "true", the file or data set will be fetched to
         the destination directory without appending remote hostname to the
         destination. Refer to the M(fetch) module for a more detailed
         description of this parameter.

@@ -90,6 +90,7 @@ notes:
       C(checksum) parameter.
     - All data sets are always assumed to be in catalog. If an uncataloged data
       set needs to be fetched, it should be cataloged first.
+    - Fetching HFS or ZFS is currently not supported.
 seealso:
 - module: fetch
 - module: zos_copy
@@ -342,8 +343,8 @@ def _fetch_pdse(src):
     if rc != 0:
         _fail_json(
             msg=(
-                "Error copying partitioned data set to USS. Make sure the PDS"
-                "/PDS(E) is not empty"
+                "Error copying partitioned data set to USS. Make sure it is "
+                " not empty"
             ),
             stdout=out, stderr=err, stdout_lines=out.splitlines(),
             stderr_lines=err.splitlines(), rc=rc

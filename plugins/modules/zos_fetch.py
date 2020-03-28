@@ -80,9 +80,9 @@ options:
 notes:
     - When fetching PDS(E) and VSAM data sets, temporary storage will be used
       on the remote z/OS system. After the PDS(E) or VSAM data set is
-      successfully transferred, the temprorary data set will deleted. The size
+      successfully transferred, the temporary data set will deleted. The size
       of the temporary storage will correspond to the size of PDS(E) or VSAM
-      data set being fetched. If module executation fails, the temporary
+      data set being fetched. If module execution fails, the temporary
       storage will be cleaned.
     - To prevent redundancy, additional checksum validation will not be done
       when fetching PDS(E) because data integrity checks are done through the
@@ -163,7 +163,7 @@ md5sum:
     type: str
     sample: 9011901c4b1bba2fa8b73b0409af8a10
 data_set_type:
-    description: Indidcates the fetched file's data set type
+    description: Indicates the fetched file's data set type
     returned: success
     type: str
     sample: PDSE

@@ -195,12 +195,12 @@ stdout_lines:
     description: List of strings containing individual lines from stdout
     returned: failure
     type: list
-    sample: ["LISTDS USER.TEST.PDS", "USER.TEST.PDS NOT IN CATALOG"]
+    sample: [u'USER.TEST.PDS NOT IN CATALOG..']
 stderr_lines:
     description: List of strings containing individual lines from stderr
     returned: failure
     type: list
-    sample: ["Unable to traverse PDS", "File "//'USER.TEST.PDS'" not found"]
+    sample: [u'Unable to traverse PDS USER.TEST.PDS not found']
 rc:
     description: The return code of a USS command or MVS command, if applicable
     returned: failure

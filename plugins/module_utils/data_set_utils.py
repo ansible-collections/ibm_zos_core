@@ -29,12 +29,14 @@ class DataSetUtils(object):
         to be cataloged.
 
         Arguments:
-            module {AnsibleModule} -- The AnsibleModule object from currently running module.
+            module {AnsibleModule} -- The AnsibleModule object from currently
+                                      running module.
             data_set {str} -- Name of the input data set
         """
         self.module = module
         self.data_set = data_set
         self.uss_path = '/' in data_set
+        self.ds_info = dict()
         if not self.uss_path:
             self.ds_info = self._gather_data_set_info()
 
@@ -192,6 +194,8 @@ class DataSetUtils(object):
         Raises:
             MVSCmdExecError: When non-zero return code is received while
             executing MVSCmd
+
+            DatasetBusyError: When the data set is being edited by another user
         """
         sysprint = "sysprint"
         sysin = "sysin"
@@ -203,8 +207,14 @@ class DataSetUtils(object):
             "mvscmdauth --pgm={0} --{1}=* --{2}=stdin".format(pgm, sysprint, sysin),
             data=input_cmd
         )
-        if rc != 0:
+        if (re.findall(r"ALREADY IN USE", out)):
+            raise DatasetBusyError(self.data_set)
+        if (re.findall(r"NOT IN CATALOG|NOT FOUND|NOT LISTED", out)):
+            self.ds_info['exists'] = False
+        elif rc != 0:
             raise MVSCmdExecError(rc, out, err)
+        else:
+            self.ds_info['exists'] = True
         return out
 
     def _process_listds_output(self, output):
@@ -215,17 +225,9 @@ class DataSetUtils(object):
 
         Returns:
             dict -- Dictionary containing the output parameters of LISTDS
-
-        Raises:
-            DatasetBusyError: When the data set is being edited by another user
         """
-        if (re.findall(r"ALREADY IN USE", output)):
-            raise DatasetBusyError(self.data_set)
-
         result = dict()
-        result['exists'] = len(re.findall(r"NOT IN CATALOG", output)) == 0
-
-        if result.get('exists'):
+        if self.data_set_exists():
             ds_search = re.search(r"(-|--)DSORG(-\s*|\s*)\n(.*)", output, re.MULTILINE)
             if ds_search:
                 ds_params = ds_search.group(3).split()
@@ -245,10 +247,11 @@ class DataSetUtils(object):
             dict -- Dictionary containing the output parameters of LISTCAT
         """
         result = dict()
-        volser_output = re.findall(r"VOLSER-*[A-Z|0-9]*", output)
-        result['volser'] = ''.join(
-            re.findall(r"-[A-Z|0-9]*", volser_output[0])
-        ).replace('-', '')
+        if self.data_set_exists():
+            volser_output = re.findall(r"VOLSER-*[A-Z|0-9]*", output)
+            result['volser'] = ''.join(
+                re.findall(r"-[A-Z|0-9]*", volser_output[0])
+            ).replace('-', '')
         return result
 
 

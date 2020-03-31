@@ -8,14 +8,13 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-
 ANSIBLE_METADATA = {'metadata_version': '1.1',
                     'status': ['preview'],
                     'supported_by': 'community'}
 
 DOCUMENTATION = r'''
 module: zos_tso_command
-author: "Xiao Yuan Ma (@bjmaxym)"
+author: "Xiao Yuan Ma (@bjmaxy)"
 short_description: Execute a TSO command
 description:
     - Execute a TSO command on the target z/OS system with the provided options
@@ -76,6 +75,7 @@ EXAMPLES = r'''
 '''
 
 from ansible.module_utils.basic import AnsibleModule
+from zoautil_py import Datasets
 from traceback import format_exc
 
 
@@ -87,9 +87,24 @@ def run_tso_command(command, auth, module):
             read error even when the return code is 0, so use ZOAU
             command mvscmdauth to run authorized command.
             """
-            rc, stdout, stderr = module.run_command("echo " + command +
-                                                    "| mvscmdauth --pgm=IKJEFT01 --sysprint=* --systsprt=* --systsin=stdin", use_unsafe_shell=True)
+            if len(command) < 80:
+                rc, stdout, stderr = module.run_command("mvscmdauth --pgm=IKJEFT01 --sysprint=* --systsprt=* "
+                                                        "--systsin=stdin", data=command, use_unsafe_shell=True)
+            else:
+                """if the command length longer than 80 chars,
+                as ZOAU mvscmd does not support stdin longer than 80 chars,
+                so we have to store the command in a temp dataset and run mvscmdauth
+                command. 
+                """
+                hlq = Datasets.hlq()
+                TEMP_COMMAND_DS = Datasets.temp_name(hlq)
+                Datasets.create(TEMP_COMMAND_DS, type="SEQ", format="FB")
+                Datasets.write(TEMP_COMMAND_DS, command)
+                rc, stdout, stderr = module.run_command("mvscmdauth --pgm=IKJEFT01 --sysprint=* --systsprt=* "
+                                                        "--systsin=" + TEMP_COMMAND_DS, use_unsafe_shell=True)
+                Datasets.delete(TEMP_COMMAND_DS)
         else:
+            """Run the unauthorized tso command."""
             rc, stdout, stderr = module.run_command(['tso', command])
 
     except Exception as e:
@@ -109,9 +124,7 @@ def run_module():
     )
     result = dict(
         changed=False,
-        original_message="",
-        message="",
-        result=[]
+        content=""
     )
 
     command = module.params.get("command")
@@ -123,29 +136,14 @@ def run_module():
     try:
         stdout, stderr, rc = run_tso_command(command, auth, module)
 
-        ret_code = {
-            "code": rc,
-            "msg_code": rc,
-            "msg_txt": "",
-        }
         content = stdout.splitlines()
-        result["original_message"] = module.params
-        result['result'] = {
-            "ret_code": ret_code,
-            "content": content,
-        }
-        result["message"] = {
-            "msg": "",
-            "stdout": stdout,
-            "stderr": stderr,
-        }
+        result['content'] = content
+        result['rc'] = rc
         if rc == 0:
             result['changed'] = True
-            result["message"]['msg'] = 'The TSO command execution succeeded.'
             module.exit_json(**result)
         else:
-            result["message"]['msg'] = 'The TSO command execution failed.'
-            module.fail_json(**result)
+            module.fail_json(msg='The TSO command "' + command + '" execution failed.', **result)
 
     except Error as e:
         module.fail_json(msg=e.msg, **result)

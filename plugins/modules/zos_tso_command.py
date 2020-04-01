@@ -73,7 +73,10 @@ EXAMPLES = r'''
 '''
 
 from ansible.module_utils.basic import AnsibleModule
-from zoautil_py import Datasets
+try:
+    from zoautil_py import Datasets
+except Exception:
+    Datasets = ""
 from traceback import format_exc
 
 
@@ -122,7 +125,6 @@ def run_module():
     )
     result = dict(
         changed=False,
-        content=[]
     )
 
     command = module.params.get("command")

@@ -67,6 +67,7 @@ def test_zos_tso_command_short_auth_command_with_auth_equals_true(ansible_zos_mo
         assert result.get('result').get('rc') == 0
         assert result.get('changed') is True
 
+
 # The failure path test
 # Run an authorized tso command with auth=False
 def test_zos_tso_command_short_auth_command_with_auth_equals_false(ansible_zos_module):
@@ -75,6 +76,7 @@ def test_zos_tso_command_short_auth_command_with_auth_equals_false(ansible_zos_m
     for result in results.contacted.values():
         assert result.get('result').get('rc') == 255
         assert result.get('changed') is True
+
 
 # The positive path test
 # Run an unauthorized tso command with auth=False
@@ -85,11 +87,12 @@ def test_zos_tso_command_short_unauth_command_with_auth_equals_false(ansible_zos
         assert result.get('result').get('rc') == 0
         assert result.get('changed') is True
 
+
 # The failue path test
 # Run an unauthorized tso command with auth=true
 def test_zos_tso_command_short_unauth_command_with_auth_equals_true(ansible_zos_module):
     hosts = ansible_zos_module
-    results = hosts.all.zos_tso_command(command="delete 'imstestl.ims1.temp.ps'",auth=true)
+    results = hosts.all.zos_tso_command(command="delete 'imstestl.ims1.temp.ps'", auth=True)
     for result in results.contacted.values():
         assert result.get('result').get('rc') == 255
         assert result.get('changed') is False
@@ -102,6 +105,7 @@ def test_zos_tso_command_valid_command(ansible_zos_module):
         assert result.get('result').get('rc') == 0
         assert result.get('changed') is True
 
+
 # The failure test
 # The input command is empty.
 def test_zos_tso_command_empty_command(ansible_zos_module):
@@ -109,6 +113,7 @@ def test_zos_tso_command_empty_command(ansible_zos_module):
     results = hosts.all.zos_tso_command(command="")
     for result in results.contacted.values():
         assert result.get('changed') is False
+
 
 # The failure test
 # The input command is no-existing command, the module return rc 255.

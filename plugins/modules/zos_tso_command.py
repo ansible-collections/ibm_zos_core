@@ -46,9 +46,8 @@ content:
     description:
         The response resulting from the execution of the TSO command
     returned: on success
-    type: list[str]
+    type: str
     sample:
-        [
             "NO MODEL DATA SET                                                OMVSADM",
             "TERMUACC                                                                ",
              "SUBGROUP(S)= VSAMDSET SYSCTLG  BATCH    SASS     MASS     IMSGRP1       ",
@@ -56,7 +55,6 @@ content:
              "             J91      J09      J97      J93      M82      D67           ",
              "             D52      M12      CCG      D17      M32      IMSVS         ",
              "             DSN210   DSN130   RAD      CATLG4   VCAT     CSP           ",
-        ]
 '''
 
 EXAMPLES = r'''
@@ -124,6 +122,7 @@ def run_module():
     )
     result = dict(
         changed=False,
+        content=[]
     )
 
     command = module.params.get("command")
@@ -135,8 +134,8 @@ def run_module():
     try:
         stdout, stderr, rc = run_tso_command(command, auth, module)
 
-        content = stdout.splitlines()
-        result['content'] = content
+        # content = stdout.splitlines()
+        result['content'] = stdout
         result['rc'] = rc
         if rc == 0:
             result['changed'] = True

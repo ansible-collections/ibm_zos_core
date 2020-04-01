@@ -121,7 +121,7 @@ class ActionModule(ActionBase):
             return result
 
         ds_type = None
-        fetch_member = src.endswith(')')
+        fetch_member = '(' in src and src.endswith(')')
         src = self._connection._shell.join_path(src)
         src = self._remote_expand_user(src)
 
@@ -163,17 +163,6 @@ class ActionModule(ActionBase):
 
         dest = dest.replace("//", "/")
 
-        if '/' in src:
-            # Assuming a USS file as '/' is not a valid character for
-            # an MVS data set name
-            # Use Ansible fetch module to fetch USS files
-            fetch_action = self._get_fetch_action_plugin()
-            mvs_args = frozenset({'is_binary', 'use_qualifier'})
-            fetch_action._task.args = dict(
-                (k, v) for k, v in self._task.args.items() if k not in mvs_args
-            )
-            return _update_result(fetch_action.run(task_vars=task_vars), src, dest)
-
         # If a data set member is being fetched, extract the member name
         # from src and update dest path with the member name
         if fetch_member:
@@ -208,14 +197,15 @@ class ActionModule(ActionBase):
             return result
 
         ds_type = fetch_res.get('ds_type')
-        src = fetch_res['file']
+        src = fetch_res.get('file')
 
         fetch_content = None
         mvs_ds = ds_type in ('PO', 'PDSE', 'PE')
 
         if (
-            ds_type == 'VSAM' or
-            ds_type == 'PS' or
+            ds_type == "VSAM" or
+            ds_type == "PS" or
+            ds_type == "USS" or
             (fetch_member and mvs_ds)
         ):
             fetch_content = self._write_remote_data_to_local_file(
@@ -346,13 +336,3 @@ class ActionModule(ActionBase):
             _write_content_to_file(dest, new_content, write_mode)
             result['changed'] = True
         return result
-
-    def _get_fetch_action_plugin(self):
-        return (self._shared_loader_obj.action_loader.get(
-            'fetch',
-            task=self._task.copy(),
-            connection=self._connection,
-            play_context=self._play_context,
-            loader=self._loader,
-            templar=self._templar,
-            shared_loader_obj=self._shared_loader_obj))

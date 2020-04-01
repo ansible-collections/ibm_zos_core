@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 
+# Copyright (c) IBM Corporation 2019, 2020
+# Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
+
 from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
@@ -61,7 +64,7 @@ def test_zos_operator_positive_path_verbose(ansible_zos_module):
         assert result.get("content") is not None
 
 
-def test_zos_operator_goldenpath_with_debug(ansible_zos_module):
+def test_zos_operator_positive_with_debug(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_operator(cmd='d u,all', verbose=False, debug=True)
     for result in results.contacted.values():
@@ -70,7 +73,7 @@ def test_zos_operator_goldenpath_with_debug(ansible_zos_module):
         assert result.get("content") is not None
 
 
-def test_zos_operator_goldenpath_with_debug_verbose(ansible_zos_module):
+def test_zos_operator_positive_with_debug_verbose(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_operator(cmd='d u,all', verbose=True, debug=True)
     for result in results.contacted.values():

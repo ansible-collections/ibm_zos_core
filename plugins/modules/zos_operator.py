@@ -59,41 +59,34 @@ EXAMPLES = r'''
 '''
 
 RETURN = r'''
-result:
+rc:
     description:
-       Result that is returned from executing the operator command
+       Return code of the operator command
     returned: success
-    type: list
-    elements: dict
-    contains:
-        rc:
-            description:
-               Return code of the operator command
-            returned: success
-            type: int
-            sample: 0
-        content:
-            description:
-               The response resulting from the execution of the operator
-               command
-            returned: success
-            type: list[str]
-            sample:
-                [ "MV2C      2020039  04:29:57.58             ISF031I CONSOLE XIAOPIN ACTIVATED ",
-                  "MV2C      2020039  04:29:57.58            -D U,ALL                           ",
-                  "MV2C      2020039  04:29:57.59             IEE457I 04.29.57 UNIT STATUS 948  ",
-                  "         UNIT TYPE STATUS        VOLSER     VOLSTATE      SS                 ",
-                  "          0100 3277 OFFLINE                                 0                ",
-                  "          0101 3277 OFFLINE                                 0                "
-                ]
-        changed:
-            description:
-               Indicates if any changes were made during module operation.
-               Given operator commands can introduce change and unknown to the
-               module, True is always returned unless either a module or
-               command failure has occurred.
-            returned: always
-            type: bool
+    type: int
+    sample: 0
+content:
+    description:
+       The response resulting from the execution of the operator
+       command
+    returned: success
+    type: list[str]
+    sample:
+        [ "MV2C      2020039  04:29:57.58             ISF031I CONSOLE XIAOPIN ACTIVATED ",
+          "MV2C      2020039  04:29:57.58            -D U,ALL                           ",
+          "MV2C      2020039  04:29:57.59             IEE457I 04.29.57 UNIT STATUS 948  ",
+          "         UNIT TYPE STATUS        VOLSER     VOLSTATE      SS                 ",
+          "          0100 3277 OFFLINE                                 0                ",
+          "          0101 3277 OFFLINE                                 0                "
+        ]
+changed:
+    description:
+       Indicates if any changes were made during module operation.
+       Given operator commands can introduce change and unknown to the
+       module, True is always returned unless either a module or
+       command failure has occurred.
+    returned: always
+    type: bool
 '''
 
 
@@ -176,7 +169,7 @@ class Error(Exception):
 
 class OperatorCmdError(Error):
     def __init__(self, cmd, message):
-        self.msg = 'An error occurred during issue the operator command "{0}", the response is "{1}"'.format(cmd, message)
+        self.msg = 'An error occurred executing the operator command "{0}", with response "{1}"'.format(cmd, message)
 
 
 def main():

@@ -80,8 +80,8 @@ options:
   encoding:
     description:
       - Specifies which encodings the fetched data set should be converted from
-        and to. If this parameter is not provided, this module assumes that 
-        source file or data set is encoded in IBM-1047 and will be converted 
+        and to. If this parameter is not provided, this module assumes that
+        source file or data set is encoded in IBM-1047 and will be converted
         to ISO8859-1.
     required: false
     type: dict
@@ -93,7 +93,7 @@ options:
       to:
         description: The encoding to be converted to
         required: true
-        type: str  
+        type: str
     default: { from: 'IBM-1047', to: 'ISO8859-1' }
 notes:
     - When fetching PDS(E) and VSAM data sets, temporary storage will be used
@@ -240,8 +240,10 @@ rc:
 import base64
 import hashlib
 import tempfile
+import re
 
 from os import access, R_OK
+from math import floor, ceil
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils._text import to_bytes
 from ansible.module_utils.parsing.convert_bool import boolean
@@ -310,53 +312,85 @@ def _fetch_zos_data_set(zos_data_set, is_binary, fetch_member=False):
     return content
 
 
+def _get_vsam_size(vsam):
+    """ Invoke IDCAMS LISTCAT command to get the record length and space used.
+        Then estimate the space used by the VSAM data set.
+    """
+    space_pri = 0
+    total_size = 0
+    # Bytes per cylinder for a 3390 DASD
+    bytes_per_cyl = 849960
+
+    listcat_cmd = " LISTCAT ENT('{0}') ALL".format(vsam)
+    cmd = 'mvscmdauth --pgm=idcams --sysprint=stdout --sysin=stdin'
+    rc, out, err = _run_command(cmd, data=listcat_cmd)
+    if not rc:
+        find_space_pri = re.findall(r'SPACE-PRI-*\d+', out)
+        if find_space_pri:
+            space_pri = int(''.join(re.findall(r'\d+', find_space_pri[0])))
+        total_size = ceil((bytes_per_cyl * space_pri)/1024)
+    else:
+        _fail_json(
+            msg="Unable to obtain data set information for {}: {}".format(vsam, err),
+            stdout=out,
+            stderr=err,
+            stdout_lines=out.splitlines(),
+            stderr_lines=err.splitlines(),
+            rc=rc
+        )
+    return total_size
+
+
 def _copy_vsam_to_temp_data_set(ds_name):
     """ Copy VSAM data set to a temporary sequential data set """
+    check_rc = 0
+    mvs_rc = 0
+    vsam_size = _get_vsam_size(ds_name)
     try:
         sysin = data_set_utils.DataSetUtils.create_temp_data_set('SYSIN')
-        out_ds = data_set_utils.DataSetUtils.create_temp_data_set('OUTPUT')
         sysprint = data_set_utils.DataSetUtils.create_temp_data_set('SYSPRINT')
-    except OSError as err:
-        _fail_json(
-            msg=str(err)
+        out_ds_name = data_set_utils.DataSetUtils.create_temp_data_set(
+            'VSM', size="{0}K".format(vsam_size)
         )
+        repro_sysin = ' REPRO INFILE(INPUT)  OUTFILE(OUTPUT) '
+        Datasets.write(sysin, repro_sysin)
 
-    repro_sysin = ' REPRO INFILE(INPUT)  OUTFILE(OUTPUT) '
-    Datasets.write(sysin, repro_sysin)
+        dd_statements = []
+        dd_statements.append(types.DDStatement(ddName='sysin', dataset=sysin))
+        dd_statements.append(types.DDStatement(ddName='input', dataset=ds_name))
+        dd_statements.append(types.DDStatement(ddName='output', dataset=out_ds_name))
+        dd_statements.append(types.DDStatement(ddName='sysprint', dataset=sysprint))
 
-    dd_statements = []
-    dd_statements.append(types.DDStatement(ddName='sysin', dataset=sysin))
-    dd_statements.append(types.DDStatement(ddName='input', dataset=ds_name))
-    dd_statements.append(types.DDStatement(ddName='output', dataset=out_ds))
-    dd_statements.append(types.DDStatement(ddName='sysprint', dataset=sysprint))
+        mvs_rc = MVSCmd.execute_authorized(pgm='idcams', args='', dds=dd_statements)
 
-    try:
-        rc = MVSCmd.execute_authorized(pgm='idcams', args='', dds=dd_statements)
+    except OSError as err:
+        _fail_json(msg=str(err))
+
     except Exception as err:
-        if Datasets.exists(out_ds):
-            Datasets.delete(out_ds)
+        if Datasets.exists(out_ds_name):
+            Datasets.delete(out_ds_name)
 
-        if rc != 0:
+        if mvs_rc != 0:
             _fail_json(
                 msg=(
                     "Non-zero return code received while executing MVSCmd "
                     "to copy VSAM data set {0}".format(ds_name)
                 ),
-                rc=rc
+                rc=mvs_rc
             )
         _fail_json(
             msg=(
                 "Failed to call IDCAMS to copy VSAM data set {0} to "
                 "sequential data set".format(ds_name)
             ),
-            stderr=str(err), rc=rc
+            stderr=str(err), rc=mvs_rc
         )
 
     finally:
         Datasets.delete(sysprint)
         Datasets.delete(sysin)
 
-    return out_ds
+    return out_ds_name
 
 
 def _fetch_vsam(src, validate_checksum, is_binary):
@@ -429,8 +463,8 @@ def run_module():
             is_binary=dict(required=False, default=False, type='bool'),
             use_qualifier=dict(required=False, default=False, type='bool'),
             encoding=dict(
-                required=False, 
-                type=dict, 
+                required=False,
+                type=dict,
                 default={'from': 'IBM-1047', 'to': 'ISO8859-1'}
             )
         )
@@ -441,7 +475,7 @@ def run_module():
         to_encoding=module.params.get('encoding').get('to')
         )
     )
-    
+
     arg_def = dict(
         src=dict(arg_type='data_set_or_path_type', required=True),
         dest=dict(arg_type='path', required=True),
@@ -458,7 +492,7 @@ def run_module():
         parsed_args = parser.parse_args(module.params)
     except ValueError as err:
         _fail_json(msg="Parameter verification failed", stderr=str(err))
-    
+
     src = parsed_args.get('src', None)
     b_src = to_bytes(src)
     fail_on_missing = boolean(parsed_args.get('fail_on_missing'))

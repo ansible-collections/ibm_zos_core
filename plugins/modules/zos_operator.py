@@ -62,15 +62,14 @@ RETURN = r'''
 rc:
     description:
        Return code of the operator command
-    returned: success
+    returned: on success
     type: int
     sample: 0
 content:
     description:
-       The response resulting from the execution of the operator
-       command
-    returned: success
-    type: list[str]
+       The response resulting from the execution of the operator command
+    returned: on success
+    type: list
     sample:
         [ "MV2C      2020039  04:29:57.58             ISF031I CONSOLE XIAOPIN ACTIVATED ",
           "MV2C      2020039  04:29:57.58            -D U,ALL                           ",

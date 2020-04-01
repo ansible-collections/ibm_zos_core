@@ -6,9 +6,16 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
+from ansible.module_utils.six import PY3
 from tempfile import NamedTemporaryFile
 import shutil
 import re
+
+if PY3: 
+    from shlex import quote
+else:
+    from pipes import quote
+
 
 class EncodeUtils(object):
     def __init__(self, module):
@@ -21,8 +28,10 @@ class EncodeUtils(object):
         self.module = module
 
     def run_uss_cmd(self, uss_cmd):
-        """ Call AnsibleModule.run_command() to execute USS command. 
+        """Call AnsibleModule.run_command() to execute USS command. 
 
+        Arguments:
+            uss_cmd {str} -- The USS command to be executed.
         Raises:
             USSCmdExecError: When any exception is raised during the conversion.
         Returns:
@@ -34,7 +43,7 @@ class EncodeUtils(object):
         return out
 
     def get_codeset(self):
-        """ Get the list of supported encodings from the  USS command 'iconv -l' 
+        """Get the list of supported encodings from the  USS command 'iconv -l' 
 
         Raises:
             USSCmdExecError: When any exception is raised during the conversion.
@@ -49,12 +58,42 @@ class EncodeUtils(object):
             code_set = [c for i, c in enumerate(code_set_list) if i > 0 and i % 2 == 0]
         return code_set
 
+    def string_convert_encoding(self, src, blksize, from_encoding, to_encoding):
+        """Convert the encoding of the data when the src is a normal string.
+
+        Arguments:
+            from_code_set: {str} -- The source code set of the string.
+            to_code_set: {str} -- The destination code set for the string.
+            src: {str} -- The input string content.
+            blksize: {int} -- The maximum length, in bytes, of a data block.
+
+        Raises:
+            USSCmdExecError: When any exception is raised during the conversion.
+        Returns:
+            str -- The string content after the encoding.
+        """
+        #blksize = 1024
+        #blksize = 27920
+        converted = ''
+        with NamedTemporaryFile(mode='w+') as temp:
+            temp.write(src)
+            temp.seek(0)
+            while True:
+                to_be_converted = temp.read(blksize)
+                if not to_be_converted:
+                    break
+                iconv_cmd = 'printf {} | iconv -f {} -t {}'.format(\
+                     quote(to_be_converted), quote(from_encoding), quote(to_encoding))
+                out = run_uss_cmd(iconv_cmd)
+                converted = converted + out
+        return converted
+
     def uss_convert_encoding(self, src, dest, from_code_set, to_code_set):
         """Convert the encoding of the data in a USS file.
 
         Arguments:
             from_code_set: {str} -- The source code set of the input file.
-            to_code_set: {str} -- The the destination code set for the output file.
+            to_code_set: {str} -- The destination code set for the output file.
             src: {str} -- The input file name, it should be a uss file.
             dest: {str} -- The output file name, it should be a uss file.
 
@@ -69,9 +108,10 @@ class EncodeUtils(object):
         if not src == dest:
             temp_fi = dest
         else:
-            temp_fo = NamedTemporaryFile(delete=False)
+            temp_fo = NamedTemporaryFile()
             temp_fi = temp_fo.name
-        iconv_cmd = 'iconv -f {0} -t {1} {2} > {3}'.format(from_code_set, to_code_set, src, temp_fi)
+        iconv_cmd = 'iconv -f {0} -t {1} {2} > {3}'.format(\
+                    quote(from_code_set), quote(to_code_set), quote(src), quote(temp_fi))
         try:
             out = self.run_uss_cmd(iconv_cmd)
             if dest == temp_fi:
@@ -84,9 +124,6 @@ class EncodeUtils(object):
                     raise MoveFileError(src, dest, e)
         except Exception:
             raise
-        finally:
-            if temp_fo:
-                temp_fo.close()
         return convert_rc
 
     def mvs_convert_encoding(self, src, dest, from_code_set, to_code_set):
@@ -102,11 +139,11 @@ class EncodeUtils(object):
             USSCmdExecError: When any exception is raised during the conversion.
             MoveFileError: When any exception is raised during moving files.
         Returns:
-            str --- The output file name after the conversion. 
             boolean -- Indicate whether the conversion is successful or not.
         """
         convert_rc = False
-        iconv_cmd = 'cat "//\'{0}\'" | iconv -f {1} -t {2} > {3}'.format(src, from_code_set, to_code_set, dest)
+        iconv_cmd = 'cat "//\'{0}\'" | iconv -f {1} -t {2} > {3}'.format(\
+                    quote(src), from_code_set, to_code_set, dest)
         out = self.run_uss_cmd(iconv_cmd)
         convert_rc = True
         return convert_rc

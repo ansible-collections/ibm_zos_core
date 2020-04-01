@@ -46,7 +46,7 @@ content:
     description:
         The response resulting from the execution of the TSO command
     returned: on success
-    type: list[str]
+    type: list
     sample:
            [
             "NO MODEL DATA SET                                                OMVSADM",

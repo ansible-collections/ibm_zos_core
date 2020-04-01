@@ -94,7 +94,7 @@ def run_tso_command(command, auth, module):
                 """if the command length longer than 80 chars,
                 as ZOAU mvscmd does not support stdin longer than 80 chars,
                 so we have to store the command in a temp dataset and run mvscmdauth
-                command. 
+                command.
                 """
                 hlq = Datasets.hlq()
                 TEMP_COMMAND_DS = Datasets.temp_name(hlq)
@@ -124,7 +124,6 @@ def run_module():
     )
     result = dict(
         changed=False,
-        content=""
     )
 
     command = module.params.get("command")

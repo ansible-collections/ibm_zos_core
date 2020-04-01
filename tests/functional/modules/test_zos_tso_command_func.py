@@ -49,58 +49,72 @@ import pytest
 
 # The happy path test
 # Run tso command to allocate a dataset like an existing one.
-def test_zos_tso_command(ansible_zos_module):
+def test_zos_tso_command_long_unauth_command(ansible_zos_module):
     hosts = ansible_zos_module
     # results = hosts.all.zos_tso_command(command="alloc da('imstestl.ims1.test10') like('imstestl.ims1.test05')")
-    results = hosts.all.zos_tso_command(command="alloc da('bjmaxy.hill3.test') like('bjmaxy.hill3')")
+    results = hosts.all.zos_tso_command(command="alloc da('imstestl.ims1.temp.ps') catalog lrecl(133) blksize(13300) recfm(f b) dsorg(po) cylinders space(5,5) dir(5)")
     for result in results.contacted.values():
-        assert result.get('result')['ret_code'].get('code') == 0
+        assert result.get('result').get('rc') == 0
         assert result.get('changed') is True
 
 
 # The positive path test
-# Run tso command to delete an existing dataset.
-def test_zos_tso_command_2(ansible_zos_module):
+# Run an authorized tso command with auth=true
+def test_zos_tso_command_short_auth_command_with_auth_equals_true(ansible_zos_module):
     hosts = ansible_zos_module
-    results = hosts.all.zos_tso_command(command="delete 'bjmaxy.hill3.test'")
+    results = hosts.all.zos_tso_command(command="LISTDS 'imstestl.ims1.temp.ps'", auth=True)
     for result in results.contacted.values():
-        assert result.get('result')['ret_code'].get('code') == 0
+        assert result.get('result').get('rc') == 0
         assert result.get('changed') is True
 
+# The failure path test
+# Run an authorized tso command with auth=False
+def test_zos_tso_command_short_auth_command_with_auth_equals_false(ansible_zos_module):
+    hosts = ansible_zos_module
+    results = hosts.all.zos_tso_command(command="LISTDS 'imstestl.ims1.temp.ps'", auth=False)
+    for result in results.contacted.values():
+        assert result.get('result').get('rc') == 255
+        assert result.get('changed') is True
 
 # The positive path test
-# Run an authorized tso command
-def test_zos_tso_command_3(ansible_zos_module):
+# Run an unauthorized tso command with auth=False
+def test_zos_tso_command_short_unauth_command_with_auth_equals_false(ansible_zos_module):
     hosts = ansible_zos_module
-    results = hosts.all.zos_tso_command(command="LU BJMAXY", auth=True)
+    results = hosts.all.zos_tso_command(command="LISTCAT ENT('imstestl.ims1.temp.ps')", auth=False)
     for result in results.contacted.values():
-        assert result.get('result')['ret_code'].get('code') == 0
+        assert result.get('result').get('rc') == 0
         assert result.get('changed') is True
 
+# The failue path test
+# Run an unauthorized tso command with auth=true
+def test_zos_tso_command_short_unauth_command_with_auth_equals_true(ansible_zos_module):
+    hosts = ansible_zos_module
+    results = hosts.all.zos_tso_command(command="delete 'imstestl.ims1.temp.ps'",auth=true)
+    for result in results.contacted.values():
+        assert result.get('result').get('rc') == 255
+        assert result.get('changed') is False
+
+
+def test_zos_tso_command_valid_command(ansible_zos_module):
+    hosts = ansible_zos_module
+    results = hosts.all.zos_tso_command(command="delete 'imstestl.ims1.temp.ps'")
+    for result in results.contacted.values():
+        assert result.get('result').get('rc') == 0
+        assert result.get('changed') is True
 
 # The failure test
 # The input command is empty.
-def test_zos_tso_command_failure2(ansible_zos_module):
+def test_zos_tso_command_empty_command(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_tso_command(command="")
     for result in results.contacted.values():
         assert result.get('changed') is False
 
-
-# The failure test
-# The input auth is not true or false.
-def test_zos_tso_command_failure3(ansible_zos_module):
-    hosts = ansible_zos_module
-    results = hosts.all.zos_tso_command(command="LU BJMAXY", auth='aaaa')
-    for result in results.contacted.values():
-        assert result.get('changed') is False
-
-
 # The failure test
 # The input command is no-existing command, the module return rc 255.
-def test_zos_tso_command_failure4(ansible_zos_module):
+def test_zos_tso_command_invalid_command(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_tso_command(command="xxxxxx")
     for result in results.contacted.values():
-        assert result.get('result')['ret_code'].get('code') == 255
+        assert result.get('result').get('rc') == 255
         assert result.get('changed') is False

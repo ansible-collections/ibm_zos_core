@@ -77,6 +77,24 @@ options:
     required: false
     default: "false"
     type: bool
+  encoding:
+    description:
+      - Specifies which encodings the fetched data set should be converted from
+        and to. If this parameter is not provided, this module assumes that 
+        source file or data set is encoded in IBM-1047 and will be converted 
+        to ISO8859-1.
+    required: false
+    type: dict
+    suboptions:
+      from:
+        description: The encoding to be converted from
+        required: true
+        type: str
+      to:
+        description: The encoding to be converted to
+        required: true
+        type: str  
+    default: { from: 'IBM-1047', to: 'ISO8859-1' }
 notes:
     - When fetching PDS(E) and VSAM data sets, temporary storage will be used
       on the remote z/OS system. After the PDS(E) or VSAM data set is
@@ -134,6 +152,15 @@ EXAMPLES = r'''
   zos_fetch:
     src: USER.TEST.PDS(DATA)
     dest: /tmp/
+    flat: true
+
+- name: Fetch a USS file and convert from IBM-037 to ISO8859-1
+  zos_fetch:
+    src: /etc/profile
+    dest: /tmp/
+    encoding:
+      from: IBM-037
+      to: ISO8859-1
     flat: true
 '''
 
@@ -400,17 +427,30 @@ def run_module():
             validate_checksum=dict(required=False, default=True, type='bool'),
             flat=dict(required=False, default=True, type='bool'),
             is_binary=dict(required=False, default=False, type='bool'),
-            use_qualifier=dict(required=False, default=False, type='bool')
+            use_qualifier=dict(required=False, default=False, type='bool'),
+            encoding=dict(
+                required=False, 
+                type=dict, 
+                default={'from': 'IBM-1047', 'to': 'ISO8859-1'}
+            )
         )
     )
 
+    module.params.update(dict(
+        from_encoding=module.params.get('encoding').get('from'),
+        to_encoding=module.params.get('encoding').get('to')
+        )
+    )
+    
     arg_def = dict(
         src=dict(arg_type='data_set_or_path_type', required=True),
         dest=dict(arg_type='path', required=True),
         fail_on_missing=dict(arg_type='bool', required=False, default=True),
         validate_checksum=dict(arg_type='bool', required=False, default=True),
         is_binary=dict(arg_type='bool', required=False, default=False),
-        use_qualifier=dict(arg_type='bool', required=False, default=False)
+        use_qualifier=dict(arg_type='bool', required=False, default=False),
+        from_encoding=dict(arg_type='encoding_type'),
+        to_encoding=dict(arg_type='encoding_type')
     )
 
     try:
@@ -418,7 +458,7 @@ def run_module():
         parsed_args = parser.parse_args(module.params)
     except ValueError as err:
         _fail_json(msg="Parameter verification failed", stderr=str(err))
-
+    
     src = parsed_args.get('src', None)
     b_src = to_bytes(src)
     fail_on_missing = boolean(parsed_args.get('fail_on_missing'))

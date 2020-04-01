@@ -52,7 +52,8 @@ import pytest
 def test_zos_tso_command_long_unauth_command(ansible_zos_module):
     hosts = ansible_zos_module
     # results = hosts.all.zos_tso_command(command="alloc da('imstestl.ims1.test10') like('imstestl.ims1.test05')")
-    results = hosts.all.zos_tso_command(command="alloc da('imstestl.ims1.temp.ps') catalog lrecl(133) blksize(13300) recfm(f b) dsorg(po) cylinders space(5,5) dir(5)")
+    results = hosts.all.zos_tso_command(command=
+    "alloc da('imstestl.ims1.temp.ps') catalog lrecl(133) blksize(13300) recfm(f b) dsorg(po) cylinders space(5,5) dir(5)")
     for result in results.contacted.values():
         assert result.get('result').get('rc') == 0
         assert result.get('changed') is True

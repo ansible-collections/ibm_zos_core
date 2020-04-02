@@ -81,8 +81,8 @@ content:
 changed:
     description:
        Indicates if any changes were made during module operation.
-       Given operator commands can introduce change and unknown to the
-       module, True is always returned unless either a module or
+       Given operator commands may introduce changes that are unknown to the
+       module. True is always returned unless either a module or
        command failure has occurred.
     returned: always
     type: bool

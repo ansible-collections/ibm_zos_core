@@ -56,13 +56,11 @@ def test_zos_tso_command_run_help(ansible_zos_module):
 
 
 # The happy path test
-# Run a long authorized tso command to allocate a dataset. 
+# Run a long authorized tso command to allocate a dataset.
 def test_zos_tso_command_long_auth_command_128_chars(ansible_zos_module):
     hosts = ansible_zos_module
-    command_string = (
-    "send 'Hello, this is a test message from zos_tso_command module. "
+    command_string = "send 'Hello, this is a test message from zos_tso_command module. "+
     "Im sending a command exceed 80 chars. Thank you.' user(omvsadm)"
-    )
     results = hosts.all.zos_tso_command(command=command_string, auth=True)
     for result in results.contacted.values():
         assert result.get('rc') == 0

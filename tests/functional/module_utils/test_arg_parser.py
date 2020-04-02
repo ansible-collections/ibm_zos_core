@@ -118,7 +118,6 @@ def test_alias_resolution(provided_args):
     )
     parser = BetterArgParser(arg_defs)
     result = parser.parse_args(provided_args)
-    print(result)
     result_simple = [str(x) for x in result.values()]
     for val in provided_args.values():
         assert str(val) in result_simple
@@ -515,3 +514,106 @@ def test_mutually_exclusive_parameters_two_values_set_top_level_defaults():
     parser = BetterArgParser(arg_defs)
     with pytest.raises(ValueError):
         parser.parse_args({})
+
+
+def test_custom_defined_values_top_level():
+    def special_names_get_uppercase(value, dependencies, kwargs):
+        if value in kwargs.get("special_names", []):
+            return value.upper()
+        return value
+
+    arg_defs = dict(
+        name=dict(
+            arg_type=special_names_get_uppercase,
+            required=True,
+            default="samplename",
+            special_names=["blake", "demetri", "ping", "crystal", "asif", "luke"],
+        ),
+        date=dict(arg_type="str", default="may 1, 2020"),
+        time=dict(arg_type="int"),
+    )
+    parser = BetterArgParser(arg_defs)
+    result = parser.parse_args({"name": "blake"})
+    assert result.get("name") == "BLAKE"
+    result = parser.parse_args({"name": "john"})
+    assert result.get("name") == "john"
+
+
+def test_custom_defined_values_top_level_required():
+    def special_user(value, dependencies, kwargs):
+        if dependencies.get("name") in kwargs.get("special_names", []):
+            return True
+        return False
+
+    arg_defs = dict(
+        name=dict(arg_type="str", required=True, default="samplename",),
+        date=dict(arg_type="str", default="may 1, 2020"),
+        time=dict(arg_type="int"),
+        age=dict(
+            arg_type="int",
+            required=special_user,
+            dependencies=["name"],
+            special_names=["blake", "demetri", "ping", "crystal", "asif", "luke"],
+        ),
+    )
+    parser = BetterArgParser(arg_defs)
+    with pytest.raises(ValueError):
+        parser.parse_args({"name": "blake"})
+    result = parser.parse_args({"name": "john"})
+    assert result.get("name") == "john"
+
+
+def test_custom_defined_values_second_level():
+    def special_names_get_uppercase(value, dependencies, kwargs):
+        if value in kwargs.get("special_names", []):
+            return value.upper()
+        return value
+
+    arg_defs = dict(
+        person=dict(
+            arg_type="dict",
+            options=dict(
+                name=dict(
+                    arg_type=special_names_get_uppercase,
+                    required=True,
+                    default="testname",
+                    special_names=[
+                        "blake",
+                        "demetri",
+                        "ping",
+                        "crystal",
+                        "asif",
+                        "luke",
+                    ],
+                ),
+                age=dict(arg_type="int", required=False),
+                address=dict(
+                    arg_type="dict",
+                    options=dict(
+                        street=dict(arg_type="str"), number=dict(arg_type="int")
+                    ),
+                ),
+            ),
+        )
+    )
+    parser = BetterArgParser(arg_defs)
+    result = parser.parse_args(
+        {
+            "person": {
+                "name": "blake",
+                "age": 23,
+                "address": {"street": "bailey ave", "number": 555},
+            }
+        }
+    )
+    assert result.get("person").get("name") == "BLAKE"
+    result = parser.parse_args(
+        {
+            "person": {
+                "name": "john",
+                "age": 23,
+                "address": {"street": "bailey ave", "number": 555},
+            }
+        }
+    )
+    assert result.get("person").get("name") == "john"

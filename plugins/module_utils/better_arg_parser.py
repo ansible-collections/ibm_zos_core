@@ -125,8 +125,8 @@ class BetterArgHandler(object):
             "qualifier": self._qualifier_type,
             "qualifier_pattern": self._qualifier_pattern_type,
             "volume": self._volume_type,
-            "data_set_or_path_type": self._data_set_or_path_type,
-            "encoding_type": self._encoding_type,
+            "data_set_or_path": self._data_set_or_path_type,
+            "encoding": self._encoding_type,
         }
 
     def handle_arg(self):
@@ -279,6 +279,26 @@ class BetterArgHandler(object):
             )
         return str(contents)
 
+    # ---------------------------------------------------------------------------- #
+    #                             DATA SET NAMING RULES                            #
+    # ---------------------------------------------------------------------------- #
+    # A data set name consists of one or more parts connected by periods. Each part is called a qualifier.
+    # Each qualifier must begin with an alphabetic character (A-Z) or the special characters $, #, @.
+    # The remaining characters in each qualifier can be alphabetic characters, digits (0-9), a hyphen (-),
+    #  or the special characters $, #, @.
+    # Each qualifier must be one to eight characters long.
+    # The maximum length of a complete data set name before specifying a member name is 44 characters,
+    # including the periods.
+
+    # ---------------------------------------------------------------------------- #
+    #                            PDS member naming rules                           #
+    # ---------------------------------------------------------------------------- #
+    # A member name cannot be longer than eight characters.
+    # The first member character must be either a letter or one of the following three special characters: #, @, $.
+    # The remaining seven characters can be letters, numbers, or one of the following special characters: #, @, or $.
+    # A PDS member name cannot contain a hyphen (-).
+    # A PDS member name cannot contain accented characters (à, é, è, and so on).
+
     def _data_set_type(self, contents, resolve_dependencies):
         """Resolver for data_set type arguments.
 
@@ -294,7 +314,7 @@ class BetterArgHandler(object):
             str -- The arguments contents after any necessary operations.
         """
         if not re.fullmatch(
-            r"^(?:(?:[A-Z]{1}[A-Z0-9]{0,7})(?:[.]{1})){1,21}[A-Z]{1}[A-Z0-9]{0,7}(?:\([A-Z]{1}[A-Z0-9]{0,7}\)){0,1}$",
+            r"^(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}(?:\([A-Z$#@]{1}[A-Z0-9$#@]{0,7}\)){0,1}$",
             str(contents),
             re.IGNORECASE,
         ):
@@ -318,7 +338,7 @@ class BetterArgHandler(object):
             str -- The arguments contents after any necessary operations.
         """
         if not re.fullmatch(
-            r"^(?:(?:[A-Z]{1}[A-Z0-9]{0,7})(?:[.]{1})){1,21}[A-Z]{1}[A-Z0-9]{0,7}$",
+            r"^(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}$",
             str(contents),
             re.IGNORECASE,
         ):
@@ -344,7 +364,7 @@ class BetterArgHandler(object):
             str -- The arguments contents after any necessary operations.
         """
         if not re.fullmatch(
-            r"^(?:(?:[A-Z]{1}[A-Z0-9]{0,7})(?:[.]{1})){1,21}[A-Z]{1}[A-Z0-9]{0,7}\([A-Z]{1}[A-Z0-9]{0,7}\)$",
+            r"^(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}\([A-Z$#@]{1}[A-Z0-9$#@]{0,7}\)$",
             str(contents),
             re.IGNORECASE,
         ):
@@ -415,7 +435,7 @@ class BetterArgHandler(object):
         Returns:
             str -- The arguments contents after any necessary operations.
         """
-        if not re.fullmatch(r"^[A-Z0-9]{1,6}$", str(contents), re.IGNORECASE,):
+        if not re.fullmatch(r"^[A-Z0-9@#$]{1,6}$", str(contents), re.IGNORECASE,):
             raise ValueError(
                 'Invalid argument type for "{0}". expected "volume"'.format(contents)
             )
@@ -436,7 +456,7 @@ class BetterArgHandler(object):
             str -- The arguments contents after any necessary operations.
         """
         if not re.fullmatch(
-            r"^(?:(?:[A-Z]{1}[A-Z0-9]{0,7})(?:[.]{1})){1,21}[A-Z]{1}[A-Z0-9]{0,7}(?:\([A-Z]{1}[A-Z0-9]{0,7}\)){0,1}$",
+            r"^(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}(?:\([A-Z$#@]{1}[A-Z0-9$#@]{0,7}\)){0,1}$",
             str(contents),
             re.IGNORECASE,
         ):

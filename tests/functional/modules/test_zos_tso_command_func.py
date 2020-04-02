@@ -59,8 +59,8 @@ def test_zos_tso_command_run_help(ansible_zos_module):
 # Run a long authorized tso command to allocate a dataset.
 def test_zos_tso_command_long_auth_command_128_chars(ansible_zos_module):
     hosts = ansible_zos_module
-    command_string = "send 'Hello, this is a test message from zos_tso_command module. "+
-    "Im sending a command exceed 80 chars. Thank you.' user(omvsadm)"
+    command_string = ("send 'Hello, this is a test message from zos_tso_command module. "
+    "Im sending a command exceed 80 chars. Thank you.' user(omvsadm)")
     results = hosts.all.zos_tso_command(command=command_string, auth=True)
     for result in results.contacted.values():
         assert result.get('rc') == 0
@@ -68,7 +68,7 @@ def test_zos_tso_command_long_auth_command_128_chars(ansible_zos_module):
 
 
 # The happy path test
-# Run a long unauthorized tso command to allocate a dataset. 
+# Run a long unauthorized tso command to allocate a dataset.
 def test_zos_tso_command_long_unauth_command_116_chars(ansible_zos_module):
     hosts = ansible_zos_module
     command_string = "alloc da('imstestl.ims1.temp.ps') catalog lrecl(133) blksize(13300) recfm(f b) dsorg(po) cylinders space(5,5) dir(5)"
@@ -119,7 +119,7 @@ def test_zos_tso_command_both_unauth_and_auth_command(ansible_zos_module):
 
 
 # The failure path test
-# Delete dataset is both auth or unauth command, the dataset has be deleted. 
+# Delete dataset is both auth or unauth command, the dataset has be deleted.
 def test_zos_tso_command_valid_command_failed_as_has_been_deleted(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_tso_command(command="delete 'imstestl.ims1.temp.ps'")

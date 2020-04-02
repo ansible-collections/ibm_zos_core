@@ -94,12 +94,12 @@ def run_tso_command(command, auth, module):
                 has that limitation each line. So, here we divide the long command to multiple lines.
                 Each line contains 70 chars, the line-continuation character -， and linefeed char.
                 """
-                lines = len(command)//70
+                lines = len(command) // 70
                 remainder = len(command) % 70
                 new_command = ''
                 for index in range(lines):
-                    new_command = new_command + command[index*70: index*70+70] + "-\n"
-                new_command = new_command + command[lines*70: lines*70+remainder]
+                    new_command = new_command + command[index * 70: index * 70 + 70] + "-\n"
+                new_command = new_command + command[lines * 70: lines * 70 + remainder]
                 rc, stdout, stderr = module.run_command("mvscmdauth --pgm=IKJEFT01 --sysprint=* --systsprt=* "
                                                         "--systsin=stdin", data=new_command, use_unsafe_shell=True)
 

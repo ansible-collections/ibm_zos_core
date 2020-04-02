@@ -115,7 +115,7 @@ def run_tso_command(command, auth, module):
 def run_module():
     module_args = dict(
         command=dict(type='str', required=True),
-        auth=dict(type='bool', required=False),
+        auth=dict(type='bool', required=False, default=False),
     )
 
     module = AnsibleModule(

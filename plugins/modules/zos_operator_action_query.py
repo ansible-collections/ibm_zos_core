@@ -9,12 +9,12 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 ANSIBLE_METADATA = {
-    'metadata_version': '1.1',
-    'status': ['preview'],
-    'supported_by': 'community'
+    "metadata_version": "1.1",
+    "status": ["preview"],
+    "supported_by": "community",
 }
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: zos_operator_action_query
 short_description: Display operator action messages
@@ -52,9 +52,9 @@ options:
     required: false
 seealso:
 - module: zos_operator
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 - name: Display all outstanding messages issued on system MV2H
   zos_operator_outstanding_action:
       system: mv2h
@@ -72,9 +72,9 @@ EXAMPLES = r'''
       job_name: mq*
       message_id: dsi*
       system: mv29
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 changed:
     description:
         Indicates if any changes were made during module operation. Given
@@ -164,12 +164,14 @@ actions:
                 "message_id": 'DFS3139I'
             }
         ]
-'''
+"""
 
 from ansible.module_utils.basic import AnsibleModule
 import re
 from traceback import format_exc
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import BetterArgParser
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
+    BetterArgParser,
+)
 
 try:
     from zoautil_py import OperatorCmd
@@ -179,49 +181,37 @@ except Exception:
 
 def run_module():
     module_args = dict(
-        system=dict(type='str', required=False),
-        message_id=dict(type='str', required=False),
-        job_name=dict(type='str', required=False)
+        system=dict(type="str", required=False),
+        message_id=dict(type="str", required=False),
+        job_name=dict(type="str", required=False),
     )
 
-    result = dict(
-        changed=False
-    )
+    result = dict(changed=False)
 
-    module = AnsibleModule(
-        argument_spec=module_args,
-        supports_check_mode=False
-    )
+    module = AnsibleModule(argument_spec=module_args, supports_check_mode=False)
 
     try:
         new_params = parse_params(module.params)
         requests = find_required_request(new_params)
         if requests:
-            result['count'] = len(requests)
+            result["count"] = len(requests)
     except Error as e:
         module.fail_json(msg=e.msg, **result)
     except Exception as e:
         trace = format_exc()
-        module.fail_json(msg='An unexpected error occurred: {0}'.format(trace), **result)
+        module.fail_json(
+            msg="An unexpected error occurred: {0}".format(trace), **result
+        )
 
-    result['actions'] = requests
+    result["actions"] = requests
     module.exit_json(**result)
 
 
 def parse_params(params):
     arg_defs = dict(
-        system=dict(
-            arg_type=system_type,
-            required=False
-        ),
-        message_id=dict(
-            arg_type=message_id_type,
-            required=False
-        ),
-        job_name=dict(
-            arg_type=job_name_type,
-            required=False
-        )
+        system=dict(arg_type=system_type, required=False),
+        message_id=dict(arg_type=message_id_type, required=False),
+        job_name=dict(arg_type=job_name_type, required=False),
     )
     parser = BetterArgParser(arg_defs)
     new_params = parser.parse_args(params)
@@ -229,28 +219,28 @@ def parse_params(params):
 
 
 def system_type(arg_val, params):
-    if arg_val and arg_val != '*':
-        arg_val = arg_val.strip('*')
+    if arg_val and arg_val != "*":
+        arg_val = arg_val.strip("*")
     value = arg_val
-    regex = '^[a-zA-Z0-9]{1,8}$'
+    regex = "^[a-zA-Z0-9]{1,8}$"
     validate_parameters_based_on_regex(value, regex)
     return arg_val
 
 
 def message_id_type(arg_val, params):
-    if arg_val and arg_val != '*':
-        arg_val = arg_val.strip('*')
+    if arg_val and arg_val != "*":
+        arg_val = arg_val.strip("*")
     value = arg_val
-    regex = '^[a-zA-Z0-9]{1,8}$'
+    regex = "^[a-zA-Z0-9]{1,8}$"
     validate_parameters_based_on_regex(value, regex)
     return arg_val
 
 
 def job_name_type(arg_val, params):
-    if arg_val and arg_val != '*':
-        arg_val = arg_val.strip('*')
+    if arg_val and arg_val != "*":
+        arg_val = arg_val.strip("*")
     value = arg_val
-    regex = '^[a-zA-Z0-9]{1,8}$'
+    regex = "^[a-zA-Z0-9]{1,8}$"
     validate_parameters_based_on_regex(value, regex)
     return arg_val
 
@@ -271,7 +261,7 @@ def find_required_request(params):
     if requests:
         pass
     else:
-        message = 'There is no such request given the condition, check your command or update your options.'
+        message = "There is no such request given the condition, check your command or update your options."
         raise OperatorCmdError(message)
     return requests
 
@@ -282,8 +272,8 @@ def create_merge_list():
     'd r,a,s' response like: "742 R MV28     JOB57578 &742 ARC0055A REPLY 'GO'OR 'CANCEL'"
     'd r,a,jn' response like:"742 R FVFNT29H &742 ARC0055A REPLY 'GO' OR 'CANCEL'"
     the results will be merged so that a full list of information returned on condition"""
-    operator_cmd_a = 'd r,a,s'
-    operator_cmd_b = 'd r,a,jn'
+    operator_cmd_a = "d r,a,s"
+    operator_cmd_b = "d r,a,jn"
     message_a = execute_command(operator_cmd_a)
     message_b = execute_command(operator_cmd_b)
     list_a = parse_result_a(message_a)
@@ -294,16 +284,18 @@ def create_merge_list():
 
 def filter_requests(merged_list, params):
     """filter the request given the params provided."""
-    system = params.get('system')
-    message_id = params.get('message_id')
-    job_name = params.get('job_name')
+    system = params.get("system")
+    message_id = params.get("message_id")
+    job_name = params.get("job_name")
     newlist = merged_list
     if system:
-        newlist = handle_conditions(newlist, 'system', system.upper().strip('*'))
+        newlist = handle_conditions(newlist, "system", system.upper().strip("*"))
     if job_name:
-        newlist = handle_conditions(newlist, 'job_name', job_name.upper().strip('*'))
+        newlist = handle_conditions(newlist, "job_name", job_name.upper().strip("*"))
     if message_id:
-        newlist = handle_conditions(newlist, 'message_id', message_id.upper().strip('*'))
+        newlist = handle_conditions(
+            newlist, "message_id", message_id.upper().strip("*")
+        )
     return newlist
 
 
@@ -319,8 +311,8 @@ def handle_conditions(list, condition_type, condition_values):
 
 def execute_command(operator_cmd):
     rc_message = OperatorCmd.execute(operator_cmd)
-    rc = rc_message.get('rc')
-    message = rc_message.get('message')
+    rc = rc_message.get("rc")
+    message = rc_message.get("message")
     if rc > 0:
         raise OperatorCmdError(message)
     return message
@@ -335,41 +327,38 @@ def parse_result_a(result):
 
     dict_temp = {}
     list = []
-    request_temp = ''
+    request_temp = ""
     end_flag = False
-    lines = result.split('\n')
-    regex = re.compile(r'\s+')
+    lines = result.split("\n")
 
     for index, line in enumerate(lines):
         line = line.strip()
-        # handle pattern"742 R FVFNT29H &742 ARC0055A REPLY 'GO' OR 'CANCEL'"
-        pattern_without_job_id = re.compile(r'\s*[0-9]{2,}\s[A-Z]{1}\s[a-zA-Z0-9]{1,8}')
-        # handle pattern "742 R MV28     JOB57578 &742 ARC0055A REPLY 'GO' OR 'CANCEL'"
-        pattern_with_job_id = re.compile(r'\s*[0-9]{2,}\s[A-Z]{1}\s[A-Z0-9]{1,8}\s+[A-Z0-9]{1,8}\s')
-        m = pattern_without_job_id.search(line)
-        n = pattern_with_job_id.search(line)
-
+        pattern = re.compile(
+            r"\s*([0-9]{2,})\s([A-Z]{1})\s([A-Z0-9]{1,8})\s+((?:[A-Z0-9]{1,8})?)\s*[&*]?[0-9]+(.*)"
+        )
+        m = pattern.search(line)
         if index == (len(lines) - 1):
             end_flag = True
-        if n or m or end_flag:
+        if m or end_flag:
             if request_temp:
-                dict_temp['message_text'] = request_temp
+                dict_temp["message_text"] = request_temp
                 list.append(dict_temp)
-                request_temp = ''
+                request_temp = ""
                 dict_temp = {}
-            if n:
-                elements = regex.split(line, 4)
-                dict_temp = {'number': elements[0], 'type': elements[1], 'system': elements[2], 'job_id': elements[3]}
-                request_temp = elements[4].strip()
-                continue
             if m:
-                elements = line.split(' ', 3)
-                dict_temp = {'number': elements[0], 'type': elements[1], 'system': elements[2]}
-                request_temp = elements[3].strip()
+                dict_temp = {
+                    "number": m.group(1),
+                    "type": m.group(2),
+                    "system": m.group(3),
+                }
+                if m.group(4) != "":
+                    dict_temp["job_id"] = (m.group(4),)
+                request_temp = m.group(5).strip()
                 continue
         else:
             if request_temp:
-                request_temp = request_temp + ' ' + line
+                request_temp = request_temp + " " + line
+
     return list
 
 
@@ -380,16 +369,20 @@ def parse_result_b(result):
 
     dict_temp = {}
     list = []
-    lines = result.split('\n')
-    regex = re.compile(r'\s+')
+    lines = result.split("\n")
+    regex = re.compile(r"\s+")
     for index, line in enumerate(lines):
         line = line.strip()
-        pattern_with_job_name = re.compile(r'\s*[0-9]{2,}\s[A-Z]{1}\s[A-Z0-9]{1,8}\s+')
+        pattern_with_job_name = re.compile(
+            r"\s*([0-9]{2,})\s([A-Z]{1})\s+(?:[A-Z0-9]{1,8})?\s*[&*]?[0-9]+\s([A-Z0-9]+)"
+        )
         m = pattern_with_job_name.search(line)
         if m:
-            elements = regex.split(line, 5)
-            # 215 R IM5GCONN *215 HWSC0000I *IMS CONNECT READY*  IM5GCONN
-            dict_temp = {'number': elements[0], ' job_name': elements[2], 'message_id': elements[4]}
+            dict_temp = {
+                "number": m.group(1),
+                "job_name": m.group(2),
+                "message_id": m.group(3),
+            }
             list.append(dict_temp)
             continue
     return list
@@ -399,7 +392,7 @@ def merge_list(list_a, list_b):
     merged_list = []
     for dict_a in list_a:
         for dict_b in list_b:
-            if dict_a.get('number') == dict_b.get('number'):
+            if dict_a.get("number") == dict_b.get("number"):
                 dict_z = dict_a.copy()
                 dict_z.update(dict_b)
                 merged_list.append(dict_z)
@@ -412,17 +405,21 @@ class Error(Exception):
 
 class ValidationError(Error):
     def __init__(self, message):
-        self.msg = 'An error occurred during validate the input parameters: "{0}"'.format(message)
+        self.msg = 'An error occurred during validate the input parameters: "{0}"'.format(
+            message
+        )
 
 
 class OperatorCmdError(Error):
     def __init__(self, message):
-        self.msg = 'An error occurred during issue the operator command, the response is "{0}"'.format(message)
+        self.msg = 'An error occurred during issue the operator command, the response is "{0}"'.format(
+            message
+        )
 
 
 def main():
     run_module()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

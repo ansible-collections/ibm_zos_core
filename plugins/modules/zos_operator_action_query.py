@@ -56,19 +56,19 @@ seealso:
 
 EXAMPLES = r"""
 - name: Display all outstanding messages issued on system MV2H
-  zos_operator_outstanding_action:
+  zos_operator_action_query:
       system: mv2h
 
 - name: Display all outstanding messages whose job name begin with im5
-  zos_operator_outstanding_action:
+  zos_operator_action_query:
       job_name: im5*
 
 - name: Display all outstanding messages whose message id begin with dsi*
-  zos_operator_outstanding_action:
+  zos_operator_action_query:
       message_id: dsi*
 
 - name: Display all outstanding messages given job_name, message_id, system
-  zos_operator_outstanding_action:
+  zos_operator_action_query:
       job_name: mq*
       message_id: dsi*
       system: mv29
@@ -370,7 +370,6 @@ def parse_result_b(result):
     dict_temp = {}
     list = []
     lines = result.split("\n")
-    regex = re.compile(r"\s+")
     for index, line in enumerate(lines):
         line = line.strip()
         pattern_with_job_name = re.compile(

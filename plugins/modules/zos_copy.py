@@ -397,35 +397,25 @@ def _copy_to_seq(
     data, 
     validate=True, 
     local_checksum=None, 
-    remote_src=False, 
     src_ds_type=None
 ):
-    if remote_src:
-        cmd = None
-        if src_ds_type == 'USS':
-            cmd = "cp {0} \"//'{1}'\"".format(src, dest)
-        elif src_ds_type in MVS_SEQ.union(MVS_PARTITIONED):
-            cmd = "cp \"//'{0}'\" \"//'{1}'\"".format(src, dest)
-        else:
-            _copy_to_ds(dest, remote_src=True, src_ds=src)
-    else:
-        remote_checksum = _get_mvs_checksum(dest)
-        rc = Datasets.write(dest, _ascii_to_ebcdic(src, data))
-        if rc != 0:
+    remote_checksum = _get_mvs_checksum(dest)
+    rc = Datasets.write(dest, _ascii_to_ebcdic(src, data))
+    if rc != 0:
+        module.fail_json(
+            msg="Unable to write content to destination {}".format(dest)
+        )
+    if validate:
+        new_checksum = _get_mvs_checksum(dest)
+        if remote_checksum != new_checksum:
+            changed = True
+        if new_checksum != local_checksum:
             module.fail_json(
-                msg="Unable to write content to destination {}".format(dest)
+                msg="Checksum mismatch", 
+                checksum=new_checksum, 
+                local_checksum=local_checksum, 
+                changed=changed
             )
-        if validate:
-            new_checksum = _get_mvs_checksum(dest)
-            if remote_checksum != new_checksum:
-                changed = True
-            if new_checksum != local_checksum:
-                module.fail_json(
-                    msg="Checksum mismatch", 
-                    checksum=new_checksum, 
-                    local_checksum=local_checksum, 
-                    changed=changed
-                )
 
 
 def _copy_remote_pdse(src_ds, dest, copy_member=False):
@@ -449,26 +439,22 @@ def _copy_remote_pdse(src_ds, dest, copy_member=False):
 def _copy_to_pdse(
     src_dir, 
     dest, 
-    copy_member=False, 
-    remote_src=False, 
+    copy_member=False,  
     src_file=None
 ):
-    if remote_src:
-        _copy_remote_pdse(src_dir, dest, copy_member=copy_member)
+    cmd = None
+    if copy_member:
+        cmd = "cp {0} \"//'{}'\"".format(src_file, dest)
     else:
-        cmd = None
-        if copy_member:
-            cmd = "cp {0} \"//'{}'\"".format(src_file, dest)
-        else:
-            path, dirs, files = next(os.walk(src_dir))
-            cmd = "cp"
-            for file in files:
-                file = file if '.' not in file else file[:file.rfind('.')]
-                cmd += " {0}/{1}".format(path, file)
-            cmd += " \"//'{0}'\"".format(dest)
-        rc, out, err = module.run_command(cmd)
-        if rc != 0:
-            module.fail_json(msg="Unable to copy to data set {}".format(dest))
+        path, dirs, files = next(os.walk(src_dir))
+        cmd = "cp"
+        for file in files:
+            file = file if '.' not in file else file[:file.rfind('.')]
+            cmd += " {0}/{1}".format(path, file)
+        cmd += " \"//'{0}'\"".format(dest)
+    rc, out, err = module.run_command(cmd)
+    if rc != 0:
+        module.fail_json(msg="Unable to copy to data set {}".format(dest))
 
 
 def _create_data_set(src, ds_name, ds_type, size, d_blocks=None):
@@ -480,6 +466,17 @@ def _create_data_set(src, ds_name, ds_type, size, d_blocks=None):
             )
     else:
         _allocate_vsam(ds_name, size)
+
+
+def _remote_copy_handler(src, dest, src_ds_type, dest_ds_type, module_args):
+    if dest_ds_type in MVS_SEQ:
+        cmd = None
+        if src_ds_type == 'USS':
+            cmd = "cp {0} \"//'{1}'\"".format(src, dest)
+        elif src_ds_type in MVS_SEQ.union(MVS_PARTITIONED):
+            cmd = "cp \"//'{0}'\" \"//'{1}'\"".format(src, dest)
+        else:
+            _copy_to_ds(dest, remote_src=True, src_ds=src)
 
 
 def main():
@@ -532,6 +529,12 @@ def main():
 
     changed = False
 
+    try:
+        dest_ds_utils = data_set_utils.DataSetUtils(module, dest)
+        dest_ds_type = dest_ds_utils.get_data_set_type()
+    except Exception as err:
+        module.fail_json(msg=str(err))
+
     if remote_src:
         try:
             src_ds_utils = data_set_utils.DataSetUtils(module, src)
@@ -539,15 +542,11 @@ def main():
         except Exception as err:
             module.fail_json(msg=str(err))
 
-    try:
-        dest_ds_utils = data_set_utils.DataSetUtils(module, dest)
-        dest_ds_type = dest_ds_utils.get_data_set_type()
-    except Exception as err:
-        module.fail_json(msg=str(err))
+        _remote_copy_handler(src, dest, src_ds_type, dest_ds_type, module.params)
     
-    if not dest_ds_type:
+    if dest_ds_utils.data_set_exists() is False:
         d_blocks = None
-        if is_pds:
+        if is_pds or src_ds_type == "PO":
             dest_ds_type = "PDSE"
             d_blocks = math.ceil(_num_files/6)
         elif is_vsam:

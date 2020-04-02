@@ -75,10 +75,6 @@ EXAMPLES = r'''
 '''
 
 from ansible.module_utils.basic import AnsibleModule
-try:
-    from zoautil_py import Datasets
-except Exception:
-    Datasets = ""
 from traceback import format_exc
 
 
@@ -90,22 +86,23 @@ def run_tso_command(command, auth, module):
             read error even when the return code is 0, so use ZOAU
             command mvscmdauth to run authorized command.
             """
-            if len(command) < 80:
+            if len(command) < 73:
                 rc, stdout, stderr = module.run_command("mvscmdauth --pgm=IKJEFT01 --sysprint=* --systsprt=* "
                                                         "--systsin=stdin", data=command, use_unsafe_shell=True)
             else:
-                """if the command length longer than 80 chars,
-                as ZOAU mvscmd does not support stdin longer than 80 chars,
-                so we have to store the command in a temp dataset and run mvscmdauth
-                command.
+                """if the command exceed 72 chars, we will put it in multiple lines as stdin data
+                has that limitation each line. So, here we divide the long command to multiple lines.
+                Each line contains 70 chars, the line-continuation character -， and linefeed char.
                 """
-                hlq = Datasets.hlq()
-                TEMP_COMMAND_DS = Datasets.temp_name(hlq)
-                Datasets.create(TEMP_COMMAND_DS, type="SEQ", format="FB")
-                Datasets.write(TEMP_COMMAND_DS, command)
+                lines = len(command)//70
+                remainder = len(command) % 70
+                new_command = ''
+                for index in range(lines):
+                    new_command = new_command + command[index*70: index*70+70] + "-\n"
+                new_command = new_command + command[lines*70: lines*70+remainder]
                 rc, stdout, stderr = module.run_command("mvscmdauth --pgm=IKJEFT01 --sysprint=* --systsprt=* "
-                                                        "--systsin=" + TEMP_COMMAND_DS, use_unsafe_shell=True)
-                Datasets.delete(TEMP_COMMAND_DS)
+                                                        "--systsin=stdin", data=new_command, use_unsafe_shell=True)
+
         else:
             """Run the unauthorized tso command."""
             rc, stdout, stderr = module.run_command(['tso', command])

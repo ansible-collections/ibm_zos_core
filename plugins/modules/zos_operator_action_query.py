@@ -238,7 +238,7 @@ def job_name_type(arg_val, params):
 
 def validate_parameters_based_on_regex(value, regex):
     pattern = re.compile(regex)
-    if pattern.search(value):
+    if pattern.fullmatch(value):
         pass
     else:
         raise ValidationError(str(value))

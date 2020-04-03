@@ -17,7 +17,7 @@ ANSIBLE_METADATA = {
 DOCUMENTATION = r"""
 ---
 module: zos_operator_action_query
-short_description: Display operator action messages
+short_description: Display messages requiring action
 description:
   - Get a list of outstanding messages requiring operator action given one or
     more conditions.

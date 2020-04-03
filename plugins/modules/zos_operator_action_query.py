@@ -219,30 +219,21 @@ def parse_params(params):
 
 
 def system_type(arg_val, params):
-    if arg_val and arg_val != "*":
-        arg_val = arg_val.strip("*")
-    value = arg_val
-    regex = "^[a-zA-Z0-9]{1,8}$"
-    validate_parameters_based_on_regex(value, regex)
-    return arg_val
+    regex = "^(?:[a-zA-Z0-9]{1,8})|(?:[a-zA-Z0-9]{0,7}[*])$"
+    validate_parameters_based_on_regex(arg_val, regex)
+    return arg_val.upper()
 
 
 def message_id_type(arg_val, params):
-    if arg_val and arg_val != "*":
-        arg_val = arg_val.strip("*")
-    value = arg_val
-    regex = "^[a-zA-Z0-9]{1,8}$"
-    validate_parameters_based_on_regex(value, regex)
-    return arg_val
+    regex = "^(?:[a-zA-Z0-9]{1,})|(?:[a-zA-Z0-9]{0,}[*])$"
+    validate_parameters_based_on_regex(arg_val, regex)
+    return arg_val.upper()
 
 
 def job_name_type(arg_val, params):
-    if arg_val and arg_val != "*":
-        arg_val = arg_val.strip("*")
-    value = arg_val
-    regex = "^[a-zA-Z0-9]{1,8}$"
-    validate_parameters_based_on_regex(value, regex)
-    return arg_val
+    regex = "^(?:[a-zA-Z0-9]{1,8})|(?:[a-zA-Z0-9]{0,7}[*])$"
+    validate_parameters_based_on_regex(arg_val, regex)
+    return arg_val.upper()
 
 
 def validate_parameters_based_on_regex(value, regex):
@@ -289,21 +280,22 @@ def filter_requests(merged_list, params):
     job_name = params.get("job_name")
     newlist = merged_list
     if system:
-        newlist = handle_conditions(newlist, "system", system.upper().strip("*"))
+        newlist = handle_conditions(newlist, "system", system)
     if job_name:
-        newlist = handle_conditions(newlist, "job_name", job_name.upper().strip("*"))
+        newlist = handle_conditions(newlist, "job_name", job_name)
     if message_id:
-        newlist = handle_conditions(
-            newlist, "message_id", message_id.upper().strip("*")
-        )
+        newlist = handle_conditions(newlist, "message_id", message_id)
     return newlist
 
 
-def handle_conditions(list, condition_type, condition_values):
-    regex = re.compile(condition_values)
+def handle_conditions(list, condition_type, value):
+    # regex = re.compile(condition_values)
     newlist = []
     for dict in list:
-        exist = regex.search(dict.get(condition_type))
+        if value.endswith("*"):
+            exist = dict.get(condition_type).startswith(value.rstrip("*"))
+        else:
+            exist = dict.get(condition_type) == value
         if exist:
             newlist.append(dict)
     return newlist

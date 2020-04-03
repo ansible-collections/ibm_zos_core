@@ -249,7 +249,7 @@ class DataSetUtils(object):
             dict -- Dictionary containing the output parameters of LISTCAT
         """
         result = dict()
-        if not "NOT FOUND" in output:
+        if "NOT FOUND" not in output:
             volser_output = re.findall(r"VOLSER-*[A-Z|0-9]*", output)
             result['volser'] = ''.join(
                 re.findall(r"-[A-Z|0-9]*", volser_output[0])

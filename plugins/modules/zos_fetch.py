@@ -556,13 +556,13 @@ def run_module():
             if fail_on_missing:
                 fetch_handler._fail_json(
                     msg=(
-                        "The data set {0} does not exist or is "
+                        "The data set '{0}' does not exist or is "
                         "uncataloged".format(ds_name)
                     )
                 )
             module.exit_json(
                 note=(
-                    "Source {0} was not found. No data was fetched".format(ds_name)
+                    "Source '{0}' was not found. No data was fetched".format(ds_name)
                 )
             )
         ds_type = ds_utils.get_data_set_type()
@@ -589,6 +589,12 @@ def run_module():
 
     elif ds_type == "PO":
         if _fetch_member:
+            member_name = src[src.find('(') + 1 : src.find(')')]
+            if not ds_utils.data_set_member_exists(member_name):
+                fetch_handler._fail_json(
+                    msg=("The data set member '{0}' was not found inside data" 
+                         " set '{1}'").format(member_name, ds_name)
+                )
             file_path = fetch_handler._fetch_mvs_data(src, is_binary, encoding)
             res_args['remote_path'] = file_path
         else:
@@ -601,7 +607,7 @@ def run_module():
     elif ds_type == 'USS':
         if not os.access(b_src, os.R_OK):
             fetch_handler._fail_json(
-                msg="File {0} does not have appropriate read permission".format(src)
+                msg="File '{0}' does not have appropriate read permission".format(src)
             )
         file_path = fetch_handler._fetch_uss_file(src, is_binary, encoding)
         res_args['remote_path'] = file_path

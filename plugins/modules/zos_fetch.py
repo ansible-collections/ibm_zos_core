@@ -185,11 +185,6 @@ checksum:
     returned: success and src is a non-partitioned data set
     type: str
     sample: 8d320d5f68b048fc97559d771ede68b37a71e8374d1d678d96dcfa2b2da7a64e
-md5sum:
-    description: The MD5 hash of the fetched file
-    returned: success and src is a USS file
-    type: str
-    sample: 9011901c4b1bba2fa8b73b0409af8a10
 data_set_type:
     description: Indicates the fetched file's data set type
     returned: success
@@ -241,9 +236,11 @@ import base64
 import hashlib
 import tempfile
 import re
+import os
 
-from os import access, R_OK
 from math import floor, ceil
+from shutil import rmtree, move
+from shlex import quote
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils._text import to_bytes
 from ansible.module_utils.parsing.convert_bool import boolean
@@ -258,207 +255,246 @@ except Exception:
     types = ""
 
 
-# Ansible module object
-module = None
+class FetchHandler:
+    def __init__(self, module):
+        self.module = module
 
-MVS_DS_TYPES = frozenset({'PS', 'PO', 'PDSE', 'PE'})
+    def _fail_json(self, **kwargs):
+        """ Wrapper for AnsibleModule.fail_json """
+        self.module.fail_json(**kwargs)
 
+    def _run_command(self, cmd, **kwargs):
+        """ Wrapper for AnsibleModule.run_command """
+        return self.module.run_command(cmd, **kwargs)
 
-def _fail_json(**kwargs):
-    """ Wrapper for AnsibleModule.fail_json """
-    module.fail_json(**kwargs)
+    def _get_vsam_size(self, vsam):
+        """ Invoke IDCAMS LISTCAT command to get the record length and space used.
+            Then estimate the space used by the VSAM data set.
+        """
+        space_pri = 0
+        total_size = 0
+        # Bytes per cylinder for a 3390 DASD
+        bytes_per_cyl = 849960
 
+        listcat_cmd = " LISTCAT ENT('{0}') ALL".format(vsam)
+        cmd = 'mvscmdauth --pgm=idcams --sysprint=stdout --sysin=stdin'
+        rc, out, err = self._run_command(cmd, data=listcat_cmd)
+        if not rc:
+            find_space_pri = re.findall(r'SPACE-PRI-*\d+', out)
+            if find_space_pri:
+                space_pri = int(''.join(re.findall(r'\d+', find_space_pri[0])))
+            total_size = ceil((bytes_per_cyl * space_pri)/1024)
+        else:
+            self._fail_json(
+                msg="Unable to obtain data set information for {0}: {1}".format(vsam, err),
+                stdout=out,
+                stderr=err,
+                stdout_lines=out.splitlines(),
+                stderr_lines=err.splitlines(),
+                rc=rc
+            )
+        return total_size
 
-def _run_command(cmd, **kwargs):
-    """ Wrapper for AnsibleModule.run_command """
-    return module.run_command(cmd, **kwargs)
+    def _copy_vsam_to_temp_data_set(self, ds_name):
+        """ Copy VSAM data set to a temporary sequential data set """
+        check_rc = 0
+        mvs_rc = 0
+        vsam_size = self._get_vsam_size(ds_name)
+        try:
+            sysin = data_set_utils.DataSetUtils.create_temp_data_set('SYSIN')
+            sysprint = data_set_utils.DataSetUtils.create_temp_data_set('SYSPRINT')
+            out_ds_name = data_set_utils.DataSetUtils.create_temp_data_set(
+                'VSM', size="{0}K".format(vsam_size)
+            )
+            repro_sysin = ' REPRO INFILE(INPUT)  OUTFILE(OUTPUT) '
+            Datasets.write(sysin, repro_sysin)
 
+            dd_statements = []
+            dd_statements.append(types.DDStatement(ddName='sysin', dataset=sysin))
+            dd_statements.append(types.DDStatement(ddName='input', dataset=ds_name))
+            dd_statements.append(types.DDStatement(ddName='output', dataset=out_ds_name))
+            dd_statements.append(types.DDStatement(ddName='sysprint', dataset=sysprint))
 
-def _fetch_uss_file(src, validate_checksum, is_binary):
-    """ Read a USS file and return its contents """
-    read_mode = 'rb' if is_binary else 'r'
-    content = checksum = None
-    try:
-        with open(src, read_mode) as infile:
-            content = infile.read()
-            if is_binary:
-                content = base64.b64encode(content)
-            if validate_checksum:
-                checksum = _get_checksum(content)
-    except (FileNotFoundError, IOError, OSError) as err:
-        _fail_json(msg=str(err))
-    return content, checksum
+            mvs_rc = MVSCmd.execute_authorized(pgm='idcams', args='', dds=dd_statements)
 
+        except OSError as err:
+            self._fail_json(msg=str(err))
 
-def _fetch_zos_data_set(zos_data_set, is_binary, fetch_member=False):
-    """ Read a sequential data set and return its contents """
-    if fetch_member:
-        rc, out, err = _run_command("cat \"//'{0}'\"".format(zos_data_set))
-        if rc != 0:
-            _fail_json(
+        except Exception as err:
+            if Datasets.exists(out_ds_name):
+                Datasets.delete(out_ds_name)
+
+            if mvs_rc != 0:
+                self._fail_json(
+                    msg=(
+                        "Non-zero return code received while executing MVSCmd "
+                        "to copy VSAM data set {0}".format(ds_name)
+                    ),
+                    rc=mvs_rc
+                )
+            self._fail_json(
                 msg=(
-                    "Failed to read data set member for "
-                    "data set {0}".format(zos_data_set)
+                    "Failed to call IDCAMS to copy VSAM data set {0} to a temporary"
+                    " sequential data set".format(ds_name)
+                ),
+                stderr=str(err), rc=mvs_rc
+            )
+
+        finally:
+            Datasets.delete(sysprint)
+            Datasets.delete(sysin)
+
+        return out_ds_name
+
+    def _uss_convert_encoding(self, src, dest, from_code_set, to_code_set):
+        """ Convert the encoding of the data in a USS file """
+        temp_fo = None
+        if not src == dest:
+            temp_fi = dest
+        else:
+            temp_fo = tempfile.NamedTemporaryFile()
+            temp_fi = temp_fo.name
+        iconv_cmd = 'iconv -f {0} -t {1} {2} > {3}'.format(
+                    quote(from_code_set),
+                    quote(to_code_set),
+                    quote(src),
+                    quote(temp_fi)
+                )
+
+        self._run_command(iconv_cmd, use_unsafe_shell=True)
+        if dest != temp_fi:
+            try:
+                move(temp_fi, dest)
+            except (OSError, IOError) as e:
+                raise
+
+    def _fetch_uss_file(self, src, is_binary, encoding):
+        """ Convert encoding of a USS file. Return a tuple of temporary file
+            name containing converted data.
+        """
+        file_path = None
+        if not is_binary:
+            fd, file_path = tempfile.mkstemp()
+            from_code_set = encoding.get('from')
+            to_code_set = encoding.get('to')
+            # enc_utils = encode_utils.EncodeUtils(self.module)
+            try:
+                # enc_utils.uss_convert_encoding(src, file_path, from_code_set, to_code_set)
+                self._uss_convert_encoding(src, file_path, from_code_set, to_code_set)
+            except Exception as err:
+                os.remove(file_path)
+                self._fail_json(
+                    msg=(
+                        "An error occured while converting encoding of the file "
+                        "{0} from {1} to {2}"
+                    ).format(src, from_code_set, to_code_set),
+                    stderr=str(err), stderr_lines=str(err).splitlines()
+                )
+            finally:
+                os.close(fd)
+
+        return file_path if file_path else src
+
+    def _fetch_vsam(self, src, is_binary, encoding):
+        """ Copy the contents of a VSAM to a sequential data set.
+            Afterwards, copy that data set to a USS file.
+        """
+        temp_ds = self._copy_vsam_to_temp_data_set(src)
+        file_path = self._fetch_mvs_data(temp_ds, is_binary, encoding)
+        rc = Datasets.delete(temp_ds)
+        if rc != 0:
+            os.remove(file_path)
+            self._fail_json(
+                msg="Unable to delete temporary data set {0}".format(temp_ds), rc=rc
+            )
+
+        return file_path
+
+    def _fetch_pdse(self, src, is_binary, encoding):
+        """ Copy a partitioned data set to a USS directory. If the data set
+            is not being fetched in binary mode, encoding for all members inside
+            the data set will be converted.
+        """
+        dir_path = tempfile.mkdtemp()
+        cmd = "cp -B \"//'{0}'\" {1}"
+        if not is_binary:
+            cmd = cmd.replace(" -B", "")
+        rc, out, err = self._run_command(cmd.format(src, dir_path))
+        if rc != 0:
+            rmtree(dir_path)
+            self._fail_json(
+                msg=(
+                    "Error copying partitioned data set {0} to USS. Make sure it is"
+                    " not empty".format(src)
                 ),
                 stdout=out, stderr=err, stdout_lines=out.splitlines(),
                 stderr_lines=err.splitlines(), rc=rc
             )
-        content = out
-    else:
-        content = Datasets.read(zos_data_set)
-    if is_binary:
-        content = content.encode('utf-8', 'surrogateescape')
-        return base64.b64encode(content.decode('utf-8', 'replace').encode())
-    return content
+        if not is_binary:
+            # enc_utils = encode_utils.EncodeUtils(self.module)
+            from_code_set = encoding.get('from')
+            to_code_set = encoding.get('to')
+            root, dirs, files = next(os.walk(dir_path))
+            for file in files:
+                file_path = os.path.join(root, file)
+                # enc_utils.uss_convert_encoding(
+                #     file_path, file_path, from_code_set, to_code_set
+                # )
+                self._uss_convert_encoding(file_path, file_path, from_code_set, to_code_set)
 
+        return dir_path
 
-def _get_vsam_size(vsam):
-    """ Invoke IDCAMS LISTCAT command to get the record length and space used.
-        Then estimate the space used by the VSAM data set.
-    """
-    space_pri = 0
-    total_size = 0
-    # Bytes per cylinder for a 3390 DASD
-    bytes_per_cyl = 849960
+    def _fetch_mvs_data(self, src, is_binary, encoding):
+        """ Copy a sequential data set or a partitioned data set member
+            to a USS file
+        """
+        fd, file_path = tempfile.mkstemp()
+        cmd = "cp -B \"//'{0}'\" {1}"
+        if not is_binary:
+            cmd = cmd.replace(" -B", "")
+        rc, out, err = self._run_command(cmd.format(src, file_path))
 
-    listcat_cmd = " LISTCAT ENT('{0}') ALL".format(vsam)
-    cmd = 'mvscmdauth --pgm=idcams --sysprint=stdout --sysin=stdin'
-    rc, out, err = _run_command(cmd, data=listcat_cmd)
-    if not rc:
-        find_space_pri = re.findall(r'SPACE-PRI-*\d+', out)
-        if find_space_pri:
-            space_pri = int(''.join(re.findall(r'\d+', find_space_pri[0])))
-        total_size = ceil((bytes_per_cyl * space_pri)/1024)
-    else:
-        _fail_json(
-            msg="Unable to obtain data set information for {}: {}".format(vsam, err),
-            stdout=out,
-            stderr=err,
-            stdout_lines=out.splitlines(),
-            stderr_lines=err.splitlines(),
-            rc=rc
-        )
-    return total_size
-
-
-def _copy_vsam_to_temp_data_set(ds_name):
-    """ Copy VSAM data set to a temporary sequential data set """
-    check_rc = 0
-    mvs_rc = 0
-    vsam_size = _get_vsam_size(ds_name)
-    try:
-        sysin = data_set_utils.DataSetUtils.create_temp_data_set('SYSIN')
-        sysprint = data_set_utils.DataSetUtils.create_temp_data_set('SYSPRINT')
-        out_ds_name = data_set_utils.DataSetUtils.create_temp_data_set(
-            'VSM', size="{0}K".format(vsam_size)
-        )
-        repro_sysin = ' REPRO INFILE(INPUT)  OUTFILE(OUTPUT) '
-        Datasets.write(sysin, repro_sysin)
-
-        dd_statements = []
-        dd_statements.append(types.DDStatement(ddName='sysin', dataset=sysin))
-        dd_statements.append(types.DDStatement(ddName='input', dataset=ds_name))
-        dd_statements.append(types.DDStatement(ddName='output', dataset=out_ds_name))
-        dd_statements.append(types.DDStatement(ddName='sysprint', dataset=sysprint))
-
-        mvs_rc = MVSCmd.execute_authorized(pgm='idcams', args='', dds=dd_statements)
-
-    except OSError as err:
-        _fail_json(msg=str(err))
-
-    except Exception as err:
-        if Datasets.exists(out_ds_name):
-            Datasets.delete(out_ds_name)
-
-        if mvs_rc != 0:
-            _fail_json(
-                msg=(
-                    "Non-zero return code received while executing MVSCmd "
-                    "to copy VSAM data set {0}".format(ds_name)
-                ),
-                rc=mvs_rc
+        if rc != 0:
+            os.close(fd)
+            os.remove(file_path)
+            self._fail_json(
+                msg="Unable to copy {0} to USS".format(src),
+                stdout=str(out), stderr=str(err), rc=rc,
+                stdout_lines=str(out).splitlines(),
+                stderr_lines=str(err).splitlines()
             )
-        _fail_json(
-            msg=(
-                "Failed to call IDCAMS to copy VSAM data set {0} to "
-                "sequential data set".format(ds_name)
-            ),
-            stderr=str(err), rc=mvs_rc
-        )
+        if not is_binary:
+            # enc_utils = encode_utils.EncodeUtils(self.module)
+            from_code_set = encoding.get('from')
+            to_code_set = encoding.get('to')
+            try:
+                # enc_utils.uss_convert_encoding(
+                #     file_path, file_path, from_code_set, to_code_set
+                # )
+                self._uss_convert_encoding(file_path, file_path, from_code_set, to_code_set)
+            except Exception as err:
+                self._fail_json(
+                    msg=(
+                        "An error occured while converting encoding of the data set"
+                        " {0} from {1} to {2}"
+                    ).format(src, from_code_set, to_code_set),
+                    stderr=str(err), stderr_lines=str(err).splitlines()
+                )
 
-    finally:
-        Datasets.delete(sysprint)
-        Datasets.delete(sysin)
-
-    return out_ds_name
-
-
-def _fetch_vsam(src, validate_checksum, is_binary):
-    """ Fetch a VSAM data set """
-    checksum = None
-    temp_ds = _copy_vsam_to_temp_data_set(src)
-    content = _fetch_zos_data_set(temp_ds, is_binary)
-    if content is None:
-        content = ''
-
-    rc = Datasets.delete(temp_ds)
-    if rc != 0:
-        _fail_json(
-            msg="Unable to delete data set {0}".format(temp_ds), rc=rc
-        )
-
-    if validate_checksum:
-        checksum = _get_checksum(content)
-
-    return content, checksum
-
-
-def _fetch_pdse(src):
-    """ Fetch a partitioned data set """
-    result = dict()
-    temp_dir = tempfile.mkdtemp()
-    rc, out, err = _run_command("cp \"//'{0}'\" {1}".format(src, temp_dir))
-    if rc != 0:
-        _fail_json(
-            msg=(
-                "Error copying partitioned data set to USS. Make sure it is "
-                " not empty"
-            ),
-            stdout=out, stderr=err, stdout_lines=out.splitlines(),
-            stderr_lines=err.splitlines(), rc=rc
-        )
-
-    result['pds_path'] = temp_dir
-    return result
-
-
-def _fetch_ps(src, validate_checksum, is_binary):
-    """ Fetch a sequential data set """
-    checksum = None
-    content = _fetch_zos_data_set(src, is_binary)
-    if content is None:
-        content = ""
-    if validate_checksum:
-        checksum = _get_checksum(content)
-    return content, checksum
-
-
-def _get_checksum(data):
-    """ Calculate checksum for the given data """
-    digest = hashlib.sha256()
-    data = to_bytes(data, errors='surrogate_or_strict')
-    digest.update(data)
-    return digest.hexdigest()
+        os.close(fd)
+        return file_path
 
 
 def run_module():
-    global module
+    # ********************************************************** #
+    #                Module initialization                       #
+    # ********************************************************** #
+
     module = AnsibleModule(
         argument_spec=dict(
             src=dict(required=True, type='str'),
             dest=dict(required=True, type='path'),
             fail_on_missing=dict(required=False, default=True, type='bool'),
-            validate_checksum=dict(required=False, default=True, type='bool'),
             flat=dict(required=False, default=True, type='bool'),
             is_binary=dict(required=False, default=False, type='bool'),
             use_qualifier=dict(required=False, default=False, type='bool'),
@@ -476,91 +512,109 @@ def run_module():
         )
     )
 
+    # ********************************************************** #
+    #                   Verify paramater validity                #
+    # ********************************************************** #
+
     arg_def = dict(
-        src=dict(arg_type='data_set_or_path_type', required=True),
+        src=dict(arg_type='data_set_or_path', required=True),
         dest=dict(arg_type='path', required=True),
         fail_on_missing=dict(arg_type='bool', required=False, default=True),
-        validate_checksum=dict(arg_type='bool', required=False, default=True),
         is_binary=dict(arg_type='bool', required=False, default=False),
         use_qualifier=dict(arg_type='bool', required=False, default=False),
-        from_encoding=dict(arg_type='encoding_type'),
-        to_encoding=dict(arg_type='encoding_type')
+        from_encoding=dict(arg_type='encoding'),
+        to_encoding=dict(arg_type='encoding')
     )
+
+    fetch_handler = FetchHandler(module)
 
     try:
         parser = better_arg_parser.BetterArgParser(arg_def)
         parsed_args = parser.parse_args(module.params)
     except ValueError as err:
-        _fail_json(msg="Parameter verification failed", stderr=str(err))
+        fetch_handler._fail_json(
+            msg="Parameter verification failed", stderr=str(err)
+        )
 
     src = parsed_args.get('src', None)
     b_src = to_bytes(src)
     fail_on_missing = boolean(parsed_args.get('fail_on_missing'))
-    validate_checksum = boolean(parsed_args.get('validate_checksum'))
     is_binary = boolean(parsed_args.get('is_binary'))
     use_qualifier = boolean(parsed_args.get('use_qualifier'))
+    encoding = module.params.get('encoding')
+
+    # ********************************************************** #
+    #  Check for data set existence and determine its type       #
+    # ********************************************************** #
 
     res_args = dict()
-    _fetch_member = src.endswith(')')
+    _fetch_member = '(' in src and src.endswith(')')
     ds_name = src if not _fetch_member else src[:src.find('(')]
     try:
         ds_utils = data_set_utils.DataSetUtils(module, ds_name)
         if ds_utils.data_set_exists() is False:
             if fail_on_missing:
-                _fail_json(
+                fetch_handler._fail_json(
                     msg=(
                         "The data set {0} does not exist or is "
-                        "uncataloged".format(src)
+                        "uncataloged".format(ds_name)
                     )
                 )
             module.exit_json(
                 note=(
-                    "Source {0} was not found. No data was fetched".format(src)
+                    "Source {0} was not found. No data was fetched".format(ds_name)
                 )
             )
         ds_type = ds_utils.get_data_set_type()
         if not ds_type:
-            _fail_json(msg="Unable to determine data set type")
+            fetch_handler._fail_json(msg="Unable to determine data set type")
 
     except Exception as err:
-        _fail_json(msg="Error while gathering data set information", stderr=str(err))
+        fetch_handler._fail_json(msg="Error while gathering data set information", stderr=str(err))
 
     if use_qualifier:
         src = Datasets.hlq() + '.' + src
 
-    # Fetch sequential dataset
+    # ********************************************************** #
+    #                  Fetch a sequential data set               #
+    # ********************************************************** #
+
     if ds_type == 'PS':
-        content, checksum = _fetch_ps(src, validate_checksum, is_binary)
-        res_args['checksum'] = checksum
-        res_args['content'] = content
+        file_path = fetch_handler._fetch_mvs_data(src, is_binary, encoding)
+        res_args['remote_path'] = file_path
 
-    # PDS/PDSE
-    elif ds_type in ('PO', 'PDSE', 'PE'):
+    # ********************************************************** #
+    #    Fetch a paritioned data set or oen of its members       #
+    # ********************************************************** #
+
+    elif ds_type == "PO":
         if _fetch_member:
-            content = _fetch_zos_data_set(src, is_binary, fetch_member=True)
-            res_args['content'] = content
-            res_args['checksum'] = _get_checksum(content)
+            file_path = fetch_handler._fetch_mvs_data(src, is_binary, encoding)
+            res_args['remote_path'] = file_path
         else:
-            result = _fetch_pdse(src)
-            res_args['pds_path'] = result['pds_path']
+            res_args['remote_path'] = fetch_handler._fetch_pdse(src, is_binary, encoding)
 
-    # USS file
+    # ********************************************************** #
+    #                  Fetch a USS file                          #
+    # ********************************************************** #
+
     elif ds_type == 'USS':
-        if not access(b_src, R_OK):
-            _fail_json(
+        if not os.access(b_src, os.R_OK):
+            fetch_handler._fail_json(
                 msg="File {0} does not have appropriate read permission".format(src)
             )
-        content, checksum = _fetch_uss_file(src, validate_checksum, is_binary)
-        res_args['checksum'] = checksum
-        res_args['content'] = content
+        file_path = fetch_handler._fetch_uss_file(src, is_binary, encoding)
+        res_args['remote_path'] = file_path
 
-    # VSAM dataset
+    # ********************************************************** #
+    #                  Fetch a VSAM data set                     #
+    # ********************************************************** #
+
     elif ds_type == 'VSAM':
-        content, checksum = _fetch_vsam(src, validate_checksum, is_binary)
-        res_args['checksum'] = checksum
-        res_args['content'] = content
+        file_path = fetch_handler._fetch_vsam(src, is_binary, encoding)
+        res_args['remote_path'] = file_path
 
-    res_args['file'] = src
+    res_args['file'] = ds_name
     res_args['ds_type'] = ds_type
     module.exit_json(**res_args)
 

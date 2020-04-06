@@ -13,6 +13,7 @@ import ansible.errors
 import ansible.utils
 import pytest
 
+from hashlib import sha256
 from ansible.utils.hashing import checksum
 
 __metaclass__ = type
@@ -31,9 +32,9 @@ def test_fetch_uss_file_not_present_on_local_machine(ansible_zos_module):
         dest='/tmp/',
         flat=True
     )
-    results = hosts.all.zos_fetch(**params)
-    dest_path = '/tmp/profile'
     try:
+        results = hosts.all.zos_fetch(**params)
+        dest_path = '/tmp/profile'
         for result in results.contacted.values():
             assert result.get('changed') is True
             assert result.get('data_set_type') == 'USS'
@@ -53,13 +54,13 @@ def test_fetch_uss_file_replace_on_local_machine(ansible_zos_module):
         flat=True
     )
     dest_path = '/tmp/profile'
-    local_checksum = checksum(dest_path)
-    results = hosts.all.zos_fetch(**params)
+    local_checksum = checksum(dest_path, hash_func=sha256)
 
     try:
+        results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():
             assert result.get('changed') is True
-            assert result.get('checlsum') != local_checksum
+            assert result.get('checksum') != local_checksum
             assert result.get('module_stderr') is None
             assert os.path.exists(dest_path)
     finally:
@@ -75,10 +76,10 @@ def test_fetch_uss_file_present_on_local_machine(ansible_zos_module):
     )
     dest_path = '/tmp/profile'
     hosts.all.zos_fetch(**params)
-    local_checksum = checksum(dest_path)
-    results = hosts.all.zos_fetch(**params)
+    local_checksum = checksum(dest_path, hash_func=sha256)
 
     try:
+        results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():
             assert result.get('changed') is False
             assert result.get('checksum') == local_checksum
@@ -94,9 +95,9 @@ def test_fetch_sequential_data_set_fixed_block(ansible_zos_module):
         dest='/tmp/',
         flat=True
     )
-    results = hosts.all.zos_fetch(**params)
     dest_path = '/tmp/IMSTESTL.IMS01.DDCHKPT'
     try:
+        results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():
             assert result.get('changed') is True
             assert result.get('data_set_type') == 'Sequential'
@@ -115,9 +116,9 @@ def test_fetch_sequential_data_set_variable_block(ansible_zos_module):
         dest='/tmp/',
         flat=True
     )
-    results = hosts.all.zos_fetch(**params)
     dest_path = '/tmp/IMSTESTL.IMS01.SPOOL1'
     try:
+        results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():
             assert result.get('changed') is True
             assert result.get('data_set_type') == 'Sequential'
@@ -136,9 +137,9 @@ def test_fetch_partitioned_data_set(ansible_zos_module):
         dest='/tmp/',
         flat=True
     )
-    results = hosts.all.zos_fetch(**params)
     dest_path = '/tmp/IMSTESTL.COMN91'
     try:
+        results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():
             assert result.get('changed') is True
             assert result.get('data_set_type') == 'Partitioned'
@@ -158,9 +159,9 @@ def test_fetch_vsam_data_set(ansible_zos_module):
         dest='/tmp/',
         flat=True
     )
-    results = hosts.all.zos_fetch(**params)
     dest_path = '/tmp/IMSTESTL.LDS01.WADS2'
     try:
+        results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():
             assert result.get('changed') is True
             assert result.get('data_set_type') == 'VSAM'
@@ -180,9 +181,9 @@ def test_fetch_partitioned_data_set_member_in_binary_mode(ansible_zos_module):
         flat=True,
         is_binary=True
     )
-    results = hosts.all.zos_fetch(**params)
     dest_path = '/tmp/ATRQUERY'
     try:
+        results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():
             assert result.get('changed') is True
             assert result.get('data_set_type') == 'Partitioned'
@@ -204,9 +205,9 @@ def test_fetch_sequential_data_set_in_binary_mode(ansible_zos_module):
         flat=True,
         is_binary=True
     )
-    results = hosts.all.zos_fetch(**params)
     dest_path = '/tmp/IMSTESTL.IMS01.DDCHKPT'
     try:
+        results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():
             assert result.get('changed') is True
             assert result.get('data_set_type') == 'Sequential'
@@ -226,9 +227,9 @@ def test_fetch_partitioned_data_set_binary_mode(ansible_zos_module):
         flat=True,
         is_binary=True
     )
-    results = hosts.all.zos_fetch(**params)
     dest_path = '/tmp/IMSTESTL.COMN91'
     try:
+        results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():
             assert result.get('changed') is True
             assert result.get('data_set_type') == 'Partitioned'
@@ -248,9 +249,9 @@ def test_fetch_sequential_data_set_empty(ansible_zos_module):
         dest='/tmp/',
         flat=True
     )
-    results = hosts.all.zos_fetch(**params)
     dest_path = '/tmp/IMSTESTL.IMSCOM.HOLDER'
     try:
+        results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():
             assert result.get('changed') is True
             assert result.get('data_set_type') == 'Sequential'
@@ -278,11 +279,11 @@ def test_fetch_partitioned_data_set_empty_fails(ansible_zos_module):
         dest='/tmp/',
         flat=True
     )
-    results = hosts.all.zos_fetch(**params)
     try:
+        results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():
-            assert result.get('msg')
-            assert result.get('stderr') != ""
+            assert "msg" in result.keys()
+            assert "stderr" in result.keys()
     finally:
         hosts.all.zos_data_set(name=pds_name, state='absent')
 
@@ -307,9 +308,9 @@ def test_fetch_partitioned_data_set_member_empty(ansible_zos_module):
         dest='/tmp/',
         flat=True
     )
-    results = hosts.all.zos_fetch(**params)
     dest_path = '/tmp/MYDATA'
     try:
+        results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():
             assert result.get('changed') is True
             assert result.get('data_set_type') == 'Partitioned'
@@ -330,11 +331,11 @@ def test_fetch_missing_uss_file_does_not_fail(ansible_zos_module):
         flat=True,
         fail_on_missing=False
     )
-    results = hosts.all.zos_fetch(**params)
     try:
+        results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():
             assert result.get('changed') is False
-            assert result.get('note') != ""
+            assert "note" in result.keys()
             assert result.get('module_stderr') is None
     except Exception:
         raise
@@ -347,12 +348,10 @@ def test_fetch_missing_uss_file_fails(ansible_zos_module):
         dest='/tmp/',
         flat=True
     )
-    results = hosts.all.zos_fetch(**params)
-    fail_msg = ("The data set /tmp/dummy_file_on_remote_host does not exist"
-                " or is uncataloged")
     try:
+        results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():
-            assert result.get('msg')
+            assert "msg" in result.keys()
     except Exception:
         raise
 
@@ -365,11 +364,11 @@ def test_fetch_missing_mvs_data_set_does_not_fail(ansible_zos_module):
         flat=True,
         fail_on_missing=False
     )
-    results = hosts.all.zos_fetch(**params)
     try:
+        results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():
             assert result.get('changed') is False
-            assert result.get('note') != ""
+            assert "note" in result.keys()
             assert result.get('module_stderr') is None
             assert not os.path.exists('/tmp/FETCH.TEST.DATA.SET')
     except Exception:
@@ -383,11 +382,11 @@ def test_fetch_partitioned_data_set_member_missing_fails(ansible_zos_module):
         dest='/tmp/',
         flat=True
     )
-    results = hosts.all.zos_fetch(**params)
     try:
+        results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():
-            assert result.get('msg')
-            assert result.get('stderr') != ""
+            assert "msg" in result.keys()
+            assert "stderr" in result.keys()
     except Exception:
         raise
 
@@ -399,12 +398,11 @@ def test_fetch_mvs_data_set_missing_fails(ansible_zos_module):
         dest='/tmp/',
         flat=True
     )
-    results = hosts.all.zos_fetch(**params)
     try:
+        results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():
-            assert result.get('msg')
+            assert "msg" in result.keys()
             assert result.get('stderr') != ""
-            assert not os.path.exists('/tmp/ZOS.FETCH.TEST.PDS')
     except Exception:
         raise
 
@@ -416,18 +414,18 @@ def test_fetch_sequential_data_set_replace_on_local_machine(ansible_zos_module):
     with open(dest_path, 'w') as infile:
         infile.write(DUMMY_DATA)
 
-    local_checksum = checksum(dest_path)
+    local_checksum = checksum(dest_path, hash_func=sha256)
     params = dict(
         src=ds_name,
         dest='/tmp/',
         flat=True
     )
-    results = hosts.all.zos_fetch(**params)
     try:
+        results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():
             assert result.get('changed') is True
             assert result.get('module_stderr') is None
-            assert checksum(dest_path) != local_checksum
+            assert checksum(dest_path, hash_func=sha256) != local_checksum
     finally:
         if os.path.exists(dest_path):
             os.remove(dest_path)
@@ -462,8 +460,8 @@ def test_fetch_partitioned_data_set_replace_on_local_machine(ansible_zos_module)
         dest='/tmp/',
         flat=True
     )
-    results = hosts.all.zos_fetch(**params)
     try:
+        results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():
             assert result.get('changed') is True
             assert result.get('module_stderr') is None
@@ -482,15 +480,16 @@ def test_fetch_uss_file_insufficient_write_permission_fails(ansible_zos_module):
     os.chmod(dest_path, stat.S_IREAD)
     params = dict(
         src='/etc/profile',
-        dest='/tmp/profile',
+        dest='/tmp/',
         flat=True
     )
-    results = hosts.all.zos_fetch(**params)
     try:
+        results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():
-            assert result.get('msg')
+            assert "msg" in result.keys()
     finally:
-        os.remove(dest_path)
+        if os.path.exists(dest_path):
+            os.remove(dest_path)
 
 
 def test_fetch_pds_dir_insufficient_write_permission_fails(ansible_zos_module):
@@ -503,10 +502,10 @@ def test_fetch_pds_dir_insufficient_write_permission_fails(ansible_zos_module):
         dest='/tmp/',
         flat=True
     )
-    results = hosts.all.zos_fetch(**params)
     try:
+        results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():
-            assert result.get('msg')
+            assert "msg" in result.keys()
     finally:
         if os.path.exists(dest_path):
             shutil.rmtree(dest_path)

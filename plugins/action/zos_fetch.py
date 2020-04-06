@@ -8,9 +8,10 @@ __metaclass__ = type
 import os
 import subprocess
 import base64
+import re
 
 from hashlib import sha256
-from ansible.module_utils._text import to_bytes
+from ansible.module_utils._text import to_bytes, to_text
 from ansible.module_utils.six import string_types
 from ansible.module_utils.parsing.convert_bool import boolean
 from ansible.plugins.action import ActionBase
@@ -19,14 +20,11 @@ from ansible.utils.hashing import checksum as checksum_d
 from ansible.utils.hashing import checksum_s
 
 
-def _update_result(
-        result,
-        src,
-        dest,
-        ds_type="USS",
-        binary_mode=False):
-    """ Helper function to update output result with the provided values """
+SUPPORTED_DS_TYPES = frozenset({'PS', 'PO', 'VSAM', 'USS'})
 
+
+def _update_result(result, src, dest, ds_type="USS", is_binary=False):
+    """ Helper function to update output result with the provided values """
     data_set_types = {
         'PS': "Sequential",
         'PO': "Partitioned",
@@ -41,40 +39,9 @@ def _update_result(
         'file': src,
         'dest': dest,
         'data_set_type': data_set_types[ds_type],
-        'is_binary': binary_mode
+        'is_binary': is_binary
     })
     return updated_result
-
-
-def _write_content_to_file(filename, content, write_mode):
-    """ Writes the given content to a file indicated by filename.
-        Uses indicated write mode while writing to this file.
-        If filename contains a path with non-existent directories,
-        those directories should be created.
-    """
-    try:
-        os.makedirs(os.path.dirname(filename), exist_ok=True)
-        with open(filename, write_mode) as outfile:
-            outfile.write(content)
-    except UnicodeEncodeError as err:
-        raise AnsibleError(
-            (
-                "Error writing to destination {0} due to encoding issues. "
-                "If it is a binary file, make sure to set 'is_binary' parameter"
-                " to true'; stderr: {1}".format(filename, err)
-            )
-        )
-    except PermissionError as err:
-        raise AnsibleError(
-            (
-                "Insufficient write permission for destination {0}:"
-                "{1}".format(filename, str(err))
-            )
-        )
-    except (IOError, OSError) as err:
-        raise AnsibleError(
-            "Error writing to destination {0}: {1}".format(filename, err)
-        )
 
 
 def _process_boolean(arg, default=False):
@@ -87,10 +54,31 @@ def _process_boolean(arg, default=False):
         return default
 
 
+def _get_file_checksum(src):
+    """ Calculate SHA256 hash for a given file """
+    b_src = to_bytes(src)
+    if not os.path.exists(b_src) or os.path.isdir(b_src):
+        return None
+    blksize = 64 * 1024
+    hash_digest = sha256()
+    try:
+        with open(to_bytes(src, errors='surrogate_or_strict'), 'rb') as infile:
+            block = infile.read(blksize)
+            while block:
+                hash_digest.update(block)
+                block = infile.read(blksize)
+    except Exception as err:
+        raise AnsibleError("Unable to calculate checksum: {0}".format(str(err)))
+    return hash_digest.hexdigest()
+
+
 class ActionModule(ActionBase):
     def run(self, tmp=None, task_vars=None):
         result = super(ActionModule, self).run(tmp, task_vars)
         del tmp
+        # ********************************************************** #
+        #                 Parameter initializations                  #
+        # ********************************************************** #
 
         src = self._task.args.get('src')
         dest = self._task.args.get('dest')
@@ -98,9 +86,12 @@ class ActionModule(ActionBase):
         flat = _process_boolean(self._task.args.get('flat'), default=False)
         is_binary = _process_boolean(self._task.args.get('is_binary'))
         validate_checksum = _process_boolean(
-            self._task.args.get('validate_checksum'),
-            default=True
+            self._task.args.get('validate_checksum'), default=True
         )
+
+        # ********************************************************** #
+        #                 Parameter sanity checks                    #
+        # ********************************************************** #
 
         msg = None
         if src is None or dest is None:
@@ -125,7 +116,15 @@ class ActionModule(ActionBase):
         src = self._connection._shell.join_path(src)
         src = self._remote_expand_user(src)
 
-        # calculate the destination name
+        # ********************************************************** #
+        #  Determine destination path:                               #
+        #  1. If the 'flat' parameter is 'false', then hostname      #
+        #     will be appended to dest.                              #
+        #  2. If 'flat' is 'true', then dest must not be a directory.#
+        #     If it is a directory, a trailing forward slash must    #
+        #     be added.                                              #
+        # ********************************************************** #
+
         if os.path.sep not in self._connection._shell.join_path('a', ''):
             src = self._connection._shell._unquote(src)
             source_local = src.replace('\\', '/')
@@ -163,12 +162,23 @@ class ActionModule(ActionBase):
 
         dest = dest.replace("//", "/")
 
-        # If a data set member is being fetched, extract the member name
-        # from src and update dest path with the member name
+        # ********************************************************** #
+        #  If a data set member is being fetched, extract the member #
+        #  name and update dest with the name of the member.         #
+        #  For instance: If src is: USER.TEST.PROCLIB(DATA)          #
+        #  and dest is: /tmp/, then updated dets would be /tmp/DATA  #
+        # ********************************************************** #
+
         if fetch_member:
             member = src[src.find('(') + 1:src.find(')')]
             base_dir = os.path.dirname(dest)
             dest = os.path.join(base_dir, member)
+
+        local_checksum = _get_file_checksum(dest)
+
+        # ********************************************************** #
+        #                Execute module on remote host               #
+        # ********************************************************** #
 
         try:
             fetch_res = self._execute_module(
@@ -198,28 +208,24 @@ class ActionModule(ActionBase):
 
         ds_type = fetch_res.get('ds_type')
         src = fetch_res.get('file')
+        remote_path = fetch_res.get('remote_path')
 
-        fetch_content = None
-        mvs_ds = ds_type in ('PO', 'PDSE', 'PE')
+        if ds_type in SUPPORTED_DS_TYPES:
+            fetch_content = self._transfer_remote_content(dest, remote_path, ds_type)
+            if fetch_content.get('msg'):
+                return fetch_content
 
-        if (
-            ds_type == "VSAM" or
-            ds_type == "PS" or
-            ds_type == "USS" or
-            (fetch_member and mvs_ds)
-        ):
-            fetch_content = self._write_remote_data_to_local_file(
-                dest, task_vars, fetch_res['content'], fetch_res['checksum'],
-                binary_mode=is_binary, validate_checksum=validate_checksum
-            )
-
-        elif mvs_ds:
-            fetch_content = self._fetch_remote_dir(
-                dest,
-                task_vars,
-                fetch_res['pds_path'],
-                binary_mode=is_binary
-            )
+            if validate_checksum and ds_type != "PO" and not is_binary:
+                new_checksum = _get_file_checksum(dest)
+                result['changed'] = local_checksum != new_checksum
+                result['checksum'] = new_checksum
+                if local_checksum and new_checksum != local_checksum:
+                    result['msg'] = "Checksum mismatch"
+                    result['old_checksum'] = local_checksum
+                    result['failed'] = True
+                    return result
+            else:
+                result['changed'] = True
 
         else:
             result['msg'] = (
@@ -229,32 +235,26 @@ class ActionModule(ActionBase):
             result['failed'] = True
             return result
 
-        if fetch_content.get('msg'):
-            return fetch_content
+        # ********************************************************** #
+        #                Execute module on remote host               #
+        # ********************************************************** #
 
-        return _update_result(
-            dict(list(result.items()) + list(fetch_content.items())),
-            src, dest, ds_type, binary_mode=is_binary
-        )
+        return _update_result(result, src, dest, ds_type, is_binary=is_binary)
 
-    def _fetch_remote_dir(self, dest, task_vars, pds_path, binary_mode=False):
-        """ Transfer a directory from USS to local machine.
-            If the directory is to be transferred in binary mode, SFTP will be
-            used. Otherwise, SCP will be used. After the transfer is complete,
-            the USS directory will be removed.
+    def _transfer_remote_content(self, dest, remote_path, src_type):
+        """ Transfer a file or directory from USS to local machine.
+            After the transfer is complete, the USS file or directory will
+            be removed.
         """
         result = dict()
         try:
             ansible_user = self._play_context.remote_user
             ansible_host = self._play_context.remote_addr
-            stdin = None
 
-            if binary_mode:
-                cmd = ['sftp', ansible_user + '@' + ansible_host]
-                stdin = to_bytes("get -r {0} {1}".format(pds_path, dest))
-            else:
-                remote_path = ansible_user + '@' + ansible_host + ':' + pds_path
-                cmd = ['scp', '-r', remote_path, dest]
+            cmd = ['sftp', ansible_user + '@' + ansible_host]
+            stdin = "get -r {0} {1}".format(remote_path, dest)
+            if src_type != "PO":
+                stdin = stdin.replace(" -r", "")
 
             transfer_pds = subprocess.Popen(
                 cmd,
@@ -262,77 +262,23 @@ class ActionModule(ActionBase):
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE
             )
-            out, err = transfer_pds.communicate(stdin)
-
-            if transfer_pds.returncode != 0:
-                result['msg'] = "Error transferring PDS from remote z/OS system"
-                result['stdout'] = out,
-                result['stderr'] = err
+            out, err = transfer_pds.communicate(to_bytes(stdin))
+            if (
+                re.findall(rb"Permission denied", err) or
+                transfer_pds.returncode != 0
+            ):
+                result['msg'] = "Error transferring remote data from z/OS system"
+                result['stdout'] = to_text(out)
+                result['stderr'] = to_text(err)
                 result['rc'] = transfer_pds.returncode
-                result['stdout_lines'] = out.splitlines()
-                result['stderr_lines'] = err.splitlines()
+                result['stdout_lines'] = to_text(out).splitlines()
+                result['stderr_lines'] = to_text(err).splitlines()
                 result['failed'] = True
-            else:
-                result['changed'] = True
+
         finally:
-            self._connection.exec_command("rm -r {0}".format(pds_path))
-        return result
+            rm_cmd = "rm -r {0}".format(remote_path)
+            if src_type != "PO":
+                rm_cmd = rm_cmd.replace(" -r", "")
+            self._connection.exec_command(rm_cmd)
 
-    def _write_remote_data_to_local_file(
-        self,
-        dest,
-        task_vars,
-        content,
-        checksum,
-        binary_mode=False,
-        validate_checksum=True
-    ):
-        """ Write fetched content to local file """
-
-        result = dict()
-        new_content = content
-
-        if binary_mode:
-            write_mode = 'wb'
-            try:
-                with open(dest, 'rb') as tmp:
-                    local_data = tmp.read()
-                    local_checksum = checksum_s(
-                        base64.b64encode(local_data),
-                        hash_func=sha256
-                    )
-            except FileNotFoundError:
-                local_checksum = None
-            new_content = base64.b64decode(content)
-        else:
-            write_mode = 'w'
-            local_checksum = checksum_d(dest, hash_func=sha256)
-        if validate_checksum:
-            remote_checksum = checksum
-            if remote_checksum != local_checksum:
-                _write_content_to_file(dest, new_content, write_mode)
-                new_checksum = checksum_s(content, hash_func=sha256)
-                if remote_checksum != new_checksum:
-                    result.update(
-                        dict(
-                            msg='Checksum mismatch',
-                            checksum=new_checksum,
-                            remote_checksum=remote_checksum,
-                            failed=True
-                        )
-                    )
-                else:
-                    result.update(
-                        dict(
-                            checksum=new_checksum,
-                            changed=True,
-                            remote_checksum=remote_checksum
-                        )
-                    )
-            else:
-                result['changed'] = False
-                result['checksum'] = remote_checksum
-        else:
-            _write_content_to_file(dest, new_content, write_mode)
-            result['changed'] = True
         return result

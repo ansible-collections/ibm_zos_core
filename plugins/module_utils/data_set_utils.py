@@ -67,7 +67,7 @@ class DataSetUtils(object):
             if rc == 0 and not re.findall(r"EDC5067I", err):
                 return True
         return False
-    
+
     def get_data_set_type(self):
         """Retrieves the data set type of the input data set.
 

@@ -283,7 +283,7 @@ class FetchHandler:
             find_space_pri = re.findall(r'SPACE-PRI-*\d+', out)
             if find_space_pri:
                 space_pri = int(''.join(re.findall(r'\d+', find_space_pri[0])))
-            total_size = ceil((bytes_per_cyl * space_pri)/1024)
+            total_size = ceil((bytes_per_cyl * space_pri) / 1024)
         else:
             self._fail_json(
                 msg="Unable to obtain data set information for {0}: {1}".format(vsam, err),
@@ -359,7 +359,7 @@ class FetchHandler:
                     quote(to_code_set),
                     quote(src),
                     quote(temp_fi)
-                )
+        )
 
         self._run_command(iconv_cmd, use_unsafe_shell=True)
         if dest != temp_fi:
@@ -498,9 +498,10 @@ def run_module():
             flat=dict(required=False, default=True, type='bool'),
             is_binary=dict(required=False, default=False, type='bool'),
             use_qualifier=dict(required=False, default=False, type='bool'),
+            validate_checksum=dict(required=False, default=True, type='bool'),
             encoding=dict(
                 required=False,
-                type=dict,
+                type='dict',
                 default={'from': 'IBM-1047', 'to': 'ISO8859-1'}
             )
         )
@@ -508,8 +509,7 @@ def run_module():
 
     module.params.update(dict(
         from_encoding=module.params.get('encoding').get('from'),
-        to_encoding=module.params.get('encoding').get('to')
-        )
+        to_encoding=module.params.get('encoding').get('to'))
     )
 
     # ********************************************************** #

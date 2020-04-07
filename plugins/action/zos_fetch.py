@@ -264,7 +264,7 @@ class ActionModule(ActionBase):
             )
             out, err = transfer_pds.communicate(to_bytes(stdin))
             if (
-                re.findall(rb"Permission denied", err) or
+                re.findall(r"Permission denied", to_text(err)) or
                 transfer_pds.returncode != 0
             ):
                 result['msg'] = "Error transferring remote data from z/OS system"

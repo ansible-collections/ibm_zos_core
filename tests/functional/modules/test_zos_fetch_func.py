@@ -509,3 +509,29 @@ def test_fetch_pds_dir_insufficient_write_permission_fails(ansible_zos_module):
     finally:
         if os.path.exists(dest_path):
             shutil.rmtree(dest_path)
+
+
+def test_fetch_use_data_set_qualifier(ansible_zos_module):
+    hosts = ansible_zos_module
+    dest_path = "/tmp/OMVSADM.TEST.USER.QUAL"
+    hosts.all.zos_data_set(
+        name="OMVSADM.TEST.USER.QUAL",
+        type="seq",
+        state="present"
+    )
+    params = dict(
+        src='TEST.USER.QUAL',
+        dest='/tmp/',
+        flat=True,
+        use_qualifier=True
+    )
+    try:
+        results = hosts.all.zos_fetch(**params)
+        for result in results.contacted.values():
+            assert result.get('changed') is True
+            assert result.get('data_set_type') == 'Sequential'
+            assert result.get('module_stderr') is None
+            assert os.path.exists(dest_path)
+    finally:
+        if os.path.exists(dest_path):
+            os.remove(dest_path)

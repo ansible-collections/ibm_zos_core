@@ -515,7 +515,7 @@ def run_module():
 
     src = module.params.get("src")
     if module.params.get("use_qualifier"):
-        src = Datasets.hlq() + "." + src
+        module.params['src'] = Datasets.hlq() + "." + src
 
     # ********************************************************** #
     #                   Verify paramater validity                #
@@ -540,9 +540,10 @@ def run_module():
         fetch_handler._fail_json(
             msg="Parameter verification failed", stderr=str(err)
         )
-
+    src = parsed_args.get('src')
     b_src = to_bytes(src)
     fail_on_missing = boolean(parsed_args.get('fail_on_missing'))
+    use_qualifier = boolean(parsed_args.get('use_qualifier'))
     is_binary = boolean(parsed_args.get('is_binary'))
     encoding = module.params.get('encoding')
 

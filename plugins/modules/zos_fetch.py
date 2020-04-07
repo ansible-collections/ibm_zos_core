@@ -589,10 +589,10 @@ def run_module():
 
     elif ds_type == "PO":
         if _fetch_member:
-            member_name = src[src.find('(') + 1 : src.find(')')]
+            member_name = src[src.find('(') + 1:src.find(')')]
             if not ds_utils.data_set_member_exists(member_name):
                 fetch_handler._fail_json(
-                    msg=("The data set member '{0}' was not found inside data" 
+                    msg=("The data set member '{0}' was not found inside data"
                          " set '{1}'").format(member_name, ds_name)
                 )
             file_path = fetch_handler._fetch_mvs_data(src, is_binary, encoding)

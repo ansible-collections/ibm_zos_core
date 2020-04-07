@@ -406,6 +406,12 @@ class EncodeUtils(object):
                         rc, out, err    = self.copy_uss2mvs(temp_dest, temp_ps, 'PS')
                         rc, out, err    = self.copy_vsam_ps(temp_ps, dest.upper())
                         convert_rc = True
+                    elif dest_type == 'PO':
+                        for (dir, _, files) in walk(temp_dest):
+                            for file in files:
+                                temp_file = path.join(dir, file)
+                                rc, out, err = self.copy_uss2mvs(temp_file, dest, 'PS')
+                                convert_rc = True
                     else:
                         rc, out, err = self.copy_uss2mvs(temp_dest, dest, dest_type)
                         convert_rc = True

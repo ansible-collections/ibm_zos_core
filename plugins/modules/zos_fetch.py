@@ -34,6 +34,7 @@ options:
   src:
     description:
       - Name of PDS, PDS(E) members, VSAM data set, USS file path.
+      - USS file paths should be absolute paths.
     required: true
     type: str
   dest:

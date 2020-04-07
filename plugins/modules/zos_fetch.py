@@ -513,6 +513,9 @@ def run_module():
         to_encoding=module.params.get('encoding').get('to'))
     )
 
+    if module.params.get("use_qualifier"):
+        src = Datasets.hlq() + "." + src
+
     # ********************************************************** #
     #                   Verify paramater validity                #
     # ********************************************************** #
@@ -572,9 +575,6 @@ def run_module():
 
     except Exception as err:
         fetch_handler._fail_json(msg="Error while gathering data set information", stderr=str(err))
-
-    if use_qualifier:
-        src = Datasets.hlq() + '.' + src
 
     # ********************************************************** #
     #                  Fetch a sequential data set               #

@@ -21,8 +21,9 @@ version_added: "2.9"
 short_description: Fetch data from z/OS
 description:
   - This module copies a file or data set from a remote z/OS system to the
-    local machine. Use the M(zos_copy) module to copy files from local machine
-    to the remote z/OS system.
+    local machine. Use the
+    L(fetch,https://docs.ansible.com/ansible/latest/modules/fetch_module.html)
+    module to copy files from local machine to the remote z/OS system.
   - When fetching a sequential data set, the destination file name will be the
     same as the data set name.
   - When fetching a PDS/PDS(E), the destination will be a directory with the
@@ -88,14 +89,17 @@ options:
     type: dict
     suboptions:
       from:
-        description: The encoding to be converted from
+        description:
+            - The encoding to be converted from
         required: true
         type: str
+        default: IBM-1047
       to:
-        description: The encoding to be converted to
+        description:
+            - The encoding to be converted to
         required: true
         type: str
-    default: { from: 'IBM-1047', to: 'ISO8859-1' }
+        default: ISO8859-1
 notes:
     - When fetching PDS(E) and VSAM data sets, temporary storage will be used
       on the remote z/OS system. After the PDS(E) or VSAM data set is

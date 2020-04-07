@@ -51,6 +51,23 @@ class DataSetUtils(object):
             return path.exists(to_bytes(self.data_set))
         return self.ds_info.get('exists')
 
+    def data_set_member_exists(self, member):
+        """Determines whether the input data set contains the given member.
+
+        Arguments:
+            member {str} -- The name of the data set member
+
+        Returns:
+            bool -- If the member exists
+        """
+        if self.get_data_set_type() == "PO":
+            rc, out, err = self.module.run_command(
+                "head \"//'{0}({1})'\"".format(self.data_set, member)
+            )
+            if rc == 0 and not re.findall(r"EDC5067I", err):
+                return True
+        return False
+
     def get_data_set_type(self):
         """Retrieves the data set type of the input data set.
 

@@ -513,6 +513,7 @@ def run_module():
         to_encoding=module.params.get('encoding').get('to'))
     )
 
+    src = module.params.get("src")
     if module.params.get("use_qualifier"):
         src = Datasets.hlq() + "." + src
 
@@ -540,11 +541,9 @@ def run_module():
             msg="Parameter verification failed", stderr=str(err)
         )
 
-    src = parsed_args.get('src', None)
     b_src = to_bytes(src)
     fail_on_missing = boolean(parsed_args.get('fail_on_missing'))
     is_binary = boolean(parsed_args.get('is_binary'))
-    use_qualifier = boolean(parsed_args.get('use_qualifier'))
     encoding = module.params.get('encoding')
 
     # ********************************************************** #

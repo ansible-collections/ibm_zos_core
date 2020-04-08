@@ -512,11 +512,7 @@ def run_module():
             is_binary=dict(required=False, default=False, type='bool'),
             use_qualifier=dict(required=False, default=False, type='bool'),
             validate_checksum=dict(required=False, default=True, type='bool'),
-            encoding=dict(
-                required=False,
-                type='dict',
-                default={"from": "IBM-1047", "to": "ISO8859-1"}
-            )
+            encoding=dict(required=False, type='dict')
         )
     )
 
@@ -528,6 +524,11 @@ def run_module():
     src = module.params.get("src")
     if module.params.get("use_qualifier"):
         module.params['src'] = Datasets.hlq() + "." + src
+
+    # The user did not provide any encoding information. The default values
+    # will be used.
+    if not module.params.get("encoding"):
+        module.params['encoding'] = {"from": "IBM-1047", "to": "ISO8859-1"}
 
     # ********************************************************** #
     #                   Verify paramater validity                #

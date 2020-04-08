@@ -516,11 +516,6 @@ def run_module():
         )
     )
 
-    module.params.update(dict(
-        from_encoding=module.params.get('encoding').get('from'),
-        to_encoding=module.params.get('encoding').get('to'))
-    )
-
     src = module.params.get("src")
     if module.params.get("use_qualifier"):
         module.params['src'] = Datasets.hlq() + "." + src
@@ -529,6 +524,11 @@ def run_module():
     # will be used.
     if not module.params.get("encoding"):
         module.params['encoding'] = {"from": "IBM-1047", "to": "ISO8859-1"}
+
+    module.params.update(dict(
+        from_encoding=module.params.get('encoding').get('from'),
+        to_encoding=module.params.get('encoding').get('to'))
+    )
 
     # ********************************************************** #
     #                   Verify paramater validity                #

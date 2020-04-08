@@ -318,8 +318,8 @@ def check_mvs_dataset(ds):
     try:
         du = data_set_utils.DataSetUtils(module, ds)
         if not du.data_set_exists():
-            err_msg = "Data set {} is not cataloged, please check data set provided in"
-            "the src option.".format(ds)
+            err_msg = ("Data set {} is not cataloged, please check data set provided in"
+            "the src option.").format(ds)
         else:
             check_rc = True
             ds_type = du.get_data_set_type()

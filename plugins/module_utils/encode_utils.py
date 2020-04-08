@@ -23,25 +23,29 @@ except Exception:
     Datasets = ""
     MVSCmd = ""
 
-if PY3: 
+
+if PY3:
     from shlex import quote
 else:
     from pipes import quote
+
 
 REPRO = '''  REPRO INDATASET({}) -
     OUTDATASET({}) REPLACE '''
 LISTCAT = " LISTCAT ENT('{}') ALL"
 
+
 class EncodeUtils(object):
     def __init__(self, module):
-        """Call the coded character set conversion utility iconv 
+        """Call the coded character set conversion utility iconv
         to convert a USS file from one coded character set to another
 
         Arguments:
             module {AnsibleModule} -- The AnsibleModule object from currently running module
         """
         self.module = module
-    
+
+
     def run_uss_cmd(self, uss_cmd, data=None):
         """Call AnsibleModule.run_command() to execute USS command
 
@@ -66,6 +70,7 @@ class EncodeUtils(object):
            err = stderr
         return rc, out, err
 
+
     def listdsi_data_set(self, ds):
         """Invoke IDCAMS LISTCAT command to get the record length and space used
         to estimate the space used by the VSAM data set
@@ -79,8 +84,8 @@ class EncodeUtils(object):
             int -- The maximum record length of the VSAM data set.
             int -- The space used by the VSAM data set(KB).
         """
-        reclen   = 0
-        space_u  = 0
+        reclen = 0
+        space_u = 0
         listcat_cmd = LISTCAT.format(ds)
         cmd = 'mvscmdauth --pgm=ikjeft01 --systsprt=stdout --systsin=stdin'
         rc, out, err = self.run_uss_cmd(cmd, data=listcat_cmd)
@@ -115,10 +120,11 @@ class EncodeUtils(object):
             # This value will be used by the temporary PS when coping a VSAM data set
             # For DASD volume type 3390, 56664 bytes per track
             rec_in_ci = floor((cisize - cisize * freeci - 10) / reclen)
-            ci_num    = ceil(recnum / rec_in_ci)
-            ca_num    = ceil(ci_num / (cioca * (1 - freeca)))
-            space_u   = ceil(ca_num * trkoca * 566664 / 1024)
+            ci_num = ceil(recnum / rec_in_ci)
+            ca_num = ceil(ci_num / (cioca * (1 - freeca)))
+            space_u = ceil(ca_num * trkoca * 566664 / 1024)
         return reclen, space_u
+
 
     def temp_data_set(self, reclen, space_u):
         """Creates a temporary data set with the given record length and size
@@ -137,12 +143,13 @@ class EncodeUtils(object):
         try:
             temp_ps = DataSetUtils.create_temp_data_set(
                 'TEMP',
-                size  = size,
-                lrecl = reclen
+                size=size,
+                lrecl=reclen
             )
         except OSError:
             raise
         return temp_ps
+
 
     def copy_uss2mvs(self, src, dest, ds_type):
         """Copy uss a file or path to an MVS data set
@@ -154,7 +161,6 @@ class EncodeUtils(object):
 
         Raises:
             USSCmdExecError: When any exception is raised during the conversion.
-        Returns:
         Returns:
             boolean -- The return code after the copy command executed successfully
             str -- The stdout after the copy command executed successfully
@@ -168,6 +174,7 @@ class EncodeUtils(object):
             cp_uss2mvs = 'cp -F rec {0} "//\'{1}\'" '.format(quote(src), dest)
         rc, out, err = self.run_uss_cmd(cp_uss2mvs)
         return rc, out, err
+
 
     def copy_ps2uss(self, src, dest):
         """Copy a PS data set to a uss file
@@ -188,6 +195,7 @@ class EncodeUtils(object):
         rc, out, err = self.run_uss_cmd(cp_ps2uss)
         return rc, out, err
 
+
     def copy_pds2uss(self, src, dest):
         """Copy the whole PDS(E) to a uss path
 
@@ -206,6 +214,7 @@ class EncodeUtils(object):
         rc, out, err = self.run_uss_cmd(cp_pds2uss)
         return rc, out, err
 
+
     def copy_vsam_ps(self, src, dest):
         """Copy a VSAM(KSDS) data set to a PS data set vise versa
 
@@ -219,14 +228,15 @@ class EncodeUtils(object):
             boolean -- The return code after the USS command executed successfully
             str -- The stdout after the USS command executed successfully
             str -- The stderr after the USS command executed successfully
-        """        
+        """
         repro_cmd = REPRO.format(src, dest)
         cmd = 'mvscmdauth --pgm=idcams --sysprint=stdout --sysin=stdin'
         rc, out, err = self.run_uss_cmd(cmd, data=repro_cmd)
         return rc, out, err
 
+
     def get_codeset(self):
-        """Get the list of supported encodings from the  USS command 'iconv -l' 
+        """Get the list of supported encodings from the  USS command 'iconv -l'
 
         Raises:
             USSCmdExecError: When any exception is raised during the conversion
@@ -326,7 +336,7 @@ class EncodeUtils(object):
                 elif len(file_list) == 1:
                     if path.isdir(dest):
                         file_name = path.basename(file_list[0])
-                        dest_f    = path.join(dest, file_name)
+                        dest_f = path.join(dest, file_name)
                     convert_rc = self.uss_convert_encoding(src, dest, from_code, to_code)
                 else:
                     if path.isfile(dest):
@@ -335,9 +345,9 @@ class EncodeUtils(object):
                     else:
                         for file in file_list:
                             if dest == src:
-                                dest_f  = file
+                                dest_f = file
                             else:
-                                dest_f  = file.replace(src, dest, 1)
+                                dest_f = file.replace(src, dest, 1)
                                 dest_dir = path.dirname(dest_f)
                                 if not path.exists(dest_dir):
                                     makedirs(dest_dir)
@@ -345,7 +355,7 @@ class EncodeUtils(object):
             else:
                 if path.isdir(dest):
                     file_name = path.basename(path.abspath(src))
-                    dest      = path.join(dest, file_name)
+                    dest = path.join(dest, file_name)
                 convert_rc = self.uss_convert_encoding(src, dest, from_code, to_code)
         except Exception:
             raise
@@ -370,31 +380,31 @@ class EncodeUtils(object):
             str -- Returned error messages 
         """
         convert_rc = False
-        temp_ps    = None
-        temp_src   = src
-        temp_dest  = dest
+        temp_ps = None
+        temp_src = src
+        temp_dest = dest
         try:
             if src_type == 'PS':
-                temp_src_fo  = NamedTemporaryFile()
-                temp_src     = temp_src_fo.name
+                temp_src_fo = NamedTemporaryFile()
+                temp_src = temp_src_fo.name
                 rc, out, err = self.copy_ps2uss(src, temp_src)
             if src_type == 'PO':
-                temp_src_fo  = TemporaryDirectory()
-                temp_src     = temp_src_fo.name
+                temp_src_fo = TemporaryDirectory()
+                temp_src = temp_src_fo.name
                 rc, out, err = self.copy_pds2uss(src, temp_src)
             if src_type == 'VSAM':
                 reclen, space_u = self.listdsi_data_set(src.upper())
-                temp_ps         = self.temp_data_set(reclen, space_u)
-                rc, out, err    = self.copy_vsam_ps(src.upper(), temp_ps)
-                temp_src_fo     = NamedTemporaryFile()
-                temp_src        = temp_src_fo.name
-                rc, out, err    = self.copy_ps2uss(temp_ps, temp_src)
+                temp_ps = self.temp_data_set(reclen, space_u)
+                rc, out, err = self.copy_vsam_ps(src.upper(), temp_ps)
+                temp_src_fo = NamedTemporaryFile()
+                temp_src = temp_src_fo.name
+                rc, out, err = self.copy_ps2uss(temp_ps, temp_src)
             if dest_type == 'PS' or dest_type == 'VSAM':
                 temp_dest_fo = NamedTemporaryFile()
-                temp_dest    = temp_dest_fo.name
+                temp_dest = temp_dest_fo.name
             if dest_type == 'PO':
                 temp_dest_fo = TemporaryDirectory()
-                temp_dest    = temp_dest_fo.name
+                temp_dest = temp_dest_fo.name
             rc, err_msg = self.uss_convert_encoding_prev(temp_src, temp_dest, from_code, to_code)
             if rc:
                 if not dest_type:
@@ -402,9 +412,9 @@ class EncodeUtils(object):
                 else:
                     if dest_type == 'VSAM':
                         reclen, space_u = self.listdsi_data_set(dest.upper())
-                        temp_ps         = self.temp_data_set(reclen, space_u)
-                        rc, out, err    = self.copy_uss2mvs(temp_dest, temp_ps, 'PS')
-                        rc, out, err    = self.copy_vsam_ps(temp_ps, dest.upper())
+                        temp_ps = self.temp_data_set(reclen, space_u)
+                        rc, out, err = self.copy_uss2mvs(temp_dest, temp_ps, 'PS')
+                        rc, out, err = self.copy_vsam_ps(temp_ps, dest.upper())
                         convert_rc = True
                     elif dest_type == 'PO':
                         for (dir, _, files) in walk(temp_dest):

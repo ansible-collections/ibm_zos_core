@@ -244,7 +244,7 @@ import re
 import os
 
 from math import floor, ceil
-from shutil import rmtree, move
+from shutil import rmtree, copy, move
 from shlex import quote
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils._text import to_bytes
@@ -354,24 +354,23 @@ class FetchHandler:
     def _uss_convert_encoding(self, src, dest, from_code_set, to_code_set):
         """ Convert the encoding of the data in a USS file """
         temp_fo = None
-        if not src == dest:
+        if src != dest:
             temp_fi = dest
         else:
-            temp_fo = tempfile.NamedTemporaryFile()
-            temp_fi = temp_fo.name
+            fd, temp_fi = tempfile.mkstemp()
         iconv_cmd = 'iconv -f {0} -t {1} {2} > {3}'.format(
-                    quote(from_code_set),
-                    quote(to_code_set),
-                    quote(src),
-                    quote(temp_fi)
+                    quote(from_code_set), quote(to_code_set), quote(src), quote(temp_fi)
         )
-
         self._run_command(iconv_cmd, use_unsafe_shell=True)
         if dest != temp_fi:
             try:
                 move(temp_fi, dest)
-            except (OSError, IOError) as e:
+            except (OSError, IOError):
                 raise
+            finally:
+                os.close(fd)
+                if os.path.exists(temp_fi):
+                    os.remove(temp_fi)
 
     def _fetch_uss_file(self, src, is_binary, encoding):
         """ Convert encoding of a USS file. Return a tuple of temporary file
@@ -440,13 +439,24 @@ class FetchHandler:
             from_code_set = encoding.get('from')
             to_code_set = encoding.get('to')
             root, dirs, files = next(os.walk(dir_path))
-            for file in files:
-                file_path = os.path.join(root, file)
-                # enc_utils.uss_convert_encoding(
-                #     file_path, file_path, from_code_set, to_code_set
-                # )
-                self._uss_convert_encoding(file_path, file_path, from_code_set, to_code_set)
-
+            try:
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    self._uss_convert_encoding(
+                        file_path, file_path, from_code_set, to_code_set
+                    )
+                    # enc_utils.uss_convert_encoding(
+                    #     file_path, file_path, from_code_set, to_code_set
+                    # )
+            except Exception as err:
+                rmtree(dir_path)
+                self._fail_json(
+                    msg=(
+                        "An error occured while converting encoding of the member "
+                        "{0} from {1} to {2}"
+                    ).format(file, from_code_set, to_code_set),
+                    stderr=str(err), stderr_lines=str(err).splitlines()
+                )
         return dir_path
 
     def _fetch_mvs_data(self, src, is_binary, encoding):
@@ -454,13 +464,12 @@ class FetchHandler:
             to a USS file
         """
         fd, file_path = tempfile.mkstemp()
+        os.close(fd)
         cmd = "cp -B \"//'{0}'\" {1}"
         if not is_binary:
             cmd = cmd.replace(" -B", "")
         rc, out, err = self._run_command(cmd.format(src, file_path))
-
         if rc != 0:
-            os.close(fd)
             os.remove(file_path)
             self._fail_json(
                 msg="Unable to copy {0} to USS".format(src),
@@ -473,11 +482,12 @@ class FetchHandler:
             from_code_set = encoding.get('from')
             to_code_set = encoding.get('to')
             try:
+                self._uss_convert_encoding(file_path, file_path, from_code_set, to_code_set)
                 # enc_utils.uss_convert_encoding(
                 #     file_path, file_path, from_code_set, to_code_set
                 # )
-                self._uss_convert_encoding(file_path, file_path, from_code_set, to_code_set)
             except Exception as err:
+                os.remove(file_path)
                 self._fail_json(
                     msg=(
                         "An error occured while converting encoding of the data set"
@@ -485,8 +495,6 @@ class FetchHandler:
                     ).format(src, from_code_set, to_code_set),
                     stderr=str(err), stderr_lines=str(err).splitlines()
                 )
-
-        os.close(fd)
         return file_path
 
 
@@ -507,7 +515,7 @@ def run_module():
             encoding=dict(
                 required=False,
                 type='dict',
-                default={'from': 'IBM-1047', 'to': 'ISO8859-1'}
+                default={"from": "IBM-1047", "to": "ISO8859-1"}
             )
         )
     )
@@ -531,8 +539,8 @@ def run_module():
         fail_on_missing=dict(arg_type='bool', required=False, default=True),
         is_binary=dict(arg_type='bool', required=False, default=False),
         use_qualifier=dict(arg_type='bool', required=False, default=False),
-        from_encoding=dict(arg_type='encoding'),
-        to_encoding=dict(arg_type='encoding')
+        from_encoding=dict(arg_type='encoding', default="IBM-1047"),
+        to_encoding=dict(arg_type='encoding', default="ISO-8859-1")
     )
 
     fetch_handler = FetchHandler(module)

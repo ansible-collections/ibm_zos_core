@@ -513,7 +513,7 @@ def test_fetch_pds_dir_insufficient_write_permission_fails(ansible_zos_module):
 
 def test_fetch_use_data_set_qualifier(ansible_zos_module):
     hosts = ansible_zos_module
-    dest_path = "/tmp/OMVSADM.TEST.USER.QUAL"
+    dest_path = "/tmp/TEST.USER.QUAL"
     hosts.all.zos_data_set(
         name="OMVSADM.TEST.USER.QUAL",
         type="seq",
@@ -535,3 +535,4 @@ def test_fetch_use_data_set_qualifier(ansible_zos_module):
     finally:
         if os.path.exists(dest_path):
             os.remove(dest_path)
+        hosts.all.zos_data_set(src="OMVSADM.TEST.USER.QUAL", state="absent")

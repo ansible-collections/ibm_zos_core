@@ -283,10 +283,10 @@ def mvs_file_backup(src):
         bk_dsn = '.'.join(temp)
 
     bk_sysin = ''' COPY DATASET(INCLUDE( {0} )) -
-    RENUNC({1}, -
-    {2}) -
+    RENUNC({0}, -
+    {1}) -
     CATALOG -
-    OPTIMIZE(4)  '''.format(dsn, dsn, bk_dsn)
+    OPTIMIZE(4)  '''.format(dsn, bk_dsn)
     bkup_cmd = "mvscmdauth --pgm=adrdssu --sysprint=stdout --sysin=stdin"
     rc, stdout, stderr = module.run_command(bkup_cmd, data=bk_sysin, use_unsafe_shell=True)
     if rc > 4:

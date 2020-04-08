@@ -293,7 +293,7 @@ class EncodeUtils(object):
                 try:
                     shutil.move(temp_fi, dest)
                     convert_rc = True
-                except (OSError, IOError, Error) as e:
+                except (OSError, IOError) as e:
                     raise MoveFileError(src, dest, e)
         except Exception:
             raise
@@ -320,7 +320,7 @@ class EncodeUtils(object):
         file_list = list()
         try:
             if path.isdir(src):
-                for (dir, _, files) in walk(src):
+                for (dir, subdir, files) in walk(src):
                     for file in files:
                         file_list.append(path.join(dir, file))
                 if len(file_list) == 0:
@@ -332,8 +332,10 @@ class EncodeUtils(object):
                     convert_rc = self.uss_convert_encoding(src, dest, from_code, to_code)
                 else:
                     if path.isfile(dest):
-                        err_msg = ("Can't convert multiple files (src) {0} to a single file"
-                            " (dest) {1}.").format(src, dest)
+                        err_msg = (
+                            "Can't convert multiple files (src) {0} to a single file"
+                            " (dest) {1}.".format(src, dest)
+                        )
                     else:
                         for file in file_list:
                             if dest == src:
@@ -409,7 +411,7 @@ class EncodeUtils(object):
                         rc, out, err = self.copy_vsam_ps(temp_ps, dest.upper())
                         convert_rc = True
                     elif dest_type == 'PO':
-                        for (dir, _, files) in walk(temp_dest):
+                        for (dir, subdir, files) in walk(temp_dest):
                             for file in files:
                                 temp_file = path.join(dir, file)
                                 rc, out, err = self.copy_uss2mvs(temp_file, dest, 'PS')
@@ -428,9 +430,10 @@ class EncodeUtils(object):
 
 class USSCmdExecError(Exception):
     def __init__(self, uss_cmd, rc, out, err):
-        self.msg = ("Failed during execution of usscmd: {0}, Return code: {1}; "
-                    "stdout: {2}; stderr: {3}".format(uss_cmd, rc, out, err)
-                   )
+        self.msg = (
+            "Failed during execution of usscmd: {0}, Return code: {1}; "
+            "stdout: {2}; stderr: {3}".format(uss_cmd, rc, out, err)
+        )
         super().__init__(self.msg)
 
 

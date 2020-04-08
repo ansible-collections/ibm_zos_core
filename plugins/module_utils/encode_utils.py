@@ -11,7 +11,7 @@ from math import floor, ceil
 from os import path, walk, makedirs, rmdir, remove
 from ansible.module_utils.six import PY3
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set_utils import (
-     DataSetUtils
+    DataSetUtils
 )
 
 import shutil
@@ -45,7 +45,6 @@ class EncodeUtils(object):
         """
         self.module = module
 
-
     def run_uss_cmd(self, uss_cmd, data=None):
         """Call AnsibleModule.run_command() to execute USS command
 
@@ -60,21 +59,20 @@ class EncodeUtils(object):
         """
         out = None
         err = None
-        rc, stdout, stderr = self.module.run_command(uss_cmd, data=data, use_unsafe_shell=True )
+        rc, stdout, stderr = self.module.run_command(uss_cmd, data=data, use_unsafe_shell=True)
         if rc:
             out = stdout
             err = stderr
             raise USSCmdExecError(uss_cmd, rc, out, err)
         else:
-           out = stdout
-           err = stderr
+            out = stdout
+            err = stderr
         return rc, out, err
-
 
     def listdsi_data_set(self, ds):
         """Invoke IDCAMS LISTCAT command to get the record length and space used
         to estimate the space used by the VSAM data set
-    
+
         Arguments:
             ds: {str} -- The VSAM data set to be checked.
 
@@ -95,7 +93,7 @@ class EncodeUtils(object):
             find_recnum = re.findall(r'REC-TOTAL-*\d+', out)
             find_freeci = re.findall(r'FREESPACE-%CI-*\d+', out)
             find_freeca = re.findall(r'FREESPACE-%CA-*\d+', out)
-            find_cioca  = re.findall(r'CI/CA-*\d+', out)
+            find_cioca = re.findall(r'CI/CA-*\d+', out)
             find_trkoca = re.findall(r'TRACKS/CA-*\d+', out)
             if find_reclen:
                 reclen = int(''.join(re.findall(r'\d+', find_reclen[0])))
@@ -108,10 +106,10 @@ class EncodeUtils(object):
             if find_freeca:
                 freeca = int(''.join(re.findall(r'\d+', find_freeca[0])))
             if find_cioca:
-                cioca  = int(''.join(re.findall(r'\d+', find_cioca[0])))
+                cioca = int(''.join(re.findall(r'\d+', find_cioca[0])))
             if find_trkoca:
                 trkoca = int(''.join(re.findall(r'\d+', find_trkoca[0])))
-             
+
             # Algorithm used for VSAM data set space evaluation
             # Step01. Get the number of records in each VSAM CI
             # Step02. The CI used by the VSAM data set
@@ -124,7 +122,6 @@ class EncodeUtils(object):
             ca_num = ceil(ci_num / (cioca * (1 - freeca)))
             space_u = ceil(ca_num * trkoca * 566664 / 1024)
         return reclen, space_u
-
 
     def temp_data_set(self, reclen, space_u):
         """Creates a temporary data set with the given record length and size
@@ -150,7 +147,6 @@ class EncodeUtils(object):
             raise
         return temp_ps
 
-
     def copy_uss2mvs(self, src, dest, ds_type):
         """Copy uss a file or path to an MVS data set
 
@@ -175,7 +171,6 @@ class EncodeUtils(object):
         rc, out, err = self.run_uss_cmd(cp_uss2mvs)
         return rc, out, err
 
-
     def copy_ps2uss(self, src, dest):
         """Copy a PS data set to a uss file
 
@@ -195,7 +190,6 @@ class EncodeUtils(object):
         rc, out, err = self.run_uss_cmd(cp_ps2uss)
         return rc, out, err
 
-
     def copy_pds2uss(self, src, dest):
         """Copy the whole PDS(E) to a uss path
 
@@ -213,7 +207,6 @@ class EncodeUtils(object):
         cp_pds2uss = 'cp -U -F rec "//\'{0}\'" {1}'.format(src, quote(dest))
         rc, out, err = self.run_uss_cmd(cp_pds2uss)
         return rc, out, err
-
 
     def copy_vsam_ps(self, src, dest):
         """Copy a VSAM(KSDS) data set to a PS data set vise versa
@@ -233,7 +226,6 @@ class EncodeUtils(object):
         cmd = 'mvscmdauth --pgm=idcams --sysprint=stdout --sysin=stdin'
         rc, out, err = self.run_uss_cmd(cmd, data=repro_cmd)
         return rc, out, err
-
 
     def get_codeset(self):
         """Get the list of supported encodings from the  USS command 'iconv -l'
@@ -265,7 +257,7 @@ class EncodeUtils(object):
             str -- The string content after the encoding
         """
         iconv_cmd = 'printf {0} | iconv -f {1} -t {2}'.format(
-                     quote(src), quote(from_encoding), quote(to_encoding))
+            quote(src), quote(from_encoding), quote(to_encoding))
         rc, out, err = self.run_uss_cmd(iconv_cmd)
         return out
 
@@ -316,17 +308,17 @@ class EncodeUtils(object):
             to_code: {str} -- The destination code set for the output path
             src: {str} -- The input uss path or a file
             dest: {str} -- The output uss path or a file
-        
+
         Raises:
             OSError: When direcotry is empty or copy multiple files to a single file
         Returns:
             boolean -- Indicate whether the conversion is successful or not
-            str -- Returned error messages 
+            str -- Returned error messages
         """
         convert_rc = False
-        err_msg    = None
-        file_list  = list()
-        try: 
+        err_msg = None
+        file_list = list()
+        try:
             if path.isdir(src):
                 for (dir, _, files) in walk(src):
                     for file in files:
@@ -341,7 +333,7 @@ class EncodeUtils(object):
                 else:
                     if path.isfile(dest):
                         err_msg = ("Can't convert multiple files (src) {0} to a single file"
-                        " (dest) {1}.").format(src, dest)
+                            " (dest) {1}.").format(src, dest)
                     else:
                         for file in file_list:
                             if dest == src:
@@ -366,7 +358,7 @@ class EncodeUtils(object):
            1) USS to MVS(PS, PDS/E VSAM)
            2) MVS to USS
            3) MVS to MVS
-        
+
         Arguments:
             src: {str} -- The input MVS data set to be converted
             dest: {str} -- The output MVS data set
@@ -374,10 +366,10 @@ class EncodeUtils(object):
             dest_type: {str} -- The output MVS data set type
             from_code: {str} -- The source code set of the input MVS data set
             to_code: {str} -- The destination code set of the output MVS data set
-        
+
         Returns:
             boolean -- Indicate whether the conversion is successful or not
-            str -- Returned error messages 
+            str -- Returned error messages
         """
         convert_rc = False
         temp_ps = None
@@ -433,12 +425,14 @@ class EncodeUtils(object):
 
         return convert_rc, err_msg
 
+
 class USSCmdExecError(Exception):
     def __init__(self, uss_cmd, rc, out, err):
         self.msg = ("Failed during execution of usscmd: {0}, Return code: {1}; "
                     "stdout: {2}; stderr: {3}".format(uss_cmd, rc, out, err)
-        )
+                   )
         super().__init__(self.msg)
+
 
 class MoveFileError(Exception):
     def __init__(self, src, dest, e):

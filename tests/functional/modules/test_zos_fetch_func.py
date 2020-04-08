@@ -3,14 +3,8 @@
 from __future__ import (absolute_import, division, print_function)
 
 import os
-import sys
-import warnings
 import shutil
 import stat
-
-import ansible.constants
-import ansible.errors
-import ansible.utils
 import pytest
 
 from hashlib import sha256
@@ -100,7 +94,7 @@ def test_fetch_sequential_data_set_fixed_block(ansible_zos_module):
         results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():
             assert result.get('changed') is True
-            assert result.get('data_set_type') == 'Sequential'
+            assert result.get('data_set_type') == "Sequential"
             assert result.get('module_stderr') is None
             assert result.get('dest') == dest_path
             assert os.path.exists(dest_path)
@@ -186,7 +180,7 @@ def test_fetch_partitioned_data_set_member_in_binary_mode(ansible_zos_module):
         results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():
             assert result.get('changed') is True
-            assert result.get('data_set_type') == 'Partitioned'
+            assert result.get('data_set_type') == "Partitioned"
             assert result.get('module_stderr') is None
             assert result.get('dest') == dest_path
             assert result.get('is_binary') is True
@@ -536,3 +530,29 @@ def test_fetch_use_data_set_qualifier(ansible_zos_module):
         if os.path.exists(dest_path):
             os.remove(dest_path)
         hosts.all.zos_data_set(src="OMVSADM.TEST.USER.QUAL", state="absent")
+
+
+def test_fetch_flat_create_dirs(ansible_zos_module, z_python_interpreter):
+    z_int = z_python_interpreter
+    hosts = ansible_zos_module
+    remote_host = z_int[1].get("inventory").strip(",")
+    dest_path = "/tmp/{0}/etc/ssh/ssh_config".format(remote_host)
+    params = dict(
+        src="/etc/ssh/ssh_config",
+        dest="/tmp/",
+        flat=False
+    )
+    try:
+        shutil.rmtree("/tmp/" + remote_host)
+    except FileNotFoundError:
+        pass
+    try:
+        assert not os.path.exists(dest_path)
+        results = hosts.all.zos_fetch(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+        assert os.path.exists(dest_path)
+    finally:
+        if os.path.exists(dest_path):
+            shutil.rmtree("/tmp/" + remote_host)

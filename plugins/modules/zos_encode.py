@@ -4,7 +4,7 @@
 # Copyright (c) IBM Corporation 2019, 2020
 # Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
-from future import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
@@ -245,6 +245,7 @@ def exit_when_exception(err_msg, result):
     result['msg'] = err_msg
     module.fail_json(**result)
 
+
 def uss_file_backup(src):
     err_msg = None
     src_name = path.abspath(src)
@@ -399,7 +400,7 @@ def run_module():
     backup_file = None
     convert_rc = False
     changed = False
-    
+
     result = dict(
         changed=changed,
         src=src,

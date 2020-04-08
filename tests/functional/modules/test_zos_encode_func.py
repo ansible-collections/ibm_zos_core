@@ -3,7 +3,7 @@
 # Copyright (c) IBM Corporation 2019, 2020
 # Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
-from future import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
 from shellescape import quote
 from pprint import pprint
 import tempfile
@@ -25,11 +25,12 @@ from_encoding = 'IBM-1047'
 invalid_encoding = 'EBCDIC'
 to_encoding = 'ISO8859-1'
 
+
 def test_uss_encoding_conversion_with_invalid_encoding(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_encode(
-        src=uss_file, 
-        from_encoding=invalid_encoding, 
+        src=uss_file,
+        from_encoding=invalid_encoding,
         to_encoding=to_encoding
     )
     pprint(vars(results))
@@ -144,9 +145,9 @@ def test_uss_encoding_conversion_USS_path_to_USS_path(ansible_zos_module):
     results = hosts.all.zos_encode(
         src=uss_path,
         dest=uss_dest_path,
-        from_encoding=from_encoding, 
+        from_encoding=from_encoding,
         to_encoding=to_encoding,
-        backup= True
+        backup=True
     )
     pprint(vars(results))
     for result in results.contacted.values():
@@ -161,7 +162,7 @@ def test_uss_encoding_conversion_USS_file_to_MVS_ps(ansible_zos_module):
     results = hosts.all.zos_encode(
         src=uss_file,
         dest=mvs_ps,
-        from_encoding= from_encoding,
+        from_encoding=from_encoding,
         to_encoding=to_encoding
     )
     pprint(vars(results))
@@ -260,7 +261,7 @@ def test_uss_encoding_conversion_MVS_PDS_member_to_USS_file(ansible_zos_module):
         dest=uss_dest_file,
         from_encoding=from_encoding,
         to_encoding=to_encoding,
-        backup= True
+        backup=True
     )
     pprint(vars(results))
     for result in results.contacted.values():
@@ -318,6 +319,7 @@ def test_uss_encoding_conversion_MVS_VSAM_to_MVS_PS(ansible_zos_module):
         assert result.get('backup_file') is None
         assert result.get('changed') is True
 
+
 def test_uss_encoding_conversion_MVS_PS_to_MVS_PDS_member(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_encode(
@@ -354,7 +356,7 @@ def test_uss_encoding_conversion_MVS_PS_to_MVS_VSAM(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_encode(
         src=mvs_vps,
-        dest= mvs_vs,
+        dest=mvs_vs,
         from_encoding=from_encoding,
         to_encoding=to_encoding
     )

@@ -598,7 +598,7 @@ def run_module():
         res_args['remote_path'] = file_path
 
     # ********************************************************** #
-    #    Fetch a paritioned data set or oen of its members       #
+    #    Fetch a partitioned data set or one of its members       #
     # ********************************************************** #
 
     elif ds_type == "PO":

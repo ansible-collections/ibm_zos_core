@@ -159,7 +159,8 @@ class ActionModule(ActionBase):
                 target_name,
                 source_local
             )
-            os.makedirs(os.path.dirname(dest), exist_ok=True)
+            if not os.path.exists(os.path.dirname(dest)):
+                os.makedirs(os.path.dirname(dest))
 
         dest = dest.replace("//", "/")
 

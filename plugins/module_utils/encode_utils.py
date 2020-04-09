@@ -6,15 +6,16 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-from tempfile import NamedTemporaryFile, TemporaryDirectory
+from tempfile import NamedTemporaryFile, TemporaryDirectory, mkstemp
 from math import floor, ceil
-from os import path, walk, makedirs, rmdir, remove
+from os import path, walk, makedirs, unlink
 from ansible.module_utils.six import PY3
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set_utils import (
     DataSetUtils
 )
 
 import shutil
+import errno
 import re
 
 try:
@@ -281,8 +282,7 @@ class EncodeUtils(object):
         if not src == dest:
             temp_fi = dest
         else:
-            temp_fo = NamedTemporaryFile()
-            temp_fi = temp_fo.name
+            temp_fo, temp_fi = mkstemp()
         iconv_cmd = 'iconv -f {0} -t {1} {2} > {3}'.format(
                     quote(from_code), quote(to_code), quote(src), quote(temp_fi))
         try:
@@ -297,6 +297,13 @@ class EncodeUtils(object):
                     raise MoveFileError(src, dest, e)
         except Exception:
             raise
+        finally:
+            if temp_fo:
+                try:
+                    unlink(temp_fi)
+                except OSError as e:
+                    if e.errno != errno.ENOENT:
+                        raise
         return convert_rc
 
     def uss_convert_encoding_prev(self, src, dest, from_code, to_code):
@@ -424,7 +431,6 @@ class EncodeUtils(object):
         finally:
             if temp_ps:
                 Datasets.delete(temp_ps)
-
         return convert_rc, err_msg
 
 

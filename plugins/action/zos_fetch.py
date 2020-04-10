@@ -127,6 +127,8 @@ class ActionModule(ActionBase):
 
         ds_type = None
         fetch_member = '(' in src and src.endswith(')')
+        if fetch_member:
+            member_name = src[src.find('(') + 1:src.find(')')]
         src = self._connection._shell.join_path(src)
         src = self._remote_expand_user(src)
 
@@ -137,6 +139,13 @@ class ActionModule(ActionBase):
         #  2. If 'flat' is 'true', then dest must not be a directory.#
         #     If it is a directory, a trailing forward slash must    #
         #     be added.                                              #
+        # ********************************************************** #
+
+        # ********************************************************** #
+        #  If a data set member is being fetched, extract the member #
+        #  name and update dest with the name of the member.         #
+        #  For instance: If src is: USER.TEST.PROCLIB(DATA)          #
+        #  and dest is: /tmp/, then updated dest would be /tmp/DATA  #
         # ********************************************************** #
 
         if os.path.sep not in self._connection._shell.join_path('a', ''):
@@ -159,8 +168,12 @@ class ActionModule(ActionBase):
                 result['failed'] = True
                 return result
             if dest.endswith(os.sep):
-                base = os.path.basename(source_local)
-                dest = os.path.join(dest, base)
+                if fetch_member:
+                    base = os.path.dirname(dest)
+                    dest = os.path.join(base, member_name)
+                else:
+                    base = os.path.basename(source_local)
+                    dest = os.path.join(dest, base)
             if not dest.startswith("/"):
                 dest = self._loader.path_dwim(dest)
         else:
@@ -168,10 +181,11 @@ class ActionModule(ActionBase):
                 target_name = task_vars['inventory_hostname']
             else:
                 target_name = self._play_context.remote_addr
+            suffix = member_name if fetch_member else source_local
             dest = "{0}/{1}/{2}".format(
                 self._loader.path_dwim(dest),
                 target_name,
-                source_local
+                suffix
             )
             try:
                 dirname = os.path.dirname(dest).replace("//", "/")
@@ -185,19 +199,6 @@ class ActionModule(ActionBase):
                 return result
 
         dest = dest.replace("//", "/")
-
-        # ********************************************************** #
-        #  If a data set member is being fetched, extract the member #
-        #  name and update dest with the name of the member.         #
-        #  For instance: If src is: USER.TEST.PROCLIB(DATA)          #
-        #  and dest is: /tmp/, then updated dets would be /tmp/DATA  #
-        # ********************************************************** #
-
-        if fetch_member and dest.endswith(os.sep):
-            member = src[src.find('(') + 1:src.find(')')]
-            base_dir = os.path.dirname(dest)
-            dest = os.path.join(base_dir, member)
-
         local_checksum = _get_file_checksum(dest)
 
         # ********************************************************** #

@@ -217,10 +217,11 @@ class ActionModule(ActionBase):
 
         if fetch_res.get('msg'):
             result['msg'] = fetch_res.get('msg')
-            result['stdout'] = fetch_res.get('stdout')
-            result['stderr'] = fetch_res.get('stderr')
+            result['stdout'] = fetch_res.get('stdout') or fetch_res.get("module_stdout")
+            result['stderr'] = fetch_res.get('stderr') or fetch_res.get("module_stderr")
             result['stdout_lines'] = fetch_res.get('stdout_lines')
             result['stderr_lines'] = fetch_res.get('stderr_lines')
+            result["rc"] = fetch_res.get("rc")
             result['failed'] = True
             return result
 

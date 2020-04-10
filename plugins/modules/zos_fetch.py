@@ -502,7 +502,6 @@ def run_module():
     # ********************************************************** #
     #                Module initialization                       #
     # ********************************************************** #
-
     module = AnsibleModule(
         argument_spec=dict(
             src=dict(required=True, type='str'),
@@ -550,7 +549,7 @@ def run_module():
         parser = better_arg_parser.BetterArgParser(arg_def)
         parsed_args = parser.parse_args(module.params)
     except ValueError as err:
-        fetch_handler._fail_json(
+        module.fail_json(
             msg="Parameter verification failed", stderr=str(err)
         )
     src = parsed_args.get('src')
@@ -571,7 +570,7 @@ def run_module():
         ds_utils = data_set_utils.DataSetUtils(module, ds_name)
         if ds_utils.data_set_exists() is False:
             if fail_on_missing:
-                fetch_handler._fail_json(
+                module.fail_json(
                     msg=(
                         "The data set '{0}' does not exist or is "
                         "uncataloged".format(ds_name)
@@ -584,10 +583,10 @@ def run_module():
             )
         ds_type = ds_utils.get_data_set_type()
         if not ds_type:
-            fetch_handler._fail_json(msg="Unable to determine data set type")
+            module.fail_json(msg="Unable to determine data set type")
 
     except Exception as err:
-        fetch_handler._fail_json(msg="Error while gathering data set information", stderr=str(err))
+        module.fail_json(msg="Error while gathering data set information", stderr=str(err))
 
     # ********************************************************** #
     #                  Fetch a sequential data set               #
@@ -605,9 +604,11 @@ def run_module():
         if _fetch_member:
             member_name = src[src.find('(') + 1:src.find(')')]
             if not ds_utils.data_set_member_exists(member_name):
-                fetch_handler._fail_json(
-                    msg=("The data set member '{0}' was not found inside data"
-                         " set '{1}'").format(member_name, ds_name)
+                module.fail_json(
+                    msg=(
+                        "The data set member '{0}' was not found inside data "
+                        "set '{1}'"
+                    ).format(member_name, ds_name)
                 )
             file_path = fetch_handler._fetch_mvs_data(src, is_binary, encoding)
             res_args['remote_path'] = file_path
@@ -620,7 +621,7 @@ def run_module():
 
     elif ds_type == 'USS':
         if not os.access(b_src, os.R_OK):
-            fetch_handler._fail_json(
+            module.fail_json(
                 msg="File '{0}' does not have appropriate read permission".format(src)
             )
         file_path = fetch_handler._fetch_uss_file(src, is_binary, encoding)

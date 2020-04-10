@@ -236,7 +236,7 @@ class ActionModule(ActionBase):
         remote_path = fetch_res.get('remote_path')
 
         if ds_type in SUPPORTED_DS_TYPES:
-            if ds_type == "PO" and os.path.isfile(dest):
+            if ds_type == "PO" and os.path.isfile(dest) and not fetch_member:
                 result["msg"] = "Destination must be a directory to fetch a partitioned data set"
                 result["failed"] = True
                 return result

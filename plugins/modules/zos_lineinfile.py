@@ -174,7 +174,7 @@ import tempfile
 # import module snippets
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.better_arg_parser import BetterArgParser
-from zoautil_py.SedCmd import SedOperator
+from zoautil_py import Datasets
 
 def main():
     module = AnsibleModule(
@@ -221,12 +221,12 @@ def main():
             mutually_exclusive=['insertafter']
             ),
         backrefs=dict(
-            arg_type='bool', 
+            arg_type='bool',
             dependencies=['regex'],
             default=False，
             ),
         backup=dict(
-            arg_type='bool', 
+            arg_type='bool',
             default=False
             ),
         firstmatch=dict(
@@ -287,8 +287,17 @@ def encoding_type(contents, dependencies):
 
 
 def present(zosdest, regexp, line,
-                ins_aft, ins_bef, backup, backrefs, firstmatch,type,encoding):
-    SedOperator.present(zosdest, regexp, line,
-                ins_aft, ins_bef, backup, backrefs, firstmatch,type,encoding)
-def absent(path, regexp, line, backup):
-    SedOperator.absent(path, regexp, line, backup)
+                ins_aft, ins_bef, backup, backrefs, firstmatch,file_type,encoding):
+    if file_type == 'uss':
+      filetype=1
+        # todo
+    else:
+      filetype=0
+    Datasets.datasets_ensure_line_present(zosdest, line, regexp, insertAfter, insertBefore, encoding, backup, firstMatch, backref,filetype)
+
+def absent(zosdest, regexp, line, backup,file_type):
+    if file_type == 'uss':
+        filetype=1
+    else:
+        filetype=0
+        Datasets.datasets_ensure_line_absent(zosdest, regexp, line, backup,filetype)

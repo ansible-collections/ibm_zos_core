@@ -96,12 +96,12 @@ class ActionModule(ActionBase):
         msg = None
         if src is None or dest is None:
             msg = "Source and destination are required"
-        if not isinstance(src, string_types):
+        elif not isinstance(src, string_types):
             msg = (
                 "Invalid type supplied for 'source' option, "
                 "it must be a string"
             )
-        if not isinstance(dest, string_types):
+        elif not isinstance(dest, string_types):
             msg = (
                 "Invalid type supplied for 'destination' option, "
                 "it must be a string"
@@ -159,8 +159,16 @@ class ActionModule(ActionBase):
                 target_name,
                 source_local
             )
-            if not os.path.exists(os.path.dirname(dest)):
-                os.makedirs(os.path.dirname(dest))
+            try:
+                dirname = os.path.dirname(dest).replace("//", "/")
+                if not os.path.exists(dirname):
+                    os.makedirs(dirname)
+            except OSError as err:
+                result["msg"] = "Unable to create destination directory {0}".format(dirname)
+                result["stderr"] = str(err)
+                result["stderr_lines"] = str(err).splitlines()
+                result["failed"] = True
+                return result
 
         dest = dest.replace("//", "/")
 
@@ -238,7 +246,7 @@ class ActionModule(ActionBase):
             return result
 
         # ********************************************************** #
-        #                Execute module on remote host               #
+        #                Update module response                      #
         # ********************************************************** #
 
         return _update_result(result, src, dest, ds_type, is_binary=is_binary)
@@ -265,14 +273,16 @@ class ActionModule(ActionBase):
                 stderr=subprocess.PIPE
             )
             out, err = transfer_pds.communicate(to_bytes(stdin))
-            if (
-                re.findall(r"Permission denied", to_text(err)) or
-                transfer_pds.returncode != 0
-            ):
+            if re.findall(r"Permission denied", to_text(err)):
+                result["msg"] = "Insufficient write permission for destination {0}".format(dest)
+            elif re.findall(r"Read-only file system", to_text(err)):
+                result["msg"] = "Destination {0} is read-only".format(dest)
+            elif transfer_pds.returncode != 0:
                 result['msg'] = "Error transferring remote data from z/OS system"
+                result['rc'] = transfer_pds.returncode
+            if result.get("msg"):
                 result['stdout'] = to_text(out)
                 result['stderr'] = to_text(err)
-                result['rc'] = transfer_pds.returncode
                 result['stdout_lines'] = to_text(out).splitlines()
                 result['stderr_lines'] = to_text(err).splitlines()
                 result['failed'] = True

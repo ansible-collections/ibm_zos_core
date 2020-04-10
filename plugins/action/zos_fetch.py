@@ -72,6 +72,18 @@ def _get_file_checksum(src):
     return hash_digest.hexdigest()
 
 
+def _detect_sftp_errors(stderr):
+    """Detects if the stderr of the SFTP command contains any errors.
+       The SFTP command usually returns zero return code even if it
+       encountered an error while transferring data. Hence the need to parse
+       its stderr to determine what error it ran into.
+    """
+    lines = to_text(stderr).splitlines()
+    if len(lines) > 1:
+        return "".join(lines[1:])
+    return ""
+
+
 class ActionModule(ActionBase):
     def run(self, tmp=None, task_vars=None):
         result = super(ActionModule, self).run(tmp, task_vars)
@@ -273,18 +285,14 @@ class ActionModule(ActionBase):
                 stderr=subprocess.PIPE
             )
             out, err = transfer_pds.communicate(to_bytes(stdin))
-            if re.findall(r"Permission denied", to_text(err)):
+            err = _detect_sftp_errors(err)
+            if re.findall(r"Permission denied", err):
                 result["msg"] = "Insufficient write permission for destination {0}".format(dest)
-            elif re.findall(r"Read-only file system", to_text(err)):
-                result["msg"] = "Destination {0} is read-only".format(dest)
-            elif transfer_pds.returncode != 0:
+            elif transfer_pds.returncode != 0 or err:
                 result['msg'] = "Error transferring remote data from z/OS system"
                 result['rc'] = transfer_pds.returncode
             if result.get("msg"):
-                result['stdout'] = to_text(out)
-                result['stderr'] = to_text(err)
-                result['stdout_lines'] = to_text(out).splitlines()
-                result['stderr_lines'] = to_text(err).splitlines()
+                result['stderr'] = err
                 result['failed'] = True
 
         finally:

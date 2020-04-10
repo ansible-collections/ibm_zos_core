@@ -41,6 +41,8 @@ options:
   dest:
     description:
       - Local path where the file or data set will be stored.
+      - If dest is an existing file or directory, the contents will be
+        overwritten.
     required: true
     type: path
   fail_on_missing:

@@ -78,6 +78,8 @@ def _detect_sftp_errors(stderr):
        encountered an error while transferring data. Hence the need to parse
        its stderr to determine what error it ran into.
     """
+    # The first line of stderr is a connection acknowledgement,
+    # which can be ignored
     lines = to_text(stderr).splitlines()
     if len(lines) > 1:
         return "".join(lines[1:])
@@ -191,7 +193,7 @@ class ActionModule(ActionBase):
         #  and dest is: /tmp/, then updated dets would be /tmp/DATA  #
         # ********************************************************** #
 
-        if fetch_member:
+        if fetch_member and dest.endswith(os.sep):
             member = src[src.find('(') + 1:src.find(')')]
             base_dir = os.path.dirname(dest)
             dest = os.path.join(base_dir, member)
@@ -234,6 +236,10 @@ class ActionModule(ActionBase):
         remote_path = fetch_res.get('remote_path')
 
         if ds_type in SUPPORTED_DS_TYPES:
+            if ds_type == "PO" and os.path.isfile(dest):
+                result["msg"] = "Destination must be a directory to fetch a partitioned data set"
+                result["failed"] = True
+                return result
             fetch_content = self._transfer_remote_content(dest, remote_path, ds_type)
             if fetch_content.get('msg'):
                 return fetch_content
@@ -242,11 +248,6 @@ class ActionModule(ActionBase):
                 new_checksum = _get_file_checksum(dest)
                 result['changed'] = local_checksum != new_checksum
                 result['checksum'] = new_checksum
-                if local_checksum and new_checksum != local_checksum:
-                    result['msg'] = "Checksum mismatch"
-                    result['old_checksum'] = local_checksum
-                    result['failed'] = True
-                    return result
             else:
                 result['changed'] = True
 

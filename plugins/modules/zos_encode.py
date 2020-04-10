@@ -212,7 +212,6 @@ backup_file:
     returned: changed and if backup=yes
     type: str
     sample: /path/file_name.2020-04-23-08-32-29-bak.tar (if src is a USS file or path)
-    sample: SOURCE.DATA.SET.NAME.D200423.T083229 (if src is an MVS data set)
 changed:
     description: True if the state was changed, otherwise False
     returned: always
@@ -318,8 +317,10 @@ def check_mvs_dataset(ds):
     try:
         du = data_set_utils.DataSetUtils(module, ds)
         if not du.data_set_exists():
-            err_msg = ("Data set {} is not cataloged, please check data set provided in"
-            "the src option.").format(ds)
+            err_msg = (
+                "Data set {} is not cataloged, please check data set provided in"
+                "the src option.".format(ds)
+            )
         else:
             check_rc = True
             ds_type = du.get_data_set_type()

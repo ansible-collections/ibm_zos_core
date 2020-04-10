@@ -318,7 +318,7 @@ def check_mvs_dataset(ds):
         du = data_set_utils.DataSetUtils(module, ds)
         if not du.data_set_exists():
             err_msg = (
-                "Data set {} is not cataloged, please check data set provided in"
+                "Data set {0} is not cataloged, please check data set provided in"
                 "the src option.".format(ds)
             )
         else:

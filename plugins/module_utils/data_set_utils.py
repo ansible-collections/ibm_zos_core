@@ -18,21 +18,25 @@ except Exception:
 
 __metaclass__ = type
 
-LISTDS_COMMAND = " LISTDS '{0}' "
-LISTCAT_COMMAND = " LISTCAT ENT({0}) ALL "
+LISTDS_COMMAND = "  LISTDS '{0}'"
+LISTCAT_COMMAND = "  LISTCAT ENT({0}) ALL"
 
 
 class DataSetUtils(object):
-    def __init__(self, data_set):
+    def __init__(self, module, data_set):
         """A standard utility to gather information about
         a particular data set. Note that the input data set is assumed
         to be cataloged.
 
         Arguments:
+            module {AnsibleModule} -- The AnsibleModule object from currently
+                                      running module.
             data_set {str} -- Name of the input data set
         """
+        self.module = module
         self.data_set = data_set
         self.uss_path = '/' in data_set
+        self.ds_info = dict()
         if not self.uss_path:
             self.ds_info = self._gather_data_set_info()
 
@@ -46,6 +50,23 @@ class DataSetUtils(object):
         if self.uss_path:
             return path.exists(to_bytes(self.data_set))
         return self.ds_info.get('exists')
+
+    def data_set_member_exists(self, member):
+        """Determines whether the input data set contains the given member.
+
+        Arguments:
+            member {str} -- The name of the data set member
+
+        Returns:
+            bool -- If the member exists
+        """
+        if self.get_data_set_type() == "PO":
+            rc, out, err = self.module.run_command(
+                "head \"//'{0}({1})'\"".format(self.data_set, member)
+            )
+            if rc == 0 and not re.findall(r"EDC5067I", err):
+                return True
+        return False
 
     def get_data_set_type(self):
         """Retrieves the data set type of the input data set.
@@ -92,7 +113,8 @@ class DataSetUtils(object):
         """
         chars = ascii_uppercase
         HLQ2 = ''.join(choice(chars) for i in range(5))
-        temp_ds_name = Datasets.hlq() + '.' + HLQ2 + '.' + LLQ
+        HLQ3 = ''.join(choice(chars) for i in range(6))
+        temp_ds_name = "{0}.{1}.{2}.{3}".format(Datasets.hlq(), HLQ2, HLQ3, LLQ)
 
         rc = Datasets.create(temp_ds_name, ds_type, size, ds_format, "", lrecl)
         if rc != 0:
@@ -166,9 +188,10 @@ class DataSetUtils(object):
             dict -- Dictionary containing data set attributes
         """
         result = dict()
+
         try:
-            listds_out = self._run_mvs_cmd('ikjeft01', LISTDS_COMMAND.format(self.data_set))
-            listcat_out = self._run_mvs_cmd('idcams', LISTCAT_COMMAND.format(self.data_set))
+            listds_out = self._run_mvs_cmd('IKJEFT01', LISTDS_COMMAND.format(self.data_set))
+            listcat_out = self._run_mvs_cmd('IDCAMS', LISTCAT_COMMAND.format(self.data_set))
         except Exception:
             raise
         result.update(self._process_listds_output(listds_out))
@@ -176,7 +199,7 @@ class DataSetUtils(object):
         return result
 
     def _run_mvs_cmd(self, pgm, input_cmd):
-        """Executes MVSCmd with the given program and input command.
+        """Executes mvscmd with the given program and input command.
 
         Arguments:
             pgm {str} -- The name of the MVS program to execute
@@ -186,46 +209,29 @@ class DataSetUtils(object):
             str -- The generated 'sysprint' of the executed command
 
         Raises:
-            IOError: When non-zero return code is received from
-            Datasets.write() or Datasets.read()
-
             MVSCmdExecError: When non-zero return code is received while
             executing MVSCmd
-        """
-        sysin_ds = self.create_temp_data_set('SYSIN')
-        sysprint_ds = self.create_temp_data_set('SYSPRINT')
-        try:
-            rc = Datasets.write(sysin_ds, input_cmd)
-            if rc > 0:
-                raise IOError(
-                    (
-                        "Unable to write content to temporary dataset while "
-                        "executing MVSCmd"
-                    )
-                )
-            if pgm == 'ikjeft01':
-                sysin = 'systsin'
-                sysprint = 'systsprt'
-            else:
-                sysin = 'sysin'
-                sysprint = 'sysprint'
 
-            dd_statements = []
-            dd_statements.append(
-                types.DDStatement(ddName=sysin, dataset=sysin_ds)
-            )
-            dd_statements.append(
-                types.DDStatement(ddName=sysprint, dataset=sysprint_ds)
-            )
-            rc = MVSCmd.execute_authorized(pgm=pgm, args="", dds=dd_statements)
-            if rc != 0:
-                raise MVSCmdExecError(rc)
-            return Datasets.read(sysprint_ds)
-        except Exception:
-            raise
-        finally:
-            Datasets.delete(sysin_ds)
-            Datasets.delete(sysprint_ds)
+            DatasetBusyError: When the data set is being edited by another user
+        """
+        sysprint = "sysprint"
+        sysin = "sysin"
+        if pgm == "IKJEFT01":
+            sysprint = "systsprt"
+            sysin = "systsin"
+
+        rc, out, err = self.module.run_command(
+            "mvscmdauth --pgm={0} --{1}=* --{2}=stdin".format(pgm, sysprint, sysin),
+            data=input_cmd
+        )
+        if rc != 0:
+            if (re.findall(r"ALREADY IN USE", out)):
+                raise DatasetBusyError(self.data_set)
+            if (re.findall(r"NOT IN CATALOG|NOT FOUND|NOT LISTED", out)):
+                self.ds_info['exists'] = False
+            else:
+                raise MVSCmdExecError(rc, out, err)
+        return out
 
     def _process_listds_output(self, output):
         """Parses the output generated by LISTDS command.
@@ -235,17 +241,12 @@ class DataSetUtils(object):
 
         Returns:
             dict -- Dictionary containing the output parameters of LISTDS
-
-        Raises:
-            DatasetBusyError: When the data set is being edited by another user
         """
-        if (re.findall(r"ALREADY IN USE", output)):
-            raise DatasetBusyError(self.data_set)
-
         result = dict()
-        result['exists'] = len(re.findall(r"NOT IN CATALOG", output)) == 0
-
-        if result.get('exists'):
+        if "NOT IN CATALOG" in output:
+            result['exists'] = False
+        else:
+            result['exists'] = True
             ds_search = re.search(r"(-|--)DSORG(-\s*|\s*)\n(.*)", output, re.MULTILINE)
             if ds_search:
                 ds_params = ds_search.group(3).split()
@@ -265,16 +266,20 @@ class DataSetUtils(object):
             dict -- Dictionary containing the output parameters of LISTCAT
         """
         result = dict()
-        volser_output = re.findall(r"VOLSER-*[A-Z|0-9]*", output)
-        result['volser'] = ''.join(
-            re.findall(r"-[A-Z|0-9]*", volser_output[0])
-        ).replace('-', '')
+        if "NOT FOUND" not in output:
+            volser_output = re.findall(r"VOLSER-*[A-Z|0-9]*", output)
+            result['volser'] = ''.join(
+                re.findall(r"-[A-Z|0-9]*", volser_output[0])
+            ).replace('-', '')
         return result
 
 
 class MVSCmdExecError(Exception):
-    def __init__(self, rc):
-        self.msg = "Failure during execution of MVSCmd; Return code: {0}".format(rc)
+    def __init__(self, rc, out, err):
+        self.msg = (
+            "Failure during execution of mvscmd; Return code: {0}; "
+            "stdout: {1}; stderr: {2}".format(rc, out, err)
+        )
         super().__init__(self.msg)
 
 

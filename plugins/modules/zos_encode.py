@@ -428,6 +428,7 @@ def run_module():
     is_uss_src, is_mvs_src, ds_type_src, err_msg = check_file(src)
     if err_msg:
         exit_when_exception(err_msg, result)
+    result['src'] = src
 
     # Check the dest is a USS file/path or an MVS data set
     # if the dest is not specified, the value in the src will be used

@@ -67,20 +67,20 @@ def test_uss_encoding_conversion_with_the_same_encoding(ansible_zos_module):
 
 
 def test_uss_encoding_conversion_without_dest(ansible_zos_module):
-   hosts = ansible_zos_module
-   hosts.all.copy(content=test_data, dest=uss_file)
-   results = hosts.all.zos_encode(
-       src=uss_file,
-       from_encoding=from_encoding,
-       to_encoding=to_encoding
-   )
-   hosts.all.file(path=uss_file, state="absent")
-   pprint(vars(results))
-   for result in results.contacted.values():
-       assert result.get('src') == uss_file
-       assert result.get('dest') == uss_file
-       assert result.get('backup_file') is None
-       assert result.get('changed') is True
+    hosts = ansible_zos_module
+    hosts.all.copy(content=test_data, dest=uss_file)
+    results = hosts.all.zos_encode(
+        src=uss_file,
+        from_encoding=from_encoding,
+        to_encoding=to_encoding
+    )
+    hosts.all.file(path=uss_file, state="absent")
+    pprint(vars(results))
+    for result in results.contacted.values():
+        assert result.get('src') == uss_file
+        assert result.get('dest') == uss_file
+        assert result.get('backup_file') is None
+        assert result.get('changed') is True
 
 
 def test_uss_encoding_conversion_when_dest_not_exists_01(ansible_zos_module):
@@ -121,9 +121,9 @@ def test_uss_encoding_conversion_when_dest_not_exists_02(ansible_zos_module):
     for result in results.contacted.values():
         assert result.get('src') == mvs_ps
         assert result.get('dest') == mvs_none_ps
-        assert result.get('backup_file') == None
-        assert result.get('changed') == False
-   
+        assert result.get('backup_file') is None
+        assert result.get('changed') is False
+
 
 def test_uss_encoding_conversion_uss_USS_file_to_USS_file(ansible_zos_module):
     hosts = ansible_zos_module
@@ -168,8 +168,8 @@ def test_uss_encoding_conversion_USS_file_to_USS_path(ansible_zos_module):
 def test_uss_encoding_conversion_USS_path_to_USS_path(ansible_zos_module):
     hosts = ansible_zos_module
     hosts.all.file(path=uss_path, state="directory")
-    hosts.all.copy(content=test_data, dest=uss_path+'/encode1')
-    hosts.all.copy(content=test_data, dest=uss_path+'/encode2')
+    hosts.all.copy(content=test_data, dest=uss_path + '/encode1')
+    hosts.all.copy(content=test_data, dest=uss_path + '/encode2')
     hosts.all.file(path=uss_dest_path, state="directory")
     results = hosts.all.zos_encode(
         src=uss_path,
@@ -299,11 +299,11 @@ def test_uss_encoding_conversion_MVS_PDS_member_to_USS_file(ansible_zos_module):
 def test_uss_encoding_conversion_USS_path_to_MVS_PDS(ansible_zos_module):
     hosts = ansible_zos_module
     hosts.all.file(path=uss_path, state="directory")
-    hosts.all.copy(content=test_data, dest=uss_path+'/encode1')
-    hosts.all.copy(content=test_data, dest=uss_path+'/encode2')
+    hosts.all.copy(content=test_data, dest=uss_path + '/encode1')
+    hosts.all.copy(content=test_data, dest=uss_path + '/encode2')
     hosts.all.zos_data_set(
         name=mvs_pds,
-        state="present", 
+        state="present",
         type="pds",
         record_length=80
     )

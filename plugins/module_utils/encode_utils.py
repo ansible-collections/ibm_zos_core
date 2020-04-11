@@ -166,7 +166,6 @@ class EncodeUtils(object):
         """
 
         if ds_type == 'PO':
-            #tempdir = path.join(quote(src), '*')
             cp_uss2mvs = 'cp -CM -F rec {0} "//\'{1}\'"'.format(quote(src), dest)
         else:
             cp_uss2mvs = 'cp -F rec {0} "//\'{1}\'" '.format(quote(src), dest)

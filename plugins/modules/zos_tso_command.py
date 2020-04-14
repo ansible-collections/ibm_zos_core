@@ -34,7 +34,7 @@ output:
     returned: always
     type: list
     elements: dict
-    suboptions:
+    contains:
         command:
             description:
                 The executed tso command.

@@ -166,20 +166,17 @@ EXAMPLES = r'''
 
 '''
 
-import os
-import argparse
 import re
-import tempfile
-
-# import module snippets
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils.better_arg_parser import BetterArgParser
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
+    better_arg_parser, data_set_utils)
 from zoautil_py import Datasets
+from os import path
 
 def main():
     module = AnsibleModule(
         argument_spec=dict(
-            zosdest=dict(type='path', required=True),
+            zosdest=dict(type='str', required=True),
             state=dict(type='str', default='present', choices=['absent', 'present']),
             regexp=dict(type='str'),
             line=dict(type='str'),
@@ -197,24 +194,23 @@ def main():
       ),
     arg_defs = dict(
         zosdest=dict(
-            arg_type=data_set_or_path_type, 
-            required=True，
+            arg_type='data_set_or_path_type',
+            required=True,
             ),
         state=dict(
-            arg_type='str', 
-            default='present', 
+            arg_type='str',
+            default='present',
             choices=['absent', 'present']
             ),
         regex=dict(
-            arg_type=regex_type,
+            arg_type='str',
             ),
         line=dict(
             arg_type='str',
         ),
         insertafter=dict(
             arg_type='str',
-            mutually_exclusive=['insertbefore']
-            default=eof_tbd
+            mutually_exclusive=['insertbefore'],
             ),
         insertbefore=dict(
             arg_type='str',
@@ -223,7 +219,7 @@ def main():
         backrefs=dict(
             arg_type='bool',
             dependencies=['regex'],
-            default=False，
+            default=False
             ),
         backup=dict(
             arg_type='bool',
@@ -238,31 +234,39 @@ def main():
             default={'from': 'IBM-1047', 'to': 'ISO8859-1'}
             ),
     )
-    parser = BetterArgParser(arg_defs)
-    params = parser.parse_args(module.params)
-    backup = params['backup']
-    backrefs = params['backrefs']
-    zosdest = params['zosdest']
-    firstmatch = params['firstmatch']
-    regexp = params['regexp']
-    line = params['line']
-    ins_aft = params['insertafter']
-    ins_bef = params['insertbefore']
+    try:
+      parser = better_arg_parser.BetterArgParser(arg_defs)
+      params = parser.parse_args(module.params)
+    except ValueError as err:
+        module.fail_json(
+            msg="Parameter verification failed", stderr=str(err)
+        )
+    backup = params.get('backup')
+    backrefs = params.get('backrefs')
+    zosdest = params.get('zosdest')
+    firstmatch = params.get('firstmatch')
+    regexp = params.get('regexp')
+    line = params.get('line')
+    ins_aft = params.get('insertafter')
+    ins_bef = params.get('insertbefore')
+    encoding = params.get('encoding')
     # analysis the file type
+    ds_utils = data_set_utils.DataSetUtils(module, zosdest)
     file_type = ds_utils.get_data_set_type()
-    if new_params['state'] == 'present':
+    if params.get('state') == 'present':
         if line is None:
             module.fail_json(msg='line is required with state=present')
         present(zosdest, regexp, line,
-                ins_aft, ins_bef, backup, backrefs, firstmatch,file_type,encoding)
+                ins_aft, ins_bef, backup, backrefs, firstmatch, file_type, encoding)
     else:
         if regexp is None and line is None:
             module.fail_json(msg='one of line or regexp is required with state=absent')
-        absent(path, regexp, line, backup,file_type)
+        absent(zosdest, regexp, line, backup, file_type)
 
 
 if __name__ == '__main__':
     main()
+
 
 def data_set_or_path_type(contents, dependencies):
     if not re.fullmatch(
@@ -286,18 +290,17 @@ def encoding_type(contents, dependencies):
     return str(contents)
 
 
-def present(zosdest, regexp, line,
-                ins_aft, ins_bef, backup, backrefs, firstmatch,file_type,encoding):
-    if file_type == 'uss':
+def present(zosdest, regexp, line, ins_aft, ins_bef, backup, backrefs, firstmatch, file_type, encoding):
+    if file_type == 'USS':
       filetype=1
         # todo
     else:
       filetype=0
-    Datasets.datasets_ensure_line_present(zosdest, line, regexp, insertAfter, insertBefore, encoding, backup, firstMatch, backref,filetype)
+    Datasets.datasets_ensure_line_present(zosdest, line, regexp, ins_aft, ins_bef, encoding, backup, firstmatch, backrefs,filetype)
 
-def absent(zosdest, regexp, line, backup,file_type):
-    if file_type == 'uss':
+def absent(zosdest, regexp, line, backup, file_type):
+    if file_type == 'USS':
         filetype=1
     else:
         filetype=0
-        Datasets.datasets_ensure_line_absent(zosdest, regexp, line, backup,filetype)
+        Datasets.datasets_ensure_line_absent(zosdest, regexp, line, backup, filetype)

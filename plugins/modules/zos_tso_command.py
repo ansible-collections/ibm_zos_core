@@ -37,7 +37,7 @@ output:
         command:
             description:
                 The executed tso command.
-            return: always
+            returned: always
             type: str
         rc:
             description:

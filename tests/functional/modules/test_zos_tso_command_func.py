@@ -145,6 +145,5 @@ def test_zos_tso_command_multiple_commands(ansible_zos_module):
     results = hosts.all.zos_tso_command(commands=commands_list)
     for result in results.contacted.values():
         for item in result.get('output'):
-             assert item.get('rc') == 0
+            assert item.get('rc') == 0
         assert result.get('changed') is True
-        

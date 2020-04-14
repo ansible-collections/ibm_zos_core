@@ -71,7 +71,7 @@ def test_zos_tso_command_long_command_128_chars(ansible_zos_module):
 # Run a long  tso command to allocate a dataset.
 def test_zos_tso_command_long_unauth_command_116_chars(ansible_zos_module):
     hosts = ansible_zos_module
-    command_string = "alloc da('imstestl.ims1.temp.ps') catalog lrecl(133) blksize(13300) recfm(f b) dsorg(po) cylinders space(5,5) dir(5)"
+    command_string = ["alloc da('imstestl.ims1.temp.ps') catalog lrecl(133) blksize(13300) recfm(f b) dsorg(po) cylinders space(5,5) dir(5)"]
     results = hosts.all.zos_tso_command(commands=command_string)
     for result in results.contacted.values():
         assert result.get('output')[0].get('rc') == 0
@@ -82,7 +82,7 @@ def test_zos_tso_command_long_unauth_command_116_chars(ansible_zos_module):
 # Run an authorized tso command with auth=true
 def test_zos_tso_command_auth_command_with_auth_equals_true(ansible_zos_module):
     hosts = ansible_zos_module
-    results = hosts.all.zos_tso_command(commands="LISTDS 'imstestl.ims1.temp.ps'")
+    results = hosts.all.zos_tso_command(commands=["LISTDS 'imstestl.ims1.temp.ps'"])
     for result in results.contacted.values():
         assert result.get('output')[0].get('rc') == 0
         assert result.get('changed') is True
@@ -92,7 +92,7 @@ def test_zos_tso_command_auth_command_with_auth_equals_true(ansible_zos_module):
 # Run an unauthorized tso command with auth=False
 def test_zos_tso_command_unauth_command_with_auth_equals_false(ansible_zos_module):
     hosts = ansible_zos_module
-    results = hosts.all.zos_tso_command(commands="LISTCAT ENT('imstestl.ims1.temp.ps')")
+    results = hosts.all.zos_tso_command(commands=["LISTCAT ENT('imstestl.ims1.temp.ps')"])
     for result in results.contacted.values():
         assert result.get('output')[0].get('rc') == 0
         assert result.get('changed') is True
@@ -102,7 +102,7 @@ def test_zos_tso_command_unauth_command_with_auth_equals_false(ansible_zos_modul
 # Delete dataset is both auth or unauth command
 def test_zos_tso_command_both_unauth_and_auth_command(ansible_zos_module):
     hosts = ansible_zos_module
-    results = hosts.all.zos_tso_command(commands="delete 'imstestl.ims1.temp.ps'")
+    results = hosts.all.zos_tso_command(commands=["delete 'imstestl.ims1.temp.ps'"])
     for result in results.contacted.values():
         assert result.get('output')[0].get('rc') == 0
         assert result.get('changed') is True
@@ -112,7 +112,7 @@ def test_zos_tso_command_both_unauth_and_auth_command(ansible_zos_module):
 # Delete dataset is both auth or unauth command, the dataset has be deleted.
 def test_zos_tso_command_valid_command_failed_as_has_been_deleted(ansible_zos_module):
     hosts = ansible_zos_module
-    results = hosts.all.zos_tso_command(commands="delete 'imstestl.ims1.temp.ps'")
+    results = hosts.all.zos_tso_command(commands=["delete 'imstestl.ims1.temp.ps'"])
     for result in results.contacted.values():
         assert result.get('output')[0].get('rc') == 8
         assert result.get('changed') is False
@@ -122,7 +122,7 @@ def test_zos_tso_command_valid_command_failed_as_has_been_deleted(ansible_zos_mo
 # The input command is empty.
 def test_zos_tso_command_empty_command(ansible_zos_module):
     hosts = ansible_zos_module
-    results = hosts.all.zos_tso_command(commands="")
+    results = hosts.all.zos_tso_command(commands=[""])
     for result in results.contacted.values():
         assert result.get('changed') is False
 
@@ -131,19 +131,20 @@ def test_zos_tso_command_empty_command(ansible_zos_module):
 # The input command is no-existing command, the module return rc 255.
 def test_zos_tso_command_invalid_command(ansible_zos_module):
     hosts = ansible_zos_module
-    results = hosts.all.zos_tso_command(commands="xxxxxx")
+    results = hosts.all.zos_tso_command(commands=["xxxxxx"])
     for result in results.contacted.values():
         assert result.get('output')[0].get('rc') == -3
         assert result.get('changed') is False
 
 
 # The positive test
-# The multiple commands 
+# The multiple commands
 def test_zos_tso_command_multiple_commands(ansible_zos_module):
     hosts = ansible_zos_module
-    commands_list = ["LU omvsadm","LISTGRP"]
+    commands_list = ["LU omvsadm", "LISTGRP"]
     results = hosts.all.zos_tso_command(commands=commands_list)
     for result in results.contacted.values():
         for item in result.get('output'):
-                assert item.get('rc') == 0
+             assert item.get('rc') == 0
         assert result.get('changed') is True
+        

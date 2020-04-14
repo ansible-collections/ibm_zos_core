@@ -80,7 +80,7 @@ def test_zos_tso_command_long_unauth_command_116_chars(ansible_zos_module):
 
 # The positive path test
 # Run an authorized tso command with auth=true
-def test_zos_tso_command_auth_command_with_auth_equals_true(ansible_zos_module):
+def test_zos_tso_command_auth_command_listds(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_tso_command(commands=["LISTDS 'imstestl.ims1.temp.ps'"])
     for result in results.contacted.values():
@@ -90,7 +90,7 @@ def test_zos_tso_command_auth_command_with_auth_equals_true(ansible_zos_module):
 
 # The positive path test
 # Run an unauthorized tso command with auth=False
-def test_zos_tso_command_unauth_command_with_auth_equals_false(ansible_zos_module):
+def test_zos_tso_command_unauth_command_listcat(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_tso_command(commands=["LISTCAT ENT('imstestl.ims1.temp.ps')"])
     for result in results.contacted.values():

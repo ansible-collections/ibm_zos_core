@@ -87,6 +87,7 @@ from traceback import format_exc
 from os import chmod, path
 from tempfile import NamedTemporaryFile
 import json
+from stat import S_IEXEC, S_IREAD, S_IWRITE
 
 
 def run_tso_command(commands, module):
@@ -139,7 +140,7 @@ def copy_rexx_and_run(script, command, module):
     tmp_file = NamedTemporaryFile(delete=delete_on_close)
     with open(tmp_file.name, 'w') as f:
         f.write(script)
-    chmod(tmp_file.name, 0o755)
+    chmod(tmp_file.name, S_IEXEC | S_IREAD | S_IWRITE)
     pathName = path.dirname(tmp_file.name)
     scriptName = path.basename(tmp_file.name)
     rc, stdout, stderr = module.run_command(['./' + scriptName, command], cwd=pathName)

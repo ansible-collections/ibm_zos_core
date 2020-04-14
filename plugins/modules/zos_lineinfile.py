@@ -173,9 +173,29 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
 from zoautil_py import Datasets
 from os import path
 
+
+def present(zosdest,line, regexp, ins_aft, ins_bef, encoding, backup, firstmatch, backrefs,filetype):
+    first_match, back_ref, file_type = 0, 0, 0
+    if firstmatch:
+        first_match = 1
+    
+    if backrefs:
+        back_ref = 1
+
+    if filetype == 'USS':
+        file_type = 1
+    # return Datasets.line_present(zosdest, line, regexp, ins_aft, ins_bef, encoding, backup, first_match, back_ref, file_type)
+    return Datasets.line_present(dataset=zosdest, line=line, regex=regexp)
+
+def absent(zosdest, line, regexp, backup, filetype):
+    if filetype == 'USS':
+        file_type = 1
+    else:
+        file_type = 0
+    return Datasets.line_absent(dataset=zosdest, line=line, regex=regexp, backup=backup, filetype=file_type)
+
 def main():
-    module = AnsibleModule(
-        argument_spec=dict(
+    module_args = dict(
             zosdest=dict(type='str', required=True),
             state=dict(type='str', default='present', choices=['absent', 'present']),
             regexp=dict(type='str'),
@@ -190,11 +210,19 @@ def main():
                 type=dict,
                 default={'from': 'IBM-1047', 'to': 'ISO8859-1'}
             ),
-        ),
-      ),
+        )
+    module = AnsibleModule(
+        argument_spec=module_args,
+        supports_check_mode=True
+    )
+    result = dict(
+        changed=False,
+        original_message='',
+        message=''
+    )
     arg_defs = dict(
         zosdest=dict(
-            arg_type='data_set_or_path_type',
+            arg_type='data_set_or_path',
             required=True,
             ),
         state=dict(
@@ -210,11 +238,9 @@ def main():
         ),
         insertafter=dict(
             arg_type='str',
-            mutually_exclusive=['insertbefore'],
             ),
         insertbefore=dict(
             arg_type='str',
-            mutually_exclusive=['insertafter']
             ),
         backrefs=dict(
             arg_type='bool',
@@ -233,74 +259,40 @@ def main():
             arg_type='dict',
             default={'from': 'IBM-1047', 'to': 'ISO8859-1'}
             ),
+        mutually_exclusive=[["insertbefore","insertafter"]],
     )
     try:
-      parser = better_arg_parser.BetterArgParser(arg_defs)
-      params = parser.parse_args(module.params)
+        # parser = better_arg_parser.BetterArgParser(arg_defs)
+        # new_params = parser.parse_args(module.params)
+        new_params = module.params
     except ValueError as err:
         module.fail_json(
             msg="Parameter verification failed", stderr=str(err)
         )
-    backup = params.get('backup')
-    backrefs = params.get('backrefs')
-    zosdest = params.get('zosdest')
-    firstmatch = params.get('firstmatch')
-    regexp = params.get('regexp')
-    line = params.get('line')
-    ins_aft = params.get('insertafter')
-    ins_bef = params.get('insertbefore')
-    encoding = params.get('encoding')
+    backup = new_params.get('backup')
+    backrefs = new_params.get('backrefs')
+    zosdest = new_params.get('zosdest')
+    firstmatch = new_params.get('firstmatch')
+    regexp = new_params.get('regexp')
+    line = new_params.get('line')
+    ins_aft = new_params.get('insertafter')
+    ins_bef = new_params.get('insertbefore')
+    encoding = new_params.get('encoding')
     # analysis the file type
     ds_utils = data_set_utils.DataSetUtils(module, zosdest)
     file_type = ds_utils.get_data_set_type()
-    if params.get('state') == 'present':
+    if new_params.get('state') == 'present':
         if line is None:
             module.fail_json(msg='line is required with state=present')
-        present(zosdest, regexp, line,
-                ins_aft, ins_bef, backup, backrefs, firstmatch, file_type, encoding)
+        return_content = present(zosdest,line, regexp, ins_aft, ins_bef, encoding, backup, firstmatch, backrefs,file_type)
+        result['return_content'] = return_content
     else:
         if regexp is None and line is None:
             module.fail_json(msg='one of line or regexp is required with state=absent')
-        absent(zosdest, regexp, line, backup, file_type)
+        return_content = absent(zosdest, line, regexp, backup, file_type)
+        result['return_content'] = return_content
+    module.exit_json(**result)
 
 
 if __name__ == '__main__':
     main()
-
-
-def data_set_or_path_type(contents, dependencies):
-    if not re.fullmatch(
-        r"^(?:(?:[A-Z]{1}[A-Z0-9]{0,7})(?:[.]{1})){1,21}[A-Z]{1}[A-Z0-9]{0,7}(?:\([A-Z]{1}[A-Z0-9]{0,7}\)){0,1}$",
-        str(contents),
-        re.IGNORECASE,
-    ):
-        if not path.isabs(str(contents)):
-            raise ValueError(
-                'Invalid argument type for "{0}". expected "data_set" or "path"'.format(
-                    contents
-                )
-            )
-    return str(contents)
-
-def encoding_type(contents, dependencies):
-    if not re.fullmatch(r"^[A-Z0-9-]{2,}$", str(contents), re.IGNORECASE,):
-        raise ValueError(
-            'Invalid argument type for "{0}". expected "encoding"'.format(contents)
-        )
-    return str(contents)
-
-
-def present(zosdest, regexp, line, ins_aft, ins_bef, backup, backrefs, firstmatch, file_type, encoding):
-    if file_type == 'USS':
-      filetype=1
-        # todo
-    else:
-      filetype=0
-    Datasets.datasets_ensure_line_present(zosdest, line, regexp, ins_aft, ins_bef, encoding, backup, firstmatch, backrefs,filetype)
-
-def absent(zosdest, regexp, line, backup, file_type):
-    if file_type == 'USS':
-        filetype=1
-    else:
-        filetype=0
-        Datasets.datasets_ensure_line_absent(zosdest, regexp, line, backup, filetype)

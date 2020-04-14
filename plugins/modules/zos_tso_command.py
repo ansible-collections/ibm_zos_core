@@ -35,7 +35,7 @@ output:
     type: list
     elements: dict
         command:
-            description: 
+            description:
                 The executed tso command.
             return: alwasy
             type: str
@@ -48,7 +48,7 @@ output:
         content:
             description:
                 The response resulting from the execution of the TSO command
-            returned: always 
+            returned: always
             type: list
             sample:
                 [
@@ -60,8 +60,8 @@ output:
                 "             D52      M12      CCG      D17      M32      IMSVS         ",
                 "             DSN210   DSN130   RAD      CATLG4   VCAT     CSP           ",
                 ]
-        lines: 
-            description: 
+        lines:
+            description:
                 The line number of the content .
             returned: always
             type: int
@@ -70,13 +70,13 @@ output:
 EXAMPLES = r'''
 - name: Execute TSO command allocate a new dataset
   zos_tso_command:
-      commands: 
+      commands:
           - alloc da('TEST.HILL3.TEST') like('TEST.HILL3')
           - delete 'TEST.HILL3.TEST'
 
 - name: Execute TSO command list user TESTUSER tso information
   zos_tso_command:
-      commands: 
+      commands:
            - LU TESTUSER
 
 '''
@@ -89,7 +89,7 @@ import json
 
 
 def run_tso_command(commands, module):
-    script = """/* REXX */   
+    script = """/* REXX */
 ARG cmds
 address tso
 say '{"output":['
@@ -109,7 +109,7 @@ do while cmds <> ''
    do j = 1 to listcato.0
        if j == listcato.0
           then say ' "'listcato.j '"'
-       else 
+       else
           say ' "'listcato.j '",'
    end
    say ']'
@@ -127,12 +127,13 @@ drop listcato.
     for item in commands:
         command_str = command_str + item + ";"
 
-    rc, stdout, stderr = copy_rexx_and_run(script, command_str,  module)
+    rc, stdout, stderr = copy_rexx_and_run(script, command_str, module)
 
     command_detail_json = json.loads(stdout, strict=False)
     return command_detail_json
 
-def copy_rexx_and_run(script, command,  module):
+
+def copy_rexx_and_run(script, command, module):
     delete_on_close = True
     tmp_file = NamedTemporaryFile(delete=delete_on_close)
     with open(tmp_file.name, 'w') as f:
@@ -163,7 +164,7 @@ def run_module():
             msg='Please provided a valid value for option "command".', **result)
 
     try:
-        result = run_tso_command(commands,  module)
+        result = run_tso_command(commands, module)
         for cmd in result.get('output'):
             if cmd.get('rc') != 0:
                 module.fail_json(msg='The TSO command "' + cmd.get('command') + '" execution failed.', **result)

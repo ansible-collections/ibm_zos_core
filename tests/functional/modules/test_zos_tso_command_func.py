@@ -49,7 +49,7 @@ import pytest
 
 def test_zos_tso_command_run_help(ansible_zos_module):
     hosts = ansible_zos_module
-    results = hosts.all.zos_tso_command(commands="help")
+    results = hosts.all.zos_tso_command(commands=["help"])
     for result in results.contacted.values():
         assert result.get('output')[0].get('rc') == 0
         assert result.get('changed') is True
@@ -59,8 +59,8 @@ def test_zos_tso_command_run_help(ansible_zos_module):
 # Run a long tso command to allocate a dataset.
 def test_zos_tso_command_long_command_128_chars(ansible_zos_module):
     hosts = ansible_zos_module
-    command_string = ("send 'Hello, this is a test message from zos_tso_command module. "
-                      "Im sending a command exceed 80 chars. Thank you.' user(omvsadm)")
+    command_string = [("send 'Hello, this is a test message from zos_tso_command module. "
+                      "Im sending a command exceed 80 chars. Thank you.' user(omvsadm)")]
     results = hosts.all.zos_tso_command(commands=command_string)
     for result in results.contacted.values():
         assert result.get('output')[0].get('rc') == 0

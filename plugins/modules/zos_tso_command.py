@@ -17,7 +17,7 @@ module: zos_tso_command
 author: "Xiao Yuan Ma (@bjmaxy)"
 short_description: Execute a TSO command
 description:
-    - Execute a TSO command on the target z/OS system with the provided options
+    - Execute TSO commands on the target z/OS system with the provided options
       and receive a structured response.
 options:
   commands:
@@ -34,6 +34,7 @@ output:
     returned: always
     type: list
     elements: dict
+    suboptions:
         command:
             description:
                 The executed tso command.

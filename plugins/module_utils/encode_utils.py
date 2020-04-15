@@ -16,6 +16,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set_utils im
 
 import shutil
 import errno
+import os
 import re
 
 try:
@@ -291,6 +292,10 @@ class EncodeUtils(object):
                 convert_rc = True
             else:
                 try:
+                    src_mode = os.stat(src).st_mode
+                    temp_mode = os.stat(temp_fi).st_mode
+                    if src_mode != temp_mode:
+                        os.chmod(temp_fi, src_mode)
                     shutil.move(temp_fi, dest)
                     convert_rc = True
                 except (OSError, IOError) as e:

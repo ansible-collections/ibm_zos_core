@@ -173,26 +173,11 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
 from zoautil_py import Datasets
 from os import path
 
+def present(zosdest,line, regexp, ins_aft, ins_bef, encoding, backup, first_match, backrefs,file_type):
+    return Datasets.line_present(zosdest, line, regexp, ins_aft, ins_bef, encoding, backup, first_match, backrefs, file_type)
 
-def present(zosdest,line, regexp, ins_aft, ins_bef, encoding, backup, firstmatch, backrefs,filetype):
-    first_match, back_ref, file_type = 0, 0, 0
-    if firstmatch:
-        first_match = 1
-    
-    if backrefs:
-        back_ref = 1
-
-    if filetype == 'USS':
-        file_type = 1
-    # return Datasets.line_present(zosdest, line, regexp, ins_aft, ins_bef, encoding, backup, first_match, back_ref, file_type)
-    return Datasets.line_present(dataset=zosdest, line=line, regex=regexp)
-
-def absent(zosdest, line, regexp, backup, filetype):
-    if filetype == 'USS':
-        file_type = 1
-    else:
-        file_type = 0
-    return Datasets.line_absent(dataset=zosdest, line=line, regex=regexp, backup=backup, filetype=file_type)
+def absent(zosdest, line, regexp, backup, file_type):
+    return Datasets.line_absent(zosdest, line, regexp, backup,file_type)
 
 def main():
     module_args = dict(
@@ -203,12 +188,10 @@ def main():
             insertafter=dict(type='str'),
             insertbefore=dict(type='str'),
             backrefs=dict(type='bool', default=False),
-            backup=dict(type='bool', default=False),
+            backup=dict(type='str'),
             firstmatch=dict(type='bool', default=False),
             encoding=dict(
-                required=False,
-                type=dict,
-                default={'from': 'IBM-1047', 'to': 'ISO8859-1'}
+                type=str,
             ),
         )
     module = AnsibleModule(
@@ -248,16 +231,14 @@ def main():
             default=False
             ),
         backup=dict(
-            arg_type='bool',
-            default=False
+            arg_type='str'
             ),
         firstmatch=dict(
             arg_type='bool',
             default=False
             ),
         encoding=dict(
-            arg_type='dict',
-            default={'from': 'IBM-1047', 'to': 'ISO8859-1'}
+            arg_type='str',
             ),
         mutually_exclusive=[["insertbefore","insertafter"]],
     )
@@ -281,18 +262,24 @@ def main():
     # analysis the file type
     ds_utils = data_set_utils.DataSetUtils(module, zosdest)
     file_type = ds_utils.get_data_set_type()
+    if file_type == 'USS':
+        type = 1
+    else:
+        type = 0
     if new_params.get('state') == 'present':
         if line is None:
             module.fail_json(msg='line is required with state=present')
-        return_content = present(zosdest,line, regexp, ins_aft, ins_bef, encoding, backup, firstmatch, backrefs,file_type)
+        
+        return_content = present(zosdest,line, regexp, ins_aft, ins_bef, encoding, backup, firstmatch, backrefs,type)
         result['return_content'] = return_content
     else:
         if regexp is None and line is None:
             module.fail_json(msg='one of line or regexp is required with state=absent')
-        return_content = absent(zosdest, line, regexp, backup, file_type)
+        return_content = absent(zosdest, line, regexp, backup, type)
         result['return_content'] = return_content
     module.exit_json(**result)
 
 
 if __name__ == '__main__':
     main()
+

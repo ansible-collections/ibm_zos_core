@@ -365,7 +365,7 @@ def parse_result_b(result):
     for index, line in enumerate(lines):
         line = line.strip()
         pattern_with_job_name = re.compile(
-            r"\s*([0-9]{2,})\s([A-Z]{1})\s+(?:[A-Z0-9]{1,8})?\s*[&*]?[0-9]+\s([A-Z0-9]+)"
+            r"\s*([0-9]{2,})\s[A-Z]{1}\s+([A-Z0-9]{1,8})?\s*[&*]?[0-9]+\s([A-Z0-9]+)"
         )
         m = pattern_with_job_name.search(line)
         if m:

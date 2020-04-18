@@ -84,9 +84,8 @@ options:
   encoding:
     description:
       - Specifies which encodings the fetched data set should be converted from
-        and to. If this parameter is not provided, this module assumes that
-        source file or data set is encoded in IBM-1047 and will be converted
-        to ISO8859-1.
+        and to. If this parameter is not provided, no encoding conversions will
+        take place.
     required: false
     type: dict
     suboptions:
@@ -95,13 +94,11 @@ options:
             - The encoding to be converted from
         required: true
         type: str
-        default: IBM-1047
       to:
         description:
             - The encoding to be converted to
         required: true
         type: str
-        default: ISO8859-1
 notes:
     - When fetching PDS(E) and VSAM data sets, temporary storage will be used
       on the remote z/OS system. After the PDS(E) or VSAM data set is
@@ -374,12 +371,12 @@ class FetchHandler:
                 if os.path.exists(temp_fi):
                     os.remove(temp_fi)
 
-    def _fetch_uss_file(self, src, is_binary, encoding):
+    def _fetch_uss_file(self, src, is_binary, encoding=None):
         """ Convert encoding of a USS file. Return a tuple of temporary file
             name containing converted data.
         """
         file_path = None
-        if not is_binary:
+        if (not is_binary) and encoding:
             fd, file_path = tempfile.mkstemp()
             from_code_set = encoding.get('from')
             to_code_set = encoding.get('to')
@@ -401,7 +398,7 @@ class FetchHandler:
 
         return file_path if file_path else src
 
-    def _fetch_vsam(self, src, is_binary, encoding):
+    def _fetch_vsam(self, src, is_binary, encoding=None):
         """ Copy the contents of a VSAM to a sequential data set.
             Afterwards, copy that data set to a USS file.
         """
@@ -416,7 +413,7 @@ class FetchHandler:
 
         return file_path
 
-    def _fetch_pdse(self, src, is_binary, encoding):
+    def _fetch_pdse(self, src, is_binary, encoding=None):
         """ Copy a partitioned data set to a USS directory. If the data set
             is not being fetched in binary mode, encoding for all members inside
             the data set will be converted.
@@ -436,7 +433,7 @@ class FetchHandler:
                 stdout=out, stderr=err, stdout_lines=out.splitlines(),
                 stderr_lines=err.splitlines(), rc=rc
             )
-        if not is_binary:
+        if (not is_binary) and encoding:
             # enc_utils = encode_utils.EncodeUtils(self.module)
             from_code_set = encoding.get('from')
             to_code_set = encoding.get('to')
@@ -461,7 +458,7 @@ class FetchHandler:
                 )
         return dir_path
 
-    def _fetch_mvs_data(self, src, is_binary, encoding):
+    def _fetch_mvs_data(self, src, is_binary, encoding=None):
         """ Copy a sequential data set or a partitioned data set member
             to a USS file
         """
@@ -479,7 +476,7 @@ class FetchHandler:
                 stdout_lines=str(out).splitlines(),
                 stderr_lines=str(err).splitlines()
             )
-        if not is_binary:
+        if (not is_binary) and encoding:
             # enc_utils = encode_utils.EncodeUtils(self.module)
             from_code_set = encoding.get('from')
             to_code_set = encoding.get('to')
@@ -521,16 +518,6 @@ def run_module():
     if module.params.get("use_qualifier"):
         module.params['src'] = Datasets.hlq() + "." + src
 
-    # The user did not provide any encoding information. The default values
-    # will be used.
-    if not module.params.get("encoding"):
-        module.params['encoding'] = {"from": "IBM-1047", "to": "ISO8859-1"}
-
-    module.params.update(dict(
-        from_encoding=module.params.get('encoding').get('from'),
-        to_encoding=module.params.get('encoding').get('to'))
-    )
-
     # ********************************************************** #
     #                   Verify paramater validity                #
     # ********************************************************** #
@@ -540,10 +527,18 @@ def run_module():
         dest=dict(arg_type='path', required=True),
         fail_on_missing=dict(arg_type='bool', required=False, default=True),
         is_binary=dict(arg_type='bool', required=False, default=False),
-        use_qualifier=dict(arg_type='bool', required=False, default=False),
-        from_encoding=dict(arg_type='encoding', default="IBM-1047"),
-        to_encoding=dict(arg_type='encoding', default="ISO-8859-1")
+        use_qualifier=dict(arg_type='bool', required=False, default=False)
     )
+
+    if module.params.get("encoding"):
+        module.params.update(dict(
+            from_encoding=module.params.get('encoding').get('from'),
+            to_encoding=module.params.get('encoding').get('to'))
+        )
+        arg_def.update(dict(
+            from_encoding=dict(arg_type='encoding'),
+            to_encoding=dict(arg_type='encoding')
+        ))
 
     fetch_handler = FetchHandler(module)
 
@@ -570,11 +565,11 @@ def run_module():
     ds_name = src if not _fetch_member else src[:src.find('(')]
     try:
         ds_utils = data_set_utils.DataSetUtils(module, ds_name)
-        if ds_utils.data_set_exists() is False:
+        if not ds_utils.data_set_exists():
             if fail_on_missing:
                 module.fail_json(
                     msg=(
-                        "The data set '{0}' does not exist or is "
+                        "The source '{0}' does not exist or is "
                         "uncataloged".format(ds_name)
                     )
                 )
@@ -599,7 +594,7 @@ def run_module():
         res_args['remote_path'] = file_path
 
     # ********************************************************** #
-    #    Fetch a partitioned data set or one of its members       #
+    #    Fetch a partitioned data set or one of its members      #
     # ********************************************************** #
 
     elif ds_type == "PO":

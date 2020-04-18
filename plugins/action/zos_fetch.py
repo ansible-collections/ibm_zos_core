@@ -96,7 +96,7 @@ class ActionModule(ActionBase):
 
         src = self._task.args.get('src')
         dest = self._task.args.get('dest')
-        volume = self._task.args.get('volume')
+        encoding = self._task.args.get('encoding')
         flat = _process_boolean(self._task.args.get('flat'), default=False)
         is_binary = _process_boolean(self._task.args.get('is_binary'))
         validate_checksum = _process_boolean(
@@ -241,7 +241,7 @@ class ActionModule(ActionBase):
                 result["msg"] = "Destination must be a directory to fetch a partitioned data set"
                 result["failed"] = True
                 return result
-            fetch_content = self._transfer_remote_content(dest, remote_path, ds_type)
+            fetch_content = self._transfer_remote_content(dest, remote_path, ds_type, encoding)
             if fetch_content.get('msg'):
                 return fetch_content
 
@@ -266,7 +266,7 @@ class ActionModule(ActionBase):
 
         return _update_result(result, src, dest, ds_type, is_binary=is_binary)
 
-    def _transfer_remote_content(self, dest, remote_path, src_type):
+    def _transfer_remote_content(self, dest, remote_path, src_type, encoding):
         """ Transfer a file or directory from USS to local machine.
             After the transfer is complete, the USS file or directory will
             be removed.
@@ -299,9 +299,12 @@ class ActionModule(ActionBase):
                 result['failed'] = True
 
         finally:
-            rm_cmd = "rm -r {0}".format(remote_path)
-            if src_type != "PO":
-                rm_cmd = rm_cmd.replace(" -r", "")
-            self._connection.exec_command(rm_cmd)
+            # When fetching USS files and no encoding parameter is provided
+            # do not remove the original file.
+            if not (src_type == "USS" and not encoding):
+                rm_cmd = "rm -r {0}".format(remote_path)
+                if src_type != "PO":
+                    rm_cmd = rm_cmd.replace(" -r", "")
+                self._connection.exec_command(rm_cmd)
 
         return result

@@ -7,7 +7,6 @@ __metaclass__ = type
 
 import os
 import subprocess
-import base64
 import re
 
 from hashlib import sha256
@@ -16,8 +15,6 @@ from ansible.module_utils.six import string_types
 from ansible.module_utils.parsing.convert_bool import boolean
 from ansible.plugins.action import ActionBase
 from ansible.errors import AnsibleError
-from ansible.utils.hashing import checksum as checksum_d
-from ansible.utils.hashing import checksum_s
 
 
 SUPPORTED_DS_TYPES = frozenset({'PS', 'PO', 'VSAM', 'USS'})

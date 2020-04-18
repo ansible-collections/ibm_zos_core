@@ -242,8 +242,8 @@ import tempfile
 import re
 import os
 
-from math import floor, ceil
-from shutil import rmtree, copy, move
+from math import ceil
+from shutil import rmtree, move
 from shlex import quote
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils._text import to_bytes

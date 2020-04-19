@@ -14,14 +14,12 @@ DOCUMENTATION = r'''
 ---
 module: zos_copy
 version_added: '0.0.3'
-short_description: Copy data sets or files to remote z/OS systems
+short_description: Copy data to z/OS
 description:
     - The M(zos_copy) module copies a file or data set from a local or a
       remote machine to a location on the remote machine.
     - Use the M(zos_fetch) module to copy files or data sets from remote 
       locations to local machine.
-    - If destination is a USS file, it is highly recommended to use the 
-      M(copy) module.
 author: "Asif Mahmud (@asifmahmud)"
 options:
   src:
@@ -62,6 +60,7 @@ options:
     - This is for simple values, for anything complex or with formatting please
       switch to the M(template) module.
     type: str
+    required: false
   backup:
     description:
     - Determine whether a backup should be created.
@@ -72,6 +71,7 @@ options:
       copied.
     type: bool
     default: false
+    required: false
   force:
     description:
     - If C(true), the remote file or data set will be replaced when contents 
@@ -80,44 +80,61 @@ options:
       not exist.
     type: bool
     default: true
+    required: false
   mode:
     description:
     - The permission of the destination file or directory.
     - If C(dest) is USS, this will act as Unix file mode, otherwise ignored.
     - Refer to the M(copy) module for a detailed description of this parameter.
     type: path
+    required: false
   remote_src:
     description:
     - If C(false), it will search for src at local machine.
     - If C(true), it will go to the remote/target machine for the src.
     type: bool
     default: false
+    required: false
   local_follow:
     description:
     - This flag indicates that filesystem links in the source tree, if they 
       exist, should be followed.
     type: bool
     default: true
+    required: false
   is_binary:
     description:
     - If C(true), indicates that the file or data set to be copied is a 
       binary file/data set. 
     type: bool
     default: false
+    required: false
   use_qualifier:
     description:
     - Add user qualifier to data sets.
     type: bool
     default: true
+    required: false
   encoding:
     description:
-    - Indicates the encoding of the file or data set on the remote machine.
-    - If set to C(ASCII), the module will not convert the encoding to EBCDIC.
-    - If set to C(EBCDIC), the module will convert the encoding of the file or 
-      data set to EBCDIC before copying to destination.
+    - Specifies which encodings the destination file or data set should be
+      converted from and to. 
+    - If this parameter is not provided, no encoding conversions will take 
+      place.
     - Only valid if I(is_binary=false)
-    type: str
-    default: EBCDIC
+    type: dict
+    required: false
+    suboptions:
+      from:
+        description:
+            - The encoding to be converted from
+        required: true
+        type: str
+      to:
+        description:
+            - The encoding to be converted to
+        required: true
+        type: str
   checksum:
     description:
     - SHA256 checksum of the file being copied.
@@ -125,15 +142,18 @@ options:
     - If this is not provided and I(validate=true), Ansible will use local 
       calculated checksum of the src file.
     type: str
+    required: false
   validate:
     description:
     - Verrify that the copy operation was successful by comparing the source 
       and destination checksum.
     type: bool
     default: true
+    required: false
 notes:
-    - All data sets are assumed to be in catalog. When trying to copy to an
-      uncataloged data set, it must be cataloged first.
+    - Destination data sets are assumed to be in catalog. When trying to copy 
+      to an uncataloged data set, the module assumes that the data set does 
+      not exist and will create it.
 '''
 
 EXAMPLES = r'''
@@ -145,11 +165,13 @@ EXAMPLES = r'''
   zos_copy:
     src: /path/to/test.log
     dest: /tmp/test.log
-- name: Copy a local ASCII encoded file and convert to EBCDIC
+- name: Copy a local ASCII encoded file and convert to IBM-1047
   zos_copy:
     src: /path/to/file.txt
     dest: /tmp/file.txt
-    encoding: EBCDIC
+    encoding:
+      from: ISO8859-1
+      to: IBM-1047
 - name: Copy file with owner and permission details
   zos_copy:
     src: /path/to/foo.conf
@@ -222,15 +244,10 @@ src:
     type: str
     sample: /path/to/source.log
 checksum:
-    description: SHA1 checksum of the file after running copy.
+    description: SHA256 checksum of the file after running copy.
     returned: success
     type: str
-    sample: 6e642bb8dd5c2e027bf21dd923337cbb4214f827
-md5sum:
-    description: MD5 checksum of the file or data set after running copy
-    returned: when supported
-    type: str
-    sample: 2a5aeecc61dc98c4d780b14b330e3282
+    sample: 8d320d5f68b048fc97559d771ede68b37a71e8374d1d678d96dcfa2b2da7a64e
 backup_file:
     description: Name of the backup file or data set that was created.
     returned: changed and if backup=true
@@ -263,7 +280,7 @@ mode:
     sample: 0644
 size:
     description: Size of the target, after execution.
-    returned: changed, src is a file
+    returned: changed and src is a file
     type: int
     sample: 1220
 state:
@@ -271,6 +288,37 @@ state:
     returned: success and if dest is USS
     type: str
     sample: file
+msg:
+    description: Failure message returned by the module
+    returned: failure
+    type: str
+    sample: Error while gathering data set information
+stdout:
+    description: The stdout from a USS command or MVS command, if applicable
+    returned: failure
+    type: str
+    sample: Copying local file /tmp/foo/src to remote path /tmp/foo/dest
+stderr:
+    description: The stderr of a USS command or MVS command, if applicable
+    returned: failure
+    type: str
+    sample: FileNotFoundError: No such file or directory '/tmp/foo'
+stdout_lines:
+    description: List of strings containing individual lines from stdout
+    returned: failure
+    type: list
+    sample: [u"Copying local file /tmp/foo/src to remote path /tmp/foo/dest.."]
+stderr_lines:
+    description: List of strings containing individual lines from stderr
+    returned: failure
+    type: list
+    sample: [u"FileNotFoundError: No such file or directory '/tmp/foo'"]
+rc:
+    description: The return code of a USS command or MVS command, if applicable
+    returned: failure
+    type: int
+    sample: 8
+
 '''
 
 import os

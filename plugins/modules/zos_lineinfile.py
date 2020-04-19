@@ -174,10 +174,12 @@ from zoautil_py import Datasets
 from os import path
 
 def present(zosdest,line, regexp, ins_aft, ins_bef, encoding, backup, first_match, backrefs,file_type):
-    return Datasets.line_present(zosdest, line, regexp, ins_aft, ins_bef, encoding, backup, first_match, backrefs, file_type)
+  # todo, handle encoding, backup here
+    return Datasets.line_present(zosdest, line, regexp, ins_aft, ins_bef,first_match, backrefs)
 
 def absent(zosdest, line, regexp, backup, file_type):
-    return Datasets.line_absent(zosdest, line, regexp, backup,file_type)
+  # todo, handle encoding, backup here
+    return Datasets.line_absent(zosdest, line, regexp)
 
 def main():
     module_args = dict(

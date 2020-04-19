@@ -331,7 +331,7 @@ import math
 import tempfile
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
-    better_arg_parser, data_set_utils, vtoc
+    better_arg_parser, data_set_utils
 )
 
 
@@ -346,85 +346,165 @@ from zoautil_py import types
 MVS_PARTITIONED = frozenset({'PE', 'PO', 'PDSE', 'PDS'})
 MVS_SEQ = frozenset({'PS', 'SEQ'})
 
-# The AnsibleModule object
-module = None
+
+class CopyHandler(object):
+    def __init__(self, module):
+        self.module = module
+
+    def _fail_json(self, **kwargs):
+        """ Wrapper for AnsibleModule.fail_json """
+        self.module.fail_json(**kwargs)
+
+    def _run_command(self, cmd, **kwargs):
+        """ Wrapper for AnsibleModule.run_command """
+        return self.module.run_command(cmd, **kwargs)
+
+    def _copy_to_ds(self, ds_name, size=None, content=None, remote_src=False, src_ds=None):
+        if not remote_src:
+            temp_ds_name = data_set_utils.DataSetUtils.create_temp_data_set(
+                "TEMP", size=str(size)
+            )
+            Datasets.write(temp_ds_name, _ascii_to_ebcdic(content))
+        repro_cmd = "  REPRO INFILE({0}) OUTFILE({1})".format(temp_ds_name, ds_name)
+        try:
+            sysprint = _run_mvs_command("IDCAMS", repro_cmd, authorized=True)
+        finally:
+            if Datasets.exists(temp_ds_name):
+                Datasets.delete(temp_ds_name)
+
+    def _run_mvs_command(self, pgm, cmd, dd=None, authorized=False):
+        sysprint = "sysprint"
+        sysin = "sysin"
+        pgm = pgm.upper()
+        if pgm == "IKJEFT01":
+            sysprint = "systsprt"
+            sysin = "systsin"
+
+        mvs_cmd = "mvscmd"
+        if authorized:
+            mvs_cmd += "auth"
+        mvs_cmd += " --pgm={0} --{1}=* --{2}=stdin"
+        if dd:
+            for k, v in dd.items():
+                mvs_cmd += " --{0}={1}".format(k, v)
+        
+        rc, out, err = self._run_command(
+            mvs_cmd.format(pgm, sysprint, sysin), data=cmd
+        )
+        if rc != 0:
+            self._fail_json(
+                msg="Non-zero return code received while executing mvscmd",
+                stdout=out,
+                stderr=err,
+                ret_code=rc
+            )
+        return out
+
+    def _allocate_vsam(self, ds_name, size):
+        volume = "000000"
+        max_size = 16777215
+        allocation_size = math.ceil(size/1048576)
+        
+        if allocation_size > max_size:
+            msg = ("Size of data exceeds maximum allowed allocation size for VSAM."
+                "Maximum size allowed: {0} Megabytes, given data size: {1}"
+                " Megabytes".format(max_size, allocation_size))
+            self._fail_json(msg=msg)
+    
+        define_sysin = ''' DEFINE CLUSTER (NAME({0})  -
+                            VOLUMES({1})) -                           
+                            DATA (NAME({0}.DATA) -
+                            MEGABYTES({2}, 5)) -
+                            INDEX (NAME({0}.INDEX)) '''.format(
+                                ds_name, volume, allocation_size
+                            )
+
+        try:
+            sysprint = self._run_mvs_command("IDCAMS", define_sysin)
+        except Exception as err:
+            self._fail_json(msg="Failed to call IDCAMS to allocate VSAM data set")
+
+    def _copy_to_seq(
+        self, src, dest, data, validate=True, local_checksum=None, src_ds_type=None
+    ):
+        remote_checksum = _get_mvs_checksum(dest)
+        rc = Datasets.write(dest, _ascii_to_ebcdic(src, data))
+        if rc != 0:
+            self._fail_json(
+                msg="Unable to write content to destination {}".format(dest)
+            )
+        if validate:
+            new_checksum = _get_mvs_checksum(dest)
+            if remote_checksum != new_checksum:
+                changed = True
+            if new_checksum != local_checksum:
+                self._fail_json(
+                    msg="Checksum mismatch", 
+                    checksum=new_checksum, 
+                    local_checksum=local_checksum, 
+                    changed=changed
+                )
+
+    def _copy_remote_pdse(self, src_ds, dest, copy_member=False):
+        if copy_member:
+            rc, out, err = self._run_command(
+                "cp \"//{}\" \"//{}\"".format(src_ds, dest)
+            )
+            if rc != 0:
+                self._fail_json(
+                    msg="Unable to copy partitioned data set member",
+                    stdout=out,
+                    stderr=err,
+                    rc=rc
+                )
+        else:
+            dds = dict(OUTPUT=dest, INPUT=src_ds)
+            copy_cmd = "   COPY OUTDD=OUTPUT,INDD=((INPUT,R))"
+            sysprint = _run_mvs_command("IEBCOPY", copy_cmd, dds)
+
+    def _copy_to_pdse(self, src_dir, dest, copy_member=False, src_file=None):
+        cmd = None
+        if copy_member:
+            cmd = "cp {0} \"//'{}'\"".format(src_file, dest)
+        else:
+            path, dirs, files = next(os.walk(src_dir))
+            cmd = "cp"
+            for file in files:
+                file = file if '.' not in file else file[:file.rfind('.')]
+                cmd += " {0}/{1}".format(path, file)
+            cmd += " \"//'{0}'\"".format(dest)
+        rc, out, err = self._run_command(cmd)
+        if rc != 0:
+            self._fail_json(msg="Unable to copy to data set {}".format(dest))
+
+    def _create_data_set(self, src, ds_name, ds_type, size, d_blocks=None):
+        if (ds_type in MVS_PARTITIONED.union(MVS_SEQ)):
+            rc = Datasets.create(ds_name, ds_type, size, "FB", directory_blocks=d_blocks)
+            if rc != 0:
+                self._fail_json(
+                    "Unable to allocate destination data set to copy {}".format(src)
+                )
+        else:
+            self._allocate_vsam(ds_name, size)
+
+    def _remote_copy_handler(self, src, dest, src_ds_type, dest_ds_type, module_args):
+        if dest_ds_type in MVS_SEQ:
+            cmd = None
+            if src_ds_type == 'USS':
+                cmd = "cp {0} \"//'{1}'\"".format(src, dest)
+            elif src_ds_type in MVS_SEQ.union(MVS_PARTITIONED):
+                cmd = "cp \"//'{0}'\" \"//'{1}'\"".format(src, dest)
+            else:
+                self._copy_to_ds(dest, remote_src=True, src_ds=src)
 
 def _ascii_to_ebcdic(src, content):
     conv_cmd = "iconv -f ISO8859-1 -t IBM-1047"
     rc, out, err = module.run_command(conv_cmd, data=content)
     if rc != 0:
         module.fail_json(
-          msg="Unable to convert encoding of {} to EBCDIC".format(src)
+        msg="Unable to convert encoding of {} to EBCDIC".format(src)
         )
     return out
-
-
-def _copy_to_ds(ds_name, size=None, content=None, remote_src=False, src_ds=None):
-    if not remote_src:
-        temp_ds_name = data_set_utils.DataSetUtils.create_temp_data_set(
-            "TEMP", size=str(size)
-        )
-        Datasets.write(temp_ds_name, _ascii_to_ebcdic(content))
-    repro_cmd = "  REPRO INFILE({0}) OUTFILE({1})".format(temp_ds_name, ds_name)
-    try:
-        sysprint = _run_mvs_command("IDCAMS", repro_cmd, authorized=True)
-    finally:
-        if Datasets.exists(temp_ds_name):
-            Datasets.delete(temp_ds_name)
-
-
-def _run_mvs_command(pgm, cmd, dd=None, authorized=False):
-    sysprint = "sysprint"
-    sysin = "sysin"
-    pgm = pgm.upper()
-    if pgm == "IKJEFT01":
-        sysprint = "systsprt"
-        sysin = "systsin"
-
-    mvs_cmd = "mvscmd"
-    if authorized:
-        mvs_cmd += "auth"
-    mvs_cmd += " --pgm={0} --{1}=* --{2}=stdin"
-    if dd:
-        for k, v in dd.items():
-            mvs_cmd += " --{0}={1}".format(k, v)
-    
-    rc, out, err = module.run_command(
-        mvs_cmd.format(pgm, sysprint, sysin), data=cmd
-    )
-    if rc != 0:
-        module.fail_json(
-            msg="Non-zero return code received while executing mvscmd",
-            stdout=out,
-            stderr=err,
-            ret_code=rc
-        )
-    return out
-
-
-def _allocate_vsam(ds_name, size):
-    volume = "000000"
-    max_size = 16777215
-    allocation_size = math.ceil(size/1048576)
-    
-    if allocation_size > max_size:
-        msg = ("Size of data exceeds maximum allowed allocation size for VSAM."
-               "Maximum size allowed: {0} Megabytes, given data size: {1}"
-               " Megabytes".format(max_size, allocation_size))
-        module.fail_json(msg=msg)
-  
-    define_sysin = ''' DEFINE CLUSTER (NAME({0})  -
-   	                    VOLUMES({1})) -                           
-                        DATA (NAME({0}.DATA) -
-	                    MEGABYTES({2}, 5)) -
-                        INDEX (NAME({0}.INDEX)) '''.format(
-                            ds_name, volume, allocation_size
-                        )
-
-    try:
-        sysprint = _run_mvs_command("IDCAMS", define_sysin)
-    except Exception as err:
-        module.fail_json(msg="Failed to call IDCAMS to allocate VSAM data set")
 
 
 def _get_checksum(data):
@@ -439,97 +519,7 @@ def _get_mvs_checksum(ds_name):
     return _get_checksum(Datasets.read(ds_name))
 
 
-def _copy_to_seq(
-    src, 
-    dest, 
-    data, 
-    validate=True, 
-    local_checksum=None, 
-    src_ds_type=None
-):
-    remote_checksum = _get_mvs_checksum(dest)
-    rc = Datasets.write(dest, _ascii_to_ebcdic(src, data))
-    if rc != 0:
-        module.fail_json(
-            msg="Unable to write content to destination {}".format(dest)
-        )
-    if validate:
-        new_checksum = _get_mvs_checksum(dest)
-        if remote_checksum != new_checksum:
-            changed = True
-        if new_checksum != local_checksum:
-            module.fail_json(
-                msg="Checksum mismatch", 
-                checksum=new_checksum, 
-                local_checksum=local_checksum, 
-                changed=changed
-            )
-
-
-def _copy_remote_pdse(src_ds, dest, copy_member=False):
-    if copy_member:
-        rc, out, err = module.run_command(
-            "cp \"//{}\" \"//{}\"".format(src_ds, dest)
-        )
-        if rc != 0:
-            module.fail_json(
-                msg="Unable to copy partitioned data set member",
-                stdout=out,
-                stderr=err,
-                rc=rc
-            )
-    else:
-        dds = dict(OUTPUT=dest, INPUT=src_ds)
-        copy_cmd = "   COPY OUTDD=OUTPUT,INDD=((INPUT,R))"
-        sysprint = _run_mvs_command("IEBCOPY", copy_cmd, dds)
-
-
-def _copy_to_pdse(
-    src_dir, 
-    dest, 
-    copy_member=False,  
-    src_file=None
-):
-    cmd = None
-    if copy_member:
-        cmd = "cp {0} \"//'{}'\"".format(src_file, dest)
-    else:
-        path, dirs, files = next(os.walk(src_dir))
-        cmd = "cp"
-        for file in files:
-            file = file if '.' not in file else file[:file.rfind('.')]
-            cmd += " {0}/{1}".format(path, file)
-        cmd += " \"//'{0}'\"".format(dest)
-    rc, out, err = module.run_command(cmd)
-    if rc != 0:
-        module.fail_json(msg="Unable to copy to data set {}".format(dest))
-
-
-def _create_data_set(src, ds_name, ds_type, size, d_blocks=None):
-    if (ds_type in MVS_PARTITIONED.union(MVS_SEQ)):
-        rc = Datasets.create(ds_name, ds_type, size, "FB", directory_blocks=d_blocks)
-        if rc != 0:
-            module.fail_json(
-                "Unable to allocate destination data set to copy {}".format(src)
-            )
-    else:
-        _allocate_vsam(ds_name, size)
-
-
-def _remote_copy_handler(src, dest, src_ds_type, dest_ds_type, module_args):
-    if dest_ds_type in MVS_SEQ:
-        cmd = None
-        if src_ds_type == 'USS':
-            cmd = "cp {0} \"//'{1}'\"".format(src, dest)
-        elif src_ds_type in MVS_SEQ.union(MVS_PARTITIONED):
-            cmd = "cp \"//'{0}'\" \"//'{1}'\"".format(src, dest)
-        else:
-            _copy_to_ds(dest, remote_src=True, src_ds=src)
-
-
 def main():
-    global module
-
     module = AnsibleModule(
         argument_spec=dict(
             src=dict(required=True, type='str'),
@@ -577,6 +567,7 @@ def main():
 
     changed = False
 
+    copy_handler = CopyHandler(module)
     try:
         dest_ds_utils = data_set_utils.DataSetUtils(module, dest)
         dest_ds_type = dest_ds_utils.get_data_set_type()
@@ -590,7 +581,7 @@ def main():
         except Exception as err:
             module.fail_json(msg=str(err))
 
-        _remote_copy_handler(src, dest, src_ds_type, dest_ds_type, module.params)
+        copy_handler._remote_copy_handler(src, dest, src_ds_type, dest_ds_type, module.params)
     
     if dest_ds_utils.data_set_exists() is False:
         d_blocks = None
@@ -602,12 +593,12 @@ def main():
         else:
             dest_ds_type = "SEQ"
 
-        _create_data_set(src, dest, dest_ds_type, _size, d_blocks=d_blocks)
+        copy_handler._create_data_set(src, dest, dest_ds_type, _size, d_blocks=d_blocks)
         changed = True
     
     # Copy to sequential data set
     if dest_ds_type in MVS_SEQ:
-        _copy_to_seq(
+        copy_handler._copy_to_seq(
             src, 
             dest, 
             _local_data, 
@@ -626,7 +617,7 @@ def main():
             with os.fdopen(fd, write_mode) as tmp:
                 tmp.write(_local_data)
         try:
-            _copy_to_pdse(
+            copy_handler._copy_to_pdse(
                 src if remote_src else _pds_path, 
                 dest, 
                 copy_member=_copy_member, 
@@ -639,7 +630,7 @@ def main():
 
     # Copy to VSAM data set
     else:
-        _copy_to_ds(dest, size=_size, content=_local_data)
+        copy_handler._copy_to_ds(dest, size=_size, content=_local_data)
 
     remote_checksum = None
     new_checksum = None

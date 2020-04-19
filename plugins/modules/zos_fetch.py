@@ -204,10 +204,10 @@ changed:
     returned: always
     type: bool
 msg:
-    description: Message returned by the module
+    description: Message returned on failure
     returned: failure
     type: str
-    sample: The data set was fetched successfully
+    sample: The source 'TEST.DATA.SET' does not exist or is uncataloged
 stdout:
     description: The stdout from a USS command or MVS command, if applicable
     returned: failure

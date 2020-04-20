@@ -445,7 +445,8 @@ def run_module():
                     head, tail = path.split(dest)
                     if not path.exists(head):
                         makedirs(head)
-                    with open(tail, 'w'): pass
+                    with open(tail, 'w'):
+                        pass
                 else:
                     makedirs(dest)
                 err_msg = None

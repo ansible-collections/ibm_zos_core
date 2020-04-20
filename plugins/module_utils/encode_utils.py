@@ -16,6 +16,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set_utils im
 
 import shutil
 import errno
+import os
 import re
 
 try:
@@ -83,8 +84,8 @@ class EncodeUtils(object):
             int -- The maximum record length of the VSAM data set.
             int -- The space used by the VSAM data set(KB).
         """
-        reclen = 0
-        space_u = 0
+        reclen = 80
+        space_u = 1024
         listcat_cmd = LISTCAT.format(ds)
         cmd = 'mvscmdauth --pgm=ikjeft01 --systsprt=stdout --systsin=stdin'
         rc, out, err = self.run_uss_cmd(cmd, data=listcat_cmd)
@@ -121,7 +122,8 @@ class EncodeUtils(object):
             rec_in_ci = floor((cisize - cisize * freeci - 10) / reclen)
             ci_num = ceil(recnum / rec_in_ci)
             ca_num = ceil(ci_num / (cioca * (1 - freeca)))
-            space_u = ceil(ca_num * trkoca * 566664 / 1024)
+            if ca_num > 0:
+                space_u = ceil(ca_num * trkoca * 566664 / 1024)
         return reclen, space_u
 
     def temp_data_set(self, reclen, space_u):
@@ -165,8 +167,7 @@ class EncodeUtils(object):
         """
 
         if ds_type == 'PO':
-            tempdir = path.join(quote(src), '*')
-            cp_uss2mvs = 'cp -CM -F rec {0} "//\'{1}\'" '.format(tempdir, dest)
+            cp_uss2mvs = 'cp -CM -F rec {0} "//\'{1}\'"'.format(quote(src), dest)
         else:
             cp_uss2mvs = 'cp -F rec {0} "//\'{1}\'" '.format(quote(src), dest)
         rc, out, err = self.run_uss_cmd(cp_uss2mvs)
@@ -291,6 +292,10 @@ class EncodeUtils(object):
                 convert_rc = True
             else:
                 try:
+                    src_mode = os.stat(src).st_mode
+                    temp_mode = os.stat(temp_fi).st_mode
+                    if src_mode != temp_mode:
+                        os.chmod(temp_fi, src_mode)
                     shutil.move(temp_fi, dest)
                     convert_rc = True
                 except (OSError, IOError) as e:
@@ -335,8 +340,9 @@ class EncodeUtils(object):
                 elif len(file_list) == 1:
                     if path.isdir(dest):
                         file_name = path.basename(file_list[0])
+                        src_f = path.join(src, file_name)
                         dest_f = path.join(dest, file_name)
-                    convert_rc = self.uss_convert_encoding(src, dest, from_code, to_code)
+                    convert_rc = self.uss_convert_encoding(src_f, dest_f, from_code, to_code)
                 else:
                     if path.isfile(dest):
                         err_msg = (
@@ -421,7 +427,7 @@ class EncodeUtils(object):
                         for (dir, subdir, files) in walk(temp_dest):
                             for file in files:
                                 temp_file = path.join(dir, file)
-                                rc, out, err = self.copy_uss2mvs(temp_file, dest, 'PS')
+                                rc, out, err = self.copy_uss2mvs(temp_file, dest, 'PO')
                                 convert_rc = True
                     else:
                         rc, out, err = self.copy_uss2mvs(temp_dest, dest, dest_type)

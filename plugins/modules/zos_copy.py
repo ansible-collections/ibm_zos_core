@@ -109,6 +109,12 @@ options:
     type: bool
     default: false
     required: false
+  is_vsam:
+    description:
+    - Indicates whether the destination data set is VSAM. 
+    type: bool
+    default: false
+    required: false
   use_qualifier:
     description:
     - Add user qualifier to data sets.
@@ -161,10 +167,12 @@ EXAMPLES = r'''
   zos_copy:
     src: /path/to/sample_seq_data_set
     dest: SAMPLE.SEQ.DATA.SET
+
 - name: Copy a local file to a USS location
   zos_copy:
     src: /path/to/test.log
     dest: /tmp/test.log
+
 - name: Copy a local ASCII encoded file and convert to IBM-1047
   zos_copy:
     src: /path/to/file.txt
@@ -172,6 +180,7 @@ EXAMPLES = r'''
     encoding:
       from: ISO8859-1
       to: IBM-1047
+
 - name: Copy file with owner and permission details
   zos_copy:
     src: /path/to/foo.conf
@@ -179,51 +188,62 @@ EXAMPLES = r'''
     owner: foo
     group: foo
     mode: '0644'
+
 - name: Module will follow the symbolic link specified in src
   zos_copy:
     src: /path/to/link
     dest: /path/to/uss/location
     local_follow: true
+
 - name: Copy a local file to a PDS member and validate checksum
   zos_copy:
     src: /path/to/local/file
     dest: HLQ.SAMPLE.PDSE(member_name)
     validate: true
+
 - name: Copy a single file to a VSAM(KSDS)
   zos_copy:
     src: /path/to/local/file
-    dest: HLQ.SAMPLE.VSAM
+    dest: SAMPLE.VSAM.DATA.SET
+    is_vsam: true
+
 - name: Copy inline content to a sequential dataset and replace existing data
   zos_copy:
     content: 'Inline content to be copied'
     dest: SAMPLE.SEQ.DATA.SET
     force: true
+
 - name: Copy a USS file to a sequential data set
   zos_copy:
     src: /path/to/remote/uss/file
     dest: SAMPLE.SEQ.DATA.SET
     remote_src: true
+
 - name: Copy a binary file to a PDSE member
   zos_copy:
     src: /path/to/binary/file
     dest: HLQ.SAMPLE.PDSE(member_name)
     is_binary: true
+
 - name: Copy a local file and take a backup of the existing file
   zos_copy:
     src: /path/to/local/file
     dest: /path/to/dest
     backup: true
+
 - name: Copy a PDS(E) on remote system to a new PDS(E)
   zos_copy:
     src: HLQ.SAMPLE.PDSE
     dest: HLQ.NEW.PDSE
     remote_src: true
+
 - name: Copy a PDS(E) on remote system to a PDS(E), replacing the original
   zos_copy:
     src: HLQ.SAMPLE.PDSE
     dest: HLQ.EXISTING.PDSE
     remote_src: true
     force: true
+
 - name: Copy PDS(E) member to a new PDS(E) member. Replace if it already exists
   zos_copy:
     src: HLQ.SAMPLE.PDSE(member_name)
@@ -318,7 +338,6 @@ rc:
     returned: failure
     type: int
     sample: 8
-
 '''
 
 import os
@@ -527,7 +546,7 @@ def main():
             use_qualifier=dict(type='bool', default=False), 
             is_binary=dict(type='bool', default=False),
             is_vsam=dict(type='bool', default=False),
-            encoding=dict(type='str', default='EBCDIC',choices=['EBCDIC','ASCII']),
+            encoding=dict(type='dict'),
             content=dict(type='str', no_log=True),
             backup=dict(type='bool', default=False),
             force=dict(type='bool', default=True),

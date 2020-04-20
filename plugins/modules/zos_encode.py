@@ -441,10 +441,17 @@ def run_module():
         is_uss_dest, is_mvs_dest, ds_type_dest, err_msg = check_file(dest)
         if (not is_uss_dest) and (path.sep in dest):
             try:
-                makedirs(dest)
+                if path.isfile(src):
+                    head, tail = path.split(dest)
+                    if not path.exists(head):
+                        makedirs(head)
+                    with open(tail, 'w'): pass
+                else:
+                    makedirs(dest)
                 err_msg = None
+                is_uss_dest = True
             except OSError:
-                err_msg = "Failed when creating the directory {0}".format(dest)
+                err_msg = "Failed when creating the {0}".format(dest)
         if err_msg:
             exit_when_exception(err_msg, result)
     result['dest'] = dest

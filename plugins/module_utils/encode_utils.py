@@ -340,8 +340,9 @@ class EncodeUtils(object):
                 elif len(file_list) == 1:
                     if path.isdir(dest):
                         file_name = path.basename(file_list[0])
+                        src_f = path.join(src, file_name)
                         dest_f = path.join(dest, file_name)
-                    convert_rc = self.uss_convert_encoding(src, dest, from_code, to_code)
+                    convert_rc = self.uss_convert_encoding(src_f, dest_f, from_code, to_code)
                 else:
                     if path.isfile(dest):
                         err_msg = (

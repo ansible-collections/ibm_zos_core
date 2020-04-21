@@ -249,14 +249,13 @@ class ActionModule(ActionBase):
                 )
                 result['failed'] = True
                 return result
-        
         except Exception as err:
             result['msg'] = "Failure during module execution"
             result['stderr'] = str(err)
             result['stderr_lines'] = str(err).splitlines()
             result['failed'] = True
             return result
-        
+
         # ********************************************************** #
         #              Cleanup temp files and directories            #
         # ********************************************************** #

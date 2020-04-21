@@ -208,59 +208,61 @@ class ActionModule(ActionBase):
                 module_args=self._task.args,
                 task_vars=task_vars
             )
+            ds_type = fetch_res.get('ds_type')
+            src = fetch_res.get('file')
+            remote_path = fetch_res.get('remote_path')
+
+            if fetch_res.get('msg'):
+                result['msg'] = fetch_res.get('msg')
+                result['stdout'] = fetch_res.get('stdout') or fetch_res.get("module_stdout")
+                result['stderr'] = fetch_res.get('stderr') or fetch_res.get("module_stderr")
+                result['stdout_lines'] = fetch_res.get('stdout_lines')
+                result['stderr_lines'] = fetch_res.get('stderr_lines')
+                result["rc"] = fetch_res.get("rc")
+                result['failed'] = True
+                return result
+
+            elif fetch_res.get('note'):
+                result['note'] = fetch_res.get('note')
+                return result
+
+            if ds_type in SUPPORTED_DS_TYPES:
+                if ds_type == "PO" and os.path.isfile(dest) and not fetch_member:
+                    result["msg"] = "Destination must be a directory to fetch a partitioned data set"
+                    result["failed"] = True
+                    return result
+                fetch_content = self._transfer_remote_content(dest, remote_path, ds_type, encoding)
+                if fetch_content.get('msg'):
+                    return fetch_content
+
+                if validate_checksum and ds_type != "PO" and not is_binary:
+                    new_checksum = _get_file_checksum(dest)
+                    result['changed'] = local_checksum != new_checksum
+                    result['checksum'] = new_checksum
+                else:
+                    result['changed'] = True
+
+            else:
+                result['msg'] = (
+                    "The data set type '{0}' is not"
+                    " currently supported".format(ds_type)
+                )
+                result['failed'] = True
+                return result
+        
         except Exception as err:
             result['msg'] = "Failure during module execution"
             result['stderr'] = str(err)
             result['stderr_lines'] = str(err).splitlines()
             result['failed'] = True
             return result
-
-        if fetch_res.get('msg'):
-            result['msg'] = fetch_res.get('msg')
-            result['stdout'] = fetch_res.get('stdout') or fetch_res.get("module_stdout")
-            result['stderr'] = fetch_res.get('stderr') or fetch_res.get("module_stderr")
-            result['stdout_lines'] = fetch_res.get('stdout_lines')
-            result['stderr_lines'] = fetch_res.get('stderr_lines')
-            result["rc"] = fetch_res.get("rc")
-            result['failed'] = True
-            return result
-
-        elif fetch_res.get('note'):
-            result['note'] = fetch_res.get('note')
-            return result
-
-        ds_type = fetch_res.get('ds_type')
-        src = fetch_res.get('file')
-        remote_path = fetch_res.get('remote_path')
-
-        if ds_type in SUPPORTED_DS_TYPES:
-            if ds_type == "PO" and os.path.isfile(dest) and not fetch_member:
-                result["msg"] = "Destination must be a directory to fetch a partitioned data set"
-                result["failed"] = True
-                return result
-            fetch_content = self._transfer_remote_content(dest, remote_path, ds_type, encoding)
-            if fetch_content.get('msg'):
-                return fetch_content
-
-            if validate_checksum and ds_type != "PO" and not is_binary:
-                new_checksum = _get_file_checksum(dest)
-                result['changed'] = local_checksum != new_checksum
-                result['checksum'] = new_checksum
-            else:
-                result['changed'] = True
-
-        else:
-            result['msg'] = (
-                "The data set type '{0}' is not"
-                " currently supported".format(ds_type)
-            )
-            result['failed'] = True
-            return result
-
+        
         # ********************************************************** #
-        #                Update module response                      #
+        #              Cleanup temp files and directories            #
         # ********************************************************** #
 
+        finally:
+            self._remote_cleanup(remote_path, ds_type, encoding)
         return _update_result(result, src, dest, ds_type, is_binary=is_binary)
 
     def _transfer_remote_content(self, dest, remote_path, src_type, encoding):
@@ -269,39 +271,38 @@ class ActionModule(ActionBase):
             be removed.
         """
         result = dict()
-        try:
-            ansible_user = self._play_context.remote_user
-            ansible_host = self._play_context.remote_addr
+        ansible_user = self._play_context.remote_user
+        ansible_host = self._play_context.remote_addr
 
-            cmd = ['sftp', ansible_user + '@' + ansible_host]
-            stdin = "get -r {0} {1}".format(remote_path, dest)
-            if src_type != "PO":
-                stdin = stdin.replace(" -r", "")
+        cmd = ['sftp', ansible_user + '@' + ansible_host]
+        stdin = "get -r {0} {1}".format(remote_path, dest)
+        if src_type != "PO":
+            stdin = stdin.replace(" -r", "")
 
-            transfer_pds = subprocess.Popen(
-                cmd,
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE
-            )
-            out, err = transfer_pds.communicate(to_bytes(stdin))
-            err = _detect_sftp_errors(err)
-            if re.findall(r"Permission denied", err):
-                result["msg"] = "Insufficient write permission for destination {0}".format(dest)
-            elif transfer_pds.returncode != 0 or err:
-                result['msg'] = "Error transferring remote data from z/OS system"
-                result['rc'] = transfer_pds.returncode
-            if result.get("msg"):
-                result['stderr'] = err
-                result['failed'] = True
-
-        finally:
-            # When fetching USS files and no encoding parameter is provided
-            # do not remove the original file.
-            if not (src_type == "USS" and not encoding):
-                rm_cmd = "rm -r {0}".format(remote_path)
-                if src_type != "PO":
-                    rm_cmd = rm_cmd.replace(" -r", "")
-                self._connection.exec_command(rm_cmd)
-
+        transfer_pds = subprocess.Popen(
+            cmd,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+        out, err = transfer_pds.communicate(to_bytes(stdin))
+        err = _detect_sftp_errors(err)
+        if re.findall(r"Permission denied", err):
+            result["msg"] = "Insufficient write permission for destination {0}".format(dest)
+        elif transfer_pds.returncode != 0 or err:
+            result['msg'] = "Error transferring remote data from z/OS system"
+            result['rc'] = transfer_pds.returncode
+        if result.get("msg"):
+            result['stderr'] = err
+            result['failed'] = True
         return result
+
+    def _remote_cleanup(self, remote_path, src_type, encoding):
+        """Remove all temporary files and directories from the remote system"""
+        # When fetching USS files and no encoding parameter is provided
+        # do not remove the original file.
+        if not (src_type == "USS" and not encoding):
+            rm_cmd = "rm -r {0}".format(remote_path)
+            if src_type != "PO":
+                rm_cmd = rm_cmd.replace(" -r", "")
+            self._connection.exec_command(rm_cmd)

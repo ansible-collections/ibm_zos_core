@@ -479,11 +479,14 @@ EXAMPLES = r"""
 
 from ansible.module_utils.basic import AnsibleModule
 from pipes import quote
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
+    MissingZOAUImport,
+)
 
 try:
     from zoautil_py import Jobs
 except Exception:
-    Jobs = ""
+    Jobs = MissingZOAUImport()
 from time import sleep
 from os import chmod, path, remove
 from tempfile import NamedTemporaryFile
@@ -587,10 +590,7 @@ def query_jobs_status(jobId):
             pass
         except Exception as e:
             raise SubmitJCLError(
-                repr(e)
-                + """
-            The output is """
-                + output
+                "{0} {1} {2}".format(repr(e), "The output is", output or " ")
             )
     if output is None and timeout == 0:
         raise SubmitJCLError(

@@ -9,12 +9,12 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 ANSIBLE_METADATA = {
-    'metadata_version': '1.1',
-    'status': ['preview'],
-    'supported_by': 'community'
+    "metadata_version": "1.1",
+    "status": ["preview"],
+    "supported_by": "community",
 }
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: zos_operator
 short_description: Execute operator command
@@ -39,9 +39,9 @@ options:
     type: bool
     required: false
     default: false
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 - name: Execute an operator command to show active jobs
   zos_operator:
     cmd: 'd u,all'
@@ -56,9 +56,9 @@ EXAMPLES = r'''
     cmd: 'd u,all'
     verbose: true
     debug: true
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 rc:
     description:
        Return code of the operator command
@@ -86,63 +86,57 @@ changed:
        command failure has occurred.
     returned: always
     type: bool
-'''
+"""
 
 
 from ansible.module_utils.basic import AnsibleModule
 import re
 from traceback import format_exc
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
+    MissingZOAUImport,
+)
+
 try:
     from zoautil_py import OperatorCmd
 except Exception:
-    OperatorCmd = ""
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import BetterArgParser
+    OperatorCmd = MissingZOAUImport()
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
+    BetterArgParser,
+)
 
 
 def run_module():
     module_args = dict(
-        cmd=dict(type='str', required=True),
-        verbose=dict(type='bool', default=False),
-        debug=dict(type='bool', default=False),
+        cmd=dict(type="str", required=True),
+        verbose=dict(type="bool", default=False),
+        debug=dict(type="bool", default=False),
     )
 
-    result = dict(
-        changed=False
-    )
+    result = dict(changed=False)
 
-    module = AnsibleModule(
-        argument_spec=module_args,
-        supports_check_mode=False
-    )
+    module = AnsibleModule(argument_spec=module_args, supports_check_mode=False)
 
     try:
         new_params = parse_params(module.params)
         rc_message = run_operator_command(new_params)
-        result['rc'] = rc_message.get('rc')
-        result['content'] = rc_message.get('message').split('\n')
+        result["rc"] = rc_message.get("rc")
+        result["content"] = rc_message.get("message").split("\n")
     except Error as e:
         module.fail_json(msg=e.msg, **result)
     except Exception as e:
         trace = format_exc()
-        module.fail_json(msg='An unexpected error occurred: {0}'.format(trace), **result)
-    result['changed'] = True
+        module.fail_json(
+            msg="An unexpected error occurred: {0}".format(trace), **result
+        )
+    result["changed"] = True
     module.exit_json(**result)
 
 
 def parse_params(params):
     arg_defs = dict(
-        cmd=dict(
-            arg_type='str',
-            required=True
-        ),
-        verbose=dict(
-            arg_type='bool',
-            required=False
-        ),
-        debug=dict(
-            arg_type='bool',
-            required=False
-        )
+        cmd=dict(arg_type="str", required=True),
+        verbose=dict(arg_type="bool", required=False),
+        debug=dict(arg_type="bool", required=False),
     )
     parser = BetterArgParser(arg_defs)
     new_params = parser.parse_args(params)
@@ -150,15 +144,15 @@ def parse_params(params):
 
 
 def run_operator_command(params):
-    command = params.get('cmd')
-    verbose = params.get('verbose')
-    debug = params.get('debug')
+    command = params.get("cmd")
+    verbose = params.get("verbose")
+    debug = params.get("debug")
     rc_message = []
     rc_message = OperatorCmd.execute(command, "", verbose, debug)
-    rc = rc_message.get('rc')
-    message = rc_message.get('message')
+    rc = rc_message.get("rc")
+    message = rc_message.get("message")
     if rc > 0:
-        raise OperatorCmdError(command, message.split('\n') if message else message)
+        raise OperatorCmdError(command, message.split("\n") if message else message)
     return rc_message
 
 
@@ -168,12 +162,14 @@ class Error(Exception):
 
 class OperatorCmdError(Error):
     def __init__(self, cmd, message):
-        self.msg = 'An error occurred executing the operator command "{0}", with response "{1}"'.format(cmd, message)
+        self.msg = 'An error occurred executing the operator command "{0}", with response "{1}"'.format(
+            cmd, message
+        )
 
 
 def main():
     run_module()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

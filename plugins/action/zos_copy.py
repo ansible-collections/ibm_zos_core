@@ -65,15 +65,7 @@ def _process_boolean(arg, default=False):
         return default
 
 
-def _get_dir_size(src):
-    size = 0
-    path, dirs, files = next(os.walk(src))
-    for file in files:
-        size += pathlib.Path(path + "/" + file).stat().st_size
-    return size
-
-
-def _create_temp_dir_name(src):
+def _create_temp_path_name(src):
     current_date = time.strftime("D%y%m%d", time.localtime())
     current_time = time.strftime("T%H%M%S", time.localtime())
     return "/tmp/ansible-playbook-{0}-{1}/{2}".format(current_date, current_time, src)
@@ -83,6 +75,20 @@ def _validate_dsname(ds_name):
     """ Validate the name of a given data set """
     dsn_regex = "^(([A-Z]{1}[A-Z0-9]{0,7})([.]{1})){1,21}[A-Z]{1}[A-Z0-9]{0,7}$"
     return re.match(dsn_regex, ds_name if '(' not in ds_name else ds_name[:ds_name.find('(')])
+
+
+def _detect_sftp_errors(stderr):
+    """Detects if the stderr of the SFTP command contains any errors.
+       The SFTP command usually returns zero return code even if it
+       encountered an error while transferring data. Hence the need to parse
+       its stderr to determine what error it ran into.
+    """
+    # The first line of stderr is a connection acknowledgement,
+    # which can be ignored
+    lines = to_text(stderr).splitlines()
+    if len(lines) > 1:
+        return "".join(lines[1:])
+    return ""
 
 
 class ActionModule(ActionBase):
@@ -121,8 +127,6 @@ class ActionModule(ActionBase):
             result['msg'] = "Invalid type supplied for 'destination' option, it must be a string"
         elif content and isinstance (content, string_types):
             result['msg'] = "Invalid type supplied for 'content' option, it must be a string"
-        elif encoding and not isinstance(encoding, string_types):
-            result['msg'] = "Invalid type supplied for 'encoding' option, it must be a string"
         elif content and src:
             result['msg'] = "Only 'content' or 'src' can be provided. Not both"
         elif local_follow and not os.path.islink(src):
@@ -133,12 +137,9 @@ class ActionModule(ActionBase):
         copy_member = '(' in src and src.endswith(')')
         new_module_args = dict((k, v) for k, v in self._task.args.items())
 
-
         if not is_uss:
             if mode or owner or group:
                 result['msg'] = "Cannot specify 'mode', 'owner' or 'group' for MVS destination"
-            elif not _validate_dsname(dest):
-                result['msg'] = "Invalid destination data set name provided"
 
         if not remote_src:
             if not os.path.exists(b_src):
@@ -147,6 +148,8 @@ class ActionModule(ActionBase):
                 result['msg'] = "The local file {0} does not have appropriate read permisssion".format(src)
             elif '(' in src or ')' in src:
                 result['msg'] = "Invalid source name provided"
+            elif is_pds and is_uss:
+                result['msg'] = "Source is a directory, which can not be copied to a USS location"
 
         if remote_src and not _validate_dsname(src):
             result['msg'] = "Invalid source data set name provided"
@@ -155,93 +158,75 @@ class ActionModule(ActionBase):
             result.update(src=src, dest=dest, changed=False, failed=True)
             return result
 
-        try:
-            if is_uss:
-                copy_action = self._get_copy_action_plugin()
-                mvs_args = frozenset(
-                    {'is_vsam', 'use_qualifier', 'encoding', 'is_binary'}
+        if not remote_src:
+            if is_pds:
+                path, dirs, files = next(os.walk(src))
+                dir_size = 0
+                if len(dirs) > 0:
+                    result['msg'] = "Subdirectory found inside source directory"
+                    result.update(src=src, dest=dest, changed=False, failed=True)
+                    return result
+                
+                for file in files:
+                    dir_size += pathlib.Path(path + "/" + file).stat().st_size
+                
+                new_module_args.update(
+                    size=dir_size,
+                    num_files=len(files)
                 )
-                copy_action._task.args = dict(
-                    (k, v) for k, v in self._task.args.items() if k not in mvs_args
+            else:
+                local_checksum = file_checksum(src)
+                new_module_args = dict((k, v) for k, v in self._task.args.items())
+                new_module_args.update( 
+                    size=pathlib.Path(src).stat().st_size, 
+                    local_checksum=local_checksum
                 )
-                return copy_action.run(task_vars=task_vars)
+        transfer_res = self._transfer_local_data_to_remote_machine(src, is_pds)
+        if transfer_res.get("msg"):
+            return transfer_res
 
-            if not remote_src:
-                if is_pds:
-                    _, dirs, files = next(os.walk(src))
-                    if len(dirs) > 0:
-                        result['msg'] = "Subdirectory found inside source directory"
-                        result.update(src=src, dest=dest, changed=False, failed=True)
-                        return result
-
-                    temp_dir = self._transfer_local_dir_to_remote_machine(
-                        src, 
-                        binary_mode=is_binary
-                    )
-                    new_module_args.update(_size=_get_dir_size(src), _pds_path=temp_dir)
-
-                else:
-                    content = _read_file(src)
-                    local_checksum = file_checksum(src)
-                    new_module_args = dict((k,v) for k,v in self._task.args.items())
-                    new_module_args.update(
-                        _local_data=content, 
-                        _size=pathlib.Path(src).stat().st_size, 
-                        _local_checksum=local_checksum
-                    )
-            new_module_args.update(is_uss=is_uss, is_pds=is_pds, _copy_member=copy_member)
-            copy_res = (
-                self._execute_module(
-                    module_name='zos_copy', 
-                    module_args=new_module_args, 
-                    task_vars=task_vars
-                )
+        new_module_args.update(
+            is_uss=is_uss, is_pds=is_pds, copy_member=copy_member, temp_path=transfer_res.get("temp_path")
+        )
+        copy_res = (
+            self._execute_module(
+                module_name='zos_copy', 
+                module_args=new_module_args, 
+                task_vars=task_vars
             )
-            if copy_res.get('msg'):
-                result['msg'] = copy_res.get('msg')
-                result['stdout'] = copy_res.get('stdout')
-                result['stderr'] = copy_res.get('stderr')
-                result['rc'] = copy_res.get('rc')
-                return result
+        )
+        if copy_res.get('msg'):
+            result['msg'] = copy_res.get('msg')
+            result['stdout'] = copy_res.get('stdout') or copy_res.get("module_stdout")
+            result['stderr'] = copy_res.get('stderr') or copy_res.get("module_stderr")
+            result['stdout_lines'] = copy_res.get("stdout").splitlines()
+            result['stderr_lines'] = copy_res.get("stderr").splitlines()
+            result['rc'] = copy_res.get('rc')
+            return result
+        return _update_result(result, src, dest, copy_res['ds_type'], is_binary)
 
-            result.update(
-                _update_result(result, src, dest, copy_res['ds_type'], is_binary)
-            )  
-
-        finally:
-            if not remote_src and is_pds:
-                self._connection.exec_command("rm -r {0}".format(temp_dir))
-
-        return result
-
-    def _transfer_local_dir_to_remote_machine(self, src, binary_mode=False):
+    def _transfer_local_data_to_remote_machine(self, src, is_pds):
         ansible_user = self._play_context.remote_user
         ansible_host = self._play_context.remote_host
-        temp_dir_name = _create_temp_dir_name(src)
+        temp_path = _create_temp_path_name(src)
         stdin = None
+        result = dict()
 
-        rc, out, err = self._connection.exec_command("mkdir -p {0}".format(temp_dir_name))
-        if rc != 0:
-            raise AnsibleError("Unable to create temporary directory on remote host; stdout: {0}; stderr: {1}".format(out, err))
-
-        if binary_mode:
-            cmd = ['sftp', ansible_user + '@' + ansible_host]
-            stdin = to_bytes("put -r {0} {1}".format(src, temp_dir_name))
+        cmd = ['sftp', ansible_user + '@' + ansible_host]
+        stdin = "put -r {0} {1}".format(src, temp_path)
+        if not is_pds:
+            stdin = stdin.replace(" -r", "")
+        transfer_data = subprocess.Popen(
+            cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
+        out, err = transfer_data.communicate(to_bytes(stdin))
+        err = _detect_sftp_errors(err)
+        if transfer_data.returncode != 0 or err:
+            result['msg'] = "Error transferring source '{0}' to remote z/OS system".format(src)
+            result['rc'] = transfer_data.returncode
+            result['stderr'] = err
+            result['stderr_lines'] = err.splitlines()
+            result['failed'] = True
         else:
-            cmd = ["scp", '-r', src, ansible_user + '@' + ansible_host + ':' + temp_dir_name]
-        
-        transfer_dir = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        out, err = transfer_dir.communicate(stdin)
-        if transfer_dir.returncode != 0:
-            raise AnsibleError("Error transferring PDS from remote z/OS system; stdout: {0}; stderr: {1}".format(out, err))
-        return temp_dir_name
-
-    def _get_copy_action_plugin(self):
-        return (self._shared_loader_obj.action_loader.get(
-            'copy',
-            task=self._task.copy(),
-            connection=self._connection,
-            play_context=self._play_context,
-            loader=self._loader,
-            templar=self._templar,
-            shared_loader_obj=self._shared_loader_obj))
+            result['temp_path'] = temp_path
+        return result

@@ -51,6 +51,23 @@ class DataSetUtils(object):
             return path.exists(to_bytes(self.data_set))
         return self.ds_info.get('exists')
 
+    def data_set_member_exists(self, member):
+        """Determines whether the input data set contains the given member.
+
+        Arguments:
+            member {str} -- The name of the data set member
+
+        Returns:
+            bool -- If the member exists
+        """
+        if self.get_data_set_type() == "PO":
+            rc, out, err = self.module.run_command(
+                "head \"//'{0}({1})'\"".format(self.data_set, member)
+            )
+            if rc == 0 and not re.findall(r"EDC5067I", err):
+                return True
+        return False
+
     def get_data_set_type(self):
         """Retrieves the data set type of the input data set.
 
@@ -207,14 +224,13 @@ class DataSetUtils(object):
             "mvscmdauth --pgm={0} --{1}=* --{2}=stdin".format(pgm, sysprint, sysin),
             data=input_cmd
         )
-        if (re.findall(r"ALREADY IN USE", out)):
-            raise DatasetBusyError(self.data_set)
-        if (re.findall(r"NOT IN CATALOG|NOT FOUND|NOT LISTED", out)):
-            self.ds_info['exists'] = False
-        elif rc != 0:
-            raise MVSCmdExecError(rc, out, err)
-        else:
-            self.ds_info['exists'] = True
+        if rc != 0:
+            if (re.findall(r"ALREADY IN USE", out)):
+                raise DatasetBusyError(self.data_set)
+            if (re.findall(r"NOT IN CATALOG|NOT FOUND|NOT LISTED", out)):
+                self.ds_info['exists'] = False
+            else:
+                raise MVSCmdExecError(rc, out, err)
         return out
 
     def _process_listds_output(self, output):
@@ -227,7 +243,10 @@ class DataSetUtils(object):
             dict -- Dictionary containing the output parameters of LISTDS
         """
         result = dict()
-        if self.data_set_exists():
+        if "NOT IN CATALOG" in output:
+            result['exists'] = False
+        else:
+            result['exists'] = True
             ds_search = re.search(r"(-|--)DSORG(-\s*|\s*)\n(.*)", output, re.MULTILINE)
             if ds_search:
                 ds_params = ds_search.group(3).split()
@@ -247,7 +266,7 @@ class DataSetUtils(object):
             dict -- Dictionary containing the output parameters of LISTCAT
         """
         result = dict()
-        if self.data_set_exists():
+        if "NOT FOUND" not in output:
             volser_output = re.findall(r"VOLSER-*[A-Z|0-9]*", output)
             result['volser'] = ''.join(
                 re.findall(r"-[A-Z|0-9]*", volser_output[0])

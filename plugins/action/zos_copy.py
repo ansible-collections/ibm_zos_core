@@ -22,14 +22,8 @@ from ansible.utils.hashing import checksum as file_checksum
 from ansible.utils.vars import merge_hash
 
 
-def _update_result(
-        result,
-        src,
-        dest,
-        ds_type="USS",
-        binary_mode=False):
+def _update_result(is_binary, **copy_res):
     """ Helper function to update output result with the provided values """
-
     data_set_types = {
         'PS': "Sequential",
         'PO': "Partitioned",
@@ -38,24 +32,27 @@ def _update_result(
         'VSAM': "VSAM",
         'USS': "USS"
     }
-    file_or_ds = "file" if ds_type == 'USS' else "data set"
-    updated_result = dict((k, v) for k, v in result.items())
-    updated_result.update({
-        'file': src,
-        'dest': dest,
-        'data_set_type': data_set_types[ds_type],
-        'is_binary': binary_mode
-    })
+    ds_type = copy_res.get("ds_type")
+    updated_result = dict(
+        file=copy_res.get("src"),
+        dest=copy_res.get("dest"),
+        data_set_type=data_set_types[ds_type],
+        is_binary=is_binary,
+        checksum=copy_res.get("checksum"),
+        size=copy_res.get("size")
+    )
+    if ds_type == "USS":
+        updated_result.update(
+            dict(
+                gid=copy_res.get("gid"),
+                uid=copy_res.get("uid"),
+                group=copy_res.get("group"),
+                owner=copy_res.get("owner"),
+                mode=copy_res.get("mode"),
+                state=copy_res.get("state")
+            )
+        )
     return updated_result
-
-
-def _read_file(src, is_binary=False):
-    read_mode = 'rb' if is_binary else 'r'
-    try:
-        content = open(src, read_mode).read()
-    except (FileNotFoundError, IOError, OSError) as err:
-        raise AnsibleError("Could not read file {}".format(src))
-    return content
 
 
 def _process_boolean(arg, default=False):
@@ -65,16 +62,10 @@ def _process_boolean(arg, default=False):
         return default
 
 
-def _create_temp_path_name(src):
+def _create_temp_path_name():
     current_date = time.strftime("D%y%m%d", time.localtime())
     current_time = time.strftime("T%H%M%S", time.localtime())
-    return "/tmp/ansible-playbook-{0}-{1}/{2}".format(current_date, current_time, src)
-
-
-def _validate_dsname(ds_name):
-    """ Validate the name of a given data set """
-    dsn_regex = "^(([A-Z]{1}[A-Z0-9]{0,7})([.]{1})){1,21}[A-Z]{1}[A-Z0-9]{0,7}$"
-    return re.match(dsn_regex, ds_name if '(' not in ds_name else ds_name[:ds_name.find('(')])
+    return "/tmp/ansible-zos-copy-payload-{0}-{1}".format(current_date, current_time)
 
 
 def _detect_sftp_errors(stderr):
@@ -122,13 +113,23 @@ class ActionModule(ActionBase):
         if src is None or dest is None:
             result['msg'] = "Source and destination are required"
         elif not isinstance(src, string_types):
-            result['msg'] = "Invalid type supplied for 'source' option, it must be a string"
+            result['msg'] = (
+                "Invalid type supplied for 'src' option, it must be a string"
+            )
         elif not isinstance(dest, string_types):
-            result['msg'] = "Invalid type supplied for 'destination' option, it must be a string"
+            result['msg'] = (
+                "Invalid type supplied for 'dest' option, it must be a string"
+            )
+        elif len(src) < 1 or len(dest) < 1:
+            result['msg'] = "'src' or 'dest' must not be empty"
+
         elif content and isinstance (content, string_types):
-            result['msg'] = "Invalid type supplied for 'content' option, it must be a string"
+            result['msg'] = (
+                "Invalid type supplied for 'content' option, it must be a string"
+            )
         elif content and src:
-            result['msg'] = "Only 'content' or 'src' can be provided. Not both"
+            result['msg'] = "Only 'content' or 'src' can be provided, not both"
+
         elif local_follow and not os.path.islink(src):
             result['msg'] = "The provided source is not a symbolic link"
 
@@ -139,23 +140,30 @@ class ActionModule(ActionBase):
 
         if not is_uss:
             if mode or owner or group:
-                result['msg'] = "Cannot specify 'mode', 'owner' or 'group' for MVS destination"
-
+                result['msg'] = (
+                    "Cannot specify 'mode', 'owner' or 'group' for MVS destination"
+                )
         if not remote_src:
             if not os.path.exists(b_src):
                 result['msg'] = "The local file {0} does not exist".format(src)
+
             elif not os.access(b_src, os.R_OK):
-                result['msg'] = "The local file {0} does not have appropriate read permisssion".format(src)
+                result['msg'] = (
+                    "The local file {0} does not have appropriate "
+                    "read permisssion".format(src)
+                )
+
             elif '(' in src or ')' in src:
                 result['msg'] = "Invalid source name provided"
-            elif is_pds and is_uss:
-                result['msg'] = "Source is a directory, which can not be copied to a USS location"
 
-        if remote_src and not _validate_dsname(src):
-            result['msg'] = "Invalid source data set name provided"
+            elif is_pds and is_uss:
+                result['msg'] = (
+                    "Source is a directory, which can not be copied "
+                    "to a USS location"
+                )
         
         if result.get('msg'):
-            result.update(src=src, dest=dest, changed=False, failed=True)
+            result.update(dict(src=src, dest=dest, changed=False, failed=True))
             return result
 
         if not remote_src:
@@ -164,29 +172,27 @@ class ActionModule(ActionBase):
                 dir_size = 0
                 if len(dirs) > 0:
                     result['msg'] = "Subdirectory found inside source directory"
-                    result.update(src=src, dest=dest, changed=False, failed=True)
+                    result.update(dict(src=src, dest=dest, changed=False, failed=True))
                     return result
                 
                 for file in files:
                     dir_size += pathlib.Path(path + "/" + file).stat().st_size
                 
-                new_module_args.update(
-                    size=dir_size,
-                    num_files=len(files)
-                )
+                new_module_args.update(dict(size=dir_size, num_files=len(files)))
             else:
-                local_checksum = file_checksum(src)
-                new_module_args = dict((k, v) for k, v in self._task.args.items())
-                new_module_args.update( 
-                    size=pathlib.Path(src).stat().st_size, 
-                    local_checksum=local_checksum
-                )
-        transfer_res = self._transfer_local_data_to_remote_machine(src, is_pds)
-        if transfer_res.get("msg"):
-            return transfer_res
+                new_module_args.update(dict(size=pathlib.Path(src).stat().st_size))
+
+            transfer_res = self._copy_to_remote(src, is_pds)
+            if transfer_res.get("msg"):
+                return transfer_res
+            new_module_args.update(dict(temp_path=transfer_res.get("temp_path")))
 
         new_module_args.update(
-            is_uss=is_uss, is_pds=is_pds, copy_member=copy_member, temp_path=transfer_res.get("temp_path")
+            dict(
+                is_uss=is_uss, 
+                is_pds=is_pds, 
+                copy_member=copy_member,
+            )
         )
         copy_res = (
             self._execute_module(
@@ -199,18 +205,26 @@ class ActionModule(ActionBase):
             result['msg'] = copy_res.get('msg')
             result['stdout'] = copy_res.get('stdout') or copy_res.get("module_stdout")
             result['stderr'] = copy_res.get('stderr') or copy_res.get("module_stderr")
-            result['stdout_lines'] = copy_res.get("stdout").splitlines()
-            result['stderr_lines'] = copy_res.get("stderr").splitlines()
+            result['stdout_lines'] = copy_res.get("stdout_lines")
+            result['stderr_lines'] = copy_res.get("stderr_lines")
             result['rc'] = copy_res.get('rc')
+            self._remote_cleanup(dest, copy_res.get("dest_exists"), task_vars)
             return result
-        return _update_result(result, src, dest, copy_res['ds_type'], is_binary)
 
-    def _transfer_local_data_to_remote_machine(self, src, is_pds):
-        ansible_user = self._play_context.remote_user
-        ansible_host = self._play_context.remote_host
-        temp_path = _create_temp_path_name(src)
-        stdin = None
+        try:
+            result = _update_result(is_binary, **copy_res)
+        except Exception as err:
+            self._remote_cleanup(dest, copy_res.get("dest_exists"), task_vars)
+            result['msg'] = str(err)
+            return result
+        return result
+
+    def _copy_to_remote(self, src, is_pds):
         result = dict()
+        stdin = None
+        ansible_user = self._play_context.remote_user
+        ansible_host = self._play_context.remote_addr
+        temp_path = _create_temp_path_name()
 
         cmd = ['sftp', ansible_user + '@' + ansible_host]
         stdin = "put -r {0} {1}".format(src, temp_path)
@@ -222,7 +236,7 @@ class ActionModule(ActionBase):
         out, err = transfer_data.communicate(to_bytes(stdin))
         err = _detect_sftp_errors(err)
         if transfer_data.returncode != 0 or err:
-            result['msg'] = "Error transferring source '{0}' to remote z/OS system".format(src)
+            result['msg'] = "Error transfering source '{0}' to remote z/OS system".format(src)
             result['rc'] = transfer_data.returncode
             result['stderr'] = err
             result['stderr_lines'] = err.splitlines()
@@ -230,3 +244,17 @@ class ActionModule(ActionBase):
         else:
             result['temp_path'] = temp_path
         return result
+
+    def _remote_cleanup(self, dest, dest_exists, task_vars):
+        if not dest_exists:
+            if '/' in dest:
+                self._connection.exec_command("rm -rf {0}".format(dest))
+            else:
+                module_args = dict(name=dest, state='absent')
+                if dest.endswith(')'):
+                    module_args.update(dict(type='MEMBER'))
+                self._execute_module(
+                    module_name='zos_data_set',
+                    module_args=module_args,
+                    task_vars=task_vars
+                )

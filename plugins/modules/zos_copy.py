@@ -258,7 +258,7 @@ dest:
     returned: success
     type: str
     sample: SAMPLE.SEQ.DATA.SET
-src:
+file:
     description: Source file used for the copy on the target machine.
     returned: changed
     type: str
@@ -273,6 +273,11 @@ backup_file:
     returned: changed and if backup=true
     type: str
     sample: 11540.20150212-220915.bak
+data_set_type:
+    description: Destination file or data set type.
+    returned: success
+    type: str
+    sample: Sequential
 gid:
     description: Group id of the file, after execution
     returned: success and if dest is USS
@@ -299,8 +304,8 @@ mode:
     type: str
     sample: 0644
 size:
-    description: Size of the target, after execution.
-    returned: changed and src is a file
+    description: Size(in bytes) of the target, after execution.
+    returned: success and dest is USS
     type: int
     sample: 1220
 state:
@@ -341,11 +346,13 @@ rc:
 '''
 
 import os
-import hashlib
 import tempfile
 import math
+
+from pathlib import Path
 from shlex import quote
-from shutil import move
+from shutil import move, copy
+from hashlib import sha256
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.common.process import get_bin_path
@@ -378,22 +385,6 @@ class CopyHandler(object):
     def _run_command(self, cmd, **kwargs):
         """ Wrapper for AnsibleModule.run_command """
         return self.module.run_command(cmd, **kwargs)
-
-    def _copy_to_ds(self, ds_name, size=None, content=None, remote_src=False, src_ds=None):
-        if not remote_src:
-            temp_ds_name = data_set_utils.DataSetUtils.create_temp_data_set(
-                "TEMP", size=str(size)
-            )
-            Datasets.write(temp_ds_name, _ascii_to_ebcdic(content))
-        repro_cmd = "  REPRO INFILE({0}) OUTFILE({1})".format(temp_ds_name, ds_name)
-        try:
-            sysprint = _run_mvs_command("IDCAMS", repro_cmd, authorized=True)
-        finally:
-            if Datasets.exists(temp_ds_name):
-                Datasets.delete(temp_ds_name)
-    
-    def _copy_to_uss(self, src, dest, encoding, is_binary=False):
-        pass
 
     def _run_mvs_command(self, pgm, cmd, dd=None, authorized=False):
         sysprint = "sysprint"
@@ -447,6 +438,36 @@ class CopyHandler(object):
         except Exception as err:
             self._fail_json(msg="Failed to call IDCAMS to allocate VSAM data set")
 
+    def _copy_to_ds(self, ds_name, size=None, content=None, remote_src=False, src_ds=None):
+        if not remote_src:
+            temp_ds_name = data_set_utils.DataSetUtils.create_temp_data_set(
+                "TEMP", size=str(size)
+            )
+            Datasets.write(temp_ds_name, _ascii_to_ebcdic(content))
+        repro_cmd = "  REPRO INFILE({0}) OUTFILE({1})".format(temp_ds_name, ds_name)
+        try:
+            sysprint = _run_mvs_command("IDCAMS", repro_cmd, authorized=True)
+        finally:
+            if Datasets.exists(temp_ds_name):
+                Datasets.delete(temp_ds_name)
+    
+    def _copy_to_uss(self, src, temp_path, dest, encoding, is_binary=False, remote_src=False):
+        if remote_src:
+            try:
+                copy(src, dest)
+            except OSError as err:
+                self._fail_json(
+                    msg="Destination {0} is not writable".format(dest), 
+                    stderr=str(err)
+                )
+        else:
+            if (not is_binary) and encoding:
+                # Convert encoding of the source file
+                from_code_set = encoding.get("from")
+                to_code_set = encoding.get("to")
+                self._uss_convert_encoding(temp_path, temp_path, from_code_set, to_code_set)
+            move(temp_path, dest)
+
     def _copy_to_seq(
         self, src, dest, data, validate=True, local_checksum=None, src_ds_type=None
     ):
@@ -485,7 +506,7 @@ class CopyHandler(object):
             copy_cmd = "   COPY OUTDD=OUTPUT,INDD=((INPUT,R))"
             sysprint = _run_mvs_command("IEBCOPY", copy_cmd, dds)
 
-    def _copy_to_pdse(self, src_dir, dest, copy_member=False, src_file=None):
+    def copy_to_pdse(self, src_dir, dest, copy_member=False, src_file=None):
         cmd = None
         if copy_member:
             cmd = "cp {0} \"//'{}'\"".format(src_file, dest)
@@ -500,7 +521,7 @@ class CopyHandler(object):
         if rc != 0:
             self._fail_json(msg="Unable to copy to data set {}".format(dest))
 
-    def _create_data_set(self, src, ds_name, ds_type, size, d_blocks=None):
+    def create_data_set(self, src, ds_name, ds_type, size, d_blocks=None):
         if (ds_type in MVS_PARTITIONED.union(MVS_SEQ)):
             rc = Datasets.create(ds_name, ds_type, size, "FB", directory_blocks=d_blocks)
             if rc != 0:
@@ -510,7 +531,7 @@ class CopyHandler(object):
         else:
             self._allocate_vsam(ds_name, size)
 
-    def _remote_copy_handler(self, src, dest, src_ds_type, dest_ds_type, module_args):
+    def remote_copy_handler(self, src, dest, src_ds_type, dest_ds_type, module_args):
         if dest_ds_type in MVS_SEQ:
             cmd = None
             if src_ds_type == 'USS':
@@ -519,6 +540,11 @@ class CopyHandler(object):
                 cmd = "cp \"//'{0}'\" \"//'{1}'\"".format(src, dest)
             else:
                 self._copy_to_ds(dest, remote_src=True, src_ds=src)
+        elif dest_ds_type in MVS_PARTITIONED:
+            pass
+        else:
+            # Destination is a VSAM data set
+            pass
 
     def _uss_convert_encoding(self, src, dest, from_code_set, to_code_set):
         """ Convert the encoding of the data in a USS file """
@@ -540,18 +566,24 @@ class CopyHandler(object):
                 os.close(fd)
                 if os.path.exists(temp_fi):
                     os.remove(temp_fi)
+            
 
-
-def _get_checksum(data):
-    """ Calculate checksum for the given data """
-    digest = hashlib.sha256()
-    data = to_bytes(data, errors='surrogate_or_strict')
-    digest.update(data)
-    return digest.hexdigest()
-
-
-def _get_mvs_checksum(ds_name):
-    return _get_checksum(Datasets.read(ds_name))
+def _get_file_checksum(src):
+    """ Calculate SHA256 hash for a given file """
+    b_src = to_bytes(src)
+    if not os.path.exists(b_src) or os.path.isdir(b_src):
+        return None
+    blksize = 64 * 1024
+    hash_digest = sha256()
+    try:
+        with open(to_bytes(src, errors='surrogate_or_strict'), 'rb') as infile:
+            block = infile.read(blksize)
+            while block:
+                hash_digest.update(block)
+                block = infile.read(blksize)
+    except Exception as err:
+        raise
+    return hash_digest.hexdigest()
 
 
 def main():
@@ -572,7 +604,6 @@ def main():
             is_uss=dict(type='bool'),
             is_pds=dict(type='bool'),
             size=dict(type='int'),
-            local_checksum=dict(type='str'),
             temp_path=dict(type='str'),
             num_files=dict(type='int'),
             copy_member=dict(type='bool')
@@ -619,111 +650,120 @@ def main():
     use_qualifier = parsed_args.get('use_qualifier')
     is_binary = parsed_args.get('is_binary')
     is_vsam = parsed_args.get('is_vsam')
-    encoding = parsed_args.get('encoding')
     content = parsed_args.get('content')
     validate = parsed_args.get('validate')
     force = parsed_args.get('force')
+    encoding = module.params.get('encoding')
     _is_uss = module.params.get('is_uss')
     _is_pds = module.params.get('is_pds')
-    _local_checksum = module.params.get('local_checksum')
     _temp_path = module.params.get('temp_path')
     _num_files = module.params.get('num_files')
     _size = module.params.get('size')
     _copy_member = module.params.get('copy_member')
 
     changed = False
-    copy_handler = CopyHandler(module)
+    res_args = dict()
+    
     try:
-        dest_ds_utils = data_set_utils.DataSetUtils(module, dest)
+        dest_ds_utils = data_set_utils.DataSetUtils(dest)
+        dest_exists = dest_ds_utils.data_set_exists()
         dest_ds_type = dest_ds_utils.get_data_set_type()
     except Exception as err:
         module.fail_json(msg=str(err))
-
-    if _is_uss:
-        copy_handler._uss_convert_encoding(_temp_path, _temp_path, encoding)
-
-    elif remote_src:
-        try:
-            src_ds_utils = data_set_utils.DataSetUtils(module, src)
-            src_ds_type = src_ds_utils.get_data_set_type()
-        except Exception as err:
-            module.fail_json(msg=str(err))
-
-        copy_handler._remote_copy_handler(
-            src, dest, src_ds_type, dest_ds_type, module.params
-        )
-    else:
-        if not dest_ds_utils.data_set_exists():
-            d_blocks = None
-            if _is_pds or src_ds_type == "PO":
-                dest_ds_type = "PDSE"
-                d_blocks = math.ceil(_num_files/6)
-            elif is_vsam:
-                dest_ds_type = "VSAM"
-            else:
-                dest_ds_type = "SEQ"
-
-            copy_handler._create_data_set(
-                src, dest, dest_ds_type, _size, d_blocks=d_blocks
-            )
-            changed = True
-        
-        # Copy to sequential data set
-        if dest_ds_type in MVS_SEQ:
-            copy_handler._copy_to_seq(
-                src, 
-                dest, 
-                "", 
-                validate=validate, 
-                local_checksum=_local_checksum, 
-                remote_src=remote_src,
-                src_ds_type=src_ds_type
-            )
-
-        # Copy to partitioned data set
-        elif dest_ds_type in MVS_PARTITIONED:
-            temp_file = None
-            if _copy_member:
-                fd, temp_file = tempfile.mkstemp()
-                write_mode = 'wb' if is_binary else 'w'
-                with os.fdopen(fd, write_mode) as tmp:
-                    tmp.write("")
+    
+    copy_handler = CopyHandler(module)
+    try:
+        if _is_uss:
+            if os.path.exists(dest) and os.path.isdir(dest):
+                dest = os.path.join(dest, os.path.basename(src))
             try:
-                copy_handler._copy_to_pdse(
-                    src if remote_src else _temp_path, 
-                    dest, 
-                    copy_member=_copy_member, 
-                    remote_src=remote_src, 
-                    src_file=temp_file
-                )
-            finally:
-                if temp_file and os.path.exists(temp_file):
-                    os.remove(temp_file)
+                remote_checksum = _get_file_checksum(_temp_path)
+                dest_checksum = _get_file_checksum(dest)
+            except Exception as err:
+                module.fail_json(msg="Unable to calculate checksum", stderr=str(err))
+            
+            copy_handler._copy_to_uss(
+                src, _temp_path, dest, encoding, is_binary=is_binary, remote_src=remote_src
+            )
+            res_args['changed'] = remote_checksum != dest_checksum
+            res_args['checksum'] = remote_checksum
+            res_args['size'] = Path(dest).stat().st_size
 
-        # Copy to VSAM data set
+        elif remote_src:
+            try:
+                src_ds_utils = data_set_utils.DataSetUtils(src)
+                src_ds_type = src_ds_utils.get_data_set_type()
+            except Exception as err:
+                module.fail_json(msg=str(err))
+
+            copy_handler._remote_copy_handler(
+                src, dest, src_ds_type, dest_ds_type, module.params
+            )
         else:
-            copy_handler._copy_to_ds(dest, size=_size)
+            if not dest_exists:
+                d_blocks = None
+                if _is_pds or src_ds_type == "PO":
+                    dest_ds_type = "PDSE"
+                    d_blocks = math.ceil(_num_files/6)
+                elif is_vsam:
+                    dest_ds_type = "VSAM"
+                else:
+                    dest_ds_type = "SEQ"
 
-    remote_checksum = None
-    new_checksum = None
+                copy_handler._create_data_set(
+                    src, dest, dest_ds_type, _size, d_blocks=d_blocks
+                )
+                changed = True
+            
+            # Copy to sequential data set
+            if dest_ds_type in MVS_SEQ:
+                copy_handler._copy_to_seq(
+                    src, 
+                    dest, 
+                    "", 
+                    validate=validate, 
+                    local_checksum=_local_checksum, 
+                    remote_src=remote_src,
+                    src_ds_type=src_ds_type
+                )
 
-    res_args = dict(
-        src=src,
-        dest=dest,
-        changed=changed,
-        checksum=_get_mvs_checksum(dest),
-        size="{} Bytes".format(module.params.get('_size')),
-        ds_type = dest_ds_type
+            # Copy to partitioned data set
+            elif dest_ds_type in MVS_PARTITIONED:
+                temp_file = None
+                if _copy_member:
+                    fd, temp_file = tempfile.mkstemp()
+                    write_mode = 'wb' if is_binary else 'w'
+                    with os.fdopen(fd, write_mode) as tmp:
+                        tmp.write("")
+                try:
+                    copy_handler._copy_to_pdse(
+                        src if remote_src else _temp_path, 
+                        dest, 
+                        copy_member=_copy_member, 
+                        remote_src=remote_src, 
+                        src_file=temp_file
+                    )
+                finally:
+                    if temp_file and os.path.exists(temp_file):
+                        os.remove(temp_file)
+
+            # Copy to VSAM data set
+            else:
+                copy_handler._copy_to_ds(dest, size=_size)
+    finally:
+        if _temp_path:
+            module.run_command("rm -r {0}".format(_temp_path))
+
+    res_args.update(
+        dict(
+            src=src,
+            dest=dest,
+            changed=changed,
+            ds_type = dest_ds_type,
+            dest_exists=dest_exists
+        )  
     )
     module.exit_json(**res_args)
-
-
-class UncatalogedDatasetError(Exception):
-    def __init__(self, ds_name):
-        super().__init__(
-            ("Data set {} is not in catalog. If you would like to copy to "
-             "the data set, please catalog it first".format(ds_name))
-        )
 
 
 if __name__ == '__main__':

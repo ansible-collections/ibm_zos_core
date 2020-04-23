@@ -580,8 +580,7 @@ def query_jobs_status(module, jobId):
     output = {}
     while not output.get("jobs") and timeout > 0:
         try:
-            # all_jobs = Jobs.list()
-            output = job_output(module, job_id=jobId)
+            output = job_output(job_id=jobId)
             sleep(0.5)
             timeout = timeout - 1
         except IndexError:
@@ -739,7 +738,7 @@ def run_module():
         ):
             sleep(1)
             duration = duration + 1
-            waitJob = job_output(module, job_id=jobId)
+            waitJob = job_output(job_id=jobId)
             job_msg = waitJob.get("jobs")[0].get("ret_code").get("msg")
             if re.search("^(?:{0})".format("|".join(JOB_COMPLETION_MESSAGES)), job_msg):
                 break

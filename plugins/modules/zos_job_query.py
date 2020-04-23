@@ -135,17 +135,11 @@ message:
   sample:
      msg: "List FAILED! no such job been found: IYK3Z0R9"
 """
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingZOAUImport,
-)
 
-try:
-    from zoautil_py import Jobs
-except Exception:
-    Jobs = MissingZOAUImport()
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import job_status
+
 from ansible.module_utils.basic import AnsibleModule
 import re
-from time import sleep
 
 
 def run_module():
@@ -167,6 +161,7 @@ def run_module():
         validate_arguments(module.params)
         jobs_raw = query_jobs(module.params)
         jobs = parsing_jobs(jobs_raw)
+
     except Exception as e:
         module.fail_json(msg=e, **result)
     result["jobs"] = jobs
@@ -199,69 +194,55 @@ def validate_arguments(params):
         raise RuntimeError("Argument Error:job id can not be co-exist with owner")
 
 
-def query_jobs(params, count=0):
+def query_jobs(params):
     job_name_in = params.get("job_name")
     job_id = params.get("job_id")
     owner = params.get("owner")
     jobs = []
-    try:
-        if job_id:
-            jobs = Jobs.list(job_id=job_id)
-        elif owner:
-            jobs = Jobs.list(owner=owner, job_name=job_name_in)
-        else:
-            jobs = Jobs.list(job_name=job_name_in)
-        if not jobs:
-            raise RuntimeError(
-                "List FAILED! no such job name been found: " + job_name_in
-            )
-    except IndexError:
-        if count > 12:
-            raise
-        sleep(0.25)
-        count += 1
-        jobs = query_jobs(params, count)
+    if job_id:
+        jobs = job_status(job_id=job_id)
+    elif owner:
+        jobs = job_status(owner=owner, job_name=job_name_in)
+    else:
+        jobs = job_status(job_name=job_name_in)
+    if not jobs:
+        raise RuntimeError("List FAILED! no such job was found.")
     return jobs
 
 
 def parsing_jobs(jobs_raw):
     jobs = []
-    status = ""
     ret_code = {}
     for job in jobs_raw:
-        status_raw = job.get("status")
+        status_raw = job.get("ret_code").get("msg", "")
         if "AC" in status_raw:
             # the job is active
-            ret_code = "null"
+            ret_code = None
         elif "CC" in status_raw:
             # status = 'Completed normally'
             ret_code = {
-                "msg": status_raw + " " + job.get("return"),
-                "code": job.get("return"),
+                "msg": status_raw,
+                "code": job.get("ret_code").get("code"),
             }
-        elif status_raw == "ABEND":
+        elif "ABEND" in status_raw:
             # status = 'Ended abnormally'
             ret_code = {
-                "msg": status_raw + " " + job.get("return"),
-                "code": job.get("return"),
+                "msg": status_raw,
+                "code": job.get("ret_code").get("code"),
             }
         elif "ABENDU" in status_raw:
             # status = 'Ended abnormally'
-            if job.get("return") == "?":
-                ret_code = {"msg": status_raw, "code": status_raw[5:]}
-            else:
-                ret_code = {"msg": status_raw, "code": job.get("return")}
+            ret_code = {"msg": status_raw, "code": job.get("ret_code").get("code")}
         elif "CANCELED" or "JCLERR" in status_raw:
             # status = status_raw
-            ret_code = {"msg": status_raw, "code": "null"}
+            ret_code = {"msg": status_raw, "code": None}
         else:
             # status = 'Unknown'
-            ret_code = {"msg": status_raw, "code": job.get("return")}
+            ret_code = {"msg": status_raw, "code": job.get("ret_code").get("code")}
         job_dict = {
-            "job_name": job.get("name"),
+            "job_name": job.get("job_name"),
             "owner": job.get("owner"),
-            "job_id": job.get("id"),
-            # 'job_status':status,
+            "job_id": job.get("job_id"),
             "ret_code": ret_code,
         }
         jobs.append(job_dict)

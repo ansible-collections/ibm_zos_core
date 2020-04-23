@@ -506,7 +506,7 @@ def submit_pds_jcl(src):
     jobId = Jobs.submit(src)
     if jobId is None:
         raise SubmitJCLError(
-            "SUBMIT JOB FAILED: " + "NO JOB ID IS RETURNED. PLEASE CHECK THE JCL."
+            "SUBMIT JOB FAILED: NO JOB ID IS RETURNED. PLEASE CHECK THE JCL."
         )
     return jobId
 
@@ -524,7 +524,7 @@ def submit_uss_jcl(src, module):
         jobId = stdout.replace("\n", "").strip()
     else:
         raise SubmitJCLError(
-            "SUBMIT JOB FAILED: " + "NO JOB ID IS RETURNED. PLEASE CHECK THE JCL."
+            "SUBMIT JOB FAILED: NO JOB ID IS RETURNED. PLEASE CHECK THE JCL."
         )
     return jobId
 
@@ -587,10 +587,7 @@ def query_jobs_status(module, jobId):
             pass
         except Exception as e:
             raise SubmitJCLError(
-                repr(e)
-                + """
-            The output is """
-                + output
+                "{0} {1} {2}".format(repr(e), "The output is", output or "")
             )
     if not output and timeout == 0:
         raise SubmitJCLError(

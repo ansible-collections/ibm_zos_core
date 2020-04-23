@@ -3,18 +3,18 @@
 # Copyright (c) IBM Corporation 2019, 2020
 # Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
 ANSIBLE_METADATA = {
-    'metadata_version': '1.1',
-    'status': ['preview'],
-    'supported_by': 'community'
+    "metadata_version": "1.1",
+    "status": ["preview"],
+    "supported_by": "community",
 }
 
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: zos_fetch
 version_added: "2.9"
@@ -118,9 +118,9 @@ seealso:
 - module: zos_copy
 - module: copy
 - module: zos_data_set
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 - name: Fetch file from USS and store into /tmp/fetched/hostname/tmp/somefile
   zos_fetch:
     src: /tmp/somefile
@@ -166,9 +166,9 @@ EXAMPLES = r'''
       from: IBM-037
       to: ISO8859-1
     flat: true
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 file:
     description: The source file path on remote machine
     returned: success
@@ -233,7 +233,7 @@ rc:
     returned: failure
     type: int
     sample: 8
-'''
+"""
 
 
 import base64
@@ -249,14 +249,19 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils._text import to_bytes
 from ansible.module_utils.parsing.convert_bool import boolean
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
-    better_arg_parser, data_set_utils
+    better_arg_parser,
+    data_set_utils,
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
+    MissingZOAUImport,
+)
+
 try:
     from zoautil_py import Datasets, MVSCmd, types
 except Exception:
-    Datasets = ""
-    MVSCmd = ""
-    types = ""
+    Datasets = MissingZOAUImport()
+    MVSCmd = MissingZOAUImport()
+    types = MissingZOAUImport()
 
 
 class FetchHandler:
@@ -281,21 +286,23 @@ class FetchHandler:
         bytes_per_cyl = 849960
 
         listcat_cmd = " LISTCAT ENT('{0}') ALL".format(vsam)
-        cmd = 'mvscmdauth --pgm=idcams --sysprint=stdout --sysin=stdin'
+        cmd = "mvscmdauth --pgm=idcams --sysprint=stdout --sysin=stdin"
         rc, out, err = self._run_command(cmd, data=listcat_cmd)
         if not rc:
-            find_space_pri = re.findall(r'SPACE-PRI-*\d+', out)
+            find_space_pri = re.findall(r"SPACE-PRI-*\d+", out)
             if find_space_pri:
-                space_pri = int(''.join(re.findall(r'\d+', find_space_pri[0])))
+                space_pri = int("".join(re.findall(r"\d+", find_space_pri[0])))
             total_size = ceil((bytes_per_cyl * space_pri) / 1024)
         else:
             self._fail_json(
-                msg="Unable to obtain data set information for {0}: {1}".format(vsam, err),
+                msg="Unable to obtain data set information for {0}: {1}".format(
+                    vsam, err
+                ),
                 stdout=out,
                 stderr=err,
                 stdout_lines=out.splitlines(),
                 stderr_lines=err.splitlines(),
-                rc=rc
+                rc=rc,
             )
         return total_size
 
@@ -305,21 +312,23 @@ class FetchHandler:
         mvs_rc = 0
         vsam_size = self._get_vsam_size(ds_name)
         try:
-            sysin = data_set_utils.DataSetUtils.create_temp_data_set('SYSIN')
-            sysprint = data_set_utils.DataSetUtils.create_temp_data_set('SYSPRINT')
+            sysin = data_set_utils.DataSetUtils.create_temp_data_set("SYSIN")
+            sysprint = data_set_utils.DataSetUtils.create_temp_data_set("SYSPRINT")
             out_ds_name = data_set_utils.DataSetUtils.create_temp_data_set(
-                'VSM', size="{0}K".format(vsam_size)
+                "VSM", size="{0}K".format(vsam_size)
             )
-            repro_sysin = ' REPRO INFILE(INPUT)  OUTFILE(OUTPUT) '
+            repro_sysin = " REPRO INFILE(INPUT)  OUTFILE(OUTPUT) "
             Datasets.write(sysin, repro_sysin)
 
             dd_statements = []
-            dd_statements.append(types.DDStatement(ddName='sysin', dataset=sysin))
-            dd_statements.append(types.DDStatement(ddName='input', dataset=ds_name))
-            dd_statements.append(types.DDStatement(ddName='output', dataset=out_ds_name))
-            dd_statements.append(types.DDStatement(ddName='sysprint', dataset=sysprint))
+            dd_statements.append(types.DDStatement(ddName="sysin", dataset=sysin))
+            dd_statements.append(types.DDStatement(ddName="input", dataset=ds_name))
+            dd_statements.append(
+                types.DDStatement(ddName="output", dataset=out_ds_name)
+            )
+            dd_statements.append(types.DDStatement(ddName="sysprint", dataset=sysprint))
 
-            mvs_rc = MVSCmd.execute_authorized(pgm='idcams', args='', dds=dd_statements)
+            mvs_rc = MVSCmd.execute_authorized(pgm="idcams", args="", dds=dd_statements)
 
         except OSError as err:
             self._fail_json(msg=str(err))
@@ -334,14 +343,15 @@ class FetchHandler:
                         "Non-zero return code received while executing MVSCmd "
                         "to copy VSAM data set {0}".format(ds_name)
                     ),
-                    rc=mvs_rc
+                    rc=mvs_rc,
                 )
             self._fail_json(
                 msg=(
                     "Failed to call IDCAMS to copy VSAM data set {0} to a temporary"
                     " sequential data set".format(ds_name)
                 ),
-                stderr=str(err), rc=mvs_rc
+                stderr=str(err),
+                rc=mvs_rc,
             )
 
         finally:
@@ -357,8 +367,8 @@ class FetchHandler:
             temp_fi = dest
         else:
             fd, temp_fi = tempfile.mkstemp()
-        iconv_cmd = 'iconv -f {0} -t {1} {2} > {3}'.format(
-                    quote(from_code_set), quote(to_code_set), quote(src), quote(temp_fi)
+        iconv_cmd = "iconv -f {0} -t {1} {2} > {3}".format(
+            quote(from_code_set), quote(to_code_set), quote(src), quote(temp_fi)
         )
         self._run_command(iconv_cmd, use_unsafe_shell=True)
         if dest != temp_fi:
@@ -378,8 +388,8 @@ class FetchHandler:
         file_path = None
         if (not is_binary) and encoding:
             fd, file_path = tempfile.mkstemp()
-            from_code_set = encoding.get('from')
-            to_code_set = encoding.get('to')
+            from_code_set = encoding.get("from")
+            to_code_set = encoding.get("to")
             # enc_utils = encode_utils.EncodeUtils(self.module)
             try:
                 # enc_utils.uss_convert_encoding(src, file_path, from_code_set, to_code_set)
@@ -391,7 +401,8 @@ class FetchHandler:
                         "An error occured while converting encoding of the file "
                         "{0} from {1} to {2}"
                     ).format(src, from_code_set, to_code_set),
-                    stderr=str(err), stderr_lines=str(err).splitlines()
+                    stderr=str(err),
+                    stderr_lines=str(err).splitlines(),
                 )
             finally:
                 os.close(fd)
@@ -430,13 +441,16 @@ class FetchHandler:
                     "Error copying partitioned data set {0} to USS. Make sure it is"
                     " not empty".format(src)
                 ),
-                stdout=out, stderr=err, stdout_lines=out.splitlines(),
-                stderr_lines=err.splitlines(), rc=rc
+                stdout=out,
+                stderr=err,
+                stdout_lines=out.splitlines(),
+                stderr_lines=err.splitlines(),
+                rc=rc,
             )
         if (not is_binary) and encoding:
             # enc_utils = encode_utils.EncodeUtils(self.module)
-            from_code_set = encoding.get('from')
-            to_code_set = encoding.get('to')
+            from_code_set = encoding.get("from")
+            to_code_set = encoding.get("to")
             root, dirs, files = next(os.walk(dir_path))
             try:
                 for file in files:
@@ -454,7 +468,8 @@ class FetchHandler:
                         "An error occured while converting encoding of the member "
                         "{0} from {1} to {2}"
                     ).format(file, from_code_set, to_code_set),
-                    stderr=str(err), stderr_lines=str(err).splitlines()
+                    stderr=str(err),
+                    stderr_lines=str(err).splitlines(),
                 )
         return dir_path
 
@@ -472,16 +487,20 @@ class FetchHandler:
             os.remove(file_path)
             self._fail_json(
                 msg="Unable to copy {0} to USS".format(src),
-                stdout=str(out), stderr=str(err), rc=rc,
+                stdout=str(out),
+                stderr=str(err),
+                rc=rc,
                 stdout_lines=str(out).splitlines(),
-                stderr_lines=str(err).splitlines()
+                stderr_lines=str(err).splitlines(),
             )
         if (not is_binary) and encoding:
             # enc_utils = encode_utils.EncodeUtils(self.module)
-            from_code_set = encoding.get('from')
-            to_code_set = encoding.get('to')
+            from_code_set = encoding.get("from")
+            to_code_set = encoding.get("to")
             try:
-                self._uss_convert_encoding(file_path, file_path, from_code_set, to_code_set)
+                self._uss_convert_encoding(
+                    file_path, file_path, from_code_set, to_code_set
+                )
                 # enc_utils.uss_convert_encoding(
                 #     file_path, file_path, from_code_set, to_code_set
                 # )
@@ -492,7 +511,8 @@ class FetchHandler:
                         "An error occured while converting encoding of the data set"
                         " {0} from {1} to {2}"
                     ).format(src, from_code_set, to_code_set),
-                    stderr=str(err), stderr_lines=str(err).splitlines()
+                    stderr=str(err),
+                    stderr_lines=str(err).splitlines(),
                 )
         return file_path
 
@@ -503,42 +523,46 @@ def run_module():
     # ********************************************************** #
     module = AnsibleModule(
         argument_spec=dict(
-            src=dict(required=True, type='str'),
-            dest=dict(required=True, type='path'),
-            fail_on_missing=dict(required=False, default=True, type='bool'),
-            flat=dict(required=False, default=True, type='bool'),
-            is_binary=dict(required=False, default=False, type='bool'),
-            use_qualifier=dict(required=False, default=False, type='bool'),
-            validate_checksum=dict(required=False, default=True, type='bool'),
-            encoding=dict(required=False, type='dict')
+            src=dict(required=True, type="str"),
+            dest=dict(required=True, type="path"),
+            fail_on_missing=dict(required=False, default=True, type="bool"),
+            flat=dict(required=False, default=True, type="bool"),
+            is_binary=dict(required=False, default=False, type="bool"),
+            use_qualifier=dict(required=False, default=False, type="bool"),
+            validate_checksum=dict(required=False, default=True, type="bool"),
+            encoding=dict(required=False, type="dict"),
         )
     )
 
     src = module.params.get("src")
     if module.params.get("use_qualifier"):
-        module.params['src'] = Datasets.hlq() + "." + src
+        module.params["src"] = Datasets.hlq() + "." + src
 
     # ********************************************************** #
     #                   Verify paramater validity                #
     # ********************************************************** #
 
     arg_def = dict(
-        src=dict(arg_type='data_set_or_path', required=True),
-        dest=dict(arg_type='path', required=True),
-        fail_on_missing=dict(arg_type='bool', required=False, default=True),
-        is_binary=dict(arg_type='bool', required=False, default=False),
-        use_qualifier=dict(arg_type='bool', required=False, default=False)
+        src=dict(arg_type="data_set_or_path", required=True),
+        dest=dict(arg_type="path", required=True),
+        fail_on_missing=dict(arg_type="bool", required=False, default=True),
+        is_binary=dict(arg_type="bool", required=False, default=False),
+        use_qualifier=dict(arg_type="bool", required=False, default=False),
     )
 
     if module.params.get("encoding"):
-        module.params.update(dict(
-            from_encoding=module.params.get('encoding').get('from'),
-            to_encoding=module.params.get('encoding').get('to'))
+        module.params.update(
+            dict(
+                from_encoding=module.params.get("encoding").get("from"),
+                to_encoding=module.params.get("encoding").get("to"),
+            )
         )
-        arg_def.update(dict(
-            from_encoding=dict(arg_type='encoding'),
-            to_encoding=dict(arg_type='encoding')
-        ))
+        arg_def.update(
+            dict(
+                from_encoding=dict(arg_type="encoding"),
+                to_encoding=dict(arg_type="encoding"),
+            )
+        )
 
     fetch_handler = FetchHandler(module)
 
@@ -546,23 +570,21 @@ def run_module():
         parser = better_arg_parser.BetterArgParser(arg_def)
         parsed_args = parser.parse_args(module.params)
     except ValueError as err:
-        module.fail_json(
-            msg="Parameter verification failed", stderr=str(err)
-        )
-    src = parsed_args.get('src')
+        module.fail_json(msg="Parameter verification failed", stderr=str(err))
+    src = parsed_args.get("src")
     b_src = to_bytes(src)
-    fail_on_missing = boolean(parsed_args.get('fail_on_missing'))
-    use_qualifier = boolean(parsed_args.get('use_qualifier'))
-    is_binary = boolean(parsed_args.get('is_binary'))
-    encoding = module.params.get('encoding')
+    fail_on_missing = boolean(parsed_args.get("fail_on_missing"))
+    use_qualifier = boolean(parsed_args.get("use_qualifier"))
+    is_binary = boolean(parsed_args.get("is_binary"))
+    encoding = module.params.get("encoding")
 
     # ********************************************************** #
     #  Check for data set existence and determine its type       #
     # ********************************************************** #
 
     res_args = dict()
-    _fetch_member = '(' in src and src.endswith(')')
-    ds_name = src if not _fetch_member else src[:src.find('(')]
+    _fetch_member = "(" in src and src.endswith(")")
+    ds_name = src if not _fetch_member else src[: src.find("(")]
     try:
         ds_utils = data_set_utils.DataSetUtils(module, ds_name)
         if not ds_utils.data_set_exists():
@@ -574,24 +596,24 @@ def run_module():
                     )
                 )
             module.exit_json(
-                note=(
-                    "Source '{0}' was not found. No data was fetched".format(ds_name)
-                )
+                note=("Source '{0}' was not found. No data was fetched".format(ds_name))
             )
         ds_type = ds_utils.get_data_set_type()
         if not ds_type:
             module.fail_json(msg="Unable to determine data set type")
 
     except Exception as err:
-        module.fail_json(msg="Error while gathering data set information", stderr=str(err))
+        module.fail_json(
+            msg="Error while gathering data set information", stderr=str(err)
+        )
 
     # ********************************************************** #
     #                  Fetch a sequential data set               #
     # ********************************************************** #
 
-    if ds_type == 'PS':
+    if ds_type == "PS":
         file_path = fetch_handler._fetch_mvs_data(src, is_binary, encoding)
-        res_args['remote_path'] = file_path
+        res_args["remote_path"] = file_path
 
     # ********************************************************** #
     #    Fetch a partitioned data set or one of its members      #
@@ -599,7 +621,7 @@ def run_module():
 
     elif ds_type == "PO":
         if _fetch_member:
-            member_name = src[src.find('(') + 1:src.find(')')]
+            member_name = src[src.find("(") + 1 : src.find(")")]
             if not ds_utils.data_set_member_exists(member_name):
                 module.fail_json(
                     msg=(
@@ -608,32 +630,34 @@ def run_module():
                     ).format(member_name, ds_name)
                 )
             file_path = fetch_handler._fetch_mvs_data(src, is_binary, encoding)
-            res_args['remote_path'] = file_path
+            res_args["remote_path"] = file_path
         else:
-            res_args['remote_path'] = fetch_handler._fetch_pdse(src, is_binary, encoding)
+            res_args["remote_path"] = fetch_handler._fetch_pdse(
+                src, is_binary, encoding
+            )
 
     # ********************************************************** #
     #                  Fetch a USS file                          #
     # ********************************************************** #
 
-    elif ds_type == 'USS':
+    elif ds_type == "USS":
         if not os.access(b_src, os.R_OK):
             module.fail_json(
                 msg="File '{0}' does not have appropriate read permission".format(src)
             )
         file_path = fetch_handler._fetch_uss_file(src, is_binary, encoding)
-        res_args['remote_path'] = file_path
+        res_args["remote_path"] = file_path
 
     # ********************************************************** #
     #                  Fetch a VSAM data set                     #
     # ********************************************************** #
 
-    elif ds_type == 'VSAM':
+    elif ds_type == "VSAM":
         file_path = fetch_handler._fetch_vsam(src, is_binary, encoding)
-        res_args['remote_path'] = file_path
+        res_args["remote_path"] = file_path
 
-    res_args['file'] = ds_name
-    res_args['ds_type'] = ds_type
+    res_args["file"] = ds_name
+    res_args["ds_type"] = ds_type
     module.exit_json(**res_args)
 
 
@@ -641,5 +665,5 @@ def main():
     run_module()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

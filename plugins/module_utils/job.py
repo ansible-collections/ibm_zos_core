@@ -13,19 +13,17 @@ import re
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,
 )
+from ansible.module_utils.basic import AnsibleModule
 
 
-def job_output(module, job_id=None, owner=None, job_name=None, dd_name=None):
+def job_output(job_id=None, owner=None, job_name=None, dd_name=None):
     """Get the output from a z/OS job based on various search criteria.
 
-    Arguments:
-        module {AnsibleModule} -- The AnsibleModule object from the running module.
-
     Keyword Arguments:
-        job_id {str} -- The job ID to search for (default: {''})
-        owner {str} -- The owner of the job (default: {''})
-        job_name {str} -- The job name search for (default: {''})
-        dd_name {str} -- The data definition to retrieve (default: {''})
+        job_id {str} -- The job ID to search for (default: {None})
+        owner {str} -- The owner of the job (default: {None})
+        job_name {str} -- The job name search for (default: {None})
+        dd_name {str} -- The data definition to retrieve (default: {None})
 
     Raises:
         RuntimeError: When job output cannot be retrieved successfully but job exists.
@@ -34,7 +32,7 @@ def job_output(module, job_id=None, owner=None, job_name=None, dd_name=None):
     Returns:
         dict[str, list[dict]] -- The output information for a given job.
     """
-
+    module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
     arg_defs = dict(
         job_id=dict(arg_type="qualifier_pattern"),
         owner=dict(arg_type="qualifier_pattern"),
@@ -50,10 +48,10 @@ def job_output(module, job_id=None, owner=None, job_name=None, dd_name=None):
     job_id = parsed_args.get("job_id") or ""
     job_name = parsed_args.get("job_name") or ""
     owner = parsed_args.get("owner") or ""
-    ddname = parsed_args.get("ddname") or ""
+    dd_name = parsed_args.get("ddname") or ""
 
     job_detail_json = {}
-    rc, out, err = _get_job_json_str(module, job_id, owner, job_name, dd_name)
+    rc, out, err = _get_job_output_str(job_id, owner, job_name, dd_name)
     if rc != 0:
         raise RuntimeError(
             "Failed to retrieve job output. RC: {0} Error: {1}".format(
@@ -66,21 +64,20 @@ def job_output(module, job_id=None, owner=None, job_name=None, dd_name=None):
     for job in job_detail_json.get("jobs"):
         job["ret_code"] = {} if job.get("ret_code") is None else job.get("ret_code")
         job["ret_code"]["code"] = _get_return_code_num(
-            job.get("ret_code", {}).get("msg", "")
+            job.get("ret_code").get("msg", "")
         )
         job["ret_code"]["msg_code"] = _get_return_code_str(
-            job.get("ret_code", {}).get("msg", "")
+            job.get("ret_code").get("msg", "")
         )
         job["ret_code"]["msg_txt"] = ""
+        if job.get("ret_code").get("msg", "") == "":
+            job["ret_code"]["msg"] = "AC"
     return job_detail_json
 
 
-def _get_job_json_str(module, job_id="", owner="", job_name="", dd_name=""):
+def _get_job_output_str(job_id="", owner="", job_name="", dd_name=""):
     """Generate JSON output string containing Job info from SDSF.
     Writes a temporary REXX script to the USS filesystem to gather output.
-
-    Arguments:
-        module {AnsibleModule} -- The AnsibleModule object from the running module.
 
     Keyword Arguments:
         job_id {str} -- The job ID to search for (default: {''})
@@ -203,7 +200,7 @@ Parse Arg string
 Return translate(string, '4040'x, '1525'x)
 """
     try:
-
+        module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
         if dd_name is None or dd_name == "?":
             dd_name = ""
         jobid_param = "jobid=" + job_id
@@ -216,6 +213,159 @@ Return translate(string, '4040'x, '1525'x)
             f.write(get_job_detail_json_rexx)
         chmod(tmp.name, S_IEXEC | S_IREAD | S_IWRITE)
         args = [jobid_param, owner_param, jobname_param, ddname_param]
+
+        cmd = [tmp.name, " ".join(args)]
+        rc, out, err = module.run_command(args=cmd)
+    except Exception:
+        raise
+    return rc, out, err
+
+
+def job_status(job_id=None, owner=None, job_name=None):
+    """Get the status information of a z/OS job based on various search criteria.
+
+    Keyword Arguments:
+        job_id {str} -- The job ID to search for (default: {None})
+        owner {str} -- The owner of the job (default: {None})
+        job_name {str} -- The job name search for (default: {None})
+
+    Raises:
+        RuntimeError: When job status cannot be retrieved successfully but job exists.
+        RuntimeError: When no job status is found.
+
+    Returns:
+        list[dict] -- The status information for a given job.
+    """
+    arg_defs = dict(
+        job_id=dict(arg_type="qualifier_pattern"),
+        owner=dict(arg_type="qualifier_pattern"),
+        job_name=dict(arg_type="qualifier_pattern"),
+    )
+
+    parser = BetterArgParser(arg_defs)
+    parsed_args = parser.parse_args(
+        {"job_id": job_id, "owner": owner, "job_name": job_name}
+    )
+
+    job_id = parsed_args.get("job_id") or ""
+    job_name = parsed_args.get("job_name") or ""
+    owner = parsed_args.get("owner") or ""
+
+    job_status_json = {}
+    rc, out, err = _get_job_status_str(job_id, owner, job_name)
+    if rc != 0:
+        raise RuntimeError(
+            "Failed to retrieve job status. RC: {0} Error: {1}".format(
+                str(rc), str(err)
+            )
+        )
+    if not out:
+        raise RuntimeError("Failed to retrieve job status. No job status found.")
+    job_status_json = json.loads(out, strict=False)
+    for job in job_status_json:
+        job["ret_code"] = {} if job.get("ret_code") is None else job.get("ret_code")
+        job["ret_code"]["code"] = _get_return_code_num(
+            job.get("ret_code").get("msg", "")
+        )
+        job["ret_code"]["msg_code"] = _get_return_code_str(
+            job.get("ret_code").get("msg", "")
+        )
+        job["ret_code"]["msg_txt"] = ""
+        if job.get("ret_code").get("msg", "") == "":
+            job["ret_code"]["msg"] = "AC"
+    return job_status_json
+
+
+def _get_job_status_str(job_id="", owner="", job_name=""):
+    """Generate JSON output string containing Job status info from SDSF.
+    Writes a temporary REXX script to the USS filesystem to gather output.
+
+    Keyword Arguments:
+        job_id {str} -- The job ID to search for (default: {''})
+        owner {str} -- The owner of the job (default: {''})
+        job_name {str} -- The job name search for (default: {''})
+
+    Returns:
+        tuple[int, str, str] -- RC, STDOUT, and STDERR from the REXX script.
+    """
+    get_job_status_json_rexx = """/* REXX */
+arg options
+parse var options param
+upper param
+parse var param 'JOBID=' jobid ' OWNER=' owner,
+' JOBNAME=' jobname
+
+rc=isfcalls('ON')
+
+jobid = strip(jobid,'L')
+if (jobid <> '') then do
+ISFFILTER='JobID EQ '||jobid
+end
+owner = strip(owner,'L')
+if (owner <> '') then do
+ISFOWNER=owner
+end
+jobname = strip(jobname,'L')
+if (jobname <> '') then do
+ISFPREFIX=jobname
+end
+
+Address SDSF "ISFEXEC ST (ALTERNATE DELAYED)"
+if rc<>0 then do
+Say '[]'
+Exit 0
+end
+if isfrows == 0 then do
+Say '[]'
+end
+else do
+Say '['
+do ix=1 to isfrows
+    linecount = 0
+    if ix<>1 then do
+    Say ','
+    end
+    Say '{'
+    Say '"'||'job_id'||'":"'||value('JOBID'||"."||ix)||'",'
+    Say '"'||'job_name'||'":"'||value('JNAME'||"."||ix)||'",'
+    Say '"'||'subsystem'||'":"'||value('ESYSID'||"."||ix)||'",'
+    Say '"'||'owner'||'":"'||value('OWNERID'||"."||ix)||'",'
+    Say '"'||'ret_code'||'":{"'||'msg'||'":"'||value('RETCODE'||"."||ix)||'"},'
+    Say '"'||'class'||'":"'||value('JCLASS'||"."||ix)||'",'
+    Say '"'||'content_type'||'":"'||value('JTYPE'||"."||ix)||'"'
+    Say '}'
+end
+Say ']'
+end
+
+rc=isfcalls('OFF')
+
+return 0
+
+escapeDoubleQuote: Procedure
+Parse Arg string
+out=''
+Do While Pos('"',string)<>0
+Parse Var string prefix '"' string
+out=out||prefix||'\\"'
+End
+Return out||string
+
+escapeNewLine: Procedure
+Parse Arg string
+Return translate(string, '4040'x, '1525'x)
+"""
+    try:
+        module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+        jobid_param = "jobid=" + job_id
+        owner_param = "owner=" + owner
+        jobname_param = "jobname=" + job_name
+
+        tmp = NamedTemporaryFile(delete=True)
+        with open(tmp.name, "w") as f:
+            f.write(get_job_status_json_rexx)
+        chmod(tmp.name, S_IEXEC | S_IREAD | S_IWRITE)
+        args = [jobid_param, owner_param, jobname_param]
 
         cmd = [tmp.name, " ".join(args)]
         rc, out, err = module.run_command(args=cmd)

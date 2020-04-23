@@ -1,7 +1,7 @@
 # Copyright (c) IBM Corporation 2019, 2020
 # Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
@@ -47,6 +47,7 @@ def ansible_zos_module(request, z_python_interpreter):
         host.vars["ansible_python_interpreter"] = interpreter
         host.vars["ansible_connection"] = "zos_ssh"
     yield adhoc
+    adhoc.all.command(cmd="opercmd '$PJ(*)'")
 
 
 # * We no longer edit sys.modules directly to add zoautil_py mock

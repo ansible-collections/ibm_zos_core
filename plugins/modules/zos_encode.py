@@ -61,9 +61,9 @@ options:
           to_encoding.
         - If length of the file name in src is more the 8 characters, name
           will be truncated when converting to a PDS.
-        - If src is a USS file, PS, VSAM or PDS/E member, a file will be 
+        - If src is a USS file, PS, VSAM or PDS/E member, a file will be
           created for the dest when no dest specified.
-        - If src is a USS path, PDS/E, a path will be created for the dest 
+        - If src is a USS path, PDS/E, a path will be created for the dest
           when no dest specified.
         - The USS path or file must be an absolute pathname.
     required: false

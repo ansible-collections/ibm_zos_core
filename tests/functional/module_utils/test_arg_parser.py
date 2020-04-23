@@ -617,3 +617,63 @@ def test_custom_defined_values_second_level():
         }
     )
     assert result.get("person").get("name") == "john"
+
+
+@pytest.mark.parametrize(
+    ("arg_type", "name"),
+    [
+        ("data_set", "easy.data.set"),
+        ("data_set", "$asy.d@ta.$et"),
+        ("data_set", "easy.dat@.s$t"),
+        ("data_set", "e##@y.dat#@.set(h$ll0)"),
+        ("data_set", "easy.da-a.set(######)"),
+        ("data_set_base", "easy.data.set"),
+        ("data_set_base", "$asy.d@ta.$et"),
+        ("data_set_base", "easy.dat@.s$t"),
+        ("data_set_member", "e##@y.dat#@.set(h$ll0)"),
+        ("data_set_member", "ea-y.data.set(######)"),
+        ("data_set_or_path", "easy.data.set"),
+        ("data_set_or_path", "$asy.d@ta.$et"),
+        ("data_set_or_path", "easy.dat@.s$t"),
+        ("data_set_or_path", "e##@y.d-t#@.s-t(h$ll0)"),
+        ("data_set_or_path", "easy.data.set(######)"),
+        ("data_set_or_path", "e##@y.dat#@.set(hello)"),
+        ("data_set_or_path", "easy.data.set(helloo)"),
+        ("data_set_or_path", "/usr/lpp/rsusr"),
+    ],
+)
+def test_data_set_type_no_invalid(arg_type, name):
+    arg_defs = dict(dsname=dict(arg_type=arg_type))
+    parser = BetterArgParser(arg_defs)
+    result = parser.parse_args({"dsname": name})
+    assert result.get("dsname") == name
+
+
+@pytest.mark.parametrize(
+    ("arg_type", "name"),
+    [
+        ("data_set", "easy.data.set(helloworld)"),
+        ("data_set", "$asy.d@ta.$et(--helo)"),
+        ("data_set", "easy.dat@.s$t(@$%@)"),
+        ("data_set", "$asy.d@ta.$et(0helo)"),
+        ("data_set", "-##@y.dat#@.set(h$ll0)"),
+        ("data_set", "1asy.da-a.set(######)"),
+        ("data_set_base", "-asy.data.set"),
+        ("data_set_base", "$asy.d@ta.$etdafsfsdfad"),
+        ("data_set_member", "e##@y.dat#@.set(h$l-l0)"),
+        ("data_set_member", "ea-y.data.set(#########)"),
+        ("data_set_or_path", "easy.data.seeeeeeeeeet"),
+        ("data_set_or_path", "-asy.d@ta.$et"),
+        ("data_set_or_path", "easy.dat@.s$t(-)"),
+        ("data_set_or_path", "e##@y.d-t#@.s-t(h$dddll00)"),
+        ("data_set_or_path", "3asy.data.set(######)"),
+        ("data_set_or_path", "e#^#@y.dat#@.set(hello)"),
+        ("data_set_or_path", "easy.5at@@a.set(helloo)"),
+        ("data_set_or_path", "../lpp/rsusr"),
+    ],
+)
+def test_data_set_type_invalid(arg_type, name):
+    arg_defs = dict(dsname=dict(arg_type=arg_type))
+    parser = BetterArgParser(arg_defs)
+    with pytest.raises(ValueError):
+        parser.parse_args({"dsname": name})

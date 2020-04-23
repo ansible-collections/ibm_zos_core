@@ -168,7 +168,6 @@ actions:
 
 from ansible.module_utils.basic import AnsibleModule
 import re
-from traceback import format_exc
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,
 )
@@ -199,11 +198,10 @@ def run_module():
         if requests:
             result["count"] = len(requests)
     except Error as e:
-        module.fail_json(msg=e.msg, **result)
+        module.fail_json(msg=repr(e), **result)
     except Exception as e:
-        trace = format_exc()
         module.fail_json(
-            msg="An unexpected error occurred: {0}".format(trace), **result
+            msg="An unexpected error occurred: {0}".format(repr(e)), **result
         )
 
     result["actions"] = requests
@@ -252,11 +250,6 @@ def find_required_request(params):
     """Find the request given the options provided."""
     merged_list = create_merge_list()
     requests = filter_requests(merged_list, params)
-    if requests:
-        pass
-    else:
-        message = "There is no such request given the condition, check your command or update your options."
-        raise OperatorCmdError(message)
     return requests
 
 

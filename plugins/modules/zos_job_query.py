@@ -14,7 +14,7 @@ ANSIBLE_METADATA = {
     "supported_by": "community",
 }
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: zos_job_query
 short_description: Query job status
@@ -44,9 +44,9 @@ options:
         with STC, JOB, TSU and are followed by 5 digits.
     type: str
     required: False
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 - name: list zos jobs with a jobname 'IYK3ZNA1'
   zos_job_query:
     job_name: "IYK3ZNA1"
@@ -64,9 +64,9 @@ EXAMPLES = r'''
   zos_job_query:
     job_name: IYK3ZNA*
     owner: BROWNAD
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 changed:
   description:
      True if the state was changed, otherwise False.
@@ -134,12 +134,15 @@ message:
   returned: failure
   sample:
      msg: "List FAILED! no such job been found: IYK3Z0R9"
-'''
+"""
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
+    MissingZOAUImport,
+)
 
 try:
     from zoautil_py import Jobs
 except Exception:
-    Jobs = ""
+    Jobs = MissingZOAUImport()
 from ansible.module_utils.basic import AnsibleModule
 import re
 from time import sleep

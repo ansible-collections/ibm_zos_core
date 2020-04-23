@@ -39,7 +39,8 @@ def _update_result(is_binary, **copy_res):
         data_set_type=data_set_types[ds_type],
         is_binary=is_binary,
         checksum=copy_res.get("checksum"),
-        size=copy_res.get("size")
+        size=copy_res.get("size"),
+        changed=copy_res.get("changed")
     )
     if ds_type == "USS":
         updated_result.update(
@@ -52,6 +53,8 @@ def _update_result(is_binary, **copy_res):
                 state=copy_res.get("state")
             )
         )
+    if copy_res.get("backup_file"):
+        updated_result['backup_file'] = copy_res.get("backup_file")
     return updated_result
 
 
@@ -216,6 +219,7 @@ class ActionModule(ActionBase):
         except Exception as err:
             self._remote_cleanup(dest, copy_res.get("dest_exists"), task_vars)
             result['msg'] = str(err)
+            result['failed'] = True
             return result
         return result
 
@@ -252,7 +256,7 @@ class ActionModule(ActionBase):
             else:
                 module_args = dict(name=dest, state='absent')
                 if dest.endswith(')'):
-                    module_args.update(dict(type='MEMBER'))
+                    module_args['type'] = "MEMBER"
                 self._execute_module(
                     module_name='zos_data_set',
                     module_args=module_args,

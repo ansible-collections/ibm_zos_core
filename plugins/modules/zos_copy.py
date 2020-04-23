@@ -64,11 +64,12 @@ options:
   backup:
     description:
     - Determine whether a backup should be created.
-    - When set to C(true), create a backup file including the timestamp 
-      information so you can get the original file back if you somehow 
-      clobbered it incorrectly.
+    - When set to C(true), the module creates a backup file including the 
+      timestamp information.
     - No backup is taken when I(remote_src=False) and multiple files are being
       copied.
+    - For USS files the backup is located in the same directory as C(dest) with
+      the format C(/path/to/dest/dir/YYYY-MM-DD-HH-MM-filename)
     type: bool
     default: false
     required: false
@@ -272,7 +273,7 @@ backup_file:
     description: Name of the backup file or data set that was created.
     returned: changed and if backup=true
     type: str
-    sample: 11540.20150212-220915.bak
+    sample: /u/omvsadm/2020-04-22-06-24-testfile.txt
 data_set_type:
     description: Destination file or data set type.
     returned: success
@@ -348,6 +349,7 @@ rc:
 import os
 import tempfile
 import math
+import time
 
 from pathlib import Path
 from shlex import quote
@@ -451,7 +453,16 @@ class CopyHandler(object):
             if Datasets.exists(temp_ds_name):
                 Datasets.delete(temp_ds_name)
     
-    def _copy_to_uss(self, src, temp_path, dest, encoding, is_binary=False, remote_src=False):
+    def _copy_to_uss(
+        self, src, temp_path, dest, encoding, is_binary=False, remote_src=False, backup=False
+    ):
+        backup_path = None
+        if backup:
+            current_time = time.strftime("%Y-%m-%d-%I-%M", time.localtime())
+            backup_file = "{0}-{1}".format(current_time, os.path.basename(dest))
+            backup_path = os.path.join(os.path.dirname(dest), backup_file)
+            copy(dest, backup_path)
+
         if remote_src:
             try:
                 copy(src, dest)
@@ -467,6 +478,7 @@ class CopyHandler(object):
                 to_code_set = encoding.get("to")
                 self._uss_convert_encoding(temp_path, temp_path, from_code_set, to_code_set)
             move(temp_path, dest)
+        return backup_path
 
     def _copy_to_seq(
         self, src, dest, data, validate=True, local_checksum=None, src_ds_type=None
@@ -586,7 +598,16 @@ def _get_file_checksum(src):
     return hash_digest.hexdigest()
 
 
-def main():
+def _get_updated_dest_type(module, dest):
+    try:
+        dest_ds_utils = data_set_utils.DataSetUtils(module, dest)
+        dest_ds_type = dest_ds_utils.get_data_set_type()
+    except Exception as err:
+        module.fail_json(msg=str(err))
+    return dest_ds_type
+
+
+def run_module():
     module = AnsibleModule(
         argument_spec=dict(
             src=dict(required=True, type='str'),
@@ -653,6 +674,7 @@ def main():
     content = parsed_args.get('content')
     validate = parsed_args.get('validate')
     force = parsed_args.get('force')
+    backup = parsed_args.get('backup')
     encoding = module.params.get('encoding')
     _is_uss = module.params.get('is_uss')
     _is_pds = module.params.get('is_pds')
@@ -662,14 +684,18 @@ def main():
     _copy_member = module.params.get('copy_member')
 
     changed = False
+    backup_path = None
     res_args = dict()
     
     try:
-        dest_ds_utils = data_set_utils.DataSetUtils(dest)
+        dest_ds_utils = data_set_utils.DataSetUtils(module, dest)
         dest_exists = dest_ds_utils.data_set_exists()
         dest_ds_type = dest_ds_utils.get_data_set_type()
     except Exception as err:
         module.fail_json(msg=str(err))
+
+    if backup and not dest_exists:
+        module.fail_json(msg="Destination does not exist, no data to be backed up")
     
     copy_handler = CopyHandler(module)
     try:
@@ -682,8 +708,9 @@ def main():
             except Exception as err:
                 module.fail_json(msg="Unable to calculate checksum", stderr=str(err))
             
-            copy_handler._copy_to_uss(
-                src, _temp_path, dest, encoding, is_binary=is_binary, remote_src=remote_src
+            backup_path = copy_handler._copy_to_uss(
+                src, _temp_path, dest, encoding, is_binary=is_binary, 
+                remote_src=remote_src, backup=backup
             )
             res_args['changed'] = remote_checksum != dest_checksum
             res_args['checksum'] = remote_checksum
@@ -691,7 +718,7 @@ def main():
 
         elif remote_src:
             try:
-                src_ds_utils = data_set_utils.DataSetUtils(src)
+                src_ds_utils = data_set_utils.DataSetUtils(module, src)
                 src_ds_type = src_ds_utils.get_data_set_type()
             except Exception as err:
                 module.fail_json(msg=str(err))
@@ -758,12 +785,19 @@ def main():
         dict(
             src=src,
             dest=dest,
-            changed=changed,
-            ds_type = dest_ds_type,
+            ds_type = _get_updated_dest_type(module, dest),
             dest_exists=dest_exists
         )  
     )
+  
+    if backup_path:
+        res_args['backup_file'] = backup_path
+
     module.exit_json(**res_args)
+
+
+def main():
+    run_module()
 
 
 if __name__ == '__main__':

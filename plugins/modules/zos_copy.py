@@ -388,59 +388,10 @@ class CopyHandler(object):
         """ Wrapper for AnsibleModule.run_command """
         return self.module.run_command(cmd, **kwargs)
 
-    def _run_mvs_command(self, pgm, cmd, dd=None, authorized=False):
-        sysprint = "sysprint"
-        sysin = "sysin"
-        pgm = pgm.upper()
-        if pgm == "IKJEFT01":
-            sysprint = "systsprt"
-            sysin = "systsin"
-
-        mvs_cmd = "mvscmd"
-        if authorized:
-            mvs_cmd += "auth"
-        mvs_cmd += " --pgm={0} --{1}=* --{2}=stdin"
-        if dd:
-            for k, v in dd.items():
-                mvs_cmd += " --{0}={1}".format(k, v)
-        
-        rc, out, err = self._run_command(
-            mvs_cmd.format(pgm, sysprint, sysin), data=cmd
-        )
-        if rc != 0:
-            self._fail_json(
-                msg="Non-zero return code received while executing mvscmd",
-                stdout=out,
-                stderr=err,
-                ret_code=rc
-            )
-        return out
-
-    def _allocate_vsam(self, ds_name, size):
-        volume = "000000"
-        max_size = 16777215
-        allocation_size = math.ceil(size/1048576)
-        
-        if allocation_size > max_size:
-            msg = ("Size of data exceeds maximum allowed allocation size for VSAM."
-                "Maximum size allowed: {0} Megabytes, given data size: {1}"
-                " Megabytes".format(max_size, allocation_size))
-            self._fail_json(msg=msg)
-    
-        define_sysin = ''' DEFINE CLUSTER (NAME({0})  -
-                            VOLUMES({1})) -                           
-                            DATA (NAME({0}.DATA) -
-                            MEGABYTES({2}, 5)) -
-                            INDEX (NAME({0}.INDEX)) '''.format(
-                                ds_name, volume, allocation_size
-                            )
-
-        try:
-            sysprint = self._run_mvs_command("IDCAMS", define_sysin)
-        except Exception as err:
-            self._fail_json(msg="Failed to call IDCAMS to allocate VSAM data set")
-
-    def _copy_to_ds(self, ds_name, size=None, content=None, remote_src=False, src_ds=None):
+    def copy_to_ds(
+        self, ds_name, size=None, content=None, 
+        remote_src=False, src_ds=None
+    ):
         if not remote_src:
             temp_ds_name = data_set_utils.DataSetUtils.create_temp_data_set(
                 "TEMP", size=str(size)
@@ -453,8 +404,9 @@ class CopyHandler(object):
             if Datasets.exists(temp_ds_name):
                 Datasets.delete(temp_ds_name)
     
-    def _copy_to_uss(
-        self, src, temp_path, dest, encoding, is_binary=False, remote_src=False, backup=False
+    def copy_to_uss(
+        self, src, temp_path, dest, encoding, is_binary=False, 
+        remote_src=False, backup=False
     ):
         backup_path = None
         if backup:
@@ -472,15 +424,17 @@ class CopyHandler(object):
                     stderr=str(err)
                 )
         else:
-            if (not is_binary) and encoding:
-                # Convert encoding of the source file
+            if encoding:
+                # Convert encoding of the source file or content
                 from_code_set = encoding.get("from")
                 to_code_set = encoding.get("to")
-                self._uss_convert_encoding(temp_path, temp_path, from_code_set, to_code_set)
+                self._uss_convert_encoding(
+                    temp_path, temp_path, from_code_set, to_code_set
+                )
             move(temp_path, dest)
         return backup_path
 
-    def _copy_to_seq(
+    def copy_to_seq(
         self, src, dest, data, validate=True, local_checksum=None, src_ds_type=None
     ):
         remote_checksum = _get_mvs_checksum(dest)
@@ -501,7 +455,7 @@ class CopyHandler(object):
                     changed=changed
                 )
 
-    def _copy_remote_pdse(self, src_ds, dest, copy_member=False):
+    def copy_remote_pdse(self, src_ds, dest, copy_member=False):
         if copy_member:
             rc, out, err = self._run_command(
                 "cp \"//{}\" \"//{}\"".format(src_ds, dest)
@@ -558,6 +512,58 @@ class CopyHandler(object):
             # Destination is a VSAM data set
             pass
 
+    def _run_mvs_command(self, pgm, cmd, dd=None, authorized=False):
+        sysprint = "sysprint"
+        sysin = "sysin"
+        pgm = pgm.upper()
+        if pgm == "IKJEFT01":
+            sysprint = "systsprt"
+            sysin = "systsin"
+
+        mvs_cmd = "mvscmd"
+        if authorized:
+            mvs_cmd += "auth"
+        mvs_cmd += " --pgm={0} --{1}=* --{2}=stdin"
+        if dd:
+            for k, v in dd.items():
+                mvs_cmd += " --{0}={1}".format(k, v)
+        
+        rc, out, err = self._run_command(
+            mvs_cmd.format(pgm, sysprint, sysin), data=cmd
+        )
+        if rc != 0:
+            self._fail_json(
+                msg="Non-zero return code received while executing mvscmd",
+                stdout=out,
+                stderr=err,
+                ret_code=rc
+            )
+        return out
+
+    def _allocate_vsam(self, ds_name, size):
+        volume = "000000"
+        max_size = 16777215
+        allocation_size = math.ceil(size/1048576)
+        
+        if allocation_size > max_size:
+            msg = ("Size of data exceeds maximum allowed allocation size for VSAM."
+                "Maximum size allowed: {0} Megabytes, given data size: {1}"
+                " Megabytes".format(max_size, allocation_size))
+            self._fail_json(msg=msg)
+    
+        define_sysin = ''' DEFINE CLUSTER (NAME({0})  -
+                            VOLUMES({1})) -                           
+                            DATA (NAME({0}.DATA) -
+                            MEGABYTES({2}, 5)) -
+                            INDEX (NAME({0}.INDEX)) '''.format(
+                                ds_name, volume, allocation_size
+                            )
+
+        try:
+            sysprint = self._run_mvs_command("IDCAMS", define_sysin)
+        except Exception as err:
+            self._fail_json(msg="Failed to call IDCAMS to allocate VSAM data set")
+
     def _uss_convert_encoding(self, src, dest, from_code_set, to_code_set):
         """ Convert the encoding of the data in a USS file """
         temp_fo = None
@@ -566,7 +572,7 @@ class CopyHandler(object):
         else:
             fd, temp_fi = tempfile.mkstemp()
         iconv_cmd = 'iconv -f {0} -t {1} {2} > {3}'.format(
-                    quote(from_code_set), quote(to_code_set), quote(src), quote(temp_fi)
+            quote(from_code_set), quote(to_code_set), quote(src), quote(temp_fi)
         )
         self._run_command(iconv_cmd, use_unsafe_shell=True)
         if dest != temp_fi:
@@ -578,6 +584,13 @@ class CopyHandler(object):
                 os.close(fd)
                 if os.path.exists(temp_fi):
                     os.remove(temp_fi)
+
+    def _string_convert_encoding(self, content, from_code_set, to_code_set):
+        iconv_cmd = 'printf {0} | iconv -f {1} -t {2}'.format(
+            quote(content), quote(from_code_set), quote(to_code_set)
+        )
+        rc, out, err = self._run_command(iconv_cmd, use_unsafe_shell=True)
+        return out
             
 
 def _get_file_checksum(src):
@@ -610,7 +623,7 @@ def _get_updated_dest_type(module, dest):
 def run_module():
     module = AnsibleModule(
         argument_spec=dict(
-            src=dict(required=True, type='str'),
+            src=dict(type='str'),
             dest=dict(required=True, type='str'),
             use_qualifier=dict(type='bool', default=False), 
             is_binary=dict(type='bool', default=False),
@@ -632,7 +645,7 @@ def run_module():
     )
 
     arg_def = dict(
-        src=dict(arg_type='path', required=True),
+        src=dict(arg_type='path', required=False),
         dest=dict(arg_type='data_set_or_path', required=True),
         is_binary=dict(arg_type='bool', required=False, default=False),
         use_qualifier=dict(arg_type='bool', required=False, default=False),
@@ -696,8 +709,21 @@ def run_module():
 
     if backup and not dest_exists:
         module.fail_json(msg="Destination does not exist, no data to be backed up")
-    
+
     copy_handler = CopyHandler(module)
+    if not dest_exists:
+        d_blocks = None
+        if _is_pds:
+            dest_ds_type = "PDSE"
+            d_blocks = math.ceil(_num_files/6)
+        elif is_vsam:
+            dest_ds_type = "VSAM"
+        else:
+            dest_ds_type = "SEQ"
+        copy_handler.create_data_set(
+            src, dest, dest_ds_type, _size, d_blocks=d_blocks
+        )
+        changed = True
     try:
         if _is_uss:
             if os.path.exists(dest) and os.path.isdir(dest):
@@ -708,7 +734,7 @@ def run_module():
             except Exception as err:
                 module.fail_json(msg="Unable to calculate checksum", stderr=str(err))
             
-            backup_path = copy_handler._copy_to_uss(
+            backup_path = copy_handler.copy_to_uss(
                 src, _temp_path, dest, encoding, is_binary=is_binary, 
                 remote_src=remote_src, backup=backup
             )
@@ -723,28 +749,13 @@ def run_module():
             except Exception as err:
                 module.fail_json(msg=str(err))
 
-            copy_handler._remote_copy_handler(
+            copy_handler.remote_copy_handler(
                 src, dest, src_ds_type, dest_ds_type, module.params
             )
         else:
-            if not dest_exists:
-                d_blocks = None
-                if _is_pds or src_ds_type == "PO":
-                    dest_ds_type = "PDSE"
-                    d_blocks = math.ceil(_num_files/6)
-                elif is_vsam:
-                    dest_ds_type = "VSAM"
-                else:
-                    dest_ds_type = "SEQ"
-
-                copy_handler._create_data_set(
-                    src, dest, dest_ds_type, _size, d_blocks=d_blocks
-                )
-                changed = True
-            
             # Copy to sequential data set
             if dest_ds_type in MVS_SEQ:
-                copy_handler._copy_to_seq(
+                copy_handler.copy_to_seq(
                     src, 
                     dest, 
                     "", 
@@ -763,7 +774,7 @@ def run_module():
                     with os.fdopen(fd, write_mode) as tmp:
                         tmp.write("")
                 try:
-                    copy_handler._copy_to_pdse(
+                    copy_handler.copy_to_pdse(
                         src if remote_src else _temp_path, 
                         dest, 
                         copy_member=_copy_member, 
@@ -776,7 +787,7 @@ def run_module():
 
             # Copy to VSAM data set
             else:
-                copy_handler._copy_to_ds(dest, size=_size)
+                copy_handler.copy_to_ds(dest, size=_size)
     finally:
         if _temp_path:
             module.run_command("rm -r {0}".format(_temp_path))

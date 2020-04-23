@@ -12,7 +12,8 @@ import pathlib
 import time
 import subprocess
 
-#from ansible.constants import mk_boolean as boolean
+from tempfile import mkstemp
+
 from ansible.errors import AnsibleError, AnsibleFileNotFound
 from ansible.module_utils._text import to_bytes, to_native, to_text
 from ansible.module_utils.six import string_types
@@ -85,6 +86,17 @@ def _detect_sftp_errors(stderr):
     return ""
 
 
+def _write_content_to_file(content):
+    fd, path = mkstemp()
+    try:
+        with os.fdopen(fd, 'w') as infile:
+            infile.write(content)
+    except (OSError, IOError) as err:
+        os.remove(path)
+        raise AnsibleError("Unable to write content to temporary file")
+    return path
+
+
 class ActionModule(ActionBase):
     def run(self, tmp=None, task_vars=None):
         ''' handler for file transfer operations '''
@@ -113,52 +125,51 @@ class ActionModule(ActionBase):
         owner = self._task.args.get('owner', None)
         group = self._task.args.get('group', None)
 
-        if src is None or dest is None:
-            result['msg'] = "Source and destination are required"
-        elif not isinstance(src, string_types):
-            result['msg'] = (
-                "Invalid type supplied for 'src' option, it must be a string"
-            )
+        new_module_args = dict((k, v) for k, v in self._task.args.items())
+        is_uss = '/' in dest
+        is_pds = False
+        copy_member = '(' in dest and dest.endswith(')')
+        temp_path = None
+        if src:
+            is_pds = os.path.isdir(b_src)
+            if not isinstance(src, string_types):
+                result['msg'] = (
+                    "Invalid type supplied for 'src' option, it must be a string"
+                )
+            elif len(src) < 1 or len(dest) < 1:
+                result['msg'] = "'src' or 'dest' must not be empty"
+
+        if not src and not content:
+            result['msg'] = "'src' or 'content' is required"
+        elif not dest:
+            result['msg'] = "Destination is required"
         elif not isinstance(dest, string_types):
             result['msg'] = (
                 "Invalid type supplied for 'dest' option, it must be a string"
             )
-        elif len(src) < 1 or len(dest) < 1:
-            result['msg'] = "'src' or 'dest' must not be empty"
-
-        elif content and isinstance (content, string_types):
+        elif content and not isinstance (content, string_types):
             result['msg'] = (
                 "Invalid type supplied for 'content' option, it must be a string"
             )
         elif content and src:
             result['msg'] = "Only 'content' or 'src' can be provided, not both"
-
         elif local_follow and not os.path.islink(src):
             result['msg'] = "The provided source is not a symbolic link"
-
-        is_uss = '/' in dest
-        is_pds = os.path.isdir(b_src)
-        copy_member = '(' in src and src.endswith(')')
-        new_module_args = dict((k, v) for k, v in self._task.args.items())
-
+        elif encoding and is_binary:
+            result['msg'] = "The 'encoding' parameter is not valid for binary transfer."        
         if not is_uss:
             if mode or owner or group:
                 result['msg'] = (
                     "Cannot specify 'mode', 'owner' or 'group' for MVS destination"
                 )
         if not remote_src:
-            if not os.path.exists(b_src):
+            if src and not os.path.exists(b_src):
                 result['msg'] = "The local file {0} does not exist".format(src)
-
-            elif not os.access(b_src, os.R_OK):
+            elif src and not os.access(b_src, os.R_OK):
                 result['msg'] = (
                     "The local file {0} does not have appropriate "
                     "read permisssion".format(src)
                 )
-
-            elif '(' in src or ')' in src:
-                result['msg'] = "Invalid source name provided"
-
             elif is_pds and is_uss:
                 result['msg'] = (
                     "Source is a directory, which can not be copied "
@@ -170,31 +181,40 @@ class ActionModule(ActionBase):
             return result
 
         if not remote_src:
-            if is_pds:
-                path, dirs, files = next(os.walk(src))
-                dir_size = 0
-                if len(dirs) > 0:
-                    result['msg'] = "Subdirectory found inside source directory"
-                    result.update(dict(src=src, dest=dest, changed=False, failed=True))
-                    return result
-                
-                for file in files:
-                    dir_size += pathlib.Path(path + "/" + file).stat().st_size
-                
-                new_module_args.update(dict(size=dir_size, num_files=len(files)))
-            else:
-                new_module_args.update(dict(size=pathlib.Path(src).stat().st_size))
+            if not content:
+                if is_pds:
+                    path, dirs, files = next(os.walk(src))
+                    dir_size = 0
+                    if len(dirs) > 0:
+                        result['msg'] = "Subdirectory found inside source directory"
+                        result.update(dict(src=src, dest=dest, changed=False, failed=True))
+                        return result
+                    
+                    for file in files:
+                        dir_size += pathlib.Path(path + "/" + file).stat().st_size
+                    
+                    new_module_args.update(dict(size=dir_size, num_files=len(files)))
+                else:
+                    new_module_args['size'] = pathlib.Path(src).stat().st_size
 
-            transfer_res = self._copy_to_remote(src, is_pds)
+                transfer_res = self._copy_to_remote(src, is_pds=is_pds)
+            else:
+                try:
+                    local_content = _write_content_to_file(content)
+                    transfer_res = self._copy_to_remote(local_content)
+                finally:
+                    os.remove(local_content)
+
             if transfer_res.get("msg"):
                 return transfer_res
-            new_module_args.update(dict(temp_path=transfer_res.get("temp_path")))
+            temp_path = transfer_res.get("temp_path")
 
         new_module_args.update(
             dict(
                 is_uss=is_uss, 
                 is_pds=is_pds, 
                 copy_member=copy_member,
+                temp_path=temp_path
             )
         )
         copy_res = (
@@ -223,7 +243,7 @@ class ActionModule(ActionBase):
             return result
         return result
 
-    def _copy_to_remote(self, src, is_pds):
+    def _copy_to_remote(self, src, is_pds=False):
         result = dict()
         stdin = None
         ansible_user = self._play_context.remote_user

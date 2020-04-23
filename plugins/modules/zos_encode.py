@@ -234,7 +234,9 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser, data_set_utils, encode_utils
 )
-
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
+    MissingZOAUImport,
+)
 if PY3:
     from shlex import quote
 else:
@@ -243,8 +245,8 @@ else:
 try:
     from zoautil_py import Datasets, MVSCmd
 except Exception:
-    Datasets = ""
-    MVSCmd = ""
+    Datasets = MissingZOAUImport()
+    MVSCmd = MissingZOAUImport()
 
 
 def exit_when_exception(err_msg, result):

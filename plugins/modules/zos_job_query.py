@@ -137,6 +137,7 @@ message:
 """
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import job_status
+
 from ansible.module_utils.basic import AnsibleModule
 import re
 

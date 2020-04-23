@@ -397,11 +397,16 @@ from collections import OrderedDict
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.vtoc import (
     VolumeTableOfContents,
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
+    MissingZOAUImport,
+)
 
 try:
     from zoautil_py import Datasets, types, MVSCmd
 except Exception:
-    Datasets = ""
+    Datasets = MissingZOAUImport()
+    types = MissingZOAUImport()
+    MVSCmd = MissingZOAUImport()
 import re
 from ansible.module_utils.basic import AnsibleModule
 

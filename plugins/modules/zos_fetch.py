@@ -621,7 +621,7 @@ def run_module():
 
     elif ds_type == "PO":
         if _fetch_member:
-            member_name = src[src.find("(") + 1 : src.find(")")]
+            member_name = src[src.find("(") + 1: src.find(")")]
             if not ds_utils.data_set_member_exists(member_name):
                 module.fail_json(
                     msg=(

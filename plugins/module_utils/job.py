@@ -30,9 +30,8 @@ def job_output(job_id=None, owner=None, job_name=None, dd_name=None):
         RuntimeError: When no job output is found
 
     Returns:
-        dict[str, list[dict]] -- The output information for a given job.
+        list[dict] -- The output information for a list of jobs matching specified criteria.
     """
-    module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
     arg_defs = dict(
         job_id=dict(arg_type="qualifier_pattern"),
         owner=dict(arg_type="qualifier_pattern"),
@@ -61,7 +60,7 @@ def job_output(job_id=None, owner=None, job_name=None, dd_name=None):
     if not out:
         raise RuntimeError("Failed to retrieve job output. No job output found.")
     job_detail_json = json.loads(out, strict=False)
-    for job in job_detail_json.get("jobs"):
+    for job in job_detail_json:
         job["ret_code"] = {} if job.get("ret_code") is None else job.get("ret_code")
         job["ret_code"]["code"] = _get_return_code_num(
             job.get("ret_code").get("msg", "")
@@ -116,14 +115,14 @@ end
 
 Address SDSF "ISFEXEC ST (ALTERNATE DELAYED)"
 if rc<>0 then do
-Say '{"jobs":[]}'
+Say '[]'
 Exit 0
 end
 if isfrows == 0 then do
-Say '{"jobs":[]}'
+Say '[]'
 end
 else do
-Say '{"jobs":['
+Say '['
 do ix=1 to isfrows
     linecount = 0
     if ix<>1 then do
@@ -179,7 +178,7 @@ do ix=1 to isfrows
     end
     Say '}'
 end
-Say ']}'
+Say ']'
 end
 
 rc=isfcalls('OFF')
@@ -234,7 +233,7 @@ def job_status(job_id=None, owner=None, job_name=None):
         RuntimeError: When no job status is found.
 
     Returns:
-        list[dict] -- The status information for a given job.
+        list[dict] -- The status information for a list of jobs matching search criteria.
     """
     arg_defs = dict(
         job_id=dict(arg_type="qualifier_pattern"),

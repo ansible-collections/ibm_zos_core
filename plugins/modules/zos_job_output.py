@@ -352,7 +352,8 @@ def run_module():
         module.fail_json(msg="Please provide a job_id or job_name or owner")
 
     try:
-        results = job_output(job_id, owner, job_name, ddname)
+        results = {}
+        results["jobs"] = job_output(job_id, owner, job_name, ddname)
         results["changed"] = False
     except Exception as e:
         module.fail_json(msg=repr(e))

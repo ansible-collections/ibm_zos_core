@@ -562,7 +562,7 @@ def copy_rexx_and_run(script, src, vol, module):
 def get_job_info(module, jobId, return_output):
     result = dict()
     try:
-        result = query_jobs_status(module, jobId)
+        result["jobs"] = query_jobs_status(module, jobId)
     except SubmitJCLError:
         raise
 
@@ -577,8 +577,8 @@ def get_job_info(module, jobId, return_output):
 
 def query_jobs_status(module, jobId):
     timeout = 20
-    output = {}
-    while not output.get("jobs") and timeout > 0:
+    output = []
+    while not output and timeout > 0:
         try:
             output = job_output(job_id=jobId)
             sleep(0.5)
@@ -592,7 +592,7 @@ def query_jobs_status(module, jobId):
             The output is """
                 + output
             )
-    if not output.get("jobs") and timeout == 0:
+    if not output and timeout == 0:
         raise SubmitJCLError(
             "THE JOB CAN NOT BE QUERIED FROM JES (TIMEOUT=10s). PLEASE CHECK THE ZOS SYSTEM. IT IS SLOW TO RESPONSE."
         )
@@ -729,7 +729,7 @@ def run_module():
         duration = 0
         try:
             waitJob = query_jobs_status(module, jobId)
-            job_msg = waitJob.get("jobs")[0].get("ret_code").get("msg")
+            job_msg = waitJob[0].get("ret_code").get("msg")
         except SubmitJCLError as e:
             module.fail_json(msg=repr(e), **result)
         # while (job_msg.startswith("CC") or job_msg.startswith("ABEND")) is False:
@@ -739,7 +739,7 @@ def run_module():
             sleep(1)
             duration = duration + 1
             waitJob = job_output(job_id=jobId)
-            job_msg = waitJob.get("jobs")[0].get("ret_code").get("msg")
+            job_msg = waitJob[0].get("ret_code").get("msg")
             if re.search("^(?:{0})".format("|".join(JOB_COMPLETION_MESSAGES)), job_msg):
                 break
             if duration == wait_time_s:  # Long running task. timeout return

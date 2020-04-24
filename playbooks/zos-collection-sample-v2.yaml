@@ -1,0 +1,635 @@
+###############################################################################
+# Copyright (c) IBM Corporation 2020
+###############################################################################
+
+###############################################################################
+# This sample playbook demonstrates using various modules included in the
+# Red Hat Ansible Certified Content for IBM Z core collection.
+#
+# Usage:
+#  ansible-playbook -i <inventory> <playbook>
+#
+# Example:
+#  ansible-playbook -i inventory zos-collection-sample.yaml
+#
+# Notes:
+#  This sample demonstrates various ways to perform tasks using Ansible z/OS
+#  core modules. Each module has options available to customize how
+#  automation can be controlled. This sample does not demonstrate all options,
+#  refer to documentation or ansible-doc for those options.
+#
+# Requirements:
+#   IBM z/OS core collection 1.0.1 or later
+#   ZOAU 1.0.2 or later
+###############################################################################
+
+---
+- hosts: all
+  collections:
+    - ibm.ibm_zos_core
+  gather_facts: no
+  vars:
+    tgt_tmp_dir: "/tmp" # Scratch target directory in USS
+    ctl_tmp_dir: "/tmp" # scratch controller directory
+  environment: "{{ environment_vars }}"
+  connection: ibm.ibm_zos_core.zos_ssh
+
+  tasks:
+    # ##########################################################################
+    # Check requirements, iconv, z/OS Web Client Enablement toolkit, python
+    # ##########################################################################
+    - name: Ping the z/OS host {{ inventory_hostname }} and perform resource checks
+      zos_ping:
+      register: result
+
+    - name: Response
+      debug:
+        msg: "{{ result }}"
+
+    # ##########################################################################
+    # Fact setting for use by this playbook
+    # ##########################################################################
+    - name: Setting fact `data_set_name` for use by this sample
+      set_fact:
+        data_set_name: "{{ ansible_user | upper }}.SOME.DATA.SET"
+
+    - name: Fact `data_set_name` set with value
+      debug:
+        msg: "{{ data_set_name }}"
+
+    - name: Detecting system name
+      shell: "uname -a |awk '{print $2}'"
+      register: result
+
+    - name: Setting fact `system_name` for use by this sample
+      set_fact:
+        system_name: "{{ result.stdout }}"
+
+    - name: Fact `system_name` set with value
+      debug:
+        msg: "{{ system_name }}"
+
+    # ##########################################################################
+    # Modules zos_operator_action_query, zos_operator
+    # ##########################################################################
+    # +-------------------------------------------------------------------------
+    # | Create an actionable operator message (WTOR),
+    # | 'IEE094D SPECIFY OPERAND(S) FOR DUMP COMMAND', query operator actions,
+    # | parse module response for reply number, reply with cancel, display
+    # | actionable,operator actions.
+    # +-------------------------------------------------------------------------
+
+    - name: Query actionable messages on system {{ system_name }}
+      zos_operator_action_query:
+        system: "{{ system_name }}"
+      register: result_zos_operator_action_pre_query
+
+    - name: Response for query actionable messages on system {{ system_name }}
+      debug:
+        msg: "{{ result_zos_operator_action_pre_query }}"
+      when: result_zos_operator_action_pre_query is defined and not result_zos_operator_action_pre_query.failed
+
+    - name: Filter actionable messages that match 'IEE094D SPECIFY OPERAND', if more than one is found this demo will skip the operator task.
+      set_fact:
+        bool_zos_operator_action_continue: "{{ result_zos_operator_action_pre_query | ibm.ibm_zos_core.filter_wtor_messages('IEE094D SPECIFY OPERAND') | length == 0}}"
+      when: result_zos_operator_action_pre_query is defined and not result_zos_operator_action_pre_query.failed
+
+    - name: Evaluate if there are any existing dump messages matching 'IEE094D SPECIFY OPERAND'
+      assert:
+        that:
+          - bool_zos_operator_action_continue is defined
+          - bool_zos_operator_action_continue
+        success_msg: "Operator demo will continue, no matching 'IEE094D SPECIFY OPERAND' actions were discovered."
+        fail_msg: "There are more than one actionable messages that matches 'IEE094D SPECIFY OPERAND' , skipping operator demo. "
+      ignore_errors: yes
+
+    - name: Create an operator action (WTOR) "DUMP COMM=('test dump')" for
+        system {{ system_name }}
+      zos_operator:
+        cmd: "DUMP COMM=('test dump')"
+      register: result_zos_operator
+      when: bool_zos_operator_action_continue
+
+    - name: Response for create an operator action
+        (WTOR) "DUMP COMM=('test dump')" for system {{ system_name }}
+      debug:
+        msg: "{{ result_zos_operator }}"
+      when: bool_zos_operator_action_continue
+
+    - name: Query actionable messages on system {{ system_name }}
+      zos_operator_action_query:
+        system: "{{ system_name }}"
+      register: result_zos_operator_action_query
+      when: bool_zos_operator_action_continue
+
+    - name: Response for query actionable messages on system {{ system_name }}
+      debug:
+        msg: "{{ result_zos_operator_action_query }}"
+      when: bool_zos_operator_action_continue and result_zos_operator_action_query is defined and not result_zos_operator_action_query.failed
+
+    - name: Filter actionable messages that match only 'DUMP'
+      set_fact:
+        filtered_zos_operator_action_query: "{{ result_zos_operator_action_query | ibm.ibm_zos_core.filter_wtor_messages('IEE094D SPECIFY OPERAND') }}"
+      when: bool_zos_operator_action_continue and result_zos_operator_action_query is defined and not result_zos_operator_action_query.failed
+
+    - name: Response for filter actionable messages that match only 'DUMP'
+      debug:
+        msg: "{{ filtered_zos_operator_action_query }}"
+      when: bool_zos_operator_action_continue and filtered_zos_operator_action_query is defined
+
+    - name: Set cancel value if there is one matching actionable message
+      set_fact:
+        cancel_num: "{{ result_zos_operator_action_query.actions[0].number }}"
+      when: bool_zos_operator_action_continue and filtered_zos_operator_action_query is defined and  (filtered_zos_operator_action_query | length == 1)
+
+    - name: Reply to operator action with "cancel"
+      zos_operator:
+        cmd: "{{ cancel_num}}cancel"
+      register: result_zos_operator_cancel
+      when: bool_zos_operator_action_continue and cancel_num is defined
+
+    - name: Response for reply to operator action with "cancel"
+      debug:
+        msg: "{{ result_zos_operator_cancel }}"
+      when: bool_zos_operator_action_continue and result_zos_operator_cancel is defined and cancel_num is defined
+
+    - name: Verify actionable message on system {{ system_name }} is canceled
+      zos_operator_action_query:
+        system: "{{ system_name }}"
+      register: results_zos_operator_action_query_verify
+      when: bool_zos_operator_action_continue
+
+    - name: Verify no actionable messages match 'IEE094D SPECIFY OPERAND' with filter
+      set_fact:
+        filtered_zos_operator_action_query_verify: "{{ results_zos_operator_action_query_verify | ibm.ibm_zos_core.filter_wtor_messages('IEE094D SPECIFY OPERAND') }}"
+      when: bool_zos_operator_action_continue and results_zos_operator_action_query_verify is defined and not results_zos_operator_action_query_verify.failed
+
+    - name: Response for verifying actionable messages on system {{ system_name }} are canceled
+      assert:
+        that:
+          - bool_zos_operator_action_continue
+          - filtered_zos_operator_action_query_verify is defined and  (filtered_zos_operator_action_query_verify | length == 0)
+        success_msg: "All actionable messages that match 'IEE094D SPECIFY OPERAND' have been cancelled"
+        fail_msg: "There are more than one remaining actionable messages that match 'IEE094D SPECIFY OPERAND' , unable to reply to more than one action. "
+      ignore_errors: yes
+
+    # ##########################################################################
+    # Modules zos_data_set, zos_fetch
+    # ##########################################################################
+    # +-------------------------------------------------------------------------
+    # | Create PDS, PDS members, USS files, populate USS files and PDS members
+    # | with 'hello world', fetch members to controller, delete target files
+    # | and PDS
+    # +-------------------------------------------------------------------------
+    - name: Create a PDS data set {{ data_set_name }}
+      zos_data_set:
+        name: "{{ data_set_name }}"
+        type: pds
+        size: 5M
+        format: fb
+        record_length: 25
+        replace: yes
+      register: result
+
+    - name: Response for create a PDS data set {{ data_set_name }}
+      debug:
+        msg: "{{ result }}"
+
+    - name: Create a series of PDS members and replace if members exist
+      zos_data_set:
+        name: "{{ data_set_name }}(MEM{{ item }})"
+        type: MEMBER
+        replace: yes
+      with_sequence: count=4
+      register: result
+
+    - name: Response for create a series of PDS members and replace if
+        members exist
+      debug:
+        msg: "{{ result }}"
+
+    - name: Create directory {{ tgt_tmp_dir }}/files/
+      file:
+        path: "{{ tgt_tmp_dir }}/files/"
+        state: directory
+
+    - name: Create a series of USS files in {{ tgt_tmp_dir }}/files
+      file:
+        path: "{{ tgt_tmp_dir }}/files/{{ item }}.txt"
+        state: touch
+      with_sequence: count=4
+      register: result
+
+    - name: Response for create a series of USS files in {{ tgt_tmp_dir }}/files
+      debug:
+        msg: "{{ result }}"
+
+    - name: Populate a series of USS files in {{ tgt_tmp_dir }}/files
+        with 'hello world'
+      shell: 'echo "hello world" >{{ tgt_tmp_dir }}/files/{{ item }}.txt'
+      with_sequence: count=4
+      register: result
+
+    - name: Response for populate a series of USS files
+        in {{ tgt_tmp_dir }}/files with 'hello world'
+      debug:
+        msg: "{{ result }}"
+
+    - name: Populate {{ data_set_name }} members with data from USS files in
+        in {{ tgt_tmp_dir }}/files
+      command: 'cp {{ tgt_tmp_dir }}/files/{{ item }}.txt "//''{{ data_set_name }}(MEM{{ item }})''"'
+      with_sequence: count=4
+      register: result
+
+    - name: Response for populate {{ data_set_name }} members with data from
+        USS files in {{ tgt_tmp_dir }}/files
+      debug:
+        msg: "{{ result }}"
+
+    - name: Fetch {{ data_set_name }} from target {{ inventory_hostname }}
+      zos_fetch:
+        src: "{{ data_set_name }}"
+        dest: "{{ ctl_tmp_dir }}/"
+        flat: true
+        validate_checksum: false
+        is_binary: false
+      register: result
+
+    - name: Response for fetch {{ data_set_name }} from
+        target {{ inventory_hostname }}
+      debug:
+        msg: "{{ result }}"
+
+    - name: Remove files {{ tgt_tmp_dir }}/files from
+        target {{ inventory_hostname }}
+      file:
+        path: "{{ tgt_tmp_dir }}/files"
+        state: absent
+      register: result
+
+    - name: Response for remove files {{ tgt_tmp_dir }}/files from
+        target {{ inventory_hostname }}
+      debug:
+        msg: "{{ result }}"
+
+    - name: Delete data set {{ data_set_name }} from
+        target {{ inventory_hostname }}
+      zos_data_set:
+        name: "{{ data_set_name }}"
+        state: absent
+      register: result
+
+    - name: Response for delete data set {{ data_set_name }} from
+        target {{ inventory_hostname }}
+      debug:
+        msg: "{{ result }}"
+
+    # ##########################################################################
+    # Modules zos_encode
+    # ##########################################################################
+    # +-------------------------------------------------------------------------
+    # | Create script on target, encode with the targets charset, execute
+    # | script if mode == 755, else fail
+    # +-------------------------------------------------------------------------
+    - name: Create shell script {{ tgt_tmp_dir }}/date.sh on
+        target {{ inventory_hostname }}
+      copy:
+        dest: "{{ tgt_tmp_dir }}/date.sh"
+        content: |
+          date
+        owner: "{{ ansible_user }}"
+        mode: "0755"
+        force: yes
+
+    - name: Detect character set for locale on target {{ inventory_hostname }}
+      command: locale -c charmap
+      register: result
+
+    - name: Response for create shell script {{ tgt_tmp_dir }}/date.sh on
+        target {{ inventory_hostname }}
+      debug:
+        msg: "{{ result }}"
+
+    - name: Set variable `target_charset` with target {{ inventory_hostname }}
+        charset
+      set_fact:
+        target_charset: "{{ result.stdout | default('IBM-1047') }}"
+
+    - name: Encode script {{ tgt_tmp_dir }}/date.sh encoding
+        from ISO8859-1 to "{{ target_charset }}"
+      zos_encode:
+        src: "{{ tgt_tmp_dir }}/date.sh"
+        dest: "{{ tgt_tmp_dir }}/date.sh"
+        from_encoding: ISO8859-1
+        to_encoding: "{{ target_charset }}"
+        backup: no
+      register: result
+
+    - name: Response for encode script {{ tgt_tmp_dir }}/date.sh encoding from ISO8859-1 to {{ target_charset }}
+      debug:
+        msg: "{{ result }}"
+    - name: Setting fact `script_sh_mode` with script file permissions
+      set_fact:
+        script_sh_mode: "{{ result.mode }}"
+
+    - name: Display script contents after changing encoding to "{{ target_charset }}"
+      command: cat {{ tgt_tmp_dir }}/date.sh
+      register: result
+
+    - name: Response for display script contents after changing encoding
+        to "{{ target_charset }}"
+      debug:
+        msg: "{{ result.stdout }}"
+
+    - name: Executing {{ tgt_tmp_dir }}/date.sh on target if permission is 0755
+      shell: "{{ tgt_tmp_dir }}/date.sh"
+      register: result
+      when: script_sh_mode == "0755"
+
+    - name: Response for executing {{ tgt_tmp_dir }}/date.sh on target if
+        permission is 0755
+      debug:
+        msg: "{{ result.stdout_lines }}"
+      when: result.stdout_lines is defined
+
+    - name: File permissions check
+      fail:
+        msg: "File {{ tgt_tmp_dir }}/date.sh permissions were not equal to 0755"
+      when: result.stdout_lines is not defined
+      ignore_errors: yes
+
+    - name: Remove {{ tgt_tmp_dir }}/date.sh on target {{ inventory_hostname }}
+      file:
+        path: "{{ tgt_tmp_dir }}/date.sh"
+        state: absent
+      register: result
+
+    - name: Response for remove {{ tgt_tmp_dir }}/date.sh on
+        target {{ inventory_hostname }}
+      debug:
+        msg: "{{ result }}"
+
+    # +-------------------------------------------------------------------------
+    # | Create 4 USS files, encode, delete
+    # +-------------------------------------------------------------------------
+
+    - name: Detecting the character set for the locale on the target
+      command: locale -c charmap
+      register: result
+
+    - name: Response for detecting the character set for the locale on the
+        target
+      debug:
+        msg: "{{ result }}"
+
+    - name: Set variable `target_charset` with target {{ inventory_hostname }}
+        charset
+      set_fact:
+        target_charset: "{{ result.stdout | default('IBM-1047') }}"
+
+    - name: Create directory {{ tgt_tmp_dir }}/encode/
+      file:
+        path: "{{ tgt_tmp_dir }}/encode/"
+        state: directory
+
+    - name: Create a series of USS files in {{ tgt_tmp_dir }}/encode
+      file:
+        path: "{{ tgt_tmp_dir }}/encode/{{ item }}.txt"
+        state: touch
+      with_sequence: count=4
+      register: result
+
+    - name: Response for create a series of USS files
+        in {{ tgt_tmp_dir }}/encode
+      debug:
+        msg: "{{ result }}"
+
+    - name: Populate a series of USS files in {{ tgt_tmp_dir }}/encode
+        with 'hello world'
+      shell: 'echo "hello world" >{{ tgt_tmp_dir }}/encode/{{ item }}.txt'
+      with_sequence: count=4
+      register: result
+
+    - name: Response for populate a series of USS files
+        in {{ tgt_tmp_dir }}/encode with 'hello world'
+      debug:
+        msg: "{{ result }}"
+
+    - name: Encode files in {{ tgt_tmp_dir }}/encode/` from
+        charset ISO8859-1 to {{ target_charset }}
+      zos_encode:
+        src: "{{ tgt_tmp_dir }}/encode/"
+        dest: "{{ tgt_tmp_dir }}/encode/"
+        from_encoding: "{{ target_charset }}"
+        to_encoding: ISO8859-1
+      register: result
+
+    - name: Response for encode files in {{ tgt_tmp_dir }}/encode/` from
+        charset ISO8859-1 to {{ target_charset }}
+      debug:
+        msg: "{{ result }}"
+
+    - name: Display a series of USS files contents in {{ tgt_tmp_dir }}/encode
+      command: "cat {{ tgt_tmp_dir }}/encode/{{ item }}.txt"
+      with_sequence: count=4
+      register: result
+
+    - name: Response for display a series of USS files contents
+        in {{ tgt_tmp_dir }}/encode
+      debug:
+        msg: "{{ result }}"
+
+    - name: Remove files on target in {{ tgt_tmp_dir }}/encode
+      file:
+        path: "{{ tgt_tmp_dir }}/encode"
+        state: absent
+      register: result
+
+    - name: Response for remove files on target in {{ tgt_tmp_dir }}/encode
+      debug:
+        msg: "{{ result }}"
+
+    ############################################################################
+    # List user OMVSADM
+    ############################################################################
+    - name: Create a PDS data set {{ data_set_name }}
+      zos_data_set:
+        name: "{{ data_set_name }}"
+        type: pds
+        size: 5M
+        format: fb
+        record_length: 80
+        replace: yes
+      register: result
+
+    - name: Response for create a PDS data set {{ data_set_name }}
+      debug:
+        msg: "{{ result }}"
+
+    - name: Create a PDS member and replace if member exist
+      zos_data_set:
+        name: "{{ data_set_name }}(MEM{{ item }})"
+        type: MEMBER
+        replace: yes
+      with_sequence: count=1
+      register: result
+
+    - name: Response for create a PDS member and replace if member exist
+      debug:
+        msg: "{{ result }}"
+
+    - name: Ensure JCL folder exists in USS to manage JCL
+      file:
+        path: "{{ tgt_tmp_dir }}/ansible/jcl"
+        state: directory
+
+    - name: Write HELLO JCL to USS in {{ tgt_tmp_dir }}/ansible/jcl/HELLO"
+        on target {{ inventory_hostname }}
+      shell: "echo {{ lookup('file', playbook_dir + '/files/HELLO.jcl') | quote }} > {{ tgt_tmp_dir }}/ansible/jcl/HELLO"
+      changed_when: true
+      register: result
+
+    - name: Response for write HELLO JCL to USS
+        in {{ tgt_tmp_dir }}/ansible/jcl/HELLO" on
+        target {{ inventory_hostname }}
+      debug:
+        msg: "{{ result }}"
+
+    - name: Populate {{ data_set_name }} member with data from USS file in
+        in {{ tgt_tmp_dir }}/ansible/jcl
+      command: 'cp {{ tgt_tmp_dir }}/ansible/jcl/HELLO "//''{{ data_set_name }}(MEM{{ item }})''"'
+      with_sequence: count=1
+      register: result
+
+    - name: Response for populate {{ data_set_name }} member with data from
+        USS file in {{ tgt_tmp_dir }}/ansible/jcl
+      debug:
+        msg: "{{ result }}"
+
+    - name: TSO commands to manage data set (LU, LISTDS, RENAME, LISTDS)
+      zos_tso_command:
+        commands:
+          - LU {{ ansible_user }}
+          - LISTDS '{{ data_set_name }}'
+          - RENAME '{{ data_set_name }}' '{{ data_set_name }}.LLQ'
+          - LISTDS '{{ data_set_name }}.LLQ'
+      register: result
+
+    - name: Response for TSO commands to manage data
+        set (LU, LISTDS, RENAME, LISTDS)
+      debug:
+        msg: "{{ result }}"
+
+    - name: Submit the JCL {{ data_set_name }}.LLQ(MEM1)
+      zos_job_submit:
+        src: "{{ data_set_name }}.LLQ(MEM{{ item }})"
+        location: DATA_SET
+        wait: true
+      register: response
+      with_sequence: count=1
+
+    - name: Response for submit the JCL {{ data_set_name }}.LLQ(MEM1)
+      debug:
+        msg: "{{ result }}"
+
+    - name: Query submitted job 'HELLO' in data set {{ data_set_name }}.LLQ
+      zos_job_query:
+        job_name: HELLO
+      register: result
+
+    - name: Response for query submitted job 'HELLO' in data
+        set {{ data_set_name }}.LLQ
+      debug:
+        msg: "{{ result }}"
+
+    - name: Get HELLO job output
+      zos_job_output:
+        job_name: HELLO
+      register: result
+
+    - name: Response for get HELLO job output
+      debug:
+        msg: "{{ result }}"
+
+    - name: TSO command delete data set {{ data_set_name }}.LLQ
+      zos_tso_command:
+        commands:
+          - DELETE '{{ data_set_name }}.LLQ'
+      register: result
+
+    - name: Response for TSO command delete data set {{ data_set_name }}.LLQ
+      debug:
+        msg: "{{ result }}"
+
+    - name: Remove files on target in {{ tgt_tmp_dir }}/encode
+      file:
+        path: "{{ tgt_tmp_dir }}/ansible"
+        state: absent
+      register: result
+
+    - name: Response for remove files on target in {{ tgt_tmp_dir }}/encode
+      debug:
+        msg: "{{ result }}"
+
+    ############################################################################
+    # Crete location for JCL in USS
+    ############################################################################
+
+    - name: Ensure JCL folder exists in USS to manage JCL
+      file:
+        path: "{{ tgt_tmp_dir }}/ansible/jcl"
+        state: directory
+
+    - name: Write HELLO JCL to USS in {{ tgt_tmp_dir }}/ansible/jcl/HELLO"
+        on target {{ inventory_hostname }}
+      shell: "echo {{ lookup('file', playbook_dir + '/files/HELLO.jcl') | quote }} > {{ tgt_tmp_dir }}/ansible/jcl/HELLO"
+      changed_when: true
+      register: result
+
+    - name: Response for ensure JCL folder exists in USS to manage JCL
+      debug:
+        msg: "{{ result }}"
+
+    - name: Submit HELLO jcl on on target in {{ tgt_tmp_dir }}/ansible/jcl/HELLO
+      zos_job_submit:
+        src: "{{ tgt_tmp_dir }}/ansible/jcl/HELLO"
+        location: USS
+        wait: True
+
+    - name: Response for submit HELLO jcl on on target
+        in {{ tgt_tmp_dir }}/ansible/jcl/HELLO
+      debug:
+        msg: "{{ result }}"
+
+    - name: Query submitted job 'HELLO'
+      zos_job_query:
+        job_name: HELLO
+      register: result
+
+    - name: Response for query submitted job 'HELLO'
+      debug:
+        msg: "{{ result }}"
+
+    - name: Get HELLO job output
+      zos_job_output:
+        job_name: HELLO
+      register: result
+
+    - name: Response for get HELLO job output
+      debug:
+        msg: "{{ result }}"
+
+    - name: Remove HELLO JCL and folder from z/OS target node
+      file:
+        path: "{{ tgt_tmp_dir }}/ansible"
+        state: absent
+
+    - name: Delete data set 'USER.PRIVATE.TEST'
+      zos_data_set:
+        name: USER.PRIVATE.TEST
+        state: absent
+      register: result
+
+    - name: Response for delete data set 'USER.PRIVATE.TEST'
+      debug:
+        msg: "{{ result }}"

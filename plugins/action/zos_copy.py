@@ -40,7 +40,6 @@ def _update_result(is_binary, **copy_res):
         data_set_type=data_set_types[ds_type],
         is_binary=is_binary,
         checksum=copy_res.get("checksum"),
-        size=copy_res.get("size"),
         changed=copy_res.get("changed")
     )
     if ds_type == "USS":
@@ -51,7 +50,8 @@ def _update_result(is_binary, **copy_res):
                 group=copy_res.get("group"),
                 owner=copy_res.get("owner"),
                 mode=copy_res.get("mode"),
-                state=copy_res.get("state")
+                state=copy_res.get("state"),
+                size=copy_res.get("size"),
             )
         )
     if copy_res.get("backup_file"):
@@ -113,7 +113,6 @@ class ActionModule(ActionBase):
         content = self._task.args.get('content', None)
         backup = _process_boolean(self._task.args.get('backup'), default=False)
         force = _process_boolean(self._task.args.get('force'), default=True)
-        validate = _process_boolean(self._task.args.get('validate'), default=True)
         local_follow = _process_boolean(self._task.args.get('local_follow'), default=False)
         remote_src = _process_boolean(self._task.args.get('remote_src'), default=False)
         use_qualifier = _process_boolean(self._task.args.get('use_qualifier', True), default=False)
@@ -193,7 +192,7 @@ class ActionModule(ActionBase):
                     for file in files:
                         dir_size += pathlib.Path(path + "/" + file).stat().st_size
                     
-                    new_module_args.update(dict(size=dir_size, num_files=len(files)))
+                    new_module_args.update(dict(size=dir_size))
                 else:
                     new_module_args['size'] = pathlib.Path(src).stat().st_size
 
@@ -240,7 +239,7 @@ class ActionModule(ActionBase):
             self._remote_cleanup(dest, copy_res.get("dest_exists"), task_vars)
             result['msg'] = str(err)
             result['failed'] = True
-            return result
+        
         return result
 
     def _copy_to_remote(self, src, is_pds=False):

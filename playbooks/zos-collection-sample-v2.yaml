@@ -29,8 +29,8 @@
     - ibm.ibm_zos_core
   gather_facts: no
   vars:
-    tgt_tmp_dir: "/tmp"       # Scratch target directory in USS
-    ctl_tmp_dir: "/tmp"       # scratch controller directory
+    tgt_tmp_dir: "/tmp" # Scratch target directory in USS
+    ctl_tmp_dir: "/tmp" # scratch controller directory
   environment: "{{ environment_vars }}"
   connection: ibm.ibm_zos_core.zos_ssh
 
@@ -68,12 +68,12 @@
     - name: Fact `system_name` set with value
       debug:
         msg: "{{ system_name }}"
-        
+
     # ##########################################################################
     # Modules zos_operator_action_query, zos_operator
     # ##########################################################################
     # +-------------------------------------------------------------------------
-    # | Create an actionable operator message (WTOR), 
+    # | Create an actionable operator message (WTOR),
     # | 'IEE094D SPECIFY OPERAND(S) FOR DUMP COMMAND', query operator actions,
     # | parse module response for reply number, reply with cancel, display
     # | actionable,operator actions.
@@ -81,7 +81,7 @@
 
     - name: Query actionable messages on system {{ system_name }}
       zos_operator_action_query:
-          system: "{{ system_name }}"
+        system: "{{ system_name }}"
       register: result_zos_operator_action_pre_query
 
     - name: Response for query actionable messages on system {{ system_name }}
@@ -104,21 +104,21 @@
       ignore_errors: yes
 
     - name: Create an operator action (WTOR) "DUMP COMM=('test dump')" for
-            system {{ system_name }}
+        system {{ system_name }}
       zos_operator:
         cmd: "DUMP COMM=('test dump')"
       register: result_zos_operator
       when: bool_zos_operator_action_continue
 
     - name: Response for create an operator action
-            (WTOR) "DUMP COMM=('test dump')" for system {{ system_name }}
+        (WTOR) "DUMP COMM=('test dump')" for system {{ system_name }}
       debug:
         msg: "{{ result_zos_operator }}"
       when: bool_zos_operator_action_continue
 
     - name: Query actionable messages on system {{ system_name }}
       zos_operator_action_query:
-          system: "{{ system_name }}"
+        system: "{{ system_name }}"
       register: result_zos_operator_action_query
       when: bool_zos_operator_action_continue
 
@@ -155,7 +155,7 @@
 
     - name: Verify actionable message on system {{ system_name }} is canceled
       zos_operator_action_query:
-          system: "{{ system_name }}"
+        system: "{{ system_name }}"
       register: results_zos_operator_action_query_verify
       when: bool_zos_operator_action_continue
 
@@ -183,30 +183,30 @@
     # +-------------------------------------------------------------------------
     - name: Create a PDS data set {{ data_set_name }}
       zos_data_set:
-          name: "{{ data_set_name }}"
-          type: pds
-          size: 5M
-          format: fb
-          record_length: 25
-          replace: yes
+        name: "{{ data_set_name }}"
+        type: pds
+        size: 5M
+        format: fb
+        record_length: 25
+        replace: yes
       register: result
 
     - name: Response for create a PDS data set {{ data_set_name }}
       debug:
-          msg: "{{ result }}"
+        msg: "{{ result }}"
 
     - name: Create a series of PDS members and replace if members exist
       zos_data_set:
-          name: "{{ data_set_name }}(MEM{{ item }})"
-          type: MEMBER
-          replace: yes
+        name: "{{ data_set_name }}(MEM{{ item }})"
+        type: MEMBER
+        replace: yes
       with_sequence: count=4
       register: result
 
     - name: Response for create a series of PDS members and replace if
-            members exist
+        members exist
       debug:
-          msg: "{{ result }}"
+        msg: "{{ result }}"
 
     - name: Create directory {{ tgt_tmp_dir }}/files/
       file:
@@ -225,26 +225,26 @@
         msg: "{{ result }}"
 
     - name: Populate a series of USS files in {{ tgt_tmp_dir }}/files
-            with 'hello world'
-      shell: "echo \"hello world\" >{{ tgt_tmp_dir }}/files/{{ item }}.txt"
+        with 'hello world'
+      shell: 'echo "hello world" >{{ tgt_tmp_dir }}/files/{{ item }}.txt'
       with_sequence: count=4
       register: result
 
     - name: Response for populate a series of USS files
-            in {{ tgt_tmp_dir }}/files with 'hello world'
+        in {{ tgt_tmp_dir }}/files with 'hello world'
       debug:
-          msg: "{{ result }}"
+        msg: "{{ result }}"
 
     - name: Populate {{ data_set_name }} members with data from USS files in
-            in {{ tgt_tmp_dir }}/files
-      command: "cp {{ tgt_tmp_dir }}/files/{{ item }}.txt \"//'{{ data_set_name }}(MEM{{ item }})'\""
+        in {{ tgt_tmp_dir }}/files
+      command: 'cp {{ tgt_tmp_dir }}/files/{{ item }}.txt "//''{{ data_set_name }}(MEM{{ item }})''"'
       with_sequence: count=4
       register: result
 
     - name: Response for populate {{ data_set_name }} members with data from
-            USS files in {{ tgt_tmp_dir }}/files
+        USS files in {{ tgt_tmp_dir }}/files
       debug:
-          msg: "{{ result }}"
+        msg: "{{ result }}"
 
     - name: Fetch {{ data_set_name }} from target {{ inventory_hostname }}
       zos_fetch:
@@ -256,31 +256,31 @@
       register: result
 
     - name: Response for fetch {{ data_set_name }} from
-            target {{ inventory_hostname }}
+        target {{ inventory_hostname }}
       debug:
-         msg: "{{ result }}"
+        msg: "{{ result }}"
 
     - name: Remove files {{ tgt_tmp_dir }}/files from
-            target {{ inventory_hostname }}
+        target {{ inventory_hostname }}
       file:
         path: "{{ tgt_tmp_dir }}/files"
         state: absent
       register: result
 
     - name: Response for remove files {{ tgt_tmp_dir }}/files from
-            target {{ inventory_hostname }}
+        target {{ inventory_hostname }}
       debug:
         msg: "{{ result }}"
 
     - name: Delete data set {{ data_set_name }} from
-            target {{ inventory_hostname }}
+        target {{ inventory_hostname }}
       zos_data_set:
         name: "{{ data_set_name }}"
         state: absent
       register: result
 
     - name: Response for delete data set {{ data_set_name }} from
-            target {{ inventory_hostname }}
+        target {{ inventory_hostname }}
       debug:
         msg: "{{ result }}"
 
@@ -292,13 +292,13 @@
     # | script if mode == 755, else fail
     # +-------------------------------------------------------------------------
     - name: Create shell script {{ tgt_tmp_dir }}/date.sh on
-            target {{ inventory_hostname }}
+        target {{ inventory_hostname }}
       copy:
         dest: "{{ tgt_tmp_dir }}/date.sh"
         content: |
           date
         owner: "{{ ansible_user }}"
-        mode: '0755'
+        mode: "0755"
         force: yes
 
     - name: Detect character set for locale on target {{ inventory_hostname }}
@@ -306,28 +306,28 @@
       register: result
 
     - name: Response for create shell script {{ tgt_tmp_dir }}/date.sh on
-            target {{ inventory_hostname }}
+        target {{ inventory_hostname }}
       debug:
-         msg: "{{ result }}"
+        msg: "{{ result }}"
 
     - name: Set variable `target_charset` with target {{ inventory_hostname }}
-            charset
+        charset
       set_fact:
         target_charset: "{{ result.stdout | default('IBM-1047') }}"
 
     - name: Encode script {{ tgt_tmp_dir }}/date.sh encoding
-            from ISO8859-1 to "{{ target_charset }}"
+        from ISO8859-1 to "{{ target_charset }}"
       zos_encode:
-         src: "{{ tgt_tmp_dir }}/date.sh"
-         dest: "{{ tgt_tmp_dir }}/date.sh"
-         from_encoding: ISO8859-1
-         to_encoding: "{{ target_charset }}"
-         backup: no
+        src: "{{ tgt_tmp_dir }}/date.sh"
+        dest: "{{ tgt_tmp_dir }}/date.sh"
+        from_encoding: ISO8859-1
+        to_encoding: "{{ target_charset }}"
+        backup: no
       register: result
 
     - name: Response for encode script {{ tgt_tmp_dir }}/date.sh encoding from ISO8859-1 to {{ target_charset }}
       debug:
-         msg: "{{ result }}"
+        msg: "{{ result }}"
     - name: Setting fact `script_sh_mode` with script file permissions
       set_fact:
         script_sh_mode: "{{ result.mode }}"
@@ -337,7 +337,7 @@
       register: result
 
     - name: Response for display script contents after changing encoding
-            to "{{ target_charset }}"
+        to "{{ target_charset }}"
       debug:
         msg: "{{ result.stdout }}"
 
@@ -347,7 +347,7 @@
       when: script_sh_mode == "0755"
 
     - name: Response for executing {{ tgt_tmp_dir }}/date.sh on target if
-            permission is 0755
+        permission is 0755
       debug:
         msg: "{{ result.stdout_lines }}"
       when: result.stdout_lines is defined
@@ -365,7 +365,7 @@
       register: result
 
     - name: Response for remove {{ tgt_tmp_dir }}/date.sh on
-            target {{ inventory_hostname }}
+        target {{ inventory_hostname }}
       debug:
         msg: "{{ result }}"
 
@@ -378,12 +378,12 @@
       register: result
 
     - name: Response for detecting the character set for the locale on the
-            target
+        target
       debug:
-         msg: "{{ result }}"
+        msg: "{{ result }}"
 
     - name: Set variable `target_charset` with target {{ inventory_hostname }}
-            charset
+        charset
       set_fact:
         target_charset: "{{ result.stdout | default('IBM-1047') }}"
 
@@ -400,32 +400,32 @@
       register: result
 
     - name: Response for create a series of USS files
-            in {{ tgt_tmp_dir }}/encode
+        in {{ tgt_tmp_dir }}/encode
       debug:
         msg: "{{ result }}"
 
     - name: Populate a series of USS files in {{ tgt_tmp_dir }}/encode
-            with 'hello world'
-      shell: "echo \"hello world\" >{{ tgt_tmp_dir }}/encode/{{ item }}.txt"
+        with 'hello world'
+      shell: 'echo "hello world" >{{ tgt_tmp_dir }}/encode/{{ item }}.txt'
       with_sequence: count=4
       register: result
 
     - name: Response for populate a series of USS files
-            in {{ tgt_tmp_dir }}/encode with 'hello world'
+        in {{ tgt_tmp_dir }}/encode with 'hello world'
       debug:
-          msg: "{{ result }}"
+        msg: "{{ result }}"
 
     - name: Encode files in {{ tgt_tmp_dir }}/encode/` from
-            charset ISO8859-1 to {{ target_charset }}
+        charset ISO8859-1 to {{ target_charset }}
       zos_encode:
         src: "{{ tgt_tmp_dir }}/encode/"
         dest: "{{ tgt_tmp_dir }}/encode/"
-        from_encoding:  "{{ target_charset }}"
+        from_encoding: "{{ target_charset }}"
         to_encoding: ISO8859-1
       register: result
 
     - name: Response for encode files in {{ tgt_tmp_dir }}/encode/` from
-            charset ISO8859-1 to {{ target_charset }}
+        charset ISO8859-1 to {{ target_charset }}
       debug:
         msg: "{{ result }}"
 
@@ -435,9 +435,9 @@
       register: result
 
     - name: Response for display a series of USS files contents
-            in {{ tgt_tmp_dir }}/encode
+        in {{ tgt_tmp_dir }}/encode
       debug:
-          msg: "{{ result }}"
+        msg: "{{ result }}"
 
     - name: Remove files on target in {{ tgt_tmp_dir }}/encode
       file:
@@ -454,29 +454,29 @@
     ############################################################################
     - name: Create a PDS data set {{ data_set_name }}
       zos_data_set:
-          name: "{{ data_set_name }}"
-          type: pds
-          size: 5M
-          format: fb
-          record_length: 80
-          replace: yes
+        name: "{{ data_set_name }}"
+        type: pds
+        size: 5M
+        format: fb
+        record_length: 80
+        replace: yes
       register: result
 
     - name: Response for create a PDS data set {{ data_set_name }}
       debug:
-          msg: "{{ result }}"
+        msg: "{{ result }}"
 
     - name: Create a PDS member and replace if member exist
       zos_data_set:
-          name: "{{ data_set_name }}(MEM{{ item }})"
-          type: MEMBER
-          replace: yes
+        name: "{{ data_set_name }}(MEM{{ item }})"
+        type: MEMBER
+        replace: yes
       with_sequence: count=1
       register: result
 
     - name: Response for create a PDS member and replace if member exist
       debug:
-          msg: "{{ result }}"
+        msg: "{{ result }}"
 
     - name: Ensure JCL folder exists in USS to manage JCL
       file:
@@ -484,41 +484,41 @@
         state: directory
 
     - name: Write HELLO JCL to USS in {{ tgt_tmp_dir }}/ansible/jcl/HELLO"
-            on target {{ inventory_hostname }}
+        on target {{ inventory_hostname }}
       shell: "echo {{ lookup('file', playbook_dir + '/files/HELLO.jcl') | quote }} > {{ tgt_tmp_dir }}/ansible/jcl/HELLO"
       changed_when: true
       register: result
 
     - name: Response for write HELLO JCL to USS
-            in {{ tgt_tmp_dir }}/ansible/jcl/HELLO" on
-            target {{ inventory_hostname }}
+        in {{ tgt_tmp_dir }}/ansible/jcl/HELLO" on
+        target {{ inventory_hostname }}
       debug:
-          msg: "{{ result }}"
+        msg: "{{ result }}"
 
     - name: Populate {{ data_set_name }} member with data from USS file in
-            in {{ tgt_tmp_dir }}/ansible/jcl
-      command: "cp {{ tgt_tmp_dir }}/ansible/jcl/HELLO \"//'{{ data_set_name }}(MEM{{ item }})'\""
+        in {{ tgt_tmp_dir }}/ansible/jcl
+      command: 'cp {{ tgt_tmp_dir }}/ansible/jcl/HELLO "//''{{ data_set_name }}(MEM{{ item }})''"'
       with_sequence: count=1
       register: result
 
     - name: Response for populate {{ data_set_name }} member with data from
-            USS file in {{ tgt_tmp_dir }}/ansible/jcl
+        USS file in {{ tgt_tmp_dir }}/ansible/jcl
       debug:
-          msg: "{{ result }}"
+        msg: "{{ result }}"
 
     - name: TSO commands to manage data set (LU, LISTDS, RENAME, LISTDS)
       zos_tso_command:
-          commands:
-              - LU {{ ansible_user }}
-              - LISTDS '{{ data_set_name }}'
-              - RENAME '{{ data_set_name }}' '{{ data_set_name }}.LLQ'
-              - LISTDS '{{ data_set_name }}.LLQ'
+        commands:
+          - LU {{ ansible_user }}
+          - LISTDS '{{ data_set_name }}'
+          - RENAME '{{ data_set_name }}' '{{ data_set_name }}.LLQ'
+          - LISTDS '{{ data_set_name }}.LLQ'
       register: result
 
     - name: Response for TSO commands to manage data
-            set (LU, LISTDS, RENAME, LISTDS)
+        set (LU, LISTDS, RENAME, LISTDS)
       debug:
-          msg: "{{ result }}"
+        msg: "{{ result }}"
 
     - name: Submit the JCL {{ data_set_name }}.LLQ(MEM1)
       zos_job_submit:
@@ -538,7 +538,7 @@
       register: result
 
     - name: Response for query submitted job 'HELLO' in data
-            set {{ data_set_name }}.LLQ
+        set {{ data_set_name }}.LLQ
       debug:
         msg: "{{ result }}"
 
@@ -553,13 +553,13 @@
 
     - name: TSO command delete data set {{ data_set_name }}.LLQ
       zos_tso_command:
-          commands:
-              - DELETE '{{ data_set_name }}.LLQ'
+        commands:
+          - DELETE '{{ data_set_name }}.LLQ'
       register: result
 
     - name: Response for TSO command delete data set {{ data_set_name }}.LLQ
       debug:
-          msg: "{{ result }}"
+        msg: "{{ result }}"
 
     - name: Remove files on target in {{ tgt_tmp_dir }}/encode
       file:
@@ -571,7 +571,6 @@
       debug:
         msg: "{{ result }}"
 
-
     ############################################################################
     # Crete location for JCL in USS
     ############################################################################
@@ -582,14 +581,14 @@
         state: directory
 
     - name: Write HELLO JCL to USS in {{ tgt_tmp_dir }}/ansible/jcl/HELLO"
-            on target {{ inventory_hostname }}
+        on target {{ inventory_hostname }}
       shell: "echo {{ lookup('file', playbook_dir + '/files/HELLO.jcl') | quote }} > {{ tgt_tmp_dir }}/ansible/jcl/HELLO"
       changed_when: true
       register: result
 
     - name: Response for ensure JCL folder exists in USS to manage JCL
       debug:
-          msg: "{{ result }}"
+        msg: "{{ result }}"
 
     - name: Submit HELLO jcl on on target in {{ tgt_tmp_dir }}/ansible/jcl/HELLO
       zos_job_submit:
@@ -598,7 +597,7 @@
         wait: True
 
     - name: Response for submit HELLO jcl on on target
-            in {{ tgt_tmp_dir }}/ansible/jcl/HELLO
+        in {{ tgt_tmp_dir }}/ansible/jcl/HELLO
       debug:
         msg: "{{ result }}"
 

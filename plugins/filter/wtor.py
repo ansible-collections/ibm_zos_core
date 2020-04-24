@@ -1,8 +1,13 @@
+# Copyright (c) IBM Corporation 2020
+# Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
+
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 import re
 
-def filter_wtor_messages(wtor_response, text, ingore_case = False):
+
+def filter_wtor_messages(wtor_response, text, ingore_case=False):
     """Filter a list of WTOR messages based on message text.
 
     Arguments:
@@ -18,7 +23,7 @@ def filter_wtor_messages(wtor_response, text, ingore_case = False):
     """
     wtors = []
     if isinstance(wtor_response, dict):
-        wtors = wtor_response.get('actions')
+        wtors = wtor_response.get("actions")
     elif isinstance(wtor_response, list):
         wtors = wtor_response
     found = []
@@ -32,11 +37,12 @@ def filter_wtor_messages(wtor_response, text, ingore_case = False):
             found.append(wtor)
     return found
 
+
 class FilterModule(object):
-    ''' Jinja2 filters for use with WTOR response objects returned by zos_operator_action_query module. '''
+    """ Jinja2 filters for use with WTOR response objects returned by zos_operator_action_query module. """
 
     def filters(self):
         filters = {
-            'filter_wtor_messages': filter_wtor_messages,
+            "filter_wtor_messages": filter_wtor_messages,
         }
         return filters

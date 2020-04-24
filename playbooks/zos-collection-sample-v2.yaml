@@ -302,7 +302,7 @@
         force: yes
 
     - name: Detect character set for locale on target {{ inventory_hostname }}
-      shell: locale -c charmap
+      command: locale -c charmap
       register: result
 
     - name: Response for create shell script {{ tgt_tmp_dir }}/date.sh on
@@ -374,7 +374,7 @@
     # +-------------------------------------------------------------------------
 
     - name: Detecting the character set for the locale on the target
-      shell: locale -c charmap
+      command: locale -c charmap
       register: result
 
     - name: Response for detecting the character set for the locale on the
@@ -430,7 +430,7 @@
         msg: "{{ result }}"
 
     - name: Display a series of USS files contents in {{ tgt_tmp_dir }}/encode
-      shell: "cat {{ tgt_tmp_dir }}/encode/{{ item }}.txt"
+      command: "cat {{ tgt_tmp_dir }}/encode/{{ item }}.txt"
       with_sequence: count=4
       register: result
 

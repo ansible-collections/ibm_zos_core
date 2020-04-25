@@ -251,6 +251,7 @@ from ansible.module_utils.parsing.convert_bool import boolean
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser,
     data_set_utils,
+    encode_utils
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     MissingZOAUImport,
@@ -360,27 +361,6 @@ class FetchHandler:
 
         return out_ds_name
 
-    def _uss_convert_encoding(self, src, dest, from_code_set, to_code_set):
-        """ Convert the encoding of the data in a USS file """
-        temp_fo = None
-        if src != dest:
-            temp_fi = dest
-        else:
-            fd, temp_fi = tempfile.mkstemp()
-        iconv_cmd = "iconv -f {0} -t {1} {2} > {3}".format(
-            quote(from_code_set), quote(to_code_set), quote(src), quote(temp_fi)
-        )
-        self._run_command(iconv_cmd, use_unsafe_shell=True)
-        if dest != temp_fi:
-            try:
-                move(temp_fi, dest)
-            except (OSError, IOError):
-                raise
-            finally:
-                os.close(fd)
-                if os.path.exists(temp_fi):
-                    os.remove(temp_fi)
-
     def _fetch_uss_file(self, src, is_binary, encoding=None):
         """ Convert encoding of a USS file. Return a tuple of temporary file
             name containing converted data.
@@ -390,10 +370,9 @@ class FetchHandler:
             fd, file_path = tempfile.mkstemp()
             from_code_set = encoding.get("from")
             to_code_set = encoding.get("to")
-            # enc_utils = encode_utils.EncodeUtils(self.module)
+            enc_utils = encode_utils.EncodeUtils(self.module)
             try:
-                # enc_utils.uss_convert_encoding(src, file_path, from_code_set, to_code_set)
-                self._uss_convert_encoding(src, file_path, from_code_set, to_code_set)
+                enc_utils.uss_convert_encoding(src, file_path, from_code_set, to_code_set)
             except Exception as err:
                 os.remove(file_path)
                 self._fail_json(
@@ -448,19 +427,16 @@ class FetchHandler:
                 rc=rc,
             )
         if (not is_binary) and encoding:
-            # enc_utils = encode_utils.EncodeUtils(self.module)
+            enc_utils = encode_utils.EncodeUtils(self.module)
             from_code_set = encoding.get("from")
             to_code_set = encoding.get("to")
             root, dirs, files = next(os.walk(dir_path))
             try:
                 for file in files:
                     file_path = os.path.join(root, file)
-                    self._uss_convert_encoding(
+                    enc_utils.uss_convert_encoding(
                         file_path, file_path, from_code_set, to_code_set
                     )
-                    # enc_utils.uss_convert_encoding(
-                    #     file_path, file_path, from_code_set, to_code_set
-                    # )
             except Exception as err:
                 rmtree(dir_path)
                 self._fail_json(
@@ -494,16 +470,13 @@ class FetchHandler:
                 stderr_lines=str(err).splitlines(),
             )
         if (not is_binary) and encoding:
-            # enc_utils = encode_utils.EncodeUtils(self.module)
+            enc_utils = encode_utils.EncodeUtils(self.module)
             from_code_set = encoding.get("from")
             to_code_set = encoding.get("to")
             try:
-                self._uss_convert_encoding(
+                enc_utils.uss_convert_encoding(
                     file_path, file_path, from_code_set, to_code_set
                 )
-                # enc_utils.uss_convert_encoding(
-                #     file_path, file_path, from_code_set, to_code_set
-                # )
             except Exception as err:
                 os.remove(file_path)
                 self._fail_json(

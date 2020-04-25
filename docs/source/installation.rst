@@ -75,7 +75,7 @@ After installation, the collection content will resemble this hierarchy: :
    │                  ├── action/
    │                  ├── connection/
    │                  ├── module_utils/
-   │                  └── modules/
+   │                  ├── modules/
    │                  └── filter/
 
 

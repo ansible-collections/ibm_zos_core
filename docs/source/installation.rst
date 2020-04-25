@@ -76,7 +76,7 @@ After installation, the collection content will resemble this hierarchy: :
    │                  ├── connection/
    │                  ├── module_utils/
    │                  └── modules/
-   │                  └── plugin/
+   │                  └── filter/
 
 
 You can use the `-p` option with `ansible-galaxy` to specify the installation

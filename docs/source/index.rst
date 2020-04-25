@@ -5,11 +5,19 @@
 IBM z/OS core collection
 ========================
 
-The **IBM z/OS core collection**, also represented as **ibm_zos_core** in this 
-document, is part of the broader offering
-**Red Hat® Ansible Certified Content for IBM Z**. IBM z/OS core collection 
-supports tasks such as creating data sets, submitting jobs, querying jobs, and
-retrieving job output.
+The **IBM z/OS core collection**, also represented as **ibm\_zos\_core**
+in this document, is part of the broader offering **Red Hat® Ansible
+Certified Content for IBM Z**. IBM z/OS core collection supports tasks
+such as creating data sets, submitting jobs, querying jobs,
+retrieving job output, encoding data sets, fetching data sets, operator
+commands, TSO commands, ping and querying operator actions.
+
+The **IBM z/OS core collection** serves as a dependency for other collections
+under the **Red Hat® Ansible Certified Content for IBM Z** umbrella and
+works closely with offerings such as [IBM z/OS IMS collection]
+(https://github.com/ansible-collections/ibm_zos_ims) to deliver
+a solution that will enable you to automate tasks on z/OS subsystems such
+as IMS.
 
 Red Hat Ansible Certified Content for IBM Z
 ===========================================
@@ -23,14 +31,14 @@ easy-to-use platform.
 
 IBM z/OS core collection, as part of the broader offering
 **Red Hat® Ansible Certified Content for IBM Z**, will be available on both,
-Galaxy as community supported and Automation Hub with enterprise support. 
+Galaxy as community supported and Automation Hub with enterprise support.
 
 Features
 ========
 
 The IBM z/OS core collection includes `connection plugins`_,
-`action plugins`_, `modules`_, `sample playbooks`_ and ansible-doc to automate
-tasks on z/OS.
+`action plugins`_, `modules`_, `sample playbooks`_, `filters`_ and 
+ansible-doc to automate tasks on z/OS.
 
 .. _connection plugins:
    https://github.com/ansible-collections/ibm_zos_core/tree/master/plugins/connection/
@@ -40,6 +48,8 @@ tasks on z/OS.
     https://github.com/ansible-collections/ibm_zos_core/tree/master/plugins/modules/
 .. _sample playbooks:
     https://github.com/ansible-collections/ibm_zos_core/tree/master/playbooks/
+.. _filters:
+   https://github.com/ansible-collections/ibm_zos_core/tree/master/plugins/filter/
 
 
 Copyright

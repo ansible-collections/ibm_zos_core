@@ -107,7 +107,7 @@ file `all.yml`_.
 
 The value for property **BPXK_AUTOCVT** must be configured to ``ON``.
 
-The value for property **ZOAU_ROOT** is the ZOA Utilities install root path,
+The value for property **ZOAU_HOME** is the ZOA Utilities install root path,
 for example, ``/usr/lpp/IBM/zoautil``.
 
 The value for property **PYTHONPATH** is the ZOA Utilities Python library path,
@@ -126,10 +126,17 @@ interpreter path, for example,
 
    environment_vars:
       _BPXK_AUTOCVT: ON
-      ZOAU_ROOT: '/usr/lpp/IBM/zoautil'
+      ZOAU_HOME: '/usr/lpp/IBM/zoautil'
       PYTHONPATH: '/usr/lpp/IBM/zoautil/lib'
       LIBPATH: '/usr/lpp/IBM/zoautil/lib/:/usr/lpp/rsusr/python36/lib:/usr/lib:/lib:.'
-      PATH: '/usr/lpp/IBM/zoautil/bin;/usr/lpp/rsusr/python36/bin/python'
+      PATH: '/usr/lpp/IBM/zoautil/bin:/usr/lpp/rsusr/python36/bin/python:/bin'
+
+.. note::
+   In ZOAU 1.0.2 and later, the property **ZOAU_ROOT** is no longer supported
+   and can be replaced with property **ZOAU_HOME**. If you are using ZOAU less
+   than or equal to version 1.0.1, you must continue to use property
+   **ZOAU_ROOT** which is the ZOA Utilities install root path required for
+   ZOAU, for example, ``/usr/lpp/IBM/zoautil``.
 
 .. _all.yml:
    https://github.com/ansible-collections/ibm_zos_core/blob/master/playbooks/group_vars/all.yml
@@ -167,6 +174,14 @@ for example, `-v`, `-vv`, `-vvv`, or `-vvvv`.
 
 Each letter `v` increases logging verbosity similar to traditional logging
 levels INFO, WARN, ERROR, DEBUG.
+
+.. note::
+   It is a good practice to review the playbook samples before executing them
+   to understand what requirements in terms of space, location, names, authority
+   and artifacts will be created and cleaned up. Although samples are always
+   written to operate without the need for users configuration, flexibility is
+   written into the samples because it can't always be determined if a sample
+   has access to the hosts resources.
 
 .. _ask-pass documentation:
    https://linux.die.net/man/1/sshpass

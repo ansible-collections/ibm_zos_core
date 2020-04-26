@@ -25,19 +25,10 @@ from ansible.utils.vars import merge_hash
 
 def _update_result(is_binary, **copy_res):
     """ Helper function to update output result with the provided values """
-    data_set_types = {
-        'PS': "Sequential",
-        'PO': "Partitioned",
-        'PDSE': "Partitioned Extended",
-        'PE': "Partitioned Extended",
-        'VSAM': "VSAM",
-        'USS': "USS"
-    }
     ds_type = copy_res.get("ds_type")
     updated_result = dict(
         file=copy_res.get("src"),
         dest=copy_res.get("dest"),
-        data_set_type=data_set_types[ds_type],
         is_binary=is_binary,
         checksum=copy_res.get("checksum"),
         changed=copy_res.get("changed")
@@ -204,9 +195,11 @@ class ActionModule(ActionBase):
                 finally:
                     os.remove(local_content)
 
-            if transfer_res.get("msg"):
-                return transfer_res
             temp_path = transfer_res.get("temp_path")
+            if transfer_res.get("msg"):
+                self._remote_cleanup(temp_path, dest, True, task_vars)
+                return transfer_res
+            
 
         new_module_args.update(
             dict(
@@ -230,16 +223,16 @@ class ActionModule(ActionBase):
             result['stdout_lines'] = copy_res.get("stdout_lines")
             result['stderr_lines'] = copy_res.get("stderr_lines")
             result['rc'] = copy_res.get('rc')
-            self._remote_cleanup(dest, copy_res.get("dest_exists"), task_vars)
+            self._remote_cleanup(temp_path, dest, copy_res.get("dest_exists"), task_vars)
             return result
 
         try:
             result = _update_result(is_binary, **copy_res)
         except Exception as err:
-            self._remote_cleanup(dest, copy_res.get("dest_exists"), task_vars)
+            self._remote_cleanup(temp_path, dest, copy_res.get("dest_exists"), task_vars)
             result['msg'] = str(err)
             result['failed'] = True
-        
+
         return result
 
     def _copy_to_remote(self, src, is_pds=False):
@@ -248,6 +241,9 @@ class ActionModule(ActionBase):
         ansible_user = self._play_context.remote_user
         ansible_host = self._play_context.remote_addr
         temp_path = _create_temp_path_name()
+        if is_pds:
+            base = os.path.basename(src)
+            self._connection.exec_command("mkdir -p {0}/{1}".format(temp_path, base))
 
         cmd = ['sftp', ansible_user + '@' + ansible_host]
         stdin = "put -r {0} {1}".format(src, temp_path)
@@ -264,11 +260,11 @@ class ActionModule(ActionBase):
             result['stderr'] = err
             result['stderr_lines'] = err.splitlines()
             result['failed'] = True
-        else:
-            result['temp_path'] = temp_path
+        result['temp_path'] = temp_path + "/" + base if is_pds else temp_path
         return result
 
-    def _remote_cleanup(self, dest, dest_exists, task_vars):
+    def _remote_cleanup(self, temp_path, dest, dest_exists, task_vars):
+        self._connection.exec_command("rm -rf {0}".format(temp_path))
         if not dest_exists:
             if '/' in dest:
                 self._connection.exec_command("rm -rf {0}".format(dest))

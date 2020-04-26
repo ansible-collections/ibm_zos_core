@@ -264,11 +264,6 @@ backup_file:
     returned: changed and if backup=true
     type: str
     sample: /path/to/file.txt.2015-02-03@04:15~
-data_set_type:
-    description: Destination file or data set type.
-    returned: success
-    type: str
-    sample: Sequential
 gid:
     description: Group id of the file, after execution
     returned: success and if dest is USS
@@ -352,294 +347,30 @@ from ansible.module_utils._text import to_bytes, to_native
 from ansible.module_utils.six import PY3
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
-    better_arg_parser, data_set_utils
+    better_arg_parser, 
+    data_set_utils,
+    encode_utils
+)
+
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
+    MissingZOAUImport,
 )
 
 try:
     from zoautil_py import Datasets, MVSCmd, types
 except Exception:
-    Datasets = ""
-    MVSCmd = ""
-    types = ""
+    Datasets = MissingZOAUImport()
+    MVSCmd = MissingZOAUImport()
+    types = MissingZOAUImport()
+
 
 MVS_PARTITIONED = frozenset({'PE', 'PO', 'PDSE', 'PDS'})
 MVS_SEQ = frozenset({'PS', 'SEQ'})
 
-#TODO: Copy from local to PDS
+
 #TODO: Copy from remote PDS to PDS
 #TODO: Copy from local to VSAM
 #TODO: Copy from remote VSAM to VSAM
-class CopyHandler(object):
-    def __init__(self, module):
-        self.module = module
-
-    def _fail_json(self, **kwargs):
-        """ Wrapper for AnsibleModule.fail_json """
-        self.module.fail_json(**kwargs)
-
-    def _run_command(self, cmd, **kwargs):
-        """ Wrapper for AnsibleModule.run_command """
-        return self.module.run_command(cmd, **kwargs)
-
-    def copy_to_ds(self, src, dest):
-        repro_cmd = "  REPRO INFILE({0}) OUTFILE({1})".format(src, dest)
-        try:
-            sysprint = _run_mvs_command("IDCAMS", repro_cmd, authorized=True)
-        except Exception as err:
-            self._fail_json(
-                msg="Error while copying data from {0} to {1}".format(src, dest), 
-                stderr=str(err)
-        )
-    
-    def copy_to_uss(
-        self, src, temp_path, dest, is_binary=False, remote_src=False, backup=False
-    ):
-        backup_path = None
-        if backup:
-            current_time = time.strftime("%Y-%m-%d@%I:%M~", time.localtime())
-            backup_file = "{0}.{1}".format(os.path.basename(dest), current_time)
-            backup_path = os.path.join(os.path.dirname(dest), backup_file)
-            copy(dest, backup_path)
-
-        if remote_src:
-            try:
-                copy(src, dest)
-            except OSError as err:
-                self._fail_json(
-                    msg="Destination {0} is not writable".format(dest), 
-                    stderr=str(err)
-                )
-        else:
-            move(temp_path, dest)
-        return backup_path
-
-    def copy_to_seq(
-        self, src, dest, src_ds_type=None, backup=False
-    ):
-        write_rc = 0
-        if src_ds_type in MVS_SEQ.union(MVS_PARTITIONED):
-            if src_ds_type in MVS_PARTITIONED and not src.endswith(')'):
-                self._fail_json(
-                    msg=(
-                        "To copy data to a sequential data set, the source"
-                            " must be a sequential data set or a partitioned data"
-                            " set member"
-                    )
-                )
-            write_rc = Datasets.copy(src, dest)
-        elif src_ds_type == "VSAM":
-            self._copy_to_ds(src, dest)
-        else:
-            try:
-                append = False
-                blksize = 64 * 1024
-                with open(src, 'r') as infile:
-                    block = infile.read(blksize)
-                    while (block and write_rc == 0):
-                        write_rc = Datasets.write(dest, block, append=append or False)
-                        append = True
-                        block = infile.read(blksize)
-            except (IOError, OSError) as err:
-                self._fail_json(
-                    msg="Error while copying data to {0}".format(dest), 
-                    stderr=str(err)
-                )
-        if write_rc != 0:
-            self._fail_json(
-                msg="Non-zero return code received while writing to data set {0}".format(dest),
-                rc=write_rc
-            )
-
-    def copy_remote_pdse(self, src_ds, dest, copy_member=False):
-        if copy_member:
-            rc, out, err = self._run_command(
-                "cp \"//{}\" \"//{}\"".format(src_ds, dest)
-            )
-            if rc != 0:
-                self._fail_json(
-                    msg="Unable to copy partitioned data set member",
-                    stdout=out,
-                    stderr=err,
-                    rc=rc
-                )
-        else:
-            dds = dict(OUTPUT=dest, INPUT=src_ds)
-            copy_cmd = "   COPY OUTDD=OUTPUT,INDD=((INPUT,R))"
-            sysprint = _run_mvs_command("IEBCOPY", copy_cmd, dds)
-
-    def copy_to_pdse(self, src_dir, dest, copy_member=False, src_file=None):
-        cmd = None
-        if copy_member:
-            cmd = "cp {0} \"//'{}'\"".format(src_file, dest)
-        else:
-            path, dirs, files = next(os.walk(src_dir))
-            cmd = "cp"
-            for file in files:
-                file = file if '.' not in file else file[:file.rfind('.')]
-                cmd += " {0}/{1}".format(path, file)
-            cmd += " \"//'{0}'\"".format(dest)
-        rc, out, err = self._run_command(cmd)
-        if rc != 0:
-            self._fail_json(msg="Unable to copy to data set {}".format(dest))
-
-    def create_data_set(self, src, ds_name, ds_type, size):
-        if (ds_type in MVS_PARTITIONED.union(MVS_SEQ)):
-            size = "{0}K".format(str(math.ceil(size/1024)))
-            rc = Datasets.create(ds_name, ds_type, size, "FB")
-            if rc != 0:
-                self._fail_json(
-                    msg="Unable to allocate destination data set to copy {0}".format(src)
-                )
-        else:
-            self._allocate_vsam(ds_name, size)
-
-    def remote_copy_handler(self, src, dest, src_ds_type, dest_ds_type, module_args):
-        if dest_ds_type in MVS_SEQ:
-            cmd = None
-            if src_ds_type == 'USS':
-                cmd = "cp {0} \"//'{1}'\"".format(src, dest)
-            elif src_ds_type in MVS_SEQ.union(MVS_PARTITIONED):
-                cmd = "cp \"//'{0}'\" \"//'{1}'\"".format(src, dest)
-            else:
-                self._copy_to_ds(dest, remote_src=True, src_ds=src)
-        elif dest_ds_type in MVS_PARTITIONED:
-            pass
-        else:
-            #TODO: Destination is a VSAM data set
-            pass
-
-    def convert_encoding(self, file_path, encoding):
-        from_code_set = encoding.get("from")
-        to_code_set = encoding.get("to")
-        self._uss_convert_encoding(
-            file_path, file_path, from_code_set, to_code_set
-        )
-
-    def backup_data_set(self, ds_name, ds_type):
-        temp_ds = Datasets.temp_name()
-        if (ds_type in MVS_SEQ):
-            rc = Datasets.copy(ds_name, temp_ds)
-            if rc != 0:
-                self._fail_json(
-                    msg=("Non-zero error code while trying to back up"
-                         "data set {0}".format(ds_name)
-                    )
-                )
-        elif (ds_type in MVS_PARTITIONED):
-            # TODO: Backup partitioned data sets
-            pass
-        else:
-            # TODO: Backup VSAM
-            pass
-        return temp_ds
-
-    def _run_mvs_command(self, pgm, cmd, dd=None, authorized=False):
-        sysprint = "sysprint"
-        sysin = "sysin"
-        pgm = pgm.upper()
-        if pgm == "IKJEFT01":
-            sysprint = "systsprt"
-            sysin = "systsin"
-
-        mvs_cmd = "mvscmd"
-        if authorized:
-            mvs_cmd += "auth"
-        mvs_cmd += " --pgm={0} --{1}=* --{2}=stdin"
-        if dd:
-            for k, v in dd.items():
-                mvs_cmd += " --{0}={1}".format(k, v)
-        
-        rc, out, err = self._run_command(
-            mvs_cmd.format(pgm, sysprint, sysin), data=cmd
-        )
-        return rc, out, err
-
-    def _allocate_vsam(self, ds_name, size):
-        volume = "000000"
-        max_size = 16777215
-        allocation_size = math.ceil(size/1048576)
-        
-        if allocation_size > max_size:
-            msg = ("Size of data exceeds maximum allowed allocation size for VSAM."
-                "Maximum size allowed: {0} Megabytes, given data size: {1}"
-                " Megabytes".format(max_size, allocation_size))
-            self._fail_json(msg=msg)
-    
-        define_sysin = ''' DEFINE CLUSTER (NAME({0})  -
-        VOLUMES({1})) -                           
-        DATA (NAME({0}.DATA) -
-        MEGABYTES({2}, 5)) -
-        INDEX (NAME({0}.INDEX)) '''.format(
-                                ds_name, volume, allocation_size
-                            )
-
-        try:
-            rc, out, err = self._run_mvs_command("IDCAMS", define_sysin)
-            if rc != 0:
-                self._fail_json(
-                    msg=("Non-zero return code received while trying to "
-                         "allocate destination VSAM"), 
-                    stderr=err,
-                    stdout=out,
-                    stderr_lines=err.splitlines(),
-                    stdout_lines=out.splitlines(),
-                    rc=rc
-                )
-        except Exception as err:
-            self._fail_json(
-                msg="Failed to call IDCAMS to allocate VSAM data set",
-                stderr=str(err)    
-            )
-
-    def _uss_convert_encoding(self, src, dest, from_code_set, to_code_set):
-        """ Convert the encoding of the data in a USS file """
-        temp_fo = None
-        if src != dest:
-            temp_fi = dest
-        else:
-            fd, temp_fi = tempfile.mkstemp()
-        iconv_cmd = 'iconv -f {0} -t {1} {2} > {3}'.format(
-            quote(from_code_set), quote(to_code_set), quote(src), quote(temp_fi)
-        )
-        self._run_command(iconv_cmd, use_unsafe_shell=True)
-        if dest != temp_fi:
-            try:
-                move(temp_fi, dest)
-            except (OSError, IOError):
-                raise
-            finally:
-                os.close(fd)
-                if os.path.exists(temp_fi):
-                    os.remove(temp_fi)
-
-
-def _get_file_checksum(src):
-    """ Calculate SHA256 hash for a given file """
-    b_src = to_bytes(src)
-    if not os.path.exists(b_src) or os.path.isdir(b_src):
-        return None
-    blksize = 64 * 1024
-    hash_digest = sha256()
-    try:
-        with open(to_bytes(src, errors='surrogate_or_strict'), 'rb') as infile:
-            block = infile.read(blksize)
-            while block:
-                hash_digest.update(block)
-                block = infile.read(blksize)
-    except Exception as err:
-        raise
-    return hash_digest.hexdigest()
-
-
-def _get_updated_dest_type(module, dest):
-    try:
-        dest_ds_utils = data_set_utils.DataSetUtils(module, dest)
-        dest_ds_type = dest_ds_utils.get_data_set_type()
-    except Exception as err:
-        module.fail_json(msg=str(err))
-    return dest_ds_type
-
-
 def run_module():
     module = AnsibleModule(
         argument_spec=dict(
@@ -664,7 +395,7 @@ def run_module():
     )
 
     arg_def = dict(
-        src=dict(arg_type='path', required=False),
+        src=dict(arg_type='data_set_or_path', required=False),
         dest=dict(arg_type='data_set_or_path', required=True),
         is_binary=dict(arg_type='bool', required=False, default=False),
         use_qualifier=dict(arg_type='bool', required=False, default=False),
@@ -719,8 +450,21 @@ def run_module():
     try:
         dest_ds_utils = data_set_utils.DataSetUtils(module, dest)
         dest_exists = dest_ds_utils.data_set_exists()
-        dest_ds_type = dest_ds_utils.get_data_set_type()
+        if '/' in dest:
+            dest_ds_type = "USS"
+        else:
+            dest_ds_type = dest_ds_utils.get_data_set_type()
+        if _temp_path:
+            src_ds_type = "USS"
+        else:
+            src_ds_utils = data_set_utils.DataSetUtils(module, src)
+            src_ds_type = src_ds_utils.get_data_set_type()
     except Exception as err:
+        module.fail_json(msg=str(err))
+
+    try:
+        _validate_target_type(src, dest, src_ds_type, dest_ds_type)
+    except IncompatibleTargetError as err:
         module.fail_json(msg=str(err))
     
     copy_handler = CopyHandler(module)
@@ -736,13 +480,15 @@ def run_module():
             backup_path = copy_handler.backup_data_set(dest, dest_ds_type)
 
     if not dest_exists:
-        if _is_pds:
+        if _is_pds or _copy_member or dest.endswith(')'):
             dest_ds_type = "PDSE"
+            dest_name = dest[:dest.rfind('(')] if _copy_member else dest
         elif is_vsam:
             dest_ds_type = "VSAM"
         else:
             dest_ds_type = "SEQ"
-        copy_handler.create_data_set(src, dest, dest_ds_type, _size)
+        if dest_ds_type in ("PDSE", "VSAM"):
+            copy_handler.create_data_set(src, dest_name, _size, dest_ds_type)
         changed = True
     try:
         if encoding:
@@ -766,23 +512,16 @@ def run_module():
             res_args['size'] = Path(dest).stat().st_size
 
         elif remote_src:
-            try:
-                src_ds_utils = data_set_utils.DataSetUtils(module, src)
-                src_ds_type = src_ds_utils.get_data_set_type()
-            except Exception as err:
-                module.fail_json(msg=str(err))
-
             copy_handler.remote_copy_handler(
                 src, dest, src_ds_type, dest_ds_type, module.params
             )
-            result['checksum'] = _get_file_checksum(_temp_path)
         else:
             # Copy to sequential data set
             if dest_ds_type in MVS_SEQ:
                 copy_handler.copy_to_seq(
                     _temp_path, dest, src_ds_type="USS", backup=backup
                 )
-
+                result['checksum'] = _get_file_checksum(_temp_path)
             # Copy to partitioned data set
             elif dest_ds_type in MVS_PARTITIONED:
                 temp_file = None
@@ -792,12 +531,8 @@ def run_module():
                     with os.fdopen(fd, write_mode) as tmp:
                         tmp.write("")
                 try:
-                    copy_handler.copy_to_pdse(
-                        src if remote_src else _temp_path, 
-                        dest, 
-                        copy_member=_copy_member, 
-                        remote_src=remote_src, 
-                        src_file=temp_file
+                    copy_handler.copy_to_pdse(_temp_path, dest, 
+                        copy_member=_copy_member
                     )
                 finally:
                     if temp_file and os.path.exists(temp_file):
@@ -814,7 +549,7 @@ def run_module():
         dict(
             src=src,
             dest=dest,
-            ds_type = _get_updated_dest_type(module, dest),
+            ds_type = dest_ds_type,
             dest_exists=dest_exists
         )  
     )
@@ -822,6 +557,256 @@ def run_module():
         res_args['backup_file'] = backup_path
 
     module.exit_json(**res_args)
+
+
+def _get_file_checksum(src):
+    """ Calculate SHA256 hash for a given file """
+    b_src = to_bytes(src)
+    if not os.path.exists(b_src) or os.path.isdir(b_src):
+        return None
+    blksize = 64 * 1024
+    hash_digest = sha256()
+    try:
+        with open(to_bytes(src, errors='surrogate_or_strict'), 'rb') as infile:
+            block = infile.read(blksize)
+            while block:
+                hash_digest.update(block)
+                block = infile.read(blksize)
+    except Exception as err:
+        raise
+    return hash_digest.hexdigest()
+
+
+def _validate_target_type(src, dest, src_type, dest_type):
+    incompatible = False
+    if (src_type in MVS_SEQ):
+        incompatible = dest_type in MVS_PARTITIONED and not dest.endswith(')')
+    elif (src_type in MVS_PARTITIONED):
+        incompatible = (dest_type == "VSAM" or 
+                        (src.endswith(')') and not dest.endswith(')')))
+    elif (src_type == "USS"):
+        pass
+    else:
+        incompatible = dest_type in MVS_PARTITIONED
+    if incompatible:
+        raise IncompatibleTargetError(src_type, dest_type)
+
+
+class CopyHandler(object):
+    def __init__(self, module):
+        self.module = module
+
+    def _fail_json(self, **kwargs):
+        """ Wrapper for AnsibleModule.fail_json """
+        self.module.fail_json(**kwargs)
+
+    def _run_command(self, cmd, **kwargs):
+        """ Wrapper for AnsibleModule.run_command """
+        return self.module.run_command(cmd, **kwargs)
+
+    def copy_to_ds(self, src, dest):
+        repro_cmd = "  REPRO INFILE({0}) OUTFILE({1})".format(src, dest)
+        try:
+            sysprint = _run_mvs_command("IDCAMS", repro_cmd, authorized=True)
+        except Exception as err:
+            self._fail_json(
+                msg="Error while copying data from {0} to {1}".format(src, dest), 
+                stderr=str(err)
+        )
+    
+    def copy_to_uss(
+        self, src, temp_path, dest, is_binary=False, remote_src=False, backup=False
+    ):
+        backup_path = None
+        if backup:
+            current_time = time.strftime("%Y-%m-%d@%I:%M~", time.localtime())
+            backup_file = "{0}.{1}".format(os.path.basename(dest), current_time)
+            backup_path = os.path.join(os.path.dirname(dest), backup_file)
+            copy(dest, backup_path)
+
+        if remote_src:
+            try:
+                copy(src, dest)
+            except OSError as err:
+                self._fail_json(
+                    msg="Destination {0} is not writable".format(dest), 
+                    stderr=str(err)
+                )
+        else:
+            move(temp_path, dest)
+        return backup_path
+
+    def copy_to_seq(
+        self, src, dest, src_ds_type=None, backup=False
+    ):
+        write_rc = 0
+        if src_ds_type != "VSAM":
+            write_rc = Datasets.copy(src, dest)
+            if write_rc != 0:
+                self._fail_json(
+                    msg="Non-zero return code received while writing to data set {0}".format(dest),
+                    rc=write_rc
+                )
+        else:
+            self._copy_to_ds(src, dest)
+
+    def copy_remote_pdse(self, src, dest, copy_member=False):
+        if copy_member:
+            rc = Datasets.copy(src, dest)
+            if rc != 0:
+                self._fail_json(
+                    msg="Unable to copy partitioned data set member",
+                    rc=rc
+                )
+        else:
+            dds = dict(OUTPUT=dest, INPUT=src)
+            copy_cmd = "   COPY OUTDD=OUTPUT,INDD=((INPUT,R))"
+            sysprint = _run_mvs_command("IEBCOPY", copy_cmd, dds)
+
+    def copy_to_pdse(self, src, dest, copy_member=False, src_file=None):
+        out = err = None
+        if copy_member:
+            rc = Datasets.copy(src, dest)
+        else:
+            path, dirs, files = next(os.walk(src))
+            cmd = "cp"
+            for file in files:
+                file = file if '.' not in file else file[:file.rfind('.')]
+                cmd += " {0}/{1}".format(path, file)
+            cmd += " \"//'{0}'\"".format(dest)
+        rc, out, err = self._run_command(cmd)
+        if rc != 0:
+            self._fail_json(
+                msg="Unable to copy to data set {}".format(dest),
+                stdout=out, stderr=err, rc=rc,
+                stdout_lines=out.splitlines() if out else None,
+                stderr_lines=err.splitlines() if err else None
+            )
+
+    def create_data_set(self, src, dest_name, size, dest_ds_type, remote_src=False):
+        out = err = None
+        if (dest_ds_type == "PDSE"):
+            if remote_src:
+                alloc_cmd = "  ALLOC DS('{0}') LIKE('{1}')".format(dest_name, src)
+                rc, out, err = self._run_mvs_command("IKJEFT01", alloc_cmd, authorized=True)
+            else:
+                size = "{0}K".format(str(int(math.ceil(size/1024))))
+                rc = Datasets.create(dest_name, dest_ds_type, size, "FB")
+            if rc != 0:
+                self._fail_json(
+                    msg="Unable to allocate destination data set to copy {0}".format(src),
+                    stdout=out, stderr=err, rc=rc,
+                    stdout_lines=out.splitlines() if out else None,
+                    stderr_lines=err.splitlines() if err else None
+                )
+        else:
+            self._allocate_vsam(dest_name, size)
+
+    def remote_copy_handler(self, src, dest, src_ds_type, dest_ds_type, module_args):
+        if dest_ds_type in MVS_SEQ:
+            self.copy_to_seq(src, dest, src_ds_type)
+        elif dest_ds_type in MVS_PARTITIONED:
+            pass
+        else:
+            #TODO: Destination is a VSAM data set
+            pass
+
+    def convert_encoding(self, file_path, encoding):
+        from_code_set = encoding.get("from")
+        to_code_set = encoding.get("to")
+        enc_utils = encode_utils.EncodeUtils(self.module)
+        if os.path.isdir(file_path):
+            path, dirs, files = next(os.walk(file_path))
+            for file in files:
+                member = path + "/" + file
+                enc_utils.uss_convert_encoding(
+                   member, member, from_code_set, to_code_set
+                )
+        else:
+            enc_utils.uss_convert_encoding(
+                file_path, file_path, from_code_set, to_code_set
+            )
+
+    def backup_data_set(self, ds_name, ds_type):
+        temp_ds = Datasets.temp_name()
+        if (ds_type in MVS_SEQ):
+            rc = Datasets.copy(ds_name, temp_ds)
+            if rc != 0:
+                self._fail_json(
+                    msg=("Non-zero error code while trying to back up"
+                         "data set {0}".format(ds_name)
+                    )
+                )
+        elif (ds_type in MVS_PARTITIONED):
+            # TODO: Backup partitioned data sets
+            pass
+        else:
+            # TODO: Backup VSAM
+            pass
+        return temp_ds
+
+    def _run_mvs_command(self, pgm, cmd, dd=None, authorized=False):
+        sysprint = "sysprint"
+        sysin = "sysin"
+        pgm = pgm.upper()
+        if pgm == "IKJEFT01":
+            sysprint = "systsprt"
+            sysin = "systsin"
+
+        mvs_cmd = "mvscmd"
+        if authorized:
+            mvs_cmd += "auth"
+        mvs_cmd += " --pgm={0} --{1}=* --{2}=stdin"
+        if dd:
+            for k, v in dd.items():
+                mvs_cmd += " --{0}={1}".format(k, v)
+        
+        rc, out, err = self._run_command(
+            mvs_cmd.format(pgm, sysprint, sysin), data=cmd
+        )
+        return rc, out, err
+
+    def _allocate_vsam(self, ds_name, size):
+        volume = "000000"
+        max_size = 16777215
+        allocation_size = math.ceil(size/1048576)
+        
+        if allocation_size > max_size:
+            msg = ("Size of data exceeds maximum allowed allocation size for VSAM."
+                "Maximum size allowed: {0} Megabytes, given data size: {1}"
+                " Megabytes".format(max_size, allocation_size))
+            self._fail_json(msg=msg)
+    
+        define_sysin = ''' DEFINE CLUSTER (NAME({0})  -
+            VOLUMES({1})) -                           
+            DATA (NAME({0}.DATA) -
+            MEGABYTES({2}, 5)) -
+            INDEX (NAME({0}.INDEX)) '''.format(
+                                ds_name, volume, allocation_size
+                            )
+
+        try:
+            rc, out, err = self._run_mvs_command("IDCAMS", define_sysin)
+            if rc != 0:
+                self._fail_json(
+                    msg=("Non-zero return code received while trying to "
+                         "allocate destination VSAM"), 
+                    stderr=err,
+                    stdout=out,
+                    stderr_lines=err.splitlines(),
+                    stdout_lines=out.splitlines(),
+                    rc=rc
+                )
+        except Exception as err:
+            self._fail_json(
+                msg="Failed to call IDCAMS to allocate VSAM data set",
+                stderr=str(err)    
+            )
+
+class IncompatibleTargetError(Exception):
+    def __init__(self, src_type, dest_type):
+        self.msg = "Incompatible target type '{0}' for source '{1}'".format(dest_type, src_type)
+        super().__init__(self.msg)
 
 
 def main():

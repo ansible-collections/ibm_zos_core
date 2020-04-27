@@ -167,6 +167,7 @@ EXAMPLES = r'''
 '''
 
 import re
+import json
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser, data_set_utils)
@@ -183,18 +184,17 @@ def absent(zosdest, line, regexp, backup, file_type):
 
 def main():
     module_args = dict(
-            zosdest=dict(type='str', required=True),
+            path=dict(type='str', required=True, aliases=['zosdest', 'dest', 'destfile', 'name']),
             state=dict(type='str', default='present', choices=['absent', 'present']),
-            regexp=dict(type='str'),
-            line=dict(type='str'),
+            regexp=dict(type='str', aliases=['regex']),
+            line=dict(type='str', aliases=['value']),
             insertafter=dict(type='str'),
             insertbefore=dict(type='str'),
             backrefs=dict(type='bool', default=False),
-            backup=dict(type='str'),
+            backup=dict(type='bool', default=False),
+            backup_path=dict(type='str', aliases=['b_path']),
             firstmatch=dict(type='bool', default=False),
-            encoding=dict(
-                type=str,
-            ),
+            encoding=dict(type=str, default='EBCDIC', choices=['ASCII', 'EBCDIC']),
         )
     module = AnsibleModule(
         argument_spec=module_args,
@@ -203,10 +203,12 @@ def main():
     result = dict(
         changed=False,
         original_message='',
-        message=''
+        message='',
+        found=0,
+        backup=''
     )
     arg_defs = dict(
-        zosdest=dict(
+        path=dict(
             arg_type='data_set_or_path',
             required=True,
             ),
@@ -253,8 +255,10 @@ def main():
             msg="Parameter verification failed", stderr=str(err)
         )
     backup = new_params.get('backup')
+    if new_params.get('backup_path'):
+        backup = new_params.get('backup_path')
     backrefs = new_params.get('backrefs')
-    zosdest = new_params.get('zosdest')
+    path = new_params.get('path')
     firstmatch = new_params.get('firstmatch')
     regexp = new_params.get('regexp')
     line = new_params.get('line')
@@ -262,7 +266,7 @@ def main():
     ins_bef = new_params.get('insertbefore')
     encoding = new_params.get('encoding')
     # analysis the file type
-    ds_utils = data_set_utils.DataSetUtils(module, zosdest)
+    ds_utils = data_set_utils.DataSetUtils(module, path)
     file_type = ds_utils.get_data_set_type()
     if file_type == 'USS':
         type = 1
@@ -272,12 +276,20 @@ def main():
         if line is None:
             module.fail_json(msg='line is required with state=present')
         
-        return_content = present(zosdest,line, regexp, ins_aft, ins_bef, encoding, backup, firstmatch, backrefs,type)
-        result['return_content'] = return_content
+        return_content = present(path,line, regexp, ins_aft, ins_bef, encoding, backup, firstmatch, backrefs,type)
+        #result['return_content'] = return_content
     else:
         if regexp is None and line is None:
             module.fail_json(msg='one of line or regexp is required with state=absent')
-        return_content = absent(zosdest, line, regexp, backup, type)
+        return_content = absent(path, line, regexp, backup, type)
+        #result['return_content'] = return_content        
+    try:
+        ret = json.loads(return_content)
+        result['cmd'] = ret['cmd']
+        result['changed'] = ret['changed']
+        result['found'] = ret['found']
+    except:
+        result['message'] = "warning: dsed return content isn't in json format"
         result['return_content'] = return_content
     module.exit_json(**result)
 

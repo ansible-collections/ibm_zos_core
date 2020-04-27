@@ -181,10 +181,20 @@ levels INFO, WARN, ERROR, DEBUG.
    and artifacts will be created and cleaned up. Although samples are always
    written to operate without the need for users configuration, flexibility is
    written into the samples because it can't always be determined if a sample
-   has access to the hosts resources.
+   has access to the hosts resources. Review the playbook notes sections for
+   additional details and configuration.
+
+   Sample playbooks often submit JCL that is included with this collection
+   under the `files directory`_. Review the sample JCL for necessary edits to
+   allow for submission on the target system. The most common changes are to
+   add a CLASS parameter and change the NOTIFY user parameter. For more details
+   see the JCL notes section included in the collection.
 
 .. _ask-pass documentation:
    https://linux.die.net/man/1/sshpass
+
+.. _files directory:
+   https://github.com/ansible-collections/ibm_zos_core/tree/dev/playbooks/files
 
 
 

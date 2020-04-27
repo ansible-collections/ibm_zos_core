@@ -5,8 +5,8 @@
 Releases
 ========
 
-Version 1.1.0-beta
-------------------
+Version 1.1.0-beta1
+-------------------
 
 Notes
    * Update recommended

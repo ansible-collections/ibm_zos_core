@@ -33,23 +33,44 @@ refer to the installation path as ``~/.ansible/collections/ibm/ibm_zos_core``.
 
 
 Sample Configuration and Setup
----------------------------------------
+------------------------------
+Each release of Ansible provides options beyond the options identified in the
+sample configurations that are included with this collection. These options
+allow you to customize how Ansible operates. Ansible supports several sources
+to configure its behavior, they follow the Ansible `precedence rules`_.
 
-Ansible config file `ansible.cfg` can override nearly all
-``ansible-playbook`` configurations. Also included in the
-`playbooks directory`_ is a sample `ansible.cfg`_ that with little
-modification can supplement ``ansible-playbook``.
+Ansible config file `ansible.cfg` can override nearly all ``ansible-playbook``
+configurations. Included in the `playbooks directory`_ is a sample
+`ansible.cfg`_ that with little modification can supplement
+``ansible-playbook``.
 
-In the sample `ansible.cfg`_, the only required configuration is:
+In the sample `ansible.cfg`_, the only required configuration is
 ``pipelining = True``
+
+We often see users who specify the SSH port used by Ansible and instruct
+Ansible where to write temporary files on the target. This can easily be done
+by adding a these options to your inventory or `ansible.cfg`.
+
+An example of adding these options to `ansible.cfg` is shown below, see the
+sample `ansible.cfg`_ notes for more details.
+
+.. code-block:: yaml
+
+   [defaults]
+   forks = 25
+   remote_tmp = /u/ansible/tmp
+   remote_port = 2022
 
 For more information about available configurations for ``ansible.cfg``, read
 the Ansible documentation on `Ansible configuration settings`_.
+
 
 .. _ansible.cfg:
    https://github.com/ansible-collections/ibm_zos_core/blob/master/playbooks/ansible.cfg
 .. _Ansible configuration settings:
    https://docs.ansible.com/ansible/latest/reference_appendices/config.html#ansible-configuration-settings-locations
+.. _precedence rules:
+   https://docs.ansible.com/ansible/latest/reference_appendices/general_precedence.html#general-precedence-rules
 
 Inventory
 ---------
@@ -84,8 +105,13 @@ path. This is useful for systems with more than one Python installation, or
 when Python is not located at in the default location **/usr/bin/python**, for
 example, ``ansible_python_interpreter: /usr/lpp/rsusr/python36/bin/python``
 
+
 For more information on python configuration requirements on z/OS, refer to
 Ansible `FAQ`_.
+
+For behavioral inventory parameters such as ``ansible_port`` which allows you
+to set the port for a host can be reviewed in the
+`behavioral inventory parameters`_.
 
 .. _inventory:
    https://docs.ansible.com/ansible/latest/user_guide/intro_inventory.html
@@ -95,6 +121,8 @@ Ansible `FAQ`_.
    https://github.com/ansible-collections/ibm_zos_core/blob/master/playbooks/inventory
 .. _FAQ:
    https://docs.ansible.com/ansible/latest/reference_appendices/faq.html#running-on-z-os
+.. behavioral inventory parameters:
+   https://docs.ansible.com/ansible/latest/user_guide/intro_inventory.html#connecting-to-hosts-behavioral-inventory-parameters
 
 
 Group_vars
@@ -140,6 +168,7 @@ interpreter path, for example,
 
 .. _all.yml:
    https://github.com/ansible-collections/ibm_zos_core/blob/master/playbooks/group_vars/all.yml
+
 
 
 Run the playbook

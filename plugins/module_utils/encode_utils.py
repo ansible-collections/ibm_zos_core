@@ -10,14 +10,12 @@ from tempfile import NamedTemporaryFile, TemporaryDirectory, mkstemp
 from math import floor, ceil
 from os import path, walk, makedirs, unlink
 from ansible.module_utils.six import PY3
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set_utils import (
-    DataSetUtils
-)
 
 import shutil
 import errno
 import os
 import re
+import time
 
 try:
     from zoautil_py import Datasets, MVSCmd
@@ -34,6 +32,11 @@ else:
 
 REPRO = '''  REPRO INDATASET({}) -
     OUTDATASET({}) REPLACE '''
+BACKUP = ''' COPY DATASET(INCLUDE( {0} )) -
+    RENUNC({0}, -
+    {1}) -
+    CATALOG -
+    OPTIMIZE(4) '''
 LISTCAT = " LISTCAT ENT('{}') ALL"
 
 
@@ -140,15 +143,77 @@ class EncodeUtils(object):
             OSError: When any exception is raised during the data set allocation
         """
         size = str(space_u * 2) + 'K'
-        try:
-            temp_ps = DataSetUtils.create_temp_data_set(
-                'TEMP',
-                size=size,
-                lrecl=reclen
-            )
-        except OSError:
-            raise
+        hlq = Datasets.hlq()
+        temp_ps = Datasets.temp_name(hlq)
+        rc = Datasets.create(temp_ps, 'SEQ', size, 'FB', '', reclen)
+        if rc:
+            raise OSError("Failed when allocating temporary sequential data set!")
         return temp_ps
+
+    def mvs_file_backup(self, dsn, bk_dsn):
+        """Create a backup data set for an MVS data set
+
+        Arguments:
+            dsn {str} -- The name of the data set to be backuped.
+                         It could be an MVS PS/PDS/PDSE/VSAM(KSDS), etc.
+            bk_dsn {str} -- The name of the backup data set.
+
+        Returns:
+            str -- Name of the backup data set.
+            err_msg -- The message to indicate the backup is successfully or not.
+        """
+        err_msg = None
+        out = None
+        if not bk_dsn:
+            hlq = Datasets.hlq()
+            bk_dsn = Datasets.temp_name(hlq)
+        bk_sysin = BACKUP.format(dsn, bk_dsn)
+        bkup_cmd = "mvscmdauth --pgm=adrdssu --sysprint=stdout --sysin=stdin"
+        rc, stdout, stderr = self.module.run_command(bkup_cmd, data=bk_sysin, use_unsafe_shell=True)
+        if rc > 4:
+            out = stdout
+            if 'DUPLICATE' in out:
+                err_msg = 'Backup data set {0} exists, please check'.format(bk_dsn)
+            else:
+                err_msg = "Failed when creating the backup of the data set {0} : {1}". format(dsn, out)
+                if Datasets.exists(bk_dsn):
+                    Datasets.delete(bk_dsn)
+        return bk_dsn, err_msg
+
+    def uss_file_backup(self, file, bk_file):
+        """Create a backup file for a USS file or path
+
+        Arguments:
+            file {str} -- The name of the USS file or path to be backuped.
+            bk_file {str} -- The name of the backup file.
+
+        Returns:
+            str -- Name of the backup file.
+            err_msg -- The message to indicate the backup is successfully or not.
+        """
+        err_msg = None
+        out = None
+        file_name = path.abspath(file)
+        ext = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()).lower()
+        backup_f = '{0}@{1}-bak.tar'.format(file, ext)
+        backup_base = path.basename(backup_f)
+        if bk_file:
+            bk_file_name = path.basename(bk_file)
+            if not bk_file_name:
+                if not path.exists(bk_file):
+                    backup_f = bk_file
+                    err_msg = "Path {0} for the backup does not exist.".format(bk_file)
+                else:
+                    backup_f = path.join(bk_file, backup_base)
+            else:
+                if path.isdir(bk_file):
+                    backup_f = path.join(bk_file, backup_base)
+                else:
+                    backup_f = bk_file
+        if not err_msg:
+            bk_cmd = 'tar -cpf {0} {1}'.format(quote(backup_f), quote(file_name))
+            rc, out, err = self.run_uss_cmd(bk_cmd)
+        return backup_f, err_msg
 
     def copy_uss2mvs(self, src, dest, ds_type):
         """Copy uss a file or path to an MVS data set

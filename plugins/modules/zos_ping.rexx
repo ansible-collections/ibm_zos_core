@@ -13,7 +13,7 @@ DOCUMENTATION = '''
 ---
 module: zos_ping
 version_added: 2.9
-short_description: Determine if required and optional dependencies are present on the target host.
+short_description: Ping z/OS and check dependencies.
 description:
   - M(zos_ping) verifies the presence of z/OS Web Client Enablement Toolkit,
     iconv, and Python.

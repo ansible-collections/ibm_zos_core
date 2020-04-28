@@ -15,8 +15,7 @@ ANSIBLE_METADATA = {'metadata_version': '1.1',
 DOCUMENTATION = r'''
 module: zos_encode
 author: "Zhao Lu (@yourfuwa2015)"
-short_description: Convert the encoding of characters read from a USS file or
-                   an MVS data set.
+short_description: Encode data in USS and data sets
 description:
     - Convert the encoding of characters read from either Unix System
       Services (USS) file or path, PS(sequential data set), PDS/E or KSDS(

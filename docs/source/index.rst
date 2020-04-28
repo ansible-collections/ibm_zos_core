@@ -14,11 +14,12 @@ commands, TSO commands, ping and querying operator actions.
 
 The **IBM z/OS core collection** serves as a dependency for other collections
 under the **Red Hat® Ansible Certified Content for IBM Z** umbrella and
-works closely with offerings such as [IBM z/OS IMS collection]
-(https://github.com/ansible-collections/ibm_zos_ims) to deliver
+works closely with offerings such as `IBM z/OS IMS collection`_ to deliver
 a solution that will enable you to automate tasks on z/OS subsystems such
 as IMS.
 
+.. _IBM z/OS IMS collection:
+   https://github.com/ansible-collections/ibm_zos_ims
 Red Hat Ansible Certified Content for IBM Z
 ===========================================
 
@@ -37,7 +38,7 @@ Features
 ========
 
 The IBM z/OS core collection includes `connection plugins`_,
-`action plugins`_, `modules`_, `sample playbooks`_, `filters`_ and 
+`action plugins`_, `modules`_, `sample playbooks`_, `filters`_ and
 ansible-doc to automate tasks on z/OS.
 
 .. _connection plugins:

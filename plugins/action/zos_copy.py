@@ -8,11 +8,11 @@ __metaclass__ = type
 import os
 import stat
 import re
-import pathlib
 import time
 import subprocess
 
 from tempfile import mkstemp
+from pathlib import Path
 
 from ansible.errors import AnsibleError, AnsibleFileNotFound
 from ansible.module_utils._text import to_bytes, to_native, to_text
@@ -30,7 +30,6 @@ def _update_result(is_binary, **copy_res):
         file=copy_res.get("src"),
         dest=copy_res.get("dest"),
         is_binary=is_binary,
-        checksum=copy_res.get("checksum"),
         changed=copy_res.get("changed")
     )
     if ds_type == "USS":
@@ -43,6 +42,7 @@ def _update_result(is_binary, **copy_res):
                 mode=copy_res.get("mode"),
                 state=copy_res.get("state"),
                 size=copy_res.get("size"),
+                checksum=copy_res.get("checksum"),
             )
         )
     if copy_res.get("backup_file"):
@@ -143,8 +143,7 @@ class ActionModule(ActionBase):
             )
         elif content and src:
             result['msg'] = "Only 'content' or 'src' can be provided, not both"
-        elif local_follow and not os.path.islink(src):
-            result['msg'] = "The provided source is not a symbolic link"
+
         elif encoding and is_binary:
             result['msg'] = "The 'encoding' parameter is not valid for binary transfer."        
         if not is_uss:
@@ -160,6 +159,13 @@ class ActionModule(ActionBase):
                     "The local file {0} does not have appropriate "
                     "read permisssion".format(src)
                 )
+            elif src and local_follow and not os.path.islink(src):
+                result['msg'] = "The provided source is not a symbolic link"
+            elif src and os.path.islink(b_src) and (not local_follow):
+                result['msg'] = (
+                    "Source is a symbolic link. If you would like to follow"
+                    " symbolic links, set 'local_follow' parameter to true"
+                )
             elif is_pds and is_uss:
                 result['msg'] = (
                     "Source is a directory, which can not be copied "
@@ -171,35 +177,29 @@ class ActionModule(ActionBase):
             return result
 
         if not remote_src:
-            if not content:
-                if is_pds:
-                    path, dirs, files = next(os.walk(src))
-                    dir_size = 0
-                    if len(dirs) > 0:
-                        result['msg'] = "Subdirectory found inside source directory"
-                        result.update(dict(src=src, dest=dest, changed=False, failed=True))
-                        return result
-                    
-                    for file in files:
-                        dir_size += pathlib.Path(path + "/" + file).stat().st_size
-                    
-                    new_module_args.update(dict(size=dir_size))
-                else:
-                    new_module_args['size'] = pathlib.Path(src).stat().st_size
-
-                transfer_res = self._copy_to_remote(src, is_pds=is_pds)
-            else:
+            if content:
                 try:
                     local_content = _write_content_to_file(content)
                     transfer_res = self._copy_to_remote(local_content)
                 finally:
                     os.remove(local_content)
+            else:
+                if is_pds:
+                    path, dirs, files = next(os.walk(src))
+                    if dirs:
+                        result['msg'] = "Subdirectory found inside source directory"
+                        result.update(dict(src=src, dest=dest, changed=False, failed=True))
+                        return result
+                    dir_size = sum(Path(path + "/" + f).stat().st_size for f in files)
+                    new_module_args.update(dict(size=dir_size))
+                else:
+                    new_module_args['size'] = Path(src).stat().st_size
+                transfer_res = self._copy_to_remote(src, is_pds=is_pds)
 
             temp_path = transfer_res.get("temp_path")
             if transfer_res.get("msg"):
                 self._remote_cleanup(temp_path, dest, True, task_vars)
                 return transfer_res
-            
 
         new_module_args.update(
             dict(
@@ -223,13 +223,13 @@ class ActionModule(ActionBase):
             result['stdout_lines'] = copy_res.get("stdout_lines")
             result['stderr_lines'] = copy_res.get("stderr_lines")
             result['rc'] = copy_res.get('rc')
-            self._remote_cleanup(temp_path, dest, copy_res.get("dest_exists"), task_vars)
+            self._remote_cleanup(dest, copy_res.get("dest_exists"), task_vars)
             return result
 
         try:
             result = _update_result(is_binary, **copy_res)
         except Exception as err:
-            self._remote_cleanup(temp_path, dest, copy_res.get("dest_exists"), task_vars)
+            self._remote_cleanup(dest, copy_res.get("dest_exists"), task_vars)
             result['msg'] = str(err)
             result['failed'] = True
 
@@ -237,17 +237,16 @@ class ActionModule(ActionBase):
 
     def _copy_to_remote(self, src, is_pds=False):
         result = dict()
-        stdin = None
         ansible_user = self._play_context.remote_user
         ansible_host = self._play_context.remote_addr
         temp_path = _create_temp_path_name()
+        cmd = ['sftp', ansible_user + '@' + ansible_host]
+        stdin = "put -r {0} {1}".format(src, temp_path)
+
         if is_pds:
             base = os.path.basename(src)
             self._connection.exec_command("mkdir -p {0}/{1}".format(temp_path, base))
-
-        cmd = ['sftp', ansible_user + '@' + ansible_host]
-        stdin = "put -r {0} {1}".format(src, temp_path)
-        if not is_pds:
+        else:
             stdin = stdin.replace(" -r", "")
         transfer_data = subprocess.Popen(
             cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE
@@ -260,12 +259,13 @@ class ActionModule(ActionBase):
             result['stderr'] = err
             result['stderr_lines'] = err.splitlines()
             result['failed'] = True
-        result['temp_path'] = temp_path + "/" + base if is_pds else temp_path
+            return result
+
+        result['temp_path'] = temp_path
         return result
 
-    def _remote_cleanup(self, temp_path, dest, dest_exists, task_vars):
-        self._connection.exec_command("rm -rf {0}".format(temp_path))
-        if not dest_exists:
+    def _remote_cleanup(self, dest, dest_exists, task_vars):
+        if dest_exists is False:
             if '/' in dest:
                 self._connection.exec_command("rm -rf {0}".format(dest))
             else:

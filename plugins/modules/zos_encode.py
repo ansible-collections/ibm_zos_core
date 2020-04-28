@@ -92,7 +92,6 @@ options:
         then the MVS backup data set recovery can be done by renaming it.
     required: false
     type: str
-    default: None
 notes:
     - All data sets are always assumed to be catalogged. If an uncataloged data
       set needs to be encoded, it should be catalogged first.

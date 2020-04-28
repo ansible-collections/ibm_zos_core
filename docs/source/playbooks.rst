@@ -121,7 +121,7 @@ to set the port for a host can be reviewed in the
    https://github.com/ansible-collections/ibm_zos_core/blob/master/playbooks/inventory
 .. _FAQ:
    https://docs.ansible.com/ansible/latest/reference_appendices/faq.html#running-on-z-os
-.. behavioral inventory parameters:
+.. _behavioral inventory parameters:
    https://docs.ansible.com/ansible/latest/user_guide/intro_inventory.html#connecting-to-hosts-behavioral-inventory-parameters
 
 

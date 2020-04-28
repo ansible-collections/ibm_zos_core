@@ -20,6 +20,7 @@ as IMS.
 
 .. _IBM z/OS IMS collection:
    https://github.com/ansible-collections/ibm_zos_ims
+
 Red Hat Ansible Certified Content for IBM Z
 ===========================================
 

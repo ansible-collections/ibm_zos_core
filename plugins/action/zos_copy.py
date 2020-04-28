@@ -198,7 +198,7 @@ class ActionModule(ActionBase):
 
             temp_path = transfer_res.get("temp_path")
             if transfer_res.get("msg"):
-                self._remote_cleanup(temp_path, dest, True, task_vars)
+                self._remote_cleanup(dest, True, task_vars)
                 return transfer_res
 
         new_module_args.update(

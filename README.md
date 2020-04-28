@@ -36,16 +36,11 @@ Features
 ========
 
 The IBM z/OS core collection includes
-[connection plugins]
-(https://github.com/ansible-collections/ibm_zos_core/tree/master/plugins/connection/),
-[action plugins]
-(https://github.com/ansible-collections/ibm_zos_core/tree/master/plugins/action/),
-[modules]
-(https://github.com/ansible-collections/ibm_zos_core/tree/master/plugins/modules/),
-[sample playbooks]
-(https://github.com/ansible-collections/ibm_zos_core/tree/master/playbooks/),
-[filters]
-(https://github.com/ansible-collections/ibm_zos_core/tree/master/plugins/filter/),
+[connection plugins](https://github.com/ansible-collections/ibm_zos_core/tree/master/plugins/connection/),
+[action plugins](https://github.com/ansible-collections/ibm_zos_core/tree/master/plugins/action/),
+[modules](https://github.com/ansible-collections/ibm_zos_core/tree/master/plugins/modules/),
+[sample playbooks](https://github.com/ansible-collections/ibm_zos_core/tree/master/playbooks/),
+[filters](https://github.com/ansible-collections/ibm_zos_core/tree/master/plugins/filter/),
 and ansible-doc to automate tasks on z/OS.
 
 Copyright

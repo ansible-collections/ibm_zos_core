@@ -381,7 +381,6 @@ MVS_SEQ = frozenset({'PS', 'SEQ'})
 #TODO: Copy from remote VSAM to VSAM
 #TODO: Backup VSAM
 #TODO: Add support for following local and remote links
-#TODO: Add a 'mode' arg_type to BetterArgParser
 def run_module():
     module = AnsibleModule(
         argument_spec=dict(
@@ -397,14 +396,14 @@ def run_module():
             force=dict(type='bool', default=True),
             remote_src=dict(type='bool', default=False),
             checksum=dict(type='str'),
-            mode=dict(type='str'),
             is_uss=dict(type='bool'),
             is_pds=dict(type='bool'),
             size=dict(type='int'),
             temp_path=dict(type='str'),
             num_files=dict(type='int'),
             copy_member=dict(type='bool')
-        )
+        ),
+        add_file_common_args=True
     )
 
     arg_def = dict(
@@ -419,7 +418,6 @@ def run_module():
         force=dict(arg_type='bool', default=True, required=False),
         remote_src=dict(arg_type='bool', default=False, required=False),
         checksum=dict(arg_type='str', required=False),
-        mode=dict(arg_type='str', required=False)
     )
 
     if module.params.get("encoding"):
@@ -456,7 +454,9 @@ def run_module():
     force = parsed_args.get('force')
     backup = parsed_args.get('backup')
     backup_file = parsed_args.get('backup_file')
-    mode = parsed_args.get('mode')
+    mode = module.params.get('mode')
+    group = module.params.get('group')
+    owner = module.params.get('owner')
     encoding = module.params.get('encoding')
     _is_uss = module.params.get('is_uss')
     _is_pds = module.params.get('is_pds')
@@ -562,10 +562,14 @@ def run_module():
                 src, _temp_path, dest, remote_src=remote_src
             )
 
-            if mode:
-                module.set_mode_if_different(dest, mode, True)
+            if mode is not None:
+                changed = module.set_mode_if_different(dest, mode, True)
+            if group is not None:
+                changed = module.set_group_if_different(dest, group, True)
+            if owner is not None:
+                changed = module.set_owner_if_different(dest, owner, True)
 
-            res_args['changed'] = remote_checksum != dest_checksum
+            res_args['changed'] = (remote_checksum != dest_checksum) or changed
             res_args['checksum'] = remote_checksum
             res_args['size'] = Path(dest).stat().st_size
     

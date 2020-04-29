@@ -74,8 +74,9 @@ options:
   backup:
     description:
       - Creates a backup file or backup data set for dest, including the
-        timestamp information to ensure that you retrieve the original file back if you
-        somehow clobbered it incorrectly.
+        timestamp information to ensure that you retrieve the original file in case of 
+        an accidental data loss, file corruption, or a hard drive crash.
+        ### I think clobbered it incorrectly could mean a variety of things. My edits are just suggestions. Please use an appropriate alternative.
       - If the dest is a USS file or USS path, the name of the backup file
         will be the destination file or path name appended with a timestamp,
         e.g. /path/file_name.2020-04-23-08-32-29-bak.tar.
@@ -83,16 +84,16 @@ options:
         will be the MVS data set name appended with two qualifiers to
         indicate timestamp information,
         e.g. SOURCE.DATA.SET.NAME.D200423.T083229
-      - USS file or path are backuped in a compressed format, the USS
+      - USS file or path are backed up in a compressed format; the USS
         pax or tar command is required for recovery.
-      - MVS backup data set recovery can be done by renaming it.
+      - MVS backup data set can be recovered by renaming it.
     required: false
     type: bool
     default: false
 notes:
-    - All data sets are always assumed to be catalogged. If an uncataloged data
-      set needs to be encoded, it should be catalogged first.
-seealso:
+    - All data sets are always assumed to be cataloged. If an uncataloged data
+      set needs to be encoded, it should be cataloged first.
+see also:
     - module: data_set_utils, encode_utils
 '''
 
@@ -213,13 +214,18 @@ src:
     returned: always
     type: str
 dest:
-    description: The name of the output file or data set, if the dest is a
-      uss file or path and the file status has been changed in the conversion,
-      the file stat info also will also be returned.
+    description: The name of the output file or data set. If dest is a
+      USS file or path and the file status has been changed in the conversion,
+      the file stat information also will also be returned.
+      ### file stat --> Is this a property or regular English language expression? If this is a regular english language expression, consider expanding it.
+      ### I see this usage : if "the dest". If we want to use "the" then we should 
+      ### use the regular english language expression "destination". If we are using the property "dest" the article need not be present.
+      ### for example, The name of the output file or data set, if dest is a USS file or path....OR
+      ### The name of the output file or data set, if the destination is a USS file or path.
     returned: always
     type: str
 backup_file:
-    description: Name of backup file created
+    description: Name of the backup file created
     returned: changed and if backup=yes
     type: str
     sample: /path/file_name.2020-04-23-08-32-29-bak.tar

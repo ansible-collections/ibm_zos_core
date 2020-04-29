@@ -8,11 +8,13 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+ANSIBLE_METADATA = {
+    "metadata_version": "1.1",
+    "status": ["preview"],
+    "supported_by": "community",
+}
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 module: zos_encode
 author: "Zhao Lu (@yourfuwa2015)"
 short_description: Convert the encoding of characters read from a USS file or
@@ -97,9 +99,9 @@ notes:
       set needs to be encoded, it should be catalogged first.
 seealso:
     - module: data_set_utils, encode_utils
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 - name: Convert file encoding from IBM-1047 to ISO8859-1 to the same file
   zos_encode:
     src: /zos_encode/test.data
@@ -208,9 +210,9 @@ EXAMPLES = r'''
     from_encoding: ISO8859-1
     to_encoding: IBM-1047
 
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 src:
     description: The name of the input file or data set
     returned: always
@@ -230,7 +232,7 @@ changed:
     description: True if the state was changed, otherwise False
     returned: always
     type: bool
-'''
+"""
 
 import time
 import re
@@ -238,11 +240,16 @@ from os import path, makedirs
 from ansible.module_utils.six import PY3
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
-    better_arg_parser, data_set_utils, encode_utils
+    better_arg_parser,
+    data_set_utils,
+    encode_utils,
+    backup as zos_backup,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     MissingZOAUImport,
 )
+
+
 if PY3:
     from shlex import quote
 else:
@@ -257,7 +264,7 @@ except Exception:
 
 def exit_when_exception(err_msg, result):
     """ Call Ansible module.fail_json to exit with a warning message """
-    result['msg'] = err_msg
+    result["msg"] = err_msg
     module.fail_json(**result)
 
 
@@ -267,12 +274,12 @@ def check_pds_member(ds, mem):
     if mem in Datasets.list_members(ds):
         check_rc = True
     else:
-        err_msg = 'Cannot find member {0} in {1}'.format(mem, ds)
+        err_msg = "Cannot find member {0} in {1}".format(mem, ds)
     return check_rc, err_msg
 
 
 def check_mvs_dataset(ds):
-    ''' To call data_set_utils to check if the MVS data set exists or not '''
+    """ To call data_set_utils to check if the MVS data set exists or not """
     check_rc = False
     err_msg = None
     ds_type = None
@@ -294,7 +301,7 @@ def check_mvs_dataset(ds):
 
 
 def check_file(file):
-    ''' check file is a USS file/path or an MVS data set '''
+    """ check file is a USS file/path or an MVS data set """
     is_uss = False
     is_mvs = False
     ds_type = None
@@ -306,16 +313,16 @@ def check_file(file):
             is_uss = True
     else:
         ds = file.upper()
-        if '(' in ds:
-            dsn = ds[0:ds.rfind('(', 1)]
-            mem = ''.join(re.findall(r'[(](.*?)[)]', ds))
+        if "(" in ds:
+            dsn = ds[0: ds.rfind("(", 1)]
+            mem = "".join(re.findall(r"[(](.*?)[)]", ds))
             rc, ds_type, err_msg = check_mvs_dataset(dsn)
             if rc:
-                if ds_type == 'PO':
+                if ds_type == "PO":
                     is_mvs, err_msg = check_pds_member(dsn, mem)
-                    ds_type = 'PS'
+                    ds_type = "PS"
                 else:
-                    err_msg = 'Data set {0} is not a partitioned data set'.format(dsn)
+                    err_msg = "Data set {0} is not a partitioned data set".format(dsn)
         else:
             is_mvs, ds_type, err_msg = check_mvs_dataset(ds)
     return is_uss, is_mvs, ds_type, err_msg
@@ -332,9 +339,7 @@ def run_module():
         backup_file=dict(type="str", required=False, default=None),
     )
 
-    module = AnsibleModule(
-        argument_spec=module_args
-    )
+    module = AnsibleModule(argument_spec=module_args)
 
     arg_defs = dict(
         src=dict(arg_type="data_set_or_path", required=True),
@@ -342,7 +347,7 @@ def run_module():
         from_encoding=dict(arg_type="str", default="IBM-1047"),
         to_encoding=dict(arg_type="str", default="ISO8859-1", required=False),
         backup=dict(arg_type="bool", default=False, required=False),
-        backup_file=dict(type="data_set_or_path", required=False, default=None)
+        backup_file=dict(type="data_set_or_path", required=False, default=None),
     )
 
     parser = better_arg_parser.BetterArgParser(arg_defs)
@@ -366,13 +371,9 @@ def run_module():
     convert_rc = False
     changed = False
 
-    result = dict(
-        changed=changed,
-        src=src,
-        dest=dest
-    )
+    result = dict(changed=changed, src=src, dest=dest)
 
-    eu = encode_utils.EncodeUtils(module)
+    eu = encode_utils.EncodeUtils()
 
     # Check input code set is valid or not
     # If the value specified in from_encoding or to_encoding is not in the code_set, exit with an error message
@@ -392,7 +393,7 @@ def run_module():
     is_uss_src, is_mvs_src, ds_type_src, err_msg = check_file(src)
     if err_msg:
         exit_when_exception(err_msg, result)
-    result['src'] = src
+    result["src"] = src
 
     # Check the dest is a USS file/path or an MVS data set
     # if the dest is not specified, the value in the src will be used
@@ -405,11 +406,11 @@ def run_module():
         is_uss_dest, is_mvs_dest, ds_type_dest, err_msg = check_file(dest)
         if (not is_uss_dest) and (path.sep in dest):
             try:
-                if path.isfile(src) or ds_type_src in ['PS', 'VSAM']:
+                if path.isfile(src) or ds_type_src in ["PS", "VSAM"]:
                     head, tail = path.split(dest)
                     if not path.exists(head):
                         makedirs(head)
-                    with open(dest, 'w'):
+                    with open(dest, "w"):
                         pass
                 else:
                     makedirs(dest)
@@ -419,40 +420,39 @@ def run_module():
                 err_msg = "Failed when creating the {0}".format(dest)
         if err_msg:
             exit_when_exception(err_msg, result)
-    result['dest'] = dest
+    result["dest"] = dest
 
     # Check if the dest is required to be backup before conversion
     if backup:
         if is_uss_dest:
-            backup_file, err_msg = eu.uss_file_backup(dest, backup_file)
+            backup_file, err_msg = zos_backup.uss_file_backup(dest, backup_file)
         if is_mvs_dest:
-            backup_file, err_msg = eu.mvs_file_backup(dest, backup_file)
+            backup_file, err_msg = zos_backup.mvs_file_backup(dest, backup_file)
         if err_msg:
             exit_when_exception(err_msg, result)
-    result['backup_file'] = backup_file
+    result["backup_file"] = backup_file
 
     if is_uss_src and is_uss_dest:
-        convert_rc, err_msg = eu.uss_convert_encoding_prev(src, dest, from_encoding, to_encoding)
+        convert_rc, err_msg = eu.uss_convert_encoding_prev(
+            src, dest, from_encoding, to_encoding
+        )
     else:
-        convert_rc, err_msg = eu.mvs_convert_encoding(src, dest, ds_type_src, ds_type_dest,
-                                                      from_encoding, to_encoding)
+        convert_rc, err_msg = eu.mvs_convert_encoding(
+            src,
+            dest,
+            from_encoding,
+            to_encoding,
+            src_type=ds_type_src,
+            dest_type=ds_type_dest,
+        )
     if err_msg:
         exit_when_exception(err_msg, result)
 
     if convert_rc:
         changed = True
-        result = dict(
-            changed=changed,
-            src=src,
-            dest=dest,
-            backup_file=backup_file
-        )
+        result = dict(changed=changed, src=src, dest=dest, backup_file=backup_file)
     else:
-        result = dict(
-            src=src,
-            dest=dest,
-            changed=changed
-        )
+        result = dict(src=src, dest=dest, changed=changed)
 
     module.exit_json(**result)
 
@@ -461,5 +461,5 @@ def main():
     run_module()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

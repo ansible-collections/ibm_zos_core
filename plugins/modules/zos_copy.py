@@ -468,7 +468,6 @@ def run_module():
     if mode == 'preserve':
         mode = '0{:o}'.format(stat.S_IMODE(os.stat(b_src).st_mode))
 
-    changed = False
     backup_path = None
     src_ds_vol = None
     res_args = dict()
@@ -557,7 +556,7 @@ def run_module():
             except Exception as err:
                 copy_handler._fail_json(msg="Unable to calculate checksum", stderr=str(err))
 
-            changed = copy_handler.copy_to_uss(
+            perm_changed = copy_handler.copy_to_uss(
                 src, _temp_path, dest, 
                 common_file_args=dict(mode=mode, group=group, owner=owner), 
                 remote_src=remote_src
@@ -566,7 +565,7 @@ def run_module():
             res_args['changed'] = (
                 res_args.get("changed") or 
                 remote_checksum != dest_checksum or 
-                changed
+                perm_changed
             )
             res_args['checksum'] = remote_checksum
             res_args['size'] = Path(dest).stat().st_size
@@ -673,18 +672,6 @@ class CopyHandler(object):
         )
     
     def copy_to_uss(self, src, temp_path, dest, common_file_args=None, remote_src=False):
-        changed = False
-        if common_file_args:
-            mode = common_file_args.get("mode")
-            group = common_file_args.get("group")
-            owner = common_file_args.get("owner")
-            if mode is not None:
-                changed = module.set_mode_if_different(dest, mode, True)
-            if group is not None:
-                changed = module.set_group_if_different(dest, group, True)
-            if owner is not None:
-                changed = module.set_owner_if_different(dest, owner, True)
-
         if remote_src:
             try:
                 copy(src, dest)
@@ -706,7 +693,18 @@ class CopyHandler(object):
                     msg="Unable to move file {0} to {1}".format(temp_path, dest), 
                     stderr=str(err)
                 )
-        return changed
+        if common_file_args is not None:
+            mode = common_file_args.get("mode")
+            group = common_file_args.get("group")
+            owner = common_file_args.get("owner")
+            if mode is not None:
+                mode_changed = self.module.set_mode_if_different(dest, mode, False)
+            if group is not None:
+                group_changed = self.module.set_group_if_different(dest, group, False)
+            if owner is not None:
+                owner_changed = self.module.set_owner_if_different(dest, owner, False)
+        
+        return mode_changed or group_changed or owner_changed
 
     def copy_to_seq(self, src, dest, src_ds_type):
         write_rc = 0

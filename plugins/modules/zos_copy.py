@@ -376,7 +376,6 @@ MVS_PARTITIONED = frozenset({'PE', 'PO', 'PDSE', 'PDS'})
 MVS_SEQ = frozenset({'PS', 'SEQ'})
 
 
-#TODO: Explicitly tag destination file
 #TODO: Copy from local to VSAM
 #TODO: Copy from remote VSAM to VSAM
 #TODO: Backup VSAM
@@ -557,19 +556,18 @@ def run_module():
                 dest_checksum = _get_file_checksum(dest)
             except Exception as err:
                 copy_handler._fail_json(msg="Unable to calculate checksum", stderr=str(err))
-            
-            backup_path = copy_handler.copy_to_uss(
-                src, _temp_path, dest, remote_src=remote_src
+
+            changed = copy_handler.copy_to_uss(
+                src, _temp_path, dest, 
+                common_file_args=dict(mode=mode, group=group, owner=owner), 
+                remote_src=remote_src
             )
 
-            if mode is not None:
-                changed = module.set_mode_if_different(dest, mode, True)
-            if group is not None:
-                changed = module.set_group_if_different(dest, group, True)
-            if owner is not None:
-                changed = module.set_owner_if_different(dest, owner, True)
-
-            res_args['changed'] = (remote_checksum != dest_checksum) or changed
+            res_args['changed'] = (
+                res_args.get("changed") or 
+                remote_checksum != dest_checksum or 
+                changed
+            )
             res_args['checksum'] = remote_checksum
             res_args['size'] = Path(dest).stat().st_size
     
@@ -674,7 +672,19 @@ class CopyHandler(object):
                 stderr=str(err)
         )
     
-    def copy_to_uss(self, src, temp_path, dest, remote_src=False):
+    def copy_to_uss(self, src, temp_path, dest, common_file_args=None, remote_src=False):
+        changed = False
+        if common_file_args:
+            mode = common_file_args.get("mode")
+            group = common_file_args.get("group")
+            owner = common_file_args.get("owner")
+            if mode is not None:
+                changed = module.set_mode_if_different(dest, mode, True)
+            if group is not None:
+                changed = module.set_group_if_different(dest, group, True)
+            if owner is not None:
+                changed = module.set_owner_if_different(dest, owner, True)
+
         if remote_src:
             try:
                 copy(src, dest)
@@ -696,6 +706,7 @@ class CopyHandler(object):
                     msg="Unable to move file {0} to {1}".format(temp_path, dest), 
                     stderr=str(err)
                 )
+        return changed
 
     def copy_to_seq(self, src, dest, src_ds_type):
         write_rc = 0

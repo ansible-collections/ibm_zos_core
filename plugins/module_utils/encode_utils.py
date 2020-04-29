@@ -22,6 +22,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import copy
 
 try:
     from zoautil_py import Datasets, MVSCmd
@@ -35,9 +36,6 @@ if PY3:
 else:
     from pipes import quote
 
-
-REPRO = """  REPRO INDATASET({}) -
-    OUTDATASET({}) REPLACE """
 
 LISTCAT = " LISTCAT ENT('{}') ALL"
 
@@ -154,100 +152,6 @@ class EncodeUtils(object):
         if rc:
             raise OSError("Failed when allocating temporary sequential data set!")
         return temp_ps
-
-    def copy_uss2mvs(self, src, dest, ds_type):
-        """Copy uss a file or path to an MVS data set
-
-        Arguments:
-            src: {str} -- The uss file or path to be copied
-            dest: {str} -- The destination MVS data set, it must be a PS or PDS(E)
-            ds_type: {str} -- The dsorg of the dest.
-
-        Raises:
-            USSCmdExecError: When any exception is raised during the conversion.
-        Returns:
-            boolean -- The return code after the copy command executed successfully
-            str -- The stdout after the copy command executed successfully
-            str -- The stderr after the copy command executed successfully
-        """
-        src = self._validate_path(src)
-        dest = self._validate_data_set_name(dest)
-        if ds_type == "PO":
-            cp_uss2mvs = "cp -CM -F rec {0} \"//'{1}'\"".format(quote(src), dest)
-        else:
-            cp_uss2mvs = "cp -F rec {0} \"//'{1}'\" ".format(quote(src), dest)
-        rc, out, err = self.module.run_command(cp_uss2mvs)
-        if rc:
-            raise USSCmdExecError(cp_uss2mvs, rc, out, err)
-        return rc, out, err
-
-    def copy_ps2uss(self, src, dest):
-        """Copy a PS data set to a uss file
-
-        Arguments:
-            src: {str} -- The MVS data set to be copied, it must be a PS data set
-            or a PDS(E) member
-            dest: {str} -- The destination uss file
-
-        Raises:
-            USSCmdExecError: When any exception is raised during the conversion
-        Returns:
-            boolean -- The return code after the copy command executed successfully
-            str -- The stdout after the copy command executed successfully
-            str -- The stderr after the copy command executed successfully
-        """
-        src = self._validate_data_set_name(src)
-        dest = self._validate_path(dest)
-        cp_ps2uss = "cp -F rec \"//'{0}'\" {1}".format(src, quote(dest))
-        rc, out, err = self.module.run_command(cp_ps2uss)
-        if rc:
-            raise USSCmdExecError(cp_ps2uss, rc, out, err)
-        return rc, out, err
-
-    def copy_pds2uss(self, src, dest):
-        """Copy the whole PDS(E) to a uss path
-
-        Arguments:
-            src: {str} -- The MVS data set to be copied, it must be a PDS(E) data set
-            dest: {str} -- The destination uss path
-
-        Raises:
-            USSCmdExecError: When any exception is raised during the conversion.
-        Returns:
-            boolean -- The return code after the USS command executed successfully
-            str -- The stdout after the USS command executed successfully
-            str -- The stderr after the USS command executed successfully
-        """
-        src = self._validate_data_set_name(src)
-        dest = self._validate_path(dest)
-        cp_pds2uss = "cp -U -F rec \"//'{0}'\" {1}".format(src, quote(dest))
-        rc, out, err = self.module.run_command(cp_pds2uss)
-        if rc:
-            raise USSCmdExecError(cp_pds2uss, rc, out, err)
-        return rc, out, err
-
-    def copy_vsam_ps(self, src, dest):
-        """Copy a VSAM(KSDS) data set to a PS data set vise versa
-
-        Arguments:
-            src: {str} -- The VSAM(KSDS) or PS data set to be copied
-            dest: {str} -- The PS or VSAM(KSDS) data set
-
-        Raises:
-            USSCmdExecError: When any exception is raised during the conversion
-        Returns:
-            boolean -- The return code after the USS command executed successfully
-            str -- The stdout after the USS command executed successfully
-            str -- The stderr after the USS command executed successfully
-        """
-        src = self._validate_data_set_name(src)
-        dest = self._validate_data_set_name(dest)
-        repro_cmd = REPRO.format(src, dest)
-        cmd = "mvscmdauth --pgm=idcams --sysprint=stdout --sysin=stdin"
-        rc, out, err = self.module.run_command(cmd, data=repro_cmd)
-        if rc:
-            raise USSCmdExecError(cmd, rc, out, err)
-        return rc, out, err
 
     def get_codeset(self):
         """Get the list of supported encodings from the  USS command 'iconv -l'
@@ -446,18 +350,18 @@ class EncodeUtils(object):
             if src_type == "PS":
                 temp_src_fo = NamedTemporaryFile()
                 temp_src = temp_src_fo.name
-                rc, out, err = self.copy_ps2uss(src, temp_src)
+                rc, out, err = copy.copy_ps2uss(src, temp_src)
             if src_type == "PO":
                 temp_src_fo = TemporaryDirectory()
                 temp_src = temp_src_fo.name
-                rc, out, err = self.copy_pds2uss(src, temp_src)
+                rc, out, err = copy.copy_pds2uss(src, temp_src)
             if src_type == "VSAM":
                 reclen, space_u = self.listdsi_data_set(src.upper())
                 temp_ps = self.temp_data_set(reclen, space_u)
-                rc, out, err = self.copy_vsam_ps(src.upper(), temp_ps)
+                rc, out, err = copy.copy_vsam_ps(src.upper(), temp_ps)
                 temp_src_fo = NamedTemporaryFile()
                 temp_src = temp_src_fo.name
-                rc, out, err = self.copy_ps2uss(temp_ps, temp_src)
+                rc, out, err = copy.copy_ps2uss(temp_ps, temp_src)
             if dest_type == "PS" or dest_type == "VSAM":
                 temp_dest_fo = NamedTemporaryFile()
                 temp_dest = temp_dest_fo.name
@@ -474,17 +378,17 @@ class EncodeUtils(object):
                     if dest_type == "VSAM":
                         reclen, space_u = self.listdsi_data_set(dest.upper())
                         temp_ps = self.temp_data_set(reclen, space_u)
-                        rc, out, err = self.copy_uss2mvs(temp_dest, temp_ps, "PS")
-                        rc, out, err = self.copy_vsam_ps(temp_ps, dest.upper())
+                        rc, out, err = copy.copy_uss2mvs(temp_dest, temp_ps, "PS")
+                        rc, out, err = copy.copy_vsam_ps(temp_ps, dest.upper())
                         convert_rc = True
                     elif dest_type == "PO":
                         for (dir, subdir, files) in walk(temp_dest):
                             for file in files:
                                 temp_file = path.join(dir, file)
-                                rc, out, err = self.copy_uss2mvs(temp_file, dest, "PO")
+                                rc, out, err = copy.copy_uss2mvs(temp_file, dest, "PO")
                                 convert_rc = True
                     else:
-                        rc, out, err = self.copy_uss2mvs(temp_dest, dest, dest_type)
+                        rc, out, err = copy.copy_uss2mvs(temp_dest, dest, dest_type)
                         convert_rc = True
         except Exception:
             raise

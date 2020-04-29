@@ -182,12 +182,10 @@ EXAMPLES = r'''
       from: ISO8859-1
       to: IBM-1047
 
-- name: Copy file with owner and permission details
+- name: Copy file with permission details
   zos_copy:
     src: /path/to/foo.conf
     dest: /etc/foo.conf
-    owner: foo
-    group: foo
     mode: '0644'
 
 - name: Module will follow the symbolic link specified in src
@@ -230,6 +228,7 @@ EXAMPLES = r'''
     src: /path/to/local/file
     dest: /path/to/dest
     backup: true
+    backup_file: /tmp/local_file_backup
 
 - name: Copy a PDS(E) on remote system to a new PDS(E)
   zos_copy:
@@ -377,8 +376,10 @@ MVS_PARTITIONED = frozenset({'PE', 'PO', 'PDSE', 'PDS'})
 MVS_SEQ = frozenset({'PS', 'SEQ'})
 
 
+#TODO: Explicitly tag destination file
 #TODO: Copy from local to VSAM
 #TODO: Copy from remote VSAM to VSAM
+#TODO: Backup VSAM
 #TODO: Add support for following local and remote links
 #TODO: Add a 'mode' arg_type to BetterArgParser
 def run_module():
@@ -793,6 +794,7 @@ class CopyHandler(object):
         to_code_set = encoding.get("to")
         enc_utils = encode_utils.EncodeUtils(self.module)
         if os.path.isdir(file_path):
+            self._tag_file_encoding(file_path, to_code_set, is_dir=True)
             path, dirs, files = next(os.walk(file_path))
             for file in files:
                 member = path + "/" + file
@@ -803,6 +805,7 @@ class CopyHandler(object):
             enc_utils.uss_convert_encoding(
                 file_path, file_path, from_code_set, to_code_set
             )
+            self._tag_file_encoding(file_path, to_code_set)
 
     def backup_data(self, ds_name, ds_type, is_vsam=False, backup_file=None, copy_member=False):
         if not backup_file:
@@ -848,6 +851,19 @@ class CopyHandler(object):
                     stderr=str(err)
                 )
         return backup_file
+
+    def _tag_file_encoding(self, file_path, tag, is_dir=False):
+        rc, out, err = self._run_command("chtag -{0}c {1} {2}".format(
+                "R" if is_dir else "t", tag, file_path
+            )
+        )
+        if rc != 0:
+            self._fail_json(
+                msg="Unable to tag the file {0} to {1}".format(file_path, tag),
+                stdout=out, stderr=err, rc=rc,
+                stdout_lines=out.splitlines(),
+                stderr_lines=err.splitlines()
+            )
 
     def _run_mvs_command(self, pgm, cmd, dd=None, authorized=False):
         sysprint = "sysprint"

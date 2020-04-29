@@ -15,27 +15,27 @@ ANSIBLE_METADATA = {'metadata_version': '1.1',
 DOCUMENTATION = r'''
 module: zos_encode
 author: "Zhao Lu (@yourfuwa2015)"
-short_description: Encode data in USS and data sets
+short_description: Encodes data in USS and data sets
 description:
-    - Convert the encoding of characters read from either Unix System
-      Services (USS) file or path, PS(sequential data set), PDS/E or KSDS(
+    - Converts the encoding of characters that are read from Unix System
+      Services (USS) file or path, PS(sequential data set), PDS, PDSE, or KSDS(
       VSAM data set).
-    - Write the data out to either Unix System Services (USS) file or path,
-      PS(sequential data set), PDS/E or KSDS(VSAM data set).
+    - Writes the data to Unix System Services (USS) file or path,
+      PS(sequential data set), PDS, PDSE, or KSDS(VSAM data set).
 options:
   from_encoding:
     description:
-        - The source code set of the input(src).
-        - Supported charsets rely on the target version, the most common
-          charsets are supported.
+        - The source code set of the input (src).
+        - Supported character sets rely on the target version; the most common
+          character sets are supported.
     required: false
     type: str
     default: IBM-1047
   to_encoding:
     description:
-        - The destination code set for the output(dest).
-        - Supported charsets rely on the target version, the most common
-          charsets are supported.
+        - The destination code set for the output (dest).
+        - Supported character sets rely on the target version; the most common
+          character sets are supported.
     required: false
     type: str
     default: ISO8859-1
@@ -43,34 +43,38 @@ options:
     description:
         - The location of the input characters.
         - It could be a USS file, USS directory, PS(sequential data set),
-          PDS/E or KSDS(VSAM data set).
+          PDS, PDSE, or KSDS(VSAM data set).
         - The USS path or file must be an absolute pathname.
-        - If the source is a USS directory, all files will be encoding, it
+        - If the source is a USS directory, all files will be encoded. It
           is to the user to avoid files that should not be encoded such as
-          binary files
+          binary files.
+          ### RV: Who is the user here ? Also, avoid means avoid using the file altogether or something else? Please clarify who the user is. State the conditions if there are any.     
     required: true
     type: str
   dest:
     description:
-        - The location of the coverted characters to be written out to.
+        - The location to write the converted characters on.
+        ### consider rewriting to: The location where the converted characters are output. (OR) The location where you can write the converted characters.
         - It could be a USS file, USS directory, PS(sequential data set),
-          PDS/E or KSDS(VSAM data set).
-        - If the dest is not specified, the src will be used. It will be
-          converted and overwritten with the specified charset in the
+          PDS, PDSE, or KSDS(VSAM data set).
+        - If the destination is not specified, the source location will be used. It will be
+          converted and overwritten with the specified character set in 
           to_encoding.
-        - If length of the file name in src is more the 8 characters, name
+          ### Just referring to them as dest and src could cause some confusion. We are talking about a particular location ( USSfile, pds and so on)
+          ### that is provided for dest or src in the subsequent lines. I believe we dont have to repeat the property name in the description. Your call.
+        - If the length of the file name in src is greater than 8 characters, the name
           will be truncated when converting to a PDS.
-        - If src is a USS file, PS, VSAM or PDS/E member, a file will be
-          created for the dest when no dest specified.
-        - If src is a USS path, PDS/E, a path will be created for the dest
-          when no dest specified.
+        - If src is a USS file, PS, VSAM, PDS, or PDSE member, a file will be
+          created for dest when no dest is specified.
+        - If src is a USS path, PDS, PDSE, a path will be created for dest
+          when no dest is specified.
         - The USS path or file must be an absolute pathname.
     required: false
     type: str
   backup:
     description:
-      - Create a backup file or backup data set for dest including the
-        timestamp information so you can get the original file back if you
+      - Creates a backup file or backup data set for dest, including the
+        timestamp information to ensure that you retrieve the original file back if you
         somehow clobbered it incorrectly.
       - If the dest is a USS file or USS path, the name of the backup file
         will be the destination file or path name appended with a timestamp,

@@ -464,9 +464,6 @@ def run_module():
     _copy_member = module.params.get('copy_member')
     dest_name = dest[:dest.rfind('(')] if _copy_member else dest
     src_name = src[:src.rfind('(')] if src.endswith(')') else src
-    
-    if mode == 'preserve':
-        mode = '0{:o}'.format(stat.S_IMODE(os.stat(b_src).st_mode))
 
     backup_path = None
     src_ds_vol = None
@@ -479,6 +476,8 @@ def run_module():
                 module.fail_json(msg="Source {0} does not exist".format(src))
             if not os.access(src, os.R_OK):
                 module.fail_json(msg="Source {0} is not readable".format(src))
+            if mode == 'preserve':
+                mode = '0{:o}'.format(stat.S_IMODE(os.stat(b_src).st_mode))
 
     # ----------------------------------- X -----------------------------------
 
@@ -503,7 +502,7 @@ def run_module():
 
         copy_handler = CopyHandler(module, dest_exists)
         try:
-            _validate_target_type(src, dest, src_ds_type, dest_ds_type)
+            validate_target_type(src, dest, src_ds_type, dest_ds_type)
         except IncompatibleTargetError as err:
             module.fail_json(msg=str(err))
 
@@ -551,21 +550,19 @@ def run_module():
             if os.path.exists(dest) and os.path.isdir(dest):
                 dest = os.path.join(dest, os.path.basename(src))
             try:
-                remote_checksum = _get_file_checksum(_temp_path)
-                dest_checksum = _get_file_checksum(dest)
+                remote_checksum = get_file_checksum(_temp_path)
+                dest_checksum = get_file_checksum(dest)
             except Exception as err:
                 copy_handler._fail_json(msg="Unable to calculate checksum", stderr=str(err))
 
-            perm_changed = copy_handler.copy_to_uss(
+            copy_handler.copy_to_uss(
                 src, _temp_path, dest, 
                 common_file_args=dict(mode=mode, group=group, owner=owner), 
                 remote_src=remote_src
             )
-
             res_args['changed'] = (
                 res_args.get("changed") or 
-                remote_checksum != dest_checksum or 
-                perm_changed
+                remote_checksum != dest_checksum
             )
             res_args['checksum'] = remote_checksum
             res_args['size'] = Path(dest).stat().st_size
@@ -611,7 +608,7 @@ def run_module():
     module.exit_json(**res_args)
 
 
-def _get_file_checksum(src):
+def get_file_checksum(src):
     """ Calculate SHA256 hash for a given file """
     b_src = to_bytes(src)
     if not os.path.exists(b_src) or os.path.isdir(b_src):
@@ -629,7 +626,7 @@ def _get_file_checksum(src):
     return hash_digest.hexdigest()
 
 
-def _validate_target_type(src, dest, src_type, dest_type):
+def validate_target_type(src, dest, src_type, dest_type):
     incompatible = False
     if src_type in MVS_SEQ:
         incompatible = (
@@ -664,7 +661,7 @@ class CopyHandler(object):
     def copy_to_ds(self, src, dest):
         repro_cmd = "  REPRO INFILE({0}) OUTFILE({1})".format(src, dest)
         try:
-            sysprint = _run_mvs_command("IDCAMS", repro_cmd, authorized=True)
+            rc, out, err = _run_mvs_command("IDCAMS", repro_cmd, authorized=True)
         except Exception as err:
             self._fail_json(
                 msg="Error while copying data from {0} to {1}".format(src, dest), 
@@ -698,13 +695,11 @@ class CopyHandler(object):
             group = common_file_args.get("group")
             owner = common_file_args.get("owner")
             if mode is not None:
-                mode_changed = self.module.set_mode_if_different(dest, mode, False)
+                self.module.set_mode_if_different(dest, mode, False)
             if group is not None:
-                group_changed = self.module.set_group_if_different(dest, group, False)
+                self.module.set_group_if_different(dest, group, False)
             if owner is not None:
-                owner_changed = self.module.set_owner_if_different(dest, owner, False)
-        
-        return mode_changed or group_changed or owner_changed
+                self.module.set_owner_if_different(dest, owner, False)
 
     def copy_to_seq(self, src, dest, src_ds_type):
         write_rc = 0

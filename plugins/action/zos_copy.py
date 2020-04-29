@@ -193,6 +193,8 @@ class ActionModule(ActionBase):
                     dir_size = sum(Path(path + "/" + f).stat().st_size for f in files)
                     new_module_args.update(dict(size=dir_size))
                 else:
+                    if mode == 'preserve':
+                        new_module_args['mode'] = '0{:o}'.format(stat.S_IMODE(os.stat(b_src).st_mode))
                     new_module_args['size'] = Path(src).stat().st_size
                 transfer_res = self._copy_to_remote(src, is_pds=is_pds)
 

@@ -484,11 +484,12 @@ def run_module():
     # ----------------------------------- X -----------------------------------
 
         try:
-            dest_ds_utils = data_set_utils.DataSetUtils(module, dest_name)
-            dest_exists = dest_ds_utils.data_set_exists()
             if _is_uss:
                 dest_ds_type = "USS"
+                dest_exists = os.path.exists(dest)
             else:
+                dest_ds_utils = data_set_utils.DataSetUtils(module, dest_name)
+                dest_exists = dest_ds_utils.data_set_exists()
                 dest_ds_type = dest_ds_utils.get_data_set_type()
             if _temp_path or '/' in src:
                 src_ds_type = "USS"
@@ -510,7 +511,7 @@ def run_module():
     # ----------------------------------- X -----------------------------------
 
         if dest_exists:
-            if backup and dest_ds_type != "USS":
+            if backup:
                 backup_path = copy_handler.backup_data(
                     dest, dest_ds_type, is_vsam=is_vsam, 
                     backup_file=backup_file, copy_member=_copy_member
@@ -525,9 +526,10 @@ def run_module():
                 dest_ds_type = "PDSE"
             elif is_vsam:
                 dest_ds_type = "VSAM"
-            else:
+            elif not _is_uss:
                 dest_ds_type = "SEQ"
-            if dest_ds_type in ("PDSE", "VSAM"):
+
+            if dest_ds_type in ("PDSE", "VSAM", "USS"):
                 ds_props = dict(
                     name=src,
                     volser=src_ds_vol
@@ -546,7 +548,7 @@ def run_module():
 
         if _is_uss:
             if not os.access(dest, os.W_OK):
-                copy_handler._fail_json("Destination {0} is not writable".format(dest))
+                copy_handler._fail_json(msg="Destination {0} is not writable".format(dest))
             if os.path.exists(dest) and os.path.isdir(dest):
                 dest = os.path.join(dest, os.path.basename(src))
             try:
@@ -555,11 +557,13 @@ def run_module():
             except Exception as err:
                 copy_handler._fail_json(msg="Unable to calculate checksum", stderr=str(err))
             
-            if mode:
-                module.set_mode_if_different(src, mode, True)
             backup_path = copy_handler.copy_to_uss(
                 src, _temp_path, dest, remote_src=remote_src
             )
+
+            if mode:
+                module.set_mode_if_different(dest, mode, True)
+
             res_args['changed'] = remote_checksum != dest_checksum
             res_args['checksum'] = remote_checksum
             res_args['size'] = Path(dest).stat().st_size
@@ -765,6 +769,11 @@ class CopyHandler(object):
                     stdout_lines=out.splitlines() if out else None,
                     stderr_lines=err.splitlines() if err else None
                 )
+        elif (dest_ds_type == "USS"):
+            try:
+                open(dest_name, 'w').close()
+            except Exception as err:
+                self._fail_json(msg="Unable to create destination file {0}".format(dest_name))
         else:
             self._allocate_vsam(dest_name, size)
 

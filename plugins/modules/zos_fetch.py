@@ -20,22 +20,18 @@ module: zos_fetch
 version_added: "2.9"
 short_description: Fetch data from z/OS
 description:
-  - This module copies a file or data set from a remote z/OS system to the
-    local machine. Use the
-    L(fetch,https://docs.ansible.com/ansible/latest/modules/fetch_module.html)
-    module to copy files from local machine to the remote z/OS system.
+  - This module fetches a file or data set from a remote z/OS system. 
   - When fetching a sequential data set, the destination file name will be the
     same as the data set name.
-  - When fetching a PDS or PDS(E), the destination will be a directory with the
-    same name as the PDS or PDS(E).
-    # why are we using different methods to refer to PDS(E) - elsewhere I see PDSE. It will be helpful if we stick to either one.
+  - When fetching a PDS or PDSE, the destination will be a directory with the
+    same name as the PDS or PDSE.
   - Files that already exist at dest will be overwritten if they are different
     than the src.
 author: "Asif Mahmud (@asifmahmud)"
 options:
   src:
     description:
-      - Name of PDS, PDS(E) members, VSAM data set, USS file path.
+      - Name of PDS, PDSE members, VSAM data set, USS file path.
       - USS file paths should be absolute paths.
     required: true
     type: str
@@ -111,8 +107,8 @@ notes:
       when fetching PDS(E) because data integrity checks are done through the
       transfer methods used. As a result, the module response will not include
       C(checksum) parameter.
-    - All data sets are always assumed to be in the catalog. If an uncataloged data
-      set needs to be fetched, it should be cataloged first.
+    - All data sets are always assumed to be cataloged. If an uncataloged 
+      data set needs to be fetched, it should be cataloged first.
     - Fetching HFS or ZFS is currently not supported.
 seealso:
 - module: fetch
@@ -122,7 +118,7 @@ seealso:
 """
 
 EXAMPLES = r"""
-- name: Fetch file from USS and store into /tmp/fetched/hostname/tmp/somefile
+- name: Fetch file from USS and store in /tmp/fetched/hostname/tmp/somefile
   zos_fetch:
     src: /tmp/somefile
     dest: /tmp/fetched
@@ -171,7 +167,7 @@ EXAMPLES = r"""
 
 RETURN = r"""
 file:
-    description: The source file path on the remote machine.
+    description: The source file path or data set on the remote machine.
     returned: success
     type: str
     sample: SOME.DATA.SET
@@ -181,7 +177,7 @@ dest:
     type: str
     sample: /tmp/SOME.DATA.SET
 is_binary:
-    description: Indicates which transfer mode was used to fetch the file.
+    description: Indicates the transfer mode that was used to fetch.
     returned: success
     type: bool
     sample: True
@@ -191,7 +187,7 @@ checksum:
     type: str
     sample: 8d320d5f68b048fc97559d771ede68b37a71e8374d1d678d96dcfa2b2da7a64e
 data_set_type:
-    description: Indicates the fetched file's data set type.
+    description: Indicates the fetched data set type.
     returned: success
     type: str
     sample: PDSE

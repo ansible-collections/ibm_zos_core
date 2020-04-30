@@ -60,9 +60,7 @@ def test_uss_encoding_conversion_with_invalid_encoding(ansible_zos_module):
         assert result.get("dest") is None
         assert result.get("backup_file") is None
         assert result.get("changed") is False
-        assert result.get("msg") == (
-            "Invalid codeset: Please check the value " "of the from_encoding!"
-        )
+        assert "Invalid codeset: Please check the value" in result.get("msg")
 
 
 def test_uss_encoding_conversion_with_the_same_encoding(ansible_zos_module):
@@ -76,10 +74,10 @@ def test_uss_encoding_conversion_with_the_same_encoding(ansible_zos_module):
         assert result.get("dest") is None
         assert result.get("backup_file") is None
         assert result.get("changed") is False
-        assert result.get("msg") == (
+        assert (
             "The value of the from_encoding and to_encoding "
             "are the same, no need to do the conversion!"
-        )
+        ) in result.get("msg")
 
 
 def test_uss_encoding_conversion_without_dest(ansible_zos_module):
@@ -113,7 +111,7 @@ def test_uss_encoding_conversion_when_dest_not_exists_01(ansible_zos_module):
     for result in results.contacted.values():
         assert result.get("src") == USS_FILE
         assert result.get("dest") == USS_NONE_FILE
-        assert result.get("backup_file") is not None
+        assert result.get("backup_file") is None
         assert result.get("changed") is True
 
 

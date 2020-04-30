@@ -6,16 +6,19 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-from os import path
+import os
 from ansible.module_utils.six import PY3
 from ansible.module_utils.basic import AnsibleModule
 import time
+from shutil import copy2, copytree, rmtree
+from stat import S_IREAD, S_IWRITE, ST_MODE
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     MissingZOAUImport,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.file import make_dirs
 
 try:
     from zoautil_py import Datasets
@@ -48,14 +51,16 @@ def mvs_file_backup(self, dsn, bk_dsn):
                         It could be an MVS PS/PDS/PDSE/VSAM(KSDS), etc.
         bk_dsn {str} -- The name of the backup data set.
 
+    Raises:
+        BackupError: When backup data set exists.
+        BackupError: When creation of backup data set fails.
+
     Returns:
         str -- Name of the backup data set.
-        err_msg -- A message indicating whether the backup was successful or not.
     """
     module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
     dsn = _validate_data_set_name(dsn)
     bk_dsn = _validate_data_set_name(bk_dsn)
-    err_msg = None
     out = None
     if not bk_dsn:
         hlq = Datasets.hlq()
@@ -68,59 +73,83 @@ def mvs_file_backup(self, dsn, bk_dsn):
     if rc > 4:
         out = stdout
         if "DUPLICATE" in out:
-            err_msg = "Backup data set {0} exists, please check".format(bk_dsn)
+            raise BackupError("Backup data set {0} exists, please check".format(bk_dsn))
         else:
-            err_msg = "Failed when creating the backup of the data set {0} : {1}".format(
-                dsn, out
-            )
             if Datasets.exists(bk_dsn):
                 Datasets.delete(bk_dsn)
-    return bk_dsn, err_msg
+            raise BackupError(
+                "Failed when creating the backup of the data set {0} : {1}".format(
+                    dsn, out
+                )
+            )
+    return bk_dsn
 
 
-def uss_file_backup(file, bk_file):
+def uss_file_backup(path, backup_name=None, compress=False):
     """Create a backup file for a USS file or path
 
     Arguments:
-        file {str} -- The name of the USS file or path to backup.
-        bk_file {str} -- The name of the backup file.
+        path {str} -- The name of the USS file or path to backup.
+        backup_name {str} -- The name of the backup file.
+
+    Keyword Arguments:
+        compress {bool} -- Determines if the backup be compressed. (default: {False})
+
+    Raises:
+        BackupError: When creating compressed backup fails.
 
     Returns:
         str -- Name of the backup file.
-        err_msg -- A message indicating whether the backup was successful or not.
     """
+    abs_path = os.path.abspath(path)
+
+    if not os.path.exists(abs_path):
+        raise BackupError("Path to be backed up does not exist.")
+
     module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
-    err_msg = None
-    out = None
-    file_name = path.abspath(file)
+
     ext = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()).lower()
-    backup_f = "{0}@{1}-bak.tar".format(file, ext)
-    backup_base = path.basename(backup_f)
-    if bk_file:
-        bk_file_name = path.basename(bk_file)
-        if not bk_file_name:
-            if not path.exists(bk_file):
-                backup_f = bk_file
-                err_msg = "Path {0} for the backup does not exist.".format(bk_file)
-            else:
-                backup_f = path.join(bk_file, backup_base)
-        else:
-            if path.isdir(bk_file):
-                backup_f = path.join(bk_file, backup_base)
-            else:
-                backup_f = bk_file
-    if not err_msg:
-        bk_cmd = "tar -cpf {0} {1}".format(quote(backup_f), quote(file_name))
+    if os.path.isdir(abs_path):
+        default_backup_name = "{0}@{1}-bak".format(abs_path[:-1], ext)
+    else:
+        default_backup_name = "{0}@{1}-bak".format(abs_path, ext)
+
+    backup_base = os.path.basename(default_backup_name)
+    backup_name_provided = True
+
+    if not backup_name:
+        backup_name = default_backup_name
+        backup_name_provided = False
+
+    if os.path.isdir(abs_path) and backup_name[-1] != "/" and not compress:
+        backup_name += "/"
+        make_dirs(backup_name, mode_from=abs_path)
+    if backup_name[-1] == "/" and not os.path.isdir(backup_name):
+        make_dirs(backup_name)
+    elif os.path.isdir(backup_name) and backup_name[-1] != "/":
+        backup_name += "/"
+
+    if compress:
+        if backup_name_provided and os.path.isdir(backup_name):
+            backup_name += backup_base
+        bk_cmd = "tar -cpf {0}.tar {1}".format(quote(backup_name), quote(abs_path))
         rc, out, err = module.run_command(bk_cmd)
         if rc:
-            raise USSCmdExecError(bk_cmd, rc, out, err)
-    return backup_f, err_msg
+            raise BackupError(err)
+    else:
+        if os.path.isdir(abs_path):
+            if os.path.exists(backup_name):
+                rmtree(backup_name)
+            copytree(abs_path, backup_name)
+        elif not os.path.isdir(abs_path) and os.path.isdir(backup_name):
+            backup_name = backup_name + os.path.basename(abs_path)
+            copy2(abs_path, backup_name)
+        else:
+            copy2(abs_path, backup_name)
+    return backup_name
 
 
-class USSCmdExecError(Exception):
-    def __init__(self, uss_cmd, rc, out, err):
-        self.msg = (
-            "Failed during execution of usscmd: {0}, Return code: {1}; "
-            "stdout: {2}; stderr: {3}".format(uss_cmd, rc, out, err)
-        )
-        super().__init__(self.msg)
+class BackupError(Exception):
+    def __init__(self, message):
+        self.msg = 'An error occurred during backup: "{0}"'.format(message)
+        super(BackupError, self).__init__(self.msg)

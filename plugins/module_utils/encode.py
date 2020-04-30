@@ -82,7 +82,7 @@ class EncodeUtils(object):
             ds: {str} -- The VSAM data set to be checked.
 
         Raises:
-            USSCmdExecError: When any exception is raised during the conversion.
+            EncodeError: When any exception is raised during the conversion.
         Returns:
             int -- The maximum record length of the VSAM data set.
             int -- The space used by the VSAM data set(KB).
@@ -94,7 +94,7 @@ class EncodeUtils(object):
         cmd = "mvscmdauth --pgm=ikjeft01 --systsprt=stdout --systsin=stdin"
         rc, out, err = self.module.run_command(cmd, data=listcat_cmd)
         if rc:
-            raise USSCmdExecError(cmd, rc, out, err)
+            raise EncodeError(err)
         if out:
             find_reclen = re.findall(r"MAXLRECL-*\d+", out)
             find_cisize = re.findall(r"CISIZE-*\d+", out)
@@ -157,7 +157,7 @@ class EncodeUtils(object):
         """Get the list of supported encodings from the  USS command 'iconv -l'
 
         Raises:
-            USSCmdExecError: When any exception is raised during the conversion
+            EncodeError: When any exception is raised during the conversion
         Returns:
             list -- The code set list supported in current USS platform
         """
@@ -165,7 +165,7 @@ class EncodeUtils(object):
         iconv_list_cmd = ["iconv", "-l"]
         rc, out, err = self.module.run_command(iconv_list_cmd)
         if rc:
-            raise USSCmdExecError(iconv_list_cmd, rc, out, err)
+            raise EncodeError(err)
         if out:
             code_set_list = list(filter(None, re.split(r"[\n|\t]", out)))
             code_set = [c for i, c in enumerate(code_set_list) if i > 0 and i % 2 == 0]
@@ -180,7 +180,7 @@ class EncodeUtils(object):
             src: {str} -- The input string content
 
         Raises:
-            USSCmdExecError: When any exception is raised during the conversion
+            EncodeError: When any exception is raised during the conversion
         Returns:
             str -- The string content after the encoding
         """
@@ -191,7 +191,7 @@ class EncodeUtils(object):
         )
         rc, out, err = self.module.run_command(iconv_cmd, use_unsafe_shell=True)
         if rc:
-            raise USSCmdExecError(iconv_cmd, rc, out, err)
+            raise EncodeError(err)
         return out
 
     def uss_convert_encoding(self, src, dest, from_code, to_code):
@@ -204,7 +204,7 @@ class EncodeUtils(object):
             dest: {str} -- The output file name, it should be a uss file
 
         Raises:
-            USSCmdExecError: When any exception is raised during the conversion.
+            EncodeError: When any exception is raised during the conversion.
             MoveFileError: When any exception is raised during moving files.
         Returns:
             boolean -- Indicate whether the conversion is successful or not.
@@ -225,7 +225,7 @@ class EncodeUtils(object):
         try:
             rc, out, err = self.module.run_command(iconv_cmd, use_unsafe_shell=True)
             if rc:
-                raise USSCmdExecError(iconv_cmd, rc, out, err)
+                raise EncodeError(err)
             if dest == temp_fi:
                 convert_rc = True
             else:
@@ -260,61 +260,57 @@ class EncodeUtils(object):
             dest: {str} -- The output uss path or a file
 
         Raises:
-            OSError: When direcotry is empty or copy multiple files to a single file
+            EncodeError: When direcotry is empty or copy multiple files to a single file
         Returns:
             boolean -- Indicate whether the conversion is successful or not
-            str -- Returned error messages
         """
         src = self._validate_path(src)
         dest = self._validate_path(dest)
         from_code = self._validate_encoding(from_code)
         to_code = self._validate_encoding(to_code)
         convert_rc = False
-        err_msg = None
         file_list = list()
-        try:
-            if path.isdir(src):
-                for (dir, subdir, files) in walk(src):
-                    for file in files:
-                        file_list.append(path.join(dir, file))
-                if len(file_list) == 0:
-                    err_msg = "Directory {0} is empty. Please check the path.".format(
-                        src
-                    )
-                elif len(file_list) == 1:
-                    if path.isdir(dest):
-                        file_name = path.basename(file_list[0])
-                        src_f = path.join(src, file_name)
-                        dest_f = path.join(dest, file_name)
-                    convert_rc = self.uss_convert_encoding(
-                        src_f, dest_f, from_code, to_code
+        if path.isdir(src):
+            for (dir, subdir, files) in walk(src):
+                for file in files:
+                    file_list.append(path.join(dir, file))
+            if len(file_list) == 0:
+                raise EncodeError(
+                    "Directory {0} is empty. Please check the path.".format(src)
+                )
+            elif len(file_list) == 1:
+                if path.isdir(dest):
+                    file_name = path.basename(file_list[0])
+                    src_f = path.join(src, file_name)
+                    dest_f = path.join(dest, file_name)
+                convert_rc = self.uss_convert_encoding(
+                    src_f, dest_f, from_code, to_code
+                )
+            else:
+                if path.isfile(dest):
+                    raise EncodeError(
+                        "Can't convert multiple files (src) {0} to a single file"
+                        " (dest) {1}.".format(src, dest)
                     )
                 else:
-                    if path.isfile(dest):
-                        err_msg = (
-                            "Can't convert multiple files (src) {0} to a single file"
-                            " (dest) {1}.".format(src, dest)
+                    for file in file_list:
+                        if dest == src:
+                            dest_f = file
+                        else:
+                            dest_f = file.replace(src, dest, 1)
+                            dest_dir = path.dirname(dest_f)
+                            if not path.exists(dest_dir):
+                                makedirs(dest_dir)
+                        convert_rc = self.uss_convert_encoding(
+                            file, dest_f, from_code, to_code
                         )
-                    else:
-                        for file in file_list:
-                            if dest == src:
-                                dest_f = file
-                            else:
-                                dest_f = file.replace(src, dest, 1)
-                                dest_dir = path.dirname(dest_f)
-                                if not path.exists(dest_dir):
-                                    makedirs(dest_dir)
-                            convert_rc = self.uss_convert_encoding(
-                                file, dest_f, from_code, to_code
-                            )
-            else:
-                if path.isdir(dest):
-                    file_name = path.basename(path.abspath(src))
-                    dest = path.join(dest, file_name)
-                convert_rc = self.uss_convert_encoding(src, dest, from_code, to_code)
-        except Exception:
-            raise
-        return convert_rc, err_msg
+        else:
+            if path.isdir(dest):
+                file_name = path.basename(path.abspath(src))
+                dest = path.join(dest, file_name)
+            convert_rc = self.uss_convert_encoding(src, dest, from_code, to_code)
+
+        return convert_rc
 
     def mvs_convert_encoding(
         self, src, dest, from_code, to_code, src_type=None, dest_type=None
@@ -336,7 +332,6 @@ class EncodeUtils(object):
 
         Returns:
             boolean -- Indicate whether the conversion is successful or not
-            str -- Returned error messages
         """
         src = self._validate_data_set_or_path(src)
         dest = self._validate_data_set_or_path(dest)
@@ -368,9 +363,7 @@ class EncodeUtils(object):
             if dest_type == "PO":
                 temp_dest_fo = TemporaryDirectory()
                 temp_dest = temp_dest_fo.name
-            rc, err_msg = self.uss_convert_encoding_prev(
-                temp_src, temp_dest, from_code, to_code
-            )
+            rc = self.uss_convert_encoding_prev(temp_src, temp_dest, from_code, to_code)
             if rc:
                 if not dest_type:
                     convert_rc = True
@@ -395,16 +388,13 @@ class EncodeUtils(object):
         finally:
             if temp_ps:
                 Datasets.delete(temp_ps)
-        return convert_rc, err_msg
+        return convert_rc
 
 
-class USSCmdExecError(Exception):
-    def __init__(self, uss_cmd, rc, out, err):
-        self.msg = (
-            "Failed during execution of usscmd: {0}, Return code: {1}; "
-            "stdout: {2}; stderr: {3}".format(uss_cmd, rc, out, err)
-        )
-        super().__init__(self.msg)
+class EncodeError(Exception):
+    def __init__(self, message):
+        self.msg = 'An error occurred during encoding: "{0}"'.format(message)
+        super(EncodeError, self).__init__(self.msg)
 
 
 class MoveFileError(Exception):

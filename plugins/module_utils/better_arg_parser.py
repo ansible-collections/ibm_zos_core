@@ -31,6 +31,7 @@ class BetterArg(object):
         choices=None,
         mutually_exclusive=None,
         arg_type="str",
+        type=None,
         **kwargs
     ):
         """Holds all of the attributes that define a particular argument.
@@ -63,6 +64,8 @@ class BetterArg(object):
             mutually_exclusive {list[list[str]]} -- A list containing lists of mutually exclusive argument names.
             (default: {None})
             arg_type {Union[str, function]} -- The type the argument contents should be. (default: {'str'})
+            type {Union[str, function]} -- The type the argument contents should be. Alternative to arg_type.
+            (default: {'str'})
         """
         if aliases is None:
             aliases = []
@@ -81,7 +84,7 @@ class BetterArg(object):
         self.required = required
         self.default = default
         self.choices = choices
-        self.arg_type = arg_type
+        self.arg_type = type if type else arg_type
         if options:
             self.options = self.arg_parser.handle_args(options)
             self.mutually_exclusive = self.arg_parser.handle_mutually_exclusive_args(

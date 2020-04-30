@@ -16,7 +16,9 @@ ANSIBLE_METADATA = {
 
 DOCUMENTATION = r"""
 module: zos_encode
-author: "Zhao Lu (@yourfuwa2015)"
+author:
+  - "Zhao Lu (@yourfuwa2015)"
+  - "Blake Becker (@blakeinate)"
 short_description: Perform encoding operations.
 description:
   - Convert the encoding of characters read from either Unix System

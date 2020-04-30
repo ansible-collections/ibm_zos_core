@@ -56,6 +56,11 @@ EXAMPLES = r"""
     cmd: 'd u,all'
     verbose: true
     debug: true
+
+- name: Execute an operator command to purge all job logs (requires escaping)
+  zos_operator:
+    cmd: "\\$PJ(*)"
+
 """
 
 RETURN = r"""

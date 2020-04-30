@@ -10,8 +10,8 @@ you can run commands and playbooks from a laptop, desktop, or server machine.
 However, you cannot run **IBM z/OS core collection** on a Windows machine.
 
 A managed node is often referred to as a target node, or host, and is the node
-that is managed by Ansible. Ansible does not need not need to be installed on
-a managed node, but SSH must be enabled.
+that is managed by Ansible. Ansible does not need to be installed on a managed
+node, but SSH must be enabled.
 
 The following nodes require specific versions of software:
 
@@ -36,10 +36,14 @@ Managed node
 * `Python on z/OS`_: 3.6 or later
 * `z/OS`_: V02.02.00 or later
 * `IBM Z Open Automation Utilities`_ (ZOAU)
+
+   * IBM z/OS core collections are dependent on specific versions of ZOAU,
+     review the `release notes`_ to see which version of ZOAU is required.
 * `z/OS OpenSSH`_
 
 .. _Python on z/OS:
    requirements.html#id1
+
 .. _z/OS:
    https://www.ibm.com/support/knowledgecenter/SSLTBW_2.2.0/com.ibm.zos.v2r2/zos-v2r2-home.html
 
@@ -48,6 +52,9 @@ Managed node
 
 .. _z/OS OpenSSH:
    https://www.ibm.com/support/knowledgecenter/SSLTBW_2.2.0/com.ibm.zos.v2r2.e0za100/ch1openssh.htm
+
+.. _release notes:
+   release_notes.html
 
 Python on z/OS
 --------------

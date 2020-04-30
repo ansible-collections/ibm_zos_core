@@ -14,13 +14,38 @@
 #
 # Notes:
 #  This sample demonstrates various ways to perform tasks using Ansible z/OS
-#  core modules. Each module has options available to customize how
-#  automation can be controlled. This sample does not demonstrate all options,
-#  refer to documentation or ansible-doc for those options.
+#  core modules. Each module has options available on how automation can be
+#  controlled. This sample does not demonstrate all options, refer to
+#  documentation or ansible-doc for those options.
+#
+#  When running this playbook, review the comments on how ths sample will
+#  interact with your target, ensure you have the required authority and
+#  permissions such as writing the the target directories or creating data sets.
+#
+#  Data sets created for this sample will follow this pattern
+#  <USER<.SOME.DATA.SET where USER will be the user who submits the playbook.
+# The user is identified by the Ansible variable `ansible_user`.
+#
+#  Additional facts for this playbook can be configured to override the defaults
+#  by reviewing the "Fact setting" section of this playbook, for example,
+#  `data_set_name` and `system_name`.
 #
 # Requirements:
-#   IBM z/OS core collection 1.0.1 or later
-#   ZOAU 1.0.2 or later
+#   IBM z/OS core collection 1.1.0-beta1 or later
+#   ZOAU 1.0.1 or later
+#
+# Configure:
+#   tgt_tmp_dir - this is the USS directory on the target which will be written
+#                 to for this example.
+#   ctl_tmp_dir - this is the directory on the controller which will be written
+#                 to for this example.
+# Optional:
+#   data_set_name - this is the data set name that will be created during
+#                   execution of this sample.
+#   system_name - this is the system name that will be used during this example,
+#                 determined by executing `uname -n` on the target.
+#   job_name - this is the job name what will be used in this sample, if you
+#              change the HELLO.JCL job name, you must update this variable
 ###############################################################################
 
 ---
@@ -29,23 +54,13 @@
     - ibm.ibm_zos_core
   gather_facts: no
   vars:
-    tgt_tmp_dir: "/tmp" # Scratch target directory in USS
-    ctl_tmp_dir: "/tmp" # scratch controller directory
+    tgt_tmp_dir: "/tmp"
+    ctl_tmp_dir: "/tmp"
+    job_name: "HELLO"
   environment: "{{ environment_vars }}"
   connection: ibm.ibm_zos_core.zos_ssh
 
   tasks:
-    # ##########################################################################
-    # Check requirements, iconv, z/OS Web Client Enablement toolkit, python
-    # ##########################################################################
-    - name: Ping the z/OS host {{ inventory_hostname }} and perform resource checks
-      zos_ping:
-      register: result
-
-    - name: Response
-      debug:
-        msg: "{{ result }}"
-
     # ##########################################################################
     # Fact setting for use by this playbook
     # ##########################################################################
@@ -58,7 +73,8 @@
         msg: "{{ data_set_name }}"
 
     - name: Detecting system name
-      shell: "uname -a |awk '{print $2}'"
+      #shell: "uname -a |awk '{print $2}'"
+      command: uname -n
       register: result
 
     - name: Setting fact `system_name` for use by this sample
@@ -68,6 +84,17 @@
     - name: Fact `system_name` set with value
       debug:
         msg: "{{ system_name }}"
+
+    # ##########################################################################
+    # Check requirements, iconv, z/OS Web Client Enablement toolkit, python
+    # ##########################################################################
+    - name: Ping the z/OS host {{ inventory_hostname }} and perform resource checks
+      zos_ping:
+      register: result
+
+    - name: Response
+      debug:
+        msg: "{{ result }}"
 
     # ##########################################################################
     # Modules zos_operator_action_query, zos_operator
@@ -288,7 +315,7 @@
     # Modules zos_encode
     # ##########################################################################
     # +-------------------------------------------------------------------------
-    # | Create script on target, encode with the targets charset, execute
+    # | Create shell script on target, encode with the targets charset, execute
     # | script if mode == 755, else fail
     # +-------------------------------------------------------------------------
     - name: Create shell script {{ tgt_tmp_dir }}/date.sh on
@@ -370,7 +397,7 @@
         msg: "{{ result }}"
 
     # +-------------------------------------------------------------------------
-    # | Create 4 USS files, encode, delete
+    # | Create 4 files on USS target, encode them and and delete them
     # +-------------------------------------------------------------------------
 
     - name: Detecting the character set for the locale on the target
@@ -450,8 +477,14 @@
         msg: "{{ result }}"
 
     ############################################################################
-    # List user OMVSADM
+    # Modules zos_data_set, zos_tso_command, zos_job_submit, zos_job_query,
+    # zos_job_output
     ############################################################################
+    # +-------------------------------------------------------------------------
+    # | Create a data set, create JCL on USS target, copy USS JCL to data set,
+    # | rename data set using TSO commands, submit JCL in data set, query job,
+    # | get job output, delete data set using TSO command
+    # +-------------------------------------------------------------------------
     - name: Create a PDS data set {{ data_set_name }}
       zos_data_set:
         name: "{{ data_set_name }}"
@@ -561,75 +594,113 @@
       debug:
         msg: "{{ result }}"
 
-    - name: Remove files on target in {{ tgt_tmp_dir }}/encode
+    - name: Remove files on target in {{ tgt_tmp_dir }}/ansible
       file:
         path: "{{ tgt_tmp_dir }}/ansible"
         state: absent
       register: result
 
-    - name: Response for remove files on target in {{ tgt_tmp_dir }}/encode
+    - name: Response for remove files on target in {{ tgt_tmp_dir }}/ansible
       debug:
         msg: "{{ result }}"
 
-    ############################################################################
-    # Crete location for JCL in USS
-    ############################################################################
+    # ##########################################################################
+    # Modules zos_job_submit, zos_job_query, zos_job_output, zos_data_set
+    # ##########################################################################
+    # +-------------------------------------------------------------------------
+    # | Create a directory in USS on the target, write sample JCL on target,
+    # | submit the target JCL, query for the submitted job and obtain the
+    # | job output, demonstrate creating and deleting data sets
+    # +-------------------------------------------------------------------------
 
-    - name: Ensure JCL folder exists in USS to manage JCL
+    - name: Create directory {{ tgt_tmp_dir }}/ansible/jcl on USS
+            target {{ system_name }}
       file:
         path: "{{ tgt_tmp_dir }}/ansible/jcl"
         state: directory
 
-    - name: Write HELLO JCL to USS in {{ tgt_tmp_dir }}/ansible/jcl/HELLO"
-        on target {{ inventory_hostname }}
-      shell: "echo {{ lookup('file', playbook_dir + '/files/HELLO.jcl') | quote }} > {{ tgt_tmp_dir }}/ansible/jcl/HELLO"
+    - name: Write sample {{ job_name }} JCL in {{ tgt_tmp_dir }}/ansible/jcl
+            on USS
+            target {{ system_name }}
+      shell: "echo {{ lookup('file', playbook_dir + '/files/{{job_name}}.jcl') | quote }} > {{ tgt_tmp_dir }}/ansible/jcl/{{job_name}}"
       changed_when: true
       register: result
 
-    - name: Response for ensure JCL folder exists in USS to manage JCL
+    - name: Response for write sample {{job_name}} JCL in {{ tgt_tmp_dir }}/ansible/jcl
+            on USS target {{ system_name }}
       debug:
         msg: "{{ result }}"
 
-    - name: Submit HELLO jcl on on target in {{ tgt_tmp_dir }}/ansible/jcl/HELLO
+    - name: Submit {{job_name}} jcl located on target
+            in {{ tgt_tmp_dir }}/ansible/jcl/{{job_name}}
       zos_job_submit:
-        src: "{{ tgt_tmp_dir }}/ansible/jcl/HELLO"
+        src: "{{ tgt_tmp_dir }}/ansible/jcl/{{job_name}}"
         location: USS
         wait: True
 
-    - name: Response for submit HELLO jcl on on target
-        in {{ tgt_tmp_dir }}/ansible/jcl/HELLO
+    - name: Response for submit {{job_name}} jcl located on target
+            in {{ tgt_tmp_dir }}/ansible/jcl/{{job_name}}
       debug:
         msg: "{{ result }}"
 
-    - name: Query submitted job 'HELLO'
+    - name: Query the submitted job {{job_name}} on USS target {{ system_name }}
       zos_job_query:
-        job_name: HELLO
+        job_name: "{{job_name}}"
       register: result
 
-    - name: Response for query submitted job 'HELLO'
+    - name: Response for Query the submitted job {{job_name}}
+            on USS target {{ system_name }}
       debug:
         msg: "{{ result }}"
 
-    - name: Get HELLO job output
+    - name: Get {{job_name}} job output on USS target {{ system_name }}
       zos_job_output:
-        job_name: HELLO
+        job_name: "{{job_name}}"
       register: result
 
-    - name: Response for get HELLO job output
+    - name: Response for Get {{job_name}} job output on USS target {{ system_name }}
       debug:
         msg: "{{ result }}"
 
-    - name: Remove HELLO JCL and folder from z/OS target node
+    - name: Remove {{job_name}} JCL and folder on USS target {{ system_name }}
       file:
         path: "{{ tgt_tmp_dir }}/ansible"
         state: absent
 
-    - name: Delete data set 'USER.PRIVATE.TEST'
+    - name: Response for remove {{job_name}} JCL and folder on
+            USS target {{ system_name }}
+      debug:
+        msg: "{{ result }}"
+
+    - name: Create a PDS data set {{ data_set_name }}
       zos_data_set:
-        name: USER.PRIVATE.TEST
+        name: "{{ data_set_name }}"
+        type: pds
+        size: 5M
+        format: fb
+        record_length: 25
+        replace: yes
+      register: result
+
+    - name: Response create a PDS data set {{ data_set_name }}
+      debug:
+        msg: "{{ result }}"
+
+    - name: Check if data set {{ data_set_name }} was created
+      command: "dls {{ data_set_name }}"
+      register: result
+      changed_when: true
+
+    - name: Response for check if data set {{ data_set_name }} was created
+      debug:
+        msg: "{{ result }}"
+
+    - name: Delete data set {{ data_set_name }}
+      zos_data_set:
+        name: "{{ data_set_name }}"
         state: absent
       register: result
 
-    - name: Response for delete data set 'USER.PRIVATE.TEST'
+    - name: Response for delete data set {{ data_set_name }}
       debug:
         msg: "{{ result }}"

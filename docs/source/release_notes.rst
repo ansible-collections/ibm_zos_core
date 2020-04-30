@@ -5,6 +5,28 @@
 Releases
 ========
 
+Version 1.1.0-beta1
+-------------------
+
+Notes
+   * Update recommended
+   * New modules
+
+     * zos_fetch, zos_encode, zos_operator_action_query, zos_operator,
+       zos_tso_command, zos_ping
+   * New filter
+   * Improved error handling and messages
+   * Bug fixes
+   * Documentation updates
+   * New samples
+
+Availability
+  * Galaxy
+  * github
+
+Reference
+  * Supported by IBM Z Open Automation Utilities: 1.0.2 or later
+
 Version 1.0.0
 -------------
 Notes
@@ -80,6 +102,3 @@ Availability
 
 Reference
   * Supported by IBM Z Open Automation Utilities: 1.0.1 (PTF UI66957 or later)
-
-
-

@@ -18,14 +18,14 @@ help:
 
 .PHONY: help Makefile
 
-clean: 
+clean:
 	rm -rf build
 	echo "Deleted directory build/"
 
 	rm -rf source/modules
 	echo "Deleted directory source/modules"
-	echo "Completed HTML text generation, run 'make ibm_zos_core'"
-ibm_zos_core: 
+	echo "Completed HTML text generation, run 'make ibm_zos_doc'"
+ibm_zos_doc:
 	mkdir build
 	mkdir -p source/modules
 	mv ../plugins/modules/__init__.py ../plugins/modules/__init__.py.skip

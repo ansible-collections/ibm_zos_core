@@ -251,7 +251,7 @@ from ansible.module_utils.parsing.convert_bool import boolean
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser,
     data_set_utils,
-    encode_utils
+    encode
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     MissingZOAUImport,
@@ -370,7 +370,7 @@ class FetchHandler:
             fd, file_path = tempfile.mkstemp()
             from_code_set = encoding.get("from")
             to_code_set = encoding.get("to")
-            enc_utils = encode_utils.EncodeUtils(self.module)
+            enc_utils = encode.EncodeUtils(self.module)
             try:
                 enc_utils.uss_convert_encoding(src, file_path, from_code_set, to_code_set)
             except Exception as err:
@@ -427,7 +427,7 @@ class FetchHandler:
                 rc=rc,
             )
         if (not is_binary) and encoding:
-            enc_utils = encode_utils.EncodeUtils(self.module)
+            enc_utils = encode.EncodeUtils(self.module)
             from_code_set = encoding.get("from")
             to_code_set = encoding.get("to")
             root, dirs, files = next(os.walk(dir_path))
@@ -470,7 +470,7 @@ class FetchHandler:
                 stderr_lines=str(err).splitlines(),
             )
         if (not is_binary) and encoding:
-            enc_utils = encode_utils.EncodeUtils(self.module)
+            enc_utils = encode.EncodeUtils(self.module)
             from_code_set = encoding.get("from")
             to_code_set = encoding.get("to")
             try:

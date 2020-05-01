@@ -15,7 +15,7 @@ ANSIBLE_METADATA = {'metadata_version': '1.1',
 DOCUMENTATION = r'''
 module: zos_tso_command
 author: "Xiao Yuan Ma (@bjmaxy)"
-short_description: Execute a TSO command
+short_description: Execute a TSO commands
 description:
     - Execute TSO commands on the target z/OS system with the provided options
       and receive a structured response.

@@ -35,7 +35,8 @@ author: "Asif Mahmud (@asifmahmud)"
 options:
   src:
     description:
-      - Name of PDS, PDSE members, VSAM data set, USS file path.
+      - Name of a Unix System Services (USS) file, PS(sequential data set), PDS,
+        PDSE, member of a PDS, PDSE or KSDS(VSAM data set).
       - USS file paths should be absolute paths.
     required: true
     type: str
@@ -84,35 +85,40 @@ options:
   encoding:
     description:
       - Specifies which encodings the fetched data set should be converted from
-        and to. If this parameter is not provided, no encoding conversions will
-        take place.
+        and to. If this parameter is not provided, encoding conversions will
+        not take place.
     required: false
     type: dict
     suboptions:
       from:
         description:
-            - The encoding to be converted from.
+            - The character set of the source I(src).
+            - Supported character sets rely on the target version; the most
+            common character sets are supported.
         required: true
         type: str
       to:
         description:
-            - The encoding to be converted to.
+            - The destination I(dest) character set for the output to be written
+              as.
+            - Supported character sets rely on the target version; the most
+              common character sets are supported.
         required: true
         type: str
 notes:
     - When fetching PDSE and VSAM data sets, temporary storage will be used
       on the remote z/OS system. After the PDSE or VSAM data set is
-      successfully transferred, the temporary data set will be deleted. The size
+      successfully transferred, the temporary storage will be deleted. The size
       of the temporary storage will correspond to the size of PDSE or VSAM
       data set being fetched. If module execution fails, the temporary
-      storage will be cleaned.
-    - To prevent redundancy, additional checksum validation will not be done
-      when fetching PDSE because data integrity checks are done through the
-      transfer methods used. As a result, the module response will not include
-      C(checksum) parameter.
+      storage will be deleted.
+    - To ensure optimal performance, data integrity checks for PDS, PDSE, and
+      members of PDS or PDSE are done through the transfer methods used.
+      As a result, the module response will not include
+      the C(checksum) parameter.
     - All data sets are always assumed to be cataloged. If an uncataloged
       data set needs to be fetched, it should be cataloged first.
-    - Fetching HFS or ZFS is currently not supported.
+    - Fetching HFS or ZFS type data sets is currently not supported.
 seealso:
 - module: fetch
 - module: zos_copy
@@ -185,7 +191,8 @@ is_binary:
     type: bool
     sample: True
 checksum:
-    description: The SHA256 checksum of the fetched file.
+    description: The SHA256 checksum of the fetched file or data set. checksum
+    validation is performed for all USS files and sequential data sets.
     returned: success and src is a non-partitioned data set
     type: str
     sample: 8d320d5f68b048fc97559d771ede68b37a71e8374d1d678d96dcfa2b2da7a64e
@@ -199,10 +206,6 @@ note:
     returned: failure and fail_on_missing=false
     type: str
     sample: The data set USER.PROCLIB does not exist. No data was fetched.
-changed:
-    description: Indicates if any changes were made during the module operation.
-    returned: always
-    type: bool
 msg:
     description: Message returned on failure.
     returned: failure

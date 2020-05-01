@@ -20,7 +20,11 @@ module: zos_fetch
 version_added: "2.9"
 short_description: Fetch data from z/OS
 description:
-  - This module fetches a file or data set from a remote z/OS system. 
+  - This module fetches a Unix System Services (USS) file,
+    PS(sequential data set), PDS, PDSE, member of a PDS or PDSE, or
+    KSDS(VSAM data set) from a remote z/OS system.
+  - In the case of a PDS or PDSE member, the destination will be the same as
+    the dest parameter. When fetching a member, destination will be a file.
   - When fetching a sequential data set, the destination file name will be the
     same as the data set name.
   - When fetching a PDS or PDSE, the destination will be a directory with the
@@ -60,8 +64,7 @@ options:
       - Override the default behavior of appending hostname/path/to/file to the
         destination. If set to "true", the file or data set will be fetched to
         the destination directory without appending remote hostname to the
-        destination. Refer to the M(fetch) module for a more detailed
-        description of this parameter.
+        destination.
     required: false
     default: "true"
     type: bool
@@ -97,17 +100,17 @@ options:
         required: true
         type: str
 notes:
-    - When fetching PDS(E) and VSAM data sets, temporary storage will be used
-      on the remote z/OS system. After the PDS(E) or VSAM data set is
+    - When fetching PDSE and VSAM data sets, temporary storage will be used
+      on the remote z/OS system. After the PDSE or VSAM data set is
       successfully transferred, the temporary data set will be deleted. The size
-      of the temporary storage will correspond to the size of PDS(E) or VSAM
+      of the temporary storage will correspond to the size of PDSE or VSAM
       data set being fetched. If module execution fails, the temporary
       storage will be cleaned.
     - To prevent redundancy, additional checksum validation will not be done
-      when fetching PDS(E) because data integrity checks are done through the
+      when fetching PDSE because data integrity checks are done through the
       transfer methods used. As a result, the module response will not include
       C(checksum) parameter.
-    - All data sets are always assumed to be cataloged. If an uncataloged 
+    - All data sets are always assumed to be cataloged. If an uncataloged
       data set needs to be fetched, it should be cataloged first.
     - Fetching HFS or ZFS is currently not supported.
 seealso:

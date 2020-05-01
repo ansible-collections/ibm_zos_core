@@ -62,7 +62,7 @@ options:
     type: bool
     default: false
     required: false
-  backup_file:
+  backup_path:
     description:
       - Specify the USS file name or data set name for the dest backup.
       - If the dest is a USS file or path, the backup_file name must be a file 
@@ -359,8 +359,9 @@ from ansible.module_utils._text import to_bytes
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser, 
     data_set_utils,
-    encode_utils,
-    vtoc
+    encode,
+    vtoc,
+    backup
 )
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
@@ -393,7 +394,7 @@ def run_module():
             encoding=dict(type='dict'),
             content=dict(type='str', no_log=True),
             backup=dict(type='bool', default=False),
-            backup_file=dict(type='str'),
+            backup_path=dict(type='str'),
             force=dict(type='bool', default=True),
             remote_src=dict(type='bool', default=False),
             checksum=dict(type='str'),
@@ -415,7 +416,7 @@ def run_module():
         is_vsam=dict(arg_type='bool', required=False, default=False),
         content=dict(arg_type='str', required=False),
         backup=dict(arg_type='bool', default=False, required=False),
-        backup_file=dict(arg_type='data_set_or_path', required=False),
+        backup_path=dict(arg_type='data_set_or_path', required=False),
         force=dict(arg_type='bool', default=True, required=False),
         remote_src=dict(arg_type='bool', default=False, required=False),
         checksum=dict(arg_type='str', required=False),
@@ -457,7 +458,7 @@ def run_module():
         content = parsed_args.get('content')
         force = parsed_args.get('force')
         backup = parsed_args.get('backup')
-        backup_file = parsed_args.get('backup_file')
+        backup_path = parsed_args.get('backup_file')
         mode = module.params.get('mode')
         group = module.params.get('group')
         owner = module.params.get('owner')
@@ -540,8 +541,7 @@ def run_module():
         if dest_exists:
             if backup:
                 backup_path = copy_handler.backup_data(
-                    dest, dest_ds_type, is_vsam=is_vsam, 
-                    backup_file=backup_file, copy_member=_copy_member
+                    dest_name, dest_ds_type, backup_path
                 )
         # ********************************************************************
         # If destination does not exist, it must be created. To determine 
@@ -753,7 +753,10 @@ class CopyHandler(object):
             temp_path {str} -- Path to the location where the control node transferred data to
             conv_path {str} -- Path to the converted source file or directory
             dest {str} -- Path to destination file
-            common_file_args {dict} -- Destination file attributes such as mode, group, owner
+
+        Keyword Arguments:
+            common_file_args {dict} -- Destination file attributes such as 
+                                       mode, group, owner. (Default {None})
         """
         if temp_path:
             try:
@@ -818,7 +821,9 @@ class CopyHandler(object):
             conv_path {str} -- Path to the converted source file/directory
             dest {str} -- Name of destination data set
             src_ds_type {str} -- The type of source
-            copy_member {bool} -- Whether destination is a data set member
+
+        Keyword Arguments:
+            copy_member {bool} -- Whether destination is a data set member. (Default {False})
         """
         src = temp_path or conv_path or src
         if copy_member:
@@ -866,8 +871,10 @@ class CopyHandler(object):
             size {int} -- The size, in bytes, of the source file
             dest_ds_type {str} -- Type of the data set to be created
             src_ds_type {str} -- Type of source data set
-            remote_src {bool} -- Whether source is located in remote system
-            vol {str} -- Volume where source data set is stored
+        
+        Keyword Arguments:
+            remote_src {bool} -- Whether source is located in remote system. (Default {False})
+            vol {str} -- Volume where source data set is stored. (Default {None})
         """
         out = err = None
         if dest_ds_type == "PDSE":
@@ -907,12 +914,15 @@ class CopyHandler(object):
             temp_path {str} -- Path to the location where the control node transferred data to
             encoding {dict} -- Charsets that the source is to be converted from and to
 
+        Raises:
+            EncodingConversionError -- When the encoding of a USS file is not able to be converted
+
         Returns:
             {str} -- The USS path where the converted data is stored
         """
         from_code_set = encoding.get("from")
         to_code_set = encoding.get("to")
-        enc_utils = encode_utils.EncodeUtils(self.module)
+        enc_utils = encode.EncodeUtils(self.module)
         src = temp_path or src
 
         if os.path.isdir(src):
@@ -952,66 +962,40 @@ class CopyHandler(object):
   
         return src
 
-    def backup_data(self, ds_name, ds_type, is_vsam=False, backup_file=None, copy_member=False):
-        """Copy the given data set or file to the location specified by 'backup_file'.
-        If 'backup_file' is not specified, then calculate a temporary location
+    def backup_data(self, ds_name, ds_type, backup_path):
+        """Back up the given data set or file to the location specified by 'backup_path'.
+        If 'backup_path' is not specified, then calculate a temporary location
         and copy the file or data set there.
 
         Arguments:
             ds_name {str} -- Name of the file or data set to be backed up
             ds_type {str} -- Type of the file or data set
-            is_vsam {bool} -- Whether the data set to be backed up is VSAM 
-            backup_file {str} -- Path to USS location or name of data set 
+            backup_path {str} -- Path to USS location or name of data set 
                                  where data will be backed up
-            copy_member {bool} -- Whether a data set member is being backed up
 
         Returns:
             {str} -- The USS path or data set name where data was backed up
         """
-        if not backup_file:
+        try:
             if ds_type == "USS":
-                current_time = time.strftime("%Y-%m-%d@%I:%M~", time.localtime())
-                bk_file = "{0}.{1}".format(os.path.basename(ds_name), current_time)
-                backup_file = os.path.join(os.path.dirname(ds_name), bk_file)
-            else:
-                backup_file = Datasets.temp_name()
-
-        if ds_type in MVS_SEQ:
-            rc = Datasets.copy(ds_name, backup_file)
-            if rc != 0:
-                self._fail_json(
-                    msg=("Non-zero error code received while trying to back up"
-                         "data set {0}".format(ds_name)
-                    )
-                )
-        elif ds_type in MVS_PARTITIONED:
-            if copy_member:
-                backup_rc = Datasets.copy(ds_name, backup_file)
-            else:
-                backup_rc = Datasets.move(ds_name, backup_file)
-                if backup_rc == 0:
-                    rc = self._allocate_pdse(ds_name, model_ds=backup_file)
-                    if rc != 0:
-                        self._fail_json(
-                            msg="Unable to backup partitioned data set {0}".format(ds_name),
-                            rc=rc
-                        )
-            if backup_rc != 0:
-                msg = "Error while backing up data set {0} to {1}".format(ds_name, backup_file)
-                self._fail_json(msg=msg, rc=backup_rc)
-        elif is_vsam:
-            self._backup_vsam(ds_name, backup_file)
-        else:
-            try:
-                copy(ds_name, backup_file)
-            except Exception as err:
-                self._fail_json(
-                    msg="Error while backing up file {0}".format(ds_name),
-                    stderr=str(err)
-                )
-        return backup_file
+                return backup.uss_file_backup(ds_name, backup_name=backup_path)
+            return backup.mvs_file_backup(ds_name, backup_path)
+        except Exception as err:
+            self._fail_json(msg=str(err))
 
     def _tag_file_encoding(self, file_path, tag, is_dir=False):
+        """Tag the file specified by 'file_path' with the given code set.
+        If `file_path` is a directory, all of the files and subdirectories will
+        be tagged recursively.
+
+        Arguments:
+            file_path {str} -- Absolute file path
+            tag {str} -- Specifies which code set to tag the file
+
+        Keyword Arguments:
+            is_dir {bool} -- Whether 'file_path' specifies a directory. (Default {False})
+
+        """
         rc, out, err = self._run_command("chtag -{0}c {1} {2}".format(
                 "R" if is_dir else "t", tag, file_path
             )
@@ -1025,6 +1009,17 @@ class CopyHandler(object):
             )
 
     def _run_mvs_command(self, pgm, cmd, dd=None, authorized=False):
+        """Run a particular MVS command.
+
+        Arguments:
+            pgm {str} -- The MVS program to run
+            cmd {str} -- The input command to pass to the program
+
+        Keyword Arguments:
+            dd {dict} -- The DD definitions required by the program. (Default {None})
+            authorized {bool} -- Indicates whether the MVS program should be 
+                                 run as authorized. (Default {False})
+        """
         sysprint = "sysprint"
         sysin = "sysin"
         pgm = pgm.upper()

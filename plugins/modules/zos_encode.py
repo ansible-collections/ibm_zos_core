@@ -51,8 +51,10 @@ options:
         KSDS(VSAM data set).
       - The USS path or file must be an absolute pathname.
       - If I(src) is a USS directory, all files will be encoded. It is the
-        user's responsibility to avoid files that should not be encoded such
-        as binary files.
+        playbook author or user's responsibility to avoid files that should not
+        be encoded, such as binary files. A user is described as the remote
+        user, configured either for the playbook or playbook tasks, who can
+        also obtain escalated privileges to execute as root or another user.
     required: true
     type: str
   dest:

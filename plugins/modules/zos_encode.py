@@ -21,23 +21,23 @@ author:
   - "Blake Becker (@blakeinate)"
 short_description: Perform encoding operations.
 description:
-  - Converts the encoding of characters that are read from either a Unix System
-    Services (USS) file or path, PS(sequential data set), PDS, PDSE or
+  - Converts the encoding of characters that are read from a Unix System
+    Services (USS) file or path, PS(sequential data set), PDS, PDSE, or
     KSDS(VSAM data set).
-  - Writes the data out to either Unix System Services (USS) file or path,
-    PS(sequential data set), PDS, PDSE or KSDS(VSAM data set).
+  - Writes the data to a Unix System Services (USS) file or path,
+    PS(sequential data set), PDS, PDSE, or KSDS(VSAM data set).
 options:
   from_encoding:
     description:
-      - The charset of the source I(src).
+      - The character set of the source I(src).
       - Supported character sets rely on the target version; the most common
-        charsets are supported.
+        character sets are supported.
     required: false
     type: str
     default: IBM-1047
   to_encoding:
     description:
-      - The destination I(dest) charset for the output to be written as.
+      - The destination I(dest) character set for the output to be written as.
       - Supported character sets rely on the target version; the most common
         character sets are supported.
     required: false
@@ -47,7 +47,7 @@ options:
     description:
       - The location of the input characters.
       - The location can be a Unix System Services (USS) file or path,
-        PS(sequential data set), member of a PDS or PDSE, PDS, PDSE or
+        PS(sequential data set), member of a PDS or PDSE, PDS, PDSE, or
         KSDS(VSAM data set).
       - The USS path or file must be an absolute pathname.
       - If I(src) is a USS directory, all files will be encoded. It is the
@@ -64,7 +64,7 @@ options:
       - If the length of the PDSE member name used in I(dest) is greater
         than 8 characters, the member name will be truncated when written out.
       - If I(dest) is not specified, the I(src) will be used as the destination
-        and will overwrite the I(src) with the charset in the
+        and will overwrite the I(src) with the character set in the
         option I(to_encoding).
       - The USS file or path must be an absolute pathname.
     required: false
@@ -81,14 +81,14 @@ options:
   backup_file:
     description:
       - Specify the USS file name or data set name for the dest backup.
-      - If the dest is a USS file or path, I(backup_file) must be a file or
+      - If dest is a USS file or path, I(backup_file) must be a file or
         path name, and the USS path or file must be an absolute pathname.
-      - If the dest is an MVS data set, the I(backup_file) must be an MVS data
+      - If dest is an MVS data set, the I(backup_file) must be an MVS data
         set name.
       - If I(backup_file) is not provided, the default backup name will be used.
         The default backup name for a USS file or path will be the destination
         file or path name appended with a timestamp,
-        e.g. /path/file_name.2020-04-23-08-32-29-bak.tar. If the dest is an
+        e.g. /path/file_name.2020-04-23-08-32-29-bak.tar. If dest is an
         MVS data set, the default backup name will be a random name generated
         by IBM Z Open Automation Utilities.
     required: false
@@ -101,8 +101,8 @@ options:
     required: false
     default: false
 notes:
-  - All data sets are always assumed to be catalogged. If an uncataloged data
-    set needs to be encoded, it should be catalogged first.
+  - All data sets are always assumed to be cataloged. If an uncataloged data
+    set needs to be encoded, it should be cataloged first.
 """
 
 EXAMPLES = r"""
@@ -225,14 +225,14 @@ src:
     type: str
 dest:
     description:
-       The name of the output file or data set. If the dest is a USS file or
+       The name of the output file or data set. If dest is a USS file or
        path and the status has been changed in the conversion, the file
        status will also be returned.
     returned: always
     type: str
 backup_file:
     description:
-       Name of backup file created.
+       Name of the backup file created.
     returned: changed and if backup=yes
     type: str
     sample: /path/file_name.2020-04-23-08-32-29-bak.tar

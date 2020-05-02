@@ -77,7 +77,8 @@ def _detect_sftp_errors(stderr):
     return ""
 
 
-def _write_content_to_file(content):
+def _write_content_to_temp_file(content):
+    """Write given content to a temp file and return its path """
     fd, path = mkstemp()
     try:
         with os.fdopen(fd, 'w') as infile:
@@ -90,7 +91,7 @@ def _write_content_to_file(content):
 
 class ActionModule(ActionBase):
     def run(self, tmp=None, task_vars=None):
-        ''' handler for file transfer operations '''
+        """ handler for file transfer operations """
         if task_vars is None:
             task_vars = dict()
 
@@ -103,13 +104,11 @@ class ActionModule(ActionBase):
         b_dest = to_bytes(dest, errors='surrogate_or_strict')
         content = self._task.args.get('content', None)
         backup = _process_boolean(self._task.args.get('backup'), default=False)
-        force = _process_boolean(self._task.args.get('force'), default=True)
         local_follow = _process_boolean(self._task.args.get('local_follow'), default=False)
         remote_src = _process_boolean(self._task.args.get('remote_src'), default=False)
-        use_qualifier = _process_boolean(self._task.args.get('use_qualifier', True), default=False)
         is_binary = _process_boolean(self._task.args.get('is_binary'), default=False)
-        is_vsam = _process_boolean(self._task.args.get('is_vsam'), default=False)
-        checksum = self._task.args.get('checksum', None)
+        validate = _process_boolean(self._task.args.get('validate'), default=False)
+        backup_path = self._task.args.get("backup_path", None)
         encoding = self._task.args.get('encoding', None)
         mode = self._task.args.get('mode', None)
         owner = self._task.args.get('owner', None)
@@ -145,7 +144,11 @@ class ActionModule(ActionBase):
             result['msg'] = "Only 'content' or 'src' can be provided, not both"
 
         elif encoding and is_binary:
-            result['msg'] = "The 'encoding' parameter is not valid for binary transfer."        
+            result['msg'] = "The 'encoding' parameter is not valid for binary transfer"
+
+        elif (not backup) and backup_path is not None:
+            result['msg'] = "Backup path provided but 'backup' parameter is False"
+        
         if not is_uss:
             if mode or owner or group:
                 result['msg'] = (
@@ -179,7 +182,7 @@ class ActionModule(ActionBase):
         if not remote_src:
             if content:
                 try:
-                    local_content = _write_content_to_file(content)
+                    local_content = _write_content_to_temp_file(content)
                     transfer_res = self._copy_to_remote(local_content)
                 finally:
                     os.remove(local_content)
@@ -218,16 +221,23 @@ class ActionModule(ActionBase):
                 task_vars=task_vars
             )
         )
-        if copy_res.get('msg'):
-            result['msg'] = copy_res.get('msg')
-            result['stdout'] = copy_res.get('stdout') or copy_res.get("module_stdout")
-            result['stderr'] = copy_res.get('stderr') or copy_res.get("module_stderr")
-            result['stdout_lines'] = copy_res.get("stdout_lines")
-            result['stderr_lines'] = copy_res.get("stderr_lines")
-            result['rc'] = copy_res.get('rc')
-            self._remote_cleanup(dest, copy_res.get("dest_exists"), task_vars)
+        if copy_res.get('note'):
+            result['note'] = copy_res.get('note')
             return result
 
+        if copy_res.get('msg'):
+            result.update(
+                dict(
+                    msg=copy_res.get('msg'),
+                    stdout=copy_res.get('stdout') or copy_res.get("module_stdout"),
+                    stderr=copy_res.get('stderr') or copy_res.get("module_stderr"),
+                    stdout_lines=copy_res.get("stdout_lines"),
+                    stderr_lines=copy_res.get("stderr_lines"),
+                    rc=copy_res.get('rc')
+                )   
+            )
+            self._remote_cleanup(dest, copy_res.get("dest_exists"), task_vars)
+            return result
         try:
             result = _update_result(is_binary, **copy_res)
         except Exception as err:

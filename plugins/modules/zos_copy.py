@@ -65,11 +65,11 @@ options:
   backup_path:
     description:
       - Specify the USS file name or data set name for the dest backup.
-      - If the dest is a USS file or path, the backup_file name must be a file 
+      - If the dest is a USS file or path, the backup_path name must be a file 
         or path name, and the USS path or file must be an absolute pathname.
-      - If the dest is an MVS data set, the backup_file name must be an MVS 
+      - If the dest is an MVS data set, the backup_path name must be an MVS 
         data set name.
-      - If the backup_file is not provided, the default backup_file name will 
+      - If the backup_path is not provided, the default backup_path name will 
         be used. If the dest is a USS file or USS path, the name of the backup 
         file will be the destination file or path name appended with a 
         timestamp, e.g. C(/path/to/dest/dir/filename.yyyy-mm-dd@hh:mm~).
@@ -149,12 +149,14 @@ options:
           - The encoding to be converted to
         required: true
         type: str
-  checksum:
+  validate:
     description:
-      - SHA256 checksum of the file being copied.
-      - Used to validate that the copy of the file or data set was successful.
-    type: str
+      - Specifies whether to perform checksum validation for source and
+        destination files. 
+      - Valid only for USS destination. Otherwise ignored.
+    type: bool
     required: false
+    default: false
 notes:
     - Destination data sets are assumed to be in catalog. When trying to copy 
       to an uncataloged data set, the module assumes that the data set does 
@@ -172,10 +174,11 @@ EXAMPLES = r'''
     src: /path/to/sample_seq_data_set
     dest: SAMPLE.SEQ.DATA.SET
 
-- name: Copy a local file to a USS location
+- name: Copy a local file to a USS location and validate checksum
   zos_copy:
     src: /path/to/test.log
     dest: /tmp/test.log
+    validate: true
 
 - name: Copy a local ASCII encoded file and convert to IBM-1047
   zos_copy:
@@ -189,7 +192,9 @@ EXAMPLES = r'''
   zos_copy:
     src: /path/to/foo.conf
     dest: /etc/foo.conf
-    mode: '0644'
+    mode: 0644
+    group: foo
+    owner: bar
 
 - name: Module will follow the symbolic link specified in src
   zos_copy:
@@ -202,17 +207,17 @@ EXAMPLES = r'''
     src: /path/to/local/file
     dest: HLQ.SAMPLE.PDSE(member_name)
 
-- name: Copy a single file to a VSAM(KSDS)
+- name: Copy a VSAM(KSDS) to a VSAM(KSDS)
   zos_copy:
-    src: /path/to/local/file
-    dest: SAMPLE.VSAM.DATA.SET
+    src: SAMPLE.SRC.VSAM
+    dest: SAMPLE.DEST.VSAM
     is_vsam: true
+    remote_src: true
 
 - name: Copy inline content to a sequential dataset and replace existing data
   zos_copy:
     content: 'Inline content to be copied'
     dest: SAMPLE.SEQ.DATA.SET
-    force: true
 
 - name: Copy a USS file to a sequential data set
   zos_copy:
@@ -231,7 +236,7 @@ EXAMPLES = r'''
     src: /path/to/local/file
     dest: /path/to/dest
     backup: true
-    backup_file: /tmp/local_file_backup
+    backup_path: /tmp/local_file_backup
 
 - name: Copy a PDS(E) on remote system to a new PDS(E)
   zos_copy:
@@ -244,13 +249,11 @@ EXAMPLES = r'''
     src: HLQ.SAMPLE.PDSE
     dest: HLQ.EXISTING.PDSE
     remote_src: true
-    force: true
 
 - name: Copy PDS(E) member to a new PDS(E) member. Replace if it already exists
   zos_copy:
     src: HLQ.SAMPLE.PDSE(member_name)
     dest: HLQ.NEW.PDSE(member_name)
-    force: true
     remote_src: true
 '''
 
@@ -267,10 +270,10 @@ file:
     sample: /path/to/source.log
 checksum:
     description: SHA256 checksum of the file after running copy.
-    returned: success and dest is USS
+    returned: success and dest is USS and C(validate) is C(true)
     type: str
     sample: 8d320d5f68b048fc97559d771ede68b37a71e8374d1d678d96dcfa2b2da7a64e
-backup_file:
+backup_path:
     description: Name of the backup file or data set that was created.
     returned: changed and if backup=true
     type: str
@@ -310,6 +313,11 @@ state:
     returned: success and if dest is USS
     type: str
     sample: file
+note:
+    description: A note to the user after module terminates
+    returned: C(force) is C(false) and dest exists
+    type: str
+    sample: No data was copied
 msg:
     description: Failure message returned by the module
     returned: failure
@@ -397,7 +405,7 @@ def run_module():
             backup_path=dict(type='str'),
             force=dict(type='bool', default=True),
             remote_src=dict(type='bool', default=False),
-            checksum=dict(type='str'),
+            validate=dict(type='bool'),
             is_uss=dict(type='bool'),
             is_pds=dict(type='bool'),
             size=dict(type='int'),
@@ -420,6 +428,7 @@ def run_module():
         force=dict(arg_type='bool', default=True, required=False),
         remote_src=dict(arg_type='bool', default=False, required=False),
         checksum=dict(arg_type='str', required=False),
+        validate=dict(arg_type='bool', required=False)
     )
 
     try:
@@ -458,7 +467,8 @@ def run_module():
         content = parsed_args.get('content')
         force = parsed_args.get('force')
         backup = parsed_args.get('backup')
-        backup_path = parsed_args.get('backup_file')
+        backup_path = parsed_args.get('backup_path')
+        validate = parsed_args.get('validate')
         mode = module.params.get('mode')
         group = module.params.get('group')
         owner = module.params.get('owner')
@@ -537,9 +547,15 @@ def run_module():
         # ********************************************************************
         # Backup should only be performed if dest is an existing file or 
         # data set. Otherwise ignored.
+        #
+        # If destination exists and the 'force' parameter is set to false,
+        # the module exits with a note to the user.
         # ********************************************************************
         if dest_exists:
-            if backup:
+            if not force:
+                module.exit_json(note="No data was copied")
+
+            if backup or backup_path:
                 backup_path = copy_handler.backup_data(
                     dest_name, dest_ds_type, backup_path
                 )
@@ -599,11 +615,16 @@ def run_module():
                     )
                 if os.path.isdir(dest):
                     dest = os.path.join(dest, os.path.basename(src))
-            try:
-                remote_checksum = get_file_checksum(_temp_path or src)
-                dest_checksum = get_file_checksum(dest)
-            except Exception as err:
-                copy_handler._fail_json(msg="Unable to calculate checksum", stderr=str(err))
+
+            if validate:
+                try:
+                    remote_checksum = get_file_checksum(_temp_path or src)
+                    dest_checksum = get_file_checksum(dest)
+                except Exception as err:
+                    copy_handler._fail_json(
+                        msg="Unable to calculate checksum", stderr=str(err)
+                    )
+                res_args['checksum'] = remote_checksum
 
             copy_handler.copy_to_uss(
                 src, _temp_path, conv_path, dest, 
@@ -612,7 +633,6 @@ def run_module():
             res_args['changed'] = (
                 res_args.get("changed") or remote_checksum != dest_checksum
             )
-            res_args['checksum'] = remote_checksum
             res_args['size'] = Path(dest).stat().st_size
 
     # ----------------------------------- o -----------------------------------
@@ -650,7 +670,7 @@ def run_module():
         )  
     )
     if backup_path:
-        res_args['backup_file'] = backup_path
+        res_args['backup_path'] = backup_path
 
     module.exit_json(**res_args)
 
@@ -1040,10 +1060,62 @@ class CopyHandler(object):
         )
         return rc, out, err
 
+    def _allocate_pdse(self, ds_name, model_ds=None, size=None, vol=None, src=None):
+        """Allocate a partitioned extended data set. If 'model_ds' is provided,
+        use its allocation paramters to allocate the PDSE. Otherwise, if 'size'
+        is provided, allocate PDSE using this given size. If neither of them
+        are provided, obtain the 'src' data set size from vtoc and allocate using
+        that information.
+
+        Arguments:
+            ds_name {str} -- The name of the PDSE to allocate
+        
+        Keyword Arguments:
+            model_ds {str} -- The name of the data set whose allocation parameters
+                              should be used to allocate the PDSE 
+            size {int} -- The size, in bytes, of the allocated PDSE
+            src {str} -- The name of the source data set from which to get the size
+            vol {str} -- Volume of the source data set
+        """
+        if model_ds:
+            alloc_cmd = "  ALLOC DS('{0}') LIKE('{1}')".format(ds_name, model_ds)
+            rc, out, err = self._run_mvs_command("IKJEFT01", alloc_cmd, authorized=True)
+            if rc != 0:
+                self._fail_json(
+                    msg="Unable to allocate destination {0}".format(ds_name),
+                    stdout=out, stderr=err, rc=rc,
+                    stdout_lines=out.splitlines(),
+                    stderr_lines=err.splitlines()
+                )
+            return rc
+
+        recfm = "FB"
+        lrecl = 80
+        if size is None:
+            ds_vtoc = vtoc.VolumeTableOfContents(self.module)
+            vtoc_info = ds_vtoc.get_data_set_entry(src, vol)
+            tracks = int(vtoc_info.get("last_block_pointer").get("track"))
+            blocks = int(vtoc_info.get("last_block_pointer").get("block"))
+            blksize = int(vtoc_info.get("block_size"))
+            bytes_per_trk = 56664
+            size = (tracks * bytes_per_trk) + (blocks * blksize)
+            recfm = vtoc_info.get("record_format") or recfm
+            lrecl = int(vtoc_info.get("record_length")) or lrecl
+
+        size = "{0}K".format(str(int(math.ceil(size/1024))))
+        return Datasets.create(ds_name, "PDSE", size, recfm, "", lrecl)
+
     def _allocate_vsam(self, ds_name, size):
+        """Allocate a VSAM data set. The VSAM will be allocated in volume
+        '000000'. 
+
+        Arguments:
+            ds_name {str} -- The name of the VSAM to allocate
+            size {int} -- How much space, in bytes, to allocate for the VSAM
+        """
         volume = "000000"
         max_size = 16777215
-        allocation_size = math.ceil(size/1048576)
+        allocation_size = int(math.ceil(size/1048576)) # bytes to Megabytes
         
         if allocation_size > max_size:
             msg = ("Size of data exceeds maximum allowed allocation size for VSAM."
@@ -1077,36 +1149,12 @@ class CopyHandler(object):
                 stderr=str(err)    
             )
 
-    def _allocate_pdse(self, ds_name, model_ds=None, size=None, vol=None, src=None):
-        if model_ds:
-            alloc_cmd = "  ALLOC DS('{0}') LIKE('{1}')".format(ds_name, model_ds)
-            rc, out, err = self._run_mvs_command("IKJEFT01", alloc_cmd, authorized=True)
-            if rc != 0:
-                self._fail_json(
-                    msg="Unable to allocate destination {0}".format(ds_name),
-                    stdout=out, stderr=err, rc=rc,
-                    stdout_lines=out.splitlines(),
-                    stderr_lines=err.splitlines()
-                )
-            return rc
-
-        recfm = "FB"
-        lrecl = 80
-        if size is None:
-            ds_vtoc = vtoc.VolumeTableOfContents(self.module)
-            vtoc_info = ds_vtoc.get_data_set_entry(src, vol)
-            tracks = int(vtoc_info.get("last_block_pointer").get("track"))
-            blocks = int(vtoc_info.get("last_block_pointer").get("block"))
-            blksize = int(vtoc_info.get("block_size"))
-            bytes_per_trk = 56664
-            size = (tracks * bytes_per_trk) + (blocks * blksize)
-            recfm = vtoc_info.get("record_format") or recfm
-            lrecl = int(vtoc_info.get("record_length")) or lrecl
-
-        size = "{0}K".format(str(int(math.ceil(size/1024))))
-        return Datasets.create(ds_name, "PDSE", size, recfm, "", lrecl)
-
     def _clear_pdse(self, data_set):
+        """Delete all members from a partitioned data set.
+
+        Arguments:
+            data_set {str} -- Name of the PDS/PDSE
+        """
         members = Datasets.list_members(data_set + "(*)")
         if members:
             try:

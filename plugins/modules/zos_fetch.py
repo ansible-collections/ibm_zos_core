@@ -20,21 +20,23 @@ module: zos_fetch
 version_added: "2.9"
 short_description: Fetch data from z/OS
 description:
-  - This module copies a file or data set from a remote z/OS system to the
-    local machine. Use the
-    L(fetch,https://docs.ansible.com/ansible/latest/modules/fetch_module.html)
-    module to copy files from local machine to the remote z/OS system.
+  - This module fetches a Unix System Services (USS) file,
+    PS(sequential data set), PDS, PDSE, member of a PDS or PDSE, or
+    KSDS(VSAM data set) from a remote z/OS system.
+  - In the case of a PDS or PDSE member, the destination will be the same as
+    the dest parameter. When fetching a member, destination will be a file.
   - When fetching a sequential data set, the destination file name will be the
     same as the data set name.
-  - When fetching a PDS/PDS(E), the destination will be a directory with the
-    same name as the PDS/PDS(E).
+  - When fetching a PDS or PDSE, the destination will be a directory with the
+    same name as the PDS or PDSE.
   - Files that already exist at dest will be overwritten if they are different
     than the src.
 author: "Asif Mahmud (@asifmahmud)"
 options:
   src:
     description:
-      - Name of PDS, PDS(E) members, VSAM data set, USS file path.
+      - Name of a Unix System Services (USS) file, PS(sequential data set), PDS,
+        PDSE, member of a PDS, PDSE or KSDS(VSAM data set).
       - USS file paths should be absolute paths.
     required: true
     type: str
@@ -63,8 +65,7 @@ options:
       - Override the default behavior of appending hostname/path/to/file to the
         destination. If set to "true", the file or data set will be fetched to
         the destination directory without appending remote hostname to the
-        destination. Refer to the M(fetch) module for a more detailed
-        description of this parameter.
+        destination.
     required: false
     default: "true"
     type: bool
@@ -84,35 +85,40 @@ options:
   encoding:
     description:
       - Specifies which encodings the fetched data set should be converted from
-        and to. If this parameter is not provided, no encoding conversions will
-        take place.
+        and to. If this parameter is not provided, encoding conversions will
+        not take place.
     required: false
     type: dict
     suboptions:
       from:
         description:
-            - The encoding to be converted from
+            - The character set of the source I(src).
+            - Supported character sets rely on the target version; the most
+              common character sets are supported.
         required: true
         type: str
       to:
         description:
-            - The encoding to be converted to
+            - The destination I(dest) character set for the output to be written
+              as.
+            - Supported character sets rely on the target version; the most
+              common character sets are supported.
         required: true
         type: str
 notes:
-    - When fetching PDS(E) and VSAM data sets, temporary storage will be used
-      on the remote z/OS system. After the PDS(E) or VSAM data set is
-      successfully transferred, the temporary data set will deleted. The size
-      of the temporary storage will correspond to the size of PDS(E) or VSAM
+    - When fetching PDSE and VSAM data sets, temporary storage will be used
+      on the remote z/OS system. After the PDSE or VSAM data set is
+      successfully transferred, the temporary storage will be deleted. The size
+      of the temporary storage will correspond to the size of PDSE or VSAM
       data set being fetched. If module execution fails, the temporary
-      storage will be cleaned.
-    - To prevent redundancy, additional checksum validation will not be done
-      when fetching PDS(E) because data integrity checks are done through the
-      transfer methods used. As a result, the module response will not include
-      C(checksum) parameter.
-    - All data sets are always assumed to be in catalog. If an uncataloged data
-      set needs to be fetched, it should be cataloged first.
-    - Fetching HFS or ZFS is currently not supported.
+      storage will be deleted.
+    - To ensure optimal performance, data integrity checks for PDS, PDSE, and
+      members of PDS or PDSE are done through the transfer methods used.
+      As a result, the module response will not include
+      the C(checksum) parameter.
+    - All data sets are always assumed to be cataloged. If an uncataloged
+      data set needs to be fetched, it should be cataloged first.
+    - Fetching HFS or ZFS type data sets is currently not supported.
 seealso:
 - module: fetch
 - module: zos_copy
@@ -121,7 +127,7 @@ seealso:
 """
 
 EXAMPLES = r"""
-- name: Fetch file from USS and store into /tmp/fetched/hostname/tmp/somefile
+- name: Fetch file from USS and store in /tmp/fetched/hostname/tmp/somefile
   zos_fetch:
     src: /tmp/somefile
     dest: /tmp/fetched
@@ -139,7 +145,7 @@ EXAMPLES = r"""
     flat: true
     is_binary: true
 
-- name: Fetch a unix file and don't validate its checksum
+- name: Fetch a Unix file and don't validate its checksum
   zos_fetch:
     src: /tmp/somefile
     dest: /tmp/
@@ -170,46 +176,43 @@ EXAMPLES = r"""
 
 RETURN = r"""
 file:
-    description: The source file path on remote machine
+    description: The source file path or data set on the remote machine.
     returned: success
     type: str
     sample: SOME.DATA.SET
 dest:
-    description: The destination file path on controlling machine
+    description: The destination file path on the controlling machine.
     returned: success
     type: str
     sample: /tmp/SOME.DATA.SET
 is_binary:
-    description: Indicates which transfer mode was used to fetch the file
+    description: Indicates the transfer mode that was used to fetch.
     returned: success
     type: bool
     sample: True
 checksum:
-    description: The SHA256 checksum of the fetched file
+    description: The SHA256 checksum of the fetched file or data set. checksum
+       validation is performed for all USS files and sequential data sets.
     returned: success and src is a non-partitioned data set
     type: str
     sample: 8d320d5f68b048fc97559d771ede68b37a71e8374d1d678d96dcfa2b2da7a64e
 data_set_type:
-    description: Indicates the fetched file's data set type
+    description: Indicates the fetched data set type.
     returned: success
     type: str
     sample: PDSE
 note:
-    description: Notice of module failure when C(fail_on_missing) is false
+    description: Notice of module failure when C(fail_on_missing) is false.
     returned: failure and fail_on_missing=false
     type: str
     sample: The data set USER.PROCLIB does not exist. No data was fetched.
-changed:
-    description: Indicates if any changes were made during the module operation
-    returned: always
-    type: bool
 msg:
-    description: Message returned on failure
+    description: Message returned on failure.
     returned: failure
     type: str
-    sample: The source 'TEST.DATA.SET' does not exist or is uncataloged
+    sample: The source 'TEST.DATA.SET' does not exist or is uncataloged.
 stdout:
-    description: The stdout from a USS command or MVS command, if applicable
+    description: The stdout from a USS command or MVS command, if applicable.
     returned: failure
     type: str
     sample: DATA SET 'USER.PROCLIB' NOT IN CATALOG
@@ -217,19 +220,19 @@ stderr:
     description: The stderr of a USS command or MVS command, if applicable
     returned: failure
     type: str
-    sample: File /tmp/result.log not found
+    sample: File /tmp/result.log not found.
 stdout_lines:
     description: List of strings containing individual lines from stdout
     returned: failure
     type: list
     sample: [u'USER.TEST.PDS NOT IN CATALOG..']
 stderr_lines:
-    description: List of strings containing individual lines from stderr
+    description: List of strings containing individual lines from stderr.
     returned: failure
     type: list
     sample: [u'Unable to traverse PDS USER.TEST.PDS not found']
 rc:
-    description: The return code of a USS command or MVS command, if applicable
+    description: The return code of a USS command or MVS command, if applicable.
     returned: failure
     type: int
     sample: 8

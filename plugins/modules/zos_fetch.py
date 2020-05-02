@@ -94,7 +94,7 @@ options:
         description:
             - The character set of the source I(src).
             - Supported character sets rely on the target version; the most
-            common character sets are supported.
+              common character sets are supported.
         required: true
         type: str
       to:
@@ -192,7 +192,7 @@ is_binary:
     sample: True
 checksum:
     description: The SHA256 checksum of the fetched file or data set. checksum
-    validation is performed for all USS files and sequential data sets.
+       validation is performed for all USS files and sequential data sets.
     returned: success and src is a non-partitioned data set
     type: str
     sample: 8d320d5f68b048fc97559d771ede68b37a71e8374d1d678d96dcfa2b2da7a64e

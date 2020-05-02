@@ -21,95 +21,94 @@ author:
   - "Blake Becker (@blakeinate)"
 short_description: Perform encoding operations.
 description:
-  - Convert the encoding of characters read from either Unix System
-    Services (USS) file or path, PS(sequential data set), PDS/E or KSDS(
-    VSAM data set).
-  - Write the data out to either Unix System Services (USS) file or path,
-    PS(sequential data set), PDS/E or KSDS(VSAM data set).
+  - Converts the encoding of characters that are read from a Unix System
+    Services (USS) file or path, PS(sequential data set), PDS, PDSE, or
+    KSDS(VSAM data set).
+  - Writes the data to a Unix System Services (USS) file or path,
+    PS(sequential data set), PDS, PDSE, or KSDS(VSAM data set).
 options:
   from_encoding:
     description:
-      - The source code set of the input(src).
-      - Supported charsets rely on the target version, the most common
-        charsets are supported.
+      - The character set of the source I(src).
+      - Supported character sets rely on the target version; the most common
+        character sets are supported.
     required: false
     type: str
     default: IBM-1047
   to_encoding:
     description:
-      - The destination code set for the output I(dest).
-      - Supported charsets rely on the target version, the most common
-        charsets are supported.
+      - The destination I(dest) character set for the output to be written as.
+      - Supported character sets rely on the target version; the most common
+        character sets are supported.
     required: false
     type: str
     default: ISO8859-1
   src:
     description:
       - The location of the input characters.
-      - It could be a USS file, USS directory, PS(sequential data set),
-        PDS/E or KSDS(VSAM data set).
+      - The location can be a Unix System Services (USS) file or path,
+        PS(sequential data set), member of a PDS or PDSE, PDS, PDSE, or
+        KSDS(VSAM data set).
       - The USS path or file must be an absolute pathname.
-      - If I(src) is a USS directory, all files will be encoding, it
-        is the user's responsibility to avoid files that should not be encoded, such as
-        binary files.
+      - If I(src) is a USS directory, all files will be encoded. It is the
+        playbook author or user's responsibility to avoid files that should not
+        be encoded, such as binary files. A user is described as the remote
+        user, configured either for the playbook or playbook tasks, who can
+        also obtain escalated privileges to execute as root or another user.
     required: true
     type: str
   dest:
     description:
-      - The location of the coverted characters to be written out to.
-      - It could be a USS file, USS directory, PS(sequential data set),
-        PDS/E or KSDS(VSAM data set).
-      - If I(dest) is not specified, I(src) will be used as the destination.
-        The I(src) will be converted and overwritten with the specified charset in
-        I(to_encoding). The result is placed in I(dest).
-      - If length of the file name in I(src) is more the 8 characters, name
-        will be truncated when converting to a PDS.
-      - If I(src) is a USS file, PS, VSAM or PDS/E member, a file will be
-        created for the dest when no dest specified.
-      - If I(src) is a USS path, PDS/E, a path will be created for the dest
-        when no dest specified.
-      - The USS path or file must be an absolute pathname.
+      - The location where the converted characters are output.
+      - The destination I(dest) can be a Unix System Services (USS) file or path,
+        PS(sequential data set), member of a PDS or PDSE, PDS, PDSE or
+        KSDS(VSAM data set).
+      - If the length of the PDSE member name used in I(dest) is greater
+        than 8 characters, the member name will be truncated when written out.
+      - If I(dest) is not specified, the I(src) will be used as the destination
+        and will overwrite the I(src) with the character set in the
+        option I(to_encoding).
+      - The USS file or path must be an absolute pathname.
     required: false
     type: str
   backup:
     description:
-      - Create a backup file or backup data set for I(dest) so you can get the
-        original file back if you somehow clobbered it incorrectly.
-      - I(backup_file) can be used to specify a backup file name if I(backup=true).
+      - Creates a backup file or backup data set for I(dest), including the
+        timestamp information to ensure that you retrieve the original file.
+      - I(backup_file) can be used to specify a backup file name
+        if I(backup=true).
     required: false
     type: bool
     default: false
   backup_file:
     description:
       - Specify the USS file name or data set name for the dest backup.
-      - If the dest is a USS file or path, I(backup_file) must be a file or
+      - If dest is a USS file or path, I(backup_file) must be a file or
         path name, and the USS path or file must be an absolute pathname.
-      - If the dest is an MVS data set, I(backup_file) must be an MVS data
+      - If dest is an MVS data set, the I(backup_file) must be an MVS data
         set name.
-      - If I(backup_file) is not provided, the default backup name will be
-        used. If the dest is a USS file or USS path, the name of the backup file
-        will be the destination file or path name appended with a timestamp,
-        e.g. /path/file_name.2020-04-23-08-32-29-bak.tar.If the dest is an MVS data
-        set, it will be a data set with a random name generated by calling ZOAU API,
-        then the MVS backup data set recovery can be done by renaming it.
+      - If I(backup_file) is not provided, the default backup name will be used.
+        The default backup name for a USS file or path will be the destination
+        file or path name appended with a timestamp,
+        e.g. /path/file_name.2020-04-23-08-32-29-bak.tar. If dest is an
+        MVS data set, the default backup name will be a random name generated
+        by IBM Z Open Automation Utilities.
     required: false
     type: str
   backup_compress:
     description:
-      - Determines if any backups to USS should be compressed.
+      - Determines if backups to USS files or paths should be compressed.
       - I(backup_compress) is only used when I(backup=true).
     type: bool
     required: false
     default: false
 notes:
-  - All data sets are always assumed to be catalogged. If an uncataloged data
-    set needs to be encoded, it should be catalogged first.
-seealso:
-  - module: data_set_utils, encode
+  - All data sets are always assumed to be cataloged. If an uncataloged data
+    set needs to be encoded, it should be cataloged first.
 """
 
 EXAMPLES = r"""
-- name: Convert file encoding from IBM-1047 to ISO8859-1 to the same file
+- name: Convert file encoding from IBM-1047 to ISO8859-1 for the same file
   zos_encode:
     src: /zos_encode/test.data
 
@@ -222,24 +221,23 @@ EXAMPLES = r"""
 
 RETURN = r"""
 src:
-    description: The name of the input file or data set
+    description:
+       The location of the input characters identified in option I(src).
     returned: always
     type: str
 dest:
-    description: The name of the output file or data set, if the dest is a
-      uss file or path and the file status has been changed in the conversion,
-      the file stat info also will also be returned.
+    description:
+       The name of the output file or data set. If dest is a USS file or
+       path and the status has been changed in the conversion, the file
+       status will also be returned.
     returned: always
     type: str
 backup_file:
-    description: Name of backup file created
+    description:
+       Name of the backup file created.
     returned: changed and if backup=yes
     type: str
     sample: /path/file_name.2020-04-23-08-32-29-bak.tar
-changed:
-    description: True if the state was changed, otherwise False
-    returned: always
-    type: bool
 """
 
 import time

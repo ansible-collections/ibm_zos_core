@@ -81,10 +81,11 @@ options:
     required: false
   force:
     description:
-      - If C(true), the remote file or data set will be replaced when contents 
-        are different than the source.
-      - If C(false), the file will only be transferred if the destination does 
-        not exist.
+      - If C(true), the remote file or data set will be replaced.
+      - If C(false), the file or data set will only be copied if the destination 
+        does not exist.
+      - If C(false) and destination exists, the module exits with a note to 
+        the user.
     type: bool
     default: true
     required: false
@@ -119,7 +120,10 @@ options:
     required: false
   is_vsam:
     description:
-      - Indicates whether the destination data set is VSAM. 
+      - Indicates whether the destination data set is VSAM.
+      - When the dest is KSDS or ESDS, then source can be ESDS,KSDS or RRDS.
+      - When the dest is RRDS, then the source must be RRDS.
+      - When dest is LDS, then source must be LDS.
     type: bool
     default: false
     required: false
@@ -161,6 +165,9 @@ notes:
     - Destination data sets are assumed to be in catalog. When trying to copy 
       to an uncataloged data set, the module assumes that the data set does 
       not exist and will create it.
+    - Destination will be backed up if either C(backup) is C(true) or 
+      C(backup_path) is provided. If C(backup) is C(false) but C(backup_path)
+      is provided, task will fail.
 seealso:
 - copy
 - fetch
@@ -231,6 +238,11 @@ EXAMPLES = r'''
     dest: HLQ.SAMPLE.PDSE(member_name)
     is_binary: true
 
+- name: Copy a sequential data set to a PDS member:
+  zos_copy:
+    src: SAMPLE.SEQ.DATA.SET
+    dest: HLQ.SAMPLE.PDSE(member_name)
+
 - name: Copy a local file and take a backup of the existing file
   zos_copy:
     src: /path/to/local/file
@@ -252,9 +264,14 @@ EXAMPLES = r'''
 
 - name: Copy PDS(E) member to a new PDS(E) member. Replace if it already exists
   zos_copy:
-    src: HLQ.SAMPLE.PDSE(member_name)
-    dest: HLQ.NEW.PDSE(member_name)
+    src: HLQ.SAMPLE.PDSE(SRCMEM)
+    dest: HLQ.NEW.PDSE(DESTMEM)
     remote_src: true
+
+- name: Copy a USS file to a PDSE member. If PDSE does not exist, allocate it
+  zos_copy:
+    src: /path/to/uss/src
+    dest: DEST.PDSE.DATA.SET(MEMBER)
 '''
 
 RETURN = r'''
@@ -270,7 +287,7 @@ file:
     sample: /path/to/source.log
 checksum:
     description: SHA256 checksum of the file after running copy.
-    returned: success and dest is USS and C(validate) is C(true)
+    returned: C(validate) is C(true) and if dest is USS
     type: str
     sample: 8d320d5f68b048fc97559d771ede68b37a71e8374d1d678d96dcfa2b2da7a64e
 backup_path:
@@ -533,13 +550,14 @@ def run_module():
     # ----------------------------------- o -----------------------------------
 
         copy_handler = CopyHandler(module, dest_exists)
+        pdse_copy_handler = PDSECopyHandler(module, dest_exists)
         # ********************************************************************
         # Some src and dest combinations are incompatible. For example, it is
         # not possible to copy a PDS member to a VSAM data set or a USS file
         # to a PDS. Perform these sanity checks.
         # ********************************************************************
         try:
-            validate_target_type(src, dest, src_ds_type, dest_ds_type)
+            CopyUtil.validate_target_type(src, dest, src_ds_type, dest_ds_type)
         except IncompatibleTargetError as err:
             module.fail_json(msg=str(err))
 
@@ -553,7 +571,7 @@ def run_module():
         # ********************************************************************
         if dest_exists:
             if not force:
-                module.exit_json(note="No data was copied")
+                module.exit_json(note="Destination exists. No data was copied")
 
             if backup or backup_path:
                 backup_path = copy_handler.backup_data(
@@ -580,16 +598,14 @@ def run_module():
                 os.path.isdir(b_src)
             ):
                 dest_ds_type = "PDSE"
+                pdse_copy_handler.create_pdse(
+                    src, dest_name, _size, src_ds_type, remote_src=remote_src, 
+                    vol=src_ds_vol
+                )
             elif is_vsam:
                 dest_ds_type = "VSAM"
             elif not _is_uss:
                 dest_ds_type = "SEQ"
-
-            if dest_ds_type in ("PDSE", "VSAM"):
-                copy_handler.create_data_set(
-                    src, dest_name, _size, dest_ds_type, src_ds_type, 
-                    remote_src=remote_src, vol=src_ds_vol
-                )
             res_args['changed'] = True
 
         if encoding:
@@ -618,8 +634,8 @@ def run_module():
 
             if validate:
                 try:
-                    remote_checksum = get_file_checksum(_temp_path or src)
-                    dest_checksum = get_file_checksum(dest)
+                    remote_checksum = CopyUtil.get_file_checksum(_temp_path or src)
+                    dest_checksum = CopyUtil.get_file_checksum(dest)
                 except Exception as err:
                     copy_handler._fail_json(
                         msg="Unable to calculate checksum", stderr=str(err)
@@ -647,19 +663,23 @@ def run_module():
         elif dest_ds_type in MVS_PARTITIONED:
             if not remote_src and not _copy_member:
                 _temp_path = os.path.join(_temp_path, os.path.basename(src))
-            copy_handler.copy_to_pdse(
-                src, _temp_path, conv_path, dest, src_ds_type, copy_member=_copy_member
-            )
+            if _copy_member:
+                pdse_copy_handler.copy_to_member(src, _temp_path, conv_path, dest)
+            else:
+                pdse_copy_handler.copy_to_pdse(
+                    src, _temp_path, conv_path, dest, src_ds_type
+                )
 
     # ----------------------------------- o -----------------------------------
         # Copy to VSAM data set
         # ---------------------
         else:
-            copy_handler.copy_to_vsam(dest, size=_size)
+            vsam_copy_handler = VSAMCopyHandler(module, dest_exists)
+            vsam_copy_handler.copy_to_vsam(src, dest)
 
     finally:
-        cleanup(module.params.get("temp_path"))
-        cleanup(conv_path)
+        CopyUtil.cleanup(module.params.get("temp_path"))
+        CopyUtil.cleanup(conv_path)
 
     res_args.update(
         dict(
@@ -675,75 +695,77 @@ def run_module():
     module.exit_json(**res_args)
 
 
-def get_file_checksum(src):
-    """Calculate SHA256 hash for a given file 
-    
-    Arguments:
-        src {str} -- The absolute path of the file
-    
-    Returns:
-        str -- The SHA256 hash of the contents of input file
-    """
-    b_src = to_bytes(src)
-    if not os.path.exists(b_src) or os.path.isdir(b_src):
-        return None
-    blksize = 64 * 1024
-    hash_digest = sha256()
-    try:
-        with open(to_bytes(src, errors='surrogate_or_strict'), 'rb') as infile:
-            block = infile.read(blksize)
-            while block:
-                hash_digest.update(block)
+class CopyUtil(object):    
+    @staticmethod
+    def get_file_checksum(self, src):
+        """Calculate SHA256 hash for a given file 
+        
+        Arguments:
+            src {str} -- The absolute path of the file
+        
+        Returns:
+            str -- The SHA256 hash of the contents of input file
+        """
+        b_src = to_bytes(src)
+        if not os.path.exists(b_src) or os.path.isdir(b_src):
+            return None
+        blksize = 64 * 1024
+        hash_digest = sha256()
+        try:
+            with open(to_bytes(src, errors='surrogate_or_strict'), 'rb') as infile:
                 block = infile.read(blksize)
-    except Exception as err:
-        raise
-    return hash_digest.hexdigest()
+                while block:
+                    hash_digest.update(block)
+                    block = infile.read(blksize)
+        except Exception as err:
+            raise
+        return hash_digest.hexdigest()
 
+    @staticmethod
+    def cleanup(self, src):
+        """Remove the file or directory specified by path 
+        
+        Arguments:
+            src {str} -- The absolute path to the file or directory
+        """
+        if src and os.path.exists(src):
+            if os.path.isdir(src):
+                rmtree(src)
+            else:
+                os.remove(src)
 
-def cleanup(src):
-    """Remove the file or directory specified by path 
-    
-    Arguments:
-        src {str} -- The absolute path to the file or directory
-    """
-    if src and os.path.exists(src):
-        if os.path.isdir(src):
-            rmtree(src)
+    @staticmethod
+    def validate_target_type(self, src, dest, src_type, dest_type):
+        """Determine whether the src and dest are compatible and src can be
+        copied to dest.
+
+        Arguments:
+            src {str} -- Path to source file or name of data set
+            dest {srr} -- Path to destination file or name of data set
+            src_type {str} -- Type of the source (e.g. PDSE, USS)
+            dest_type {str} -- Type of destination
+
+        Raises:
+            IncompatibleTargetError -- When source type and destination type are
+            are incompatible with each other.
+
+        """
+        incompatible = False
+        if src_type in MVS_SEQ:
+            incompatible = (
+                dest_type in MVS_PARTITIONED and not dest.endswith(')')
+            )
+        elif src_type in MVS_PARTITIONED:
+            incompatible = (
+                dest_type == "VSAM" or 
+                src.endswith(')') and not dest.endswith(')')
+            )
+        elif src_type == "USS":
+            pass
         else:
-            os.remove(src)
-
-
-def validate_target_type(src, dest, src_type, dest_type):
-    """Determine whether the src and dest are compatible and src can be
-    copied to dest.
-
-    Arguments:
-        src {str} -- Path to source file or name of data set
-        dest {srr} -- Path to destination file or name of data set
-        src_type {str} -- Type of the source (e.g. PDSE, USS)
-        dest_type {str} -- Type of destination
-
-    Raises:
-        IncompatibleTargetError -- When source type and destination type are
-        are incompatible with each other.
-
-    """
-    incompatible = False
-    if src_type in MVS_SEQ:
-        incompatible = (
-            dest_type in MVS_PARTITIONED and not dest.endswith(')')
-        )
-    elif src_type in MVS_PARTITIONED:
-        incompatible = (
-            dest_type == "VSAM" or 
-            src.endswith(')') and not dest.endswith(')')
-        )
-    elif src_type == "USS":
-        pass
-    else:
-        incompatible = dest_type in MVS_PARTITIONED
-    if incompatible:
-        raise IncompatibleTargetError(src_type, dest_type)
+            incompatible = dest_type in MVS_PARTITIONED
+        if incompatible:
+            raise IncompatibleTargetError(src_type, dest_type)
 
 
 class CopyHandler(object):
@@ -832,100 +854,6 @@ class CopyHandler(object):
         else:
             self._copy_to_ds(src, dest)
 
-    def copy_to_pdse(self, src, temp_path, conv_path, dest, src_ds_type, copy_member=False):
-        """Copy source to a PDS/PDSE or PDS/PDSE member.
-
-        Arguments:
-            src {str} -- Path to USS file/directory or data set name.
-            temp_path {str} -- Path to the location where the control node transferred data to
-            conv_path {str} -- Path to the converted source file/directory
-            dest {str} -- Name of destination data set
-            src_ds_type {str} -- The type of source
-
-        Keyword Arguments:
-            copy_member {bool} -- Whether destination is a data set member. (Default {False})
-        """
-        src = temp_path or conv_path or src
-        if copy_member:
-            rc = Datasets.copy(src, dest)
-            if rc != 0:
-                self._fail_json(
-                    msg="Unable to copy to data set member {}".format(dest), 
-                    rc=rc
-                )
-        else:
-            self._clear_pdse(dest)
-            if src_ds_type == "USS":
-                path, dirs, files = next(os.walk(src))
-                for file in files:
-                    member_name = file[:file.rfind('.')] if '.' in file else file
-                    full_file_path = path + "/" + file
-                    rc = Datasets.copy(
-                        full_file_path, "{0}({1})".format(dest, member_name)
-                    )
-                    if rc != 0:
-                        self._fail_json(
-                            msg="Error while copying file {0} to {1}".format(full_file_path, dest)
-                        )
-            else:
-                dds = dict(OUTPUT=dest, INPUT=src)
-                copy_cmd = "   COPY OUTDD=OUTPUT,INDD=((INPUT,R))"
-                rc, out, err = self._run_mvs_command("IEBCOPY", copy_cmd, dds)
-                if rc != 0:
-                    self._fail_json(
-                        msg="Unable to copy {0} to {1}".format(src, dest),
-                        stdout=out, stderr=err, rc=rc,
-                        stdout_lines=out.splitlines(),
-                        stderr_lines=err.splitlines()
-                    )
-
-    def create_data_set(
-        self, src, dest_name, size, dest_ds_type, src_ds_type, 
-        remote_src=False, vol=None
-    ):
-        """Create a data set specified by 'dest_name'
-
-        Arguments:
-            src {str} -- Name of the source data set
-            dest_name {str} -- Name of the data set to be created
-            size {int} -- The size, in bytes, of the source file
-            dest_ds_type {str} -- Type of the data set to be created
-            src_ds_type {str} -- Type of source data set
-        
-        Keyword Arguments:
-            remote_src {bool} -- Whether source is located in remote system. (Default {False})
-            vol {str} -- Volume where source data set is stored. (Default {None})
-        """
-        out = err = None
-        if dest_ds_type == "PDSE":
-            if remote_src:
-                if src_ds_type in MVS_PARTITIONED:
-                    rc = self._allocate_pdse(dest_name, model_ds=src)
-                elif src_ds_type in MVS_SEQ:
-                    rc = self._allocate_pdse(dest_name, vol=vol, src=src)
-                elif os.path.isfile(src):
-                    size = Path(src).stat().st_size
-                    rc = self._allocate_pdse(dest_name, size=size)
-                else:
-                    path, dirs, files = next(os.walk(src))
-                    if dirs:
-                        self._fail_json(
-                            msg="Subdirectory found in source directory {0}".format(src)
-                        )
-                    size = sum(Path(path + "/" + f).stat().st_size for f in files)
-                    rc = self._allocate_pdse(dest_name, size=size)
-            else:
-                rc = self._allocate_pdse(dest_name, size=size)
-            if rc != 0:
-                self._fail_json(
-                    msg="Unable to allocate destination data set to copy {0}".format(src),
-                    stdout=out, stderr=err, rc=rc,
-                    stdout_lines=out.splitlines() if out else None,
-                    stderr_lines=err.splitlines() if err else None
-                )
-        else:
-            self._allocate_vsam(dest_name, size)
-
     def convert_encoding(self, src, temp_path, encoding):
         """Convert encoding for given src
 
@@ -1003,6 +931,29 @@ class CopyHandler(object):
         except Exception as err:
             self._fail_json(msg=str(err))
 
+    def allocate_model(self, ds_name, model):
+        """Use 'model' data sets allocation paramters to allocate the given
+        data set.
+
+        Arguments:
+            ds_name {str} -- The name of the data set to allocate
+            model {str} -- The name of the data set whose allocation parameters
+                           should be used to allocate 'ds_name' 
+
+        Returns:
+            {int} -- The return code of executing the allocation command 
+        """
+        alloc_cmd = "  ALLOC DS('{0}') LIKE('{1}')".format(ds_name, model)
+        rc, out, err = self._run_mvs_command("IKJEFT01", alloc_cmd, authorized=True)
+        if rc != 0:
+            self._fail_json(
+                msg="Unable to allocate destination {0}".format(ds_name),
+                stdout=out, stderr=err, rc=rc,
+                stdout_lines=out.splitlines(),
+                stderr_lines=err.splitlines()
+            )
+        return rc
+
     def _tag_file_encoding(self, file_path, tag, is_dir=False):
         """Tag the file specified by 'file_path' with the given code set.
         If `file_path` is a directory, all of the files and subdirectories will
@@ -1060,9 +1011,116 @@ class CopyHandler(object):
         )
         return rc, out, err
 
-    def _allocate_pdse(self, ds_name, model_ds=None, size=None, vol=None, src=None):
-        """Allocate a partitioned extended data set. If 'model_ds' is provided,
-        use its allocation paramters to allocate the PDSE. Otherwise, if 'size'
+
+class PDSECopyHandler(CopyHandler):
+    def __init__(self, module, dest_exists):
+        """ Utility class to handle copying to partitioned data sets or
+        partitioned data set members.
+        """
+        super().__init__(module, dest_exists)
+
+    def copy_to_pdse(self, src, temp_path, conv_path, dest, src_ds_type):
+        """Copy source to a PDS/PDSE or PDS/PDSE member.
+
+        Arguments:
+            src {str} -- Path to USS file/directory or data set name.
+            temp_path {str} -- Path to the location where the control node transferred data to
+            conv_path {str} -- Path to the converted source file/directory
+            dest {str} -- Name of destination data set
+            src_ds_type {str} -- The type of source
+        """
+        src = temp_path or conv_path or src
+        self._clear_pdse(dest)
+        if src_ds_type == "USS":
+            path, dirs, files = next(os.walk(src))
+            for file in files:
+                member_name = file[:file.rfind('.')] if '.' in file else file
+                full_file_path = path + "/" + file
+                rc = Datasets.copy(
+                    full_file_path, "{0}({1})".format(dest, member_name)
+                )
+                if rc != 0:
+                    self._fail_json(
+                        msg="Error while copying file {0} to {1}".format(full_file_path, dest)
+                    )
+        else:
+            dds = dict(OUTPUT=dest, INPUT=src)
+            copy_cmd = "   COPY OUTDD=OUTPUT,INDD=((INPUT,R))"
+            rc, out, err = self._run_mvs_command("IEBCOPY", copy_cmd, dds)
+            if rc != 0:
+                self._fail_json(
+                    msg="Unable to copy {0} to {1}".format(src, dest),
+                    stdout=out, stderr=err, rc=rc,
+                    stdout_lines=out.splitlines(),
+                    stderr_lines=err.splitlines()
+                )
+
+    def copy_to_member(self, src, temp_path, conv_path, dest):
+        """Copy source to a PDS/PDSE member. The only valid sources are:
+            - USS files
+            - Sequential data sets
+            - PDS/PDSE members
+            - local files
+        
+        Arguments:
+            src {str} -- Path to USS file or data set name.
+            temp_path {str} -- Path to the location where the control node transferred data to
+            conv_path {str} -- Path to the converted source file/directory
+            dest {str} -- Name of destination data set
+        """
+        src = temp_path or conv_path or src
+        rc = Datasets.copy(src, dest)
+        if rc != 0:
+            self._fail_json(
+                msg="Unable to copy to data set member {}".format(dest), 
+                rc=rc
+            )
+
+    def create_pdse(
+        self, src, dest_name, size, src_ds_type, remote_src=False, vol=None
+    ):
+        """Create a data set specified by 'dest_name'
+
+        Arguments:
+            src {str} -- Name of the source data set
+            dest_name {str} -- Name of the data set to be created
+            size {int} -- The size, in bytes, of the source file
+            dest_ds_type {str} -- Type of the data set to be created
+            src_ds_type {str} -- Type of source data set
+        
+        Keyword Arguments:
+            remote_src {bool} -- Whether source is located in remote system. (Default {False})
+            vol {str} -- Volume where source data set is stored. (Default {None})
+        """
+        rc = out = err = None
+        if remote_src:
+            if src_ds_type in MVS_PARTITIONED:
+                rc = self._allocate_model(dest_name, src)
+            elif src_ds_type in MVS_SEQ:
+                rc = self._allocate_pdse(dest_name, vol=vol, src=src)
+            elif os.path.isfile(src):
+                size = Path(src).stat().st_size
+                rc = self._allocate_pdse(dest_name, size=size)
+            else:
+                path, dirs, files = next(os.walk(src))
+                if dirs:
+                    self._fail_json(
+                        msg="Subdirectory found in source directory {0}".format(src)
+                    )
+                size = sum(Path(path + "/" + f).stat().st_size for f in files)
+                rc = self._allocate_pdse(dest_name, size=size)
+        else:
+            rc = self._allocate_pdse(dest_name, size=size)
+        if rc != 0:
+            self._fail_json(
+                msg="Unable to allocate destination data set to copy {0}".format(src),
+                stdout=out, stderr=err, rc=rc,
+                stdout_lines=out.splitlines() if out else None,
+                stderr_lines=err.splitlines() if err else None
+            )
+
+    def _allocate_pdse(self, ds_name, size=None, vol=None, src=None):
+        """Allocate a partitioned extended data set. If 'size'
         is provided, allocate PDSE using this given size. If neither of them
         are provided, obtain the 'src' data set size from vtoc and allocate using
         that information.
@@ -1071,24 +1129,10 @@ class CopyHandler(object):
             ds_name {str} -- The name of the PDSE to allocate
         
         Keyword Arguments:
-            model_ds {str} -- The name of the data set whose allocation parameters
-                              should be used to allocate the PDSE 
             size {int} -- The size, in bytes, of the allocated PDSE
             src {str} -- The name of the source data set from which to get the size
             vol {str} -- Volume of the source data set
         """
-        if model_ds:
-            alloc_cmd = "  ALLOC DS('{0}') LIKE('{1}')".format(ds_name, model_ds)
-            rc, out, err = self._run_mvs_command("IKJEFT01", alloc_cmd, authorized=True)
-            if rc != 0:
-                self._fail_json(
-                    msg="Unable to allocate destination {0}".format(ds_name),
-                    stdout=out, stderr=err, rc=rc,
-                    stdout_lines=out.splitlines(),
-                    stderr_lines=err.splitlines()
-                )
-            return rc
-
         recfm = "FB"
         lrecl = 80
         if size is None:
@@ -1104,6 +1148,78 @@ class CopyHandler(object):
 
         size = "{0}K".format(str(int(math.ceil(size/1024))))
         return Datasets.create(ds_name, "PDSE", size, recfm, "", lrecl)
+
+    def _clear_pdse(self, data_set):
+        """Delete all members from a partitioned data set.
+
+        Arguments:
+            data_set {str} -- Name of the PDS/PDSE
+        """
+        members = Datasets.list_members(data_set + "(*)")
+        if members:
+            try:
+                for m in members.split('\n'):
+                    rc, out, err = self._run_command("mrm {0}({1})".format(data_set, m))
+                    if rc != 0:
+                        self._fail_json(
+                            msg="Unable to delete data set member {0} from {1}".format(m, data_set),
+                            rc=rc, out=out, err=err
+                        )
+            finally:
+                self._run_command("rm /tmp/mrm.*.sysprint")
+
+
+class VSAMCopyHandler(CopyHandler):
+    def __init__(self, module, dest_exists):
+        super().__init__(module, dest_exists)
+
+    def copy_to_vsam(self, src, dest):
+        repro_cmd = '''  REPRO -
+        INDATASET({0}) - 
+        OUTDATASET({1})'''.format(src, dest)
+    
+        rc, out, err = self._run_mvs_command(
+            "IDCAMS", repro_cmd, authorized=True
+        )
+        if rc != 0:
+            self._fail_json(
+                msg="Error while copying {0} to {1}".format(src, dest),
+                stdout=out, stderr=err, rc=rc,
+                stdout_lines=out.splitlines(),
+                stderr_lines=err.splitlines()
+            )
+
+    def _delete_vsam(self, src_vsam):
+        del_cmd = '''  DELETE {} -
+           CLUSTER -
+           PURGE -
+           ERASE'''.format(src_vsam)
+        rc, out, err = self._run_mvs_command(
+            "IDCAMS", del_cmd, authorized=True
+        )
+        if rc != 0:
+            self._fail_json(
+                msg="Error while deleting VSAM data set {0}".format(src_vsam),
+                stdout=out, stderr=err, rc=rc,
+                stdout_lines=out.splitlines(),
+                stderr_lines=err.splitlines()
+            )
+
+    def _backup_vsam(self, src_vsam, target):
+        backup_cmd = '''  EXPORT {0} -
+        OUTDATASET({1}) - 
+        TEMPORARY'''.format(src_vsam, target)
+        rc, out, err = self._run_mvs_command("IDCAMS", backup_cmd, authorized=True)
+        if rc != 0:
+            if rc == 12 and "OPEN RETURN CODE IS 160" in out:
+                self._copy_to_vsam(src_vsam, target)
+            else:
+                self._fail_json(
+                    msg="Error while exporting VSAM {0} to {1}".format(src_vsam, target),
+                    stdout=out, stderr=err, rc=rc,
+                    stdout_lines=out.splitlines(),
+                    stderr_lines=err.splitlines()
+                )
 
     def _allocate_vsam(self, ds_name, size):
         """Allocate a VSAM data set. The VSAM will be allocated in volume
@@ -1147,52 +1263,6 @@ class CopyHandler(object):
             self._fail_json(
                 msg="Failed to call IDCAMS to allocate VSAM data set",
                 stderr=str(err)    
-            )
-
-    def _clear_pdse(self, data_set):
-        """Delete all members from a partitioned data set.
-
-        Arguments:
-            data_set {str} -- Name of the PDS/PDSE
-        """
-        members = Datasets.list_members(data_set + "(*)")
-        if members:
-            try:
-                for m in members.split('\n'):
-                    rc, out, err = self._run_command("mrm {0}({1})".format(data_set, m))
-                    if rc != 0:
-                        self._fail_json(
-                            msg="Unable to delete data set member {0} from {1}".format(m, data_set),
-                            rc=rc, out=out, err=err
-                        )
-            finally:
-                self._run_command("rm /tmp/mrm.*.sysprint")
-
-    def _backup_vsam(self, src_vsam, target):
-        backup_cmd = '''  EXPORT {0} -
-        OUTDATASET({1}) - 
-        TEMPORARY'''.format(src_vsam, target)
-        rc, out, err = self._run_mvs_command("IDCAMS", backup_cmd, authorized=True)
-        if rc != 0:
-            if rc == 12 and "OPEN RETURN CODE IS 160" in out:
-                self._copy_to_ds(src_vsam, target)
-            else:
-                self._fail_json(
-                    msg="Error while exporting VSAM {0} to {1}".format(src_vsam, target),
-                    stdout=out, stderr=err, rc=rc,
-                    stdout_lines=out.splitlines(),
-                    stderr_lines=err.splitlines()
-                )
-
-    def _copy_to_ds(self, src, dest):
-        repro_cmd = "  REPRO INFILE({0}) OUTFILE({1})".format(src, dest)
-        rc, out, err = _run_mvs_command("IDCAMS", repro_cmd, authorized=True)
-        if rc != 0:
-            self._fail_json(
-                msg="Error while copying {0} to {1}".format(src, dest),
-                stdout=out, stderr=err, rc=rc,
-                stdout_lines=out.splitlines(),
-                stderr_lines=err.splitlines()
             )
 
 

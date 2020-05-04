@@ -100,10 +100,13 @@ options:
         get the original file back if you somehow clobbered it incorrectly.
     type: bool
     default: no
-  backupdest:
+backup_path:
     description:
-      - The file destination or dataset name for backup
+      - Backup path can be optionally provided
+      - If backup_path was specified and backup=False, the backup file will be created in the specified path
+      - If backup_path wasn't specified and backup=True, the default backup path will be same path as the original file
     type: str
+    aliases: [b_path, backupdest]
   firstmatch:
     description:
       - Used with C(insertafter) or C(insertbefore).
@@ -170,17 +173,17 @@ import re
 import json
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
-    better_arg_parser, data_set_utils)
+    better_arg_parser, data_set_utils, backup as Backup)
 from zoautil_py import Datasets
 from os import path
 
-def present(zosdest,line, regexp, ins_aft, ins_bef, encoding, backup, first_match, backrefs,file_type):
-  # todo, handle encoding, backup here
-    return Datasets.line_present(zosdest, line, regexp, ins_aft, ins_bef,first_match, backrefs)
+encodingDict = {'ASCII': 'ISO8859-1', 'EBCDIC': 'IBM-1047'}
 
-def absent(zosdest, line, regexp, backup, file_type):
-  # todo, handle encoding, backup here
-    return Datasets.line_absent(zosdest, line, regexp)
+def present(zosdest,line, regexp, ins_aft, ins_bef, encoding, first_match, backrefs, file_type):
+    return Datasets.line_present(zosdest, line, regexp, ins_aft, ins_bef, encoding, first_match, backrefs)
+
+def absent(zosdest, line, regexp, encoding, file_type):
+    return Datasets.line_absent(zosdest, line, regexp, encoding)
 
 def main():
     module_args = dict(
@@ -192,7 +195,7 @@ def main():
             insertbefore=dict(type='str'),
             backrefs=dict(type='bool', default=False),
             backup=dict(type='bool', default=False),
-            backup_path=dict(type='str', aliases=['b_path']),
+            backup_path=dict(type='str', aliases=['b_path', 'backupdest']),
             firstmatch=dict(type='bool', default=False),
             encoding=dict(type=str, default='EBCDIC', choices=['ASCII', 'EBCDIC']),
         )
@@ -269,19 +272,29 @@ def main():
     ds_utils = data_set_utils.DataSetUtils(module, path)
     file_type = ds_utils.get_data_set_type()
     if file_type == 'USS':
-        type = 1
+        file_type = 1
     else:
-        type = 0
+        file_type = 0
+    if backup:
+        if type(backup) == bool:
+            backup = None
+        try:
+            if file_type:
+                result['backup'] = Backup.uss_file_backup(path, backup_name=backup, compress=False)
+            else:
+                result['backup'] = Backup.mvs_file_backup(dsn=path, bk_dsn=backup)
+        except Exception:
+            module.fail_json(msg="creating backup has failed")
     if new_params.get('state') == 'present':
         if line is None:
             module.fail_json(msg='line is required with state=present')
         
-        return_content = present(path,line, regexp, ins_aft, ins_bef, encoding, backup, firstmatch, backrefs,type)
+        return_content = present(path,line, regexp, ins_aft, ins_bef, encodingDict[encoding], firstmatch, backrefs, file_type)
         #result['return_content'] = return_content
     else:
         if regexp is None and line is None:
             module.fail_json(msg='one of line or regexp is required with state=absent')
-        return_content = absent(path, line, regexp, backup, type)
+        return_content = absent(path, line, regexp, encodingDict[encoding], file_type)
         #result['return_content'] = return_content        
     try:
         ret = json.loads(return_content)

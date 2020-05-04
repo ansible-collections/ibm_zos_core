@@ -187,6 +187,8 @@ class ActionModule(ActionBase):
                 finally:
                     os.remove(local_content)
             else:
+                if local_follow:
+                    src = os.path.realpath(src)
                 if is_pds:
                     path, dirs, files = next(os.walk(src))
                     if dirs:

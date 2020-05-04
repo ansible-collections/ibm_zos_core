@@ -15,7 +15,7 @@ ANSIBLE_METADATA = {'metadata_version': '1.1',
 DOCUMENTATION = r'''
 module: zos_tso_command
 author: "Xiao Yuan Ma (@bjmaxy)"
-short_description: Execute a TSO commands
+short_description: Execute TSO commands
 description:
     - Execute TSO commands on the target z/OS system with the provided options
       and receive a structured response.
@@ -30,25 +30,25 @@ options:
 RETURN = r'''
 output:
     description:
-        List of each tso command output.
+        List of each TSO command output.
     returned: always
     type: list
     elements: dict
     contains:
         command:
             description:
-                The executed tso command.
+                The executed TSO command.
             returned: always
             type: str
         rc:
             description:
-                The return code returned from the execution of the TSO command.
+                The return code from the executed TSO command.
             returned: always
             type: int
             sample: 0
         content:
             description:
-                The response resulting from the execution of the TSO command
+                The response resulting from the execution of the TSO command.
             returned: always
             type: list
             sample:
@@ -63,19 +63,19 @@ output:
                 ]
         lines:
             description:
-                The line number of the content .
+                The line number of the content.
             returned: always
             type: int
 '''
 
 EXAMPLES = r'''
-- name: Execute TSO command allocate a new dataset
+- name: Execute TSO commands to allocate a new dataset
   zos_tso_command:
       commands:
           - alloc da('TEST.HILL3.TEST') like('TEST.HILL3')
           - delete 'TEST.HILL3.TEST'
 
-- name: Execute TSO command list user TESTUSER tso information
+- name: Execute TSO command list user TESTUSER to obtain TSO information
   zos_tso_command:
       commands:
            - LU TESTUSER
@@ -163,7 +163,7 @@ def run_module():
     commands = module.params.get("commands")
     if commands is None:
         module.fail_json(
-            msg='Please provided a valid value for option "command".', **result)
+            msg='Please provide a valid value for option "command".', **result)
 
     try:
         result = run_tso_command(commands, module)

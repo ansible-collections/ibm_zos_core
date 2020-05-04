@@ -122,9 +122,6 @@ notes:
     - For supported character sets used to encode data, refer to
       U(https://ansible-collections.github.io/ibm_zos_core/supplementary.html#encode)
 seealso:
-- module: fetch
-- module: zos_copy
-- module: copy
 - module: zos_data_set
 """
 

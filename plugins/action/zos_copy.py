@@ -42,9 +42,10 @@ def _update_result(is_binary, **copy_res):
                 mode=copy_res.get("mode"),
                 state=copy_res.get("state"),
                 size=copy_res.get("size"),
-                checksum=copy_res.get("checksum"),
             )
         )
+        if copy_res.get("checksum"):
+            updated_result['checksum'] = copy_res.get("checksum")
     if copy_res.get("backup_file"):
         updated_result['backup_file'] = copy_res.get("backup_file")
     return updated_result

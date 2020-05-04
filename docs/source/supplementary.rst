@@ -29,10 +29,10 @@ ISO-8859-1 or CCSID 819. The CCSID determines the character set name that is
 used with the iconv functions and z/OS module encoding options. The options
 used with modules are input as a string such as ``IBM-147`` and ``ISO-8859-1``.
 
-Since the z/OS modules rely on ``iconv`` included with Unix System Services
+Since the z/OS modules rely on ``iconv`` included with Unix System Service
 (USS) the allowable character sets can vary with each version of z/OS. To
 determine the supported encodings, you can log into z/OS USS and run the
-command ``iconv -l` and this will list all the supported encodings.
+command ``iconv -l`` and this will list all the supported encodings.
 
 In IBM z/OS V2R2.0 the list of supported character sets are listed below, it is
 not often the support changes so a list of supported encodings is shared below.

@@ -469,7 +469,7 @@ def run_module():
                 msg="Parameter verification failed", stderr=str(err)
             )
 
-    # ----------------------------------- o -----------------------------------
+        # ------------------------------- o -----------------------------------
 
         src = parsed_args.get('src')
         b_src = to_bytes(src, errors='surrogate_or_strict')
@@ -509,7 +509,7 @@ def run_module():
         src_ds_vol = None
         res_args = dict()
 
-    # ----------------------------------- o -----------------------------------
+        # ------------------------------- o -----------------------------------
         # ********************************************************************
         # 1. When the source is a USS file or directory , verify that the file
         #    or directory exists and has proper read permissions.
@@ -524,7 +524,7 @@ def run_module():
             if mode == 'preserve':
                 mode = '0{:o}'.format(stat.S_IMODE(os.stat(b_src).st_mode))
 
-    # ----------------------------------- o -----------------------------------
+        # ------------------------------- o -----------------------------------
         # ********************************************************************
         # 1. Use DataSetUtils to determine the src and dest data set type. 
         # 2. For source data sets, find its volume, which will be used later.
@@ -568,7 +568,7 @@ def run_module():
                 )
             )
 
-    # ----------------------------------- o -----------------------------------
+        # ------------------------------- o -----------------------------------
         # ********************************************************************
         # Backup should only be performed if dest is an existing file or 
         # data set. Otherwise ignored.
@@ -628,7 +628,7 @@ def run_module():
             # 'conv_path' points to the converted src file or directory
             conv_path = copy_handler.convert_encoding(src, _temp_path, encoding)
 
-    # ----------------------------------- o -----------------------------------
+        # ------------------------------- o -----------------------------------
         # Copy to USS file or directory
         # -----------------------------
         if _is_uss:
@@ -660,15 +660,15 @@ def run_module():
             )
             res_args['size'] = Path(dest).stat().st_size
 
-    # ----------------------------------- o -----------------------------------
+        # ------------------------------- o -----------------------------------
         # Copy to sequential data set
         # ---------------------------
         elif dest_ds_type in MVS_SEQ:
             copy_handler.copy_to_seq(src, _temp_path, conv_path, dest, src_ds_type)
        
-    # ----------------------------------- o -----------------------------------
-       # Copy to PDS/PDSE
-       # ----------------
+        # ------------------------------- o -----------------------------------
+        # Copy to PDS/PDSE
+        # ----------------
         elif dest_ds_type in MVS_PARTITIONED:
             if not remote_src and not _copy_member:
                 _temp_path = os.path.join(_temp_path, os.path.basename(src))
@@ -681,7 +681,7 @@ def run_module():
                     src, _temp_path, conv_path, dest, src_ds_type
                 )
 
-    # ----------------------------------- o -----------------------------------
+        # ------------------------------- o -----------------------------------
         # Copy to VSAM data set
         # ---------------------
         else:

@@ -12,8 +12,8 @@ Many of the z/OS modules offer options to convert the data encodings that are
 read, copied, and transferred from a USS file or a data set. Encoding is managed
 by setting the source and destination character set options within the modules.
 
-A character set is an element of internationalization that maps and translates
-an alphabet or characters that are used in a particular language. A character
+A character set is an element of internationalization that defines how an
+alphabet or characters are represented in a particular language. A character
 set is made up of a series of code points or the numeric representation of a
 character. For example, the code point for the letter A in international EBCDIC
 is 0xC1.
@@ -36,10 +36,6 @@ determine the supported encodings, you can log into z/OS USS and run the
 command ``iconv -l`` and to list all the supported encodings.
 
 The supported character sets in IBM z/OS V2R2.0 are listed below.
-
-.. note::
-   Support for the encodings listed below does not change often. Visit this page
-   to get the latest information on the supported encodings.
 
 
 +-------------+

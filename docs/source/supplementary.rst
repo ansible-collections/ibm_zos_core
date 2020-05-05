@@ -17,13 +17,6 @@ an alphabet or characters that are used in a particular language. A character
 set is made up of a series of code points or the numeric representation of a
 character. For example, the code point for the letter A in international EBCDIC
 is 0xC1.
-.. The definition is incomplete and im not in favor of using 'translating'. A
-charset is not translating but just defines how an alphabet or character is
-represented in a particular language. Please consider rewriting. IBM terminology
-defines it differently
-Suggested rewrite: A character set is an element of internationalization that
-describes/ defines how an alphabet or character is represented in a particular
-language.
 
 A character set can also be called a coded character set, a code set, a
 code page, or an encoding. Examples of character sets include International
@@ -48,8 +41,6 @@ The supported character sets in IBM z/OS V2R2.0 are listed below.
    Support for the encodings listed below does not change often. Visit this page
    to get the latest information on the supported encodings.
 
-..   do we plan to update this list as and when support changes? IF yes, we can
-add the second line.
 
 +-------------+
 |Character set|

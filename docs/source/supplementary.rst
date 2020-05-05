@@ -8,34 +8,48 @@ Supplementary
 Encode
 ------
 
-Many the z/OS modules offer options to convert the encodings of data that are
-being read, copied and transferred. This is managed by setting the source and
-destination character set options within the modules.
+Many of the z/OS modules offer options to convert the data encodings that are
+read, copied, and transferred from a USS file or a data set. Encoding is managed
+by setting the source and destination character set options within the modules.
 
 A character set is an element of internationalization that maps and translates
-an alphabet such that characters are used in a particular language. A character
+an alphabet or characters that are used in a particular language. A character
 set is made up of a series of code points or the numeric representation of a
-character. For example, the code point for the letter A in international
-EBCDIC is 0xC1.
+character. For example, the code point for the letter A in international EBCDIC
+is 0xC1.
+.. The definition is incomplete and im not in favor of using 'translating'. A
+charset is not translating but just defines how an alphabet or character is
+represented in a particular language. Please consider rewriting. IBM terminology
+ defines it differently
+Suggested rewrite: A character set is an element of internationalization that
+describes/ defines how an alphabet or character is represented in a particular
+language.
 
 A character set can also be called a coded character set, a code set, a
 code page, or an encoding. Examples of character sets include International
 EBCDIC, Latin 1, and Unicode. Character sets are chosen on the basis of the
 letters and symbols required.
 
-Character sets are referred to by a name or by an integer identifier called the
+Character sets are identified by a name or by an integer identifier called the
 coded character set identifier (CCSID). For example, Latin 1 might be called
 ISO-8859-1 or CCSID 819. The CCSID determines the character set name that is
 used with the iconv functions and z/OS module encoding options. The options
-used with modules are input as a string such as ``IBM-147`` and ``ISO-8859-1``.
+used with the modules are input as a string, such as ``IBM-147`` and
+``ISO-8859-1``.
 
 Since the z/OS modules rely on ``iconv`` included with Unix System Service
-(USS) the allowable character sets can vary with each version of z/OS. To
+(USS), the allowable character sets can vary with each version of z/OS. To
 determine the supported encodings, you can log into z/OS USS and run the
-command ``iconv -l`` and this will list all the supported encodings.
+command ``iconv -l`` and to list all the supported encodings.
 
-In IBM z/OS V2R2.0 the list of supported character sets are listed below, it is
-not often the support changes so a list of supported encodings is shared below.
+The supported character sets in IBM z/OS V2R2.0 are listed below.
+
+.. note::
+   Support for the encodings listed below does not change often. Visit this page
+   to get the latest information on the supported encodings.
+
+..   do we plan to update this list as and when support changes? IF yes, we can
+add the second line.
 
 +-------------+
 |Character set|

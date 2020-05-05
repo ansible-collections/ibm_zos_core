@@ -20,7 +20,7 @@ is 0xC1.
 .. The definition is incomplete and im not in favor of using 'translating'. A
 charset is not translating but just defines how an alphabet or character is
 represented in a particular language. Please consider rewriting. IBM terminology
- defines it differently
+defines it differently
 Suggested rewrite: A character set is an element of internationalization that
 describes/ defines how an alphabet or character is represented in a particular
 language.

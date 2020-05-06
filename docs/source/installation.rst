@@ -90,7 +90,7 @@ see `installing collections`_.
    https://docs.ansible.com/ansible/latest/user_guide/collections_using.html#installing-collections-with-ansible-galaxy
 
 Automation Hub and Private Galaxy server
----------------------------------------
+----------------------------------------
 Configuring access to a private Galaxy server follows the same instructions
 that you would use to configure your client to point to Automation Hub. When
 hosting a private Galaxy server or pointing to Hub, available content is not

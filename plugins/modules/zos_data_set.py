@@ -392,7 +392,63 @@ except Exception:
 import re
 from ansible.module_utils.basic import AnsibleModule
 
-module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+module_args = dict(
+    # Used for batch data set args
+    batch=dict(
+        type="list",
+        elements="dict",
+        options=dict(
+            name=dict(type="str", required=True,),
+            state=dict(
+                type="str",
+                default="present",
+                choices=["present", "absent", "cataloged", "uncataloged"],
+            ),
+            type=dict(type="str", required=False,),
+            size=dict(type="str", required=False),
+            format=dict(type="str", required=False,),
+            data_class=dict(type="str", required=False,),
+            record_length=dict(type="int",),
+            # NEEDS FIX FROM ZOAUTIL
+            # key_offset=dict(
+            #     type='int',
+            #     required=False,
+            #     aliases=['offset']
+            # ),
+            replace=dict(type="bool", default=False,),
+            volume=dict(type="str", required=False)
+            # unsafe_writes=dict(
+            #     type='bool',
+            #     default=False
+            # )
+        ),
+    ),
+    # For individual data set args
+    name=dict(type="str"),
+    state=dict(
+        type="str",
+        default="present",
+        choices=["present", "absent", "cataloged", "uncataloged"],
+    ),
+    type=dict(type="str", required=False,),
+    size=dict(type="str", required=False),
+    format=dict(type="str", required=False,),
+    data_class=dict(type="str", required=False,),
+    record_length=dict(type="int",),
+    # NEEDS FIX FROM ZOAUTIL
+    # key_offset=dict(
+    #     type='int',
+    #     required=False,
+    #     aliases=['offset']
+    # ),
+    replace=dict(type="bool", default=False,),
+    volume=dict(type="str", required=False),
+    # unsafe_writes=dict(
+    #     type='bool',
+    #     default=False
+    # )
+)
+module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
 
 # CONSTANTS
 DATA_SET_TYPES = [
@@ -1325,66 +1381,8 @@ def _build_non_vsam_catalog_command(name, volume):
 
 def run_module():
     # TODO: add logic to handle aliases during parsing
-    module_args = dict(
-        # Used for batch data set args
-        batch=dict(
-            type="list",
-            elements="dict",
-            options=dict(
-                name=dict(type="str", required=True,),
-                state=dict(
-                    type="str",
-                    default="present",
-                    choices=["present", "absent", "cataloged", "uncataloged"],
-                ),
-                type=dict(type="str", required=False,),
-                size=dict(type="str", required=False),
-                format=dict(type="str", required=False,),
-                data_class=dict(type="str", required=False,),
-                record_length=dict(type="int",),
-                # NEEDS FIX FROM ZOAUTIL
-                # key_offset=dict(
-                #     type='int',
-                #     required=False,
-                #     aliases=['offset']
-                # ),
-                replace=dict(type="bool", default=False,),
-                volume=dict(type="str", required=False)
-                # unsafe_writes=dict(
-                #     type='bool',
-                #     default=False
-                # )
-            ),
-        ),
-        # For individual data set args
-        name=dict(type="str"),
-        state=dict(
-            type="str",
-            default="present",
-            choices=["present", "absent", "cataloged", "uncataloged"],
-        ),
-        type=dict(type="str", required=False,),
-        size=dict(type="str", required=False),
-        format=dict(type="str", required=False,),
-        data_class=dict(type="str", required=False,),
-        record_length=dict(type="int",),
-        # NEEDS FIX FROM ZOAUTIL
-        # key_offset=dict(
-        #     type='int',
-        #     required=False,
-        #     aliases=['offset']
-        # ),
-        replace=dict(type="bool", default=False,),
-        volume=dict(type="str", required=False),
-        # unsafe_writes=dict(
-        #     type='bool',
-        #     default=False
-        # )
-    )
 
     result = dict(changed=False, message="")
-
-    module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
 
     if module.check_mode:
         if module.params.get("replace"):

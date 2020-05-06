@@ -9,8 +9,6 @@ __metaclass__ = type
 import re
 from ansible.module_utils.basic import AnsibleModule
 
-module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
-
 
 def get_volume_entry(volume):
     """Retrieve VTOC information for all data sets with entries
@@ -87,6 +85,7 @@ def _iehlist(dd, stdin):
     Returns:
         str -- The sysprint response of IEHLIST.
     """
+    module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
     response = None
     rc, stdout, stderr = module.run_command(
         "mvscmd --pgm=iehlist --sysprint=* --dd={0} --sysin=stdin ".format(dd),
@@ -214,9 +213,9 @@ def _format_table_data(table_data):
         "INITIAL ALLOC": "space_type",
         "2ND ALLOC": "space_secondary",
         "EXTEND": _format_extend,
-        "LAST BLK(T-R-L)": {"name": "last_block_pointer", "func": _format_last_blk,},
+        "LAST BLK(T-R-L)": {"name": "last_block_pointer", "func": _format_last_blk},
         "DIR.REM": "last_directory_block_bytes_used",
-        "F2 OR F3(C-H-R)": {"name": "dscb_format_2_or_3", "func": _format_f2_or_f3,},
+        "F2 OR F3(C-H-R)": {"name": "dscb_format_2_or_3", "func": _format_f2_or_f3},
         "DSCB(C-H-R)": {"name": "dscb_format_1_or_8", "func": _format_dscb},
         "EATTR": "extended_attributes",
     }

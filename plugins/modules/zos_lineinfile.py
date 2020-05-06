@@ -96,17 +96,28 @@ options:
     choices: [ BOF, '*regex*' ]
   backup:
     description:
-      - Create a backup file or dataset including the timestamp information so you can
-        get the original file back if you somehow clobbered it incorrectly.
+      - Creates a backup file or backup data set for I(dest), including the
+        timestamp information to ensure that you retrieve the original file.
+      - I(backup_file) can be used to specify a backup file name
+        if I(backup=true).
+    required: false
     type: bool
-    default: no
-backup_path:
+    default: false
+  backup_file:
     description:
-      - Backup path can be optionally provided
-      - If backup_path was specified and backup=False, the backup file will be created in the specified path
-      - If backup_path wasn't specified and backup=True, the default backup path will be same path as the original file
+      - Specify the USS file name or data set name for the dest backup.
+      - If dest is a USS file or path, I(backup_file) must be a file or
+        path name, and the USS path or file must be an absolute pathname.
+      - If dest is an MVS data set, the I(backup_file) must be an MVS data
+        set name.
+      - If I(backup_file) is not provided, the default backup name will be used.
+        The default backup name for a USS file or path will be the destination
+        file or path name appended with a timestamp,
+        e.g. /path/file_name.2020-04-23-08-32-29-bak.tar. If dest is an
+        MVS data set, the default backup name will be a random name generated
+        by IBM Z Open Automation Utilities.
+    required: false
     type: str
-    aliases: [b_path, backupdest]
   firstmatch:
     description:
       - Used with C(insertafter) or C(insertbefore).
@@ -115,22 +126,13 @@ backup_path:
     default: no
   encoding:
     description:
-      - Specifies which encodings the fetched data set should be converted from
-        and to. If this parameter is not provided, this module assumes that
-        source file or data set is encoded in IBM-1047 and will be converted
-        to ISO8859-1.
+      - Specifies the encoding of USS file or data set. zos_lineinfile
+        requires to be provided with correct encoding to read the content
+        of USS file or data set. If this parameter is not provided, this
+        module assumes that USS file or data set is encoded in IBM-1047.
     required: false
-    type: dict
-    suboptions:
-      from:
-        description: The encoding to be converted from
-        required: true
-        type: str
-      to:
-        description: The encoding to be converted to
-        required: true
-        type: str
-    default: { from: 'IBM-1047', to: 'ISO8859-1' }
+    type: str
+    default: IBM-1047
 '''
 
 EXAMPLES = r'''
@@ -174,10 +176,19 @@ import json
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser, data_set_utils, backup as Backup)
-from zoautil_py import Datasets
 from os import path
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
+    MissingZOAUImport,
+)
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
+    BetterArgParser,
+)
 
-encodingDict = {'ASCII': 'ISO8859-1', 'EBCDIC': 'IBM-1047'}
+try:
+    from zoautil_py import Datasets
+except Exception:
+    Datasets = MissingZOAUImport()
+
 
 def present(zosdest,line, regexp, ins_aft, ins_bef, encoding, first_match, backrefs, file_type):
     return Datasets.line_present(zosdest, line, regexp, ins_aft, ins_bef, encoding, first_match, backrefs)
@@ -195,9 +206,9 @@ def main():
             insertbefore=dict(type='str'),
             backrefs=dict(type='bool', default=False),
             backup=dict(type='bool', default=False),
-            backup_path=dict(type='str', aliases=['b_path', 'backupdest']),
+            backup_file=dict(type='str', required=False, default=None),
             firstmatch=dict(type='bool', default=False),
-            encoding=dict(type=str, default='EBCDIC', choices=['ASCII', 'EBCDIC']),
+            encoding=dict(type=str, default="IBM-1047"),
         )
     module = AnsibleModule(
         argument_spec=module_args,
@@ -258,8 +269,8 @@ def main():
             msg="Parameter verification failed", stderr=str(err)
         )
     backup = new_params.get('backup')
-    if new_params.get('backup_path'):
-        backup = new_params.get('backup_path')
+    if new_params.get('backup_file') and backup:
+        backup = new_params.get('backup_file')
     backrefs = new_params.get('backrefs')
     path = new_params.get('path')
     firstmatch = new_params.get('firstmatch')
@@ -275,6 +286,8 @@ def main():
         file_type = 1
     else:
         file_type = 0
+    if not encoding:
+        encoding = "IBM-1047"
     if backup:
         if type(backup) == bool:
             backup = None
@@ -289,13 +302,11 @@ def main():
         if line is None:
             module.fail_json(msg='line is required with state=present')
         
-        return_content = present(path,line, regexp, ins_aft, ins_bef, encodingDict[encoding], firstmatch, backrefs, file_type)
-        #result['return_content'] = return_content
+        return_content = present(path,line, regexp, ins_aft, ins_bef, encoding, firstmatch, backrefs, file_type)
     else:
         if regexp is None and line is None:
             module.fail_json(msg='one of line or regexp is required with state=absent')
-        return_content = absent(path, line, regexp, encodingDict[encoding], file_type)
-        #result['return_content'] = return_content        
+        return_content = absent(path, line, regexp, encoding, file_type)
     try:
         ret = json.loads(return_content)
         result['cmd'] = ret['cmd']

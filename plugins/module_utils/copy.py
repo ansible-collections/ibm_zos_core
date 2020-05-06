@@ -143,12 +143,41 @@ def copy_uss2uss_binary(src, dest):
         str -- The stderr after the USS command executed successfully
     """
     module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
-    src = _validate_data_set_name(src)
+    src = _validate_path(src)
     dest = _validate_path(dest)
-    cp_uss2uss = "cp -F bin {0} {1}".format(src, quote(dest))
+    cp_uss2uss = "cp -F bin {0} {1}".format(quote(src), quote(dest))
     rc, out, err = module.run_command(cp_uss2uss)
     if rc:
         raise USSCmdExecError(cp_uss2uss, rc, out, err)
+    return rc, out, err
+
+
+def copy_mvs2mvs(src, dest, is_binary=False):
+    """Copy an MVS source to MVS target
+
+    Arguments:
+        src: {str} -- Name of source data set
+        dest: {str} -- Name of destination data set
+
+    Keyword Arguments:
+        is_binary: {bool} -- Whether the data set to be copied contains binary data
+
+    Raises:
+        USSCmdExecError: When any exception is raised during the conversion.
+    Returns:
+        boolean -- The return code after the USS command executed successfully
+        str -- The stdout after the USS command executed successfully
+        str -- The stderr after the USS command executed successfully
+    """
+    module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+    src = _validate_data_set_name(src)
+    dest = _validate_data_set_name(dest)
+    cp_mvs2mvs = "cp -F rec \"//'{0}'\" \"//'{1}'\"".format(src, dest)
+    if is_binary:
+        cp_mvs2mvs = cp_mvs2mvs.replace("rec", "bin")
+    rc, out, err = module.run_command(cp_mvs2mvs)
+    if rc:
+        raise USSCmdExecError(cp_mvs2mvs, rc, out, err)
     return rc, out, err
 
 

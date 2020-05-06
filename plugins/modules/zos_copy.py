@@ -613,7 +613,7 @@ class CopyHandler(object):
 
 
 class USSCopyHandler(CopyHandler):
-    def __init__(self, module, dest_exists, common_file_args=None):
+    def __init__(self, module, dest_exists, is_binary=False, common_file_args=None):
         """Utility class to handle copying files or data sets to USS target
 
         Arguments:
@@ -623,8 +623,11 @@ class USSCopyHandler(CopyHandler):
         Keyword Arguments:
             common_file_args {dict} -- mode, group and owner information to be
             applied to destination file.
+
+            is_binary {bool} -- Whether the file to be copied contains binary data
         """
         super().__init__(module, dest_exists)
+        self.is_binary = is_binary
         self.common_file_args = common_file_args
 
     def copy_to_uss(self, conv_path, temp_path, src_ds_type, src_member, member_name):
@@ -640,7 +643,7 @@ class USSCopyHandler(CopyHandler):
         src = self.module.params.get("src")
         dest = self.module.params.get("dest")
         if src_ds_type in MVS_SEQ.union(MVS_PARTITIONED):
-            self._mvs_copy_to_uss(src, dest, src_member, member_name=member_name)
+            self._mvs_copy_to_uss(src, dest, src_ds_type, src_member, member_name=member_name)
         else:
             self._copy_to_file(src, dest, conv_path, temp_path)
     
@@ -667,37 +670,30 @@ class USSCopyHandler(CopyHandler):
         if os.path.isdir(dest):
             dest = os.path.join(dest, os.path.basename(src))
 
-        if temp_path:
-            try:
-                move(temp_path, dest)
-            except Exception as err:
-                self._fail_json(
-                    msg="Unable to move file {0} to {1}".format(temp_path, dest), 
-                    stderr=str(err)
-                )
-        else:
-            try:
-                if conv_path:
-                    move(conv_path, dest)
-                else:
-                    copy(src, dest)
-            except OSError as err:
-                self._fail_json(
-                    msg="Destination {0} is not writable".format(dest), 
-                    stderr=str(err)
-                )
-            except Exception as err:
-                self._fail_json(
-                    msg="Unable to copy file {0} to {1}".format(src, dest), 
-                    stderr=str(err)
-                )
+        src = temp_path or conv_path or src
+        try:
+            if self.is_binary:
+                copy.copy_uss2uss_binary(src, dest)
+            else:
+                copy(src, dest)
+        except OSError as err:
+            self._fail_json(
+                msg="Destination {0} is not writable".format(dest), 
+                stderr=str(err)
+            )
+        except Exception as err:
+            self._fail_json(
+                msg="Unable to copy file {0} to {1}".format(src, dest), 
+                stderr=str(err)
+            )
 
-    def _mvs_copy_to_uss(self, src, dest, src_member, member_name=None):
+    def _mvs_copy_to_uss(self, src, dest, src_ds_type, src_member, member_name=None):
         """Helper function to copy an MVS data set src to USS dest.
 
         Arguments:
             src {str} -- Name of source data set or data set member
             dest {str} -- USS dest file path
+            src_ds_type -- Type of source
             src_member {bool} -- Whether src is a data set member
 
         Keyword Arguments:
@@ -708,18 +704,22 @@ class USSCopyHandler(CopyHandler):
             # the same name as the member.
             dest = "{0}/{1}".format(dest, member_name or src)
 
-            if src in MVS_PARTITIONED and not src_member:
+            if src_ds_type in MVS_PARTITIONED and not src_member:
                 try:
                     os.mkdir(dest)
                 except FileExistsError:
                     pass
-        rc = Datasets.copy(src, dest)
-        if rc != 0:
-            self._fail_json(msg="Unable copy MVS source {0} to {1}".format(dest))
+        try:
+            if src_ds_type in MVS_SEQ:
+                copy.copy_ps2uss(src, dest, is_binary=self.is_binary)
+            else:
+                copy.copy_pds2uss(src, dest, is_binary=self.is_binary)
+        except Exception as err:
+            self._fail_json(msg=str(err))
 
 
 class PDSECopyHandler(CopyHandler):
-    def __init__(self, module, dest_exists):
+    def __init__(self, module, dest_exists, is_binary=False):
         """ Utility class to handle copying to partitioned data sets or
         partitioned data set members.
 
@@ -728,6 +728,7 @@ class PDSECopyHandler(CopyHandler):
             dest_exists {boolean} -- Whether destination already exists
         """
         super().__init__(module, dest_exists)
+        self.is_binary = is_binary
 
     def copy_to_pdse(self, src, temp_path, conv_path, dest, src_ds_type):
         """Copy source to a PDS/PDSE or PDS/PDSE member.

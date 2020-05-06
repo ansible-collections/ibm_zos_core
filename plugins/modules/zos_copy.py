@@ -393,7 +393,8 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     data_set_utils,
     encode,
     vtoc,
-    backup
+    backup,
+    copy
 )
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
@@ -948,6 +949,7 @@ class VSAMCopyHandler(CopyHandler):
                 stderr_lines=err.splitlines(),
                 cmd=del_cmd
             )
+
 
 class CopyUtil(object):
 

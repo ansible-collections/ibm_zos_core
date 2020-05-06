@@ -53,7 +53,7 @@ options to your inventory or `ansible.cfg`.
 An example of adding these options to `ansible.cfg` is shown below. For more
 details, see the sample `ansible.cfg`_ notes.
 
-.. code-block:: yaml
+.. code-block:: sh
 
    [defaults]
    forks = 25

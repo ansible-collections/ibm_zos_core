@@ -87,7 +87,9 @@ See individual files for applicable licenses.
 
    plugins
    modules
+   filters
    playbooks
+   supplementary
 
 .. toctree::
    :maxdepth: 1

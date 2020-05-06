@@ -29,11 +29,11 @@ if PY3:
 else:
     from pipes import quote
 
-BACKUP = """ COPY DATASET(INCLUDE( {0} )) -
-    RENUNC({0}, -
-    {1}) -
-    CATALOG -
-    OPTIMIZE(4) """
+# BACKUP = """ COPY DATASET(INCLUDE( {0} )) -
+#     RENUNC({0}, -
+#     {1}) -
+#     CATALOG -
+#     OPTIMIZE(4) """
 
 
 def _validate_data_set_name(ds):
@@ -43,7 +43,48 @@ def _validate_data_set_name(ds):
     return parsed_args.get("ds")
 
 
-def mvs_file_backup(self, dsn, bk_dsn):
+# def mvs_file_backup(self, dsn, bk_dsn):
+#     """Create a backup data set for an MVS data set
+
+#     Arguments:
+#         dsn {str} -- The name of the data set to backup.
+#                         It could be an MVS PS/PDS/PDSE/VSAM(KSDS), etc.
+#         bk_dsn {str} -- The name of the backup data set.
+
+#     Raises:
+#         BackupError: When backup data set exists.
+#         BackupError: When creation of backup data set fails.
+
+#     Returns:
+#         str -- Name of the backup data set.
+#     """
+#     module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+#     dsn = _validate_data_set_name(dsn)
+#     bk_dsn = _validate_data_set_name(bk_dsn)
+#     out = None
+#     if not bk_dsn:
+#         hlq = Datasets.hlq()
+#         bk_dsn = Datasets.temp_name(hlq)
+#     bk_sysin = BACKUP.format(dsn, bk_dsn)
+#     bkup_cmd = "mvscmdauth --pgm=adrdssu --sysprint=stdout --sysin=stdin"
+#     rc, stdout, stderr = module.run_command(
+#         bkup_cmd, data=bk_sysin, use_unsafe_shell=True
+#     )
+#     if rc > 4:
+#         out = stdout
+#         if "DUPLICATE" in out:
+#             raise BackupError("Backup data set {0} exists, please check".format(bk_dsn))
+#         else:
+#             if Datasets.exists(bk_dsn):
+#                 Datasets.delete(bk_dsn)
+#             raise BackupError(
+#                 "Failed when creating the backup of the data set {0} : {1}".format(
+#                     dsn, out
+#                 )
+#             )
+#     return bk_dsn
+
+def mvs_file_backup(dsn, bk_dsn):
     """Create a backup data set for an MVS data set
 
     Arguments:
@@ -54,35 +95,21 @@ def mvs_file_backup(self, dsn, bk_dsn):
     Raises:
         BackupError: When backup data set exists.
         BackupError: When creation of backup data set fails.
-
-    Returns:
-        str -- Name of the backup data set.
     """
     module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
     dsn = _validate_data_set_name(dsn)
     bk_dsn = _validate_data_set_name(bk_dsn)
-    out = None
     if not bk_dsn:
         hlq = Datasets.hlq()
         bk_dsn = Datasets.temp_name(hlq)
-    bk_sysin = BACKUP.format(dsn, bk_dsn)
-    bkup_cmd = "mvscmdauth --pgm=adrdssu --sysprint=stdout --sysin=stdin"
-    rc, stdout, stderr = module.run_command(
-        bkup_cmd, data=bk_sysin, use_unsafe_shell=True
-    )
-    if rc > 4:
-        out = stdout
-        if "DUPLICATE" in out:
-            raise BackupError("Backup data set {0} exists, please check".format(bk_dsn))
+
+    cp_rc = _copy_ds(dsn, bk_dsn)
+    if cp_rc == 12:
+        # The data set is probably a PDS or PDSE
+        if Datasets.move(dsn, bk_dsn) == 0:
+            _allocate_model(dsn, bk_dsn)
         else:
-            if Datasets.exists(bk_dsn):
-                Datasets.delete(bk_dsn)
-            raise BackupError(
-                "Failed when creating the backup of the data set {0} : {1}".format(
-                    dsn, out
-                )
-            )
-    return bk_dsn
+            raise BackupError("Unable to backup data set {0} to {1}".format(dsn, bk_dsn))
 
 
 def uss_file_backup(path, backup_name=None, compress=False):
@@ -147,6 +174,51 @@ def uss_file_backup(path, backup_name=None, compress=False):
         else:
             copy2(abs_path, backup_name)
     return backup_name
+
+
+def _copy_ds(ds, bk_ds):
+    """Copy the contents of a data set to another
+
+    Arguments:
+        ds {str} -- The source data set to be copied from. Should be SEQ or VSAM
+        bk_dsn {str} -- The destination data set to copy to.
+
+    Raises:
+        BackupError: When copying data fails
+    """
+    module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+    alloc_rc = _allocate_model(ds, bk_ds)
+    if alloc_rc == 0:
+        repro_cmd = '''  REPRO -
+        INDATASET({0}) -
+        OUTDATASET({1})'''.format(ds, bk_ds)
+        rc, out, err = module.run_command(
+            "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=repro_cmd
+        )
+        if rc != 0 and rc != 12:
+            raise BackupError(
+                "Unable to backup data set {0}; stdout: {1}; stderr: {2}".format(ds, out, err)
+            )
+    return rc
+
+
+def _allocate_model(ds, model):
+    """Allocate a data set using allocation information of a model data set
+
+    Arguments:
+        ds {str} -- The name of the data set to be allocated.
+        model {str} -- The name of the data set whose allocation parameters should be used.
+
+    Raises:
+        BackupError: When allocation fails
+    """
+    module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+    alloc_cmd = "  ALLOC DS('{0}') LIKE('{1}')".format(ds, model)
+    cmd = "mvscmdauth --pgm=ikjeft01 --systsprt=* --systsin=stdin"
+    rc, out, err = module.run_command(cmd, data=alloc_cmd)
+    if rc != 0:
+        raise BackupError("Unable to allocate data set {0}; stdout: {1}; stderr: {2}".format(ds, out, err))
+    return rc
 
 
 class BackupError(Exception):

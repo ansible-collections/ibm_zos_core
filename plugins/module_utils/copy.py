@@ -129,6 +129,29 @@ def copy_pds2uss(src, dest, is_binary=False):
     return rc, out, err
 
 
+def copy_uss2uss_binary(src, dest):
+    """Copy a USS file to a USS location in binary mode
+
+    Arguments:
+        src: {str} -- The source USS path
+        dest: {str} -- The destination USS path
+    Raises:
+        USSCmdExecError: When any exception is raised during the conversion.
+    Returns:
+        boolean -- The return code after the USS command executed successfully
+        str -- The stdout after the USS command executed successfully
+        str -- The stderr after the USS command executed successfully
+    """
+    module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+    src = _validate_data_set_name(src)
+    dest = _validate_path(dest)
+    cp_uss2uss = "cp -F bin {0} {1}".format(src, quote(dest))
+    rc, out, err = module.run_command(cp_uss2uss)
+    if rc:
+        raise USSCmdExecError(cp_uss2uss, rc, out, err)
+    return rc, out, err
+
+
 def copy_vsam_ps(src, dest):
     """Copy a VSAM(KSDS) data set to a PS data set vise versa
 

@@ -63,7 +63,7 @@ def copy_uss2mvs(src, dest, ds_type, is_binary=False):
     else:
         cp_uss2mvs = "cp -F rec {0} \"//'{1}'\" ".format(quote(src), dest)
     if is_binary:
-        cp_uss2mvs = cp_uss2mvs.replace("rec", "bin")
+        cp_uss2mvs = cp_uss2mvs.replace("rec", "bin", 1)
     rc, out, err = module.run_command(cp_uss2mvs)
     if rc:
         raise USSCmdExecError(cp_uss2mvs, rc, out, err)
@@ -93,7 +93,7 @@ def copy_ps2uss(src, dest, is_binary=False):
     dest = _validate_path(dest)
     cp_ps2uss = "cp -F rec \"//'{0}'\" {1}".format(src, quote(dest))
     if is_binary:
-        cp_ps2uss = cp_ps2uss.replace("rec", "bin")
+        cp_ps2uss = cp_ps2uss.replace("rec", "bin", 1)
     rc, out, err = module.run_command(cp_ps2uss)
     if rc:
         raise USSCmdExecError(cp_ps2uss, rc, out, err)
@@ -122,7 +122,7 @@ def copy_pds2uss(src, dest, is_binary=False):
     dest = _validate_path(dest)
     cp_pds2uss = "cp -U -F rec \"//'{0}'\" {1}".format(src, quote(dest))
     if is_binary:
-        cp_pds2uss = cp_pds2uss.replace("rec", "bin")
+        cp_pds2uss = cp_pds2uss.replace("rec", "bin", 1)
     rc, out, err = module.run_command(cp_pds2uss)
     if rc:
         raise USSCmdExecError(cp_pds2uss, rc, out, err)
@@ -174,7 +174,7 @@ def copy_mvs2mvs(src, dest, is_binary=False):
     dest = _validate_data_set_name(dest)
     cp_mvs2mvs = "cp -F rec \"//'{0}'\" \"//'{1}'\"".format(src, dest)
     if is_binary:
-        cp_mvs2mvs = cp_mvs2mvs.replace("rec", "bin")
+        cp_mvs2mvs = cp_mvs2mvs.replace("rec", "bin", 1)
     rc, out, err = module.run_command(cp_mvs2mvs)
     if rc:
         raise USSCmdExecError(cp_mvs2mvs, rc, out, err)

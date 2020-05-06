@@ -366,3 +366,52 @@ def test_copy_vsam_lds_to_existing_vsam_lds(ansible_zos_module):
 
 def test_copy_vsam_lds_to_non_existing_vsam_lds(ansible_zos_module):
     pass
+
+
+def test_copy_inline_content_to_uss_file():
+    pass
+
+
+def test_copy_inline_content_to_ps():
+    pass
+
+
+def test_copy_inline_content_to_pds_member():
+    pass
+
+
+def test_copy_inline_content_to_pdse_member():
+    pass
+
+
+def test_backup_uss_file():
+    pass
+
+
+def test_backup_ps():
+    pass
+
+
+def test_backup_pds():
+    pass
+
+
+def test_backup_pds_member():
+    pass
+
+
+def test_backup_pdse():
+    pass
+
+
+def test_backup_vsam():
+    pass
+
+
+def test_copy_to_existing_dest_not_forced():
+    pass
+
+
+def test_copy_local_symlink_to_uss_file():
+    pass
+

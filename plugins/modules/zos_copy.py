@@ -1043,8 +1043,8 @@ def run_module():
             is_pds=dict(type='bool'),
             size=dict(type='int'),
             temp_path=dict(type='str'),
-            num_files=dict(type='int'),
-            copy_member=dict(type='bool')
+            copy_member=dict(type='bool'),
+            src_member=dict(type='str')
         ),
         add_file_common_args=True
     )
@@ -1105,12 +1105,12 @@ def run_module():
         group = module.params.get('group')
         owner = module.params.get('owner')
         encoding = module.params.get('encoding')
-        _is_uss = module.params.get('is_uss')
-        _is_pds = module.params.get('is_pds')
-        _temp_path = module.params.get('temp_path')
-        _size = module.params.get('size')
-        _copy_member = module.params.get('copy_member')
-        _src_member = '(' in src and src.endswith(')')
+        is_uss = module.params.get('is_uss')
+        is_pds = module.params.get('is_pds')
+        temp_path = module.params.get('temp_path')
+        alloc_size = module.params.get('size')
+        copy_member = module.params.get('copy_member')
+        src_member = module.params.get('src_member')
         
 
         # ********************************************************************
@@ -1118,16 +1118,15 @@ def run_module():
         # in the form DATA.SET.NAME(MEMBER). When this is the case, extract the 
         # actual name of the data set.
         # ********************************************************************
-        dest_name = dest[:dest.rfind('(')] if _copy_member else dest
-        src_name = src[:src.rfind('(')] if _src_member else src
-        member_name = src[src.rfind('(')+1:src.rfind(')')] if _src_member else None
+        dest_name = dest[:dest.rfind('(')] if copy_member else dest
+        src_name = src[:src.rfind('(')] if src_member else src
+        member_name = src[src.rfind('(')+1:src.rfind(')')] if src_member else None
 
         backup_path = None
         conv_path = None
         src_ds_vol = None
         res_args = dict()
 
-        # ------------------------------- o -----------------------------------
         # ********************************************************************
         # 1. When the source is a USS file or directory , verify that the file
         #    or directory exists and has proper read permissions.
@@ -1142,25 +1141,24 @@ def run_module():
             if mode == 'preserve':
                 mode = '0{:o}'.format(stat.S_IMODE(os.stat(b_src).st_mode))
 
-        # ------------------------------- o -----------------------------------
         # ********************************************************************
         # 1. Use DataSetUtils to determine the src and dest data set type. 
         # 2. For source data sets, find its volume, which will be used later.
         # ********************************************************************
         try:
-            if _is_uss:
+            if is_uss:
                 dest_ds_type = "USS"
                 dest_exists = os.path.exists(dest)
             else:
                 dest_ds_utils = data_set_utils.DataSetUtils(module, dest_name)
                 dest_exists = dest_ds_utils.data_set_exists()
                 dest_ds_type = dest_ds_utils.get_data_set_type()
-            if _temp_path or '/' in src:
+            if temp_path or '/' in src:
                 src_ds_type = "USS"
             else:
                 src_ds_utils = data_set_utils.DataSetUtils(module, src_name)
                 if src_ds_utils.data_set_exists():
-                    if _src_member and not src_ds_utils.data_set_member_exists(member_name):
+                    if src_member and not src_ds_utils.data_set_member_exists(member_name):
                         raise NonExistentSourceError(src)
                     src_ds_type = src_ds_utils.get_data_set_type()
                     src_ds_vol = src_ds_utils.get_data_set_volume()
@@ -1169,7 +1167,6 @@ def run_module():
         except Exception as err:
             module.fail_json(msg=str(err))
 
-        # ------------------------------- o -----------------------------------        
         # ********************************************************************
         # Some src and dest combinations are incompatible. For example, it is
         # not possible to copy a PDS member to a VSAM data set or a USS file
@@ -1177,7 +1174,7 @@ def run_module():
         # ********************************************************************
         
         if not CopyUtil.is_compatible(
-            src, dest, src_ds_type, dest_ds_type, _copy_member, _src_member
+            src, dest, src_ds_type, dest_ds_type, copy_member, src_member
         ):
             module.fail_json(
                 msg="Incompatible target type '{0}' for source '{1}'".format(
@@ -1185,7 +1182,6 @@ def run_module():
                 )
             )
 
-        # ------------------------------- o -----------------------------------
         # ********************************************************************
         # Backup should only be performed if dest is an existing file or 
         # data set. Otherwise ignored.
@@ -1217,19 +1213,19 @@ def run_module():
         # ********************************************************************
         else:
             if(
-                _is_pds or 
-                _copy_member or 
+                is_pds or 
+                copy_member or 
                 src_ds_type in MVS_PARTITIONED or 
                 os.path.isdir(b_src)
             ):
                 dest_ds_type = "PDSE"
                 PDSECopyHandler(module, dest_exists).create_pdse(
-                    src, dest_name, _size, src_ds_type, remote_src=remote_src, 
+                    src, dest_name, alloc_size, src_ds_type, remote_src=remote_src, 
                     vol=src_ds_vol
                 )
             elif is_vsam:
                 dest_ds_type = "VSAM"
-            elif not _is_uss:
+            elif not is_uss:
                 dest_ds_type = "SEQ"
             res_args['changed'] = True
 
@@ -1243,12 +1239,12 @@ def run_module():
                     msg="Encoding conversion is only valid for USS source"
                 )
             # 'conv_path' points to the converted src file or directory
-            conv_path = copy_handler.convert_encoding(src, _temp_path, encoding)
+            conv_path = copy_handler.convert_encoding(src, temp_path, encoding)
 
         # ------------------------------- o -----------------------------------
         # Copy to USS file or directory
-        # -----------------------------
-        if _is_uss:
+        # ---------------------------------------------------------------------
+        if is_uss:
             if dest_exists:
                 if not os.access(dest, os.W_OK):
                     copy_handler._fail_json(
@@ -1257,7 +1253,7 @@ def run_module():
 
             if validate:
                 try:
-                    remote_checksum = CopyUtil.get_file_checksum(_temp_path or src)
+                    remote_checksum = CopyUtil.get_file_checksum(temp_path or src)
                     dest_checksum = CopyUtil.get_file_checksum(dest)
                 except Exception as err:
                     copy_handler._fail_json(
@@ -1273,34 +1269,34 @@ def run_module():
                 common_file_args=dict(mode=mode, group=group, owner=owner)
             )
             uss_copy_handler.copy_to_uss(
-                conv_path, _temp_path, src_ds_type, _src_member, member_name
+                conv_path, temp_path, src_ds_type, src_member, member_name
             )
             res_args['size'] = Path(dest).stat().st_size
 
         # ------------------------------- o -----------------------------------
         # Copy to sequential data set
-        # ---------------------------
+        # ---------------------------------------------------------------------
         elif dest_ds_type in MVS_SEQ:
-            copy_handler.copy_to_seq(src, _temp_path, conv_path, dest, src_ds_type)
+            copy_handler.copy_to_seq(src, temp_path, conv_path, dest, src_ds_type)
        
         # ------------------------------- o -----------------------------------
         # Copy to PDS/PDSE
-        # ----------------
+        # ---------------------------------------------------------------------
         elif dest_ds_type in MVS_PARTITIONED:
-            if not remote_src and not _copy_member:
-                _temp_path = os.path.join(_temp_path, os.path.basename(src))
+            if not remote_src and not copy_member:
+                temp_path = os.path.join(temp_path, os.path.basename(src))
 
             pdse_copy_handler = PDSECopyHandler(module, dest_exists)
-            if _copy_member:
-                pdse_copy_handler.copy_to_member(src, _temp_path, conv_path, dest)
+            if copy_member:
+                pdse_copy_handler.copy_to_member(src, temp_path, conv_path, dest)
             else:
                 pdse_copy_handler.copy_to_pdse(
-                    src, _temp_path, conv_path, dest, src_ds_type
+                    src, temp_path, conv_path, dest, src_ds_type
                 )
 
         # ------------------------------- o -----------------------------------
         # Copy to VSAM data set
-        # ---------------------
+        # ---------------------------------------------------------------------
         else:
             VSAMCopyHandler(module, dest_exists).copy_to_vsam(src, dest)
 

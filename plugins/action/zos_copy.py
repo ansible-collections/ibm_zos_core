@@ -1,8 +1,8 @@
-# Copyright (c) 2019, 2020 Lu Zhao <zlbjlu@cn.ibm.com>
-# Copyright (c) IBM Corporation 2020
-# LICENSE: [GNU General Public License version 3](https://opensource.org/licenses/GPL-3.0)
+# Copyright (c) IBM Corporation 2019, 2020
+# Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
 from __future__ import (absolute_import, division, print_function)
+
 __metaclass__ = type
 
 import os
@@ -21,6 +21,10 @@ from ansible.module_utils.parsing.convert_bool import boolean
 from ansible.plugins.action import ActionBase
 from ansible.utils.hashing import checksum as file_checksum
 from ansible.utils.vars import merge_hash
+
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
+    better_arg_parser
+)
 
 
 def _update_result(is_binary, **copy_res):
@@ -44,10 +48,14 @@ def _update_result(is_binary, **copy_res):
                 size=copy_res.get("size"),
             )
         )
-        if copy_res.get("checksum"):
-            updated_result['checksum'] = copy_res.get("checksum")
-    if copy_res.get("backup_file"):
-        updated_result['backup_file'] = copy_res.get("backup_file")
+        checksum = copy_res.get("checksum")
+        if checksum:
+            updated_result['checksum'] = checksum
+    
+    backup_file = copy_res.get("backup_file")
+    if backup_file:
+        updated_result['backup_file'] = backup_file
+    
     return updated_result
 
 
@@ -58,7 +66,19 @@ def _process_boolean(arg, default=False):
         return default
 
 
+def _is_member(data_set):
+    """Determine whether the input string specifies a data set member"""
+    try:
+        arg_def = dict(data_set=dict(arg_type='data_set_member'))
+        parser = better_arg_parser.BetterArgParser(arg_def)
+        parser.parse_args({'data_set': data_set})
+    except ValueError:
+        return False
+    return True
+
+
 def _create_temp_path_name():
+    """Create a temporary path name"""
     current_date = time.strftime("D%y%m%d", time.localtime())
     current_time = time.strftime("T%H%M%S", time.localtime())
     return "/tmp/ansible-zos-copy-payload-{0}-{1}".format(current_date, current_time)
@@ -116,13 +136,16 @@ class ActionModule(ActionBase):
         group = self._task.args.get('group', None)
 
         new_module_args = dict((k, v) for k, v in self._task.args.items())
-        is_uss = '/' in dest
-        is_pds = False
-        copy_member = '(' in dest and dest.endswith(')')
-        temp_path = None
-        if src:
+        is_pds = is_uss = False
+        temp_path = real_path = None
+        is_uss = '/' in dest if dest else None
+        
+        if src:            
             is_pds = os.path.isdir(b_src)
-            if not isinstance(src, string_types):
+            if content:
+                result['msg'] = "Either 'src' or 'content' can be provided; not both."
+
+            elif not isinstance(src, string_types):
                 result['msg'] = (
                     "Invalid type supplied for 'src' option, it must be a string"
                 )
@@ -131,19 +154,18 @@ class ActionModule(ActionBase):
 
         if not src and not content:
             result['msg'] = "'src' or 'content' is required"
+
         elif not dest:
             result['msg'] = "Destination is required"
+
         elif not isinstance(dest, string_types):
             result['msg'] = (
                 "Invalid type supplied for 'dest' option, it must be a string"
             )
-        elif content and not isinstance (content, string_types):
+        elif content and not isinstance(content, string_types):
             result['msg'] = (
                 "Invalid type supplied for 'content' option, it must be a string"
             )
-        elif content and src:
-            result['msg'] = "Only 'content' or 'src' can be provided, not both"
-
         elif encoding and is_binary:
             result['msg'] = "The 'encoding' parameter is not valid for binary transfer"
 
@@ -156,8 +178,18 @@ class ActionModule(ActionBase):
                     "Cannot specify 'mode', 'owner' or 'group' for MVS destination"
                 )
         if not remote_src:
-            if src and not os.path.exists(b_src):
+            if local_follow:
+                if not src:
+                    result['msg'] = "No path given for local symlink"
+                else:
+                    real_path = os.path.realpath(src)
+                    if not os.path.exists(real_path):
+                        result['msg'] = ("The local file pointed to by "
+                                         "symlink {0} does not exist".format(src))
+
+            elif src and not os.path.exists(b_src):
                 result['msg'] = "The local file {0} does not exist".format(src)
+
             elif src and not os.access(b_src, os.R_OK):
                 result['msg'] = (
                     "The local file {0} does not have appropriate "
@@ -165,6 +197,7 @@ class ActionModule(ActionBase):
                 )
             elif src and local_follow and not os.path.islink(src):
                 result['msg'] = "The provided source is not a symbolic link"
+
             elif src and os.path.islink(b_src) and (not local_follow):
                 result['msg'] = (
                     "Source is a symbolic link. If you would like to follow"
@@ -188,8 +221,7 @@ class ActionModule(ActionBase):
                 finally:
                     os.remove(local_content)
             else:
-                if local_follow:
-                    src = os.path.realpath(src)
+                src = real_path or src
                 if is_pds:
                     path, dirs, files = next(os.walk(src))
                     if dirs:
@@ -197,7 +229,7 @@ class ActionModule(ActionBase):
                         result.update(dict(src=src, dest=dest, changed=False, failed=True))
                         return result
                     dir_size = sum(Path(path + "/" + f).stat().st_size for f in files)
-                    new_module_args.update(dict(size=dir_size))
+                    new_module_args['size'] = dir_size
                 else:
                     if mode == 'preserve':
                         new_module_args['mode'] = '0{:o}'.format(stat.S_IMODE(os.stat(b_src).st_mode))
@@ -206,23 +238,21 @@ class ActionModule(ActionBase):
 
             temp_path = transfer_res.get("temp_path")
             if transfer_res.get("msg"):
-                self._remote_cleanup(dest, True, task_vars)
                 return transfer_res
 
         new_module_args.update(
             dict(
                 is_uss=is_uss, 
                 is_pds=is_pds, 
-                copy_member=copy_member,
+                copy_member=_is_member(dest),
+                src_member=_is_member(src),
                 temp_path=temp_path
             )
         )
-        copy_res = (
-            self._execute_module(
-                module_name='zos_copy', 
-                module_args=new_module_args, 
-                task_vars=task_vars
-            )
+        copy_res = self._execute_module(
+            module_name='zos_copy', 
+            module_args=new_module_args, 
+            task_vars=task_vars
         )
         if copy_res.get('note'):
             result['note'] = copy_res.get('note')
@@ -251,7 +281,7 @@ class ActionModule(ActionBase):
         return result
 
     def _copy_to_remote(self, src, is_pds=False):
-        result = dict()
+        """Copy a file or directory to the remote z/OS system """
         ansible_user = self._play_context.remote_user
         ansible_host = self._play_context.remote_addr
         temp_path = _create_temp_path_name()
@@ -268,24 +298,31 @@ class ActionModule(ActionBase):
         )
         out, err = transfer_data.communicate(to_bytes(stdin))
         err = _detect_sftp_errors(err)
-        if transfer_data.returncode != 0 or err:
-            result['msg'] = "Error transfering source '{0}' to remote z/OS system".format(src)
-            result['rc'] = transfer_data.returncode
-            result['stderr'] = err
-            result['stderr_lines'] = err.splitlines()
-            result['failed'] = True
-            return result
 
-        result['temp_path'] = temp_path
-        return result
+        if transfer_data.returncode != 0 or err:
+            return dict(
+                msg="Error transfering source '{0}' to remote z/OS system".format(src),
+                rc=transfer_data.returncode,
+                stderr=err,
+                stderr_lines=err.splitlines(),
+                failed=True
+            )
+
+        return dict(temp_path=temp_path)
 
     def _remote_cleanup(self, dest, dest_exists, task_vars):
+        """Remove all files or data sets pointed to by 'dest' on the remote 
+        z/OS system. The idea behind this cleanup step is that if, for some
+        reason, the module fails after copying the data, we want to return the
+        remote system to its original state. Which means deleting any newly
+        created files or data sets.
+        """
         if dest_exists is False:
             if '/' in dest:
                 self._connection.exec_command("rm -rf {0}".format(dest))
             else:
                 module_args = dict(name=dest, state='absent')
-                if dest.endswith(')'):
+                if _is_member(dest):
                     module_args['type'] = "MEMBER"
                 self._execute_module(
                     module_name='zos_data_set',

@@ -1197,7 +1197,7 @@ def run_module():
         # If destination exists and the 'force' parameter is set to false,
         # the module exits with a note to the user.
         # ********************************************************************
-        copy_handler = CopyHandler(module, dest_exists)
+        copy_handler = CopyHandler(module, dest_exists, is_binary=is_binary)
         if dest_exists:
             if not force:
                 module.exit_json(note="Destination exists. No data was copied")
@@ -1273,7 +1273,7 @@ def run_module():
                 )
 
             uss_copy_handler = USSCopyHandler(
-                module, dest_exists, 
+                module, dest_exists, is_binary=is_binary,
                 common_file_args=dict(mode=mode, group=group, owner=owner)
             )
             uss_copy_handler.copy_to_uss(
@@ -1294,7 +1294,7 @@ def run_module():
             if not remote_src and not copy_member:
                 temp_path = os.path.join(temp_path, os.path.basename(src))
 
-            pdse_copy_handler = PDSECopyHandler(module, dest_exists)
+            pdse_copy_handler = PDSECopyHandler(module, dest_exists, is_binary=is_binary)
             if copy_member:
                 pdse_copy_handler.copy_to_member(src, temp_path, conv_path, dest)
             else:

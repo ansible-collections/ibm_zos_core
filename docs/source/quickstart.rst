@@ -5,9 +5,8 @@
 Quickstart
 ==========
 
-After you have installed the collection outlined in the  `installation`_
-guide, you will want to access the collection and ansible-doc covered in the
-following topics.
+After you install the collection outlined in the  `installation`_ guide, you
+can access the collection and ansible-doc covered in the following topics:
 
 .. _installation:
    installation.html
@@ -15,9 +14,9 @@ following topics.
 ibm_zos_core
 ------------
 
-After the collection is installed, you can access collection content for a
-playbook by referencing the namespace ``ibm`` and collection's fully qualified
-name ``ibm_zos_core``, for example:
+After the collection is installed, you can access the collection content for a
+playbook by referencing the namespace ``ibm`` and the collection's fully
+qualified name ``ibm_zos_core``. For example:
 
 .. code-block:: yaml
 
@@ -29,7 +28,7 @@ name ``ibm_zos_core``, for example:
         job_name: HELLO
 
 
-In Ansible 2.9, the ``collections`` keyword was added and reduces the need
+In Ansible 2.9, the ``collections`` keyword was added to reduce the need
 to refer to the collection repeatedly. For example, you can use the
 ``collections`` keyword in your playbook:
 
@@ -48,15 +47,14 @@ to refer to the collection repeatedly. For example, you can use the
 z/OS Connection Plugin
 ----------------------
 
-Since EBCDIC encoding is used on z/OS, custom plugins are needed to determine
-the correct transport method when targeting a z/OS system.
+Since EBCDIC encoding is used on z/OS, custom plugins are required to determine
+the correct transport method when targeting a z/OS system. The zos_ssh.py
+connection plugin is a fork of the default ssh.py plugin with the added
+functionality to check if a module is written in REXX.
 
-The zos_ssh.py connection plugin is a fork of the default ssh.py plugin with
-added functionality for checking if a module is written in REXX.
-
-Since REXX scripts need to be in EBCDIC encoding to run, they need to be
+Since REXX scripts are required be in EBCDIC encoding to run, they must be
 handled differently during transfer. If the string
-``__ANSIBLE_ENCODE_EBCDIC__`` is found on the first line of the module, the
+``__ANSIBLE_ENCODE_EBCDIC__`` is found in the first line of the module, the
 module is transferred to the target system using SCP. Otherwise, SFTP is used.
 SCP treats files as text, automatically encoding as EBCDIC at transfer time.
 SFTP treats files as binary, performing no encoding changes.
@@ -85,7 +83,7 @@ similar to a UNIX, or UNIX-like operating system man page (manual page). This
 documentation can be accessed from the command line by using the
 ``ansible-doc`` command.
 
-Here's how to use the ``ansible-doc`` command after you have installed the
+Here's how to use the ``ansible-doc`` command after you install the
 **IBM z/OS core collection**: ``ansible-doc ibm.ibm_zos_core.zos_data_set``
 
 .. code-block:: sh

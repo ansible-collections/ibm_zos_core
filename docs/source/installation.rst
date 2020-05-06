@@ -5,9 +5,8 @@
 Installation
 ============
 
-You have several options you may use to install the
-**IBM z/OS Core Collection**. These are Ansible Galaxy,
-Ansible Automation Hub, and a local build.
+You can install the **IBM z/OS core collection** using one of these options:
+Ansible Galaxy, Ansible Automation Hub, or a local build.
 
 For more information on installing collections, see `using collections`_.
 
@@ -16,16 +15,15 @@ For more information on installing collections, see `using collections`_.
 
 Ansible Galaxy
 --------------
-
-You can use the `ansible-galaxy`_ command with the option ``install`` to
-install a collection on your system (control node) hosted in Galaxy.
-
 Galaxy enables you to quickly configure your automation project with content
-from the Ansible community. Galaxy provides prepackaged units of work known as
-collections. If you have installed a prior version you may need to force
-overwriting an existing collection with the ``--force`` option.
+from the Ansible community.
 
-Here are examples for installing the **IBM z/OS core collection**:
+Galaxy provides prepackaged units of work known as collections. You can use the
+`ansible-galaxy`_ command with the option ``install`` to install a collection on
+your system (control node) hosted in Galaxy. If you have installed a prior
+version, you must overwrite an existing collection with the ``--force`` option.
+
+Here are a few examples of installing the **IBM z/OS core collection**:
 
 .. code-block:: sh
 
@@ -33,12 +31,11 @@ Here are examples for installing the **IBM z/OS core collection**:
    $ ansible-galaxy collection install -f ibm.ibm_zos_core
    $ ansible-galaxy collection install --force ibm.ibm_zos_core
 
-
-By default, ansible-galaxy installs the latest collection that is available but
-you can add a version identifier to install a specific version. When installing
-a collection from Galaxy, it would be good to review the versions available as
-there can be point releases, mods and beta versions available and you may be
-interested in features in a particular version.
+By default, the `ansible-galaxy`_ command installs the latest available
+collection, but you can add a version identifier to install a specific version.
+Before installing a collection from Galaxy, review all the available versions.
+There could be new patch releases and beta versions available and you might
+be interested in the features in a particular version.
 
 Here's an example command for installing the **IBM z/OS core collection** for
 a specific version.
@@ -50,7 +47,7 @@ a specific version.
 The collection installation progress will be output to the console. Note the
 location of the installation so that you can review other content included with
 the collection, such as the sample playbook. By default, collections are
-installed in ``~/.ansible/collections``, see the sample output.
+installed in ``~/.ansible/collections``; see the sample output.
 
 .. _ansible-galaxy:
    https://docs.ansible.com/ansible/latest/cli/ansible-galaxy.html
@@ -92,8 +89,8 @@ see `installing collections`_.
 .. _installing collections:
    https://docs.ansible.com/ansible/latest/user_guide/collections_using.html#installing-collections-with-ansible-galaxy
 
-Automaton Hub and Private Galaxy server
----------------------------------------
+Automation Hub and Private Galaxy server
+----------------------------------------
 Configuring access to a private Galaxy server follows the same instructions
 that you would use to configure your client to point to Automation Hub. When
 hosting a private Galaxy server or pointing to Hub, available content is not
@@ -109,7 +106,7 @@ collection. The `ansible-galaxy` client can be configured to point to Hub or
 other servers, such as a privately running Galaxy server, by configuring the
 server list in the ``ansible.cfg`` file.
 
-Ansible searches for ``ansible.cfg`` in these locations in this order:
+Ansible searches for ``ansible.cfg`` in the following locations in this order:
 
    * ANSIBLE_CONFIG (environment variable if set)
    * ansible.cfg (in the current directory)
@@ -172,7 +169,7 @@ Git repository, build the collection archive, and install the collection. The
 archive that can later be installed locally without having to use Hub or
 Galaxy.
 
-To build a collection from the git repository:
+To build a collection from the Git repository:
 
    1. Clone the sample repository:
 

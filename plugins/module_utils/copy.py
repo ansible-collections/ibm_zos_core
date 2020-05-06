@@ -91,7 +91,7 @@ def copy_ps2uss(src, dest, is_binary=False):
     module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
     src = _validate_data_set_name(src)
     dest = _validate_path(dest)
-    cp_ps2uss = "cp -B -F rec \"//'{0}'\" {1}".format(src, quote(dest))
+    cp_ps2uss = "cp -F rec \"//'{0}'\" {1}".format(src, quote(dest))
     if is_binary:
         cp_ps2uss = cp_ps2uss.replace("rec", "bin")
     rc, out, err = module.run_command(cp_ps2uss)

@@ -383,7 +383,7 @@ import stat
 
 from pathlib import Path
 from shutil import move, copy, copytree, rmtree
-from hashlib import sha256
+from hashlib import sha256  
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils._text import to_bytes
@@ -444,7 +444,6 @@ class CopyHandler(object):
             dest {str} -- Name of destination data set
             src_ds_type {str} -- The type of source
         """
-        write_rc = 0
         src = temp_path or conv_path or src
         try:
             if src_ds_type == 'USS':

@@ -53,7 +53,7 @@ options to your inventory or `ansible.cfg`.
 An example of adding these options to `ansible.cfg` is shown below. For more
 details, see the sample `ansible.cfg`_ notes.
 
-.. code-block:: sh
+.. code-block:: yaml
 
    [defaults]
    forks = 25
@@ -146,7 +146,7 @@ colons ``:``; for example,
 
 The value for the property **PATH** is the ZOA utilities BIN path and the Python
 interpreter path; for example,
-``/usr/lpp/IBM/zoautil/bin;/usr/lpp/rsusr/python36/bin/python``.
+``/usr/lpp/IBM/zoautil/bin:/usr/lpp/rsusr/python36/bin/python:/bin``.
 
 .. code-block:: yaml
 

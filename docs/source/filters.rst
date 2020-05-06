@@ -15,9 +15,8 @@ their own custom filters.
 
 The **IBM z/OS core collection** includes filters and their usage in sample
 playbooks. Unlike collections that can be identified at the top level using the
-collections keyword and then simply accessing modules using module names,
-filters must always be specified in the playbook with their fully qualified name
-even when included in a collection .
+collections keyword, filters must always be specified in the playbook with their
+fully qualified name even when included in a collection.
 
 Filters usage follows this pattern:
 

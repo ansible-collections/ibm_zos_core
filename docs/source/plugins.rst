@@ -12,7 +12,7 @@ and expandable feature set.
 Action
 ------
 
-* ``normal``: A fork of Ansible `normal.py`_ action plugin that is modified to allow a conditional shebang line in REXX modules.
+* ``zos_ping``: A fork of Ansible `normal.py`_ action plugin that is modified to allow a conditional shebang line in REXX modules.
 
 * ``zos_job_submit``: Used to `submit a job`_ from the controller and optionally monitor the job completion.
 

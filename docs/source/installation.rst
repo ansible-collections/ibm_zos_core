@@ -5,7 +5,7 @@
 Installation
 ============
 
-You can install the **IBM z/OS Core Collection** using one of these options:
+You can install the **IBM z/OS core collection** using one of these options:
 Ansible Galaxy, Ansible Automation Hub, or a local build.
 
 For more information on installing collections, see `using collections`_.

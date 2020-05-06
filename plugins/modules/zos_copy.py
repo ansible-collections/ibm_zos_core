@@ -413,15 +413,17 @@ MVS_SEQ = frozenset({'PS', 'SEQ'})
 
 
 class CopyHandler(object):
-    def __init__(self, module, dest_exists):
+    def __init__(self, module, dest_exists, is_binary=False):
         """Utility class to handle copying data between two targets
 
         Arguments:
             module {AnsibleModule} -- The AnsibleModule object from currently running module
             dest_exists {boolean} -- Whether destination already exists
+            is_binary {bool} -- Whether the file or data set to be copied contains binary data
         """
         self.module = module
         self.dest_exists = dest_exists
+        self.is_binary = is_binary
 
     def _fail_json(self, **kwargs):
         """ Wrapper for AnsibleModule.fail_json """
@@ -443,13 +445,14 @@ class CopyHandler(object):
         """
         write_rc = 0
         src = temp_path or conv_path or src
-        if src_ds_type != "VSAM":
-            write_rc = Datasets.copy(src, dest)
-            if write_rc != 0:
-                self._fail_json(
-                    msg="Non-zero return code received while writing to data set {0}".format(dest),
-                    rc=write_rc
-                )
+        try:
+            if src_ds_type == 'USS':
+                copy.copy_uss2mvs(src, dest, "PS", is_binary=self.is_binary)
+            elif src_ds_type in MVS_SEQ.union(MVS_PARTITIONED):
+                copy.copy_mvs2mvs(src, dest, is_binary=self.is_binary)
+        except Exception as err:
+            self._fail_json(msg=str(err))
+        
 
     def convert_encoding(self, src, temp_path, encoding):
         """Convert encoding for given src
@@ -626,8 +629,7 @@ class USSCopyHandler(CopyHandler):
 
             is_binary {bool} -- Whether the file to be copied contains binary data
         """
-        super().__init__(module, dest_exists)
-        self.is_binary = is_binary
+        super().__init__(module, dest_exists, is_binary=is_binary)
         self.common_file_args = common_file_args
 
     def copy_to_uss(self, conv_path, temp_path, src_ds_type, src_member, member_name):
@@ -727,8 +729,7 @@ class PDSECopyHandler(CopyHandler):
             module {AnsibleModule} -- The AnsibleModule object from currently running module
             dest_exists {boolean} -- Whether destination already exists
         """
-        super().__init__(module, dest_exists)
-        self.is_binary = is_binary
+        super().__init__(module, dest_exists, is_binary=is_binary)
 
     def copy_to_pdse(self, src, temp_path, conv_path, dest, src_ds_type):
         """Copy source to a PDS/PDSE or PDS/PDSE member.
@@ -747,13 +748,13 @@ class PDSECopyHandler(CopyHandler):
             for file in files:
                 member_name = file[:file.rfind('.')] if '.' in file else file
                 full_file_path = path + "/" + file
-                rc = Datasets.copy(
-                    full_file_path, "{0}({1})".format(dest, member_name)
-                )
-                if rc != 0:
-                    self._fail_json(
-                        msg="Error while copying file {0} to {1}".format(full_file_path, dest)
+                try:
+                    copy.copy_uss2mvs(
+                        full_file_path, "{0}({1})".format(dest, member_name), 
+                        "PO", is_binary=self.is_binary
                     )
+                except Exception as err:
+                    self._fail_json(msg=str(err))
         else:
             dds = dict(OUTPUT=dest, INPUT=src)
             copy_cmd = "   COPY OUTDD=OUTPUT,INDD=((INPUT,R))"
@@ -781,12 +782,18 @@ class PDSECopyHandler(CopyHandler):
             dest {str} -- Name of destination data set
         """
         src = temp_path or conv_path or src
-        rc = Datasets.copy(src, dest)
-        if rc != 0:
-            self._fail_json(
-                msg="Unable to copy to data set member {}".format(dest), 
-                rc=rc
-            )
+        if '/' in src:
+            try:
+                copy.copy_uss2mvs(src, dest, "PO", is_binary=self.is_binary)
+            except Exception as err:
+                self._fail_json(msg=str(err))
+        else:
+            rc = Datasets.copy(src, dest)
+            if rc != 0:
+                self._fail_json(
+                    msg="Unable to copy to data set member {}".format(dest), 
+                    rc=rc
+                )
 
     def create_pdse(
         self, src, dest_name, size, src_ds_type, remote_src=False, vol=None

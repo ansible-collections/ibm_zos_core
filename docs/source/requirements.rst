@@ -60,7 +60,7 @@ Managed node
 Python on z/OS
 --------------
 
-If the Ansible target is z/OS, you must install a python distribution ported
+If the Ansible target is z/OS, you must install a Python distribution ported
 for this platform. Rocket Software is currently the preferred version for z/OS.
 
 **Installation**

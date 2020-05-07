@@ -34,8 +34,8 @@ Here are a few examples of installing the **IBM z/OS core collection**:
 By default, the `ansible-galaxy`_ command installs the latest available
 collection, but you can add a version identifier to install a specific version.
 Before installing a collection from Galaxy, review all the available versions.
-There could be new patch releases and beta versions available and you might
-be interested in the features in a particular version.
+Periodically, new releases containing enhancements and features you might be
+interested in become available.
 
 Here's an example command for installing the **IBM z/OS core collection** for
 a specific version.

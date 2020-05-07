@@ -6,7 +6,7 @@ Quickstart
 ==========
 
 After you install the collection outlined in the  `installation`_ guide, you
-can access the collection and ansible-doc covered in the following topics:
+can access the collection and the ansible-doc covered in the following topics:
 
 .. _installation:
    installation.html

@@ -453,6 +453,39 @@ class CopyHandler(object):
         except Exception as err:
             self._fail_json(msg=str(err))
 
+    def copy_to_vsam(self, src, dest):
+        """ Copy source VSAM to destination VSAM. If source VSAM exists, then
+        it will be deleted and a new VSAM cluster will be allocated.
+
+        Arguments:
+            src {str} -- The name of the source VSAM
+            dest {str} -- The name of the destination VSAM
+        """
+        if self.dest_exists:
+            rc = Datasets.delete(dest)
+            if rc != 0:
+                self._fail_json(
+                    msg="Unable to delete destination data set {0}".format(dest),
+                    rc=rc
+                )
+        self.allocate_model(dest, src)
+
+        repro_cmd = '''  REPRO -
+        INDATASET({0}) - 
+        OUTDATASET({1})'''.format(src, dest)
+        rc, out, err = self._run_mvs_command(
+            "IDCAMS", repro_cmd, authorized=True
+        )
+        if rc != 0:
+            self._fail_json(
+                msg=("IDCAMS REPRO encountered a problem while "
+                     "copying {0} to {1}".format(src, dest)),
+                stdout=out, stderr=err, rc=rc,
+                stdout_lines=out.splitlines(),
+                stderr_lines=err.splitlines(),
+                cmd=repro_cmd
+            )
+
     def convert_encoding(self, src, temp_path, encoding):
         """Convert encoding for given src
 
@@ -588,8 +621,8 @@ class CopyHandler(object):
 
         Keyword Arguments:
             dd {dict} -- The DD definitions required by the program. (Default {None})
-            authorized {bool} -- Indicates whether the MVS program should be 
-            run as authorized. (Default {False})
+            authorized {bool} -- Indicates whether the MVS program should run
+            as authorized. (Default {False})
 
         Returns:
             tuple[int, str, str] -- A tuple of return code, stdout and stderr
@@ -887,68 +920,6 @@ class PDSECopyHandler(CopyHandler):
                 self._run_command("rm /tmp/mrm.*.sysprint")
 
 
-class VSAMCopyHandler(CopyHandler):
-    def __init__(self, module, dest_exists):
-        """ Utility class to handle copying to VSAM data sets
-
-        Arguments:
-            module {AnsibleModule} -- The AnsibleModule object from currently running module
-            dest_exists {boolean} -- Whether destination already exists
-        """
-        super().__init__(module, dest_exists)
-
-    def copy_to_vsam(self, src, dest):
-        """ Copy source VSAM to destination VSAM. If source VSAM exists, then
-        it will be deleted and a new VSAM cluster will be allocated.
-
-        Arguments:
-            src {str} -- The name of the source VSAM
-            dest {str} -- The name of the destination VSAM
-        """
-        if self.dest_exists:
-            self._delete_vsam(dest)
-        self.allocate_model(dest, src)
-
-        repro_cmd = '''  REPRO -
-        INDATASET({0}) - 
-        OUTDATASET({1})'''.format(src, dest)
-        rc, out, err = self._run_mvs_command(
-            "IDCAMS", repro_cmd, authorized=True
-        )
-        if rc != 0:
-            self._fail_json(
-                msg=("IDCAMS REPRO encountered a problem while "
-                     "copying {0} to {1}".format(src, dest)),
-                stdout=out, stderr=err, rc=rc,
-                stdout_lines=out.splitlines(),
-                stderr_lines=err.splitlines(),
-                cmd=repro_cmd
-            )
-
-    def _delete_vsam(self, src_vsam):
-        """ Delete the given VSAM cluster
-
-        Arguments:
-            src {str} -- The name of the VSAM to be deleted
-        """
-        del_cmd = '''  DELETE {} -
-           CLUSTER -
-           PURGE -
-           ERASE'''.format(src_vsam)
-        rc, out, err = self._run_mvs_command(
-            "IDCAMS", del_cmd, authorized=True
-        )
-        if rc != 0:
-            self._fail_json(
-                msg=("IDCAMS DELETE encountered an error while deleting "
-                     "VSAM data set {0}".format(src_vsam)),
-                stdout=out, stderr=err, rc=rc,
-                stdout_lines=out.splitlines(),
-                stderr_lines=err.splitlines(),
-                cmd=del_cmd
-            )
-
-
 class CopyUtil(object):
 
     @staticmethod
@@ -967,15 +938,36 @@ class CopyUtil(object):
         Returns:
             {bool} -- Whether src can be copied to dest
         """
+        # ********************************************************************
+        # If the destination does not exist, then obviously it will need
+        # to be created. As a result, target is compatible.
+        # ********************************************************************
         if dest_type is None:
             return True
 
+        # ********************************************************************
+        # If source is a sequential data set, then destination must be
+        # partitioned data set member, other sequential data sets or USS files.
+        # Anything else is incompatible.
+        # ********************************************************************
         if src_type in MVS_SEQ:
             return not (
                 (dest_type in MVS_PARTITIONED and not copy_member) or
                 dest_type == "VSAM"
             )
 
+        # ********************************************************************
+        # If source is a partitioned data set, then we need to determine
+        # target compatibility for two different scenarios:
+        #   - If the source is a data set member
+        #   - If the source is an entire data set
+        #
+        # In the first case, the possible targets are: USS files, PDS/PDSE
+        # members and sequential data sets. Anything else is incompatible.
+        #
+        # In the second case, the possible targets are USS directories and 
+        # other PDS/PDSE. Anything else is incompatible.
+        # ********************************************************************
         elif src_type in MVS_PARTITIONED:
             if dest_type == "VSAM":
                 return False
@@ -1295,7 +1287,7 @@ def run_module():
                 temp_path = os.path.join(temp_path, os.path.basename(src))
 
             pdse_copy_handler = PDSECopyHandler(module, dest_exists, is_binary=is_binary)
-            if copy_member:
+            if copy_member or os.path.isfile(temp_path or b_src):
                 pdse_copy_handler.copy_to_member(src, temp_path, conv_path, dest)
             else:
                 pdse_copy_handler.copy_to_pdse(
@@ -1306,7 +1298,7 @@ def run_module():
         # Copy to VSAM data set
         # ---------------------------------------------------------------------
         else:
-            VSAMCopyHandler(module, dest_exists).copy_to_vsam(src, dest)
+            copy_handler.copy_to_vsam(src, dest)
 
     finally:
         CopyUtil.cleanup(module.params.get("temp_path"))

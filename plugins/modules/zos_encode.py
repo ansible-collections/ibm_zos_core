@@ -429,15 +429,12 @@ def run_module():
 
         # Check if the dest is required to be backup before conversion
         if backup:
-            try:
-                if is_uss_dest:
-                    backup_file = zos_backup.uss_file_backup(
-                        dest, backup_file, backup_compress
-                    )
-                if is_mvs_dest:
-                    backup_file = zos_backup.mvs_file_backup(dest, backup_file)
-            except Exception:
-                backup_file = None
+            if is_uss_dest:
+                backup_file = zos_backup.uss_file_backup(
+                    dest, backup_file, backup_compress
+                )
+            if is_mvs_dest:
+                backup_file = zos_backup.mvs_file_backup(dest, backup_file)
             result["backup_file"] = backup_file
 
         if is_uss_src and is_uss_dest:

@@ -29,21 +29,15 @@ if PY3:
 else:
     from pipes import quote
 
-BACKUP = """ COPY DATASET(INCLUDE( {0} )) -
-    RENUNC({0}, -
-    {1}) -
-    CATALOG -
-    OPTIMIZE(4) """
-
 
 def _validate_data_set_name(ds):
-    arg_defs = dict(ds=dict(arg_type="data_set"),)
+    arg_defs = dict(ds=dict(arg_type="data_set"))
     parser = BetterArgParser(arg_defs)
     parsed_args = parser.parse_args({"ds": ds})
     return parsed_args.get("ds")
 
 
-def mvs_file_backup(self, dsn, bk_dsn):
+def mvs_file_backup(dsn, bk_dsn):
     """Create a backup data set for an MVS data set
 
     Arguments:
@@ -54,35 +48,26 @@ def mvs_file_backup(self, dsn, bk_dsn):
     Raises:
         BackupError: When backup data set exists.
         BackupError: When creation of backup data set fails.
-
-    Returns:
-        str -- Name of the backup data set.
     """
-    module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
-    dsn = _validate_data_set_name(dsn)
-    bk_dsn = _validate_data_set_name(bk_dsn)
-    out = None
+    dsn = _validate_data_set_name(dsn).upper()
+    bk_dsn = _validate_data_set_name(bk_dsn).upper()
     if not bk_dsn:
         hlq = Datasets.hlq()
         bk_dsn = Datasets.temp_name(hlq)
-    bk_sysin = BACKUP.format(dsn, bk_dsn)
-    bkup_cmd = "mvscmdauth --pgm=adrdssu --sysprint=stdout --sysin=stdin"
-    rc, stdout, stderr = module.run_command(
-        bkup_cmd, data=bk_sysin, use_unsafe_shell=True
-    )
-    if rc > 4:
-        out = stdout
-        if "DUPLICATE" in out:
-            raise BackupError("Backup data set {0} exists, please check".format(bk_dsn))
+
+    cp_rc = _copy_ds(dsn, bk_dsn)
+    # The data set is probably a PDS or PDSE
+    if cp_rc == 12:
+        # Delete allocated backup that was created when attempting to use _copy_ds()
+        # Safe to delete because _copy_ds() would have raised an exception if it did
+        # not successfully create the backup data set, so no risk of it predating module invocation
+        Datasets.delete(bk_dsn)
+        if Datasets.move(dsn, bk_dsn) == 0:
+            _allocate_model(dsn, bk_dsn)
         else:
-            if Datasets.exists(bk_dsn):
-                Datasets.delete(bk_dsn)
             raise BackupError(
-                "Failed when creating the backup of the data set {0} : {1}".format(
-                    dsn, out
-                )
+                "Unable to backup data set {0} to {1}".format(dsn, bk_dsn)
             )
-    return bk_dsn
 
 
 def uss_file_backup(path, backup_name=None, compress=False):
@@ -147,6 +132,86 @@ def uss_file_backup(path, backup_name=None, compress=False):
         else:
             copy2(abs_path, backup_name)
     return backup_name
+
+
+def _copy_ds(ds, bk_ds):
+    """Copy the contents of a data set to another
+
+    Arguments:
+        ds {str} -- The source data set to be copied from. Should be SEQ or VSAM
+        bk_dsn {str} -- The destination data set to copy to.
+
+    Raises:
+        BackupError: When copying data fails
+    """
+    module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+    _allocate_model(bk_ds, ds)
+    repro_cmd = """  REPRO -
+    INDATASET({0}) -
+    OUTDATASET({1})""".format(
+        ds, bk_ds
+    )
+    rc, out, err = module.run_command(
+        "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=repro_cmd
+    )
+    if rc != 0 and rc != 12:
+        Datasets.delete(bk_ds)
+        raise BackupError(
+            "Unable to backup data set {0}; stdout: {1}; stderr: {2}".format(
+                ds, out, err
+            )
+        )
+    if rc != 0 and _vsam_empty(ds):
+        rc = 0
+    return rc
+
+
+def _allocate_model(ds, model):
+    """Allocate a data set using allocation information of a model data set
+
+    Arguments:
+        ds {str} -- The name of the data set to be allocated.
+        model {str} -- The name of the data set whose allocation parameters should be used.
+
+    Raises:
+        BackupError: When allocation fails
+    """
+    module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+    alloc_cmd = "  ALLOC DS('{0}') LIKE('{1}')".format(ds, model)
+    cmd = "mvscmdauth --pgm=ikjeft01 --systsprt=* --systsin=stdin"
+    rc, out, err = module.run_command(cmd, data=alloc_cmd)
+    if rc != 0:
+        raise BackupError(
+            "Unable to allocate data set {0}; stdout: {1}; stderr: {2}".format(
+                ds, out, err
+            )
+        )
+    return rc
+
+
+def _vsam_empty(ds):
+    """Determine if a VSAM data set is empty.
+
+    Arguments:
+        ds {str} -- The name of the VSAM data set.
+
+    Returns:
+        bool - If VSAM data set is empty.
+        Returns True if VSAM data set exists and is empty.
+        False otherwise.
+    """
+    module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+    empty_cmd = """  PRINT -
+    INFILE(MYDSET) -
+    COUNT(1)"""
+    rc, out, err = module.run_command(
+        "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin --mydset={0}".format(ds),
+        data=empty_cmd,
+    )
+    if rc == 4 or "VSAM OPEN RETURN CODE IS 160" in out:
+        return True
+    elif rc != 0:
+        return False
 
 
 class BackupError(Exception):

@@ -129,7 +129,7 @@ def test_uss_encoding_conversion_when_dest_not_exists_01(ansible_zos_module):
         assert result.get("src") == USS_FILE
         assert result.get("dest") == USS_NONE_FILE
         assert result.get("backup_file") is None
-        assert result.get("changed") is True
+        assert result.get("changed") is False
 
 
 def test_uss_encoding_conversion_when_dest_not_exists_02(ansible_zos_module):
@@ -533,7 +533,7 @@ def test_vsam_backup(ansible_zos_module):
     )
     hosts.all.file(path=TEMP_JCL_PATH, state="absent")
 
-    results = hosts.all.zos_encode(
+    hosts.all.zos_encode(
         src=MVS_VS, dest=MVS_PS, from_encoding=FROM_ENCODING, to_encoding=TO_ENCODING,
     )
     contents = hosts.all.shell(cmd="cat \"//'{0}'\"".format(MVS_PS))

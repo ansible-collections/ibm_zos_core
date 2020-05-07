@@ -22,7 +22,7 @@ Notes
 
 Availability
   * Galaxy
-  * github
+  * GitHub
 
 Reference
   * Supported by IBM Z Open Automation Utilities: 1.0.2 or later
@@ -39,7 +39,7 @@ Notes
 Availability
   * Automation Hub
   * Galaxy
-  * github
+  * GitHub
 
 Reference
   * Supported by IBM Z Open Automation Utilities: 1.0.1 (PTF UI66957 or later)
@@ -57,7 +57,7 @@ Notes
 
 Availability
   * Galaxy
-  * github
+  * GitHub
 
 Reference:
   * Supported by IBM Z Open Automation Utilities: 1.0.1 (PTF UI66957 or later)
@@ -71,7 +71,7 @@ Notes
 
 Availability
   * Galaxy
-  * github
+  * GitHub
 
 Reference
   * Supported by IBM Z Open Automation Utilities: 1.0.1 (PTF UI66957 or later)
@@ -80,11 +80,11 @@ Version 0.0.2
 -------------
 Notes
   * Update not required
-  * Includes updates to the REAMDE  and included docs
+  * Updates to the README and included docs
 
 Availability
   * Galaxy
-  * github
+  * GitHub
 
 Reference
   * Supported by IBM Z Open Automation Utilities: 1.0.1 (PTF UI66957 or later)
@@ -94,11 +94,11 @@ Version 0.0.1
 Notes
   * Initial beta release of IBM Z core collection, referred to as ibm_zos_core
     which is part of the broader offering
-    Red Hat® Ansible Certified Content for IBM Z. ibm_zos_core.
+    Red Hat® Ansible Certified Content for IBM Z.
 
 Availability
   * Galaxy
-  * github
+  * GitHub
 
 Reference
   * Supported by IBM Z Open Automation Utilities: 1.0.1 (PTF UI66957 or later)

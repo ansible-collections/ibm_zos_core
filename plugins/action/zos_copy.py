@@ -292,7 +292,7 @@ class ActionModule(ActionBase):
             base = os.path.basename(src)
             self._connection.exec_command("mkdir -p {0}/{1}".format(temp_path, base))
         else:
-            stdin = stdin.replace(" -r", "")
+            stdin = stdin.replace(" -r", "", 1)
         transfer_data = subprocess.Popen(
             cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )

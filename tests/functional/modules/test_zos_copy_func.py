@@ -368,50 +368,61 @@ def test_copy_vsam_lds_to_non_existing_vsam_lds(ansible_zos_module):
     pass
 
 
-def test_copy_inline_content_to_uss_file():
+def test_copy_inline_content_to_uss_file(ansible_zos_module):
     pass
 
 
-def test_copy_inline_content_to_ps():
+def test_copy_inline_content_to_ps(ansible_zos_module):
     pass
 
 
-def test_copy_inline_content_to_pds_member():
+def test_copy_inline_content_to_pds_member(ansible_zos_module):
     pass
 
 
-def test_copy_inline_content_to_pdse_member():
+def test_copy_inline_content_to_pdse_member(ansible_zos_module):
     pass
 
 
-def test_backup_uss_file():
+def test_backup_uss_file(ansible_zos_module):
     pass
 
 
-def test_backup_ps():
+def test_backup_ps(ansible_zos_module):
     pass
 
 
-def test_backup_pds():
+def test_backup_pds(ansible_zos_module):
     pass
 
 
-def test_backup_pds_member():
+def test_backup_pds_member(ansible_zos_module):
     pass
 
 
-def test_backup_pdse():
+def test_backup_pdse(ansible_zos_module):
     pass
 
 
-def test_backup_vsam():
+def test_backup_vsam(ansible_zos_module):
     pass
 
 
-def test_copy_to_existing_dest_not_forced():
+def test_copy_to_existing_dest_not_forced(ansible_zos_module):
     pass
 
 
-def test_copy_local_symlink_to_uss_file():
+def test_copy_local_symlink_to_uss_file(ansible_zos_module):
     pass
 
+
+def test_copy_local_file_to_uss_file_convert_encoding(ansible_zos_module):
+    pass
+
+
+def test_copy_uss_file_to_uss_file_convert_encoding(ansible_zos_module):
+    pass
+
+
+def test_copy_uss_file_to_pds_member_convert_encoding(ansible_zos_module):
+    pass

@@ -380,9 +380,9 @@ import tempfile
 import math
 import time
 import stat
+import shutil
 
 from pathlib import Path
-from shutil import move, copy, copytree, rmtree
 from hashlib import sha256  
 
 from ansible.module_utils.basic import AnsibleModule
@@ -452,7 +452,6 @@ class CopyHandler(object):
                 copy.copy_mvs2mvs(src, dest, is_binary=self.is_binary)
         except Exception as err:
             self._fail_json(msg=str(err))
-        
 
     def convert_encoding(self, src, temp_path, encoding):
         """Convert encoding for given src
@@ -477,7 +476,7 @@ class CopyHandler(object):
             try:
                 if not temp_path:
                     temp_dir = tempfile.mkdtemp()
-                    copytree(src, temp_dir)
+                    shutil.copytree(src, temp_dir)
                     src = temp_dir
 
                 rc, err = enc_utils.uss_convert_encoding_prev(
@@ -488,7 +487,7 @@ class CopyHandler(object):
                 self._tag_file_encoding(src, to_code_set, is_dir=True)
 
             except Exception as err:
-                rmtree(src)
+                shutil.rmtree(src)
                 self._fail_json(msg=str(err))
 
         else:
@@ -496,7 +495,7 @@ class CopyHandler(object):
                 if not temp_path:
                     fd, temp_src = tempfile.mkstemp()
                     os.close(fd)
-                    copy(src, temp_src)
+                    shutil.copy(src, temp_src)
                     src = temp_src
     
                 rc = enc_utils.uss_convert_encoding(src, src, from_code_set, to_code_set)
@@ -677,7 +676,7 @@ class USSCopyHandler(CopyHandler):
             if self.is_binary:
                 copy.copy_uss2uss_binary(src, dest)
             else:
-                copy(src, dest)
+                shutil.copy(src, dest)
         except OSError as err:
             self._fail_json(
                 msg="Destination {0} is not writable".format(dest), 
@@ -1029,7 +1028,7 @@ class CopyUtil(object):
         """
         if src and os.path.exists(src):
             if os.path.isdir(src):
-                rmtree(src)
+                shutil.rmtree(src)
             else:
                 os.remove(src)
 

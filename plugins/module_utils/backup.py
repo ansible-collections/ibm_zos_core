@@ -29,12 +29,6 @@ if PY3:
 else:
     from pipes import quote
 
-# BACKUP = """ COPY DATASET(INCLUDE( {0} )) -
-#     RENUNC({0}, -
-#     {1}) -
-#     CATALOG -
-#     OPTIMIZE(4) """
-
 
 def _validate_data_set_name(ds):
     arg_defs = dict(ds=dict(arg_type="data_set"))
@@ -161,11 +155,14 @@ def _copy_ds(ds, bk_ds):
         "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=repro_cmd
     )
     if rc != 0 and rc != 12:
+        Datasets.delete(bk_ds)
         raise BackupError(
             "Unable to backup data set {0}; stdout: {1}; stderr: {2}".format(
                 ds, out, err
             )
         )
+    if rc != 0 and _vsam_empty(ds):
+        rc = 0
     return rc
 
 
@@ -190,6 +187,31 @@ def _allocate_model(ds, model):
             )
         )
     return rc
+
+
+def _vsam_empty(ds):
+    """Determine if a VSAM data set is empty.
+
+    Arguments:
+        ds {str} -- The name of the VSAM data set.
+
+    Returns:
+        bool - If VSAM data set is empty.
+        Returns True if VSAM data set exists and is empty.
+        False otherwise.
+    """
+    module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+    empty_cmd = """  PRINT -
+    INFILE(MYDSET) -
+    COUNT(1)"""
+    rc, out, err = module.run_command(
+        "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin --mydset={0}".format(ds),
+        data=empty_cmd,
+    )
+    if rc == 4 or "VSAM OPEN RETURN CODE IS 160" in out:
+        return True
+    elif rc != 0:
+        return False
 
 
 class BackupError(Exception):

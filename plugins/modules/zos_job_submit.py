@@ -478,12 +478,6 @@ EXAMPLES = r"""
 """
 
 from ansible.module_utils.basic import AnsibleModule
-from pipes import quote
-
-try:
-    from zoautil_py import Jobs
-except Exception:
-    Jobs = ""
 from time import sleep
 from os import chmod, path, remove
 from tempfile import NamedTemporaryFile
@@ -493,18 +487,34 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser
     BetterArgParser,
 )
 from stat import S_IEXEC, S_IREAD, S_IWRITE
+from ansible.module_utils.six import PY3
+
+if PY3:
+    from shlex import quote
+else:
+    from pipes import quote
 
 """time between job query checks to see if a job has completed, default 1 second"""
 POLLING_INTERVAL = 1
 POLLING_COUNT = 60
 
+JOB_COMPLETION_MESSAGES = ["CC", "ABEND", "SEC"]
 
-def submit_pds_jcl(src):
+
+def submit_pds_jcl(src, module):
     """ A wrapper around zoautil_py Jobs submit to raise exceptions on failure. """
-    jobId = Jobs.submit(src)
-    if jobId is None:
+    rc, stdout, stderr = module.run_command(
+        'submit -j "//{0}"'.format(quote(src)), use_unsafe_shell=True
+    )
+    if rc != 0:
+        raise SubmitJCLError("SUBMIT JOB FAILED:  Stderr :" + stderr)
+    if "Error" in stderr or "Not accepted by JES" in stderr:
+        raise SubmitJCLError("SUBMIT JOB FAILED: " + stderr)
+    if stdout != "":
+        jobId = stdout.replace("\n", "").strip()
+    else:
         raise SubmitJCLError(
-            "SUBMIT JOB FAILED: " + "NO JOB ID IS RETURNED. PLEASE CHECK THE JCL."
+            "SUBMIT JOB FAILED: NO JOB ID IS RETURNED. PLEASE CHECK THE JCL."
         )
     return jobId
 
@@ -514,15 +524,13 @@ def submit_uss_jcl(src, module):
     rc, stdout, stderr = module.run_command(["submit", "-j", src])
     if rc != 0:
         raise SubmitJCLError("SUBMIT JOB FAILED:  Stderr :" + stderr)
-    if "Error" in stderr:
-        raise SubmitJCLError("SUBMIT JOB FAILED: " + stderr)
-    if "Not accepted by JES" in stderr:
+    if "Error" in stderr or "Not accepted by JES" in stderr:
         raise SubmitJCLError("SUBMIT JOB FAILED: " + stderr)
     if stdout != "":
         jobId = stdout.replace("\n", "").strip()
     else:
         raise SubmitJCLError(
-            "SUBMIT JOB FAILED: " + "NO JOB ID IS RETURNED. PLEASE CHECK THE JCL."
+            "SUBMIT JOB FAILED: NO JOB ID IS RETURNED. PLEASE CHECK THE JCL."
         )
     return jobId
 
@@ -560,11 +568,9 @@ def copy_rexx_and_run(script, src, vol, module):
 def get_job_info(module, jobId, return_output):
     result = dict()
     try:
-        output = query_jobs_status(jobId)
+        result["jobs"] = query_jobs_status(module, jobId)
     except SubmitJCLError:
         raise
-
-    result = job_output(module, job_id=jobId)
 
     if not return_output:
         for job in result.get("jobs", []):
@@ -575,118 +581,30 @@ def get_job_info(module, jobId, return_output):
     return result
 
 
-def query_jobs_status(jobId):
-    timeout = 10
-    output = None
-    while output is None and timeout > 0:
+def query_jobs_status(module, jobId):
+    timeout = 20
+    output = []
+    while not output and timeout > 0:
         try:
-            output = Jobs.list(job_id=jobId)
-            sleep(1)
+            output = job_output(job_id=jobId)
+            sleep(0.5)
             timeout = timeout - 1
         except IndexError:
             pass
         except Exception as e:
             raise SubmitJCLError(
-                repr(e)
-                + """
-            The output is """
-                + output
+                "{0} {1} {2}".format(repr(e), "The output is", output or " ")
             )
-    if output is None and timeout == 0:
+    if not output and timeout == 0:
         raise SubmitJCLError(
             "THE JOB CAN NOT BE QUERIED FROM JES (TIMEOUT=10s). PLEASE CHECK THE ZOS SYSTEM. IT IS SLOW TO RESPONSE."
         )
     return output
 
 
-def parsing_job(job_raw):
-    ret_code = {}
-    status_raw = job_raw.get("status")
-    if "AC" in status_raw:
-        # the job is active
-        ret_code = {
-            "msg": "ACTIVE",
-            "code": "null",
-            "msg_detail": "Submit JCL operation succeeded.The job is still running.",
-        }
-    elif "CC" in status_raw:
-        # status = 'Completed normally'
-        ret_code = {
-            "msg": status_raw + " " + job_raw.get("return"),
-            "code": job_raw.get("return"),
-            "msg_detail": "Submit JCL operation succeeded.",
-        }
-    elif status_raw == "ABEND":
-        # status = 'Ended abnormally'
-        ret_code = {
-            "msg": status_raw + " " + job_raw.get("return"),
-            "code": job_raw.get("return"),
-            "msg_detail": "Submit JCL operation succeeded. But the job is ended abnormally.",
-        }
-    elif "ABENDU" in status_raw:
-        # status = 'Ended abnormally'
-        if job_raw.get("return") == "?":
-            ret_code = {
-                "msg": status_raw,
-                "code": status_raw[5:],
-                "msg_detail": "Submit JCL operation succeeded but the job is ended abnormally",
-            }
-        else:
-            ret_code = {
-                "msg": status_raw,
-                "code": job_raw.get("return"),
-                "msg_detail": "Submit JCL operation succeeded but the job is ended abnormally.",
-            }
-    elif "CANCELED" in status_raw:
-        # status = status_raw
-        ret_code = {
-            "msg": status_raw,
-            "code": "null",
-            "msg_detail": "Submit JCL operation succeeded but the job was canceled.",
-        }
-    elif "JCLERR" in status_raw:
-        ret_code = {
-            "msg": "JCL ERROR",
-            "code": "null",
-            "msg_detail": "Submit JCL operation succeeded but the job has a JCL ERROR.",
-        }
-    else:
-        # status = 'Unknown'
-        ret_code = {
-            "msg": status_raw,
-            "code": job_raw.get("return"),
-            "msg_detail": "Submit JCL operation succeeded. Please check the job status.",
-        }
-
-    return ret_code
-
-
 def assert_valid_return_code(max_rc, found_rc):
     if found_rc is None or max_rc < int(found_rc):
         raise SubmitJCLError("")
-
-
-def data_set_or_path_type(contents, resolve_dependencies):
-    if not re.fullmatch(
-        r"^(?:(?:[A-Z]{1}[A-Z0-9]{0,7})(?:[.]{1})){1,21}[A-Z]{1}[A-Z0-9]{0,7}(?:\([A-Z]{1}[A-Z0-9]{0,7}\)){0,1}$",
-        str(contents),
-        re.IGNORECASE,
-    ):
-        if not path.isabs(str(contents)):
-            raise ValueError(
-                'Invalid argument type for "{0}". expected "data_set" or "path"'.format(
-                    contents
-                )
-            )
-    return str(contents)
-
-
-def encoding_type(contents, resolve_dependencies):
-    if not re.fullmatch(r"^[A-Z0-9-]{2,}$", str(contents), re.IGNORECASE,):
-        raise ValueError(
-            'Invalid argument type for "{0}". expected "encoding"'.format(contents)
-        )
-    return str(contents)
 
 
 def run_module():
@@ -712,12 +630,12 @@ def run_module():
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
 
     arg_defs = dict(
-        src=dict(arg_type=data_set_or_path_type, required=True),
+        src=dict(arg_type="data_set_or_path", required=True),
         wait=dict(arg_type="bool", required=False),
         location=dict(
             arg_type="str", default="DATA_SET", choices=["DATA_SET", "USS", "LOCAL"],
         ),
-        encoding=dict(arg_type=encoding_type, default="UTF-8"),
+        encoding=dict(arg_type="encoding", default="UTF-8"),
         volume=dict(arg_type="volume", required=False),
         return_output=dict(arg_type="bool", default=True),
         wait_time_s=dict(arg_type="int", required=False, default=60),
@@ -750,15 +668,13 @@ def run_module():
 
     DSN_REGEX = r"^(([A-Z]{1}[A-Z0-9]{0,7})([.]{1})){1,21}[A-Z]{1}[A-Z0-9]{0,7}([(]([A-Z]{1}[A-Z0-9]{0,7})[)]){0,1}?$"
 
-    # calculate the job elapse time
-    duration = 0
     try:
         if location == "DATA_SET":
             data_set_name_pattern = re.compile(DSN_REGEX, re.IGNORECASE)
             check = data_set_name_pattern.fullmatch(src)
             if check:
                 if volume is None or volume == "":
-                    jobId = submit_pds_jcl(src)
+                    jobId = submit_pds_jcl(src, module)
                 else:
                     jobId = submit_jcl_in_volume(src, volume, module)
             else:
@@ -812,15 +728,22 @@ def run_module():
 
     result["job_id"] = jobId
     if wait is True:
+        # calculate the job elapse time
+        duration = 0
         try:
-            waitJob = query_jobs_status(jobId)
+            waitJob = query_jobs_status(module, jobId)
+            job_msg = waitJob[0].get("ret_code").get("msg")
         except SubmitJCLError as e:
             module.fail_json(msg=repr(e), **result)
-        while waitJob[0].get("status") == "AC":  # AC means in progress
+        # while (job_msg.startswith("CC") or job_msg.startswith("ABEND")) is False:
+        while not re.search(
+            "^(?:{0})".format("|".join(JOB_COMPLETION_MESSAGES)), job_msg
+        ):
             sleep(1)
             duration = duration + 1
-            waitJob = Jobs.list(job_id=jobId)
-            if waitJob[0].get("status") == "CC":  # CC means completed
+            waitJob = job_output(job_id=jobId)
+            job_msg = waitJob[0].get("ret_code").get("msg")
+            if re.search("^(?:{0})".format("|".join(JOB_COMPLETION_MESSAGES)), job_msg):
                 break
             if duration == wait_time_s:  # Long running task. timeout return
                 break

@@ -3,17 +3,29 @@
 ################################################################################
 
 ################################################################################
-# The value for property BPXK_AUTOCVT must be configured to ON.
-# The value for property ZOAU_ROOT is the ZOA Utilities install root path, for example: /usr/lpp/IBM/zoautil.
-# The value for property PYTHONPATH is the ZOA Utilities Python library path, for example: /usr/lpp/IBM/zoautil/lib/.
-# The value for property LIBPATH is both the path to the python libraries on the target and the ZOA Utilities Python library path separated by semi-colons,
+# - The value for property BPXK_AUTOCVT must be configured to ON.
+# - The value for property ZOAU_HOME is the ZOA Utilities install root path,
+# for example: /usr/lpp/IBM/zoautil.
+# - The value for property ZOAU_ROOT is the ZOA Utilities install root path,
+# for example: /usr/lpp/IBM/zoautil.
+# - The value for property PYTHONPATH is the ZOA Utilities Python library path,
+# for example: /usr/lpp/IBM/zoautil/lib/.
+# - The value for property LIBPATH is both the path to the python libraries on
+# the target and the ZOA Utilities Python library path separated by semi-colons,
 # for example: /usr/lpp/IBM/zoautil/lib/:/usr/lpp/rsusr/python36/lib:/lib:/usr/lib:..
-# The value for property PATH is the ZOA utilities BIN path and Python interpreter path, for example: /usr/lpp/IBM/zoautil/bin;/usr/bin/python.
+# - The value for property PATH is the ZOA utilities BIN path and Python
+# interpreter path, for example: /usr/lpp/IBM/zoautil/bin:/usr/bin/python:/bin
+#
+# Note:
+#   In the configuration below, both `ZOAU_HOME` and `ZOAU_ROOT` are included.
+#   In ZOAU 1.0.1 and lesser, property `ZOAU_ROOT` is required, for versions
+#   ZOAU 1.0.2 and later, property `ZOAU_HOME` replaces `ZOAU_ROOT`
 ################################################################################
 
 environment_vars:
   _BPXK_AUTOCVT: ON
+  ZOAU_HOME: "/usr/lpp/IBM/zoautil"
   ZOAU_ROOT: "/usr/lpp/IBM/zoautil"
   PYTHONPATH: "/usr/lpp/IBM/zoautil/lib"
   LIBPATH: "/usr/lpp/IBM/zoautil/lib/:/usr/lpp/rsusr/python36/lib:/usr/lib:/lib:."
-  PATH: "/usr/lpp/IBM/zoautil/bin;/usr/lpp/rsusr/python36/bin/python"
+  PATH: "/usr/lpp/IBM/zoautil/bin:/usr/lpp/rsusr/python36/bin/python:/bin"

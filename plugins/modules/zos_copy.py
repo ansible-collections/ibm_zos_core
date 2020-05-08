@@ -831,7 +831,7 @@ class PDSECopyHandler(CopyHandler):
                     cmd=copy_cmd
                 )
 
-    def copy_to_member(self, src, temp_path, conv_path, dest):
+    def copy_to_member(self, src, temp_path, conv_path, dest, copy_member=False):
         """Copy source to a PDS/PDSE member. The only valid sources are:
             - USS files
             - Sequential data sets
@@ -843,7 +843,13 @@ class PDSECopyHandler(CopyHandler):
             temp_path {str} -- Path to the location where the control node transferred data to
             conv_path {str} -- Path to the converted source file/directory
             dest {str} -- Name of destination data set
+
+        Keyword Arguments:
+            copy_member {bool} -- Whether destination specifies a member name. (default {False})
         """
+        if '/' in src and not copy_member:
+            dest = "{0}({1})".format(dest, os.path.basename(src))
+        
         src = temp_path or conv_path or src
         if '/' in src:
             try:
@@ -1323,7 +1329,9 @@ def run_module():
 
             pdse_copy_handler = PDSECopyHandler(module, dest_exists, is_binary=is_binary)
             if copy_member or os.path.isfile(temp_path or src):
-                pdse_copy_handler.copy_to_member(src, temp_path, conv_path, dest)
+                pdse_copy_handler.copy_to_member(
+                    src, temp_path, conv_path, dest, copy_member=copy_member
+                )
             else:
                 pdse_copy_handler.copy_to_pdse(
                     src, temp_path, conv_path, dest, src_ds_type

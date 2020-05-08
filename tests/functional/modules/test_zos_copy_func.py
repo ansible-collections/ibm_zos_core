@@ -27,22 +27,11 @@ DUMMY DATA ---- LINE 006 ------
 DUMMY DATA ---- LINE 007 ------
 '''
 
-# LOCAL_SRC = "/etc/profile"
-# LOCAL_DIR = create_temp_local_dir()
-# REMOTE_SRC = ''
-
-
-# def create_temp_local_dir():
-#     temp_dir = tempfile.mkdtemp()
-#     for i in range(5):
-#         with open(temp_dir + '/' + 'file' + i, 'w') as infile:
-#             infile.write(DUMMY_DATA)
-#     return temp_dir
-
 
 def test_copy_local_file_to_non_existing_uss_file(ansible_zos_module):
     hosts = ansible_zos_module
     dest_path = '/tmp/profile'
+    hosts.all.file(path=dest_path, state='absent')
     copy_res = hosts.all.zos_copy(
         src='/etc/profile',
         dest=dest_path
@@ -56,96 +45,127 @@ def test_copy_local_file_to_non_existing_uss_file(ansible_zos_module):
     finally:
         hosts.all.file(path=dest_path, state='absent')
 
+
 def test_copy_local_file_to_existing_uss_file(ansible_zos_module):
-    pass
+    hosts = ansible_zos_module
+    dest_path = '/tmp/profile'
+    hosts.all.file(path=dest_path, state='touch')
+    stat_res = list(hosts.all.stat(path=dest_path).contacted.values())
+    timestamp = stat_res[0].get('stat').get('atime')
+    assert timestamp is not None
+    copy_res = hosts.all.zos_copy(
+        src='/etc/profile',
+        dest=dest_path
+    )
+    stat_res = hosts.all.stat(path=dest_path)
+    try:
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+        for result in stat_res.contacted.values():
+            assert result.get('stat').get('exists') is True
+            assert result.get('stat').get('atime') != timestamp
+    finally:
+        hosts.all.file(path=dest_path, state='absent')
 
 
 def test_copy_local_file_to_uss_dir(ansible_zos_module):
-    pass
+    hosts = ansible_zos_module
+    dest_path = '/tmp/testdir'
+    hosts.all.file(path=dest_path, state='directory')
+    copy_res = hosts.all.zos_copy(
+        src='/etc/profile',
+        dest=dest_path
+    )
+    stat_res = hosts.all.stat(path=dest_path + '/' + 'profile')
+    try:
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+        for result in stat_res.contacted.values():
+            assert result.get('stat').get('exists') is True
+    finally:
+        hosts.all.file(path=dest_path, state='absent')
 
 
 def test_copy_local_file_to_non_existing_sequential_data_set(ansible_zos_module):
     hosts = ansible_zos_module
-    fd, source_path = tempfile.mkstemp(text=True)
-    with os.fdopen(fd, 'w') as infile:
-        infile.write(DUMMY_DATA)
-    
-    dest = 'USER.TEST.SEQ'
-    params = dict(src=source_path, dest=dest)
-    copy_result = hosts.all.zos_copy(**params)
+    dest = 'USER.TEST.SEQ.UNITTEST'
+    src_file = '/etc/profile'
+    copy_result = hosts.all.zos_copy(src=src_file, dest=dest)
     verify_copy = hosts.all.shell(
         cmd="cat \"//'{}'\" > /dev/null 2>/dev/null".format(dest), 
         executable="/usr/lpp/rsusr/ported/bin/bash"
     )
     try:
         for cp_res in copy_result.contacted.values():
-            assert cp_res.get('module_stderr') is None
+            assert cp_res.get('msg') is None
         for v_cp in verify_copy.contacted.values():
             assert v_cp.get('rc') == 0
     finally:
-        os.remove(source_path)
         hosts.all.zos_data_set(name=dest, state='absent')
 
 
 def test_copy_local_file_to_existing_sequential_data_set(ansible_zos_module):
     hosts = ansible_zos_module
-    fd, source_path = tempfile.mkstemp(text=True)
-    with open(fd, 'w') as infile:
-        infile.write(DUMMY_DATA)
-    
-    dest = 'USER.TEST.SEQ'
-    hosts.all.zos_data_set(name=dest, type='seq', state='present')
-    params = dict(src=source_path, dest=dest)
-    copy_result = hosts.all.zos_copy(**params)
-    verify_copy = hosts.all.shell(
-        cmd="cat \"//'{}'\" > /dev/null 2>/dev/null".format(dest), 
-        executable="/usr/lpp/rsusr/ported/bin/bash"
-    )
-    dest_path = '/tmp/TERRY.IMSV14.ADFSBASE'
+    dest = 'USER.TEST.SEQ.UNITTEST'
+    src_file = '/etc/profile'
     try:
+        hosts.all.zos_data_set(name=dest, type='seq', state='present')
+        copy_result = hosts.all.zos_copy(src=src_file, dest=dest)
+        verify_copy = hosts.all.shell(
+            cmd="cat \"//'{}'\"".format(dest), 
+            executable="/usr/lpp/rsusr/ported/bin/bash"
+        )
         for cp_res in copy_result.contacted.values():
-            assert cp_res.get('module_stderr') == False
-            assert cp_res.get('changed') == True
-        for v_cp in verify_copy.constants.values():
+            assert cp_res.get('msg') is None
+        for v_cp in verify_copy.contacted.values():
             assert v_cp.get('rc') == 0
             assert v_cp.get('stdout') != ""
-        
     finally:
-        os.remove(source_path)
         hosts.all.zos_data_set(name=dest, state='absent')
 
 
 def test_copy_local_file_to_existing_pdse_member(ansible_zos_module):
     hosts = ansible_zos_module
-    fd, source_path = tempfile.mkstemp(text=True)
-    with open(fd, 'w') as infile:
-        infile.write(DUMMY_DATA)
-    
-    dest = 'USER.TEST.PDS(data)'
-    params = dict(src=source_path, dest=dest)
-    hosts.all.zos_data_set(
-        name=dest[:dest.find('(')], 
-        type='pds', size='5M', format='fba', record_length=25
-    )
-    hosts.all.zos_data_set(name=dest, type='MEMBER', replace='yes')
-    copy_result = hosts.all.zos_copy(**params)
-    verify_copy = hosts.all.shell(
-        cmd="cat \"//'{}'\" > /dev/null 2>/dev/null".format(dest), 
-        executable="/usr/lpp/rsusr/ported/bin/bash"
-    )
+    dest = 'USER.TEST.PDS.UNITTEST'
+    dest_path = 'USER.TEST.PDS.UNITTEST(DATA)'
+    src_file = '/etc/profile'
     try:
+        hosts.all.zos_data_set(
+            name=dest, type='pds', size='5M', format='fba', record_length=25
+        )
+        hosts.all.zos_data_set(name=dest_path, type='MEMBER', replace='yes')
+        copy_result = hosts.all.zos_copy(src=src_file, dest=dest_path)
+        verify_copy = hosts.all.shell(
+            cmd="cat \"//'{}'\" > /dev/null 2>/dev/null".format(dest_path), 
+            executable="/usr/lpp/rsusr/ported/bin/bash"
+        )
         for cp_res in copy_result.contacted.values():
-            assert cp_res.get('module_stderr') == False
+            assert cp_res.get('msg') is None
         for v_cp in verify_copy.contacted.values():
             assert v_cp.get('rc') == 0
-            assert v_cp.get('stdout') != ""
     finally:
-        os.remove(source_path)
         hosts.all.zos_data_set(name=dest, state='absent')
 
 
 def test_copy_local_file_to_non_existing_pdse_member(ansible_zos_module):
-    pass
+    hosts = ansible_zos_module
+    dest = 'USER.TEST.PDS.UNITTEST'
+    src_file = '/etc/profile'
+    try:
+        hosts.all.zos_data_set(
+            name=dest, type='pds', size='5M', format='fba', record_length=25
+        )
+        copy_result = hosts.all.zos_copy(src=src_file, dest=dest)
+        verify_copy = hosts.all.shell(
+            cmd="cat \"//'{0}'\" > /dev/null 2>/dev/null".format(dest + '(PROFILE)'), 
+            executable="/usr/lpp/rsusr/ported/bin/bash"
+        )
+        for cp_res in copy_result.contacted.values():
+            assert cp_res.get('msg') is None
+        for v_cp in verify_copy.contacted.values():
+            assert v_cp.get('rc') == 0
+    finally:
+        hosts.all.zos_data_set(name=dest, state='absent')
 
 
 def test_copy_local_file_to_non_existing_pdse(ansible_zos_module):

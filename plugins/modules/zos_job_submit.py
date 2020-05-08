@@ -478,15 +478,6 @@ EXAMPLES = r"""
 """
 
 from ansible.module_utils.basic import AnsibleModule
-from pipes import quote
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingZOAUImport,
-)
-
-try:
-    from zoautil_py import Jobs
-except Exception:
-    Jobs = MissingZOAUImport()
 from time import sleep
 from os import chmod, path, remove
 from tempfile import NamedTemporaryFile
@@ -496,6 +487,12 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser
     BetterArgParser,
 )
 from stat import S_IEXEC, S_IREAD, S_IWRITE
+from ansible.module_utils.six import PY3
+
+if PY3:
+    from shlex import quote
+else:
+    from pipes import quote
 
 """time between job query checks to see if a job has completed, default 1 second"""
 POLLING_INTERVAL = 1
@@ -504,10 +501,18 @@ POLLING_COUNT = 60
 JOB_COMPLETION_MESSAGES = ["CC", "ABEND", "SEC"]
 
 
-def submit_pds_jcl(src):
+def submit_pds_jcl(src, module):
     """ A wrapper around zoautil_py Jobs submit to raise exceptions on failure. """
-    jobId = Jobs.submit(src)
-    if jobId is None:
+    rc, stdout, stderr = module.run_command(
+        'submit -j "//{0}"'.format(quote(src)), use_unsafe_shell=True
+    )
+    if rc != 0:
+        raise SubmitJCLError("SUBMIT JOB FAILED:  Stderr :" + stderr)
+    if "Error" in stderr or "Not accepted by JES" in stderr:
+        raise SubmitJCLError("SUBMIT JOB FAILED: " + stderr)
+    if stdout != "":
+        jobId = stdout.replace("\n", "").strip()
+    else:
         raise SubmitJCLError(
             "SUBMIT JOB FAILED: NO JOB ID IS RETURNED. PLEASE CHECK THE JCL."
         )
@@ -519,9 +524,7 @@ def submit_uss_jcl(src, module):
     rc, stdout, stderr = module.run_command(["submit", "-j", src])
     if rc != 0:
         raise SubmitJCLError("SUBMIT JOB FAILED:  Stderr :" + stderr)
-    if "Error" in stderr:
-        raise SubmitJCLError("SUBMIT JOB FAILED: " + stderr)
-    if "Not accepted by JES" in stderr:
+    if "Error" in stderr or "Not accepted by JES" in stderr:
         raise SubmitJCLError("SUBMIT JOB FAILED: " + stderr)
     if stdout != "":
         jobId = stdout.replace("\n", "").strip()
@@ -671,7 +674,7 @@ def run_module():
             check = data_set_name_pattern.fullmatch(src)
             if check:
                 if volume is None or volume == "":
-                    jobId = submit_pds_jcl(src)
+                    jobId = submit_pds_jcl(src, module)
                 else:
                     jobId = submit_jcl_in_volume(src, volume, module)
             else:

@@ -455,7 +455,7 @@ def run_module():
             changed = True
             result = dict(changed=changed, src=src, dest=dest, backup_file=backup_file)
         else:
-            result = dict(src=src, dest=dest, changed=changed)
+            result = dict(src=src, dest=dest, changed=changed, backup_file=backup_file)
     except Exception as e:
         module.fail_json(msg=repr(e), **result)
 

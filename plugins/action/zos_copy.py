@@ -77,6 +77,17 @@ def _is_member(data_set):
     return True
 
 
+def _is_data_set(data_set):
+    """Determine whether the input string specifies a data set name"""
+    try:
+        arg_def = dict(data_set=dict(arg_type='data_set'))
+        parser = better_arg_parser.BetterArgParser(arg_def)
+        parser.parse_args({'data_set': data_set})
+    except ValueError:
+        return False
+    return True
+
+
 def _create_temp_path_name():
     """Create a temporary path name"""
     current_date = time.strftime("D%y%m%d", time.localtime())
@@ -135,13 +146,16 @@ class ActionModule(ActionBase):
         owner = self._task.args.get('owner', None)
         group = self._task.args.get('group', None)
 
-        new_module_args = dict((k, v) for k, v in self._task.args.items())
-        is_pds = is_uss = False
+        new_module_args = self._task.args
+        is_pds = is_src_dir = False
         temp_path = real_path = None
         is_uss = '/' in dest if dest else None
+        is_mvs_dest = _is_data_set(dest) if dest else False
         
-        if src:            
-            is_pds = os.path.isdir(b_src)
+        if src:
+            src = os.path.realpath(src)
+            is_src_dir = os.path.isdir(src)
+            is_pds = is_src_dir and is_mvs_dest
             if content:
                 result['msg'] = "Either 'src' or 'content' can be provided; not both."
 
@@ -178,14 +192,8 @@ class ActionModule(ActionBase):
                     "Cannot specify 'mode', 'owner' or 'group' for MVS destination"
                 )
         if not remote_src:
-            if local_follow:
-                if not src:
-                    result['msg'] = "No path given for local symlink"
-                else:
-                    real_path = os.path.realpath(src)
-                    if not os.path.exists(real_path):
-                        result['msg'] = ("The local file pointed to by "
-                                         "symlink {0} does not exist".format(src))
+            if local_follow and not src:
+                result['msg'] = "No path given for local symlink"
 
             elif src and not os.path.exists(b_src):
                 result['msg'] = "The local file {0} does not exist".format(src)
@@ -194,19 +202,6 @@ class ActionModule(ActionBase):
                 result['msg'] = (
                     "The local file {0} does not have appropriate "
                     "read permisssion".format(src)
-                )
-            elif src and local_follow and not os.path.islink(src):
-                result['msg'] = "The provided source is not a symbolic link"
-
-            elif src and os.path.islink(b_src) and (not local_follow):
-                result['msg'] = (
-                    "Source is a symbolic link. If you would like to follow"
-                    " symbolic links, set 'local_follow' parameter to true"
-                )
-            elif is_pds and is_uss:
-                result['msg'] = (
-                    "Source is a directory, which can not be copied "
-                    "to a USS location"
                 )
         
         if result.get('msg'):
@@ -221,20 +216,20 @@ class ActionModule(ActionBase):
                 finally:
                     os.remove(local_content)
             else:
-                src = real_path or src
-                if is_pds:
+                if is_src_dir:
                     path, dirs, files = next(os.walk(src))
                     if dirs:
                         result['msg'] = "Subdirectory found inside source directory"
                         result.update(dict(src=src, dest=dest, changed=False, failed=True))
                         return result
-                    dir_size = sum(Path(path + "/" + f).stat().st_size for f in files)
-                    new_module_args['size'] = dir_size
+                    new_module_args['size'] = sum(
+                        Path(path + "/" + f).stat().st_size for f in files
+                    )
                 else:
                     if mode == 'preserve':
                         new_module_args['mode'] = '0{:o}'.format(stat.S_IMODE(os.stat(b_src).st_mode))
                     new_module_args['size'] = Path(src).stat().st_size
-                transfer_res = self._copy_to_remote(src, is_pds=is_pds)
+                transfer_res = self._copy_to_remote(src, is_dir=is_src_dir)
 
             temp_path = transfer_res.get("temp_path")
             if transfer_res.get("msg"):
@@ -246,7 +241,8 @@ class ActionModule(ActionBase):
                 is_pds=is_pds, 
                 copy_member=_is_member(dest),
                 src_member=_is_member(src),
-                temp_path=temp_path
+                temp_path=temp_path,
+                is_mvs_dest=is_mvs_dest
             )
         )
         copy_res = self._execute_module(
@@ -280,7 +276,7 @@ class ActionModule(ActionBase):
 
         return result
 
-    def _copy_to_remote(self, src, is_pds=False):
+    def _copy_to_remote(self, src, is_dir=False):
         """Copy a file or directory to the remote z/OS system """
         ansible_user = self._play_context.remote_user
         ansible_host = self._play_context.remote_addr
@@ -288,7 +284,7 @@ class ActionModule(ActionBase):
         cmd = ['sftp', ansible_user + '@' + ansible_host]
         stdin = "put -r {0} {1}".format(src, temp_path)
 
-        if is_pds:
+        if is_dir:
             base = os.path.basename(src)
             self._connection.exec_command("mkdir -p {0}/{1}".format(temp_path, base))
         else:

@@ -27,10 +27,34 @@ DUMMY DATA ---- LINE 006 ------
 DUMMY DATA ---- LINE 007 ------
 '''
 
+# LOCAL_SRC = "/etc/profile"
+# LOCAL_DIR = create_temp_local_dir()
+# REMOTE_SRC = ''
+
+
+# def create_temp_local_dir():
+#     temp_dir = tempfile.mkdtemp()
+#     for i in range(5):
+#         with open(temp_dir + '/' + 'file' + i, 'w') as infile:
+#             infile.write(DUMMY_DATA)
+#     return temp_dir
+
 
 def test_copy_local_file_to_non_existing_uss_file(ansible_zos_module):
-    pass
-
+    hosts = ansible_zos_module
+    dest_path = '/tmp/profile'
+    copy_res = hosts.all.zos_copy(
+        src='/etc/profile',
+        dest=dest_path
+    )
+    stat_res = hosts.all.stat(path=dest_path)
+    try:
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+        for result in stat_res.contacted.values():
+            assert result.get('stat').get('exists') is True
+    finally:
+        hosts.all.file(path=dest_path, state='absent')
 
 def test_copy_local_file_to_existing_uss_file(ansible_zos_module):
     pass
@@ -54,9 +78,9 @@ def test_copy_local_file_to_non_existing_sequential_data_set(ansible_zos_module)
         executable="/usr/lpp/rsusr/ported/bin/bash"
     )
     try:
-        for cp_res in copy_result.contacted.values(ansible_zos_module):
+        for cp_res in copy_result.contacted.values():
             assert cp_res.get('module_stderr') is None
-        for v_cp in verify_copy.contacted.values(ansible_zos_module):
+        for v_cp in verify_copy.contacted.values():
             assert v_cp.get('rc') == 0
     finally:
         os.remove(source_path)
@@ -79,10 +103,10 @@ def test_copy_local_file_to_existing_sequential_data_set(ansible_zos_module):
     )
     dest_path = '/tmp/TERRY.IMSV14.ADFSBASE'
     try:
-        for cp_res in copy_result.contacted.values(ansible_zos_module):
+        for cp_res in copy_result.contacted.values():
             assert cp_res.get('module_stderr') == False
             assert cp_res.get('changed') == True
-        for v_cp in verify_copy.constants.values(ansible_zos_module):
+        for v_cp in verify_copy.constants.values():
             assert v_cp.get('rc') == 0
             assert v_cp.get('stdout') != ""
         
@@ -110,9 +134,9 @@ def test_copy_local_file_to_existing_pdse_member(ansible_zos_module):
         executable="/usr/lpp/rsusr/ported/bin/bash"
     )
     try:
-        for cp_res in copy_result.contacted.values(ansible_zos_module):
+        for cp_res in copy_result.contacted.values():
             assert cp_res.get('module_stderr') == False
-        for v_cp in verify_copy.contacted.values(ansible_zos_module):
+        for v_cp in verify_copy.contacted.values():
             assert v_cp.get('rc') == 0
             assert v_cp.get('stdout') != ""
     finally:
@@ -141,9 +165,9 @@ def test_copy_local_dir_to_existing_pdse(ansible_zos_module):
         executable="/usr/lpp/rsusr/ported/bin/bash"
     )
     try:
-        for cp_res in copy_result.contacted.values(ansible_zos_module):
+        for cp_res in copy_result.contacted.values():
             assert cp_res.get('module_stderr') == False
-        for v_cp in verify_copy.contacted.values(ansible_zos_module):
+        for v_cp in verify_copy.contacted.values():
             assert v_cp.get('rc') == 0
     finally:
         shutil.rmtree(source_path)
@@ -167,9 +191,9 @@ def test_copy_local_dir_to_non_existing_pdse(ansible_zos_module):
         executable="/usr/lpp/rsusr/ported/bin/bash"
     )
     try:
-        for cp_res in copy_result.contacted.values(ansible_zos_module):
+        for cp_res in copy_result.contacted.values():
             assert cp_res.get('module_stderr') == False
-        for v_cp in verify_copy.contacted.values(ansible_zos_module):
+        for v_cp in verify_copy.contacted.values():
             assert v_cp.get('rc') == 0
     finally:
         shutil.rmtree(source_path)

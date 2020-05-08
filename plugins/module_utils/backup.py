@@ -121,6 +121,7 @@ def uss_file_backup(path, backup_name=None, compress=False):
         rc, out, err = module.run_command(bk_cmd)
         if rc:
             raise BackupError(err)
+        backup_name += ".tar"
     else:
         if os.path.isdir(abs_path):
             if os.path.exists(backup_name):
@@ -131,6 +132,7 @@ def uss_file_backup(path, backup_name=None, compress=False):
             copy2(abs_path, backup_name)
         else:
             copy2(abs_path, backup_name)
+
     return backup_name
 
 

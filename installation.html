@@ -84,7 +84,7 @@
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Installation</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#ansible-galaxy">Ansible Galaxy</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#private-galaxy-server">Private Galaxy server</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#automation-hub-and-private-galaxy-server">Automation Hub and Private Galaxy server</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#local-build">Local build</a></li>
 </ul>
 </li>
@@ -94,7 +94,9 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="plugins.html">Plugins</a></li>
 <li class="toctree-l1"><a class="reference internal" href="modules.html">Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="filters.html">Filters</a></li>
 <li class="toctree-l1"><a class="reference internal" href="playbooks.html">Playbooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="supplementary.html">Supplementary</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Community guides</span></p>
 <ul>
@@ -176,25 +178,37 @@
             
   <div class="section" id="installation">
 <h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
-<p>You have several options you may use to install the
-<strong>IBM z/OS Core Collection</strong>. These are Ansible Galaxy,
-Ansible Automation Hub, and a local build.</p>
+<p>You can install the <strong>IBM z/OS core collection</strong> using one of these options:
+Ansible Galaxy, Ansible Automation Hub, or a local build.</p>
 <p>For more information on installing collections, see <a class="reference external" href="https://docs.ansible.com/ansible/latest/user_guide/collections_using.html">using collections</a>.</p>
 <div class="section" id="ansible-galaxy">
 <h2>Ansible Galaxy<a class="headerlink" href="#ansible-galaxy" title="Permalink to this headline">¶</a></h2>
-<p>You can use the <a class="reference external" href="https://docs.ansible.com/ansible/latest/cli/ansible-galaxy.html">ansible-galaxy</a> command with the option <code class="docutils literal notranslate"><span class="pre">install</span></code> to
-install a collection on your system (control node) hosted in Galaxy.</p>
 <p>Galaxy enables you to quickly configure your automation project with content
-from the Ansible community. Galaxy provides prepackaged units of work known as
-collections.</p>
-<p>Here’s an example command for installing the <strong>IBM z/OS core collection</strong>:</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ ansible-galaxy collection install ibm.ibm_zos_core
+from the Ansible community.</p>
+<p>Galaxy provides prepackaged units of work known as collections. You can use the
+<a class="reference external" href="https://docs.ansible.com/ansible/latest/cli/ansible-galaxy.html">ansible-galaxy</a> command with the option <code class="docutils literal notranslate"><span class="pre">install</span></code> to install a collection on
+your system (control node) hosted in Galaxy. If you have installed a prior
+version, you must overwrite an existing collection with the <code class="docutils literal notranslate"><span class="pre">--force</span></code> option.</p>
+<p>Here are a few examples of installing the <strong>IBM z/OS core collection</strong>:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ ansible-galaxy collection install ibm.ibm_zos_core<span class="se">\</span>
+$ ansible-galaxy collection install -f ibm.ibm_zos_core
+$ ansible-galaxy collection install --force ibm.ibm_zos_core
+</pre></div>
+</div>
+<p>By default, the <a class="reference external" href="https://docs.ansible.com/ansible/latest/cli/ansible-galaxy.html">ansible-galaxy</a> command installs the latest available
+collection, but you can add a version identifier to install a specific version.
+Before installing a collection from Galaxy, review all the available versions.
+Periodically, new releases containing enhancements and features you might be
+interested in become available.</p>
+<p>Here’s an example command for installing the <strong>IBM z/OS core collection</strong> for
+a specific version.</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ ansible-galaxy collection install ibm.ibm_zos_core::1.0.0
 </pre></div>
 </div>
 <p>The collection installation progress will be output to the console. Note the
 location of the installation so that you can review other content included with
 the collection, such as the sample playbook. By default, collections are
-installed in <code class="docutils literal notranslate"><span class="pre">~/.ansible/collections</span></code>, see the sample output.</p>
+installed in <code class="docutils literal notranslate"><span class="pre">~/.ansible/collections</span></code>; see the sample output.</p>
 <div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>Process install dependency map
 Starting collection install process
 Installing <span class="s1">&#39;ibm.ibm_zos_core:1.0.0&#39;</span> to <span class="s1">&#39;/Users/user/.ansible/collections/ansible_collections/ibm/ibm_zos_core&#39;</span>
@@ -211,7 +225,8 @@ Installing <span class="s1">&#39;ibm.ibm_zos_core:1.0.0&#39;</span> to <span cla
 │                  ├── action/
 │                  ├── connection/
 │                  ├── module_utils/
-│                  └── modules/
+│                  ├── modules/
+│                  └── filter/
 </pre></div>
 </div>
 <p>You can use the <cite>-p</cite> option with <cite>ansible-galaxy</cite> to specify the installation
@@ -222,8 +237,8 @@ path, such as:</p>
 <p>For more information on installing collections with Ansible Galaxy,
 see <a class="reference external" href="https://docs.ansible.com/ansible/latest/user_guide/collections_using.html#installing-collections-with-ansible-galaxy">installing collections</a>.</p>
 </div>
-<div class="section" id="private-galaxy-server">
-<h2>Private Galaxy server<a class="headerlink" href="#private-galaxy-server" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="automation-hub-and-private-galaxy-server">
+<h2>Automation Hub and Private Galaxy server<a class="headerlink" href="#automation-hub-and-private-galaxy-server" title="Permalink to this headline">¶</a></h2>
 <p>Configuring access to a private Galaxy server follows the same instructions
 that you would use to configure your client to point to Automation Hub. When
 hosting a private Galaxy server or pointing to Hub, available content is not
@@ -232,11 +247,11 @@ always consistent with what is available on the community Galaxy server.</p>
 install a collection on your system (control node) hosted in Automation Hub
 or a private Galaxy server.</p>
 <p>By default, the <code class="docutils literal notranslate"><span class="pre">ansible-galaxy</span></code> command is configured to access
-<code class="docutils literal notranslate"><span class="pre">https://galaxy.ansible.com</span></code> as the Galaxy server when you install a
+<code class="docutils literal notranslate"><span class="pre">https://galaxy.ansible.com</span></code> as the server when you install a
 collection. The <cite>ansible-galaxy</cite> client can be configured to point to Hub or
 other servers, such as a privately running Galaxy server, by configuring the
 server list in the <code class="docutils literal notranslate"><span class="pre">ansible.cfg</span></code> file.</p>
-<p>Ansible searches for <code class="docutils literal notranslate"><span class="pre">ansible.cfg</span></code> in these locations in this order:</p>
+<p>Ansible searches for <code class="docutils literal notranslate"><span class="pre">ansible.cfg</span></code> in the following locations in this order:</p>
 <blockquote>
 <div><ul class="simple">
 <li><p>ANSIBLE_CONFIG (environment variable if set)</p></li>
@@ -248,7 +263,8 @@ server list in the <code class="docutils literal notranslate"><span class="pre">
 <p>To configure a Galaxy server list in the ansible.cfg file:</p>
 <blockquote>
 <div><ul class="simple">
-<li><p>Add the server_list option under the [galaxy] section to one or more server names.</p></li>
+<li><p>Add the server_list option under the [galaxy] section to one or more
+server names.</p></li>
 <li><p>Create a new section for each server name.</p></li>
 <li><p>Set the url option for each server name.</p></li>
 </ul>
@@ -257,26 +273,26 @@ server list in the <code class="docutils literal notranslate"><span class="pre">
 <blockquote>
 <div><ul class="simple">
 <li><p>Set the auth_url option for each server name.</p></li>
-<li><p>Set the API token for each server name. For more information on API tokens, see <a class="reference external" href="https://cloud.redhat.com/ansible/automation-hub/token/">Get API token from the version dropdown to copy your API token</a>.</p></li>
+<li><p>Set the API token for each server name. For more information on API tokens,
+see <a class="reference external" href="https://cloud.redhat.com/ansible/automation-hub/token/">Get API token from the version dropdown to copy your API token</a>.</p></li>
 </ul>
 </div></blockquote>
 <p>The following example shows a configuration for Automation Hub, a private
 running Galaxy server, and Galaxy:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">[</span><span class="nv">galaxy</span><span class="p p-Indicator">]</span>
-<span class="l l-Scalar l-Scalar-Plain">server_list = automation_hub, release_galaxy, private_galaxy</span>
+<span class="l l-Scalar l-Scalar-Plain">server_list = automation_hub, galaxy, private_galaxy</span>
 
 <span class="l l-Scalar l-Scalar-Plain">[galaxy_server.automation_hub]</span>
 <span class="l l-Scalar l-Scalar-Plain">url=https://cloud.redhat.com/api/automation-hub/</span>
 <span class="l l-Scalar l-Scalar-Plain">auth_url=https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/token</span>
-<span class="l l-Scalar l-Scalar-Plain">token=hub_token</span>
+<span class="l l-Scalar l-Scalar-Plain">token=&lt;hub_token&gt;</span>
 
-<span class="l l-Scalar l-Scalar-Plain">[galaxy_server.release_galaxy]</span>
+<span class="l l-Scalar l-Scalar-Plain">[galaxy_server.galaxy]</span>
 <span class="l l-Scalar l-Scalar-Plain">url=https://galaxy.ansible.com/</span>
-<span class="l l-Scalar l-Scalar-Plain">token=release_token</span>
 
 <span class="l l-Scalar l-Scalar-Plain">[galaxy_server.private_galaxy]</span>
 <span class="l l-Scalar l-Scalar-Plain">url=https://galaxy-dev.ansible.com/</span>
-<span class="l l-Scalar l-Scalar-Plain">token=private_token</span>
+<span class="l l-Scalar l-Scalar-Plain">token=&lt;private_token&gt;</span>
 </pre></div>
 </div>
 <p>For more configuration information, see
@@ -290,13 +306,10 @@ Git repository, build the collection archive, and install the collection. The
 <code class="docutils literal notranslate"><span class="pre">ansible-galaxy</span> <span class="pre">collection</span> <span class="pre">build</span></code> command packages the collection into an
 archive that can later be installed locally without having to use Hub or
 Galaxy.</p>
-<p>To build a collection from the git repository:</p>
+<p>To build a collection from the Git repository:</p>
 <blockquote>
 <div><ol class="arabic">
 <li><p>Clone the sample repository:</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ git clone git@github.com:ansible-collections/ibm_zos_core.git
-</pre></div>
-</div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <ul class="simple">

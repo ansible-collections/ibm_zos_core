@@ -93,7 +93,9 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="modules.html">Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="filters.html">Filters</a></li>
 <li class="toctree-l1"><a class="reference internal" href="playbooks.html">Playbooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="supplementary.html">Supplementary</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Community guides</span></p>
 <ul>
@@ -181,14 +183,14 @@ and expandable feature set.</p>
 <div class="section" id="action">
 <h2>Action<a class="headerlink" href="#action" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">normal</span></code>: A fork of Ansible <a class="reference external" href="https://github.com/ansible/ansible/blob/devel/lib/ansible/plugins/action/normal.py">normal.py</a> action plugin that is modified to allow a conditional shebang line in REXX modules.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">zos_job_submit</span></code>: Used to <a class="reference external" href="modules/zos_job_submit.html">submit a job</a> from the controller and optionally monitor for job completion.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">zos_ping</span></code>: A fork of Ansible <a class="reference external" href="https://github.com/ansible/ansible/blob/devel/lib/ansible/plugins/action/normal.py">normal.py</a> action plugin that is modified to allow a conditional shebang line in REXX modules.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">zos_job_submit</span></code>: Used to <a class="reference external" href="modules/zos_job_submit.html">submit a job</a> from the controller and optionally monitor the job completion.</p></li>
 </ul>
 </div>
 <div class="section" id="connection">
 <h2>Connection<a class="headerlink" href="#connection" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">zos_ssh</span></code>: Enables the Ansible controller to communicate to a z/OS target machine by using ssh, with the added support to transfer ASCII as EBCDIC when transferring REXX modules. This connection plugin was forked from the Ansible <a class="reference external" href="https://github.com/ansible/ansible/blob/devel/lib/ansible/plugins/connection/ssh.py">ssh.py</a> connection plugin.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">zos_ssh</span></code>: Enables the Ansible controller to communicate with a z/OS target machine by using SSH, with the added support to transfer ASCII as EBCDIC when transferring REXX modules. This connection plugin was forked from the Ansible <a class="reference external" href="https://github.com/ansible/ansible/blob/devel/lib/ansible/plugins/connection/ssh.py">ssh.py</a> connection plugin.</p></li>
 <li><p>For further reference, see the <a class="reference external" href="quickstart.html#z-os-connection-plugin">zos_ssh quickstart</a> guide.</p></li>
 </ul>
 </div>

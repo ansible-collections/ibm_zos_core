@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Modules &mdash; IBM z/OS core collection 1.0.0 documentation</title>
+  <title>Filters &mdash; IBM z/OS core collection 1.0.0 documentation</title>
   
 
   
@@ -35,8 +35,8 @@
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="zos_data_set – Manage data sets" href="modules/zos_data_set.html" />
-    <link rel="prev" title="Plugins" href="plugins.html" /> 
+    <link rel="next" title="Playbooks" href="playbooks.html" />
+    <link rel="prev" title="zos_tso_command – Execute TSO commands" href="modules/zos_tso_command.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -88,22 +88,8 @@
 <p class="caption"><span class="caption-text">Reference</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="plugins.html">Plugins</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Modules</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#module-reference">Module reference</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="modules/zos_data_set.html">zos_data_set – Manage data sets</a></li>
-<li class="toctree-l3"><a class="reference internal" href="modules/zos_encode.html">zos_encode – Perform encoding operations.</a></li>
-<li class="toctree-l3"><a class="reference internal" href="modules/zos_fetch.html">zos_fetch – Fetch data from z/OS</a></li>
-<li class="toctree-l3"><a class="reference internal" href="modules/zos_job_output.html">zos_job_output – Display job output</a></li>
-<li class="toctree-l3"><a class="reference internal" href="modules/zos_job_query.html">zos_job_query – Query job status</a></li>
-<li class="toctree-l3"><a class="reference internal" href="modules/zos_job_submit.html">zos_job_submit – Submit JCL</a></li>
-<li class="toctree-l3"><a class="reference internal" href="modules/zos_operator.html">zos_operator – Execute operator command</a></li>
-<li class="toctree-l3"><a class="reference internal" href="modules/zos_operator_action_query.html">zos_operator_action_query – Display messages requiring action</a></li>
-<li class="toctree-l3"><a class="reference internal" href="modules/zos_tso_command.html">zos_tso_command – Execute TSO commands</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="filters.html">Filters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">Modules</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Filters</a></li>
 <li class="toctree-l1"><a class="reference internal" href="playbooks.html">Playbooks</a></li>
 <li class="toctree-l1"><a class="reference internal" href="supplementary.html">Supplementary</a></li>
 </ul>
@@ -164,14 +150,14 @@
     
       <li><a href="index.html">Docs</a> &raquo;</li>
         
-      <li>Modules</li>
+      <li>Filters</li>
     
     
       <li class="wy-breadcrumbs-aside">
         
             
             
-              <a href="https://github.com/ansible-collections/ibm_zos_core/blob/master/docs/source/modules.rst" class="fa fa-github"> Edit on GitHub</a>
+              <a href="https://github.com/ansible-collections/ibm_zos_core/blob/master/docs/source/filters.rst" class="fa fa-github"> Edit on GitHub</a>
             
           
         
@@ -185,31 +171,30 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="modules">
-<h1>Modules<a class="headerlink" href="#modules" title="Permalink to this headline">¶</a></h1>
-<p>The IBM z/OS core collection contains modules that can be used in a playbook to
-automate tasks on z/OS. Ansible executes each module on the target node and
-returns the result back to the controller. While different modules perform
-different tasks, their interfaces and responses follow similar patterns.</p>
-<div class="section" id="module-reference">
-<h2>Module reference<a class="headerlink" href="#module-reference" title="Permalink to this headline">¶</a></h2>
-<p>Reference material for each module contains documentation on the accepted
-parameters and their expected values.</p>
-<div class="toctree-wrapper compound">
-<p class="caption"><span class="caption-text">Contents:</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="modules/zos_data_set.html">zos_data_set – Manage data sets</a></li>
-<li class="toctree-l1"><a class="reference internal" href="modules/zos_encode.html">zos_encode – Perform encoding operations.</a></li>
-<li class="toctree-l1"><a class="reference internal" href="modules/zos_fetch.html">zos_fetch – Fetch data from z/OS</a></li>
-<li class="toctree-l1"><a class="reference internal" href="modules/zos_job_output.html">zos_job_output – Display job output</a></li>
-<li class="toctree-l1"><a class="reference internal" href="modules/zos_job_query.html">zos_job_query – Query job status</a></li>
-<li class="toctree-l1"><a class="reference internal" href="modules/zos_job_submit.html">zos_job_submit – Submit JCL</a></li>
-<li class="toctree-l1"><a class="reference internal" href="modules/zos_operator.html">zos_operator – Execute operator command</a></li>
-<li class="toctree-l1"><a class="reference internal" href="modules/zos_operator_action_query.html">zos_operator_action_query – Display messages requiring action</a></li>
-<li class="toctree-l1"><a class="reference internal" href="modules/zos_tso_command.html">zos_tso_command – Execute TSO commands</a></li>
+  <div class="section" id="filters">
+<h1>Filters<a class="headerlink" href="#filters" title="Permalink to this headline">¶</a></h1>
+<p>Filters in Ansible are from Jinja2, and are used to transform data inside
+a template expression. The templates operate on the Ansible controller, and not
+on the target host. Therefore, filters execute on the controller as they augment
+the data locally.</p>
+<p>Jinja2 ships with many filters as does Ansible, and also allows users to add
+their own custom filters.</p>
+<p>The <strong>IBM z/OS core collection</strong> includes filters and their usage in sample
+playbooks. Unlike collections that can be identified at the top level using the
+collections keyword, filters must always be specified in the playbook with their
+fully qualified name even when included in a collection.</p>
+<p>Filters usage follows this pattern:</p>
+<blockquote>
+<div><div class="admonition note">
+<p class="admonition-title">Note</p>
+<ul class="simple">
+<li><p>&lt;namespace&gt;.&lt;collection&gt;.&lt;filter&gt;</p></li>
+<li><p>ibm.ibm_zos_core.filter_wtor_messages(‘IEE094D SPECIFY OPERAND’)</p></li>
 </ul>
 </div>
-</div>
+</div></blockquote>
+<p>For more details on filters, review the filters and documentation under
+the <a class="reference external" href="https://github.com/ansible-collections/ibm_zos_core/tree/master/plugins/filter/">filter</a> directory included in the collection.</p>
 </div>
 
 
@@ -220,10 +205,10 @@ parameters and their expected values.</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="modules/zos_data_set.html" class="btn btn-neutral float-right" title="zos_data_set – Manage data sets" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="playbooks.html" class="btn btn-neutral float-right" title="Playbooks" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="plugins.html" class="btn btn-neutral float-left" title="Plugins" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="modules/zos_tso_command.html" class="btn btn-neutral float-left" title="zos_tso_command – Execute TSO commands" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   

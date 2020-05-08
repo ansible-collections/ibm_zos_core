@@ -88,7 +88,9 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="plugins.html">Plugins</a></li>
 <li class="toctree-l1"><a class="reference internal" href="modules.html">Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="filters.html">Filters</a></li>
 <li class="toctree-l1"><a class="reference internal" href="playbooks.html">Playbooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="supplementary.html">Supplementary</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Community guides</span></p>
 <ul>
@@ -170,11 +172,17 @@
             
   <div class="section" id="ibm-z-os-core-collection">
 <h1>IBM z/OS core collection<a class="headerlink" href="#ibm-z-os-core-collection" title="Permalink to this headline">¶</a></h1>
-<p>The <strong>IBM z/OS core collection</strong>, also represented as <strong>ibm_zos_core</strong> in this
-document, is part of the broader offering
-<strong>Red Hat® Ansible Certified Content for IBM Z</strong>. IBM z/OS core collection
-supports tasks such as creating data sets, submitting jobs, querying jobs, and
-retrieving job output.</p>
+<p>The <strong>IBM z/OS core collection</strong>, also represented as <strong>ibm_zos_core</strong>
+in this document, is part of the broader offering <strong>Red Hat® Ansible
+Certified Content for IBM Z</strong>. IBM z/OS core collection supports tasks
+such as creating data sets, submitting jobs, querying jobs,
+retrieving job output, encoding data sets, fetching data sets, operator
+commands, TSO commands, ping and querying operator actions.</p>
+<p>The <strong>IBM z/OS core collection</strong> serves as a dependency for other collections
+under the <strong>Red Hat® Ansible Certified Content for IBM Z</strong> umbrella and
+works closely with offerings such as <a class="reference external" href="https://github.com/ansible-collections/ibm_zos_ims">IBM z/OS IMS collection</a> to deliver
+a solution that will enable you to automate tasks on z/OS subsystems such
+as IMS.</p>
 </div>
 <div class="section" id="red-hat-ansible-certified-content-for-ibm-z">
 <h1>Red Hat Ansible Certified Content for IBM Z<a class="headerlink" href="#red-hat-ansible-certified-content-for-ibm-z" title="Permalink to this headline">¶</a></h1>
@@ -191,8 +199,8 @@ Galaxy as community supported and Automation Hub with enterprise support.</p>
 <div class="section" id="features">
 <h1>Features<a class="headerlink" href="#features" title="Permalink to this headline">¶</a></h1>
 <p>The IBM z/OS core collection includes <a class="reference external" href="https://github.com/ansible-collections/ibm_zos_core/tree/master/plugins/connection/">connection plugins</a>,
-<a class="reference external" href="https://github.com/ansible-collections/ibm_zos_core/tree/master/plugins/action/">action plugins</a>, <a class="reference external" href="https://github.com/ansible-collections/ibm_zos_core/tree/master/plugins/modules/">modules</a>, <a class="reference external" href="https://github.com/ansible-collections/ibm_zos_core/tree/master/playbooks/">sample playbooks</a> and ansible-doc to automate
-tasks on z/OS.</p>
+<a class="reference external" href="https://github.com/ansible-collections/ibm_zos_core/tree/master/plugins/action/">action plugins</a>, <a class="reference external" href="https://github.com/ansible-collections/ibm_zos_core/tree/master/plugins/modules/">modules</a>, <a class="reference external" href="https://github.com/ansible-collections/ibm_zos_core/tree/master/playbooks/">sample playbooks</a>, <a class="reference external" href="https://github.com/ansible-collections/ibm_zos_core/tree/master/plugins/filter/">filters</a> and
+ansible-doc to automate tasks on z/OS.</p>
 </div>
 <div class="section" id="copyright">
 <h1>Copyright<a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h1>
@@ -209,7 +217,7 @@ collection are licensed under <a class="reference external" href="https://openso
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="installation.html#ansible-galaxy">Ansible Galaxy</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation.html#private-galaxy-server">Private Galaxy server</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#automation-hub-and-private-galaxy-server">Automation Hub and Private Galaxy server</a></li>
 <li class="toctree-l2"><a class="reference internal" href="installation.html#local-build">Local build</a></li>
 </ul>
 </li>
@@ -232,19 +240,29 @@ collection are licensed under <a class="reference external" href="https://openso
 <li class="toctree-l1"><a class="reference internal" href="modules.html">Modules</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="modules.html#module-reference">Module reference</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="modules/zos_data_set.html">zos_data_set – Manage data sets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules/zos_encode.html">zos_encode – Perform encoding operations.</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules/zos_fetch.html">zos_fetch – Fetch data from z/OS</a></li>
 <li class="toctree-l3"><a class="reference internal" href="modules/zos_job_output.html">zos_job_output – Display job output</a></li>
 <li class="toctree-l3"><a class="reference internal" href="modules/zos_job_query.html">zos_job_query – Query job status</a></li>
 <li class="toctree-l3"><a class="reference internal" href="modules/zos_job_submit.html">zos_job_submit – Submit JCL</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules/zos_operator.html">zos_operator – Execute operator command</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules/zos_operator_action_query.html">zos_operator_action_query – Display messages requiring action</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules/zos_tso_command.html">zos_tso_command – Execute TSO commands</a></li>
 </ul>
 </li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="filters.html">Filters</a></li>
 <li class="toctree-l1"><a class="reference internal" href="playbooks.html">Playbooks</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="playbooks.html#playbook-documentation">Playbook Documentation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="playbooks.html#sample-configuration-and-setup">Sample Configuration and Setup</a></li>
 <li class="toctree-l2"><a class="reference internal" href="playbooks.html#inventory">Inventory</a></li>
 <li class="toctree-l2"><a class="reference internal" href="playbooks.html#group-vars">Group_vars</a></li>
 <li class="toctree-l2"><a class="reference internal" href="playbooks.html#run-the-playbook">Run the playbook</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="supplementary.html">Supplementary</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="supplementary.html#encode">Encode</a></li>
 </ul>
 </li>
 </ul>

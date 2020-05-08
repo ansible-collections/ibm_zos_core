@@ -94,7 +94,9 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="plugins.html">Plugins</a></li>
 <li class="toctree-l1"><a class="reference internal" href="modules.html">Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="filters.html">Filters</a></li>
 <li class="toctree-l1"><a class="reference internal" href="playbooks.html">Playbooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="supplementary.html">Supplementary</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Community guides</span></p>
 <ul>
@@ -176,14 +178,13 @@
             
   <div class="section" id="quickstart">
 <h1>Quickstart<a class="headerlink" href="#quickstart" title="Permalink to this headline">¶</a></h1>
-<p>After you have installed the collection outlined in the  <a class="reference external" href="installation.html">installation</a>
-guide, you will want to access the collection and ansible-doc covered in the
-following topics.</p>
+<p>After you install the collection outlined in the  <a class="reference external" href="installation.html">installation</a> guide, you
+can access the collection and the ansible-doc covered in the following topics:</p>
 <div class="section" id="ibm-zos-core">
 <h2>ibm_zos_core<a class="headerlink" href="#ibm-zos-core" title="Permalink to this headline">¶</a></h2>
-<p>After the collection is installed, you can access collection content for a
-playbook by referencing the namespace <code class="docutils literal notranslate"><span class="pre">ibm</span></code> and collection’s fully qualified
-name <code class="docutils literal notranslate"><span class="pre">ibm_zos_core</span></code>, for example:</p>
+<p>After the collection is installed, you can access the collection content for a
+playbook by referencing the namespace <code class="docutils literal notranslate"><span class="pre">ibm</span></code> and the collection’s fully
+qualified name <code class="docutils literal notranslate"><span class="pre">ibm_zos_core</span></code>. For example:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span> <span class="nt">hosts</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">all</span>
 
 <span class="nt">tasks</span><span class="p">:</span>
@@ -192,7 +193,7 @@ name <code class="docutils literal notranslate"><span class="pre">ibm_zos_core</
     <span class="nt">job_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">HELLO</span>
 </pre></div>
 </div>
-<p>In Ansible 2.9, the <code class="docutils literal notranslate"><span class="pre">collections</span></code> keyword was added and reduces the need
+<p>In Ansible 2.9, the <code class="docutils literal notranslate"><span class="pre">collections</span></code> keyword was added to reduce the need
 to refer to the collection repeatedly. For example, you can use the
 <code class="docutils literal notranslate"><span class="pre">collections</span></code> keyword in your playbook:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span> <span class="nt">hosts</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">all</span>
@@ -208,13 +209,13 @@ to refer to the collection repeatedly. For example, you can use the
 </div>
 <div class="section" id="z-os-connection-plugin">
 <h2>z/OS Connection Plugin<a class="headerlink" href="#z-os-connection-plugin" title="Permalink to this headline">¶</a></h2>
-<p>Since EBCDIC encoding is used on z/OS, custom plugins are needed to determine
-the correct transport method when targeting a z/OS system.</p>
-<p>The zos_ssh.py connection plugin is a fork of the default ssh.py plugin with
-added functionality for checking if a module is written in REXX.</p>
-<p>Since REXX scripts need to be in EBCDIC encoding to run, they need to be
+<p>Since EBCDIC encoding is used on z/OS, custom plugins are required to determine
+the correct transport method when targeting a z/OS system. The zos_ssh.py
+connection plugin is a fork of the default ssh.py plugin with the added
+functionality to check if a module is written in REXX.</p>
+<p>Since REXX scripts are required be in EBCDIC encoding to run, they must be
 handled differently during transfer. If the string
-<code class="docutils literal notranslate"><span class="pre">__ANSIBLE_ENCODE_EBCDIC__</span></code> is found on the first line of the module, the
+<code class="docutils literal notranslate"><span class="pre">__ANSIBLE_ENCODE_EBCDIC__</span></code> is found in the first line of the module, the
 module is transferred to the target system using SCP. Otherwise, SFTP is used.
 SCP treats files as text, automatically encoding as EBCDIC at transfer time.
 SFTP treats files as binary, performing no encoding changes.</p>
@@ -237,7 +238,7 @@ RETURN <span class="m">0</span>
 similar to a UNIX, or UNIX-like operating system man page (manual page). This
 documentation can be accessed from the command line by using the
 <code class="docutils literal notranslate"><span class="pre">ansible-doc</span></code> command.</p>
-<p>Here’s how to use the <code class="docutils literal notranslate"><span class="pre">ansible-doc</span></code> command after you have installed the
+<p>Here’s how to use the <code class="docutils literal notranslate"><span class="pre">ansible-doc</span></code> command after you install the
 <strong>IBM z/OS core collection</strong>: <code class="docutils literal notranslate"><span class="pre">ansible-doc</span> <span class="pre">ibm.ibm_zos_core.zos_data_set</span></code></p>
 <div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>&gt; ZOS_DATA_SET    <span class="o">(</span>/Users/user/.ansible/collections/ansible_collections/ibm/ibm_zos_core/plugins/modules/zos_data_set.py<span class="o">)</span>
 

@@ -12,9 +12,9 @@ and expandable feature set.
 Action
 ------
 
-* ``normal``: A fork of Ansible `normal.py`_ action plugin that is modified to allow a conditional shebang line in REXX modules.
+* ``zos_ping``: A fork of Ansible `normal.py`_ action plugin that is modified to allow a conditional shebang line in REXX modules.
 
-* ``zos_job_submit``: Used to `submit a job`_ from the controller and optionally monitor for job completion.
+* ``zos_job_submit``: Used to `submit a job`_ from the controller and optionally monitor the job completion.
 
 .. _normal.py:
    https://github.com/ansible/ansible/blob/devel/lib/ansible/plugins/action/normal.py
@@ -24,7 +24,7 @@ Action
 Connection
 ----------
 
-* ``zos_ssh``: Enables the Ansible controller to communicate to a z/OS target machine by using ssh, with the added support to transfer ASCII as EBCDIC when transferring REXX modules. This connection plugin was forked from the Ansible `ssh.py`_ connection plugin.
+* ``zos_ssh``: Enables the Ansible controller to communicate with a z/OS target machine by using SSH, with the added support to transfer ASCII as EBCDIC when transferring REXX modules. This connection plugin was forked from the Ansible `ssh.py`_ connection plugin.
 * For further reference, see the `zos_ssh quickstart`_ guide.
 
 .. _ssh.py:

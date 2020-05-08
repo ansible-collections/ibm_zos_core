@@ -6,14 +6,14 @@ Requirements
 ============
 
 A control node is any machine with Ansible installed. From the control node,
-you can run commands and playbooks from a laptop, desktop, or server machine.
-However, you cannot run **IBM z/OS core collection** on a Windows machine.
+you can run commands and playbooks from a laptop, desktop, or server.
+However, you cannot run **IBM z/OS core collection** on a Windows system.
 
-A managed node is often referred to as a target node, or host, and is the node
-that is managed by Ansible. Ansible does not need to be installed on a managed
-node, but SSH must be enabled.
+A managed node is often referred to as a target node, or host, and it is managed
+by Ansible. Ansible need not be installed on a managed node, but SSH must be
+enabled.
 
-The following nodes require specific versions of software:
+The nodes listed below require these specific versions of software:
 
 Control node
 ------------
@@ -37,8 +37,9 @@ Managed node
 * `z/OS`_: V02.02.00 or later
 * `IBM Z Open Automation Utilities`_ (ZOAU)
 
-   * IBM z/OS core collections are dependent on specific versions of ZOAU,
-     review the `release notes`_ to see which version of ZOAU is required.
+   * IBM z/OS core collections are dependent on specific versions of ZOAU.
+     For information about the required version of ZOAU, review the
+     `release notes`_.
 * `z/OS OpenSSH`_
 
 .. _Python on z/OS:
@@ -59,7 +60,7 @@ Managed node
 Python on z/OS
 --------------
 
-If the Ansible target is z/OS, you must install a python distribution ported
+If the Ansible target is z/OS, you must install a Python distribution ported
 for this platform. Rocket Software is currently the preferred version for z/OS.
 
 **Installation**
@@ -67,12 +68,12 @@ for this platform. Rocket Software is currently the preferred version for z/OS.
 * Visit the `Rocket Software homepage`_ and create a required account in the
   `Rocket Customer Portal`_.
 * Click Downloads on the top left portion the page.
-* Select the category z/OpenSource on left side panel.
+* Select the category z/OpenSource on the left panel.
 * Scroll and select Python.
-* Download the binaries, installations files, and the README.ZOS onto an x86
+* Download the binaries, installation files, and the README.ZOS onto an x86
   machine.
 * Transfer the zipped tarball (tar.gz) file to the target z/OS system and
-  extract it according the instructions in the installation files.
+  extract it according to the instructions in the installation files.
 * Follow the additional setup instructions as described in the README.ZOS file.
 
 .. _Rocket Software homepage:
@@ -92,7 +93,7 @@ in the scripting language of your choice.
 **Installation**
 
 * For the ZOAU FMID, program directory, fix list, latest PTF, installation
-  and configuration, refer to the ZOAU `product page`_.
+  and configuration instructions, refer to the ZOAU `product page`_.
 
 .. _product page:
    https://www.ibm.com/support/knowledgecenter/en/SSKFYE_1.0.0/welcome_zoautil.html

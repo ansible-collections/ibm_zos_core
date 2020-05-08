@@ -19,22 +19,41 @@ help:
 .PHONY: help Makefile
 
 clean:
-	rm -rf build
-	echo "Deleted directory build/"
+	@rm -rf build
+	@echo "Deleted directory 'build/'."
 
-	rm -rf source/modules
-	echo "Deleted directory source/modules"
-	echo "Completed HTML text generation, run 'make ibm_zos_doc'"
-ibm_zos_doc:
-	mkdir build
-	mkdir -p source/modules
-	mv ../plugins/modules/__init__.py ../plugins/modules/__init__.py.skip
-	ansible-doc-extractor --template templates/module.rst.j2 source/modules ../plugins/modules/*.py
-	echo "Completed restructured text generation, run 'make html'"
-	mv ../plugins/modules/__init__.py.skip ../plugins/modules/__init__.py
+	@rm -rf source/modules
+	@echo "Deleted directory source/modules."
+
+	@if test -e ../plugins/modules/__init__.py.skip; \
+	then mv -f ../plugins/modules/__init__.py.skip ../plugins/modules/__init__.py; \
+	fi
+	@echo "Reset '../plugins/modules/__init__.py'"
+
+	@echo "Completed cleanup, run 'make module_doc'."
+
+module_doc:
+	@mkdir build
+	@echo "Make build directory for Sphinx generated HTML."
+
+	@mkdir -p source/modules
+	@echo "Make source/modules for module RST generated doc."
+
+	@mv ../plugins/modules/__init__.py ../plugins/modules/__init__.py.skip
+	@echo "Move file '../plugins/modules/__init__.py' to a tmp location to avoid failure'"
+
+	@ansible-doc-extractor --template templates/module.rst.j2 source/modules ../plugins/modules/*.py
+	@echo "Extract module ansible doc from '../plugins/modules/' into 'source/modules'"
+
+	@if test -e ../plugins/modules/__init__.py.skip; \
+	then mv -f ../plugins/modules/__init__.py.skip ../plugins/modules/__init__.py; \
+	fi
+	@echo "Reset '../plugins/modules/__init__.py'"
+
+	@echo "Completed restructured text generation, run 'make html'"
 
 # Catch-all target: route all unknown targets to Sphinx using the new
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
 %: Makefile
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
-	 echo "Completed HTML text generation, run 'make view'"
+	@echo "Completed HTML text generation, run 'make view'"

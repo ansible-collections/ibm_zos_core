@@ -105,6 +105,8 @@ options:
 notes:
   - All data sets are always assumed to be cataloged. If an uncataloged data
     set needs to be encoded, it should be cataloged first.
+  - For supported character sets used to encode data, refer to
+    U(https://ansible-collections.github.io/ibm_zos_core/supplementary.html#encode)
 """
 
 EXAMPLES = r"""
@@ -427,15 +429,12 @@ def run_module():
 
         # Check if the dest is required to be backup before conversion
         if backup:
-            try:
-                if is_uss_dest:
-                    backup_file = zos_backup.uss_file_backup(
-                        dest, backup_file, backup_compress
-                    )
-                if is_mvs_dest:
-                    backup_file = zos_backup.mvs_file_backup(dest, backup_file)
-            except Exception:
-                backup_file = None
+            if is_uss_dest:
+                backup_file = zos_backup.uss_file_backup(
+                    dest, backup_file, backup_compress
+                )
+            if is_mvs_dest:
+                backup_file = zos_backup.mvs_file_backup(dest, backup_file)
             result["backup_file"] = backup_file
 
         if is_uss_src and is_uss_dest:
@@ -456,7 +455,7 @@ def run_module():
             changed = True
             result = dict(changed=changed, src=src, dest=dest, backup_file=backup_file)
         else:
-            result = dict(src=src, dest=dest, changed=changed)
+            result = dict(src=src, dest=dest, changed=changed, backup_file=backup_file)
     except Exception as e:
         module.fail_json(msg=repr(e), **result)
 

@@ -148,7 +148,7 @@ class EncodeUtils(object):
         size = str(space_u * 2) + "K"
         hlq = Datasets.hlq()
         temp_ps = Datasets.temp_name(hlq)
-        rc = Datasets.create(temp_ps, "SEQ", size, "FB", "", reclen)
+        rc = Datasets.create(temp_ps, "SEQ", size, "VB", "", reclen)
         if rc:
             raise OSError("Failed when allocating temporary sequential data set!")
         return temp_ps

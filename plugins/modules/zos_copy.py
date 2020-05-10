@@ -1052,6 +1052,25 @@ class CopyUtil(object):
         return hash_digest.hexdigest()
 
     @staticmethod
+    def extract_dsname(data_set):
+        result = ""
+        for c in data_set:
+            if c == '(':
+                break
+            result += c
+        return result
+
+    @staticmethod
+    def extract_member_name(data_set):
+        start = data_set.find('(')
+        member = ""
+        for i in range(start+1, len(data_set)):
+            if data_set[i] == ')':
+                break
+            member += data_set[i]
+        return member
+
+    @staticmethod
     def cleanup(src):
         """Remove the file or directory specified by path 
         
@@ -1160,9 +1179,9 @@ def run_module():
         # in the form DATA.SET.NAME(MEMBER). When this is the case, extract the 
         # actual name of the data set.
         # ********************************************************************
-        dest_name = dest[:dest.rfind('(')] if copy_member else dest
-        src_name = src[:src.rfind('(')] if src_member else src
-        member_name = src[src.rfind('(')+1:src.rfind(')')] if src_member else None
+        dest_name = CopyUtil.extract_dsname(dest)
+        src_name = CopyUtil.extract_dsname(src)
+        member_name = CopyUtil.extract_member_name(src) if src_member else None
 
         backup_path = None
         conv_path = None
@@ -1200,7 +1219,7 @@ def run_module():
             else:
                 src_ds_utils = data_set_utils.DataSetUtils(module, src_name)
                 if src_ds_utils.data_set_exists():
-                    if src_member and not src_ds_utils.data_set_member_exists(member_name):
+                    if src_member is True and not src_ds_utils.data_set_member_exists(member_name):
                         raise NonExistentSourceError(src)
                     src_ds_type = src_ds_utils.get_data_set_type()
                     src_ds_vol = src_ds_utils.get_data_set_volume()

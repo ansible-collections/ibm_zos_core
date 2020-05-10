@@ -445,19 +445,116 @@ def test_copy_uss_file_to_non_existing_pdse_member(ansible_zos_module):
 
 
 def test_copy_uss_file_to_existing_pdse_member(ansible_zos_module):
-    pass
+    hosts = ansible_zos_module
+    dest = 'USER.TEST.PDSE.FUNCTEST'
+    dest_path = 'USER.TEST.PDSE.FUNCTEST(DATA)'
+    src_file = '/etc/profile'
+    try:
+        hosts.all.zos_data_set(
+            name=dest, type='pdse', size='5M', format='fba', record_length=25
+        )
+        hosts.all.zos_data_set(
+            name=dest_path, type='MEMBER', replace='yes'
+        )
+        copy_result = hosts.all.zos_copy(
+            src=src_file, 
+            dest=dest_path,
+            remote_src=True
+        )
+        verify_copy = hosts.all.shell(
+            cmd="cat \"//'{}'\" > /dev/null 2>/dev/null".format(dest_path), 
+            executable=SHELL_EXECUTABLE
+        )
+        for cp_res in copy_result.contacted.values():
+            assert cp_res.get('msg') is None
+        for v_cp in verify_copy.contacted.values():
+            assert v_cp.get('rc') == 0
+    finally:
+        hosts.all.zos_data_set(name=dest, state='absent')
 
 
 def test_copy_uss_dir_to_existing_pdse(ansible_zos_module):
-    pass
+    hosts = ansible_zos_module
+    src_dir = '/tmp/testdir'
+    dest = 'USER.TEST.PDSE.FUNCTEST'
+    try:
+        hosts.all.zos_data_set(
+            name=dest, type='pdse', size='5M', format='fba', record_length=25
+        )
+        hosts.all.file(path=src_dir, state='directory')
+        for i in range(5):
+            hosts.all.file(path=src_dir + '/' + 'file' + str(i), state='touch')
+
+        copy_res = hosts.all.zos_copy(
+            src=src_dir,
+            dest=dest,
+            remote_src=True
+        )
+        verify_copy = hosts.all.shell(
+            cmd="cat \"//'{}'\" > /dev/null 2>/dev/null".format(dest + "(FILE2)"), 
+            executable=SHELL_EXECUTABLE
+        )
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+        for result in verify_copy.contacted.values():
+            assert result.get('rc') == 0
+    finally:
+        hosts.all.file(path=src_dir, state='absent')
+        hosts.all.zos_data_set(name=dest, state='absent')
 
 
 def test_copy_uss_dir_to_non_existing_pdse(ansible_zos_module):
-    pass
+    hosts = ansible_zos_module
+    src_dir = '/tmp/testdir'
+    dest = 'USER.TEST.PDSE.FUNCTEST'
+    try:
+        hosts.all.file(path=src_dir, state='directory')
+        for i in range(5):
+            hosts.all.file(path=src_dir + '/' + 'file' + str(i), state='touch')
+
+        copy_res = hosts.all.zos_copy(
+            src=src_dir,
+            dest=dest,
+            remote_src=True
+        )
+        verify_copy = hosts.all.shell(
+            cmd="cat \"//'{}'\" > /dev/null 2>/dev/null".format(dest + "(FILE2)"), 
+            executable=SHELL_EXECUTABLE
+        )
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+        for result in verify_copy.contacted.values():
+            assert result.get('rc') == 0
+    finally:
+        hosts.all.file(path=src_dir, state='absent')
+        hosts.all.zos_data_set(name=dest, state='absent')
 
 
 def test_copy_ps_to_existing_uss_file(ansible_zos_module):
-    pass
+    hosts = ansible_zos_module
+    src_ds = 'IMSTESTL.IMS01.DDCHKPT'
+    dest = '/tmp/ddchkpt'
+    try:
+        hosts.all.file(path=dest, state='touch')
+        copy_res = hosts.all.zos_copy(
+            src=src_ds,
+            dest=dest,
+            remote_src=True
+        )
+        stat_res = hosts.all.stat(path=dest)
+        verify_copy = hosts.all.shell(
+            cmd="cat {0}".format(dest), 
+            executable=SHELL_EXECUTABLE
+        )
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+        for result in stat_res.contacted.values():
+            assert result.get('stat').get('exists') is True
+        for result in verify_copy.contacted.values():
+            assert result.get('rc') == 0
+            assert result.get('stdout') != ""
+    finally:
+        hosts.all.file(path=dest, state='absent')
 
 
 def test_copy_ps_to_non_existing_uss_file(ansible_zos_module):
@@ -677,4 +774,44 @@ def test_copy_uss_file_to_pds_member_convert_encoding(ansible_zos_module):
 
 
 def test_ensure_tmp_cleanup(ansible_zos_module):
+    pass
+
+
+def test_backup_uss_file_default_backup_path(ansible_zos_module):
+    pass
+
+
+def test_backup_sequential_data_set_default_backup_path(ansible_zos_module):
+    pass
+
+
+def test_backup_pds_default_backup_path(ansible_zos_module):
+    pass
+
+
+def test_backup_pdse_default_backup_path(ansible_zos_module):
+    pass
+
+
+def test_backup_vsam_default_backup_path(ansible_zos_module):
+    pass
+
+
+def test_backup_uss_file_user_backup_path(ansible_zos_module):
+    pass
+
+
+def test_backup_sequential_data_set_user_backup_path(ansible_zos_module):
+    pass
+
+
+def test_backup_pds_user_backup_path(ansible_zos_module):
+    pass
+
+
+def test_backup_pdse_user_backup_path(ansible_zos_module):
+    pass
+
+
+def test_backup_vsam_user_backup_path(ansible_zos_module):
     pass

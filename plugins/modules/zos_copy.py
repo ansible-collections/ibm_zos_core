@@ -1053,6 +1053,14 @@ class CopyUtil(object):
 
     @staticmethod
     def extract_dsname(data_set):
+        """Extract the actual name of the data set from a given input source
+        
+        Arguments:
+            data_set {str} -- Input data set name
+
+        Returns:
+            {str} -- The actual name of the data set
+        """
         result = ""
         for c in data_set:
             if c == '(':
@@ -1062,6 +1070,14 @@ class CopyUtil(object):
 
     @staticmethod
     def extract_member_name(data_set):
+        """Extract the member name from a given input source
+        
+        Arguments:
+            data_set {str} -- Input source name
+
+        Returns:
+            {str} -- The member name
+        """
         start = data_set.find('(')
         member = ""
         for i in range(start+1, len(data_set)):

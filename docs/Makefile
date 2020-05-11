@@ -57,8 +57,10 @@ module_doc:
 	   sed -n "/RETURN = '''/,/'''/p" ../plugins/modules/$$REXX_FILE.rexx >> ../plugins/modules/rexx_module_doc/$$REXX_FILE.py; \
 	   echo Generating RST doc for module $$REXX_FILE; \
 	   ansible-doc-extractor --template templates/module.rst.j2 source/modules ../plugins/modules/rexx_module_doc/$$REXX_FILE.py; \
-	   rm -rf ../plugins/modules/rexx_module_doc/; \
 	done
+
+	@echo "Deleted directory '../plugins/modules/rexx_module_doc/'."
+	@rm -rf ../plugins/modules/rexx_module_doc
 
 	@ansible-doc-extractor --template templates/module.rst.j2 source/modules ../plugins/modules/*.py
 	@echo "Extract module ansible doc from '../plugins/modules/' into 'source/modules'"

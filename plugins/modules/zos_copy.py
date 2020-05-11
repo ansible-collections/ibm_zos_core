@@ -16,9 +16,9 @@ module: zos_copy
 version_added: '2.9'
 short_description: Copy data to z/OS
 description:
-  - The M(zos_copy) module copies a file or data set from a local or a
+  - The C(zos_copy) module copies a file or data set from a local or a
     remote machine to a location on the remote machine.
-  - Use the M(zos_fetch) module to copy files or data sets from remote 
+  - Use the C(zos_fetch) module to copy files or data sets from remote 
     locations to local machine.
 author: "Asif Mahmud (@asifmahmud)"
 options:
@@ -44,7 +44,7 @@ options:
       - If C(src) and C(dest) are files and if the parent directory of C(dest)
         doesn't exist, then the task will fail.
     type: str
-    required: yes
+    required: true
   content:
     description:
       - When used instead of C(src), sets the contents of a file or data set
@@ -226,7 +226,7 @@ EXAMPLES = r'''
     dest: SAMPLE.SEQ.DATA.SET
     remote_src: true
 
-- name: Copy a binary file to a PDSE member
+- name: Copy a local binary file to a PDSE member
   zos_copy:
     src: /path/to/binary/file
     dest: HLQ.SAMPLE.PDSE(MEMBER)
@@ -236,6 +236,7 @@ EXAMPLES = r'''
   zos_copy:
     src: SAMPLE.SEQ.DATA.SET
     dest: HLQ.SAMPLE.PDSE(MEMBER)
+    remote_src: true
 
 - name: Copy a local file and take a backup of the existing file
   zos_copy:
@@ -244,19 +245,19 @@ EXAMPLES = r'''
     backup: true
     backup_path: /tmp/local_file_backup
 
-- name: Copy a PDS(E) on remote system to a new PDS(E)
+- name: Copy a PDS on remote system to a new PDS
   zos_copy:
     src: HLQ.SAMPLE.PDSE
     dest: HLQ.NEW.PDSE
     remote_src: true
 
-- name: Copy a PDS(E) on remote system to a PDS(E), replacing the original
+- name: Copy a PDS on remote system to a PDS, replacing the original
   zos_copy:
     src: HLQ.SAMPLE.PDSE
     dest: HLQ.EXISTING.PDSE
     remote_src: true
 
-- name: Copy PDS(E) member to a new PDS(E) member. Replace if it already exists
+- name: Copy PDS member to a new PDS member. Replace if it already exists
   zos_copy:
     src: HLQ.SAMPLE.PDSE(SRCMEM)
     dest: HLQ.NEW.PDSE(DESTMEM)
@@ -266,16 +267,25 @@ EXAMPLES = r'''
   zos_copy:
     src: /path/to/uss/src
     dest: DEST.PDSE.DATA.SET(MEMBER)
+    remote_src: true
 
 - name: Copy a sequential data set to a USS file
   zos_copy:
     src: SRC.SEQ.DATA.SET
     dest: /tmp/
+    remote_src: true
 
-- name: Copy a PDS member to USS file
+- name: Copy a PDSE member to USS file
   zos_copy:
     src: SRC.PDSE(MEMBER)
     dest: /tmp/member
+    remote_src: true
+
+- name: Copy a PDS to a USS directory (/tmp/SRC.PDS).
+  zos_copy:
+    src: SRC.PDS
+    dest: /tmp
+    remote_src: true
 
 '''
 
@@ -422,6 +432,8 @@ class CopyHandler(object):
         Arguments:
             module {AnsibleModule} -- The AnsibleModule object from currently running module
             dest_exists {boolean} -- Whether destination already exists
+
+        Keyword Arguments:
             is_binary {bool} -- Whether the file or data set to be copied contains binary data
         """
         self.module = module
@@ -791,6 +803,9 @@ class PDSECopyHandler(CopyHandler):
         Arguments:
             module {AnsibleModule} -- The AnsibleModule object from currently running module
             dest_exists {boolean} -- Whether destination already exists
+
+        Keyword Arguments:
+            is_binary {bool} -- Whether the data set to be copied contains binary data
         """
         super().__init__(module, dest_exists, is_binary=is_binary)
 
@@ -805,8 +820,9 @@ class PDSECopyHandler(CopyHandler):
             src_ds_type {str} -- The type of source
         """
         src = temp_path or conv_path or src
-        self._delete_members(dest)
         if src_ds_type == "USS":
+            if self.dest_exists:
+                self._delete_members(dest)
             path, dirs, files = next(os.walk(src))
             for file in files:
                 member_name = file[:file.rfind('.')] if '.' in file else file
@@ -819,6 +835,11 @@ class PDSECopyHandler(CopyHandler):
                 except Exception as err:
                     self._fail_json(msg=str(err))
         else:
+            if self.dest_exists:
+                temp_ds = Datasets.temp_name()
+                Datasets.move(dest, temp_ds)
+                self.allocate_model(dest, src)
+                Datasets.delete(temp_ds)
             dds = dict(OUTPUT=dest, INPUT=src)
             copy_cmd = "   COPY OUTDD=OUTPUT,INDD=((INPUT,R))"
             rc, out, err = self._run_mvs_command("IEBCOPY", copy_cmd, dds)
@@ -883,7 +904,7 @@ class PDSECopyHandler(CopyHandler):
         rc = out = err = None
         if remote_src:
             if src_ds_type in MVS_PARTITIONED:
-                rc = self._allocate_model(dest_name, src)
+                rc = self.allocate_model(dest_name, src)
             elif src_ds_type in MVS_SEQ:
                 rc = self._allocate_pdse(dest_name, vol=vol, src=src)
             elif os.path.isfile(src):
@@ -915,7 +936,7 @@ class PDSECopyHandler(CopyHandler):
 
         Arguments:
             ds_name {str} -- The name of the PDSE to allocate
-        
+
         Keyword Arguments:
             size {int} -- The size, in bytes, of the allocated PDSE
             src {str} -- The name of the source data set from which to get the size
@@ -923,6 +944,7 @@ class PDSECopyHandler(CopyHandler):
         """
         recfm = "FB"
         lrecl = 80
+        default_size = 5242880 #Use the default 5 Megabytes
         if size is None:
             if vol:
                 ds_vtoc = vtoc.VolumeTableOfContents(self.module)
@@ -935,7 +957,7 @@ class PDSECopyHandler(CopyHandler):
                 recfm = vtoc_info.get("record_format") or recfm
                 lrecl = int(vtoc_info.get("record_length")) or lrecl
             else:
-                size = 5242880 #Use the default 5 Megabytes
+                size = default_size
 
         size = "{0}K".format(str(int(math.ceil(size/1024))))
         return Datasets.create(ds_name, "PDSE", size, recfm, "", lrecl)
@@ -1120,7 +1142,7 @@ def run_module():
             size=dict(type='int'),
             temp_path=dict(type='str'),
             copy_member=dict(type='bool'),
-            src_member=dict(type='str')
+            src_member=dict(type='bool')
         ),
         add_file_common_args=True
     )
@@ -1235,7 +1257,7 @@ def run_module():
             else:
                 src_ds_utils = data_set_utils.DataSetUtils(module, src_name)
                 if src_ds_utils.data_set_exists():
-                    if src_member is True and not src_ds_utils.data_set_member_exists(member_name):
+                    if src_member and not src_ds_utils.data_set_member_exists(member_name):
                         raise NonExistentSourceError(src)
                     src_ds_type = src_ds_utils.get_data_set_type()
                     src_ds_vol = src_ds_utils.get_data_set_volume()
@@ -1292,7 +1314,7 @@ def run_module():
             if(
                 is_pds or 
                 copy_member or 
-                src_ds_type in MVS_PARTITIONED or
+                (src_ds_type in MVS_PARTITIONED and is_mvs_dest) or
                 (os.path.isdir(b_src) and is_mvs_dest)
             ):
                 dest_ds_type = "PDSE"

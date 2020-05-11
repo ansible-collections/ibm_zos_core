@@ -1210,7 +1210,6 @@ def run_module():
         alloc_size = module.params.get('size')
         copy_member = module.params.get('copy_member')
         src_member = module.params.get('src_member')
-        
 
         # ********************************************************************
         # When copying to and from a data set member, 'dest' or 'src' will be 

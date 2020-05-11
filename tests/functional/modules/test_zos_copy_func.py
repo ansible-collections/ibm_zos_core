@@ -3,13 +3,9 @@
 from __future__ import absolute_import, division
 
 import os
-import sys
-import warnings
 import shutil
 import tempfile
 
-import ansible.constants
-import ansible.errors
 import ansible.utils
 import pytest
 
@@ -876,15 +872,80 @@ def test_copy_pdse_to_non_existing_pdse(ansible_zos_module):
 
 
 def test_copy_pds_member_to_existing_uss_file(ansible_zos_module):
-    pass
+    hosts = ansible_zos_module
+    src_ds = 'IMSTESTL.COMNUC(ATRQUERY)'
+    dest = '/tmp/atrquery'
+    try:
+        hosts.all.file(path=dest, state='touch')
+        copy_res = hosts.all.zos_copy(
+            src=src_ds,
+            dest=dest,
+            remote_src=True
+        )
+        stat_res = hosts.all.stat(path=dest)
+        verify_copy = hosts.all.shell(
+            cmd="head {0}".format(dest), 
+            executable=SHELL_EXECUTABLE
+        )
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+        for result in stat_res.contacted.values():
+            assert result.get('stat').get('exists') is True
+        for result in verify_copy.contacted.values():
+            assert result.get('rc') == 0
+            assert result.get('stdout') != ""
+    finally:
+        hosts.all.file(path=dest, state='absent')
 
 
 def test_copy_pds_member_to_non_existing_uss_file(ansible_zos_module):
-    pass
+    hosts = ansible_zos_module
+    src_ds = 'IMSTESTL.COMNUC(ATRQUERY)'
+    dest = '/tmp/atrquery'
+    try:
+        copy_res = hosts.all.zos_copy(
+            src=src_ds,
+            dest=dest,
+            remote_src=True
+        )
+        stat_res = hosts.all.stat(path=dest)
+        verify_copy = hosts.all.shell(
+            cmd="head {0}".format(dest), 
+            executable=SHELL_EXECUTABLE
+        )
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+        for result in stat_res.contacted.values():
+            assert result.get('stat').get('exists') is True
+        for result in verify_copy.contacted.values():
+            assert result.get('rc') == 0
+            assert result.get('stdout') != ""
+    finally:
+        hosts.all.file(path=dest, state='absent')
 
 
 def test_copy_pds_member_to_existing_ps(ansible_zos_module):
-    pass
+    hosts = ansible_zos_module
+    src_ds = 'IMSTESTL.COMNUC(ATRQUERY)'
+    dest = 'USER.TEST.SEQ.FUNCTEST'
+    try:
+        hosts.all.zos_data_set(name=dest, type='seq', state='present')
+        copy_res = hosts.all.zos_copy(
+            src=src_ds,
+            dest=dest,
+            remote_src=True
+        )
+        verify_copy = hosts.all.shell(
+            cmd="head \"//'{0}'\"".format(dest), 
+            executable=SHELL_EXECUTABLE
+        )
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+        for result in verify_copy.contacted.values():
+            assert result.get('rc') == 0
+            assert result.get('stdout') != ""
+    finally:
+        hosts.all.zos_data_set(name=dest, state='absent')
 
 
 def test_copy_pds_member_to_non_existing_ps(ansible_zos_module):

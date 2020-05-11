@@ -80,7 +80,7 @@ def _is_member(data_set):
 def _is_data_set(data_set):
     """Determine whether the input string specifies a data set name"""
     try:
-        arg_def = dict(data_set=dict(arg_type='data_set'))
+        arg_def = dict(data_set=dict(arg_type='data_set_base'))
         parser = better_arg_parser.BetterArgParser(arg_def)
         parser.parse_args({'data_set': data_set})
     except ValueError:
@@ -151,6 +151,8 @@ class ActionModule(ActionBase):
         temp_path = real_path = None
         is_uss = '/' in dest if dest else None
         is_mvs_dest = _is_data_set(dest) if dest else False
+        src_member = _is_member(src)
+        copy_member = _is_member(dest)
         
         if src:
             src = os.path.realpath(src)
@@ -239,8 +241,8 @@ class ActionModule(ActionBase):
             dict(
                 is_uss=is_uss, 
                 is_pds=is_pds, 
-                copy_member=_is_member(dest),
-                src_member=_is_member(src),
+                copy_member=copy_member,
+                src_member=src_member,
                 temp_path=temp_path,
                 is_mvs_dest=is_mvs_dest
             )

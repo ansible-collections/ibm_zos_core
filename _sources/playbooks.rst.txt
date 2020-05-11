@@ -63,6 +63,7 @@ details, see the sample `ansible.cfg`_ notes.
 For more information about available configurations for ``ansible.cfg``, read
 the Ansible documentation on `Ansible configuration settings`_.
 
+
 .. _ansible.cfg:
    https://github.com/ansible-collections/ibm_zos_core/blob/master/playbooks/ansible.cfg
 .. _Ansible configuration settings:

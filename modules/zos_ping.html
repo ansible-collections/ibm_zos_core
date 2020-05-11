@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>zos_operator – Execute operator command &mdash; IBM z/OS core collection 1.0.0 documentation</title>
+  <title>zos_ping – Ping z/OS and check dependencies. &mdash; IBM z/OS core collection 1.0.0 documentation</title>
   
 
   
@@ -35,8 +35,8 @@
   <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="zos_operator_action_query – Display messages requiring action" href="zos_operator_action_query.html" />
-    <link rel="prev" title="zos_job_submit – Submit JCL" href="zos_job_submit.html" /> 
+    <link rel="next" title="zos_tso_command – Execute TSO commands" href="zos_tso_command.html" />
+    <link rel="prev" title="zos_operator_action_query – Display messages requiring action" href="zos_operator_action_query.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -96,15 +96,14 @@
 <li class="toctree-l3"><a class="reference internal" href="zos_job_output.html">zos_job_output – Display job output</a></li>
 <li class="toctree-l3"><a class="reference internal" href="zos_job_query.html">zos_job_query – Query job status</a></li>
 <li class="toctree-l3"><a class="reference internal" href="zos_job_submit.html">zos_job_submit – Submit JCL</a></li>
-<li class="toctree-l3 current"><a class="current reference internal" href="#">zos_operator – Execute operator command</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="zos_operator.html">zos_operator – Execute operator command</a></li>
+<li class="toctree-l3"><a class="reference internal" href="zos_operator_action_query.html">zos_operator_action_query – Display messages requiring action</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">zos_ping – Ping z/OS and check dependencies.</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#synopsis">Synopsis</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#parameters">Parameters</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#examples">Examples</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#return-values">Return Values</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="zos_operator_action_query.html">zos_operator_action_query – Display messages requiring action</a></li>
-<li class="toctree-l3"><a class="reference internal" href="zos_ping.html">zos_ping – Ping z/OS and check dependencies.</a></li>
 <li class="toctree-l3"><a class="reference internal" href="zos_tso_command.html">zos_tso_command – Execute TSO commands</a></li>
 </ul>
 </li>
@@ -175,7 +174,7 @@
         
           <li><a href="../modules.html">Modules</a> &raquo;</li>
         
-      <li>zos_operator – Execute operator command</li>
+      <li>zos_ping – Ping z/OS and check dependencies.</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -183,7 +182,7 @@
             
             
               <!-- User defined GitHub URL -->
-              <a href="https://github.com/ansible-collections/ibm_zos_core/blob/dev/plugins/modules/zos_operator.py" class="fa fa-github"> Edit on GitHub</a>
+              <a href="https://github.com/ansible-collections/ibm_zos_core/blob/dev/plugins/modules/zos_ping.py" class="fa fa-github"> Edit on GitHub</a>
             
           
         
@@ -197,104 +196,49 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="zos-operator-execute-operator-command">
-<span id="zos-operator-module"></span><h1>zos_operator – Execute operator command<a class="headerlink" href="#zos-operator-execute-operator-command" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="zos-ping-ping-z-os-and-check-dependencies">
+<span id="zos-ping-module"></span><h1>zos_ping – Ping z/OS and check dependencies.<a class="headerlink" href="#zos-ping-ping-z-os-and-check-dependencies" title="Permalink to this headline">¶</a></h1>
 <div class="contents local topic" id="contents">
 <ul class="simple">
 <li><p><a class="reference internal" href="#synopsis" id="id1">Synopsis</a></p></li>
-<li><p><a class="reference internal" href="#parameters" id="id2">Parameters</a></p></li>
-<li><p><a class="reference internal" href="#examples" id="id3">Examples</a></p></li>
-<li><p><a class="reference internal" href="#return-values" id="id4">Return Values</a></p></li>
+<li><p><a class="reference internal" href="#examples" id="id2">Examples</a></p></li>
+<li><p><a class="reference internal" href="#return-values" id="id3">Return Values</a></p></li>
 </ul>
 </div>
 <div class="section" id="synopsis">
 <h2><a class="toc-backref" href="#id1">Synopsis</a><a class="headerlink" href="#synopsis" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
-<li><p>Execute an operator command and receive the output.</p></li>
+<li><p><a class="reference internal" href="#zos-ping-module"><span class="std std-ref">zos_ping</span></a> verifies the presence of z/OS Web Client Enablement Toolkit, iconv, and Python.</p></li>
+<li><p><a class="reference internal" href="#zos-ping-module"><span class="std std-ref">zos_ping</span></a> returns <code class="docutils literal notranslate"><span class="pre">pong</span></code> when the target host is not missing any required dependencies.</p></li>
+<li><p>If the target host is missing optional dependencies, the <a class="reference internal" href="#zos-ping-module"><span class="std std-ref">zos_ping</span></a> will return one or more warning messages.</p></li>
+<li><p>If a required dependency is missing from the target host, an explanatory message will be returned with the module failure.</p></li>
+<li><p>The <span class="xref std std-ref">zos_ssh</span> connection plugin must be used for this module to function correctly.</p></li>
 </ul>
 </div>
-<div class="section" id="parameters">
-<h2><a class="toc-backref" href="#id2">Parameters</a><a class="headerlink" href="#parameters" title="Permalink to this headline">¶</a></h2>
-<dl>
-<dt>cmd</dt><dd><p>The command to execute.</p>
-<div class="line-block">
-<div class="line"><strong>required</strong>: True</div>
-<div class="line"><strong>type</strong>: str</div>
-</div>
-</dd>
-<dt>debug</dt><dd><p>Return debugging information.</p>
-<div class="line-block">
-<div class="line"><strong>required</strong>: False</div>
-<div class="line"><strong>type</strong>: bool</div>
-</div>
-</dd>
-<dt>verbose</dt><dd><p>Return verbose information.</p>
-<div class="line-block">
-<div class="line"><strong>required</strong>: False</div>
-<div class="line"><strong>type</strong>: bool</div>
-</div>
-</dd>
-</dl>
-</div>
 <div class="section" id="examples">
-<h2><a class="toc-backref" href="#id3">Examples</a><a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
-<div class="highlight-yaml+jinja notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Execute an operator command to show active jobs</span>
-  <span class="nt">zos_operator</span><span class="p">:</span>
-    <span class="nt">cmd</span><span class="p">:</span> <span class="s">&#39;d</span><span class="nv"> </span><span class="s">u,all&#39;</span>
-
-<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Execute an operator command to show active jobs with verbose information</span>
-  <span class="nt">zos_operator</span><span class="p">:</span>
-    <span class="nt">cmd</span><span class="p">:</span> <span class="s">&#39;d</span><span class="nv"> </span><span class="s">u,all&#39;</span>
-    <span class="nt">verbose</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
-
-<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Execute an operator command to show active jobs with verbose and debug information</span>
-  <span class="nt">zos_operator</span><span class="p">:</span>
-    <span class="nt">cmd</span><span class="p">:</span> <span class="s">&#39;d</span><span class="nv"> </span><span class="s">u,all&#39;</span>
-    <span class="nt">verbose</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
-    <span class="nt">debug</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
-
-<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Execute an operator command to purge all job logs (requires escaping)</span>
-  <span class="nt">zos_operator</span><span class="p">:</span>
-    <span class="nt">cmd</span><span class="p">:</span> <span class="s">&quot;\\$PJ(*)&quot;</span>
+<h2><a class="toc-backref" href="#id2">Examples</a><a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-yaml+jinja notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Ping the z/OS host and perform resource checks</span>
+  <span class="nt">zos_ping</span><span class="p">:</span>
+  <span class="nt">register</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">result</span>
 </pre></div>
 </div>
 </div>
 <div class="section" id="return-values">
-<h2><a class="toc-backref" href="#id4">Return Values</a><a class="headerlink" href="#return-values" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id3">Return Values</a><a class="headerlink" href="#return-values" title="Permalink to this headline">¶</a></h2>
 <blockquote>
 <div><dl>
-<dt>rc</dt><dd><div class="line-block">
-<div class="line">Return code of the operator command</div>
+<dt>ping</dt><dd><div class="line-block">
+<div class="line">Should contain the value “pong” on success.</div>
 </div>
 <div class="line-block">
-<div class="line"><strong>returned</strong>: on success</div>
-</div>
-<div class="line-block">
-<div class="line"><strong>type</strong>: int</div>
+<div class="line"><strong>type</strong>: str</div>
 </div>
 </dd>
-<dt>content</dt><dd><div class="line-block">
-<div class="line">The response resulting from the execution of the operator command</div>
-</div>
-<div class="line-block">
-<div class="line"><strong>returned</strong>: on success</div>
+<dt>warnings</dt><dd><div class="line-block">
+<div class="line">List of warnings returned from stderr when performing resource checks.</div>
 </div>
 <div class="line-block">
 <div class="line"><strong>type</strong>: list</div>
-</div>
-<p><strong>sample</strong>:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="s2">&quot;MV2C      2020039  04:29:57.58             ISF031I CONSOLE XIAOPIN ACTIVATED &quot;</span><span class="p">,</span> <span class="s2">&quot;MV2C      2020039  04:29:57.58            -D U,ALL                           &quot;</span><span class="p">,</span> <span class="s2">&quot;MV2C      2020039  04:29:57.59             IEE457I 04.29.57 UNIT STATUS 948  &quot;</span><span class="p">,</span> <span class="s2">&quot;         UNIT TYPE STATUS        VOLSER     VOLSTATE      SS                 &quot;</span><span class="p">,</span> <span class="s2">&quot;          0100 3277 OFFLINE                                 0                &quot;</span><span class="p">,</span> <span class="s2">&quot;          0101 3277 OFFLINE                                 0                &quot;</span><span class="p">]</span>
-</pre></div>
-</div>
-</dd>
-<dt>changed</dt><dd><div class="line-block">
-<div class="line">Indicates if any changes were made during module operation. Given operator commands may introduce changes that are unknown to the module. True is always returned unless either a module or command failure has occurred.</div>
-</div>
-<div class="line-block">
-<div class="line"><strong>returned</strong>: always</div>
-</div>
-<div class="line-block">
-<div class="line"><strong>type</strong>: bool</div>
 </div>
 </dd>
 </dl>
@@ -310,10 +254,10 @@
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="zos_operator_action_query.html" class="btn btn-neutral float-right" title="zos_operator_action_query – Display messages requiring action" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="zos_tso_command.html" class="btn btn-neutral float-right" title="zos_tso_command – Execute TSO commands" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="zos_job_submit.html" class="btn btn-neutral float-left" title="zos_job_submit – Submit JCL" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="zos_operator_action_query.html" class="btn btn-neutral float-left" title="zos_operator_action_query – Display messages requiring action" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   

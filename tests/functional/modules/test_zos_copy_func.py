@@ -949,196 +949,568 @@ def test_copy_pds_member_to_existing_ps(ansible_zos_module):
 
 
 def test_copy_pds_member_to_non_existing_ps(ansible_zos_module):
-    pass
+    hosts = ansible_zos_module
+    src_ds = 'IMSTESTL.COMNUC(ATRQUERY)'
+    dest = 'USER.TEST.SEQ.FUNCTEST'
+    try:
+        copy_res = hosts.all.zos_copy(
+            src=src_ds,
+            dest=dest,
+            remote_src=True
+        )
+        verify_copy = hosts.all.shell(
+            cmd="head \"//'{0}'\"".format(dest), 
+            executable=SHELL_EXECUTABLE
+        )
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+        for result in verify_copy.contacted.values():
+            assert result.get('rc') == 0
+            assert result.get('stdout') != ""
+    finally:
+        hosts.all.zos_data_set(name=dest, state='absent')
 
 
 def test_copy_pds_member_to_existing_pds_member(ansible_zos_module):
-    pass
+    hosts = ansible_zos_module
+    src_ds = 'IMSTESTL.COMNUC(ATRQUERY)'
+    dest_ds = "USER.TEST.PDS.FUNCTEST"
+    dest = "USER.TEST.PDS.FUNCTEST(DATA)"
+    try:
+        hosts.all.zos_data_set(
+            name=dest_ds, type='pds', size='5M', format='fba', record_length=25
+        )
+        hosts.all.zos_data_set(
+            name=dest, type='MEMBER', replace='yes'
+        )
+        copy_res = hosts.all.zos_copy(
+            src=src_ds,
+            dest=dest,
+            remote_src=True
+        )
+        verify_copy = hosts.all.shell(
+            cmd="head \"//'{}'\"".format(dest), 
+            executable=SHELL_EXECUTABLE
+        )
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+        for result in verify_copy.contacted.values():
+            assert result.get('rc') == 0
+            assert result.get('stdout') != ""
+    finally:
+        hosts.all.zos_data_set(name=dest_ds, state='absent')
 
 
 def test_copy_pds_member_to_non_existing_pds_member(ansible_zos_module):
-    pass
+    hosts = ansible_zos_module
+    src_ds = 'IMSTESTL.COMNUC(ATRQUERY)'
+    dest_ds = "USER.TEST.PDS.FUNCTEST"
+    dest = "USER.TEST.PDS.FUNCTEST(DATA)"
+    try:
+        hosts.all.zos_data_set(
+            name=dest_ds, type='pds', size='5M', format='fba', record_length=25
+        )
+        copy_res = hosts.all.zos_copy(
+            src=src_ds,
+            dest=dest,
+            remote_src=True
+        )
+        verify_copy = hosts.all.shell(
+            cmd="head \"//'{}'\"".format(dest), 
+            executable=SHELL_EXECUTABLE
+        )
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+        for result in verify_copy.contacted.values():
+            assert result.get('rc') == 0
+            assert result.get('stdout') != ""
+    finally:
+        hosts.all.zos_data_set(name=dest_ds, state='absent')
+
+
+def test_copy_pds_member_to_existing_pds(ansible_zos_module):
+    hosts = ansible_zos_module
+    src_ds = 'IMSTESTL.COMNUC(ATRQUERY)'
+    dest_ds = "USER.TEST.PDS.FUNCTEST"
+    dest = "USER.TEST.PDS.FUNCTEST(ATRQUERY)"
+    try:
+        hosts.all.zos_data_set(
+            name=dest_ds, type='pds', size='5M', format='fba', record_length=25
+        )
+        copy_res = hosts.all.zos_copy(
+            src=src_ds,
+            dest=dest_ds,
+            remote_src=True
+        )
+        verify_copy = hosts.all.shell(
+            cmd="head \"//'{}'\"".format(dest), 
+            executable=SHELL_EXECUTABLE
+        )
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+        for result in verify_copy.contacted.values():
+            assert result.get('rc') == 0
+            assert result.get('stdout') != ""
+    finally:
+        hosts.all.zos_data_set(name=dest_ds, state='absent')
 
 
 def test_copy_pds_member_to_existing_pdse_member(ansible_zos_module):
-    pass
+    hosts = ansible_zos_module
+    src_ds = 'IMSTESTL.COMNUC(ATRQUERY)'
+    dest_ds = "USER.TEST.PDS.FUNCTEST"
+    dest = "USER.TEST.PDS.FUNCTEST(DATA)"
+    try:
+        hosts.all.zos_data_set(
+            name=dest_ds, type='pdse', size='5M', format='fba', record_length=25
+        )
+        hosts.all.zos_data_set(
+            name=dest, type='MEMBER', replace='yes'
+        )
+        copy_res = hosts.all.zos_copy(
+            src=src_ds,
+            dest=dest,
+            remote_src=True
+        )
+        verify_copy = hosts.all.shell(
+            cmd="head \"//'{}'\"".format(dest), 
+            executable=SHELL_EXECUTABLE
+        )
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+        for result in verify_copy.contacted.values():
+            assert result.get('rc') == 0
+            assert result.get('stdout') != ""
+    finally:
+        hosts.all.zos_data_set(name=dest_ds, state='absent')
 
 
 def test_copy_pds_member_to_non_existing_pdse_member(ansible_zos_module):
-    pass
+    hosts = ansible_zos_module
+    src_ds = 'IMSTESTL.COMNUC(ATRQUERY)'
+    dest_ds = "USER.TEST.PDS.FUNCTEST"
+    dest = "USER.TEST.PDS.FUNCTEST(DATA)"
+    try:
+        hosts.all.zos_data_set(
+            name=dest_ds, type='pdse', size='5M', format='fba', record_length=25
+        )
+        copy_res = hosts.all.zos_copy(
+            src=src_ds,
+            dest=dest,
+            remote_src=True
+        )
+        verify_copy = hosts.all.shell(
+            cmd="head \"//'{}'\"".format(dest), 
+            executable=SHELL_EXECUTABLE
+        )
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+        for result in verify_copy.contacted.values():
+            assert result.get('rc') == 0
+            assert result.get('stdout') != ""
+    finally:
+        hosts.all.zos_data_set(name=dest_ds, state='absent')
 
 
 def test_copy_pdse_member_to_existing_uss_file(ansible_zos_module):
-    pass
+    hosts = ansible_zos_module
+    src_ds = 'SYS1.NFSLIBE(GFSAMAIN)'
+    dest = '/tmp/gfsamain'
+    try:
+        hosts.all.file(path=dest, state='touch')
+        copy_res = hosts.all.zos_copy(
+            src=src_ds,
+            dest=dest,
+            remote_src=True
+        )
+        stat_res = hosts.all.stat(path=dest)
+        verify_copy = hosts.all.shell(
+            cmd="head {0}".format(dest), 
+            executable=SHELL_EXECUTABLE
+        )
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+        for result in stat_res.contacted.values():
+            assert result.get('stat').get('exists') is True
+        for result in verify_copy.contacted.values():
+            assert result.get('rc') == 0
+            assert result.get('stdout') != ""
+    finally:
+        hosts.all.file(path=dest, state='absent')
 
 
 def test_copy_pdse_member_to_non_existing_uss_file(ansible_zos_module):
-    pass
+    hosts = ansible_zos_module
+    src_ds = 'SYS1.NFSLIBE(GFSAMAIN)'
+    dest = '/tmp/gfsamain'
+    try:
+        copy_res = hosts.all.zos_copy(
+            src=src_ds,
+            dest=dest,
+            remote_src=True
+        )
+        stat_res = hosts.all.stat(path=dest)
+        verify_copy = hosts.all.shell(
+            cmd="head {0}".format(dest), 
+            executable=SHELL_EXECUTABLE
+        )
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+        for result in stat_res.contacted.values():
+            assert result.get('stat').get('exists') is True
+        for result in verify_copy.contacted.values():
+            assert result.get('rc') == 0
+            assert result.get('stdout') != ""
+    finally:
+        hosts.all.file(path=dest, state='absent')
 
 
 def test_copy_pdse_member_to_existing_ps(ansible_zos_module):
-    pass
+    hosts = ansible_zos_module
+    src_ds = 'SYS1.NFSLIBE(GFSAMAIN)'
+    dest = 'USER.TEST.SEQ.FUNCTEST'
+    try:
+        hosts.all.zos_data_set(name=dest, type='seq', state='present')
+        copy_res = hosts.all.zos_copy(
+            src=src_ds,
+            dest=dest,
+            remote_src=True
+        )
+        verify_copy = hosts.all.shell(
+            cmd="head \"//'{0}'\"".format(dest), 
+            executable=SHELL_EXECUTABLE
+        )
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+        for result in verify_copy.contacted.values():
+            assert result.get('rc') == 0
+            assert result.get('stdout') != ""
+    finally:
+        hosts.all.zos_data_set(name=dest, state='absent')
 
 
 def test_copy_pdse_member_to_non_existing_ps(ansible_zos_module):
-    pass
+    hosts = ansible_zos_module
+    src_ds = 'SYS1.NFSLIBE(GFSAMAIN)'
+    dest = 'USER.TEST.SEQ.FUNCTEST'
+    try:
+        copy_res = hosts.all.zos_copy(
+            src=src_ds,
+            dest=dest,
+            remote_src=True
+        )
+        verify_copy = hosts.all.shell(
+            cmd="head \"//'{0}'\"".format(dest), 
+            executable=SHELL_EXECUTABLE
+        )
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+        for result in verify_copy.contacted.values():
+            assert result.get('rc') == 0
+            assert result.get('stdout') != ""
+    finally:
+        hosts.all.zos_data_set(name=dest, state='absent')
 
 
 def test_copy_pdse_member_to_existing_pdse_member(ansible_zos_module):
-    pass
+    hosts = ansible_zos_module
+    src_ds = 'SYS1.NFSLIBE(GFSAMAIN)'
+    dest_ds = "USER.TEST.PDS.FUNCTEST"
+    dest = "USER.TEST.PDS.FUNCTEST(DATA)"
+    try:
+        hosts.all.zos_data_set(
+            name=dest_ds, type='pdse', size='5M', format='fba', record_length=25
+        )
+        hosts.all.zos_data_set(
+            name=dest, type='MEMBER', replace='yes'
+        )
+        copy_res = hosts.all.zos_copy(
+            src=src_ds,
+            dest=dest,
+            remote_src=True
+        )
+        verify_copy = hosts.all.shell(
+            cmd="head \"//'{}'\"".format(dest), 
+            executable=SHELL_EXECUTABLE
+        )
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+        for result in verify_copy.contacted.values():
+            assert result.get('rc') == 0
+            assert result.get('stdout') != ""
+    finally:
+        hosts.all.zos_data_set(name=dest_ds, state='absent')
 
 
 def test_copy_pdse_member_to_non_existing_pdse_member(ansible_zos_module):
-    pass
+    hosts = ansible_zos_module
+    src_ds = 'SYS1.NFSLIBE(GFSAMAIN)'
+    dest_ds = "USER.TEST.PDS.FUNCTEST"
+    dest = "USER.TEST.PDS.FUNCTEST(DATA)"
+    try:
+        hosts.all.zos_data_set(
+            name=dest_ds, type='pdse', size='5M', format='fba', record_length=25
+        )
+        copy_res = hosts.all.zos_copy(
+            src=src_ds,
+            dest=dest,
+            remote_src=True
+        )
+        verify_copy = hosts.all.shell(
+            cmd="head \"//'{}'\"".format(dest), 
+            executable=SHELL_EXECUTABLE
+        )
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+        for result in verify_copy.contacted.values():
+            assert result.get('rc') == 0
+            assert result.get('stdout') != ""
+    finally:
+        hosts.all.zos_data_set(name=dest_ds, state='absent')
 
 
 def test_copy_pdse_member_to_existing_pds_member(ansible_zos_module):
-    pass
+    hosts = ansible_zos_module
+    src_ds = 'SYS1.NFSLIBE(GFSAMAIN)'
+    dest_ds = "USER.TEST.PDS.FUNCTEST"
+    dest = "USER.TEST.PDS.FUNCTEST(DATA)"
+    try:
+        hosts.all.zos_data_set(
+            name=dest_ds, type='pds', size='5M', format='fba', record_length=25
+        )
+        hosts.all.zos_data_set(
+            name=dest, type='MEMBER', replace='yes'
+        )
+        copy_res = hosts.all.zos_copy(
+            src=src_ds,
+            dest=dest,
+            remote_src=True
+        )
+        verify_copy = hosts.all.shell(
+            cmd="head \"//'{}'\"".format(dest), 
+            executable=SHELL_EXECUTABLE
+        )
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+        for result in verify_copy.contacted.values():
+            assert result.get('rc') == 0
+            assert result.get('stdout') != ""
+    finally:
+        hosts.all.zos_data_set(name=dest_ds, state='absent')
 
 
 def test_copy_pdse_member_to_non_existing_pds_member(ansible_zos_module):
-    pass
+    hosts = ansible_zos_module
+    src_ds = 'SYS1.NFSLIBE(GFSAMAIN)'
+    dest_ds = "USER.TEST.PDS.FUNCTEST"
+    dest = "USER.TEST.PDS.FUNCTEST(DATA)"
+    try:
+        hosts.all.zos_data_set(
+            name=dest_ds, type='pds', size='5M', format='fba', record_length=25
+        )
+        copy_res = hosts.all.zos_copy(
+            src=src_ds,
+            dest=dest,
+            remote_src=True
+        )
+        verify_copy = hosts.all.shell(
+            cmd="head \"//'{}'\"".format(dest), 
+            executable=SHELL_EXECUTABLE
+        )
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+        for result in verify_copy.contacted.values():
+            assert result.get('rc') == 0
+            assert result.get('stdout') != ""
+    finally:
+        hosts.all.zos_data_set(name=dest_ds, state='absent')
 
 
 def test_copy_pds_member_to_uss_dir(ansible_zos_module):
-    pass
+    hosts = ansible_zos_module
+    src_ds = 'IMSTESTL.COMNUC(ATRQUERY)'
+    dest = '/tmp/'
+    dest_path = "/tmp/ATRQUERY"
+    try:
+        copy_res = hosts.all.zos_copy(
+            src=src_ds,
+            dest=dest,
+            remote_src=True
+        )
+        stat_res = hosts.all.stat(path=dest_path)
+        verify_copy = hosts.all.shell(
+            cmd="head {0}".format(dest_path), 
+            executable=SHELL_EXECUTABLE
+        )
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+        for result in stat_res.contacted.values():
+            assert result.get('stat').get('exists') is True
+        for result in verify_copy.contacted.values():
+            assert result.get('rc') == 0
+            assert result.get('stdout') != ""
+    finally:
+        hosts.all.file(path=dest_path, state='absent')
 
 
 def test_copy_pdse_member_to_uss_dir(ansible_zos_module):
-    pass
+    hosts = ansible_zos_module
+    src_ds = 'SYS1.NFSLIBE(GFSAMAIN)'
+    dest = '/tmp/'
+    dest_path = "/tmp/GFSAMAIN"
+    try:
+        copy_res = hosts.all.zos_copy(
+            src=src_ds,
+            dest=dest,
+            remote_src=True
+        )
+        stat_res = hosts.all.stat(path=dest_path)
+        verify_copy = hosts.all.shell(
+            cmd="head {0}".format(dest_path), 
+            executable=SHELL_EXECUTABLE
+        )
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+        for result in stat_res.contacted.values():
+            assert result.get('stat').get('exists') is True
+        for result in verify_copy.contacted.values():
+            assert result.get('rc') == 0
+            assert result.get('stdout') != ""
+    finally:
+        hosts.all.file(path=dest_path, state='absent')
 
 
-def test_copy_vsam_ksds_to_existing_vsam_ksds(ansible_zos_module):
-    pass
+# def test_copy_vsam_ksds_to_existing_vsam_ksds(ansible_zos_module):
+#     pass
 
 
-def test_copy_vsam_ksds_to_non_existing_vsam_ksds(ansible_zos_module):
-    pass
+# def test_copy_vsam_ksds_to_non_existing_vsam_ksds(ansible_zos_module):
+#     pass
 
 
-def test_copy_vsam_lds_to_existing_vsam_lds(ansible_zos_module):
-    pass
+# def test_copy_vsam_lds_to_existing_vsam_lds(ansible_zos_module):
+#     pass
 
 
-def test_copy_vsam_lds_to_non_existing_vsam_lds(ansible_zos_module):
-    pass
+# def test_copy_vsam_lds_to_non_existing_vsam_lds(ansible_zos_module):
+#     pass
 
 
-def test_copy_inline_content_to_uss_file(ansible_zos_module):
-    pass
+# def test_copy_inline_content_to_uss_file(ansible_zos_module):
+#     pass
 
 
-def test_copy_inline_content_to_ps(ansible_zos_module):
-    pass
+# def test_copy_inline_content_to_ps(ansible_zos_module):
+#     pass
 
 
-def test_copy_inline_content_to_pds_member(ansible_zos_module):
-    pass
+# def test_copy_inline_content_to_pds_member(ansible_zos_module):
+#     pass
 
 
-def test_copy_inline_content_to_pdse_member(ansible_zos_module):
-    pass
+# def test_copy_inline_content_to_pdse_member(ansible_zos_module):
+#     pass
 
 
-def test_backup_uss_file(ansible_zos_module):
-    pass
+# def test_backup_uss_file(ansible_zos_module):
+#     pass
 
 
-def test_backup_ps(ansible_zos_module):
-    pass
+# def test_backup_ps(ansible_zos_module):
+#     pass
 
 
-def test_backup_pds(ansible_zos_module):
-    pass
+# def test_backup_pds(ansible_zos_module):
+#     pass
 
 
-def test_backup_pds_member(ansible_zos_module):
-    pass
+# def test_backup_pds_member(ansible_zos_module):
+#     pass
 
 
-def test_backup_pdse(ansible_zos_module):
-    pass
+# def test_backup_pdse(ansible_zos_module):
+#     pass
 
 
-def test_backup_vsam(ansible_zos_module):
-    pass
+# def test_backup_vsam(ansible_zos_module):
+#     pass
 
 
-def test_copy_to_existing_dest_not_forced(ansible_zos_module):
-    pass
+# def test_copy_to_existing_dest_not_forced(ansible_zos_module):
+#     pass
 
 
-def test_copy_local_symlink_to_uss_file(ansible_zos_module):
-    pass
+# def test_copy_local_symlink_to_uss_file(ansible_zos_module):
+#     pass
 
 
-def test_copy_local_file_to_uss_file_convert_encoding(ansible_zos_module):
-    pass
+# def test_copy_local_file_to_uss_file_convert_encoding(ansible_zos_module):
+#     pass
 
 
-def test_copy_uss_file_to_uss_file_convert_encoding(ansible_zos_module):
-    pass
+# def test_copy_uss_file_to_uss_file_convert_encoding(ansible_zos_module):
+#     pass
 
 
-def test_copy_uss_file_to_pds_member_convert_encoding(ansible_zos_module):
-    pass
+# def test_copy_uss_file_to_pds_member_convert_encoding(ansible_zos_module):
+#     pass
 
 
-def test_ensure_tmp_cleanup(ansible_zos_module):
-    pass
+# def test_ensure_tmp_cleanup(ansible_zos_module):
+#     pass
 
 
-def test_backup_uss_file_default_backup_path(ansible_zos_module):
-    pass
+# def test_backup_uss_file_default_backup_path(ansible_zos_module):
+#     pass
 
 
-def test_backup_sequential_data_set_default_backup_path(ansible_zos_module):
-    pass
+# def test_backup_sequential_data_set_default_backup_path(ansible_zos_module):
+#     pass
 
 
-def test_backup_pds_default_backup_path(ansible_zos_module):
-    pass
+# def test_backup_pds_default_backup_path(ansible_zos_module):
+#     pass
 
 
-def test_backup_pdse_default_backup_path(ansible_zos_module):
-    pass
+# def test_backup_pdse_default_backup_path(ansible_zos_module):
+#     pass
 
 
-def test_backup_vsam_default_backup_path(ansible_zos_module):
-    pass
+# def test_backup_vsam_default_backup_path(ansible_zos_module):
+#     pass
 
 
-def test_backup_uss_file_user_backup_path(ansible_zos_module):
-    pass
+# def test_backup_uss_file_user_backup_path(ansible_zos_module):
+#     pass
 
 
-def test_backup_sequential_data_set_user_backup_path(ansible_zos_module):
-    pass
+# def test_backup_sequential_data_set_user_backup_path(ansible_zos_module):
+#     pass
 
 
-def test_backup_pds_user_backup_path(ansible_zos_module):
-    pass
+# def test_backup_pds_user_backup_path(ansible_zos_module):
+#     pass
 
 
-def test_backup_pdse_user_backup_path(ansible_zos_module):
-    pass
+# def test_backup_pdse_user_backup_path(ansible_zos_module):
+#     pass
 
 
-def test_backup_vsam_user_backup_path(ansible_zos_module):
-    pass
+# def test_backup_vsam_user_backup_path(ansible_zos_module):
+#     pass
 
 
-def test_copy_inline_content_to_uss_file(ansible_zos_module):
-    pass
+# def test_copy_inline_content_to_uss_file(ansible_zos_module):
+#     pass
 
 
-def test_copy_inline_content_to_sequential_data_set(ansible_zos_module):
-    pass
+# def test_copy_inline_content_to_sequential_data_set(ansible_zos_module):
+#     pass
 
 
-def test_copy_inline_content_to_pds_member(ansible_zos_module):
-    pass
+# def test_copy_inline_content_to_pds_member(ansible_zos_module):
+#     pass
 
 
-def test_copy_inline_content_to_pdse_member(ansible_zos_module):
-    pass
+# def test_copy_inline_content_to_pdse_member(ansible_zos_module):
+#     pass

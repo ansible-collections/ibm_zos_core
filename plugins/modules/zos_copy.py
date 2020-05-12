@@ -1033,14 +1033,11 @@ class CopyUtil(object):
         elif src_type in MVS_PARTITIONED:
             if dest_type == "VSAM":
                 return False
-            if src_member:
-                return not (
-                    dest_type in MVS_PARTITIONED and not copy_member
-                )
-            else:
+            if not src_member:
                 return not (
                     copy_member or dest_type in MVS_SEQ
                 )
+            return True
 
         elif src_type == "USS":
             return dest != "VSAM"
@@ -1208,8 +1205,8 @@ def run_module():
         is_mvs_dest = module.params.get('is_mvs_dest')
         temp_path = module.params.get('temp_path')
         alloc_size = module.params.get('size')
-        copy_member = module.params.get('copy_member')
         src_member = module.params.get('src_member')
+        copy_member = module.params.get('copy_member') or src_member
 
         # ********************************************************************
         # When copying to and from a data set member, 'dest' or 'src' will be 
@@ -1262,6 +1259,7 @@ def run_module():
                     src_ds_vol = src_ds_utils.get_data_set_volume()
                 else:
                     raise NonExistentSourceError(src)
+
         except Exception as err:
             module.fail_json(msg=str(err))
 
@@ -1270,7 +1268,6 @@ def run_module():
         # not possible to copy a PDS member to a VSAM data set or a USS file
         # to a PDS. Perform these sanity checks.
         # ********************************************************************
-        
         if not CopyUtil.is_compatible(
             src, dest, src_ds_type, dest_ds_type, copy_member, src_member
         ):
@@ -1310,21 +1307,22 @@ def run_module():
         # created; they are automatically created by the Python/ZOAU API.
         # ********************************************************************
         else:
-            if(
-                is_pds or 
-                copy_member or 
-                (src_ds_type in MVS_PARTITIONED and is_mvs_dest) or
-                (os.path.isdir(b_src) and is_mvs_dest)
-            ):
-                dest_ds_type = "PDSE"
-                PDSECopyHandler(module, dest_exists).create_pdse(
-                    src, dest_name, alloc_size, src_ds_type, remote_src=remote_src, 
-                    vol=src_ds_vol
-                )
-            elif is_vsam:
-                dest_ds_type = "VSAM"
-            elif not is_uss:
-                dest_ds_type = "SEQ"
+            if not dest_ds_type:
+                if(
+                    is_pds or 
+                    copy_member or 
+                    (src_ds_type in MVS_PARTITIONED and (not src_member) and is_mvs_dest) or
+                    (os.path.isdir(b_src) and is_mvs_dest)
+                ):
+                    dest_ds_type = "PDSE"
+                    PDSECopyHandler(module, dest_exists).create_pdse(
+                        src, dest_name, alloc_size, src_ds_type, remote_src=remote_src, 
+                        vol=src_ds_vol
+                    )
+                elif is_vsam:
+                    dest_ds_type = "VSAM"
+                elif not is_uss:
+                    dest_ds_type = "SEQ"
             res_args['changed'] = True
 
         # ********************************************************************

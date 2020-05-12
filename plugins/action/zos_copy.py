@@ -150,7 +150,7 @@ class ActionModule(ActionBase):
         is_pds = is_src_dir = False
         temp_path = real_path = None
         is_uss = '/' in dest if dest else None
-        is_mvs_dest = _is_data_set(dest) if dest else False
+        is_mvs_dest = _is_data_set(dest) if dest else None
         src_member = _is_member(src)
         copy_member = _is_member(dest)
         

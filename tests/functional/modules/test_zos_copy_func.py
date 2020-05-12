@@ -32,6 +32,26 @@ def populate_dir(dir_path):
             infile.write(DUMMY_DATA)
 
 
+def create_vsam_ksds(ds_name, ansible_zos_module):
+    hosts = ansible_zos_module
+    alloc_cmd = """     DEFINE CLUSTER (NAME({0})  -
+    INDEXED                 -
+    RECSZ(80,80)            -
+    TRACKS(1,1)             -
+    KEYS(5,0)               -
+    CISZ(4096)              - 
+    VOLUMES(000000)         -
+    FREESPACE(3,3) )        -
+    DATA (NAME({0}.DATA))   -
+    INDEX (NAME({0}.INDEX))""".format(ds_name)
+
+    return hosts.all.shell(
+        cmd="mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin",
+        executable=SHELL_EXECUTABLE,
+        stdin=alloc_cmd
+    )
+
+
 def test_copy_local_file_to_non_existing_uss_file(ansible_zos_module):
     hosts = ansible_zos_module
     dest_path = '/tmp/profile'
@@ -1380,137 +1400,337 @@ def test_copy_pdse_member_to_uss_dir(ansible_zos_module):
         hosts.all.file(path=dest_path, state='absent')
 
 
-# def test_copy_vsam_ksds_to_existing_vsam_ksds(ansible_zos_module):
-#     pass
-
-
-# def test_copy_vsam_ksds_to_non_existing_vsam_ksds(ansible_zos_module):
-#     pass
-
-
-# def test_copy_vsam_lds_to_existing_vsam_lds(ansible_zos_module):
-#     pass
-
-
-# def test_copy_vsam_lds_to_non_existing_vsam_lds(ansible_zos_module):
-#     pass
-
-
-# def test_copy_inline_content_to_uss_file(ansible_zos_module):
-#     pass
-
-
-# def test_copy_inline_content_to_ps(ansible_zos_module):
-#     pass
-
-
-# def test_copy_inline_content_to_pds_member(ansible_zos_module):
-#     pass
-
-
-# def test_copy_inline_content_to_pdse_member(ansible_zos_module):
-#     pass
-
-
-# def test_backup_uss_file(ansible_zos_module):
-#     pass
-
-
-# def test_backup_ps(ansible_zos_module):
-#     pass
-
-
-# def test_backup_pds(ansible_zos_module):
-#     pass
-
-
-# def test_backup_pds_member(ansible_zos_module):
-#     pass
-
-
-# def test_backup_pdse(ansible_zos_module):
-#     pass
-
-
-# def test_backup_vsam(ansible_zos_module):
-#     pass
-
-
-# def test_copy_to_existing_dest_not_forced(ansible_zos_module):
-#     pass
-
-
-# def test_copy_local_symlink_to_uss_file(ansible_zos_module):
-#     pass
-
-
-# def test_copy_local_file_to_uss_file_convert_encoding(ansible_zos_module):
-#     pass
-
-
-# def test_copy_uss_file_to_uss_file_convert_encoding(ansible_zos_module):
-#     pass
-
-
-# def test_copy_uss_file_to_pds_member_convert_encoding(ansible_zos_module):
-#     pass
-
-
-# def test_ensure_tmp_cleanup(ansible_zos_module):
-#     pass
-
-
-# def test_backup_uss_file_default_backup_path(ansible_zos_module):
-#     pass
-
-
-# def test_backup_sequential_data_set_default_backup_path(ansible_zos_module):
-#     pass
-
-
-# def test_backup_pds_default_backup_path(ansible_zos_module):
-#     pass
-
-
-# def test_backup_pdse_default_backup_path(ansible_zos_module):
-#     pass
-
-
-# def test_backup_vsam_default_backup_path(ansible_zos_module):
-#     pass
-
-
-# def test_backup_uss_file_user_backup_path(ansible_zos_module):
-#     pass
-
-
-# def test_backup_sequential_data_set_user_backup_path(ansible_zos_module):
-#     pass
-
-
-# def test_backup_pds_user_backup_path(ansible_zos_module):
-#     pass
-
-
-# def test_backup_pdse_user_backup_path(ansible_zos_module):
-#     pass
-
-
-# def test_backup_vsam_user_backup_path(ansible_zos_module):
-#     pass
-
-
-# def test_copy_inline_content_to_uss_file(ansible_zos_module):
-#     pass
-
-
-# def test_copy_inline_content_to_sequential_data_set(ansible_zos_module):
-#     pass
-
-
-# def test_copy_inline_content_to_pds_member(ansible_zos_module):
-#     pass
-
-
-# def test_copy_inline_content_to_pdse_member(ansible_zos_module):
-#     pass
+def test_copy_vsam_ksds_to_existing_vsam_ksds(ansible_zos_module):
+    hosts = ansible_zos_module
+    src_ds = 'SYS1.STGINDEX'
+    dest_ds = "USER.TEST.VSAM.KSDS"
+    try:
+        create_vsam_ksds(dest_ds, ansible_zos_module)
+        copy_res = hosts.all.zos_copy(
+            src=src_ds,
+            dest=dest_ds,
+            is_vsam=True,
+            remote_src=True
+        )
+        verify_copy = hosts.all.shell(
+            cmd="tsocmd \"LISTDS '{0}'\"".format(dest_ds), 
+            executable=SHELL_EXECUTABLE
+        )
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+        for result in verify_copy.contacted.values():
+            assert result.get('rc') == 0
+            assert "NOT IN CATALOG" not in result.get('stderr')
+            assert "NOT IN CATALOG" not in result.get('stdout')
+            assert "VSAM" in result.get('stdout')
+    finally:
+        hosts.all.zos_data_set(name=dest_ds, state='absent')
+
+
+def test_copy_vsam_ksds_to_non_existing_vsam_ksds(ansible_zos_module):
+    hosts = ansible_zos_module
+    src_ds = 'SYS1.STGINDEX'
+    dest_ds = "USER.TEST.VSAM.KSDS"
+    try:
+        copy_res = hosts.all.zos_copy(
+            src=src_ds,
+            dest=dest_ds,
+            is_vsam=True,
+            remote_src=True
+        )
+        verify_copy = hosts.all.shell(
+            cmd="tsocmd \"LISTDS '{0}'\"".format(dest_ds), 
+            executable=SHELL_EXECUTABLE
+        )
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+        for result in verify_copy.contacted.values():
+            assert result.get('rc') == 0
+            assert "NOT IN CATALOG" not in result.get('stderr')
+            assert "NOT IN CATALOG" not in result.get('stdout')
+            assert "VSAM" in result.get('stdout')
+    finally:
+        hosts.all.zos_data_set(name=dest_ds, state='absent')
+
+
+def test_copy_empty_vsam_fails(ansible_zos_module):
+    hosts = ansible_zos_module
+    src_ds = 'IMSTESTL.LDS01.WADS2'
+    dest_ds = "USER.TEST.VSAM.LDS"
+    try:
+        copy_res = hosts.all.zos_copy(
+            src=src_ds,
+            dest=dest_ds,
+            is_vsam=True,
+            remote_src=True
+        )
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is not None
+    finally:
+        hosts.all.zos_data_set(name=dest_ds, state='absent')
+
+
+def test_copy_inline_content_to_existing_uss_file(ansible_zos_module):
+    hosts = ansible_zos_module
+    dest_path = '/tmp/inline'
+    try:
+        hosts.all.file(path=dest_path, state='absent')
+        copy_res = hosts.all.zos_copy(
+            content='Inline content',
+            dest=dest_path
+        )
+        stat_res = hosts.all.stat(path=dest_path)
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+        for result in stat_res.contacted.values():
+            assert result.get('stat').get('exists') is True
+    finally:
+        hosts.all.file(path=dest_path, state='absent')
+
+
+def test_copy_inline_content_to_uss_dir(ansible_zos_module):
+    hosts = ansible_zos_module
+    dest = '/tmp/'
+    dest_path = '/tmp/content'
+    try:
+        copy_res = hosts.all.zos_copy(
+            content='Inline content',
+            dest=dest
+        )
+        stat_res = hosts.all.stat(path=dest_path)
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+        for result in stat_res.contacted.values():
+            assert result.get('stat').get('exists') is True
+    finally:
+        hosts.all.file(path=dest_path, state='absent')
+
+
+def test_copy_inline_content_to_ps(ansible_zos_module):
+    hosts = ansible_zos_module
+    dest_path = "USER.TEST.SEQ.FUNCTEST"
+    try:
+        copy_res = hosts.all.zos_copy(
+            content='Inline content',
+            dest=dest_path
+        )
+        verify_copy = hosts.all.shell(
+            cmd="head \"//'{0}'\"".format(dest_path),
+            executable=SHELL_EXECUTABLE
+        )
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+        for result in verify_copy.contacted.values():
+            assert result.get('rc') == 0
+            assert result.get('stdout') != ""
+    finally:
+        hosts.all.zos_data_set(name=dest_path, state='absent')
+
+
+def test_copy_inline_content_to_pds_member(ansible_zos_module):
+    hosts = ansible_zos_module
+    dest_ds = "USER.TEST.PDS.FUNCTEST"
+    dest_path = "USER.TEST.PDS.FUNCTEST(CONTENT)"
+    try:
+        hosts.all.zos_data_set(
+            type='pds', size='5M', format='fba', record_length=25
+        )
+        copy_res = hosts.all.zos_copy(
+            content='Inline content',
+            dest=dest_path
+        )
+        verify_copy = hosts.all.shell(
+            cmd="head \"//'{0}'\"".format(dest_path),
+            executable=SHELL_EXECUTABLE
+        )
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+        for result in verify_copy.contacted.values():
+            assert result.get('rc') == 0
+            assert result.get('stdout') != ""
+    finally:
+        hosts.all.zos_data_set(name=dest_ds, state='absent')
+
+
+def test_copy_inline_content_to_pdse_member(ansible_zos_module):
+    hosts = ansible_zos_module
+    dest_ds = "USER.TEST.PDS.FUNCTEST"
+    dest_path = "USER.TEST.PDS.FUNCTEST(CONTENT)"
+    try:
+        hosts.all.zos_data_set(
+            type='pdse', size='5M', format='fba', record_length=25
+        )
+        copy_res = hosts.all.zos_copy(
+            content='Inline content',
+            dest=dest_path
+        )
+        verify_copy = hosts.all.shell(
+            cmd="head \"//'{0}'\"".format(dest_path),
+            executable=SHELL_EXECUTABLE
+        )
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+        for result in verify_copy.contacted.values():
+            assert result.get('rc') == 0
+            assert result.get('stdout') != ""
+    finally:
+        hosts.all.zos_data_set(name=dest_ds, state='absent')
+
+
+def test_copy_to_existing_dest_not_forced(ansible_zos_module):
+    hosts = ansible_zos_module
+    dest_path = '/tmp/profile'
+    try:
+        hosts.all.file(path=dest_path, state='touch')
+        copy_res = hosts.all.zos_copy(
+            src='/etc/profile',
+            dest=dest_path,
+            force=False
+        )
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+            assert result.get('note') is not None
+    finally:
+        hosts.all.file(path=dest_path, state='absent')
+
+
+def test_copy_local_symlink_to_uss_file(ansible_zos_module):
+    hosts = ansible_zos_module
+    src_lnk = '/tmp/etclnk'
+    dest_path = '/tmp/profile'
+    try:
+        try:
+            os.symlink('/etc/profile', src_lnk)
+        except FileExistsError:
+            pass
+        hosts.all.file(path=dest_path, state='touch')
+        copy_res = hosts.all.zos_copy(
+            src=src_lnk,
+            dest=dest_path,
+            local_follow=True
+        )
+        verify_copy = hosts.all.shell(
+            cmd="head {0}".format(dest_path),
+            executable=SHELL_EXECUTABLE
+        )
+        stat_res = hosts.all.stat(path=dest_path)
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+        for result in stat_res.contacted.values():
+            assert result.get('stat').get('exists') is True
+        for result in verify_copy.contacted.values():
+            assert result.get('rc') == 0
+            assert result.get('stdout') != ""
+    finally:
+        hosts.all.file(path=dest_path, state='absent')
+        os.remove(src_lnk)
+
+
+def test_copy_local_file_to_uss_file_convert_encoding(ansible_zos_module):
+    hosts = ansible_zos_module
+    dest_path = '/tmp/profile'
+    try:
+        hosts.all.file(path=dest_path, state='absent')
+        copy_res = hosts.all.zos_copy(
+            src='/etc/profile',
+            dest=dest_path,
+            encoding={'from': "ISO8859-1", 'to': "IBM-1047"}
+        )
+        stat_res = hosts.all.stat(path=dest_path)
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+        for result in stat_res.contacted.values():
+            assert result.get('stat').get('exists') is True
+    finally:
+        hosts.all.file(path=dest_path, state='absent')
+
+
+def test_copy_uss_file_to_uss_file_convert_encoding(ansible_zos_module):
+    hosts = ansible_zos_module
+    dest_path = '/tmp/profile'
+    try:
+        hosts.all.file(path=dest_path, state='absent')
+        copy_res = hosts.all.zos_copy(
+            src='/etc/profile',
+            dest=dest_path,
+            encoding={'from': "IBM-1047", 'to': "IBM-1047"},
+            remote_src=True
+        )
+        stat_res = hosts.all.stat(path=dest_path)
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+        for result in stat_res.contacted.values():
+            assert result.get('stat').get('exists') is True
+    finally:
+        hosts.all.file(path=dest_path, state='absent')
+
+
+def test_copy_uss_file_to_pds_member_convert_encoding(ansible_zos_module):
+    hosts = ansible_zos_module
+    src = "/etc/profile"
+    dest_path = "USER.TEST.PDS.FUNCTEST"
+    try:
+        hosts.all.zos_data_set(
+            type='pds', size='5M', format='fba', record_length=25
+        )
+        copy_res = hosts.all.zos_copy(
+            src=src,
+            dest=dest_path,
+            remote_src=True,
+            encoding={'from': "IBM-1047", 'to': "IBM-1047"}
+        )
+        verify_copy = hosts.all.shell(
+            cmd="head \"//'{0}'\"".format(dest_path+"(PROFILE)"),
+            executable=SHELL_EXECUTABLE
+        )
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+        for result in verify_copy.contacted.values():
+            assert result.get('rc') == 0
+            assert result.get('stdout') != ""
+    finally:
+        hosts.all.zos_data_set(name=dest_path, state='absent')
+
+
+def test_ensure_tmp_cleanup(ansible_zos_module):
+    pass
+
+
+def test_backup_uss_file_default_backup_path(ansible_zos_module):
+    pass
+
+
+def test_backup_sequential_data_set_default_backup_path(ansible_zos_module):
+    pass
+
+
+def test_backup_pds_default_backup_path(ansible_zos_module):
+    pass
+
+
+def test_backup_pdse_default_backup_path(ansible_zos_module):
+    pass
+
+
+def test_backup_vsam_default_backup_path(ansible_zos_module):
+    pass
+
+
+def test_backup_uss_file_user_backup_path(ansible_zos_module):
+    pass
+
+
+def test_backup_sequential_data_set_user_backup_path(ansible_zos_module):
+    pass
+
+
+def test_backup_pds_user_backup_path(ansible_zos_module):
+    pass
+
+
+def test_backup_pdse_user_backup_path(ansible_zos_module):
+    pass
+
+
+def test_backup_vsam_user_backup_path(ansible_zos_module):
+    pass

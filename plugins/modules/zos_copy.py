@@ -719,7 +719,7 @@ class USSCopyHandler(CopyHandler):
             conv_path {str} -- Path to the converted source file or directory
         """
         if os.path.isdir(dest):
-            dest = os.path.join(dest, os.path.basename(src))
+            dest = os.path.join(dest, os.path.basename(src) if src else 'content')
 
         src = temp_path or conv_path or src
         try:
@@ -868,7 +868,7 @@ class PDSECopyHandler(CopyHandler):
         Keyword Arguments:
             copy_member {bool} -- Whether destination specifies a member name. (default {False})
         """
-        if '/' in src and not copy_member:
+        if src and '/' in src and not copy_member:
             dest = "{0}({1})".format(dest, os.path.basename(src))
         
         src = temp_path or conv_path or src
@@ -1130,6 +1130,7 @@ def run_module():
             content=dict(type='str', no_log=True),
             backup=dict(type='bool', default=False),
             backup_path=dict(type='str'),
+            local_follow=dict(type='bool'),
             force=dict(type='bool', default=True),
             remote_src=dict(type='bool', default=False),
             validate=dict(type='bool'),
@@ -1153,6 +1154,7 @@ def run_module():
         backup=dict(arg_type='bool', default=False, required=False),
         backup_path=dict(arg_type='data_set_or_path', required=False),
         force=dict(arg_type='bool', default=True, required=False),
+        local_follow=dict(arg_type='bool', default=True, required=False),
         remote_src=dict(arg_type='bool', default=False, required=False),
         checksum=dict(arg_type='str', required=False),
         validate=dict(arg_type='bool', required=False)
@@ -1214,7 +1216,7 @@ def run_module():
         # actual name of the data set.
         # ********************************************************************
         dest_name = CopyUtil.extract_dsname(dest)
-        src_name = CopyUtil.extract_dsname(src)
+        src_name = CopyUtil.extract_dsname(src) if src else None
         member_name = CopyUtil.extract_member_name(src) if src_member else None
 
         backup_path = None
@@ -1319,7 +1321,7 @@ def run_module():
                         src, dest_name, alloc_size, src_ds_type, remote_src=remote_src, 
                         vol=src_ds_vol
                     )
-                elif is_vsam:
+                elif src_ds_type == "VSAM" or is_vsam:
                     dest_ds_type = "VSAM"
                 elif not is_uss:
                     dest_ds_type = "SEQ"

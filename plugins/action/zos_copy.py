@@ -151,8 +151,8 @@ class ActionModule(ActionBase):
         temp_path = real_path = None
         is_uss = '/' in dest if dest else None
         is_mvs_dest = _is_data_set(dest) if dest else None
-        src_member = _is_member(src)
-        copy_member = _is_member(dest)
+        src_member = _is_member(src) if src else None
+        copy_member = _is_member(dest) if dest else None
         
         if src:
             src = os.path.realpath(src)

@@ -573,18 +573,13 @@ class CopyHandler(object):
         try:
             if ds_type == "USS":
                 return backup.uss_file_backup(ds_name, backup_name=backup_path)
-            else:
-                hlq = Datasets.hlq()
-                backup_path = Datasets.temp_name(hlq)
-                backup.mvs_file_backup(ds_name, backup_path)
-                return backup_path
+            return backup.mvs_file_backup(ds_name, backup_path)
         except Exception as err:
             self._fail_json(
                 msg="Unable to back up destination {0}".format(ds_name),
                 stderr=str(err)
             )
             
-
     def allocate_model(self, ds_name, model):
         """Use 'model' data sets allocation paramters to allocate the given
         data set.
@@ -597,7 +592,9 @@ class CopyHandler(object):
         Returns:
             {int} -- The return code of executing the allocation command 
         """
-        alloc_cmd = "  ALLOC DS('{0}') LIKE('{1}')".format(ds_name, model)
+        alloc_cmd = """  ALLOC -
+        DS('{0}') -
+        LIKE('{1}')""".format(ds_name, model)
         rc, out, err = self._run_mvs_command("IKJEFT01", alloc_cmd, authorized=True)
         if rc != 0:
             self._fail_json(
@@ -1415,12 +1412,10 @@ def run_module():
             src=src,
             dest=dest,
             ds_type=dest_ds_type,
-            dest_exists=dest_exists
+            dest_exists=dest_exists,
+            backup_file=backup_path
         )  
     )
-    if backup_path:
-        res_args['backup_file'] = backup_path
-
     module.exit_json(**res_args)
 
 

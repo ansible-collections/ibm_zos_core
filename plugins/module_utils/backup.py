@@ -180,7 +180,9 @@ def _allocate_model(ds, model):
         BackupError: When allocation fails
     """
     module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
-    alloc_cmd = "  ALLOC DS('{0}') LIKE('{1}')".format(ds, model)
+    alloc_cmd = """  ALLOC - 
+    DS('{0}') -
+    LIKE('{1}')""".format(ds, model)
     cmd = "mvscmdauth --pgm=ikjeft01 --systsprt=* --systsin=stdin"
     rc, out, err = module.run_command(cmd, data=alloc_cmd)
     if rc != 0:

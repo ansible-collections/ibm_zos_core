@@ -39,7 +39,7 @@ def create_vsam_ksds(ds_name, ansible_zos_module):
     RECSZ(80,80)            -
     TRACKS(1,1)             -
     KEYS(5,0)               -
-    CISZ(4096)              - 
+    CISZ(4096)              -
     VOLUMES(000000)         -
     FREESPACE(3,3) )        -
     DATA (NAME({0}.DATA))   -
@@ -117,7 +117,7 @@ def test_copy_local_file_to_non_existing_sequential_data_set(ansible_zos_module)
     try:
         copy_result = hosts.all.zos_copy(src=src_file, dest=dest)
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{0}'\" > /dev/null 2>/dev/null".format(dest), 
+            cmd="cat \"//'{0}'\" > /dev/null 2>/dev/null".format(dest),
             executable=SHELL_EXECUTABLE
         )
         for cp_res in copy_result.contacted.values():
@@ -136,7 +136,7 @@ def test_copy_local_file_to_existing_sequential_data_set(ansible_zos_module):
         hosts.all.zos_data_set(name=dest, type='seq', state='present')
         copy_result = hosts.all.zos_copy(src=src_file, dest=dest)
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{}'\"".format(dest), 
+            cmd="cat \"//'{0}'\"".format(dest),
             executable=SHELL_EXECUTABLE
         )
         for cp_res in copy_result.contacted.values():
@@ -160,7 +160,7 @@ def test_copy_local_file_to_existing_pdse_member(ansible_zos_module):
         hosts.all.zos_data_set(name=dest_path, type='MEMBER', replace='yes')
         copy_result = hosts.all.zos_copy(src=src_file, dest=dest_path)
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{}'\" > /dev/null 2>/dev/null".format(dest_path), 
+            cmd="cat \"//'{0}'\" > /dev/null 2>/dev/null".format(dest_path),
             executable=SHELL_EXECUTABLE
         )
         for cp_res in copy_result.contacted.values():
@@ -181,7 +181,7 @@ def test_copy_local_file_to_non_existing_pdse_member(ansible_zos_module):
         )
         copy_result = hosts.all.zos_copy(src=src_file, dest=dest)
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{0}'\" > /dev/null 2>/dev/null".format(dest + '(PROFILE)'), 
+            cmd="cat \"//'{0}'\" > /dev/null 2>/dev/null".format(dest + '(PROFILE)'),
             executable=SHELL_EXECUTABLE
         )
         for cp_res in copy_result.contacted.values():
@@ -200,7 +200,7 @@ def test_copy_local_file_to_non_existing_pdse(ansible_zos_module):
     try:
         copy_result = hosts.all.zos_copy(src=src_file, dest=dest_path)
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{0}'\" > /dev/null 2>/dev/null".format(dest_path), 
+            cmd="cat \"//'{0}'\" > /dev/null 2>/dev/null".format(dest_path),
             executable=SHELL_EXECUTABLE
         )
         for cp_res in copy_result.contacted.values():
@@ -221,7 +221,7 @@ def test_copy_local_dir_to_existing_pdse(ansible_zos_module):
         hosts.all.zos_data_set(name=dest + '(FILE1)', type='MEMBER', replace='yes')
         copy_result = hosts.all.zos_copy(src=source_path, dest=dest)
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{0}'\" > /dev/null 2>/dev/null".format(dest+"(FILE2)"), 
+            cmd="cat \"//'{0}'\" > /dev/null 2>/dev/null".format(dest+"(FILE2)"),
             executable=SHELL_EXECUTABLE
         )
         for cp_res in copy_result.contacted.values():
@@ -241,7 +241,7 @@ def test_copy_local_dir_to_non_existing_pdse(ansible_zos_module):
         populate_dir(source_path)
         copy_result = hosts.all.zos_copy(src=source_path, dest=dest)
         verify_copy = hosts.all.shell(
-            cmd="tsocmd \"LISTDS '{}'\" > /dev/null 2>/dev/null".format(dest), 
+            cmd="tsocmd \"LISTDS '{0}'\" > /dev/null 2>/dev/null".format(dest),
             executable=SHELL_EXECUTABLE
         )
         for cp_res in copy_result.contacted.values():
@@ -278,12 +278,12 @@ def test_copy_local_file_to_sequential_data_set_binary(ansible_zos_module):
     src_file = '/etc/profile'
     try:
         copy_result = hosts.all.zos_copy(
-            src=src_file, 
+            src=src_file,
             dest=dest,
             is_binary=True
         )
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{}'\" > /dev/null 2>/dev/null".format(dest), 
+            cmd="cat \"//'{0}'\" > /dev/null 2>/dev/null".format(dest),
             executable=SHELL_EXECUTABLE
         )
         for cp_res in copy_result.contacted.values():
@@ -305,12 +305,12 @@ def test_copy_local_file_to_pds_member_binary(ansible_zos_module):
         )
         hosts.all.zos_data_set(name=dest_path, type='MEMBER', replace='yes')
         copy_result = hosts.all.zos_copy(
-            src=src_file, 
+            src=src_file,
             dest=dest_path,
             is_binary=True
         )
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{}'\" > /dev/null 2>/dev/null".format(dest_path), 
+            cmd="cat \"//'{0}'\" > /dev/null 2>/dev/null".format(dest_path),
             executable=SHELL_EXECUTABLE
         )
         for cp_res in copy_result.contacted.values():
@@ -332,12 +332,12 @@ def test_copy_local_file_to_pdse_member_binary(ansible_zos_module):
         )
         hosts.all.zos_data_set(name=dest_path, type='MEMBER', replace='yes')
         copy_result = hosts.all.zos_copy(
-            src=src_file, 
+            src=src_file,
             dest=dest_path,
             is_binary=True
         )
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{}'\" > /dev/null 2>/dev/null".format(dest_path), 
+            cmd="cat \"//'{0}'\" > /dev/null 2>/dev/null".format(dest_path),
             executable=SHELL_EXECUTABLE
         )
         for cp_res in copy_result.contacted.values():
@@ -355,8 +355,8 @@ def test_copy_uss_file_to_uss_file(ansible_zos_module):
     try:
         hosts.all.file(path=dest, state='absent')
         copy_result = hosts.all.zos_copy(
-            src=remote_src, 
-            dest=dest, 
+            src=remote_src,
+            dest=dest,
             remote_src=True
         )
         stat_res = hosts.all.stat(path=dest)
@@ -376,8 +376,8 @@ def test_copy_uss_file_to_uss_dir(ansible_zos_module):
     try:
         hosts.all.file(path=dest_path, state='absent')
         copy_result = hosts.all.zos_copy(
-            src=remote_src, 
-            dest=dest, 
+            src=remote_src,
+            dest=dest,
             remote_src=True
         )
         stat_res = hosts.all.stat(path=dest_path)
@@ -395,12 +395,12 @@ def test_copy_uss_file_to_non_existing_sequential_data_set(ansible_zos_module):
     src_file = '/etc/profile'
     try:
         copy_result = hosts.all.zos_copy(
-            src=src_file, 
+            src=src_file,
             dest=dest,
             remote_src=True
         )
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{}'\" > /dev/null 2>/dev/null".format(dest), 
+            cmd="cat \"//'{0}'\" > /dev/null 2>/dev/null".format(dest),
             executable=SHELL_EXECUTABLE
         )
         for cp_res in copy_result.contacted.values():
@@ -418,12 +418,12 @@ def test_copy_uss_file_to_existing_sequential_data_set(ansible_zos_module):
     try:
         hosts.all.zos_data_set(name=dest, type='seq', state='present')
         copy_result = hosts.all.zos_copy(
-            src=src_file, 
+            src=src_file,
             dest=dest,
             remote_src=True
         )
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{}'\" > /dev/null 2>/dev/null".format(dest), 
+            cmd="cat \"//'{0}'\" > /dev/null 2>/dev/null".format(dest),
             executable=SHELL_EXECUTABLE
         )
         for cp_res in copy_result.contacted.values():
@@ -444,12 +444,12 @@ def test_copy_uss_file_to_non_existing_pdse_member(ansible_zos_module):
             name=dest, type='pdse', size='5M', format='fba', record_length=25
         )
         copy_result = hosts.all.zos_copy(
-            src=src_file, 
+            src=src_file,
             dest=dest_path,
             remote_src=True
         )
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{}'\" > /dev/null 2>/dev/null".format(dest_path), 
+            cmd="cat \"//'{0}'\" > /dev/null 2>/dev/null".format(dest_path),
             executable=SHELL_EXECUTABLE
         )
         for cp_res in copy_result.contacted.values():
@@ -473,12 +473,12 @@ def test_copy_uss_file_to_existing_pdse_member(ansible_zos_module):
             name=dest_path, type='MEMBER', replace='yes'
         )
         copy_result = hosts.all.zos_copy(
-            src=src_file, 
+            src=src_file,
             dest=dest_path,
             remote_src=True
         )
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{}'\" > /dev/null 2>/dev/null".format(dest_path), 
+            cmd="cat \"//'{0}'\" > /dev/null 2>/dev/null".format(dest_path),
             executable=SHELL_EXECUTABLE
         )
         for cp_res in copy_result.contacted.values():
@@ -507,7 +507,7 @@ def test_copy_uss_dir_to_existing_pdse(ansible_zos_module):
             remote_src=True
         )
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{}'\" > /dev/null 2>/dev/null".format(dest + "(FILE2)"), 
+            cmd="cat \"//'{0}'\" > /dev/null 2>/dev/null".format(dest + "(FILE2)"),
             executable=SHELL_EXECUTABLE
         )
         for result in copy_res.contacted.values():
@@ -534,7 +534,7 @@ def test_copy_uss_dir_to_non_existing_pdse(ansible_zos_module):
             remote_src=True
         )
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{}'\" > /dev/null 2>/dev/null".format(dest + "(FILE2)"), 
+            cmd="cat \"//'{0}'\" > /dev/null 2>/dev/null".format(dest + "(FILE2)"),
             executable=SHELL_EXECUTABLE
         )
         for result in copy_res.contacted.values():
@@ -559,7 +559,7 @@ def test_copy_ps_to_existing_uss_file(ansible_zos_module):
         )
         stat_res = hosts.all.stat(path=dest)
         verify_copy = hosts.all.shell(
-            cmd="cat {0}".format(dest), 
+            cmd="cat {0}".format(dest),
             executable=SHELL_EXECUTABLE
         )
         for result in copy_res.contacted.values():
@@ -585,7 +585,7 @@ def test_copy_ps_to_non_existing_uss_file(ansible_zos_module):
         )
         stat_res = hosts.all.stat(path=dest)
         verify_copy = hosts.all.shell(
-            cmd="cat {0}".format(dest), 
+            cmd="cat {0}".format(dest),
             executable=SHELL_EXECUTABLE
         )
         for result in copy_res.contacted.values():
@@ -613,7 +613,7 @@ def test_copy_ps_to_existing_uss_dir(ansible_zos_module):
         )
         stat_res = hosts.all.stat(path=dest_path)
         verify_copy = hosts.all.shell(
-            cmd="cat {0}".format(dest_path), 
+            cmd="cat {0}".format(dest_path),
             executable=SHELL_EXECUTABLE
         )
         for result in copy_res.contacted.values():
@@ -638,7 +638,7 @@ def test_copy_ps_to_non_existing_ps(ansible_zos_module):
             remote_src=True
         )
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{}'\"".format(dest), 
+            cmd="cat \"//'{0}'\"".format(dest),
             executable=SHELL_EXECUTABLE
         )
         for result in copy_res.contacted.values():
@@ -662,7 +662,7 @@ def test_copy_ps_to_existing_ps(ansible_zos_module):
             remote_src=True
         )
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{}'\"".format(dest), 
+            cmd="cat \"//'{0}'\"".format(dest),
             executable=SHELL_EXECUTABLE
         )
         for result in copy_res.contacted.values():
@@ -688,7 +688,7 @@ def test_copy_ps_to_existing_pdse_member(ansible_zos_module):
             remote_src=True
         )
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{}'\"".format(dest), 
+            cmd="cat \"//'{0}'\"".format(dest),
             executable=SHELL_EXECUTABLE
         )
         for result in copy_res.contacted.values():
@@ -713,7 +713,7 @@ def test_copy_ps_to_non_existing_pdse_member(ansible_zos_module):
             remote_src=True
         )
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{}'\"".format(dest), 
+            cmd="cat \"//'{0}'\"".format(dest),
             executable=SHELL_EXECUTABLE
         )
         for result in copy_res.contacted.values():
@@ -760,7 +760,7 @@ def test_copy_pds_to_existing_pds(ansible_zos_module):
             remote_src=True
         )
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{}'\"".format(dest+"(ATRQUERY)"), 
+            cmd="cat \"//'{0}'\"".format(dest+"(ATRQUERY)"),
             executable=SHELL_EXECUTABLE
         )
         for result in copy_res.contacted.values():
@@ -783,7 +783,7 @@ def test_copy_pds_to_non_existing_pds(ansible_zos_module):
             remote_src=True
         )
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{}'\"".format(dest+"(ATRQUERY)"), 
+            cmd="cat \"//'{0}'\"".format(dest+"(ATRQUERY)"),
             executable=SHELL_EXECUTABLE
         )
         for result in copy_res.contacted.values():
@@ -809,7 +809,7 @@ def test_copy_pds_to_existing_pdse(ansible_zos_module):
             remote_src=True
         )
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{}'\"".format(dest+"(ATRQUERY)"), 
+            cmd="cat \"//'{0}'\"".format(dest+"(ATRQUERY)"),
             executable=SHELL_EXECUTABLE
         )
         for result in copy_res.contacted.values():
@@ -856,7 +856,7 @@ def test_copy_pdse_to_existing_pdse(ansible_zos_module):
             remote_src=True
         )
         verify_copy = hosts.all.shell(
-            cmd="head \"//'{}'\"".format(dest+"(GFSAMAIN)"), 
+            cmd="head \"//'{0}'\"".format(dest+"(GFSAMAIN)"),
             executable=SHELL_EXECUTABLE
         )
         for result in copy_res.contacted.values():
@@ -879,7 +879,7 @@ def test_copy_pdse_to_non_existing_pdse(ansible_zos_module):
             remote_src=True
         )
         verify_copy = hosts.all.shell(
-            cmd="head \"//'{}'\"".format(dest+"(GFSAMAIN)"), 
+            cmd="head \"//'{0}'\"".format(dest+"(GFSAMAIN)"),
             executable=SHELL_EXECUTABLE
         )
         for result in copy_res.contacted.values():
@@ -904,7 +904,7 @@ def test_copy_pds_member_to_existing_uss_file(ansible_zos_module):
         )
         stat_res = hosts.all.stat(path=dest)
         verify_copy = hosts.all.shell(
-            cmd="head {0}".format(dest), 
+            cmd="head {0}".format(dest),
             executable=SHELL_EXECUTABLE
         )
         for result in copy_res.contacted.values():
@@ -930,7 +930,7 @@ def test_copy_pds_member_to_non_existing_uss_file(ansible_zos_module):
         )
         stat_res = hosts.all.stat(path=dest)
         verify_copy = hosts.all.shell(
-            cmd="head {0}".format(dest), 
+            cmd="head {0}".format(dest),
             executable=SHELL_EXECUTABLE
         )
         for result in copy_res.contacted.values():
@@ -956,7 +956,7 @@ def test_copy_pds_member_to_existing_ps(ansible_zos_module):
             remote_src=True
         )
         verify_copy = hosts.all.shell(
-            cmd="head \"//'{0}'\"".format(dest), 
+            cmd="head \"//'{0}'\"".format(dest),
             executable=SHELL_EXECUTABLE
         )
         for result in copy_res.contacted.values():
@@ -979,7 +979,7 @@ def test_copy_pds_member_to_non_existing_ps(ansible_zos_module):
             remote_src=True
         )
         verify_copy = hosts.all.shell(
-            cmd="head \"//'{0}'\"".format(dest), 
+            cmd="head \"//'{0}'\"".format(dest),
             executable=SHELL_EXECUTABLE
         )
         for result in copy_res.contacted.values():
@@ -1009,7 +1009,7 @@ def test_copy_pds_member_to_existing_pds_member(ansible_zos_module):
             remote_src=True
         )
         verify_copy = hosts.all.shell(
-            cmd="head \"//'{}'\"".format(dest), 
+            cmd="head \"//'{0}'\"".format(dest),
             executable=SHELL_EXECUTABLE
         )
         for result in copy_res.contacted.values():
@@ -1036,7 +1036,7 @@ def test_copy_pds_member_to_non_existing_pds_member(ansible_zos_module):
             remote_src=True
         )
         verify_copy = hosts.all.shell(
-            cmd="head \"//'{}'\"".format(dest), 
+            cmd="head \"//'{0}'\"".format(dest),
             executable=SHELL_EXECUTABLE
         )
         for result in copy_res.contacted.values():
@@ -1063,7 +1063,7 @@ def test_copy_pds_member_to_existing_pds(ansible_zos_module):
             remote_src=True
         )
         verify_copy = hosts.all.shell(
-            cmd="head \"//'{}'\"".format(dest), 
+            cmd="head \"//'{0}'\"".format(dest),
             executable=SHELL_EXECUTABLE
         )
         for result in copy_res.contacted.values():
@@ -1093,7 +1093,7 @@ def test_copy_pds_member_to_existing_pdse_member(ansible_zos_module):
             remote_src=True
         )
         verify_copy = hosts.all.shell(
-            cmd="head \"//'{}'\"".format(dest), 
+            cmd="head \"//'{0}'\"".format(dest),
             executable=SHELL_EXECUTABLE
         )
         for result in copy_res.contacted.values():
@@ -1120,7 +1120,7 @@ def test_copy_pds_member_to_non_existing_pdse_member(ansible_zos_module):
             remote_src=True
         )
         verify_copy = hosts.all.shell(
-            cmd="head \"//'{}'\"".format(dest), 
+            cmd="head \"//'{0}'\"".format(dest),
             executable=SHELL_EXECUTABLE
         )
         for result in copy_res.contacted.values():
@@ -1145,7 +1145,7 @@ def test_copy_pdse_member_to_existing_uss_file(ansible_zos_module):
         )
         stat_res = hosts.all.stat(path=dest)
         verify_copy = hosts.all.shell(
-            cmd="head {0}".format(dest), 
+            cmd="head {0}".format(dest),
             executable=SHELL_EXECUTABLE
         )
         for result in copy_res.contacted.values():
@@ -1171,7 +1171,7 @@ def test_copy_pdse_member_to_non_existing_uss_file(ansible_zos_module):
         )
         stat_res = hosts.all.stat(path=dest)
         verify_copy = hosts.all.shell(
-            cmd="head {0}".format(dest), 
+            cmd="head {0}".format(dest),
             executable=SHELL_EXECUTABLE
         )
         for result in copy_res.contacted.values():
@@ -1197,7 +1197,7 @@ def test_copy_pdse_member_to_existing_ps(ansible_zos_module):
             remote_src=True
         )
         verify_copy = hosts.all.shell(
-            cmd="head \"//'{0}'\"".format(dest), 
+            cmd="head \"//'{0}'\"".format(dest),
             executable=SHELL_EXECUTABLE
         )
         for result in copy_res.contacted.values():
@@ -1220,7 +1220,7 @@ def test_copy_pdse_member_to_non_existing_ps(ansible_zos_module):
             remote_src=True
         )
         verify_copy = hosts.all.shell(
-            cmd="head \"//'{0}'\"".format(dest), 
+            cmd="head \"//'{0}'\"".format(dest),
             executable=SHELL_EXECUTABLE
         )
         for result in copy_res.contacted.values():
@@ -1250,7 +1250,7 @@ def test_copy_pdse_member_to_existing_pdse_member(ansible_zos_module):
             remote_src=True
         )
         verify_copy = hosts.all.shell(
-            cmd="head \"//'{}'\"".format(dest), 
+            cmd="head \"//'{0}'\"".format(dest),
             executable=SHELL_EXECUTABLE
         )
         for result in copy_res.contacted.values():
@@ -1277,7 +1277,7 @@ def test_copy_pdse_member_to_non_existing_pdse_member(ansible_zos_module):
             remote_src=True
         )
         verify_copy = hosts.all.shell(
-            cmd="head \"//'{}'\"".format(dest), 
+            cmd="head \"//'{0}'\"".format(dest),
             executable=SHELL_EXECUTABLE
         )
         for result in copy_res.contacted.values():
@@ -1307,7 +1307,7 @@ def test_copy_pdse_member_to_existing_pds_member(ansible_zos_module):
             remote_src=True
         )
         verify_copy = hosts.all.shell(
-            cmd="head \"//'{}'\"".format(dest), 
+            cmd="head \"//'{0}'\"".format(dest),
             executable=SHELL_EXECUTABLE
         )
         for result in copy_res.contacted.values():
@@ -1334,7 +1334,7 @@ def test_copy_pdse_member_to_non_existing_pds_member(ansible_zos_module):
             remote_src=True
         )
         verify_copy = hosts.all.shell(
-            cmd="head \"//'{}'\"".format(dest), 
+            cmd="head \"//'{0}'\"".format(dest),
             executable=SHELL_EXECUTABLE
         )
         for result in copy_res.contacted.values():
@@ -1359,7 +1359,7 @@ def test_copy_pds_member_to_uss_dir(ansible_zos_module):
         )
         stat_res = hosts.all.stat(path=dest_path)
         verify_copy = hosts.all.shell(
-            cmd="head {0}".format(dest_path), 
+            cmd="head {0}".format(dest_path),
             executable=SHELL_EXECUTABLE
         )
         for result in copy_res.contacted.values():
@@ -1386,7 +1386,7 @@ def test_copy_pdse_member_to_uss_dir(ansible_zos_module):
         )
         stat_res = hosts.all.stat(path=dest_path)
         verify_copy = hosts.all.shell(
-            cmd="head {0}".format(dest_path), 
+            cmd="head {0}".format(dest_path),
             executable=SHELL_EXECUTABLE
         )
         for result in copy_res.contacted.values():
@@ -1413,7 +1413,7 @@ def test_copy_vsam_ksds_to_existing_vsam_ksds(ansible_zos_module):
             remote_src=True
         )
         verify_copy = hosts.all.shell(
-            cmd="tsocmd \"LISTDS '{0}'\"".format(dest_ds), 
+            cmd="tsocmd \"LISTDS '{0}'\"".format(dest_ds),
             executable=SHELL_EXECUTABLE
         )
         for result in copy_res.contacted.values():
@@ -1439,7 +1439,7 @@ def test_copy_vsam_ksds_to_non_existing_vsam_ksds(ansible_zos_module):
             remote_src=True
         )
         verify_copy = hosts.all.shell(
-            cmd="tsocmd \"LISTDS '{0}'\"".format(dest_ds), 
+            cmd="tsocmd \"LISTDS '{0}'\"".format(dest_ds),
             executable=SHELL_EXECUTABLE
         )
         for result in copy_res.contacted.values():
@@ -1708,7 +1708,7 @@ def test_ensure_tmp_cleanup(ansible_zos_module):
         copy_res = hosts.all.zos_copy(src=src, dest=dest)
         for result in copy_res.contacted.values():
             assert result.get('msg') is None
-        
+
         stat_dir = hosts.all.shell(
             cmd="ls -l",
             executable=SHELL_EXECUTABLE,

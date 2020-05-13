@@ -51,11 +51,11 @@ def _update_result(is_binary, **copy_res):
         checksum = copy_res.get("checksum")
         if checksum:
             updated_result['checksum'] = checksum
-    
+
     backup_file = copy_res.get("backup_file")
     if backup_file:
         updated_result['backup_file'] = backup_file
-    
+
     return updated_result
 
 
@@ -129,7 +129,7 @@ class ActionModule(ActionBase):
 
         result = super(ActionModule, self).run(tmp, task_vars)
         del tmp
-        
+
         src = self._task.args.get('src', None)
         b_src = to_bytes(src, errors='surrogate_or_strict')
         dest = self._task.args.get('dest', None)
@@ -153,7 +153,7 @@ class ActionModule(ActionBase):
         is_mvs_dest = _is_data_set(dest) if dest else None
         src_member = _is_member(src) if src else None
         copy_member = _is_member(dest) if dest else None
-        
+
         if src:
             src = os.path.realpath(src)
             is_src_dir = os.path.isdir(src)
@@ -187,7 +187,7 @@ class ActionModule(ActionBase):
 
         elif (not backup) and backup_path is not None:
             result['msg'] = "Backup path provided but 'backup' parameter is False"
-        
+
         if not is_uss:
             if mode or owner or group:
                 result['msg'] = (
@@ -205,7 +205,7 @@ class ActionModule(ActionBase):
                     "The local file {0} does not have appropriate "
                     "read permisssion".format(src)
                 )
-        
+
         if result.get('msg'):
             result.update(dict(src=src, dest=dest, changed=False, failed=True))
             return result
@@ -239,8 +239,8 @@ class ActionModule(ActionBase):
 
         new_module_args.update(
             dict(
-                is_uss=is_uss, 
-                is_pds=is_pds, 
+                is_uss=is_uss,
+                is_pds=is_pds,
                 copy_member=copy_member,
                 src_member=src_member,
                 temp_path=temp_path,
@@ -248,8 +248,8 @@ class ActionModule(ActionBase):
             )
         )
         copy_res = self._execute_module(
-            module_name='zos_copy', 
-            module_args=new_module_args, 
+            module_name='zos_copy',
+            module_args=new_module_args,
             task_vars=task_vars
         )
         if copy_res.get('note'):
@@ -265,7 +265,7 @@ class ActionModule(ActionBase):
                     stdout_lines=copy_res.get("stdout_lines"),
                     stderr_lines=copy_res.get("stderr_lines"),
                     rc=copy_res.get('rc')
-                )   
+                )
             )
             self._remote_cleanup(dest, copy_res.get("dest_exists"), task_vars)
             return result
@@ -309,7 +309,7 @@ class ActionModule(ActionBase):
         return dict(temp_path=temp_path)
 
     def _remote_cleanup(self, dest, dest_exists, task_vars):
-        """Remove all files or data sets pointed to by 'dest' on the remote 
+        """Remove all files or data sets pointed to by 'dest' on the remote
         z/OS system. The idea behind this cleanup step is that if, for some
         reason, the module fails after copying the data, we want to return the
         remote system to its original state. Which means deleting any newly

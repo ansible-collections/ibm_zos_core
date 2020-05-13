@@ -575,7 +575,11 @@ class CopyHandler(object):
                 return backup.uss_file_backup(ds_name, backup_name=backup_path)
             return backup.mvs_file_backup(ds_name, backup_path)
         except Exception as err:
-            self._fail_json(msg=str(err))
+            self._fail_json(
+                msg="Unable to back up destination {0}".format(ds_name),
+                stderr=str(err)
+            )
+            
 
     def allocate_model(self, ds_name, model):
         """Use 'model' data sets allocation paramters to allocate the given
@@ -1412,7 +1416,7 @@ def run_module():
         )  
     )
     if backup_path:
-        res_args['backup_path'] = backup_path
+        res_args['backup_file'] = backup_path
 
     module.exit_json(**res_args)
 

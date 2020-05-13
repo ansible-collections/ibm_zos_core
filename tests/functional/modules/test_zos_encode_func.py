@@ -28,6 +28,9 @@ TEST_DATA = """00000001This is for encode conversion testsing
 00000003This is for encode conversion testsing
 00000004This is for encode conversion testsing
 """
+TEST_FILE_TEXT = "HELLO world"
+BACKUP_DATA_SET = "USER.PRIVATE.BACK"
+
 KSDS_CREATE_JCL = """//CREKSDS    JOB (T043JM,JM00,1,0,0,0),'CREATE KSDS',CLASS=R,
 //             MSGCLASS=X,MSGLEVEL=1,NOTIFY=OMVSADM
 //STEP1  EXEC PGM=IDCAMS
@@ -35,16 +38,30 @@ KSDS_CREATE_JCL = """//CREKSDS    JOB (T043JM,JM00,1,0,0,0),'CREATE KSDS',CLASS=
 //SYSIN    DD  *
    DELETE ENCODE.TEST.VS
    SET MAXCC=0
-   DEFINE CLUSTER (NAME(ENCODE.TEST.VS)    -
-   INDEXED                                 -
-   KEYS(8 0)                               -
-   RECSZ(47 47)                            -
-   TRACKS(1,1)                             -
-   CISZ(4096)                              -
-   FREESPACE(3 3)                          -
-   VOLUMES(000000) )                       -
-   DATA (NAME(ENCODE.TEST.VS.DATA))        -
-   INDEX (NAME(ENCODE.TEST.VS.INDEX))
+   DEFINE CLUSTER                          -
+    (NAME(ENCODE.TEST.VS)                  -
+    INDEXED                                -
+    KEYS(12 20)                            -
+    RECSZ(200 200)                         -
+    RECORDS(100)                           -
+    SHAREOPTIONS(2 3)                      -
+    VOLUMES(000000) )                      -
+    DATA (NAME(ENCODE.TEST.VS.DATA))       -
+    INDEX (NAME(ENCODE.TEST.VS.INDEX))
+/*
+"""
+
+KSDS_REPRO_JCL = """//DOREPRO    JOB (T043JM,JM00,1,0,0,0),'CREATE KSDS',CLASS=R,
+//             MSGCLASS=E,MSGLEVEL=1,NOTIFY=OMVSADM
+//REPROJOB   EXEC PGM=IDCAMS
+//SYSPRINT DD  SYSOUT=A
+//SYSIN    DD   *
+ REPRO -
+  INFILE(SYS01) -
+  OUTDATASET({0})
+//SYS01    DD *
+ DDUMMY   RECORD                      !! DO NOT ALTER !!
+ EEXAMPLE RECORD   REMOVE THIS LINE IF EXAMPLES NOT REQUIRED
 /*
 """
 
@@ -112,7 +129,7 @@ def test_uss_encoding_conversion_when_dest_not_exists_01(ansible_zos_module):
         assert result.get("src") == USS_FILE
         assert result.get("dest") == USS_NONE_FILE
         assert result.get("backup_file") is None
-        assert result.get("changed") is True
+        assert result.get("changed") is False
 
 
 def test_uss_encoding_conversion_when_dest_not_exists_02(ansible_zos_module):
@@ -441,3 +458,208 @@ def test_uss_encoding_conversion_mvs_ps_to_mvs_vsam(ansible_zos_module):
         assert result.get("dest") == MVS_VS
         assert result.get("backup_file") is None
         assert result.get("changed") is True
+
+
+def test_pds_backup(ansible_zos_module):
+    hosts = ansible_zos_module
+    hosts.all.zos_data_set(name=BACKUP_DATA_SET, state="absent")
+    hosts.all.zos_data_set(name=MVS_PDS, state="absent")
+    hosts.all.zos_data_set(name=MVS_PDS, state="present", type="pds")
+    hosts.all.shell(cmd="echo '{0}' > {1}".format(TEST_FILE_TEXT, TEMP_JCL_PATH))
+    hosts.all.shell(cmd="cp {0} \"//'{1}(SAMPLE)'\"".format(TEMP_JCL_PATH, MVS_PDS))
+    hosts.all.zos_encode(
+        src=MVS_PDS,
+        from_encoding=TO_ENCODING,
+        to_encoding=FROM_ENCODING,
+        backup=True,
+        backup_file=BACKUP_DATA_SET,
+    )
+    contents = hosts.all.shell(cmd="cat \"//'{0}(SAMPLE)'\"".format(BACKUP_DATA_SET))
+    hosts.all.file(path=TEMP_JCL_PATH, state="absent")
+    hosts.all.zos_data_set(name=MVS_PDS, state="absent")
+    hosts.all.zos_data_set(name=BACKUP_DATA_SET, state="absent")
+    for content in contents.contacted.values():
+        # pprint(content)
+        assert TEST_FILE_TEXT in content.get("stdout")
+
+
+def test_ps_backup(ansible_zos_module):
+    hosts = ansible_zos_module
+    hosts.all.zos_data_set(name=BACKUP_DATA_SET, state="absent")
+    hosts.all.zos_data_set(name=MVS_PS, state="absent")
+    hosts.all.zos_data_set(name=MVS_PS, state="present", type="ps")
+    hosts.all.shell(cmd="echo '{0}' > {1}".format(TEST_FILE_TEXT, TEMP_JCL_PATH))
+    hosts.all.shell(cmd="cp {0} \"//'{1}'\"".format(TEMP_JCL_PATH, MVS_PS))
+    hosts.all.zos_encode(
+        src=MVS_PS,
+        from_encoding=TO_ENCODING,
+        to_encoding=FROM_ENCODING,
+        backup=True,
+        backup_file=BACKUP_DATA_SET,
+    )
+    contents = hosts.all.shell(cmd="cat \"//'{0}'\"".format(BACKUP_DATA_SET))
+    hosts.all.file(path=TEMP_JCL_PATH, state="absent")
+    hosts.all.zos_data_set(name=MVS_PS, state="absent")
+    hosts.all.zos_data_set(name=BACKUP_DATA_SET, state="absent")
+    for content in contents.contacted.values():
+        assert TEST_FILE_TEXT in content.get("stdout")
+
+
+def test_vsam_backup(ansible_zos_module):
+    hosts = ansible_zos_module
+    hosts.all.zos_data_set(name=BACKUP_DATA_SET, state="absent")
+    hosts.all.zos_data_set(name=MVS_VS, state="absent")
+    hosts.all.zos_data_set(name=MVS_PS, state="absent")
+    hosts.all.zos_data_set(
+        name=MVS_PS, state="present", record_length=200, type="seq", format="VB"
+    )
+    hosts.all.file(path=TEMP_JCL_PATH, state="directory")
+    hosts.all.shell(
+        cmd="echo {0} > {1}/SAMPLE".format(quote(KSDS_CREATE_JCL), TEMP_JCL_PATH)
+    )
+    hosts.all.zos_job_submit(
+        src="{0}/SAMPLE".format(TEMP_JCL_PATH), location="USS", wait=True
+    )
+    hosts.all.file(path=TEMP_JCL_PATH, state="absent")
+    # submit JCL to populate KSDS
+    hosts.all.file(path=TEMP_JCL_PATH, state="directory")
+    hosts.all.shell(
+        cmd="echo {0} > {1}/SAMPLE".format(
+            quote(KSDS_REPRO_JCL.format(MVS_VS.upper())), TEMP_JCL_PATH
+        )
+    )
+    hosts.all.zos_job_submit(
+        src="{0}/SAMPLE".format(TEMP_JCL_PATH), location="USS", wait=True
+    )
+    hosts.all.file(path=TEMP_JCL_PATH, state="absent")
+
+    hosts.all.zos_encode(
+        src=MVS_VS, dest=MVS_PS, from_encoding=FROM_ENCODING, to_encoding=TO_ENCODING,
+    )
+    contents = hosts.all.shell(cmd="cat \"//'{0}'\"".format(MVS_PS))
+    content1 = ""
+    hosts.all.zos_data_set(name=MVS_PS, state="absent")
+    for content in contents.contacted.values():
+        content1 = content.get("stdout")
+    hosts.all.zos_encode(
+        src=MVS_VS,
+        from_encoding=FROM_ENCODING,
+        to_encoding=TO_ENCODING,
+        backup=True,
+        backup_file=BACKUP_DATA_SET,
+    )
+    hosts.all.zos_data_set(
+        name=MVS_PS, state="present", record_length=200, type="seq", format="VB"
+    )
+    hosts.all.zos_encode(
+        src=BACKUP_DATA_SET,
+        dest=MVS_PS,
+        from_encoding=FROM_ENCODING,
+        to_encoding=TO_ENCODING,
+    )
+
+    contents = hosts.all.shell(cmd="cat \"//'{0}'\"".format(MVS_PS))
+    content2 = ""
+    hosts.all.zos_data_set(name=MVS_PS, state="absent")
+    for content in contents.contacted.values():
+        content2 = content.get("stdout")
+    hosts.all.zos_data_set(name=MVS_VS, state="absent")
+    hosts.all.zos_data_set(name=BACKUP_DATA_SET, state="absent")
+    assert content1 and (content1 == content2)
+
+
+def test_uss_backup_entire_folder_to_default_backup_location(ansible_zos_module):
+    hosts = ansible_zos_module
+    hosts.all.zos_data_set(name=BACKUP_DATA_SET, state="absent")
+    # create and fill PDS
+    hosts.all.zos_data_set(name=MVS_PDS, state="absent")
+    hosts.all.zos_data_set(name=MVS_PDS, state="present", type="pds")
+    hosts.all.shell(cmd="echo '{0}' > {1}".format(TEST_FILE_TEXT, TEMP_JCL_PATH))
+    hosts.all.shell(cmd="cp {0} \"//'{1}(SAMPLE)'\"".format(TEMP_JCL_PATH, MVS_PDS))
+    hosts.all.shell(cmd="cp {0} \"//'{1}(SAMPLE2)'\"".format(TEMP_JCL_PATH, MVS_PDS))
+    hosts.all.shell(cmd="cp {0} \"//'{1}(SAMPLE3)'\"".format(TEMP_JCL_PATH, MVS_PDS))
+    # create and fill directory
+    hosts.all.file(path=TEMP_JCL_PATH + "2", state="absent")
+    hosts.all.file(path=TEMP_JCL_PATH + "2", state="directory")
+    hosts.all.shell(
+        cmd="echo '{0}' > {1}".format(TEST_FILE_TEXT, TEMP_JCL_PATH + "2/file1")
+    )
+    hosts.all.shell(
+        cmd="echo '{0}' > {1}".format(TEST_FILE_TEXT, TEMP_JCL_PATH + "2/file2")
+    )
+    hosts.all.shell(
+        cmd="echo '{0}' > {1}".format(TEST_FILE_TEXT, TEMP_JCL_PATH + "2/file3")
+    )
+    results = hosts.all.zos_encode(
+        src=MVS_PDS,
+        dest=TEMP_JCL_PATH + "2",
+        from_encoding=TO_ENCODING,
+        to_encoding=FROM_ENCODING,
+        backup=True,
+    )
+    backup_file = None
+    for result in results.contacted.values():
+        backup_file = result.get("backup_file")
+    assert backup_file
+    contents = hosts.all.shell(cmd="cat {0}".format(backup_file + "file1"))
+    content1 = ""
+    for content in contents.contacted.values():
+        content1 = content.get("stdout")
+    contents = hosts.all.shell(cmd="cat {0}".format(backup_file + "file2"))
+    content2 = ""
+    for content in contents.contacted.values():
+        content2 = content.get("stdout")
+    contents = hosts.all.shell(cmd="cat {0}".format(backup_file + "file3"))
+    content3 = ""
+    for content in contents.contacted.values():
+        content3 = content.get("stdout")
+    hosts.all.file(path=TEMP_JCL_PATH, state="absent")
+    hosts.all.file(path=TEMP_JCL_PATH + "2", state="absent")
+    hosts.all.zos_data_set(name=MVS_PDS, state="absent")
+    hosts.all.zos_data_set(name=BACKUP_DATA_SET, state="absent")
+    assert (
+        content1
+        and content1 == content2
+        and content2 == content3
+        and content1 == TEST_FILE_TEXT
+    )
+
+
+def test_uss_backup_entire_folder_to_default_backup_location_compressed(
+    ansible_zos_module,
+):
+    hosts = ansible_zos_module
+    hosts.all.zos_data_set(name=BACKUP_DATA_SET, state="absent")
+    # create and fill PDS
+    hosts.all.zos_data_set(name=MVS_PDS, state="absent")
+    hosts.all.zos_data_set(name=MVS_PDS, state="present", type="pds")
+    hosts.all.shell(cmd="echo '{0}' > {1}".format(TEST_FILE_TEXT, TEMP_JCL_PATH))
+    hosts.all.shell(cmd="cp {0} \"//'{1}(SAMPLE)'\"".format(TEMP_JCL_PATH, MVS_PDS))
+    hosts.all.shell(cmd="cp {0} \"//'{1}(SAMPLE2)'\"".format(TEMP_JCL_PATH, MVS_PDS))
+    hosts.all.shell(cmd="cp {0} \"//'{1}(SAMPLE3)'\"".format(TEMP_JCL_PATH, MVS_PDS))
+    # create and fill directory
+    hosts.all.file(path=TEMP_JCL_PATH + "2", state="absent")
+    hosts.all.file(path=TEMP_JCL_PATH + "2", state="directory")
+    hosts.all.shell(
+        cmd="echo '{0}' > {1}".format(TEST_FILE_TEXT, TEMP_JCL_PATH + "2/file1")
+    )
+    hosts.all.shell(
+        cmd="echo '{0}' > {1}".format(TEST_FILE_TEXT, TEMP_JCL_PATH + "2/file2")
+    )
+    hosts.all.shell(
+        cmd="echo '{0}' > {1}".format(TEST_FILE_TEXT, TEMP_JCL_PATH + "2/file3")
+    )
+    results = hosts.all.zos_encode(
+        src=MVS_PDS,
+        dest=TEMP_JCL_PATH + "2",
+        from_encoding=TO_ENCODING,
+        to_encoding=FROM_ENCODING,
+        backup=True,
+        backup_compress=True,
+    )
+    backup_file = None
+    for result in results.contacted.values():
+        backup_file = result.get("backup_file")
+    results = hosts.all.shell(cmd="ls -la {0}".format(backup_file[:-4] + "*"))
+    for result in results.contacted.values():
+        assert backup_file in result.get("stdout")

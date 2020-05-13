@@ -68,6 +68,7 @@ def mvs_file_backup(dsn, bk_dsn):
             raise BackupError(
                 "Unable to backup data set {0} to {1}".format(dsn, bk_dsn)
             )
+    return bk_dsn
 
 
 def uss_file_backup(path, backup_name=None, compress=False):

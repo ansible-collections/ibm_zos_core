@@ -49,11 +49,11 @@ def mvs_file_backup(dsn, bk_dsn):
         BackupError: When backup data set exists.
         BackupError: When creation of backup data set fails.
     """
-    dsn = _validate_data_set_name(dsn).upper()
-    bk_dsn = _validate_data_set_name(bk_dsn).upper()
     if not bk_dsn:
         hlq = Datasets.hlq()
         bk_dsn = Datasets.temp_name(hlq)
+    dsn = _validate_data_set_name(dsn).upper()
+    bk_dsn = _validate_data_set_name(bk_dsn).upper()
 
     cp_rc = _copy_ds(dsn, bk_dsn)
     # The data set is probably a PDS or PDSE

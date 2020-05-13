@@ -49,11 +49,11 @@ def mvs_file_backup(dsn, bk_dsn):
         BackupError: When backup data set exists.
         BackupError: When creation of backup data set fails.
     """
-    dsn = _validate_data_set_name(dsn).upper()
-    bk_dsn = _validate_data_set_name(bk_dsn).upper()
     if not bk_dsn:
         hlq = Datasets.hlq()
         bk_dsn = Datasets.temp_name(hlq)
+    dsn = _validate_data_set_name(dsn).upper()
+    bk_dsn = _validate_data_set_name(bk_dsn).upper()
 
     cp_rc = _copy_ds(dsn, bk_dsn)
     # The data set is probably a PDS or PDSE
@@ -68,6 +68,7 @@ def mvs_file_backup(dsn, bk_dsn):
             raise BackupError(
                 "Unable to backup data set {0} to {1}".format(dsn, bk_dsn)
             )
+    return bk_dsn
 
 
 def uss_file_backup(path, backup_name=None, compress=False):
@@ -179,7 +180,9 @@ def _allocate_model(ds, model):
         BackupError: When allocation fails
     """
     module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
-    alloc_cmd = "  ALLOC DS('{0}') LIKE('{1}')".format(ds, model)
+    alloc_cmd = """  ALLOC -
+    DS('{0}') -
+    LIKE('{1}')""".format(ds, model)
     cmd = "mvscmdauth --pgm=ikjeft01 --systsprt=* --systsin=stdin"
     rc, out, err = module.run_command(cmd, data=alloc_cmd)
     if rc != 0:

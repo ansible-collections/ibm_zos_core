@@ -573,7 +573,11 @@ class CopyHandler(object):
         try:
             if ds_type == "USS":
                 return backup.uss_file_backup(ds_name, backup_name=backup_path)
-            return backup.mvs_file_backup(ds_name, backup_path)
+            else:
+                hlq = Datasets.hlq()
+                backup_path = Datasets.temp_name(hlq)
+                backup.mvs_file_backup(ds_name, backup_path)
+                return backup_path
         except Exception as err:
             self._fail_json(
                 msg="Unable to back up destination {0}".format(ds_name),
@@ -1223,7 +1227,6 @@ def run_module():
         src_name = CopyUtil.extract_dsname(src) if src else None
         member_name = CopyUtil.extract_member_name(src) if src_member else None
 
-        backup_path = None
         conv_path = None
         src_ds_vol = None
         res_args = dict()

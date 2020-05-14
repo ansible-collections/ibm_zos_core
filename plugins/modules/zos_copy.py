@@ -31,6 +31,7 @@ options:
         a directory.
       - If src a file and dest ends with "/" or destination is a directory, the
         file is copied to the directory with the same filename as src.
+      - If src is a VSAM, destination must also be a VSAM.
       - Required unless using C(content).
     type: str
   dest:
@@ -43,6 +44,10 @@ options:
       - If C(dest) is a nonexistent data set, it will be allocated.
       - If C(src) and C(dest) are files and if the parent directory of C(dest)
         doesn't exist, then the task will fail.
+      - When the C(dest) is VSAM(KSDS) or VSAM(ESDS), then source can be ESDS, 
+        KSDS or RRDS.
+      - When the C(dest) is VSAM(RRDS), then the source must be RRDS.
+      - When C(dest) is VSAM(LDS), then source must be LDS.
     type: str
     required: true
   content:
@@ -117,15 +122,6 @@ options:
     type: bool
     default: false
     required: false
-  is_vsam:
-    description:
-      - Indicates whether the destination data set is VSAM.
-      - When the dest is KSDS or ESDS, then source can be ESDS, KSDS or RRDS.
-      - When the dest is RRDS, then the source must be RRDS.
-      - When dest is LDS, then source must be LDS.
-    type: bool
-    default: false
-    required: false
   encoding:
     description:
       - Specifies which encodings the destination file or data set should be
@@ -151,7 +147,7 @@ options:
     description:
       - Specifies whether to perform checksum validation for source and
         destination files.
-      - Valid only for USS destination. Otherwise ignored.
+      - Valid only for USS destination, otherwise ignored.
     type: bool
     required: false
     default: false
@@ -162,6 +158,13 @@ notes:
     - Destination will be backed up if either C(backup) is C(true) or
       C(backup_path) is provided. If C(backup) is C(false) but C(backup_path)
       is provided, task will fail.
+    - When copying local files or directories, temporary storage will be used
+      on the remote z/OS system. The size of the temporary storage will
+      correspond to the size of the file or directory being copied. Temporary 
+      files will always be deleted, regardless of success or failure of the
+      copy task.
+    - For supported character sets used to encode data, refer to
+      U(https://ansible-collections.github.io/ibm_zos_core/supplementary.html#encode)
 seealso:
 - copy
 - fetch
@@ -189,6 +192,11 @@ EXAMPLES = r'''
       from: ISO8859-1
       to: IBM-1047
 
+- name: Copy a local directory to a PDSE
+  zos_copy:
+    src: /path/to/local/dir/
+    dest: HLQ.DEST.PDSE
+
 - name: Copy file with permission details
   zos_copy:
     src: /path/to/foo.conf
@@ -212,7 +220,6 @@ EXAMPLES = r'''
   zos_copy:
     src: SAMPLE.SRC.VSAM
     dest: SAMPLE.DEST.VSAM
-    is_vsam: true
     remote_src: true
 
 - name: Copy inline content to a sequential dataset and replace existing data
@@ -220,10 +227,19 @@ EXAMPLES = r'''
     content: 'Inline content to be copied'
     dest: SAMPLE.SEQ.DATA.SET
 
-- name: Copy a USS file to a sequential data set
+- name: Copy a USS file to sequential data set and convert encoding beforehand
   zos_copy:
     src: /path/to/remote/uss/file
     dest: SAMPLE.SEQ.DATA.SET
+    remote_src: true
+    encoding:
+      from: ISO8859-1
+      to: IBM-1047
+
+- name: Copy a USS directory to another USS directory
+  zos_copy:
+    src: /path/to/uss/dir
+    dest: /path/to/dest/dir
     remote_src: true
 
 - name: Copy a local binary file to a PDSE member
@@ -247,8 +263,8 @@ EXAMPLES = r'''
 
 - name: Copy a PDS on remote system to a new PDS
   zos_copy:
-    src: HLQ.SAMPLE.PDSE
-    dest: HLQ.NEW.PDSE
+    src: HLQ.SRC.PDS
+    dest: HLQ.NEW.PDS
     remote_src: true
 
 - name: Copy a PDS on remote system to a PDS, replacing the original
@@ -1130,7 +1146,6 @@ def run_module():
             src=dict(type='str'),
             dest=dict(required=True, type='str'),
             is_binary=dict(type='bool', default=False),
-            is_vsam=dict(type='bool', default=False),
             encoding=dict(type='dict'),
             content=dict(type='str', no_log=True),
             backup=dict(type='bool', default=False),
@@ -1154,7 +1169,6 @@ def run_module():
         src=dict(arg_type='data_set_or_path', required=False),
         dest=dict(arg_type='data_set_or_path', required=True),
         is_binary=dict(arg_type='bool', required=False, default=False),
-        is_vsam=dict(arg_type='bool', required=False, default=False),
         content=dict(arg_type='str', required=False),
         backup=dict(arg_type='bool', default=False, required=False),
         backup_path=dict(arg_type='data_set_or_path', required=False),
@@ -1197,7 +1211,6 @@ def run_module():
         b_dest = to_bytes(dest, errors='surrogate_or_strict')
         remote_src = parsed_args.get('remote_src')
         is_binary = parsed_args.get('is_binary')
-        is_vsam = parsed_args.get('is_vsam')
         content = parsed_args.get('content')
         force = parsed_args.get('force')
         backup = parsed_args.get('backup')
@@ -1325,7 +1338,7 @@ def run_module():
                         src, dest_name, alloc_size, src_ds_type, remote_src=remote_src,
                         vol=src_ds_vol
                     )
-                elif src_ds_type == "VSAM" or is_vsam:
+                elif src_ds_type == "VSAM":
                     dest_ds_type = "VSAM"
                 elif not is_uss:
                     dest_ds_type = "SEQ"

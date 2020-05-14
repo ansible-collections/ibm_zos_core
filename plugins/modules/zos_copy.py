@@ -1,7 +1,7 @@
 #!/usr/bin/python
-# -*- coding: utf-8 -*-​
+# -*- coding: utf-8 -*-
 # Copyright (c) IBM Corporation 2019, 2020
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
@@ -27,11 +27,11 @@ options:
       - Absolute local path to a file to copy to the remote z/OS system.
       - If C(remote_src) is true, then src must be the absolute path to a USS
         file, name of a data set or data set member.
-      - If src is a directory, destination must be a partitioned data set or
+      - If C(src) is a directory, destination must be a partitioned data set or
         a directory.
-      - If src a file and dest ends with "/" or destination is a directory, the
+      - If C(src) a file and dest ends with "/" or destination is a directory, the
         file is copied to the directory with the same filename as src.
-      - If src is a VSAM, destination must also be a VSAM.
+      - If C(src) is a VSAM data set, destination must also be a VSAM.
       - Required unless using C(content).
     type: str
   dest:
@@ -62,7 +62,7 @@ options:
     required: false
   backup:
     description:
-      - Sepcifies whether a backup of destination should be created before
+      - Specifies whether a backup of destination should be created before
         copying data.
       - When set to C(true), the module creates a backup file or data set.
     type: bool
@@ -72,7 +72,7 @@ options:
     description:
       - Specify the USS file name or data set name for the dest backup.
       - If the dest is a USS file or path, the backup_path name must be a file
-        or path name, and the USS path or file must be an absolute pathname.
+        or path name, and the USS path or file must be an absolute path name.
       - If the dest is an MVS data set, the backup_path name must be an MVS
         data set name.
       - If the backup_path is not provided, the default backup_path name will

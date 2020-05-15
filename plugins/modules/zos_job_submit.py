@@ -46,7 +46,7 @@ options:
     description:
       - The JCL location. Supported options are DATA_SET, USS or LOCAL.
       - DATA_SET can be a PDS, PDSE, or sequential data set.
-      - USS means the JCL location is located in Unix System Services (USS).
+      - USS means the JCL location is located in UNIX System Services (USS).
       - LOCAL means locally to the ansible control node.
   wait:
     required: false

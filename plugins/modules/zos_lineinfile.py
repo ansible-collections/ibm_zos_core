@@ -214,71 +214,41 @@ def main():
         argument_spec=module_args,
         supports_check_mode=True
     )
-    result = dict(
-        changed=False,
-        original_message='',
-        message='',
-        found=0,
-        backup=''
-    )
+    result = dict(changed=False, message='', found=0, backup='')
+
     arg_defs = dict(
-        path=dict(
-            arg_type='data_set_or_path',
-            required=True,
-            ),
-        state=dict(
-            arg_type='str',
-            default='present',
-            choices=['absent', 'present']
-            ),
-        regex=dict(
-            arg_type='str',
-            ),
-        line=dict(
-            arg_type='str',
-        ),
-        insertafter=dict(
-            arg_type='str',
-            ),
-        insertbefore=dict(
-            arg_type='str',
-            ),
-        backrefs=dict(
-            arg_type='bool',
-            dependencies=['regex'],
-            default=False
-            ),
-        backup=dict(
-            arg_type='str'
-            ),
-        firstmatch=dict(
-            arg_type='bool',
-            default=False
-            ),
-        encoding=dict(
-            arg_type='str',
-            ),
+        path=dict(arg_type="data_set_or_path", aliases=['zosdest', 'dest', 'destfile', 'name'], required=True),
+        state=dict(arg_type='str', default='present',choices=['absent', 'present']),
+        regexp=dict(arg_type="str", aliases=['regex'], required=False),
+        line=dict(arg_type="str", aliases=['value'], required=False),
+        insertafter=dict(arg_type="str", required=False),
+        insertbefore=dict(arg_type="str", required=False),
+        encoding=dict(arg_type="str", default="IBM-1047", required=False),
+        backup=dict(arg_type="bool", default=False, required=False),
+        backup_file=dict(arg_type="data_set_or_path", required=False, default=None),
+        firstmatch=dict(arg_type="bool", required=False, default=False),
+        backrefs=dict(arg_type="bool", dependencies=['regexp'], required=False, default=False),
         mutually_exclusive=[["insertbefore","insertafter"]],
     )
+
     try:
-        # parser = better_arg_parser.BetterArgParser(arg_defs)
-        # new_params = parser.parse_args(module.params)
-        new_params = module.params
+        parser = better_arg_parser.BetterArgParser(arg_defs)
+        parsed_args = parser.parse_args(module.params)
     except ValueError as err:
-        module.fail_json(
-            msg="Parameter verification failed", stderr=str(err)
-        )
-    backup = new_params.get('backup')
-    if new_params.get('backup_file') and backup:
-        backup = new_params.get('backup_file')
-    backrefs = new_params.get('backrefs')
-    path = new_params.get('path')
-    firstmatch = new_params.get('firstmatch')
-    regexp = new_params.get('regexp')
-    line = new_params.get('line')
-    ins_aft = new_params.get('insertafter')
-    ins_bef = new_params.get('insertbefore')
-    encoding = new_params.get('encoding')
+        module.fail_json(msg="Parameter verification failed", stderr=str(err))
+
+    backup = parsed_args.get('backup')
+    if parsed_args.get('backup_file') and backup:
+        backup = parsed_args.get('backup_file')
+    backrefs = parsed_args.get('backrefs')
+    path = parsed_args.get('path')
+    firstmatch = parsed_args.get('firstmatch')
+    regexp = parsed_args.get('regexp')
+    line = parsed_args.get('line')
+    ins_aft = parsed_args.get('insertafter')
+    ins_bef = parsed_args.get('insertbefore')
+    encoding = parsed_args.get('encoding')
+
     # analysis the file type
     ds_utils = data_set_utils.DataSetUtils(module, path)
     file_type = ds_utils.get_data_set_type()
@@ -298,16 +268,21 @@ def main():
                 result['backup'] = Backup.mvs_file_backup(dsn=path, bk_dsn=backup)
         except Exception:
             module.fail_json(msg="creating backup has failed")
-    if new_params.get('state') == 'present':
+    if parsed_args.get('state') == 'present':
         if line is None:
             module.fail_json(msg='line is required with state=present')
-        
+        if regexp is None and ins_aft is None and ins_bef is None:
+            module.fail_json(msg='at least one of regexp/insertafter/insertbefore is required with state=present')
         return_content = present(path,line, regexp, ins_aft, ins_bef, encoding, firstmatch, backrefs, file_type)
     else:
         if regexp is None and line is None:
             module.fail_json(msg='one of line or regexp is required with state=absent')
         return_content = absent(path, line, regexp, encoding, file_type)
     try:
+        # change the return string to be loadable by json.loads()
+        return_content = return_content.replace('/c\\', '/c\\\\')
+        return_content = return_content.replace('/a\\', '/a\\\\')
+        return_content = return_content.replace('/i\\', '/i\\\\')
         ret = json.loads(return_content)
         result['cmd'] = ret['cmd']
         result['changed'] = ret['changed']

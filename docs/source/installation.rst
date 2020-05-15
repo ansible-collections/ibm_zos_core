@@ -29,10 +29,10 @@ Periodically, new releases containing enhancements and features you might be
 interested in become available.
 
 The ansible-galaxy command ignores any pre-release versions unless
-the ``==`` range identifier is used to explicitly set to that pre-release
-version. A pre-release version is denoted by appending a hyphen and a series of
+the ``==`` range identifier is set to that pre-release version.
+A pre-release version is denoted by appending a hyphen and a series of
 dot separated identifiers immediately following the patch version. The
-**IBM z/OS core collection** does release collections with the pre-release
+**IBM z/OS core collection** releases collections with the pre-release
 naming convention such as **1.1.0-beta1** that would require a range identifier.
 
 Here is an example an example of installing a pre-release collection:

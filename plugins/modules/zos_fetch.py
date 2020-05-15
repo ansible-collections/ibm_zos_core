@@ -20,7 +20,7 @@ module: zos_fetch
 version_added: "2.9"
 short_description: Fetch data from z/OS
 description:
-  - This module fetches a Unix System Services (USS) file,
+  - This module fetches a UNIX System Services (USS) file,
     PS(sequential data set), PDS, PDSE, member of a PDS or PDSE, or
     KSDS(VSAM data set) from a remote z/OS system.
   - In the case of a PDS or PDSE member, the destination will be the same as
@@ -35,7 +35,7 @@ author: "Asif Mahmud (@asifmahmud)"
 options:
   src:
     description:
-      - Name of a Unix System Services (USS) file, PS(sequential data set), PDS,
+      - Name of a UNIX System Services (USS) file, PS(sequential data set), PDS,
         PDSE, member of a PDS, PDSE or KSDS(VSAM data set).
       - USS file paths should be absolute paths.
     required: true
@@ -144,7 +144,7 @@ EXAMPLES = r"""
     flat: true
     is_binary: true
 
-- name: Fetch a Unix file and don't validate its checksum
+- name: Fetch a UNIX file and don't validate its checksum
   zos_fetch:
     src: /tmp/somefile
     dest: /tmp/

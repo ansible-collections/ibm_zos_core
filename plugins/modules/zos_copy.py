@@ -306,16 +306,16 @@ EXAMPLES = r'''
 '''
 
 RETURN = r'''
-dest:
-    description: Destination file/path or MVS data set name.
-    returned: success
-    type: str
-    sample: SAMPLE.SEQ.DATA.SET
-file:
-    description: Source file used for the copy on the target machine.
+src:
+    description: Source file or data set being copied.
     returned: changed
     type: str
     sample: /path/to/source.log
+dest:
+    description: Destination file/path or data set name.
+    returned: success
+    type: str
+    sample: SAMPLE.SEQ.DATA.SET
 checksum:
     description: SHA256 checksum of the file after running copy.
     returned: C(validate) is C(true) and if dest is USS
@@ -327,27 +327,27 @@ backup_path:
     type: str
     sample: /path/to/file.txt.2015-02-03@04:15~
 gid:
-    description: Group id of the file, after execution
+    description: Group id of the file, after execution.
     returned: success and if dest is USS
     type: int
     sample: 100
 group:
-    description: Group of the file, after execution
+    description: Group of the file, after execution.
     returned: success and if dest is USS
     type: str
     sample: httpd
 owner:
-    description: Owner of the file, after execution
+    description: Owner of the file, after execution.
     returned: success and if dest is USS
     type: str
     sample: httpd
 uid:
-    description: Owner id of the file, after execution
+    description: Owner id of the file, after execution.
     returned: success and if dest is USS
     type: int
     sample: 100
 mode:
-    description: Permissions of the target, after execution
+    description: Permissions of the target, after execution.
     returned: success and if dest is USS
     type: str
     sample: 0644
@@ -357,47 +357,47 @@ size:
     type: int
     sample: 1220
 state:
-    description: State of the target, after execution
+    description: State of the target, after execution.
     returned: success and if dest is USS
     type: str
     sample: file
 note:
-    description: A note to the user after module terminates
+    description: A note to the user after module terminates.
     returned: C(force) is C(false) and dest exists
     type: str
     sample: No data was copied
 msg:
-    description: Failure message returned by the module
+    description: Failure message returned by the module.
     returned: failure
     type: str
     sample: Error while gathering data set information
 stdout:
-    description: The stdout from a USS command or MVS command, if applicable
+    description: The stdout from a USS command or MVS command, if applicable.
     returned: failure
     type: str
     sample: Copying local file /tmp/foo/src to remote path /tmp/foo/dest
 stderr:
-    description: The stderr of a USS command or MVS command, if applicable
+    description: The stderr of a USS command or MVS command, if applicable.
     returned: failure
     type: str
     sample: FileNotFoundError: No such file or directory '/tmp/foo'
 stdout_lines:
-    description: List of strings containing individual lines from stdout
+    description: List of strings containing individual lines from stdout.
     returned: failure
     type: list
     sample: [u"Copying local file /tmp/foo/src to remote path /tmp/foo/dest.."]
 stderr_lines:
-    description: List of strings containing individual lines from stderr
+    description: List of strings containing individual lines from stderr.
     returned: failure
     type: list
     sample: [u"FileNotFoundError: No such file or directory '/tmp/foo'"]
 rc:
-    description: The return code of a USS command or MVS command, if applicable
+    description: The return code of a USS or MVS command, if applicable.
     returned: failure
     type: int
     sample: 8
 cmd:
-    description: The MVS command issued, if applicable
+    description: The MVS command issued, if applicable.
     returned: failure
     type: str
     sample: REPRO INDATASET(SAMPLE.DATA.SET) OUTDATASET(SAMPLE.DEST.DATA.SET)
@@ -456,11 +456,11 @@ class CopyHandler(object):
         self.dest_exists = dest_exists
         self.is_binary = is_binary
 
-    def _fail_json(self, **kwargs):
+    def fail_json(self, **kwargs):
         """ Wrapper for AnsibleModule.fail_json """
         self.module.fail_json(**kwargs, dest_exists=self.dest_exists)
 
-    def _run_command(self, cmd, **kwargs):
+    def run_command(self, cmd, **kwargs):
         """ Wrapper for AnsibleModule.run_command """
         return self.module.run_command(cmd, **kwargs)
 
@@ -481,7 +481,7 @@ class CopyHandler(object):
             elif src_ds_type in MVS_SEQ.union(MVS_PARTITIONED):
                 copy.copy_mvs2mvs(src, dest, is_binary=self.is_binary)
         except Exception as err:
-            self._fail_json(msg=str(err))
+            self.fail_json(msg=str(err))
 
     def copy_to_vsam(self, src, dest):
         """ Copy source VSAM to destination VSAM. If source VSAM exists, then
@@ -494,7 +494,7 @@ class CopyHandler(object):
         if self.dest_exists:
             rc = Datasets.delete(dest)
             if rc != 0:
-                self._fail_json(
+                self.fail_json(
                     msg="Unable to delete destination data set {0}".format(dest),
                     rc=rc
                 )
@@ -507,7 +507,7 @@ class CopyHandler(object):
             "IDCAMS", repro_cmd, authorized=True
         )
         if rc != 0:
-            self._fail_json(
+            self.fail_json(
                 msg=("IDCAMS REPRO encountered a problem while "
                      "copying {0} to {1}".format(src, dest)),
                 stdout=out, stderr=err, rc=rc,
@@ -551,8 +551,7 @@ class CopyHandler(object):
 
             except Exception as err:
                 shutil.rmtree(src)
-                self._fail_json(msg=str(err))
-
+                self.fail_json(msg=str(err))
         else:
             try:
                 if not temp_path:
@@ -568,7 +567,7 @@ class CopyHandler(object):
 
             except Exception as err:
                 os.remove(src)
-                self._fail_json(msg=str(err))
+                self.fail_json(msg=str(err))
 
         return src
 
@@ -591,7 +590,7 @@ class CopyHandler(object):
                 return backup.uss_file_backup(ds_name, backup_name=backup_path)
             return backup.mvs_file_backup(ds_name, backup_path)
         except Exception as err:
-            self._fail_json(
+            self.fail_json(
                 msg="Unable to back up destination {0}".format(ds_name),
                 stderr=str(err)
             )
@@ -613,7 +612,7 @@ class CopyHandler(object):
         LIKE('{1}')""".format(ds_name, model)
         rc, out, err = self._run_mvs_command("IKJEFT01", alloc_cmd, authorized=True)
         if rc != 0:
-            self._fail_json(
+            self.fail_json(
                 msg="Unable to allocate destination {0}".format(ds_name),
                 stdout=out, stderr=err, rc=rc,
                 stdout_lines=out.splitlines(),
@@ -635,12 +634,12 @@ class CopyHandler(object):
             is_dir {bool} -- Whether 'file_path' specifies a directory. (Default {False})
 
         """
-        rc, out, err = self._run_command("chtag -{0}c {1} {2}".format(
+        rc, out, err = self.run_command("chtag -{0}c {1} {2}".format(
                 "R" if is_dir else "t", tag, file_path
             )
         )
         if rc != 0:
-            self._fail_json(
+            self.fail_json(
                 msg="Unable to tag the file {0} to {1}".format(file_path, tag),
                 stdout=out, stderr=err, rc=rc,
                 stdout_lines=out.splitlines(),
@@ -677,7 +676,7 @@ class CopyHandler(object):
             for k, v in dd.items():
                 mvs_cmd += " --{0}={1}".format(k, v)
 
-        return self._run_command(
+        return self.run_command(
             mvs_cmd.format(pgm, sysprint, sysin), data=cmd
         )
 
@@ -749,12 +748,12 @@ class USSCopyHandler(CopyHandler):
             else:
                 shutil.copy(src, dest)
         except OSError as err:
-            self._fail_json(
+            self.fail_json(
                 msg="Destination {0} is not writable".format(dest),
                 stderr=str(err)
             )
         except Exception as err:
-            self._fail_json(
+            self.fail_json(
                 msg="Unable to copy file {0} to {1}".format(src, dest),
                 stderr=str(err)
             )
@@ -773,14 +772,14 @@ class USSCopyHandler(CopyHandler):
             try:
                 shutil.rmtree(dest_dir)
             except Exception as err:
-                self._fail_json(
+                self.fail_json(
                     msg="Unable to delete pre-existing directory {0}".format(dest_dir),
                     stdout=str(err)
                 )
         try:
             shutil.copytree(src_dir, dest_dir)
         except Exception as err:
-            self._fail_json(
+            self.fail_json(
                 msg="Error while copying data to destination directory {0}".format(dest_dir),
                 stdout=str(err)
             )
@@ -813,7 +812,7 @@ class USSCopyHandler(CopyHandler):
             else:
                 copy.copy_pds2uss(src, dest, is_binary=self.is_binary)
         except Exception as err:
-            self._fail_json(msg=str(err))
+            self.fail_json(msg=str(err))
 
 
 class PDSECopyHandler(CopyHandler):
@@ -854,7 +853,7 @@ class PDSECopyHandler(CopyHandler):
                         "PO", is_binary=self.is_binary
                     )
                 except Exception as err:
-                    self._fail_json(msg=str(err))
+                    self.fail_json(msg=str(err))
         else:
             if self.dest_exists:
                 temp_ds = Datasets.temp_name()
@@ -865,7 +864,7 @@ class PDSECopyHandler(CopyHandler):
             copy_cmd = "   COPY OUTDD=OUTPUT,INDD=((INPUT,R))"
             rc, out, err = self._run_mvs_command("IEBCOPY", copy_cmd, dds)
             if rc != 0:
-                self._fail_json(
+                self.fail_json(
                     msg="IEBCOPY encountered a problem while copying {0} to {1}".format(src, dest),
                     stdout=out, stderr=err, rc=rc,
                     stdout_lines=out.splitlines(),
@@ -897,11 +896,11 @@ class PDSECopyHandler(CopyHandler):
             try:
                 copy.copy_uss2mvs(src, dest, "PO", is_binary=self.is_binary)
             except Exception as err:
-                self._fail_json(msg=str(err))
+                self.fail_json(msg=str(err))
         else:
             rc = Datasets.copy(src, dest)
             if rc != 0:
-                self._fail_json(
+                self.fail_json(
                     msg="Unable to copy to data set member {}".format(dest),
                     rc=rc
                 )
@@ -934,7 +933,7 @@ class PDSECopyHandler(CopyHandler):
             elif os.path.isdir(src):
                 path, dirs, files = next(os.walk(src))
                 if dirs:
-                    self._fail_json(
+                    self.fail_json(
                         msg="Subdirectory found in source directory {0}".format(src)
                     )
                 size = sum(Path(path + "/" + f).stat().st_size for f in files)
@@ -942,7 +941,7 @@ class PDSECopyHandler(CopyHandler):
         else:
             rc = self._allocate_pdse(dest_name, size=size)
         if rc != 0:
-            self._fail_json(
+            self.fail_json(
                 msg="Unable to allocate destination data set to copy {0}".format(src),
                 stdout=out, stderr=err, rc=rc,
                 stdout_lines=out.splitlines() if out else None,
@@ -993,14 +992,14 @@ class PDSECopyHandler(CopyHandler):
         if members:
             try:
                 for m in members.split('\n'):
-                    rc, out, err = self._run_command("mrm {0}({1})".format(data_set, m))
+                    rc, out, err = self.run_command("mrm {0}({1})".format(data_set, m))
                     if rc != 0:
-                        self._fail_json(
+                        self.fail_json(
                             msg="Unable to delete data set member {0} from {1}".format(m, data_set),
                             rc=rc, out=out, err=err
                         )
             finally:
-                self._run_command("rm /tmp/mrm.*.sysprint")
+                self.run_command("rm /tmp/mrm.*.sysprint")
 
 
 class CopyUtil(object):
@@ -1264,18 +1263,18 @@ def run_module():
                 dest_ds_type = "USS"
                 dest_exists = os.path.exists(dest)
             else:
-                dest_ds_utils = data_set_utils.DataSetUtils(module, dest_name)
-                dest_exists = dest_ds_utils.data_set_exists()
-                dest_ds_type = dest_ds_utils.get_data_set_type()
+                dest_du = data_set_utils.DataSetUtils(module, dest_name)
+                dest_exists = dest_du.data_set_exists()
+                dest_ds_type = dest_du.get_data_set_type()
             if temp_path or '/' in src:
                 src_ds_type = "USS"
             else:
-                src_ds_utils = data_set_utils.DataSetUtils(module, src_name)
-                if src_ds_utils.data_set_exists():
-                    if src_member and not src_ds_utils.data_set_member_exists(member_name):
+                src_du = data_set_utils.DataSetUtils(module, src_name)
+                if src_du.data_set_exists():
+                    if src_member and not src_du.data_set_member_exists(member_name):
                         raise NonExistentSourceError(src)
-                    src_ds_type = src_ds_utils.get_data_set_type()
-                    src_ds_vol = src_ds_utils.get_data_set_volume()
+                    src_ds_type = src_du.get_data_set_type()
+                    src_ds_vol = src_du.get_data_set_volume()
                 else:
                     raise NonExistentSourceError(src)
 
@@ -1345,12 +1344,12 @@ def run_module():
             res_args['changed'] = True
 
         # ********************************************************************
-        # Encoding conversion is only valid if the source is a local file
-        # or local directory or a USS file/directory.
+        # Encoding conversion is only valid if the source is a local file,
+        # local directory or a USS file/directory.
         # ********************************************************************
         if encoding:
             if remote_src and src_ds_type != "USS":
-                copy_handler._fail_json(
+                copy_handler.fail_json(
                     msg="Encoding conversion is only valid for USS source"
                 )
             # 'conv_path' points to the converted src file or directory
@@ -1361,7 +1360,7 @@ def run_module():
         # ---------------------------------------------------------------------
         if is_uss:
             if dest_exists and not os.access(dest, os.W_OK):
-                copy_handler._fail_json(
+                copy_handler.fail_json(
                     msg="Destination {0} is not writable".format(dest)
                 )
 
@@ -1370,7 +1369,7 @@ def run_module():
                     remote_checksum = CopyUtil.get_file_checksum(temp_path or src)
                     dest_checksum = CopyUtil.get_file_checksum(dest)
                 except Exception as err:
-                    copy_handler._fail_json(
+                    copy_handler.fail_json(
                         msg="Unable to calculate checksum", stderr=str(err)
                     )
                 res_args['checksum'] = remote_checksum

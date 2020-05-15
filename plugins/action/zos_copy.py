@@ -31,7 +31,7 @@ def _update_result(is_binary, **copy_res):
     """ Helper function to update output result with the provided values """
     ds_type = copy_res.get("ds_type")
     updated_result = dict(
-        file=copy_res.get("src"),
+        src=copy_res.get("src"),
         dest=copy_res.get("dest"),
         is_binary=is_binary,
         changed=copy_res.get("changed")
@@ -146,69 +146,76 @@ class ActionModule(ActionBase):
         owner = self._task.args.get('owner', None)
         group = self._task.args.get('group', None)
 
-        new_module_args = self._task.args
+        new_module_args = self._task.args.copy()
         is_pds = is_src_dir = False
-        temp_path = real_path = None
-        is_uss = '/' in dest if dest else None
-        is_mvs_dest = _is_data_set(dest) if dest else None
-        src_member = _is_member(src) if src else None
-        copy_member = _is_member(dest) if dest else None
+        temp_path = is_uss = is_mvs_dest = copy_member = src_member = None
+
+        if dest:
+            if not isinstance(dest, string_types):
+                msg = "Invalid type supplied for 'dest' option, it must be a string"
+                return self._fail_acton(result, msg)
+            else:
+                is_uss = '/' in dest
+                is_mvs_dest = _is_data_set(dest)
+                copy_member = _is_member(dest)
+        else:
+            msg = "Destination is required"
+            return self._fail_acton(result, msg)
 
         if src:
-            src = os.path.realpath(src)
-            is_src_dir = os.path.isdir(src)
-            is_pds = is_src_dir and is_mvs_dest
             if content:
-                result['msg'] = "Either 'src' or 'content' can be provided; not both."
+                msg = "Either 'src' or 'content' can be provided; not both."
+                return self._fail_acton(result, msg)
 
             elif not isinstance(src, string_types):
-                result['msg'] = (
-                    "Invalid type supplied for 'src' option, it must be a string"
-                )
+                msg = "Invalid type supplied for 'src' option, it must be a string"
+                return self._fail_acton(result, msg)
+
             elif len(src) < 1 or len(dest) < 1:
-                result['msg'] = "'src' or 'dest' must not be empty"
+                msg = "'src' or 'dest' must not be empty"
+                return self._fail_acton(result, msg)
+            else:
+                src = os.path.realpath(src)
+                src_member = _is_member(src)
+                is_src_dir = os.path.isdir(src)
+                is_pds = is_src_dir and is_mvs_dest
 
         if not src and not content:
-            result['msg'] = "'src' or 'content' is required"
+            msg = "'src' or 'content' is required"
+            return self._fail_acton(result, msg)
 
-        elif not dest:
-            result['msg'] = "Destination is required"
+        if content and not isinstance(content, string_types):
+            msg = "Invalid type supplied for 'content' option, it must be a string"
+            return self._fail_acton(result, msg)
 
-        elif not isinstance(dest, string_types):
-            result['msg'] = (
-                "Invalid type supplied for 'dest' option, it must be a string"
-            )
-        elif content and not isinstance(content, string_types):
-            result['msg'] = (
-                "Invalid type supplied for 'content' option, it must be a string"
-            )
-        elif encoding and is_binary:
-            result['msg'] = "The 'encoding' parameter is not valid for binary transfer"
+        if encoding and is_binary:
+            msg = "The 'encoding' parameter is not valid for binary transfer"
+            return self._fail_acton(result, msg)
 
-        elif (not backup) and backup_path is not None:
-            result['msg'] = "Backup path provided but 'backup' parameter is False"
+        if (not backup) and backup_path is not None:
+            msg = "Backup path provided but 'backup' parameter is False"
+            return self._fail_acton(result, msg)
 
         if not is_uss:
             if mode or owner or group:
-                result['msg'] = (
-                    "Cannot specify 'mode', 'owner' or 'group' for MVS destination"
-                )
+                msg = "Cannot specify 'mode', 'owner' or 'group' for MVS destination"
+                return self._fail_acton(result, msg)
+
         if not remote_src:
             if local_follow and not src:
-                result['msg'] = "No path given for local symlink"
+                msg = "No path given for local symlink"
+                return self._fail_acton(result, msg)
 
             elif src and not os.path.exists(b_src):
-                result['msg'] = "The local file {0} does not exist".format(src)
+                msg = "The local file {0} does not exist".format(src)
+                return self._fail_acton(result, msg)
 
             elif src and not os.access(b_src, os.R_OK):
-                result['msg'] = (
+                msg = (
                     "The local file {0} does not have appropriate "
                     "read permisssion".format(src)
                 )
-
-        if result.get('msg'):
-            result.update(dict(src=src, dest=dest, changed=False, failed=True))
-            return result
+                return self._fail_acton(result, msg)
 
         if not remote_src:
             if content:
@@ -269,14 +276,8 @@ class ActionModule(ActionBase):
             )
             self._remote_cleanup(dest, copy_res.get("dest_exists"), task_vars)
             return result
-        try:
-            result = _update_result(is_binary, **copy_res)
-        except Exception as err:
-            self._remote_cleanup(dest, copy_res.get("dest_exists"), task_vars)
-            result['msg'] = str(err)
-            result['failed'] = True
 
-        return result
+        return _update_result(is_binary, **copy_res)
 
     def _copy_to_remote(self, src, is_dir=False):
         """Copy a file or directory to the remote z/OS system """
@@ -327,3 +328,15 @@ class ActionModule(ActionBase):
                     module_args=module_args,
                     task_vars=task_vars
                 )
+
+    def _fail_acton(self, result, msg):
+        """Fail action plugin with a failure message"""
+        src = self._task.args.get('src')
+        dest = self._task.args.get('dest')
+        result.update(
+            dict(
+                changed=False, failed=True, msg=msg,
+                invocation=dict(module_args=self._task.args)
+            )
+        )
+        return result

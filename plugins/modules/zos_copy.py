@@ -1005,13 +1005,11 @@ class PDSECopyHandler(CopyHandler):
 class CopyUtil(object):
 
     @staticmethod
-    def is_compatible(src, dest, src_type, dest_type, copy_member, src_member):
+    def is_compatible(src_type, dest_type, copy_member, src_member):
         """Determine whether the src and dest are compatible and src can be
         copied to dest.
 
         Arguments:
-            src {str} -- File path or name of source data set
-            dest {str} -- File path or name of dest data set
             src_type {str} -- Type of the source (e.g. PDSE, USS)
             dest_type {str} -- Type of destination
             src_member {bool} -- Whether src is a data set member
@@ -1287,7 +1285,7 @@ def run_module():
         # to a PDS. Perform these sanity checks.
         # ********************************************************************
         if not CopyUtil.is_compatible(
-            src, dest, src_ds_type, dest_ds_type, copy_member, src_member
+            src_ds_type, dest_ds_type, copy_member, src_member
         ):
             module.fail_json(
                 msg="Incompatible target type '{0}' for source '{1}'".format(

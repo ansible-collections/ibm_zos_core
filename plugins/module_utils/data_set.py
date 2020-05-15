@@ -63,7 +63,7 @@ class DataSetUtils(object):
         Returns:
             bool -- If the member exists
         """
-        if self.get_data_set_type() == "PO":
+        if self.ds_type() == "PO":
             rc, out, err = self.module.run_command(
                 "head \"//'{0}({1})'\"".format(self.data_set, member)
             )
@@ -86,7 +86,7 @@ class DataSetUtils(object):
             'IS'   -- Indexed Sequential
             'USS'  -- USS file or directory
         """
-        if self.is_uss_path and self.data_set_exists():
+        if self.is_uss_path and self.exists():
             return 'USS'
         return self.ds_info.get('dsorg')
 

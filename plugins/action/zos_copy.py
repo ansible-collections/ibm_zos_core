@@ -184,10 +184,6 @@ class ActionModule(ActionBase):
             msg = "'src' or 'content' is required"
             return self._fail_acton(result, msg)
 
-        if content and not isinstance(content, string_types):
-            msg = "Invalid type supplied for 'content' option, it must be a string"
-            return self._fail_acton(result, msg)
-
         if encoding and is_binary:
             msg = "The 'encoding' parameter is not valid for binary transfer"
             return self._fail_acton(result, msg)
@@ -213,7 +209,7 @@ class ActionModule(ActionBase):
             elif src and not os.access(b_src, os.R_OK):
                 msg = (
                     "The local file {0} does not have appropriate "
-                    "read permisssion".format(src)
+                    "read permission".format(src)
                 )
                 return self._fail_acton(result, msg)
 

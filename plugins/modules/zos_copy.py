@@ -1060,7 +1060,7 @@ class CopyUtil(object):
             return True
 
         elif src_type == "USS":
-            return dest != "VSAM"
+            return dest_type != "VSAM"
 
         else:
             return dest_type == "VSAM"

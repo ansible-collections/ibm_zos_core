@@ -372,7 +372,7 @@ class FetchHandler:
             fd, file_path = tempfile.mkstemp()
             from_code_set = encoding.get("from")
             to_code_set = encoding.get("to")
-            enc_utils = encode.EncodeUtils(self.module)
+            enc_utils = encode.EncodeUtils()
             try:
                 enc_utils.uss_convert_encoding(src, file_path, from_code_set, to_code_set)
             except Exception as err:

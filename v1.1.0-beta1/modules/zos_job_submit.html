@@ -1,0 +1,620 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>zos_job_submit – Submit JCL &mdash; IBM z/OS core collection 1.0.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/banner.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="zos_operator – Execute operator command" href="zos_operator.html" />
+    <link rel="prev" title="zos_job_query – Query job status" href="zos_job_query.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> IBM z/OS core collection
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">Quickstart</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Reference</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../plugins.html">Plugins</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../modules.html">Modules</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../modules.html#module-reference">Module reference</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="zos_data_set.html">zos_data_set – Manage data sets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="zos_encode.html">zos_encode – Perform encoding operations.</a></li>
+<li class="toctree-l3"><a class="reference internal" href="zos_fetch.html">zos_fetch – Fetch data from z/OS</a></li>
+<li class="toctree-l3"><a class="reference internal" href="zos_job_output.html">zos_job_output – Display job output</a></li>
+<li class="toctree-l3"><a class="reference internal" href="zos_job_query.html">zos_job_query – Query job status</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">zos_job_submit – Submit JCL</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#synopsis">Synopsis</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#parameters">Parameters</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#examples">Examples</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#return-values">Return Values</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="zos_operator.html">zos_operator – Execute operator command</a></li>
+<li class="toctree-l3"><a class="reference internal" href="zos_operator_action_query.html">zos_operator_action_query – Display messages requiring action</a></li>
+<li class="toctree-l3"><a class="reference internal" href="zos_ping.html">zos_ping – Ping z/OS and check dependencies.</a></li>
+<li class="toctree-l3"><a class="reference internal" href="zos_tso_command.html">zos_tso_command – Execute TSO commands</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../filters.html">Filters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../playbooks.html">Playbooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../supplementary.html">Supplementary</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Community guides</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../community_guides.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../community_guides.html#helpful-links">Helpful Links</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Requirements</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../requirements.html">Requirements</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Appendices</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../release_notes.html">Releases</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">IBM z/OS core collection</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../modules.html">Modules</a> &raquo;</li>
+        
+      <li>zos_job_submit – Submit JCL</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            
+              <!-- User defined GitHub URL -->
+              <a href="https://github.com/ansible-collections/ibm_zos_core/blob/dev/plugins/modules/zos_job_submit.py" class="fa fa-github"> Edit on GitHub</a>
+            
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+
+
+    
+    
+
+
+
+    <p class="scv-banner scv-sphinx_rtd_theme"><a href="../../v1.1.0-beta1/modules/zos_job_submit.html"><b>Warning:</b> This document is for the development version of IBM z/OS core collection. The latest version is v1.1.0-beta1.</a></p>
+<div class="section" id="zos-job-submit-submit-jcl">
+<span id="zos-job-submit-module"></span><h1>zos_job_submit – Submit JCL<a class="headerlink" href="#zos-job-submit-submit-jcl" title="Permalink to this headline">¶</a></h1>
+<div class="contents local topic" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#synopsis" id="id1">Synopsis</a></p></li>
+<li><p><a class="reference internal" href="#parameters" id="id2">Parameters</a></p></li>
+<li><p><a class="reference internal" href="#examples" id="id3">Examples</a></p></li>
+<li><p><a class="reference internal" href="#return-values" id="id4">Return Values</a></p></li>
+</ul>
+</div>
+<div class="section" id="synopsis">
+<h2><a class="toc-backref" href="#id1">Synopsis</a><a class="headerlink" href="#synopsis" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p>Submit JCL from DATA_SET , USS, or LOCAL location.</p></li>
+<li><p>Submit a job and optionally monitor for its execution.</p></li>
+<li><p>Optionally wait for the job output until the job finishes.</p></li>
+<li><p>For the uncataloged dataset, specify the volume serial number.</p></li>
+</ul>
+</div>
+<div class="section" id="parameters">
+<h2><a class="toc-backref" href="#id2">Parameters</a><a class="headerlink" href="#parameters" title="Permalink to this headline">¶</a></h2>
+<dl>
+<dt>encoding</dt><dd><p>The encoding of the local JCL file on the ansible control node.</p>
+<p>If it is UTF-8, ASCII, ISO-8859-1, the file will be converted to EBCDIC on the z/OS platform.</p>
+<p>If it is EBCDIC, IBM-037, IBM-1047, the file will be unchanged when submitted on the z/OS platform.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: str</div>
+<div class="line"><strong>default</strong>: UTF-8</div>
+<div class="line"><strong>choices</strong>: UTF-8, ASCII, ISO-8859-1, EBCDIC, IBM-037, IBM-1047</div>
+</div>
+</dd>
+<dt>location</dt><dd><p>The JCL location. Supported options are DATA_SET, USS or LOCAL.</p>
+<p>DATA_SET can be a PDS, PDSE, or sequential data set.</p>
+<p>USS means the JCL location is located in Unix System Services (USS).</p>
+<p>LOCAL means locally to the ansible control node.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: True</div>
+<div class="line"><strong>type</strong>: str</div>
+<div class="line"><strong>default</strong>: DATA_SET</div>
+<div class="line"><strong>choices</strong>: DATA_SET, USS, LOCAL</div>
+</div>
+</dd>
+<dt>max_rc</dt><dd><p>Specifies the maximum return code for the submitted job that should be allowed without failing the module.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">max_rc</span></code> is only checked when <code class="docutils literal notranslate"><span class="pre">wait=true</span></code>, otherwise, it is ignored.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: int</div>
+</div>
+</dd>
+<dt>return_output</dt><dd><p>Whether to print the DD output.</p>
+<p>If false, an empty list will be returned in ddnames field.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: bool</div>
+<div class="line"><strong>default</strong>: True</div>
+</div>
+</dd>
+<dt>src</dt><dd><p>The source directory or data set containing the JCL to submit.</p>
+<p>It could be physical sequential data set or a partitioned data set qualified by a member or a path. (e.g “USER.TEST”,”USER.JCL(TEST)”)</p>
+<p>Or an USS file. (e.g “/u/tester/demo/sample.jcl”)</p>
+<p>Or an LOCAL file in ansible control node. (e.g “/User/tester/ansible-playbook/sample.jcl”)</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: True</div>
+<div class="line"><strong>type</strong>: str</div>
+</div>
+</dd>
+<dt>volume</dt><dd><p>The volume serial (VOLSER) where the data set resides. The option is required only when the data set is not cataloged on the system. Ignored for USS and LOCAL.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: str</div>
+</div>
+</dd>
+<dt>wait</dt><dd><p>Wait for the Job to finish and capture the output. Default is false.</p>
+<p>User can specify the wait time, see option <code class="docutils literal notranslate"><span class="pre">duration_s</span></code>.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: bool</div>
+</div>
+</dd>
+<dt>wait_time_s</dt><dd><p>When wait is true, the module will wait for a maximum of 60 seconds by default.</p>
+<p>User can set the wait time manually in this option.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: int</div>
+<div class="line"><strong>default</strong>: 60</div>
+</div>
+</dd>
+</dl>
+</div>
+<div class="section" id="examples">
+<h2><a class="toc-backref" href="#id3">Examples</a><a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-yaml+jinja notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Submit the JCL</span>
+  <span class="nt">zos_job_submit</span><span class="p">:</span>
+    <span class="nt">src</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">TEST.UTILs(SAMPLE)</span>
+    <span class="nt">location</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">DATA_SET</span>
+    <span class="nt">wait</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">false</span>
+    <span class="nt">volume</span><span class="p">:</span>
+  <span class="nt">register</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">response</span>
+
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Submit USS job</span>
+  <span class="nt">zos_job_submit</span><span class="p">:</span>
+    <span class="nt">src</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/u/tester/demo/sample.jcl</span>
+    <span class="nt">location</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">USS</span>
+    <span class="nt">wait</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">false</span>
+    <span class="nt">volume</span><span class="p">:</span>
+    <span class="nt">return_output</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">false</span>
+
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Submit LOCAL job</span>
+  <span class="nt">zos_job_submit</span><span class="p">:</span>
+    <span class="nt">src</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/Users/maxy/ansible-playbooks/provision/sample.jcl</span>
+    <span class="nt">location</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">LOCAL</span>
+    <span class="nt">wait</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">false</span>
+    <span class="nt">encoding</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">UTF-8</span>
+    <span class="nt">volume</span><span class="p">:</span>
+
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Submit uncatalogued PDS job</span>
+  <span class="nt">zos_job_submit</span><span class="p">:</span>
+    <span class="nt">src</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">TEST.UNCATLOG.JCL(SAMPLE)</span>
+    <span class="nt">location</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">DATA_SET</span>
+    <span class="nt">wait</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">false</span>
+    <span class="nt">volume</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">P2SS01</span>
+
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Submit long running PDS job, and wait for the job to finish</span>
+  <span class="nt">zos_job_submit</span><span class="p">:</span>
+    <span class="nt">src</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">TEST.UTILs(LONGRUN)</span>
+    <span class="nt">location</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">DATA_SET</span>
+    <span class="nt">wait</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
+    <span class="nt">wait_time_s</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">30</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="return-values">
+<h2><a class="toc-backref" href="#id4">Return Values</a><a class="headerlink" href="#return-values" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div><dl>
+<dt>jobs</dt><dd><blockquote>
+<div><div class="line-block">
+<div class="line">List of jobs output.</div>
+</div>
+<div class="line-block">
+<div class="line"><strong>returned</strong>: success</div>
+</div>
+<div class="line-block">
+<div class="line"><strong>type</strong>: list</div>
+</div>
+<p><strong>sample</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[{</span><span class="s2">&quot;class&quot;</span><span class="p">:</span> <span class="s2">&quot;K&quot;</span><span class="p">,</span> <span class="s2">&quot;content_type&quot;</span><span class="p">:</span> <span class="s2">&quot;JOB&quot;</span><span class="p">,</span> <span class="s2">&quot;ddnames&quot;</span><span class="p">:</span> <span class="p">[{</span><span class="s2">&quot;byte_count&quot;</span><span class="p">:</span> <span class="s2">&quot;677&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;1                       J E S 2  J O B  L O G  --  S Y S T E M  S T L 1  --  N O D E  S T L 1            &quot;</span><span class="p">,</span> <span class="s2">&quot;0 &quot;</span><span class="p">,</span> <span class="s2">&quot; 12.50.08 JOB00361 ---- FRIDAY,    13 MAR 2020 ----&quot;</span><span class="p">,</span> <span class="s2">&quot; 12.50.08 JOB00361  IRR010I  USERID OMVSADM  IS ASSIGNED TO THIS JOB.&quot;</span><span class="p">,</span> <span class="s2">&quot; 12.50.08 JOB00361  ICH70001I OMVSADM  LAST ACCESS AT 12:50:03 ON FRIDAY, MARCH 13, 2020&quot;</span><span class="p">,</span> <span class="s2">&quot; 12.50.08 JOB00361  $HASP373 DBDGEN00 STARTED - INIT 15   - CLASS K        - SYS STL1&quot;</span><span class="p">,</span> <span class="s2">&quot; 12.50.08 JOB00361  SMF000I  DBDGEN00    C           ASMA90      0000&quot;</span><span class="p">,</span> <span class="s2">&quot; 12.50.09 JOB00361  SMF000I  DBDGEN00    L           IEWL        0000&quot;</span><span class="p">,</span> <span class="s2">&quot; 12.50.09 JOB00361  $HASP395 DBDGEN00 ENDED - RC=0000&quot;</span><span class="p">,</span> <span class="s2">&quot;0------ JES2 JOB STATISTICS ------&quot;</span><span class="p">,</span> <span class="s2">&quot;-  13 MAR 2020 JOB EXECUTION DATE&quot;</span><span class="p">,</span> <span class="s2">&quot;-           28 CARDS READ&quot;</span><span class="p">,</span> <span class="s2">&quot;-          158 SYSOUT PRINT RECORDS&quot;</span><span class="p">,</span> <span class="s2">&quot;-            0 SYSOUT PUNCH RECORDS&quot;</span><span class="p">,</span> <span class="s2">&quot;-           12 SYSOUT SPOOL KBYTES&quot;</span><span class="p">,</span> <span class="s2">&quot;-         0.00 MINUTES EXECUTION TIME&quot;</span><span class="p">],</span> <span class="s2">&quot;ddname&quot;</span><span class="p">:</span> <span class="s2">&quot;JESMSGLG&quot;</span><span class="p">,</span> <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;2&quot;</span><span class="p">,</span> <span class="s2">&quot;procstep&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;record_count&quot;</span><span class="p">:</span> <span class="s2">&quot;16&quot;</span><span class="p">,</span> <span class="s2">&quot;stepname&quot;</span><span class="p">:</span> <span class="s2">&quot;JES2&quot;</span><span class="p">},</span> <span class="p">{</span><span class="s2">&quot;byte_count&quot;</span><span class="p">:</span> <span class="s2">&quot;2136&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;         1 //DBDGEN00 JOB MSGLEVEL=1,MSGCLASS=E,CLASS=K,                           JOB00361&quot;</span><span class="p">,</span> <span class="s2">&quot;           //   LINES=999999,TIME=1440,REGION=0M,                                          &quot;</span><span class="p">,</span> <span class="s2">&quot;           //   MEMLIMIT=NOLIMIT                                                           &quot;</span><span class="p">,</span> <span class="s2">&quot;         2 /*JOBPARM  SYSAFF=*                                                             &quot;</span><span class="p">,</span> <span class="s2">&quot;           //*                                                                             &quot;</span><span class="p">,</span> <span class="s2">&quot;         3 //DBDGEN   PROC MBR=TEMPNAME                                                    &quot;</span><span class="p">,</span> <span class="s2">&quot;           //C        EXEC PGM=ASMA90,                                                     &quot;</span><span class="p">,</span> <span class="s2">&quot;           //             PARM=</span><span class="se">\u0027</span><span class="s2">OBJECT,NODECK,NOLIST</span><span class="se">\u0027</span><span class="s2">                                      &quot;</span><span class="p">,</span> <span class="s2">&quot;           //SYSLIB   DD DISP=SHR,                                                         &quot;</span><span class="p">,</span> <span class="s2">&quot;           //      DSN=IMSBLD.I15RTSMM.SDFSMAC                                             &quot;</span><span class="p">,</span> <span class="s2">&quot;           //SYSLIN   DD DISP=(NEW,PASS),RECFM=F,LRECL=80,BLKSIZE=80,                      &quot;</span><span class="p">,</span> <span class="s2">&quot;           //         UNIT=SYSDA,SPACE=(CYL,(10,5),RLSE,,)                                 &quot;</span><span class="p">,</span> <span class="s2">&quot;           //SYSUT1   DD DISP=(NEW,DELETE),UNIT=SYSDA,SPACE=(CYL,                          &quot;</span><span class="p">,</span> <span class="s2">&quot;           //         (10,5),,,)                                                           &quot;</span><span class="p">,</span> <span class="s2">&quot;           //SYSPRINT DD SYSOUT=*                                                          &quot;</span><span class="p">,</span> <span class="s2">&quot;           //L        EXEC PGM=IEWL,                                                       &quot;</span><span class="p">,</span> <span class="s2">&quot;           //             PARM=</span><span class="se">\u0027</span><span class="s2">XREF,NOLIST</span><span class="se">\u0027</span><span class="s2">,                                              &quot;</span><span class="p">,</span> <span class="s2">&quot;           //             COND=(0,LT,C)                                                    &quot;</span><span class="p">,</span> <span class="s2">&quot;           //SYSLMOD  DD DISP=SHR,                                                         &quot;</span><span class="p">,</span> <span class="s2">&quot;           //      DSN=IMSTESTL.IMS1.DBDLIB(</span><span class="se">\u0026</span><span class="s2">MBR)                                          &quot;</span><span class="p">,</span> <span class="s2">&quot;           //SYSLIN   DD DSN=*.C.SYSLIN,DISP=(OLD,DELETE)                                  &quot;</span><span class="p">,</span> <span class="s2">&quot;           //SYSPRINT DD SYSOUT=*                                                          &quot;</span><span class="p">,</span> <span class="s2">&quot;           //*                                                                             &quot;</span><span class="p">,</span> <span class="s2">&quot;           //         PEND                                                                 &quot;</span><span class="p">,</span> <span class="s2">&quot;         4 //DLORD6   EXEC DBDGEN,                                                         &quot;</span><span class="p">,</span> <span class="s2">&quot;           //             MBR=DLORD6                                                       &quot;</span><span class="p">,</span> <span class="s2">&quot;         5 ++DBDGEN   PROC MBR=TEMPNAME                                                    &quot;</span><span class="p">,</span> <span class="s2">&quot;         6 ++C        EXEC PGM=ASMA90,                                                     &quot;</span><span class="p">,</span> <span class="s2">&quot;           ++             PARM=</span><span class="se">\u0027</span><span class="s2">OBJECT,NODECK,NOLIST</span><span class="se">\u0027</span><span class="s2">                                      &quot;</span><span class="p">,</span> <span class="s2">&quot;         7 ++SYSLIB   DD DISP=SHR,                                                         &quot;</span><span class="p">,</span> <span class="s2">&quot;           ++      DSN=IMSBLD.I15RTSMM.SDFSMAC                                             &quot;</span><span class="p">,</span> <span class="s2">&quot;         8 ++SYSLIN   DD DISP=(NEW,PASS),RECFM=F,LRECL=80,BLKSIZE=80,                      &quot;</span><span class="p">,</span> <span class="s2">&quot;           ++         UNIT=SYSDA,SPACE=(CYL,(10,5),RLSE,,)                                 &quot;</span><span class="p">,</span> <span class="s2">&quot;         9 ++SYSUT1   DD DISP=(NEW,DELETE),UNIT=SYSDA,SPACE=(CYL,                          &quot;</span><span class="p">,</span> <span class="s2">&quot;           ++         (10,5),,,)                                                           &quot;</span><span class="p">,</span> <span class="s2">&quot;        10 ++SYSPRINT DD SYSOUT=*                                                          &quot;</span><span class="p">,</span> <span class="s2">&quot;        11 //SYSIN    DD DISP=SHR,                                                         &quot;</span><span class="p">,</span> <span class="s2">&quot;           //      DSN=IMSTESTL.IMS1.DBDSRC(DLORD6)                                        &quot;</span><span class="p">,</span> <span class="s2">&quot;        12 ++L        EXEC PGM=IEWL,                                                       &quot;</span><span class="p">,</span> <span class="s2">&quot;           ++             PARM=</span><span class="se">\u0027</span><span class="s2">XREF,NOLIST</span><span class="se">\u0027</span><span class="s2">,                                              &quot;</span><span class="p">,</span> <span class="s2">&quot;           ++             COND=(0,LT,C)                                                    &quot;</span><span class="p">,</span> <span class="s2">&quot;        13 ++SYSLMOD  DD DISP=SHR,                                                         &quot;</span><span class="p">,</span> <span class="s2">&quot;           ++      DSN=IMSTESTL.IMS1.DBDLIB(</span><span class="se">\u0026</span><span class="s2">MBR)                                          &quot;</span><span class="p">,</span> <span class="s2">&quot;           IEFC653I SUBSTITUTION JCL - DISP=SHR,DSN=IMSTESTL.IMS1.DBDLIB(DLORD6)&quot;</span><span class="p">,</span> <span class="s2">&quot;        14 ++SYSLIN   DD DSN=*.C.SYSLIN,DISP=(OLD,DELETE)                                  &quot;</span><span class="p">,</span> <span class="s2">&quot;        15 ++SYSPRINT DD SYSOUT=*                                                          &quot;</span><span class="p">,</span> <span class="s2">&quot;           ++*                                                                             &quot;</span><span class="p">],</span> <span class="s2">&quot;ddname&quot;</span><span class="p">:</span> <span class="s2">&quot;JESJCL&quot;</span><span class="p">,</span> <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;3&quot;</span><span class="p">,</span> <span class="s2">&quot;procstep&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;record_count&quot;</span><span class="p">:</span> <span class="s2">&quot;47&quot;</span><span class="p">,</span> <span class="s2">&quot;stepname&quot;</span><span class="p">:</span> <span class="s2">&quot;JES2&quot;</span><span class="p">},</span> <span class="p">{</span><span class="s2">&quot;byte_count&quot;</span><span class="p">:</span> <span class="s2">&quot;2414&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;  STMT NO. MESSAGE&quot;</span><span class="p">,</span> <span class="s2">&quot;         4 IEFC001I PROCEDURE DBDGEN WAS EXPANDED USING INSTREAM PROCEDURE DEFINITION&quot;</span><span class="p">,</span> <span class="s2">&quot; ICH70001I OMVSADM  LAST ACCESS AT 12:50:03 ON FRIDAY, MARCH 13, 2020&quot;</span><span class="p">,</span> <span class="s2">&quot; IEF236I ALLOC. FOR DBDGEN00 C DLORD6&quot;</span><span class="p">,</span> <span class="s2">&quot; IEF237I 083C ALLOCATED TO SYSLIB&quot;</span><span class="p">,</span> <span class="s2">&quot; IGD100I 0940 ALLOCATED TO DDNAME SYSLIN   DATACLAS (        )&quot;</span><span class="p">,</span> <span class="s2">&quot; IGD100I 0942 ALLOCATED TO DDNAME SYSUT1   DATACLAS (        )&quot;</span><span class="p">,</span> <span class="s2">&quot; IEF237I JES2 ALLOCATED TO SYSPRINT&quot;</span><span class="p">,</span> <span class="s2">&quot; IEF237I 01A0 ALLOCATED TO SYSIN&quot;</span><span class="p">,</span> <span class="s2">&quot; IEF142I DBDGEN00 C DLORD6 - STEP WAS EXECUTED - COND CODE 0000&quot;</span><span class="p">,</span> <span class="s2">&quot; IEF285I   IMSBLD.I15RTSMM.SDFSMAC                      KEPT          &quot;</span><span class="p">,</span> <span class="s2">&quot; IEF285I   VOL SER NOS= IMSBG2.                            &quot;</span><span class="p">,</span> <span class="s2">&quot; IEF285I   SYS20073.T125008.RA000.DBDGEN00.R0101894     PASSED        &quot;</span><span class="p">,</span> <span class="s2">&quot; IEF285I   VOL SER NOS= 000000.                            &quot;</span><span class="p">,</span> <span class="s2">&quot; IEF285I   SYS20073.T125008.RA000.DBDGEN00.R0101895     DELETED       &quot;</span><span class="p">,</span> <span class="s2">&quot; IEF285I   VOL SER NOS= 333333.                            &quot;</span><span class="p">,</span> <span class="s2">&quot; IEF285I   OMVSADM.DBDGEN00.JOB00361.D0000101.?         SYSOUT        &quot;</span><span class="p">,</span> <span class="s2">&quot; IEF285I   IMSTESTL.IMS1.DBDSRC                         KEPT          &quot;</span><span class="p">,</span> <span class="s2">&quot; IEF285I   VOL SER NOS= USER03.                            &quot;</span><span class="p">,</span> <span class="s2">&quot; IEF373I STEP/C       /START 2020073.1250&quot;</span><span class="p">,</span> <span class="s2">&quot; IEF032I STEP/C       /STOP  2020073.1250 &quot;</span><span class="p">,</span> <span class="s2">&quot;         CPU:     0 HR  00 MIN  00.03 SEC    SRB:     0 HR  00 MIN  00.00 SEC    &quot;</span><span class="p">,</span> <span class="s2">&quot;         VIRT:   252K  SYS:   240K  EXT:  1876480K  SYS:    11896K&quot;</span><span class="p">,</span> <span class="s2">&quot;         ATB- REAL:                  1048K  SLOTS:                     0K&quot;</span><span class="p">,</span> <span class="s2">&quot;              VIRT- ALLOC:      14M SHRD:       0M&quot;</span><span class="p">,</span> <span class="s2">&quot; IEF236I ALLOC. FOR DBDGEN00 L DLORD6&quot;</span><span class="p">,</span> <span class="s2">&quot; IEF237I 01A0 ALLOCATED TO SYSLMOD&quot;</span><span class="p">,</span> <span class="s2">&quot; IEF237I 0940 ALLOCATED TO SYSLIN&quot;</span><span class="p">,</span> <span class="s2">&quot; IEF237I JES2 ALLOCATED TO SYSPRINT&quot;</span><span class="p">,</span> <span class="s2">&quot; IEF142I DBDGEN00 L DLORD6 - STEP WAS EXECUTED - COND CODE 0000&quot;</span><span class="p">,</span> <span class="s2">&quot; IEF285I   IMSTESTL.IMS1.DBDLIB                         KEPT          &quot;</span><span class="p">,</span> <span class="s2">&quot; IEF285I   VOL SER NOS= USER03.                            &quot;</span><span class="p">,</span> <span class="s2">&quot; IEF285I   SYS20073.T125008.RA000.DBDGEN00.R0101894     DELETED       &quot;</span><span class="p">,</span> <span class="s2">&quot; IEF285I   VOL SER NOS= 000000.                            &quot;</span><span class="p">,</span> <span class="s2">&quot; IEF285I   OMVSADM.DBDGEN00.JOB00361.D0000102.?         SYSOUT        &quot;</span><span class="p">,</span> <span class="s2">&quot; IEF373I STEP/L       /START 2020073.1250&quot;</span><span class="p">,</span> <span class="s2">&quot; IEF032I STEP/L       /STOP  2020073.1250 &quot;</span><span class="p">,</span> <span class="s2">&quot;         CPU:     0 HR  00 MIN  00.00 SEC    SRB:     0 HR  00 MIN  00.00 SEC    &quot;</span><span class="p">,</span> <span class="s2">&quot;         VIRT:    92K  SYS:   256K  EXT:     1768K  SYS:    11740K&quot;</span><span class="p">,</span> <span class="s2">&quot;         ATB- REAL:                  1036K  SLOTS:                     0K&quot;</span><span class="p">,</span> <span class="s2">&quot;              VIRT- ALLOC:      11M SHRD:       0M&quot;</span><span class="p">,</span> <span class="s2">&quot; IEF375I  JOB/DBDGEN00/START 2020073.1250&quot;</span><span class="p">,</span> <span class="s2">&quot; IEF033I  JOB/DBDGEN00/STOP  2020073.1250 &quot;</span><span class="p">,</span> <span class="s2">&quot;         CPU:     0 HR  00 MIN  00.03 SEC    SRB:     0 HR  00 MIN  00.00 SEC    &quot;</span><span class="p">],</span> <span class="s2">&quot;ddname&quot;</span><span class="p">:</span> <span class="s2">&quot;JESYSMSG&quot;</span><span class="p">,</span> <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;4&quot;</span><span class="p">,</span> <span class="s2">&quot;procstep&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;record_count&quot;</span><span class="p">:</span> <span class="s2">&quot;44&quot;</span><span class="p">,</span> <span class="s2">&quot;stepname&quot;</span><span class="p">:</span> <span class="s2">&quot;JES2&quot;</span><span class="p">},</span> <span class="p">{</span><span class="s2">&quot;byte_count&quot;</span><span class="p">:</span> <span class="s2">&quot;1896&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;1z/OS V2 R2 BINDER     12:50:08 FRIDAY MARCH 13, 2020                                                                    &quot;</span><span class="p">,</span> <span class="s2">&quot; BATCH EMULATOR  JOB(DBDGEN00) STEP(DLORD6  ) PGM= IEWL      PROCEDURE(L       )                                         &quot;</span><span class="p">,</span> <span class="s2">&quot; IEW2278I B352 INVOCATION PARAMETERS - XREF,NOLIST                                                                       &quot;</span><span class="p">,</span> <span class="s2">&quot; IEW2650I 5102 MODULE ENTRY NOT PROVIDED.  ENTRY DEFAULTS TO SECTION DLORD6.                                             &quot;</span><span class="p">,</span> <span class="s2">&quot;                                                                                                                         &quot;</span><span class="p">,</span> <span class="s2">&quot;                                                                                                                         &quot;</span><span class="p">,</span> <span class="s2">&quot;1                                       C R O S S - R E F E R E N C E  T A B L E                                         &quot;</span><span class="p">,</span> <span class="s2">&quot;                                        _________________________________________                                        &quot;</span><span class="p">,</span> <span class="s2">&quot;                                                                                                                         &quot;</span><span class="p">,</span> <span class="s2">&quot; TEXT CLASS = B_TEXT                                                                                                     &quot;</span><span class="p">,</span> <span class="s2">&quot;                                                                                                                         &quot;</span><span class="p">,</span> <span class="s2">&quot; ---------------  R E F E R E N C E  --------------------------  T A R G E T  -------------------------------------------&quot;</span><span class="p">,</span> <span class="s2">&quot;   CLASS                            ELEMENT       |                                            ELEMENT                  |&quot;</span><span class="p">,</span> <span class="s2">&quot;   OFFSET SECT/PART(ABBREV)          OFFSET  TYPE | SYMBOL(ABBREV)   SECTION (ABBREV)           OFFSET CLASS NAME       |&quot;</span><span class="p">,</span> <span class="s2">&quot;                                                  |                                                                     |&quot;</span><span class="p">,</span> <span class="s2">&quot;                                        *** E N D  O F  C R O S S  R E F E R E N C E ***                                 &quot;</span><span class="p">,</span> <span class="s2">&quot;1z/OS V2 R2 BINDER     12:50:08 FRIDAY MARCH 13, 2020                                                                    &quot;</span><span class="p">,</span> <span class="s2">&quot; BATCH EMULATOR  JOB(DBDGEN00) STEP(DLORD6  ) PGM= IEWL      PROCEDURE(L       )                                         &quot;</span><span class="p">,</span> <span class="s2">&quot; IEW2850I F920 DLORD6 HAS BEEN SAVED WITH AMODE  24 AND RMODE    24.  ENTRY POINT NAME IS DLORD6.                        &quot;</span><span class="p">,</span> <span class="s2">&quot; IEW2231I 0481 END OF SAVE PROCESSING.                                                                                   &quot;</span><span class="p">,</span> <span class="s2">&quot; IEW2008I 0F03 PROCESSING COMPLETED.  RETURN CODE =  0.                                                                  &quot;</span><span class="p">,</span> <span class="s2">&quot;                                                                                                                         &quot;</span><span class="p">,</span> <span class="s2">&quot;                                                                                                                         &quot;</span><span class="p">,</span> <span class="s2">&quot;                                                                                                                         &quot;</span><span class="p">,</span> <span class="s2">&quot;1----------------------                                                                                                  &quot;</span><span class="p">,</span> <span class="s2">&quot; MESSAGE SUMMARY REPORT                                                                                                  &quot;</span><span class="p">,</span> <span class="s2">&quot; ----------------------                                                                                                  &quot;</span><span class="p">,</span> <span class="s2">&quot;  TERMINAL MESSAGES      (SEVERITY = 16)                                                                                 &quot;</span><span class="p">,</span> <span class="s2">&quot;  NONE                                                                                                                   &quot;</span><span class="p">,</span> <span class="s2">&quot;                                                                                                                         &quot;</span><span class="p">,</span> <span class="s2">&quot;  SEVERE MESSAGES        (SEVERITY = 12)                                                                                 &quot;</span><span class="p">,</span> <span class="s2">&quot;  NONE                                                                                                                   &quot;</span><span class="p">,</span> <span class="s2">&quot;                                                                                                                         &quot;</span><span class="p">,</span> <span class="s2">&quot;  ERROR MESSAGES         (SEVERITY = 08)                                                                                 &quot;</span><span class="p">,</span> <span class="s2">&quot;  NONE                                                                                                                   &quot;</span><span class="p">,</span> <span class="s2">&quot;                                                                                                                         &quot;</span><span class="p">,</span> <span class="s2">&quot;  WARNING MESSAGES       (SEVERITY = 04)                                                                                 &quot;</span><span class="p">,</span> <span class="s2">&quot;  NONE                                                                                                                   &quot;</span><span class="p">,</span> <span class="s2">&quot;                                                                                                                         &quot;</span><span class="p">,</span> <span class="s2">&quot;  INFORMATIONAL MESSAGES (SEVERITY = 00)                                                                                 &quot;</span><span class="p">,</span> <span class="s2">&quot;  2008  2231  2278  2650  2850                                                                                           &quot;</span><span class="p">,</span> <span class="s2">&quot;                                                                                                                         &quot;</span><span class="p">,</span> <span class="s2">&quot;                                                                                                                         &quot;</span><span class="p">,</span> <span class="s2">&quot;  **** END OF MESSAGE SUMMARY REPORT ****                                                                                &quot;</span><span class="p">,</span> <span class="s2">&quot;                                                                                                                         &quot;</span><span class="p">],</span> <span class="s2">&quot;ddname&quot;</span><span class="p">:</span> <span class="s2">&quot;SYSPRINT&quot;</span><span class="p">,</span> <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;102&quot;</span><span class="p">,</span> <span class="s2">&quot;procstep&quot;</span><span class="p">:</span> <span class="s2">&quot;L&quot;</span><span class="p">,</span> <span class="s2">&quot;record_count&quot;</span><span class="p">:</span> <span class="s2">&quot;45&quot;</span><span class="p">,</span> <span class="s2">&quot;stepname&quot;</span><span class="p">:</span> <span class="s2">&quot;DLORD6&quot;</span><span class="p">}],</span> <span class="s2">&quot;job_id&quot;</span><span class="p">:</span> <span class="s2">&quot;JOB00361&quot;</span><span class="p">,</span> <span class="s2">&quot;job_name&quot;</span><span class="p">:</span> <span class="s2">&quot;DBDGEN00&quot;</span><span class="p">,</span> <span class="s2">&quot;owner&quot;</span><span class="p">:</span> <span class="s2">&quot;OMVSADM&quot;</span><span class="p">,</span> <span class="s2">&quot;ret_code&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;code&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;msg&quot;</span><span class="p">:</span> <span class="s2">&quot;CC 0000&quot;</span><span class="p">,</span> <span class="s2">&quot;msg_code&quot;</span><span class="p">:</span> <span class="s2">&quot;0000&quot;</span><span class="p">,</span> <span class="s2">&quot;msg_txt&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">},</span> <span class="s2">&quot;subsystem&quot;</span><span class="p">:</span> <span class="s2">&quot;STL1&quot;</span><span class="p">}]</span>
+</pre></div>
+</div>
+</div></blockquote>
+<dl>
+<dt>job_id</dt><dd><div class="line-block">
+<div class="line">The z/OS job ID of the job containing the spool file.</div>
+</div>
+<div class="line-block">
+<div class="line"><strong>type</strong>: str</div>
+</div>
+<div class="line-block">
+<div class="line"><strong>sample</strong>: JOB00134</div>
+</div>
+</dd>
+<dt>job_name</dt><dd><div class="line-block">
+<div class="line">The name of the batch job.</div>
+</div>
+<div class="line-block">
+<div class="line"><strong>type</strong>: str</div>
+</div>
+<div class="line-block">
+<div class="line"><strong>sample</strong>: HELLO</div>
+</div>
+</dd>
+<dt>duration</dt><dd><div class="line-block">
+<div class="line">The total lapsed time the JCL ran for.</div>
+</div>
+<div class="line-block">
+<div class="line"><strong>type</strong>: int</div>
+</div>
+</dd>
+<dt>ddnames</dt><dd><blockquote>
+<div><div class="line-block">
+<div class="line">Data definition names.</div>
+</div>
+<div class="line-block">
+<div class="line"><strong>type</strong>: list</div>
+</div>
+</div></blockquote>
+<dl>
+<dt>ddname</dt><dd><div class="line-block">
+<div class="line">Data definition name.</div>
+</div>
+<div class="line-block">
+<div class="line"><strong>type</strong>: str</div>
+</div>
+<div class="line-block">
+<div class="line"><strong>sample</strong>: JESMSGLG</div>
+</div>
+</dd>
+<dt>record_count</dt><dd><div class="line-block">
+<div class="line">Count of the number of lines in a print data set.</div>
+</div>
+<div class="line-block">
+<div class="line"><strong>type</strong>: int</div>
+</div>
+<div class="line-block">
+<div class="line"><strong>sample</strong>: 17</div>
+</div>
+</dd>
+<dt>id</dt><dd><div class="line-block">
+<div class="line">The file ID.</div>
+</div>
+<div class="line-block">
+<div class="line"><strong>type</strong>: str</div>
+</div>
+<div class="line-block">
+<div class="line"><strong>sample</strong>: 2</div>
+</div>
+</dd>
+<dt>stepname</dt><dd><div class="line-block">
+<div class="line">A step name is name that identifies the job step so that other JCL statements or the operating system can refer to it.</div>
+</div>
+<div class="line-block">
+<div class="line"><strong>type</strong>: str</div>
+</div>
+<div class="line-block">
+<div class="line"><strong>sample</strong>: JES2</div>
+</div>
+</dd>
+<dt>procstep</dt><dd><div class="line-block">
+<div class="line">Identifies the set of statements inside JCL grouped together to perform a particular function.</div>
+</div>
+<div class="line-block">
+<div class="line"><strong>type</strong>: str</div>
+</div>
+<div class="line-block">
+<div class="line"><strong>sample</strong>: PROC1</div>
+</div>
+</dd>
+<dt>byte_count</dt><dd><div class="line-block">
+<div class="line">Byte size in a print data set.</div>
+</div>
+<div class="line-block">
+<div class="line"><strong>type</strong>: int</div>
+</div>
+<div class="line-block">
+<div class="line"><strong>sample</strong>: 574</div>
+</div>
+</dd>
+<dt>content</dt><dd><div class="line-block">
+<div class="line">The ddname content.</div>
+</div>
+<div class="line-block">
+<div class="line"><strong>type</strong>: list[str]</div>
+</div>
+<p><strong>sample</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="s2">&quot;</span><span class="se">\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0</span><span class="s2"> 1 //HELLO</span><span class="se">\u00a0\u00a0\u00a0</span><span class="s2"> JOB (T043JM,JM00,1,0,0,0),</span><span class="se">\u0027</span><span class="s2">HELLO WORLD - JRM</span><span class="se">\u0027</span><span class="s2">,CLASS=R,</span><span class="se">\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0</span><span class="s2"> JOB00134&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0</span><span class="s2">    </span><span class="se">\&quot;\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0</span><span class="s2"> //</span><span class="se">\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0</span><span class="s2"> MSGCLASS=X&quot;</span><span class="p">,</span> <span class="s2">&quot;MSGLEVEL=1&quot;</span><span class="p">,</span> <span class="s2">&quot;NOTIFY=S0JM</span><span class="se">\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0</span><span class="s2"> </span><span class="se">\&quot;</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0</span><span class="s2">    </span><span class="se">\&quot;\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0</span><span class="s2"> </span><span class="se">\u00a0\u00a0\u00a0</span><span class="s2"> //*</span><span class="se">\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0</span><span class="s2"> </span><span class="se">\&quot;</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0</span><span class="s2">    </span><span class="se">\&quot;\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0</span><span class="s2"> //* PRINT </span><span class="se">\\\&quot;</span><span class="s2">HELLO WORLD</span><span class="se">\\\&quot;</span><span class="s2"> ON JOB OUTPUT</span><span class="se">\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\&quot;</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0</span><span class="s2">    </span><span class="se">\&quot;\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0</span><span class="s2"> //*</span><span class="se">\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0</span><span class="s2"> </span><span class="se">\&quot;</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0</span><span class="s2">    </span><span class="se">\&quot;\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0</span><span class="s2"> //* NOTE THAT THE EXCLAMATION POINT IS INVALID EBCDIC FOR JCL</span><span class="se">\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0</span><span class="s2"> </span><span class="se">\&quot;</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0</span><span class="s2">    </span><span class="se">\&quot;\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0</span><span class="s2"> //*</span><span class="se">\u00a0\u00a0</span><span class="s2"> AND WILL CAUSE A JCL ERROR</span><span class="se">\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0</span><span class="s2"> </span><span class="se">\&quot;</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0</span><span class="s2">    </span><span class="se">\&quot;\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0</span><span class="s2"> //*</span><span class="se">\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0</span><span class="s2"> </span><span class="se">\&quot;</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0</span><span class="s2">    </span><span class="se">\&quot;\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0</span><span class="s2"> 2 //STEP0001 EXEC PGM=IEBGENER</span><span class="se">\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0</span><span class="s2"> </span><span class="se">\&quot;</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0</span><span class="s2">    </span><span class="se">\&quot;\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0</span><span class="s2"> 3 //SYSIN</span><span class="se">\u00a0\u00a0\u00a0</span><span class="s2"> DD DUMMY</span><span class="se">\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0</span><span class="s2"> </span><span class="se">\&quot;</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0</span><span class="s2">    </span><span class="se">\&quot;\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0</span><span class="s2"> 4 //SYSPRINT DD SYSOUT=*</span><span class="se">\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0</span><span class="s2"> </span><span class="se">\&quot;</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0</span><span class="s2">    </span><span class="se">\&quot;\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0</span><span class="s2"> 5 //SYSUT1</span><span class="se">\u00a0\u00a0</span><span class="s2"> DD *</span><span class="se">\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0</span><span class="s2"> </span><span class="se">\&quot;</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0</span><span class="s2">    </span><span class="se">\&quot;\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0</span><span class="s2"> 6 //SYSUT2</span><span class="se">\u00a0\u00a0</span><span class="s2"> DD SYSOUT=*</span><span class="se">\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0</span><span class="s2"> </span><span class="se">\&quot;</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0</span><span class="s2">    </span><span class="se">\&quot;\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0</span><span class="s2"> 7 //</span><span class="se">\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0</span><span class="s2"> </span><span class="se">\&quot;</span><span class="s2"> </span><span class="se">\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0</span><span class="s2">&quot;</span><span class="p">]</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+</dd>
+<dt>ret_code</dt><dd><blockquote>
+<div><div class="line-block">
+<div class="line">Return code output collected from job log.</div>
+</div>
+<div class="line-block">
+<div class="line"><strong>type</strong>: dict</div>
+</div>
+<p><strong>sample</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[{</span><span class="s2">&quot;code&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">},</span> <span class="p">{</span><span class="s2">&quot;msg&quot;</span><span class="p">:</span> <span class="s2">&quot;CC 0000&quot;</span><span class="p">},</span> <span class="p">{</span><span class="s2">&quot;msg_code&quot;</span><span class="p">:</span> <span class="s2">&quot;0000&quot;</span><span class="p">},</span> <span class="p">{</span><span class="s2">&quot;msg_txt&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">}]</span>
+</pre></div>
+</div>
+</div></blockquote>
+<dl>
+<dt>msg</dt><dd><div class="line-block">
+<div class="line">Return code or abend resulting from the job submission.</div>
+</div>
+<div class="line-block">
+<div class="line"><strong>type</strong>: str</div>
+</div>
+<div class="line-block">
+<div class="line"><strong>sample</strong>: CC 0000</div>
+</div>
+</dd>
+<dt>msg_code</dt><dd><div class="line-block">
+<div class="line">Return code extracted from the <cite>msg</cite> so that it can better evaluated. For example, ABEND(S0C4) would yield “”S0C4”.</div>
+</div>
+<div class="line-block">
+<div class="line"><strong>type</strong>: str</div>
+</div>
+<div class="line-block">
+<div class="line"><strong>sample</strong>: S0C4</div>
+</div>
+</dd>
+<dt>msg_txt</dt><dd><div class="line-block">
+<div class="line">Returns additional information related to the job.</div>
+</div>
+<div class="line-block">
+<div class="line"><strong>type</strong>: str</div>
+</div>
+<div class="line-block">
+<div class="line"><strong>sample</strong>: No job can be located with this job name: HELLO</div>
+</div>
+</dd>
+<dt>code</dt><dd><div class="line-block">
+<div class="line">Return code converted to integer value (when possible).</div>
+</div>
+<div class="line-block">
+<div class="line"><strong>type</strong>: int</div>
+</div>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd>
+<dt>changed</dt><dd><div class="line-block">
+<div class="line">Indicates if any changes were made during module operation.</div>
+</div>
+<div class="line-block">
+<div class="line"><strong>returned</strong>: success</div>
+</div>
+<div class="line-block">
+<div class="line"><strong>type</strong>: bool</div>
+</div>
+</dd>
+<dt>message</dt><dd><div class="line-block">
+<div class="line">The output message that the sample module generates.</div>
+</div>
+<div class="line-block">
+<div class="line"><strong>returned</strong>: success</div>
+</div>
+<div class="line-block">
+<div class="line"><strong>type</strong>: str</div>
+</div>
+<div class="line-block">
+<div class="line"><strong>sample</strong>: Submit JCL operation succeeded.</div>
+</div>
+</dd>
+</dl>
+</div></blockquote>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="zos_operator.html" class="btn btn-neutral float-right" title="zos_operator – Execute operator command" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="zos_job_query.html" class="btn btn-neutral float-left" title="zos_job_query – Query job status" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, IBM
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+<div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+        <span class="fa fa-book"> Other Versions</span>
+        v: release-v1.1.0-beta1
+        <span class="fa fa-caret-down"></span>
+    </span>
+    <div class="rst-other-versions">
+        <dl>
+            <dt>Tags</dt>
+            <dd><a href="../../v1.1.0-beta1/modules/zos_job_submit.html">v1.1.0-beta1</a></dd>
+            <dd><a href="../../v1.0.0/modules/zos_job_submit.html">v1.0.0</a></dd>
+        </dl>
+        <dl>
+            <dt>Branches</dt>
+            <dd><a href="zos_job_submit.html">release-v1.1.0-beta1</a></dd>
+        </dl>
+    </div>
+</div>
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

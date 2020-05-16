@@ -418,7 +418,7 @@ from ansible.module_utils._text import to_bytes
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser,
-    data_set_utils,
+    data_set,
     encode,
     vtoc,
     backup,
@@ -1261,18 +1261,18 @@ def run_module():
                 dest_ds_type = "USS"
                 dest_exists = os.path.exists(dest)
             else:
-                dest_du = data_set_utils.DataSetUtils(module, dest_name)
-                dest_exists = dest_du.data_set_exists()
-                dest_ds_type = dest_du.get_data_set_type()
+                dest_du = data_set.DataSetUtils(dest_name)
+                dest_exists = dest_du.exists()
+                dest_ds_type = dest_du.ds_type()
             if temp_path or '/' in src:
                 src_ds_type = "USS"
             else:
-                src_du = data_set_utils.DataSetUtils(module, src_name)
-                if src_du.data_set_exists():
-                    if src_member and not src_du.data_set_member_exists(member_name):
+                src_du = data_set.DataSetUtils(src_name)
+                if src_du.exists():
+                    if src_member and not src_du.member_exists(member_name):
                         raise NonExistentSourceError(src)
-                    src_ds_type = src_du.get_data_set_type()
-                    src_ds_vol = src_du.get_data_set_volume()
+                    src_ds_type = src_du.ds_type()
+                    src_ds_vol = src_du.volume()
                 else:
                     raise NonExistentSourceError(src)
 

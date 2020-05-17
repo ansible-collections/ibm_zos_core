@@ -1410,7 +1410,6 @@ def test_copy_vsam_ksds_to_existing_vsam_ksds(ansible_zos_module):
         copy_res = hosts.all.zos_copy(
             src=src_ds,
             dest=dest_ds,
-            is_vsam=True,
             remote_src=True
         )
         verify_copy = hosts.all.shell(
@@ -1436,7 +1435,6 @@ def test_copy_vsam_ksds_to_non_existing_vsam_ksds(ansible_zos_module):
         copy_res = hosts.all.zos_copy(
             src=src_ds,
             dest=dest_ds,
-            is_vsam=True,
             remote_src=True
         )
         verify_copy = hosts.all.shell(
@@ -1475,7 +1473,7 @@ def test_copy_inline_content_to_existing_uss_file(ansible_zos_module):
     hosts = ansible_zos_module
     dest_path = '/tmp/inline'
     try:
-        hosts.all.file(path=dest_path, state='absent')
+        hosts.all.file(path=dest_path, state='touch')
         copy_res = hosts.all.zos_copy(
             content='Inline content',
             dest=dest_path
@@ -1492,7 +1490,7 @@ def test_copy_inline_content_to_existing_uss_file(ansible_zos_module):
 def test_copy_inline_content_to_uss_dir(ansible_zos_module):
     hosts = ansible_zos_module
     dest = '/tmp/'
-    dest_path = '/tmp/content'
+    dest_path = '/tmp/inline_copy'
     try:
         copy_res = hosts.all.zos_copy(
             content='Inline content',

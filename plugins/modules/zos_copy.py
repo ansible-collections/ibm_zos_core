@@ -481,7 +481,15 @@ class CopyHandler(object):
             elif src_ds_type in MVS_SEQ.union(MVS_PARTITIONED):
                 copy.copy_mvs2mvs(src, dest, is_binary=self.is_binary)
         except Exception as err:
-            self.fail_json(msg=str(err))
+            err = str(err)
+            if "I/O abend was trapped" in err:
+                try:
+                    Datasets.create(dest, "SEQ")
+                    copy.copy_mvs2mvs(src, dest, is_binary=self.is_binary)
+                except Exception as err:
+                    self.fail_json(msg=str(err))
+            else:
+                self.fail_json(msg=err)
 
     def copy_to_vsam(self, src, dest):
         """ Copy source VSAM to destination VSAM. If source VSAM exists, then
@@ -707,6 +715,9 @@ class USSCopyHandler(CopyHandler):
             src_ds_type {str} -- Type of source
             src_member {bool} -- Whether src is a data set member
             member_name {str} -- The name of the source data set member
+
+        Returns:
+            {str} -- Destination where the file was copied to
         """
         src = self.module.params.get("src")
         dest = self.module.params.get("dest")
@@ -714,9 +725,9 @@ class USSCopyHandler(CopyHandler):
             self._mvs_copy_to_uss(src, dest, src_ds_type, src_member, member_name=member_name)
         else:
             if os.path.isfile(temp_path or conv_path or src):
-                self._copy_to_file(src, dest, conv_path, temp_path)
+                dest = self._copy_to_file(src, dest, conv_path, temp_path)
             else:
-                self._copy_to_dir(src, dest, conv_path, temp_path)
+                dest = self._copy_to_dir(src, dest, conv_path, temp_path)
 
         if self.common_file_args is not None:
             mode = self.common_file_args.get("mode")
@@ -728,6 +739,7 @@ class USSCopyHandler(CopyHandler):
                 self.module.set_group_if_different(dest, group, False)
             if owner is not None:
                 self.module.set_owner_if_different(dest, owner, False)
+        return dest
 
     def _copy_to_file(self, src, dest, conv_path, temp_path):
         """Helper function to copy a USS src to USS dest.
@@ -737,9 +749,12 @@ class USSCopyHandler(CopyHandler):
             dest {str} -- USS dest file path
             temp_path {str} -- Path to the location where the control node transferred data to
             conv_path {str} -- Path to the converted source file or directory
+
+        Returns:
+            {str} -- Destination where the file was copied to
         """
         if os.path.isdir(dest):
-            dest = os.path.join(dest, os.path.basename(src) if src else 'content')
+            dest = os.path.join(dest, os.path.basename(src) if src else 'inline_copy')
 
         src = temp_path or conv_path or src
         try:
@@ -757,6 +772,7 @@ class USSCopyHandler(CopyHandler):
                 msg="Unable to copy file {0} to {1}".format(src, dest),
                 stderr=str(err)
             )
+        return dest
 
     def _copy_to_dir(self, src_dir, dest_dir, conv_path, temp_path):
         """Helper function to copy a USS directory to another USS directory
@@ -766,6 +782,9 @@ class USSCopyHandler(CopyHandler):
             dest {str} -- USS dest directory
             temp_path {str} -- Path to the location where the control node transferred data to
             conv_path {str} -- Path to the converted source directory
+
+        Returns:
+            {str} -- Destination where the directory was copied to
         """
         src_dir = temp_path or conv_path or src_dir
         if os.path.exists(dest_dir):
@@ -783,6 +802,7 @@ class USSCopyHandler(CopyHandler):
                 msg="Error while copying data to destination directory {0}".format(dest_dir),
                 stdout=str(err)
             )
+        return dest_dir
 
     def _mvs_copy_to_uss(self, src, dest, src_ds_type, src_member, member_name=None):
         """Helper function to copy an MVS data set src to USS dest.
@@ -887,6 +907,9 @@ class PDSECopyHandler(CopyHandler):
 
         Keyword Arguments:
             copy_member {bool} -- Whether destination specifies a member name. (default {False})
+
+        Returns:
+            {str} -- Destination where the member was copied to
         """
         if src and '/' in src and not copy_member:
             dest = "{0}({1})".format(dest, os.path.basename(src))
@@ -904,6 +927,7 @@ class PDSECopyHandler(CopyHandler):
                     msg="Unable to copy to data set member {}".format(dest),
                     rc=rc
                 )
+        return dest
 
     def create_pdse(
         self, src, dest_name, size, src_ds_type, remote_src=False, vol=None
@@ -1223,7 +1247,7 @@ def run_module():
         temp_path = module.params.get('temp_path')
         alloc_size = module.params.get('size')
         src_member = module.params.get('src_member')
-        copy_member = module.params.get('copy_member') or src_member
+        copy_member = module.params.get('copy_member')
 
         # ********************************************************************
         # When copying to and from a data set member, 'dest' or 'src' will be
@@ -1339,6 +1363,7 @@ def run_module():
                     dest_ds_type = "VSAM"
                 elif not is_uss:
                     dest_ds_type = "SEQ"
+
             res_args['changed'] = True
 
         # ********************************************************************
@@ -1362,6 +1387,14 @@ def run_module():
                     msg="Destination {0} is not writable".format(dest)
                 )
 
+            uss_copy_handler = USSCopyHandler(
+                module, dest_exists, is_binary=is_binary,
+                common_file_args=dict(mode=mode, group=group, owner=owner)
+            )
+            dest = uss_copy_handler.copy_to_uss(
+                conv_path, temp_path, src_ds_type, src_member, member_name
+            )
+            res_args['size'] = Path(dest).stat().st_size
             if validate:
                 try:
                     remote_checksum = CopyUtil.get_file_checksum(temp_path or src)
@@ -1374,15 +1407,6 @@ def run_module():
                 res_args['changed'] = (
                     res_args.get("changed") or remote_checksum != dest_checksum
                 )
-
-            uss_copy_handler = USSCopyHandler(
-                module, dest_exists, is_binary=is_binary,
-                common_file_args=dict(mode=mode, group=group, owner=owner)
-            )
-            uss_copy_handler.copy_to_uss(
-                conv_path, temp_path, src_ds_type, src_member, member_name
-            )
-            res_args['size'] = Path(dest).stat().st_size
 
         # ------------------------------- o -----------------------------------
         # Copy to sequential data set
@@ -1398,8 +1422,8 @@ def run_module():
                 temp_path = os.path.join(temp_path, os.path.basename(src))
 
             pdse_copy_handler = PDSECopyHandler(module, dest_exists, is_binary=is_binary)
-            if copy_member or os.path.isfile(temp_path or src):
-                pdse_copy_handler.copy_to_member(
+            if copy_member or os.path.isfile(temp_path or src) or src_member:
+                dest = pdse_copy_handler.copy_to_member(
                     src, temp_path, conv_path, dest, copy_member=copy_member
                 )
             else:

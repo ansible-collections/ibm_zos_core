@@ -30,12 +30,14 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
 def _update_result(is_binary, **copy_res):
     """ Helper function to update output result with the provided values """
     ds_type = copy_res.get("ds_type")
+    src = copy_res.get("src")
     updated_result = dict(
-        src=copy_res.get("src"),
-        dest=copy_res.get("dest"),
+        dest=copy_res.get('dest'),
         is_binary=is_binary,
         changed=copy_res.get("changed")
     )
+    if src:
+        updated_result['src'] = src
     if ds_type == "USS":
         updated_result.update(
             dict(
@@ -175,10 +177,11 @@ class ActionModule(ActionBase):
                 msg = "'src' or 'dest' must not be empty"
                 return self._fail_acton(result, msg)
             else:
-                src = os.path.realpath(src)
                 src_member = _is_member(src)
-                is_src_dir = os.path.isdir(src)
-                is_pds = is_src_dir and is_mvs_dest
+                if not remote_src:
+                    src = os.path.realpath(src)
+                    is_src_dir = os.path.isdir(src)
+                    is_pds = is_src_dir and is_mvs_dest
 
         if not src and not content:
             msg = "'src' or 'content' is required"
@@ -213,7 +216,6 @@ class ActionModule(ActionBase):
                 )
                 return self._fail_acton(result, msg)
 
-        if not remote_src:
             if content:
                 try:
                     local_content = _write_content_to_temp_file(content)

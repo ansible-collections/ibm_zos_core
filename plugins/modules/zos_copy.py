@@ -44,7 +44,7 @@ options:
       - If C(dest) is a nonexistent data set, it will be allocated.
       - If C(src) and C(dest) are files and if the parent directory of C(dest)
         doesn't exist, then the task will fail.
-      - When the C(dest) is VSAM(KSDS) or VSAM(ESDS), then source can be ESDS, 
+      - When the C(dest) is VSAM(KSDS) or VSAM(ESDS), then source can be ESDS,
         KSDS or RRDS.
       - When the C(dest) is VSAM(RRDS), then the source must be RRDS.
       - When C(dest) is VSAM(LDS), then source must be LDS.
@@ -58,6 +58,8 @@ options:
         partitioned data set member.
       - This is for simple values, for anything complex or with formatting, the
         M(template) module should be used.
+      - If C(dest) is a directory, then content will be copied to
+        C(/path/to/dest/inline_copy).
     type: str
     required: false
   backup:
@@ -160,16 +162,17 @@ notes:
       is provided, task will fail.
     - When copying local files or directories, temporary storage will be used
       on the remote z/OS system. The size of the temporary storage will
-      correspond to the size of the file or directory being copied. Temporary 
+      correspond to the size of the file or directory being copied. Temporary
       files will always be deleted, regardless of success or failure of the
       copy task.
+    - VSAM data sets can only be copied to other VSAM data sets.
     - For supported character sets used to encode data, refer to
       U(https://ansible-collections.github.io/ibm_zos_core/supplementary.html#encode)
 seealso:
-- copy
-- fetch
-- zos_fetch
-- zos_data_set
+- module: copy
+- module: fetch
+- module: zos_fetch
+- module: zos_data_set
 '''
 
 EXAMPLES = r'''
@@ -482,6 +485,12 @@ class CopyHandler(object):
                 copy.copy_mvs2mvs(src, dest, is_binary=self.is_binary)
         except Exception as err:
             err = str(err)
+            # *****************************************************************
+            # When Copying a PDSE member to a non-exiswtent sequential data set
+            # using: cp "//'SOME.PDSE.DATA.SET(MEMBER)'" "//'SOME.DEST.SEQ'"
+            # An I/O abend could be trapped and can be resolved by allocating
+            # the destination data set before copying.
+            # *****************************************************************
             if "I/O abend was trapped" in err:
                 try:
                     Datasets.create(dest, "SEQ")

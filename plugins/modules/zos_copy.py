@@ -85,7 +85,6 @@ options:
         recovery can be done by renaming it.
     required: false
     type: str
-    required: false
   force:
     description:
       - If C(true), the remote file or data set will be overwritten.
@@ -383,7 +382,7 @@ stderr:
     description: The stderr of a USS command or MVS command, if applicable.
     returned: failure
     type: str
-    sample: No such file or directory '/tmp/foo'
+    sample: No such file or directory "/tmp/foo"
 stdout_lines:
     description: List of strings containing individual lines from stdout.
     returned: failure

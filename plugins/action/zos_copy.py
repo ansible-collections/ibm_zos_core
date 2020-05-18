@@ -11,7 +11,7 @@ import re
 import time
 import subprocess
 
-from tempfile import mkstemp
+from tempfile import mkstemp, gettempprefix
 from pathlib import Path
 
 from ansible.errors import AnsibleError, AnsibleFileNotFound
@@ -94,7 +94,7 @@ def _create_temp_path_name():
     """Create a temporary path name"""
     current_date = time.strftime("D%y%m%d", time.localtime())
     current_time = time.strftime("T%H%M%S", time.localtime())
-    return "/tmp/ansible-zos-copy-payload-{0}-{1}".format(current_date, current_time)
+    return "ansible-zos-copy-payload-{0}-{1}".format(current_date, current_time)
 
 
 def _detect_sftp_errors(stderr):
@@ -281,7 +281,7 @@ class ActionModule(ActionBase):
         """Copy a file or directory to the remote z/OS system """
         ansible_user = self._play_context.remote_user
         ansible_host = self._play_context.remote_addr
-        temp_path = _create_temp_path_name()
+        temp_path = "/{0}/{1}".format(gettempprefix(), _create_temp_path_name())
         cmd = ['sftp', ansible_user + '@' + ansible_host]
         stdin = "put -r {0} {1}".format(src, temp_path)
 

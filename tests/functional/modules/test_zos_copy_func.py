@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import absolute_import, division
+from __future__ import (absolute_import, division, print_function)
 
 import os
 import shutil
@@ -29,7 +29,7 @@ SHELL_EXECUTABLE = "/usr/lpp/rsusr/ported/bin/bash"
 
 def populate_dir(dir_path):
     for i in range(5):
-        with open(dir_path + '/' + "file" + str(i+1), 'w') as infile:
+        with open(dir_path + '/' + "file" + str(i + 1), 'w') as infile:
             infile.write(DUMMY_DATA)
 
 
@@ -222,7 +222,7 @@ def test_copy_local_dir_to_existing_pdse(ansible_zos_module):
         hosts.all.zos_data_set(name=dest + '(FILE1)', type='MEMBER', replace='yes')
         copy_result = hosts.all.zos_copy(src=source_path, dest=dest)
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{0}'\" > /dev/null 2>/dev/null".format(dest+"(FILE2)"),
+            cmd="cat \"//'{0}'\" > /dev/null 2>/dev/null".format(dest + "(FILE2)"),
             executable=SHELL_EXECUTABLE
         )
         for cp_res in copy_result.contacted.values():
@@ -761,7 +761,7 @@ def test_copy_pds_to_existing_pds(ansible_zos_module):
             remote_src=True
         )
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{0}'\"".format(dest+"(ATRQUERY)"),
+            cmd="cat \"//'{0}'\"".format(dest + "(ATRQUERY)"),
             executable=SHELL_EXECUTABLE
         )
         for result in copy_res.contacted.values():
@@ -784,7 +784,7 @@ def test_copy_pds_to_non_existing_pds(ansible_zos_module):
             remote_src=True
         )
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{0}'\"".format(dest+"(ATRQUERY)"),
+            cmd="cat \"//'{0}'\"".format(dest + "(ATRQUERY)"),
             executable=SHELL_EXECUTABLE
         )
         for result in copy_res.contacted.values():
@@ -810,7 +810,7 @@ def test_copy_pds_to_existing_pdse(ansible_zos_module):
             remote_src=True
         )
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{0}'\"".format(dest+"(ATRQUERY)"),
+            cmd="cat \"//'{0}'\"".format(dest + "(ATRQUERY)"),
             executable=SHELL_EXECUTABLE
         )
         for result in copy_res.contacted.values():
@@ -857,7 +857,7 @@ def test_copy_pdse_to_existing_pdse(ansible_zos_module):
             remote_src=True
         )
         verify_copy = hosts.all.shell(
-            cmd="head \"//'{0}'\"".format(dest+"(GFSAMAIN)"),
+            cmd="head \"//'{0}'\"".format(dest + "(GFSAMAIN)"),
             executable=SHELL_EXECUTABLE
         )
         for result in copy_res.contacted.values():
@@ -880,7 +880,7 @@ def test_copy_pdse_to_non_existing_pdse(ansible_zos_module):
             remote_src=True
         )
         verify_copy = hosts.all.shell(
-            cmd="head \"//'{0}'\"".format(dest+"(GFSAMAIN)"),
+            cmd="head \"//'{0}'\"".format(dest + "(GFSAMAIN)"),
             executable=SHELL_EXECUTABLE
         )
         for result in copy_res.contacted.values():
@@ -1679,7 +1679,7 @@ def test_copy_uss_file_to_pds_member_convert_encoding(ansible_zos_module):
             encoding={'from': "IBM-1047", 'to': "IBM-1047"}
         )
         verify_copy = hosts.all.shell(
-            cmd="head \"//'{0}'\"".format(dest_path+"(PROFILE)"),
+            cmd="head \"//'{0}'\"".format(dest_path + "(PROFILE)"),
             executable=SHELL_EXECUTABLE
         )
         for result in copy_res.contacted.values():

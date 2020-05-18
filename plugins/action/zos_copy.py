@@ -234,7 +234,7 @@ class ActionModule(ActionBase):
                     )
                 else:
                     if mode == 'preserve':
-                        new_module_args['mode'] = '0{:o}'.format(stat.S_IMODE(os.stat(b_src).st_mode))
+                        new_module_args['mode'] = '0{0:o}'.format(stat.S_IMODE(os.stat(b_src).st_mode))
                     new_module_args['size'] = Path(src).stat().st_size
                 transfer_res = self._copy_to_remote(src, is_dir=is_src_dir)
 

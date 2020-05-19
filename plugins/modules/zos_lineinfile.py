@@ -175,7 +175,7 @@ import re
 import json
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
-    better_arg_parser, data_set_utils, backup as Backup)
+    better_arg_parser, data_set, backup as Backup)
 from os import path
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     MissingZOAUImport,
@@ -250,8 +250,8 @@ def main():
     encoding = parsed_args.get('encoding')
 
     # analysis the file type
-    ds_utils = data_set_utils.DataSetUtils(module, path)
-    file_type = ds_utils.get_data_set_type()
+    ds_utils = data_set.DataSetUtils(path)
+    file_type = ds_utils.ds_type()
     if file_type == 'USS':
         file_type = 1
     else:
@@ -269,6 +269,8 @@ def main():
         except Exception:
             module.fail_json(msg="creating backup has failed")
     if parsed_args.get('state') == 'present':
+        if backrefs and regexp is None:
+            module.fail_json(msg='regexp is required with backrefs=true')
         if line is None:
             module.fail_json(msg='line is required with state=present')
         if regexp is None and ins_aft is None and ins_bef is None:

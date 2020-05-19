@@ -20,7 +20,7 @@ module: zos_fetch
 version_added: "2.9"
 short_description: Fetch data from z/OS
 description:
-  - This module fetches a Unix System Services (USS) file,
+  - This module fetches a UNIX System Services (USS) file,
     PS(sequential data set), PDS, PDSE, member of a PDS or PDSE, or
     KSDS(VSAM data set) from a remote z/OS system.
   - In the case of a PDS or PDSE member, the destination will be the same as
@@ -35,7 +35,7 @@ author: "Asif Mahmud (@asifmahmud)"
 options:
   src:
     description:
-      - Name of a Unix System Services (USS) file, PS(sequential data set), PDS,
+      - Name of a UNIX System Services (USS) file, PS(sequential data set), PDS,
         PDSE, member of a PDS, PDSE or KSDS(VSAM data set).
       - USS file paths should be absolute paths.
     required: true
@@ -144,7 +144,7 @@ EXAMPLES = r"""
     flat: true
     is_binary: true
 
-- name: Fetch a Unix file and don't validate its checksum
+- name: Fetch a UNIX file and don't validate its checksum
   zos_fetch:
     src: /tmp/somefile
     dest: /tmp/
@@ -252,7 +252,7 @@ from ansible.module_utils._text import to_bytes
 from ansible.module_utils.parsing.convert_bool import boolean
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser,
-    data_set_utils,
+    data_set,
     encode
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
@@ -315,9 +315,9 @@ class FetchHandler:
         mvs_rc = 0
         vsam_size = self._get_vsam_size(ds_name)
         try:
-            sysin = data_set_utils.DataSetUtils.create_temp_data_set("SYSIN")
-            sysprint = data_set_utils.DataSetUtils.create_temp_data_set("SYSPRINT")
-            out_ds_name = data_set_utils.DataSetUtils.create_temp_data_set(
+            sysin = data_set.DataSetUtils.create_temp_data_set("SYSIN")
+            sysprint = data_set.DataSetUtils.create_temp_data_set("SYSPRINT")
+            out_ds_name = data_set.DataSetUtils.create_temp_data_set(
                 "VSM", size="{0}K".format(vsam_size)
             )
             repro_sysin = " REPRO INFILE(INPUT)  OUTFILE(OUTPUT) "
@@ -372,7 +372,7 @@ class FetchHandler:
             fd, file_path = tempfile.mkstemp()
             from_code_set = encoding.get("from")
             to_code_set = encoding.get("to")
-            enc_utils = encode.EncodeUtils(self.module)
+            enc_utils = encode.EncodeUtils()
             try:
                 enc_utils.uss_convert_encoding(src, file_path, from_code_set, to_code_set)
             except Exception as err:
@@ -561,8 +561,8 @@ def run_module():
     _fetch_member = "(" in src and src.endswith(")")
     ds_name = src if not _fetch_member else src[: src.find("(")]
     try:
-        ds_utils = data_set_utils.DataSetUtils(module, ds_name)
-        if not ds_utils.data_set_exists():
+        ds_utils = data_set.DataSetUtils(ds_name)
+        if not ds_utils.exists():
             if fail_on_missing:
                 module.fail_json(
                     msg=(
@@ -573,7 +573,7 @@ def run_module():
             module.exit_json(
                 note=("Source '{0}' was not found. No data was fetched".format(ds_name))
             )
-        ds_type = ds_utils.get_data_set_type()
+        ds_type = ds_utils.ds_type()
         if not ds_type:
             module.fail_json(msg="Unable to determine data set type")
 
@@ -597,7 +597,7 @@ def run_module():
     elif ds_type == "PO":
         if _fetch_member:
             member_name = src[src.find("(") + 1: src.find(")")]
-            if not ds_utils.data_set_member_exists(member_name):
+            if not ds_utils.member_exists(member_name):
                 module.fail_json(
                     msg=(
                         "The data set member '{0}' was not found inside data "

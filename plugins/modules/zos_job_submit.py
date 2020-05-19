@@ -87,18 +87,18 @@ options:
         Ignored for USS and LOCAL.
   encoding:
     required: false
-    default: UTF-8
+    default: ISO8859-1
     type: str
     choices:
       - UTF-8
       - ASCII
-      - ISO-8859-1
+      - ISO8859-1
       - EBCDIC
       - IBM-037
       - IBM-1047
     description:
       - The encoding of the local JCL file on the ansible control node.
-      - If it is UTF-8, ASCII, ISO-8859-1, the file will be converted to EBCDIC
+      - If it is UTF-8, ASCII, ISO8859-1, the file will be converted to EBCDIC
         on the z/OS platform.
       - If it is EBCDIC, IBM-037, IBM-1047, the file will be unchanged when
         submitted on the z/OS platform.
@@ -617,8 +617,8 @@ def run_module():
         ),
         encoding=dict(
             type="str",
-            default="UTF-8",
-            choices=["UTF-8", "ASCII", "ISO-8859-1", "EBCDIC", "IBM-037", "IBM-1047"],
+            default="ISO8859-1",
+            choices=["UTF-8", "ASCII", "ISO8859-1", "EBCDIC", "IBM-037", "IBM-1047"],
         ),
         volume=dict(type="str", required=False),
         return_output=dict(type="bool", required=False, default=True),
@@ -635,7 +635,7 @@ def run_module():
         location=dict(
             arg_type="str", default="DATA_SET", choices=["DATA_SET", "USS", "LOCAL"],
         ),
-        encoding=dict(arg_type="encoding", default="UTF-8"),
+        encoding=dict(arg_type="encoding", default="ISO8859-1"),
         volume=dict(arg_type="volume", required=False),
         return_output=dict(arg_type="bool", default=True),
         wait_time_s=dict(arg_type="int", required=False, default=60),
@@ -692,7 +692,7 @@ def run_module():
             # 'UTF-8' 'ASCII' encoding will be converted.
             elif (
                 encoding == "UTF-8"
-                or encoding == "ISO-8859-1"
+                or encoding == "ISO8859-1"
                 or encoding == "ASCII"
                 or encoding is None
             ):
@@ -713,7 +713,7 @@ def run_module():
                 module.fail_json(
                     msg=(
                         "The Local file encoding format is not supported."
-                        "The supported encoding is UTF-8, ASCII, ISO-8859-1, EBCDIC, IBM-037, IBM-1047. Default is UTF-8."
+                        "The supported encoding is UTF-8, ASCII, ISO8859-1, EBCDIC, IBM-037, IBM-1047. Default is UTF-8."
                     ),
                     **result
                 )

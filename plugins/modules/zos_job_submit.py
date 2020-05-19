@@ -102,6 +102,7 @@ options:
         on the z/OS platform.
       - If it is EBCDIC, IBM-037, IBM-1047, the file will be unchanged when
         submitted on the z/OS platform.
+      - If no encoding is specified, ISO8859-1 is used as the default value.
 """
 
 RETURN = r"""

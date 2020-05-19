@@ -285,6 +285,8 @@ def main():
         return_content = return_content.replace('/c\\', '/c\\\\')
         return_content = return_content.replace('/a\\', '/a\\\\')
         return_content = return_content.replace('/i\\', '/i\\\\')
+        return_content = return_content.replace('$ a\\', '$ a\\\\')
+        return_content = return_content.replace('1 i\\', '1 i\\\\')
         ret = json.loads(return_content)
         result['cmd'] = ret['cmd']
         result['changed'] = ret['changed']

@@ -149,11 +149,11 @@ def test_fetch_partitioned_data_set(ansible_zos_module):
 def test_fetch_vsam_data_set(ansible_zos_module):
     hosts = ansible_zos_module
     params = dict(
-        src='IMSTESTL.LDS01.WADS2',
+        src='IMSTESTL.LDS01.WADS0',
         dest='/tmp/',
         flat=True
     )
-    dest_path = '/tmp/IMSTESTL.LDS01.WADS2'
+    dest_path = '/tmp/IMSTESTL.LDS01.WADS0'
     try:
         results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():

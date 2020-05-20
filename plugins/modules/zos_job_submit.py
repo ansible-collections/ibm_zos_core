@@ -727,9 +727,9 @@ def run_module():
         )
 
     result["job_id"] = jobId
+    duration = 0
     if wait is True:
         # calculate the job elapse time
-        duration = 0
         try:
             waitJob = query_jobs_status(module, jobId)
             job_msg = waitJob[0].get("ret_code").get("msg")

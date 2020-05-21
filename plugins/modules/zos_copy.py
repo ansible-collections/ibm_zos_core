@@ -69,14 +69,14 @@ options:
     type: bool
     default: false
     required: false
-  backup_path:
+  backup_file:
     description:
       - Specify the USS file name or data set name for the dest backup.
-      - If the dest is a USS file or path, the backup_path name must be a file
+      - If the dest is a USS file or path, the backup_file name must be a file
         or path name, and the USS path or file must be an absolute path name.
-      - If the dest is an MVS data set, the backup_path name must be an MVS
+      - If the dest is an MVS data set, the backup_file name must be an MVS
         data set name.
-      - If the backup_path is not provided, the default backup_path name will
+      - If the backup_file is not provided, the default backup_file name will
         be used. If the dest is a USS file or USS path, the name of the backup
         file will be the destination file or path name appended with a
         timestamp, e.g. C(/path/file_name.2020-04-23-08-32-29-bak.tar).
@@ -158,7 +158,7 @@ notes:
       to an uncataloged data set, the module assumes that the data set does
       not exist and will create it.
     - Destination will be backed up if either C(backup) is C(true) or
-      C(backup_path) is provided. If C(backup) is C(false) but C(backup_path)
+      C(backup_file) is provided. If C(backup) is C(false) but C(backup_file)
       is provided, task will fail.
     - When copying local files or directories, temporary storage will be used
       on the remote z/OS system. The size of the temporary storage will
@@ -262,7 +262,7 @@ EXAMPLES = r"""
     src: /path/to/local/file
     dest: /path/to/dest
     backup: true
-    backup_path: /tmp/local_file_backup
+    backup_file: /tmp/local_file_backup
 
 - name: Copy a PDS on remote system to a new PDS
   zos_copy:
@@ -323,7 +323,7 @@ checksum:
     returned: C(validate) is C(true) and if dest is USS
     type: str
     sample: 8d320d5f68b048fc97559d771ede68b37a71e8374d1d678d96dcfa2b2da7a64e
-backup_path:
+backup_file:
     description: Name of the backup file or data set that was created.
     returned: changed and if backup=true
     type: str
@@ -587,15 +587,15 @@ class CopyHandler(object):
 
         return src
 
-    def backup_data(self, ds_name, ds_type, backup_path):
-        """Back up the given data set or file to the location specified by 'backup_path'.
-        If 'backup_path' is not specified, then calculate a temporary location
+    def backup_data(self, ds_name, ds_type, backup_file):
+        """Back up the given data set or file to the location specified by 'backup_file'.
+        If 'backup_file' is not specified, then calculate a temporary location
         and copy the file or data set there.
 
         Arguments:
             ds_name {str} -- Name of the file or data set to be backed up
             ds_type {str} -- Type of the file or data set
-            backup_path {str} -- Path to USS location or name of data set
+            backup_file {str} -- Path to USS location or name of data set
             where data will be backed up
 
         Returns:
@@ -603,8 +603,8 @@ class CopyHandler(object):
         """
         try:
             if ds_type == "USS":
-                return backup.uss_file_backup(ds_name, backup_name=backup_path)
-            return backup.mvs_file_backup(ds_name, backup_path)
+                return backup.uss_file_backup(ds_name, backup_name=backup_file)
+            return backup.mvs_file_backup(ds_name, backup_file)
         except Exception as err:
             self.fail_json(
                 msg="Unable to back up destination {0}".format(ds_name),
@@ -1176,7 +1176,7 @@ def run_module():
             encoding=dict(type='dict'),
             content=dict(type='str', no_log=True),
             backup=dict(type='bool', default=False),
-            backup_path=dict(type='str'),
+            backup_file=dict(type='str'),
             local_follow=dict(type='bool', default=True),
             force=dict(type='bool', default=True),
             remote_src=dict(type='bool', default=False),
@@ -1198,7 +1198,7 @@ def run_module():
         is_binary=dict(arg_type='bool', required=False, default=False),
         content=dict(arg_type='str', required=False),
         backup=dict(arg_type='bool', default=False, required=False),
-        backup_path=dict(arg_type='data_set_or_path', required=False),
+        backup_file=dict(arg_type='data_set_or_path', required=False),
         force=dict(arg_type='bool', default=True, required=False),
         local_follow=dict(arg_type='bool', default=True, required=False),
         remote_src=dict(arg_type='bool', default=False, required=False),
@@ -1241,7 +1241,7 @@ def run_module():
         content = parsed_args.get('content')
         force = parsed_args.get('force')
         backup = parsed_args.get('backup')
-        backup_path = parsed_args.get('backup_path')
+        backup_file = parsed_args.get('backup_file')
         validate = parsed_args.get('validate')
         mode = module.params.get('mode')
         group = module.params.get('group')
@@ -1335,9 +1335,9 @@ def run_module():
             if not force:
                 module.exit_json(note="Destination exists. No data was copied")
 
-            if backup or backup_path:
-                backup_path = copy_handler.backup_data(
-                    dest_name, dest_ds_type, backup_path
+            if backup or backup_file:
+                backup_file = copy_handler.backup_data(
+                    dest_name, dest_ds_type, backup_file
                 )
         # ********************************************************************
         # If destination does not exist, it must be created. To determine
@@ -1453,7 +1453,7 @@ def run_module():
             dest=dest,
             ds_type=dest_ds_type,
             dest_exists=dest_exists,
-            backup_file=backup_path
+            backup_file=backup_file
         )
     )
     module.exit_json(**res_args)

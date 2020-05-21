@@ -4,7 +4,6 @@
 # Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
 from __future__ import absolute_import, division, print_function
-import os
 from shellescape import quote
 from pprint import pprint
 
@@ -14,8 +13,7 @@ __metaclass__ = type
 def set_uss_test_env(test_name, hosts, test_env):
     test_env["TEST_FILE"] = test_env["TEST_DIR"] + test_name
     try:
-        if not os.path.exists(test_env["TEST_DIR"]):
-            os.mkdir(test_env["TEST_DIR"])
+        hosts.all.shell(cmd="mkdir -p "+test_env["TEST_DIR"])
         hosts.all.shell(cmd="echo \"{0}\" > {1}".format(test_env["TEST_CONT"], test_env["TEST_FILE"]))
     except:
         assert 1==0, "Failed to set the test env"

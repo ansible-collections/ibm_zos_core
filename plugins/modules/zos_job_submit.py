@@ -507,6 +507,8 @@ POLLING_INTERVAL = 1
 POLLING_COUNT = 60
 
 JOB_COMPLETION_MESSAGES = ["CC", "ABEND", "SEC"]
+DEFAULT_ASCII_CHARSET = "ISO8859-1"
+DEFAULT_EBCDIC_CHARSET = "IBM-1047"
 
 
 def submit_pds_jcl(src, module):
@@ -616,18 +618,13 @@ def assert_valid_return_code(max_rc, found_rc):
 
 
 def run_module():
-
     module_args = dict(
         src=dict(type="str", required=True),
         wait=dict(type="bool", required=False),
         location=dict(
             type="str", default="DATA_SET", choices=["DATA_SET", "USS", "LOCAL"],
         ),
-        encoding=dict(
-            type="dict",
-            default={'from': 'ISO8859-1', 'to': 'IBM-1047'},
-            required=False
-        ),
+        encoding=dict(type="dict", required=False),
         volume=dict(type="str", required=False),
         return_output=dict(type="bool", required=False, default=True),
         wait_time_s=dict(type="int", default=60),
@@ -636,6 +633,13 @@ def run_module():
     )
 
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
+    encoding = module.params.get('encoding')
+    if encoding is None:
+        encoding = {'from': DEFAULT_ASCII_CHARSET, 'to': DEFAULT_EBCDIC_CHARSET}
+    if encoding.get('from') is None:
+        encoding['from'] = DEFAULT_ASCII_CHARSET
+    if encoding.get('to') is None:
+        encoding['to'] = DEFAULT_EBCDIC_CHARSET
 
     arg_defs = dict(
         src=dict(arg_type="data_set_or_path", required=True),
@@ -695,8 +699,8 @@ def run_module():
             jobId = submit_uss_jcl(src, module)
         else:
             # For local file, it has been copied to the temp directory in action plugin.
-            from_encoding = module.params.get('encoding').get('from')
-            to_encoding = module.params.get('encoding').get('to')
+            from_encoding = encoding.get('from')
+            to_encoding = encoding.get('to')
             (conv_rc, stdout, stderr) = module.run_command(
                 "iconv -f {0} -t {1} {2} > {3}".format(
                     from_encoding, to_encoding, quote(temp_file), quote(temp_file_2.name)

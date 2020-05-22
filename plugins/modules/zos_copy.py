@@ -549,39 +549,43 @@ class CopyHandler(object):
         from_code_set = encoding.get("from")
         to_code_set = encoding.get("to")
         enc_utils = encode.EncodeUtils()
-        if temp_path:
-            src = "{0}/{1}".format(temp_path, os.path.basename(src))
+        new_src = temp_path or src
 
-        if os.path.isdir(src):
+        if os.path.isdir(new_src):
+            if temp_path:
+                if src.endswith('/'):
+                    new_src = "{0}/{1}".format(temp_path, os.path.basename(os.path.dirname(src)))
+                else:
+                    new_src = "{0}/{1}".format(temp_path, os.path.basename(src))
             try:
                 if not temp_path:
                     temp_dir = tempfile.mkdtemp()
-                    shutil.copytree(src, temp_dir)
-                    src = temp_dir
-                self._convert_encoding_dir(src, from_code_set, to_code_set)
-                self._tag_file_encoding(src, to_code_set, is_dir=True)
+                    shutil.copytree(new_src, temp_dir)
+                    new_src = temp_dir
+                self._convert_encoding_dir(new_src, from_code_set, to_code_set)
+                self._tag_file_encoding(new_src, to_code_set, is_dir=True)
 
             except Exception as err:
-                shutil.rmtree(src)
+                shutil.rmtree(new_src)
                 self.fail_json(msg=str(err))
         else:
             try:
                 if not temp_path:
                     fd, temp_src = tempfile.mkstemp()
                     os.close(fd)
-                    shutil.copy(src, temp_src)
-                    src = temp_src
+                    shutil.copy(new_src, temp_src)
+                    new_src = temp_src
 
-                rc = enc_utils.uss_convert_encoding(src, src, from_code_set, to_code_set)
+                rc = enc_utils.uss_convert_encoding(new_src, new_src, from_code_set, to_code_set)
                 if not rc:
-                    raise EncodingConversionError(src, from_code_set, to_code_set)
-                self._tag_file_encoding(src, to_code_set)
+                    raise EncodingConversionError(new_src, from_code_set, to_code_set)
+                self._tag_file_encoding(new_src, to_code_set)
 
             except Exception as err:
-                os.remove(src)
+                os.remove(new_src)
                 self.fail_json(msg=str(err))
 
-        return src
+        return new_src
 
     def backup_data(self, ds_name, ds_type, backup_file):
         """Back up the given data set or file to the location specified by 'backup_file'.
@@ -648,7 +652,8 @@ class CopyHandler(object):
                     os.remove(src)
 
         rc, out, err = self.run_command(
-            "rm -rf tmp* ansible.* converted*", use_unsafe_shell=True
+            "rm -rf tmp* ansible.* converted*", use_unsafe_shell=True,
+            cwd=tempfile.gettempprefix()
         )
         if rc != 0:
             self.fail_json(

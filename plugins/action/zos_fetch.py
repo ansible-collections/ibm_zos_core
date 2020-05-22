@@ -117,6 +117,9 @@ class ActionModule(ActionBase):
                 "Invalid type supplied for 'destination' option, "
                 "it must be a string"
             )
+        elif len(src) < 1 or len(dest) < 1:
+            msg = "Source and destination parameters must not be empty"
+
         if msg:
             result['msg'] = msg
             result['failed'] = True

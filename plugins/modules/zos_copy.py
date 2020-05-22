@@ -873,13 +873,12 @@ class PDSECopyHandler(CopyHandler):
             for file in files:
                 member_name = file[:file.rfind('.')] if '.' in file else file
                 full_file_path = path + "/" + file
-                try:
-                    copy.copy_uss2mvs(
-                        full_file_path, "{0}({1})".format(dest, member_name),
-                        "PO", is_binary=self.is_binary
+                rc = Datasets.copy(full_file_path, "{0}({1})".format(dest, member_name))
+                if rc != 0:
+                    self.fail_json(
+                        msg="Unable to copy {0} to data set {1}".format(full_file_path, dest),
+                        rc=rc
                     )
-                except Exception as err:
-                    self.fail_json(msg=str(err))
         else:
             if self.dest_exists:
                 temp_ds = Datasets.temp_name()
@@ -921,18 +920,12 @@ class PDSECopyHandler(CopyHandler):
             dest = "{0}({1})".format(dest, os.path.basename(src))
 
         src = temp_path or conv_path or src
-        if '/' in src:
-            try:
-                copy.copy_uss2mvs(src, dest, "PO", is_binary=self.is_binary)
-            except Exception as err:
-                self.fail_json(msg=str(err))
-        else:
-            rc = Datasets.copy(src, dest)
-            if rc != 0:
-                self.fail_json(
-                    msg="Unable to copy to data set member {0}".format(dest),
-                    rc=rc
-                )
+        rc = Datasets.copy(src, dest)
+        if rc != 0:
+            self.fail_json(
+                msg="Unable to copy to data set member {0}".format(dest),
+                rc=rc
+            )
         return dest
 
     def create_pdse(

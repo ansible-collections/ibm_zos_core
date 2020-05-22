@@ -24,9 +24,11 @@ description:
 options:
   commands:
     description:
-        - The TSO commands to execute on the target z/OS system.
+        - One or more TSO commands to execute on the target z/OS system.
+        - Accepts a single string or list of strings as input.
     required: true
-    type: list
+    type: raw
+    aliases: command
 """
 
 RETURN = r"""
@@ -89,6 +91,9 @@ from os import chmod
 from tempfile import NamedTemporaryFile
 import json
 from stat import S_IEXEC, S_IREAD, S_IWRITE
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
+    BetterArgParser,
+)
 
 
 def run_tso_command(commands, module):
@@ -146,17 +151,42 @@ def copy_rexx_and_run(script, command, module):
     return rc, stdout, stderr
 
 
+def list_or_str_type(contents, dependencies):
+    failed = False
+    if isinstance(contents, list):
+        for item in contents:
+            if not isinstance(item, str):
+                failed = True
+                break
+    elif isinstance(contents, str):
+        contents = [contents]
+    else:
+        failed = True
+    if failed:
+        raise ValueError(
+            'Invalid argument type for "{0}". expected "string or list of strings"'.format(
+                contents
+            )
+        )
+    return contents
+
+
 def run_module():
-    module_args = dict(commands=dict(type="list", elements="str", required=True),)
+    module_args = dict(commands=dict(type="raw", required=True, aliases=["command"]),)
 
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
     result = dict(changed=False,)
 
-    commands = module.params.get("commands")
-    if commands is None:
-        module.fail_json(
-            msg='Please provide a valid value for option "command".', **result
-        )
+    arg_defs = dict(
+        commands=dict(type=list_or_str_type, required=True, aliases=["command"]),
+    )
+    try:
+        parser = BetterArgParser(arg_defs)
+        parsed_args = parser.parse_args(module.params)
+    except ValueError as e:
+        module.fail_json(msg=repr(e), **result)
+
+    commands = parsed_args.get("commands")
 
     try:
         result = run_tso_command(commands, module)

@@ -1876,7 +1876,7 @@ def test_backup_uss_file_user_backup_path(ansible_zos_module):
     try:
         hosts.all.file(path=dest, state='touch')
         copy_res = hosts.all.zos_copy(
-            src=src, dest=dest, backup=True, backup_path=backup_file
+            src=src, dest=dest, backup=True, backup_file=backup_file
         )
 
         for result in copy_res.contacted.values():
@@ -1901,7 +1901,7 @@ def test_backup_sequential_data_set_user_backup_path(ansible_zos_module):
     try:
         hosts.all.zos_data_set(name=dest, type='seq', state='present')
         copy_res = hosts.all.zos_copy(
-            src=src, dest=dest, backup=True, backup_path=backup_file
+            src=src, dest=dest, backup=True, backup_file=backup_file
         )
 
         for result in copy_res.contacted.values():
@@ -1933,7 +1933,7 @@ def test_backup_pds_user_backup_path(ansible_zos_module):
         hosts.all.zos_data_set(name=dest, type='pds', size='5M', format='fba', record_length=25)
         hosts.all.zos_data_set(name=dest + '(FILE1)', type='MEMBER', replace='yes')
         copy_res = hosts.all.zos_copy(
-            src=src, dest=dest, backup=True, backup_path=backup_file
+            src=src, dest=dest, backup=True, backup_file=backup_file
         )
 
         for result in copy_res.contacted.values():
@@ -1966,7 +1966,7 @@ def test_backup_pdse_user_backup_path(ansible_zos_module):
         hosts.all.zos_data_set(name=dest, type='pdse', size='5M', format='fba', record_length=25)
         hosts.all.zos_data_set(name=dest + '(FILE1)', type='MEMBER', replace='yes')
         copy_res = hosts.all.zos_copy(
-            src=src, dest=dest, backup=True, backup_path=backup_file
+            src=src, dest=dest, backup=True, backup_file=backup_file
         )
 
         for result in copy_res.contacted.values():
@@ -1997,7 +1997,7 @@ def test_backup_vsam_user_backup_path(ansible_zos_module):
     try:
         create_vsam_ksds(dest, ansible_zos_module)
         copy_res = hosts.all.zos_copy(
-            src=src, dest=dest, backup=True, remote_src=True, backup_path=backup_file
+            src=src, dest=dest, backup=True, remote_src=True, backup_file=backup_file
         )
 
         for result in copy_res.contacted.values():

@@ -477,27 +477,27 @@ class CopyHandler(object):
             src_ds_type {str} -- The type of source
         """
         src = temp_path or conv_path or src
-        try:
-            if src_ds_type == 'USS':
+        if src_ds_type == "USS":
+            try:
                 copy.copy_uss2mvs(src, dest, "PS", is_binary=self.is_binary)
-            elif src_ds_type in MVS_SEQ.union(MVS_PARTITIONED):
-                copy.copy_mvs2mvs(src, dest, is_binary=self.is_binary)
-        except Exception as err:
-            err = str(err)
+            except Exception as err:
+                self.fail_json(msg=err)
+        else:
+            rc = Datasets.copy(src, dest)
             # *****************************************************************
             # When Copying a PDSE member to a non-exiswtent sequential data set
             # using: cp "//'SOME.PDSE.DATA.SET(MEMBER)'" "//'SOME.DEST.SEQ'"
             # An I/O abend could be trapped and can be resolved by allocating
             # the destination data set before copying.
             # *****************************************************************
-            if "I/O abend was trapped" in err:
-                try:
-                    Datasets.create(dest, "SEQ")
-                    copy.copy_mvs2mvs(src, dest, is_binary=self.is_binary)
-                except Exception as err:
-                    self.fail_json(msg=str(err))
-            else:
-                self.fail_json(msg=err)
+            if rc != 0:
+                Datasets.create(dest, "SEQ")
+                rc = Datasets.copy(src, dest)
+                if rc != 0:
+                    self.fail_json(
+                        msg="Unable to copy source {0} to {1}".format(src, dest),
+                        rc=rc
+                    )
 
     def copy_to_vsam(self, src, dest):
         """ Copy source VSAM to destination VSAM. If source VSAM exists, then
@@ -652,8 +652,8 @@ class CopyHandler(object):
                     os.remove(src)
 
         rc, out, err = self.run_command(
-            "rm -rf tmp* ansible.* converted*", use_unsafe_shell=True,
-            cwd=tempfile.gettempprefix()
+            "rm -rf tmp* ansible.* converted* ansible-zos-copy-payload*",
+            use_unsafe_shell=True, cwd=tempfile.gettempprefix()
         )
         if rc != 0:
             self.fail_json(
@@ -921,12 +921,9 @@ class PDSECopyHandler(CopyHandler):
             for file in files:
                 member_name = file[:file.rfind('.')] if '.' in file else file
                 full_file_path = path + "/" + file
-                rc = Datasets.copy(full_file_path, "{0}({1})".format(dest, member_name))
-                if rc != 0:
-                    self.fail_json(
-                        msg="Unable to copy {0} to data set {1}".format(full_file_path, dest),
-                        rc=rc
-                    )
+                self.copy_to_member(
+                    full_file_path, None, None, "{0}({1})".format(dest, member_name), copy_member=True
+                )
         else:
             if self.dest_exists:
                 temp_ds = Datasets.temp_name()
@@ -964,16 +961,29 @@ class PDSECopyHandler(CopyHandler):
         Returns:
             {str} -- Destination where the member was copied to
         """
-        if src and '/' in src and not copy_member:
+        is_uss_src = (
+            temp_path is not None
+            or conv_path is not None
+            or '/' in src
+        )
+        if src and is_uss_src and not copy_member:
             dest = "{0}({1})".format(dest, os.path.basename(src))
 
         src = temp_path or conv_path or src
-        rc = Datasets.copy(src, dest)
-        if rc != 0:
-            self.fail_json(
-                msg="Unable to copy to data set member {0}".format(dest),
-                rc=rc
-            )
+        if is_uss_src:
+            rc = Datasets.copy(src, dest)
+            if rc != 0:
+                try:
+                    copy.copy_uss2mvs(src, dest, "PS", is_binary=self.is_binary)
+                except Exception as err:
+                    self.fail_json(msg=str(err))
+        else:
+            rc = Datasets.copy(src, dest)
+            if rc != 0:
+                self.fail_json(
+                    msg="Unable to copy to data set member {0}".format(dest),
+                    rc=rc
+                )
         return dest
 
     def create_pdse(

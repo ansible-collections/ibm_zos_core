@@ -549,7 +549,8 @@ class CopyHandler(object):
         from_code_set = encoding.get("from")
         to_code_set = encoding.get("to")
         enc_utils = encode.EncodeUtils()
-        src = temp_path or src
+        if temp_path:
+            src = "{0}/{1}".format(temp_path, os.path.basename(src))
 
         if os.path.isdir(src):
             try:
@@ -557,12 +558,7 @@ class CopyHandler(object):
                     temp_dir = tempfile.mkdtemp()
                     shutil.copytree(src, temp_dir)
                     src = temp_dir
-
-                rc, err = enc_utils.uss_convert_encoding_prev(
-                    src, src, from_code_set, to_code_set
-                )
-                if (not rc) or err:
-                    raise EncodingConversionError(src, from_code_set, to_code_set)
+                self._convert_encoding_dir(src, from_code_set, to_code_set)
                 self._tag_file_encoding(src, to_code_set, is_dir=True)
 
             except Exception as err:
@@ -636,6 +632,53 @@ class CopyHandler(object):
                 cmd=alloc_cmd
             )
         return rc
+
+    def cleanup(self, src_list):
+        """Remove all files or directories listed in src_list. Also perform
+        additional cleanup of the /tmp directory.
+
+        Arguments:
+            src_list {list} -- A list of file paths
+        """
+        for src in src_list:
+            if src and os.path.exists(src):
+                if os.path.isdir(src):
+                    shutil.rmtree(src)
+                else:
+                    os.remove(src)
+
+        rc, out, err = self.run_command(
+            "rm -rf tmp* ansible.* converted*", use_unsafe_shell=True
+        )
+        if rc != 0:
+            self.fail_json(
+                msg="Error while performing cleanup",
+                stdout=out, stderr=err,
+                stdout_lines=out.splitlines(),
+                stderr_lines=err.splitlines(),
+                rc=rc
+            )
+
+    def _convert_encoding_dir(self, dir_path, from_code_set, to_code_set):
+        """Convert encoding for all files inside a given directory
+
+        Arguments:
+            dir_path {str} -- Absolute path to the input directory
+            from_code_set {str} -- The character set to convert the files from
+            to_code_set {str} -- The character set to convert the files to
+
+        Raises
+            EncodingConversionError -- When the encoding of a USS file is not able to be converted
+        """
+        path, dirs, files = next(os.walk(dir_path))
+        enc_utils = encode.EncodeUtils()
+        for file in files:
+            full_file_path = path + "/" + file
+            rc = enc_utils.uss_convert_encoding(
+                full_file_path, full_file_path, from_code_set, to_code_set
+            )
+            if not rc:
+                raise EncodingConversionError(full_file_path, from_code_set, to_code_set)
 
     def _tag_file_encoding(self, file_path, tag, is_dir=False):
         """Tag the file specified by 'file_path' with the given code set.
@@ -1146,19 +1189,6 @@ class CopyUtil(object):
             member += data_set[i]
         return member
 
-    @staticmethod
-    def cleanup(src):
-        """Remove the file or directory specified by path
-
-        Arguments:
-            src {str} -- The absolute path to the file or directory
-        """
-        if src and os.path.exists(src):
-            if os.path.isdir(src):
-                shutil.rmtree(src)
-            else:
-                os.remove(src)
-
 
 def run_module():
     module = AnsibleModule(
@@ -1437,8 +1467,7 @@ def run_module():
             copy_handler.copy_to_vsam(src, dest)
 
     finally:
-        CopyUtil.cleanup(module.params.get("temp_path"))
-        CopyUtil.cleanup(conv_path)
+        copy_handler.cleanup([temp_path, conv_path])
 
     res_args.update(
         dict(

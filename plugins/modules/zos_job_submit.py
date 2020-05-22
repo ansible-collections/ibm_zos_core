@@ -111,6 +111,9 @@ options:
         required: false
         type: str
         default: IBM-1047
+notes:
+  - For supported character sets used to encode data, refer to
+    U(https://ansible-collections.github.io/ibm_zos_core/supplementary.html#encode)
 """
 
 RETURN = r"""
@@ -435,10 +438,6 @@ jobs:
               "subsystem": "STL1"
           }
      ]
-changed:
-  description: Indicates if any changes were made during module operation.
-  type: bool
-  returned: success
 message:
   description: The output message that the sample module generates.
   returned: success
@@ -647,14 +646,21 @@ def run_module():
         location=dict(
             arg_type="str", default="DATA_SET", choices=["DATA_SET", "USS", "LOCAL"],
         ),
+        from_encoding=dict(arg_type="encoding", default=DEFAULT_ASCII_CHARSET),
+        to_encoding=dict(arg_type="encoding", default=DEFAULT_EBCDIC_CHARSET),
         volume=dict(arg_type="volume", required=False),
         return_output=dict(arg_type="bool", default=True),
         wait_time_s=dict(arg_type="int", required=False, default=60),
         max_rc=dict(arg_type="int", required=False),
-        temp_file=dict(arg_type="path", required=False)
     )
 
     result = dict(changed=False)
+    module.params.update(
+        dict(
+            from_encoding=module.params.get('encoding').get('from'),
+            to_encoding=module.params.get('encoding').get('to')
+        )
+    )
     try:
         parser = BetterArgParser(arg_defs)
         parsed_args = parser.parse_args(module.params)
@@ -668,7 +674,7 @@ def run_module():
     return_output = parsed_args.get("return_output")
     wait_time_s = parsed_args.get("wait_time_s")
     max_rc = parsed_args.get("max_rc")
-    # get temporary file names for copied files
+    # get temporary file names for copied filesß
     temp_file = parsed_args.get("temp_file")
     if temp_file:
         temp_file_2 = NamedTemporaryFile(delete=True)

@@ -674,7 +674,7 @@ def run_module():
     return_output = parsed_args.get("return_output")
     wait_time_s = parsed_args.get("wait_time_s")
     max_rc = parsed_args.get("max_rc")
-    # get temporary file names for copied filesß
+    # get temporary file names for copied files
     temp_file = parsed_args.get("temp_file")
     if temp_file:
         temp_file_2 = NamedTemporaryFile(delete=True)

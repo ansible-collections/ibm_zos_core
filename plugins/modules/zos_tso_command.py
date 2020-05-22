@@ -8,11 +8,13 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+ANSIBLE_METADATA = {
+    "metadata_version": "1.1",
+    "status": ["preview"],
+    "supported_by": "community",
+}
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 module: zos_tso_command
 author: "Xiao Yuan Ma (@bjmaxy)"
 short_description: Execute TSO commands
@@ -25,9 +27,9 @@ options:
         - The TSO commands to execute on the target z/OS system.
     required: true
     type: list
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 output:
     description:
         List of each TSO command output.
@@ -66,9 +68,9 @@ output:
                 The line number of the content.
             returned: always
             type: int
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 - name: Execute TSO commands to allocate a new dataset
   zos_tso_command:
       commands:
@@ -80,11 +82,10 @@ EXAMPLES = r'''
       commands:
            - LU TESTUSER
 
-'''
+"""
 
 from ansible.module_utils.basic import AnsibleModule
-from traceback import format_exc
-from os import chmod, path
+from os import chmod
 from tempfile import NamedTemporaryFile
 import json
 from stat import S_IEXEC, S_IREAD, S_IWRITE
@@ -92,7 +93,7 @@ from stat import S_IEXEC, S_IREAD, S_IWRITE
 
 def run_tso_command(commands, module):
     script = """/* REXX */
-ARG cmds
+PARSE ARG cmds
 address tso
 say '{"output":['
 do while cmds <> ''
@@ -125,7 +126,7 @@ say ']'
 say '}'
 drop listcato.
 """
-    command_str = ''
+    command_str = ""
     for item in commands:
         command_str = command_str + item + ";"
 
@@ -138,57 +139,48 @@ drop listcato.
 def copy_rexx_and_run(script, command, module):
     delete_on_close = True
     tmp_file = NamedTemporaryFile(delete=delete_on_close)
-    with open(tmp_file.name, 'w') as f:
+    with open(tmp_file.name, "w") as f:
         f.write(script)
     chmod(tmp_file.name, S_IEXEC | S_IREAD | S_IWRITE)
-    pathName = path.dirname(tmp_file.name)
-    scriptName = path.basename(tmp_file.name)
-    rc, stdout, stderr = module.run_command(['./' + scriptName, command], cwd=pathName)
+    rc, stdout, stderr = module.run_command([tmp_file.name, command])
     return rc, stdout, stderr
 
 
 def run_module():
-    module_args = dict(
-        commands=dict(type='list', elements='str', required=True),
-    )
+    module_args = dict(commands=dict(type="list", elements="str", required=True),)
 
-    module = AnsibleModule(
-        argument_spec=module_args,
-        supports_check_mode=True
-    )
-    result = dict(
-        changed=False,
-    )
+    module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
+    result = dict(changed=False,)
 
     commands = module.params.get("commands")
     if commands is None:
         module.fail_json(
-            msg='Please provide a valid value for option "command".', **result)
+            msg='Please provide a valid value for option "command".', **result
+        )
 
     try:
         result = run_tso_command(commands, module)
-        for cmd in result.get('output'):
-            if cmd.get('rc') != 0:
-                module.fail_json(msg='The TSO command "' + cmd.get('command') + '" execution failed.', **result)
+        for cmd in result.get("output"):
+            if cmd.get("rc") != 0:
+                module.fail_json(
+                    msg='The TSO command "'
+                    + cmd.get("command", "")
+                    + '" execution failed.',
+                    **result
+                )
 
-        result['changed'] = True
+        result["changed"] = True
         module.exit_json(**result)
 
-    except Error as e:
-        module.fail_json(msg=e.msg, **result)
     except Exception as e:
-        trace = format_exc()
         module.fail_json(
-            msg="An unexpected error occurred: {0}".format(trace), **result)
-
-
-class Error(Exception):
-    pass
+            msg="An unexpected error occurred: {0}".format(repr(e)), **result
+        )
 
 
 def main():
     run_module()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

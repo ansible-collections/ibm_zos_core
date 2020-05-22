@@ -28,7 +28,8 @@ options:
         - Accepts a single string or list of strings as input.
     required: true
     type: raw
-    aliases: command
+    aliases:
+        - command
 """
 
 RETURN = r"""

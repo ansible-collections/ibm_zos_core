@@ -16,6 +16,7 @@ def set_uss_test_env(test_name, hosts, test_env):
         hosts.all.shell(cmd="mkdir -p "+test_env["TEST_DIR"])
         hosts.all.shell(cmd="echo \"{0}\" > {1}".format(test_env["TEST_CONT"], test_env["TEST_FILE"]))
     except:
+        clean_uss_test_env(test_env["TEST_DIR"], hosts)
         assert 1==0, "Failed to set the test env"
 
 def clean_uss_test_env(test_dir, hosts):
@@ -36,8 +37,8 @@ def test_uss_general(test_name, ansible_zos_module, test_env, test_info):
 
 def set_ds_test_env(test_name, hosts, test_env):
     TEMP_FILE = "/tmp/" + test_name
+    """
     encoding = test_env["ENCODING"].replace("-", "").replace(".", "").upper()
-    
     try:
         int(encoding[0])
         encoding = "E" + encoding
@@ -45,7 +46,9 @@ def set_ds_test_env(test_name, hosts, test_env):
         pass
     if len(encoding) > 7:
         encoding = encoding[:4] + encoding[-4:]
-
+    """
+    # simplifying dataset name, zos_encode seems to have issues with some dataset names (can be from ZOAU)
+    encoding = "ENC"
     test_env["DS_NAME"] = test_name.upper() + "." + encoding + "." + test_env["DS_TYPE"]
     cmdStr = "python -c \"from zoautil_py import Datasets; Datasets.create('" + test_env["DS_NAME"] + "', type='" + test_env["DS_TYPE"] + "')\" "
 
@@ -70,6 +73,7 @@ def set_ds_test_env(test_name, hosts, test_env):
         for result in results.contacted.values():
             assert int(result.get("stdout")) != 0
     except:
+        clean_ds_test_env(test_env["DS_NAME"], hosts)
         assert 1==0, "Failed to set the test env"
 
 def clean_ds_test_env(ds_name, hosts):

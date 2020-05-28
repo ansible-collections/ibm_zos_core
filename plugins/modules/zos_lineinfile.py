@@ -191,10 +191,10 @@ except Exception:
 
 
 def present(zosdest,line, regexp, ins_aft, ins_bef, encoding, first_match, backrefs, file_type):
-    return Datasets.line_present(zosdest, line, regexp, ins_aft, ins_bef, encoding, first_match, backrefs)
+    return Datasets.lineinfile(zosdest, line, regexp, ins_aft, ins_bef, encoding, first_match, backrefs, state=True)
 
 def absent(zosdest, line, regexp, encoding, file_type):
-    return Datasets.line_absent(zosdest, line, regexp, encoding)
+    return Datasets.lineinfile(zosdest, line, regexp, state=False)
 
 def main():
     module_args = dict(

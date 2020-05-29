@@ -13,7 +13,7 @@ __metaclass__ = type
 def set_uss_test_env(test_name, hosts, test_env):
     test_env["TEST_FILE"] = test_env["TEST_DIR"] + test_name
     try:
-        hosts.all.shell(cmd="mkdir -p "+test_env["TEST_DIR"])
+        hosts.all.shell(cmd="mkdir -p {0}".format(test_env["TEST_DIR"]))
         hosts.all.shell(cmd="echo \"{0}\" > {1}".format(test_env["TEST_CONT"], test_env["TEST_FILE"]))
     except:
         clean_uss_test_env(test_env["TEST_DIR"], hosts)
@@ -25,15 +25,20 @@ def clean_uss_test_env(test_dir, hosts):
     except:
         assert 1==0, "Failed to clean the test env"
 
-def test_uss_general(test_name, ansible_zos_module, test_env, test_info):
+def test_uss_general(test_name, ansible_zos_module, test_env, test_info, expected):
     hosts = ansible_zos_module
     set_uss_test_env(test_name, hosts, test_env)
     test_info["path"] = test_env["TEST_FILE"]
     results = hosts.all.zos_lineinfile(**test_info)
-    clean_uss_test_env(test_env["TEST_DIR"], hosts)
     pprint(vars(results))
     for result in results.contacted.values():
         assert result.get("changed") == 1
+    cmdStr = "cat {0}".format(test_info["path"])
+    results = hosts.all.shell(cmd=cmdStr)
+    pprint(vars(results))
+    for result in results.contacted.values():
+        assert result.get("stdout") == expected
+    clean_uss_test_env(test_env["TEST_DIR"], hosts)
 
 def set_ds_test_env(test_name, hosts, test_env):
     TEMP_FILE = "/tmp/" + test_name
@@ -84,14 +89,20 @@ def clean_ds_test_env(ds_name, hosts):
     except:
         assert 1==0, "Failed to clean the test env"
 
-def test_ds_general(test_name, ansible_zos_module, test_env, test_info):
+def test_ds_general(test_name, ansible_zos_module, test_env, test_info, expected):
     hosts = ansible_zos_module
     set_ds_test_env(test_name, hosts, test_env)
     test_info["path"] = test_env["DS_NAME"]
     if test_env["ENCODING"]:
         test_info["encoding"] = test_env["ENCODING"]
     results = hosts.all.zos_lineinfile(**test_info)
-    clean_ds_test_env(test_env["DS_NAME"], hosts)
     pprint(vars(results))
     for result in results.contacted.values():
         assert result.get("changed") == 1
+    if test_env["ENCODING"] == 'IBM-1047':
+        cmdStr = "cat \"//'{0}'\" ".format(test_env["DS_NAME"])
+        results = hosts.all.shell(cmd=cmdStr)
+        pprint(vars(results))
+        for result in results.contacted.values():
+            assert result.get("stdout").replace('\n', '').replace(' ', '') == expected.replace('\n', '').replace(' ', '')
+    clean_ds_test_env(test_env["DS_NAME"], hosts)

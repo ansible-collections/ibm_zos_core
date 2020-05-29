@@ -194,7 +194,7 @@ def present(zosdest,line, regexp, ins_aft, ins_bef, encoding, first_match, backr
     return Datasets.lineinfile(zosdest, line, regexp, ins_aft, ins_bef, encoding, first_match, backrefs, state=True)
 
 def absent(zosdest, line, regexp, encoding, file_type):
-    return Datasets.lineinfile(zosdest, line, regexp, state=False)
+    return Datasets.lineinfile(zosdest, line, regexp, encoding=encoding, state=False)
 
 def main():
     module_args = dict(

@@ -1442,6 +1442,7 @@ def run_module(module, arg_def):
 
     return res_args, temp_path, conv_path
 
+
 def main():
     module = AnsibleModule(
         argument_spec=dict(

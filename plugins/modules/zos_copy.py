@@ -1217,8 +1217,6 @@ def run_module(module, arg_def):
             msg="Parameter verification failed", stderr=str(err)
         )
 
-    # ------------------------------- o -----------------------------------
-
     src = parsed_args.get('src')
     b_src = to_bytes(src, errors='surrogate_or_strict')
     dest = parsed_args.get('dest')
@@ -1491,8 +1489,8 @@ def main():
             from_encoding=dict(arg_type='encoding'),
             to_encoding=dict(arg_type='encoding')
         ))
-
     try:
+        res_args = temp_path = conv_path = None
         res_args, temp_path, conv_path = run_module(module, arg_def)
         module.exit_json(**res_args)
     finally:

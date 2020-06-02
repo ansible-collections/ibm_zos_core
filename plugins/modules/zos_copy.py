@@ -16,9 +16,9 @@ module: zos_copy
 version_added: '2.9'
 short_description: Copy data to z/OS
 description:
-  - The C (zos_copy) module copies a file or data set from a local or a
+  - The C(zos_copy) module copies a file or data set from a local or a
     remote machine to a location on the remote machine.
-  - Use the C (zos_fetch) module to copy files or data sets from remote
+  - Use the C(zos_fetch) module to copy files or data sets from remote
     locations to the local machine.
 author: "Asif Mahmud (@asifmahmud)"
 options:
@@ -43,10 +43,10 @@ options:
       - If C(dest) is a nonexistent data set, it will be allocated.
       - If C(src) and C(dest) are files and if the parent directory of C(dest)
         does not exist, then the task will fail.
-      - When the C(dest) is VSAM (KSDS) or VSAM (ESDS), then source can be ESDS,
+      - When the C(dest) is VSAM(KSDS) or VSAM(ESDS), then source can be ESDS,
         KSDS or RRDS.
-      - When the C(dest) is VSAM (RRDS), then the source must be RRDS.
-      - When C(dest) is VSAM (LDS), then source must be LDS.
+      - When the C(dest) is VSAM(RRDS), then the source must be RRDS.
+      - When C(dest) is VSAM(LDS), then source must be LDS.
     type: str
     required: true
   content:

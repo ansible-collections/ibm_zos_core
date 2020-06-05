@@ -1,16 +1,15 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright: (c) 2014, 2015 YAEGASHI Takeshi <yaegashi@debian.org>
-# Copyright: (c) 2017, Ansible Project
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) IBM Corporation 2019, 2020
+# Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 ANSIBLE_METADATA = {'metadata_version': '1.1',
                     'status': ['preview'],
-                    'supported_by': 'core'}
+                    'supported_by': 'comminuty'}
 
 DOCUMENTATION = r'''
 ---
@@ -64,17 +63,6 @@ options:
     - If specified regular expression has no matches, the block will be inserted at the end of the file.
     type: str
     choices: [ BOF, '*regex*' ]
-  create:
-    description:
-    - Create a new file if it does not exist.
-    type: bool
-    default: no
-  backup:
-    description:
-    - Create a backup file including the timestamp information so you can
-      get the original file back if you somehow clobbered it incorrectly.
-    type: bool
-    default: no
   marker_begin:
     description:
     - This will be inserted at C({mark}) in the opening ansible block marker.
@@ -88,6 +76,39 @@ options:
     type: str
     default: END
     version_added: '2.5'
+  backup:
+    description:
+      - Creates a backup file or backup data set for I(dest), including the
+        timestamp information to ensure that you retrieve the original file.
+      - I(backup_file) can be used to specify a backup file name
+        if I(backup=true).
+    required: false
+    type: bool
+    default: false
+  backup_file:
+    description:
+      - Specify the USS file name or data set name for the dest backup.
+      - If dest is a USS file or path, I(backup_file) must be a file or
+        path name, and the USS path or file must be an absolute pathname.
+      - If dest is an MVS data set, the I(backup_file) must be an MVS data
+        set name.
+      - If I(backup_file) is not provided, the default backup name will be used.
+        The default backup name for a USS file or path will be the destination
+        file or path name appended with a timestamp,
+        e.g. /path/file_name.2020-04-23-08-32-29-bak.tar. If dest is an
+        MVS data set, the default backup name will be a random name generated
+        by IBM Z Open Automation Utilities.
+    required: false
+    type: str
+  encoding:
+    description:
+      - Specifies the encoding of USS file or data set. zos_lineinfile
+        requires to be provided with correct encoding to read the content
+        of USS file or data set. If this parameter is not provided, this
+        module assumes that USS file or data set is encoded in IBM-1047.
+    required: false
+    type: str
+    default: IBM-1047
 notes:
   - This module supports check mode.
   - When using 'with_*' loops be aware that if you do not set a unique mark the block will be overwritten on each iteration.
@@ -154,10 +175,30 @@ EXAMPLES = r'''
 import re
 import os
 import tempfile
+import subprocess
 from ansible.module_utils.six import b
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils._text import to_bytes
+from ansible.module_utils.six import PY3
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
+    better_arg_parser, data_set, backup as Backup)
+from os import path
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
+    MissingZOAUImport,
+)
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
+    BetterArgParser,
+)
 
+try:
+    from zoautil_py import Datasets
+except Exception:
+    Datasets = MissingZOAUImport()
+
+if PY3:
+    from shlex import quote
+else:
+    from pipes import quote
 
 def write_changes(module, contents, path):
 
@@ -192,6 +233,12 @@ def check_file_attrs(module, changed, message, diff):
 
     return message, changed
 
+def iconv(content, from_encoding, to_encoding):
+    iconv_cmd = "iconv -f {0} -t {1}".format(quote(from_encoding), quote(to_encoding))
+    p = subprocess.Popen(iconv_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE, shell=True)
+    p.stdin.write(content)
+    p.stdin.close()
+    return p.stdout.read()
 
 def main():
     module = AnsibleModule(
@@ -203,10 +250,12 @@ def main():
             insertafter=dict(type='str'),
             insertbefore=dict(type='str'),
             create=dict(type='bool', default=False),
-            backup=dict(type='bool', default=False),
             validate=dict(type='str'),
             marker_begin=dict(type='str', default='BEGIN'),
             marker_end=dict(type='str', default='END'),
+            backup=dict(type='bool', default=False),
+            backup_file=dict(type='str', required=False, default=None),
+            encoding=dict(type=str, default="IBM-1047"),
         ),
         mutually_exclusive=[['insertbefore', 'insertafter']],
         add_file_common_args=True,
@@ -216,28 +265,93 @@ def main():
     params = module.params
     path = params['path']
 
-    if os.path.isdir(path):
-        module.fail_json(rc=256,
+    arg_defs = dict(
+        path=dict(arg_type="data_set_or_path", aliases=['zosdest', 'dest', 'destfile', 'name'], required=True),
+        state=dict(arg_type='str', default='present',choices=['absent', 'present']),
+        marker=dict(arg_type='str', default='# {mark} ANSIBLE MANAGED BLOCK'),
+        block=dict(arg_type='str', default='', aliases=['content']),
+        insertafter=dict(arg_type="str", required=False),
+        insertbefore=dict(arg_type="str", required=False),
+        create=dict(arg_type='bool', required=False, default=False),
+        validate=dict(arg_type='str', required=False),
+        marker_begin=dict(arg_type='str', default='BEGIN'),
+        marker_end=dict(arg_type='str', default='END'),
+        encoding=dict(arg_type="str", default="IBM-1047", required=False),
+        backup=dict(arg_type="bool", default=False, required=False),
+        backup_file=dict(arg_type="data_set_or_path", required=False, default=None),
+        mutually_exclusive=[["insertbefore","insertafter"]],
+    )
+
+    try:
+        parser = better_arg_parser.BetterArgParser(arg_defs)
+        parsed_args = parser.parse_args(module.params)
+    except ValueError as err:
+        module.fail_json(msg="Parameter verification failed", stderr=str(err))
+
+    backup = parsed_args.get('backup')
+    backup_file = None
+    if parsed_args.get('backup_file') and backup:
+        backup = parsed_args.get('backup_file')
+    path = parsed_args.get('path')
+    insertafter = parsed_args.get('insertafter')
+    insertbefore = parsed_args.get('insertbefore')
+    encoding = parsed_args.get('encoding')
+    #block = to_bytes(parsed_args.get('block'))
+    block = to_bytes(params['block'])
+    marker = to_bytes(parsed_args.get('marker'))
+    present = parsed_args.get('state') == 'present'
+
+    # analysis the file type
+    ds_utils = data_set.DataSetUtils(path)
+    file_type = ds_utils.ds_type()
+    if file_type == 'USS':
+        file_type = 1
+    else:
+        file_type = 0
+    if not encoding:
+        encoding = "IBM-1047"
+
+    if file_type:
+        if os.path.isdir(path):
+            module.fail_json(rc=256,
                          msg='Path %s is a directory !' % path)
 
-    path_exists = os.path.exists(path)
-    if not path_exists:
-        if not module.boolean(params['create']):
-            module.fail_json(rc=257,
+        path_exists = os.path.exists(path)
+        if not path_exists:
+            if not module.boolean(params['create']):
+                module.fail_json(rc=257,
                              msg='Path %s does not exist !' % path)
-        destpath = os.path.dirname(path)
-        if not os.path.exists(destpath) and not module.check_mode:
-            try:
-                os.makedirs(destpath)
-            except Exception as e:
-                module.fail_json(msg='Error creating %s Error code: %s Error description: %s' % (destpath, e[0], e[1]))
-        original = None
-        lines = []
+            destpath = os.path.dirname(path)
+            if not os.path.exists(destpath) and not module.check_mode:
+                try:
+                    os.makedirs(destpath)
+                except Exception as e:
+                    module.fail_json(msg='Error creating %s Error code: %s Error description: %s' % (destpath, e[0], e[1]))
+            original = None
+            lines = []
+        else:
+            f = open(path, 'rb')
+            original = f.read()
+            f.close()
+            if encoding != "ISO8859-1":
+                original = iconv(original, encoding, "ISO8859-1")
+            lines = original.splitlines()
     else:
+        #original = to_bytes(Datasets.read_from(path, start=1))
+        path = "//'" + path + "'"
         f = open(path, 'rb')
         original = f.read()
         f.close()
-        lines = original.splitlines()
+        if encoding != "ISO8859-1":
+            original = iconv(original, encoding, "ISO8859-1")
+        lines = []
+        recLen = 80
+        start = 0
+        end = recLen
+        while(end <= len(original)):
+            lines.append(original[start:end])
+            start = end
+            end += recLen
 
     diff = {'before': '',
             'after': '',
@@ -246,12 +360,6 @@ def main():
 
     if module._diff and original:
         diff['before'] = original
-
-    insertbefore = params['insertbefore']
-    insertafter = params['insertafter']
-    block = to_bytes(params['block'])
-    marker = to_bytes(params['marker'])
-    present = params['state'] == 'present'
 
     if not present and not path_exists:
         module.exit_json(changed=False, msg="File %s not present" % path)
@@ -275,6 +383,9 @@ def main():
         blocklines = [marker0] + block.splitlines() + [marker1]
     else:
         blocklines = []
+    if not file_type:
+        for i in range(len(blocklines)):
+            blocklines[i] += b((' ')*(recLen - len(blocklines[i])))
 
     n0 = n1 = None
     for i, line in enumerate(lines):
@@ -305,12 +416,15 @@ def main():
 
     lines[n0:n0] = blocklines
 
-    if lines:
-        result = b('\n').join(lines)
-        #if original is None or original.endswith(b('\n')):
-        #    result += b('\n')
+    if file_type:
+        if lines:
+            result = b('\n').join(lines)
+            if original is None or original.endswith(b('\n')):
+                result += b('\n')
+        else:
+            result = b''
     else:
-        result = b''
+        result = b('').join(lines)
 
     if module._diff:
         diff['after'] = result
@@ -329,24 +443,41 @@ def main():
         changed = True
 
     if changed and not module.check_mode:
-        if module.boolean(params['backup']) and path_exists:
-            module.backup_local(path)
-        # We should always follow symlinks so that we change the real file
-        real_path = os.path.realpath(params['path'])
-        #write_changes(module, result, real_path)
-        module.run_command("echo \"{0}\" > {1}".format(str(result)[2:-1], real_path), use_unsafe_shell=True)
+        if backup:
+            if type(backup) == bool:
+                backup = None
+            try:
+                if file_type:
+                    backup_file = Backup.uss_file_backup(path, backup_name=backup, compress=False)
+                else:
+                    backup_file = Backup.mvs_file_backup(dsn=path, bk_dsn=backup)
+            except Exception:
+                module.fail_json(msg="creating backup has failed")
+        if file_type:
+            if encoding != "ISO8859-1":
+                result = iconv(result, "ISO8859-1", encoding)
+            # We should always follow symlinks so that we change the real file
+            real_path = os.path.realpath(params['path'])
+            write_changes(module, result, real_path)
+        else:
+            if encoding != "ISO8859-1":
+                result = iconv(result, "ISO8859-1", encoding)
+            f = open(path, 'wb')
+            f.write(result)
+            f.close()
 
     if module.check_mode and not path_exists:
-        module.exit_json(changed=changed, msg=msg, diff=diff)
+        module.exit_json(changed=changed, msg=msg, diff=diff, backup_file=backup_file)
 
     attr_diff = {}
-    msg, changed = check_file_attrs(module, changed, msg, attr_diff)
+    if file_type:
+        msg, changed = check_file_attrs(module, changed, msg, attr_diff)
 
     attr_diff['before_header'] = '%s (file attributes)' % path
     attr_diff['after_header'] = '%s (file attributes)' % path
 
     difflist = [diff, attr_diff]
-    module.exit_json(changed=changed, msg=msg, diff=difflist)
+    module.exit_json(changed=changed, msg=msg, diff=difflist, backup_file=backup_file)
 
 
 if __name__ == '__main__':

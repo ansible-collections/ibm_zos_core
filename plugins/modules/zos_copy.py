@@ -28,7 +28,7 @@ options:
       - If C(remote_src) is true, then src must be the absolute path to a USS
         file, name of a data set, or data set member.
       - If C(src) is a directory, destination must be a partitioned data set or
-        a directory.
+        a USS directory.
       - If C(src) is a file and dest ends with "/" or destination is a directory, the
         file is copied to the directory with the same filename as src.
       - If C(src) is a VSAM data set, destination must also be a VSAM.
@@ -38,8 +38,7 @@ options:
     description:
       - Remote absolute path or data set where the file should be copied to.
       - Destination can be a USS path or an MVS data set name.
-      - If C(src) is a directory, destination must be a partitioned data set.
-      - If C(dest) is a nonexistent path, it will be created.
+      - If C(dest) is a nonexistent USS file, it will be created.
       - If C(dest) is a nonexistent data set, it will be allocated.
       - If C(src) and C(dest) are files and if the parent directory of C(dest)
         does not exist, then the task will fail.
@@ -99,8 +98,14 @@ options:
     description:
       - The permission of the destination file or directory.
       - If C(dest) is USS, this will act as Unix file mode, otherwise ignored.
-      - Refer to the M(copy) module for a detailed description of this
-        parameter.
+      - It should be kept in mind that modes are actually octal numbers.
+        The user must either add a leading zero so that Ansible's YAML parser knows it is an octal number
+        (like C(0644) or C(01777))or quote it (like C('644') or C('1777')) so Ansible receives a string
+        and can do its own conversion from string into number. Giving Ansible a number without following
+        one of these rules will end up with a decimal number which will have unexpected results.
+      - As of Ansible 1.8, the mode may be specified as a symbolic mode (for example, C(u+rwx) or C(u=rw,g=r,o=r)).
+      - As of Ansible 2.3, the mode may also be the special string C(preserve).
+      - C(preserve) means that the file will be given the same permissions as the source file.
     type: str
     required: false
   remote_src:
@@ -128,9 +133,9 @@ options:
     description:
       - Specifies which encodings the destination file or data set should be
         converted from and to.
-      - If this parameter is not provided, no encoding conversions will take
+      - If C(encoding) is not provided, no encoding conversions will take
         place.
-      - If set to C(true) and if C(src) is an MVS data set, task will fail.
+      - If C(encoding) is provided and C(src) is an MVS data set, task will fail.
       - Only valid if C(is_binary) is false.
     type: dict
     required: false
@@ -319,7 +324,7 @@ dest:
     type: str
     sample: SAMPLE.SEQ.DATA.SET
 checksum:
-    description: SHA256 checksum of the file after running copy.
+    description: SHA256 checksum of the file after running zos_copy.
     returned: C(validate) is C(true) and if dest is USS
     type: str
     sample: 8d320d5f68b048fc97559d771ede68b37a71e8374d1d678d96dcfa2b2da7a64e
@@ -408,7 +413,6 @@ cmd:
 import os
 import tempfile
 import math
-import time
 import stat
 import shutil
 
@@ -485,7 +489,7 @@ class CopyHandler(object):
         else:
             rc = Datasets.copy(new_src, dest)
             # *****************************************************************
-            # When Copying a PDSE member to a non-exiswtent sequential data set
+            # When Copying a PDSE member to a non-existent sequential data set
             # using: cp "//'SOME.PDSE.DATA.SET(MEMBER)'" "//'SOME.DEST.SEQ'"
             # An I/O abend could be trapped and can be resolved by allocating
             # the destination data set before copying.

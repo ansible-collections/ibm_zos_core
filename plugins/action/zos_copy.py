@@ -119,7 +119,9 @@ def _write_content_to_temp_file(content):
             infile.write(content)
     except (OSError, IOError) as err:
         os.remove(path)
-        raise AnsibleError("Unable to write content to temporary file")
+        raise AnsibleError(
+            "Unable to write content to temporary file: {0}".format(repr(err))
+        )
     return path
 
 

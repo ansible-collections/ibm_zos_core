@@ -54,6 +54,8 @@ options:
       - Uses Python regular expressions.
         See U(http://docs.python.org/2/library/re.html).
     type: str
+    aliases:
+      - regex
   state:
     description:
       - Whether the line should be there or not.

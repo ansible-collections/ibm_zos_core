@@ -16,6 +16,8 @@ ANSIBLE_METADATA = {'metadata_version': '1.1',
 DOCUMENTATION = r"""
 ---
 module: zos_lineinfile
+author:
+  - "Behnam (@balkajbaf)"
 short_description: Manage textual data on z/OS
 description:
   - Manage lines in z/OS Unix System Services (USS) files, partitioned data set
@@ -30,6 +32,12 @@ options:
       - The zos uss file or dataset to modify.
     type: str
     required: true
+    aliases:
+      - path
+      - dest
+      - destfile
+      - name
+      - zosdest
   regexp:
     description:
       - The regular expression to look for in every line of the uss file
@@ -61,7 +69,8 @@ options:
       - If C(backrefs) is set, may contain backreferences that will get
         expanded with the C(regexp) capture groups if the regexp matches.
     type: str
-    aliases: [ value ]
+    aliases:
+      - value
   backrefs:
     description:
       - Used with C(state=present).
@@ -90,7 +99,9 @@ options:
         C(insertafter) is only honored if no match for C(regexp) is found.
       - May not be used with C(backrefs) or C(insertbefore).
     type: str
-    choices: [ EOF, '*regex*' ]
+    choices:
+      - EOF
+      - *regex*
     default: EOF
   insertbefore:
     description:
@@ -106,7 +117,9 @@ options:
         C(insertbefore) is only honored if no match for C(regexp) is found.
       - May not be used with C(backrefs) or C(insertafter).
     type: str
-    choices: [ BOF, '*regex*' ]
+    choices:
+      - BOF
+      - *regex*
   backup:
     description:
       - Creates a backup file or backup data set for I(dest), including the
@@ -215,18 +228,30 @@ def absent(zosdest, line, regexp, encoding, file_type):
 def main():
     module_args = dict(
         path=dict(
-            type='str', required=True, aliases=['zosdest', 'dest', 'destfile', 'name']
+            type='str',
+            required=True,
+            aliases=['zosdest', 'dest', 'destfile', 'name']
         ),
-        state=dict(type='str', default='present', choices=['absent', 'present']),
+        state=dict(
+          type='str',
+          default='present',
+          choices=['absent', 'present']
+        ),
         regexp=dict(type='str', aliases=['regex']),
         line=dict(type='str', aliases=['value']),
-        insertafter=dict(type='str'),
-        insertbefore=dict(type='str'),
+        insertafter=dict(type='str',
+            default="EOF",
+            choices=["EOF","*regex*"],
+        ),
+        insertbefore=dict(type='str',
+            default=None,
+            choices=["BOF","*regex*"],
+        ),
         backrefs=dict(type='bool', default=False),
         backup=dict(type='bool', default=False),
         backup_file=dict(type='str', required=False, default=None),
         firstmatch=dict(type='bool', default=False),
-        encoding=dict(type=str, default="IBM-1047"),
+        encoding=dict(type='str', default="IBM-1047"),
     )
     module = AnsibleModule(
         argument_spec=module_args,

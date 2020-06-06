@@ -776,8 +776,8 @@ def test_ds_line_replace_nomatch_insertbefore_match(
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
 @pytest.mark.parametrize("encoding", ENCODING)
-def test_ds_line_replace_nomatch_insertafter_nomatch
-(ansible_zos_module, dstype, encoding):
+def test_ds_line_replace_nomatch_insertafter_nomatch(
+        ansible_zos_module, dstype, encoding):
     TEST_ENV["DS_TYPE"] = dstype
     TEST_ENV["ENCODING"] = encoding
     test_ds_general(

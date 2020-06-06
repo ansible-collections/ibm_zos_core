@@ -13,17 +13,17 @@ ANSIBLE_METADATA = {'metadata_version': '1.1',
                     'supported_by': 'community'}
 
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: zos_lineinfile
 short_description: Manage textual data on z/OS
 description:
   - Manage lines in z/OS Unix System Services (USS) files, partitioned data set
-  members or sequential data sets.
+    members or sequential data sets.
   - This module ensures a particular line is in a USS file or data set, or
-  replace an existing line using a back-referenced regular expression.
+    replace an existing line using a back-referenced regular expression.
   - This is primarily useful when you want to change a single line in a USS
-  file or dataset only.
+    file or dataset only.
 options:
   zosdest:
     description:
@@ -33,16 +33,16 @@ options:
   regexp:
     description:
       - The regular expression to look for in every line of the uss file
-      or dataset.
+        or dataset.
       - For C(state=present), the pattern to replace if found. Only the
-      last line found will be replaced.
+        last line found will be replaced.
       - For C(state=absent), the pattern of the line(s) to remove.
       - If the regular expression is not matched, the line will be
         added to the file in keeping with C(insertbefore) or C(insertafter)
         settings.
       - When modifying a line the regexp should typically match both
-      the initial state of the line as well as its state after replacement by
-      C(line) to ensure idempotence.
+        the initial state of the line as well as its state after replacement by
+        C(line) to ensure idempotence.
       - Uses Python regular expressions.
       See U(http://docs.python.org/2/library/re.html).
     type: str
@@ -50,7 +50,9 @@ options:
     description:
       - Whether the line should be there or not.
     type: str
-    choices: [ absent, present ]
+    choices:
+      - absent
+      - present
     default: present
   line:
     description:
@@ -77,15 +79,15 @@ options:
     description:
       - Used with C(state=present).
       - If specified, the line will be inserted after the last match of
-      specified regular expression.
+        specified regular expression.
       - If the first match is required, use(firstmatch=yes).
       - A special value is available; C(EOF) for inserting the line at the end
-      of the file.
+        of the file.
       - If specified regular expression has no matches, EOF will be used
-      instead.
+        instead.
       - If C(insertbefore) is set, default value C(EOF) will be ignored.
       - If regular expressions are passed to both C(regexp) and C(insertafter),
-      C(insertafter) is only honored if no match for C(regexp) is found.
+        C(insertafter) is only honored if no match for C(regexp) is found.
       - May not be used with C(backrefs) or C(insertbefore).
     type: str
     choices: [ EOF, '*regex*' ]
@@ -94,14 +96,14 @@ options:
     description:
       - Used with C(state=present).
       - If specified, the line will be inserted before the last match of
-      specified regular expression.
+        specified regular expression.
       - If the first match is required, use C(firstmatch=yes).
       - A value is available; C(BOF) for inserting the line at the beginning of
-      the uss file or dataset.
+        the uss file or dataset.
       - If specified regular expression has no matches, the line will be
-      inserted at the end of the file.
+        inserted at the end of the file.
       - If regular expressions are passed to both C(regexp) and C(insertbefore),
-      C(insertbefore) is only honored if no match for C(regexp) is found.
+        C(insertbefore) is only honored if no match for C(regexp) is found.
       - May not be used with C(backrefs) or C(insertafter).
     type: str
     choices: [ BOF, '*regex*' ]
@@ -133,7 +135,7 @@ options:
     description:
       - Used with C(insertafter) or C(insertbefore).
       - If set, C(insertafter) and C(insertbefore) will work with the first line
-      that matches the given regular expression.
+        that matches the given regular expression.
     type: bool
     default: no
   encoding:
@@ -145,9 +147,9 @@ options:
     required: false
     type: str
     default: IBM-1047
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 - name: Ensure dataset for cics SIT input has the SEC setting as YES
   lineinfile:
     path: XIAOPIN.TEST.TXT(SIT)
@@ -180,8 +182,7 @@ EXAMPLES = r'''
     regexp: '^(.*)User(\d+)m(.*)$'
     line: '\1APPUser\3'
     backrefs: yes
-
-'''
+"""
 
 import re
 import json

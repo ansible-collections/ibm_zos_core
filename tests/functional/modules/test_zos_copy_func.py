@@ -24,7 +24,8 @@ DUMMY DATA ---- LINE 006 ------
 DUMMY DATA ---- LINE 007 ------
 '''
 
-SHELL_EXECUTABLE = "/usr/lpp/rsusr/ported/bin/bash"
+# SHELL_EXECUTABLE = "/usr/lpp/rsusr/ported/bin/bash"
+SHELL_EXECUTABLE = "/bin/sh"
 
 
 def populate_dir(dir_path):

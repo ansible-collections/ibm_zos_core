@@ -44,7 +44,7 @@ options:
         the initial state of the line as well as its state after replacement by
         C(line) to ensure idempotence.
       - Uses Python regular expressions.
-      See U(http://docs.python.org/2/library/re.html).
+        See U(http://docs.python.org/2/library/re.html).
     type: str
   state:
     description:

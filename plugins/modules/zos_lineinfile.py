@@ -203,7 +203,7 @@ except Exception:
     Datasets = MissingZOAUImport()
 
 
-def present(zosdest,line, regexp, ins_aft, ins_bef, encoding, first_match, backrefs, file_type):
+def present(zosdest, line, regexp, ins_aft, ins_bef, encoding, first_match, backrefs, file_type):
     return Datasets.lineinfile(zosdest, line, regexp, ins_aft, ins_bef, encoding, first_match, backrefs, state=True)
 
 
@@ -213,18 +213,18 @@ def absent(zosdest, line, regexp, encoding, file_type):
 
 def main():
     module_args = dict(
-            path=dict(type='str', required=True, aliases=['zosdest', 'dest', 'destfile', 'name']),
-            state=dict(type='str', default='present', choices=['absent', 'present']),
-            regexp=dict(type='str', aliases=['regex']),
-            line=dict(type='str', aliases=['value']),
-            insertafter=dict(type='str'),
-            insertbefore=dict(type='str'),
-            backrefs=dict(type='bool', default=False),
-            backup=dict(type='bool', default=False),
-            backup_file=dict(type='str', required=False, default=None),
-            firstmatch=dict(type='bool', default=False),
-            encoding=dict(type=str, default="IBM-1047"),
-        )
+        path=dict(
+        type='str', required=True, aliases=['zosdest', 'dest', 'destfile', 'name']),
+        state=dict(type='str', default='present', choices=['absent', 'present']),
+        regexp=dict(type='str', aliases=['regex']),
+        line=dict(type='str', aliases=['value']),
+        insertafter=dict(type='str'),
+        insertbefore=dict(type='str'),
+        backrefs=dict(type='bool', default=False),
+        backup=dict(type='bool', default=False),
+        backup_file=dict(type='str', required=False, default=None),
+        firstmatch=dict(type='bool', default=False),
+        encoding=dict(type=str, default="IBM-1047"),)
     module = AnsibleModule(
         argument_spec=module_args,
         supports_check_mode=True
@@ -243,8 +243,7 @@ def main():
         backup_file=dict(arg_type="data_set_or_path", required=False, default=None),
         firstmatch=dict(arg_type="bool", required=False, default=False),
         backrefs=dict(arg_type="bool", dependencies=['regexp'], required=False, default=False),
-        mutually_exclusive=[["insertbefore", "insertafter"]],
-    )
+        mutually_exclusive=[["insertbefore", "insertafter"]],)
 
     try:
         parser = better_arg_parser.BetterArgParser(arg_defs)
@@ -290,7 +289,7 @@ def main():
             module.fail_json(msg='line is required with state=present')
         if regexp is None and ins_aft is None and ins_bef is None:
             module.fail_json(msg='at least one of regexp/insertafter/insertbefore is required with state=present')
-        return_content = present(path,line, regexp, ins_aft, ins_bef, encoding, firstmatch, backrefs, file_type)
+        return_content = present(path, line, regexp, ins_aft, ins_bef, encoding, firstmatch, backrefs, file_type)
     else:
         if regexp is None and line is None:
             module.fail_json(msg='one of line or regexp is required with state=absent')
@@ -314,4 +313,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-

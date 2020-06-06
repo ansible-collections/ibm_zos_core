@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020
+# Copyright (c) IBM Corporation 2020
 # Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
 from __future__ import absolute_import, division, print_function
@@ -17,13 +17,15 @@ def set_uss_test_env(test_name, hosts, test_env):
         hosts.all.shell(cmd="echo \"{0}\" > {1}".format(test_env["TEST_CONT"], test_env["TEST_FILE"]))
     except:
         clean_uss_test_env(test_env["TEST_DIR"], hosts)
-        assert 1==0, "Failed to set the test env"
+        assert 1 == 0, "Failed to set the test env"
+
 
 def clean_uss_test_env(test_dir, hosts):
     try:
         hosts.all.shell(cmd="rm -rf " + test_dir)
     except:
-        assert 1==0, "Failed to clean the test env"
+        assert 1 == 0, "Failed to clean the test env"
+
 
 def test_uss_general(test_name, ansible_zos_module, test_env, test_info, expected):
     hosts = ansible_zos_module
@@ -39,6 +41,7 @@ def test_uss_general(test_name, ansible_zos_module, test_env, test_info, expecte
     for result in results.contacted.values():
         assert result.get("stdout") == expected
     clean_uss_test_env(test_env["TEST_DIR"], hosts)
+
 
 def set_ds_test_env(test_name, hosts, test_env):
     TEMP_FILE = "/tmp/" + test_name
@@ -61,7 +64,7 @@ def set_ds_test_env(test_name, hosts, test_env):
         hosts.all.shell(cmd=cmdStr)
         hosts.all.shell(cmd="echo \"{0}\" > {1}".format(test_env["TEST_CONT"], TEMP_FILE))
         if test_env["DS_TYPE"] in ["PDS", "PDSE"]:
-            test_env["DS_NAME"] =  test_env["DS_NAME"] + "(MEM)"
+            test_env["DS_NAME"] = test_env["DS_NAME"] + "(MEM)"
             hosts.all.zos_data_set(name=test_env["DS_NAME"], state="present", type="member")
             cmdStr = "cp -CM {0} \"//'{1}'\"".format(quote(TEMP_FILE), test_env["DS_NAME"])
         else:
@@ -76,10 +79,11 @@ def set_ds_test_env(test_name, hosts, test_env):
         results = hosts.all.shell(cmd=cmdStr)
         pprint(vars(results))
         for result in results.contacted.values():
-            assert int(result.get("stdout")) != 0
+            assert int(result.get("stdout")) ! = 0
     except:
         clean_ds_test_env(test_env["DS_NAME"], hosts)
-        assert 1==0, "Failed to set the test env"
+        assert 1 == 0, "Failed to set the test env"
+
 
 def clean_ds_test_env(ds_name, hosts):
     ds_name = ds_name.replace("(MEM)", "")
@@ -87,7 +91,8 @@ def clean_ds_test_env(ds_name, hosts):
     try:
         hosts.all.shell(cmd=cmdStr)
     except:
-        assert 1==0, "Failed to clean the test env"
+        assert 1 == 0, "Failed to clean the test env"
+
 
 def test_ds_general(test_name, ansible_zos_module, test_env, test_info, expected):
     hosts = ansible_zos_module

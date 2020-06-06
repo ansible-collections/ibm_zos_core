@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020
+# Copyright (c) IBM Corporation 2020
 # Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
 
@@ -16,12 +16,13 @@ ANSIBLE_METADATA = {'metadata_version': '1.1',
 DOCUMENTATION = r'''
 ---
 module: zos_lineinfile
-short_description: Manage lines in zos uss files or partitioned dataset members 
-or sequential datasets
+short_description: Manage textual data on z/OS
 description:
-  - This module ensures a particular line is in a uss file or dataset, or
+  - Manage lines in z/OS Unix System Services (USS) files, partitioned data set
+  members or sequential data sets.
+  - This module ensures a particular line is in a USS file or data set, or
   replace an existing line using a back-referenced regular expression.
-  - This is primarily useful when you want to change a single line in a uss 
+  - This is primarily useful when you want to change a single line in a USS
   file or dataset only.
 options:
   zosdest:
@@ -42,7 +43,8 @@ options:
       - When modifying a line the regexp should typically match both
       the initial state of the line as well as its state after replacement by
       C(line) to ensure idempotence.
-      - Uses Python regular expressions. See U(http://docs.python.org/2/library/re.html).
+      - Uses Python regular expressions.
+      See U(http://docs.python.org/2/library/re.html).
     type: str
   state:
     description:
@@ -64,8 +66,9 @@ options:
       - If set, C(line) can contain backreferences (both positional and named)
         that will get populated if the C(regexp) matches.
       - This parameter changes the operation of the module slightly;
-        C(insertbefore) and C(insertafter) will be ignored, and if the 
-        C(regexp) does not match anywhere in the file, the file will be left unchanged.
+        C(insertbefore) and C(insertafter) will be ignored, and if the
+        C(regexp) does not match anywhere in the file, the file will be left
+        unchanged.
       - If the C(regexp) does match, the last matching line will be replaced by
         the expanded line parameter.
     type: bool
@@ -73,12 +76,16 @@ options:
   insertafter:
     description:
       - Used with C(state=present).
-      - If specified, the line will be inserted after the last match of specified regular expression.
+      - If specified, the line will be inserted after the last match of
+      specified regular expression.
       - If the first match is required, use(firstmatch=yes).
-      - A special value is available; C(EOF) for inserting the line at the end of the file.
-      - If specified regular expression has no matches, EOF will be used instead.
+      - A special value is available; C(EOF) for inserting the line at the end
+      of the file.
+      - If specified regular expression has no matches, EOF will be used
+      instead.
       - If C(insertbefore) is set, default value C(EOF) will be ignored.
-      - If regular expressions are passed to both C(regexp) and C(insertafter), C(insertafter) is only honored if no match for C(regexp) is found.
+      - If regular expressions are passed to both C(regexp) and C(insertafter),
+      C(insertafter) is only honored if no match for C(regexp) is found.
       - May not be used with C(backrefs) or C(insertbefore).
     type: str
     choices: [ EOF, '*regex*' ]
@@ -86,11 +93,15 @@ options:
   insertbefore:
     description:
       - Used with C(state=present).
-      - If specified, the line will be inserted before the last match of specified regular expression.
+      - If specified, the line will be inserted before the last match of
+      specified regular expression.
       - If the first match is required, use C(firstmatch=yes).
-      - A value is available; C(BOF) for inserting the line at the beginning of the uss file or dataset.
-      - If specified regular expression has no matches, the line will be inserted at the end of the file.
-      - If regular expressions are passed to both C(regexp) and C(insertbefore), C(insertbefore) is only honored if no match for C(regexp) is found.
+      - A value is available; C(BOF) for inserting the line at the beginning of
+      the uss file or dataset.
+      - If specified regular expression has no matches, the line will be
+      inserted at the end of the file.
+      - If regular expressions are passed to both C(regexp) and C(insertbefore),
+      C(insertbefore) is only honored if no match for C(regexp) is found.
       - May not be used with C(backrefs) or C(insertafter).
     type: str
     choices: [ BOF, '*regex*' ]
@@ -121,12 +132,13 @@ options:
   firstmatch:
     description:
       - Used with C(insertafter) or C(insertbefore).
-      - If set, C(insertafter) and C(insertbefore) will work with the first line that matches the given regular expression.
+      - If set, C(insertafter) and C(insertbefore) will work with the first line
+      that matches the given regular expression.
     type: bool
     default: no
   encoding:
     description:
-      - Specifies the encoding of USS file or data set. zos_lineinfile
+      - Specifies the encoding of USS file or data set. M(zos_lineinfile)
         requires to be provided with correct encoding to read the content
         of USS file or data set. If this parameter is not provided, this
         module assumes that USS file or data set is encoded in IBM-1047.
@@ -184,6 +196,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser
     BetterArgParser,
 )
 
+
 try:
     from zoautil_py import Datasets
 except Exception:
@@ -193,8 +206,10 @@ except Exception:
 def present(zosdest,line, regexp, ins_aft, ins_bef, encoding, first_match, backrefs, file_type):
     return Datasets.lineinfile(zosdest, line, regexp, ins_aft, ins_bef, encoding, first_match, backrefs, state=True)
 
+
 def absent(zosdest, line, regexp, encoding, file_type):
     return Datasets.lineinfile(zosdest, line, regexp, encoding=encoding, state=False)
+
 
 def main():
     module_args = dict(
@@ -218,7 +233,7 @@ def main():
 
     arg_defs = dict(
         path=dict(arg_type="data_set_or_path", aliases=['zosdest', 'dest', 'destfile', 'name'], required=True),
-        state=dict(arg_type='str', default='present',choices=['absent', 'present']),
+        state=dict(arg_type='str', default='present', choices=['absent', 'present']),
         regexp=dict(arg_type="str", aliases=['regex'], required=False),
         line=dict(arg_type="str", aliases=['value'], required=False),
         insertafter=dict(arg_type="str", required=False),
@@ -228,7 +243,7 @@ def main():
         backup_file=dict(arg_type="data_set_or_path", required=False, default=None),
         firstmatch=dict(arg_type="bool", required=False, default=False),
         backrefs=dict(arg_type="bool", dependencies=['regexp'], required=False, default=False),
-        mutually_exclusive=[["insertbefore","insertafter"]],
+        mutually_exclusive=[["insertbefore", "insertafter"]],
     )
 
     try:

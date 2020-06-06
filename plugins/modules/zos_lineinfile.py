@@ -101,7 +101,7 @@ options:
     type: str
     choices:
       - EOF
-      - *regex*
+      - '*regex*'
     default: EOF
   insertbefore:
     description:
@@ -120,7 +120,7 @@ options:
     type: str
     choices:
       - BOF
-      - *regex*
+      - '*regex*'
   backup:
     description:
       - Creates a backup file or backup data set for I(dest), including the
@@ -243,13 +243,13 @@ def main():
         line=dict(type='str', aliases=['value']),
         insertafter=dict(
             type='str',
-            default="EOF",
-            choices=["EOF", "*regex*"],
+            default='EOF',
+            choices=['EOF', '*regex*'],
         ),
         insertbefore=dict(
             type='str',
             default=None,
-            choices=["BOF", "*regex*"],
+            choices=['BOF', '*regex*'],
         ),
         backrefs=dict(type='bool', default=False),
         backup=dict(type='bool', default=False),
@@ -265,10 +265,10 @@ def main():
 
     arg_defs = dict(
         path=dict(arg_type="data_set_or_path", aliases=['zosdest', 'dest', 'destfile', 'name'], required=True),
-        state=dict(arg_type='str', default='present', choices=['absent', 'present']),
+        state=dict(arg_type="str", default='present', choices=['absent', 'present']),
         regexp=dict(arg_type="str", aliases=['regex'], required=False),
         line=dict(arg_type="str", aliases=['value'], required=False),
-        insertafter=dict(arg_type="str", required=False),
+        insertafter=dict(arg_type="str", default="EOF", required=False),
         insertbefore=dict(arg_type="str", required=False),
         encoding=dict(arg_type="str", default="IBM-1047", required=False),
         backup=dict(arg_type="bool", default=False, required=False),

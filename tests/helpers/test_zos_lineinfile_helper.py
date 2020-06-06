@@ -79,7 +79,7 @@ def set_ds_test_env(test_name, hosts, test_env):
         results = hosts.all.shell(cmd=cmdStr)
         pprint(vars(results))
         for result in results.contacted.values():
-            assert int(result.get("stdout")) ! = 0
+            assert int(result.get("stdout")) != 0
     except:
         clean_ds_test_env(test_env["DS_NAME"], hosts)
         assert 1 == 0, "Failed to set the test env"
@@ -111,4 +111,3 @@ def test_ds_general(test_name, ansible_zos_module, test_env, test_info, expected
         for result in results.contacted.values():
             assert result.get("stdout").replace('\n', '').replace(' ', '') == expected.replace('\n', '').replace(' ', '')
     clean_ds_test_env(test_env["DS_NAME"], hosts)
-    

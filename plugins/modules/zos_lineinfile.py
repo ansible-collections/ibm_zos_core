@@ -214,7 +214,8 @@ def absent(zosdest, line, regexp, encoding, file_type):
 def main():
     module_args = dict(
         path=dict(
-        type='str', required=True, aliases=['zosdest', 'dest', 'destfile', 'name']),
+            type='str', required=True, aliases=['zosdest', 'dest', 'destfile', 'name']
+        ),
         state=dict(type='str', default='present', choices=['absent', 'present']),
         regexp=dict(type='str', aliases=['regex']),
         line=dict(type='str', aliases=['value']),
@@ -224,7 +225,8 @@ def main():
         backup=dict(type='bool', default=False),
         backup_file=dict(type='str', required=False, default=None),
         firstmatch=dict(type='bool', default=False),
-        encoding=dict(type=str, default="IBM-1047"),)
+        encoding=dict(type=str, default="IBM-1047"),
+    )
     module = AnsibleModule(
         argument_spec=module_args,
         supports_check_mode=True

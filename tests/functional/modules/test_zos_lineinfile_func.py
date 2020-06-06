@@ -4,12 +4,12 @@
 # Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
 from __future__ import absolute_import, division, print_function
+from test_zos_lineinfile_helper import test_uss_general, test_ds_general
 import os
 import sys
 import pytest
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '../../helpers'))
-from test_zos_lineinfile_helper import test_uss_general, test_ds_general
 
 __metaclass__ = type
 
@@ -61,23 +61,37 @@ TEST_ENV = dict(
 )
 
 TEST_INFO = dict(
-    test_uss_line_replace=dict(path="", regexp="ZOAU_ROOT=", line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present"),
-    test_uss_line_insertafter_regex=dict(insertafter="ZOAU_ROOT=", line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present"),
-    test_uss_line_insertbefore_regex=dict(insertbefore="ZOAU_ROOT=", line="unset ZOAU_ROOT", state="present"),
-    test_uss_line_insertafter_eof=dict(insertafter="EOF", line="export ZOAU_ROOT", state="present"),
-    test_uss_line_insertbefore_bof=dict(insertbefore="BOF", line="# this is file is for setting env vars", state="present"),
+    test_uss_line_replace=dict(
+        path="", regexp="ZOAU_ROOT=", line="ZOAU_ROOT=/mvsutil-develop_dsed",
+        state="present"),
+    test_uss_line_insertafter_regex=dict(
+        insertafter="ZOAU_ROOT=", line="ZOAU_ROOT=/mvsutil-develop_dsed",
+        state="present"),
+    test_uss_line_insertbefore_regex=dict(
+        insertbefore="ZOAU_ROOT=", line="unset ZOAU_ROOT", state="present"),
+    test_uss_line_insertafter_eof=dict(
+        insertafter="EOF", line="export ZOAU_ROOT", state="present"),
+    test_uss_line_insertbefore_bof=dict(
+        insertbefore="BOF", line="# this is file is for setting env vars",
+        state="present"),
     test_uss_line_replace_match_insertafter_ignore=dict(
-        regexp="ZOAU_ROOT=", insertafter="PATH=", line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present"),
+        regexp="ZOAU_ROOT=", insertafter="PATH=",
+        line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present"),
     test_uss_line_replace_match_insertbefore_ignore=dict(
-        regexp="ZOAU_ROOT=", insertbefore="PATH=", line="unset ZOAU_ROOT", state="present"),
+        regexp="ZOAU_ROOT=", insertbefore="PATH=", line="unset ZOAU_ROOT",
+        state="present"),
     test_uss_line_replace_nomatch_insertafter_match=dict(
-        regexp="abcxyz", insertafter="ZOAU_ROOT=", line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present"),
+        regexp="abcxyz", insertafter="ZOAU_ROOT=",
+        line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present"),
     test_uss_line_replace_nomatch_insertbefore_match=dict(
-        regexp="abcxyz", insertbefore="ZOAU_ROOT=", line="unset ZOAU_ROOT", state="present"),
+        regexp="abcxyz", insertbefore="ZOAU_ROOT=", line="unset ZOAU_ROOT",
+        state="present"),
     test_uss_line_replace_nomatch_insertafter_nomatch=dict(
-        regexp="abcxyz", insertafter="xyzijk", line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present"),
+        regexp="abcxyz", insertafter="xyzijk",
+        line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present"),
     test_uss_line_replace_nomatch_insertbefore_nomatch=dict(
-        regexp="abcxyz", insertbefore="xyzijk", line="unset ZOAU_ROOT", state="present"),
+        regexp="abcxyz", insertbefore="xyzijk", line="unset ZOAU_ROOT",
+        state="present"),
     test_uss_line_absent=dict(regexp="ZOAU_ROOT=", line="", state="absent"),
     test_ds_line_replace=dict(test_name="T1"),
     test_ds_line_insertafter_regex=dict(test_name="T2"),
@@ -125,7 +139,7 @@ export PYTHONPATH
 export PKG_CONFIG_PATH
 export PYTHON_HOME
 export _BPXK_AUTOCVT""",
-    test_uss_line_insertafter_regex="""if [ -z STEPLIB ] && tty -s;
+                  test_uss_line_insertafter_regex="""if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
@@ -160,7 +174,7 @@ export PYTHONPATH
 export PKG_CONFIG_PATH
 export PYTHON_HOME
 export _BPXK_AUTOCVT""",
-    test_uss_line_insertbefore_regex="""if [ -z STEPLIB ] && tty -s;
+                  test_uss_line_insertbefore_regex="""if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
@@ -195,7 +209,7 @@ export PYTHONPATH
 export PKG_CONFIG_PATH
 export PYTHON_HOME
 export _BPXK_AUTOCVT""",
-    test_uss_line_insertafter_eof="""if [ -z STEPLIB ] && tty -s;
+                  test_uss_line_insertafter_eof="""if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
@@ -230,7 +244,7 @@ export PKG_CONFIG_PATH
 export PYTHON_HOME
 export _BPXK_AUTOCVT
 export ZOAU_ROOT""",
-    test_uss_line_insertbefore_bof="""# this is file is for setting env vars
+                  test_uss_line_insertbefore_bof="""# this is file is for setting env vars
 if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -265,7 +279,7 @@ export PYTHONPATH
 export PKG_CONFIG_PATH
 export PYTHON_HOME
 export _BPXK_AUTOCVT""",
-    test_uss_line_replace_match_insertafter_ignore="""if [ -z STEPLIB ] && tty -s;
+                  test_uss_line_replace_match_insertafter_ignore="""if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
@@ -299,7 +313,7 @@ export PYTHONPATH
 export PKG_CONFIG_PATH
 export PYTHON_HOME
 export _BPXK_AUTOCVT""",
-    test_uss_line_replace_match_insertbefore_ignore="""if [ -z STEPLIB ] && tty -s;
+                  test_uss_line_replace_match_insertbefore_ignore="""if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
@@ -333,7 +347,7 @@ export PYTHONPATH
 export PKG_CONFIG_PATH
 export PYTHON_HOME
 export _BPXK_AUTOCVT""",
-    test_uss_line_replace_nomatch_insertafter_match="""if [ -z STEPLIB ] && tty -s;
+                  test_uss_line_replace_nomatch_insertafter_match="""if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
@@ -368,7 +382,7 @@ export PYTHONPATH
 export PKG_CONFIG_PATH
 export PYTHON_HOME
 export _BPXK_AUTOCVT""",
-    test_uss_line_replace_nomatch_insertbefore_match="""if [ -z STEPLIB ] && tty -s;
+                  test_uss_line_replace_nomatch_insertbefore_match="""if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
@@ -403,7 +417,7 @@ export PYTHONPATH
 export PKG_CONFIG_PATH
 export PYTHON_HOME
 export _BPXK_AUTOCVT""",
-    test_uss_line_replace_nomatch_insertafter_nomatch="""if [ -z STEPLIB ] && tty -s;
+                  test_uss_line_replace_nomatch_insertafter_nomatch="""if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
@@ -438,7 +452,7 @@ export PKG_CONFIG_PATH
 export PYTHON_HOME
 export _BPXK_AUTOCVT
 ZOAU_ROOT=/mvsutil-develop_dsed""",
-    test_uss_line_replace_nomatch_insertbefore_nomatch="""if [ -z STEPLIB ] && tty -s;
+                  test_uss_line_replace_nomatch_insertbefore_nomatch="""if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
@@ -473,7 +487,7 @@ export PKG_CONFIG_PATH
 export PYTHON_HOME
 export _BPXK_AUTOCVT
 unset ZOAU_ROOT""",
-    test_uss_line_absent="""if [ -z STEPLIB ] && tty -s;
+                  test_uss_line_absent="""if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
@@ -515,73 +529,111 @@ export _BPXK_AUTOCVT"""),
 
 @pytest.mark.uss
 def test_uss_line_replace(ansible_zos_module):
-    test_uss_general("test_uss_line_replace", ansible_zos_module, TEST_ENV, TEST_INFO["test_uss_line_replace"],
+    test_uss_general(
+        "test_uss_line_replace", ansible_zos_module, TEST_ENV,
+        TEST_INFO["test_uss_line_replace"],
         TEST_INFO["expected"]["test_uss_line_replace"])
 
 
 @pytest.mark.uss
 def test_uss_line_insertafter_regex(ansible_zos_module):
-    test_uss_general("test_uss_line_insertafter_regex", ansible_zos_module, TEST_ENV, TEST_INFO["test_uss_line_insertafter_regex"],
+    test_uss_general(
+        "test_uss_line_insertafter_regex", ansible_zos_module, TEST_ENV,
+        TEST_INFO["test_uss_line_insertafter_regex"],
         TEST_INFO["expected"]["test_uss_line_insertafter_regex"])
 
 
 @pytest.mark.uss
 def test_uss_line_insertbefore_regex(ansible_zos_module):
-    test_uss_general("test_uss_line_insertbefore_regex", ansible_zos_module, TEST_ENV, TEST_INFO["test_uss_line_insertbefore_regex"],
+    test_uss_general(
+        "test_uss_line_insertbefore_regex", ansible_zos_module, TEST_ENV,
+        TEST_INFO["test_uss_line_insertbefore_regex"],
         TEST_INFO["expected"]["test_uss_line_insertbefore_regex"])
 
 
 @pytest.mark.uss
 def test_uss_line_insertafter_eof(ansible_zos_module):
-    test_uss_general("test_uss_line_insertafter_eof", ansible_zos_module, TEST_ENV, TEST_INFO["test_uss_line_insertafter_eof"],
+    test_uss_general(
+        "test_uss_line_insertafter_eof", ansible_zos_module,
+        TEST_ENV, TEST_INFO["test_uss_line_insertafter_eof"],
         TEST_INFO["expected"]["test_uss_line_insertafter_eof"])
 
 
 @pytest.mark.uss
 def test_uss_line_insertbefore_bof(ansible_zos_module):
-    test_uss_general("test_uss_line_insertbefore_bof", ansible_zos_module, TEST_ENV, TEST_INFO["test_uss_line_insertbefore_bof"],
+    test_uss_general(
+        "test_uss_line_insertbefore_bof", ansible_zos_module,
+        TEST_ENV, TEST_INFO["test_uss_line_insertbefore_bof"],
         TEST_INFO["expected"]["test_uss_line_insertbefore_bof"])
 
 
 @pytest.mark.uss
 def test_uss_line_replace_match_insertafter_ignore(ansible_zos_module):
-    test_uss_general("test_uss_line_replace_match_insertafter_ignore", ansible_zos_module, TEST_ENV, TEST_INFO["test_uss_line_replace_match_insertafter_ignore"],
-        TEST_INFO["expected"]["test_uss_line_replace_match_insertafter_ignore"])
+    test_uss_general(
+        "test_uss_line_replace_match_insertafter_ignore", ansible_zos_module,
+        TEST_ENV, TEST_INFO["test_uss_line_replace_match_insertafter_ignore"],
+        TEST_INFO["expected"]["test_uss_line_replace_match_insertafter_ignore"]
+    )
 
 
 @pytest.mark.uss
 def test_uss_line_replace_match_insertbefore_ignore(ansible_zos_module):
-    test_uss_general("test_uss_line_replace_match_insertbefore_ignore", ansible_zos_module, TEST_ENV, TEST_INFO["test_uss_line_replace_match_insertbefore_ignore"],
-        TEST_INFO["expected"]["test_uss_line_replace_match_insertbefore_ignore"])
+    test_uss_general(
+        "test_uss_line_replace_match_insertbefore_ignore", ansible_zos_module,
+        TEST_ENV, TEST_INFO["test_uss_line_replace_match_insertbefore_ignore"],
+        TEST_INFO["expected"]
+        ["test_uss_line_replace_match_insertbefore_ignore"]
+    )
 
 
 @pytest.mark.uss
 def test_uss_line_replace_nomatch_insertafter_match(ansible_zos_module):
-    test_uss_general("test_uss_line_replace_nomatch_insertafter_match", ansible_zos_module, TEST_ENV, TEST_INFO["test_uss_line_replace_nomatch_insertafter_match"],
-        TEST_INFO["expected"]["test_uss_line_replace_nomatch_insertafter_match"])
+    test_uss_general(
+        "test_uss_line_replace_nomatch_insertafter_match", ansible_zos_module,
+        TEST_ENV, TEST_INFO["test_uss_line_replace_nomatch_insertafter_match"],
+        TEST_INFO["expected"]
+        ["test_uss_line_replace_nomatch_insertafter_match"]
+    )
 
 
 @pytest.mark.uss
 def test_uss_line_replace_nomatch_insertbefore_match(ansible_zos_module):
-    test_uss_general("test_uss_line_replace_nomatch_insertbefore_match", ansible_zos_module, TEST_ENV, TEST_INFO["test_uss_line_replace_nomatch_insertbefore_match"],
-        TEST_INFO["expected"]["test_uss_line_replace_nomatch_insertbefore_match"])
+    test_uss_general(
+        "test_uss_line_replace_nomatch_insertbefore_match", ansible_zos_module,
+        TEST_ENV,
+        TEST_INFO["test_uss_line_replace_nomatch_insertbefore_match"],
+        TEST_INFO["expected"]
+        ["test_uss_line_replace_nomatch_insertbefore_match"]
+    )
 
 
 @pytest.mark.uss
 def test_uss_line_replace_nomatch_insertafter_nomatch(ansible_zos_module):
-    test_uss_general("test_uss_line_replace_nomatch_insertafter_nomatch", ansible_zos_module, TEST_ENV, TEST_INFO["test_uss_line_replace_nomatch_insertafter_nomatch"],
-        TEST_INFO["expected"]["test_uss_line_replace_nomatch_insertafter_nomatch"])
+    test_uss_general(
+        "test_uss_line_replace_nomatch_insertafter_nomatch",
+        ansible_zos_module, TEST_ENV,
+        TEST_INFO["test_uss_line_replace_nomatch_insertafter_nomatch"],
+        TEST_INFO["expected"]
+        ["test_uss_line_replace_nomatch_insertafter_nomatch"]
+    )
 
 
 @pytest.mark.uss
 def test_uss_line_replace_nomatch_insertbefore_nomatch(ansible_zos_module):
-    test_uss_general("test_uss_line_replace_nomatch_insertbefore_nomatch", ansible_zos_module, TEST_ENV, TEST_INFO["test_uss_line_replace_nomatch_insertbefore_nomatch"],
-        TEST_INFO["expected"]["test_uss_line_replace_nomatch_insertbefore_nomatch"])
+    test_uss_general(
+        "test_uss_line_replace_nomatch_insertbefore_nomatch",
+        ansible_zos_module, TEST_ENV,
+        TEST_INFO["test_uss_line_replace_nomatch_insertbefore_nomatch"],
+        TEST_INFO["expected"]
+        ["test_uss_line_replace_nomatch_insertbefore_nomatch"]
+    )
 
 
 @pytest.mark.uss
 def test_uss_line_absent(ansible_zos_module):
-    test_uss_general("test_uss_line_absent", ansible_zos_module, TEST_ENV, TEST_INFO["test_uss_line_absent"],
+    test_uss_general(
+        "test_uss_line_absent", ansible_zos_module, TEST_ENV,
+        TEST_INFO["test_uss_line_absent"],
         TEST_INFO["expected"]["test_uss_line_absent"])
 
 
@@ -595,8 +647,11 @@ def test_uss_line_absent(ansible_zos_module):
 def test_ds_line_replace(ansible_zos_module, dstype, encoding):
     TEST_ENV["DS_TYPE"] = dstype
     TEST_ENV["ENCODING"] = encoding
-    test_ds_general(TEST_INFO["test_ds_line_replace"]["test_name"], ansible_zos_module, TEST_ENV,
-        TEST_INFO["test_uss_line_replace"], TEST_INFO["expected"]["test_uss_line_replace"])
+    test_ds_general(
+        TEST_INFO["test_ds_line_replace"]["test_name"], ansible_zos_module,
+        TEST_ENV, TEST_INFO["test_uss_line_replace"],
+        TEST_INFO["expected"]["test_uss_line_replace"]
+    )
 
 
 @pytest.mark.ds
@@ -605,8 +660,12 @@ def test_ds_line_replace(ansible_zos_module, dstype, encoding):
 def test_ds_line_insertafter_regex(ansible_zos_module, dstype, encoding):
     TEST_ENV["DS_TYPE"] = dstype
     TEST_ENV["ENCODING"] = encoding
-    test_ds_general(TEST_INFO["test_ds_line_insertafter_regex"]["test_name"], ansible_zos_module, TEST_ENV,
-        TEST_INFO["test_uss_line_insertafter_regex"], TEST_INFO["expected"]["test_uss_line_insertafter_regex"])
+    test_ds_general(
+        TEST_INFO["test_ds_line_insertafter_regex"]["test_name"],
+        ansible_zos_module, TEST_ENV,
+        TEST_INFO["test_uss_line_insertafter_regex"],
+        TEST_INFO["expected"]["test_uss_line_insertafter_regex"]
+    )
 
 
 @pytest.mark.ds
@@ -615,8 +674,12 @@ def test_ds_line_insertafter_regex(ansible_zos_module, dstype, encoding):
 def test_ds_line_insertbefore_regex(ansible_zos_module, dstype, encoding):
     TEST_ENV["DS_TYPE"] = dstype
     TEST_ENV["ENCODING"] = encoding
-    test_ds_general(TEST_INFO["test_ds_line_insertbefore_regex"]["test_name"], ansible_zos_module, TEST_ENV,
-        TEST_INFO["test_uss_line_insertbefore_regex"], TEST_INFO["expected"]["test_uss_line_insertbefore_regex"])
+    test_ds_general(
+        TEST_INFO["test_ds_line_insertbefore_regex"]["test_name"],
+        ansible_zos_module, TEST_ENV,
+        TEST_INFO["test_uss_line_insertbefore_regex"],
+        TEST_INFO["expected"]["test_uss_line_insertbefore_regex"]
+    )
 
 
 @pytest.mark.ds
@@ -625,8 +688,12 @@ def test_ds_line_insertbefore_regex(ansible_zos_module, dstype, encoding):
 def test_ds_line_insertafter_eof(ansible_zos_module, dstype, encoding):
     TEST_ENV["DS_TYPE"] = dstype
     TEST_ENV["ENCODING"] = encoding
-    test_ds_general(TEST_INFO["test_ds_line_insertafter_eof"]["test_name"], ansible_zos_module, TEST_ENV,
-        TEST_INFO["test_uss_line_insertafter_eof"], TEST_INFO["expected"]["test_uss_line_insertafter_eof"])
+    test_ds_general(
+        TEST_INFO["test_ds_line_insertafter_eof"]["test_name"],
+        ansible_zos_module, TEST_ENV,
+        TEST_INFO["test_uss_line_insertafter_eof"],
+        TEST_INFO["expected"]["test_uss_line_insertafter_eof"]
+    )
 
 
 @pytest.mark.ds
@@ -635,66 +702,107 @@ def test_ds_line_insertafter_eof(ansible_zos_module, dstype, encoding):
 def test_ds_line_insertbefore_bof(ansible_zos_module, dstype, encoding):
     TEST_ENV["DS_TYPE"] = dstype
     TEST_ENV["ENCODING"] = encoding
-    test_ds_general(TEST_INFO["test_ds_line_insertbefore_bof"]["test_name"], ansible_zos_module, TEST_ENV,
-        TEST_INFO["test_uss_line_insertbefore_bof"], TEST_INFO["expected"]["test_uss_line_insertbefore_bof"])
+    test_ds_general(
+        TEST_INFO["test_ds_line_insertbefore_bof"]["test_name"],
+        ansible_zos_module, TEST_ENV,
+        TEST_INFO["test_uss_line_insertbefore_bof"],
+        TEST_INFO["expected"]["test_uss_line_insertbefore_bof"]
+    )
 
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
 @pytest.mark.parametrize("encoding", ENCODING)
-def test_ds_line_replace_match_insertafter_ignore(ansible_zos_module, dstype, encoding):
+def test_ds_line_replace_match_insertafter_ignore(
+        ansible_zos_module, dstype, encoding):
     TEST_ENV["DS_TYPE"] = dstype
     TEST_ENV["ENCODING"] = encoding
-    test_ds_general(TEST_INFO["test_ds_line_replace_match_insertafter_ignore"]["test_name"], ansible_zos_module, TEST_ENV,
-        TEST_INFO["test_uss_line_replace_match_insertafter_ignore"], TEST_INFO["expected"]["test_uss_line_replace_match_insertafter_ignore"])
+    test_ds_general(
+        TEST_INFO["test_ds_line_replace_match_insertafter_ignore"]
+        ["test_name"], ansible_zos_module, TEST_ENV,
+        TEST_INFO["test_uss_line_replace_match_insertafter_ignore"],
+        TEST_INFO["expected"]["test_uss_line_replace_match_insertafter_ignore"]
+    )
 
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
 @pytest.mark.parametrize("encoding", ENCODING)
-def test_ds_line_replace_match_insertbefore_ignore(ansible_zos_module, dstype, encoding):
+def test_ds_line_replace_match_insertbefore_ignore(
+        ansible_zos_module, dstype, encoding):
     TEST_ENV["DS_TYPE"] = dstype
     TEST_ENV["ENCODING"] = encoding
-    test_ds_general(TEST_INFO["test_ds_line_replace_match_insertbefore_ignore"]["test_name"], ansible_zos_module, TEST_ENV,
-        TEST_INFO["test_uss_line_replace_match_insertbefore_ignore"], TEST_INFO["expected"]["test_uss_line_replace_match_insertbefore_ignore"])
-
-@pytest.mark.ds
-@pytest.mark.parametrize("dstype", DS_TYPE)
-@pytest.mark.parametrize("encoding", ENCODING)
-def test_ds_line_replace_nomatch_insertafter_match(ansible_zos_module, dstype, encoding):
-    TEST_ENV["DS_TYPE"] = dstype
-    TEST_ENV["ENCODING"] = encoding
-    test_ds_general(TEST_INFO["test_ds_line_replace_nomatch_insertafter_match"]["test_name"], ansible_zos_module, TEST_ENV,
-        TEST_INFO["test_uss_line_replace_nomatch_insertafter_match"], TEST_INFO["expected"]["test_uss_line_replace_nomatch_insertafter_match"])
-
-@pytest.mark.ds
-@pytest.mark.parametrize("dstype", DS_TYPE)
-@pytest.mark.parametrize("encoding", ENCODING)
-def test_ds_line_replace_nomatch_insertbefore_match(ansible_zos_module, dstype, encoding):
-    TEST_ENV["DS_TYPE"] = dstype
-    TEST_ENV["ENCODING"] = encoding
-    test_ds_general(TEST_INFO["test_ds_line_replace_nomatch_insertbefore_match"]["test_name"], ansible_zos_module, TEST_ENV,
-        TEST_INFO["test_uss_line_replace_nomatch_insertbefore_match"], TEST_INFO["expected"]["test_uss_line_replace_nomatch_insertbefore_match"])
+    test_ds_general(
+        TEST_INFO["test_ds_line_replace_match_insertbefore_ignore"]
+        ["test_name"], ansible_zos_module, TEST_ENV,
+        TEST_INFO["test_uss_line_replace_match_insertbefore_ignore"],
+        TEST_INFO["expected"]
+        ["test_uss_line_replace_match_insertbefore_ignore"]
+    )
 
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
 @pytest.mark.parametrize("encoding", ENCODING)
-def test_ds_line_replace_nomatch_insertafter_nomatch(ansible_zos_module, dstype, encoding):
+def test_ds_line_replace_nomatch_insertafter_match(
+        ansible_zos_module, dstype, encoding):
     TEST_ENV["DS_TYPE"] = dstype
     TEST_ENV["ENCODING"] = encoding
-    test_ds_general(TEST_INFO["test_ds_line_replace_nomatch_insertafter_nomatch"]["test_name"], ansible_zos_module, TEST_ENV,
-        TEST_INFO["test_uss_line_replace_nomatch_insertafter_nomatch"], TEST_INFO["expected"]["test_uss_line_replace_nomatch_insertafter_nomatch"])
+    test_ds_general(
+        TEST_INFO["test_ds_line_replace_nomatch_insertafter_match"]
+        ["test_name"], ansible_zos_module, TEST_ENV,
+        TEST_INFO["test_uss_line_replace_nomatch_insertafter_match"],
+        TEST_INFO["expected"]
+        ["test_uss_line_replace_nomatch_insertafter_match"]
+    )
 
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
 @pytest.mark.parametrize("encoding", ENCODING)
-def test_ds_line_replace_nomatch_insertbefore_nomatch(ansible_zos_module, dstype, encoding):
+def test_ds_line_replace_nomatch_insertbefore_match(
+        ansible_zos_module, dstype, encoding):
     TEST_ENV["DS_TYPE"] = dstype
     TEST_ENV["ENCODING"] = encoding
-    test_ds_general(TEST_INFO["test_ds_line_replace_nomatch_insertbefore_nomatch"]["test_name"], ansible_zos_module, TEST_ENV,
-        TEST_INFO["test_uss_line_replace_nomatch_insertbefore_nomatch"], TEST_INFO["expected"]["test_uss_line_replace_nomatch_insertbefore_nomatch"])
+    test_ds_general(
+        TEST_INFO["test_ds_line_replace_nomatch_insertbefore_match"]
+        ["test_name"], ansible_zos_module, TEST_ENV,
+        TEST_INFO["test_uss_line_replace_nomatch_insertbefore_match"],
+        TEST_INFO["expected"]
+        ["test_uss_line_replace_nomatch_insertbefore_match"]
+    )
+
+
+@pytest.mark.ds
+@pytest.mark.parametrize("dstype", DS_TYPE)
+@pytest.mark.parametrize("encoding", ENCODING)
+def test_ds_line_replace_nomatch_insertafter_nomatch
+(ansible_zos_module, dstype, encoding):
+    TEST_ENV["DS_TYPE"] = dstype
+    TEST_ENV["ENCODING"] = encoding
+    test_ds_general(
+        TEST_INFO["test_ds_line_replace_nomatch_insertafter_nomatch"]
+        ["test_name"], ansible_zos_module, TEST_ENV,
+        TEST_INFO["test_uss_line_replace_nomatch_insertafter_nomatch"],
+        TEST_INFO["expected"]
+        ["test_uss_line_replace_nomatch_insertafter_nomatch"]
+    )
+
+
+@pytest.mark.ds
+@pytest.mark.parametrize("dstype", DS_TYPE)
+@pytest.mark.parametrize("encoding", ENCODING)
+def test_ds_line_replace_nomatch_insertbefore_nomatch(
+        ansible_zos_module, dstype, encoding):
+    TEST_ENV["DS_TYPE"] = dstype
+    TEST_ENV["ENCODING"] = encoding
+    test_ds_general(
+        TEST_INFO["test_ds_line_replace_nomatch_insertbefore_nomatch"]
+        ["test_name"], ansible_zos_module, TEST_ENV,
+        TEST_INFO["test_uss_line_replace_nomatch_insertbefore_nomatch"],
+        TEST_INFO["expected"]
+        ["test_uss_line_replace_nomatch_insertbefore_nomatch"]
+    )
 
 
 @pytest.mark.ds
@@ -703,5 +811,8 @@ def test_ds_line_replace_nomatch_insertbefore_nomatch(ansible_zos_module, dstype
 def test_ds_line_absent(ansible_zos_module, dstype, encoding):
     TEST_ENV["DS_TYPE"] = dstype
     TEST_ENV["ENCODING"] = encoding
-    test_ds_general(TEST_INFO["test_ds_line_absent"]["test_name"], ansible_zos_module, TEST_ENV, TEST_INFO["test_uss_line_absent"],
-        TEST_INFO["expected"]["test_uss_line_absent"])
+    test_ds_general(
+        TEST_INFO["test_ds_line_absent"]["test_name"], ansible_zos_module,
+        TEST_ENV, TEST_INFO["test_uss_line_absent"],
+        TEST_INFO["expected"]["test_uss_line_absent"]
+    )

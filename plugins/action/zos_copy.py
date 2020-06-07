@@ -7,20 +7,17 @@ __metaclass__ = type
 
 import os
 import stat
-import re
 import time
 import subprocess
 
 from tempfile import mkstemp, gettempprefix
 from pathlib import Path
 
-from ansible.errors import AnsibleError, AnsibleFileNotFound
-from ansible.module_utils._text import to_bytes, to_native, to_text
+from ansible.errors import AnsibleError
+from ansible.module_utils._text import to_bytes, to_text
 from ansible.module_utils.six import string_types
 from ansible.module_utils.parsing.convert_bool import boolean
 from ansible.plugins.action import ActionBase
-from ansible.utils.hashing import checksum as file_checksum
-from ansible.utils.vars import merge_hash
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser

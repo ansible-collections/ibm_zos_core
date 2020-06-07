@@ -27,104 +27,6 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
 )
 
 
-def _update_result(is_binary, **copy_res):
-    """ Helper function to update output result with the provided values """
-    ds_type = copy_res.get("ds_type")
-    src = copy_res.get("src")
-    updated_result = dict(
-        dest=copy_res.get('dest'),
-        is_binary=is_binary,
-        changed=copy_res.get("changed")
-    )
-    if src:
-        updated_result['src'] = src
-    if ds_type == "USS":
-        updated_result.update(
-            dict(
-                gid=copy_res.get("gid"),
-                uid=copy_res.get("uid"),
-                group=copy_res.get("group"),
-                owner=copy_res.get("owner"),
-                mode=copy_res.get("mode"),
-                state=copy_res.get("state"),
-                size=copy_res.get("size"),
-            )
-        )
-        checksum = copy_res.get("checksum")
-        if checksum:
-            updated_result['checksum'] = checksum
-
-    backup_file = copy_res.get("backup_file")
-    if backup_file:
-        updated_result['backup_file'] = backup_file
-
-    return updated_result
-
-
-def _process_boolean(arg, default=False):
-    try:
-        return boolean(arg)
-    except TypeError:
-        return default
-
-
-def _is_member(data_set):
-    """Determine whether the input string specifies a data set member"""
-    try:
-        arg_def = dict(data_set=dict(arg_type='data_set_member'))
-        parser = better_arg_parser.BetterArgParser(arg_def)
-        parser.parse_args({'data_set': data_set})
-    except ValueError:
-        return False
-    return True
-
-
-def _is_data_set(data_set):
-    """Determine whether the input string specifies a data set name"""
-    try:
-        arg_def = dict(data_set=dict(arg_type='data_set_base'))
-        parser = better_arg_parser.BetterArgParser(arg_def)
-        parser.parse_args({'data_set': data_set})
-    except ValueError:
-        return False
-    return True
-
-
-def _create_temp_path_name():
-    """Create a temporary path name"""
-    current_date = time.strftime("D%y%m%d", time.localtime())
-    current_time = time.strftime("T%H%M%S", time.localtime())
-    return "ansible-zos-copy-payload-{0}-{1}".format(current_date, current_time)
-
-
-def _detect_sftp_errors(stderr):
-    """Detects if the stderr of the SFTP command contains any errors.
-       The SFTP command usually returns zero return code even if it
-       encountered an error while transferring data. Hence the need to parse
-       its stderr to determine what error it ran into.
-    """
-    # The first line of stderr is a connection acknowledgement,
-    # which can be ignored
-    lines = to_text(stderr).splitlines()
-    if len(lines) > 1:
-        return "".join(lines[1:])
-    return ""
-
-
-def _write_content_to_temp_file(content):
-    """Write given content to a temp file and return its path """
-    fd, path = mkstemp()
-    try:
-        with os.fdopen(fd, 'w') as infile:
-            infile.write(content)
-    except (OSError, IOError) as err:
-        os.remove(path)
-        raise AnsibleError(
-            "Unable to write content to temporary file: {0}".format(repr(err))
-        )
-    return path
-
-
 class ActionModule(ActionBase):
     def run(self, tmp=None, task_vars=None):
         """ handler for file transfer operations """
@@ -271,13 +173,14 @@ class ActionModule(ActionBase):
                     stderr=copy_res.get('stderr') or copy_res.get("module_stderr"),
                     stdout_lines=copy_res.get("stdout_lines"),
                     stderr_lines=copy_res.get("stderr_lines"),
-                    rc=copy_res.get('rc')
+                    rc=copy_res.get('rc'),
+                    invocation=dict(module_args=self._task.args)
                 )
             )
             self._remote_cleanup(dest, copy_res.get("dest_exists"), task_vars)
             return result
 
-        return _update_result(is_binary, **copy_res)
+        return _update_result(is_binary, copy_res, self._task.args)
 
     def _copy_to_remote(self, src, is_dir=False):
         """Copy a file or directory to the remote z/OS system """
@@ -340,3 +243,102 @@ class ActionModule(ActionBase):
             )
         )
         return result
+
+
+def _update_result(is_binary, copy_res, original_args):
+    """ Helper function to update output result with the provided values """
+    ds_type = copy_res.get("ds_type")
+    src = copy_res.get("src")
+    updated_result = dict(
+        dest=copy_res.get('dest'),
+        is_binary=is_binary,
+        changed=copy_res.get("changed"),
+        invocation=dict(module_args=original_args)
+    )
+    if src:
+        updated_result['src'] = src
+    if ds_type == "USS":
+        updated_result.update(
+            dict(
+                gid=copy_res.get("gid"),
+                uid=copy_res.get("uid"),
+                group=copy_res.get("group"),
+                owner=copy_res.get("owner"),
+                mode=copy_res.get("mode"),
+                state=copy_res.get("state"),
+                size=copy_res.get("size"),
+            )
+        )
+        checksum = copy_res.get("checksum")
+        if checksum:
+            updated_result['checksum'] = checksum
+
+    backup_file = copy_res.get("backup_file")
+    if backup_file:
+        updated_result['backup_file'] = backup_file
+
+    return updated_result
+
+
+def _process_boolean(arg, default=False):
+    try:
+        return boolean(arg)
+    except TypeError:
+        return default
+
+
+def _is_member(data_set):
+    """Determine whether the input string specifies a data set member"""
+    try:
+        arg_def = dict(data_set=dict(arg_type='data_set_member'))
+        parser = better_arg_parser.BetterArgParser(arg_def)
+        parser.parse_args({'data_set': data_set})
+    except ValueError:
+        return False
+    return True
+
+
+def _is_data_set(data_set):
+    """Determine whether the input string specifies a data set name"""
+    try:
+        arg_def = dict(data_set=dict(arg_type='data_set_base'))
+        parser = better_arg_parser.BetterArgParser(arg_def)
+        parser.parse_args({'data_set': data_set})
+    except ValueError:
+        return False
+    return True
+
+
+def _create_temp_path_name():
+    """Create a temporary path name"""
+    current_date = time.strftime("D%y%m%d", time.localtime())
+    current_time = time.strftime("T%H%M%S", time.localtime())
+    return "ansible-zos-copy-payload-{0}-{1}".format(current_date, current_time)
+
+
+def _detect_sftp_errors(stderr):
+    """Detects if the stderr of the SFTP command contains any errors.
+       The SFTP command usually returns zero return code even if it
+       encountered an error while transferring data. Hence the need to parse
+       its stderr to determine what error it ran into.
+    """
+    # The first line of stderr is a connection acknowledgement,
+    # which can be ignored
+    lines = to_text(stderr).splitlines()
+    if len(lines) > 1:
+        return "".join(lines[1:])
+    return ""
+
+
+def _write_content_to_temp_file(content):
+    """Write given content to a temp file and return its path """
+    fd, path = mkstemp()
+    try:
+        with os.fdopen(fd, 'w') as infile:
+            infile.write(content)
+    except (OSError, IOError) as err:
+        os.remove(path)
+        raise AnsibleError(
+            "Unable to write content to temporary file: {0}".format(repr(err))
+        )
+    return path

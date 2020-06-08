@@ -632,13 +632,13 @@ def run_module():
     )
 
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
-    encoding = module.params.get('encoding')
+    encoding = module.params.get("encoding")
     if encoding is None:
-        encoding = {'from': DEFAULT_ASCII_CHARSET, 'to': DEFAULT_EBCDIC_CHARSET}
-    if encoding.get('from') is None:
-        encoding['from'] = DEFAULT_ASCII_CHARSET
-    if encoding.get('to') is None:
-        encoding['to'] = DEFAULT_EBCDIC_CHARSET
+        encoding = {"from": DEFAULT_ASCII_CHARSET, "to": DEFAULT_EBCDIC_CHARSET}
+    if encoding.get("from") is None:
+        encoding["from"] = DEFAULT_ASCII_CHARSET
+    if encoding.get("to") is None:
+        encoding["to"] = DEFAULT_EBCDIC_CHARSET
 
     arg_defs = dict(
         src=dict(arg_type="data_set_or_path", required=True),
@@ -657,8 +657,8 @@ def run_module():
     result = dict(changed=False)
     module.params.update(
         dict(
-            from_encoding=module.params.get('encoding').get('from'),
-            to_encoding=module.params.get('encoding').get('to')
+            from_encoding=encoding.get("from"),
+            to_encoding=encoding.get("to"),
         )
     )
     try:
@@ -705,11 +705,14 @@ def run_module():
             jobId = submit_uss_jcl(src, module)
         else:
             # For local file, it has been copied to the temp directory in action plugin.
-            from_encoding = encoding.get('from')
-            to_encoding = encoding.get('to')
+            from_encoding = encoding.get("from")
+            to_encoding = encoding.get("to")
             (conv_rc, stdout, stderr) = module.run_command(
                 "iconv -f {0} -t {1} {2} > {3}".format(
-                    from_encoding, to_encoding, quote(temp_file), quote(temp_file_2.name)
+                    from_encoding,
+                    to_encoding,
+                    quote(temp_file),
+                    quote(temp_file_2.name),
                 ),
                 use_unsafe_shell=True,
             )

@@ -221,6 +221,7 @@ msg:
 return_content:
   description: The error messages from ZOAU dsed
   returned: if json.loads(return_content) fails
+  type: str
   sample: BGYSC1311E Iconv error, cannot open converter from ISO-88955-1 to IBM-1047
 backup_file:
     description: Name of the backup file or data set that was created.
@@ -246,6 +247,7 @@ try:
     from zoautil_py import Datasets
 except Exception:
     Datasets = MissingZOAUImport()
+
 
 def present(dest, line, regexp, ins_aft, ins_bef, encoding, first_match, backrefs):
     """Replace a line with the matching regex pattern
@@ -416,7 +418,7 @@ def main():
         result['changed'] = ret['changed']
         result['found'] = ret['found']
     except Exception:
-        module.fail_json(msg="dsed return content is NOT in json format", stderr=return_content)
+        module.fail_json(msg="dsed return content is NOT in json format", return_content=str(return_content))
     module.exit_json(**result)
 
 

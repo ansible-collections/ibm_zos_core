@@ -15,7 +15,7 @@ def set_uss_test_env(test_name, hosts, test_env):
     try:
         hosts.all.shell(cmd="mkdir -p {0}".format(test_env["TEST_DIR"]))
         hosts.all.shell(cmd="echo \"{0}\" > {1}".format(test_env["TEST_CONT"], test_env["TEST_FILE"]))
-    except:
+    except Exception:
         clean_uss_test_env(test_env["TEST_DIR"], hosts)
         assert 1 == 0, "Failed to set the test env"
 
@@ -23,7 +23,7 @@ def set_uss_test_env(test_name, hosts, test_env):
 def clean_uss_test_env(test_dir, hosts):
     try:
         hosts.all.shell(cmd="rm -rf " + test_dir)
-    except:
+    except Exception:
         assert 1 == 0, "Failed to clean the test env"
 
 
@@ -80,7 +80,7 @@ def set_ds_test_env(test_name, hosts, test_env):
         pprint(vars(results))
         for result in results.contacted.values():
             assert int(result.get("stdout")) != 0
-    except:
+    except Exception:
         clean_ds_test_env(test_env["DS_NAME"], hosts)
         assert 1 == 0, "Failed to set the test env"
 
@@ -90,7 +90,7 @@ def clean_ds_test_env(ds_name, hosts):
     cmdStr = "python -c \"from zoautil_py import Datasets; Datasets.delete('" + ds_name + "')\" "
     try:
         hosts.all.shell(cmd=cmdStr)
-    except:
+    except Exception:
         assert 1 == 0, "Failed to clean the test env"
 
 

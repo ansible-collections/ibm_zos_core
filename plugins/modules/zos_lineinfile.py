@@ -247,53 +247,53 @@ try:
 except Exception:
     Datasets = MissingZOAUImport()
 
-"""Replace a line with the matching regex pattern
-   Insert a line before/after the matching pattern
-   Insert a line at BOF/EOF
+def present(dest, line, regexp, ins_aft, ins_bef, encoding, first_match, backrefs):
+    """Replace a line with the matching regex pattern
+    Insert a line before/after the matching pattern
+    Insert a line at BOF/EOF
 
     Arguments:
         dest: {str} -- The z/OS USS file or data set to modify.
         line: {str} -- The line to insert/replace into the dest.
         regexp: {str} -- The regular expression to look for in every line of the dest.
-                If regexp matches, ins_aft/ins_bef will be ignored.
+            If regexp matches, ins_aft/ins_bef will be ignored.
         ins_aft: {str} -- Insert the line after matching '*regex*' pattern or EOF.
-                choices:
-                  - EOF
-                  - '*regex*'
+            choices:
+                - EOF
+                - '*regex*'
         ins_bef: {str} -- Insert the line before matching '*regex*' pattern or BOF.
-                choices:
-                  - BOF
-                  - '*regex*'
+            choices:
+                - BOF
+                - '*regex*'
         encoding: {str} -- Encoding of the dest.
         first_match: {bool} -- Take the first matching regex pattern.
         backrefs: {bool} -- Back reference
 
     Returns:
         str -- Information in JSON format. keys:
-               cmd: {str} -- dsed shell command
-               found: {int} -- Number of matching regex pattern
-               changed: {bool} -- Indicates if the destination was modified.
-"""
-def present(dest, line, regexp, ins_aft, ins_bef, encoding, first_match, backrefs):
+            cmd: {str} -- dsed shell command
+            found: {int} -- Number of matching regex pattern
+            changed: {bool} -- Indicates if the destination was modified.
+    """
     return Datasets.lineinfile(dest, line, regexp, ins_aft, ins_bef, encoding, first_match, backrefs, state=True)
 
 
-"""Delete lines with matching regex pattern
+def absent(dest, line, regexp, encoding):
+    """Delete lines with matching regex pattern
 
     Arguments:
         dest: {str} -- The z/OS USS file or data set to modify.
         line: {str} -- The line to insert/replace into the the dest. If line matches,
-              regexp will be ignored.
+            regexp will be ignored.
         regexp: {str} -- The regular expression to look for in every line of the dest.
         encoding: {str} -- Encoding of the dest.
 
     Returns:
         str -- Information in JSON format. keys:
-               cmd: {str} -- dsed shell command
-               found: {int} -- Number of matching regex pattern
-               changed: {bool} -- Indicates if the destination was modified.
-"""
-def absent(dest, line, regexp, encoding):
+            cmd: {str} -- dsed shell command
+            found: {int} -- Number of matching regex pattern
+            changed: {bool} -- Indicates if the destination was modified.
+    """
     return Datasets.lineinfile(dest, line, regexp, encoding=encoding, state=False)
 
 
@@ -416,7 +416,7 @@ def main():
         result['changed'] = ret['changed']
         result['found'] = ret['found']
     except Exception:
-        module.fail_json(msg="dsed return content is NOT in json format", return_content=return_content)
+        module.fail_json(msg="dsed return content is NOT in json format", stderr=return_content)
     module.exit_json(**result)
 
 

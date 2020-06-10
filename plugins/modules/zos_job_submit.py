@@ -652,14 +652,12 @@ def run_module():
         return_output=dict(arg_type="bool", default=True),
         wait_time_s=dict(arg_type="int", required=False, default=60),
         max_rc=dict(arg_type="int", required=False),
+        temp_file=dict(arg_type="path", required=False),
     )
 
     result = dict(changed=False)
     module.params.update(
-        dict(
-            from_encoding=encoding.get("from"),
-            to_encoding=encoding.get("to"),
-        )
+        dict(from_encoding=encoding.get("from"), to_encoding=encoding.get("to"),)
     )
     try:
         parser = BetterArgParser(arg_defs)
@@ -721,7 +719,8 @@ def run_module():
             else:
                 module.fail_json(
                     msg="The Local file encoding conversion failed. Please check the source file."
-                    + stderr,
+                    + stderr
+                    or "",
                     **result
                 )
     except SubmitJCLError as e:

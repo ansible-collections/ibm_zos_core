@@ -14,9 +14,8 @@ class DDStatement(object):
             ValueError: When a value other than a DataDefinition is provided for definition parameter.
         """
         self.name = name
-        if not isinstance(definition, DataDefinition):
-            raise ValueError("DDStatement expects an object of type DataDefinition.")
         self.definition = definition
+        self._assert_valid_definition()
 
     def get_mvscmd_string(self):
         """Build the string representing this DD statement
@@ -34,6 +33,25 @@ class DDStatement(object):
             mvscmd_string += self.definition.name
             mvscmd_string += self.definition._build_arg_string()
         return mvscmd_string
+
+    def _assert_valid_definition(self):
+        """Assert that definition passed to DDStatement
+        is valid.
+        """
+        if isinstance(self.definition, list):
+            self._assert_valid_concatenation()
+        else:
+            self._assert_valid_data_definition()
+
+    def _assert_valid_data_definition(self):
+        """Assert that the provided single data set definition
+        is not an invalid type.
+
+        Raises:
+            ValueError: When an invalid type is specified in DD concatenation.
+        """
+        if not isinstance(self.definition, DataDefinition):
+            raise ValueError("DDStatement expects an object of type DataDefinition.")
 
     def _assert_valid_concatenation(self):
         """Assert that the provided data set concatenation does

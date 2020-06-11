@@ -116,7 +116,7 @@ class FileDefinition(DataDefinition):
         self,
         path_name,
         normal_disposition=None,
-        abnormal_disposition=None,
+        conditional_disposition=None,
         path_mode=None,
         status_group=None,
         file_data=None,
@@ -132,7 +132,7 @@ class FileDefinition(DataDefinition):
             normal_disposition (str, optional): What to do with path after normal termination.
                 May be one of keep, delete.
                 Defaults to None.
-            abnormal_disposition (str, optional): What to do with path after abnormal termination.
+            conditional_disposition (str, optional): What to do with path after abnormal termination.
                 May be one of keep, delete.
                 Defaults to None.
             path_mode (Union[str, int], optional): The file access attributes for the UNIX file being allocated.
@@ -158,7 +158,7 @@ class FileDefinition(DataDefinition):
         """
         super().__init__(path_name)
         self.normal_disposition = normal_disposition
-        self.abnormal_disposition = abnormal_disposition
+        self.conditional_disposition = conditional_disposition
         self.path_mode = path_mode
         self.status_group = status_group
         self.file_data = file_data
@@ -175,7 +175,7 @@ class FileDefinition(DataDefinition):
             mvscmd_string, "normdisp", self.normal_disposition
         )
         mvscmd_string = self._append_mvscmd_string(
-            mvscmd_string, "abnormdisp", self.abnormal_disposition
+            mvscmd_string, "conddisp", self.conditional_disposition
         )
         mvscmd_string = self._append_mvscmd_string(
             mvscmd_string, "pathmode", self.path_mode
@@ -209,7 +209,7 @@ class DatasetDefinition(DataDefinition):
         secondary=None,
         secondary_unit="TRK",
         normal_disposition=None,
-        abnormal_disposition=None,
+        conditional_disposition=None,
         block_size=None,
         record_format=None,
         record_length=None,
@@ -251,7 +251,7 @@ class DatasetDefinition(DataDefinition):
             normal_disposition (str, optional): tells the system what to do with the data set after normal termination of the program.
                 Valid options are: delete, keep, catalog, uncatalog.
                 Defaults to None.
-            abnormal_disposition ([type], optional): tells the system what to do with the data set after abnormal termination of the program.
+            conditional_disposition ([type], optional): tells the system what to do with the data set after abnormal termination of the program.
                 Valid options are: delete, keep, catalog, uncatalog.
                 Defaults to None.
             block_size (int, optional): The block size of the data set.
@@ -321,7 +321,7 @@ class DatasetDefinition(DataDefinition):
         else:
             self.secondary = secondary
         self.normal_disposition = normal_disposition
-        self.abnormal_disposition = abnormal_disposition
+        self.conditional_disposition = conditional_disposition
         self.block_size = block_size
         self.record_format = record_format
         self.record_length = record_length
@@ -353,7 +353,7 @@ class DatasetDefinition(DataDefinition):
             mvscmd_string, "normdisp", self.normal_disposition
         )
         mvscmd_string = self._append_mvscmd_string(
-            mvscmd_string, "abnormdisp", self.abnormal_disposition
+            mvscmd_string, "conddisp", self.conditional_disposition
         )
         mvscmd_string = self._append_mvscmd_string(
             mvscmd_string, "blksize", self.block_size

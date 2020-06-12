@@ -16,17 +16,17 @@ module: zos_copy
 version_added: '2.9'
 short_description: Copy data to z/OS
 description:
-  - The C(zos_copy) module copies a file or data set from a local or a
+  - The M(zos_copy) module copies a file or data set from a local or a
     remote machine to a location on the remote machine.
-  - Use the C(zos_fetch) module to copy files or data sets from remote
+  - Use the M(zos_fetch) module to copy files or data sets from remote
     locations to the local machine.
 author: "Asif Mahmud (@asifmahmud)"
 options:
   src:
     description:
       - Absolute local path to a file to copy to the remote z/OS system.
-      - If C(remote_src) is true, then src must be the absolute path to a USS
-        file, name of a data set, or data set member.
+      - If C(remote_src) is true, then src must be the absolute path to a UNIX
+        System Services (USS) file, name of a data set, or data set member.
       - If C(src) is a directory, destination must be a partitioned data set or
         a USS directory.
       - If C(src) is a file and dest ends with "/" or destination is a directory, the
@@ -54,8 +54,8 @@ options:
         directly to the specified value.
       - Works only when C(dest) is a USS file, sequential data set, or a
         partitioned data set member.
-      - This is for simple values, for anything complex or with formatting, use
-        the M(template) module.
+      - This is for simple values; for anything complex or with formatting, use
+        U(https://docs.ansible.com/ansible/latest/modules/copy_module.html)
       - If C(dest) is a directory, then content will be copied to
         C(/path/to/dest/inline_copy).
     type: str
@@ -112,8 +112,8 @@ options:
     required: false
   remote_src:
     description:
-      - If set to C(false), the module will search for src at local machine.
-      - If set to C(true), the module will go to the remote/target machine for the src.
+      - If set to C(false), the module searches for C(src) at the local machine.
+      - If set to C(true), the module goes to the remote/target machine for C(src).
     type: bool
     default: false
     required: false

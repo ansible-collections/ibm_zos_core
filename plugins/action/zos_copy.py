@@ -43,7 +43,7 @@ class ActionModule(ActionBase):
         remote_src = _process_boolean(self._task.args.get('remote_src'), default=False)
         is_binary = _process_boolean(self._task.args.get('is_binary'), default=False)
         validate = _process_boolean(self._task.args.get('validate'), default=False)
-        backup_path = self._task.args.get("backup_path", None)
+        backup_file = self._task.args.get("backup_file", None)
         encoding = self._task.args.get('encoding', None)
         mode = self._task.args.get('mode', None)
         owner = self._task.args.get('owner', None)
@@ -92,8 +92,8 @@ class ActionModule(ActionBase):
             msg = "The 'encoding' parameter is not valid for binary transfer"
             return self._fail_acton(result, msg)
 
-        if (not backup) and backup_path is not None:
-            msg = "Backup path provided but 'backup' parameter is False"
+        if (not backup) and backup_file is not None:
+            msg = "Backup file provided but 'backup' parameter is False"
             return self._fail_acton(result, msg)
 
         if not is_uss:
@@ -174,6 +174,8 @@ class ActionModule(ActionBase):
                     invocation=dict(module_args=self._task.args)
                 )
             )
+            if backup or backup_file:
+                result['backup_file'] = copy_res.get("backup_file")
             self._remote_cleanup(dest, copy_res.get("dest_exists"), task_vars)
             return result
 

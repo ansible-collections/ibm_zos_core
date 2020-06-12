@@ -65,6 +65,8 @@ options:
       - Specifies whether a backup of destination should be created before
         copying data.
       - When set to C(true), the module creates a backup file or data set.
+      - The backup file name will be return on either success or failure of
+        module execution such that data can be retrieved.
     type: bool
     default: false
     required: false
@@ -330,7 +332,7 @@ checksum:
     sample: 8d320d5f68b048fc97559d771ede68b37a71e8374d1d678d96dcfa2b2da7a64e
 backup_file:
     description: Name of the backup file or data set that was created.
-    returned: changed and if backup=true
+    returned: if backup=true or backup_file=true
     type: str
     sample: /path/to/file.txt.2015-02-03@04:15~
 gid:
@@ -448,7 +450,7 @@ MVS_SEQ = frozenset({'PS', 'SEQ'})
 
 
 class CopyHandler(object):
-    def __init__(self, module, dest_exists, is_binary=False):
+    def __init__(self, module, dest_exists, is_binary=False, backup_file=None):
         """Utility class to handle copying data between two targets
 
         Arguments:
@@ -457,14 +459,18 @@ class CopyHandler(object):
 
         Keyword Arguments:
             is_binary {bool} -- Whether the file or data set to be copied contains binary data
+            backup_file {str} -- The USS path or data set name of destination backup
         """
         self.module = module
         self.dest_exists = dest_exists
         self.is_binary = is_binary
+        self.backup_file = backup_file
 
     def fail_json(self, **kwargs):
         """ Wrapper for AnsibleModule.fail_json """
-        self.module.fail_json(**kwargs, dest_exists=self.dest_exists)
+        self.module.fail_json(
+            **kwargs, dest_exists=self.dest_exists, backup_file=self.backup_file
+        )
 
     def run_command(self, cmd, **kwargs):
         """ Wrapper for AnsibleModule.run_command """
@@ -591,30 +597,6 @@ class CopyHandler(object):
 
         return new_src
 
-    def backup_data(self, ds_name, ds_type, backup_file):
-        """Back up the given data set or file to the location specified by 'backup_file'.
-        If 'backup_file' is not specified, then calculate a temporary location
-        and copy the file or data set there.
-
-        Arguments:
-            ds_name {str} -- Name of the file or data set to be backed up
-            ds_type {str} -- Type of the file or data set
-            backup_file {str} -- Path to USS location or name of data set
-            where data will be backed up
-
-        Returns:
-            {str} -- The USS path or data set name where data was backed up
-        """
-        try:
-            if ds_type == "USS":
-                return backup.uss_file_backup(ds_name, backup_name=backup_file)
-            return backup.mvs_file_backup(ds_name, backup_file)
-        except Exception as err:
-            self.fail_json(
-                msg="Unable to back up destination {0}".format(ds_name),
-                stderr=str(err)
-            )
-
     def allocate_model(self, ds_name, model):
         """Use 'model' data sets allocation paramters to allocate the given
         data set.
@@ -721,7 +703,9 @@ class CopyHandler(object):
 
 
 class USSCopyHandler(CopyHandler):
-    def __init__(self, module, dest_exists, is_binary=False, common_file_args=None):
+    def __init__(
+        self, module, dest_exists, is_binary=False, common_file_args=None, backup_file=None
+    ):
         """Utility class to handle copying files or data sets to USS target
 
         Arguments:
@@ -733,8 +717,9 @@ class USSCopyHandler(CopyHandler):
             applied to destination file.
 
             is_binary {bool} -- Whether the file to be copied contains binary data
+            backup_file {str} -- The USS path or data set name of destination backup
         """
-        super().__init__(module, dest_exists, is_binary=is_binary)
+        super().__init__(module, dest_exists, is_binary=is_binary, backup_file=backup_file)
         self.common_file_args = common_file_args
 
     def copy_to_uss(self, conv_path, temp_path, src_ds_type, src_member, member_name):
@@ -867,7 +852,7 @@ class USSCopyHandler(CopyHandler):
 
 
 class PDSECopyHandler(CopyHandler):
-    def __init__(self, module, dest_exists, is_binary=False):
+    def __init__(self, module, dest_exists, is_binary=False, backup_file=None):
         """ Utility class to handle copying to partitioned data sets or
         partitioned data set members.
 
@@ -877,8 +862,9 @@ class PDSECopyHandler(CopyHandler):
 
         Keyword Arguments:
             is_binary {bool} -- Whether the data set to be copied contains binary data
+            backup_file {str} -- The USS path or data set name of destination backup
         """
-        super().__init__(module, dest_exists, is_binary=is_binary)
+        super().__init__(module, dest_exists, is_binary=is_binary, backup_file=backup_file)
 
     def copy_to_pdse(self, src, temp_path, conv_path, dest, src_ds_type):
         """Copy source to a PDS/PDSE or PDS/PDSE member.
@@ -1058,6 +1044,32 @@ class PDSECopyHandler(CopyHandler):
                         )
             finally:
                 self.run_command("rm /tmp/mrm.*.sysprint")
+
+
+def backup_data(ds_name, ds_type, backup_file):
+    """Back up the given data set or file to the location specified by 'backup_file'.
+    If 'backup_file' is not specified, then calculate a temporary location
+    and copy the file or data set there.
+
+    Arguments:
+        ds_name {str} -- Name of the file or data set to be backed up
+        ds_type {str} -- Type of the file or data set
+        backup_file {str} -- Path to USS location or name of data set
+        where data will be backed up
+
+    Returns:
+        {str} -- The USS path or data set name where data was backed up
+    """
+    module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+    try:
+        if ds_type == "USS":
+            return backup.uss_file_backup(ds_name, backup_name=backup_file)
+        return backup.mvs_file_backup(ds_name, backup_file)
+    except Exception as err:
+        module.fail_json(
+            msg="Unable to back up destination {0}".format(ds_name),
+            stderr=str(err)
+        )
 
 
 def is_compatible(src_type, dest_type, copy_member, src_member):
@@ -1319,15 +1331,12 @@ def run_module(module, arg_def):
     # If destination exists and the 'force' parameter is set to false,
     # the module exits with a note to the user.
     # ********************************************************************
-    copy_handler = CopyHandler(module, dest_exists, is_binary=is_binary)
     if dest_exists:
         if not force:
             module.exit_json(note="Destination exists. No data was copied")
 
         if backup or backup_file:
-            backup_file = copy_handler.backup_data(
-                dest_name, dest_ds_type, backup_file
-            )
+            backup_file = backup_data(dest_name, dest_ds_type, backup_file)
     # ********************************************************************
     # If destination does not exist, it must be created. To determine
     # what type of data set destination must be, a couple of simple checks
@@ -1350,9 +1359,10 @@ def run_module(module, arg_def):
                 (os.path.isdir(b_src) and is_mvs_dest)
             ):
                 dest_ds_type = "PDSE"
-                PDSECopyHandler(module, dest_exists).create_pdse(
-                    src, dest_name, alloc_size, src_ds_type, remote_src=remote_src,
-                    vol=src_ds_vol
+                pch = PDSECopyHandler(module, dest_exists, backup_file=backup_file)
+                pch.create_pdse(
+                    src, dest_name, alloc_size, src_ds_type,
+                    remote_src=remote_src, vol=src_ds_vol
                 )
             elif src_ds_type == "VSAM":
                 dest_ds_type = "VSAM"
@@ -1365,6 +1375,9 @@ def run_module(module, arg_def):
     # Encoding conversion is only valid if the source is a local file,
     # local directory or a USS file/directory.
     # ********************************************************************
+    copy_handler = CopyHandler(
+        module, dest_exists, is_binary=is_binary, backup_file=backup_file
+    )
     if encoding:
         if remote_src and src_ds_type != "USS":
             copy_handler.fail_json(
@@ -1384,7 +1397,8 @@ def run_module(module, arg_def):
 
         uss_copy_handler = USSCopyHandler(
             module, dest_exists, is_binary=is_binary,
-            common_file_args=dict(mode=mode, group=group, owner=owner)
+            common_file_args=dict(mode=mode, group=group, owner=owner),
+            backup_file=backup_file
         )
         dest = uss_copy_handler.copy_to_uss(
             conv_path, temp_path, src_ds_type, src_member, member_name
@@ -1416,7 +1430,9 @@ def run_module(module, arg_def):
         if not remote_src and not copy_member and os.path.isdir(temp_path):
             temp_path = os.path.join(temp_path, os.path.basename(src))
 
-        pdse_copy_handler = PDSECopyHandler(module, dest_exists, is_binary=is_binary)
+        pdse_copy_handler = PDSECopyHandler(
+            module, dest_exists, is_binary=is_binary, backup_file=backup_file
+        )
         if copy_member or os.path.isfile(temp_path or src) or src_member:
             dest = pdse_copy_handler.copy_to_member(
                 src, temp_path, conv_path, dest, copy_member=copy_member

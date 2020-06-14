@@ -14,6 +14,19 @@ the future.
 .. _git issues:
    https://github.com/ansible-collections/ibm_zos_core/issues
 
+z/OS Ansible Module Testing
+===========================
+
+This document outlines processes to run and develop test cases for z/OS
+Ansible modules.
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Contents:
+   :glob:
+
+   community_guides_testing/*
+
 Helpful Links
 =============
 

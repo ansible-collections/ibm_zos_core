@@ -268,6 +268,7 @@ except Exception:
 # supported data set types
 DS_TYPE = ['PS', 'PO']
 
+
 def present(dest, line, regexp, ins_aft, ins_bef, encoding, first_match, backrefs):
     """Replace a line with the matching regex pattern
     Insert a line before/after the matching pattern
@@ -394,8 +395,8 @@ def main():
         file_type = 1
     else:
         if file_type not in DS_TYPE:
-          message =  "{0} data set type is NOT supported".format(str(file_type))
-          module.fail_json(msg=message)
+            message = "{0} data set type is NOT supported".format(str(file_type))
+            module.fail_json(msg=message)
         file_type = 0
     # make sure the default encoding is set if null was passed
     if not encoding:
@@ -441,9 +442,9 @@ def main():
         result['changed'] = ret['changed']
         result['found'] = ret['found']
     except Exception:
-        messageDict=dict(msg="dsed return content is NOT in json format", return_content=str(return_content))
+        messageDict = dict(msg="dsed return content is NOT in json format", return_content=str(return_content))
         if result.get('backup_file'):
-          messageDict['backup_file'] = result['backup_file']
+            messageDict['backup_file'] = result['backup_file']
         module.fail_json(**messageDict)
     module.exit_json(**result)
 

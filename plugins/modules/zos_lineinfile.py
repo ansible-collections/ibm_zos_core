@@ -20,8 +20,8 @@ author:
   - "Behnam (@balkajbaf)"
 short_description: Manage textual data on z/OS
 description:
-  - Manage lines in z/OS Unix System Services (USS) files, partitioned data set
-    members or sequential data sets.
+  - Manage lines in z/OS Unix System Services (USS) files,
+    PS(sequential data set), member of a PDS or PDSE data set.
   - This module ensures a particular line is in a USS file or data set, or
     replace an existing line using a back-referenced regular expression.
   - This is primarily useful when you want to change a single line in a USS
@@ -29,8 +29,17 @@ description:
 options:
   dest:
     description:
-      - The z/OS USS file or data set to modify.
+      - The location of the input characters.
+      - The location can be a UNIX System Services (USS) file,
+        PS(sequential data set), member of a PDS or PDSE data set.
+      - The USS file must be an absolute pathname.
+      - It is the playbook author or user's responsibility to avoid files
+        that should not be encoded, such as binary files. A user is described
+        as the remote user, configured either for the playbook or playbook
+        tasks, who can also obtain escalated privileges to execute as root
+        or another user.
     type: str
+    aliases: [ path, destfile, destds, name ]
     required: true
   regexp:
     description:
@@ -45,8 +54,6 @@ options:
       - When modifying a line the regexp should typically match both
         the initial state of the line as well as its state after replacement by
         C(line) to ensure idempotence.
-      - Uses Python regular expressions.
-        See U(http://docs.python.org/2/library/re.html).
     type: str
     required: false
   state:
@@ -124,6 +131,8 @@ options:
         timestamp information to ensure that you retrieve the original file.
       - I(backup_file) can be used to specify a backup file name
         if I(backup=true).
+      - The backup file name will be return on either success or failure
+        of module execution such that data can be retrieved.
     required: false
     type: bool
     default: false
@@ -153,13 +162,20 @@ options:
     default: no
   encoding:
     description:
-      - Specifies the encoding of USS file or data set. M(zos_lineinfile)
+      - The character set of the destination I(dest). M(zos_lineinfile)
         requires to be provided with correct encoding to read the content
         of USS file or data set. If this parameter is not provided, this
         module assumes that USS file or data set is encoded in IBM-1047.
+      - Supported character sets rely on the target version; the most
+        common character sets are supported.
     required: false
     type: str
     default: IBM-1047
+notes:
+  - All data sets are always assumed to be cataloged. If an uncataloged data set
+    needs to be encoded, it should be cataloged first.
+  - For supported character sets used to encode data, refer to
+    U(https://ansible-collections.github.io/ibm_zos_core/supplementary.html#encode)
 """
 
 EXAMPLES = r"""
@@ -200,27 +216,27 @@ EXAMPLES = r"""
 RETURN = r"""
 changed:
   description: Indicates if the destination was modified
-  returned: if json.loads(return_content) succeesses
+  returned: success
   type: bool
   sample: 1
 found:
   description: Number of the matching patterns
-  returned: if json.loads(return_content) succeesses
+  returned: success
   type: int
   sample: 5
 cmd:
   description: constructed dsed shell cmd based on the parameters
-  returned: if json.loads(return_content) succeesses
+  returned: success
   type: str
   sample: dsedhelper -d -en IBM-1047 /^PATH=/a\\PATH=/dir/bin:$PATH/$ /etc/profile
 msg:
   description: The module messages
-  returned: if there's a failure
+  returned: failure
   type: str
   sample: Parameter verification failed
 return_content:
   description: The error messages from ZOAU dsed
-  returned: if json.loads(return_content) fails
+  returned: failure
   type: str
   sample: BGYSC1311E Iconv error, cannot open converter from ISO-88955-1 to IBM-1047
 backup_file:
@@ -248,6 +264,9 @@ try:
 except Exception:
     Datasets = MissingZOAUImport()
 
+
+# supported data set types
+DS_TYPE = ['PS', 'PO']
 
 def present(dest, line, regexp, ins_aft, ins_bef, encoding, first_match, backrefs):
     """Replace a line with the matching regex pattern
@@ -303,6 +322,7 @@ def main():
     module_args = dict(
         dest=dict(
             type='str',
+            aliases=['path', 'destfile', 'destds', 'name'],
             required=True
         ),
         state=dict(
@@ -335,7 +355,7 @@ def main():
     result = dict(changed=False, cmd='', found=0)
 
     arg_defs = dict(
-        dest=dict(arg_type="data_set_or_path", required=True),
+        dest=dict(arg_type="data_set_or_path", aliases=['path', 'destfile', 'destds', 'name'], required=True),
         state=dict(arg_type="str", default='present', choices=['absent', 'present']),
         regexp=dict(arg_type="str", required=False),
         line=dict(arg_type="str", required=False),
@@ -373,6 +393,9 @@ def main():
     if file_type == 'USS':
         file_type = 1
     else:
+        if file_type not in DS_TYPE:
+          message =  "{0} data set type is NOT supported".format(str(file_type))
+          module.fail_json(msg=message)
         file_type = 0
     # make sure the default encoding is set if null was passed
     if not encoding:
@@ -418,7 +441,10 @@ def main():
         result['changed'] = ret['changed']
         result['found'] = ret['found']
     except Exception:
-        module.fail_json(msg="dsed return content is NOT in json format", return_content=str(return_content))
+        messageDict=dict(msg="dsed return content is NOT in json format", return_content=str(return_content))
+        if result.get('backup_file'):
+          messageDict['backup_file'] = result['backup_file']
+        module.fail_json(**messageDict)
     module.exit_json(**result)
 
 

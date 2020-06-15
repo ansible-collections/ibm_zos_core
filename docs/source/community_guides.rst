@@ -14,8 +14,11 @@ the future.
 .. _git issues:
    https://github.com/ansible-collections/ibm_zos_core/issues
 
+Development
+===========
+
 z/OS Ansible Module Testing
-===========================
+---------------------------
 
 This document outlines processes to run and develop test cases for z/OS
 Ansible modules.
@@ -25,7 +28,20 @@ Ansible modules.
    :caption: Contents:
    :glob:
 
-   community_guides_testing/*
+   community_guides_docs/zos_ansible_module_testing
+
+Parsing with betterArgParse
+---------------------------
+
+This parser should serve as an alternative to parsers like argparse or used in
+conjunction with Ansible's module argument parser.
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Contents:
+   :glob:
+
+   community_guides_docs/better_arg_parser
 
 Helpful Links
 =============

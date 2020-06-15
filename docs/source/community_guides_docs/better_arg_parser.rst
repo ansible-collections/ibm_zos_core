@@ -103,7 +103,7 @@ Example argument definition:
                        ),
                        number=dict(
                            arg_type='int'
-                       )
+                       ),
                        city=dict(
                            arg_type='str',
                            default='San Jose'
@@ -321,7 +321,7 @@ Mutually Exclusive Arguments Example:
        date=dict(arg_type="str", default="may 1, 2020"),
        time=dict(arg_type="int", default="3945297"),
        weather=dict(arg_type="str"),
-       raining=dict(arg_type="bool")
+       raining=dict(arg_type="bool"),
        mutually_exclusive=[["date", "time"], ["weather", "raining"]],
    )
    parser = BetterArgParser(arg_defs)
@@ -374,8 +374,8 @@ Dependencies Example
            choices=['us', 'uk']
        ),
        currency_symbol=dict(
-           arg_type='str'
-           default=currency_sumbol
+           arg_type='str',
+           default=currency_symbol,
            dependencies=['country']
        )
    )

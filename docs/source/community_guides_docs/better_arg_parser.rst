@@ -271,8 +271,8 @@ Custom Argument Options
 
 BetterArgParser is designed to allow user provided argument options as long as the new option name does not overlap with any `reserved option names`_.
 
-.._reserved option names
-  better_arg_parser.html#argument-options
+.. _reserved option names:
+   better_arg_parser.html#argument-options
 
 Custom options are meant to be used with `custom functions`_.
 

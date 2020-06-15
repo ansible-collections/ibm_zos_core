@@ -4,7 +4,7 @@
 # Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
 from __future__ import absolute_import, division, print_function
-from test_zos_lineinfile_helper import test_uss_general, test_ds_general
+from test_zos_lineinfile_helper import test_uss_general, test_ds_general, test_ds_not_supported_helper
 import os
 import sys
 import pytest
@@ -48,7 +48,10 @@ export PKG_CONFIG_PATH
 export PYTHON_HOME
 export _BPXK_AUTOCVT"""
 
+# supported data set types
 DS_TYPE = ['SEQ', 'PDS', 'PDSE']
+# not supported data set types
+NS_DS_TYPE = ['ESDS', 'RRDS', 'LDS']
 ENCODING = ['IBM-1047', 'ISO8859-1', 'UTF-8']
 
 TEST_ENV = dict(
@@ -815,4 +818,14 @@ def test_ds_line_absent(ansible_zos_module, dstype, encoding):
         TEST_INFO["test_ds_line_absent"]["test_name"], ansible_zos_module,
         TEST_ENV, TEST_INFO["test_uss_line_absent"],
         TEST_INFO["expected"]["test_uss_line_absent"]
+    )
+
+
+@pytest.mark.ds
+@pytest.mark.parametrize("dstype", NS_DS_TYPE)
+def test_ds_not_supported(ansible_zos_module, dstype):
+    TEST_ENV["DS_TYPE"] = dstype
+    test_ds_not_supported_helper(
+        TEST_INFO["test_ds_line_replace"]["test_name"], ansible_zos_module,
+        TEST_ENV, TEST_INFO["test_uss_line_replace"]
     )

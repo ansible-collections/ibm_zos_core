@@ -111,3 +111,23 @@ def test_ds_general(test_name, ansible_zos_module, test_env, test_info, expected
         for result in results.contacted.values():
             assert result.get("stdout").replace('\n', '').replace(' ', '') == expected.replace('\n', '').replace(' ', '')
     clean_ds_test_env(test_env["DS_NAME"], hosts)
+
+
+def test_ds_not_supported_helper(test_name, ansible_zos_module, test_env, test_info):
+    hosts = ansible_zos_module
+    results = hosts.all.shell(cmd='hlq')
+    for result in results.contacted.values():
+        hlq = result.get("stdout")
+    assert len(hlq) <= 8 or hlq != ''
+    test_env["DS_NAME"] = test_name.upper() + "." + test_name.upper() + "." + test_env["DS_TYPE"]
+    results = hosts.all.zos_data_set(name=test_env["DS_NAME"], type=test_env["DS_TYPE"], replace='yes')
+    pprint(vars(results))
+    for result in results.contacted.values():
+        assert result.get("changed") is True
+    test_info["path"] = test_env["DS_NAME"]
+    results = hosts.all.zos_lineinfile(**test_info)
+    pprint(vars(results))
+    for result in results.contacted.values():
+        assert result.get("changed") is False
+        assert result.get("msg") == "VSAM data set type is NOT supported"
+    clean_ds_test_env(test_env["DS_NAME"], hosts)

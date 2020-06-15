@@ -100,7 +100,7 @@ options:
       - If regular expressions are passed to both C(regexp) and C(insertafter),
         C(insertafter) is only honored if no match for C(regexp) is found.
       - May not be used with C(backrefs) or C(insertbefore).
-      - choices: EOF, '*regex*'
+      - choices are EOF or '*regex*'
     required: false
     type: str
     default: EOF
@@ -118,7 +118,7 @@ options:
         C(insertbefore), C(insertbefore) is only honored if no match for
         C(regexp) is found.
       - May not be used with C(backrefs) or C(insertafter).
-      - choices: BOF, '*regex*'
+      - choices are BOF or '*regex*'
     required: false
     type: str
   backup:

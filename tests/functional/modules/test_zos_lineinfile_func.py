@@ -522,6 +522,40 @@ export ZOAUTIL_DIR
 export PYTHONPATH
 export PKG_CONFIG_PATH
 export PYTHON_HOME
+export _BPXK_AUTOCVT""",
+                    test_uss_line_replace_quoted="""if [ -z STEPLIB ] && tty -s;
+then
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+TZ=PST8PDT
+export TZ
+LANG=C
+export LANG
+readonly LOGNAME
+PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
+export PATH
+LIBPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+export LIBPATH
+NLSPATH=/usr/lib/nls/msg/%L/%N
+export NLSPATH
+MANPATH=/usr/man/%L
+export MANPATH
+MAIL=/usr/mail/LOGNAME
+export MAIL
+umask 022
+ZOAU_ROOT="/mvsutil-develop_dsed"
+ZOAUTIL_DIR=/usr/lpp/zoautil/v100
+PYTHONPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
+PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
+_BPXK_AUTOCVT=ON
+export ZOAU_ROOT
+export ZOAUTIL_DIR
+export ZOAUTIL_DIR
+export PYTHONPATH
+export PKG_CONFIG_PATH
+export PYTHON_HOME
 export _BPXK_AUTOCVT"""),
 )
 
@@ -638,6 +672,24 @@ def test_uss_line_absent(ansible_zos_module):
         "test_uss_line_absent", ansible_zos_module, TEST_ENV,
         TEST_INFO["test_uss_line_absent"],
         TEST_INFO["expected"]["test_uss_line_absent"])
+
+
+@pytest.mark.uss
+def test_uss_line_replace_quoted_escaped(ansible_zos_module):
+    TEST_INFO["test_uss_line_replace"]["line"] = 'ZOAU_ROOT=\"/mvsutil-develop_dsed\"'
+    test_uss_general(
+        "test_uss_line_replace", ansible_zos_module, TEST_ENV,
+        TEST_INFO["test_uss_line_replace"],
+        TEST_INFO["expected"]["test_uss_line_replace_quoted"])
+
+
+@pytest.mark.uss
+def test_uss_line_replace_quoted_not_escaped(ansible_zos_module):
+    TEST_INFO["test_uss_line_replace"]["line"] = 'ZOAU_ROOT="/mvsutil-develop_dsed"'
+    test_uss_general(
+        "test_uss_line_replace", ansible_zos_module, TEST_ENV,
+        TEST_INFO["test_uss_line_replace"],
+        TEST_INFO["expected"]["test_uss_line_replace_quoted"])
 
 
 #########################

@@ -155,8 +155,8 @@ Built-in Argument Types (*arg_type* types)
 +===================+=============================================================================================================================+====================================================================================================================+
 | dict              | An argument container type. Expects to be provided an `options argument`_.                                                  | N/A / Complex                                                                                                      |
 +-------------------+-----------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------------+
-| list              | An argument container type. Either expects to be provided an [elements argument](#argument-options)                         | N/A / Complex                                                                                                      |
-|                   | where the element type is one of the built-in argument types or a [custom function type.](#custom-function-argtype)         |                                                                                                                    |
+| list              | An argument container type. Either expects to be provided an `elements argument`_                                           | N/A / Complex                                                                                                      |
+|                   | where the element type is one of the built-in argument types or a `custom function type`_.                                  |                                                                                                                    |
 +-------------------+-----------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------------+
 | str               | Expects to receive a string.                                                                                                | `"Hello World"`                                                                                                    |
 +-------------------+-----------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------------+
@@ -186,6 +186,12 @@ Built-in Argument Types (*arg_type* types)
 
 .. _options argument:
    better_arg_parser.html#argument-options
+
+.. _elements argument
+   better_arg_parser.html#argument-options
+
+.. _custom function type
+   better_arg_parser.html#custom-function-arg-type
 
 Custom Functions
 ================
@@ -263,7 +269,10 @@ Custom Function: default
 Custom Argument Options
 =======================
 
-BetterArgParser is designed to allow user provided argument options as long as the new option name does not overlap with any [reserved option names](#available-argument-options).
+BetterArgParser is designed to allow user provided argument options as long as the new option name does not overlap with any `reserved option names`_.
+
+.._reserved option names
+  better_arg_parser.html#argument-options
 
 Custom options are meant to be used with `custom functions`_.
 

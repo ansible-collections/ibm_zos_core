@@ -187,10 +187,10 @@ Built-in Argument Types (*arg_type* types)
 .. _options argument:
    better_arg_parser.html#argument-options
 
-.. _elements argument
+.. _elements argument:
    better_arg_parser.html#argument-options
 
-.. _custom function type
+.. _custom function type:
    better_arg_parser.html#custom-function-arg-type
 
 Custom Functions

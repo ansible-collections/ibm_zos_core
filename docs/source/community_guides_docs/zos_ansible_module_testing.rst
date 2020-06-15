@@ -486,7 +486,7 @@ to `pytest-ansible` using the `adhoc` command to drive module testing behind
 the scenes. `adhoc` commands do not support setting environment variables on
 the target host, which is needed to run z/OS Python.
 
-The `ansible_zos_module`_ pytest fixture `reads the YAML configuration`_,
+The `ansible_zos_module`_ pytest fixture reads the `YAML configuration`_,
 provisions a temporary python interpreter, and sets up the ``ansible`` plugin
 from ``pytest-ansible``.
 
@@ -494,8 +494,8 @@ from ``pytest-ansible``.
 `pytest-ansible adhoc fixture`_ and can be used similarly.
 
 
-.. _reads the YAML configuration:
-   zos_ansible_module_testing.html#Configuration-and-Arguments
+.. _YAML configuration:
+   zos_ansible_module_testing.html#configuration-and-arguments
 
 .. _pytest-ansible adhoc fixture:
    https://github.com/ansible/pytest-ansible#fixture-ansible_adhoc

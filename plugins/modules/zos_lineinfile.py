@@ -315,6 +315,13 @@ def absent(dest, line, regexp, encoding):
     return Datasets.lineinfile(dest, line, regexp, encoding=encoding, state=False)
 
 
+def quotedString(string):
+    # add escape if string was quoted
+    if not isinstance(string, str):
+        return string
+    return string.replace('"', '\\\"')
+
+
 def main():
     module_args = dict(
         dest=dict(
@@ -417,11 +424,11 @@ def main():
             module.fail_json(msg='line is required with state=present')
         if regexp is None and ins_aft is None and ins_bef is None:
             module.fail_json(msg='at least one of regexp/insertafter/insertbefore is required with state=present')
-        return_content = present(dest, line, regexp, ins_aft, ins_bef, encoding, firstmatch, backrefs)
+        return_content = present(dest, quotedString(line), quotedString(regexp), quotedString(ins_aft), quotedString(ins_bef), encoding, firstmatch, backrefs)
     else:
         if regexp is None and line is None:
             module.fail_json(msg='one of line or regexp is required with state=absent')
-        return_content = absent(dest, line, regexp, encoding)
+        return_content = absent(dest, quotedString(line), quotedString(regexp), encoding)
     try:
         # change the return string to be loadable by json.loads()
         return_content = return_content.replace('/c\\', '/c\\\\')
@@ -429,8 +436,15 @@ def main():
         return_content = return_content.replace('/i\\', '/i\\\\')
         return_content = return_content.replace('$ a\\', '$ a\\\\')
         return_content = return_content.replace('1 i\\', '1 i\\\\')
+        if line:
+            return_content = return_content.replace(line, quotedString(line))
+        if regexp:
+            return_content = return_content.replace(regexp, quotedString(regexp))
+        if ins_aft:
+            return_content = return_content.replace(ins_aft, quotedString(ins_aft))
+        if ins_bef:
+            return_content = return_content.replace(ins_bef, quotedString(ins_bef))
         # Try to extract information from return_content
-        # If json.loads() fails, ZOAU dsed execution was failed.
         ret = json.loads(return_content)
         result['cmd'] = ret['cmd']
         result['changed'] = ret['changed']

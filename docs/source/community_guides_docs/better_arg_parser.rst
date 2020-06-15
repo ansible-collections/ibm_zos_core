@@ -153,7 +153,7 @@ Built-in Argument Types (*arg_type* types)
 +-------------------+-----------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------------+
 | Name              | Description                                                                                                                 | Example(s)                                                                                                         |
 +===================+=============================================================================================================================+====================================================================================================================+
-| dict              | An argument container type. Expects to be provided an [options argument](#argument-options).                                | N/A / Complex                                                                                                      |
+| dict              | An argument container type. Expects to be provided an `options argument`_.                                                  | N/A / Complex                                                                                                      |
 +-------------------+-----------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------------+
 | list              | An argument container type. Either expects to be provided an [elements argument](#argument-options)                         | N/A / Complex                                                                                                      |
 |                   | where the element type is one of the built-in argument types or a [custom function type.](#custom-function-argtype)         |                                                                                                                    |
@@ -183,6 +183,9 @@ Built-in Argument Types (*arg_type* types)
 | encoding          | Expects not to receive any characters which are not present in currently available encoding types.                          |                                                                                                                    |
 |                   | Does not verify encoding type actually exists.                                                                              | `"UTF-8"`, `"IBM-1047"`                                                                                            |
 +-------------------+-----------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------------+
+
+.. _options argument:
+   better_arg_parser.html#argument-options
 
 Custom Functions
 ================

@@ -335,13 +335,11 @@ def main():
         line=dict(type='str'),
         insertafter=dict(
             type='str',
-            default='EOF',
-            choices=['EOF', '*regex*'],
+            default='EOF'
         ),
         insertbefore=dict(
             type='str',
-            default=None,
-            choices=['BOF', '*regex*'],
+            default=None
         ),
         backrefs=dict(type='bool', default=False),
         backup=dict(type='bool', default=False),

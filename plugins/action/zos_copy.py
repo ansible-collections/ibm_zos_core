@@ -11,7 +11,6 @@ import time
 import subprocess
 
 from tempfile import mkstemp, gettempprefix
-from pathlib import Path
 
 from ansible.errors import AnsibleError
 from ansible.module_utils._text import to_bytes, to_text
@@ -131,12 +130,12 @@ class ActionModule(ActionBase):
                         result.update(dict(src=src, dest=dest, changed=False, failed=True))
                         return result
                     new_module_args['size'] = sum(
-                        Path(path + "/" + f).stat().st_size for f in files
+                        os.stat(path + "/" + f).st_size for f in files
                     )
                 else:
                     if mode == 'preserve':
                         new_module_args['mode'] = '0{0:o}'.format(stat.S_IMODE(os.stat(b_src).st_mode))
-                    new_module_args['size'] = Path(src).stat().st_size
+                    new_module_args['size'] = os.stat(src).st_size
                 transfer_res = self._copy_to_remote(src, is_dir=is_src_dir)
 
             temp_path = transfer_res.get("temp_path")

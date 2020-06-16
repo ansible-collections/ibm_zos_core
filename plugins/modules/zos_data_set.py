@@ -423,102 +423,121 @@ options:
 EXAMPLES = r"""
 - name: Create a sequential data set if it does not exist
   zos_data_set:
-    name: user.private.libs
+    name: someds.name.here
     type: seq
     state: present
 
 - name: Create a PDS data set if it does not exist
   zos_data_set:
-    name: user.private.libs
+    name: someds.name.here
     type: pds
-    size: 5M
-    format: fba
+    space_primary: 5
+    space_type: M
+    record_format: fba
     record_length: 25
 
 - name: Attempt to replace a data set if it exists
   zos_data_set:
-    name: user.private.libs
+    name: someds.name.here
     type: pds
-    size: 5M
-    format: u
+    space_primary: 5
+    space_type: M
+    record_format: u
     record_length: 25
     replace: yes
 
 - name: Attempt to replace a data set if it exists. If not found in catalog, check if on volume 222222 and catalog if found.
   zos_data_set:
-    name: user.private.libs
+    name: someds.name.here
     type: pds
-    size: 5M
-    format: u
+    space_primary: 5
+    space_type: M
+    record_format: u
     record_length: 25
-    volume: "222222"
+    volumes: "222222"
     replace: yes
 
 - name: Create an ESDS data set is it does not exist
   zos_data_set:
-    name: user.private.libs
+    name: someds.name.here
     type: esds
 
-- name: Create an RRDS data set with data class MYDATA if it does not exist
+- name: Create a KSDS data set is it does not exist
   zos_data_set:
-    name: user.private.libs
+    name: someds.name.here
+    type: ksds
+    key_length: 8
+    key_offset: 0
+
+- name: Create an RRDS data set with storage class MYDATA if it does not exist
+  zos_data_set:
+    name: someds.name.here
     type: rrds
-    data_class: mydata
+    sms_storage_class: mydata
 
 - name: Delete a data set if it exists
   zos_data_set:
-    name: user.private.libs
+    name: someds.name.here
     state: absent
 
 - name: Delete a data set if it exists. If data set not cataloged, check on volume 222222 for the data set, then catalog and delete if found.
   zos_data_set:
-    name: user.private.libs
+    name: someds.name.here
     state: absent
-    volume: "222222"
+    volumes: "222222"
 
 - name: Write a member to existing PDS, replace if member exists
   zos_data_set:
-    name: user.private.libs(mydata)
+    name: someds.name.here(mydata)
     type: MEMBER
     replace: yes
 
 - name: Write a member to existing PDS, do not replace if member exists
   zos_data_set:
-    name: user.private.libs(mydata)
+    name: someds.name.here(mydata)
     type: MEMBER
 
 - name: Remove a member from existing PDS if it exists
   zos_data_set:
-    name: user.private.libs(mydata)
+    name: someds.name.here(mydata)
     state: absent
     type: MEMBER
 
 - name: Create multiple partitioned data sets and add one or more members to each
   zos_data_set:
     batch:
-      - name:  user.private.libs1
+      - name:  someds.name.here1
         type: PDS
-        size: 5M
-        format: fb
+        space_primary: 5
+        space_type: M
+        record_format: fb
         replace: yes
-      - name: user.private.libs1(member1)
+      - name: someds.name.here1(member1)
         type: MEMBER
-      - name: user.private.libs2(member1)
+      - name: someds.name.here2(member1)
         type: MEMBER
         replace: yes
-      - name: user.private.libs2(member2)
+      - name: someds.name.here2(member2)
         type: MEMBER
 
 - name: Catalog a data set present on volume 222222 if it is uncataloged.
   zos_data_set:
-    name: user.private.libs
+    name: someds.name.here
     state: cataloged
-    volume: "222222"
+    volumes: "222222"
 
 - name: Uncatalog a data set if it is cataloged.
   zos_data_set:
-    name: user.private.libs
+    name: someds.name.here
     state: uncataloged
+
+- name: Create a data set on volumes 000000 and 222222 if it does not exist.
+  zos_data_set:
+    name: someds.name.here
+    state: present
+    volumes:
+      - "000000"
+      - "222222"
 """
 RETURN = r"""
 

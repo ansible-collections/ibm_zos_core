@@ -443,10 +443,10 @@ class VolumeDefinition(DataDefinition):
 
 
 class SteplibDefinition(DataDefinition):
-    def __init__(self):
+    def __init__(self, dataset_name):
         """Steplib DD data type to be used in a DDStatement.
         """
-        super().__init__("*")
+        super().__init__(dataset_name)
 
     def _build_arg_string(self):
         """Build a string representing the arguments of this particular data type
@@ -456,10 +456,10 @@ class SteplibDefinition(DataDefinition):
 
 
 class StdoutDefinition(DataDefinition):
-    def __init__(self, dataset_name):
+    def __init__(self):
         """Stdout DD data type to be used in a DDStatement.
         """
-        super().__init__(dataset_name)
+        super().__init__("*")
 
     def _build_arg_string(self):
         """Build a string representing the arguments of this particular data type

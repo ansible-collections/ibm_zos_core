@@ -72,11 +72,10 @@ class DDStatement(object):
         """
         for dd in self.definition:
             if not isinstance(
-                dd,
-                (DatasetDefinition, FileDefinition, SteplibDefinition, StdinDefinition),
+                dd, (DatasetDefinition, FileDefinition, StdinDefinition),
             ):
                 raise ValueError(
-                    "Incorrect DataDefinition type specified on DD statement. Valid types are DatasetDefinition, FileDefinition, SteplibDefinition, StdoutDefinition, VIODefinition, StdinDefinition, VolumeDefinition and DummyDefinition."
+                    "Incorrect DataDefinition type specified on DD statement. Valid types are DatasetDefinition, FileDefinition and StdinDefinition."
                 )
 
 
@@ -445,19 +444,6 @@ class VolumeDefinition(DataDefinition):
         to be used by mvscmd/mvscmdauth.
         """
         return ",vol"
-
-
-class SteplibDefinition(DataDefinition):
-    def __init__(self, dataset_name):
-        """Steplib DD data type to be used in a DDStatement.
-        """
-        super().__init__(dataset_name)
-
-    def _build_arg_string(self):
-        """Build a string representing the arguments of this particular data type
-        to be used by mvscmd/mvscmdauth.
-        """
-        return ""
 
 
 class StdoutDefinition(DataDefinition):

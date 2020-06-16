@@ -1,6 +1,16 @@
 # Copyright (c) IBM Corporation 2020
 # Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import DataSet
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
+    MissingZOAUImport,
+)
+
+try:
+    from zoautil_py import Datasets
+except Exception:
+    Datasets = MissingZOAUImport()
+
 
 class DDStatement(object):
     def __init__(self, name, definition):
@@ -450,6 +460,52 @@ class DummyDefinition(DataDefinition):
         """DUMMY DD data type to be used in a DDStatement.
         """
         super().__init__("DUMMY")
+
+    def _build_arg_string(self):
+        """Build a string representing the arguments of this particular data type
+        to be used by mvscmd/mvscmdauth.
+        """
+        return ""
+
+
+class StdinDefinition(DataDefinition):
+    def __init__(
+        self,
+        contents,
+        record_format="FB",
+        space_primary=5,
+        space_secondary=5,
+        space_type="M",
+        record_length=80,
+    ):
+        """[summary]
+
+        Args:
+            contents (str): The content to write to temporary data set / stdin.
+            record_format (str, optional): The record format to use for the dataset.
+                    Valid options are: FB, VB, FBA, VBA, U.
+                    Defaults to "FB".
+            space_primary (int, optional): The amount of primary space to allocate for the dataset.
+                    Defaults to 5.
+            space_secondary (int, optional):  The amount of primary space to allocate for the dataset.
+                    Defaults to 5.
+            space_type (str, optional): The unit of measurement to use when defining primary and secondary space.
+                    Defaults to "M".
+            record_length (int, optional): The length, in bytes, of each record in the data set. 
+                    Defaults to 80.
+        """
+        name = DataSet.create_temp(
+            record_format=record_format,
+            space_primary=space_primary,
+            space_secondary=space_secondary,
+            space_type=space_type,
+            record_length=record_length,
+        )
+        super().__init__(name)
+        DataSet.write(name, contents)
+
+    def __del__(self):
+        DataSet.delete(self.name)
 
     def _build_arg_string(self):
         """Build a string representing the arguments of this particular data type

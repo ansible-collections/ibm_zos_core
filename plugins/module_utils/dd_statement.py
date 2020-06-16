@@ -71,9 +71,12 @@ class DDStatement(object):
             ValueError: When an invalid type is specified in DD concatenation.
         """
         for dd in self.definition:
-            if not isinstance(dd, (DatasetDefinition, FileDefinition)):
+            if not isinstance(
+                dd,
+                (DatasetDefinition, FileDefinition, SteplibDefinition, StdinDefinition),
+            ):
                 raise ValueError(
-                    "Incorrect DataDefinition type specified on DD statement. Valid types are DatasetDefinition and FileDefinition."
+                    "Incorrect DataDefinition type specified on DD statement. Valid types are DatasetDefinition, FileDefinition, SteplibDefinition, StdoutDefinition, VIODefinition, StdinDefinition, VolumeDefinition and DummyDefinition."
                 )
 
 

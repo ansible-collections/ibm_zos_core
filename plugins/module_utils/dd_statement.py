@@ -27,7 +27,7 @@ class DDStatement(object):
         mvscmd_string = "--{0}=".format(self.name)
         if isinstance(self.definition, list):
             self._assert_valid_concatenation()
-            dd_strings = [x._build_arg_string() for x in self.definition]
+            dd_strings = [x.name + x._build_arg_string() for x in self.definition]
             mvscmd_string += ":".join(dd_strings)
         else:
             mvscmd_string += self.definition.name

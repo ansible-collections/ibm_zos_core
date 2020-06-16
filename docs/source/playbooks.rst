@@ -51,7 +51,7 @@ default behavior which is to transfer Ansible modules to the target in binary
 via SFTP, however this will fail with the error:
 
 .. warning::
-   SyntaxError: Non-UTF-8 code starting with ‘\x83’ in file
+   SyntaxError: Non-UTF-8 code starting with '\x83' in file
    /a/user1/.ansible/tmp/ansible-tmp-1548232945.35-274513842609025/
    AnsiballZ_stat.py on line 1, but no encoding declared;
    see https://python.org/dev/peps/pep-0263/ for details

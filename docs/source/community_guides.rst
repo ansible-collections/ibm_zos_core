@@ -30,8 +30,8 @@ Ansible modules.
 
    community_guides_docs/zos_ansible_module_testing
 
-Parsing with betterArgParse
----------------------------
+Parsing with BetterArgParser
+----------------------------
 
 This parser should serve as an alternative to parsers like argparse or used in
 conjunction with Ansible's module argument parser.

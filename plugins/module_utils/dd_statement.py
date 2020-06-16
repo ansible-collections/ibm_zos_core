@@ -442,11 +442,24 @@ class VolumeDefinition(DataDefinition):
         return ",vol"
 
 
-class StdoutDefinition(DataDefinition):
+class SteplibDefinition(DataDefinition):
     def __init__(self):
-        """Stdout DD data type to be used in a DDStatement.
+        """Steplib DD data type to be used in a DDStatement.
         """
         super().__init__("*")
+
+    def _build_arg_string(self):
+        """Build a string representing the arguments of this particular data type
+        to be used by mvscmd/mvscmdauth.
+        """
+        return ""
+
+
+class StdoutDefinition(DataDefinition):
+    def __init__(self, dataset_name):
+        """Stdout DD data type to be used in a DDStatement.
+        """
+        super().__init__(dataset_name)
 
     def _build_arg_string(self):
         """Build a string representing the arguments of this particular data type

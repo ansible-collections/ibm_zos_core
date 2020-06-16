@@ -215,7 +215,7 @@ class DatasetDefinition(DataDefinition):
     def __init__(
         self,
         dataset_name,
-        disposition="SHR",
+        disposition="",
         type=None,
         primary=None,
         primary_unit="TRK",
@@ -245,7 +245,7 @@ class DatasetDefinition(DataDefinition):
             dataset_name (str): The name of the dataset to associate with the DD statement.
             disposition (str, optional): The expected disposition of the dataset.
                 Valid options are: EXCL, OLD, SHR, NEW.
-                Defaults to "SHR".
+                Defaults to "".
             type (str, optional): The type of dataset.
                 Valid options are: SEQ, BASIC, LARGE, PDS, PDSE, LIBRARY, LDS, RRDS, ESDS, KSDS.
                 Defaults to None.
@@ -354,6 +354,8 @@ class DatasetDefinition(DataDefinition):
         """Build a string representing the arguments of this particular data type
         to be used by mvscmd/mvscmdauth.
         """
+        if not self.disposition:
+            return ""
         mvscmd_string = ",{0}".format(self.disposition) if self.disposition else ""
         mvscmd_string = self._append_mvscmd_string(mvscmd_string, "type", self.type)
         mvscmd_string = self._append_mvscmd_string(

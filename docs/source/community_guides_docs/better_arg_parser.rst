@@ -4,6 +4,11 @@
 
 Features
 ========
+BetterArgParser is a parser designed to validate values often used on z/OS to
+avoid unnecessary failures on the target such as incorrectly providing a
+data set name or type. It acts as an alternative to parsers such as argparse
+and includes the following features:
+
 * Arguments dependencies on other arguments
 * Multiple levels of nested arguments (dict of dict, list of dict, dict of
   lists, etc.)

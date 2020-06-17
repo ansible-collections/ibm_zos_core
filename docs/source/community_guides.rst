@@ -37,11 +37,14 @@ BetterArgParser goes beyond typical option value parsing and serves as an
 alternative to parsers such as argparse. It has been designed to validate
 values often used on z/OS to avoid unnecessary failures on the target
 such as incorrectly providing a data set name or type. For cases that require
-further validation, BetterArgParser accepts a
-BetterArg object that allows for further customization.
+further validation, BetterArgParser accepts a BetterArg object that allows for
+further customization.
 
 It is recommended to use BetterArgParser in conjunction with Ansible's
 module argument parser.
+
+This section outlines the features of BetterArgParser, explains how to define arguments,
+provides examples of dependencies and more:
 
 .. toctree::
    :maxdepth: 1

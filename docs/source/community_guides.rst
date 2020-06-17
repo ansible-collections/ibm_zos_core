@@ -51,7 +51,7 @@ provides examples of dependencies and more:
    :caption: Contents:
    :glob:
 
-   community_guides_docs/better_arg_parse
+   community_guides_docs/better_arg_parser
 
 Helpful Links
 =============

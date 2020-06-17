@@ -18,8 +18,8 @@ Features
 Importing BetterArgParser
 =========================
 
-If the ``better_arg_parser.py`` is in *module_utils/* directory then in the
-imports section of module you can import it with this example:
+If the ``better_arg_parser.py`` is present in the *module_utils/* directory, you
+can import it in the imports section of module with this example:
 
 .. code-block:: python
 
@@ -50,7 +50,7 @@ Argument Options
 +--------------------+-----------------+--------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------+---------+----------------------------------------------------------------+
 | aliases            | list[str]       | A list of any alternative names to be used for the argument.                                                             | False                                                              | []      | N/A                                                            |
 +--------------------+-----------------+--------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------+---------+----------------------------------------------------------------+
-| choices            | list            | A list of choices to be accepted by the argument                                                                         | False                                                              | N/A     | N/A                                                            |
+| choices            | list            | A list of choices accepted by the argument.                                                                              | False                                                              | N/A     | N/A                                                            |
 +--------------------+-----------------+--------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------+---------+----------------------------------------------------------------+
 | elements           | str             | When arg_type='list', elements specifies the expected type of the items in the list.                                     | True when arg_type='list'                                          | N/A     | 'str', 'int', 'bool', 'list', 'dict', or user defined function |
 +--------------------+-----------------+--------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------+---------+----------------------------------------------------------------+
@@ -196,13 +196,10 @@ Built-in Argument Types (*arg_type* types)
 Custom Functions
 ================
 
-In situations where complex operations need to be performed, defining a custom
-function is recommended.
-
-Custom functions can be used in place of other options when defining an
-argument.
-
-Custom functions need to meet different requirements depending on their usage.
+In situations where complex operations have to be performed, defining a custom
+function is recommended. Custom functions can be used in place of other options
+when defining an argument. Custom functions must meet different requirements
+depending on their usage.
 
 **Requirements for All Custom Functions**
 
@@ -212,7 +209,7 @@ The function must have two parameters:
  #. **Parameter 2** - A dictionary containing resolved dependencies specified
     during argument definition
  #. **Parameter 3 (optional)** - A dictionary containing any custom arguments
-    defined. Please see `custom argument options`_.
+    defined. See `custom argument options`_.
 
 .. _custom argument options:
    better_arg_parser.html#id1
@@ -232,13 +229,13 @@ necessary operations and validation.
 Custom Function: required
 -------------------------
 
-**Returns:** The function should return **True** or **False** depending on if the
-argument should be required.
+**Returns:** The function should return **True** or **False** depending on whether
+the argument is required.
 
 Custom Function: default
 ------------------------
 
-**Returns:** The updated contents of the argument with any default value if desired.
+**Returns:** The updated contents of the argument with any default value, if desired.
 
 .. code-block:: python
 
@@ -353,7 +350,7 @@ Dependencies will always be resolved before the argument that depends on them.
 The resolved dependencies are passed to any custom functions defined in the
 argument which has the dependencies.
 
-**Note:** dependencies can only exist between arguments at the same depth.
+**Note:** Dependencies can only exist between arguments at the same depth.
 In addition, dependencies cannot exist between elements in a list of dicts.
 
 Dependencies Example

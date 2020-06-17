@@ -5,12 +5,12 @@
 Prerequisites
 =============
 
-This document outlines processes to run and develop test cases for z/OS Ansible modules.
+The following prerequisites must be met before you develop and run test cases for z/OS Ansible modules.
 
 Control Node
 ------------
-* Preferably latest Python 3.X
-* Up to date Ansible, 2.8 confirmed working
+* Latest Python 3.X (recommended)
+* Ansible 2.8 or later 
 
 
 z/OS Target Host
@@ -25,9 +25,8 @@ z/OS Target Host
 Configuration and Dependencies
 ==============================
 
-Several configurations are dependencies are needed to run both the functional
-and unit test cases. This section will cover how to configure the environment
-and which dependencies to install.
+This section explains how to configure the environment and which dependencies to
+install to run both the functional and unti test cases.
 
 Install dependencies
 --------------------
@@ -41,7 +40,7 @@ In the root folder of the collection, run the command:
 
 
 If the command responds with ``ERROR: Could not install packages due to an EnvironmentError: [Errno 13] Permission denied``
-run the command with additional ``-user`` option:
+run the command with the additional ``-user`` option:
 
 .. code-block:: sh
 
@@ -63,7 +62,7 @@ Generate and add a new SSH key using `ssh-keygen`_ and `ssh-add`_.
 .. image:: https://zenhub.ibm.com/images/5c75c71e85b6d5070636e1d8/8bd18b60-7517-4301-b3d4-17857e3a5e49
 
 
-Copy public key to target host using `ssh-copy-id`_.
+Copy the public key to a target host, using `ssh-copy-id`_.
 
 .. _ssh-copy-id:
    https://www.ssh.com/ssh/copy-id
@@ -76,7 +75,7 @@ Copy public key to target host using `ssh-copy-id`_.
 Configuration and Arguments
 ---------------------------
 
-Create a YAML file containing information needed to run the functional tests.
+Create a YAML file containing the required information to run the functional tests.
 
 +-------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+----------+---------+
 | Argument    | Description                                                                                                                                                                                                                                                      | Required | Aliases |
@@ -87,7 +86,7 @@ Create a YAML file containing information needed to run the functional tests.
 +-------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+----------+---------+
 | python_path | The absolute path to the python interpreter on the z/OS target host.                                                                                                                                                                                             | True     |         |
 +-------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+----------+---------+
-| environment | A list of key-value pairs containing all environment variables that need to be set on the z/OS target host before running Python/Ansible. It is important to add two sets of quotes when quotations are desired in the environment variable _export_ statement.  | False    |         |
+| environment | A list of key-value pairs containing all environment variables that must be set on the z/OS target host before running Python/Ansible. It is important to add two sets of quotes when quotations are desired in the environment variable _export_ statement.  | False    |         |
 +-------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+----------+---------+
 
 
@@ -132,7 +131,7 @@ Example YAML configuration:
 Run Functional and Unit Tests
 =============================
 
-After completing the "Configuration and Dependencies" steps, you can run the
+After completing the steps in "Configuration and Dependencies", you can run the
 functional and unit tests. Running the functional tests requires access to a
 z/OS system; the unit tests do not require z/OS access.
 
@@ -140,13 +139,13 @@ z/OS system; the unit tests do not require z/OS access.
 Run Functional Tests
 --------------------
 
-To run the functional tests, you will need a Python 3 environment. Pass the
-YAML configuration to  command ``pytest`` with the option ``--zinventory``
+To run the functional tests, you will need a Python 3 environment.
+Pass the YAML configuration to  command ``pytest`` with the option ``--zinventory``
 or ``-z``. By default, ``pytest`` looks for the YAML configuration in the local
-directory as **test-config.yaml**, in this example we assume the path to the
+directory as **test-config.yaml**. In this example, we assume that the path to the
 YAML configuration is **/home/myuser/test_config.yml**.
 
-If the environment is using Python 2, or Python 3 is not in the host PATH:
+If the environment is using Python 2, or Python 3 is not present in the host PATH:
 
 .. code-block:: yaml
 
@@ -163,8 +162,8 @@ If the environment is configured with Python 3:
 Run Unit Tests
 --------------
 
-The unit tests do not require access to a z/OS system to run and require
-minimal configuration to get started. To run the unit tests, navigate to the
+The unit tests require minimal configuration to get started and do not require
+access to a z/OS system to run. To run the unit tests, navigate to the
 unit tests folder:
 
 
@@ -192,7 +191,7 @@ If the environment is configured with Python 3:
 CLI Arguments
 -------------
 
-By default, the ``pytest`` options ``--zinventory``or ``-z`` is used to provide
+By default, the ``pytest`` options ``--zinventory``or ``-z`` are used to provide
 the absolute path to the configuration YAML file. Additionally, certain select
 arguments from `pytest-ansible`_ can be used. These can be passed as command
 line options or provided in the YAML configuration file
@@ -231,12 +230,12 @@ command line example would look like:
 Add module directory to ANSIBLE_LIBRARY
 ---------------------------------------
 
-Normally, ``module_path`` in YAML config, or ``--module-path`` on CLI would be
-valid parameters, which would function as an alternative to setting the
-ANSIBLE_LIBRARY environment variable, unfortunately, the option seems to be
-broken in the **2.9.5** Ansible release.
+Typically, ``module_path`` in the YAML configuration, or ``--module-path`` on the CLI would be
+a valid parameter which would function as an alternative to setting the
+ANSIBLE_LIBRARY environment variable. However, this option is not functional in the
+**2.9.5** Ansible release.
 
-To add the module directory to **ANSIBLE_LIBRARY**, if the modules are in:
+If the modules are in:
 
 .. code-block:: sh
 
@@ -248,7 +247,7 @@ To add the module directory to **ANSIBLE_LIBRARY**, if the modules are in:
                    └── modules
 
 
-The command to add the module directory is:
+Use this command to add the module directory to **ANSIBLE_LIBRARY** :
 
 .. code-block:: sh
 
@@ -295,8 +294,8 @@ process.
 
 Mocking z/OS Packages, Methods, and Functions
 -------------------------------------------------------
-Unit tests should not require access to a z/OS system for execution. When
-functions or methods are dependent on a missing z/OS Python package, such
+Unit tests do not require access to a z/OS system for execution. When
+functions or methods are dependent on a missing z/OS Python package such
 as `zoautil_py`, the imports of both the package and direct calls to the
 missing library should be "mocked".
 

@@ -10,7 +10,12 @@ from collections import OrderedDict, defaultdict
 import types
 import re
 from os import path
-from inspect import signature
+import sys
+
+if sys.version_info >= (3, 0):
+    from inspect import getfullargspec
+else:
+    from inspect import getargspec as getfullargspec
 
 # TODO: add "allow empty" parameter for each argument
 
@@ -84,7 +89,7 @@ class BetterArg(object):
         self.required = required
         self.default = default
         self.choices = choices
-        self.arg_type = type if type else arg_type
+        self.arg_type = type if type is not None else arg_type
         if options:
             self.options = self.arg_parser.handle_args(options)
             self.mutually_exclusive = self.arg_parser.handle_mutually_exclusive_args(
@@ -130,6 +135,7 @@ class BetterArgHandler(object):
             "volume": self._volume_type,
             "data_set_or_path": self._data_set_or_path_type,
             "encoding": self._encoding_type,
+            "dd": self._dd_type,
         }
 
     def handle_arg(self):
@@ -216,9 +222,7 @@ class BetterArgHandler(object):
             str -- The arguments contents after any necessary operations.
         """
         if not isinstance(contents, str):
-            raise ValueError(
-                'Invalid argument type for "{0}". expected "str"'.format(contents)
-            )
+            raise ValueError('Invalid argument "{0}" for type "str".'.format(contents))
         return contents
 
     def _int_type(self, contents, resolve_dependencies):
@@ -237,9 +241,7 @@ class BetterArgHandler(object):
             int -- The arguments contents after any necessary operations.
         """
         if not re.fullmatch(r"[0-9]+", str(contents)):
-            raise ValueError(
-                'Invalid argument type for "{0}". expected "int"'.format(contents)
-            )
+            raise ValueError('Invalid argument "{0}" for type "int".'.format(contents))
         return int(contents)
 
     def _bool_type(self, contents, resolve_dependencies):
@@ -257,9 +259,7 @@ class BetterArgHandler(object):
             bool -- The arguments contents after any necessary operations.
         """
         if not isinstance(contents, bool):
-            raise ValueError(
-                'Invalid argument type for "{0}". expected "bool"'.format(contents)
-            )
+            raise ValueError('Invalid argument "{0}" for type "bool".'.format(contents))
         return contents
 
     def _path_type(self, contents, resolve_dependencies):
@@ -277,9 +277,7 @@ class BetterArgHandler(object):
             str -- The arguments contents after any necessary operations.
         """
         if not path.isabs(str(contents)):
-            raise ValueError(
-                'Invalid argument type for "{0}". expected "path"'.format(contents)
-            )
+            raise ValueError('Invalid argument "{0}" for type "path".'.format(contents))
         return str(contents)
 
     # ---------------------------------------------------------------------------- #
@@ -322,7 +320,7 @@ class BetterArgHandler(object):
             re.IGNORECASE,
         ):
             raise ValueError(
-                'Invalid argument type for "{0}". expected "data_set"'.format(contents)
+                'Invalid argument "{0}" for type "data_set".'.format(contents)
             )
         return str(contents)
 
@@ -346,9 +344,7 @@ class BetterArgHandler(object):
             re.IGNORECASE,
         ):
             raise ValueError(
-                'Invalid argument type for "{0}". expected "data_set_base"'.format(
-                    contents
-                )
+                'Invalid argument "{0}" for type "data_set_base".'.format(contents)
             )
         return str(contents)
 
@@ -372,9 +368,7 @@ class BetterArgHandler(object):
             re.IGNORECASE,
         ):
             raise ValueError(
-                'Invalid argument type for "{0}". expected "data_set_member"'.format(
-                    contents
-                )
+                'Invalid argument "{0}" for type "data_set_member".'.format(contents)
             )
         return str(contents)
 
@@ -394,7 +388,7 @@ class BetterArgHandler(object):
         """
         if not re.fullmatch(r"^[A-Z]{1}[A-Z0-9]{0,7}$", str(contents), re.IGNORECASE,):
             raise ValueError(
-                'Invalid argument type for "{0}". expected "qualifier"'.format(contents)
+                'Invalid argument "{0}" for type "qualifier".'.format(contents)
             )
         return str(contents)
 
@@ -418,9 +412,7 @@ class BetterArgHandler(object):
             re.IGNORECASE,
         ):
             raise ValueError(
-                'Invalid argument type for "{0}". expected "qualifier_pattern"'.format(
-                    contents
-                )
+                'Invalid argument "{0}" for type "qualifier_pattern".'.format(contents)
             )
         return str(contents)
 
@@ -440,8 +432,28 @@ class BetterArgHandler(object):
         """
         if not re.fullmatch(r"^[A-Z0-9@#$]{1,6}$", str(contents), re.IGNORECASE,):
             raise ValueError(
-                'Invalid argument type for "{0}". expected "volume"'.format(contents)
+                'Invalid argument "{0}" for type "volume".'.format(contents)
             )
+        return str(contents)
+
+    def _dd_type(self, contents, resolve_dependencies):
+        """Resolver for dd type arguments
+
+        Arguments:
+            contents {bool} -- The contents of the argument.
+            resolved_dependencies {dict} -- Contains all of the dependencies and their contents,
+            which have already been handled,
+            for use during current arguments handling operations.
+
+        Raises:
+            ValueError: When contents is invalid argument type
+        Returns:
+            str -- The arguments contents after any necessary operations.
+        """
+        if not re.fullmatch(
+            r"^[A-Z$#@][A-Z0-9@#$]{0,7}$", str(contents), re.IGNORECASE,
+        ):
+            raise ValueError('Invalid argument "{0}" for type "dd".'.format(contents))
         return str(contents)
 
     def _data_set_or_path_type(self, contents, resolve_dependencies):
@@ -465,7 +477,7 @@ class BetterArgHandler(object):
         ):
             if not path.isabs(str(contents)):
                 raise ValueError(
-                    'Invalid argument type for source. expected "data_set" or "path"'
+                    'Invalid argument "{0}" for type "data_set" or "path".'
                 )
         return str(contents)
 
@@ -485,7 +497,7 @@ class BetterArgHandler(object):
         """
         if not re.fullmatch(r"^[A-Z0-9-]{2,}$", str(contents), re.IGNORECASE):
             raise ValueError(
-                'Invalid argument type for "{0}". expected "encoding"'.format(contents)
+                'Invalid argument "{0}" for type "encoding".'.format(contents)
             )
         return str(contents)
 
@@ -612,6 +624,23 @@ class BetterArgHandler(object):
                     )
         return
 
+    def _num_of_params(self, arg_function):
+        """Get the number of parameters accepted by a function.
+
+        Args:
+            arg_function (function): The function to inspect.
+
+        Returns:
+            int: The number of parameters the function accepts.
+        """
+        spec = getfullargspec(arg_function)
+        length = len(spec[0])
+        if spec[1]:
+            length += 1
+        if spec[2]:
+            length += 1
+        return length
+
     def _call_arg_function(self, arg_function, contents):
         """Call a function with the correct number
         of arguments.
@@ -626,10 +655,10 @@ class BetterArgHandler(object):
         Returns:
             ?? -- Returns the result of the function call.
         """
-        func_args = signature(arg_function).parameters
-        if len(func_args) == 2:
+        number_of_params = self._num_of_params(arg_function)
+        if number_of_params == 2:
             return arg_function(contents, self.resolved_dependencies)
-        elif len(func_args) == 3:
+        elif number_of_params == 3:
             return arg_function(
                 contents, self.resolved_dependencies, self.arg_def.kwargs
             )

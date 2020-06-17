@@ -1,5 +1,8 @@
 # Copyright (c) IBM Corporation 2020
 # Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
+from __future__ import absolute_import, division, print_function
+
+__metaclass__ = type
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dd_statement import *
 from ansible.module_utils.basic import AnsibleModule
@@ -10,7 +13,7 @@ class MVSCmd(object):
     """
 
     @staticmethod
-    def execute(pgm, dds, args=""):
+    def execute(pgm, dds, args="", debug=False, verbose=False):
         """Execute an unauthorized MVS command.
 
         Args:
@@ -22,12 +25,16 @@ class MVSCmd(object):
             MVSCmdResponse: The response of the command.
         """
         module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
-        command = "mvscmd " + MVSCmd._build_command(pgm, dds, args)
+        command = "mvscmd {0} {1} {2} ".format(
+            "-d" if debug else "",
+            "-v" if verbose else "",
+            MVSCmd._build_command(pgm, dds, args),
+        )
         rc, out, err = module.run_command(command)
         return MVSCmdResponse(rc, out, err)
 
     @staticmethod
-    def execute_authorized(pgm, dds, args=""):
+    def execute_authorized(pgm, dds, args="", debug=False, verbose=False):
         """Execute an authorized MVS command.
 
         Args:
@@ -39,7 +46,11 @@ class MVSCmd(object):
             MVSCmdResponse: The response of the command.
         """
         module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
-        command = "mvscmdauth " + MVSCmd._build_command(pgm, dds, args)
+        command = "mvscmdauth {0} {1} {2} ".format(
+            "-d" if debug else "",
+            "-v" if verbose else "",
+            MVSCmd._build_command(pgm, dds, args),
+        )
         rc, out, err = module.run_command(command)
         return MVSCmdResponse(rc, out, err)
 

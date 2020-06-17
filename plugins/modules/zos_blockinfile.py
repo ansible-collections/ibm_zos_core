@@ -13,26 +13,40 @@ ANSIBLE_METADATA = {'metadata_version': '1.1',
 
 DOCUMENTATION = r'''
 ---
-module: blockinfile
-short_description: Insert/update/remove a text block surrounded by marker lines
-version_added: '2.0'
+module: zos_blockinfile
+short_description: Manage block of multi-line textual data on z/OS
 description:
-- This module will insert/update/remove a block of multi-line text surrounded by customizable marker lines.
+  - Manage block of multi-lines in z/OS Unix System Services (USS) files,
+    PS(sequential data set), member of a PDS or PDSE data set.
+  - This module ensures a particular block of multi-line text surrounded
+    by customizable marker lines is in a USS file or data set, or
+    replace an existing block identified by the markers.
+  - This is primarily useful when you want to change a block of multi-line
+    in a USS file or data set.
 author:
-- Yaegashi Takeshi (@yaegashi)
+  - "Behnam (@balkajbaf)"
 options:
-  path:
+  dest:
     description:
-    - The file to modify.
-    - Before Ansible 2.3 this option was only usable as I(dest), I(destfile) and I(name).
-    type: path
+      - The location of the input characters.
+      - The location can be a UNIX System Services (USS) file,
+        PS(sequential data set), member of a PDS or PDSE data set.
+      - The USS file must be an absolute pathname.
+      - It is the playbook author or user's responsibility to avoid files
+        that should not be encoded, such as binary files. A user is described
+        as the remote user, configured either for the playbook or playbook
+        tasks, who can also obtain escalated privileges to execute as root
+        or another user.
+    type: str
+    aliases: [ path, destfile, destds, name ]
     required: yes
-    aliases: [ dest, destfile, name ]
   state:
     description:
-    - Whether the block should be there or not.
+      - Whether the block should be inserted/replaced(present) or removed(absent).
     type: str
-    choices: [ absent, present ]
+    choices:
+      - absent
+      - present
     default: present
   marker:
     description:
@@ -53,77 +67,73 @@ options:
     - If specified, the block will be inserted after the last match of specified regular expression.
     - A special value is available; C(EOF) for inserting the block at the end of the file.
     - If specified regular expression has no matches, C(EOF) will be used instead.
+    - choices are EOF or '*regex*'
     type: str
-    choices: [ EOF, '*regex*' ]
     default: EOF
   insertbefore:
     description:
     - If specified, the block will be inserted before the last match of specified regular expression.
     - A special value is available; C(BOF) for inserting the block at the beginning of the file.
     - If specified regular expression has no matches, the block will be inserted at the end of the file.
+    - choices are BOF or '*regex*'
     type: str
-    choices: [ BOF, '*regex*' ]
   marker_begin:
     description:
     - This will be inserted at C({mark}) in the opening ansible block marker.
     type: str
     default: BEGIN
-    version_added: '2.5'
   marker_end:
     required: false
     description:
     - This will be inserted at C({mark}) in the closing ansible block marker.
     type: str
     default: END
-    version_added: '2.5'
   backup:
     description:
       - Creates a backup file or backup data set for I(dest), including the
         timestamp information to ensure that you retrieve the original file.
       - I(backup_file) can be used to specify a backup file name
         if I(backup=true).
+      - The backup file name will be return on either success or failure
+        of module execution such that data can be retrieved.
     required: false
     type: bool
     default: false
   backup_file:
     description:
-      - Specify the USS file name or data set name for the dest backup.
-      - If dest is a USS file or path, I(backup_file) must be a file or
-        path name, and the USS path or file must be an absolute pathname.
-      - If dest is an MVS data set, the I(backup_file) must be an MVS data
-        set name.
-      - If I(backup_file) is not provided, the default backup name will be used.
-        The default backup name for a USS file or path will be the destination
-        file or path name appended with a timestamp,
-        e.g. /path/file_name.2020-04-23-08-32-29-bak.tar. If dest is an
-        MVS data set, the default backup name will be a random name generated
-        by IBM Z Open Automation Utilities.
+      - Specify the USS file name or data set name for the destination backup.
+      - If the destination (dest) is a USS file or path, the backup_file name must be a file
+        or path name, and the USS path or file must be an absolute path name.
+      - If the destination is an MVS data set, the backup_file name must be an MVS
+        data set name.
+      - If the backup_file is not provided, the default backup_file name will
+        be used. If the destination is a USS file or USS path, the name of the backup
+        file will be the destination file or path name appended with a
+        timestamp, e.g. C(/path/file_name.2020-04-23-08-32-29-bak.tar).
+      - If the destination is an MVS data set, it will be a data set with a random
+        name generated by calling the ZOAU API. The MVS backup data set
+        recovery can be done by renaming it.
     required: false
     type: str
   encoding:
     description:
-      - Specifies the encoding of USS file or data set. zos_lineinfile
+      - The character set of the destination I(dest). M(zos_lineinfile)
         requires to be provided with correct encoding to read the content
         of USS file or data set. If this parameter is not provided, this
         module assumes that USS file or data set is encoded in IBM-1047.
+      - Supported character sets rely on the target version; the most
+        common character sets are supported.
     required: false
     type: str
     default: IBM-1047
 notes:
-  - This module supports check mode.
   - When using 'with_*' loops be aware that if you do not set a unique mark the block will be overwritten on each iteration.
-  - As of Ansible 2.3, the I(dest) option has been changed to I(path) as default, but I(dest) still works as well.
-  - Option I(follow) has been removed in Ansible 2.5, because this module modifies the contents of the file so I(follow=no) doesn't make sense.
   - When more then one block should be handled in one file you must change the I(marker) per task.
-extends_documentation_fragment:
-- files
-- validate
 '''
 
 EXAMPLES = r'''
-# Before Ansible 2.3, option 'dest' or 'name' was used instead of 'path'
 - name: Insert/Update "Match User" configuration block in /etc/ssh/sshd_config
-  blockinfile:
+  zos_blockinfile:
     path: /etc/ssh/sshd_config
     block: |
       Match User ansible-agent
@@ -131,7 +141,7 @@ EXAMPLES = r'''
 
 - name: Insert/Update eth0 configuration stanza in /etc/network/interfaces
         (it might be better to copy files into /etc/network/interfaces.d/)
-  blockinfile:
+  zos_blockinfile:
     path: /etc/network/interfaces
     block: |
       iface eth0 inet static
@@ -139,14 +149,14 @@ EXAMPLES = r'''
           netmask 255.255.255.0
 
 - name: Insert/Update configuration using a local file and validate it
-  blockinfile:
+  zos_blockinfile:
     block: "{{ lookup('file', './local/sshd_config') }}"
     dest: /etc/ssh/sshd_config
     backup: yes
     validate: /usr/sbin/sshd -T -f %s
 
 - name: Insert/Update HTML surrounded by custom markers after <body> line
-  blockinfile:
+  zos_blockinfile:
     path: /var/www/html/index.html
     marker: "<!-- {mark} ANSIBLE MANAGED BLOCK -->"
     insertafter: "<body>"
@@ -155,13 +165,13 @@ EXAMPLES = r'''
       <p>Last updated on {{ ansible_date_time.iso8601 }}</p>
 
 - name: Remove HTML as well as surrounding markers
-  blockinfile:
+  zos_blockinfile:
     path: /var/www/html/index.html
     marker: "<!-- {mark} ANSIBLE MANAGED BLOCK -->"
     block: ""
 
 - name: Add mappings to /etc/hosts
-  blockinfile:
+  zos_blockinfile:
     path: /etc/hosts
     block: |
       {{ item.ip }} {{ item.name }}
@@ -175,7 +185,7 @@ EXAMPLES = r'''
 import re
 import os
 import tempfile
-import subprocess
+import json
 from ansible.module_utils.six import b
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils._text import to_bytes
@@ -200,57 +210,68 @@ if PY3:
 else:
     from pipes import quote
 
-def write_changes(module, contents, path):
+# supported data set types
+DS_TYPE = ['PS', 'PO']
 
-    tmpfd, tmpfile = tempfile.mkstemp(dir=module.tmpdir)
-    f = os.fdopen(tmpfd, 'wb')
-    f.write(contents)
-    f.close()
+def present(dest, block, marker, ins_aft, ins_bef, encoding):
+    """Replace a block with the matching regex pattern
+    Insert a block before/after the matching pattern
+    Insert a block at BOF/EOF
 
-    validate = module.params.get('validate', None)
-    valid = not validate
-    if validate:
-        if "%s" not in validate:
-            module.fail_json(msg="validate must contain %%s: %s" % (validate))
-        (rc, out, err) = module.run_command(validate % tmpfile)
-        valid = rc == 0
-        if rc != 0:
-            module.fail_json(msg='failed to validate: '
-                                 'rc:%s error:%s' % (rc, err))
-    if valid:
-        module.atomic_move(tmpfile, path, unsafe_writes=module.params['unsafe_writes'])
+    Arguments:
+        dest: {str} -- The z/OS USS file or data set to modify.
+        block: {str} -- The block to insert/replace into the dest.
+        marker: {str} -- The block will be inserted/updated with the markers.
+        ins_aft: {str} -- Insert the block after matching '*regex*' pattern or EOF.
+            choices:
+                - EOF
+                - '*regex*'
+        ins_bef: {str} -- Insert the block before matching '*regex*' pattern or BOF.
+            choices:
+                - BOF
+                - '*regex*'
+        encoding: {str} -- Encoding of the dest.
+
+    Returns:
+        str -- Information in JSON format. keys:
+            cmd: {str} -- dmod shell command
+            found: {int} -- Number of matching regex pattern
+            changed: {bool} -- Indicates if the destination was modified.
+    """
+    return Datasets.blockinfile(dest, block, marker, ins_aft, ins_bef, encoding, state=True)
 
 
-def check_file_attrs(module, changed, message, diff):
+def absent(dest, marker, encoding):
+    """Delete blocks with matching regex pattern
 
-    file_args = module.load_file_common_arguments(module.params)
-    if module.set_file_attributes_if_different(file_args, False, diff=diff):
+    Arguments:
+        dest: {str} -- The z/OS USS file or data set to modify.
+        marker: {str} -- Identifies the block to be removed.
+        encoding: {str} -- Encoding of the dest.
 
-        if changed:
-            message += " and "
-        changed = True
-        message += "ownership, perms or SE linux context changed"
+    Returns:
+        str -- Information in JSON format. keys:
+            cmd: {str} -- dmod shell command
+            found: {int} -- Number of matching regex pattern
+            changed: {bool} -- Indicates if the destination was modified.
+    """
+    return Datasets.blockinfile(dest, marker=marker, encoding=encoding, state=False)
 
-    return message, changed
-
-def iconv(content, from_encoding, to_encoding):
-    iconv_cmd = "iconv -f {0} -t {1}".format(quote(from_encoding), quote(to_encoding))
-    p = subprocess.Popen(iconv_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE, shell=True)
-    p.stdin.write(content)
-    p.stdin.close()
-    return p.stdout.read()
+def quotedString(string):
+    # add escape if string was quoted
+    if not isinstance(string, str):
+        return string
+    return string.replace('"', '\\\"')
 
 def main():
     module = AnsibleModule(
         argument_spec=dict(
-            path=dict(type='path', required=True, aliases=['dest', 'destfile', 'name']),
+            dest=dict(type='str', required=True, aliases=['path', 'destfile', 'destds', 'name']),
             state=dict(type='str', default='present', choices=['absent', 'present']),
             marker=dict(type='str', default='# {mark} ANSIBLE MANAGED BLOCK'),
             block=dict(type='str', default='', aliases=['content']),
             insertafter=dict(type='str'),
             insertbefore=dict(type='str'),
-            create=dict(type='bool', default=False),
-            validate=dict(type='str'),
             marker_begin=dict(type='str', default='BEGIN'),
             marker_end=dict(type='str', default='END'),
             backup=dict(type='bool', default=False),
@@ -258,22 +279,17 @@ def main():
             encoding=dict(type=str, default="IBM-1047"),
         ),
         mutually_exclusive=[['insertbefore', 'insertafter']],
-        add_file_common_args=True,
-        supports_check_mode=True
     )
 
     params = module.params
-    path = params['path']
 
     arg_defs = dict(
-        path=dict(arg_type="data_set_or_path", aliases=['zosdest', 'dest', 'destfile', 'name'], required=True),
+        dest=dict(arg_type="data_set_or_path", aliases=['path', 'destfile', 'destds', 'name'], required=True),
         state=dict(arg_type='str', default='present',choices=['absent', 'present']),
         marker=dict(arg_type='str', default='# {mark} ANSIBLE MANAGED BLOCK'),
         block=dict(arg_type='str', default='', aliases=['content']),
         insertafter=dict(arg_type="str", required=False),
         insertbefore=dict(arg_type="str", required=False),
-        create=dict(arg_type='bool', required=False, default=False),
-        validate=dict(arg_type='str', required=False),
         marker_begin=dict(arg_type='str', default='BEGIN'),
         marker_end=dict(arg_type='str', default='END'),
         encoding=dict(arg_type="str", default="IBM-1047", required=False),
@@ -281,7 +297,7 @@ def main():
         backup_file=dict(arg_type="data_set_or_path", required=False, default=None),
         mutually_exclusive=[["insertbefore","insertafter"]],
     )
-
+    result = dict(changed=False, cmd='', found=0)
     try:
         parser = better_arg_parser.BetterArgParser(arg_defs)
         parsed_args = parser.parse_args(module.params)
@@ -289,196 +305,91 @@ def main():
         module.fail_json(msg="Parameter verification failed", stderr=str(err))
 
     backup = parsed_args.get('backup')
-    backup_file = None
     if parsed_args.get('backup_file') and backup:
         backup = parsed_args.get('backup_file')
-    path = parsed_args.get('path')
-    insertafter = parsed_args.get('insertafter')
-    insertbefore = parsed_args.get('insertbefore')
+    dest = parsed_args.get('dest')
+    ins_aft = parsed_args.get('insertafter')
+    ins_bef = parsed_args.get('insertbefore')
     encoding = parsed_args.get('encoding')
-    #block = to_bytes(parsed_args.get('block'))
-    block = to_bytes(params['block'])
-    marker = to_bytes(parsed_args.get('marker'))
-    present = parsed_args.get('state') == 'present'
+    block = parsed_args.get('block')
+    marker = parsed_args.get('marker')
+    marker_begin = parsed_args.get('marker_begin')
+    marker_end = parsed_args.get('marker_end')
+
+    if not block and parsed_args.get('state') == 'present':
+        module.fail_json(msg='block is required with state=present')
+    if not marker:
+        marker = '# {mark} ANSIBLE MANAGED BLOCK'
+    if "{mark}" not in marker:
+        module.fail_json(msg='marker should have {mark}')
+    # make sure the default encoding is set if empty string was passed
+    if not encoding:
+        encoding = "IBM-1047"
+    if not ins_aft and not ins_bef and parsed_args.get('state') == 'present':
+        ins_aft = "EOF"
+    if not marker_begin:
+        marker_begin = 'BEGIN'
+    if not marker_end:
+        marker_end = 'END'
+
+    marker = "{0}\\n{1}\\n{2}".format(marker_begin, marker_end, marker)
+    blocklines = block.splitlines()
+    block = '\\n'.join(blocklines)
 
     # analysis the file type
-    ds_utils = data_set.DataSetUtils(path)
+    ds_utils = data_set.DataSetUtils(dest)
     file_type = ds_utils.ds_type()
     if file_type == 'USS':
         file_type = 1
     else:
+        if file_type not in DS_TYPE:
+            message = "{0} data set type is NOT supported".format(str(file_type))
+            module.fail_json(msg=message)
         file_type = 0
-    if not encoding:
-        encoding = "IBM-1047"
 
-    if file_type:
-        if os.path.isdir(path):
-            module.fail_json(rc=256,
-                         msg='Path %s is a directory !' % path)
-
-        path_exists = os.path.exists(path)
-        if not path_exists:
-            if not module.boolean(params['create']):
-                module.fail_json(rc=257,
-                             msg='Path %s does not exist !' % path)
-            destpath = os.path.dirname(path)
-            if not os.path.exists(destpath) and not module.check_mode:
-                try:
-                    os.makedirs(destpath)
-                except Exception as e:
-                    module.fail_json(msg='Error creating %s Error code: %s Error description: %s' % (destpath, e[0], e[1]))
-            original = None
-            lines = []
-        else:
-            f = open(path, 'rb')
-            original = f.read()
-            f.close()
-            if encoding != "ISO8859-1":
-                original = iconv(original, encoding, "ISO8859-1")
-            lines = original.splitlines()
+    if backup:
+        # backup can be True(bool) or none-zero length string. string indicates that backup_file was provided.
+        # setting backup to None if backup_file wasn't provided. if backup=None, Backup module will use
+        # pre-defined naming scheme and return the created destination name.
+        if isinstance(backup, bool):
+            backup = None
+        try:
+            if file_type:
+                result['backup_file'] = Backup.uss_file_backup(dest, backup_name=backup, compress=False)
+            else:
+                result['backup_file'] = Backup.mvs_file_backup(dsn=dest, bk_dsn=backup)
+        except Exception:
+            module.fail_json(msg="creating backup has failed")
+    # state=present, insert/replace a block with matching regex pattern
+    # state=absent, delete blocks with matching regex pattern
+    if parsed_args.get('state') == 'present':
+        return_content = present(dest, quotedString(block), quotedString(marker), quotedString(ins_aft), quotedString(ins_bef), encoding)
     else:
-        #original = to_bytes(Datasets.read_from(path, start=1))
-        path = "//'" + path + "'"
-        f = open(path, 'rb')
-        original = f.read()
-        f.close()
-        if encoding != "ISO8859-1":
-            original = iconv(original, encoding, "ISO8859-1")
-        lines = []
-        recLen = 80
-        start = 0
-        end = recLen
-        while(end <= len(original)):
-            lines.append(original[start:end])
-            start = end
-            end += recLen
-
-    diff = {'before': '',
-            'after': '',
-            'before_header': '%s (content)' % path,
-            'after_header': '%s (content)' % path}
-
-    if module._diff and original:
-        diff['before'] = original
-
-    if not present and not path_exists:
-        module.exit_json(changed=False, msg="File %s not present" % path)
-
-    if insertbefore is None and insertafter is None:
-        insertafter = 'EOF'
-
-    if insertafter not in (None, 'EOF'):
-        insertre = re.compile(to_bytes(insertafter, errors='surrogate_or_strict'))
-    elif insertbefore not in (None, 'BOF'):
-        insertre = re.compile(to_bytes(insertbefore, errors='surrogate_or_strict'))
-    else:
-        insertre = None
-
-    marker0 = re.sub(b(r'{mark}'), b(params['marker_begin']), marker)
-    marker1 = re.sub(b(r'{mark}'), b(params['marker_end']), marker)
-    if present and block:
-        # Escape sequences like '\n' need to be handled in Ansible 1.x
-        if module.ansible_version.startswith('1.'):
-            block = re.sub('', block, '')
-        blocklines = [marker0] + block.splitlines() + [marker1]
-    else:
-        blocklines = []
-    if not file_type:
-        for i in range(len(blocklines)):
-            blocklines[i] += b((' ')*(recLen - len(blocklines[i])))
-
-    n0 = n1 = None
-    for i, line in enumerate(lines):
-        if line == marker0:
-            n0 = i
-        if line == marker1:
-            n1 = i
-
-    if None in (n0, n1):
-        n0 = None
-        if insertre is not None:
-            for i, line in enumerate(lines):
-                if insertre.search(line):
-                    n0 = i
-            if n0 is None:
-                n0 = len(lines)
-            elif insertafter is not None:
-                n0 += 1
-        elif insertbefore is not None:
-            n0 = 0  # insertbefore=BOF
-        else:
-            n0 = len(lines)  # insertafter=EOF
-    elif n0 < n1:
-        lines[n0:n1 + 1] = []
-    else:
-        lines[n1:n0 + 1] = []
-        n0 = n1
-
-    lines[n0:n0] = blocklines
-
-    if file_type:
-        if lines:
-            result = b('\n').join(lines)
-            if original is None or original.endswith(b('\n')):
-                result += b('\n')
-        else:
-            result = b''
-    else:
-        result = b('').join(lines)
-
-    if module._diff:
-        diff['after'] = result
-
-    if original == result:
-        msg = ''
-        changed = False
-    elif original is None:
-        msg = 'File created'
-        changed = True
-    elif not blocklines:
-        msg = 'Block removed'
-        changed = True
-    else:
-        msg = 'Block inserted'
-        changed = True
-
-    if changed and not module.check_mode:
-        if backup:
-            if type(backup) == bool:
-                backup = None
-            try:
-                if file_type:
-                    backup_file = Backup.uss_file_backup(path, backup_name=backup, compress=False)
-                else:
-                    backup_file = Backup.mvs_file_backup(dsn=path, bk_dsn=backup)
-            except Exception:
-                module.fail_json(msg="creating backup has failed")
-        if file_type:
-            if encoding != "ISO8859-1":
-                result = iconv(result, "ISO8859-1", encoding)
-            # We should always follow symlinks so that we change the real file
-            real_path = os.path.realpath(params['path'])
-            write_changes(module, result, real_path)
-        else:
-            if encoding != "ISO8859-1":
-                result = iconv(result, "ISO8859-1", encoding)
-            f = open(path, 'wb')
-            f.write(result)
-            f.close()
-
-    if module.check_mode and not path_exists:
-        module.exit_json(changed=changed, msg=msg, diff=diff, backup_file=backup_file)
-
-    attr_diff = {}
-    if file_type:
-        msg, changed = check_file_attrs(module, changed, msg, attr_diff)
-
-    attr_diff['before_header'] = '%s (file attributes)' % path
-    attr_diff['after_header'] = '%s (file attributes)' % path
-
-    difflist = [diff, attr_diff]
-    module.exit_json(changed=changed, msg=msg, diff=difflist, backup_file=backup_file)
-
+        return_content = absent(dest, quotedString(marker), encoding)
+    try:
+        # change the return string to be loadable by json.loads()
+        return_content = return_content.replace('/c\\', '/c\\\\')
+        return_content = return_content.replace('/a\\', '/a\\\\')
+        return_content = return_content.replace('/i\\', '/i\\\\')
+        return_content = return_content.replace('$ a\\', '$ a\\\\')
+        return_content = return_content.replace('1 i\\', '1 i\\\\')
+        if block:
+            return_content = return_content.replace(block, quotedString(block))
+        if ins_aft:
+            return_content = return_content.replace(ins_aft, quotedString(ins_aft))
+        if ins_bef:
+            return_content = return_content.replace(ins_bef, quotedString(ins_bef))
+        # Try to extract information from return_content
+        ret = json.loads(return_content)
+        result['cmd'] = ret['cmd']
+        result['changed'] = ret['changed']
+        result['found'] = ret['found']
+    except Exception:
+        messageDict = dict(msg="dmod return content is NOT in json format", return_content=str(return_content))
+        if result.get('backup_file'):
+            messageDict['backup_file'] = result['backup_file']
+        module.fail_json(**messageDict)
+    module.exit_json(**result)
 
 if __name__ == '__main__':
     main()

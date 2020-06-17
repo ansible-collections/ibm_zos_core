@@ -33,8 +33,8 @@ Control node
 Managed node
 ------------
 
-* `Python on z/OS`_: 3.6 or later
-* `z/OS`_: V02.02.00 or later
+* `IBM Open Enterprise Python for z/OS`_
+* z/OS `V2R3`_ or `later`_
 * `IBM Z Open Automation Utilities`_ (ZOAU)
 
    * IBM z/OS core collections are dependent on specific versions of ZOAU.
@@ -45,8 +45,11 @@ Managed node
 .. _Python on z/OS:
    requirements.html#id1
 
-.. _z/OS:
-   https://www.ibm.com/support/knowledgecenter/SSLTBW_2.2.0/com.ibm.zos.v2r2/zos-v2r2-home.html
+.. _V2R3:
+   https://www.ibm.com/support/knowledgecenter/SSLTBW_2.3.0/com.ibm.zos.v2r3/en/homepage.html
+
+.. _later:
+   https://www.ibm.com/support/knowledgecenter/SSLTBW
 
 .. _IBM Z Open Automation Utilities:
    requirements.html#id1
@@ -60,26 +63,24 @@ Managed node
 Python on z/OS
 --------------
 
-If the Ansible target is z/OS, you must install a Python distribution ported
-for this platform. Rocket Software is currently the preferred version for z/OS.
+If the Ansible target is z/OS, you must install
+**IBM Open Enterprise Python for z/OS** which is ported for the z/OS platform
+and required by **IBM z/OS core Collection**.
 
 **Installation**
 
-* Visit the `Rocket Software homepage`_ and create a required account in the
-  `Rocket Customer Portal`_.
-* Click Downloads on the top left portion the page.
-* Select the category z/OpenSource on the left panel.
-* Scroll and select Python.
-* Download the binaries, installation files, and the README.ZOS onto an x86
-  machine.
-* Transfer the zipped tarball (tar.gz) file to the target z/OS system and
-  extract it according to the instructions in the installation files.
-* Follow the additional setup instructions as described in the README.ZOS file.
+* Visit the `IBM Open Enterprise Python for z/OS`_ product page for FMID,
+  program directory, fix list, latest PTF, installation and configuration
+  instructions.
+* For reference, the Program IDs are:
 
-.. _Rocket Software homepage:
-   https://www.rocketsoftware.com/zos-open-source
-.. _Rocket Customer Portal:
-   https://my.rocketsoftware.com/
+  * NNNN-ZZZ for the base product
+  * NNNN-ZZZ for service and support
+* For the Python supported version, refer to the `release notes`_.
+
+.. _IBM Open Enterprise Python for z/OS:
+   https://www.TODO
+
 
 
 ZOAU
@@ -92,10 +93,14 @@ in the scripting language of your choice.
 
 **Installation**
 
-* For the ZOAU FMID, program directory, fix list, latest PTF, installation
-  and configuration instructions, refer to the ZOAU `product page`_.
+* Visit the `ZOAU`_ product page for the FMID, program directory, fix list,
+  latest PTF, installation and configuration instructions.
+* For reference, the Program IDs are:
 
-.. _product page:
-   https://www.ibm.com/support/knowledgecenter/en/SSKFYE_1.0.0/welcome_zoautil.html
+  * 5698-PA1 for the base product
+  * 5698-PAS for service and support
+* For ZOAU supported version, refer to the `release notes`_.
 
+.. _ZOAU:
+   https://www.ibm.com/support/knowledgecenter/en/SSKFYE
 

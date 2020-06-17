@@ -503,55 +503,55 @@ options:
 # TODO: write return info
 
 # RETURN = """
-# ret_code: 
-#     description: The return code. 
+# ret_code:
+#     description: The return code.
 #     returned : always
 #     type: dict
 #     contains:
 #         msg:
-#             description: Holds the return code 
+#             description: Holds the return code
 #             type: str
-#         msg_code: 
-#             description: Holds the return code string 
+#         msg_code:
+#             description: Holds the return code string
 #             type: str
-#         msg_txt: 
+#         msg_txt:
 #             description: Holds additional information related to the program that may be useful to the user.
 #             type: str
-#         code: 
+#         code:
 #             description: return code converted to integer value (when possible)
-#             type: int 
+#             type: int
 #     sample: Value 0 indicates success, non-zero indicates failure.
 #        - code: 0
 #        - msg: "0"
 #        - msg_code: "0"
-#        - msg_txt: "THE z/OS PROGRAM EXECUTION SUCCEED." 
+#        - msg_txt: "THE z/OS PROGRAM EXECUTION SUCCEED."
 # ddnames:
-#     description: All the related dds with the program. 
+#     description: All the related dds with the program.
 #     returned: always
-#     type: list<dict> 
+#     type: list<dict>
 #     contains:
 #         ddname:
 #           description: data definition name
 #           type: str
 #         dataset:
-#           description: the dataset name  
+#           description: the dataset name
 #           type: str
 #         content:
 #           description: ddname content
-#           type: list[str] 
+#           type: list[str]
 #         record_count:
-#           description: the lines of the content 
+#           description: the lines of the content
 #           type: int
 #         byte_count:
 #           description: bytes count
 #           type: int
-#     samples:         
+#     samples:
 #         - ddname: "SYSIN", "SYSPRINT",etc.
 #         - dataset: "TEST.TESTER.DATA", "stdout", "dummy", etc
 #         - content: " "
 #         - record_count: 4
 #         - byte_count:  415
-# changed: 
+# changed:
 #     description: Indicates if any changes were made during module operation.
 #     type: bool
 # """
@@ -559,11 +559,11 @@ options:
 # TODO: verify examples match expected format
 
 # EXAMPLES = r"""
-# - name: Run IEFBR14 program. This is a simple program, no output.  
+# - name: Run IEFBR14 program. This is a simple program, no output.
 #     zos_mvs_raw:
 #         program_name: IEFBR14
 
-# - name: run IDCAMS program to list the catagory of dataset 'TESTER.DATASET'  
+# - name: run IDCAMS program to list the catagory of dataset 'TESTER.DATASET'
 #     zos_mvs_raw:
 #         program_name: IDCAMS
 #         parms:
@@ -611,7 +611,7 @@ options:
 #             - dd_name: outdd
 #             - sysout_class: A
 #             - return_content: text
-              
+
 #   - name: TSO iebgener program,This program copy the content from sysut1 to sysut2.
 #     zos_mvs_raw:
 #       program_name: iebgener
@@ -629,7 +629,7 @@ options:
 #             - sysout_class: A
 #             - return_content: text
 #       debug: True
-    
+
 #   - name: TSO IEBUPDTE program, add/replace a new dataset member ERASE in sysut1 and store it in sysut2. ERASE content is Hello world!
 #     zos_mvs_raw:
 #       program_name: IEBUPDTE
@@ -660,8 +660,8 @@ options:
 #         - dd_dataset:
 #             - dd_name: sysprint
 #             - data_set_name: BJMAXY.NOEXIST.DS
-#       debug: True    
-     
+#       debug: True
+
 #   - name: TSO isrsupc program, Compare 2 PDS members olddd and newdd and write the output to outdd.
 #     zos_mvs_raw:
 #         program_name: ISRSUPC
@@ -703,9 +703,9 @@ options:
 #               - disposition_abnormal: keep
 #               - return_content: text
 
-     
+
 # EXAMPLE RESULTS:
-# "msg": "    
+# "msg": "
 #     "changed": true,
 #     "ddnames": [
 #         {
@@ -733,25 +733,25 @@ options:
 #             "byte_count": "3400",
 #             "content": "
 #                        ISRSUPC   -   MVS/PDF FILE/LINE/WORD/BYTE/SFOR COMPARE UTILITY- ISPF FOR z/OS         2020/02/25   3.36    PAGE     1
-#                         NEW: TESTER.MVSUTIL.PYTHON.MVSCMD.A                          OLD: TESTER.MVSUTIL.PYTHON.MVSCMD.B                       
-                                                                                                                       
-#                                             LINE COMPARE SUMMARY AND STATISTICS                                                             
-                                                                                                                       
-                                                                                                                       
-                                                                                                                       
-#                             1 NUMBER OF LINE MATCHES               0  TOTAL CHANGES (PAIRED+NONPAIRED CHNG)                                 
-#                             0 REFORMATTED LINES                    0  PAIRED CHANGES (REFM+PAIRED INS/DEL)                                  
-#                             0 NEW FILE LINE INSERTIONS             0  NON-PAIRED INSERTS                                                    
-#                             0 OLD FILE LINE DELETIONS              0  NON-PAIRED DELETES                                                    
-#                             1 NEW FILE LINES PROCESSED                                                                                      
-#                             1 OLD FILE LINES PROCESSED                                                                                      
-                                                                                                                       
-#                     LISTING-TYPE = DELTA      COMPARE-COLUMNS =    1:72        LONGEST-LINE = 80                                           
-#                     PROCESS OPTIONS USED: NONE                                                                                             
-                                                                                                                       
-#                     THE FOLLOWING PROCESS STATEMENTS (USING COLUMNS 1:72) WERE PROCESSED:                                                  
-#                             CMPCOLM 1:72                                                                                                     
-#                      " 
+#                         NEW: TESTER.MVSUTIL.PYTHON.MVSCMD.A                          OLD: TESTER.MVSUTIL.PYTHON.MVSCMD.B
+
+#                                             LINE COMPARE SUMMARY AND STATISTICS
+
+
+
+#                             1 NUMBER OF LINE MATCHES               0  TOTAL CHANGES (PAIRED+NONPAIRED CHNG)
+#                             0 REFORMATTED LINES                    0  PAIRED CHANGES (REFM+PAIRED INS/DEL)
+#                             0 NEW FILE LINE INSERTIONS             0  NON-PAIRED INSERTS
+#                             0 OLD FILE LINE DELETIONS              0  NON-PAIRED DELETES
+#                             1 NEW FILE LINES PROCESSED
+#                             1 OLD FILE LINES PROCESSED
+
+#                     LISTING-TYPE = DELTA      COMPARE-COLUMNS =    1:72        LONGEST-LINE = 80
+#                     PROCESS OPTIONS USED: NONE
+
+#                     THE FOLLOWING PROCESS STATEMENTS (USING COLUMNS 1:72) WERE PROCESSED:
+#                             CMPCOLM 1:72
+#                      "
 #             "dataset": "TESTER.MVSUTIL.PYTHON.MVSCMD.RESULT",
 #             "ddname": "outdd",
 #             "record_count": 20
@@ -785,37 +785,37 @@ options:
 #         {
 #             "byte_count": "2006",
 #             "content": "
-#                         1IDCAMS  SYSTEM SERVICES                                           TIME: 04:04:12        02/25/20     PAGE      1 
-#                         0                                                                                                                 
-#                         LISTCAT ENT('TESTER.HILL3')                                                                                    
-#                         0NONVSAM ------- TESTER.HILL3                                                                                     
-#                               IN-CAT --- ICFCAT.SYSPLEX2.CATALOGB                                                                         
-#                         1IDCAMS  SYSTEM SERVICES                                           TIME: 04:04:12        02/25/20     PAGE      2 
-#                         0         THE NUMBER OF ENTRIES PROCESSED WAS:                                                                    
-#                                             AIX -------------------0                                                                      
-#                                             ALIAS -----------------0                                                                      
-#                                             CLUSTER ---------------0                                                                      
-#                                             DATA ------------------0                                                                      
-#                                             GDG -------------------0                                                                      
-#                                             INDEX -----------------0                                                                      
-#                                             NONVSAM ---------------1                                                                      
-#                                             PAGESPACE -------------0                                                                      
-#                                             PATH ------------------0                                                                      
-#                                             SPACE -----------------0                                                                      
-#                                             USERCATALOG -----------0                                                                      
-#                                             TAPELIBRARY -----------0                                                                      
-#                                             TAPEVOLUME ------------0                                                                      
-#                                             TOTAL -----------------1                                                                      
-#                         0         THE NUMBER OF PROTECTED ENTRIES SUPPRESSED WAS 0                                                        
-#                         0IDC0001I FUNCTION COMPLETED, HIGHEST CONDITION CODE WAS 0                                                        
-#                         0                                                                                                                 
-#                         0IDC0002I IDCAMS PROCESSING COMPLETE. MAXIMUM CONDITION CODE WAS 0                                                
-#             " 
+#                         1IDCAMS  SYSTEM SERVICES                                           TIME: 04:04:12        02/25/20     PAGE      1
+#                         0
+#                         LISTCAT ENT('TESTER.HILL3')
+#                         0NONVSAM ------- TESTER.HILL3
+#                               IN-CAT --- ICFCAT.SYSPLEX2.CATALOGB
+#                         1IDCAMS  SYSTEM SERVICES                                           TIME: 04:04:12        02/25/20     PAGE      2
+#                         0         THE NUMBER OF ENTRIES PROCESSED WAS:
+#                                             AIX -------------------0
+#                                             ALIAS -----------------0
+#                                             CLUSTER ---------------0
+#                                             DATA ------------------0
+#                                             GDG -------------------0
+#                                             INDEX -----------------0
+#                                             NONVSAM ---------------1
+#                                             PAGESPACE -------------0
+#                                             PATH ------------------0
+#                                             SPACE -----------------0
+#                                             USERCATALOG -----------0
+#                                             TAPELIBRARY -----------0
+#                                             TAPEVOLUME ------------0
+#                                             TOTAL -----------------1
+#                         0         THE NUMBER OF PROTECTED ENTRIES SUPPRESSED WAS 0
+#                         0IDC0001I FUNCTION COMPLETED, HIGHEST CONDITION CODE WAS 0
+#                         0
+#                         0IDC0002I IDCAMS PROCESSING COMPLETE. MAXIMUM CONDITION CODE WAS 0
+#             "
 #             "dataset": "TESTER.MVSUTIL.PYTHON.MVSCMD.AUTH.OUT",
 #             "ddname": "sysprint",
 #             "record_count": 25
 #         }
-#     ], 
+#     ],
 #     "ret_code": {
 #         "code": 0,
 #         "msg": 0,
@@ -865,7 +865,7 @@ def volumes(contents, dependencies):
 
 def parse_and_validate_args(params):
     dd_name_base = dict(
-        dd_name=dict(type="dd")
+        dd_name=dict(type="dd", required=True)
     )
 
     dd_data_set_base = dict(
@@ -914,25 +914,26 @@ def parse_and_validate_args(params):
         return_content=dict(type="str", default="none", choices=["none", "text", "base64"]),
     )
 
-    dd_sysout = dict(
-        dd_name=dict(type="dd"),
+    dd_sysout_base = dict(
         return_content=dict(type="str", default="none", choices=["none", "text", "base64"]),
     )
 
-    dd_dummy = dict(dd_name=dict(type="dd"))
+    dd_dummy_base = dict()
 
     dd_concat_base = dict(
-        dd_data_set=dict(type="dict", options=dd_data_set_base),
-        dd_input=dict(type="dict", options=dd_input_base),
-        dd_unix=dict(type="dict", options=dd_unix_base)
+        dds=dict(type="list", elements="dict", options=dict(
+            dd_data_set=dict(type="dict", options=dd_data_set_base),
+            dd_input=dict(type="dict", options=dd_input_base),
+            dd_unix=dict(type="dict", options=dd_unix_base)
+        ))
     )
 
-    dd_data_set = dict(type="dict", options={**dd_name_base, **dd_data_set_base})
-    dd_unix = dict(type="dict", options={**dd_name_base, **dd_unix_base})
-    dd_input = dict(type="dict", options={**dd_name_base, **dd_input_base})
-    dd_concat = dict(type="dict", options={**dd_name_base, **dd_concat_base})
-    dd_sysout = dict(type="dict", options=dd_sysout)
-    dd_dummy = dict(type="dict", options=dd_dummy)
+    dd_data_set = dict(type="dict", options=dict(**dd_name_base, **dd_data_set_base))
+    dd_unix = dict(type="dict", options=dict(**dd_name_base, **dd_unix_base))
+    dd_input = dict(type="dict", options=dict(**dd_name_base, **dd_input_base))
+    dd_sysout = dict(type="dict", options=dict(**dd_name_base, **dd_sysout_base))
+    dd_dummy = dict(type="dict", options=dict(**dd_name_base, **dd_dummy_base))
+    dd_concat = dict(type="dict", options=dict(**dd_name_base, **dd_concat_base))
 
     module_args = dict(
         program_name=dict(type="str"),
@@ -954,9 +955,10 @@ def parse_and_validate_args(params):
     return parsed_args
 
 
-def initialize_module():
+def run_module():
+    result = dict(changed=False, ddnames="", ret_code="",)
     dd_name_base = dict(
-        dd_name=dict(type="str")
+        dd_name=dict(type="str", required=True)
     )
 
     dd_data_set_base = dict(
@@ -1005,26 +1007,26 @@ def initialize_module():
         return_content=dict(type="str", default="none", choices=["none", "text", "base64"]),
     )
 
-    dd_sysout = dict(
-        dd_name=dict(type="str"),
+    dd_sysout_base = dict(
         return_content=dict(type="str", default="none", choices=["none", "text", "base64"]),
-        # sysout_class=dict(type="str", required=False, default="*"),
     )
 
-    dd_dummy = dict(dd_name=dict(type="str"))
+    dd_dummy_base = dict()
 
-    dd_concat_base = dict(type="list", elements="dict", options=dict(
-        dd_data_set=dd_data_set_base,
-        dd_input=dd_input_base,
-        dd_unix=dd_unix_base
-    ))
+    dd_concat_base = dict(
+        dds=dict(type="list", elements="dict", options=dict(
+            dd_data_set=dict(type="dict", options=dd_data_set_base),
+            dd_input=dict(type="dict", options=dd_input_base),
+            dd_unix=dict(type="dict", options=dd_unix_base)
+        ))
+    )
 
-    dd_data_set = dict(type="dict", options={**dd_name_base, **dd_data_set_base})
-    dd_unix = dict(type="dict", options={**dd_name_base, **dd_unix_base})
-    dd_input = dict(type="dict", options={**dd_name_base, **dd_input_base})
-    dd_concat = dict(type="dict", options={**dd_name_base, **dd_concat_base})
-    dd_sysout = dict(type="dict", options=dd_sysout)
-    dd_dummy = dict(type="dict", options=dd_dummy)
+    dd_data_set = dict(type="dict", options=dict(**dd_name_base, **dd_data_set_base))
+    dd_unix = dict(type="dict", options=dict(**dd_name_base, **dd_unix_base))
+    dd_input = dict(type="dict", options=dict(**dd_name_base, **dd_input_base))
+    dd_sysout = dict(type="dict", options=dict(**dd_name_base, **dd_sysout_base))
+    dd_dummy = dict(type="dict", options=dict(**dd_name_base, **dd_dummy_base))
+    dd_concat = dict(type="dict", options=dict(**dd_name_base, **dd_concat_base))
 
     module_args = dict(
         program_name=dict(type="str"),
@@ -1041,13 +1043,8 @@ def initialize_module():
         verbose=dict(type="bool", required=False),
         debug=dict(type="bool", required=False),
     )
-    module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
-    return module
-
-def run_module():
-    result = dict(changed=False, ddnames="", ret_code="",)
     try:
-        module = initialize_module()
+        module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
         params = parse_and_validate_args(module.params)
         result["params"] = params
         result["original_message"] = module.params

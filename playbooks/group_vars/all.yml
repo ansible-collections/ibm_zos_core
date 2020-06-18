@@ -21,23 +21,27 @@
 #   Environment® runtime options for programs and used by Python, for example,
 #   'FILETAG(AUTOCVT,AUTOTAG) POSIX(ON)'.
 # - The value for properties __TAG_REDIR_ERR, _TAG_REDIR_IN, _TAG_REDIR_OUT
-#   is txt and should be used when your shell is bash; for example:
+#   are txt and used the shell; for example:
 #      _TAG_REDIR_ERR: txt
 #      _TAG_REDIR_IN: txt
 #      _TAG_REDIR_OUT: txt
 #
 # Note:
-#   In the configuration below, both `ZOAU_HOME` and `ZOAU_ROOT` are included.
-#   In ZOAU 1.0.1 and lesser, property `ZOAU_ROOT` is required, for versions
-#   ZOAU 1.0.2 and later, property `ZOAU_HOME` replaces `ZOAU_ROOT`
+#   In ZOAU 1.0.2 and later, the property ZOAU_ROOT is no longer supported
+#   and must be replaced with the property ZOAU_HOME. If you are using ZOAU
+#   version 1.0.1 or lower, you must continue to use the property
+#   ZOAU_ROOT which is the ZOA Utilities install root path required for
+#   ZOAU; for example, ``/usr/lpp/IBM/zoautil``.
 ################################################################################
 
 environment_vars:
   _BPXK_AUTOCVT: 'ON'
   ZOAU_HOME: "/usr/lpp/IBM/zoautil"
-  ZOAU_ROOT: "/usr/lpp/IBM/zoautil"
   PYTHONPATH: "/usr/lpp/IBM/zoautil/lib"
   LIBPATH: "/usr/lpp/IBM/zoautil/lib/:/usr/lpp/IBM/cyp/v3r8/pyz/lib:/usr/lib:/lib:."
-  PATH: "/usr/lpp/IBM/zoautil/bin:/usr/lpp/IBM/cyp/v3r8/pyz/bin/python3:/bin"
+  PATH: "/usr/lpp/IBM/zoautil/bin:/usr/lpp/IBM/cyp/v3r8/pyz/bin:/bin"
   _CEE_RUNOPTS: 'FILETAG(AUTOCVT,AUTOTAG) POSIX(ON)'
+  _TAG_REDIR_ERR: txt
+  _TAG_REDIR_IN: txt
+  _TAG_REDIR_OUT: txt
 

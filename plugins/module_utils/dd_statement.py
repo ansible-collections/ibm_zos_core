@@ -243,7 +243,7 @@ class DatasetDefinition(DataDefinition):
         Args:
             dataset_name (str): The name of the dataset to associate with the DD statement.
             disposition (str, optional): The expected disposition of the dataset.
-                Valid options are: EXCL, OLD, SHR, NEW.
+                Valid options are: EXCL, OLD, SHR, MOD, NEW.
                 Defaults to "".
             type (str, optional): The type of dataset.
                 Valid options are: SEQ, BASIC, LARGE, PDS, PDSE, LIBRARY, LDS, RRDS, ESDS, KSDS.
@@ -261,10 +261,10 @@ class DatasetDefinition(DataDefinition):
                 G or GB (gigabytes), C or CYL (cylinders), T or TRK (tracks).
                 Defaults to "TRK".
             normal_disposition (str, optional): tells the system what to do with the data set after normal termination of the program.
-                Valid options are: delete, keep, catalog, uncatalog.
+                Valid options are: delete, keep, catalog/catlg, uncatalog/uncatlg.
                 Defaults to None.
             conditional_disposition ([type], optional): tells the system what to do with the data set after abnormal termination of the program.
-                Valid options are: delete, keep, catalog, uncatalog.
+                Valid options are: delete, keep, catalog/catlg, uncatalog/uncatlg.
                 Defaults to None.
             block_size (int, optional): The block size of the data set.
                 Defaults to None.
@@ -332,8 +332,20 @@ class DatasetDefinition(DataDefinition):
             self.secondary = str(secondary) + secondary_unit
         else:
             self.secondary = secondary
-        self.normal_disposition = normal_disposition
-        self.conditional_disposition = conditional_disposition
+
+        DISPOSITION_ARG_MAP = {"catlg": "catalog", "uncatlg": "uncatalog"}
+        self.normal_disposition = (
+            DISPOSITION_ARG_MAP.get(normal_disposition.lower(), normal_disposition)
+            if normal_disposition
+            else None
+        )
+        self.conditional_disposition = (
+            DISPOSITION_ARG_MAP.get(
+                conditional_disposition.lower(), conditional_disposition
+            )
+            if conditional_disposition
+            else None
+        )
         self.block_size = block_size
         self.record_format = record_format
         self.record_length = record_length

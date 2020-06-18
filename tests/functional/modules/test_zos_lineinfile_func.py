@@ -523,7 +523,7 @@ export PYTHONPATH
 export PKG_CONFIG_PATH
 export PYTHON_HOME
 export _BPXK_AUTOCVT""",
-                    test_uss_line_replace_quoted="""if [ -z STEPLIB ] && tty -s;
+                  test_uss_line_replace_quoted="""if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL

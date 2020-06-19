@@ -20,8 +20,8 @@ author:
   - "Behnam (@balkajbaf)"
 short_description: Manage textual data on z/OS
 description:
-  - Manage lines in z/OS Unix System Services (USS) files,
-    PS(sequential data set), member of a PDS or PDSE, PDS, PDSE.
+  - Manage lines in z/OS UNIX System Services (USS) files,
+    PS(sequential data set), PDS, PDSE, or member of a PDS or PDSE.
   - This module ensures a particular line is in a USS file or data set, or
     replace an existing line using a back-referenced regular expression.
   - This is primarily useful when you want to change a single line in a USS
@@ -29,15 +29,9 @@ description:
 options:
   src:
     description:
-      - The location of the input characters.
       - The location can be a UNIX System Services (USS) file,
         PS(sequential data set), member of a PDS or PDSE, PDS, PDSE.
       - The USS file must be an absolute pathname.
-      - It is the playbook author or user's responsibility to avoid files
-        that should not be encoded, such as binary files. A user is described
-        as the remote user, configured either for the playbook or playbook
-        tasks, who can also obtain escalated privileges to execute as root
-        or another user.
     type: str
     aliases: [ path, destfile, name ]
     required: true
@@ -94,13 +88,13 @@ options:
       - If the first match is required, use(firstmatch=yes).
       - A special value is available; C(EOF) for inserting the line at the end
         of the USS file or data set.
-      - If specified regular expression has no matches, EOF will be used
+      - If the specified regular expression has no matches, EOF will be used
         instead.
       - If C(insertbefore) is set, default value C(EOF) will be ignored.
       - If regular expressions are passed to both C(regexp) and C(insertafter),
         C(insertafter) is only honored if no match for C(regexp) is found.
       - May not be used with C(backrefs) or C(insertbefore).
-      - choices are EOF or '*regex*'
+      - Choices are EOF or '*regex*'
     required: false
     type: str
     default: EOF
@@ -112,13 +106,13 @@ options:
       - If the first match is required, use C(firstmatch=yes).
       - A value is available; C(BOF) for inserting the line at the beginning of
         the USS file or data set.
-      - If specified regular expression has no matches, the line will be
+      - If the specified regular expression has no matches, the line will be
         inserted at the end of the USS file or data set.
       - If regular expressions are passed to both C(regexp) and
         C(insertbefore), C(insertbefore) is only honored if no match for
         C(regexp) is found.
       - May not be used with C(backrefs) or C(insertafter).
-      - choices are BOF or '*regex*'
+      - Choices are BOF or '*regex*'
     required: false
     type: str
   backup:
@@ -136,11 +130,11 @@ options:
     description:
       - Specify the USS file name or data set name for the destination backup.
       - If the source I(src) is a USS file or path, the backup_file name must be a file
-        or path name, and the USS path or file must be an absolute path name.
+        or path name, and the USS file or path must be an absolute path name.
       - If the source is an MVS data set, the backup_file name must be an MVS
         data set name.
       - If the backup_file is not provided, the default backup_file name will
-        be used. If the source is a USS file or USS path, the name of the backup
+        be used. If the source is a USS file or path, the name of the backup
         file will be the source file or path name appended with a
         timestamp, e.g. C(/path/file_name.2020-04-23-08-32-29-bak.tar).
       - If the source is an MVS data set, it will be a data set with a random
@@ -162,12 +156,17 @@ options:
         requires to be provided with correct encoding to read the content
         of USS file or data set. If this parameter is not provided, this
         module assumes that USS file or data set is encoded in IBM-1047.
-      - Supported character sets rely on the target version; the most
-        common character sets are supported.
+      - Supported character sets rely on the charset conversion utility (iconv)
+        version; the most common character sets are supported.
     required: false
     type: str
     default: IBM-1047
 notes:
+  - It is the playbook author or user's responsibility to avoid files
+    that should not be encoded, such as binary files. A user is described
+    as the remote user, configured either for the playbook or playbook
+    tasks, who can also obtain escalated privileges to execute as root
+    or another user.
   - All data sets are always assumed to be cataloged. If an uncataloged data set
     needs to be encoded, it should be cataloged first.
   - For supported character sets used to encode data, refer to

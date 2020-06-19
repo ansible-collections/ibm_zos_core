@@ -117,7 +117,7 @@ class DataDefinition(object):
             return string
         string += ",{0}=".format(variable_name)
         if isinstance(variable, list):
-            string += ",".join(str(variable))
+            string += ",".join([str(x) for x in variable])
         else:
             string += str(variable)
         return string
@@ -487,7 +487,7 @@ class DummyDefinition(DataDefinition):
 class StdinDefinition(DataDefinition):
     def __init__(
         self,
-        contents,
+        content,
         record_format="FB",
         space_primary=5,
         space_secondary=5,
@@ -497,7 +497,7 @@ class StdinDefinition(DataDefinition):
         """[summary]
 
         Args:
-            contents (str): The content to write to temporary data set / stdin.
+            content (str): The content to write to temporary data set / stdin.
             record_format (str, optional): The record format to use for the dataset.
                     Valid options are: FB, VB, FBA, VBA, U.
                     Defaults to "FB".
@@ -518,7 +518,7 @@ class StdinDefinition(DataDefinition):
             record_length=record_length,
         )
         super().__init__(name)
-        DataSet.write(name, contents)
+        DataSet.write(name, content)
 
     def __del__(self):
         DataSet.delete(self.name)

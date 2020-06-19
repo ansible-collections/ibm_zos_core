@@ -1,5 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+from __future__ import absolute_import, division, print_function
+
+__metaclass__ = type
 
 ANSIBLE_METADATA = {
     "metadata_version": "1.1",
@@ -19,7 +22,7 @@ options:
     description: The name of the z/OS program to run (e.g. IDCAMS, IEFBR14, IEBGENER, etc.).
     required: true
     type: str
-  parms:
+  args:
     description:
       - The program arguments (e.g. -a='MARGINS(1,72)').
     required: false
@@ -96,9 +99,11 @@ options:
             required: false
             default: catalog
             choices:
-              - del
+              - delete
               - keep
+              - catlg
               - catalog
+              - uncatlg
               - uncatalog
           disposition_abnormal:
             description:
@@ -108,9 +113,11 @@ options:
             required: false
             default: catalog
             choices:
-              - del
+              - delete
               - keep
+              - catlg
               - catalog
+              - uncatlg
               - uncatalog
           reuse:
             description:
@@ -325,31 +332,31 @@ options:
               - text
               - base64
             default: none
-      dd_sysout:
-        description:
-          - Specify location to place system output.
-        required: false
-        type: dict
-        suboptions:
-          dd_name:
-            description: The dd name.
-            required: true
-            type: str
-          return_content:
-            description:
-              - Whether to return the I(dd_sysout) content.
-              - C(none) means do not return content.
-              - C(text) means return value in ASCII, converted from EBCDIC.
-              - C(base64) means in binary mode.
-            required: false
-            type: str
-            choices:
-              - none
-              - text
-              - base64
-          sysout_class:
-            description: The sysout class.
-            type: str
+      # dd_sysout:
+      #   description:
+      #     - Specify location to place system output.
+      #   required: false
+      #   type: dict
+      #   suboptions:
+      #     dd_name:
+      #       description: The dd name.
+      #       required: true
+      #       type: str
+      #     return_content:
+      #       description:
+      #         - Whether to return the I(dd_sysout) content.
+      #         - C(none) means do not return content.
+      #         - C(text) means return value in ASCII, converted from EBCDIC.
+      #         - C(base64) means in binary mode.
+      #       required: false
+      #       type: str
+      #       choices:
+      #         - none
+      #         - text
+      #         - base64
+      #     sysout_class:
+      #       description: The sysout class.
+      #       type: str
       dd_uss:
         description:
           - The path to a file in Unix System Services (USS).
@@ -500,61 +507,38 @@ options:
         elements: dict
 """
 
-# TODO: write return info
-
-# RETURN = """
-# ret_code:
-#     description: The return code.
-#     returned : always
-#     type: dict
-#     contains:
-#         msg:
-#             description: Holds the return code
-#             type: str
-#         msg_code:
-#             description: Holds the return code string
-#             type: str
-#         msg_txt:
-#             description: Holds additional information related to the program that may be useful to the user.
-#             type: str
-#         code:
-#             description: return code converted to integer value (when possible)
-#             type: int
-#     sample: Value 0 indicates success, non-zero indicates failure.
-#        - code: 0
-#        - msg: "0"
-#        - msg_code: "0"
-#        - msg_txt: "THE z/OS PROGRAM EXECUTION SUCCEED."
-# ddnames:
-#     description: All the related dds with the program.
-#     returned: always
-#     type: list<dict>
-#     contains:
-#         ddname:
-#           description: data definition name
-#           type: str
-#         dataset:
-#           description: the dataset name
-#           type: str
-#         content:
-#           description: ddname content
-#           type: list[str]
-#         record_count:
-#           description: the lines of the content
-#           type: int
-#         byte_count:
-#           description: bytes count
-#           type: int
-#     samples:
-#         - ddname: "SYSIN", "SYSPRINT",etc.
-#         - dataset: "TEST.TESTER.DATA", "stdout", "dummy", etc
-#         - content: " "
-#         - record_count: 4
-#         - byte_count:  415
-# changed:
-#     description: Indicates if any changes were made during module operation.
-#     type: bool
-# """
+RETURN = r"""
+ret_code:
+    description: The return code.
+    returned : always
+    type: dict
+    contains:
+      code:
+        description: The return code number returned from the program.
+        type:
+dd_names:
+    description: All the related dds with the program.
+    returned: always
+    type: list
+    elements: dict
+    contains:
+      dd_name:
+        description: The data definition name.
+        type: str
+      name:
+        description: The data set or path name associated with the data definition.
+        type: str
+      content:
+        description: The content contained in the data definition.
+        type: list
+        elements: str
+      record_count:
+        description: The lines of the content.
+        type: int
+      byte_count:
+        description: The number of bytes in the response content.
+        type: int
+"""
 
 # TODO: verify examples match expected format
 
@@ -738,7 +722,6 @@ options:
 #                                             LINE COMPARE SUMMARY AND STATISTICS
 
 
-
 #                             1 NUMBER OF LINE MATCHES               0  TOTAL CHANGES (PAIRED+NONPAIRED CHNG)
 #                             0 REFORMATTED LINES                    0  PAIRED CHANGES (REFM+PAIRED INS/DEL)
 #                             0 NEW FILE LINE INSERTIONS             0  NON-PAIRED INSERTS
@@ -828,8 +811,388 @@ options:
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dd_statement import (
+    DDStatement,
+    FileDefinition,
+    DatasetDefinition,
+    StdinDefinition,
+    DummyDefinition,
+)
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.zos_raw import MVSCmd
+
 from ansible.module_utils.basic import AnsibleModule
 import re
+from ansible.module_utils.six import PY3
+
+if PY3:
+    from shlex import quote
+else:
+    from pipes import quote
+
+
+def run_module():
+    dd_name_base = dict(dd_name=dict(type="str", required=True))
+
+    dd_data_set_base = dict(
+        data_set_name=dict(type="str"),
+        disposition=dict(type="str", choices=["new", "shr", "mod", "old"]),
+        disposition_normal=dict(
+            type="str", choices=["delete", "keep", "catalog", "uncatalog"]
+        ),
+        disposition_abnormal=dict(
+            type="str", choices=["delete", "keep", "catalog", "uncatalog"]
+        ),
+        space_type=dict(
+            type="str", choices=["trk", "cyl", "b", "k", "m", "g", "blklgth", "reclgth"]
+        ),
+        space_primary=dict(type="int"),
+        space_secondary=dict(type="int"),
+        volumes=dict(type="raw"),
+        sms_management_class=dict(type="str"),
+        sms_storage_class=dict(type="str"),
+        sms_data_class=dict(type="str"),
+        block_size=dict(type="int"),
+        block_size_type=dict(type="str", choices=["b", "k", "m", "g"]),
+        key_label=dict(type="str"),
+        type=dict(
+            type="str",
+            choices=[
+                "library",
+                "pds",
+                "pdse",
+                "seq",
+                "basic",
+                "large",
+                "ksds",
+                "rrds",
+                "lds",
+                "esds",
+            ],
+        ),
+        encryption_key_1=dict(
+            type="dict",
+            options=dict(
+                label=dict(type="str", required=True),
+                encoding=dict(type="str", required=True, choices=["l", "h"]),
+            ),
+        ),
+        encryption_key_2=dict(
+            type="dict",
+            options=dict(
+                label=dict(type="str", required=True),
+                encoding=dict(type="str", required=True, choices=["l", "h"]),
+            ),
+        ),
+        key_length=dict(type="int"),
+        key_offset=dict(type="int"),
+        record_length=dict(type="int"),
+        record_format=dict(
+            type="str", choices=["u", "v", "vb", "vba", "f", "fb", "fba"]
+        ),
+        return_content=dict(
+            type="dict",
+            options=dict(
+                type=dict(
+                    type="str", default="none", choices=["text", "base64", "none"]
+                ),
+                src_encoding=dict(type="str", default="ibm-1047"),
+                response_encoding=dict(type="str", default="iso8859-1"),
+            ),
+        ),
+    )
+
+    dd_input_base = dict(
+        content=dict(type="raw", required=True),
+        return_content=dict(
+            type="dict",
+            options=dict(
+                type=dict(
+                    type="str", default="none", choices=["text", "base64", "none"]
+                ),
+                src_encoding=dict(type="str", default="ibm-1047"),
+                response_encoding=dict(type="str", default="iso8859-1"),
+            ),
+        ),
+    )
+
+    dd_unix_base = dict(
+        path=dict(type="str", required=True),
+        disposition_normal=dict(type="str", choices=["keep", "delete"]),
+        disposition_abnormal=dict(type="str", choices=["keep", "delete"]),
+        mode=dict(type="int"),
+        status_group=dict(
+            type="list",
+            elements="str",
+            choices=[
+                "ocreat",
+                "oexcl",
+                "oappend",
+                "ordwr",
+                "ordonly",
+                "owronly",
+                "onoctty",
+                "ononblock",
+                "osync",
+                "otrunc",
+            ],
+        ),
+        file_data_type=dict(
+            type="str", choices=["binary", "text", "record"], default="binary"
+        ),
+        return_content=dict(
+            type="dict",
+            options=dict(
+                type=dict(
+                    type="str", default="none", choices=["text", "base64", "none"]
+                ),
+                src_encoding=dict(type="str", default="ibm-1047"),
+                response_encoding=dict(type="str", default="iso8859-1"),
+            ),
+        ),
+    )
+
+    # dd_sysout_base = dict(
+    #     return_content=dict(type="str", default="none", choices=["none", "text", "base64"]),
+    # )
+
+    dd_dummy_base = dict()
+
+    dd_concat_base = dict(
+        dds=dict(
+            type="list",
+            elements="dict",
+            options=dict(
+                dd_data_set=dict(type="dict", options=dd_data_set_base),
+                dd_input=dict(type="dict", options=dd_input_base),
+                dd_unix=dict(type="dict", options=dd_unix_base),
+            ),
+        )
+    )
+
+    dd_data_set = dict(type="dict", options=dict(**dd_name_base, **dd_data_set_base))
+    dd_unix = dict(type="dict", options=dict(**dd_name_base, **dd_unix_base))
+    dd_input = dict(type="dict", options=dict(**dd_name_base, **dd_input_base))
+    # dd_sysout = dict(type="dict", options=dict(**dd_name_base, **dd_sysout_base))
+    dd_dummy = dict(type="dict", options=dict(**dd_name_base, **dd_dummy_base))
+    dd_concat = dict(type="dict", options=dict(**dd_name_base, **dd_concat_base))
+
+    module_args = dict(
+        program_name=dict(type="str"),
+        auth=dict(type="bool", default=False),
+        args=dict(type="str", required=False),
+        dds=dict(
+            type="list",
+            elements="dict",
+            options=dict(
+                dd_data_set=dd_data_set,
+                dd_unix=dd_unix,
+                dd_input=dd_input,
+                dd_concat=dd_concat,
+                # dd_sysout=dd_sysout,
+                dd_dummy=dd_dummy,
+            ),
+        ),
+        verbose=dict(type="bool", required=False),
+        debug=dict(type="bool", required=False),
+    )
+    result = dict(changed=False, dd_names=[], ret_code=dict(code=0))
+    response = {}
+    try:
+
+        module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
+        parms = parse_and_validate_args(module.params)
+        dd_statements = build_dd_statements(parms)
+        program = parms.get("program_name")
+        args = parms.get("args")
+        authorized = parms.get("auth")
+        program_response = run_zos_program(
+            program=program,
+            args=args,
+            dd_statements=dd_statements,
+            authorized=authorized,
+        )
+        if program_response.rc != 0 and program_response.stderr:
+            raise ZOSRawError(program, program_response.stderr)
+
+        response = build_response(program_response.rc, dd_statements)
+
+    except Exception as e:
+        module.fail_json(msg=repr(e), **result)
+
+    result["changed"] = True
+    to_return = {**result, **response}
+    module.exit_json(**to_return)
+
+
+def parse_and_validate_args(params):
+    dd_name_base = dict(dd_name=dict(type="dd", required=True))
+
+    dd_data_set_base = dict(
+        data_set_name=dict(type="data_set", required=True),
+        disposition=dict(type="str", choices=["new", "shr", "mod", "old"]),
+        disposition_normal=dict(
+            type="str", choices=["delete", "keep", "catalog", "uncatalog"]
+        ),
+        disposition_abnormal=dict(
+            type="str", choices=["delete", "keep", "catalog", "uncatalog"]
+        ),
+        space_type=dict(
+            type="str", choices=["trk", "cyl", "b", "k", "m", "g", "blklgth", "reclgth"]
+        ),
+        space_primary=dict(type="int"),
+        space_secondary=dict(type="int"),
+        volumes=dict(type=volumes),
+        sms_management_class=dict(type="str"),
+        sms_storage_class=dict(type="str"),
+        sms_data_class=dict(type="str"),
+        block_size=dict(type="int"),
+        block_size_type=dict(type="str", choices=["b", "k", "m", "g"]),
+        key_label=dict(type="str"),
+        type=dict(
+            type="str",
+            choices=[
+                "library",
+                "pds",
+                "pdse",
+                "seq",
+                "basic",
+                "large",
+                "ksds",
+                "rrds",
+                "lds",
+                "esds",
+            ],
+        ),
+        encryption_key_1=dict(
+            type="dict",
+            options=dict(
+                label=dict(type="str", required=True),
+                encoding=dict(type="str", required=True, choices=["l", "h"]),
+            ),
+        ),
+        encryption_key_2=dict(
+            type="dict",
+            options=dict(
+                label=dict(type="str", required=True),
+                encoding=dict(type="str", required=True, choices=["l", "h"]),
+            ),
+        ),
+        key_length=dict(type="int"),
+        key_offset=dict(type="int"),
+        record_length=dict(type="int"),
+        record_format=dict(
+            type="str", choices=["u", "v", "vb", "vba", "f", "fb", "fba"]
+        ),
+        return_content=dict(
+            type="dict",
+            options=dict(
+                type=dict(
+                    type="str", default="none", choices=["text", "base64", "none"]
+                ),
+                src_encoding=dict(type="encoding", default="ibm-1047"),
+                response_encoding=dict(type="encoding", default="iso8859-1"),
+            ),
+        ),
+    )
+
+    dd_input_base = dict(
+        content=dict(type=dd_content, required=True),
+        return_content=dict(
+            type="dict",
+            options=dict(
+                type=dict(
+                    type="str", default="none", choices=["text", "base64", "none"]
+                ),
+                src_encoding=dict(type="encoding", default="ibm-1047"),
+                response_encoding=dict(type="encoding", default="iso8859-1"),
+            ),
+        ),
+    )
+
+    dd_unix_base = dict(
+        path=dict(type="path", required=True),
+        disposition_normal=dict(type="str", choices=["keep", "delete"]),
+        disposition_abnormal=dict(type="str", choices=["keep", "delete"]),
+        mode=dict(type="int"),
+        status_group=dict(
+            type="list",
+            elements="str",
+            choices=[
+                "ocreat",
+                "oexcl",
+                "oappend",
+                "ordwr",
+                "ordonly",
+                "owronly",
+                "onoctty",
+                "ononblock",
+                "osync",
+                "otrunc",
+            ],
+        ),
+        file_data_type=dict(
+            type="str", choices=["binary", "text", "record"], default="binary"
+        ),
+        return_content=dict(
+            type="dict",
+            options=dict(
+                type=dict(
+                    type="str", default="none", choices=["text", "base64", "none"]
+                ),
+                src_encoding=dict(type="encoding", default="ibm-1047"),
+                response_encoding=dict(type="encoding", default="iso8859-1"),
+            ),
+        ),
+    )
+
+    # dd_sysout_base = dict(
+    #     return_content=dict(type="str", default="none", choices=["none", "text", "base64"]),
+    # )
+
+    dd_dummy_base = dict()
+
+    dd_concat_base = dict(
+        dds=dict(
+            type="list",
+            elements="dict",
+            options=dict(
+                dd_data_set=dict(type="dict", options=dd_data_set_base),
+                dd_input=dict(type="dict", options=dd_input_base),
+                dd_unix=dict(type="dict", options=dd_unix_base),
+            ),
+        )
+    )
+
+    dd_data_set = dict(type="dict", options=dict(**dd_name_base, **dd_data_set_base))
+    dd_unix = dict(type="dict", options=dict(**dd_name_base, **dd_unix_base))
+    dd_input = dict(type="dict", options=dict(**dd_name_base, **dd_input_base))
+    # dd_sysout = dict(type="dict", options=dict(**dd_name_base, **dd_sysout_base))
+    dd_dummy = dict(type="dict", options=dict(**dd_name_base, **dd_dummy_base))
+    dd_concat = dict(type="dict", options=dict(**dd_name_base, **dd_concat_base))
+
+    module_args = dict(
+        program_name=dict(type="str"),
+        auth=dict(type="bool", default=False),
+        args=dict(type="str", required=False),
+        dds=dict(
+            type="list",
+            elements="dict",
+            options=dict(
+                dd_data_set=dd_data_set,
+                dd_unix=dd_unix,
+                dd_input=dd_input,
+                dd_concat=dd_concat,
+                # dd_sysout=dd_sysout,
+                dd_dummy=dd_dummy,
+            ),
+        ),
+        verbose=dict(type="bool", required=False),
+        debug=dict(type="bool", required=False),
+    )
+    parser = BetterArgParser(module_args)
+    parsed_args = parser.parse_args(params)
+    return parsed_args
+
 
 def dd_content(contents, dependencies):
     """Reformats dd content arguments
@@ -847,6 +1210,7 @@ def dd_content(contents, dependencies):
         return "\n".join(contents)
     return contents
 
+
 def volumes(contents, dependencies):
     """Validates volume is valid.
     Returns uppercase volume."""
@@ -856,215 +1220,280 @@ def volumes(contents, dependencies):
         contents = [contents]
     for vol in contents:
         if not re.fullmatch(r"^[A-Z0-9]{1,6}$", str(vol), re.IGNORECASE,):
-            raise ValueError(
-                'Invalid argument "{0}" for type "volumes".'.format(vol)
-            )
+            raise ValueError('Invalid argument "{0}" for type "volumes".'.format(vol))
         vol = vol.upper()
     return contents
 
 
-def parse_and_validate_args(params):
-    dd_name_base = dict(
-        dd_name=dict(type="dd", required=True)
-    )
-
-    dd_data_set_base = dict(
-        data_set_name=dict(type="data_set", required=True),
-        disposition=dict(type="str", choices=["new", "shr", "mod", "old"]),
-        disposition_normal=dict(type="str", choices=["delete", "keep", "catalog", "uncatalog"]),
-        disposition_abnormal=dict(type="str", choices=["delete", "keep", "catalog", "uncatalog"]),
-        space_type=dict(type="str", choices=["trk", "cyl", "b", "k", "m", "g", "blklgth", "reclgth"]),
-        space_primary=dict(type="int"),
-        space_secondary=dict(type="int"),
-        volumes=dict(type=volumes),
-        sms_management_class=dict(type="str"),
-        sms_storage_class=dict(type="str"),
-        sms_data_class=dict(type="str"),
-        block_size=dict(type="int"),
-        block_size_type=dict(type="str", choices=["b", "k", "m", "g"]),
-        data_set_key_label=dict(type="str"),
-        data_set_type=dict(type="str", choices=["library", "pds", "pdse", "seq", "basic", "large", "ksds", "rrds", "lds", "esds"]),
-        encryption_key_1=dict(type="dict", options=dict(
-            label=dict(type="str", required=True),
-            encoding=dict(type="str", required=True, choices=["l", "h"])
-        )),
-        encryption_key_2=dict(type="dict", options=dict(
-            label=dict(type="str", required=True),
-            encoding=dict(type="str", required=True, choices=["l", "h"])
-        )),
-        key_length=dict(type="int"),
-        key_offset=dict(type="int"),
-        record_length=dict(type="int"),
-        record_format=dict(type="str", choices=["u", "v", "vb", "vba", "f", "fb", "fba"]),
-        return_content=dict(type="str", default="none", choices=["none", "text", "base64"]),
-    )
-
-    dd_input_base = dict(
-        dd_content=dict(type=dd_content, required=True),
-        return_content=dict(type="str", default="none", choices=["none", "text", "base64"]),
-    )
-
-    dd_unix_base = dict(
-        path=dict(type="path", required=True),
-        path_disposition_normal=dict(type="str", choices=["keep", "delete"]),
-        path_disposition_abnormal=dict(type="str", choices=["keep", "delete"]),
-        path_mode=dict(type="int"),
-        path_status_group=dict(type="list", elements="str", choices=["ocreat", "oexcl", "oappend", "ordwr", "ordonly", "owronly", "onoctty", "ononblock", "osync", "otrunc"]),
-        file_data_type=dict(type="str", choices=["binary", "text", "record"], default="binary"),
-        return_content=dict(type="str", default="none", choices=["none", "text", "base64"]),
-    )
-
-    dd_sysout_base = dict(
-        return_content=dict(type="str", default="none", choices=["none", "text", "base64"]),
-    )
-
-    dd_dummy_base = dict()
-
-    dd_concat_base = dict(
-        dds=dict(type="list", elements="dict", options=dict(
-            dd_data_set=dict(type="dict", options=dd_data_set_base),
-            dd_input=dict(type="dict", options=dd_input_base),
-            dd_unix=dict(type="dict", options=dd_unix_base)
-        ))
-    )
-
-    dd_data_set = dict(type="dict", options=dict(**dd_name_base, **dd_data_set_base))
-    dd_unix = dict(type="dict", options=dict(**dd_name_base, **dd_unix_base))
-    dd_input = dict(type="dict", options=dict(**dd_name_base, **dd_input_base))
-    dd_sysout = dict(type="dict", options=dict(**dd_name_base, **dd_sysout_base))
-    dd_dummy = dict(type="dict", options=dict(**dd_name_base, **dd_dummy_base))
-    dd_concat = dict(type="dict", options=dict(**dd_name_base, **dd_concat_base))
-
-    module_args = dict(
-        program_name=dict(type="str"),
-        auth=dict(type="bool", default=False),
-        parms=dict(type="str", required=False),
-        dds=dict(type="list", elements="dict", options=dict(
-            dd_data_set=dd_data_set,
-            dd_unix=dd_unix,
-            dd_input=dd_input,
-            dd_concat=dd_concat,
-            dd_sysout=dd_sysout,
-            dd_dummy=dd_dummy
-        )),
-        verbose=dict(type="bool", required=False),
-        debug=dict(type="bool", required=False),
-    )
-    parser = BetterArgParser(module_args)
-    parsed_args = parser.parse_args(params)
-    return parsed_args
+def build_dd_statements(parms):
+    dd_statements = []
+    for dd in parms.get("dds"):
+        dd_name = get_dd_name(dd)
+        data_definition = build_data_definition(dd)
+        if data_definition is None:
+            raise ValueError("No valid data definition found.")
+        dd_statement = DDStatement(dd_name, data_definition)
+        dd_statements.append(dd_statement)
+    return dd_statements
 
 
-def run_module():
-    result = dict(changed=False, ddnames="", ret_code="",)
-    dd_name_base = dict(
-        dd_name=dict(type="str", required=True)
-    )
-
-    dd_data_set_base = dict(
-        data_set_name=dict(type="str"),
-        disposition=dict(type="str", choices=["new", "shr", "mod", "old"]),
-        disposition_normal=dict(type="str", choices=["delete", "keep", "catalog", "uncatalog"]),
-        disposition_abnormal=dict(type="str", choices=["delete", "keep", "catalog", "uncatalog"]),
-        space_type=dict(type="str", choices=["trk", "cyl", "b", "k", "m", "g", "blklgth", "reclgth"]),
-        space_primary=dict(type="int"),
-        space_secondary=dict(type="int"),
-        volumes=dict(type="raw"),
-        sms_management_class=dict(type="str"),
-        sms_storage_class=dict(type="str"),
-        sms_data_class=dict(type="str"),
-        block_size=dict(type="int"),
-        block_size_type=dict(type="str", choices=["b", "k", "m", "g"]),
-        data_set_key_label=dict(type="str"),
-        data_set_type=dict(type="str", choices=["library", "pds", "pdse", "seq", "basic", "large", "ksds", "rrds", "lds", "esds"]),
-        encryption_key_1=dict(type="dict", options=dict(
-            label=dict(type="str", required=True),
-            encoding=dict(type="str", required=True, choices=["l", "h"])
-        )),
-        encryption_key_2=dict(type="dict", options=dict(
-            label=dict(type="str", required=True),
-            encoding=dict(type="str", required=True, choices=["l", "h"])
-        )),
-        key_length=dict(type="int"),
-        key_offset=dict(type="int"),
-        record_length=dict(type="int"),
-        record_format=dict(type="str", choices=["u", "v", "vb", "vba", "f", "fb", "fba"]),
-        return_content=dict(type="str", default="none", choices=["none", "text", "base64"]),
-    )
-
-    dd_input_base = dict(
-        dd_content=dict(type="raw", required=True),
-        return_content=dict(type="str", default="none", choices=["none", "text", "base64"]),
-    )
-
-    dd_unix_base = dict(
-        path=dict(type="str", required=True),
-        path_disposition_normal=dict(type="str", choices=["keep", "delete"]),
-        path_disposition_abnormal=dict(type="str", choices=["keep", "delete"]),
-        path_mode=dict(type="int"),
-        path_status_group=dict(type="list", elements="str", choices=["ocreat", "oexcl", "oappend", "ordwr", "ordonly", "owronly", "onoctty", "ononblock", "osync", "otrunc"]),
-        file_data_type=dict(type="str", choices=["binary", "text", "record"], default="binary"),
-        return_content=dict(type="str", default="none", choices=["none", "text", "base64"]),
-    )
-
-    dd_sysout_base = dict(
-        return_content=dict(type="str", default="none", choices=["none", "text", "base64"]),
-    )
-
-    dd_dummy_base = dict()
-
-    dd_concat_base = dict(
-        dds=dict(type="list", elements="dict", options=dict(
-            dd_data_set=dict(type="dict", options=dd_data_set_base),
-            dd_input=dict(type="dict", options=dd_input_base),
-            dd_unix=dict(type="dict", options=dd_unix_base)
-        ))
-    )
-
-    dd_data_set = dict(type="dict", options=dict(**dd_name_base, **dd_data_set_base))
-    dd_unix = dict(type="dict", options=dict(**dd_name_base, **dd_unix_base))
-    dd_input = dict(type="dict", options=dict(**dd_name_base, **dd_input_base))
-    dd_sysout = dict(type="dict", options=dict(**dd_name_base, **dd_sysout_base))
-    dd_dummy = dict(type="dict", options=dict(**dd_name_base, **dd_dummy_base))
-    dd_concat = dict(type="dict", options=dict(**dd_name_base, **dd_concat_base))
-
-    module_args = dict(
-        program_name=dict(type="str"),
-        auth=dict(type="bool", default=False),
-        parms=dict(type="str", required=False),
-        dds=dict(type="list", elements="dict", options=dict(
-            dd_data_set=dd_data_set,
-            dd_unix=dd_unix,
-            dd_input=dd_input,
-            dd_concat=dd_concat,
-            dd_sysout=dd_sysout,
-            dd_dummy=dd_dummy
-        )),
-        verbose=dict(type="bool", required=False),
-        debug=dict(type="bool", required=False),
-    )
-    try:
-        module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
-        params = parse_and_validate_args(module.params)
-        result["params"] = params
-        result["original_message"] = module.params
-
-    except Exception as e:
-        module.fail_json(msg=repr(e), **result)
-
-    result["changed"] = True
-    module.exit_json(**result)
+def get_dd_name(dd):
+    dd_name = ""
+    if dd.get("dd_data_set"):
+        dd_name = dd.get("dd_data_set").get("dd_name")
+    elif dd.get("dd_unix"):
+        dd_name = dd.get("dd_unix").get("dd_name")
+    elif dd.get("dd_input"):
+        dd_name = dd.get("dd_input").get("dd_name")
+    elif dd.get("dd_dummy"):
+        dd_name = dd.get("dd_dummy").get("dd_name")
+    elif dd.get("dd_concat"):
+        dd_name = dd.get("dd_concat").get("dd_name")
+    return dd_name
 
 
-class Error(Exception):
-    pass
+def build_data_definition(dd):
+    data_definition = None
+    if dd.get("dd_data_set"):
+        data_definition = RawDatasetDefinition(dd.get("dd_data_set"))
+    elif dd.get("dd_unix"):
+        data_definition = RawFileDefinition(dd.get("dd_unix"))
+    elif dd.get("dd_input"):
+        data_definition = RawStdinDefinition(dd.get("dd_input"))
+    elif dd.get("dd_dummy"):
+        data_definition = DummyDefinition()
+    elif dd.get("dd_concat"):
+        data_definition = []
+        for single_dd in dd.get("dd_concat").get("dds", []):
+            data_definition.append(build_data_definition(single_dd))
+    return data_definition
 
 
-class ZOSRawError(Error):
-    def __init__(self, program):
-        self.msg = "An error occurred during execution of z/OS program {}.".format(
-            program
+# TODO: clean up data definition wrapper classes
+class RawDatasetDefinition(DatasetDefinition):
+    def __init__(self, dd_data_set_parms):
+        DATA_SET_NAME_MAP = {
+            "data_set_name": "dataset_name",
+            "type": "type",
+            "key_label": "dataset_key_label",
+            "space_primary": "primary",
+            "space_secondary": "secondary",
+            "disposition_normal": "normal_disposition",
+            "disposition_abnormal": "conditional_disposition",
+            "sms_storage_class": "storage_class",
+            "sms_data_class": "data_class",
+            "sms_management_class": "management_class",
+        }
+        parms = remove_unused_args(dd_data_set_parms)
+        parms.pop("dd_name", None)
+        self.return_content = ReturnContent(**(parms.pop("return_content", None) or {}))
+        if parms.get("block_size_type") and parms.get("block_size"):
+            parms["block_size"] = to_bytes(
+                parms.get("block_size"), parms.get("block_size_type")
+            )
+        if parms.get("space_type"):
+            if parms.get("space_primary"):
+                parms["primary_unit"] = parms.get("space_type")
+            if parms.get("space_secondary"):
+                parms["secondary_unit"] = parms.get("space_type")
+            parms.pop("space_type", None)
+        if parms.get("encryption_key_1"):
+            if parms.get("encryption_key_1").get("label"):
+                parms["key_label1"] = parms.get("encryption_key_1").get("label")
+            if parms.get("encryption_key_1").get("encoding"):
+                parms["key_encoding1"] = parms.get("encryption_key_1").get("encoding")
+            parms.pop("encryption_key_1", None)
+        if parms.get("encryption_key_2"):
+            if parms.get("encryption_key_2").get("label"):
+                parms["key_label2"] = parms.get("encryption_key_2").get("label")
+            if parms.get("encryption_key_2").get("encoding"):
+                parms["key_encoding2"] = parms.get("encryption_key_2").get("encoding")
+            parms.pop("encryption_key_2", None)
+        parms = rename_parms(parms, DATA_SET_NAME_MAP)
+        super().__init__(**parms)
+
+
+class RawFileDefinition(FileDefinition):
+    def __init__(self, dd_unix_parms):
+        UNIX_NAME_MAP = {
+            "path": "path_name",
+            "disposition_normal": "normal_disposition",
+            "disposition_abnormal": "conditional_disposition",
+            "mode": "path_mode",
+            "file_data_type": "file_data",
+        }
+        parms = remove_unused_args(dd_unix_parms)
+        parms.pop("dd_name", None)
+        self.return_content = ReturnContent(**(parms.pop("return_content", None) or {}))
+        parms = rename_parms(parms, UNIX_NAME_MAP)
+        super().__init__(**parms)
+
+
+class RawStdinDefinition(StdinDefinition):
+    def __init__(self, dd_input_parms):
+        parms = dd_input_parms
+        parms.pop("dd_name", None)
+        self.return_content = ReturnContent(**(parms.pop("return_content", None) or {}))
+        super().__init__(**parms)
+
+
+class ReturnContent(object):
+    def __init__(self, type="none", src_encoding=None, response_encoding=None):
+        self.type = type
+        self.src_encoding = src_encoding
+        self.response_encoding = response_encoding
+
+
+def to_bytes(size, unit):
+    num_bytes = 0
+    if unit == "b":
+        num_bytes = size
+    elif unit == "k":
+        num_bytes = size * 1024
+    elif unit == "m":
+        num_bytes = size * 1048576
+    elif unit == "g":
+        num_bytes = size * 1073741824
+    return num_bytes
+
+
+def rename_parms(parms, name_map):
+    renamed_parms = {}
+    for key, value in parms.items():
+        if name_map.get(key):
+            renamed_parms[name_map.get(key)] = value
+        else:
+            renamed_parms[key] = value
+    return renamed_parms
+
+
+def remove_unused_args(parms):
+    return {key: value for key, value in parms.items() if value is not None}
+
+
+def run_zos_program(program, args="", dd_statements=[], authorized=False):
+    response = None
+    if authorized:
+        response = MVSCmd.execute_authorized(pgm=program, args=args, dds=dd_statements)
+    else:
+        response = MVSCmd.execute(pgm=program, args=args, dds=dd_statements)
+    return response
+
+
+def build_response(rc, dd_statements):
+    response = {"ret_code": {"code": rc}}
+    response["dd_names"] = gather_output(dd_statements)
+    return response
+
+
+def gather_output(dd_statements):
+    output = []
+    for dd_statement in dd_statements:
+        output += get_dd_output(dd_statement)
+    return output
+
+
+def get_dd_output(dd_statement):
+    dd_output = []
+    if (
+        isinstance(dd_statement.definition, RawDatasetDefinition)
+        and dd_statement.definition.return_content.type != "none"
+    ):
+        dd_output = [get_data_set_output(dd_statement)]
+    elif (
+        isinstance(dd_statement.definition, RawFileDefinition)
+        and dd_statement.definition.return_content.type != "none"
+    ):
+        dd_output = [get_unix_file_output(dd_statement)]
+    elif (
+        isinstance(dd_statement.definition, RawStdinDefinition)
+        and dd_statement.definition.return_content.type != "none"
+    ):
+        dd_output = [get_data_set_output(dd_statement)]
+    elif isinstance(dd_statement.definition, list):
+        dd_output = get_concatenation_output(dd_statement)
+    return dd_output
+
+
+def get_data_set_output(dd_statement):
+    contents = ""
+    if dd_statement.definition.return_content.type == "text":
+        contents = get_data_set_content(
+            name=dd_statement.definition.name,
+            binary=False,
+            from_encoding=dd_statement.definition.return_content.src_encoding,
+            to_encoding=dd_statement.definition.return_content.response_encoding,
         )
+    elif dd_statement.definition.return_content.type == "base64":
+        contents = get_data_set_content(name=dd_statement.definition.name, binary=True)
+    return build_dd_response(dd_statement.name, dd_statement.definition.name, contents)
+
+
+def get_unix_file_output(dd_statement):
+    contents = ""
+    if dd_statement.definition.return_content.type == "text":
+        contents = get_unix_content(
+            name=dd_statement.definition.name,
+            binary=False,
+            from_encoding=dd_statement.definition.return_content.src_encoding,
+            to_encoding=dd_statement.definition.return_content.response_encoding,
+        )
+    elif dd_statement.definition.return_content.type == "base64":
+        contents = get_unix_content(name=dd_statement.definition.name, binary=True)
+    return build_dd_response(dd_statement.name, dd_statement.definition.name, contents)
+
+
+def get_concatenation_output(dd_statement):
+    dd_response = gather_output(dd_statement.definition)
+    return dd_response
+
+
+def build_dd_response(dd_name, name, contents):
+    dd_response = {}
+    dd_response["dd_name"] = dd_name
+    dd_response["name"] = name
+    dd_response["content"] = contents.split("\n")
+    dd_response["record_count"] = len(dd_response.get("content", []))
+    dd_response["byte_count"] = len(contents.encode("utf-8"))
+    return dd_response
+
+
+def get_data_set_content(name, binary=False, from_encoding=None, to_encoding=None):
+    quoted_name = quote(name)
+    if "'" not in quoted_name:
+        quoted_name = "'{0}'".format(quoted_name)
+    return get_content(
+        '"//{0}"'.format(quoted_name), binary, from_encoding, to_encoding
+    )
+
+
+def get_unix_content(name, binary=False, from_encoding=None, to_encoding=None):
+    return get_content("{0}".format(quote(name)), binary, from_encoding, to_encoding)
+
+
+def get_content(formatted_name, binary=False, from_encoding=None, to_encoding=None):
+    module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+    conversion_command = ""
+    if not binary:
+        conversion_command = " | iconv -f {0} -t {1}".format(
+            quote(from_encoding), quote(to_encoding)
+        )
+    # * name argument should already be quoted by the time it reaches here
+    rc, stdout, stderr = module.run_command(
+        "cat {0}{1}".format(formatted_name, conversion_command), use_unsafe_shell=True
+    )
+    if rc:
+        return ""
+    else:
+        return stdout
+
+
+class ZOSRawError(Exception):
+    def __init__(self, program="", error=""):
+        self.msg = "An error occurred during execution of z/OS program {0}. {1}".format(
+            program, error
+        )
+        super().__init__(self.msg)
 
 
 def main():

@@ -36,11 +36,31 @@ Managed node
 * `IBM Open Enterprise Python for z/OS`_
 * z/OS `V2R3`_ or `later`_
 * `IBM Z Open Automation Utilities`_ (ZOAU)
+* The z/OS® shell
 
    * IBM z/OS core collections are dependent on specific versions of ZOAU.
      For information about the required version of ZOAU, review the
      `release notes`_.
 * `z/OS OpenSSH`_
+
+.. note::
+   Currently, the only supported shell is the ``z/OS® shell``; this is because
+   shells such as ``bash`` handle the reading and writing of untagged files
+   differently. ``bash`` added enhanced ASCII support in 4.3 and thus differs
+   from 4.2; we encourage users avoid using ``ansible_shell_executable`` to
+   change the default shell as does `Ansible documentation`_. Should the
+   ``bash`` shell be the only shell available, you will need to control how
+   new and existing files are tagged and encoded, this can be controlled by
+   setting both "_ENCODE_FILE_NEW" and "_ENCODE_FILE_EXISTING"; for example,
+
+   * _ENCODE_FILE_NEW: "IBM-1047"
+   * _ENCODE_FILE_EXISTING: "IBM-1047"
+   
+   Please review the README.ZOS guide included with the ported ``bash`` shell
+   for further configurations.
+
+.. _Ansible documentation:
+   https://docs.ansible.com/ansible/2.7/user_guide/intro_inventory.html
 
 .. _Python on z/OS:
    requirements.html#id1

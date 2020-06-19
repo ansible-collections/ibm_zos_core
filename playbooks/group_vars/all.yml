@@ -16,7 +16,7 @@
 # - The value for property PATH is the ZOA utilities BIN path and Python
 #   interpreter path, for example:
 #   PATH: "/usr/lpp/IBM/zoautil/bin:/usr/lpp/IBM/cyp/v3r8/pyz/bin:/bin"
-# - The value for the property **_CEE_RUNOPTS** is the invocation Language
+# - The value for the property _CEE_RUNOPTS is the invocation Language
 #   Environment® runtime options for programs and used by Python, for example,
 #   _CEE_RUNOPTS: "FILETAG(AUTOCVT,AUTOTAG) POSIX(ON)"
 # - The value for properties __TAG_REDIR_ERR, _TAG_REDIR_IN, _TAG_REDIR_OUT
@@ -26,6 +26,14 @@
 #      _TAG_REDIR_OUT: "txt"
 # - The value for the property LANG is the name of the default locale; value
 #   C specifies the POSIX locale, for example: ``LANG: "C"``.
+# - The bash shell is unsupported, if that is the only shell available, you will
+#   need to control how new and existing files are tagged and encoded; an
+#   example of what is needed in addition to this files environment varialbes,
+#   are both "_ENCODE_FILE_NEW" and "_ENCODE_FILE_EXISTING"; for example,
+#      _ENCODE_FILE_NEW: "IBM-1047"
+#      _ENCODE_FILE_EXISTING: "IBM-1047"
+#   Please review the README.ZOS guide included with the ported ``bash`` shell
+#   for further configurations.
 #
 # Note:
 #   In ZOAU 1.0.2 and later, the property ZOAU_ROOT is no longer supported

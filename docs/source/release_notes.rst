@@ -34,6 +34,7 @@ Reference
   * Supported by IBM Open Enterprise Python for z/OS: 3.8.2 or later
   * Supported by IBM Z Open Automation Utilities: 1.0.3 or later
   * Supported by z/OS V2R3
+  * The z/OS® shell
 
 
 Version 1.1.0-beta1

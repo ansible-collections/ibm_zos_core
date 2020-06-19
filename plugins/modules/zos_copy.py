@@ -433,7 +433,8 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     encode,
     vtoc,
     backup,
-    copy
+    copy,
+    mvs_cmd
 )
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
@@ -532,9 +533,7 @@ class CopyHandler(object):
         repro_cmd = '''  REPRO -
         INDATASET({0}) -
         OUTDATASET({1})'''.format(src, dest)
-        rc, out, err = self._run_mvs_command(
-            "IDCAMS", repro_cmd, authorized=True
-        )
+        rc, out, err = mvs_cmd.idcams(repro_cmd, authorized=True)
         if rc != 0:
             self.fail_json(
                 msg=("IDCAMS REPRO encountered a problem while "
@@ -615,7 +614,7 @@ class CopyHandler(object):
         alloc_cmd = """  ALLOC -
         DS('{0}') -
         LIKE('{1}')""".format(ds_name, model)
-        rc, out, err = self._run_mvs_command("IKJEFT01", alloc_cmd, authorized=True)
+        rc, out, err = mvs_cmd.ikjeft01(alloc_cmd, authorized=True)
         if rc != 0:
             self.fail_json(
                 msg="Unable to allocate destination {0}".format(ds_name),
@@ -669,40 +668,6 @@ class CopyHandler(object):
                 stdout_lines=out.splitlines(),
                 stderr_lines=err.splitlines()
             )
-
-    def _run_mvs_command(self, pgm, cmd, dd=None, authorized=False):
-        """Run a particular MVS command.
-
-        Arguments:
-            pgm {str} -- The MVS program to run
-            cmd {str} -- The input command to pass to the program
-
-        Keyword Arguments:
-            dd {dict} -- The DD definitions required by the program. (Default {None})
-            authorized {bool} -- Indicates whether the MVS program should run
-            as authorized. (Default {False})
-
-        Returns:
-            tuple[int, str, str] -- A tuple of return code, stdout and stderr
-        """
-        sysprint = "sysprint"
-        sysin = "sysin"
-        pgm = pgm.upper()
-        if pgm == "IKJEFT01":
-            sysprint = "systsprt"
-            sysin = "systsin"
-
-        mvs_cmd = "mvscmd"
-        if authorized:
-            mvs_cmd += "auth"
-        mvs_cmd += " --pgm={0} --{1}=* --{2}=stdin"
-        if dd:
-            for k, v in dd.items():
-                mvs_cmd += " --{0}={1}".format(k, v)
-
-        return self.run_command(
-            mvs_cmd.format(pgm, sysprint, sysin), data=cmd
-        )
 
 
 class USSCopyHandler(CopyHandler):
@@ -898,7 +863,7 @@ class PDSECopyHandler(CopyHandler):
                 Datasets.delete(temp_ds)
             dds = dict(OUTPUT=dest, INPUT=new_src)
             copy_cmd = "   COPY OUTDD=OUTPUT,INDD=((INPUT,R))"
-            rc, out, err = self._run_mvs_command("IEBCOPY", copy_cmd, dds)
+            rc, out, err = mvs_cmd.iebcopy(copy_cmd, dds=dds)
             if rc != 0:
                 self.fail_json(
                     msg="IEBCOPY encountered a problem while copying {0} to {1}".format(new_src, dest),
@@ -947,7 +912,7 @@ class PDSECopyHandler(CopyHandler):
             rc = Datasets.copy(new_src, dest)
             if rc != 0:
                 self.fail_json(
-                    msg="Unable to copy to data set member {0}".format(dest),
+                    msg="Unable to copy data set member {0} to {1}".format(new_src, dest),
                     rc=rc
                 )
         return dest

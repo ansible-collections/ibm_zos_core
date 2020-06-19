@@ -20,6 +20,8 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.file import make_dirs
 
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.mvs_cmd import iebcopy
+
 try:
     from zoautil_py import Datasets
 except Exception:
@@ -64,6 +66,7 @@ def mvs_file_backup(dsn, bk_dsn):
         Datasets.delete(bk_dsn)
         if Datasets.move(dsn, bk_dsn) == 0:
             _allocate_model(dsn, bk_dsn)
+            _copy_pds(bk_dsn, dsn)
         else:
             raise BackupError(
                 "Unable to backup data set {0} to {1}".format(dsn, bk_dsn)
@@ -217,6 +220,21 @@ def _vsam_empty(ds):
         return True
     elif rc != 0:
         return False
+
+
+def _copy_pds(src, dest):
+    module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+    dds = dict(OUTPUT=dest, INPUT=src)
+    copy_cmd = "   COPY OUTDD=OUTPUT,INDD=((INPUT,R))"
+    rc, out, err = iebcopy(copy_cmd, dds)
+    if rc != 0:
+        module.fail_json(
+            msg="IEBCOPY encountered a problem while copying {0} to {1}".format(src, dest),
+            stdout=out, stderr=err, rc=rc,
+            stdout_lines=out.splitlines(),
+            stderr_lines=err.splitlines(),
+            cmd=copy_cmd
+        )
 
 
 class BackupError(Exception):

@@ -40,7 +40,7 @@ options:
       - The input data source.
       - I(dds) supports 6 types of sources:
           - I(dd_data_set) for data set files.
-          - I(dd_uss) for UNIX files.
+          - I(dd_unix) for UNIX files.
           - I(dd_input) for in-stream data set.
           - I(dd_dummy) for no content input.
           - I(dd_concat) for a data set concatenation.
@@ -321,20 +321,21 @@ options:
             default: fb
           return_content:
             description:
+              - Determines how content should be returned to the user.
+              - If not provided, no content from the DD is returned.
             type: dict
+            required: false
             suboptions:
               type:
                 description:
-                  - Whether to return the I(dd_data_set) content.
-                  - C(none) means do not return content.
+                  - The type of the content to be returned.
                   - C(text) means return content in ASCII, converted from EBCDIC.
                   - C(base64) means return content in binary mode.
                 type: str
                 choices:
-                  - none
                   - text
                   - base64
-                default: "none"
+                required: true
               src_encoding:
                 description:
                   - The encoding of the data set on the z/OS system.
@@ -345,7 +346,7 @@ options:
                   - The encoding to use when returning the contents of the data set.
                 type: str
                 default: iso8859-1
-      dd_uss:
+      dd_unix:
         description:
           - The path to a file in Unix System Services (USS).
         required: false
@@ -420,20 +421,21 @@ options:
               - record
           return_content:
             description:
+              - Determines how content should be returned to the user.
+              - If not provided, no content from the DD is returned.
             type: dict
+            required: false
             suboptions:
               type:
                 description:
-                  - Whether to return the I(dd_data_set) content.
-                  - C(none) means do not return content.
+                  - The type of the content to be returned.
                   - C(text) means return content in ASCII, converted from EBCDIC.
                   - C(base64) means return content in binary mode.
                 type: str
                 choices:
-                  - none
                   - text
                   - base64
-                default: "none"
+                required: true
               src_encoding:
                 description:
                   - The encoding of the file on the z/OS system.
@@ -467,20 +469,21 @@ options:
             type: raw
           return_content:
             description:
+              - Determines how content should be returned to the user.
+              - If not provided, no content from the DD is returned.
             type: dict
+            required: false
             suboptions:
               type:
                 description:
-                  - Whether to return the I(dd_data_set) content.
-                  - C(none) means do not return content.
+                  - The type of the content to be returned.
                   - C(text) means return content in ASCII, converted from EBCDIC.
                   - C(base64) means return content in binary mode.
                 type: str
                 choices:
-                  - none
                   - text
                   - base64
-                default: "none"
+                required: true
               src_encoding:
                 description:
                   - The encoding of the data set on the z/OS system.
@@ -507,7 +510,7 @@ options:
       dd_concat:
         description:
           - "I(dd_concat) is a list containing any of the following types:
-            I(dd_data_set), I(dd_uss), and I(dd_input)."
+            I(dd_data_set), I(dd_unix), and I(dd_input)."
         required: false
         type: list
         elements: dict
@@ -780,20 +783,21 @@ options:
                 default: fb
               return_content:
                 description:
+                  - Determines how content should be returned to the user.
+                  - If not provided, no content from the DD is returned.
                 type: dict
+                required: false
                 suboptions:
                   type:
                     description:
-                      - Whether to return the I(dd_data_set) content.
-                      - C(none) means do not return content.
+                      - The type of the content to be returned.
                       - C(text) means return content in ASCII, converted from EBCDIC.
                       - C(base64) means return content in binary mode.
                     type: str
                     choices:
-                      - none
                       - text
                       - base64
-                    default: "none"
+                    required: true
                   src_encoding:
                     description:
                       - The encoding of the data set on the z/OS system.
@@ -804,7 +808,7 @@ options:
                       - The encoding to use when returning the contents of the data set.
                     type: str
                     default: iso8859-1
-          dd_uss:
+          dd_unix:
             description:
               - The path to a file in Unix System Services (USS).
             required: false
@@ -875,20 +879,21 @@ options:
                   - record
               return_content:
                 description:
+                  - Determines how content should be returned to the user.
+                  - If not provided, no content from the DD is returned.
                 type: dict
+                required: false
                 suboptions:
                   type:
                     description:
-                      - Whether to return the I(dd_data_set) content.
-                      - C(none) means do not return content.
+                      - The type of the content to be returned.
                       - C(text) means return content in ASCII, converted from EBCDIC.
                       - C(base64) means return content in binary mode.
                     type: str
                     choices:
-                      - none
                       - text
                       - base64
-                    default: "none"
+                    required: true
                   src_encoding:
                     description:
                       - The encoding of the file on the z/OS system.
@@ -918,20 +923,21 @@ options:
                 type: raw
               return_content:
                 description:
+                  - Determines how content should be returned to the user.
+                  - If not provided, no content from the DD is returned.
                 type: dict
+                required: false
                 suboptions:
                   type:
                     description:
-                      - Whether to return the I(dd_data_set) content.
-                      - C(none) means do not return content.
+                      - The type of the content to be returned.
                       - C(text) means return content in ASCII, converted from EBCDIC.
                       - C(base64) means return content in binary mode.
                     type: str
                     choices:
-                      - none
                       - text
                       - base64
-                    default: "none"
+                    required: true
                   src_encoding:
                     description:
                       - The encoding of the data set on the z/OS system.
@@ -1003,6 +1009,11 @@ else:
 
 
 def run_module():
+    """Executes all module-related functions.
+
+    Raises:
+        ZOSRawError: When an issue occurs attempting to run the desired program.
+    """
     dd_name_base = dict(dd_name=dict(type="str", required=True))
 
     dd_data_set_base = dict(
@@ -1062,9 +1073,7 @@ def run_module():
         return_content=dict(
             type="dict",
             options=dict(
-                type=dict(
-                    type="str", default="none", choices=["text", "base64", "none"]
-                ),
+                type=dict(type="str", choices=["text", "base64"], required=True),
                 src_encoding=dict(type="str", default="ibm-1047"),
                 response_encoding=dict(type="str", default="iso8859-1"),
             ),
@@ -1076,9 +1085,7 @@ def run_module():
         return_content=dict(
             type="dict",
             options=dict(
-                type=dict(
-                    type="str", default="none", choices=["text", "base64", "none"]
-                ),
+                type=dict(type="str", choices=["text", "base64"], required=True),
                 src_encoding=dict(type="str", default="ibm-1047"),
                 response_encoding=dict(type="str", default="iso8859-1"),
             ),
@@ -1112,9 +1119,7 @@ def run_module():
         return_content=dict(
             type="dict",
             options=dict(
-                type=dict(
-                    type="str", default="none", choices=["text", "base64", "none"]
-                ),
+                type=dict(type="str", choices=["text", "base64"], required=True),
                 src_encoding=dict(type="str", default="ibm-1047"),
                 response_encoding=dict(type="str", default="iso8859-1"),
             ),
@@ -1138,7 +1143,6 @@ def run_module():
     dd_data_set = dict(type="dict", options=dict(**dd_name_base, **dd_data_set_base))
     dd_unix = dict(type="dict", options=dict(**dd_name_base, **dd_unix_base))
     dd_input = dict(type="dict", options=dict(**dd_name_base, **dd_input_base))
-    # dd_sysout = dict(type="dict", options=dict(**dd_name_base, **dd_sysout_base))
     dd_dummy = dict(type="dict", options=dict(**dd_name_base, **dd_dummy_base))
     dd_concat = dict(type="dict", options=dict(**dd_name_base, **dd_concat_base))
 
@@ -1154,7 +1158,6 @@ def run_module():
                 dd_unix=dd_unix,
                 dd_input=dd_input,
                 dd_concat=dd_concat,
-                # dd_sysout=dd_sysout,
                 dd_dummy=dd_dummy,
             ),
         ),
@@ -1191,6 +1194,14 @@ def run_module():
 
 
 def parse_and_validate_args(params):
+    """Perform additional argument validation to validate and update input content,
+
+    Args:
+        params (dict): The raw module parameters as provided by AnsibleModule.
+
+    Returns:
+        dict: The module parameters after validation and content updates.
+    """
     dd_name_base = dict(dd_name=dict(type="dd", required=True))
 
     dd_data_set_base = dict(
@@ -1250,9 +1261,7 @@ def parse_and_validate_args(params):
         return_content=dict(
             type="dict",
             options=dict(
-                type=dict(
-                    type="str", default="none", choices=["text", "base64", "none"]
-                ),
+                type=dict(type="str", choices=["text", "base64"], required=True),
                 src_encoding=dict(type="encoding", default="ibm-1047"),
                 response_encoding=dict(type="encoding", default="iso8859-1"),
             ),
@@ -1264,9 +1273,7 @@ def parse_and_validate_args(params):
         return_content=dict(
             type="dict",
             options=dict(
-                type=dict(
-                    type="str", default="none", choices=["text", "base64", "none"]
-                ),
+                type=dict(type="str", choices=["text", "base64"], required=True),
                 src_encoding=dict(type="encoding", default="ibm-1047"),
                 response_encoding=dict(type="encoding", default="iso8859-1"),
             ),
@@ -1300,18 +1307,12 @@ def parse_and_validate_args(params):
         return_content=dict(
             type="dict",
             options=dict(
-                type=dict(
-                    type="str", default="none", choices=["text", "base64", "none"]
-                ),
+                type=dict(type="str", choices=["text", "base64"], required=True),
                 src_encoding=dict(type="encoding", default="ibm-1047"),
                 response_encoding=dict(type="encoding", default="iso8859-1"),
             ),
         ),
     )
-
-    # dd_sysout_base = dict(
-    #     return_content=dict(type="str", default="none", choices=["none", "text", "base64"]),
-    # )
 
     dd_dummy_base = dict()
 
@@ -1330,7 +1331,6 @@ def parse_and_validate_args(params):
     dd_data_set = dict(type="dict", options=dict(**dd_name_base, **dd_data_set_base))
     dd_unix = dict(type="dict", options=dict(**dd_name_base, **dd_unix_base))
     dd_input = dict(type="dict", options=dict(**dd_name_base, **dd_input_base))
-    # dd_sysout = dict(type="dict", options=dict(**dd_name_base, **dd_sysout_base))
     dd_dummy = dict(type="dict", options=dict(**dd_name_base, **dd_dummy_base))
     dd_concat = dict(type="dict", options=dict(**dd_name_base, **dd_concat_base))
 
@@ -1346,7 +1346,6 @@ def parse_and_validate_args(params):
                 dd_unix=dd_unix,
                 dd_input=dd_input,
                 dd_concat=dd_concat,
-                # dd_sysout=dd_sysout,
                 dd_dummy=dd_dummy,
             ),
         ),
@@ -1376,8 +1375,18 @@ def dd_content(contents, dependencies):
 
 
 def volumes(contents, dependencies):
-    """Validates volume is valid.
-    Returns uppercase volume."""
+    """Validate volume arguments.
+
+    Args:
+        contents (Union[str, list[str]]): The contents provided for the volume argument.
+        dependencies (dict): Any arguments this argument is dependent on.
+
+    Raises:
+        ValueError: When invalid argument provided.
+
+    Returns:
+        list[str]: The contents returned as a list of volumes
+    """
     if not contents:
         return None
     if not isinstance(contents, list):
@@ -1390,6 +1399,17 @@ def volumes(contents, dependencies):
 
 
 def build_dd_statements(parms):
+    """Build a list of DDStatement objects from provided module parms.
+
+    Args:
+        parms (dict): Module parms after formatting and validation.
+
+    Raises:
+        ValueError: If no data definition can be found matching provided DD type.
+
+    Returns:
+        list[DDStatement]: List of DDStatement objects representing DD statements specified in module parms.
+    """
     dd_statements = []
     for dd in parms.get("dds"):
         dd_name = get_dd_name(dd)
@@ -1402,6 +1422,14 @@ def build_dd_statements(parms):
 
 
 def get_dd_name(dd):
+    """Get the DD name from a dd parm as specified in module parms.
+
+    Args:
+        dd (dict): A single DD parm as specified in module parms.
+
+    Returns:
+        str: The DD name.
+    """
     dd_name = ""
     if dd.get("dd_data_set"):
         dd_name = dd.get("dd_data_set").get("dd_name")
@@ -1417,6 +1445,17 @@ def get_dd_name(dd):
 
 
 def build_data_definition(dd):
+    """Build a DataDefinition object for a particular DD parameter.
+
+    Args:
+        dd (dict): A single DD parm as specified in module parms.
+
+    Returns:
+        Union[list[RawDatasetDefinition, RawFileDefinition,
+              RawStdinDefinition],
+              RawDatasetDefinition, RawFileDefinition,
+              RawStdinDefinition, DummyDefinition]: The DataDefinition object or a list of DataDefinition objects.
+    """
     data_definition = None
     if dd.get("dd_data_set"):
         data_definition = RawDatasetDefinition(dd.get("dd_data_set"))
@@ -1435,7 +1474,34 @@ def build_data_definition(dd):
 
 # TODO: clean up data definition wrapper classes
 class RawDatasetDefinition(DatasetDefinition):
+    """Wrapper around DatasetDefinition to contain information about
+    desired return contents.
+
+    Args:
+        DatasetDefinition (DatasetDefinition): Dataset DD data type to be used in a DDStatement.
+    """
+
     def __init__(self, dd_data_set_parms):
+        """Initialize RawDatasetDefinition
+
+        Args:
+            dd_data_set_parms (dict): dd_data_set parm as specified in module.
+        """
+        self.return_content = ReturnContent(
+            **(dd_data_set_parms.pop("return_content", None) or {})
+        )
+        parms = self.restructure_parms(dd_data_set_parms)
+        super().__init__(**parms)
+
+    def restructure_parms(self, dd_data_set_parms):
+        """Restructure parms to match expected input keys and values for DatasetDefinition.
+
+        Args:
+            dd_data_set_parms (dict): The parms with same keys as provided to the module.
+
+        Returns:
+            dict: Restructured parms in format expected by DatasetDefinition
+        """
         DATA_SET_NAME_MAP = {
             "data_set_name": "dataset_name",
             "type": "type",
@@ -1450,7 +1516,6 @@ class RawDatasetDefinition(DatasetDefinition):
         }
         parms = remove_unused_args(dd_data_set_parms)
         parms.pop("dd_name", None)
-        self.return_content = ReturnContent(**(parms.pop("return_content", None) or {}))
         if parms.get("block_size_type") and parms.get("block_size"):
             parms["block_size"] = to_bytes(
                 parms.get("block_size"), parms.get("block_size_type")
@@ -1474,11 +1539,38 @@ class RawDatasetDefinition(DatasetDefinition):
                 parms["key_encoding2"] = parms.get("encryption_key_2").get("encoding")
             parms.pop("encryption_key_2", None)
         parms = rename_parms(parms, DATA_SET_NAME_MAP)
-        super().__init__(**parms)
+        return parms
 
 
 class RawFileDefinition(FileDefinition):
+    """Wrapper around FileDefinition to contain information about
+    desired return contents.
+
+    Args:
+        FileDefinition (FileDefinition): File DD data type to be used in a DDStatement.
+    """
+
     def __init__(self, dd_unix_parms):
+        """Initialize RawFileDefinition
+
+        Args:
+            dd_unix_parms (dict): dd_unix parms as specified in module.
+        """
+        self.return_content = ReturnContent(
+            **(dd_unix_parms.pop("return_content", None) or {})
+        )
+        parms = self.restructure_parms(dd_unix_parms)
+        super().__init__(**parms)
+
+    def restructure_parms(self, dd_unix_parms):
+        """Restructure parms to match expected input keys and values for FileDefinition.
+
+        Args:
+            dd_unix_parms (dict): The parms with same keys as provided to the module.
+
+        Returns:
+            dict: Restructured parms in format expected by FileDefinition
+        """
         UNIX_NAME_MAP = {
             "path": "path_name",
             "disposition_normal": "normal_disposition",
@@ -1488,13 +1580,24 @@ class RawFileDefinition(FileDefinition):
         }
         parms = remove_unused_args(dd_unix_parms)
         parms.pop("dd_name", None)
-        self.return_content = ReturnContent(**(parms.pop("return_content", None) or {}))
         parms = rename_parms(parms, UNIX_NAME_MAP)
-        super().__init__(**parms)
+        return parms
 
 
 class RawStdinDefinition(StdinDefinition):
+    """Wrapper around StdinDefinition to contain information about
+    desired return contents.
+
+    Args:
+        StdinDefinition (StdinDefinition): Stdin DD data type to be used in a DDStatement.
+    """
+
     def __init__(self, dd_input_parms):
+        """Initialize RawStdinDefinition
+
+        Args:
+            dd_input_parms (dict): dd_input parms as specified in module.
+        """
         parms = dd_input_parms
         parms.pop("dd_name", None)
         self.return_content = ReturnContent(**(parms.pop("return_content", None) or {}))
@@ -1502,13 +1605,39 @@ class RawStdinDefinition(StdinDefinition):
 
 
 class ReturnContent(object):
-    def __init__(self, type="none", src_encoding=None, response_encoding=None):
+    """Holds information about what type of content
+    should be returned for a particular DD, if any.
+
+    Args:
+        object (object): The most base type.
+    """
+
+    def __init__(self, type=None, src_encoding=None, response_encoding=None):
+        """Initialize ReturnContent
+
+        Args:
+            type (str, optional): The type of content to return.
+                    Defaults to None.
+            src_encoding (str, optional): The encoding of the data set or file on the z/OS system.
+                    Defaults to None.
+            response_encoding (str, optional): The encoding to use when returning the contents of the data set or file.
+                    Defaults to None.
+        """
         self.type = type
         self.src_encoding = src_encoding
         self.response_encoding = response_encoding
 
 
 def to_bytes(size, unit):
+    """Convert sizes of various units to bytes.
+
+    Args:
+        size (int): The size to convert.
+        unit (str): The unit of size.
+
+    Returns:
+        int: The size converted to bytes.
+    """
     num_bytes = 0
     if unit == "b":
         num_bytes = size
@@ -1522,6 +1651,15 @@ def to_bytes(size, unit):
 
 
 def rename_parms(parms, name_map):
+    """Rename parms based on a provided dictionary.
+
+    Args:
+        parms (dict): The parms before name remapping.
+        name_map (dict): The dictionary to use for name mapping.
+
+    Returns:
+        dict: The parms after name mapping.
+    """
     renamed_parms = {}
     for key, value in parms.items():
         if name_map.get(key):
@@ -1532,10 +1670,30 @@ def rename_parms(parms, name_map):
 
 
 def remove_unused_args(parms):
+    """Remove unused arguments from a dictionary.
+    Does not function recursively.
+
+    Args:
+        parms (dict): The dictionary to remove unused arguments from.
+
+    Returns:
+        dict: The dictionary without any unused arguments.
+    """
     return {key: value for key, value in parms.items() if value is not None}
 
 
 def run_zos_program(program, args="", dd_statements=[], authorized=False):
+    """Run a program on z/OS.
+
+    Args:
+        program (str): The name of the program to run.
+        args (str, optional): Additional argument string if required. Defaults to "".
+        dd_statements (list[DDStatement], optional): DD statements to allocate for the program. Defaults to [].
+        authorized (bool, optional): Determines if program will execute as an authorized user. Defaults to False.
+
+    Returns:
+        MVSCmdResponse: Holds the response information for program execution.
+    """
     response = None
     if authorized:
         response = MVSCmd.execute_authorized(pgm=program, args=args, dds=dd_statements)
@@ -1545,12 +1703,30 @@ def run_zos_program(program, args="", dd_statements=[], authorized=False):
 
 
 def build_response(rc, dd_statements):
+    """Build response dictionary to return at module completion.
+
+    Args:
+        rc (int): The return code of the program.
+        dd_statements (list[DDStatement]): The DD statements for the program.
+
+    Returns:
+        dict: Response dictionary in format expected for response on module completion.
+    """
     response = {"ret_code": {"code": rc}}
     response["dd_names"] = gather_output(dd_statements)
     return response
 
 
 def gather_output(dd_statements):
+    """Gather DD contents for all DD statements for which
+    content was requested.
+
+    Args:
+        dd_statements (list[DDStatement]): The DD statements for the program.
+
+    Returns:
+        list[dict]: The list of DD outputs, in format expected for response on module completion.
+    """
     output = []
     for dd_statement in dd_statements:
         output += get_dd_output(dd_statement)
@@ -1558,20 +1734,28 @@ def gather_output(dd_statements):
 
 
 def get_dd_output(dd_statement):
+    """Get the output for a single DD statement.
+
+    Args:
+        dd_statement (DDStatement): A single DD statement.
+
+    Returns:
+        list[dict]: The output of a single DD, in format expected for response on module completion.
+    """
     dd_output = []
     if (
         isinstance(dd_statement.definition, RawDatasetDefinition)
-        and dd_statement.definition.return_content.type != "none"
+        and dd_statement.definition.return_content.type
     ):
         dd_output = [get_data_set_output(dd_statement)]
     elif (
         isinstance(dd_statement.definition, RawFileDefinition)
-        and dd_statement.definition.return_content.type != "none"
+        and dd_statement.definition.return_content.type
     ):
         dd_output = [get_unix_file_output(dd_statement)]
     elif (
         isinstance(dd_statement.definition, RawStdinDefinition)
-        and dd_statement.definition.return_content.type != "none"
+        and dd_statement.definition.return_content.type
     ):
         dd_output = [get_data_set_output(dd_statement)]
     elif isinstance(dd_statement.definition, list):
@@ -1580,6 +1764,14 @@ def get_dd_output(dd_statement):
 
 
 def get_data_set_output(dd_statement):
+    """Get the output of a single data set DD statement.
+
+    Args:
+        dd_statement (DDStatement): A single DD statement.
+
+    Returns:
+        dict: The output of a single DD, in format expected for response on module completion.
+    """
     contents = ""
     if dd_statement.definition.return_content.type == "text":
         contents = get_data_set_content(
@@ -1594,6 +1786,14 @@ def get_data_set_output(dd_statement):
 
 
 def get_unix_file_output(dd_statement):
+    """Get the output of a single unix file DD statement.
+
+    Args:
+        dd_statement (DDStatement): A single DD statement.
+
+    Returns:
+        dict: The output of a single DD, in format expected for response on module completion.
+    """
     contents = ""
     if dd_statement.definition.return_content.type == "text":
         contents = get_unix_content(
@@ -1608,11 +1808,31 @@ def get_unix_file_output(dd_statement):
 
 
 def get_concatenation_output(dd_statement):
+    """Get the output of a single concatenation DD statement.
+
+    Args:
+        dd_statement (DDStatement): A single DD statement.
+
+    Returns:
+        list[dict]: The output of a single DD, in format expected for response on module completion.
+                Response can contain multiple outputs.
+    """
     dd_response = gather_output(dd_statement.definition)
     return dd_response
 
 
 def build_dd_response(dd_name, name, contents):
+    """Gather additional response metrics and format
+    as expected for response on module completion.
+
+    Args:
+        dd_name (str): The DD name associated with this response.
+        name (str): The data set or unix file name associated with the response.
+        contents (str): The raw contents taken from the data set or unix file.
+
+    Returns:
+        dict: Response content info of a single DD, in format expected for response on module completion.
+    """
     dd_response = {}
     dd_response["dd_name"] = dd_name
     dd_response["name"] = name
@@ -1623,6 +1843,17 @@ def build_dd_response(dd_name, name, contents):
 
 
 def get_data_set_content(name, binary=False, from_encoding=None, to_encoding=None):
+    """Retrieve the raw contents of a data set.
+
+    Args:
+        name (str): The name of the data set.
+        binary (bool, optional): Determines if contents are retrieved without encoding conversion. Defaults to False.
+        from_encoding (str, optional): The encoding of the data set on the z/OS system. Defaults to None.
+        to_encoding (str, optional): The encoding to receive the data back in. Defaults to None.
+
+    Returns:
+        str: The raw content of the data set.
+    """
     quoted_name = quote(name)
     if "'" not in quoted_name:
         quoted_name = "'{0}'".format(quoted_name)
@@ -1632,10 +1863,32 @@ def get_data_set_content(name, binary=False, from_encoding=None, to_encoding=Non
 
 
 def get_unix_content(name, binary=False, from_encoding=None, to_encoding=None):
+    """Retrieve the raw contents of a unix file.
+
+    Args:
+        name (str): The name of the unix file.
+        binary (bool, optional): Determines if contents are retrieved without encoding conversion. Defaults to False.
+        from_encoding (str, optional): The encoding of the unix file on the z/OS system. Defaults to None.
+        to_encoding (str, optional): The encoding to receive the data back in. Defaults to None.
+
+    Returns:
+        str: The raw content of the unix file.
+    """
     return get_content("{0}".format(quote(name)), binary, from_encoding, to_encoding)
 
 
 def get_content(formatted_name, binary=False, from_encoding=None, to_encoding=None):
+    """Retrieve raw contents of a data set or unix file.
+
+    Args:
+        name (str): The name of the data set or unix file, formatted and quoted for proper usage in command.
+        binary (bool, optional): Determines if contents are retrieved without encoding conversion. Defaults to False.
+        from_encoding (str, optional): The encoding of the data set or unix file on the z/OS system. Defaults to None.
+        to_encoding (str, optional): The encoding to receive the data back in. Defaults to None.
+
+    Returns:
+        str: The raw content of the data set or unix file. If unsuccessful in retrieving data, returns empty string.
+    """
     module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
     conversion_command = ""
     if not binary:

@@ -24,6 +24,8 @@
 #      _TAG_REDIR_ERR: "txt"
 #      _TAG_REDIR_IN: "txt"
 #      _TAG_REDIR_OUT: "txt"
+# - The value for the property LANG is the name of the default locale; value
+#   C specifies the POSIX locale, for example: ``LANG: "C"``.
 #
 # Note:
 #   In ZOAU 1.0.2 and later, the property ZOAU_ROOT is no longer supported
@@ -43,3 +45,4 @@ environment_vars:
   _TAG_REDIR_ERR: "txt"
   _TAG_REDIR_IN: "txt"
   _TAG_REDIR_OUT: "txt"
+  LANG: "C"

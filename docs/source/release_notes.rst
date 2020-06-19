@@ -31,8 +31,8 @@ Availability
   * GitHub
 
 Reference
-  * Supported by IBM Open Enterprise Python for z/OS: 3.8.x or later
-  * Supported by IBM Z Open Automation Utilities: 1.0.3 PTF Unnnnnn or later
+  * Supported by IBM Open Enterprise Python for z/OS: 3.8.2 or later
+  * Supported by IBM Z Open Automation Utilities: 1.0.3 or later
   * Supported by z/OS V2R3
 
 

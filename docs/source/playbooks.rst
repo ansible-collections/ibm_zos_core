@@ -174,6 +174,9 @@ The value for properties **__TAG_REDIR_ERR**, **_TAG_REDIR_IN**,
   _TAG_REDIR_IN: "txt"
   _TAG_REDIR_OUT: "txt"
 
+The value for the property **LANG** is the name of the default locale; value
+**C** specifies the POSIX locale, for example: ``LANG: "C"``.
+
 The included **all.yml** sample variables file contents are:
 
 .. code-block:: yaml
@@ -188,6 +191,7 @@ The included **all.yml** sample variables file contents are:
      _TAG_REDIR_ERR: "txt"
      _TAG_REDIR_IN: "txt"
      _TAG_REDIR_OUT: "txt"
+     LANG: "C"
 
 .. note::
    In ZOAU 1.0.2 and later, the property **ZOAU_ROOT** is no longer supported

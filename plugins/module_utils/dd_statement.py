@@ -147,24 +147,24 @@ class FileDefinition(DataDefinition):
             conditional_disposition (str, optional): What to do with path after abnormal program termination.
                 May be one of keep, delete.
                 Defaults to None.
-            path_mode (Union[str, int], optional): The file access attributes for the UNIX file being allocated.
+            path_mode (Union[str, int], optional): The file access attributes for the Unix file being allocated.
                 Provide in chmod-like number format. Defaults to None.
-            status_group (list[str], optional): the status for UNIX file being allocated.
+            status_group (list[str], optional): the status for Unix file being allocated.
                 Specify up to 6 of: OCREAT, OEXCL, OAPPEND, ORDWR, ORDONLY, OWRONLY, ONOCTTY, ONONBLOCK, OSYNC, OTRUNC.
                 Defaults to None.
-            file_data (str, optional): the type of data that is (or will be) stored in the UNIX file.
+            file_data (str, optional): the type of data that is (or will be) stored in the Unix file.
                 Defaults to None.
             record_length (int, optional): the specified logical record length for the
-                UNIX file being allocated. This is required in situations where the data will be processed as
+                Unix file being allocated. This is required in situations where the data will be processed as
                 records and therefore, the record length, block size and record format need to be supplied since
-                an UNIX file would normally be treated as a stream of bytes.
+                a Unix file would normally be treated as a stream of bytes.
                 Defaults to None.
-            block_size (int, optional): the specified block size for the UNIX file
-                being allocated since an UNIX file would normally
+            block_size (int, optional): the specified block size for the Unix file
+                being allocated since a Unix file would normally
                 be treated as a stream of bytes.
                 Defaults to None.
-            record_format (str, optional): the specified record format for the UNIX file
-                being allocated since an UNIX file would normally
+            record_format (str, optional): the specified record format for the Unix file
+                being allocated since an Unix file would normally
                 be treated as a stream of bytes.
                 Defaults to None.
         """

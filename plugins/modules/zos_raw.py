@@ -381,7 +381,6 @@ options:
             choices:
               - keep
               - delete
-          # ? what default path modes do we want?
           path_mode:
             description:
               - The file access attributes when the UNIX file is created specified in I(path).
@@ -409,7 +408,7 @@ options:
             type: list
             elements: str
             required: false
-          file_data_type: # ? should this be renamed to data_type or file_data_type?
+          file_data_type:
             description:
               - The type of data that is (or will be) stored in the file specified in I(path).
               - Maps to FILEDATA on z/OS.
@@ -419,6 +418,48 @@ options:
               - binary
               - text
               - record
+          block_size:
+            description:
+              - The block size for the Unix file.
+              - I(block_size_type) is used to provide unit of size.
+              - Default is dependent on I(record_format)
+            type: int
+            required: false
+          block_size_type:
+            description:
+              - The unit of measurement for I(block_size).
+            type: str
+            choices:
+              - b
+              - k
+              - m
+              - g
+            default: b
+          record_length:
+            description:
+              - The logical record length for the Unix file.
+              - I(record_length) is required in situations where the data will be processed as
+                records and therefore, I(record_length), I(block_size) and I(record_format) need to be supplied since
+                a Unix file would normally be treated as a stream of bytes.
+              - Maps to LRECL on z/OS.
+            type: int
+            required: false
+          record_format:
+            description:
+              - The record format for the Unix file.
+              - I(record_format) is required in situations where the data will be processed as
+                records and therefore, I(record_length), I(block_size) and I(record_format) need to be supplied since
+                a Unix file would normally be treated as a stream of bytes.
+            type: str
+            choices:
+              - u
+              - v
+              - vb
+              - vba
+              - f
+              - fb
+              - fba
+            default: fb
           return_content:
             description:
               - Determines how content should be returned to the user.
@@ -840,7 +881,6 @@ options:
                 choices:
                   - keep
                   - delete
-              # ? what default path modes do we want?
               path_mode:
                 description:
                   - The file access attributes when the UNIX file is created specified in I(path).
@@ -868,7 +908,7 @@ options:
                 type: list
                 elements: str
                 required: false
-              file_data_type: # ? should this be renamed to data_type or file_data_type?
+              file_data_type:
                 description:
                   - The type of data that is (or will be) stored in the file specified in I(path).
                   - Maps to FILEDATA on z/OS.
@@ -878,6 +918,48 @@ options:
                   - binary
                   - text
                   - record
+              block_size:
+                description:
+                  - The block size for the Unix file.
+                  - I(block_size_type) is used to provide unit of size.
+                  - Default is dependent on I(record_format)
+                type: int
+                required: false
+              block_size_type:
+                description:
+                  - The unit of measurement for I(block_size).
+                type: str
+                choices:
+                  - b
+                  - k
+                  - m
+                  - g
+                default: b
+              record_length:
+                description:
+                  - The logical record length for the Unix file.
+                  - I(record_length) is required in situations where the data will be processed as
+                    records and therefore, I(record_length), I(block_size) and I(record_format) need to be supplied since
+                    a Unix file would normally be treated as a stream of bytes.
+                  - Maps to LRECL on z/OS.
+                type: int
+                required: false
+              record_format:
+                description:
+                  - The record format for the Unix file.
+                  - I(record_format) is required in situations where the data will be processed as
+                    records and therefore, I(record_length), I(block_size) and I(record_format) need to be supplied since
+                    a Unix file would normally be treated as a stream of bytes.
+                type: str
+                choices:
+                  - u
+                  - v
+                  - vb
+                  - vba
+                  - f
+                  - fb
+                  - fba
+                default: fb
               return_content:
                 description:
                   - Determines how content should be returned to the user.
@@ -1143,6 +1225,12 @@ def run_module():
         file_data_type=dict(
             type="str", choices=["binary", "text", "record"], default="binary"
         ),
+        block_size=dict(type="int"),
+        block_size_type=dict(type="str", choices=["b", "k", "m", "g"]),
+        record_length=dict(type="int"),
+        record_format=dict(
+            type="str", choices=["u", "v", "vb", "vba", "f", "fb", "fba"]
+        ),
         return_content=dict(
             type="dict",
             options=dict(
@@ -1337,6 +1425,12 @@ def parse_and_validate_args(params):
         ),
         file_data_type=dict(
             type="str", choices=["binary", "text", "record"], default="binary"
+        ),
+        block_size=dict(type="int"),
+        block_size_type=dict(type="str", choices=["b", "k", "m", "g"]),
+        record_length=dict(type="int"),
+        record_format=dict(
+            type="str", choices=["u", "v", "vb", "vba", "f", "fb", "fba"]
         ),
         return_content=dict(
             type="dict",

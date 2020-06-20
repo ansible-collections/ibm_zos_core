@@ -429,7 +429,7 @@ class FetchHandler:
                 rc=rc,
             )
         if (not is_binary) and encoding:
-            enc_utils = encode.EncodeUtils(self.module)
+            enc_utils = encode.EncodeUtils()
             from_code_set = encoding.get("from")
             to_code_set = encoding.get("to")
             root, dirs, files = next(os.walk(dir_path))
@@ -472,7 +472,7 @@ class FetchHandler:
                 stderr_lines=str(err).splitlines(),
             )
         if (not is_binary) and encoding:
-            enc_utils = encode.EncodeUtils(self.module)
+            enc_utils = encode.EncodeUtils()
             from_code_set = encoding.get("from")
             to_code_set = encoding.get("to")
             try:

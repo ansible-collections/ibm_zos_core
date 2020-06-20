@@ -86,22 +86,34 @@ options:
         is required only when the data set is not cataloged on the system.
         Ignored for USS and LOCAL.
   encoding:
-    required: false
-    default: UTF-8
-    type: str
-    choices:
-      - UTF-8
-      - ASCII
-      - ISO-8859-1
-      - EBCDIC
-      - IBM-037
-      - IBM-1047
     description:
-      - The encoding of the local JCL file on the ansible control node.
-      - If it is UTF-8, ASCII, ISO-8859-1, the file will be converted to EBCDIC
-        on the z/OS platform.
-      - If it is EBCDIC, IBM-037, IBM-1047, the file will be unchanged when
-        submitted on the z/OS platform.
+      - Specifies which encoding the local JCL file should be converted from
+        and to, before submitting the job.
+      - If this parameter is not provided, the JCL file will be converted from
+        ISO8859-1 to IBM-1047 by default.
+    required: false
+    type: dict
+    suboptions:
+      from:
+        description:
+          - The character set of the local JCL file; defaults to ISO8859-1.
+          - Supported character sets rely on the target version; the most
+            common character sets are supported.
+        required: false
+        type: str
+        default: ISO8859-1
+      to:
+        description:
+          - The character set to convert the local JCL file to on the remote
+            z/OS system; defaults to IBM-1047.
+          - Supported character sets rely on the target version; the most
+            common character sets are supported.
+        required: false
+        type: str
+        default: IBM-1047
+notes:
+  - For supported character sets used to encode data, refer to
+    U(https://ansible-collections.github.io/ibm_zos_core/supplementary.html#encode)
 """
 
 RETURN = r"""
@@ -426,10 +438,6 @@ jobs:
               "subsystem": "STL1"
           }
      ]
-changed:
-  description: Indicates if any changes were made during module operation.
-  type: bool
-  returned: success
 message:
   description: The output message that the sample module generates.
   returned: success
@@ -443,7 +451,6 @@ EXAMPLES = r"""
     src: TEST.UTILs(SAMPLE)
     location: DATA_SET
     wait: false
-    volume:
   register: response
 
 - name: Submit USS job
@@ -451,16 +458,16 @@ EXAMPLES = r"""
     src: /u/tester/demo/sample.jcl
     location: USS
     wait: false
-    volume:
     return_output: false
 
-- name: Submit LOCAL job
+- name: Convert a local JCL file to IBM-037 and submit the job
   zos_job_submit:
     src: /Users/maxy/ansible-playbooks/provision/sample.jcl
     location: LOCAL
     wait: false
-    encoding: UTF-8
-    volume:
+    encoding:
+      from: ISO8859-1
+      to: IBM-037
 
 - name: Submit uncatalogued PDS job
   zos_job_submit:
@@ -499,6 +506,8 @@ POLLING_INTERVAL = 1
 POLLING_COUNT = 60
 
 JOB_COMPLETION_MESSAGES = ["CC", "ABEND", "SEC"]
+DEFAULT_ASCII_CHARSET = "ISO8859-1"
+DEFAULT_EBCDIC_CHARSET = "IBM-1047"
 
 
 def submit_pds_jcl(src, module):
@@ -608,18 +617,13 @@ def assert_valid_return_code(max_rc, found_rc):
 
 
 def run_module():
-
     module_args = dict(
         src=dict(type="str", required=True),
         wait=dict(type="bool", required=False),
         location=dict(
             type="str", default="DATA_SET", choices=["DATA_SET", "USS", "LOCAL"],
         ),
-        encoding=dict(
-            type="str",
-            default="UTF-8",
-            choices=["UTF-8", "ASCII", "ISO-8859-1", "EBCDIC", "IBM-037", "IBM-1047"],
-        ),
+        encoding=dict(type="dict", required=False),
         volume=dict(type="str", required=False),
         return_output=dict(type="bool", required=False, default=True),
         wait_time_s=dict(type="int", default=60),
@@ -628,6 +632,13 @@ def run_module():
     )
 
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
+    encoding = module.params.get("encoding")
+    if encoding is None:
+        encoding = {"from": DEFAULT_ASCII_CHARSET, "to": DEFAULT_EBCDIC_CHARSET}
+    if encoding.get("from") is None:
+        encoding["from"] = DEFAULT_ASCII_CHARSET
+    if encoding.get("to") is None:
+        encoding["to"] = DEFAULT_EBCDIC_CHARSET
 
     arg_defs = dict(
         src=dict(arg_type="data_set_or_path", required=True),
@@ -635,7 +646,8 @@ def run_module():
         location=dict(
             arg_type="str", default="DATA_SET", choices=["DATA_SET", "USS", "LOCAL"],
         ),
-        encoding=dict(arg_type="encoding", default="UTF-8"),
+        from_encoding=dict(arg_type="encoding", default=DEFAULT_ASCII_CHARSET),
+        to_encoding=dict(arg_type="encoding", default=DEFAULT_EBCDIC_CHARSET),
         volume=dict(arg_type="volume", required=False),
         return_output=dict(arg_type="bool", default=True),
         wait_time_s=dict(arg_type="int", required=False, default=60),
@@ -643,10 +655,15 @@ def run_module():
         temp_file=dict(arg_type="path", required=False),
     )
 
-    parser = BetterArgParser(arg_defs)
-    parsed_args = parser.parse_args(module.params)
-
     result = dict(changed=False)
+    module.params.update(
+        dict(from_encoding=encoding.get("from"), to_encoding=encoding.get("to"),)
+    )
+    try:
+        parser = BetterArgParser(arg_defs)
+        parsed_args = parser.parse_args(module.params)
+    except ValueError as err:
+        module.fail_json(msg=str(err), **result)
 
     location = parsed_args.get("location")
     volume = parsed_args.get("volume")
@@ -686,35 +703,24 @@ def run_module():
             jobId = submit_uss_jcl(src, module)
         else:
             # For local file, it has been copied to the temp directory in action plugin.
-            encoding = parsed_args.get("encoding")
-            if encoding == "EBCDIC" or encoding == "IBM-037" or encoding == "IBM-1047":
-                jobId = submit_uss_jcl(temp_file, module)
-            # 'UTF-8' 'ASCII' encoding will be converted.
-            elif (
-                encoding == "UTF-8"
-                or encoding == "ISO-8859-1"
-                or encoding == "ASCII"
-                or encoding is None
-            ):
-                (conv_rc, stdout, stderr) = module.run_command(
-                    "iconv -f ISO8859-1 -t IBM-1047 %s > %s"
-                    % (quote(temp_file), quote(temp_file_2.name)),
-                    use_unsafe_shell=True,
-                )
-                if conv_rc == 0:
-                    jobId = submit_uss_jcl(temp_file_2.name, module)
-                else:
-                    module.fail_json(
-                        msg="The Local file encoding conversion failed. Please check the source file."
-                        + stderr,
-                        **result
-                    )
+            from_encoding = encoding.get("from")
+            to_encoding = encoding.get("to")
+            (conv_rc, stdout, stderr) = module.run_command(
+                "iconv -f {0} -t {1} {2} > {3}".format(
+                    from_encoding,
+                    to_encoding,
+                    quote(temp_file),
+                    quote(temp_file_2.name),
+                ),
+                use_unsafe_shell=True,
+            )
+            if conv_rc == 0:
+                jobId = submit_uss_jcl(temp_file_2.name, module)
             else:
                 module.fail_json(
-                    msg=(
-                        "The Local file encoding format is not supported."
-                        "The supported encoding is UTF-8, ASCII, ISO-8859-1, EBCDIC, IBM-037, IBM-1047. Default is UTF-8."
-                    ),
+                    msg="The Local file encoding conversion failed. Please check the source file."
+                    + stderr
+                    or "",
                     **result
                 )
     except SubmitJCLError as e:
@@ -727,9 +733,9 @@ def run_module():
         )
 
     result["job_id"] = jobId
+    duration = 0
     if wait is True:
         # calculate the job elapse time
-        duration = 0
         try:
             waitJob = query_jobs_status(module, jobId)
             job_msg = waitJob[0].get("ret_code").get("msg")

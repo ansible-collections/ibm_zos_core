@@ -1552,9 +1552,9 @@ def build_data_definition(dd):
     if dd.get("dd_data_set"):
         data_definition = RawDatasetDefinition(**(dd.get("dd_data_set")))
     elif dd.get("dd_unix"):
-        data_definition = RawFileDefinition(dd.get("dd_unix"))
+        data_definition = RawFileDefinition(**(dd.get("dd_unix")))
     elif dd.get("dd_input"):
-        data_definition = RawStdinDefinition(dd.get("dd_input"))
+        data_definition = RawStdinDefinition(**(dd.get("dd_input")))
     elif dd.get("dd_dummy"):
         data_definition = DummyDefinition()
     elif dd.get("dd_concat"):
@@ -1687,40 +1687,38 @@ class RawFileDefinition(FileDefinition):
         FileDefinition (FileDefinition): File DD data type to be used in a DDStatement.
     """
 
-    def __init__(self, dd_unix_parms):
-        """Initialize RawFileDefinition
-
-        Args:
-            dd_unix_parms (dict): dd_unix parms as specified in module.
-        """
-        self.return_content = ReturnContent(
-            **(dd_unix_parms.pop("return_content", None) or {})
+    def __init__(
+        self,
+        path,
+        disposition_normal=None,
+        disposition_abnormal=None,
+        mode=None,
+        status_group=None,
+        file_data_type=None,
+        record_length=None,
+        block_size=None,
+        block_size_type=None,
+        record_format=None,
+        return_content={},
+        **kwargs
+    ):
+        self.return_content = ReturnContent(**(return_content or {}))
+        if block_size_type and block_size:
+            block_size = to_bytes(block_size, block_size_type)
+        super().__init__(
+            path_name=path,
+            normal_disposition=disposition_normal,
+            conditional_disposition=disposition_abnormal,
+            path_mode=mode,
+            status_group=status_group,
+            file_data=file_data_type,
+            record_length=record_length,
+            block_size=block_size,
+            record_format=record_format,
         )
-        parms = self.restructure_parms(dd_unix_parms)
-        super().__init__(**parms)
-
-    def restructure_parms(self, dd_unix_parms):
-        """Restructure parms to match expected input keys and values for FileDefinition.
-
-        Args:
-            dd_unix_parms (dict): The parms with same keys as provided to the module.
-
-        Returns:
-            dict: Restructured parms in format expected by FileDefinition
-        """
-        UNIX_NAME_MAP = {
-            "path": "path_name",
-            "disposition_normal": "normal_disposition",
-            "disposition_abnormal": "conditional_disposition",
-            "mode": "path_mode",
-            "file_data_type": "file_data",
-        }
-        parms = remove_unused_args(dd_unix_parms)
-        parms.pop("dd_name", None)
-        parms = rename_parms(parms, UNIX_NAME_MAP)
-        return parms
 
 
+# TODO: potentially extend the available parameters to end user
 class RawStdinDefinition(StdinDefinition):
     """Wrapper around StdinDefinition to contain information about
     desired return contents.
@@ -1729,16 +1727,14 @@ class RawStdinDefinition(StdinDefinition):
         StdinDefinition (StdinDefinition): Stdin DD data type to be used in a DDStatement.
     """
 
-    def __init__(self, dd_input_parms):
+    def __init__(self, content="", return_content={}, **kwargs):
         """Initialize RawStdinDefinition
 
         Args:
-            dd_input_parms (dict): dd_input parms as specified in module.
+            content (str): The content to write to temporary data set / stdin.
         """
-        parms = dd_input_parms
-        parms.pop("dd_name", None)
-        self.return_content = ReturnContent(**(parms.pop("return_content", None) or {}))
-        super().__init__(**parms)
+        self.return_content = ReturnContent(**(return_content or {}))
+        super().__init__(content=content)
 
 
 class ReturnContent(object):

@@ -254,6 +254,7 @@ class DataSet(object):
         Returns:
             bool -- If data is is cataloged.
         """
+        name = name.upper()
         module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
         stdin = " LISTCAT ENTRIES('{0}')".format(name)
         rc, stdout, stderr = module.run_command(
@@ -622,13 +623,15 @@ class DataSet(object):
             DatasetCatalogError: When attempt at catalog fails.
         """
         module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
-        iehprogm_input = DataSet._build_non_vsam_catalog_command(name, volumes)
+        iehprogm_input = DataSet._build_non_vsam_catalog_command(name.upper(), volumes)
         temp_name = None
         try:
             temp_name = DataSet.create_temp(name.split(".")[0])
             DataSet.write(temp_name, iehprogm_input)
             rc, stdout, stderr = module.run_command(
-                "mvscmdauth --pgm=iehprogm --sysprint=* --sysin={0}".format(temp_name)
+                "mvscmdauth --pgm=iehprogm --sysprint=* --sysin={0}".format(
+                    temp_name.upper()
+                )
             )
             if rc != 0 or "NORMAL END OF TASK RETURNED" not in stdout:
                 raise DatasetCatalogError(name, volumes, rc)
@@ -819,7 +822,7 @@ class DataSet(object):
             bool -- If the data set is VSAM.
         """
         module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
-        stdin = " LISTCAT ENTRIES('{0}')".format(name)
+        stdin = " LISTCAT ENTRIES('{0}')".format(name.upper())
         rc, stdout, stderr = module.run_command(
             "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=stdin
         )
@@ -961,9 +964,11 @@ class DataSet(object):
         for index, volume in enumerate(volumes):
             single_volume_string = ""
             if index == 0:
-                single_volume_string = "               VOL=3390=({0}".format(volume)
+                single_volume_string = "               VOL=3390=({0}".format(
+                    volume.upper()
+                )
             else:
-                single_volume_string = "               {0}".format(volume)
+                single_volume_string = "               {0}".format(volume.upper())
             if index + 1 != len(volumes):
                 single_volume_string += ","
                 volume_string += DataSet._format_jcl_line(single_volume_string)

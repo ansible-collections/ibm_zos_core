@@ -487,6 +487,7 @@ options:
               src_encoding:
                 description:
                   - The encoding of the data set on the z/OS system.
+                  - for I(dd_input), I(src_encoding) should generally not need to be changed.
                 type: str
                 default: ibm-1047
               response_encoding:
@@ -941,6 +942,7 @@ options:
                   src_encoding:
                     description:
                       - The encoding of the data set on the z/OS system.
+                      - for I(dd_input), I(src_encoding) should generally not need to be changed.
                     type: str
                     default: ibm-1047
                   response_encoding:
@@ -996,7 +998,13 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dd_statement impo
     StdinDefinition,
     DummyDefinition,
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import DataSet
+
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.zos_raw import MVSCmd
+
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
+    backup as zos_backup,
+)
 
 from ansible.module_utils.basic import AnsibleModule
 import re
@@ -1006,6 +1014,11 @@ if PY3:
     from shlex import quote
 else:
     from pipes import quote
+
+# hold backup names in easy to access location in
+# in case exception is raised
+# this global list is only used in case of exception
+backups = []
 
 
 def run_module():
@@ -1078,6 +1091,9 @@ def run_module():
                 response_encoding=dict(type="str", default="iso8859-1"),
             ),
         ),
+        reuse=dict(type="bool", default=False),
+        replace=dict(type="bool", default=False),
+        backup=dict(type="bool", default=False),
     )
 
     dd_input_base = dict(
@@ -1166,6 +1182,7 @@ def run_module():
     )
     result = dict(changed=False, dd_names=[], ret_code=dict(code=0))
     response = {}
+    dd_statements = []
     try:
 
         module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
@@ -1186,6 +1203,7 @@ def run_module():
         response = build_response(program_response.rc, dd_statements)
 
     except Exception as e:
+        result["backups"] = backups
         module.fail_json(msg=repr(e), **result)
 
     result["changed"] = True
@@ -1266,6 +1284,11 @@ def parse_and_validate_args(params):
                 response_encoding=dict(type="encoding", default="iso8859-1"),
             ),
         ),
+        reuse=dict(type=reuse, default=False, dependencies=["disposition"]),
+        replace=dict(
+            type=replace, default=False, dependencies=["reuse", "disposition"]
+        ),
+        backup=dict(type=backup, default=False, dependencies=["replace"]),
     )
 
     dd_input_base = dict(
@@ -1398,6 +1421,64 @@ def volumes(contents, dependencies):
     return contents
 
 
+def reuse(contents, dependencies):
+    """Validate reuse argument.
+
+    Args:
+        contents (bool): The contents provided for the reuse argument.
+        dependencies (dict): Any arguments this argument is dependent on.
+
+    Raises:
+        ValueError: When invalid argument provided.
+
+    Returns:
+        bool: The value of reuse.
+    """
+    if contents is True and dependencies.get("disposition") != "new":
+        raise ValueError('Argument "reuse" is only valid when "disposition" is "new".')
+    return contents
+
+
+def replace(contents, dependencies):
+    """Validate replace argument.
+
+    Args:
+        contents (bool): The contents provided for the replace argument.
+        dependencies (dict): Any arguments this argument is dependent on.
+
+    Raises:
+        ValueError: When invalid argument provided.
+
+    Returns:
+        bool: The value of replace.
+    """
+    if contents is True and dependencies.get("reuse") is True:
+        raise ValueError('Arguments "replace" and "reuse" are mutually exclusive.')
+    if contents is True and dependencies.get("disposition") != "new":
+        raise ValueError(
+            'Argument "replace" is only valid when "disposition" is "new".'
+        )
+    return contents
+
+
+def backup(contents, dependencies):
+    """Validate backup argument.
+
+    Args:
+        contents (bool): The contents provided for the backup argument.
+        dependencies (dict): Any arguments this argument is dependent on.
+
+    Raises:
+        ValueError: When invalid argument provided.
+
+    Returns:
+        bool: The value of backup.
+    """
+    if contents is True and dependencies.get("replace") is False:
+        raise ValueError('Argument "backup" is only valid when "replace" is True.')
+    return contents
+
+
 def build_dd_statements(parms):
     """Build a list of DDStatement objects from provided module parms.
 
@@ -1458,7 +1539,7 @@ def build_data_definition(dd):
     """
     data_definition = None
     if dd.get("dd_data_set"):
-        data_definition = RawDatasetDefinition(dd.get("dd_data_set"))
+        data_definition = RawDatasetDefinition(**(dd.get("dd_data_set")))
     elif dd.get("dd_unix"):
         data_definition = RawFileDefinition(dd.get("dd_unix"))
     elif dd.get("dd_input"):
@@ -1481,65 +1562,110 @@ class RawDatasetDefinition(DatasetDefinition):
         DatasetDefinition (DatasetDefinition): Dataset DD data type to be used in a DDStatement.
     """
 
-    def __init__(self, dd_data_set_parms):
-        """Initialize RawDatasetDefinition
+    def __init__(
+        self,
+        data_set_name,
+        disposition="",
+        type=None,
+        space_primary=None,
+        space_secondary=None,
+        space_type=None,
+        disposition_normal=None,
+        disposition_abnormal=None,
+        block_size=None,
+        block_size_type=None,
+        record_format=None,
+        record_length=None,
+        sms_storage_class=None,
+        sms_data_class=None,
+        sms_management_class=None,
+        key_length=None,
+        key_offset=None,
+        volumes=[],
+        key_label=None,
+        encryption_key_1={},
+        encryption_key_2={},
+        reuse=None,
+        replace=None,
+        backup=None,
+        return_content={},
+        **kwargs
+    ):
+        self.backup = None
+        self.return_content = ReturnContent(**(return_content or {}))
+        primary_unit = space_type
+        secondary_unit = space_type
+        key_label1 = None
+        key_encoding1 = None
+        key_label2 = None
+        key_encoding2 = None
+        if block_size_type and block_size:
+            block_size = to_bytes(block_size, block_size_type)
+        if encryption_key_1:
+            if encryption_key_1.get("label"):
+                key_label1 = encryption_key_1.get("label")
+            if encryption_key_1.get("encoding"):
+                key_encoding1 = encryption_key_1.get("encoding")
+        if encryption_key_2:
+            if encryption_key_2.get("label"):
+                key_label2 = encryption_key_2.get("label")
+            if encryption_key_2.get("encoding"):
+                key_encoding2 = encryption_key_2.get("encoding")
 
-        Args:
-            dd_data_set_parms (dict): dd_data_set parm as specified in module.
-        """
-        self.return_content = ReturnContent(
-            **(dd_data_set_parms.pop("return_content", None) or {})
-        )
-        parms = self.restructure_parms(dd_data_set_parms)
-        super().__init__(**parms)
+        should_reuse = False
+        if (reuse or replace) and data_set_exists(data_set_name, volumes):
+            if reuse:
+                should_reuse = True
+            elif replace:
+                if backup:
+                    self.backup = zos_backup.mvs_file_backup(data_set_name, None)
+                    global backups
+                    backups.append(
+                        {"original_name": data_set_name, "backup_name": self.backup}
+                    )
+                DataSet.delete(data_set_name)
 
-    def restructure_parms(self, dd_data_set_parms):
-        """Restructure parms to match expected input keys and values for DatasetDefinition.
-
-        Args:
-            dd_data_set_parms (dict): The parms with same keys as provided to the module.
-
-        Returns:
-            dict: Restructured parms in format expected by DatasetDefinition
-        """
-        DATA_SET_NAME_MAP = {
-            "data_set_name": "dataset_name",
-            "type": "type",
-            "key_label": "dataset_key_label",
-            "space_primary": "primary",
-            "space_secondary": "secondary",
-            "disposition_normal": "normal_disposition",
-            "disposition_abnormal": "conditional_disposition",
-            "sms_storage_class": "storage_class",
-            "sms_data_class": "data_class",
-            "sms_management_class": "management_class",
-        }
-        parms = remove_unused_args(dd_data_set_parms)
-        parms.pop("dd_name", None)
-        if parms.get("block_size_type") and parms.get("block_size"):
-            parms["block_size"] = to_bytes(
-                parms.get("block_size"), parms.get("block_size_type")
+        if not should_reuse:
+            super().__init__(
+                dataset_name=data_set_name,
+                disposition=disposition,
+                type=type,
+                primary=space_primary,
+                primary_unit=primary_unit,
+                secondary=space_secondary,
+                secondary_unit=secondary_unit,
+                normal_disposition=disposition_normal,
+                conditional_disposition=disposition_abnormal,
+                block_size=block_size,
+                record_format=record_format,
+                record_length=record_length,
+                storage_class=sms_storage_class,
+                data_class=sms_data_class,
+                management_class=sms_management_class,
+                key_length=key_length,
+                key_offset=key_offset,
+                volumes=volumes,
+                dataset_key_label=key_label,
+                key_label1=key_label1,
+                key_encoding1=key_encoding1,
+                key_label2=key_label2,
+                key_encoding2=key_encoding2,
             )
-        if parms.get("space_type"):
-            if parms.get("space_primary"):
-                parms["primary_unit"] = parms.get("space_type")
-            if parms.get("space_secondary"):
-                parms["secondary_unit"] = parms.get("space_type")
-            parms.pop("space_type", None)
-        if parms.get("encryption_key_1"):
-            if parms.get("encryption_key_1").get("label"):
-                parms["key_label1"] = parms.get("encryption_key_1").get("label")
-            if parms.get("encryption_key_1").get("encoding"):
-                parms["key_encoding1"] = parms.get("encryption_key_1").get("encoding")
-            parms.pop("encryption_key_1", None)
-        if parms.get("encryption_key_2"):
-            if parms.get("encryption_key_2").get("label"):
-                parms["key_label2"] = parms.get("encryption_key_2").get("label")
-            if parms.get("encryption_key_2").get("encoding"):
-                parms["key_encoding2"] = parms.get("encryption_key_2").get("encoding")
-            parms.pop("encryption_key_2", None)
-        parms = rename_parms(parms, DATA_SET_NAME_MAP)
-        return parms
+        else:
+            # TODO: determine if encoding labels are useful for existing data sets
+            super().__init__(
+                dataset_name=data_set_name,
+                disposition="shr",
+                type=type,
+                normal_disposition=disposition_normal,
+                conditional_disposition=disposition_abnormal,
+                volumes=volumes,
+                dataset_key_label=key_label,
+                key_label1=key_label1,
+                key_encoding1=key_encoding1,
+                key_label2=key_label2,
+                key_encoding2=key_encoding2,
+            )
 
 
 class RawFileDefinition(FileDefinition):
@@ -1682,6 +1808,13 @@ def remove_unused_args(parms):
     return {key: value for key, value in parms.items() if value is not None}
 
 
+def data_set_exists(name, volumes=None):
+    volume = None
+    if volumes:
+        volume = volumes[0]
+    return DataSet.data_set_exists(name, volume)
+
+
 def run_zos_program(program, args="", dd_statements=[], authorized=False):
     """Run a program on z/OS.
 
@@ -1713,8 +1846,40 @@ def build_response(rc, dd_statements):
         dict: Response dictionary in format expected for response on module completion.
     """
     response = {"ret_code": {"code": rc}}
+    response["backups"] = gather_backups(dd_statements)
     response["dd_names"] = gather_output(dd_statements)
     return response
+
+
+def gather_backups(dd_statements):
+    backups = []
+    for dd_statement in dd_statements:
+        backups += get_dd_backup(dd_statement)
+    return backups
+
+
+def get_dd_backup(dd_statement):
+    dd_backup = []
+    if (
+        isinstance(dd_statement.definition, RawDatasetDefinition)
+        and dd_statement.definition.backup
+    ):
+        dd_backup = [get_data_set_backup(dd_statement)]
+    elif isinstance(dd_statement.definition, list):
+        dd_backup = get_concatenation_backup(dd_statement)
+    return dd_backup
+
+
+def get_data_set_backup(dd_statement):
+    backup = {}
+    backup["backup_name"] = dd_statement.definition.backup
+    backup["original_name"] = dd_statement.definition.name
+    return backup
+
+
+def get_concatenation_backup(dd_statement):
+    dd_backup = gather_backups(dd_statement.definition)
+    return dd_backup
 
 
 def gather_output(dd_statements):

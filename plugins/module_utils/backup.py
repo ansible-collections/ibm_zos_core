@@ -37,7 +37,7 @@ def _validate_data_set_name(ds):
     return parsed_args.get("ds")
 
 
-def mvs_file_backup(dsn, bk_dsn):
+def mvs_file_backup(dsn, bk_dsn=None):
     """Create a backup data set for an MVS data set
 
     Arguments:
@@ -182,7 +182,9 @@ def _allocate_model(ds, model):
     module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
     alloc_cmd = """  ALLOC -
     DS('{0}') -
-    LIKE('{1}')""".format(ds, model)
+    LIKE('{1}')""".format(
+        ds, model
+    )
     cmd = "mvscmdauth --pgm=ikjeft01 --systsprt=* --systsin=stdin"
     rc, out, err = module.run_command(cmd, data=alloc_cmd)
     if rc != 0:

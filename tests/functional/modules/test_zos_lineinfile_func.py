@@ -4,12 +4,14 @@
 # Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
 from __future__ import absolute_import, division, print_function
-from test_zos_lineinfile_helper import test_uss_general, test_ds_general, test_ds_not_supported_helper
+from ibm_zos_core.tests.helpers.test_zos_lineinfile_helper import (
+    test_uss_general,
+    test_ds_general,
+    test_ds_not_supported_helper,
+)
 import os
 import sys
 import pytest
-
-sys.path.append(os.path.join(os.path.dirname(__file__), '../../helpers'))
 
 __metaclass__ = type
 

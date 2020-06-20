@@ -141,10 +141,10 @@ class FileDefinition(DataDefinition):
 
         Args:
             path_name (str): An absolute Unix file path.
-            normal_disposition (str, optional): What to do with path after normal termination.
+            normal_disposition (str, optional): What to do with path after normal program termination.
                 May be one of keep, delete.
                 Defaults to None.
-            conditional_disposition (str, optional): What to do with path after abnormal termination.
+            conditional_disposition (str, optional): What to do with path after abnormal program termination.
                 May be one of keep, delete.
                 Defaults to None.
             path_mode (Union[str, int], optional): The file access attributes for the UNIX file being allocated.
@@ -274,7 +274,6 @@ class DatasetDefinition(DataDefinition):
             record_length (int, optional): The length, in bytes, of each record in the data set.
                 Defaults to None.
             storage_class (str, optional): the storage class for an SMS-managed dataset.
-                Required for SMS-managed datasets that do not match an SMS-rule.
                 Not valid for datasets that are not SMS-managed.
                 Note that all non-linear VSAM datasets are SMS-managed.
                 Defaults to None.

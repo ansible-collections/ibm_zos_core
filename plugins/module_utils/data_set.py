@@ -151,7 +151,7 @@ class DataSet(object):
         """
         arguments = locals()
         arguments.pop("replace", None)
-        present, changed = DataSet._attempt_catalog_if_necessary(name, volumes)
+        present, changed = DataSet.attempt_catalog_if_necessary(name, volumes)
         if present:
             if not replace:
                 return changed
@@ -170,7 +170,7 @@ class DataSet(object):
         Returns:
             bool -- Indicates if changes were made.
         """
-        present, changed = DataSet._attempt_catalog_if_necessary(name, volumes)
+        present, changed = DataSet.attempt_catalog_if_necessary(name, volumes)
         if present:
             DataSet.delete(name)
             return True
@@ -300,7 +300,7 @@ class DataSet(object):
         return True
 
     @staticmethod
-    def _attempt_catalog_if_necessary(name, volumes):
+    def attempt_catalog_if_necessary(name, volumes):
         """Attempts to catalog a data set if not already cataloged.
 
         Arguments:

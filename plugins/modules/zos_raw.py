@@ -39,11 +39,11 @@ options:
     description:
       - The input data source.
       - I(dds) supports 6 types of sources:
-          - I(dd_data_set) for data set files.
-          - I(dd_unix) for UNIX files.
-          - I(dd_input) for in-stream data set.
-          - I(dd_dummy) for no content input.
-          - I(dd_concat) for a data set concatenation.
+        - I(dd_data_set) for data set files.
+        - I(dd_unix) for UNIX files.
+        - I(dd_input) for in-stream data set.
+        - I(dd_dummy) for no content input.
+        - I(dd_concat) for a data set concatenation.
       - I(dds) supports any combination of source types.
     required: false
     type: list
@@ -399,13 +399,13 @@ options:
                 pathname exists, searches for it, and fails the module if the pathname does not exist.
               - Maps to PATHOPTS status group file options on z/OS.
               - You can choose up to 6 of the following:
-                  - oappend
-                  - ocreat
-                  - oexcl
-                  - onoctty
-                  - ononblock
-                  - osync
-                  - otrunc
+                - oappend
+                - ocreat
+                - oexcl
+                - onoctty
+                - ononblock
+                - osync
+                - otrunc
             type: list
             elements: str
             required: false
@@ -858,13 +858,13 @@ options:
                     pathname exists, searches for it, and fails the module if the pathname does not exist.
                   - Maps to PATHOPTS status group file options on z/OS.
                   - You can choose up to 6 of the following:
-                      - oappend
-                      - ocreat
-                      - oexcl
-                      - onoctty
-                      - ononblock
-                      - osync
-                      - otrunc
+                    - oappend
+                    - ocreat
+                    - oexcl
+                    - onoctty
+                    - ononblock
+                    - osync
+                    - otrunc
                 type: list
                 elements: str
                 required: false
@@ -1602,6 +1602,37 @@ class RawDatasetDefinition(DatasetDefinition):
         return_content={},
         **kwargs
     ):
+        """Initialize RawDatasetDefinition
+
+        Args:
+            data_set_name (str): The name of the data set.
+            disposition (str, optional): The disposition of the data set. Defaults to "".
+            type (str, optional): The type of the data set. Defaults to None.
+            space_primary (int, optional): The primary amount of space of the data set. Defaults to None.
+            space_secondary (int, optional): The secondary amount of space of the data set. Defaults to None.
+            space_type (str, optional): The unit of space to use for primary and secondary space. Defaults to None.
+            disposition_normal (str, optional): What to do with the data set after normal termination of the program. Defaults to None.
+            disposition_abnormal (str, optional): What to do with the data set after abnormal termination of the program. Defaults to None.
+            block_size (int, optional): The block size of the data set. Defaults to None.
+            block_size_type (str, optional): The unit of size to use for block size. Defaults to None.
+            record_format (str, optional): The record format of the data set. Defaults to None.
+            record_length (int, optional): The length, in bytes, of each record in the data set. Defaults to None.
+            sms_storage_class (str, optional): The storage class for an SMS-managed dataset. Defaults to None.
+            sms_data_class (str, optional): The data class for an SMS-managed dataset. Defaults to None.
+            sms_management_class (str, optional): The management class for an SMS-managed dataset. Defaults to None.
+            key_length (int, optional): The key length of a record. Defaults to None.
+            key_offset (int, optional): The key offset is the position of the first byte of the key
+                in each logical record of a the specified VSAM data set. Defaults to None.
+            volumes (list, optional): A list of volume serials.. Defaults to [].
+            key_label (str, optional): The label for the encryption key used by the system to encrypt the data set. Defaults to None.
+            encryption_key_1 (dict, optional): [description]. Defaults to {}.
+            encryption_key_2 (dict, optional): [description]. Defaults to {}.
+            reuse (bool, optional): Determines if data set should be reused. Defaults to None.
+            replace (bool, optional): Determines if data set should be replaced. Defaults to None.
+            backup (bool, optional): Determines if a backup should be made of existing data set when disposition=NEW, replace=true,
+                and a data set with the desired name is found.. Defaults to None.
+            return_content (dict, optional): Determines how content should be returned to the user. Defaults to {}.
+        """
         self.backup = None
         self.return_content = ReturnContent(**(return_content or {}))
         primary_unit = space_type
@@ -1702,6 +1733,21 @@ class RawFileDefinition(FileDefinition):
         return_content={},
         **kwargs
     ):
+        """Initialize RawFileDefinition
+
+        Args:
+            path (str): An absolute Unix file path.
+            disposition_normal (str, optional): What to do with path after normal program termination. Defaults to None.
+            disposition_abnormal (str, optional): What to do with path after abnormal program termination. Defaults to None.
+            mode (int, optional): The file access attributes for the UNIX file being allocated. Defaults to None.
+            status_group (list[str], optional): The status for UNIX file being allocated. Defaults to None.
+            file_data_type (str, optional): The type of data that is (or will be) stored in the UNIX file. Defaults to None.
+            record_length (int, optional): The specified logical record length for the UNIX file. Defaults to None.
+            block_size (int, optional): the specified block size for the UNIX file being allocated. Defaults to None.
+            block_size_type (str, optional): The unit of size to use for the block size. Defaults to None.
+            record_format (str, optional): The specified record format for the UNIX file. Defaults to None.
+            return_content (dict, optional): Determines how content should be returned to the user. Defaults to {}.
+        """
         self.return_content = ReturnContent(**(return_content or {}))
         if block_size_type and block_size:
             block_size = to_bytes(block_size, block_size_type)
@@ -1732,6 +1778,7 @@ class RawStdinDefinition(StdinDefinition):
 
         Args:
             content (str): The content to write to temporary data set / stdin.
+            return_content (dict, optional): Determines how content should be returned to the user. Defaults to {}.
         """
         self.return_content = ReturnContent(**(return_content or {}))
         super().__init__(content=content)
@@ -1816,10 +1863,24 @@ def remove_unused_args(parms):
 
 
 def data_set_exists(name, volumes=None):
-    volume = None
-    if volumes:
-        volume = volumes[0]
-    return DataSet.data_set_exists(name, volume)
+    """Is used to determine if a data set exists.
+    In addition, if a data set does exist and is uncataloged,
+    the data set will be cataloged.
+
+    Args:
+        name (str): The name of the data set.
+        volumes (list[str], optional): A list of volume serials. Defaults to None.
+
+    Returns:
+        bool: Whether the data set exists or not.
+    """
+    exists = False
+    try:
+        present, changed = DataSet.attempt_catalog_if_necessary(name, volumes)
+        exists = present
+    except Exception:
+        pass
+    return exists
 
 
 def run_zos_program(program, args="", dd_statements=[], authorized=False):
@@ -1859,6 +1920,15 @@ def build_response(rc, dd_statements):
 
 
 def gather_backups(dd_statements):
+    """Gather backup information for all data sets which had
+    a backup made during module execution.
+
+    Args:
+        dd_statements (list[DDStatement]): The DD statements for the program.
+
+    Returns:
+        list[dict]: List of backups in format expected for response on module completion.
+    """
     backups = []
     for dd_statement in dd_statements:
         backups += get_dd_backup(dd_statement)
@@ -1866,6 +1936,15 @@ def gather_backups(dd_statements):
 
 
 def get_dd_backup(dd_statement):
+    """Gather backup information for a single data set
+    if the DD is a data set DD and a backup was made.
+
+    Args:
+        dd_statement (DDStatement): A single DD statement.
+
+    Returns:
+        list[dict]: List of backups in format expected for response on module completion.
+    """
     dd_backup = []
     if (
         isinstance(dd_statement.definition, RawDatasetDefinition)
@@ -1878,6 +1957,14 @@ def get_dd_backup(dd_statement):
 
 
 def get_data_set_backup(dd_statement):
+    """Get backup of a single data set DD statement.
+
+    Args:
+        dd_statement (DDStatement): A single DD statement.
+
+    Returns:
+        dict: Backup information in format expected for response on module completion.
+    """
     backup = {}
     backup["backup_name"] = dd_statement.definition.backup
     backup["original_name"] = dd_statement.definition.name
@@ -1885,6 +1972,15 @@ def get_data_set_backup(dd_statement):
 
 
 def get_concatenation_backup(dd_statement):
+    """Get the backup information for a single concatenation DD statement.
+
+    Args:
+        dd_statement (DDStatement): A single DD statement.
+
+    Returns:
+        list[dict]: The backup information of a single DD, in format expected for response on module completion.
+                Response can contain multiple backups.
+    """
     dd_backup = gather_backups(dd_statement.definition)
     return dd_backup
 

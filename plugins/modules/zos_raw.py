@@ -954,35 +954,46 @@ options:
 
 RETURN = r"""
 ret_code:
-    description: The return code.
-    returned : always
-    type: dict
-    contains:
-      code:
-        description: The return code number returned from the program.
-        type:
+  description: The return code.
+  returned : always
+  type: dict
+  contains:
+    code:
+      description: The return code number returned from the program.
+      type: int
 dd_names:
-    description: All the related dds with the program.
-    returned: always
-    type: list
-    elements: dict
-    contains:
-      dd_name:
-        description: The data definition name.
-        type: str
-      name:
-        description: The data set or path name associated with the data definition.
-        type: str
-      content:
-        description: The content contained in the data definition.
-        type: list
-        elements: str
-      record_count:
-        description: The lines of the content.
-        type: int
-      byte_count:
-        description: The number of bytes in the response content.
-        type: int
+  description: All the related dds with the program.
+  returned: on success
+  type: list
+  elements: dict
+  contains:
+    dd_name:
+      description: The data definition name.
+      type: str
+    name:
+      description: The data set or path name associated with the data definition.
+      type: str
+    content:
+      description: The content contained in the data definition.
+      type: list
+      elements: str
+    record_count:
+      description: The lines of the content.
+      type: int
+    byte_count:
+      description: The number of bytes in the response content.
+      type: int
+backups:
+  description: List of any data set backups made during execution.
+  returned: always
+  type: dict
+  contains:
+    original_name:
+      description: The original data set name for which a backup was made.
+      type: str
+    backup_name:
+      description:The name of the data set containing the backup of content from data set in I(original_name).
+      type: str
 """
 
 # TODO: verify examples match expected format

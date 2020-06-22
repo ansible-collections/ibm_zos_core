@@ -204,6 +204,29 @@ The included **all.yml** sample variables file contents are:
    https://github.com/ansible-collections/ibm_zos_core/blob/master/playbooks/group_vars/all.yml
 
 
+A reusable approach to storing your group variables is to create dependency
+top level variables and rely on variable expansion to substitute the values.
+This is preferred, because it tends to reduce misconfiguration when copying
+dependency paths. In this example, the top level dependency variables ``PYZ``
+for Python and ``ZOAU`` have been added and used through the configuration.
+
+.. code-block:: yaml
+
+   PYZ: "/u/oeusr01/python/pyz_3_8_2/usr/lpp/IBM/cyp/v3r8/pyz"
+   ZOAU: "/usr/lpp/IBM/zoautil"
+
+   environment_vars:
+     _BPXK_AUTOCVT: "ON"
+     ZOAU_HOME: "{{ ZOAU }}"
+     PYTHONPATH: "{{ ZOAU_HOME }}/lib"
+     LIBPATH: "{{ ZOAU_HOME }}/lib:{{ PYZ }}/lib:/lib:/usr/lib:."
+     PATH: "{{ ZOAU_HOME }}/bin:{{ PYZ }}/bin:/bin:/var/bin:/usr/lpp/java/J8.0/bin"
+     _CEE_RUNOPTS: "FILETAG(AUTOCVT,AUTOTAG) POSIX(ON)"
+     _TAG_REDIR_ERR: "txt"
+     _TAG_REDIR_IN: "txt"
+     _TAG_REDIR_OUT: "txt"
+     LANG: "C"
+
 
 Run the playbook
 ----------------

@@ -41,14 +41,24 @@
 #   version 1.0.1 or lower, you must continue to use the property
 #   ZOAU_ROOT which is the ZOA Utilities install root path required for
 #   ZOAU; for example, ``/usr/lpp/IBM/zoautil``.
+#
 ################################################################################
 
+################################################################################
+# Configure dependency installations
+################################################################################
+PYZ: "/u/oeusr01/python/pyz_3_8_2/usr/lpp/IBM/cyp/v3r8/pyz"
+ZOAU: "/usr/lpp/IBM/zoautil"
+
+################################################################################
+# Playbook enviroment variables
+################################################################################
 environment_vars:
   _BPXK_AUTOCVT: "ON"
-  ZOAU_HOME: "/usr/lpp/IBM/zoautil"
-  PYTHONPATH: "/usr/lpp/IBM/zoautil/lib"
-  LIBPATH: "/usr/lpp/IBM/zoautil/lib/:/usr/lpp/IBM/cyp/v3r8/pyz/lib:/usr/lib:/lib:."
-  PATH: "/usr/lpp/IBM/zoautil/bin:/usr/lpp/IBM/cyp/v3r8/pyz/bin:/bin"
+  ZOAU_HOME: "{{ ZOAU }}"
+  PYTHONPATH: "{{ ZOAU_HOME }}/lib"
+  LIBPATH: "{{ ZOAU_HOME }}/lib:{{ PYZ }}/lib:/lib:/usr/lib:."
+  PATH: "{{ ZOAU_HOME }}/bin:{{ PYZ }}/bin:/bin:/var/bin:/usr/lpp/java/J8.0/bin"
   _CEE_RUNOPTS: "FILETAG(AUTOCVT,AUTOTAG) POSIX(ON)"
   _TAG_REDIR_ERR: "txt"
   _TAG_REDIR_IN: "txt"

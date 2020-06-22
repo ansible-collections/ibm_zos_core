@@ -496,7 +496,9 @@ class StdinDefinition(DataDefinition):
         """[summary]
 
         Args:
-            content (str): The content to write to temporary data set / stdin.
+            content (Union[str, list[str]]): The content to write to temporary data set / stdin.
+                    Contents can be provided as a string or a list of string where each list item
+                    corresponds to a single line.
             record_format (str, optional): The record format to use for the dataset.
                     Valid options are: FB, VB, FBA, VBA, U.
                     Defaults to "FB".
@@ -517,6 +519,8 @@ class StdinDefinition(DataDefinition):
             record_length=record_length,
         )
         super().__init__(name)
+        if isinstance(content, list):
+            content = "\n".join(content)
         DataSet.write(name, content)
 
     def __del__(self):

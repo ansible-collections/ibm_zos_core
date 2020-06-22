@@ -169,11 +169,9 @@ def _run_mvs_command(pgm, cmd, dd=None, authorized=False):
     mvscmd = "mvscmd"
     if authorized:
         mvscmd += "auth"
-    mvscmd += " --pgm={0} --{1}=* --{2}=stdin"
+    mvscmd += " --pgm={0} --{1}=* --{2}=stdin".format(pgm, sysprint, sysin)
     if dd:
         for k, v in dd.items():
             mvscmd += " --{0}={1}".format(k, v)
 
-    return module.run_command(
-        mvscmd.format(pgm, sysprint, sysin), data=cmd
-    )
+    return module.run_command(mvscmd, data=cmd)

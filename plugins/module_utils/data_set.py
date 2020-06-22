@@ -6,7 +6,8 @@ from __future__ import absolute_import, division, print_function
 import re
 from os import path
 from random import choice
-from string import ascii_uppercase
+from string import ascii_uppercase, digits
+from random import randint
 from ansible.module_utils._text import to_bytes
 from ansible.module_utils.basic import AnsibleModule
 
@@ -336,6 +337,16 @@ def extract_member_name(data_set):
             break
         member += data_set[i]
     return member
+
+
+def temp_member_name():
+    """Generate a temp member name"""
+    first_char_set = ascii_uppercase + '#@$'
+    rest_char_set = ascii_uppercase + digits + '#@$'
+    temp_name = first_char_set[randint(0, len(first_char_set)-1)]
+    for _ in range(7):
+        temp_name += rest_char_set[randint(0, len(rest_char_set)-1)]
+    return temp_name
 
 
 class MVSCmdExecError(Exception):

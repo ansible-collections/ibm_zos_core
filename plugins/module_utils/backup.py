@@ -21,7 +21,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.file import make_dirs
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
-    is_member, extract_dsname
+    is_member, extract_dsname, temp_member_name
 )
 
 try:
@@ -56,7 +56,7 @@ def mvs_file_backup(dsn, bk_dsn):
     dsn = _validate_data_set_name(dsn).upper()
     if is_member(dsn):
         if not bk_dsn:
-            bk_dsn = extract_dsname(dsn) + "(MEMBAK)"
+            bk_dsn = extract_dsname(dsn) + "({0})".format(temp_member_name())
         bk_dsn = _validate_data_set_name(bk_dsn).upper()
         if Datasets.copy(dsn, bk_dsn) != 0:
             raise BackupError("Unable to backup {0} to {1}".format(dsn, bk_dsn))

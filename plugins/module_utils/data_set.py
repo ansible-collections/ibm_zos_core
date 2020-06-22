@@ -14,6 +14,10 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
     MissingZOAUImport,
 )
 
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
+    better_arg_parser
+)
+
 try:
     from zoautil_py import Datasets, MVSCmd, types
 except Exception:
@@ -275,6 +279,63 @@ class DataSetUtils(object):
                 re.findall(r"-[A-Z|0-9]*", volser_output[0])
             ).replace('-', '')
         return result
+
+
+def is_member(data_set):
+    """Determine whether the input string specifies a data set member"""
+    try:
+        arg_def = dict(data_set=dict(arg_type='data_set_member'))
+        parser = better_arg_parser.BetterArgParser(arg_def)
+        parser.parse_args({'data_set': data_set})
+    except ValueError:
+        return False
+    return True
+
+
+def is_data_set(data_set):
+    """Determine whether the input string specifies a data set name"""
+    try:
+        arg_def = dict(data_set=dict(arg_type='data_set_base'))
+        parser = better_arg_parser.BetterArgParser(arg_def)
+        parser.parse_args({'data_set': data_set})
+    except ValueError:
+        return False
+    return True
+
+
+def extract_dsname(data_set):
+    """Extract the actual name of the data set from a given input source
+
+    Arguments:
+        data_set {str} -- Input data set name
+
+    Returns:
+        {str} -- The actual name of the data set
+    """
+    result = ""
+    for c in data_set:
+        if c == '(':
+            break
+        result += c
+    return result
+
+
+def extract_member_name(data_set):
+    """Extract the member name from a given input source
+
+    Arguments:
+        data_set {str} -- Input source name
+
+    Returns:
+        {str} -- The member name
+    """
+    start = data_set.find('(')
+    member = ""
+    for i in range(start + 1, len(data_set)):
+        if data_set[i] == ')':
+            break
+        member += data_set[i]
+    return member
 
 
 class MVSCmdExecError(Exception):

@@ -8,11 +8,12 @@ __metaclass__ = type
 
 from ansible.module_utils.basic import AnsibleModule
 
+
 def iebcopy(cmd, dds=None, authorized=False):
-    """IEBCOPY is a data set utility that is used to copy or merge members 
-    between one or more partitioned data sets, or partitioned data sets extended 
-    (PDSEs), in full or in part. You can also use IEBCOPY to create a backup of 
-    a partitioned data set into a sequential data set (called an unload data set 
+    """IEBCOPY is a data set utility that is used to copy or merge members
+    between one or more partitioned data sets, or partitioned data sets extended
+    (PDSEs), in full or in part. You can also use IEBCOPY to create a backup of
+    a partitioned data set into a sequential data set (called an unload data set
     or PDSU), and to copy members from the backup into a partitioned data set.
 
     Arguments:
@@ -25,8 +26,8 @@ def iebcopy(cmd, dds=None, authorized=False):
 
 
 def iebedit(cmd, dds=None, authorized=False):
-    """You can use IEBEDIT to create a data set containing a selection of jobs 
-    or job steps. These jobs or job steps can be entered into the job stream at 
+    """You can use IEBEDIT to create a data set containing a selection of jobs
+    or job steps. These jobs or job steps can be entered into the job stream at
     a later time for processing.
 
     Arguments:
@@ -39,10 +40,10 @@ def iebedit(cmd, dds=None, authorized=False):
 
 
 def iebcompr(cmd, dds=None, authorized=False):
-    """IEBCOMPR is a data set utility that is used to compare two sequential 
-    data sets, two partitioned data sets or two partisioned data sets (PDSEs) 
-    at the logical record level to verify a backup copy. Fixed, variable, or 
-    undefined records from blocked or unblocked data sets or members can also be 
+    """IEBCOMPR is a data set utility that is used to compare two sequential
+    data sets, two partitioned data sets or two partisioned data sets (PDSEs)
+    at the logical record level to verify a backup copy. Fixed, variable, or
+    undefined records from blocked or unblocked data sets or members can also be
     compared. However, you should not use IEBCOMPR to compare load modules.
 
     Arguments:
@@ -55,8 +56,8 @@ def iebcompr(cmd, dds=None, authorized=False):
 
 
 def iebdg(cmd, dds=None, authorized=False):
-    """IEBDG is a data set utility that is used to provide a pattern of test 
-    data to be used as a programming debugging aid. This pattern of data can 
+    """IEBDG is a data set utility that is used to provide a pattern of test
+    data to be used as a programming debugging aid. This pattern of data can
     then be analyzed quickly for predictable results.
 
     Arguments:
@@ -70,21 +71,21 @@ def iebdg(cmd, dds=None, authorized=False):
 
 def iebgener(cmd, dds=None, authorized=False):
     """You can use IEBGENER to perform these tasks:
-    - Create a backup copy of a sequential data set, a member of a partitioned 
-      data set or PDSE or a z/OS UNIX System Services (z/OS UNIX) file such as a 
+    - Create a backup copy of a sequential data set, a member of a partitioned
+      data set or PDSE or a z/OS UNIX System Services (z/OS UNIX) file such as a
       HFS file.
-    - Produce a partitioned data set or PDSE, or a member of a partitioned data 
+    - Produce a partitioned data set or PDSE, or a member of a partitioned data
       set or PDSE, from a sequential data set or a z/OS UNIX file.
-    - Expand an existing partitioned data set or PDSE by creating partitioned 
+    - Expand an existing partitioned data set or PDSE by creating partitioned
       members and merging them into the existing data set.
     - Produce an edited sequential or partitioned data set or PDSE.
     - Manipulate data sets containing double-byte character set data.
-    - Print sequential data sets, members of partitioned data sets or PDSEs or 
+    - Print sequential data sets, members of partitioned data sets or PDSEs or
       z/OS UNIX files.
     - Reblock or change the logical record length of a data set.
     - Copy user labels on sequential output data sets.
-    - Supply editing facilities and exits for your routines that process labels, 
-      manipulate input data, create keys, and handle permanent input/output 
+    - Supply editing facilities and exits for your routines that process labels,
+      manipulate input data, create keys, and handle permanent input/output
       errors.
 
     Arguments:
@@ -97,8 +98,8 @@ def iebgener(cmd, dds=None, authorized=False):
 
 
 def idcams(cmd, dds=None, authorized=False):
-    """IDCAMS, which is the program name for access method services, is used 
-    primarily to define and manage VSAM data sets and integrated catalog 
+    """IDCAMS, which is the program name for access method services, is used
+    primarily to define and manage VSAM data sets and integrated catalog
     facility catalogs.
 
     Arguments:
@@ -111,11 +112,11 @@ def idcams(cmd, dds=None, authorized=False):
 
 
 def ikjeft01(cmd, dds=None, authorized=False):
-    """IKJEFT01 is the TSO/E program. You can use it whenever you wish to perform 
-    a TSO function within a batch job. It allows you to perform any TSO function. 
-    For a general list of all TSO functions, type TSO HELP. Additionally, 
-    IKJEFT01 allows you to run programs written in TSO/E Command List (CLIST) 
-    and/or TSO/E REXX. Optionally, you can also invoke other environments, such 
+    """IKJEFT01 is the TSO/E program. You can use it whenever you wish to perform
+    a TSO function within a batch job. It allows you to perform any TSO function.
+    For a general list of all TSO functions, type TSO HELP. Additionally,
+    IKJEFT01 allows you to run programs written in TSO/E Command List (CLIST)
+    and/or TSO/E REXX. Optionally, you can also invoke other environments, such
     as ISPF , allowing you to run ISPF Dialogs in a batch environment.
 
     Arguments:
@@ -128,9 +129,9 @@ def ikjeft01(cmd, dds=None, authorized=False):
 
 
 def iehlist(cmd, dds=None, authorized=False):
-    """IEHLIST is a system utility used to list entries in the directory of one 
-    or more partitioned data sets or PDSEs, or entries in an indexed or 
-    non-indexed volume table of contents. Any number of listings can be 
+    """IEHLIST is a system utility used to list entries in the directory of one
+    or more partitioned data sets or PDSEs, or entries in an indexed or
+    non-indexed volume table of contents. Any number of listings can be
     requested in a single execution of the program.
 
     Arguments:

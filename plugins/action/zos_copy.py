@@ -18,8 +18,9 @@ from ansible.module_utils.six import string_types
 from ansible.module_utils.parsing.convert_bool import boolean
 from ansible.plugins.action import ActionBase
 
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
-    better_arg_parser
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
+    is_member,
+    is_data_set
 )
 
 
@@ -58,8 +59,8 @@ class ActionModule(ActionBase):
                 return self._fail_acton(result, msg)
             else:
                 is_uss = '/' in dest
-                is_mvs_dest = _is_data_set(dest)
-                copy_member = _is_member(dest)
+                is_mvs_dest = is_data_set(dest)
+                copy_member = is_member(dest)
         else:
             msg = "Destination is required"
             return self._fail_acton(result, msg)
@@ -77,7 +78,7 @@ class ActionModule(ActionBase):
                 msg = "'src' or 'dest' must not be empty"
                 return self._fail_acton(result, msg)
             else:
-                src_member = _is_member(src)
+                src_member = is_member(src)
                 if not remote_src:
                     src = os.path.realpath(src)
                     is_src_dir = os.path.isdir(src)
@@ -222,7 +223,7 @@ class ActionModule(ActionBase):
                 self._connection.exec_command("rm -rf {0}".format(dest))
             else:
                 module_args = dict(name=dest, state='absent')
-                if _is_member(dest):
+                if is_member(dest):
                     module_args['type'] = "MEMBER"
                 self._execute_module(
                     module_name='zos_data_set',
@@ -283,28 +284,6 @@ def _process_boolean(arg, default=False):
         return boolean(arg)
     except TypeError:
         return default
-
-
-def _is_member(data_set):
-    """Determine whether the input string specifies a data set member"""
-    try:
-        arg_def = dict(data_set=dict(arg_type='data_set_member'))
-        parser = better_arg_parser.BetterArgParser(arg_def)
-        parser.parse_args({'data_set': data_set})
-    except ValueError:
-        return False
-    return True
-
-
-def _is_data_set(data_set):
-    """Determine whether the input string specifies a data set name"""
-    try:
-        arg_def = dict(data_set=dict(arg_type='data_set_base'))
-        parser = better_arg_parser.BetterArgParser(arg_def)
-        parser.parse_args({'data_set': data_set})
-    except ValueError:
-        return False
-    return True
 
 
 def _create_temp_path_name():

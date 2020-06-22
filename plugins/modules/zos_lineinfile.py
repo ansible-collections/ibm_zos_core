@@ -95,9 +95,9 @@ options:
         C(insertafter) is only honored if no match for C(regexp) is found.
       - May not be used with C(backrefs) or C(insertbefore).
       - Choices are EOF or '*regex*'
+      - Default is EOF
     required: false
     type: str
-    default: EOF
   insertbefore:
     description:
       - Used with C(state=present).
@@ -337,11 +337,9 @@ def main():
         line=dict(type='str'),
         insertafter=dict(
             type='str',
-            default='EOF'
         ),
         insertbefore=dict(
             type='str',
-            default=None
         ),
         backrefs=dict(type='bool', default=False),
         backup=dict(type='bool', default=False),
@@ -360,7 +358,7 @@ def main():
         state=dict(arg_type="str", default='present', choices=['absent', 'present']),
         regexp=dict(arg_type="str", required=False),
         line=dict(arg_type="str", required=False),
-        insertafter=dict(arg_type="str", default="EOF", required=False),
+        insertafter=dict(arg_type="str", required=False),
         insertbefore=dict(arg_type="str", required=False),
         encoding=dict(arg_type="str", default="IBM-1047", required=False),
         backup=dict(arg_type="bool", default=False, required=False),

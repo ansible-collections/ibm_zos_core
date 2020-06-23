@@ -11,6 +11,8 @@ try:
 except Exception:
     Datasets = MissingZOAUImport()
 
+space_units = {"b": "", "kb": "k", "mb": "m", "gb": "g"}
+
 
 class DDStatement(object):
     def __init__(self, name, definition):
@@ -323,6 +325,11 @@ class DatasetDefinition(DataDefinition):
         super().__init__(dataset_name)
         self.disposition = disposition
         self.type = type
+
+        if primary_unit and space_units.get(primary_unit.lower()) is not None:
+            primary_unit = space_units.get(primary_unit.lower())
+        if secondary_unit and space_units.get(secondary_unit.lower()) is not None:
+            secondary_unit = space_units.get(secondary_unit.lower())
         if primary and primary_unit:
             self.primary = str(primary) + primary_unit
         else:

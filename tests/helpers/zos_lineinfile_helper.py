@@ -27,7 +27,7 @@ def clean_uss_test_env(test_dir, hosts):
         assert 1 == 0, "Failed to clean the test env"
 
 
-def test_uss_general(test_name, ansible_zos_module, test_env, test_info, expected):
+def UssGeneral(test_name, ansible_zos_module, test_env, test_info, expected):
     hosts = ansible_zos_module
     set_uss_test_env(test_name, hosts, test_env)
     test_info["path"] = test_env["TEST_FILE"]
@@ -94,7 +94,7 @@ def clean_ds_test_env(ds_name, hosts):
         assert 1 == 0, "Failed to clean the test env"
 
 
-def test_ds_general(test_name, ansible_zos_module, test_env, test_info, expected):
+def DsGeneral(test_name, ansible_zos_module, test_env, test_info, expected):
     hosts = ansible_zos_module
     set_ds_test_env(test_name, hosts, test_env)
     test_info["path"] = test_env["DS_NAME"]
@@ -113,7 +113,7 @@ def test_ds_general(test_name, ansible_zos_module, test_env, test_info, expected
     clean_ds_test_env(test_env["DS_NAME"], hosts)
 
 
-def test_ds_not_supported_helper(test_name, ansible_zos_module, test_env, test_info):
+def DsNotSupportedHelper(test_name, ansible_zos_module, test_env, test_info):
     hosts = ansible_zos_module
     results = hosts.all.shell(cmd='hlq')
     for result in results.contacted.values():

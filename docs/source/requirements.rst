@@ -55,7 +55,7 @@ Managed node
 
    * _ENCODE_FILE_NEW: "IBM-1047"
    * _ENCODE_FILE_EXISTING: "IBM-1047"
-   
+
    Please review the README.ZOS guide included with the ported ``bash`` shell
    for further configurations.
 
@@ -94,14 +94,16 @@ and required by **IBM z/OS core Collection**.
   instructions.
 * For reference, the Program IDs are:
 
-  * NNNN-ZZZ for the base product
-  * NNNN-ZZZ for service and support
+  * 5655-PYT for the base product
+  * 5655-PYS for service and support
+* Optionally download **IBM Open Enterprise Python for z/OS**, `here`_
 * For the Python supported version, refer to the `release notes`_.
 
 .. _IBM Open Enterprise Python for z/OS:
-   https://www.TODO
+   http://www.ibm.com/products/open-enterprise-python-zos
 
-
+.. _here:
+   ftp://public.dhe.ibm.com/systems/pythonz
 
 ZOAU
 ----

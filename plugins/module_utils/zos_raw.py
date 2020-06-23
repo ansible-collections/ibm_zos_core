@@ -13,13 +13,13 @@ class MVSCmd(object):
     """
 
     @staticmethod
-    def execute(pgm, dds, args="", debug=False, verbose=False):
+    def execute(pgm, dds, parms="", debug=False, verbose=False):
         """Execute an unauthorized MVS command.
 
         Args:
             pgm (str): The name of the program to execute.
             dds (list[DDStatement]): A list of DDStatement objects.
-            args (str, optional): Argument string if required by the program. Defaults to "".
+            parms (str, optional): Argument string if required by the program. Defaults to "".
 
         Returns:
             MVSCmdResponse: The response of the command.
@@ -28,19 +28,19 @@ class MVSCmd(object):
         command = "mvscmd {0} {1} {2} ".format(
             "-d" if debug else "",
             "-v" if verbose else "",
-            MVSCmd._build_command(pgm, dds, args),
+            MVSCmd._build_command(pgm, dds, parms),
         )
         rc, out, err = module.run_command(command)
         return MVSCmdResponse(rc, out, err)
 
     @staticmethod
-    def execute_authorized(pgm, dds, args="", debug=False, verbose=False):
+    def execute_authorized(pgm, dds, parms="", debug=False, verbose=False):
         """Execute an authorized MVS command.
 
         Args:
             pgm (str): The name of the program to execute.
             dds (list[DDStatement]): A list of DDStatement objects.
-            args (str, optional): Argument string if required by the program. Defaults to "".
+            parms (str, optional): Argument string if required by the program. Defaults to "".
 
         Returns:
             MVSCmdResponse: The response of the command.
@@ -49,26 +49,26 @@ class MVSCmd(object):
         command = "mvscmdauth {0} {1} {2} ".format(
             "-d" if debug else "",
             "-v" if verbose else "",
-            MVSCmd._build_command(pgm, dds, args),
+            MVSCmd._build_command(pgm, dds, parms),
         )
         rc, out, err = module.run_command(command)
         return MVSCmdResponse(rc, out, err)
 
     @staticmethod
-    def _build_command(pgm, dds, args):
+    def _build_command(pgm, dds, parms):
         """Build the command string to be used by ZOAU mvscmd/mvscmdauth.
 
         Args:
             pgm (str): [description]
             dds (list[DDStatement]): A list of DDStatement objects.
-            args (str, optional): Argument string if required by the program. Defaults to "".
+            parms (str, optional): Argument string if required by the program. Defaults to "".
 
         Returns:
             str: Command string formatted as expected by mvscmd/mvscmdauth.
         """
         args_string = ""
-        if args:
-            args_string = "--args='{0}'".format(args)
+        if parms:
+            args_string = "--args='{0}'".format(parms)
         pgm_string = "--pgm={0}".format(pgm)
         dds_string = ""
         for dd in dds:

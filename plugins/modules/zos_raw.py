@@ -22,7 +22,7 @@ options:
     description: The name of the z/OS program to run (e.g. IDCAMS, IEFBR14, IEBGENER, etc.).
     required: true
     type: str
-  args:
+  parms:
     description:
       - The program arguments (e.g. -a='MARGINS(1,72)').
     required: false
@@ -1262,9 +1262,9 @@ def run_module():
     dd_concat = dict(type="dict", options=dict(**dd_name_base, **dd_concat_base))
 
     module_args = dict(
-        program_name=dict(type="str"),
+        program_name=dict(type="str", aliases=["program", "pgm"]),
         auth=dict(type="bool", default=False),
-        args=dict(type="str", required=False),
+        parms=dict(type="str", required=False),
         dds=dict(
             type="list",
             elements="dict",
@@ -1279,7 +1279,7 @@ def run_module():
         verbose=dict(type="bool", required=False),
         debug=dict(type="bool", required=False),
     )
-    result = dict(changed=False, dd_names=[], ret_code=dict(code=0))
+    result = dict(changed=False, dd_names=[], ret_code=dict(code=8))
     response = {}
     dd_statements = []
     try:
@@ -1463,9 +1463,9 @@ def parse_and_validate_args(params):
     dd_concat = dict(type="dict", options=dict(**dd_name_base, **dd_concat_base))
 
     module_args = dict(
-        program_name=dict(type="str"),
+        program_name=dict(type="str", aliases=["program", "pgm"]),
         auth=dict(type="bool", default=False),
-        args=dict(type="str", required=False),
+        parms=dict(type="str", required=False),
         dds=dict(
             type="list",
             elements="dict",

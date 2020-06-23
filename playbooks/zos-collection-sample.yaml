@@ -104,6 +104,11 @@
     # | job output, demonstrate creating and deleting data sets
     # +-------------------------------------------------------------------------
 
+    - name: Remove directory {{ tgt_tmp_dir }}/ansible/jcl on USS if it already exists
+      file:
+        path: "{{ tgt_tmp_dir }}/ansible/jcl"
+        state: absent
+
     - name: Create directory {{ tgt_tmp_dir }}/ansible/jcl on USS
             target {{ system_name }}
       file:

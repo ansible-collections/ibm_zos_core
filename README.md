@@ -11,7 +11,7 @@ commands, TSO commands, ping and querying operator actions.
 The **IBM z/OS core collection** serves as a dependency for other collections
 under the **Red Hat® Ansible Certified Content for IBM Z** umbrella and
 works closely with offerings such as
-[IBM z/OS IMS collection](https://github.com/ansible-collections/ibm_zos_ims)
+[IBM z/OS IMS collection](https://galaxy.ansible.com/ibm/ibm_zos_ims)
 to deliver a solution that will enable you to automate tasks on z/OS subsystems
 such as IMS.
 

@@ -93,16 +93,16 @@ options:
       from:
         description:
             - The character set of the source I(src).
-            - Supported character sets rely on the target version; the most
-              common character sets are supported.
+            - Supported character sets rely on the charset conversion utility
+              (iconv) version; the most common character sets are supported.
         required: true
         type: str
       to:
         description:
             - The destination I(dest) character set for the output to be written
               as.
-            - Supported character sets rely on the target version; the most
-              common character sets are supported.
+            - Supported character sets rely on the charset conversion utility
+              (iconv) version; the most common character sets are supported.
         required: true
         type: str
 notes:
@@ -429,7 +429,7 @@ class FetchHandler:
                 rc=rc,
             )
         if (not is_binary) and encoding:
-            enc_utils = encode.EncodeUtils(self.module)
+            enc_utils = encode.EncodeUtils()
             from_code_set = encoding.get("from")
             to_code_set = encoding.get("to")
             root, dirs, files = next(os.walk(dir_path))
@@ -472,7 +472,7 @@ class FetchHandler:
                 stderr_lines=str(err).splitlines(),
             )
         if (not is_binary) and encoding:
-            enc_utils = encode.EncodeUtils(self.module)
+            enc_utils = encode.EncodeUtils()
             from_code_set = encoding.get("from")
             to_code_set = encoding.get("to")
             try:

@@ -93,16 +93,16 @@ options:
       from:
         description:
             - The character set of the source I(src).
-            - Supported character sets rely on the target version; the most
-              common character sets are supported.
+            - Supported character sets rely on the charset conversion utility
+              (iconv) version; the most common character sets are supported.
         required: true
         type: str
       to:
         description:
             - The destination I(dest) character set for the output to be written
               as.
-            - Supported character sets rely on the target version; the most
-              common character sets are supported.
+            - Supported character sets rely on the charset conversion utility
+              (iconv) version; the most common character sets are supported.
         required: true
         type: str
 notes:

@@ -40,7 +40,7 @@ options:
       - The input data source.
       - I(dds) supports 6 types of sources:
         - I(dd_data_set) for data set files.
-        - I(dd_unix) for UNIX files.
+        - I(dd_unix) for Unix files.
         - I(dd_input) for in-stream data set.
         - I(dd_dummy) for no content input.
         - I(dd_concat) for a data set concatenation.
@@ -202,21 +202,10 @@ options:
             required: false
           block_size:
             description:
-              - The maximum length of a block.
-              - I(block_size_type) is used to provide unit of size.
+              - The maximum length of a block in bytes.
               - Default is dependent on I(record_format)
             type: int
             required: false
-          block_size_type:
-            description:
-              - The unit of measurement for I(block_size).
-            type: str
-            choices:
-              - b
-              - k
-              - m
-              - g
-            default: b
           key_label:
             description:
               - The label for the encryption key used by the system to encrypt the data set.
@@ -356,55 +345,111 @@ options:
             type: str
           path:
             description:
-              - The path to an existing UNIX file.
-              - Or provide the path to an new created UNIX file when I(path_status_group=OCREAT).
+              - The path to an existing Unix file.
+              - Or provide the path to an new created Unix file when I(status_group=OCREAT).
               - The provided path must be absolute.
             required: true
             type: str
-          path_disposition_normal:
+          disposition_normal:
             description:
-              - Tells the system what to do with the UNIX file after normal termination of
+              - Tells the system what to do with the Unix file after normal termination of
                 the program.
             type: str
             default: keep
             choices:
               - keep
               - delete
-          path_disposition_abnormal:
+          disposition_abnormal:
             description:
-              - Tells the system what to do with the UNIX file after abnormal termination of
+              - Tells the system what to do with the Unix file after abnormal termination of
                 the program.
             type: str
             default: keep
             choices:
               - keep
               - delete
-          path_mode:
+          mode:
             description:
-              - The file access attributes when the UNIX file is created specified in I(path).
+              - The file access attributes when the Unix file is created specified in I(path).
               - For those used to /usr/bin/chmod remember that modes are actually octal numbers.
                 You must either add a leading zero so that Ansible's YAML parser knows it is an octal number
                 (like 0644 or 01777) or quote it (like '644' or '1777') so Ansible receives a string and can
                 do its own conversion from string into number.
-              - The mode may be specified as a symbolic mode (for example, C(u+rwx) or C(u=rw,g=r,o=r)).
               - Maps to PATHMODE on z/OS.
             type: str
-          path_status_group:
+          status_group:
             description:
-              - The status for the UNIX file specified in I(path).
-              - If you do not code a value on the I(path_status_group) parameter the module assumes that the
+              - The status for the Unix file specified in I(path).
+              - If you do not code a value on the I(status_group) parameter the module assumes that the
                 pathname exists, searches for it, and fails the module if the pathname does not exist.
               - Maps to PATHOPTS status group file options on z/OS.
-              - You can choose up to 6 of the following:
-                - oappend
-                - ocreat
-                - oexcl
-                - onoctty
-                - ononblock
-                - osync
-                - otrunc
+              - You can specify up to 6 choices
+              - I(oappend) sets the file offset to the end of the file before each write,
+              so that data is written at the end of the file.
+              - I(ocreat) Specifies that if the file does not exist, the system is to create it.
+              If a directory specified in the pathname does not exist, one is not created,
+              and the new file is not created.
+              If the file already exists and I(oexcl) was not specified,
+              the system allows the program to use the existing file.
+              If the file already exists and I(oexcl) was specified,
+              the system fails the allocation and the job step.
+              - I(oexcl) specifies that if the file does not exist, the system is to create it.
+              If the file already exists, the system fails the allocation and the job step.
+              The system ignores I(oexcl) if I(ocreat) is not also specified.
+              - I(onoctty) specifies that if the PATH parameter identifies a terminal device,
+              opening of the file does not make the terminal device the controlling terminal for the process.
+              - I(ononblock) specifies the following, depending on the type of file
+                - For a FIFO special file
+                  - With I(ononblock) specified and I(ordonly) access,
+                  an open function for reading-only returns without delay.
+                  - With I(ononblock) not specified and I(ordonly) access,
+                  an open function for reading-only blocks (waits) until a process opens the file for writing.
+                  - With I(ononblock) specified and I(owronly) access,
+                  an open function for writing-only returns an error if no process
+                  currently has the file open for reading.
+                  - With I(ononblock) not specified and I(owronly) access,
+                  an open function for writing-only blocks (waits) until a process opens the file for reading.
+                - For a character special file that supports nonblocking open
+                  - If I(ononblock) is specified, an open function returns without blocking (waiting)
+                  until the device is ready or available.
+                  Device response depends on the type of device.
+                  - If I(ononblock) is not specified, an open function blocks (waits)
+                  until the device is ready or available.
+              - I(ononblock) has no effect on other file types.
+              - I(osync) specifies that the system is to move data from buffer storage
+              to permanent storage before returning control from a callable service that performs a write.
+              - I(otrunc) specifies that the system is to truncate the file length to zero if
+              all the following are true
+                - The file specified exists.
+                - The file is a regular file.
+                - The file successfully opened with I(ordwr) or I(owronly).
+              - When I(otrunc) is specified, the system does not change the mode and owner.
+              I(otrunc) has no effect on FIFO special files or character special files.
             type: list
             elements: str
+            choices:
+              - oappend
+              - ocreat
+              - oexcl
+              - onoctty
+              - ononblock
+              - osync
+              - otrunc
+            required: false
+          access_group:
+            description:
+              - The kind of access to request for the Unix file specified in I(path).
+            type: str
+            choices:
+              - r
+              - w
+              - rw
+              - read_only
+              - write_only
+              - read_write
+              - ordonly
+              - owronly
+              - ordwr
             required: false
           file_data_type:
             description:
@@ -418,21 +463,10 @@ options:
               - record
           block_size:
             description:
-              - The block size for the Unix file.
-              - I(block_size_type) is used to provide unit of size.
+              - The block size, in bytes, for the Unix file.
               - Default is dependent on I(record_format)
             type: int
             required: false
-          block_size_type:
-            description:
-              - The unit of measurement for I(block_size).
-            type: str
-            choices:
-              - b
-              - k
-              - m
-              - g
-            default: b
           record_length:
             description:
               - The logical record length for the Unix file.
@@ -702,21 +736,10 @@ options:
                 required: false
               block_size:
                 description:
-                  - The maximum length of a block.
-                  - I(block_size_type) is used to provide unit of size.
+                  - The maximum length of a block in bytes.
                   - Default is dependent on I(record_format)
                 type: int
                 required: false
-              block_size_type:
-                description:
-                  - The unit of measurement for I(block_size).
-                type: str
-                choices:
-                  - b
-                  - k
-                  - m
-                  - g
-                default: b
               key_label:
                 description:
                   - The label for the encryption key used by the system to encrypt the data set.
@@ -852,56 +875,111 @@ options:
             suboptions:
               path:
                 description:
-                  - The path to an existing UNIX file.
-                  - Or provide the path to an new created UNIX file when I(path_status_group=OCREAT).
+                  - The path to an existing Unix file.
+                  - Or provide the path to an new created Unix file when I(status_group=OCREAT).
                   - The provided path must be absolute.
                 required: true
                 type: str
-              path_disposition_normal:
+              disposition_normal:
                 description:
-                  - Tells the system what to do with the UNIX file after normal termination of
+                  - Tells the system what to do with the Unix file after normal termination of
                     the program.
                 type: str
                 default: keep
                 choices:
                   - keep
                   - delete
-              path_disposition_abnormal:
+              disposition_abnormal:
                 description:
-                  - Tells the system what to do with the UNIX file after abnormal termination of
+                  - Tells the system what to do with the Unix file after abnormal termination of
                     the program.
                 type: str
                 default: keep
                 choices:
                   - keep
                   - delete
-              path_mode:
+              mode:
                 description:
-                  - The file access attributes when the UNIX file is created specified in I(path).
+                  - The file access attributes when the Unix file is created specified in I(path).
                   - For those used to /usr/bin/chmod remember that modes are actually octal numbers.
                     You must either add a leading zero so that Ansible's YAML parser knows it is an octal number
                     (like 0644 or 01777) or quote it (like '644' or '1777') so Ansible receives a string and can
                     do its own conversion from string into number.
-                  - The mode may be specified as a symbolic mode (for example, C(u+rwx) or C(u=rw,g=r,o=r)).
                   - Maps to PATHMODE on z/OS.
                 type: str
-              path_status_group:
+              status_group:
                 description:
-                  - The status for the UNIX file specified in I(path).
-                  - If you do not code a value on the I(path_status_group) parameter the module assumes that the
+                  - The status for the Unix file specified in I(path).
+                  - If you do not code a value on the I(status_group) parameter the module assumes that the
                     pathname exists, searches for it, and fails the module if the pathname does not exist.
                   - Maps to PATHOPTS status group file options on z/OS.
-                  - You can choose up to 6 of the following:
-                    - oappend
-                    - ocreat
-                    - oexcl
-                    - onoctty
-                    - ononblock
-                    - osync
-                    - otrunc
+                  - You can specify up to 6 choices
+                  - I(oappend) sets the file offset to the end of the file before each write,
+                  so that data is written at the end of the file.
+                  - I(ocreat) Specifies that if the file does not exist, the system is to create it.
+                  If a directory specified in the pathname does not exist, one is not created,
+                  and the new file is not created.
+                  If the file already exists and I(oexcl) was not specified,
+                  the system allows the program to use the existing file.
+                  If the file already exists and I(oexcl) was specified,
+                  the system fails the allocation and the job step.
+                  - I(oexcl) specifies that if the file does not exist, the system is to create it.
+                  If the file already exists, the system fails the allocation and the job step.
+                  The system ignores I(oexcl) if I(ocreat) is not also specified.
+                  - I(onoctty) specifies that if the PATH parameter identifies a terminal device,
+                  opening of the file does not make the terminal device the controlling terminal for the process.
+                  - I(ononblock) specifies the following, depending on the type of file
+                    - For a FIFO special file
+                      - With I(ononblock) specified and I(ordonly) access,
+                      an open function for reading-only returns without delay.
+                      - With I(ononblock) not specified and I(ordonly) access,
+                      an open function for reading-only blocks (waits) until a process opens the file for writing.
+                      - With I(ononblock) specified and I(owronly) access,
+                      an open function for writing-only returns an error if no process
+                      currently has the file open for reading.
+                      - With I(ononblock) not specified and I(owronly) access,
+                      an open function for writing-only blocks (waits) until a process opens the file for reading.
+                    - For a character special file that supports nonblocking open
+                      - If I(ononblock) is specified, an open function returns without blocking (waiting)
+                      until the device is ready or available.
+                      Device response depends on the type of device.
+                      - If I(ononblock) is not specified, an open function blocks (waits)
+                      until the device is ready or available.
+                  - I(ononblock) has no effect on other file types.
+                  - I(osync) specifies that the system is to move data from buffer storage
+                  to permanent storage before returning control from a callable service that performs a write.
+                  - I(otrunc) specifies that the system is to truncate the file length to zero if
+                  all the following are true
+                    - The file specified exists.
+                    - The file is a regular file.
+                    - The file successfully opened with I(ordwr) or I(owronly).
+                  - When I(otrunc) is specified, the system does not change the mode and owner.
+                  I(otrunc) has no effect on FIFO special files or character special files.
                 type: list
                 elements: str
+                choices:
+                  - oappend
+                  - ocreat
+                  - oexcl
+                  - onoctty
+                  - ononblock
+                  - osync
+                  - otrunc
                 required: false
+              access_group:
+                description:
+                  - The kind of access to request for the Unix file specified in I(path).
+                type: str
+                choices:
+                  - r
+                  - w
+                  - rw
+                  - read_only
+                  - write_only
+                  - read_write
+                  - ordonly
+                  - owronly
+                  - ordwr
               file_data_type:
                 description:
                   - The type of data that is (or will be) stored in the file specified in I(path).
@@ -914,21 +992,10 @@ options:
                   - record
               block_size:
                 description:
-                  - The block size for the Unix file.
-                  - I(block_size_type) is used to provide unit of size.
+                  - The block size, in bytes, for the Unix file.
                   - Default is dependent on I(record_format)
                 type: int
                 required: false
-              block_size_type:
-                description:
-                  - The unit of measurement for I(block_size).
-                type: str
-                choices:
-                  - b
-                  - k
-                  - m
-                  - g
-                default: b
               record_length:
                 description:
                   - The logical record length for the Unix file.
@@ -1131,7 +1198,6 @@ def run_module():
         sms_storage_class=dict(type="str"),
         sms_data_class=dict(type="str"),
         block_size=dict(type="int"),
-        block_size_type=dict(type="str", choices=["b", "k", "m", "g"]),
         key_label=dict(type="str"),
         type=dict(
             type="str",
@@ -1196,27 +1262,25 @@ def run_module():
         disposition_normal=dict(type="str", choices=["keep", "delete"]),
         disposition_abnormal=dict(type="str", choices=["keep", "delete"]),
         mode=dict(type="int"),
-        status_group=dict(
-            type="list",
-            elements="str",
+        status_group=dict(type="list", elements="str",),
+        access_group=dict(
+            type="str",
             choices=[
-                "ocreat",
-                "oexcl",
-                "oappend",
-                "ordwr",
+                "r",
+                "w",
+                "rw",
+                "read_only",
+                "write_only",
+                "read_write",
                 "ordonly",
                 "owronly",
-                "onoctty",
-                "ononblock",
-                "osync",
-                "otrunc",
+                "ordwr",
             ],
         ),
         file_data_type=dict(
             type="str", choices=["binary", "text", "record"], default="binary"
         ),
         block_size=dict(type="int"),
-        block_size_type=dict(type="str", choices=["b", "k", "m", "g"]),
         record_length=dict(type="int"),
         record_format=dict(type="str", choices=["u", "vb", "vba", "fb", "fba"]),
         return_content=dict(
@@ -1326,7 +1390,6 @@ def parse_and_validate_args(params):
         sms_storage_class=dict(type="str"),
         sms_data_class=dict(type="str"),
         block_size=dict(type="int"),
-        block_size_type=dict(type="str", choices=["b", "k", "m", "g"]),
         key_label=dict(type="str"),
         type=dict(
             type="str",
@@ -1393,27 +1456,12 @@ def parse_and_validate_args(params):
         disposition_normal=dict(type="str", choices=["keep", "delete"]),
         disposition_abnormal=dict(type="str", choices=["keep", "delete"]),
         mode=dict(type="int"),
-        status_group=dict(
-            type="list",
-            elements="str",
-            choices=[
-                "ocreat",
-                "oexcl",
-                "oappend",
-                "ordwr",
-                "ordonly",
-                "owronly",
-                "onoctty",
-                "ononblock",
-                "osync",
-                "otrunc",
-            ],
-        ),
+        status_group=dict(type=status_group,),
+        access_group=dict(type=access_group,),
         file_data_type=dict(
             type="str", choices=["binary", "text", "record"], default="binary"
         ),
         block_size=dict(type="int"),
-        block_size_type=dict(type="str", choices=["b", "k", "m", "g"]),
         record_length=dict(type="int"),
         record_format=dict(type="str", choices=["u", "vb", "vba", "fb", "fba"]),
         return_content=dict(
@@ -1568,6 +1616,54 @@ def backup(contents, dependencies):
     return contents
 
 
+def status_group(contents, dependencies):
+    """Validate status group argument.
+
+    Args:
+        contents (list[str]): The contents provided for the status_group argument.
+        dependencies (dict): Any arguments this argument is dependent on.
+
+    Returns:
+        list[str]: The access group as expected by mvscmd.
+    """
+    if not contents:
+        return None
+    choices = ["ocreat", "oexcl", "oappend", "onoctty", "ononblock", "osync", "otrunc"]
+    for item in contents:
+        if item.lower() not in choices:
+            raise ValueError(
+                "Invalid argument '{0}' for type status_group. Valid options are: {1}.".format(
+                    item, ", ".join(choices)
+                )
+            )
+        else:
+            item = item.lower()
+    return contents
+
+
+def access_group(contents, dependencies):
+    """Validate access group argument.
+
+    Args:
+        contents (str): The contents provided for the access_group argument.
+        dependencies (dict): Any arguments this argument is dependent on.
+
+    Returns:
+        str: The access group as expected by mvscmd.
+    """
+    ACCESS_GROUP_NAME_MAP = {
+        "read_only": "ordonly",
+        "write_only": "owronly",
+        "read_write": "ordwr",
+        "r": "ordonly",
+        "w": "owronly",
+        "rw": "ordwr",
+    }
+    if contents and ACCESS_GROUP_NAME_MAP.get(contents):
+        contents = ACCESS_GROUP_NAME_MAP.get(contents)
+    return contents
+
+
 def build_dd_statements(parms):
     """Build a list of DDStatement objects from provided module parms.
 
@@ -1662,7 +1758,6 @@ class RawDatasetDefinition(DatasetDefinition):
         disposition_normal=None,
         disposition_abnormal=None,
         block_size=None,
-        block_size_type=None,
         record_format=None,
         record_length=None,
         sms_storage_class=None,
@@ -1692,7 +1787,6 @@ class RawDatasetDefinition(DatasetDefinition):
             disposition_normal (str, optional): What to do with the data set after normal termination of the program. Defaults to None.
             disposition_abnormal (str, optional): What to do with the data set after abnormal termination of the program. Defaults to None.
             block_size (int, optional): The block size of the data set. Defaults to None.
-            block_size_type (str, optional): The unit of size to use for block size. Defaults to None.
             record_format (str, optional): The record format of the data set. Defaults to None.
             record_length (int, optional): The length, in bytes, of each record in the data set. Defaults to None.
             sms_storage_class (str, optional): The storage class for an SMS-managed dataset. Defaults to None.
@@ -1719,8 +1813,6 @@ class RawDatasetDefinition(DatasetDefinition):
         key_encoding1 = None
         key_label2 = None
         key_encoding2 = None
-        if block_size_type and block_size:
-            block_size = to_bytes(block_size, block_size_type)
         if encryption_key_1:
             if encryption_key_1.get("label"):
                 key_label1 = encryption_key_1.get("label")
@@ -1802,11 +1894,11 @@ class RawFileDefinition(FileDefinition):
         disposition_normal=None,
         disposition_abnormal=None,
         mode=None,
+        access_group=None,
         status_group=None,
         file_data_type=None,
         record_length=None,
         block_size=None,
-        block_size_type=None,
         record_format=None,
         return_content={},
         **kwargs
@@ -1817,23 +1909,22 @@ class RawFileDefinition(FileDefinition):
             path (str): An absolute Unix file path.
             disposition_normal (str, optional): What to do with path after normal program termination. Defaults to None.
             disposition_abnormal (str, optional): What to do with path after abnormal program termination. Defaults to None.
-            mode (int, optional): The file access attributes for the UNIX file being allocated. Defaults to None.
-            status_group (list[str], optional): The status for UNIX file being allocated. Defaults to None.
-            file_data_type (str, optional): The type of data that is (or will be) stored in the UNIX file. Defaults to None.
-            record_length (int, optional): The specified logical record length for the UNIX file. Defaults to None.
-            block_size (int, optional): the specified block size for the UNIX file being allocated. Defaults to None.
-            block_size_type (str, optional): The unit of size to use for the block size. Defaults to None.
-            record_format (str, optional): The specified record format for the UNIX file. Defaults to None.
+            mode (int, optional): The file access attributes for the Unix file being allocated. Defaults to None.
+            access_group (str, optional): the access mode for Unix file. Defaults to None.
+            status_group (list[str], optional): The status for Unix file being allocated. Defaults to None.
+            file_data_type (str, optional): The type of data that is (or will be) stored in the Unix file. Defaults to None.
+            record_length (int, optional): The specified logical record length for the Unix file. Defaults to None.
+            block_size (int, optional): the specified block size for the Unix file being allocated. Defaults to None.
+            record_format (str, optional): The specified record format for the Unix file. Defaults to None.
             return_content (dict, optional): Determines how content should be returned to the user. Defaults to {}.
         """
         self.return_content = ReturnContent(**(return_content or {}))
-        if block_size_type and block_size:
-            block_size = to_bytes(block_size, block_size_type)
         super().__init__(
             path_name=path,
             normal_disposition=disposition_normal,
             conditional_disposition=disposition_abnormal,
             path_mode=mode,
+            access_group=access_group,
             status_group=status_group,
             file_data=file_data_type,
             record_length=record_length,

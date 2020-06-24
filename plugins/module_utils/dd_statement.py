@@ -132,6 +132,7 @@ class FileDefinition(DataDefinition):
         normal_disposition=None,
         conditional_disposition=None,
         path_mode=None,
+        access_group=None,
         status_group=None,
         file_data=None,
         record_length=None,
@@ -149,10 +150,13 @@ class FileDefinition(DataDefinition):
             conditional_disposition (str, optional): What to do with path after abnormal program termination.
                 May be one of keep, delete.
                 Defaults to None.
-            path_mode (Union[str, int], optional): The file access attributes for the Unix file being allocated.
+            path_mode (Union[str, int], optional): The file access attributes for the Unix file.
                 Provide in chmod-like number format. Defaults to None.
-            status_group (list[str], optional): the status for Unix file being allocated.
-                Specify up to 6 of: OCREAT, OEXCL, OAPPEND, ORDWR, ORDONLY, OWRONLY, ONOCTTY, ONONBLOCK, OSYNC, OTRUNC.
+            access_group (str, optional): the access mode for Unix file.
+                Options are: ORDWR, ORDONLY, OWRONLY.
+                Defaults to None.
+            status_group (list[str], optional): the status for Unix file.
+                Specify up to 6 of: OCREAT, OEXCL, OAPPEND, ONOCTTY, ONONBLOCK, OSYNC, OTRUNC.
                 Defaults to None.
             file_data (str, optional): the type of data that is (or will be) stored in the Unix file.
                 Defaults to None.
@@ -174,6 +178,7 @@ class FileDefinition(DataDefinition):
         self.normal_disposition = normal_disposition
         self.conditional_disposition = conditional_disposition
         self.path_mode = path_mode
+        self.access_group = access_group
         self.status_group = status_group
         self.file_data = file_data
         self.record_length = record_length
@@ -194,8 +199,13 @@ class FileDefinition(DataDefinition):
         mvscmd_string = self._append_mvscmd_string(
             mvscmd_string, "pathmode", self.path_mode
         )
+        path_opts = []
+        if self.status_group:
+            path_opts = self.status_group
+        if self.access_group:
+            path_opts.append(self.access_group)
         mvscmd_string = self._append_mvscmd_string(
-            mvscmd_string, "statusgroup", self.status_group
+            mvscmd_string, "statusgroup", path_opts
         )
         mvscmd_string = self._append_mvscmd_string(
             mvscmd_string, "filedata", self.file_data

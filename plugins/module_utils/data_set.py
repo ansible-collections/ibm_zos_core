@@ -8,13 +8,18 @@ from os import path
 from random import choice
 from string import ascii_uppercase
 from ansible.module_utils._text import to_bytes
+from ansible.module_utils.basic import AnsibleModule
+
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
+    MissingZOAUImport,
+)
 
 try:
     from zoautil_py import Datasets, MVSCmd, types
 except Exception:
-    Datasets = ""
-    MVSCmd = ""
-    types = ""
+    Datasets = MissingZOAUImport()
+    MVSCmd = MissingZOAUImport()
+    types = MissingZOAUImport()
 
 __metaclass__ = type
 
@@ -23,35 +28,33 @@ LISTCAT_COMMAND = "  LISTCAT ENT({0}) ALL"
 
 
 class DataSetUtils(object):
-    def __init__(self, module, data_set):
+    def __init__(self, data_set):
         """A standard utility to gather information about
         a particular data set. Note that the input data set is assumed
         to be cataloged.
 
         Arguments:
-            module {AnsibleModule} -- The AnsibleModule object from currently
-                                      running module.
             data_set {str} -- Name of the input data set
         """
-        self.module = module
+        self.module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
         self.data_set = data_set
-        self.uss_path = '/' in data_set
+        self.is_uss_path = '/' in data_set
         self.ds_info = dict()
-        if not self.uss_path:
+        if not self.is_uss_path:
             self.ds_info = self._gather_data_set_info()
 
-    def data_set_exists(self):
+    def exists(self):
         """Determines whether the input data set exists. The input data
         set can be VSAM or non-VSAM.
 
         Returns:
             bool -- If the data set exists
         """
-        if self.uss_path:
+        if self.is_uss_path:
             return path.exists(to_bytes(self.data_set))
         return self.ds_info.get('exists')
 
-    def data_set_member_exists(self, member):
+    def member_exists(self, member):
         """Determines whether the input data set contains the given member.
 
         Arguments:
@@ -60,7 +63,7 @@ class DataSetUtils(object):
         Returns:
             bool -- If the member exists
         """
-        if self.get_data_set_type() == "PO":
+        if self.ds_type() == "PO":
             rc, out, err = self.module.run_command(
                 "head \"//'{0}({1})'\"".format(self.data_set, member)
             )
@@ -68,7 +71,7 @@ class DataSetUtils(object):
                 return True
         return False
 
-    def get_data_set_type(self):
+    def ds_type(self):
         """Retrieves the data set type of the input data set.
 
         Returns:
@@ -83,7 +86,7 @@ class DataSetUtils(object):
             'IS'   -- Indexed Sequential
             'USS'  -- USS file or directory
         """
-        if self.uss_path and self.data_set_exists():
+        if self.is_uss_path and self.exists():
             return 'USS'
         return self.ds_info.get('dsorg')
 
@@ -122,7 +125,7 @@ class DataSetUtils(object):
 
         return temp_ds_name
 
-    def get_data_set_volume(self):
+    def volume(self):
         """Retrieves the volume name where the input data set is stored.
 
         Returns:
@@ -132,13 +135,13 @@ class DataSetUtils(object):
         Raises:
             AttributeError -- When input data set is a USS file or directory
         """
-        if self.uss_path:
+        if self.is_uss_path:
             raise AttributeError(
                 "USS file or directory has no attribute 'Volume'"
             )
         return self.ds_info.get('volser')
 
-    def get_data_set_lrecl(self):
+    def lrecl(self):
         """Retrieves the record length of the input data set. Record length
         specifies the length, in bytes, of each record in the data set.
 
@@ -149,13 +152,13 @@ class DataSetUtils(object):
         Raises:
             AttributeError -- When input data set is a USS file or directory
         """
-        if self.uss_path:
+        if self.is_uss_path:
             raise AttributeError(
                 "USS file or directory has no attribute 'lrecl'"
             )
         return self.ds_info.get('lrecl')
 
-    def get_data_set_recfm(self):
+    def recfm(self):
         """Retrieves the record format of the input data set.
 
         Returns:
@@ -174,7 +177,7 @@ class DataSetUtils(object):
             'VBS' -- Variable Blocked Spanned
             'VS'  -- Variable Spanned
         """
-        if self.uss_path:
+        if self.is_uss_path:
             raise AttributeError(
                 "USS file or directory has no attribute 'recfm'"
             )

@@ -13,6 +13,8 @@ from pprint import pprint
 EXISTING_DATA_SET = "user.private.proclib"
 DEFAULT_DATA_SET = "user.private.rawds"
 DEFAULT_DATA_SET_WITH_MEMBER = "{0}(mem1)".format(DEFAULT_DATA_SET)
+DEFAULT_PATH = "/tmp/ansible/testdir"
+DEFAULT_PATH_WITH_FILE = "{0}/testfile".format(DEFAULT_PATH)
 DEFAULT_DD = "MYDD"
 SYSIN_DD = "SYSIN"
 SYSPRINT_DD = "SYSPRINT"
@@ -834,3 +836,99 @@ def test_input_return_text_content_encodings(
     for result in results.contacted.values():
         pprint(result)
         assert result.get("changed", False) is True
+
+
+# ---------------------------------------------------------------------------- #
+#                              Unix file DD Tests                              #
+# ---------------------------------------------------------------------------- #
+
+
+def test_failing_path_name(ansible_zos_module):
+    hosts = ansible_zos_module
+    results = hosts.all.zos_raw(
+        program_name="idcams",
+        auth=True,
+        dds=[
+            dict(dd_unix=dict(dd_name=SYSPRINT_DD, path="1dfa3f4rafwer/f2rfsd",),),
+            dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN,)),
+        ],
+    )
+    for result in results.contacted.values():
+        pprint(result)
+        assert result.get("ret_code", {}).get("code", -1) == 8
+        assert "ValueError" in result.get("msg", "")
+
+
+def test_create_new_file(ansible_zos_module):
+    hosts = ansible_zos_module
+    hosts.all.file(path=DEFAULT_PATH, state="directory")
+    hosts.all.file(path=DEFAULT_PATH_WITH_FILE, state="absent")
+    results = hosts.all.zos_raw(
+        program_name="idcams",
+        auth=True,
+        dds=[
+            dict(dd_unix=dict(dd_name=SYSPRINT_DD, path=DEFAULT_PATH_WITH_FILE,),),
+            dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN,)),
+        ],
+    )
+    results2 = hosts.all.command(cmd="cat {0}".format(DEFAULT_PATH_WITH_FILE))
+    hosts.all.file(path=DEFAULT_PATH, state="absent")
+    for result in results.contacted.values():
+        pprint(result)
+        assert result.get("ret_code", {}).get("code", -1) == 0
+    for result in results2.contacted.values():
+        pprint(result)
+        assert "IDCAMS  SYSTEM" in result.get("stdout", "")
+
+
+def test_write_to_existing_file(ansible_zos_module):
+    hosts = ansible_zos_module
+    hosts.all.file(path=DEFAULT_PATH, state="directory")
+    hosts.all.file(path=DEFAULT_PATH_WITH_FILE, state="present")
+    results = hosts.all.zos_raw(
+        program_name="idcams",
+        auth=True,
+        dds=[
+            dict(dd_unix=dict(dd_name=SYSPRINT_DD, path=DEFAULT_PATH_WITH_FILE,),),
+            dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN,)),
+        ],
+    )
+    results2 = hosts.all.command(cmd="cat {0}".format(DEFAULT_PATH_WITH_FILE))
+    hosts.all.file(path=DEFAULT_PATH, state="absent")
+    for result in results.contacted.values():
+        pprint(result)
+        assert result.get("ret_code", {}).get("code", -1) == 0
+    for result in results2.contacted.values():
+        pprint(result)
+        assert "IDCAMS  SYSTEM" in result.get("stdout", "")
+
+
+@pytest.mark.parametrize(
+    "normal_disposition,expected", [("keep", True), ("delete", False)]
+)
+def test_file_normal_disposition(ansible_zos_module, normal_disposition, expected):
+    hosts = ansible_zos_module
+    hosts.all.file(path=DEFAULT_PATH, state="directory")
+    hosts.all.file(path=DEFAULT_PATH_WITH_FILE, state="present")
+    results = hosts.all.zos_raw(
+        program_name="idcams",
+        auth=True,
+        dds=[
+            dict(
+                dd_unix=dict(
+                    dd_name=SYSPRINT_DD,
+                    path=DEFAULT_PATH_WITH_FILE,
+                    disposition_normal=normal_disposition,
+                ),
+            ),
+            dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN,)),
+        ],
+    )
+    results2 = hosts.all.stat(path=DEFAULT_PATH_WITH_FILE)
+    hosts.all.file(path=DEFAULT_PATH, state="absent")
+    for result in results.contacted.values():
+        pprint(result)
+        assert result.get("ret_code", {}).get("code", -1) == 0
+    for result in results2.contacted.values():
+        pprint(result)
+        assert result.get("stat", {}).get("exists", not expected) is expected

@@ -932,3 +932,263 @@ def test_file_normal_disposition(ansible_zos_module, normal_disposition, expecte
     for result in results2.contacted.values():
         pprint(result)
         assert result.get("stat", {}).get("exists", not expected) is expected
+
+
+@pytest.mark.parametrize("mode,expected", [(644, "0644"), (755, "0755")])
+def test_file_modes(ansible_zos_module, mode, expected):
+    hosts = ansible_zos_module
+    hosts.all.file(path=DEFAULT_PATH, state="directory")
+    results = hosts.all.zos_raw(
+        program_name="idcams",
+        auth=True,
+        dds=[
+            dict(
+                dd_unix=dict(
+                    dd_name=SYSPRINT_DD, path=DEFAULT_PATH_WITH_FILE, mode=mode,
+                ),
+            ),
+            dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN,)),
+        ],
+    )
+    results2 = hosts.all.stat(path=DEFAULT_PATH_WITH_FILE)
+    hosts.all.file(path=DEFAULT_PATH, state="absent")
+    for result in results.contacted.values():
+        pprint(result)
+        assert result.get("ret_code", {}).get("code", -1) == 0
+    for result in results2.contacted.values():
+        pprint(result)
+        assert result.get("stat", {}).get("mode", "") == expected
+
+
+@pytest.mark.parametrize(
+    "access_group,status_group",
+    [
+        ("rw", ["ocreat", "oexcl"]),
+        ("w", ["ocreat", "oexcl"]),
+        ("rw", ["ocreat", "oappend"]),
+    ],
+)
+def test_file_path_options(ansible_zos_module, access_group, status_group):
+    hosts = ansible_zos_module
+    hosts.all.file(path=DEFAULT_PATH, state="directory")
+    results = hosts.all.zos_raw(
+        program_name="idcams",
+        auth=True,
+        dds=[
+            dict(
+                dd_unix=dict(
+                    dd_name=SYSPRINT_DD,
+                    path=DEFAULT_PATH_WITH_FILE,
+                    access_group=access_group,
+                    status_group=status_group,
+                ),
+            ),
+            dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN,)),
+        ],
+    )
+    results2 = hosts.all.command(cmd="cat {0}".format(DEFAULT_PATH_WITH_FILE))
+    hosts.all.file(path=DEFAULT_PATH, state="absent")
+    for result in results.contacted.values():
+        pprint(result)
+        assert result.get("ret_code", {}).get("code", -1) == 0
+    for result in results2.contacted.values():
+        pprint(result)
+        assert "IDCAMS  SYSTEM" in result.get("stdout", "")
+
+
+@pytest.mark.parametrize(
+    "block_size", [10, 20, 50, 80, 120],
+)
+def test_file_block_size(ansible_zos_module, block_size):
+    hosts = ansible_zos_module
+    hosts.all.file(path=DEFAULT_PATH, state="directory")
+    hosts.all.file(path=DEFAULT_PATH_WITH_FILE, state="absent")
+    results = hosts.all.zos_raw(
+        program_name="idcams",
+        auth=True,
+        dds=[
+            dict(
+                dd_unix=dict(
+                    dd_name=SYSPRINT_DD,
+                    path=DEFAULT_PATH_WITH_FILE,
+                    block_size=block_size,
+                ),
+            ),
+            dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN,)),
+        ],
+    )
+    results2 = hosts.all.command(cmd="cat {0}".format(DEFAULT_PATH_WITH_FILE))
+    hosts.all.file(path=DEFAULT_PATH, state="absent")
+    for result in results.contacted.values():
+        pprint(result)
+        assert result.get("ret_code", {}).get("code", -1) == 0
+    for result in results2.contacted.values():
+        pprint(result)
+        assert "IDCAMS  SYSTEM" in result.get("stdout", "")
+
+
+@pytest.mark.parametrize(
+    "record_length", [10, 20, 50, 80, 120],
+)
+def test_file_record_length(ansible_zos_module, record_length):
+    hosts = ansible_zos_module
+    hosts.all.file(path=DEFAULT_PATH, state="directory")
+    hosts.all.file(path=DEFAULT_PATH_WITH_FILE, state="absent")
+    results = hosts.all.zos_raw(
+        program_name="idcams",
+        auth=True,
+        dds=[
+            dict(
+                dd_unix=dict(
+                    dd_name=SYSPRINT_DD,
+                    path=DEFAULT_PATH_WITH_FILE,
+                    record_length=record_length,
+                ),
+            ),
+            dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN,)),
+        ],
+    )
+    results2 = hosts.all.command(cmd="cat {0}".format(DEFAULT_PATH_WITH_FILE))
+    hosts.all.file(path=DEFAULT_PATH, state="absent")
+    for result in results.contacted.values():
+        pprint(result)
+        assert result.get("ret_code", {}).get("code", -1) == 0
+    for result in results2.contacted.values():
+        pprint(result)
+        assert "IDCAMS  SYSTEM" in result.get("stdout", "")
+
+
+@pytest.mark.parametrize(
+    "record_format", ["u", "vb", "vba", "fb", "fba"],
+)
+def test_file_record_format(ansible_zos_module, record_format):
+    hosts = ansible_zos_module
+    hosts.all.file(path=DEFAULT_PATH, state="directory")
+    hosts.all.file(path=DEFAULT_PATH_WITH_FILE, state="absent")
+    results = hosts.all.zos_raw(
+        program_name="idcams",
+        auth=True,
+        dds=[
+            dict(
+                dd_unix=dict(
+                    dd_name=SYSPRINT_DD,
+                    path=DEFAULT_PATH_WITH_FILE,
+                    record_format=record_format,
+                ),
+            ),
+            dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN,)),
+        ],
+    )
+    results2 = hosts.all.command(cmd="cat {0}".format(DEFAULT_PATH_WITH_FILE))
+    hosts.all.file(path=DEFAULT_PATH, state="absent")
+    for result in results.contacted.values():
+        pprint(result)
+        assert result.get("ret_code", {}).get("code", -1) == 0
+    for result in results2.contacted.values():
+        pprint(result)
+        assert "IDCAMS  SYSTEM" in result.get("stdout", "")
+
+
+@pytest.mark.parametrize(
+    "return_content_type,expected",
+    [
+        ("text", "IDCAMS  SYSTEM"),
+        (
+            "base64",
+            "@\udcd3\udcc9\udce2\udce3\udcc3\udcc1\udce3@\udcc5\udcd5\udce3\udcd9\udcc9\udcc5",
+        ),
+    ],
+)
+def test_file_return_content(ansible_zos_module, return_content_type, expected):
+    hosts = ansible_zos_module
+    hosts.all.file(path=DEFAULT_PATH, state="directory")
+    hosts.all.file(path=DEFAULT_PATH_WITH_FILE, state="absent")
+    results = hosts.all.zos_raw(
+        program_name="idcams",
+        auth=True,
+        dds=[
+            dict(
+                dd_unix=dict(
+                    dd_name=SYSPRINT_DD,
+                    path=DEFAULT_PATH_WITH_FILE,
+                    return_content=dict(type=return_content_type),
+                ),
+            ),
+            dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN,)),
+        ],
+    )
+    hosts.all.file(path=DEFAULT_PATH, state="absent")
+    for result in results.contacted.values():
+        pprint(result)
+        assert result.get("ret_code", {}).get("code", -1) == 0
+        assert len(result.get("dd_names", [])) > 0
+        assert expected in "\n".join(result.get("dd_names")[0].get("content", []))
+
+
+@pytest.mark.parametrize(
+    "src_encoding,response_encoding,expected",
+    [
+        ("iso8859-1", "ibm-1047", "qcfe\udcebB||BTBFg\udceb|Bg\udcfdGqfgB"),
+        ("ibm-1047", "iso8859-1", "IDCAMS  SYSTEM",),
+    ],
+)
+def test_file_return_text_content_encodings(
+    ansible_zos_module, src_encoding, response_encoding, expected
+):
+    hosts = ansible_zos_module
+    hosts.all.file(path=DEFAULT_PATH, state="directory")
+    hosts.all.file(path=DEFAULT_PATH_WITH_FILE, state="absent")
+    results = hosts.all.zos_raw(
+        program_name="idcams",
+        auth=True,
+        dds=[
+            dict(
+                dd_unix=dict(
+                    dd_name=SYSPRINT_DD,
+                    path=DEFAULT_PATH_WITH_FILE,
+                    return_content=dict(
+                        type="text",
+                        src_encoding=src_encoding,
+                        response_encoding=response_encoding,
+                    ),
+                ),
+            ),
+            dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN,)),
+        ],
+    )
+    hosts.all.file(path=DEFAULT_PATH, state="absent")
+    for result in results.contacted.values():
+        pprint(result)
+        assert result.get("ret_code", {}).get("code", -1) == 0
+        assert len(result.get("dd_names", [])) > 0
+        assert expected in "\n".join(result.get("dd_names")[0].get("content", []))
+
+
+# ---------------------------------------------------------------------------- #
+#                                Dummy DD Tests                                #
+# ---------------------------------------------------------------------------- #
+
+
+def test_dummy(ansible_zos_module):
+    hosts = ansible_zos_module
+    hosts.all.file(path=DEFAULT_PATH, state="directory")
+    hosts.all.file(path=DEFAULT_PATH_WITH_FILE, state="absent")
+    results = hosts.all.zos_raw(
+        program_name="idcams",
+        auth=True,
+        dds=[
+            dict(dd_dummy=dict(dd_name=SYSPRINT_DD,),),
+            dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN,)),
+        ],
+    )
+    hosts.all.file(path=DEFAULT_PATH, state="absent")
+    for result in results.contacted.values():
+        pprint(result)
+        assert result.get("ret_code", {}).get("code", -1) == 0
+        assert len(result.get("dd_names", [])) == 0
+
+
+# ---------------------------------------------------------------------------- #
+#                            Concatenation DD Tests                            #
+# ---------------------------------------------------------------------------- #
+

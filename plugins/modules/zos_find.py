@@ -78,25 +78,28 @@ options:
     type: str
     required: false
   use_regex:
-    - If C(true), they are python regexes
-    - If C(false), they are 
+    - If C(true), they are python regexes.
+    - If C(false), they are file globs (shell) or data set
   paths:
     description:
-      - List of data sets to search.
-      - All paths must be full data set names.
+      - List of PDS/PDSE to search. Wild-card possible.
+      - Required only when searching for members, otherwise ignored.
     type: list
     required: false
   file_type;
     description:
-      - List of PDS/PDSE to search. Wild-card possible. 
-      - Required only when searching for members, otherwise ignored.
+      - The type of resource to search
+    choices:
+      - NONVSAM
+      - CLUSTER
+      - DATA
+      - INDEX
+      - PATH
 notes:
   - Only cataloged data sets will searched. If an uncataloged data set needs to
     be searched, it should be cataloged first.
 seealso:
 - module: find
-
-
 """
 
 

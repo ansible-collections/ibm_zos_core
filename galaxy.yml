@@ -50,7 +50,7 @@ tags:
   ]
 
 # Collections that this collection requires to be installed for it to be usable.
-# dependencies: { # This collection depends on no other collections # } 
+# dependencies: { # This collection depends on no other collections # }
 
 # The URL of the originating SCM repository
 repository: https://github.com/ansible-collections/ibm_zos_core

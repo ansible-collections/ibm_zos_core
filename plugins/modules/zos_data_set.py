@@ -372,7 +372,6 @@ EXAMPLES = r"""
     state: uncataloged
 """
 RETURN = r"""
-
 """
 
 import tempfile

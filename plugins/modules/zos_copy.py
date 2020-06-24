@@ -42,10 +42,10 @@ options:
       - If C(dest) is a nonexistent data set, it will be allocated.
       - If C(src) and C(dest) are files and if the parent directory of C(dest)
         does not exist, then the task will fail.
-      - When the C(dest) is VSAM(KSDS) or VSAM(ESDS), then source can be ESDS,
-        KSDS or RRDS.
-      - When the C(dest) is VSAM(RRDS), then the source must be RRDS.
-      - When C(dest) is VSAM(LDS), then source must be LDS.
+      - When the C(dest) is an existing VSAM(KSDS) or VSAM(ESDS), then source
+        can be ESDS, KSDS or RRDS.
+      - When the C(dest) is an existing VSAM(RRDS), then the source must be RRDS.
+      - When C(dest) is and existing VSAM(LDS), then source must be LDS.
     type: str
     required: true
   content:

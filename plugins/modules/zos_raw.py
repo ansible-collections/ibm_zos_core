@@ -2111,7 +2111,7 @@ def get_dd_backup(dd_statement):
     if the DD is a data set DD and a backup was made.
 
     Args:
-        dd_statement (DDStatement): A single DD statement.
+        dd (DataDefinition): A single DD statement.
 
     Returns:
         list[dict]: List of backups in format expected for response on module completion.
@@ -2152,7 +2152,13 @@ def get_concatenation_backup(dd_statement):
         list[dict]: The backup information of a single DD, in format expected for response on module completion.
                 Response can contain multiple backups.
     """
-    dd_backup = gather_backups(dd_statement.definition)
+    # create new DDStatement objects for each concat member
+    # makes it easier to handle concat and non-concat DDs consistently
+    dds = []
+    for dd in dd_statement.definition:
+        new_dd = DDStatement(dd_statement.name, dd)
+        dds.append(new_dd)
+    dd_backup = gather_backups(dds)
     return dd_backup
 
 
@@ -2256,7 +2262,13 @@ def get_concatenation_output(dd_statement):
         list[dict]: The output of a single DD, in format expected for response on module completion.
                 Response can contain multiple outputs.
     """
-    dd_response = gather_output(dd_statement.definition)
+    # create new DDStatement objects for each concat member
+    # makes it easier to handle concat and non-concat DDs consistently
+    dds = []
+    for dd in dd_statement.definition:
+        new_dd = DDStatement(dd_statement.name, dd)
+        dds.append(new_dd)
+    dd_response = gather_output(dds)
     return dd_response
 
 

@@ -22,7 +22,7 @@ options:
     description: The name of the z/OS program to run (e.g. IDCAMS, IEFBR14, IEBGENER, etc.).
     required: true
     type: str
-  parms:
+  parm:
     description:
       - The program arguments (e.g. -a='MARGINS(1,72)').
     required: false
@@ -1314,9 +1314,9 @@ def run_module():
     dd_concat = dict(type="dict", options=dict(**dd_name_base, **dd_concat_base))
 
     module_args = dict(
-        program_name=dict(type="str", aliases=["program", "pgm"]),
+        program_name=dict(type="str", aliases=["program", "pgm"], required=True),
         auth=dict(type="bool", default=False),
-        parms=dict(type="str", required=False),
+        parm=dict(type="str", required=False),
         dds=dict(
             type="list",
             elements="dict",
@@ -1340,11 +1340,11 @@ def run_module():
         parms = parse_and_validate_args(module.params)
         dd_statements = build_dd_statements(parms)
         program = parms.get("program_name")
-        program_parms = parms.get("parms")
+        program_parm = parms.get("parm")
         authorized = parms.get("auth")
         program_response = run_zos_program(
             program=program,
-            parms=program_parms,
+            parm=program_parm,
             dd_statements=dd_statements,
             authorized=authorized,
         )
@@ -1495,9 +1495,9 @@ def parse_and_validate_args(params):
     dd_concat = dict(type="dict", options=dict(**dd_name_base, **dd_concat_base))
 
     module_args = dict(
-        program_name=dict(type="str", aliases=["program", "pgm"]),
+        program_name=dict(type="str", aliases=["program", "pgm"], required=True),
         auth=dict(type="bool", default=False),
-        parms=dict(type="str", required=False),
+        parm=dict(type="str", required=False),
         dds=dict(
             type="list",
             elements="dict",
@@ -2052,12 +2052,12 @@ def data_set_exists(name, volumes=None):
     return exists
 
 
-def run_zos_program(program, parms="", dd_statements=[], authorized=False):
+def run_zos_program(program, parm="", dd_statements=[], authorized=False):
     """Run a program on z/OS.
 
     Args:
         program (str): The name of the program to run.
-        args (str, optional): Additional argument string if required. Defaults to "".
+        parm (str, optional): Additional argument string if required. Defaults to "".
         dd_statements (list[DDStatement], optional): DD statements to allocate for the program. Defaults to [].
         authorized (bool, optional): Determines if program will execute as an authorized user. Defaults to False.
 
@@ -2066,11 +2066,9 @@ def run_zos_program(program, parms="", dd_statements=[], authorized=False):
     """
     response = None
     if authorized:
-        response = MVSCmd.execute_authorized(
-            pgm=program, parms=parms, dds=dd_statements
-        )
+        response = MVSCmd.execute_authorized(pgm=program, parm=parm, dds=dd_statements)
     else:
-        response = MVSCmd.execute(pgm=program, parms=parms, dds=dd_statements)
+        response = MVSCmd.execute(pgm=program, parm=parm, dds=dd_statements)
     return response
 
 

@@ -312,10 +312,8 @@ options:
             type: str
             choices:
               - u
-              - v
               - vb
               - vba
-              - f
               - fb
               - fba
             default: fb
@@ -453,10 +451,8 @@ options:
             type: str
             choices:
               - u
-              - v
               - vb
               - vba
-              - f
               - fb
               - fba
             default: fb
@@ -816,10 +812,8 @@ options:
                 type: str
                 choices:
                   - u
-                  - v
                   - vb
                   - vba
-                  - f
                   - fb
                   - fba
                 default: fb
@@ -953,10 +947,8 @@ options:
                 type: str
                 choices:
                   - u
-                  - v
                   - vb
                   - vba
-                  - f
                   - fb
                   - fba
                 default: fb
@@ -1173,9 +1165,7 @@ def run_module():
         key_length=dict(type="int"),
         key_offset=dict(type="int"),
         record_length=dict(type="int"),
-        record_format=dict(
-            type="str", choices=["u", "v", "vb", "vba", "f", "fb", "fba"]
-        ),
+        record_format=dict(type="str", choices=["u", "vb", "vba", "fb", "fba"]),
         return_content=dict(
             type="dict",
             options=dict(
@@ -1228,9 +1218,7 @@ def run_module():
         block_size=dict(type="int"),
         block_size_type=dict(type="str", choices=["b", "k", "m", "g"]),
         record_length=dict(type="int"),
-        record_format=dict(
-            type="str", choices=["u", "v", "vb", "vba", "f", "fb", "fba"]
-        ),
+        record_format=dict(type="str", choices=["u", "vb", "vba", "fb", "fba"]),
         return_content=dict(
             type="dict",
             options=dict(
@@ -1288,11 +1276,11 @@ def run_module():
         parms = parse_and_validate_args(module.params)
         dd_statements = build_dd_statements(parms)
         program = parms.get("program_name")
-        args = parms.get("args")
+        program_parms = parms.get("parms")
         authorized = parms.get("auth")
         program_response = run_zos_program(
             program=program,
-            args=args,
+            parms=program_parms,
             dd_statements=dd_statements,
             authorized=authorized,
         )
@@ -1372,9 +1360,7 @@ def parse_and_validate_args(params):
         key_length=dict(type="int"),
         key_offset=dict(type="int"),
         record_length=dict(type="int"),
-        record_format=dict(
-            type="str", choices=["u", "v", "vb", "vba", "f", "fb", "fba"]
-        ),
+        record_format=dict(type="str", choices=["u", "vb", "vba", "fb", "fba"]),
         return_content=dict(
             type="dict",
             options=dict(
@@ -1429,9 +1415,7 @@ def parse_and_validate_args(params):
         block_size=dict(type="int"),
         block_size_type=dict(type="str", choices=["b", "k", "m", "g"]),
         record_length=dict(type="int"),
-        record_format=dict(
-            type="str", choices=["u", "v", "vb", "vba", "f", "fb", "fba"]
-        ),
+        record_format=dict(type="str", choices=["u", "vb", "vba", "fb", "fba"]),
         return_content=dict(
             type="dict",
             options=dict(
@@ -1495,7 +1479,7 @@ def dd_content(contents, dependencies):
     Returns:
         str: content string to save to data set
     """
-    if not contents:
+    if contents is None:
         return None
     if isinstance(contents, list):
         return "\n".join(contents)
@@ -1977,7 +1961,7 @@ def data_set_exists(name, volumes=None):
     return exists
 
 
-def run_zos_program(program, args="", dd_statements=[], authorized=False):
+def run_zos_program(program, parms="", dd_statements=[], authorized=False):
     """Run a program on z/OS.
 
     Args:
@@ -1991,9 +1975,11 @@ def run_zos_program(program, args="", dd_statements=[], authorized=False):
     """
     response = None
     if authorized:
-        response = MVSCmd.execute_authorized(pgm=program, args=args, dds=dd_statements)
+        response = MVSCmd.execute_authorized(
+            pgm=program, parms=parms, dds=dd_statements
+        )
     else:
-        response = MVSCmd.execute(pgm=program, args=args, dds=dd_statements)
+        response = MVSCmd.execute(pgm=program, parms=parms, dds=dd_statements)
     return response
 
 
@@ -2200,7 +2186,7 @@ def build_dd_response(dd_name, name, contents):
     dd_response["name"] = name
     dd_response["content"] = contents.split("\n")
     dd_response["record_count"] = len(dd_response.get("content", []))
-    dd_response["byte_count"] = len(contents.encode("utf-8"))
+    dd_response["byte_count"] = len(contents)  # len(contents.encode("utf-8"))
     return dd_response
 
 
@@ -2259,7 +2245,8 @@ def get_content(formatted_name, binary=False, from_encoding=None, to_encoding=No
         )
     # * name argument should already be quoted by the time it reaches here
     rc, stdout, stderr = module.run_command(
-        "cat {0}{1}".format(formatted_name, conversion_command), use_unsafe_shell=True
+        "env -i cat {0}{1}".format(formatted_name, conversion_command),
+        use_unsafe_shell=True,
     )
     if rc:
         return ""

@@ -99,57 +99,37 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser
 
 def run_tso_command(commands, module):
     script = """/* REXX */
-PARSE ARG cmds
+PARSE ARG cmd
 address tso
-say '{"output":['
-do while cmds <> ''
-   x = outtrap('listcato.')
-   i=1
-   say '{'
-   parse var  cmds cmd ';' cmds
-   say ' "command" : "'cmd'",'
-   no=POS(';',cmds)
-   cmd
-   say ' "rc" : 'RC','
-   rc.i = RC
-   i=i+1
-   say ' "lines" : 'listcato.0','
-   say ' "content" : [ '
-   do j = 1 to listcato.0
-       if j == listcato.0
-          then say ' "'listcato.j '"'
-       else
-          say ' "'listcato.j '",'
-   end
-   say ']'
-   x = outtrap('OFF')
-   if no==0
-      then say '}'
-   else
-      say '},'
+x = outtrap('listcato.')
+cmd
+rc = RC
+do j = 1 to listcato.0
+    say listcato.j
 end
-say ']'
-say '}'
-drop listcato.
+x = outtrap('OFF')
+exit rc
 """
-    command_str = ""
-    for item in commands:
-        command_str = command_str + item + ";"
-
-    rc, stdout, stderr = copy_rexx_and_run(script, command_str, module)
-
-    command_detail_json = json.loads(stdout, strict=False)
+    command_detail_json = copy_rexx_and_run_commands(script, commands, module)
     return command_detail_json
 
 
-def copy_rexx_and_run(script, command, module):
+def copy_rexx_and_run_commands(script, commands, module):
+    command_detail_json = []
     delete_on_close = True
     tmp_file = NamedTemporaryFile(delete=delete_on_close)
     with open(tmp_file.name, "w") as f:
         f.write(script)
     chmod(tmp_file.name, S_IEXEC | S_IREAD | S_IWRITE)
-    rc, stdout, stderr = module.run_command([tmp_file.name, command])
-    return rc, stdout, stderr
+    for command in commands:
+        rc, stdout, stderr = module.run_command([tmp_file.name, command])
+        command_results = {}
+        command_results["command"] = command
+        command_results["rc"] = rc
+        command_results["content"] = stdout.split("\n")
+        command_results["lines"] = len(command_results.get("content", []))
+        command_detail_json.append(command_results)
+    return command_detail_json
 
 
 def list_or_str_type(contents, dependencies):
@@ -190,7 +170,7 @@ def run_module():
     commands = parsed_args.get("commands")
 
     try:
-        result = run_tso_command(commands, module)
+        result["output"] = run_tso_command(commands, module)
         for cmd in result.get("output"):
             if cmd.get("rc") != 0:
                 module.fail_json(

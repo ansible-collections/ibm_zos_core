@@ -174,7 +174,7 @@ def test_zos_tso_command_invalid_command(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_tso_command(commands=["xxxxxx"])
     for result in results.contacted.values():
-        assert result.get("output")[0].get("rc") == -3
+        assert result.get("output")[0].get("rc") == 255
         assert result.get("changed") is False
 
 

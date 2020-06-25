@@ -204,6 +204,8 @@ options:
     type: raw
     required: false
     version_added: "2.9"
+    aliases:
+      - volume
   replace:
     description:
       - When I(replace=True), and I(state=present), existing data set matching I(name) will be replaced.
@@ -405,6 +407,8 @@ options:
         type: raw
         required: false
         version_added: "2.9"
+        aliases:
+          - volume
       replace:
         description:
           - When I(replace=True), and I(state=present), existing data set matching I(name) will be replaced.
@@ -866,6 +870,11 @@ def parse_and_validate_args(params):
                     required=False,
                     dependencies=["state"],
                 ),
+                directory_blocks=dict(
+                    type=valid_when_state_present,
+                    required=False,
+                    dependencies=["state"],
+                ),
                 record_length=dict(
                     type=record_length,
                     required=False,
@@ -908,6 +917,9 @@ def parse_and_validate_args(params):
         sms_storage_class=dict(type=sms_class, required=False, dependencies=["state"]),
         sms_data_class=dict(type=sms_class, required=False, dependencies=["state"]),
         block_size=dict(
+            type=valid_when_state_present, required=False, dependencies=["state"],
+        ),
+        directory_blocks=dict(
             type=valid_when_state_present, required=False, dependencies=["state"],
         ),
         record_length=dict(
@@ -969,9 +981,10 @@ def run_module():
                 sms_storage_class=dict(type="str", required=False),
                 sms_data_class=dict(type="str", required=False),
                 block_size=dict(type="int", required=False,),
+                directory_blocks=dict(type="int", required=False,),
                 record_length=dict(type="int", required=False,),
-                key_offset=dict(type=int, required=False),
-                key_length=dict(type=int, required=False),
+                key_offset=dict(type="int", required=False),
+                key_length=dict(type="int", required=False),
                 replace=dict(type="bool", default=False,),
                 volumes=dict(type="raw", required=False, aliases=["volume"]),
             ),
@@ -993,6 +1006,7 @@ def run_module():
         sms_storage_class=dict(type="str", required=False),
         sms_data_class=dict(type="str", required=False),
         block_size=dict(type="int", required=False,),
+        directory_blocks=dict(type="int", required=False,),
         record_length=dict(type="int", required=False,),
         key_offset=dict(type="int", required=False),
         key_length=dict(type="int", required=False),

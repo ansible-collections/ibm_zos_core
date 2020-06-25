@@ -247,6 +247,7 @@ class DatasetDefinition(DataDefinition):
         normal_disposition=None,
         conditional_disposition=None,
         block_size=None,
+        directory_blocks=None,
         record_format=None,
         record_length=None,
         storage_class=None,
@@ -291,6 +292,8 @@ class DatasetDefinition(DataDefinition):
                 Valid options are: delete, keep, catalog/catlg, uncatalog/uncatlg.
                 Defaults to None.
             block_size (int, optional): The block size of the data set.
+                Defaults to None.
+            directory_blocks (int, optional): The number of directory blocks to allocate for the data set.
                 Defaults to None.
             record_format (str, optional): The record format of the dataset.
                 Valid options are: FB, VB, FBA, VBA, U.
@@ -375,6 +378,7 @@ class DatasetDefinition(DataDefinition):
             else None
         )
         self.block_size = block_size
+        self.directory_blocks = directory_blocks
         self.record_format = record_format
         self.record_length = record_length
         self.storage_class = storage_class
@@ -411,6 +415,9 @@ class DatasetDefinition(DataDefinition):
         )
         mvscmd_string = self._append_mvscmd_string(
             mvscmd_string, "blksize", self.block_size
+        )
+        mvscmd_string = self._append_mvscmd_string(
+            mvscmd_string, "dirblks", self.directory_blocks
         )
         mvscmd_string = self._append_mvscmd_string(
             mvscmd_string, "recfm", self.record_format

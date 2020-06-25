@@ -116,6 +116,7 @@ def test_new_disposition_for_data_set_members(ansible_zos_module):
                     data_set_name=DEFAULT_DATA_SET_WITH_MEMBER,
                     disposition="new",
                     type="pds",
+                    directory_blocks=15,
                     return_content=dict(type="text"),
                 ),
             ),

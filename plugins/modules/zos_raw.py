@@ -17,8 +17,8 @@ ANSIBLE_METADATA = {
 DOCUMENTATION = r"""
 module: zos_raw
 author:
-    - "Xiao Yuan Ma (@bjmaxy)"
-    - "Blake Becker (@blakeinate)"
+  - "Xiao Yuan Ma (@bjmaxy)"
+  - "Blake Becker (@blakeinate)"
 short_description: Run a z/OS program.
 version_added: "2.9"
 options:
@@ -43,11 +43,11 @@ options:
     description:
       - The input data source.
       - I(dds) supports 6 types of sources:
-        - I(dd_data_set) for data set files.
-        - I(dd_unix) for Unix files.
-        - I(dd_input) for in-stream data set.
-        - I(dd_dummy) for no content input.
-        - I(dd_concat) for a data set concatenation.
+          - I(dd_data_set) for data set files.
+          - I(dd_unix) for Unix files.
+          - I(dd_input) for in-stream data set.
+          - I(dd_dummy) for no content input.
+          - I(dd_concat) for a data set concatenation.
       - I(dds) supports any combination of source types.
     required: false
     type: list
@@ -208,6 +208,11 @@ options:
             description:
               - The maximum length of a block in bytes.
               - Default is dependent on I(record_format)
+            type: int
+            required: false
+          directory_blocks:
+            description:
+              - The number of directory blocks to give to the data set.
             type: int
             required: false
           key_label:
@@ -386,19 +391,19 @@ options:
               - Maps to PATHOPTS status group file options on z/OS.
               - You can specify up to 6 choices
               - I(oappend) sets the file offset to the end of the file before each write,
-              so that data is written at the end of the file.
+                so that data is written at the end of the file.
               - I(ocreat) Specifies that if the file does not exist, the system is to create it.
-              If a directory specified in the pathname does not exist, one is not created,
-              and the new file is not created.
-              If the file already exists and I(oexcl) was not specified,
-              the system allows the program to use the existing file.
-              If the file already exists and I(oexcl) was specified,
-              the system fails the allocation and the job step.
+                If a directory specified in the pathname does not exist, one is not created,
+                and the new file is not created.
+                If the file already exists and I(oexcl) was not specified,
+                the system allows the program to use the existing file.
+                If the file already exists and I(oexcl) was specified,
+                the system fails the allocation and the job step.
               - I(oexcl) specifies that if the file does not exist, the system is to create it.
-              If the file already exists, the system fails the allocation and the job step.
-              The system ignores I(oexcl) if I(ocreat) is not also specified.
+                If the file already exists, the system fails the allocation and the job step.
+                The system ignores I(oexcl) if I(ocreat) is not also specified.
               - I(onoctty) specifies that if the PATH parameter identifies a terminal device,
-              opening of the file does not make the terminal device the controlling terminal for the process.
+                opening of the file does not make the terminal device the controlling terminal for the process.
               - I(ononblock) specifies the following, depending on the type of file
                 - For a FIFO special file
                   - With I(ononblock) specified and I(ordonly) access,
@@ -416,16 +421,15 @@ options:
                   Device response depends on the type of device.
                   - If I(ononblock) is not specified, an open function blocks (waits)
                   until the device is ready or available.
-              - I(ononblock) has no effect on other file types.
+                - I(ononblock) has no effect on other file types.
               - I(osync) specifies that the system is to move data from buffer storage
-              to permanent storage before returning control from a callable service that performs a write.
-              - I(otrunc) specifies that the system is to truncate the file length to zero if
-              all the following are true
-                - The file specified exists.
-                - The file is a regular file.
-                - The file successfully opened with I(ordwr) or I(owronly).
+                to permanent storage before returning control from a callable service that performs a write.
+              - "I(otrunc) specifies that the system is to truncate the file length to zero if
+                all the following are true: the file specified exists,
+                the file is a regular file,
+                and the file successfully opened with I(ordwr) or I(owronly)."
               - When I(otrunc) is specified, the system does not change the mode and owner.
-              I(otrunc) has no effect on FIFO special files or character special files.
+                I(otrunc) has no effect on FIFO special files or character special files.
             type: list
             elements: str
             choices:
@@ -583,11 +587,11 @@ options:
       dd_vio:
         description:
           - I(dd_vio) is used to handle temporary data sets.
-          -  VIO data sets reside in the paging space; but,
-          to the problem program and the access method,
-          the data sets appear to reside on a direct access storage device.
+          - VIO data sets reside in the paging space; but,
+            to the problem program and the access method,
+            the data sets appear to reside on a direct access storage device.
           - You cannot use VIO for permanent data sets,
-          VSAM data sets, or partitioned data sets extended (PDSEs).
+            VSAM data sets, or partitioned data sets extended (PDSEs).
         required: false
         type: dict
         suboptions:
@@ -607,8 +611,8 @@ options:
             type: str
           dds:
             description:
-              - A list of DD statements, which can contain any of the following types:
-            I(dd_data_set), I(dd_unix), and I(dd_input)."
+              - "A list of DD statements, which can contain any of the following types:
+                I(dd_data_set), I(dd_unix), and I(dd_input)."
             type: list
             elements: dict
             suboptions:
@@ -763,6 +767,11 @@ options:
                     description:
                       - The maximum length of a block in bytes.
                       - Default is dependent on I(record_format)
+                    type: int
+                    required: false
+                  directory_blocks:
+                    description:
+                      - The number of directory blocks to give to the data set.
                     type: int
                     required: false
                   key_label:
@@ -937,19 +946,19 @@ options:
                       - Maps to PATHOPTS status group file options on z/OS.
                       - You can specify up to 6 choices
                       - I(oappend) sets the file offset to the end of the file before each write,
-                      so that data is written at the end of the file.
+                        so that data is written at the end of the file.
                       - I(ocreat) Specifies that if the file does not exist, the system is to create it.
-                      If a directory specified in the pathname does not exist, one is not created,
-                      and the new file is not created.
-                      If the file already exists and I(oexcl) was not specified,
-                      the system allows the program to use the existing file.
-                      If the file already exists and I(oexcl) was specified,
-                      the system fails the allocation and the job step.
+                        If a directory specified in the pathname does not exist, one is not created,
+                        and the new file is not created.
+                        If the file already exists and I(oexcl) was not specified,
+                        the system allows the program to use the existing file.
+                        If the file already exists and I(oexcl) was specified,
+                        the system fails the allocation and the job step.
                       - I(oexcl) specifies that if the file does not exist, the system is to create it.
-                      If the file already exists, the system fails the allocation and the job step.
-                      The system ignores I(oexcl) if I(ocreat) is not also specified.
+                        If the file already exists, the system fails the allocation and the job step.
+                        The system ignores I(oexcl) if I(ocreat) is not also specified.
                       - I(onoctty) specifies that if the PATH parameter identifies a terminal device,
-                      opening of the file does not make the terminal device the controlling terminal for the process.
+                        opening of the file does not make the terminal device the controlling terminal for the process.
                       - I(ononblock) specifies the following, depending on the type of file
                         - For a FIFO special file
                           - With I(ononblock) specified and I(ordonly) access,
@@ -967,16 +976,15 @@ options:
                           Device response depends on the type of device.
                           - If I(ononblock) is not specified, an open function blocks (waits)
                           until the device is ready or available.
-                      - I(ononblock) has no effect on other file types.
+                        - I(ononblock) has no effect on other file types.
                       - I(osync) specifies that the system is to move data from buffer storage
-                      to permanent storage before returning control from a callable service that performs a write.
-                      - I(otrunc) specifies that the system is to truncate the file length to zero if
-                      all the following are true
-                        - The file specified exists.
-                        - The file is a regular file.
-                        - The file successfully opened with I(ordwr) or I(owronly).
+                        to permanent storage before returning control from a callable service that performs a write.
+                      - "I(otrunc) specifies that the system is to truncate the file length to zero if
+                        all the following are true: the file specified exists,
+                        the file is a regular file,
+                        and the file successfully opened with I(ordwr) or I(owronly)."
                       - When I(otrunc) is specified, the system does not change the mode and owner.
-                      I(otrunc) has no effect on FIFO special files or character special files.
+                        I(otrunc) has no effect on FIFO special files or character special files.
                     type: list
                     elements: str
                     choices:
@@ -1113,12 +1121,13 @@ options:
                           - The encoding to use when returning the contents of the data set.
                         type: str
                         default: iso8859-1
+
 """
 
 RETURN = r"""
 ret_code:
   description: The return code.
-  returned : always
+  returned: always
   type: dict
   contains:
     code:
@@ -1155,7 +1164,7 @@ backups:
       description: The original data set name for which a backup was made.
       type: str
     backup_name:
-      description:The name of the data set containing the backup of content from data set in I(original_name).
+      description: The name of the data set containing the backup of content from data set in original_name.
       type: str
 """
 
@@ -1246,6 +1255,7 @@ def run_module():
         sms_storage_class=dict(type="str"),
         sms_data_class=dict(type="str"),
         block_size=dict(type="int"),
+        directory_blocks=dict(type="int"),
         key_label=dict(type="str"),
         type=dict(
             type="str",
@@ -1448,6 +1458,7 @@ def parse_and_validate_args(params):
         sms_storage_class=dict(type=sms_class),
         sms_data_class=dict(type=sms_class),
         block_size=dict(type="int"),
+        directory_blocks=dict(type="int"),
         key_label=dict(type="str"),
         type=dict(
             type="str",
@@ -1929,6 +1940,7 @@ class RawDatasetDefinition(DatasetDefinition):
         disposition_normal=None,
         disposition_abnormal=None,
         block_size=None,
+        directory_blocks=None,
         record_format=None,
         record_length=None,
         sms_storage_class=None,
@@ -1958,6 +1970,7 @@ class RawDatasetDefinition(DatasetDefinition):
             disposition_normal (str, optional): What to do with the data set after normal termination of the program. Defaults to None.
             disposition_abnormal (str, optional): What to do with the data set after abnormal termination of the program. Defaults to None.
             block_size (int, optional): The block size of the data set. Defaults to None.
+            directory_blocks (int, optional): The number of directory blocks to allocate for the data set. Defaults to None.
             record_format (str, optional): The record format of the data set. Defaults to None.
             record_length (int, optional): The length, in bytes, of each record in the data set. Defaults to None.
             sms_storage_class (str, optional): The storage class for an SMS-managed dataset. Defaults to None.
@@ -2020,6 +2033,7 @@ class RawDatasetDefinition(DatasetDefinition):
                 normal_disposition=disposition_normal,
                 conditional_disposition=disposition_abnormal,
                 block_size=block_size,
+                directory_blocks=directory_blocks,
                 record_format=record_format,
                 record_length=record_length,
                 storage_class=sms_storage_class,

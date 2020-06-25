@@ -1,4 +1,3 @@
-#!/usr/bin/python
 # -*- coding: utf-8 -*-
 # Copyright (c) IBM Corporation 2019, 2020
 # Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
@@ -253,7 +252,7 @@ from ansible.module_utils.parsing.convert_bool import boolean
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser,
     data_set,
-    encode
+    encode,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     MissingZOAUImport,
@@ -374,7 +373,9 @@ class FetchHandler:
             to_code_set = encoding.get("to")
             enc_utils = encode.EncodeUtils()
             try:
-                enc_utils.uss_convert_encoding(src, file_path, from_code_set, to_code_set)
+                enc_utils.uss_convert_encoding(
+                    src, file_path, from_code_set, to_code_set
+                )
             except Exception as err:
                 os.remove(file_path)
                 self._fail_json(
@@ -596,7 +597,7 @@ def run_module():
 
     elif ds_type == "PO":
         if _fetch_member:
-            member_name = src[src.find("(") + 1: src.find(")")]
+            member_name = src[src.find("(") + 1 : src.find(")")]
             if not ds_utils.member_exists(member_name):
                 module.fail_json(
                     msg=(

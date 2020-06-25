@@ -1,4 +1,3 @@
-#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 # Copyright (c) IBM Corporation 2019, 2020
@@ -308,7 +307,7 @@ def check_file(file):
     else:
         ds = file.upper()
         if "(" in ds:
-            dsn = ds[0: ds.rfind("(", 1)]
+            dsn = ds[0 : ds.rfind("(", 1)]
             mem = "".join(re.findall(r"[(](.*?)[)]", ds))
             rc, ds_type = check_mvs_dataset(dsn)
             if rc:

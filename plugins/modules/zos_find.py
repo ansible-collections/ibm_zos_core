@@ -23,7 +23,7 @@ author: "Asif Mahmud (@asifmahmud)"
 options:
   age:
     description:
-      - Select files or data sets whose age is equal to or greater than the specified time.
+      - Select data sets whose age is equal to or greater than the specified time.
       - Use a negative age to find data sets equal to or less than the specified time.
       - You can choose seconds, minutes, hours, days, or weeks by specifying the 
         first letter of any of those words (e.g., "1w").
@@ -31,14 +31,14 @@ options:
     required: false
   age_stamp:
     description:
-      - Choose the date property against which we compare age.
+      - Choose the date property against which to compare age.
       - C(c_date) refers to creation date and C(r_date) refers to referenced date.
       - Only valid if C(age) is provided.
     type: str
     choices:
       - c_date
       - r_date
-    default: c_date
+    default: r_date
     required: false
   contains:
     description:
@@ -48,7 +48,7 @@ options:
     required: false
   excludes:
     description:
-      - One or more (shell or regex) patterns, which type is controlled by use_regex option.
+      - One or more (shell or regex) patterns, which type is controlled by C(use_regex) option.
       - Data sets whose names match an excludes pattern are culled from patterns matches. 
         Multiple patterns can be specified using a list.
     type: list
@@ -56,19 +56,17 @@ options:
     aliases: ['exclude']
   patterns:
     description:
-      - One or more (shell or regex) patterns, which type is controlled by use_regex option.
-      - The patterns restrict the list of files to be returned to those whose 
-        basenames match at least one of the patterns specified. Multiple patterns 
+      - One or more (shell or regex) patterns, which type is controlled by C(use_regex) option.
+      - The patterns restrict the list of data sets to be returned to those whose 
+        names match at least one of the patterns specified. Multiple patterns 
         can be specified using a list.
-      - The pattern is matched against the file base name, excluding the directory.
-      - When using regexen, the pattern MUST match the ENTIRE file name, not just 
-        parts of it. So if you are looking to match all files ending in .default, 
-        you'd need to use '.*\.default' as a regexp and not just '\.default'.
+      - When using regexes, the pattern MUST match the ENTIRE data set name, not just 
+        parts of it.
       - This parameter expects a list, which can be either comma separated or YAML. 
         If any of the patterns contain a comma, make sure to put them in a list 
         to avoid splitting the patterns in undesirable ways.
     type: list
-    required: false
+    required: true
   size:
     description:
       - Select files whose size is equal to or greater than the specified size.
@@ -94,17 +92,32 @@ options:
       - CLUSTER
       - DATA
       - INDEX
-      - PATH
+    type: str
+    required: false
+    default: NONVSAM
+  volume:
+    description:
+      - A list of volumes to search for data sets
+    type: list
+    required: false
+    aliases: ['volumes']
 notes:
   - Only cataloged data sets will searched. If an uncataloged data set needs to
     be searched, it should be cataloged first.
+  - The M(zos_find) module currently does not support wildcards for high level qualifiers.
+    For example, C(SOME.*.DATA.SET) is a valid pattern, but C(*.DATA.SET) is not. 
 seealso:
 - module: find
 """
 
 
 EXAMPLES = r"""
-
+- name: Find all data sets with HLQ 'IMS' that contain the word 'hello'
+  zos_find:
+    patterns:
+      - IMS.*
+    contains: hello
+    age: 2d
 """
 
 

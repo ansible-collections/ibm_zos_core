@@ -1,3 +1,4 @@
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 # Copyright (c) IBM Corporation 2020
@@ -1400,8 +1401,9 @@ def run_module():
     result = dict(changed=False, dd_names=[], ret_code=dict(code=8))
     response = {}
     dd_statements = []
-    module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
+    module = None
     try:
+        module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
         parms = parse_and_validate_args(module.params)
         dd_statements = build_dd_statements(parms)
         program = parms.get("program_name")

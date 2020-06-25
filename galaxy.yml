@@ -6,7 +6,7 @@ namespace: ibm
 name: ibm_zos_core
 
 # The collection version
-version: 1.1.0-beta1
+version: 1.1.0
 
 # Collection README file
 readme: README.md
@@ -69,3 +69,5 @@ build_ignore:
   - Dockerfile
   - Jenkinsfile
   - yamllint.yaml
+  - ansible.cfg
+  - .gitignore

@@ -21,10 +21,10 @@ author:
   - "Blake Becker (@blakeinate)"
 short_description: Perform encoding operations.
 description:
-  - Converts the encoding of characters that are read from a Unix System
+  - Converts the encoding of characters that are read from a UNIX System
     Services (USS) file or path, PS(sequential data set), PDS, PDSE, or
     KSDS(VSAM data set).
-  - Writes the data to a Unix System Services (USS) file or path,
+  - Writes the data to a UNIX System Services (USS) file or path,
     PS(sequential data set), PDS, PDSE, or KSDS(VSAM data set).
 options:
   from_encoding:
@@ -46,7 +46,7 @@ options:
   src:
     description:
       - The location of the input characters.
-      - The location can be a Unix System Services (USS) file or path,
+      - The location can be a UNIX System Services (USS) file or path,
         PS(sequential data set), member of a PDS or PDSE, PDS, PDSE, or
         KSDS(VSAM data set).
       - The USS path or file must be an absolute pathname.
@@ -60,7 +60,7 @@ options:
   dest:
     description:
       - The location where the converted characters are output.
-      - The destination I(dest) can be a Unix System Services (USS) file or path,
+      - The destination I(dest) can be a UNIX System Services (USS) file or path,
         PS(sequential data set), member of a PDS or PDSE, PDS, PDSE or
         KSDS(VSAM data set).
       - If the length of the PDSE member name used in I(dest) is greater
@@ -249,7 +249,7 @@ from ansible.module_utils.six import PY3
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser,
-    data_set_utils,
+    data_set,
     encode,
     backup as zos_backup,
 )
@@ -280,19 +280,19 @@ def check_pds_member(ds, mem):
 
 
 def check_mvs_dataset(ds):
-    """ To call data_set_utils to check if the MVS data set exists or not """
+    """ To call data_set utils to check if the MVS data set exists or not """
     check_rc = False
     ds_type = None
     module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
-    du = data_set_utils.DataSetUtils(module, ds)
-    if not du.data_set_exists():
+    du = data_set.DataSetUtils(ds)
+    if not du.exists():
         raise EncodeError(
             "Data set {0} is not cataloged, please check data set provided in"
             "the src option.".format(ds)
         )
     else:
         check_rc = True
-        ds_type = du.get_data_set_type()
+        ds_type = du.ds_type()
         if not ds_type:
             raise EncodeError("Unable to determine data set type of {0}".format(ds))
     return check_rc, ds_type

@@ -28,7 +28,7 @@
 .. contents::
    :local:
    :depth: 1
-   
+
 {# ------------------------------------------------------------------------ #}
 {# Generate the synopsis based on the doc description                       #}
 {# ------------------------------------------------------------------------ #}
@@ -51,7 +51,7 @@ Synopsis
 {%   for name, spec in opts | dictsort recursive %}
 {%     set req = "required" if spec.required else "optional" %}
 
-{# if its a boolean we need to convert to a string for html #} 
+{# if its a boolean we need to convert to a string for html #}
 {% if spec.type == 'bool' %}
      {% set default_str = (spec.default | string | lower ) %}
 {% elif spec.type == 'int' %}
@@ -139,8 +139,9 @@ See Also
 {# ------------------------------------------------------------- #}
 
 {% macro result_generation(results, level) %}
+
    {% for entry in results %}
-   
+
       {%  set _description  = results[entry].description %}
       {%  set _returned     = results[entry].returned %}
       {%  set _type         = results[entry].type %}
@@ -148,24 +149,29 @@ See Also
       {%  set _sample       = results[entry].sample %}
 
       {{ entry | indent(level, True) }}
-      {{ "  " * level }}| {{ _description }}
-      
+      {% if _description is iterable and _description is not string %}
+{{ "  " * (level) }}| {{ _description[0] }}
+      {% else %}
+{{ "  " * (level) }}| {{ _description }}
+      {% endif %}
+
       {% if _returned %}
 {{ "  " * level }}| **returned**: {{ _returned }}
       {% endif %}
-      
-      {{ "  " * level }}| **type**: {{ _type  }}
+{{ "  " * level }}| **type**: {{ _type  }}
 
-      {% if _sample %}
+      {%- if _sample -%}
       {% if _type != 'str' and _type != 'int' %}
+      
+      {{ "  " * level }}| **sample**:
 
-      {{ "  " * level }}**sample**: ::
+              .. code-block::
 
                        {{ _sample | tojson }}
       {% else %}
-      
+
       {{ "  " * level }}| **sample**: {{ _sample }}
-      
+
       {% endif %}
       {% endif %}
 
@@ -183,6 +189,6 @@ See Also
 Return Values
 -------------
 
-{{ result_generation(returndocs, 3) }}
+{{ result_generation(returndocs,1) }}
 {% endif %}
 

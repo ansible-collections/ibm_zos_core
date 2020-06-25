@@ -12,7 +12,7 @@ zos_operator -- Execute operator command
 .. contents::
    :local:
    :depth: 1
-   
+
 
 Synopsis
 --------
@@ -26,7 +26,6 @@ Parameters
 ----------
 
 
- 
      
 cmd
   The command to execute.
@@ -36,7 +35,6 @@ cmd
   | **type**: str
 
 
- 
      
 debug
   Return debugging information.
@@ -46,7 +44,6 @@ debug
   | **type**: bool
 
 
- 
      
 verbose
   Return verbose information.
@@ -95,41 +92,35 @@ Examples
 Return Values
 -------------
 
+
+   
+                              
+       rc
+        | Return code of the operator command
+      
+        | **returned**: on success
+        | **type**: int
+      
       
                               
-         rc
-            | Return code of the operator command
+       content
+        | The response resulting from the execution of the operator command
       
-            | **returned**: on success
-            
-            | **type**: int
+        | **returned**: on success
+        | **type**: list      
+        | **sample**:
 
-      
-      
-         
-                              
-         content
-            | The response resulting from the execution of the operator command
-      
-            | **returned**: on success
-            
-            | **type**: list
-
-            
-            **sample**: ::
+              .. code-block::
 
                        ["MV2C      2020039  04:29:57.58             ISF031I CONSOLE XIAOPIN ACTIVATED ", "MV2C      2020039  04:29:57.58            -D U,ALL                           ", "MV2C      2020039  04:29:57.59             IEE457I 04.29.57 UNIT STATUS 948  ", "         UNIT TYPE STATUS        VOLSER     VOLSTATE      SS                 ", "          0100 3277 OFFLINE                                 0                ", "          0101 3277 OFFLINE                                 0                "]
             
       
-         
+      
                               
-         changed
-            | Indicates if any changes were made during module operation. Given operator commands may introduce changes that are unknown to the module. True is always returned unless either a module or command failure has occurred.
+       changed
+        | Indicates if any changes were made during module operation. Given operator commands may introduce changes that are unknown to the module. True is always returned unless either a module or command failure has occurred.
       
-            | **returned**: always
-            
-            | **type**: bool
-
-      
+        | **returned**: always
+        | **type**: bool
       
         

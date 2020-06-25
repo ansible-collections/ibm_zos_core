@@ -12,7 +12,7 @@ zos_data_set -- Manage data sets
 .. contents::
    :local:
    :depth: 1
-   
+
 
 Synopsis
 --------
@@ -27,7 +27,6 @@ Parameters
 ----------
 
 
- 
      
 batch
   Batch can be used to perform operations on multiple data sets in a single module call.
@@ -37,7 +36,6 @@ batch
   | **type**: list
 
 
- 
      
   data_class
     The data class name.
@@ -49,7 +47,6 @@ batch
     | **type**: str
 
 
- 
      
   format
     The format of the data set. (e.g ``FB``)
@@ -63,7 +60,6 @@ batch
     | **choices**: FB, VB, FBA, VBA, U
 
 
- 
      
   name
     The name of the data set being managed. (e.g ``USER.TEST``)
@@ -75,7 +71,6 @@ batch
     | **type**: str
 
 
- 
      
   record_length
     The logical record length. (e.g ``80``)
@@ -89,7 +84,6 @@ batch
     | **type**: int
 
 
- 
      
   replace
     When *replace=True*, and *state=present*, existing data set matching *name* will be replaced.
@@ -104,7 +98,6 @@ batch
     | **type**: bool
 
 
- 
      
   size
     The size of the data set (e.g ``5M``)
@@ -123,7 +116,6 @@ batch
     | **default**: 5M
 
 
- 
      
   state
     The final state desired for specified data set.
@@ -150,7 +142,6 @@ batch
     | **choices**: present, absent
 
 
- 
      
   type
     The data set type to be used when creating a data set. (e.g ``pdse``)
@@ -165,7 +156,6 @@ batch
     | **choices**: ESDS, RRDS, LDS, SEQ, PDS, PDSE, MEMBER
 
 
- 
      
   volume
     The name of the volume where the data set is located. *volume* is not used to specify the volume where a data set should be created.
@@ -185,7 +175,6 @@ batch
 
 
 
- 
      
 data_class
   The data class name.
@@ -197,7 +186,6 @@ data_class
   | **type**: str
 
 
- 
      
 format
   The format of the data set. (e.g ``FB``)
@@ -211,7 +199,6 @@ format
   | **choices**: FB, VB, FBA, VBA, U
 
 
- 
      
 name
   The name of the data set being managed. (e.g ``USER.TEST``)
@@ -223,7 +210,6 @@ name
   | **type**: str
 
 
- 
      
 record_length
   The logical record length (e.g ``80``).
@@ -237,7 +223,6 @@ record_length
   | **type**: int
 
 
- 
      
 replace
   When *replace=True*, and *state=present*, existing data set matching *name* will be replaced.
@@ -252,7 +237,6 @@ replace
   | **type**: bool
 
 
- 
      
 size
   The size of the data set (e.g ``5M``).
@@ -271,7 +255,6 @@ size
   | **default**: 5M
 
 
- 
      
 state
   The final state desired for specified data set.
@@ -298,7 +281,6 @@ state
   | **choices**: present, absent, cataloged, uncataloged
 
 
- 
      
 type
   The data set type to be used when creating a data set. (e.g ``pdse``)
@@ -313,7 +295,6 @@ type
   | **choices**: ESDS, RRDS, LDS, SEQ, PDS, PDSE, MEMBER
 
 
- 
      
 volume
   The name of the volume where the data set is located. *volume* is not used to specify the volume where a data set should be created.

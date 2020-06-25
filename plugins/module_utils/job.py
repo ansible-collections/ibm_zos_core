@@ -44,9 +44,9 @@ def job_output(job_id=None, owner=None, job_name=None, dd_name=None):
         {"job_id": job_id, "owner": owner, "job_name": job_name, "dd_name": dd_name}
     )
 
-    job_id = parsed_args.get("job_id") or ""
-    job_name = parsed_args.get("job_name") or ""
-    owner = parsed_args.get("owner") or ""
+    job_id = parsed_args.get("job_id") or "*"
+    job_name = parsed_args.get("job_name") or "*"
+    owner = parsed_args.get("owner") or "*"
     dd_name = parsed_args.get("ddname") or ""
 
     job_detail_json = {}
@@ -74,7 +74,8 @@ def job_output(job_id=None, owner=None, job_name=None, dd_name=None):
     return job_detail_json
 
 
-def _get_job_output_str(job_id="", owner="", job_name="", dd_name=""):
+def _get_job_output_str(job_id="*", owner="*", job_name="*", dd_name=""):
+
     """Generate JSON output string containing Job info from SDSF.
     Writes a temporary REXX script to the USS filesystem to gather output.
 
@@ -246,9 +247,9 @@ def job_status(job_id=None, owner=None, job_name=None):
         {"job_id": job_id, "owner": owner, "job_name": job_name}
     )
 
-    job_id = parsed_args.get("job_id") or ""
-    job_name = parsed_args.get("job_name") or ""
-    owner = parsed_args.get("owner") or ""
+    job_id = parsed_args.get("job_id") or "*"
+    job_name = parsed_args.get("job_name") or "*"
+    owner = parsed_args.get("owner") or "*"
 
     job_status_json = {}
     rc, out, err = _get_job_status_str(job_id, owner, job_name)
@@ -275,7 +276,8 @@ def job_status(job_id=None, owner=None, job_name=None):
     return job_status_json
 
 
-def _get_job_status_str(job_id="", owner="", job_name=""):
+def _get_job_status_str(job_id="*", owner="*", job_name="*"):
+
     """Generate JSON output string containing Job status info from SDSF.
     Writes a temporary REXX script to the USS filesystem to gather output.
 

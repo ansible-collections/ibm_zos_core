@@ -162,11 +162,11 @@ The value for the property **PATH** is the **ZOA utilities BIN path** and the
 ``PATH: "/usr/lpp/IBM/zoautil/bin:/usr/lpp/IBM/cyp/v3r8/pyz/bin:/bin"``.
 
 The value for the property **_CEE_RUNOPTS** is the invocation Language
-Environment® runtime options for programs and used by Python, for example;
+Environment® runtime options for programs and used by Python; for example;
 ``_CEE_RUNOPTS: "FILETAG(AUTOCVT,AUTOTAG) POSIX(ON)"``.
 
 The value for properties **__TAG_REDIR_ERR**, **_TAG_REDIR_IN**,
-**_TAG_REDIR_OUT** are ``txt`` and used the shell; for example,
+**_TAG_REDIR_OUT** are ``txt`` and used by the shell; for example,
 
 .. code-block:: sh
 
@@ -174,8 +174,8 @@ The value for properties **__TAG_REDIR_ERR**, **_TAG_REDIR_IN**,
   _TAG_REDIR_IN: "txt"
   _TAG_REDIR_OUT: "txt"
 
-The value for the property **LANG** is the name of the default locale; value
-**C** specifies the POSIX locale, for example: ``LANG: "C"``.
+The value for the property **LANG** is the name of the default locale; the value
+**C** specifies the POSIX locale. For example, ``LANG: "C"``.
 
 The included **all.yml** sample variables file contents are:
 
@@ -204,8 +204,8 @@ The included **all.yml** sample variables file contents are:
    https://github.com/ansible-collections/ibm_zos_core/blob/master/playbooks/group_vars/all.yml
 
 
-A reusable approach to storing your group variables is to create dependency
-top level variables and rely on variable expansion to substitute the values.
+A reusable approach to storing your group variables is to create top level
+dependency variables and rely on variable expansion to substitute the values.
 This is preferred, because it tends to reduce misconfiguration when copying
 dependency paths. In this example, the top level dependency variables ``PYZ``
 for Python and ``ZOAU`` have been added and used through the configuration.

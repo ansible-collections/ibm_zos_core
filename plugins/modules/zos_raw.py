@@ -20,6 +20,9 @@ author:
   - "Xiao Yuan Ma (@bjmaxy)"
   - "Blake Becker (@blakeinate)"
 short_description: Run a z/OS program.
+description:
+  - Run a z/OS program.
+  - This is analogous to a job step in JCL.
 version_added: "2.9"
 options:
   program_name:
@@ -42,12 +45,12 @@ options:
   dds:
     description:
       - The input data source.
-      - I(dds) supports 6 types of sources:
-          - I(dd_data_set) for data set files.
-          - I(dd_unix) for Unix files.
-          - I(dd_input) for in-stream data set.
-          - I(dd_dummy) for no content input.
-          - I(dd_concat) for a data set concatenation.
+      - I(dds) supports 6 types of sources
+        - I(dd_data_set) for data set files.
+        - I(dd_unix) for Unix files.
+        - I(dd_input) for in-stream data set.
+        - I(dd_dummy) for no content input.
+        - I(dd_concat) for a data set concatenation.
       - I(dds) supports any combination of source types.
     required: false
     type: list
@@ -834,7 +837,7 @@ options:
                             I(label) is encoded by the Encryption Key Manager.
                           - I(encoding) can either be set to C(L) for label encoding,
                             or C(H) for hash encoding.
-                          - - Maps to KEYCD2 on z/OS.
+                          - Maps to KEYCD2 on z/OS.
                         type: str
                         required: true
                         choices:
@@ -1401,9 +1404,8 @@ def run_module():
     result = dict(changed=False, dd_names=[], ret_code=dict(code=8))
     response = {}
     dd_statements = []
-    module = None
+    module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
     try:
-        module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
         parms = parse_and_validate_args(module.params)
         dd_statements = build_dd_statements(parms)
         program = parms.get("program_name")
@@ -2127,7 +2129,7 @@ class RawStdinDefinition(StdinDefinition):
         StdinDefinition (StdinDefinition): Stdin DD data type to be used in a DDStatement.
     """
 
-    def __init__(self, content="", return_content={}, **kwargs):
+    def __init__(self, content="", return_content=None, **kwargs):
         """Initialize RawStdinDefinition
 
         Args:
@@ -2237,7 +2239,7 @@ def data_set_exists(name, volumes=None):
     return exists
 
 
-def run_zos_program(program, parm="", dd_statements=[], authorized=False):
+def run_zos_program(program, parm="", dd_statements=None, authorized=False):
     """Run a program on z/OS.
 
     Args:
@@ -2249,6 +2251,8 @@ def run_zos_program(program, parm="", dd_statements=[], authorized=False):
     Returns:
         MVSCmdResponse: Holds the response information for program execution.
     """
+    if not dd_statements:
+        dd_statements = []
     response = None
     if authorized:
         response = MVSCmd.execute_authorized(pgm=program, parm=parm, dds=dd_statements)

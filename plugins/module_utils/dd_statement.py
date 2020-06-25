@@ -454,22 +454,6 @@ class DatasetDefinition(DataDefinition):
         return mvscmd_string
 
 
-class VIODefinition(DataDefinition):
-    def __init__(self, dataset_name):
-        """VIO DD data type to be used in a DDStatement.
-
-        Args:
-            dataset_name (str): The dataset name to associate with the DD statement.
-        """
-        super().__init__(dataset_name)
-
-    def _build_arg_string(self):
-        """Build a string representing the arguments of this particular data type
-        to be used by mvscmd/mvscmdauth.
-        """
-        return ",vio"
-
-
 class VolumeDefinition(DataDefinition):
     def __init__(self, volume_name):
         """Volume DD data type to be used in a DDStatement.
@@ -522,7 +506,8 @@ class StdinDefinition(DataDefinition):
         space_type="M",
         record_length=80,
     ):
-        """[summary]
+        """Stdin DD Data type to be used in a DDStatement.
+        This should be used in cases where "DD *" would be used in a jcl.
 
         Args:
             content (Union[str, list[str]]): The content to write to temporary data set / stdin.
@@ -560,3 +545,30 @@ class StdinDefinition(DataDefinition):
         to be used by mvscmd/mvscmdauth.
         """
         return ""
+
+
+class VIODefinition(DataDefinition):
+    def __init__(self):
+        """VIO DD type to be used in a DDStatement.
+        VIO uses DASD space and system I/O more efficiently than other temporary data sets.
+        A temporary data set will be created for use in cases where VIO is unavailable.
+        Defaults for VIODefinition should be sufficient.
+        """
+        hlq = Datasets.hlq()
+        name = Datasets.temp_name(hlq)
+        super().__init__(name)
+
+    def __del__(self):
+        """Try to delete the temporary data set
+        if VIO wrote to disk during execution.
+        """
+        try:
+            DataSet.delete(self.name)
+        except Exception:
+            pass
+
+    def _build_arg_string(self):
+        """Build a string representing the arguments of this particular data type
+        to be used by mvscmd/mvscmdauth.
+        """
+        return ",vio"

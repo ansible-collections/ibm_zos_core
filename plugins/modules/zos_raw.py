@@ -583,518 +583,542 @@ options:
             description: The dd name.
             required: true
             type: str
+      dd_vio:
+        description:
+          - I(dd_vio) is used to handle temporary data sets.
+          -  VIO data sets reside in the paging space; but,
+          to the problem program and the access method,
+          the data sets appear to reside on a direct access storage device.
+          - You cannot use VIO for permanent data sets,
+          VSAM data sets, or partitioned data sets extended (PDSEs).
+        required: false
+        type: dict
+        suboptions:
+          dd_name:
+            description: The dd name.
+            required: true
+            type: str
       dd_concat:
         description:
-          - "I(dd_concat) is a list containing any of the following types:
-            I(dd_data_set), I(dd_unix), and I(dd_input)."
+          - I(dd_concat) is used to specify a data set concatenation.
         required: false
-        type: list
-        elements: dict
+        type: dict
         suboptions:
-          dd_data_set:
+          dd_name:
+            description: The dd name.
+            required: true
+            type: str
+          dds:
             description:
-              - Specify a data set.
-              - I(dd_data_set) can reference an existing data set or be
-                used to define a new data set to be created during execution.
-            required: false
-            type: dict
+              - A list of DD statements, which can contain any of the following types:
+            I(dd_data_set), I(dd_unix), and I(dd_input)."
+            type: list
+            elements: dict
             suboptions:
-              data_set_name:
-                description: The data set name.
-                type: str
+              dd_data_set:
+                description:
+                  - Specify a data set.
+                  - I(dd_data_set) can reference an existing data set or be
+                    used to define a new data set to be created during execution.
                 required: false
-              type:
-                description:
-                  - The data set type. Only required when I(disposition=new).
-                  - Maps to DSNTYPE on z/OS.
-                type: str
-                choices:
-                  - library
-                  - hfs
-                  - pds
-                  - large
-                  - basic
-                  - rrds
-                  - esds
-                  - lds
-                  - ksds
-              disposition:
-                description:
-                  - I(disposition) indicates the status of a data set.
-                type: str
-                default: shr
-                required: false
-                choices:
-                  - new
-                  - shr
-                  - mod
-                  - old
-              disposition_normal:
-                description:
-                  - I(disposition_normal) tells the system what to do with the data set after normal termination of the program.
-                type: str
-                required: false
-                default: catalog
-                choices:
-                  - delete
-                  - keep
-                  - catlg
-                  - catalog
-                  - uncatlg
-                  - uncatalog
-              disposition_abnormal:
-                description:
-                  - I(disposition_abnormal) tells the system what to do with the data set after abnormal termination of the
-                    program.
-                type: str
-                required: false
-                default: catalog
-                choices:
-                  - delete
-                  - keep
-                  - catlg
-                  - catalog
-                  - uncatlg
-                  - uncatalog
-              reuse:
-                description:
-                  - Determines if data set should be reused if I(disposition=NEW) and a data set with matching name already exists.
-                  - If I(reuse=true), I(disposition) will be automatically switched to C(SHR).
-                  - If I(reuse=false), and a data set with a matching name already exists, allocation will fail.
-                  - Mutually exclusive with I(replace).
-                  - I(reuse) is only considered when I(disposition=NEW)
-                type: bool
-                default: false
-              replace:
-                description:
-                  - Determines if data set should be replaced if I(disposition=NEW) and a data set with matching name already exists.
-                  - If I(replace=true), the original data set will be deleted, and a new data set created.
-                  - If I(replace=false), and a data set with a matching name already exists, allocation will fail.
-                  - Mutually exclusive with I(reuse).
-                  - I(replace) is only considered when I(disposition=NEW)
-                  - I(replace) will result in loss of all data in the original data set unless I(backup) is specified.
-                type: bool
-                default: false
-              backup:
-                description:
-                  - Determines if a backup should be made of existing data set when I(disposition=NEW), I(replace=true),
-                    and a data set with the desired name is found.
-                  - I(backup) is only used when I(replace=true).
-                type: bool
-                default: false
-              space_type:
-                description:
-                  - The unit of measurement to use when allocating space for a new data set
-                    using I(space_primary) and I(space_secondary).
-                type: str
-                choices:
-                  - trk
-                  - cyl
-                  - b
-                  - k
-                  - m
-                  - g
-                default: m
-              space_primary:
-                description:
-                  - The primary amount of space to allocate for a new data set.
-                  - The value provided to I(space_type) is used as the unit of space for the allocation.
-                  - Not applicable when I(space_type=blklgth) or I(space_type=reclgth).
-                type: int
-                default: 5
-              space_secondary:
-                description:
-                  - When primary allocation of space is filled,
-                    secondary space will be allocated with the provided size as needed.
-                  - The value provided to I(space_type) is used as the unit of space for the allocation.
-                  - Not applicable when I(space_type=blklgth) or I(space_type=reclgth).
-                type: int
-                default: 5
-              volumes:
-                description:
-                  - The volume or volumes on which a data set resides or will reside.
-                  - Do not specify the same volume multiple times.
-                type: list
-                elements: str
-                required: false
-              sms_management_class:
-                description:
-                  - The desired management class for a new SMS-managed data set.
-                  - I(sms_management_class) is ignored if specified for an existing data set.
-                  - All values must be between 1-8 alpha-numeric chars
-                type: str
-                required: false
-              sms_storage_class:
-                description:
-                  - The desired storage class for a new SMS-managed data set.
-                  - I(sms_storage_class) is ignored if specified for an existing data set.
-                  - All values must be between 1-8 alpha-numeric chars
-                type: str
-                required: false
-              sms_data_class:
-                description:
-                  - The desired data class for a new SMS-managed data set.
-                  - I(sms_data_class) is ignored if specified for an existing data set.
-                  - All values must be between 1-8 alpha-numeric chars
-                type: str
-                required: false
-              block_size:
-                description:
-                  - The maximum length of a block in bytes.
-                  - Default is dependent on I(record_format)
-                type: int
-                required: false
-              key_label:
-                description:
-                  - The label for the encryption key used by the system to encrypt the data set.
-                  - I(key_label) is the public name of a protected encryption key in the ICSF key repository.
-                  - I(key_label) should only be provided when creating an extended format data set.
-                  - Maps to DSKEYLBL on z/OS.
-                type: str
-                required: false
-              encryption_key_1:
-                description:
-                  - The encrypting key used by the Encryption Key Manager.
-                  - Specification of the key labels does not by itself enable encryption.
-                    Encryption must be enabled by a data class that specifies an encryption format.
                 type: dict
-                required: false
                 suboptions:
-                  label:
-                    description:
-                      - The label for the key encrypting key used by the Encryption Key
-                        Manager.
-                      - Key label must have a private key associated with it.
-                      - I(label) can be a maximum of 64 characters.
-                      - Maps to KEYLAB1 on z/OS.
+                  data_set_name:
+                    description: The data set name.
                     type: str
-                    required: true
-                  encoding:
-                    description:
-                      - How the label for the key encrypting key specified by
-                        I(label) is encoded by the Encryption Key Manager.
-                      - I(encoding) can either be set to C(L) for label encoding,
-                        or C(H) for hash encoding.
-                      - Maps to KEYCD1 on z/OS.
-                    type: str
-                    required: true
-                    choices:
-                      - l
-                      - h
-              encryption_key_2:
-                description:
-                  - The encrypting key used by the Encryption Key Manager.
-                  - Specification of the key labels does not by itself enable encryption.
-                    Encryption must be enabled by a data class that specifies an encryption format.
-                type: dict
-                required: false
-                suboptions:
-                  label:
-                    description:
-                      - The label for the key encrypting key used by the Encryption Key
-                        Manager.
-                      - Key label must have a private key associated with it.
-                      - I(label) can be a maximum of 64 characters.
-                      - Maps to KEYLAB2 on z/OS.
-                    type: str
-                    required: true
-                  encoding:
-                    description:
-                      - How the label for the key encrypting key specified by
-                        I(label) is encoded by the Encryption Key Manager.
-                      - I(encoding) can either be set to C(L) for label encoding,
-                        or C(H) for hash encoding.
-                      - - Maps to KEYCD2 on z/OS.
-                    type: str
-                    required: true
-                    choices:
-                      - l
-                      - h
-              key_length:
-                description:
-                  - The length of the keys used in a new data set.
-                  - If using SMS, setting I(key_length) overrides the key length defined in the SMS data class of the data set.
-                  - Valid values are (0-255 non-vsam), (1-255 vsam).
-                type: int
-                required: false
-              key_offset:
-                description:
-                  - The position of the first byte of the record key in each logical record of a new VSAM data set.
-                  - The first byte of a logical record is position 0.
-                  - Provide I(key_offset) only for VSAM key-sequenced data sets.
-                type: int
-                required: false
-              record_length:
-                description:
-                  - The logical record length. (e.g C(80)).
-                  - For variable data sets, the length must include the 4-byte prefix area.
-                  - Defaults vary depending on format. If FB/FBA 80, if VB/VBA 137, if U 0.
-                  - Valid values are (1-32760 for non-vsam,  1-32761 for vsam).
-                  - Maps to LRECL on z/OS.
-                type: int
-                required: false
-              record_format:
-                description:
-                  - The format and characteristics of the records for new data set.
-                type: str
-                choices:
-                  - u
-                  - vb
-                  - vba
-                  - fb
-                  - fba
-                default: fb
-              return_content:
-                description:
-                  - Determines how content should be returned to the user.
-                  - If not provided, no content from the DD is returned.
-                type: dict
-                required: false
-                suboptions:
+                    required: false
                   type:
                     description:
-                      - The type of the content to be returned.
-                      - C(text) means return content in ASCII, converted from EBCDIC.
-                      - C(base64) means return content in binary mode.
+                      - The data set type. Only required when I(disposition=new).
+                      - Maps to DSNTYPE on z/OS.
                     type: str
                     choices:
-                      - text
-                      - base64
-                    required: true
-                  src_encoding:
+                      - library
+                      - hfs
+                      - pds
+                      - large
+                      - basic
+                      - rrds
+                      - esds
+                      - lds
+                      - ksds
+                  disposition:
                     description:
-                      - The encoding of the data set on the z/OS system.
+                      - I(disposition) indicates the status of a data set.
                     type: str
-                    default: ibm-1047
-                  response_encoding:
+                    default: shr
+                    required: false
+                    choices:
+                      - new
+                      - shr
+                      - mod
+                      - old
+                  disposition_normal:
                     description:
-                      - The encoding to use when returning the contents of the data set.
+                      - I(disposition_normal) tells the system what to do with the data set after normal termination of the program.
                     type: str
-                    default: iso8859-1
-          dd_unix:
-            description:
-              - The path to a file in Unix System Services (USS).
-            required: false
-            type: dict
-            suboptions:
-              path:
+                    required: false
+                    default: catalog
+                    choices:
+                      - delete
+                      - keep
+                      - catlg
+                      - catalog
+                      - uncatlg
+                      - uncatalog
+                  disposition_abnormal:
+                    description:
+                      - I(disposition_abnormal) tells the system what to do with the data set after abnormal termination of the
+                        program.
+                    type: str
+                    required: false
+                    default: catalog
+                    choices:
+                      - delete
+                      - keep
+                      - catlg
+                      - catalog
+                      - uncatlg
+                      - uncatalog
+                  reuse:
+                    description:
+                      - Determines if data set should be reused if I(disposition=NEW) and a data set with matching name already exists.
+                      - If I(reuse=true), I(disposition) will be automatically switched to C(SHR).
+                      - If I(reuse=false), and a data set with a matching name already exists, allocation will fail.
+                      - Mutually exclusive with I(replace).
+                      - I(reuse) is only considered when I(disposition=NEW)
+                    type: bool
+                    default: false
+                  replace:
+                    description:
+                      - Determines if data set should be replaced if I(disposition=NEW) and a data set with matching name already exists.
+                      - If I(replace=true), the original data set will be deleted, and a new data set created.
+                      - If I(replace=false), and a data set with a matching name already exists, allocation will fail.
+                      - Mutually exclusive with I(reuse).
+                      - I(replace) is only considered when I(disposition=NEW)
+                      - I(replace) will result in loss of all data in the original data set unless I(backup) is specified.
+                    type: bool
+                    default: false
+                  backup:
+                    description:
+                      - Determines if a backup should be made of existing data set when I(disposition=NEW), I(replace=true),
+                        and a data set with the desired name is found.
+                      - I(backup) is only used when I(replace=true).
+                    type: bool
+                    default: false
+                  space_type:
+                    description:
+                      - The unit of measurement to use when allocating space for a new data set
+                        using I(space_primary) and I(space_secondary).
+                    type: str
+                    choices:
+                      - trk
+                      - cyl
+                      - b
+                      - k
+                      - m
+                      - g
+                    default: m
+                  space_primary:
+                    description:
+                      - The primary amount of space to allocate for a new data set.
+                      - The value provided to I(space_type) is used as the unit of space for the allocation.
+                      - Not applicable when I(space_type=blklgth) or I(space_type=reclgth).
+                    type: int
+                    default: 5
+                  space_secondary:
+                    description:
+                      - When primary allocation of space is filled,
+                        secondary space will be allocated with the provided size as needed.
+                      - The value provided to I(space_type) is used as the unit of space for the allocation.
+                      - Not applicable when I(space_type=blklgth) or I(space_type=reclgth).
+                    type: int
+                    default: 5
+                  volumes:
+                    description:
+                      - The volume or volumes on which a data set resides or will reside.
+                      - Do not specify the same volume multiple times.
+                    type: list
+                    elements: str
+                    required: false
+                  sms_management_class:
+                    description:
+                      - The desired management class for a new SMS-managed data set.
+                      - I(sms_management_class) is ignored if specified for an existing data set.
+                      - All values must be between 1-8 alpha-numeric chars
+                    type: str
+                    required: false
+                  sms_storage_class:
+                    description:
+                      - The desired storage class for a new SMS-managed data set.
+                      - I(sms_storage_class) is ignored if specified for an existing data set.
+                      - All values must be between 1-8 alpha-numeric chars
+                    type: str
+                    required: false
+                  sms_data_class:
+                    description:
+                      - The desired data class for a new SMS-managed data set.
+                      - I(sms_data_class) is ignored if specified for an existing data set.
+                      - All values must be between 1-8 alpha-numeric chars
+                    type: str
+                    required: false
+                  block_size:
+                    description:
+                      - The maximum length of a block in bytes.
+                      - Default is dependent on I(record_format)
+                    type: int
+                    required: false
+                  key_label:
+                    description:
+                      - The label for the encryption key used by the system to encrypt the data set.
+                      - I(key_label) is the public name of a protected encryption key in the ICSF key repository.
+                      - I(key_label) should only be provided when creating an extended format data set.
+                      - Maps to DSKEYLBL on z/OS.
+                    type: str
+                    required: false
+                  encryption_key_1:
+                    description:
+                      - The encrypting key used by the Encryption Key Manager.
+                      - Specification of the key labels does not by itself enable encryption.
+                        Encryption must be enabled by a data class that specifies an encryption format.
+                    type: dict
+                    required: false
+                    suboptions:
+                      label:
+                        description:
+                          - The label for the key encrypting key used by the Encryption Key
+                            Manager.
+                          - Key label must have a private key associated with it.
+                          - I(label) can be a maximum of 64 characters.
+                          - Maps to KEYLAB1 on z/OS.
+                        type: str
+                        required: true
+                      encoding:
+                        description:
+                          - How the label for the key encrypting key specified by
+                            I(label) is encoded by the Encryption Key Manager.
+                          - I(encoding) can either be set to C(L) for label encoding,
+                            or C(H) for hash encoding.
+                          - Maps to KEYCD1 on z/OS.
+                        type: str
+                        required: true
+                        choices:
+                          - l
+                          - h
+                  encryption_key_2:
+                    description:
+                      - The encrypting key used by the Encryption Key Manager.
+                      - Specification of the key labels does not by itself enable encryption.
+                        Encryption must be enabled by a data class that specifies an encryption format.
+                    type: dict
+                    required: false
+                    suboptions:
+                      label:
+                        description:
+                          - The label for the key encrypting key used by the Encryption Key
+                            Manager.
+                          - Key label must have a private key associated with it.
+                          - I(label) can be a maximum of 64 characters.
+                          - Maps to KEYLAB2 on z/OS.
+                        type: str
+                        required: true
+                      encoding:
+                        description:
+                          - How the label for the key encrypting key specified by
+                            I(label) is encoded by the Encryption Key Manager.
+                          - I(encoding) can either be set to C(L) for label encoding,
+                            or C(H) for hash encoding.
+                          - - Maps to KEYCD2 on z/OS.
+                        type: str
+                        required: true
+                        choices:
+                          - l
+                          - h
+                  key_length:
+                    description:
+                      - The length of the keys used in a new data set.
+                      - If using SMS, setting I(key_length) overrides the key length defined in the SMS data class of the data set.
+                      - Valid values are (0-255 non-vsam), (1-255 vsam).
+                    type: int
+                    required: false
+                  key_offset:
+                    description:
+                      - The position of the first byte of the record key in each logical record of a new VSAM data set.
+                      - The first byte of a logical record is position 0.
+                      - Provide I(key_offset) only for VSAM key-sequenced data sets.
+                    type: int
+                    required: false
+                  record_length:
+                    description:
+                      - The logical record length. (e.g C(80)).
+                      - For variable data sets, the length must include the 4-byte prefix area.
+                      - Defaults vary depending on format. If FB/FBA 80, if VB/VBA 137, if U 0.
+                      - Valid values are (1-32760 for non-vsam,  1-32761 for vsam).
+                      - Maps to LRECL on z/OS.
+                    type: int
+                    required: false
+                  record_format:
+                    description:
+                      - The format and characteristics of the records for new data set.
+                    type: str
+                    choices:
+                      - u
+                      - vb
+                      - vba
+                      - fb
+                      - fba
+                    default: fb
+                  return_content:
+                    description:
+                      - Determines how content should be returned to the user.
+                      - If not provided, no content from the DD is returned.
+                    type: dict
+                    required: false
+                    suboptions:
+                      type:
+                        description:
+                          - The type of the content to be returned.
+                          - C(text) means return content in ASCII, converted from EBCDIC.
+                          - C(base64) means return content in binary mode.
+                        type: str
+                        choices:
+                          - text
+                          - base64
+                        required: true
+                      src_encoding:
+                        description:
+                          - The encoding of the data set on the z/OS system.
+                        type: str
+                        default: ibm-1047
+                      response_encoding:
+                        description:
+                          - The encoding to use when returning the contents of the data set.
+                        type: str
+                        default: iso8859-1
+              dd_unix:
                 description:
-                  - The path to an existing Unix file.
-                  - Or provide the path to an new created Unix file when I(status_group=OCREAT).
-                  - The provided path must be absolute.
-                required: true
-                type: str
-              disposition_normal:
-                description:
-                  - Tells the system what to do with the Unix file after normal termination of
-                    the program.
-                type: str
-                default: keep
-                choices:
-                  - keep
-                  - delete
-              disposition_abnormal:
-                description:
-                  - Tells the system what to do with the Unix file after abnormal termination of
-                    the program.
-                type: str
-                default: keep
-                choices:
-                  - keep
-                  - delete
-              mode:
-                description:
-                  - The file access attributes when the Unix file is created specified in I(path).
-                  - For those used to /usr/bin/chmod remember that modes are actually octal numbers.
-                    You must either add a leading zero so that Ansible's YAML parser knows it is an octal number
-                    (like 0644 or 01777) or quote it (like '644' or '1777') so Ansible receives a string and can
-                    do its own conversion from string into number.
-                  - Maps to PATHMODE on z/OS.
-                type: str
-              status_group:
-                description:
-                  - The status for the Unix file specified in I(path).
-                  - If you do not code a value on the I(status_group) parameter the module assumes that the
-                    pathname exists, searches for it, and fails the module if the pathname does not exist.
-                  - Maps to PATHOPTS status group file options on z/OS.
-                  - You can specify up to 6 choices
-                  - I(oappend) sets the file offset to the end of the file before each write,
-                  so that data is written at the end of the file.
-                  - I(ocreat) Specifies that if the file does not exist, the system is to create it.
-                  If a directory specified in the pathname does not exist, one is not created,
-                  and the new file is not created.
-                  If the file already exists and I(oexcl) was not specified,
-                  the system allows the program to use the existing file.
-                  If the file already exists and I(oexcl) was specified,
-                  the system fails the allocation and the job step.
-                  - I(oexcl) specifies that if the file does not exist, the system is to create it.
-                  If the file already exists, the system fails the allocation and the job step.
-                  The system ignores I(oexcl) if I(ocreat) is not also specified.
-                  - I(onoctty) specifies that if the PATH parameter identifies a terminal device,
-                  opening of the file does not make the terminal device the controlling terminal for the process.
-                  - I(ononblock) specifies the following, depending on the type of file
-                    - For a FIFO special file
-                      - With I(ononblock) specified and I(ordonly) access,
-                      an open function for reading-only returns without delay.
-                      - With I(ononblock) not specified and I(ordonly) access,
-                      an open function for reading-only blocks (waits) until a process opens the file for writing.
-                      - With I(ononblock) specified and I(owronly) access,
-                      an open function for writing-only returns an error if no process
-                      currently has the file open for reading.
-                      - With I(ononblock) not specified and I(owronly) access,
-                      an open function for writing-only blocks (waits) until a process opens the file for reading.
-                    - For a character special file that supports nonblocking open
-                      - If I(ononblock) is specified, an open function returns without blocking (waiting)
-                      until the device is ready or available.
-                      Device response depends on the type of device.
-                      - If I(ononblock) is not specified, an open function blocks (waits)
-                      until the device is ready or available.
-                  - I(ononblock) has no effect on other file types.
-                  - I(osync) specifies that the system is to move data from buffer storage
-                  to permanent storage before returning control from a callable service that performs a write.
-                  - I(otrunc) specifies that the system is to truncate the file length to zero if
-                  all the following are true
-                    - The file specified exists.
-                    - The file is a regular file.
-                    - The file successfully opened with I(ordwr) or I(owronly).
-                  - When I(otrunc) is specified, the system does not change the mode and owner.
-                  I(otrunc) has no effect on FIFO special files or character special files.
-                type: list
-                elements: str
-                choices:
-                  - oappend
-                  - ocreat
-                  - oexcl
-                  - onoctty
-                  - ononblock
-                  - osync
-                  - otrunc
+                  - The path to a file in Unix System Services (USS).
                 required: false
-              access_group:
-                description:
-                  - The kind of access to request for the Unix file specified in I(path).
-                type: str
-                choices:
-                  - r
-                  - w
-                  - rw
-                  - read_only
-                  - write_only
-                  - read_write
-                  - ordonly
-                  - owronly
-                  - ordwr
-              file_data_type:
-                description:
-                  - The type of data that is (or will be) stored in the file specified in I(path).
-                  - Maps to FILEDATA on z/OS.
-                type: str
-                default: binary
-                choices:
-                  - binary
-                  - text
-                  - record
-              block_size:
-                description:
-                  - The block size, in bytes, for the Unix file.
-                  - Default is dependent on I(record_format)
-                type: int
-                required: false
-              record_length:
-                description:
-                  - The logical record length for the Unix file.
-                  - I(record_length) is required in situations where the data will be processed as
-                    records and therefore, I(record_length), I(block_size) and I(record_format) need to be supplied since
-                    a Unix file would normally be treated as a stream of bytes.
-                  - Maps to LRECL on z/OS.
-                type: int
-                required: false
-              record_format:
-                description:
-                  - The record format for the Unix file.
-                  - I(record_format) is required in situations where the data will be processed as
-                    records and therefore, I(record_length), I(block_size) and I(record_format) need to be supplied since
-                    a Unix file would normally be treated as a stream of bytes.
-                type: str
-                choices:
-                  - u
-                  - vb
-                  - vba
-                  - fb
-                  - fba
-                default: fb
-              return_content:
-                description:
-                  - Determines how content should be returned to the user.
-                  - If not provided, no content from the DD is returned.
                 type: dict
-                required: false
                 suboptions:
-                  type:
+                  path:
                     description:
-                      - The type of the content to be returned.
-                      - C(text) means return content in ASCII, converted from EBCDIC.
-                      - C(base64) means return content in binary mode.
+                      - The path to an existing Unix file.
+                      - Or provide the path to an new created Unix file when I(status_group=OCREAT).
+                      - The provided path must be absolute.
+                    required: true
+                    type: str
+                  disposition_normal:
+                    description:
+                      - Tells the system what to do with the Unix file after normal termination of
+                        the program.
+                    type: str
+                    default: keep
+                    choices:
+                      - keep
+                      - delete
+                  disposition_abnormal:
+                    description:
+                      - Tells the system what to do with the Unix file after abnormal termination of
+                        the program.
+                    type: str
+                    default: keep
+                    choices:
+                      - keep
+                      - delete
+                  mode:
+                    description:
+                      - The file access attributes when the Unix file is created specified in I(path).
+                      - For those used to /usr/bin/chmod remember that modes are actually octal numbers.
+                        You must either add a leading zero so that Ansible's YAML parser knows it is an octal number
+                        (like 0644 or 01777) or quote it (like '644' or '1777') so Ansible receives a string and can
+                        do its own conversion from string into number.
+                      - Maps to PATHMODE on z/OS.
+                    type: str
+                  status_group:
+                    description:
+                      - The status for the Unix file specified in I(path).
+                      - If you do not code a value on the I(status_group) parameter the module assumes that the
+                        pathname exists, searches for it, and fails the module if the pathname does not exist.
+                      - Maps to PATHOPTS status group file options on z/OS.
+                      - You can specify up to 6 choices
+                      - I(oappend) sets the file offset to the end of the file before each write,
+                      so that data is written at the end of the file.
+                      - I(ocreat) Specifies that if the file does not exist, the system is to create it.
+                      If a directory specified in the pathname does not exist, one is not created,
+                      and the new file is not created.
+                      If the file already exists and I(oexcl) was not specified,
+                      the system allows the program to use the existing file.
+                      If the file already exists and I(oexcl) was specified,
+                      the system fails the allocation and the job step.
+                      - I(oexcl) specifies that if the file does not exist, the system is to create it.
+                      If the file already exists, the system fails the allocation and the job step.
+                      The system ignores I(oexcl) if I(ocreat) is not also specified.
+                      - I(onoctty) specifies that if the PATH parameter identifies a terminal device,
+                      opening of the file does not make the terminal device the controlling terminal for the process.
+                      - I(ononblock) specifies the following, depending on the type of file
+                        - For a FIFO special file
+                          - With I(ononblock) specified and I(ordonly) access,
+                          an open function for reading-only returns without delay.
+                          - With I(ononblock) not specified and I(ordonly) access,
+                          an open function for reading-only blocks (waits) until a process opens the file for writing.
+                          - With I(ononblock) specified and I(owronly) access,
+                          an open function for writing-only returns an error if no process
+                          currently has the file open for reading.
+                          - With I(ononblock) not specified and I(owronly) access,
+                          an open function for writing-only blocks (waits) until a process opens the file for reading.
+                        - For a character special file that supports nonblocking open
+                          - If I(ononblock) is specified, an open function returns without blocking (waiting)
+                          until the device is ready or available.
+                          Device response depends on the type of device.
+                          - If I(ononblock) is not specified, an open function blocks (waits)
+                          until the device is ready or available.
+                      - I(ononblock) has no effect on other file types.
+                      - I(osync) specifies that the system is to move data from buffer storage
+                      to permanent storage before returning control from a callable service that performs a write.
+                      - I(otrunc) specifies that the system is to truncate the file length to zero if
+                      all the following are true
+                        - The file specified exists.
+                        - The file is a regular file.
+                        - The file successfully opened with I(ordwr) or I(owronly).
+                      - When I(otrunc) is specified, the system does not change the mode and owner.
+                      I(otrunc) has no effect on FIFO special files or character special files.
+                    type: list
+                    elements: str
+                    choices:
+                      - oappend
+                      - ocreat
+                      - oexcl
+                      - onoctty
+                      - ononblock
+                      - osync
+                      - otrunc
+                    required: false
+                  access_group:
+                    description:
+                      - The kind of access to request for the Unix file specified in I(path).
                     type: str
                     choices:
+                      - r
+                      - w
+                      - rw
+                      - read_only
+                      - write_only
+                      - read_write
+                      - ordonly
+                      - owronly
+                      - ordwr
+                  file_data_type:
+                    description:
+                      - The type of data that is (or will be) stored in the file specified in I(path).
+                      - Maps to FILEDATA on z/OS.
+                    type: str
+                    default: binary
+                    choices:
+                      - binary
                       - text
-                      - base64
-                    required: true
-                  src_encoding:
+                      - record
+                  block_size:
                     description:
-                      - The encoding of the file on the z/OS system.
-                    type: str
-                    default: ibm-1047
-                  response_encoding:
+                      - The block size, in bytes, for the Unix file.
+                      - Default is dependent on I(record_format)
+                    type: int
+                    required: false
+                  record_length:
                     description:
-                      - The encoding to use when returning the contents of the file.
+                      - The logical record length for the Unix file.
+                      - I(record_length) is required in situations where the data will be processed as
+                        records and therefore, I(record_length), I(block_size) and I(record_format) need to be supplied since
+                        a Unix file would normally be treated as a stream of bytes.
+                      - Maps to LRECL on z/OS.
+                    type: int
+                    required: false
+                  record_format:
+                    description:
+                      - The record format for the Unix file.
+                      - I(record_format) is required in situations where the data will be processed as
+                        records and therefore, I(record_length), I(block_size) and I(record_format) need to be supplied since
+                        a Unix file would normally be treated as a stream of bytes.
                     type: str
-                    default: iso8859-1
-          dd_input:
-            description:
-              - I(dd_input) is used to specify an in-stream data set.
-              - Input will be saved to a temporary data set with a record length of 80.
-            required: false
-            type: dict
-            suboptions:
-              content:
+                    choices:
+                      - u
+                      - vb
+                      - vba
+                      - fb
+                      - fba
+                    default: fb
+                  return_content:
+                    description:
+                      - Determines how content should be returned to the user.
+                      - If not provided, no content from the DD is returned.
+                    type: dict
+                    required: false
+                    suboptions:
+                      type:
+                        description:
+                          - The type of the content to be returned.
+                          - C(text) means return content in ASCII, converted from EBCDIC.
+                          - C(base64) means return content in binary mode.
+                        type: str
+                        choices:
+                          - text
+                          - base64
+                        required: true
+                      src_encoding:
+                        description:
+                          - The encoding of the file on the z/OS system.
+                        type: str
+                        default: ibm-1047
+                      response_encoding:
+                        description:
+                          - The encoding to use when returning the contents of the file.
+                        type: str
+                        default: iso8859-1
+              dd_input:
                 description:
-                  - The input contents for the DD.
-                  - I(dd_input) supports single or multiple lines of input.
-                  - Multi-line input can be provided as a multi-line string
-                    or a list of strings with 1 line per list item.
-                  - If a list of strings is provided, newlines will be
-                    added to each of the lines when used as input.
+                  - I(dd_input) is used to specify an in-stream data set.
+                  - Input will be saved to a temporary data set with a record length of 80.
                 required: false
-                type: raw
-              return_content:
-                description:
-                  - Determines how content should be returned to the user.
-                  - If not provided, no content from the DD is returned.
                 type: dict
-                required: false
                 suboptions:
-                  type:
+                  content:
                     description:
-                      - The type of the content to be returned.
-                      - C(text) means return content in ASCII, converted from EBCDIC.
-                      - C(base64) means return content in binary mode.
-                    type: str
-                    choices:
-                      - text
-                      - base64
-                    required: true
-                  src_encoding:
+                      - The input contents for the DD.
+                      - I(dd_input) supports single or multiple lines of input.
+                      - Multi-line input can be provided as a multi-line string
+                        or a list of strings with 1 line per list item.
+                      - If a list of strings is provided, newlines will be
+                        added to each of the lines when used as input.
+                    required: false
+                    type: raw
+                  return_content:
                     description:
-                      - The encoding of the data set on the z/OS system.
-                      - for I(dd_input), I(src_encoding) should generally not need to be changed.
-                    type: str
-                    default: ibm-1047
-                  response_encoding:
-                    description:
-                      - The encoding to use when returning the contents of the data set.
-                    type: str
-                    default: iso8859-1
+                      - Determines how content should be returned to the user.
+                      - If not provided, no content from the DD is returned.
+                    type: dict
+                    required: false
+                    suboptions:
+                      type:
+                        description:
+                          - The type of the content to be returned.
+                          - C(text) means return content in ASCII, converted from EBCDIC.
+                          - C(base64) means return content in binary mode.
+                        type: str
+                        choices:
+                          - text
+                          - base64
+                        required: true
+                      src_encoding:
+                        description:
+                          - The encoding of the data set on the z/OS system.
+                          - for I(dd_input), I(src_encoding) should generally not need to be changed.
+                        type: str
+                        default: ibm-1047
+                      response_encoding:
+                        description:
+                          - The encoding to use when returning the contents of the data set.
+                        type: str
+                        default: iso8859-1
 """
 
 RETURN = r"""
@@ -1160,6 +1184,7 @@ try:
         DatasetDefinition,
         StdinDefinition,
         DummyDefinition,
+        VIODefinition,
     )
 except ImportError:
     DDStatement = MissingImport("DDStatement")
@@ -1167,7 +1192,7 @@ except ImportError:
     DatasetDefinition = MissingImport("DatasetDefinition")
     StdinDefinition = MissingImport("StdinDefinition")
     DummyDefinition = MissingImport("DummyDefinition")
-
+    VIODefinition = MissingImport("VIODefinition")
 try:
     from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
         DataSet,
@@ -1324,6 +1349,8 @@ def run_module():
 
     dd_dummy_base = dict()
 
+    dd_vio_base = dict()
+
     dd_concat_base = dict(
         dds=dict(
             type="list",
@@ -1340,6 +1367,7 @@ def run_module():
     dd_unix = dict(type="dict", options=dict(**dd_name_base, **dd_unix_base))
     dd_input = dict(type="dict", options=dict(**dd_name_base, **dd_input_base))
     dd_dummy = dict(type="dict", options=dict(**dd_name_base, **dd_dummy_base))
+    dd_vio = dict(type="dict", options=dict(**dd_name_base, **dd_vio_base))
     dd_concat = dict(type="dict", options=dict(**dd_name_base, **dd_concat_base))
 
     module_args = dict(
@@ -1353,6 +1381,7 @@ def run_module():
                 dd_data_set=dd_data_set,
                 dd_unix=dd_unix,
                 dd_input=dd_input,
+                dd_vio=dd_vio,
                 dd_concat=dd_concat,
                 dd_dummy=dd_dummy,
             ),
@@ -1360,11 +1389,15 @@ def run_module():
         verbose=dict(type="bool", required=False),
         debug=dict(type="bool", required=False),
     )
+
+    # ---------------------------------------------------------------------------- #
+    #                                  Main Logic                                  #
+    # ---------------------------------------------------------------------------- #
+
     result = dict(changed=False, dd_names=[], ret_code=dict(code=8))
     response = {}
     dd_statements = []
     try:
-
         module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
         parms = parse_and_validate_args(module.params)
         dd_statements = build_dd_statements(parms)
@@ -1389,6 +1422,7 @@ def run_module():
     result["changed"] = True
     to_return = {**result, **response}
     module.exit_json(**to_return)
+    # ---------------------------------------------------------------------------- #
 
 
 def parse_and_validate_args(params):
@@ -1509,6 +1543,8 @@ def parse_and_validate_args(params):
 
     dd_dummy_base = dict()
 
+    dd_vio_base = dict()
+
     dd_concat_base = dict(
         dds=dict(
             type="list",
@@ -1525,6 +1561,7 @@ def parse_and_validate_args(params):
     dd_unix = dict(type="dict", options=dict(**dd_name_base, **dd_unix_base))
     dd_input = dict(type="dict", options=dict(**dd_name_base, **dd_input_base))
     dd_dummy = dict(type="dict", options=dict(**dd_name_base, **dd_dummy_base))
+    dd_vio = dict(type="dict", options=dict(**dd_name_base, **dd_vio_base))
     dd_concat = dict(type="dict", options=dict(**dd_name_base, **dd_concat_base))
 
     module_args = dict(
@@ -1538,6 +1575,7 @@ def parse_and_validate_args(params):
                 dd_data_set=dd_data_set,
                 dd_unix=dd_unix,
                 dd_input=dd_input,
+                dd_vio=dd_vio,
                 dd_concat=dd_concat,
                 dd_dummy=dd_dummy,
             ),
@@ -1837,6 +1875,8 @@ def get_dd_name(dd):
         dd_name = dd.get("dd_unix").get("dd_name")
     elif dd.get("dd_input"):
         dd_name = dd.get("dd_input").get("dd_name")
+    elif dd.get("dd_vio"):
+        dd_name = dd.get("dd_vio").get("dd_name")
     elif dd.get("dd_dummy"):
         dd_name = dd.get("dd_dummy").get("dd_name")
     elif dd.get("dd_concat"):
@@ -1863,6 +1903,8 @@ def build_data_definition(dd):
         data_definition = RawFileDefinition(**(dd.get("dd_unix")))
     elif dd.get("dd_input"):
         data_definition = RawStdinDefinition(**(dd.get("dd_input")))
+    elif dd.get("dd_vio"):
+        data_definition = VIODefinition()
     elif dd.get("dd_dummy"):
         data_definition = DummyDefinition()
     elif dd.get("dd_concat"):

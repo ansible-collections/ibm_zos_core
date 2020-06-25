@@ -12,7 +12,7 @@ zos_ping -- Ping z/OS and check dependencies.
 .. contents::
    :local:
    :depth: 1
-   
+
 
 Synopsis
 --------
@@ -20,7 +20,7 @@ Synopsis
 - :ref:`zos_ping <zos_ping_module>` returns ``pong`` when the target host is not missing any required dependencies.
 - If the target host is missing optional dependencies, the :ref:`zos_ping <zos_ping_module>` will return one or more warning messages.
 - If a required dependency is missing from the target host, an explanatory message will be returned with the module failure.
-- The :ref:`zos_ssh <zos_ssh_module>` connection plugin must be used for this module to function correctly.
+- The `zos_ssh` connection plugin must be used for this module to function correctly.
 
 
 
@@ -49,24 +49,19 @@ Examples
 Return Values
 -------------
 
+
+   
+                              
+       ping
+        | Should contain the value "pong" on success.
+      
+        | **type**: str
+      
       
                               
-         ping
-            | Should contain the value "pong" on success.
+       warnings
+        | List of warnings returned from stderr when performing resource checks.
       
-            
-            | **type**: str
-
-      
-      
-         
-                              
-         warnings
-            | List of warnings returned from stderr when performing resource checks.
-      
-            
-            | **type**: list
-
-      
+        | **type**: list
       
         

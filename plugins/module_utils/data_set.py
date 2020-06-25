@@ -3,6 +3,8 @@
 
 from __future__ import absolute_import, division, print_function
 
+__metaclass__ = type
+
 import re
 import tempfile
 from os import path
@@ -10,19 +12,22 @@ from random import choice
 from string import ascii_uppercase
 from ansible.module_utils._text import to_bytes
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import vtoc
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     MissingZOAUImport,
+    MissingImport,
 )
 
 try:
+    from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import vtoc
+except ImportError:
+    vtoc = MissingImport("vtoc")
+
+try:
     from zoautil_py import Datasets, MVSCmd, types
-except Exception:
+except ImportError:
     Datasets = MissingZOAUImport()
     MVSCmd = MissingZOAUImport()
     types = MissingZOAUImport()
-
-__metaclass__ = type
 
 
 class DataSet(object):
@@ -832,7 +837,7 @@ class DataSet(object):
 
     @staticmethod
     def create_temp(
-        hlq=Datasets.hlq(),
+        hlq="",
         type="SEQ",
         record_format="FB",
         space_primary=5,
@@ -863,6 +868,8 @@ class DataSet(object):
         Returns:
             str -- The name of the temporary data set.
         """
+        if not hlq:
+            Datasets.hlq()
         temp_name = Datasets.temp_name(hlq)
         DataSet.create(
             temp_name,

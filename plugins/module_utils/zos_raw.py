@@ -4,7 +4,25 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dd_statement import *
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
+    MissingImport,
+)
+
+try:
+    from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dd_statement import (
+        DDStatement,
+        DatasetDefinition,
+        FileDefinition,
+        StdinDefinition,
+        DummyDefinition,
+    )
+except ImportError:
+    DDStatement = MissingImport("DDStatement")
+    DatasetDefinition = MissingImport("DatasetDefinition")
+    FileDefinition = MissingImport("FileDefinition")
+    StdinDefinition = MissingImport("StdinDefinition")
+    DummyDefinition = MissingImport("DummyDefinition")
+
 from ansible.module_utils.basic import AnsibleModule
 
 

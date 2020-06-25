@@ -1141,26 +1141,51 @@ backups:
       type: str
 """
 
-# TODO: verify examples match expected format
 
-
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
-    BetterArgParser,
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
+    MissingImport,
 )
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dd_statement import (
-    DDStatement,
-    FileDefinition,
-    DatasetDefinition,
-    StdinDefinition,
-    DummyDefinition,
-)
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import DataSet
 
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.zos_raw import MVSCmd
+try:
+    from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
+        BetterArgParser,
+    )
+except ImportError:
+    BetterArgParser = MissingImport("BetterArgParser")
 
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
-    backup as zos_backup,
-)
+try:
+    from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dd_statement import (
+        DDStatement,
+        FileDefinition,
+        DatasetDefinition,
+        StdinDefinition,
+        DummyDefinition,
+    )
+except ImportError:
+    DDStatement = MissingImport("DDStatement")
+    FileDefinition = MissingImport("FileDefinition")
+    DatasetDefinition = MissingImport("DatasetDefinition")
+    StdinDefinition = MissingImport("StdinDefinition")
+    DummyDefinition = MissingImport("DummyDefinition")
+
+try:
+    from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
+        DataSet,
+    )
+except ImportError:
+    DataSet = MissingImport("DataSet")
+
+try:
+    from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.zos_raw import MVSCmd
+except ImportError:
+    MVSCmd = MissingImport("MVSCmd")
+
+try:
+    from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
+        backup as zos_backup,
+    )
+except ImportError:
+    zos_backup = MissingImport("zos_backup")
 
 from ansible.module_utils.basic import AnsibleModule
 import re

@@ -1947,4 +1947,3 @@ def test_copy_sequential_data_set_to_vsam_fails(ansible_zos_module):
             assert "Incompatible" in result.get("msg")
     finally:
         hosts.all.zos_data_set(name=dest, state="absent")
-

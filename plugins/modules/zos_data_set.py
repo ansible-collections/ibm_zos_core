@@ -637,8 +637,6 @@ def data_set_name(contents, dependencies):
             )
             and dependencies.get("type") == "MEMBER"
         ):
-            raise ValueError(contents, dependencies)
-
             raise ValueError(
                 "Value {0} is invalid for data set argument.".format(dsname)
             )

@@ -375,12 +375,9 @@ options:
           mode:
             description:
               - The file access attributes when the Unix file is created specified in I(path).
-              - For those used to /usr/bin/chmod remember that modes are actually octal numbers.
-                You must either add a leading zero so that Ansible's YAML parser knows it is an octal number
-                (like 0644 or 01777) or quote it (like '644' or '1777') so Ansible receives a string and can
-                do its own conversion from string into number.
+              - Specify the mode as an octal number similarly to chmod.
               - Maps to PATHMODE on z/OS.
-            type: str
+            type: int
           status_group:
             description:
               - The status for the Unix file specified in I(path).
@@ -929,12 +926,9 @@ options:
                   mode:
                     description:
                       - The file access attributes when the Unix file is created specified in I(path).
-                      - For those used to /usr/bin/chmod remember that modes are actually octal numbers.
-                        You must either add a leading zero so that Ansible's YAML parser knows it is an octal number
-                        (like 0644 or 01777) or quote it (like '644' or '1777') so Ansible receives a string and can
-                        do its own conversion from string into number.
+                      - Specify the mode as an octal number similarly to chmod.
                       - Maps to PATHMODE on z/OS.
-                    type: str
+                    type: int
                   status_group:
                     description:
                       - The status for the Unix file specified in I(path).
@@ -1397,6 +1391,7 @@ def run_module():
     result = dict(changed=False, dd_names=[], ret_code=dict(code=8))
     response = {}
     dd_statements = []
+    module = None
     try:
         module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
         parms = parse_and_validate_args(module.params)
@@ -1941,14 +1936,14 @@ class RawDatasetDefinition(DatasetDefinition):
         sms_management_class=None,
         key_length=None,
         key_offset=None,
-        volumes=[],
+        volumes=None,
         key_label=None,
-        encryption_key_1={},
-        encryption_key_2={},
+        encryption_key_1=None,
+        encryption_key_2=None,
         reuse=None,
         replace=None,
         backup=None,
-        return_content={},
+        return_content=None,
         **kwargs
     ):
         """Initialize RawDatasetDefinition
@@ -1971,15 +1966,15 @@ class RawDatasetDefinition(DatasetDefinition):
             key_length (int, optional): The key length of a record. Defaults to None.
             key_offset (int, optional): The key offset is the position of the first byte of the key
                 in each logical record of a the specified VSAM data set. Defaults to None.
-            volumes (list, optional): A list of volume serials.. Defaults to [].
+            volumes (list, optional): A list of volume serials.. Defaults to None.
             key_label (str, optional): The label for the encryption key used by the system to encrypt the data set. Defaults to None.
-            encryption_key_1 (dict, optional): [description]. Defaults to {}.
-            encryption_key_2 (dict, optional): [description]. Defaults to {}.
+            encryption_key_1 (dict, optional): [description]. Defaults to None.
+            encryption_key_2 (dict, optional): [description]. Defaults to None.
             reuse (bool, optional): Determines if data set should be reused. Defaults to None.
             replace (bool, optional): Determines if data set should be replaced. Defaults to None.
             backup (bool, optional): Determines if a backup should be made of existing data set when disposition=NEW, replace=true,
                 and a data set with the desired name is found.. Defaults to None.
-            return_content (dict, optional): Determines how content should be returned to the user. Defaults to {}.
+            return_content (dict, optional): Determines how content should be returned to the user. Defaults to None.
         """
         self.backup = None
         self.return_content = ReturnContent(**(return_content or {}))
@@ -2076,7 +2071,7 @@ class RawFileDefinition(FileDefinition):
         record_length=None,
         block_size=None,
         record_format=None,
-        return_content={},
+        return_content=None,
         **kwargs
     ):
         """Initialize RawFileDefinition
@@ -2092,7 +2087,7 @@ class RawFileDefinition(FileDefinition):
             record_length (int, optional): The specified logical record length for the Unix file. Defaults to None.
             block_size (int, optional): the specified block size for the Unix file being allocated. Defaults to None.
             record_format (str, optional): The specified record format for the Unix file. Defaults to None.
-            return_content (dict, optional): Determines how content should be returned to the user. Defaults to {}.
+            return_content (dict, optional): Determines how content should be returned to the user. Defaults to None.
         """
         self.return_content = ReturnContent(**(return_content or {}))
         super().__init__(

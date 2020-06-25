@@ -1658,4 +1658,3 @@ def test_vio_as_output(ansible_zos_module):
         pprint(result)
         assert result.get("ret_code", {}).get("code", 0) == 0
         assert len(result.get("dd_names", [])) == 0
-

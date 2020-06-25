@@ -862,7 +862,7 @@ class DataSet(object):
                     Defaults to 5.
             space_type (str, optional): The unit of measurement to use when defining primary and secondary space.
                     Defaults to "M".
-            record_length (int, optional): The length, in bytes, of each record in the data set. 
+            record_length (int, optional): The length, in bytes, of each record in the data set.
                     Defaults to 80.
 
         Returns:

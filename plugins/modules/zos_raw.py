@@ -183,8 +183,7 @@ options:
             description:
               - The volume or volumes on which a data set resides or will reside.
               - Do not specify the same volume multiple times.
-            type: list
-            elements: str
+            type: raw
             required: false
           sms_management_class:
             description:
@@ -278,7 +277,7 @@ options:
                     I(label) is encoded by the Encryption Key Manager.
                   - I(encoding) can either be set to C(L) for label encoding,
                     or C(H) for hash encoding.
-                  - - Maps to KEYCD2 on z/OS.
+                  - Maps to KEYCD2 on z/OS.
                 type: str
                 required: true
                 choices:
@@ -572,9 +571,9 @@ options:
                 default: iso8859-1
       dd_dummy:
         description:
-          - Use I(dd_dummy) to specify:
-              - No device or external storage space is to be allocated to the data set.
-              - No disposition processing is to be performed on the data set.
+          - Use I(dd_dummy) to specify
+            - No device or external storage space is to be allocated to the data set.
+            - No disposition processing is to be performed on the data set.
           - I(dd_dummy) accepts no content input.
         required: false
         type: dict

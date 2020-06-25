@@ -207,43 +207,6 @@ def test_normal_dispositions_data_set(ansible_zos_module, normal_disposition, ch
 
 
 @pytest.mark.parametrize(
-    "abnormal_disposition,changed",
-    [("keep", True), ("delete", False), ("catalog", True)],
-)
-def test_abnormal_dispositions_data_set(
-    ansible_zos_module, abnormal_disposition, changed
-):
-    hosts = ansible_zos_module
-    hosts.all.zos_data_set(
-        name=DEFAULT_DATA_SET, type="seq", state="present", replace=True
-    )
-    results = hosts.all.zos_raw(
-        program_name="IGYCRCTL",
-        auth=True,
-        dds=[
-            dict(
-                dd_data_set=dict(
-                    dd_name=SYSPRINT_DD,
-                    data_set_name=DEFAULT_DATA_SET,
-                    disposition="shr",
-                    disposition_abnormal=abnormal_disposition,
-                    return_content=dict(type="text"),
-                ),
-            ),
-            dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_INVALID_STDIN)),
-        ],
-    )
-    # for result in results.contacted.values():
-    #     pprint(result)
-    #     assert result.get("ret_code", {}).get("code", 0) != 0
-    #     assert len(result.get("dd_names", [])) > 0
-    results = hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
-    for result in results.contacted.values():
-        pprint(result)
-        assert result.get("changed", not changed) is changed
-
-
-@pytest.mark.parametrize(
     "space_type,primary,secondary,expected",
     [
         ("trk", 3, 1, 169992),

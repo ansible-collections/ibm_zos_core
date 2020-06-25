@@ -23,12 +23,16 @@ short_description: Run a z/OS program.
 description:
   - Run a z/OS program.
   - This is analogous to a job step in JCL.
+  - Defaults will be determined by underlying API if value not provided.
 version_added: "2.9"
 options:
   program_name:
     description: The name of the z/OS program to run (e.g. IDCAMS, IEFBR14, IEBGENER, etc.).
     required: true
     type: str
+    aliases:
+      - pgm
+      - program
   parm:
     description:
       - The program arguments (e.g. -a='MARGINS(1,72)').
@@ -79,10 +83,11 @@ options:
             type: str
             choices:
               - library
-              - hfs
               - pds
+              - pdse
               - large
               - basic
+              - seq
               - rrds
               - esds
               - lds
@@ -90,8 +95,8 @@ options:
           disposition:
             description:
               - I(disposition) indicates the status of a data set.
+              - Defaults to shr.
             type: str
-            default: shr
             required: false
             choices:
               - new
@@ -103,7 +108,6 @@ options:
               - I(disposition_normal) tells the system what to do with the data set after normal termination of the program.
             type: str
             required: false
-            default: catalog
             choices:
               - delete
               - keep
@@ -117,7 +121,6 @@ options:
                 program.
             type: str
             required: false
-            default: catalog
             choices:
               - delete
               - keep
@@ -163,14 +166,12 @@ options:
               - k
               - m
               - g
-            default: m
           space_primary:
             description:
               - The primary amount of space to allocate for a new data set.
               - The value provided to I(space_type) is used as the unit of space for the allocation.
               - Not applicable when I(space_type=blklgth) or I(space_type=reclgth).
             type: int
-            default: 5
           space_secondary:
             description:
               - When primary allocation of space is filled,
@@ -178,7 +179,6 @@ options:
               - The value provided to I(space_type) is used as the unit of space for the allocation.
               - Not applicable when I(space_type=blklgth) or I(space_type=reclgth).
             type: int
-            default: 5
           volumes:
             description:
               - The volume or volumes on which a data set resides or will reside.
@@ -317,7 +317,6 @@ options:
               - vba
               - fb
               - fba
-            default: fb
           return_content:
             description:
               - Determines how content should be returned to the user.
@@ -367,7 +366,6 @@ options:
               - Tells the system what to do with the Unix file after normal termination of
                 the program.
             type: str
-            default: keep
             choices:
               - keep
               - delete
@@ -376,7 +374,6 @@ options:
               - Tells the system what to do with the Unix file after abnormal termination of
                 the program.
             type: str
-            default: keep
             choices:
               - keep
               - delete
@@ -497,7 +494,6 @@ options:
               - vba
               - fb
               - fba
-            default: fb
           return_content:
             description:
               - Determines how content should be returned to the user.
@@ -638,10 +634,11 @@ options:
                     type: str
                     choices:
                       - library
-                      - hfs
                       - pds
+                      - pdse
                       - large
                       - basic
+                      - seq
                       - rrds
                       - esds
                       - lds
@@ -649,8 +646,8 @@ options:
                   disposition:
                     description:
                       - I(disposition) indicates the status of a data set.
+                      - Defaults to shr.
                     type: str
-                    default: shr
                     required: false
                     choices:
                       - new
@@ -662,7 +659,6 @@ options:
                       - I(disposition_normal) tells the system what to do with the data set after normal termination of the program.
                     type: str
                     required: false
-                    default: catalog
                     choices:
                       - delete
                       - keep
@@ -676,7 +672,6 @@ options:
                         program.
                     type: str
                     required: false
-                    default: catalog
                     choices:
                       - delete
                       - keep
@@ -722,14 +717,12 @@ options:
                       - k
                       - m
                       - g
-                    default: m
                   space_primary:
                     description:
                       - The primary amount of space to allocate for a new data set.
                       - The value provided to I(space_type) is used as the unit of space for the allocation.
                       - Not applicable when I(space_type=blklgth) or I(space_type=reclgth).
                     type: int
-                    default: 5
                   space_secondary:
                     description:
                       - When primary allocation of space is filled,
@@ -737,13 +730,11 @@ options:
                       - The value provided to I(space_type) is used as the unit of space for the allocation.
                       - Not applicable when I(space_type=blklgth) or I(space_type=reclgth).
                     type: int
-                    default: 5
                   volumes:
                     description:
                       - The volume or volumes on which a data set resides or will reside.
                       - Do not specify the same volume multiple times.
-                    type: list
-                    elements: str
+                    type: raw
                     required: false
                   sms_management_class:
                     description:
@@ -876,7 +867,6 @@ options:
                       - vba
                       - fb
                       - fba
-                    default: fb
                   return_content:
                     description:
                       - Determines how content should be returned to the user.
@@ -922,7 +912,6 @@ options:
                       - Tells the system what to do with the Unix file after normal termination of
                         the program.
                     type: str
-                    default: keep
                     choices:
                       - keep
                       - delete
@@ -931,7 +920,6 @@ options:
                       - Tells the system what to do with the Unix file after abnormal termination of
                         the program.
                     type: str
-                    default: keep
                     choices:
                       - keep
                       - delete
@@ -1051,7 +1039,6 @@ options:
                       - vba
                       - fb
                       - fba
-                    default: fb
                   return_content:
                     description:
                       - Determines how content should be returned to the user.
@@ -1245,10 +1232,12 @@ def run_module():
         data_set_name=dict(type="str"),
         disposition=dict(type="str", choices=["new", "shr", "mod", "old"]),
         disposition_normal=dict(
-            type="str", choices=["delete", "keep", "catalog", "uncatalog"]
+            type="str",
+            choices=["delete", "keep", "catalog", "uncatalog", "catlg", "uncatlg"],
         ),
         disposition_abnormal=dict(
-            type="str", choices=["delete", "keep", "catalog", "uncatalog"]
+            type="str",
+            choices=["delete", "keep", "catalog", "uncatalog", "catlg", "uncatlg"],
         ),
         space_type=dict(type="str", choices=["trk", "cyl", "b", "k", "m", "g"]),
         space_primary=dict(type="int"),
@@ -1323,7 +1312,19 @@ def run_module():
         disposition_normal=dict(type="str", choices=["keep", "delete"]),
         disposition_abnormal=dict(type="str", choices=["keep", "delete"]),
         mode=dict(type="int"),
-        status_group=dict(type="list", elements="str",),
+        status_group=dict(
+            type="list",
+            elements="str",
+            choices=[
+                "ocreat",
+                "oexcl",
+                "oappend",
+                "onoctty",
+                "ononblock",
+                "osync",
+                "otrunc",
+            ],
+        ),
         access_group=dict(
             type="str",
             choices=[
@@ -1393,8 +1394,8 @@ def run_module():
                 dd_dummy=dd_dummy,
             ),
         ),
-        verbose=dict(type="bool", required=False),
-        debug=dict(type="bool", required=False),
+        # verbose=dict(type="bool", required=False),
+        # debug=dict(type="bool", required=False),
     )
 
     # ---------------------------------------------------------------------------- #
@@ -1447,10 +1448,12 @@ def parse_and_validate_args(params):
         data_set_name=dict(type="data_set", required=True),
         disposition=dict(type="str", choices=["new", "shr", "mod", "old"]),
         disposition_normal=dict(
-            type="str", choices=["delete", "keep", "catalog", "uncatalog"]
+            type="str",
+            choices=["delete", "keep", "catalog", "uncatalog", "catlg", "uncatlg"],
         ),
         disposition_abnormal=dict(
-            type="str", choices=["delete", "keep", "catalog", "uncatalog"]
+            type="str",
+            choices=["delete", "keep", "catalog", "uncatalog", "catlg", "uncatlg"],
         ),
         space_type=dict(type="str", choices=["trk", "cyl", "b", "k", "m", "g"]),
         space_primary=dict(type="int"),
@@ -1588,8 +1591,8 @@ def parse_and_validate_args(params):
                 dd_dummy=dd_dummy,
             ),
         ),
-        verbose=dict(type="bool", required=False),
-        debug=dict(type="bool", required=False),
+        # verbose=dict(type="bool", required=False),
+        # debug=dict(type="bool", required=False),
     )
     parser = BetterArgParser(module_args)
     parsed_args = parser.parse_args(params)

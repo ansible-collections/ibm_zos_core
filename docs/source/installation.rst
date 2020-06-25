@@ -52,6 +52,7 @@ Here are a few examples of installing the **IBM z/OS core collection**:
    $ ansible-galaxy collection install ibm.ibm_zos_core
    $ ansible-galaxy collection install -f ibm.ibm_zos_core
    $ ansible-galaxy collection install --force ibm.ibm_zos_core
+   
 
 The collection installation progress will be output to the console. Note the
 location of the installation so that you can review other content included with

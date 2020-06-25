@@ -178,6 +178,7 @@ The value for the property **LANG** is the name of the default locale; the value
 
 The included **all.yml** sample variables file contents are:
 
+
 .. code-block:: yaml
 
    environment_vars:

@@ -75,6 +75,7 @@ def job_output(job_id=None, owner=None, job_name=None, dd_name=None):
 
 
 def _get_job_output_str(job_id="*", owner="*", job_name="*", dd_name=""):
+
     """Generate JSON output string containing Job info from SDSF.
     Writes a temporary REXX script to the USS filesystem to gather output.
 
@@ -276,6 +277,7 @@ def job_status(job_id=None, owner=None, job_name=None):
 
 
 def _get_job_status_str(job_id="*", owner="*", job_name="*"):
+
     """Generate JSON output string containing Job status info from SDSF.
     Writes a temporary REXX script to the USS filesystem to gather output.
 

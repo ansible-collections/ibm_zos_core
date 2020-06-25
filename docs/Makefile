@@ -87,3 +87,4 @@ html-all:
 %: Makefile
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 	@echo "Completed HTML text generation, run 'make view-html'"
+

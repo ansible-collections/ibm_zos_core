@@ -846,8 +846,9 @@ class PDSECopyHandler(CopyHandler):
         """
         new_src = temp_path or conv_path or src
         if src_ds_type == "USS":
-            if self.dest_exists:
-                self._delete_members(dest)
+            if self.dest_exists and Datasets.delete_members(dest + "(*)") != 0:
+                self.fail_json(msg="Unable to delete partitioned data set members")
+
             path, dirs, files = next(os.walk(new_src))
             for file in files:
                 member_name = file[:file.rfind('.')] if '.' in file else file
@@ -993,25 +994,6 @@ class PDSECopyHandler(CopyHandler):
 
         alloc_size = "{0}K".format(str(int(math.ceil(alloc_size / 1024))))
         return Datasets.create(ds_name, "PDSE", alloc_size, recfm, "", lrecl)
-
-    def _delete_members(self, data_set):
-        """Delete all members from a partitioned data set.
-
-        Arguments:
-            data_set {str} -- Name of the PDS/PDSE
-        """
-        members = Datasets.list_members(data_set + "(*)")
-        if members:
-            try:
-                for m in members.split('\n'):
-                    rc, out, err = self.run_command("mrm {0}({1})".format(data_set, m))
-                    if rc != 0:
-                        self.fail_json(
-                            msg="Unable to delete data set member {0} from {1}".format(m, data_set),
-                            rc=rc, out=out, err=err
-                        )
-            finally:
-                self.run_command("rm /tmp/mrm.*.sysprint")
 
 
 def backup_data(ds_name, ds_type, backup_file):

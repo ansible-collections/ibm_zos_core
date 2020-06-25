@@ -3,33 +3,33 @@
 ################################################################################
 
 ################################################################################
-# - The value for property BPXK_AUTOCVT must be configured to "ON",
+# - The value for the property BPXK_AUTOCVT must be configured to "ON";
 #   for example: _BPXK_AUTOCVT: "ON"
-# - The value for property ZOAU_HOME is the ZOA Utilities install root path,
+# - The value for the property ZOAU_HOME is the ZOA Utilities install root path;
 #   for example: ZOAU_HOME: "/usr/lpp/IBM/zoautil"
-# - The value for property PYTHONPATH is the ZOA Utilities Python library path,
+# - The value for the property PYTHONPATH is the ZOA Utilities Python library path;
 #   for example: PYTHONPATH: "/usr/lpp/IBM/zoautil/lib"
-# - The value for property LIBPATH is both the path to the python libraries on
+# - The value for the property LIBPATH is both the path to the Python libraries on
 #   the target and the ZOA Utilities Python library path separated by
-#   semi-colons, for example:
+#   semi-colons; for example:
 #   LIBPATH: "/usr/lpp/IBM/zoautil/lib/:/usr/lpp/IBM/cyp/v3r8/pyz/lib:/usr/lib:/lib:."
-# - The value for property PATH is the ZOA utilities BIN path and Python
+# - The value for the property PATH is the ZOA utilities BIN path and Python
 #   interpreter path, for example:
 #   PATH: "/usr/lpp/IBM/zoautil/bin:/usr/lpp/IBM/cyp/v3r8/pyz/bin:/bin"
 # - The value for the property _CEE_RUNOPTS is the invocation Language
-#   Environment® runtime options for programs and used by Python, for example,
+#   Environment® runtime options for programs and used by Python. For example,
 #   _CEE_RUNOPTS: "FILETAG(AUTOCVT,AUTOTAG) POSIX(ON)"
-# - The value for properties __TAG_REDIR_ERR, _TAG_REDIR_IN, _TAG_REDIR_OUT
-#   are txt and used the shell; for example:
+# - The value for the properties __TAG_REDIR_ERR, _TAG_REDIR_IN, _TAG_REDIR_OUT
+#   are txt and used by the shell; for example:
 #      _TAG_REDIR_ERR: "txt"
 #      _TAG_REDIR_IN: "txt"
 #      _TAG_REDIR_OUT: "txt"
 # - The value for the property LANG is the name of the default locale; value
-#   C specifies the POSIX locale, for example: ``LANG: "C"``.
-# - The bash shell is unsupported, if that is the only shell available, you will
-#   need to control how new and existing files are tagged and encoded; an
-#   example of what is needed in addition to this files environment varialbes,
-#   are both "_ENCODE_FILE_NEW" and "_ENCODE_FILE_EXISTING"; for example,
+#   C specifies the POSIX locale; for example: ``LANG: "C"``.
+# - The bash shell is unsupported. If that is the only shell available, you must
+#   control how new and existing files are tagged and encoded. An
+#   example of what is needed in addition to the files environment variables
+#   are "_ENCODE_FILE_NEW" and "_ENCODE_FILE_EXISTING"; for example,
 #      _ENCODE_FILE_NEW: "IBM-1047"
 #      _ENCODE_FILE_EXISTING: "IBM-1047"
 #   Please review the README.ZOS guide included with the ported ``bash`` shell

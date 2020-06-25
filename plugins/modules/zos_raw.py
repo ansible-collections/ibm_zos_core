@@ -1390,9 +1390,9 @@ def parse_and_validate_args(params):
         space_primary=dict(type="int"),
         space_secondary=dict(type="int"),
         volumes=dict(type=volumes),
-        sms_management_class=dict(type="str"),
-        sms_storage_class=dict(type="str"),
-        sms_data_class=dict(type="str"),
+        sms_management_class=dict(type=sms_class),
+        sms_storage_class=dict(type=sms_class),
+        sms_data_class=dict(type=sms_class),
         block_size=dict(type="int"),
         key_label=dict(type="str"),
         type=dict(
@@ -1424,8 +1424,12 @@ def parse_and_validate_args(params):
                 encoding=dict(type="str", required=True, choices=["l", "h"]),
             ),
         ),
-        key_length=dict(type="int"),
-        key_offset=dict(type="int"),
+        key_length=dict(
+            type=key_length, default=key_length_default, dependencies=["type"]
+        ),
+        key_offset=dict(
+            type=key_offset, default=key_offset_default, dependencies=["type"]
+        ),
         record_length=dict(type="int"),
         record_format=dict(type="str", choices=["u", "vb", "vba", "fb", "fba"]),
         return_content=dict(
@@ -1521,6 +1525,85 @@ def parse_and_validate_args(params):
     return parsed_args
 
 
+def key_length(contents, dependencies):
+    """Validates key length
+    Args:
+        contents (int): argument contents
+        dependencies (dict): Any dependent arguments
+
+    Returns:
+        int: provided key length
+    """
+    if contents is None:
+        return contents
+    if contents is not None and dependencies.get("type") != "ksds":
+        raise ValueError('key_length is only valid when "type=ksds".')
+    if not re.fullmatch(r"[0-9]+", str(contents)):
+        raise ValueError(
+            'Invalid argument "{0}" for type "key_length".'.format(str(contents))
+        )
+
+    return int(contents)
+
+
+def key_offset(contents, dependencies):
+    """Validates key offset
+    Args:
+        contents (int): argument contents
+        dependencies (dict): Any dependent arguments
+
+    Returns:
+        int: provided key offset
+    """
+    if contents is None:
+        return contents
+    if contents is not None and dependencies.get("type") != "ksds":
+        raise ValueError('key_offset is only valid when "type=ksds".')
+
+    if not re.fullmatch(r"[0-9]+", str(contents)):
+        raise ValueError(
+            'Invalid argument "{0}" for type "key_offset".'.format(str(contents))
+        )
+
+    return int(contents)
+
+
+def key_length_default(contents, dependencies):
+    """Determines default key length
+    Args:
+        contents (int): argument contents
+        dependencies (dict): Any dependent arguments
+
+    Returns:
+        int: default key length
+    """
+    KEY_LENGTH = 5
+    length = None
+    if contents is None and dependencies.get("type") == "ksds":
+        length = KEY_LENGTH
+    elif dependencies.get("type") == "ksds":
+        length = contents
+    return length
+
+
+def key_offset_default(contents, dependencies):
+    """Determines default key offset
+    Args:
+        contents (int): argument contents
+        dependencies (dict): Any dependent arguments
+
+    Returns:
+        int: default key offset
+    """
+    KEY_OFFSET = 0
+    offset = None
+    if contents is None and dependencies.get("type") == "ksds":
+        offset = KEY_OFFSET
+    elif dependencies.get("type") == "ksds":
+        offset = contents
+    return offset
+
+
 def dd_content(contents, dependencies):
     """Reformats dd content arguments
 
@@ -1535,6 +1618,28 @@ def dd_content(contents, dependencies):
         return None
     if isinstance(contents, list):
         return "\n".join(contents)
+    return contents
+
+
+def sms_class(contents, dependencies):
+    """Validates provided sms class is of valid length.
+
+    Args:
+        contents (str): argument contents
+        dependencies (dict): Any dependent arguments
+
+    Returns:
+        str: the sms class
+    """
+    if not contents:
+        return None
+    if len(contents) < 1 or len(contents) > 8:
+        raise ValueError(
+            (
+                "Value {0} is invalid for an SMS class argument. "
+                "SMS class must be between 1 and 8 characters."
+            ).format(contents)
+        )
     return contents
 
 

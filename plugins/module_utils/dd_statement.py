@@ -6,17 +6,10 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingImport,
     MissingZOAUImport,
 )
 
-try:
-    from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
-        DataSet,
-    )
-except ImportError:
-    DataSet = MissingImport("DataSet")
-
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import DataSet
 
 try:
     from zoautil_py import Datasets

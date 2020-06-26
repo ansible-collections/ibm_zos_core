@@ -1440,53 +1440,26 @@ EXAMPLES = r"""
           content: " LISTCAT ENTRIES('SYS1.*')"
 """
 
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingImport,
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
+    BetterArgParser,
 )
 
-try:
-    from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
-        BetterArgParser,
-    )
-except ImportError:
-    BetterArgParser = MissingImport("BetterArgParser")
 
-try:
-    from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dd_statement import (
-        DDStatement,
-        FileDefinition,
-        DatasetDefinition,
-        InputDefinition,
-        OutputDefinition,
-        DummyDefinition,
-        VIODefinition,
-    )
-except ImportError:
-    DDStatement = MissingImport("DDStatement")
-    FileDefinition = MissingImport("FileDefinition")
-    DatasetDefinition = MissingImport("DatasetDefinition")
-    InputDefinition = MissingImport("InputDefinition")
-    OutputDefinition = MissingImport("OutputDefinition")
-    DummyDefinition = MissingImport("DummyDefinition")
-    VIODefinition = MissingImport("VIODefinition")
-try:
-    from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
-        DataSet,
-    )
-except ImportError:
-    DataSet = MissingImport("DataSet")
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dd_statement import (
+    DDStatement,
+    FileDefinition,
+    DatasetDefinition,
+    InputDefinition,
+    OutputDefinition,
+    DummyDefinition,
+    VIODefinition,
+)
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import DataSet
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.zos_raw import MVSCmd
 
-try:
-    from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.zos_raw import MVSCmd
-except ImportError:
-    MVSCmd = MissingImport("MVSCmd")
-
-try:
-    from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
-        backup as zos_backup,
-    )
-except ImportError:
-    zos_backup = MissingImport("zos_backup")
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
+    backup as zos_backup,
+)
 
 from ansible.module_utils.basic import AnsibleModule
 import re

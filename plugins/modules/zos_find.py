@@ -25,7 +25,7 @@ options:
     description:
       - Select data sets whose age is equal to or greater than the specified time.
       - Use a negative age to find data sets equal to or less than the specified time.
-      - You can choose seconds, minutes, hours, days, or weeks by specifying the 
+      - You can choose seconds, minutes, hours, days, or weeks by specifying the
         first letter of any of those words (e.g., "1w").
     type: str
     required: false
@@ -69,15 +69,18 @@ options:
     required: true
   size:
     description:
-      - Select files whose size is equal to or greater than the specified size.
+      - Select data sets whose size is equal to or greater than the specified size.
       - Use a negative size to find files equal to or less than the specified size.
       - Unqualified values are in bytes but b, k, m, g, and t can be appended to 
         specify bytes, kilobytes, megabytes, gigabytes, and terabytes, respectively.
     type: str
     required: false
   use_regex:
-    - If C(true), they are python regexes.
-    - If C(false), they are file globs (shell) or data set
+    description:
+      - If C(true), patterns will be interpreted as python regex. Default is C(false).
+    type: bool
+    required: false
+    default: false
   paths:
     description:
       - List of PDS/PDSE to search. Wild-card possible.
@@ -86,23 +89,22 @@ options:
     required: false
   file_type;
     description:
-      - The type of resource to search
+      - The type of resource to search.
     choices:
       - NONVSAM
-      - CLUSTER
-      - DATA
-      - INDEX
+      - VSAM
     type: str
     required: false
     default: NONVSAM
   volume:
     description:
-      - A list of volumes to search for data sets
+      - If provided, only the data sets allocated in the specified list of volumes will be
+        searched.
     type: list
     required: false
     aliases: ['volumes']
 notes:
-  - Only cataloged data sets will searched. If an uncataloged data set needs to
+  - Only cataloged data sets will be searched. If an uncataloged data set needs to
     be searched, it should be cataloged first.
   - The M(zos_find) module currently does not support wildcards for high level qualifiers.
     For example, C(SOME.*.DATA.SET) is a valid pattern, but C(*.DATA.SET) is not. 
@@ -112,12 +114,39 @@ seealso:
 
 
 EXAMPLES = r"""
-- name: Find all data sets with HLQ 'IMS' that contain the word 'hello'
+- name: Find all data sets with HLQ 'IMS' or 'IMSTEST' that contain the word 'hello'
   zos_find:
     patterns:
       - IMS.*
+      - IMSTEST.*
     contains: hello
     age: 2d
+
+- name: Exclude data sets that have a low level qualifier 'TEST'
+  zos_find:
+    patterns: '^IMS[1-9].*'
+    contains: '^hello[a-z0-9]$'
+    excludes: '*.TEST'
+    use_regex: true
+
+- name: Find all members starting with characters 'TE' in a list of PDS
+  zos_find:
+    patterns: '^TE*'
+    paths:
+      - IMSTEST.TEST.*
+      - IMSTEST.USER.*
+      - USER.*.LIB
+    use_regex: true
+
+- name: Find all data sets greater than 2MB in size and allocated in one of the specified volumes
+  zos_find:
+    patterns: '*'
+    size: 2m
+    volumes:
+      - SCR03
+      - IMSSUN
+
+- name: Search all VSAM clusters 
 """
 
 

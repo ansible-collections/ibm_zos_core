@@ -104,7 +104,7 @@ and required by **IBM z/OS core Collection**.
    http://www.ibm.com/products/open-enterprise-python-zos
 
 .. _here:
-   ftp://public.dhe.ibm.com/systems/pythonz
+   https://www-01.ibm.com/marketing/iwm/platform/mrs/assets?source=swg-ibmoep
 
 ZOAU
 ----

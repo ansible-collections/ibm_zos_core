@@ -880,9 +880,9 @@ class BetterArgParser(object):
             RuntimeError: When cyclic dependencies are found
         """
         visited[name] = True
-        dependencies[name] = {
-            dep_name: True for dep_name in args.get(name).dependencies
-        }
+        dependencies[name] = {}
+        for dep_name in args.get(name).dependencies:
+            dependencies[name][dep_name] = True
         # TODO: fix dependency cycles
         if self._has_cycle(args):
             raise RuntimeError("Cyclic dependency found.")

@@ -1475,7 +1475,6 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dd_statement impo
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import DataSet
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.zos_raw import MVSCmd
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import encode
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     backup as zos_backup,
 )
@@ -1986,30 +1985,31 @@ def key_offset_default(contents, dependencies):
 def encoding(contents, dependencies):
     """Validates encoding arguments
 
-    Args:
-        contents (str): argument contents
-        dependencies (dict): Any dependent arguments
+      Args:
+          contents (str): argument contents
+          dependencies (dict): Any dependent arguments
 
-    Returns:
-        str: valid encoding
+    Raises:
+        ValueError: Provided encoding not found in list of valid encodings.
+        ValueError: Provided encoding had invalid characters for encoding name.
+
+      Returns:
+          str: valid encoding
     """
     encoding = None
     if contents is None:
         encoding = None
     valid_encodings = []
     if contents:
-        try:
-            encode_util = encode.EncodeUtils()
-            valid_encodings = encode_util.get_codeset() or []
-            valid_encodings = [e.lower() for e in valid_encodings]
+        valid_encodings = get_valid_encodings()
+        if valid_encodings:
             if contents.lower() not in valid_encodings:
                 raise ValueError(
                     'Provided encoding "{0}" is not valid. Valid encodings are: {1}.'.format(
                         contents, ", ".join(valid_encodings)
                     )
                 )
-            encoding = contents
-        except (encode.EncodeError, ValueError):
+        else:
             # if can't get list of encodings perform basic check for bad characters
             if not re.fullmatch(r"^[A-Z0-9-]{2,}$", str(contents), re.IGNORECASE):
                 raise ValueError(
@@ -2017,8 +2017,28 @@ def encoding(contents, dependencies):
                         contents, ", ".join(valid_encodings)
                     )
                 )
-            encoding = contents
+        encoding = contents
     return encoding
+
+
+def get_valid_encodings():
+    """Retrieve all valid encodings from the system
+
+    Returns:
+        list[str]: list of all valid encodings on the system
+    """
+    module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+    valid_encodings = []
+    rc, stdout, stderr = module.run_command("iconv -l")
+    if rc or stderr:
+        return valid_encodings
+    if stdout:
+        # ignores first line of output which will be "Character sets:""
+        stdout_lines = [line.lower() for line in stdout.split("\n")[1:]]
+        for line in stdout_lines:
+            encodings_from_line = line.split()
+            valid_encodings += encodings_from_line
+    return valid_encodings
 
 
 def dd_content(contents, dependencies):

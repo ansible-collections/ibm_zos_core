@@ -13,6 +13,19 @@ import pytest
 IMPORT_NAME = "ibm_zos_core.plugins.modules.zos_raw"
 
 
+class DummyModule(object):
+    """Used in place of Ansible's module 
+    so we can easily mock the desired behavior."""
+
+    def __init__(self, rc=0, stdout="", stderr=""):
+        self.rc = rc
+        self.stdout = stdout
+        self.stderr = stderr
+
+    def run_command(self, *args, **kwargs):
+        return (self.rc, self.stdout, self.stderr)
+
+
 @pytest.mark.parametrize(
     (
         "data_set_name,"
@@ -146,6 +159,11 @@ def test_argument_parsing_data_set(
 ):
     mocker, importer = zos_import_mocker
     raw = importer(IMPORT_NAME)
+    mocker.patch(
+        "{0}.AnsibleModule".format(IMPORT_NAME),
+        create=True,
+        return_value=DummyModule(),
+    )
     valid_args = {
         "program_name": "idcams",
         "auth": True,
@@ -170,11 +188,7 @@ def test_argument_parsing_data_set(
                     "encryption_key_1": encryption_key_1,
                     "encryption_key_2": encryption_key_2,
                     "record_format": record_format,
-                    "return_content": {
-                        "type": "text",
-                        "src_encoding": "iso8859-1",
-                        "response_encoding": "ibm-1047",
-                    },
+                    "return_content": {"type": "text",},
                     "reuse": False,
                     "replace": False,
                     "backup": False,
@@ -245,6 +259,11 @@ def test_argument_parsing_unix(
 ):
     mocker, importer = zos_import_mocker
     raw = importer(IMPORT_NAME)
+    mocker.patch(
+        "{0}.AnsibleModule".format(IMPORT_NAME),
+        create=True,
+        return_value=DummyModule(),
+    )
     valid_args = {
         "program_name": "idcams",
         "auth": True,
@@ -262,11 +281,7 @@ def test_argument_parsing_unix(
                     "record_format": record_format,
                     "access_group": access_group,
                     "status_group": status_group,
-                    "return_content": {
-                        "type": "text",
-                        "src_encoding": "ibm-1047",
-                        "response_encoding": "iso8859-1",
-                    },
+                    "return_content": {"type": "text",},
                 }
             },
         ],
@@ -413,6 +428,11 @@ def test_argument_parsing_data_set_failure_path(
 ):
     mocker, importer = zos_import_mocker
     raw = importer(IMPORT_NAME)
+    mocker.patch(
+        "{0}.AnsibleModule".format(IMPORT_NAME),
+        create=True,
+        return_value=DummyModule(),
+    )
     valid_args = {
         "program_name": "idcams",
         "auth": True,
@@ -437,11 +457,7 @@ def test_argument_parsing_data_set_failure_path(
                     "encryption_key_1": encryption_key_1,
                     "encryption_key_2": encryption_key_2,
                     "record_format": record_format,
-                    "return_content": {
-                        "type": "text",
-                        "src_encoding": "iso8859-1",
-                        "response_encoding": "ibm-1047",
-                    },
+                    "return_content": {"type": "text",},
                     "reuse": False,
                     "replace": False,
                     "backup": False,
@@ -517,6 +533,16 @@ def test_argument_parsing_unix_failure_path(
 ):
     mocker, importer = zos_import_mocker
     raw = importer(IMPORT_NAME)
+    mocker.patch(
+        "ansible.module_utils.basic.AnsibleModule.run_command",
+        create=True,
+        return_value=DummyModule(),
+    )
+    mocker.patch(
+        "ansible.module_utils.basic.AnsibleModule.__init__",
+        create=True,
+        return_value=None,
+    )
     valid_args = {
         "program_name": "idcams",
         "auth": True,
@@ -534,11 +560,7 @@ def test_argument_parsing_unix_failure_path(
                     "record_format": record_format,
                     "access_group": access_group,
                     "status_group": status_group,
-                    "return_content": {
-                        "type": "text",
-                        "src_encoding": "ibm-1047",
-                        "response_encoding": "iso8859-1",
-                    },
+                    "return_content": {"type": "text",},
                 }
             },
         ],
@@ -550,6 +572,11 @@ def test_argument_parsing_unix_failure_path(
 def test_ksds_defaults(zos_import_mocker,):
     mocker, importer = zos_import_mocker
     raw = importer(IMPORT_NAME)
+    mocker.patch(
+        "{0}.AnsibleModule".format(IMPORT_NAME),
+        create=True,
+        return_value=DummyModule(),
+    )
     valid_args = {
         "program_name": "idcams",
         "auth": True,
@@ -586,6 +613,11 @@ def test_ksds_defaults(zos_import_mocker,):
 def test_ksds_exception_key_length(zos_import_mocker,):
     mocker, importer = zos_import_mocker
     raw = importer(IMPORT_NAME)
+    mocker.patch(
+        "{0}.AnsibleModule".format(IMPORT_NAME),
+        create=True,
+        return_value=DummyModule(),
+    )
     valid_args = {
         "program_name": "idcams",
         "auth": True,
@@ -609,6 +641,11 @@ def test_ksds_exception_key_length(zos_import_mocker,):
 def test_ksds_exception_key_offset(zos_import_mocker,):
     mocker, importer = zos_import_mocker
     raw = importer(IMPORT_NAME)
+    mocker.patch(
+        "{0}.AnsibleModule".format(IMPORT_NAME),
+        create=True,
+        return_value=DummyModule(),
+    )
     valid_args = {
         "program_name": "idcams",
         "auth": True,

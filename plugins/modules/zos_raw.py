@@ -1372,6 +1372,24 @@ EXAMPLES = r"""
           dd_name: sysin
           content: " LISTCAT ENTRIES('SOME.DATASET.*')"
 
+- name: List data sets matching pattern in catalog,
+    return output to user, but don't store in persistent storage.
+    Return the contents of the file in encoding IBM-1047,
+    while the file is encoded in ISO8859-1.
+  zos_raw:
+    program_name: idcams
+    auth: true
+    dds:
+      - dd_output:
+          dd_name: sysprint
+          return_content:
+            type: text
+            src_encoding: iso8859-1
+            response_encoding: ibm-1047
+      - dd_input:
+          dd_name: sysin
+          content: " LISTCAT ENTRIES('SOME.DATASET.*')"
+
 - name: Take a set of data sets and write them to an archive.
   zos_raw:
     program_name: adrdssu

@@ -532,6 +532,7 @@ class StdinDefinition(DataDefinition):
             record_length (int, optional): The length, in bytes, of each record in the data set.
                     Defaults to 80.
         """
+        self.name = None
         name = DataSet.create_temp(
             record_format=record_format,
             space_primary=space_primary,
@@ -545,7 +546,8 @@ class StdinDefinition(DataDefinition):
         DataSet.write(name, content)
 
     def __del__(self):
-        DataSet.delete(self.name)
+        if self.name:
+            DataSet.delete(self.name)
 
     def _build_arg_string(self):
         """Build a string representing the arguments of this particular data type

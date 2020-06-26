@@ -1017,23 +1017,21 @@ def run_module():
 
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
 
-    if module.check_mode:
+    if not module.check_mode:
+        try:
+            params = parse_and_validate_args(module.params)
+            data_set_param_list = get_individual_data_set_parameters(params)
+
+            for data_set_params in data_set_param_list:
+                # remove unnecessary empty batch argument
+                result["changed"] = perform_data_set_operations(
+                    **data_set_params
+                ) or result.get("changed", False)
+        except Exception as e:
+            module.fail_json(msg=repr(e), **result)
+    else:
         if module.params.get("replace"):
             result["changed"] = True
-        return result
-
-    try:
-        params = parse_and_validate_args(module.params)
-        data_set_param_list = get_individual_data_set_parameters(params)
-
-        for data_set_params in data_set_param_list:
-            # remove unnecessary empty batch argument
-            result["changed"] = perform_data_set_operations(
-                **data_set_params
-            ) or result.get("changed", False)
-    except Exception as e:
-        module.fail_json(msg=repr(e), **result)
-
     module.exit_json(**result)
 
 

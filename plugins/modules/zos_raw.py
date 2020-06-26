@@ -1695,30 +1695,32 @@ def run_module():
     response = {}
     dd_statements = []
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
-    try:
-        parms = parse_and_validate_args(module.params)
-        dd_statements = build_dd_statements(parms)
-        program = parms.get("program_name")
-        program_parm = parms.get("parm")
-        authorized = parms.get("auth")
-        program_response = run_zos_program(
-            program=program,
-            parm=program_parm,
-            dd_statements=dd_statements,
-            authorized=authorized,
-        )
-        if program_response.rc != 0 and program_response.stderr:
-            raise ZOSRawError(program, program_response.stderr)
+    if not module.check_mode:
+        try:
+            parms = parse_and_validate_args(module.params)
+            dd_statements = build_dd_statements(parms)
+            program = parms.get("program_name")
+            program_parm = parms.get("parm")
+            authorized = parms.get("auth")
+            program_response = run_zos_program(
+                program=program,
+                parm=program_parm,
+                dd_statements=dd_statements,
+                authorized=authorized,
+            )
+            if program_response.rc != 0 and program_response.stderr:
+                raise ZOSRawError(program, program_response.stderr)
 
-        response = build_response(program_response.rc, dd_statements)
-
-    except Exception as e:
-        result["backups"] = backups
-        module.fail_json(msg=repr(e), **result)
-
-    result["changed"] = True
+            response = build_response(program_response.rc, dd_statements)
+            result["changed"] = True
+        except Exception as e:
+            result["backups"] = backups
+            module.fail_json(msg=repr(e), **result)
+    else:
+        result = dict(changed=True, dd_names=[], ret_code=dict(code=0))
     to_return = {**result, **response}
     module.exit_json(**to_return)
+
     # ---------------------------------------------------------------------------- #
 
 

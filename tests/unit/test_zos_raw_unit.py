@@ -14,7 +14,7 @@ IMPORT_NAME = "ibm_zos_core.plugins.modules.zos_raw"
 
 
 class DummyModule(object):
-    """Used in place of Ansible's module 
+    """Used in place of Ansible's module
     so we can easily mock the desired behavior."""
 
     def __init__(self, rc=0, stdout="", stderr=""):
@@ -188,7 +188,7 @@ def test_argument_parsing_data_set(
                     "encryption_key_1": encryption_key_1,
                     "encryption_key_2": encryption_key_2,
                     "record_format": record_format,
-                    "return_content": {"type": "text",},
+                    "return_content": {"type": "text"},
                     "reuse": False,
                     "replace": False,
                     "backup": False,
@@ -281,7 +281,7 @@ def test_argument_parsing_unix(
                     "record_format": record_format,
                     "access_group": access_group,
                     "status_group": status_group,
-                    "return_content": {"type": "text",},
+                    "return_content": {"type": "text"},
                 }
             },
         ],
@@ -457,7 +457,7 @@ def test_argument_parsing_data_set_failure_path(
                     "encryption_key_1": encryption_key_1,
                     "encryption_key_2": encryption_key_2,
                     "record_format": record_format,
-                    "return_content": {"type": "text",},
+                    "return_content": {"type": "text"},
                     "reuse": False,
                     "replace": False,
                     "backup": False,
@@ -560,7 +560,7 @@ def test_argument_parsing_unix_failure_path(
                     "record_format": record_format,
                     "access_group": access_group,
                     "status_group": status_group,
-                    "return_content": {"type": "text",},
+                    "return_content": {"type": "text"},
                 }
             },
         ],

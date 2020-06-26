@@ -37,7 +37,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Releases" href="release_notes.html" />
-    <link rel="prev" title="Contributing" href="community_guides.html" /> 
+    <link rel="prev" title="Features" href="community_guides_docs/better_arg_parser.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -97,6 +97,7 @@
 <p class="caption"><span class="caption-text">Community guides</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="community_guides.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="community_guides.html#development">Development</a></li>
 <li class="toctree-l1"><a class="reference internal" href="community_guides.html#helpful-links">Helpful Links</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Requirements</span></p>
@@ -164,7 +165,7 @@
         
             
             
-              <a href="https://github.com/ansible-collections/ibm_zos_core/blob/v1.1.0-beta1/docs/source/requirements.rst" class="fa fa-github"> Edit on GitHub</a>
+              <a href="https://github.com/ansible-collections/ibm_zos_core/blob/v1.1.0/docs/source/requirements.rst" class="fa fa-github"> Edit on GitHub</a>
             
           
         
@@ -204,9 +205,10 @@ enabled.</p>
 <div class="section" id="managed-node">
 <h2>Managed node<a class="headerlink" href="#managed-node" title="Permalink to this headline">¶</a></h2>
 <ul>
-<li><p><a class="reference external" href="requirements.html#id1">Python on z/OS</a>: 3.6 or later</p></li>
-<li><p><a class="reference external" href="https://www.ibm.com/support/knowledgecenter/SSLTBW_2.2.0/com.ibm.zos.v2r2/zos-v2r2-home.html">z/OS</a>: V02.02.00 or later</p></li>
-<li><p><a class="reference external" href="requirements.html#id1">IBM Z Open Automation Utilities</a> (ZOAU)</p>
+<li><p><a class="reference external" href="http://www.ibm.com/products/open-enterprise-python-zos">IBM Open Enterprise Python for z/OS</a></p></li>
+<li><p>z/OS <a class="reference external" href="https://www.ibm.com/support/knowledgecenter/SSLTBW_2.3.0/com.ibm.zos.v2r3/en/homepage.html">V2R3</a> or <a class="reference external" href="https://www.ibm.com/support/knowledgecenter/SSLTBW">later</a></p></li>
+<li><p><a class="reference external" href="requirements.html#id1">IBM Z Open Automation Utilities</a> (ZOAU)</p></li>
+<li><p>The z/OS® shell</p>
 <blockquote>
 <div><ul class="simple">
 <li><p>IBM z/OS core collections are dependent on specific versions of ZOAU.
@@ -217,23 +219,42 @@ For information about the required version of ZOAU, review the
 </li>
 <li><p><a class="reference external" href="https://www.ibm.com/support/knowledgecenter/SSLTBW_2.2.0/com.ibm.zos.v2r2.e0za100/ch1openssh.htm">z/OS OpenSSH</a></p></li>
 </ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Currently, the only supported shell is the <code class="docutils literal notranslate"><span class="pre">z/OS®</span> <span class="pre">shell</span></code>; this is because
+shells such as <code class="docutils literal notranslate"><span class="pre">bash</span></code> handle the reading and writing of untagged files
+differently. <code class="docutils literal notranslate"><span class="pre">bash</span></code> added enhanced ASCII support in 4.3 and thus differs
+from 4.2; we encourage users avoid using <code class="docutils literal notranslate"><span class="pre">ansible_shell_executable</span></code> to
+change the default shell as does <a class="reference external" href="https://docs.ansible.com/ansible/2.7/user_guide/intro_inventory.html">Ansible documentation</a>. Should the
+<code class="docutils literal notranslate"><span class="pre">bash</span></code> shell be the only shell available, you will need to control how
+new and existing files are tagged and encoded, this can be controlled by
+setting both “_ENCODE_FILE_NEW” and “_ENCODE_FILE_EXISTING”; for example,</p>
+<ul class="simple">
+<li><p>_ENCODE_FILE_NEW: “IBM-1047”</p></li>
+<li><p>_ENCODE_FILE_EXISTING: “IBM-1047”</p></li>
+</ul>
+<p>Please review the README.ZOS guide included with the ported <code class="docutils literal notranslate"><span class="pre">bash</span></code> shell
+for further configurations.</p>
+</div>
 </div>
 <div class="section" id="id1">
 <h2>Python on z/OS<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
-<p>If the Ansible target is z/OS, you must install a Python distribution ported
-for this platform. Rocket Software is currently the preferred version for z/OS.</p>
+<p>If the Ansible target is z/OS, you must install
+<strong>IBM Open Enterprise Python for z/OS</strong> which is ported for the z/OS platform
+and required by <strong>IBM z/OS core Collection</strong>.</p>
 <p><strong>Installation</strong></p>
 <ul class="simple">
-<li><p>Visit the <a class="reference external" href="https://www.rocketsoftware.com/zos-open-source">Rocket Software homepage</a> and create a required account in the
-<a class="reference external" href="https://my.rocketsoftware.com/">Rocket Customer Portal</a>.</p></li>
-<li><p>Click Downloads on the top left portion the page.</p></li>
-<li><p>Select the category z/OpenSource on the left panel.</p></li>
-<li><p>Scroll and select Python.</p></li>
-<li><p>Download the binaries, installation files, and the README.ZOS onto an x86
-machine.</p></li>
-<li><p>Transfer the zipped tarball (tar.gz) file to the target z/OS system and
-extract it according to the instructions in the installation files.</p></li>
-<li><p>Follow the additional setup instructions as described in the README.ZOS file.</p></li>
+<li><p>Visit the <a class="reference external" href="http://www.ibm.com/products/open-enterprise-python-zos">IBM Open Enterprise Python for z/OS</a> product page for FMID,
+program directory, fix list, latest PTF, installation and configuration
+instructions.</p></li>
+<li><p>For reference, the Program IDs are:</p>
+<ul>
+<li><p>5655-PYT for the base product</p></li>
+<li><p>5655-PYS for service and support</p></li>
+</ul>
+</li>
+<li><p>Optionally download <strong>IBM Open Enterprise Python for z/OS</strong>, <a class="reference external" href="https://www-01.ibm.com/marketing/iwm/platform/mrs/assets?source=swg-ibmoep">here</a></p></li>
+<li><p>For the Python supported version, refer to the <a class="reference external" href="release_notes.html">release notes</a>.</p></li>
 </ul>
 </div>
 <div class="section" id="zoau">
@@ -244,8 +265,15 @@ IDCAMS, and IKJEFT01, as well as perform a number of data set operations
 in the scripting language of your choice.</p>
 <p><strong>Installation</strong></p>
 <ul class="simple">
-<li><p>For the ZOAU FMID, program directory, fix list, latest PTF, installation
-and configuration instructions, refer to the ZOAU <a class="reference external" href="https://www.ibm.com/support/knowledgecenter/en/SSKFYE_1.0.0/welcome_zoautil.html">product page</a>.</p></li>
+<li><p>Visit the <a class="reference external" href="https://www.ibm.com/support/knowledgecenter/en/SSKFYE">ZOAU</a> product page for the FMID, program directory, fix list,
+latest PTF, installation and configuration instructions.</p></li>
+<li><p>For reference, the Program IDs are:</p>
+<ul>
+<li><p>5698-PA1 for the base product</p></li>
+<li><p>5698-PAS for service and support</p></li>
+</ul>
+</li>
+<li><p>For ZOAU supported version, refer to the <a class="reference external" href="release_notes.html">release notes</a>.</p></li>
 </ul>
 </div>
 </div>
@@ -261,7 +289,7 @@ and configuration instructions, refer to the ZOAU <a class="reference external" 
         <a href="release_notes.html" class="btn btn-neutral float-right" title="Releases" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="community_guides.html" class="btn btn-neutral float-left" title="Contributing" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="community_guides_docs/better_arg_parser.html" class="btn btn-neutral float-left" title="Features" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -288,12 +316,13 @@ and configuration instructions, refer to the ZOAU <a class="reference external" 
 <div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
     <span class="rst-current-version" data-toggle="rst-current-version">
         <span class="fa fa-book"> Other Versions</span>
-        v: v1.1.0-beta1
+        v: v1.1.0
         <span class="fa fa-caret-down"></span>
     </span>
     <div class="rst-other-versions">
         <dl>
             <dt>Tags</dt>
+            <dd><a href="v1.1.0/requirements.html">v1.1.0</a></dd>
             <dd><a href="v1.1.0-beta1/requirements.html">v1.1.0-beta1</a></dd>
             <dd><a href="v1.0.0/requirements.html">v1.0.0</a></dd>
         </dl>

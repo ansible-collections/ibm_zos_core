@@ -104,6 +104,7 @@
 <p class="caption"><span class="caption-text">Community guides</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="community_guides.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="community_guides.html#development">Development</a></li>
 <li class="toctree-l1"><a class="reference internal" href="community_guides.html#helpful-links">Helpful Links</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Requirements</span></p>
@@ -165,7 +166,7 @@
         
             
             
-              <a href="https://github.com/ansible-collections/ibm_zos_core/blob/v1.1.0-beta1/docs/source/playbooks.rst" class="fa fa-github"> Edit on GitHub</a>
+              <a href="https://github.com/ansible-collections/ibm_zos_core/blob/v1.1.0/docs/source/playbooks.rst" class="fa fa-github"> Edit on GitHub</a>
             
           
         
@@ -212,8 +213,19 @@ Ansible <a class="reference external" href="https://docs.ansible.com/ansible/lat
 <p>The Ansible configuration file <cite>ansible.cfg</cite> can override almost all
 <code class="docutils literal notranslate"><span class="pre">ansible-playbook</span></code> configurations. Included in the <a class="reference external" href="https://github.com/ansible-collections/ibm_zos_core/tree/master/playbooks">playbooks directory</a> is a
 sample <a class="reference external" href="https://github.com/ansible-collections/ibm_zos_core/blob/master/playbooks/ansible.cfg">ansible.cfg</a> that can supplement <code class="docutils literal notranslate"><span class="pre">ansible-playbook</span></code> with a
-little modification. In the sample <a class="reference external" href="https://github.com/ansible-collections/ibm_zos_core/blob/master/playbooks/ansible.cfg">ansible.cfg</a>, the only required
-configuration is <code class="docutils literal notranslate"><span class="pre">pipelining</span> <span class="pre">=</span> <span class="pre">True</span></code></p>
+little modification.</p>
+<p>In the <a class="reference external" href="https://github.com/ansible-collections/ibm_zos_core/blob/master/playbooks/ansible.cfg">ansible.cfg</a>, the only required configuration is <code class="docutils literal notranslate"><span class="pre">pipelining</span> <span class="pre">=</span> <span class="pre">True</span></code>.
+Setting the <code class="docutils literal notranslate"><span class="pre">pipelining</span> <span class="pre">=</span> <span class="pre">True</span></code> is <strong>required</strong> because it overrides the
+default behavior which is to transfer Ansible modules to the target in binary
+via SFTP, however this will fail with the error:</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>SyntaxError: Non-UTF-8 code starting with ‘x83’ in file
+/a/user1/.ansible/tmp/ansible-tmp-1548232945.35-274513842609025/
+AnsiballZ_stat.py on line 1, but no encoding declared;
+see <a class="reference external" href="https://python.org/dev/peps/pep-0263/">https://python.org/dev/peps/pep-0263/</a> for details</p>
+</div>
+<p>Setting <code class="docutils literal notranslate"><span class="pre">pipelining</span> <span class="pre">=</span> <span class="pre">True</span></code> in <a class="reference external" href="https://github.com/ansible-collections/ibm_zos_core/blob/master/playbooks/ansible.cfg">ansible.cfg</a> will prevent this error.</p>
 <p>You can specify the SSH port used by Ansible and instruct Ansible where to
 write the temporary files on the target. This can be easily done by adding the
 options to your inventory or <cite>ansible.cfg</cite>.</p>
@@ -265,33 +277,73 @@ to set the port for a host can be reviewed in the
 and group variables files may help you organize your variable values more
 easily. Included with the sample playbook is a sample variables
 file <a class="reference external" href="https://github.com/ansible-collections/ibm_zos_core/blob/master/playbooks/group_vars/all.yml">all.yml</a>.</p>
-<p>The value for the property <strong>BPXK_AUTOCVT</strong> must be configured to <code class="docutils literal notranslate"><span class="pre">ON</span></code>.</p>
+<p>The value for the property <strong>_BPXK_AUTOCVT</strong> must be configured to <code class="docutils literal notranslate"><span class="pre">ON</span></code>, for
+example; <code class="docutils literal notranslate"><span class="pre">_BPXK_AUTOCVT:</span> <span class="pre">&quot;ON&quot;</span></code>.</p>
 <p>The value for the property <strong>ZOAU_HOME</strong> is the ZOA Utilities install root path;
-for example, <code class="docutils literal notranslate"><span class="pre">/usr/lpp/IBM/zoautil</span></code>.</p>
+for example, <code class="docutils literal notranslate"><span class="pre">ZOAU_HOME:</span> <span class="pre">&quot;/usr/lpp/IBM/zoautil&quot;</span></code>.</p>
 <p>The value for the property <strong>PYTHONPATH</strong> is the ZOA Utilities Python library
-path; for example, <code class="docutils literal notranslate"><span class="pre">/usr/lpp/IBM/zoautil/lib/</span></code>.</p>
-<p>The value for the property <strong>LIBPATH</strong> is both the path to the Python libraries
-on the target and the ZOA Utilities Python library path separated by
-colons <code class="docutils literal notranslate"><span class="pre">:</span></code>; for example,
-<code class="docutils literal notranslate"><span class="pre">/usr/lpp/IBM/zoautil/lib/:/usr/lpp/rsusr/python36/lib:/lib:/usr/lib:.</span></code>.</p>
-<p>The value for the property <strong>PATH</strong> is the ZOA utilities BIN path and the Python
-interpreter path; for example,
-<code class="docutils literal notranslate"><span class="pre">/usr/lpp/IBM/zoautil/bin:/usr/lpp/rsusr/python36/bin/python:/bin</span></code>.</p>
+path; for example, <code class="docutils literal notranslate"><span class="pre">PYTHONPATH:</span> <span class="pre">&quot;/usr/lpp/IBM/zoautil/lib/&quot;</span></code>.</p>
+<p>The value for the property <strong>LIBPATH</strong> is both the path to the
+<strong>Python libraries</strong> on the target and the <strong>ZOA Utilities Python library</strong>
+path separated by colons <code class="docutils literal notranslate"><span class="pre">:</span></code>; for example,
+<code class="docutils literal notranslate"><span class="pre">LIBPATH:</span> <span class="pre">&quot;/usr/lpp/IBM/zoautil/lib/:/usr/lpp/IBM/cyp/v3r8/pyz/lib:/lib:/usr/lib:.&quot;</span></code>.</p>
+<p>The value for the property <strong>PATH</strong> is the <strong>ZOA utilities BIN path</strong> and the
+<strong>Python BIN path</strong>; for example,
+<code class="docutils literal notranslate"><span class="pre">PATH:</span> <span class="pre">&quot;/usr/lpp/IBM/zoautil/bin:/usr/lpp/IBM/cyp/v3r8/pyz/bin:/bin&quot;</span></code>.</p>
+<p>The value for the property <strong>_CEE_RUNOPTS</strong> is the invocation Language
+Environment® runtime options for programs and used by Python; for example;
+<code class="docutils literal notranslate"><span class="pre">_CEE_RUNOPTS:</span> <span class="pre">&quot;FILETAG(AUTOCVT,AUTOTAG)</span> <span class="pre">POSIX(ON)&quot;</span></code>.</p>
+<p>The value for properties <strong>__TAG_REDIR_ERR</strong>, <strong>_TAG_REDIR_IN</strong>,
+<strong>_TAG_REDIR_OUT</strong> are <code class="docutils literal notranslate"><span class="pre">txt</span></code> and used by the shell; for example,</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>_TAG_REDIR_ERR: <span class="s2">&quot;txt&quot;</span>
+_TAG_REDIR_IN: <span class="s2">&quot;txt&quot;</span>
+_TAG_REDIR_OUT: <span class="s2">&quot;txt&quot;</span>
+</pre></div>
+</div>
+<p>The value for the property <strong>LANG</strong> is the name of the default locale; the value
+<strong>C</strong> specifies the POSIX locale. For example, <code class="docutils literal notranslate"><span class="pre">LANG:</span> <span class="pre">&quot;C&quot;</span></code>.</p>
+<p>The included <strong>all.yml</strong> sample variables file contents are:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">environment_vars</span><span class="p">:</span>
-   <span class="nt">_BPXK_AUTOCVT</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ON</span>
-   <span class="nt">ZOAU_HOME</span><span class="p">:</span> <span class="s">&#39;/usr/lpp/IBM/zoautil&#39;</span>
-   <span class="nt">PYTHONPATH</span><span class="p">:</span> <span class="s">&#39;/usr/lpp/IBM/zoautil/lib&#39;</span>
-   <span class="nt">LIBPATH</span><span class="p">:</span> <span class="s">&#39;/usr/lpp/IBM/zoautil/lib/:/usr/lpp/rsusr/python36/lib:/usr/lib:/lib:.&#39;</span>
-   <span class="nt">PATH</span><span class="p">:</span> <span class="s">&#39;/usr/lpp/IBM/zoautil/bin:/usr/lpp/rsusr/python36/bin/python:/bin&#39;</span>
+  <span class="nt">_BPXK_AUTOCVT</span><span class="p">:</span> <span class="s">&quot;ON&quot;</span>
+  <span class="nt">ZOAU_HOME</span><span class="p">:</span> <span class="s">&quot;/usr/lpp/IBM/zoautil&quot;</span>
+  <span class="nt">PYTHONPATH</span><span class="p">:</span> <span class="s">&quot;/usr/lpp/IBM/zoautil/lib&quot;</span>
+  <span class="nt">LIBPATH</span><span class="p">:</span> <span class="s">&quot;/usr/lpp/IBM/zoautil/lib/:/usr/lpp/IBM/cyp/v3r8/pyz/lib:/usr/lib:/lib:.&quot;</span>
+  <span class="nt">PATH</span><span class="p">:</span> <span class="s">&quot;/usr/lpp/IBM/zoautil/bin:/usr/lpp/IBM/cyp/v3r8/pyz/bin:/bin&quot;</span>
+  <span class="nt">_CEE_RUNOPTS</span><span class="p">:</span> <span class="s">&quot;FILETAG(AUTOCVT,AUTOTAG)</span><span class="nv"> </span><span class="s">POSIX(ON)&quot;</span>
+  <span class="nt">_TAG_REDIR_ERR</span><span class="p">:</span> <span class="s">&quot;txt&quot;</span>
+  <span class="nt">_TAG_REDIR_IN</span><span class="p">:</span> <span class="s">&quot;txt&quot;</span>
+  <span class="nt">_TAG_REDIR_OUT</span><span class="p">:</span> <span class="s">&quot;txt&quot;</span>
+  <span class="nt">LANG</span><span class="p">:</span> <span class="s">&quot;C&quot;</span>
 </pre></div>
 </div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>In ZOAU 1.0.2 and later, the property <strong>ZOAU_ROOT</strong> is no longer supported
-and can be replaced with the property <strong>ZOAU_HOME</strong>. If you are using ZOAU
+and must be replaced with the property <strong>ZOAU_HOME</strong>. If you are using ZOAU
 version 1.0.1 or lower, you must continue to use the property
 <strong>ZOAU_ROOT</strong> which is the ZOA Utilities install root path required for
 ZOAU; for example, <code class="docutils literal notranslate"><span class="pre">/usr/lpp/IBM/zoautil</span></code>.</p>
+</div>
+<p>A reusable approach to storing your group variables is to create top level
+dependency variables and rely on variable expansion to substitute the values.
+This is preferred, because it tends to reduce misconfiguration when copying
+dependency paths. In this example, the top level dependency variables <code class="docutils literal notranslate"><span class="pre">PYZ</span></code>
+for Python and <code class="docutils literal notranslate"><span class="pre">ZOAU</span></code> have been added and used through the configuration.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">PYZ</span><span class="p">:</span> <span class="s">&quot;/u/oeusr01/python/pyz_3_8_2/usr/lpp/IBM/cyp/v3r8/pyz&quot;</span>
+<span class="nt">ZOAU</span><span class="p">:</span> <span class="s">&quot;/usr/lpp/IBM/zoautil&quot;</span>
+
+<span class="nt">environment_vars</span><span class="p">:</span>
+  <span class="nt">_BPXK_AUTOCVT</span><span class="p">:</span> <span class="s">&quot;ON&quot;</span>
+  <span class="nt">ZOAU_HOME</span><span class="p">:</span> <span class="s">&quot;{{</span><span class="nv"> </span><span class="s">ZOAU</span><span class="nv"> </span><span class="s">}}&quot;</span>
+  <span class="nt">PYTHONPATH</span><span class="p">:</span> <span class="s">&quot;{{</span><span class="nv"> </span><span class="s">ZOAU_HOME</span><span class="nv"> </span><span class="s">}}/lib&quot;</span>
+  <span class="nt">LIBPATH</span><span class="p">:</span> <span class="s">&quot;{{</span><span class="nv"> </span><span class="s">ZOAU_HOME</span><span class="nv"> </span><span class="s">}}/lib:{{</span><span class="nv"> </span><span class="s">PYZ</span><span class="nv"> </span><span class="s">}}/lib:/lib:/usr/lib:.&quot;</span>
+  <span class="nt">PATH</span><span class="p">:</span> <span class="s">&quot;{{</span><span class="nv"> </span><span class="s">ZOAU_HOME</span><span class="nv"> </span><span class="s">}}/bin:{{</span><span class="nv"> </span><span class="s">PYZ</span><span class="nv"> </span><span class="s">}}/bin:/bin:/var/bin:/usr/lpp/java/J8.0/bin&quot;</span>
+  <span class="nt">_CEE_RUNOPTS</span><span class="p">:</span> <span class="s">&quot;FILETAG(AUTOCVT,AUTOTAG)</span><span class="nv"> </span><span class="s">POSIX(ON)&quot;</span>
+  <span class="nt">_TAG_REDIR_ERR</span><span class="p">:</span> <span class="s">&quot;txt&quot;</span>
+  <span class="nt">_TAG_REDIR_IN</span><span class="p">:</span> <span class="s">&quot;txt&quot;</span>
+  <span class="nt">_TAG_REDIR_OUT</span><span class="p">:</span> <span class="s">&quot;txt&quot;</span>
+  <span class="nt">LANG</span><span class="p">:</span> <span class="s">&quot;C&quot;</span>
+</pre></div>
 </div>
 </div>
 <div class="section" id="run-the-playbook">
@@ -380,12 +432,13 @@ see the JCL notes section included in the collection.</p>
 <div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
     <span class="rst-current-version" data-toggle="rst-current-version">
         <span class="fa fa-book"> Other Versions</span>
-        v: v1.1.0-beta1
+        v: v1.1.0
         <span class="fa fa-caret-down"></span>
     </span>
     <div class="rst-other-versions">
         <dl>
             <dt>Tags</dt>
+            <dd><a href="v1.1.0/playbooks.html">v1.1.0</a></dd>
             <dd><a href="v1.1.0-beta1/playbooks.html">v1.1.0-beta1</a></dd>
             <dd><a href="v1.0.0/playbooks.html">v1.0.0</a></dd>
         </dl>

@@ -36,7 +36,7 @@
   <link rel="stylesheet" href="../_static/banner.css" type="text/css" />
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="zos_tso_command – Execute TSO commands" href="zos_tso_command.html" />
+    <link rel="next" title="zos_ping – Ping z/OS and check dependencies." href="zos_ping.html" />
     <link rel="prev" title="zos_operator – Execute operator command" href="zos_operator.html" /> 
 </head>
 
@@ -106,6 +106,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#return-values">Return Values</a></li>
 </ul>
 </li>
+<li class="toctree-l3"><a class="reference internal" href="zos_ping.html">zos_ping – Ping z/OS and check dependencies.</a></li>
 <li class="toctree-l3"><a class="reference internal" href="zos_tso_command.html">zos_tso_command – Execute TSO commands</a></li>
 </ul>
 </li>
@@ -118,6 +119,7 @@
 <p class="caption"><span class="caption-text">Community guides</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../community_guides.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../community_guides.html#development">Development</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../community_guides.html#helpful-links">Helpful Links</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Requirements</span></p>
@@ -290,8 +292,6 @@
 </div>
 <div class="line-block">
 <div class="line"><strong>returned</strong>: always</div>
-</div>
-<div class="line-block">
 <div class="line"><strong>type</strong>: bool</div>
 </div>
 </dd>
@@ -300,26 +300,20 @@
 </div>
 <div class="line-block">
 <div class="line"><strong>returned</strong>: on success</div>
-</div>
-<div class="line-block">
 <div class="line"><strong>type</strong>: int</div>
-</div>
-<div class="line-block">
 <div class="line"><strong>sample</strong>: 12</div>
 </div>
 </dd>
-<dt>actions</dt><dd><blockquote>
-<div><div class="line-block">
+<dt>actions</dt><dd><div class="line-block">
 <div class="line">The list of the outstanding messages.</div>
 </div>
 <div class="line-block">
 <div class="line"><strong>returned</strong>: success</div>
-</div>
-<div class="line-block">
 <div class="line"><strong>type</strong>: list</div>
+<div class="line"><strong>sample</strong>:</div>
 </div>
-<p><strong>sample</strong>:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[{</span><span class="s2">&quot;job_id&quot;</span><span class="p">:</span> <span class="s2">&quot;STC01537&quot;</span><span class="p">,</span> <span class="s2">&quot;job_name&quot;</span><span class="p">:</span> <span class="s2">&quot;IM5HCONN&quot;</span><span class="p">,</span> <span class="s2">&quot;message_id&quot;</span><span class="p">:</span> <span class="s2">&quot;HWSC0000I&quot;</span><span class="p">,</span> <span class="s2">&quot;message_text&quot;</span><span class="p">:</span> <span class="s2">&quot;*399 HWSC0000I *IMS CONNECT READY* IM5HCONN&quot;</span><span class="p">,</span> <span class="s2">&quot;number&quot;</span><span class="p">:</span> <span class="s2">&quot;001&quot;</span><span class="p">,</span> <span class="s2">&quot;system&quot;</span><span class="p">:</span> <span class="s2">&quot;MV27&quot;</span><span class="p">,</span> <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;R&quot;</span><span class="p">},</span> <span class="p">{</span><span class="s2">&quot;job_id&quot;</span><span class="p">:</span> <span class="s2">&quot;STC01533&quot;</span><span class="p">,</span> <span class="s2">&quot;job_name&quot;</span><span class="p">:</span> <span class="s2">&quot;IM5HCTRL&quot;</span><span class="p">,</span> <span class="s2">&quot;message_id&quot;</span><span class="p">:</span> <span class="s2">&quot;DFS3139I&quot;</span><span class="p">,</span> <span class="s2">&quot;message_text&quot;</span><span class="p">:</span> <span class="s2">&quot;*400 DFS3139I IMS INITIALIZED, AUTOMATIC RESTART PROCEEDING IM5H&quot;</span><span class="p">,</span> <span class="s2">&quot;number&quot;</span><span class="p">:</span> <span class="s2">&quot;002&quot;</span><span class="p">,</span> <span class="s2">&quot;system&quot;</span><span class="p">:</span> <span class="s2">&quot;MV27&quot;</span><span class="p">,</span> <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;R&quot;</span><span class="p">}]</span>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[{</span><span class="s2">&quot;job_id&quot;</span><span class="p">:</span> <span class="s2">&quot;STC01537&quot;</span><span class="p">,</span> <span class="s2">&quot;job_name&quot;</span><span class="p">:</span> <span class="s2">&quot;IM5HCONN&quot;</span><span class="p">,</span> <span class="s2">&quot;message_id&quot;</span><span class="p">:</span> <span class="s2">&quot;HWSC0000I&quot;</span><span class="p">,</span> <span class="s2">&quot;message_text&quot;</span><span class="p">:</span> <span class="s2">&quot;*399 HWSC0000I *IMS CONNECT READY* IM5HCONN&quot;</span><span class="p">,</span> <span class="s2">&quot;number&quot;</span><span class="p">:</span> <span class="s2">&quot;001&quot;</span><span class="p">,</span> <span class="s2">&quot;system&quot;</span><span class="p">:</span> <span class="s2">&quot;MV27&quot;</span><span class="p">,</span> <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;R&quot;</span><span class="p">},</span> <span class="p">{</span><span class="s2">&quot;job_id&quot;</span><span class="p">:</span> <span class="s2">&quot;STC01533&quot;</span><span class="p">,</span> <span class="s2">&quot;job_name&quot;</span><span class="p">:</span> <span class="s2">&quot;IM5HCTRL&quot;</span><span class="p">,</span> <span class="s2">&quot;message_id&quot;</span><span class="p">:</span> <span class="s2">&quot;DFS3139I&quot;</span><span class="p">,</span> <span class="s2">&quot;message_text&quot;</span><span class="p">:</span> <span class="s2">&quot;*400 DFS3139I IMS INITIALIZED, AUTOMATIC RESTART PROCEEDING IM5H&quot;</span><span class="p">,</span> <span class="s2">&quot;number&quot;</span><span class="p">:</span> <span class="s2">&quot;002&quot;</span><span class="p">,</span> <span class="s2">&quot;system&quot;</span><span class="p">:</span> <span class="s2">&quot;MV27&quot;</span><span class="p">,</span> <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;R&quot;</span><span class="p">}]</span>
 </pre></div>
 </div>
 </div></blockquote>
@@ -329,11 +323,7 @@
 </div>
 <div class="line-block">
 <div class="line"><strong>returned</strong>: on success</div>
-</div>
-<div class="line-block">
 <div class="line"><strong>type</strong>: int</div>
-</div>
-<div class="line-block">
 <div class="line"><strong>sample</strong>: 1</div>
 </div>
 </dd>
@@ -342,11 +332,7 @@
 </div>
 <div class="line-block">
 <div class="line"><strong>returned</strong>: on success</div>
-</div>
-<div class="line-block">
 <div class="line"><strong>type</strong>: str</div>
-</div>
-<div class="line-block">
 <div class="line"><strong>sample</strong>: R</div>
 </div>
 </dd>
@@ -355,11 +341,7 @@
 </div>
 <div class="line-block">
 <div class="line"><strong>returned</strong>: on success</div>
-</div>
-<div class="line-block">
 <div class="line"><strong>type</strong>: str</div>
-</div>
-<div class="line-block">
 <div class="line"><strong>sample</strong>: MV27</div>
 </div>
 </dd>
@@ -368,11 +350,7 @@
 </div>
 <div class="line-block">
 <div class="line"><strong>returned</strong>: on success</div>
-</div>
-<div class="line-block">
 <div class="line"><strong>type</strong>: str</div>
-</div>
-<div class="line-block">
 <div class="line"><strong>sample</strong>: STC01537</div>
 </div>
 </dd>
@@ -381,11 +359,7 @@
 </div>
 <div class="line-block">
 <div class="line"><strong>returned</strong>: success</div>
-</div>
-<div class="line-block">
 <div class="line"><strong>type</strong>: str</div>
-</div>
-<div class="line-block">
 <div class="line"><strong>sample</strong>: <em>399 HWSC0000I *IMS CONNECT READY</em> IM5HCONN</div>
 </div>
 </dd>
@@ -394,11 +368,7 @@
 </div>
 <div class="line-block">
 <div class="line"><strong>returned</strong>: success</div>
-</div>
-<div class="line-block">
 <div class="line"><strong>type</strong>: str</div>
-</div>
-<div class="line-block">
 <div class="line"><strong>sample</strong>: IM5HCONN</div>
 </div>
 </dd>
@@ -407,11 +377,7 @@
 </div>
 <div class="line-block">
 <div class="line"><strong>returned</strong>: success</div>
-</div>
-<div class="line-block">
 <div class="line"><strong>type</strong>: str</div>
-</div>
-<div class="line-block">
 <div class="line"><strong>sample</strong>: HWSC0000I</div>
 </div>
 </dd>
@@ -430,7 +396,7 @@
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="zos_tso_command.html" class="btn btn-neutral float-right" title="zos_tso_command – Execute TSO commands" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="zos_ping.html" class="btn btn-neutral float-right" title="zos_ping – Ping z/OS and check dependencies." accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
         <a href="zos_operator.html" class="btn btn-neutral float-left" title="zos_operator – Execute operator command" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
@@ -460,12 +426,13 @@
 <div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
     <span class="rst-current-version" data-toggle="rst-current-version">
         <span class="fa fa-book"> Other Versions</span>
-        v: v1.1.0-beta1
+        v: v1.1.0
         <span class="fa fa-caret-down"></span>
     </span>
     <div class="rst-other-versions">
         <dl>
             <dt>Tags</dt>
+            <dd><a href="../v1.1.0/modules/zos_operator_action_query.html">v1.1.0</a></dd>
             <dd><a href="../v1.1.0-beta1/modules/zos_operator_action_query.html">v1.1.0-beta1</a></dd>
             <dd><a href="../v1.0.0/index.html">v1.0.0</a></dd>
         </dl>

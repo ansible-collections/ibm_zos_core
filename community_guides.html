@@ -36,7 +36,7 @@
   <link rel="stylesheet" href="_static/banner.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Requirements" href="requirements.html" />
+    <link rel="next" title="Prerequisites" href="community_guides_docs/zos_ansible_module_testing.html" />
     <link rel="prev" title="Supplementary" href="supplementary.html" /> 
 </head>
 
@@ -97,6 +97,31 @@
 <p class="caption"><span class="caption-text">Community guides</span></p>
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#development">Development</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#z-os-ansible-module-testing">z/OS Ansible Module Testing</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="community_guides_docs/zos_ansible_module_testing.html">Prerequisites</a></li>
+<li class="toctree-l3"><a class="reference internal" href="community_guides_docs/zos_ansible_module_testing.html#configuration-and-dependencies">Configuration and Dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="community_guides_docs/zos_ansible_module_testing.html#run-functional-and-unit-tests">Run Functional and Unit Tests</a></li>
+<li class="toctree-l3"><a class="reference internal" href="community_guides_docs/zos_ansible_module_testing.html#develop-unit-tests-with-pytest">Develop Unit Tests with pytest</a></li>
+<li class="toctree-l3"><a class="reference internal" href="community_guides_docs/zos_ansible_module_testing.html#develop-functional-tests-with-pytest">Develop Functional Tests with pytest</a></li>
+<li class="toctree-l3"><a class="reference internal" href="community_guides_docs/zos_ansible_module_testing.html#additional-development-tips">Additional Development Tips</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#parsing-with-betterargparser">Parsing with BetterArgParser</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="community_guides_docs/better_arg_parser.html">Features</a></li>
+<li class="toctree-l3"><a class="reference internal" href="community_guides_docs/better_arg_parser.html#importing-betterargparser">Importing BetterArgParser</a></li>
+<li class="toctree-l3"><a class="reference internal" href="community_guides_docs/better_arg_parser.html#defining-arguments">Defining Arguments</a></li>
+<li class="toctree-l3"><a class="reference internal" href="community_guides_docs/better_arg_parser.html#argument-options">Argument Options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="community_guides_docs/better_arg_parser.html#built-in-argument-types-arg-type-types">Built-in Argument Types (<em>arg_type</em> types)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="community_guides_docs/better_arg_parser.html#custom-functions">Custom Functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="community_guides_docs/better_arg_parser.html#id1">Custom Argument Options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="community_guides_docs/better_arg_parser.html#mutually-exclusive-arguments">Mutually Exclusive Arguments</a></li>
+<li class="toctree-l3"><a class="reference internal" href="community_guides_docs/better_arg_parser.html#dependent-arguments">Dependent Arguments</a></li>
+<li class="toctree-l3"><a class="reference internal" href="community_guides_docs/better_arg_parser.html#dependencies-example">Dependencies Example</a></li>
+</ul>
+</li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="#helpful-links">Helpful Links</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Requirements</span></p>
@@ -158,7 +183,7 @@
         
             
             
-              <a href="https://github.com/ansible-collections/ibm_zos_core/blob/v1.1.0-beta1/docs/source/community_guides.rst" class="fa fa-github"> Edit on GitHub</a>
+              <a href="https://github.com/ansible-collections/ibm_zos_core/blob/v1.1.0/docs/source/community_guides.rst" class="fa fa-github"> Edit on GitHub</a>
             
           
         
@@ -182,8 +207,56 @@
 <h1>Contributing<a class="headerlink" href="#contributing" title="Permalink to this headline">¶</a></h1>
 <p>We are not currently accepting community contributions. However, we encourage
 you to open <a class="reference external" href="https://github.com/ansible-collections/ibm_zos_core/issues">git issues</a> for bugs, comments or feature requests.</p>
-<p>Review this content periodically to learn when and how to make contributions in
-the future.</p>
+<p>Review this content periodically to learn when and how to make
+contributions in the future. For the latest information on open issues, see:
+<a class="reference external" href="https://github.com/ansible-collections/ibm_zos_core/issues">git issues</a>.</p>
+</div>
+<div class="section" id="development">
+<h1>Development<a class="headerlink" href="#development" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="z-os-ansible-module-testing">
+<h2>z/OS Ansible Module Testing<a class="headerlink" href="#z-os-ansible-module-testing" title="Permalink to this headline">¶</a></h2>
+<p>This section outlines the processes to develop and run test cases for z/OS
+Ansible modules.</p>
+<div class="toctree-wrapper compound">
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="community_guides_docs/zos_ansible_module_testing.html">Prerequisites</a></li>
+<li class="toctree-l1"><a class="reference internal" href="community_guides_docs/zos_ansible_module_testing.html#configuration-and-dependencies">Configuration and Dependencies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="community_guides_docs/zos_ansible_module_testing.html#run-functional-and-unit-tests">Run Functional and Unit Tests</a></li>
+<li class="toctree-l1"><a class="reference internal" href="community_guides_docs/zos_ansible_module_testing.html#develop-unit-tests-with-pytest">Develop Unit Tests with pytest</a></li>
+<li class="toctree-l1"><a class="reference internal" href="community_guides_docs/zos_ansible_module_testing.html#develop-functional-tests-with-pytest">Develop Functional Tests with pytest</a></li>
+<li class="toctree-l1"><a class="reference internal" href="community_guides_docs/zos_ansible_module_testing.html#additional-development-tips">Additional Development Tips</a></li>
+</ul>
+</div>
+</div>
+<div class="section" id="parsing-with-betterargparser">
+<h2>Parsing with BetterArgParser<a class="headerlink" href="#parsing-with-betterargparser" title="Permalink to this headline">¶</a></h2>
+<p>BetterArgParser goes beyond typical option value parsing and serves as an
+alternative to parsers such as argparse. It has been designed to validate
+values often used on z/OS to avoid unnecessary failures on the target
+such as incorrectly providing a data set name or type. For cases that require
+further validation, BetterArgParser accepts a BetterArg object that allows for
+further customization.</p>
+<p>It is recommended to use BetterArgParser in conjunction with Ansible’s
+module argument parser.</p>
+<p>This section outlines the features of BetterArgParser, explains how to define arguments,
+provides examples of dependencies and more:</p>
+<div class="toctree-wrapper compound">
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="community_guides_docs/better_arg_parser.html">Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="community_guides_docs/better_arg_parser.html#importing-betterargparser">Importing BetterArgParser</a></li>
+<li class="toctree-l1"><a class="reference internal" href="community_guides_docs/better_arg_parser.html#defining-arguments">Defining Arguments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="community_guides_docs/better_arg_parser.html#argument-options">Argument Options</a></li>
+<li class="toctree-l1"><a class="reference internal" href="community_guides_docs/better_arg_parser.html#built-in-argument-types-arg-type-types">Built-in Argument Types (<em>arg_type</em> types)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="community_guides_docs/better_arg_parser.html#custom-functions">Custom Functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="community_guides_docs/better_arg_parser.html#id1">Custom Argument Options</a></li>
+<li class="toctree-l1"><a class="reference internal" href="community_guides_docs/better_arg_parser.html#mutually-exclusive-arguments">Mutually Exclusive Arguments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="community_guides_docs/better_arg_parser.html#dependent-arguments">Dependent Arguments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="community_guides_docs/better_arg_parser.html#dependencies-example">Dependencies Example</a></li>
+</ul>
+</div>
+</div>
 </div>
 <div class="section" id="helpful-links">
 <h1>Helpful Links<a class="headerlink" href="#helpful-links" title="Permalink to this headline">¶</a></h1>
@@ -200,7 +273,7 @@ the future.</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="requirements.html" class="btn btn-neutral float-right" title="Requirements" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="community_guides_docs/zos_ansible_module_testing.html" class="btn btn-neutral float-right" title="Prerequisites" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
         <a href="supplementary.html" class="btn btn-neutral float-left" title="Supplementary" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
@@ -230,12 +303,13 @@ the future.</p>
 <div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
     <span class="rst-current-version" data-toggle="rst-current-version">
         <span class="fa fa-book"> Other Versions</span>
-        v: v1.1.0-beta1
+        v: v1.1.0
         <span class="fa fa-caret-down"></span>
     </span>
     <div class="rst-other-versions">
         <dl>
             <dt>Tags</dt>
+            <dd><a href="v1.1.0/community_guides.html">v1.1.0</a></dd>
             <dd><a href="v1.1.0-beta1/community_guides.html">v1.1.0-beta1</a></dd>
             <dd><a href="v1.0.0/community_guides.html">v1.0.0</a></dd>
         </dl>

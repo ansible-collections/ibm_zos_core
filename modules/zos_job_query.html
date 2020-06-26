@@ -105,6 +105,7 @@
 <li class="toctree-l3"><a class="reference internal" href="zos_job_submit.html">zos_job_submit – Submit JCL</a></li>
 <li class="toctree-l3"><a class="reference internal" href="zos_operator.html">zos_operator – Execute operator command</a></li>
 <li class="toctree-l3"><a class="reference internal" href="zos_operator_action_query.html">zos_operator_action_query – Display messages requiring action</a></li>
+<li class="toctree-l3"><a class="reference internal" href="zos_ping.html">zos_ping – Ping z/OS and check dependencies.</a></li>
 <li class="toctree-l3"><a class="reference internal" href="zos_tso_command.html">zos_tso_command – Execute TSO commands</a></li>
 </ul>
 </li>
@@ -117,6 +118,7 @@
 <p class="caption"><span class="caption-text">Community guides</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../community_guides.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../community_guides.html#development">Development</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../community_guides.html#helpful-links">Helpful Links</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Requirements</span></p>
@@ -278,23 +280,19 @@
 </div>
 <div class="line-block">
 <div class="line"><strong>returned</strong>: always</div>
-</div>
-<div class="line-block">
 <div class="line"><strong>type</strong>: bool</div>
 </div>
 </dd>
-<dt>jobs</dt><dd><blockquote>
-<div><div class="line-block">
+<dt>jobs</dt><dd><div class="line-block">
 <div class="line">The list of z/OS job(s) and status.</div>
 </div>
 <div class="line-block">
 <div class="line"><strong>returned</strong>: success</div>
-</div>
-<div class="line-block">
 <div class="line"><strong>type</strong>: list</div>
+<div class="line"><strong>sample</strong>:</div>
 </div>
-<p><strong>sample</strong>:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[{</span><span class="s2">&quot;job_id&quot;</span><span class="p">:</span> <span class="s2">&quot;JOB01427&quot;</span><span class="p">,</span> <span class="s2">&quot;job_name&quot;</span><span class="p">:</span> <span class="s2">&quot;IYK3ZNA1&quot;</span><span class="p">,</span> <span class="s2">&quot;owner&quot;</span><span class="p">:</span> <span class="s2">&quot;BROWNAD&quot;</span><span class="p">,</span> <span class="s2">&quot;ret_code&quot;</span><span class="p">:</span> <span class="s2">&quot;null&quot;</span><span class="p">},</span> <span class="p">{</span><span class="s2">&quot;job_id&quot;</span><span class="p">:</span> <span class="s2">&quot;JOB16577&quot;</span><span class="p">,</span> <span class="s2">&quot;job_name&quot;</span><span class="p">:</span> <span class="s2">&quot;IYK3ZNA2&quot;</span><span class="p">,</span> <span class="s2">&quot;owner&quot;</span><span class="p">:</span> <span class="s2">&quot;BROWNAD&quot;</span><span class="p">,</span> <span class="s2">&quot;ret_code&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;code&quot;</span><span class="p">:</span> <span class="s2">&quot;null&quot;</span><span class="p">,</span> <span class="s2">&quot;msg&quot;</span><span class="p">:</span> <span class="s2">&quot;CANCELED&quot;</span><span class="p">}}]</span>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[{</span><span class="s2">&quot;job_id&quot;</span><span class="p">:</span> <span class="s2">&quot;JOB01427&quot;</span><span class="p">,</span> <span class="s2">&quot;job_name&quot;</span><span class="p">:</span> <span class="s2">&quot;IYK3ZNA1&quot;</span><span class="p">,</span> <span class="s2">&quot;owner&quot;</span><span class="p">:</span> <span class="s2">&quot;BROWNAD&quot;</span><span class="p">,</span> <span class="s2">&quot;ret_code&quot;</span><span class="p">:</span> <span class="s2">&quot;null&quot;</span><span class="p">},</span> <span class="p">{</span><span class="s2">&quot;job_id&quot;</span><span class="p">:</span> <span class="s2">&quot;JOB16577&quot;</span><span class="p">,</span> <span class="s2">&quot;job_name&quot;</span><span class="p">:</span> <span class="s2">&quot;IYK3ZNA2&quot;</span><span class="p">,</span> <span class="s2">&quot;owner&quot;</span><span class="p">:</span> <span class="s2">&quot;BROWNAD&quot;</span><span class="p">,</span> <span class="s2">&quot;ret_code&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;code&quot;</span><span class="p">:</span> <span class="s2">&quot;null&quot;</span><span class="p">,</span> <span class="s2">&quot;msg&quot;</span><span class="p">:</span> <span class="s2">&quot;CANCELED&quot;</span><span class="p">}}]</span>
 </pre></div>
 </div>
 </div></blockquote>
@@ -304,8 +302,6 @@
 </div>
 <div class="line-block">
 <div class="line"><strong>type</strong>: str</div>
-</div>
-<div class="line-block">
 <div class="line"><strong>sample</strong>: IYK3ZNA2</div>
 </div>
 </dd>
@@ -314,8 +310,6 @@
 </div>
 <div class="line-block">
 <div class="line"><strong>type</strong>: str</div>
-</div>
-<div class="line-block">
 <div class="line"><strong>sample</strong>: BROWNAD</div>
 </div>
 </dd>
@@ -324,8 +318,6 @@
 </div>
 <div class="line-block">
 <div class="line"><strong>type</strong>: str</div>
-</div>
-<div class="line-block">
 <div class="line"><strong>sample</strong>: JOB01427</div>
 </div>
 </dd>
@@ -335,11 +327,13 @@
 </div>
 <div class="line-block">
 <div class="line"><strong>type</strong>: dict</div>
+<div class="line"><strong>sample</strong>:</div>
 </div>
-<p><strong>sample</strong>:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[{</span><span class="s2">&quot;code&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">},</span> <span class="p">{</span><span class="s2">&quot;msg&quot;</span><span class="p">:</span> <span class="s2">&quot;CC 0000&quot;</span><span class="p">}]</span>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[{</span><span class="s2">&quot;code&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">},</span> <span class="p">{</span><span class="s2">&quot;msg&quot;</span><span class="p">:</span> <span class="s2">&quot;CC 0000&quot;</span><span class="p">}]</span>
 </pre></div>
 </div>
+</div></blockquote>
 </div></blockquote>
 <dl>
 <dt>msg</dt><dd><div class="line-block">
@@ -347,8 +341,6 @@
 </div>
 <div class="line-block">
 <div class="line"><strong>type</strong>: str</div>
-</div>
-<div class="line-block">
 <div class="line"><strong>sample</strong>: CC 0000</div>
 </div>
 </dd>
@@ -368,11 +360,7 @@
 </div>
 <div class="line-block">
 <div class="line"><strong>returned</strong>: failure</div>
-</div>
-<div class="line-block">
 <div class="line"><strong>type</strong>: str</div>
-</div>
-<div class="line-block">
 <div class="line"><strong>sample</strong>: {‘msg’: ‘List FAILED! no such job been found: IYK3Z0R9’}</div>
 </div>
 </dd>
@@ -419,12 +407,13 @@
 <div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
     <span class="rst-current-version" data-toggle="rst-current-version">
         <span class="fa fa-book"> Other Versions</span>
-        v: v1.1.0-beta1
+        v: v1.1.0
         <span class="fa fa-caret-down"></span>
     </span>
     <div class="rst-other-versions">
         <dl>
             <dt>Tags</dt>
+            <dd><a href="../v1.1.0/modules/zos_job_query.html">v1.1.0</a></dd>
             <dd><a href="../v1.1.0-beta1/modules/zos_job_query.html">v1.1.0-beta1</a></dd>
             <dd><a href="../v1.0.0/modules/zos_job_query.html">v1.0.0</a></dd>
         </dl>

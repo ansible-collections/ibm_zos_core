@@ -1159,7 +1159,7 @@ backups:
 
 EXAMPLES = r"""
 - name: List data sets matching pattern in catalog,
-  save output to a new sequential data set and return output as text.
+    save output to a new sequential data set and return output as text.
   zos_raw:
     program_name: idcams
     auth: true
@@ -1182,9 +1182,8 @@ EXAMPLES = r"""
           dd_name: sysin
           content: " LISTCAT ENTRIES('SOME.DATASET.*')"
 
-
 - name: List data sets matching patterns in catalog,
-  save output to a new sequential data set and return output as text.
+    save output to a new sequential data set and return output as text.
   zos_raw:
     program_name: idcams
     auth: true
@@ -1211,8 +1210,8 @@ EXAMPLES = r"""
             - LISTCAT ENTRIES('YET.ANOTHER.DS.*')
 
 - name: List data sets matching pattern in catalog,
-  save output to an existing sequential data set and
-  return output as text.
+    save output to an existing sequential data set and
+    return output as text.
   zos_raw:
     program_name: idcams
     auth: true
@@ -1228,8 +1227,8 @@ EXAMPLES = r"""
           content: " LISTCAT ENTRIES('SOME.DATASET.*')"
 
 - name: List data sets matching pattern in catalog,
-  save output to a sequential data set. If the data set exists,
-  then reuse it, if it does not exist, create it. Returns output as text.
+    save output to a sequential data set. If the data set exists,
+    then reuse it, if it does not exist, create it. Returns output as text.
   zos_raw:
     program_name: idcams
     auth: true
@@ -1253,11 +1252,11 @@ EXAMPLES = r"""
           content: " LISTCAT ENTRIES('SOME.DATASET.*')"
 
 - name: List data sets matching pattern in catalog,
-  save output to a sequential data set. If the data set exists,
-  then back up the existing data set and replace it.
-  If the data set does not exist, create it.
-  Returns backup name (if a backup was made) and output as text,
-  and backup name.
+    save output to a sequential data set. If the data set exists,
+    then back up the existing data set and replace it.
+    If the data set does not exist, create it.
+    Returns backup name (if a backup was made) and output as text,
+    and backup name.
   zos_raw:
     program_name: idcams
     auth: true
@@ -1274,6 +1273,8 @@ EXAMPLES = r"""
           space_type: m
           volumes:
             - "000000"
+            - "111111"
+            - "SCR002"
           record_format: fb
           return_content:
             type: text
@@ -1282,7 +1283,7 @@ EXAMPLES = r"""
           content: " LISTCAT ENTRIES('SOME.DATASET.*')"
 
 - name: List data sets matching pattern in catalog,
-  save output to a file in unix system services.
+    save output to a file in unix system services.
   zos_raw:
     program_name: idcams
     auth: true
@@ -1295,9 +1296,9 @@ EXAMPLES = r"""
           content: " LISTCAT ENTRIES('SOME.DATASET.*')"
 
 - name: List data sets matching pattern in catalog,
-  save output to a file in unix system services.
-  Return the contents of the file in encoding IBM-1047,
-  while the file is encoded in ISO8859-1.
+    save output to a file in unix system services.
+    Return the contents of the file in encoding IBM-1047,
+    while the file is encoded in ISO8859-1.
   zos_raw:
     program_name: idcams
     auth: true
@@ -1314,9 +1315,9 @@ EXAMPLES = r"""
           content: " LISTCAT ENTRIES('SOME.DATASET.*')"
 
 - name: List data sets matching pattern in catalog,
-  save output to a file in unix system services.
-  Return the contents of the file in encoding IBM-1047,
-  while the file is encoded in ISO8859-1.
+    save output to a file in unix system services.
+    Return the contents of the file in encoding IBM-1047,
+    while the file is encoded in ISO8859-1.
   zos_raw:
     program_name: idcams
     auth: true
@@ -1378,8 +1379,8 @@ EXAMPLES = r"""
           access_group: w
 
 - name: List data sets matching pattern in catalog,
-  save output to a concatenation of data set members and
-  files.
+    save output to a concatenation of data set members and
+    files.
   zos_raw:
     pgm: idcams
     auth: yes

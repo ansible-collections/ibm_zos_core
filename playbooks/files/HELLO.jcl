@@ -6,7 +6,7 @@
 //* needing editing are:
 //* CLASS: Used to achieve a balance between different types of jobs and avoid
 //*        contention between jobs that use the same resources.
-//* MSGLEVEL: controls how the allocation messages and termination messages are
+//* MSGLEVEL: controls hpw the allocation messages and termination messages are
 //*           printed in the job's output listing (SYSOUT).
 //* MSGCLASS: assign an output class for your output listing (SYSOUT)
 //*

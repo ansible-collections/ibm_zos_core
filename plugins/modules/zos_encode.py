@@ -30,33 +30,38 @@ options:
   from_encoding:
     description:
       - The character set of the source I(src).
-      - Supported character sets rely on the charset conversion utility (iconv)
-        version; the most common character sets are supported.
+      - Supported character sets rely on the target version; the most common
+        character sets are supported.
     required: false
     type: str
     default: IBM-1047
   to_encoding:
     description:
       - The destination I(dest) character set for the output to be written as.
-      - Supported character sets rely on the charset conversion utility (iconv)
-        version; the most common character sets are supported.
+      - Supported character sets rely on the target version; the most common
+        character sets are supported.
     required: false
     type: str
     default: ISO8859-1
   src:
     description:
+      - The location of the input characters.
       - The location can be a UNIX System Services (USS) file or path,
-        PS(sequential data set), PDS, PDSE, member of a PDS or PDSE, or
+        PS(sequential data set), member of a PDS or PDSE, PDS, PDSE, or
         KSDS(VSAM data set).
       - The USS path or file must be an absolute pathname.
-      - If I(src) is a USS directory, all files will be encoded.
+      - If I(src) is a USS directory, all files will be encoded. It is the
+        playbook author or user's responsibility to avoid files that should not
+        be encoded, such as binary files. A user is described as the remote
+        user, configured either for the playbook or playbook tasks, who can
+        also obtain escalated privileges to execute as root or another user.
     required: true
     type: str
   dest:
     description:
       - The location where the converted characters are output.
       - The destination I(dest) can be a UNIX System Services (USS) file or path,
-        PS(sequential data set), PDS, PDSE, member of a PDS or PDSE, or
+        PS(sequential data set), member of a PDS or PDSE, PDS, PDSE or
         KSDS(VSAM data set).
       - If the length of the PDSE member name used in I(dest) is greater
         than 8 characters, the member name will be truncated when written out.
@@ -98,10 +103,6 @@ options:
     required: false
     default: false
 notes:
-  - It is the playbook author or user's responsibility to avoid files that should
-    not be encoded, such as binary files. A user is described as the remote user,
-    configured either for the playbook or playbook tasks, who can
-    also obtain escalated privileges to execute as root or another user.
   - All data sets are always assumed to be cataloged. If an uncataloged data
     set needs to be encoded, it should be cataloged first.
   - For supported character sets used to encode data, refer to

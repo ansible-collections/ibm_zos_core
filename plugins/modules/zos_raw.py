@@ -569,6 +569,45 @@ options:
                   - The encoding to use when returning the contents of the data set.
                 type: str
                 default: iso8859-1
+      dd_output:
+        description:
+          - Use I(dd_output) to specify
+            - Content sent to the DD should be returned to the user.
+        required: false
+        type: dict
+        suboptions:
+          dd_name:
+            description: The dd name.
+            required: true
+            type: str
+          return_content:
+            description:
+              - Determines how content should be returned to the user.
+              - If not provided, no content from the DD is returned.
+            type: dict
+            required: true
+            suboptions:
+              type:
+                description:
+                  - The type of the content to be returned.
+                  - C(text) means return content in ASCII, converted from EBCDIC.
+                  - C(base64) means return content in binary mode.
+                type: str
+                choices:
+                  - text
+                  - base64
+                required: true
+              src_encoding:
+                description:
+                  - The encoding of the data set on the z/OS system.
+                  - for I(dd_input), I(src_encoding) should generally not need to be changed.
+                type: str
+                default: ibm-1047
+              response_encoding:
+                description:
+                  - The encoding to use when returning the contents of the data set.
+                type: str
+                default: iso8859-1
       dd_dummy:
         description:
           - Use I(dd_dummy) to specify
@@ -1417,7 +1456,8 @@ try:
         DDStatement,
         FileDefinition,
         DatasetDefinition,
-        StdinDefinition,
+        InputDefinition,
+        OutputDefinition,
         DummyDefinition,
         VIODefinition,
     )
@@ -1425,7 +1465,8 @@ except ImportError:
     DDStatement = MissingImport("DDStatement")
     FileDefinition = MissingImport("FileDefinition")
     DatasetDefinition = MissingImport("DatasetDefinition")
-    StdinDefinition = MissingImport("StdinDefinition")
+    InputDefinition = MissingImport("InputDefinition")
+    OutputDefinition = MissingImport("OutputDefinition")
     DummyDefinition = MissingImport("DummyDefinition")
     VIODefinition = MissingImport("VIODefinition")
 try:
@@ -1549,6 +1590,18 @@ def run_module():
         ),
     )
 
+    dd_output_base = dict(
+        return_content=dict(
+            type="dict",
+            required=True,
+            options=dict(
+                type=dict(type="str", choices=["text", "base64"], required=True),
+                src_encoding=dict(type="str", default="ibm-1047"),
+                response_encoding=dict(type="str", default="iso8859-1"),
+            ),
+        ),
+    )
+
     dd_unix_base = dict(
         path=dict(type="str", required=True),
         disposition_normal=dict(type="str", choices=["keep", "delete"]),
@@ -1616,6 +1669,7 @@ def run_module():
     dd_data_set = dict(type="dict", options=dict(**dd_name_base, **dd_data_set_base))
     dd_unix = dict(type="dict", options=dict(**dd_name_base, **dd_unix_base))
     dd_input = dict(type="dict", options=dict(**dd_name_base, **dd_input_base))
+    dd_output = dict(type="dict", options=dict(**dd_name_base, **dd_output_base))
     dd_dummy = dict(type="dict", options=dict(**dd_name_base, **dd_dummy_base))
     dd_vio = dict(type="dict", options=dict(**dd_name_base, **dd_vio_base))
     dd_concat = dict(type="dict", options=dict(**dd_name_base, **dd_concat_base))
@@ -1631,6 +1685,7 @@ def run_module():
                 dd_data_set=dd_data_set,
                 dd_unix=dd_unix,
                 dd_input=dd_input,
+                dd_output=dd_output,
                 dd_vio=dd_vio,
                 dd_concat=dd_concat,
                 dd_dummy=dd_dummy,
@@ -1771,6 +1826,18 @@ def parse_and_validate_args(params):
         ),
     )
 
+    dd_output_base = dict(
+        return_content=dict(
+            type="dict",
+            required=True,
+            options=dict(
+                type=dict(type="str", choices=["text", "base64"], required=True),
+                src_encoding=dict(type="str", default="ibm-1047"),
+                response_encoding=dict(type="str", default="iso8859-1"),
+            ),
+        ),
+    )
+
     dd_unix_base = dict(
         path=dict(type="path", required=True),
         disposition_normal=dict(type="str", choices=["keep", "delete"]),
@@ -1813,6 +1880,7 @@ def parse_and_validate_args(params):
     dd_data_set = dict(type="dict", options=dict(**dd_name_base, **dd_data_set_base))
     dd_unix = dict(type="dict", options=dict(**dd_name_base, **dd_unix_base))
     dd_input = dict(type="dict", options=dict(**dd_name_base, **dd_input_base))
+    dd_output = dict(type="dict", options=dict(**dd_name_base, **dd_output_base))
     dd_dummy = dict(type="dict", options=dict(**dd_name_base, **dd_dummy_base))
     dd_vio = dict(type="dict", options=dict(**dd_name_base, **dd_vio_base))
     dd_concat = dict(type="dict", options=dict(**dd_name_base, **dd_concat_base))
@@ -1828,6 +1896,7 @@ def parse_and_validate_args(params):
                 dd_data_set=dd_data_set,
                 dd_unix=dd_unix,
                 dd_input=dd_input,
+                dd_output=dd_output,
                 dd_vio=dd_vio,
                 dd_concat=dd_concat,
                 dd_dummy=dd_dummy,
@@ -2128,6 +2197,8 @@ def get_dd_name(dd):
         dd_name = dd.get("dd_unix").get("dd_name")
     elif dd.get("dd_input"):
         dd_name = dd.get("dd_input").get("dd_name")
+    elif dd.get("dd_output"):
+        dd_name = dd.get("dd_output").get("dd_name")
     elif dd.get("dd_vio"):
         dd_name = dd.get("dd_vio").get("dd_name")
     elif dd.get("dd_dummy"):
@@ -2145,9 +2216,9 @@ def build_data_definition(dd):
 
     Returns:
         Union[list[RawDatasetDefinition, RawFileDefinition,
-              RawStdinDefinition],
+              RawInputDefinition],
               RawDatasetDefinition, RawFileDefinition,
-              RawStdinDefinition, DummyDefinition]: The DataDefinition object or a list of DataDefinition objects.
+              RawInputDefinition, DummyDefinition]: The DataDefinition object or a list of DataDefinition objects.
     """
     data_definition = None
     if dd.get("dd_data_set"):
@@ -2155,7 +2226,9 @@ def build_data_definition(dd):
     elif dd.get("dd_unix"):
         data_definition = RawFileDefinition(**(dd.get("dd_unix")))
     elif dd.get("dd_input"):
-        data_definition = RawStdinDefinition(**(dd.get("dd_input")))
+        data_definition = RawInputDefinition(**(dd.get("dd_input")))
+    elif dd.get("dd_output"):
+        data_definition = RawOutputDefinition(**(dd.get("dd_output")))
     elif dd.get("dd_vio"):
         data_definition = VIODefinition()
     elif dd.get("dd_dummy"):
@@ -2366,16 +2439,16 @@ class RawFileDefinition(FileDefinition):
 
 
 # TODO: potentially extend the available parameters to end user
-class RawStdinDefinition(StdinDefinition):
-    """Wrapper around StdinDefinition to contain information about
+class RawInputDefinition(InputDefinition):
+    """Wrapper around InputDefinition to contain information about
     desired return contents.
 
     Args:
-        StdinDefinition (StdinDefinition): Stdin DD data type to be used in a DDStatement.
+        InputDefinition (InputDefinition): Input DD data type to be used in a DDStatement.
     """
 
     def __init__(self, content="", return_content=None, **kwargs):
-        """Initialize RawStdinDefinition
+        """Initialize RawInputDefinition
 
         Args:
             content (str): The content to write to temporary data set / stdin.
@@ -2383,6 +2456,25 @@ class RawStdinDefinition(StdinDefinition):
         """
         self.return_content = ReturnContent(**(return_content or {}))
         super().__init__(content=content)
+
+
+class RawOutputDefinition(OutputDefinition):
+    """Wrapper around OutputDefinition to contain information about
+    desired return contents.
+
+    Args:
+        OutputDefinition (OutputDefinition): Output DD data type to be used in a DDStatement.
+    """
+
+    def __init__(self, return_content=None, **kwargs):
+        """Initialize RawOutputDefinition
+
+        Args:
+            content (str): The content to write to temporary data set / stdin.
+            return_content (dict, optional): Determines how content should be returned to the user. Defaults to {}.
+        """
+        self.return_content = ReturnContent(**(return_content or {}))
+        super().__init__()
 
 
 class ReturnContent(object):
@@ -2631,7 +2723,12 @@ def get_dd_output(dd_statement):
     ):
         dd_output = [get_unix_file_output(dd_statement)]
     elif (
-        isinstance(dd_statement.definition, RawStdinDefinition)
+        isinstance(dd_statement.definition, RawInputDefinition)
+        and dd_statement.definition.return_content.type
+    ):
+        dd_output = [get_data_set_output(dd_statement)]
+    elif (
+        isinstance(dd_statement.definition, RawOutputDefinition)
         and dd_statement.definition.return_content.type
     ):
         dd_output = [get_data_set_output(dd_statement)]

@@ -556,6 +556,78 @@ class StdinDefinition(DataDefinition):
         return ""
 
 
+class InputDefinition(StdinDefinition):
+    """Input DD Data type to be used in a DDStatement.
+    This should be used in cases where "DD *" would be used in a jcl.
+    Added for consistent naming with OutputDefinition, is exact same as StdinDefinition.
+    Args:
+        content (Union[str, list[str]]): The content to write to temporary data set / stdin.
+                Contents can be provided as a string or a list of string where each list item
+                corresponds to a single line.
+        record_format (str, optional): The record format to use for the dataset.
+                Valid options are: FB, VB, FBA, VBA, U.
+                Defaults to "FB".
+        space_primary (int, optional): The amount of primary space to allocate for the dataset.
+                Defaults to 5.
+        space_secondary (int, optional):  The amount of primary space to allocate for the dataset.
+                Defaults to 5.
+        space_type (str, optional): The unit of measurement to use when defining primary and secondary space.
+                Defaults to "M".
+        record_length (int, optional): The length, in bytes, of each record in the data set.
+                Defaults to 80.
+    """
+
+    pass
+
+
+class OutputDefinition(DataDefinition):
+    def __init__(
+        self,
+        record_format="VB",
+        space_primary=5,
+        space_secondary=5,
+        space_type="M",
+        record_length=80,
+    ):
+        """Output DD Data type to be used in a DDStatement.
+        This should be used in cases where user wants to receive
+        output from a program but does not want to store in a
+        persistent data set or file.
+
+        Args:
+            record_format (str, optional): The record format to use for the dataset.
+                    Valid options are: FB, VB, FBA, VBA, U.
+                    Defaults to "VB".
+            space_primary (int, optional): The amount of primary space to allocate for the dataset.
+                    Defaults to 5.
+            space_secondary (int, optional):  The amount of primary space to allocate for the dataset.
+                    Defaults to 5.
+            space_type (str, optional): The unit of measurement to use when defining primary and secondary space.
+                    Defaults to "M".
+            record_length (int, optional): The length, in bytes, of each record in the data set.
+                    Defaults to 80.
+        """
+        self.name = None
+        name = DataSet.create_temp(
+            record_format=record_format,
+            space_primary=space_primary,
+            space_secondary=space_secondary,
+            space_type=space_type,
+            record_length=record_length,
+        )
+        super().__init__(name)
+
+    def __del__(self):
+        if self.name:
+            DataSet.delete(self.name)
+
+    def _build_arg_string(self):
+        """Build a string representing the arguments of this particular data type
+        to be used by mvscmd/mvscmdauth.
+        """
+        return ""
+
+
 class VIODefinition(DataDefinition):
     def __init__(self):
         """VIO DD type to be used in a DDStatement.

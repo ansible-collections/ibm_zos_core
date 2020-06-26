@@ -1659,3 +1659,35 @@ def test_vio_as_output(ansible_zos_module):
         pprint(result)
         assert result.get("ret_code", {}).get("code", 0) == 0
         assert len(result.get("dd_names", [])) == 0
+
+
+# ---------------------------------------------------------------------------- #
+#                                Output DD Tests                               #
+# ---------------------------------------------------------------------------- #
+
+
+def test_output_dd(ansible_zos_module):
+    hosts = ansible_zos_module
+
+    results = hosts.all.zos_raw(
+        program_name="idcams",
+        auth=True,
+        dds=[
+            dict(
+                dd_output=dict(dd_name=SYSPRINT_DD, return_content=dict(type="text"),),
+            ),
+            dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
+        ],
+    )
+    data_set_name = None
+    for result in results.contacted.values():
+        pprint(result)
+        assert result.get("ret_code", {}).get("code", -1) == 0
+        assert len(result.get("dd_names", [])) > 0
+        assert "IDCAMS" in "\n".join(result.get("dd_names")[0].get("content", []))
+        data_set_name = result.get("dd_names")[0].get("name", "")
+        assert data_set_name != ""
+    results = hosts.all.zos_data_set(name=data_set_name, state="absent")
+    for result in results.contacted.values():
+        pprint(result)
+        assert result.get("changed", True) is False

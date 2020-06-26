@@ -845,7 +845,9 @@ class BetterArgParser(object):
             OrderedDict[str, BetterArg] -- All of the BetterArg argument definitions for current argument depth,
             sorted based on dependencies.
         """
-        visited = {name: False for name in args}
+        visited = {}
+        for name in args:
+            visited[name] = False
         dependencies = {}
         ordered_arg_defs = OrderedDict()
         for name in args:

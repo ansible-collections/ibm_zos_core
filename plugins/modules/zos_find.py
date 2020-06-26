@@ -89,7 +89,8 @@ options:
     required: false
   file_type;
     description:
-      - The type of resource to search.
+      - The type of resource to search. The two choices are 'NONVSAM' and 'VSAM'.
+      - 'NONVSAM' refers to one of SEQ, LIBRARY (PDSE), PDS, LARGE, BASIC, EXTREQ, EXTPREF.
     choices:
       - NONVSAM
       - VSAM
@@ -138,7 +139,7 @@ EXAMPLES = r"""
       - USER.*.LIB
     use_regex: true
 
-- name: Find all data sets greater than 2MB in size and allocated in one of the specified volumes
+- name: Find all data sets greater than 2MB and allocated in one of the specified volumes
   zos_find:
     patterns: '*'
     size: 2m
@@ -146,11 +147,35 @@ EXAMPLES = r"""
       - SCR03
       - IMSSUN
 
-- name: Search all VSAM clusters 
+- name: Find all VSAM clusters starting with the word 'USER'
+  zos_find:
+    patterns:
+      - USER.*
+    file_type: VSAM
 """
 
 
 RETURN = r"""
-
-
+data_sets:
+    description: All matches found with the specified criteria.
+    returned: success
+    type: list
+    sample: [
+      { name: "SOME.DATA.SET",
+        "...": "...",
+      },
+      { name: "SAMPLE.DATA.SET,
+        "...": "...",
+      },
+    ]
+matched:
+    description: The number of matched data sets found
+    returned: success
+    type: int
+    sample: 49
+examined:
+    description: Number of data sets looked at
+    returned: success
+    type: int
+    sample: 158
 """

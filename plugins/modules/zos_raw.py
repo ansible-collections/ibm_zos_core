@@ -1157,6 +1157,248 @@ backups:
       type: str
 """
 
+EXAMPLES = r"""
+- name: List data sets matching pattern in catalog,
+  save output to a new sequential data set and return output as text.
+  zos_raw:
+    program_name: idcams
+    auth: true
+    dds:
+      - dd_data_set:
+          dd_name: sysprint
+          data_set_name: mypgm.output.ds
+          disposition: new
+          reuse: yes
+          type: seq
+          space_primary: 5
+          space_secondary: 1
+          space_type: m
+          volumes:
+            - "000000"
+          record_format: fb
+          return_content:
+            type: text
+      - dd_input:
+          dd_name: sysin
+          content: " LISTCAT ENTRIES('SOME.DATASET.*')"
+
+
+- name: List data sets matching patterns in catalog,
+  save output to a new sequential data set and return output as text.
+  zos_raw:
+    program_name: idcams
+    auth: true
+    dds:
+      - dd_data_set:
+          dd_name: sysprint
+          data_set_name: mypgm.output.ds
+          disposition: new
+          reuse: yes
+          type: seq
+          space_primary: 5
+          space_secondary: 1
+          space_type: m
+          volumes:
+            - "000000"
+          record_format: fb
+          return_content:
+            type: text
+      - dd_input:
+          dd_name: sysin
+          content:
+            - LISTCAT ENTRIES('SOME.DATASET.*')
+            - LISTCAT ENTRIES('SOME.OTHER.DS.*')
+            - LISTCAT ENTRIES('YET.ANOTHER.DS.*')
+
+- name: List data sets matching pattern in catalog,
+  save output to an existing sequential data set and
+  return output as text.
+  zos_raw:
+    program_name: idcams
+    auth: true
+    dds:
+      - dd_data_set:
+          dd_name: sysprint
+          data_set_name: mypgm.output.ds
+          disposition: shr
+          return_content:
+            type: text
+      - dd_input:
+          dd_name: sysin
+          content: " LISTCAT ENTRIES('SOME.DATASET.*')"
+
+- name: List data sets matching pattern in catalog,
+  save output to a sequential data set. If the data set exists,
+  then reuse it, if it does not exist, create it. Returns output as text.
+  zos_raw:
+    program_name: idcams
+    auth: true
+    dds:
+      - dd_data_set:
+          dd_name: sysprint
+          data_set_name: mypgm.output.ds
+          disposition: new
+          reuse: yes
+          type: seq
+          space_primary: 5
+          space_secondary: 1
+          space_type: m
+          volumes:
+            - "000000"
+          record_format: fb
+          return_content:
+            type: text
+      - dd_input:
+          dd_name: sysin
+          content: " LISTCAT ENTRIES('SOME.DATASET.*')"
+
+- name: List data sets matching pattern in catalog,
+  save output to a sequential data set. If the data set exists,
+  then back up the existing data set and replace it.
+  If the data set does not exist, create it.
+  Returns backup name (if a backup was made) and output as text,
+  and backup name.
+  zos_raw:
+    program_name: idcams
+    auth: true
+    dds:
+      - dd_data_set:
+          dd_name: sysprint
+          data_set_name: mypgm.output.ds
+          disposition: new
+          replace: yes
+          backup: yes
+          type: seq
+          space_primary: 5
+          space_secondary: 1
+          space_type: m
+          volumes:
+            - "000000"
+          record_format: fb
+          return_content:
+            type: text
+      - dd_input:
+          dd_name: sysin
+          content: " LISTCAT ENTRIES('SOME.DATASET.*')"
+
+- name: List data sets matching pattern in catalog,
+  save output to a file in unix system services.
+  zos_raw:
+    program_name: idcams
+    auth: true
+    dds:
+      - dd_unix:
+          dd_name: sysprint
+          path: /u/myuser/outputfile.txt
+      - dd_input:
+          dd_name: sysin
+          content: " LISTCAT ENTRIES('SOME.DATASET.*')"
+
+- name: List data sets matching pattern in catalog,
+  save output to a file in unix system services.
+  Return the contents of the file in encoding IBM-1047,
+  while the file is encoded in ISO8859-1.
+  zos_raw:
+    program_name: idcams
+    auth: true
+    dds:
+      - dd_unix:
+          dd_name: sysprint
+          path: /u/myuser/outputfile.txt
+          return_content:
+            type: text
+            src_encoding: iso8859-1
+            response_encoding: ibm-1047
+      - dd_input:
+          dd_name: sysin
+          content: " LISTCAT ENTRIES('SOME.DATASET.*')"
+
+- name: List data sets matching pattern in catalog,
+  save output to a file in unix system services.
+  Return the contents of the file in encoding IBM-1047,
+  while the file is encoded in ISO8859-1.
+  zos_raw:
+    program_name: idcams
+    auth: true
+    dds:
+      - dd_unix:
+          dd_name: sysprint
+          path: /u/myuser/outputfile.txt
+          return_content:
+            type: text
+            src_encoding: iso8859-1
+            response_encoding: ibm-1047
+      - dd_input:
+          dd_name: sysin
+          content: " LISTCAT ENTRIES('SOME.DATASET.*')"
+
+- name: Take a set of data sets and write them to an archive.
+  zos_raw:
+    program_name: adrdssu
+    auth: yes
+    dds:
+      - dd_data_set:
+          dd_name: archive
+          data_set_name: myhlq.stor.darv1
+          disposition: old
+      - dd_data_set:
+          dd_name: sysin
+          data_set_name: myhlq.adrdssu.cmd
+          disposition: shr
+      - dd_dummy:
+          dd_name: sysprint
+
+- name: Merge two sequential data sets and write them to new data set
+  zos_raw:
+    program_name: sort
+    auth: no
+    parm: "MSGPRT=CRITICAL,LIST"
+    dds:
+      - dd_data_set:
+          dd_name: sortin01
+          data_set_name: myhlq.dfsort.master
+          disposition: shr
+      - dd_data_set:
+          dd_name: sortin02
+          data_set_name: myhlq.dfsort.new
+      - dd_input:
+          dd_name: sysin
+          content: " MERGE FORMAT=CH,FIELDS=(1,9,A)"
+      - dd_data_set:
+          dd_name: sortout
+          data_set_name: myhlq.dfsort.merge
+          type: seq
+          disposition: new
+      - dd_unix:
+          dd_name: sysout
+          path: /tmp/sortpgmoutput.txt
+          mode: 644
+          status_group:
+            - ocreat
+          access_group: w
+
+- name: List data sets matching pattern in catalog,
+  save output to a concatenation of data set members and
+  files.
+  zos_raw:
+    pgm: idcams
+    auth: yes
+    dds:
+      - dd_concat:
+          dd_name: sysprint
+          dds:
+            - dd_data_set:
+                data_set_name: myhlq.ds1.out(out1)
+            - dd_data_set:
+                data_set_name: myhlq.ds1.out(out2)
+            - dd_data_set:
+                data_set_name: myhlq.ds1.out(out3)
+            - dd_unix:
+                path: /tmp/overflowout.txt
+      - dd_input:
+          dd_name: sysin
+          content: " LISTCAT ENTRIES('SYS1.*')"
+"""
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     MissingImport,

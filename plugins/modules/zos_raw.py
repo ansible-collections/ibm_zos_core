@@ -1475,10 +1475,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dd_statement impo
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import DataSet
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.zos_raw import MVSCmd
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.encode import (
-    EncodeUtils,
-    EncodeError,
-)
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import encode
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     backup as zos_backup,
 )
@@ -2000,7 +1997,7 @@ def encoding(contents, dependencies):
     valid_encodings = []
     if contents:
         try:
-            encode_util = EncodeUtils()
+            encode_util = encode.EncodeUtils()
             valid_encodings = encode_util.get_codeset() or []
             valid_encodings = [e.lower() for e in valid_encodings]
             if contents.lower() not in valid_encodings:
@@ -2010,7 +2007,7 @@ def encoding(contents, dependencies):
                     )
                 )
             encoding = contents
-        except EncodeError:
+        except (encode.EncodeError, ValueError):
             # if can't get list of encodings perform basic check for bad characters
             if not re.fullmatch(r"^[A-Z0-9-]{2,}$", str(contents), re.IGNORECASE):
                 raise ValueError(

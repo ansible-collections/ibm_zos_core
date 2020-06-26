@@ -20,11 +20,10 @@ description:
   - M(zos_ping) returns C(pong) when the target host is not missing any required dependencies.
   - If the target host is missing optional dependencies, the M(zos_ping) will return one or more warning messages.
   - If a required dependency is missing from the target host, an explanatory message will be returned with the module failure.
-  - The M(zos_ssh) connection plugin must be used for this module to function correctly.
+  - The `zos_ssh` connection plugin must be used for this module to function correctly.
 author:
   - "Vijay Katoch"
   - "Blake Becker (@blakeinate)"
-
 '''
 
 EXAMPLES = '''

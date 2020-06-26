@@ -1454,9 +1454,13 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dd_statement impo
     DummyDefinition,
     VIODefinition,
 )
+
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import DataSet
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.zos_raw import MVSCmd
-
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.encode import (
+    EncodeUtils,
+    EncodeError,
+)
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     backup as zos_backup,
 )
@@ -1776,8 +1780,8 @@ def parse_and_validate_args(params):
             type="dict",
             options=dict(
                 type=dict(type="str", choices=["text", "base64"], required=True),
-                src_encoding=dict(type="encoding", default="ibm-1047"),
-                response_encoding=dict(type="encoding", default="iso8859-1"),
+                src_encoding=dict(type=encoding, default="ibm-1047"),
+                response_encoding=dict(type=encoding, default="iso8859-1"),
             ),
         ),
         reuse=dict(type=reuse, default=False, dependencies=["disposition"]),
@@ -1793,8 +1797,8 @@ def parse_and_validate_args(params):
             type="dict",
             options=dict(
                 type=dict(type="str", choices=["text", "base64"], required=True),
-                src_encoding=dict(type="encoding", default="ibm-1047"),
-                response_encoding=dict(type="encoding", default="iso8859-1"),
+                src_encoding=dict(type=encoding, default="ibm-1047"),
+                response_encoding=dict(type=encoding, default="iso8859-1"),
             ),
         ),
     )
@@ -1805,8 +1809,8 @@ def parse_and_validate_args(params):
             required=True,
             options=dict(
                 type=dict(type="str", choices=["text", "base64"], required=True),
-                src_encoding=dict(type="str", default="ibm-1047"),
-                response_encoding=dict(type="str", default="iso8859-1"),
+                src_encoding=dict(type=encoding, default="ibm-1047"),
+                response_encoding=dict(type=encoding, default="iso8859-1"),
             ),
         ),
     )
@@ -1828,8 +1832,8 @@ def parse_and_validate_args(params):
             type="dict",
             options=dict(
                 type=dict(type="str", choices=["text", "base64"], required=True),
-                src_encoding=dict(type="encoding", default="ibm-1047"),
-                response_encoding=dict(type="encoding", default="iso8859-1"),
+                src_encoding=dict(type=encoding, default="ibm-1047"),
+                response_encoding=dict(type=encoding, default="iso8859-1"),
             ),
         ),
     )
@@ -1960,6 +1964,44 @@ def key_offset_default(contents, dependencies):
     elif dependencies.get("type") == "ksds":
         offset = contents
     return offset
+
+
+def encoding(contents, dependencies):
+    """Validates encoding arguments
+
+    Args:
+        contents (str): argument contents
+        dependencies (dict): Any dependent arguments
+
+    Returns:
+        str: valid encoding
+    """
+    encoding = None
+    if contents is None:
+        encoding = None
+    valid_encodings = []
+    if contents:
+        try:
+            encode_util = EncodeUtils()
+            valid_encodings = encode_util.get_codeset() or []
+            valid_encodings = [e.lower() for e in valid_encodings]
+            if contents.lower() not in valid_encodings:
+                raise ValueError(
+                    'Provided encoding "{0}" is not valid. Valid encodings are: {1}.'.format(
+                        contents, ", ".join(valid_encodings)
+                    )
+                )
+            encoding = contents
+        except EncodeError:
+            # if can't get list of encodings perform basic check for bad characters
+            if not re.fullmatch(r"^[A-Z0-9-]{2,}$", str(contents), re.IGNORECASE):
+                raise ValueError(
+                    'Provided encoding "{0}" is not valid. Valid encodings are: {1}.'.format(
+                        contents, ", ".join(valid_encodings)
+                    )
+                )
+            encoding = contents
+    return encoding
 
 
 def dd_content(contents, dependencies):

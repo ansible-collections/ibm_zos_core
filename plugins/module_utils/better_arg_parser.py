@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Copyright (c) IBM Corporation 2020
 # Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
@@ -8,14 +9,16 @@ __metaclass__ = type
 
 from collections import OrderedDict, defaultdict
 import types
-import re
 from os import path
 import sys
+from re import IGNORECASE
 
 if sys.version_info >= (3, 0):
     from inspect import getfullargspec
+    from re import fullmatch
 else:
     from inspect import getargspec as getfullargspec
+    from re import match as fullmatch
 
 # TODO: add "allow empty" parameter for each argument
 
@@ -240,7 +243,7 @@ class BetterArgHandler(object):
         Returns:
             int -- The arguments contents after any necessary operations.
         """
-        if not re.fullmatch(r"[0-9]+", str(contents)):
+        if not fullmatch(r"[0-9]+", str(contents)):
             raise ValueError('Invalid argument "{0}" for type "int".'.format(contents))
         return int(contents)
 
@@ -314,10 +317,10 @@ class BetterArgHandler(object):
         Returns:
             str -- The arguments contents after any necessary operations.
         """
-        if not re.fullmatch(
+        if not fullmatch(
             r"^(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}(?:\([A-Z$#@]{1}[A-Z0-9$#@]{0,7}\)){0,1}$",
             str(contents),
-            re.IGNORECASE,
+            IGNORECASE,
         ):
             raise ValueError(
                 'Invalid argument "{0}" for type "data_set".'.format(contents)
@@ -338,10 +341,10 @@ class BetterArgHandler(object):
         Returns:
             str -- The arguments contents after any necessary operations.
         """
-        if not re.fullmatch(
+        if not fullmatch(
             r"^(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}$",
             str(contents),
-            re.IGNORECASE,
+            IGNORECASE,
         ):
             raise ValueError(
                 'Invalid argument "{0}" for type "data_set_base".'.format(contents)
@@ -362,10 +365,10 @@ class BetterArgHandler(object):
         Returns:
             str -- The arguments contents after any necessary operations.
         """
-        if not re.fullmatch(
+        if not fullmatch(
             r"^(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}\([A-Z$#@]{1}[A-Z0-9$#@]{0,7}\)$",
             str(contents),
-            re.IGNORECASE,
+            IGNORECASE,
         ):
             raise ValueError(
                 'Invalid argument "{0}" for type "data_set_member".'.format(contents)
@@ -386,7 +389,7 @@ class BetterArgHandler(object):
         Returns:
             str -- The arguments contents after any necessary operations.
         """
-        if not re.fullmatch(r"^[A-Z]{1}[A-Z0-9]{0,7}$", str(contents), re.IGNORECASE,):
+        if not fullmatch(r"^[A-Z]{1}[A-Z0-9]{0,7}$", str(contents), IGNORECASE,):
             raise ValueError(
                 'Invalid argument "{0}" for type "qualifier".'.format(contents)
             )
@@ -406,10 +409,10 @@ class BetterArgHandler(object):
         Returns:
             str -- The arguments contents after any necessary operations.
         """
-        if not re.fullmatch(
+        if not fullmatch(
             r"^(?:[A-Z]{1}[A-Z0-9]{0,7})|(?:\*{1})|(?:[A-Z]{1}[A-Z0-9]{0,6}\*{1})$",
             str(contents),
-            re.IGNORECASE,
+            IGNORECASE,
         ):
             raise ValueError(
                 'Invalid argument "{0}" for type "qualifier_pattern".'.format(contents)
@@ -430,7 +433,7 @@ class BetterArgHandler(object):
         Returns:
             str -- The arguments contents after any necessary operations.
         """
-        if not re.fullmatch(r"^[A-Z0-9@#$]{1,6}$", str(contents), re.IGNORECASE,):
+        if not fullmatch(r"^[A-Z0-9@#$]{1,6}$", str(contents), IGNORECASE,):
             raise ValueError(
                 'Invalid argument "{0}" for type "volume".'.format(contents)
             )
@@ -450,9 +453,7 @@ class BetterArgHandler(object):
         Returns:
             str -- The arguments contents after any necessary operations.
         """
-        if not re.fullmatch(
-            r"^[A-Z$#@][A-Z0-9@#$]{0,7}$", str(contents), re.IGNORECASE,
-        ):
+        if not fullmatch(r"^[A-Z$#@][A-Z0-9@#$]{0,7}$", str(contents), IGNORECASE,):
             raise ValueError('Invalid argument "{0}" for type "dd".'.format(contents))
         return str(contents)
 
@@ -470,10 +471,10 @@ class BetterArgHandler(object):
         Returns:
             str -- The arguments contents after any necessary operations.
         """
-        if not re.fullmatch(
+        if not fullmatch(
             r"^(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}(?:\([A-Z$#@]{1}[A-Z0-9$#@]{0,7}\)){0,1}$",
             str(contents),
-            re.IGNORECASE,
+            IGNORECASE,
         ):
             if not path.isabs(str(contents)):
                 raise ValueError(
@@ -495,7 +496,7 @@ class BetterArgHandler(object):
         Returns:
             str -- The arguments contents after any necessary operations.
         """
-        if not re.fullmatch(r"^[A-Z0-9-]{2,}$", str(contents), re.IGNORECASE):
+        if not fullmatch(r"^[A-Z0-9-]{2,}$", str(contents), IGNORECASE):
             raise ValueError(
                 'Invalid argument "{0}" for type "encoding".'.format(contents)
             )

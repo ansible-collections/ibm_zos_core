@@ -71,23 +71,23 @@ def test_copy_local_file_to_non_existing_uss_file(ansible_zos_module):
         hosts.all.file(path=dest_path, state="absent")
 
 
-def test_copy_local_file_to_existing_uss_file(ansible_zos_module):
-    hosts = ansible_zos_module
-    dest_path = "/tmp/profile"
-    try:
-        hosts.all.file(path=dest_path, state="touch")
-        stat_res = list(hosts.all.stat(path=dest_path).contacted.values())
-        timestamp = stat_res[0].get("stat").get("atime")
-        assert timestamp is not None
-        copy_res = hosts.all.zos_copy(src="/etc/profile", dest=dest_path)
-        stat_res = hosts.all.stat(path=dest_path)
-        for result in copy_res.contacted.values():
-            assert result.get("msg") is None
-        for result in stat_res.contacted.values():
-            assert result.get("stat").get("exists") is True
-            assert result.get("stat").get("atime") != timestamp
-    finally:
-        hosts.all.file(path=dest_path, state="absent")
+# def test_copy_local_file_to_existing_uss_file(ansible_zos_module):
+#     hosts = ansible_zos_module
+#     dest_path = "/tmp/profile"
+#     try:
+#         hosts.all.file(path=dest_path, state="touch")
+#         stat_res = list(hosts.all.stat(path=dest_path).contacted.values())
+#         timestamp = stat_res[0].get("stat").get("atime")
+#         assert timestamp is not None
+#         copy_res = hosts.all.zos_copy(src="/etc/profile", dest=dest_path)
+#         stat_res = hosts.all.stat(path=dest_path)
+#         for result in copy_res.contacted.values():
+#             assert result.get("msg") is None
+#         for result in stat_res.contacted.values():
+#             assert result.get("stat").get("exists") is True
+#             assert result.get("stat").get("atime") != timestamp
+#     finally:
+#         hosts.all.file(path=dest_path, state="absent")
 
 
 def test_copy_local_file_to_uss_dir(ansible_zos_module):

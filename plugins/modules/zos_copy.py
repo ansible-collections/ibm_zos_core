@@ -845,10 +845,10 @@ class PDSECopyHandler(CopyHandler):
             src_ds_type {str} -- The type of source
         """
         new_src = temp_path or conv_path or src
-        if src_ds_type == "USS":
-            if self.dest_exists and Datasets.delete_members(dest + "(*)") != 0:
-                self.fail_json(msg="Unable to delete partitioned data set members")
+        if self.dest_exists and Datasets.delete_members(dest + "(*)") != 0:
+            self.fail_json(msg="Unable to delete partitioned data set members")
 
+        if src_ds_type == "USS":
             path, dirs, files = next(os.walk(new_src))
             for file in files:
                 member_name = file[:file.rfind('.')] if '.' in file else file
@@ -857,11 +857,6 @@ class PDSECopyHandler(CopyHandler):
                     full_file_path, None, None, "{0}({1})".format(dest, member_name), copy_member=True
                 )
         else:
-            if self.dest_exists:
-                temp_ds = Datasets.temp_name()
-                Datasets.move(dest, temp_ds)
-                self.allocate_model(dest, new_src)
-                Datasets.delete(temp_ds)
             dds = dict(OUTPUT=dest, INPUT=new_src)
             copy_cmd = "   COPY OUTDD=OUTPUT,INDD=((INPUT,R))"
             rc, out, err = mvs_cmd.iebcopy(copy_cmd, dds=dds)

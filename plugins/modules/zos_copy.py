@@ -845,8 +845,10 @@ class PDSECopyHandler(CopyHandler):
             src_ds_type {str} -- The type of source
         """
         new_src = temp_path or conv_path or src
-        if self.dest_exists and Datasets.delete_members(dest + "(*)") != 0:
-            self.fail_json(msg="Unable to delete partitioned data set members")
+        if self.dest_exists:
+            rc = Datasets.delete_members(dest + "(*)")
+            if rc != 0:
+                self.fail_json(msg="Unable to delete members inside {0}".format(dest))
 
         if src_ds_type == "USS":
             path, dirs, files = next(os.walk(new_src))

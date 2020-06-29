@@ -848,7 +848,10 @@ class PDSECopyHandler(CopyHandler):
         if self.dest_exists:
             rc = Datasets.delete_members(dest + "(*)")
             if rc != 0:
-                self.fail_json(msg="Unable to delete members inside {0}".format(dest))
+                self.fail_json(
+                    msg="Unable to delete data set member for data set {0}".format(dest),
+                    rc=rc
+                )
 
         if src_ds_type == "USS":
             path, dirs, files = next(os.walk(new_src))
@@ -1118,9 +1121,10 @@ def cleanup(src_list):
             else:
                 os.remove(src)
 
+    tmp_dir = os.path.realpath("/" + tempfile.gettempprefix())
     rc, out, err = module.run_command(
         "rm -rf tmp* ansible.* converted* ansible-zos-copy-payload*",
-        use_unsafe_shell=True, cwd=tempfile.gettempprefix()
+        use_unsafe_shell=True, cwd=tmp_dir
     )
     if rc != 0:
         module.fail_json(

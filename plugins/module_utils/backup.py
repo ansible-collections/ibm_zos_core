@@ -23,6 +23,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.file import make_
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
     is_member, extract_dsname, temp_member_name
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.mvs_cmd import iebcopy
 
 try:
     from zoautil_py import Datasets
@@ -70,9 +71,9 @@ def mvs_file_backup(dsn, bk_dsn):
             # Safe to delete because _copy_ds() would have raised an exception if it did
             # not successfully create the backup data set, so no risk of it predating module invocation
             Datasets.delete(bk_dsn)
-            if Datasets.move(dsn, bk_dsn) == 0:
-                _allocate_model(dsn, bk_dsn)
-            else:
+            _allocate_model(bk_dsn, dsn)
+            rc, out, err = _copy_pds(dsn, bk_dsn)
+            if rc != 0:
                 raise BackupError(
                     "Unable to backup data set {0} to {1}".format(dsn, bk_dsn)
                 )
@@ -225,6 +226,12 @@ def _vsam_empty(ds):
         return True
     elif rc != 0:
         return False
+
+
+def _copy_pds(ds, bk_dsn):
+    dds = dict(OUTPUT=bk_dsn, INPUT=ds)
+    copy_cmd = "   COPY OUTDD=OUTPUT,INDD=((INPUT,R))"
+    return iebcopy(copy_cmd, dds=dds)
 
 
 class BackupError(Exception):

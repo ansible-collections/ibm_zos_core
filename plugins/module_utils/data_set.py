@@ -343,9 +343,9 @@ def temp_member_name():
     """Generate a temp member name"""
     first_char_set = ascii_uppercase + '#@$'
     rest_char_set = ascii_uppercase + digits + '#@$'
-    temp_name = first_char_set[randint(0, len(first_char_set)-1)]
-    for _ in range(7):
-        temp_name += rest_char_set[randint(0, len(rest_char_set)-1)]
+    temp_name = first_char_set[randint(0, len(first_char_set) - 1)]
+    for i in range(7):
+        temp_name += rest_char_set[randint(0, len(rest_char_set) - 1)]
     return temp_name
 
 

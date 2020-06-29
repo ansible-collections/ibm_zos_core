@@ -243,7 +243,7 @@ def parsing_jobs(jobs_raw):
             "job_name": job.get("job_name"),
             "owner": job.get("owner"),
             "job_id": job.get("job_id"),
-            "system": job.get("sysname"),
+            "system": job.get("system"),
             "subsystem": job.get("subsystem"),
             "ret_code": ret_code,
         }

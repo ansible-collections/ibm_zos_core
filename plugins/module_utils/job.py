@@ -328,7 +328,7 @@ do ix=1 to isfrows
     Say '"'||'job_id'||'":"'||value('JOBID'||"."||ix)||'",'
     Say '"'||'job_name'||'":"'||value('JNAME'||"."||ix)||'",'
     Say '"'||'subsystem'||'":"'||value('ESYSID'||"."||ix)||'",'
-    Say '"'||'sysname'||'":"'||value('SYSNAME'||"."||ix)||'",'
+    Say '"'||'system'||'":"'||value('SYSNAME'||"."||ix)||'",'
     Say '"'||'owner'||'":"'||value('OWNERID'||"."||ix)||'",'
     Say '"'||'ret_code'||'":{"'||'msg'||'":"'||value('RETCODE'||"."||ix)||'"},'
     Say '"'||'class'||'":"'||value('JCLASS'||"."||ix)||'",'

@@ -14,32 +14,26 @@ ANSIBLE_METADATA = {'metadata_version': '1.1',
 DOCUMENTATION = r'''
 ---
 module: zos_blockinfile
+author:
+  - "Behnam (@balkajbaf)"
 short_description: Manage block of multi-line textual data on z/OS
 description:
   - Manage block of multi-lines in z/OS Unix System Services (USS) files,
-    PS(sequential data set), member of a PDS or PDSE data set.
+    PS(sequential data set), PDS, PDSE, or member of a PDS or PDSE.
   - This module ensures a particular block of multi-line text surrounded
     by customizable marker lines is in a USS file or data set, or
     replace an existing block identified by the markers.
   - This is primarily useful when you want to change a block of multi-line
     in a USS file or data set.
-author:
-  - "Behnam (@balkajbaf)"
 options:
-  dest:
+  src:
     description:
-      - The location of the input characters.
       - The location can be a UNIX System Services (USS) file,
-        PS(sequential data set), member of a PDS or PDSE data set.
+        PS(sequential data set), member of a PDS or PDSE, PDS, PDSE.
       - The USS file must be an absolute pathname.
-      - It is the playbook author or user's responsibility to avoid files
-        that should not be encoded, such as binary files. A user is described
-        as the remote user, configured either for the playbook or playbook
-        tasks, who can also obtain escalated privileges to execute as root
-        or another user.
     type: str
-    aliases: [ path, destfile, destds, name ]
-    required: yes
+    aliases: [ path, destfile, name ]
+    required: true
   state:
     description:
       - Whether the block should be inserted/replaced(present) or removed(absent).
@@ -51,35 +45,49 @@ options:
   marker:
     description:
     - The marker line template.
-    - C({mark}) will be replaced with the values C(in marker_begin) (default="BEGIN") and C(marker_end) (default="END").
-    - Using a custom marker without the C({mark}) variable may result in the block being repeatedly inserted on subsequent playbook runs.
+    - C({mark}) will be replaced with the values C(in marker_begin)
+      (default="BEGIN") and C(marker_end) (default="END").
+    - Using a custom marker without the C({mark}) variable may result
+      in the block being repeatedly inserted on subsequent playbook runs.
+    required: false
     type: str
     default: '# {mark} ANSIBLE MANAGED BLOCK'
   block:
     description:
     - The text to insert inside the marker lines.
-    - If it is missing or an empty string, the block will be removed as if C(state) were specified to C(absent).
+    - If it is missing or an empty string, the block will be removed as if
+      C(state) were specified to C(absent).
+    - Multi-line can separated by '\n'
+    required: false
     type: str
     default: ''
     aliases: [ content ]
   insertafter:
     description:
-    - If specified, the block will be inserted after the last match of specified regular expression.
-    - A special value is available; C(EOF) for inserting the block at the end of the file.
+    - If specified, the block will be inserted after the last match of specified
+      regular expression.
+    - A special value is available; C(EOF) for inserting the block
+      at the end of the file.
     - If specified regular expression has no matches, C(EOF) will be used instead.
-    - choices are EOF or '*regex*'
+    - Choices are EOF or '*regex*'
+    - Default is EOF
+    required: false
     type: str
-    default: EOF
   insertbefore:
     description:
-    - If specified, the block will be inserted before the last match of specified regular expression.
-    - A special value is available; C(BOF) for inserting the block at the beginning of the file.
-    - If specified regular expression has no matches, the block will be inserted at the end of the file.
-    - choices are BOF or '*regex*'
+    - If specified, the block will be inserted before the last match of specified
+      regular expression.
+    - A special value is available; C(BOF) for inserting the block
+      at the beginning of the file.
+    - If specified regular expression has no matches, the block will be inserted
+      at the end of the file.
+    - Choices are BOF or '*regex*'
+    required: false
     type: str
   marker_begin:
     description:
     - This will be inserted at C({mark}) in the opening ansible block marker.
+    required: false
     type: str
     default: BEGIN
   marker_end:
@@ -90,7 +98,7 @@ options:
     default: END
   backup:
     description:
-      - Creates a backup file or backup data set for I(dest), including the
+      - Creates a backup file or backup data set for I(src), including the
         timestamp information to ensure that you retrieve the original file.
       - I(backup_file) can be used to specify a backup file name
         if I(backup=true).
@@ -102,33 +110,44 @@ options:
   backup_file:
     description:
       - Specify the USS file name or data set name for the destination backup.
-      - If the destination (dest) is a USS file or path, the backup_file name must be a file
-        or path name, and the USS path or file must be an absolute path name.
-      - If the destination is an MVS data set, the backup_file name must be an MVS
+      - If the source I(src) is a USS file or path, the backup_file name must be a file
+        or path name, and the USS file or path must be an absolute path name.
+      - If the source is an MVS data set, the backup_file name must be an MVS
         data set name.
       - If the backup_file is not provided, the default backup_file name will
-        be used. If the destination is a USS file or USS path, the name of the backup
-        file will be the destination file or path name appended with a
+        be used. If the source is a USS file or path, the name of the backup
+        file will be the source file or path name appended with a
         timestamp, e.g. C(/path/file_name.2020-04-23-08-32-29-bak.tar).
-      - If the destination is an MVS data set, it will be a data set with a random
+      - If the source is an MVS data set, it will be a data set with a random
         name generated by calling the ZOAU API. The MVS backup data set
         recovery can be done by renaming it.
     required: false
     type: str
   encoding:
     description:
-      - The character set of the destination I(dest). M(zos_lineinfile)
+      - The character set of the source I(src). M(zos_lineinfile)
         requires to be provided with correct encoding to read the content
         of USS file or data set. If this parameter is not provided, this
         module assumes that USS file or data set is encoded in IBM-1047.
-      - Supported character sets rely on the target version; the most
-        common character sets are supported.
+      - Supported character sets rely on the charset conversion utility (iconv)
+        version; the most common character sets are supported.
     required: false
     type: str
     default: IBM-1047
 notes:
-  - When using 'with_*' loops be aware that if you do not set a unique mark the block will be overwritten on each iteration.
-  - When more then one block should be handled in one file you must change the I(marker) per task.
+  - It is the playbook author or user's responsibility to avoid files
+    that should not be encoded, such as binary files. A user is described
+    as the remote user, configured either for the playbook or playbook
+    tasks, who can also obtain escalated privileges to execute as root
+    or another user.
+  - All data sets are always assumed to be cataloged. If an uncataloged data set
+    needs to be encoded, it should be cataloged first.
+  - For supported character sets used to encode data, refer to
+    U(https://ansible-collections.github.io/ibm_zos_core/supplementary.html#encode)
+  - When using 'with_*' loops be aware that if you do not set a unique mark
+    the block will be overwritten on each iteration.
+  - When more then one block should be handled in one file you must change
+    the I(marker) per task.
 '''
 
 EXAMPLES = r'''
@@ -151,9 +170,8 @@ EXAMPLES = r'''
 - name: Insert/Update configuration using a local file and validate it
   zos_blockinfile:
     block: "{{ lookup('file', './local/sshd_config') }}"
-    dest: /etc/ssh/sshd_config
+    src: /etc/ssh/sshd_config
     backup: yes
-    validate: /usr/sbin/sshd -T -f %s
 
 - name: Insert/Update HTML surrounded by custom markers after <body> line
   zos_blockinfile:
@@ -213,14 +231,14 @@ else:
 # supported data set types
 DS_TYPE = ['PS', 'PO']
 
-def present(dest, block, marker, ins_aft, ins_bef, encoding):
+def present(src, block, marker, ins_aft, ins_bef, encoding):
     """Replace a block with the matching regex pattern
     Insert a block before/after the matching pattern
     Insert a block at BOF/EOF
 
     Arguments:
-        dest: {str} -- The z/OS USS file or data set to modify.
-        block: {str} -- The block to insert/replace into the dest.
+        src: {str} -- The z/OS USS file or data set to modify.
+        block: {str} -- The block to insert/replace into the src.
         marker: {str} -- The block will be inserted/updated with the markers.
         ins_aft: {str} -- Insert the block after matching '*regex*' pattern or EOF.
             choices:
@@ -230,7 +248,7 @@ def present(dest, block, marker, ins_aft, ins_bef, encoding):
             choices:
                 - BOF
                 - '*regex*'
-        encoding: {str} -- Encoding of the dest.
+        encoding: {str} -- Encoding of the src.
 
     Returns:
         str -- Information in JSON format. keys:
@@ -238,16 +256,16 @@ def present(dest, block, marker, ins_aft, ins_bef, encoding):
             found: {int} -- Number of matching regex pattern
             changed: {bool} -- Indicates if the destination was modified.
     """
-    return Datasets.blockinfile(dest, block, marker, ins_aft, ins_bef, encoding, state=True)
+    return Datasets.blockinfile(src, block, marker, ins_aft, ins_bef, encoding, state=True)
 
 
-def absent(dest, marker, encoding):
+def absent(src, marker, encoding):
     """Delete blocks with matching regex pattern
 
     Arguments:
-        dest: {str} -- The z/OS USS file or data set to modify.
+        src: {str} -- The z/OS USS file or data set to modify.
         marker: {str} -- Identifies the block to be removed.
-        encoding: {str} -- Encoding of the dest.
+        encoding: {str} -- Encoding of the src.
 
     Returns:
         str -- Information in JSON format. keys:
@@ -255,7 +273,7 @@ def absent(dest, marker, encoding):
             found: {int} -- Number of matching regex pattern
             changed: {bool} -- Indicates if the destination was modified.
     """
-    return Datasets.blockinfile(dest, marker=marker, encoding=encoding, state=False)
+    return Datasets.blockinfile(src, marker=marker, encoding=encoding, state=False)
 
 def quotedString(string):
     # add escape if string was quoted
@@ -266,7 +284,7 @@ def quotedString(string):
 def main():
     module = AnsibleModule(
         argument_spec=dict(
-            dest=dict(type='str', required=True, aliases=['path', 'destfile', 'destds', 'name']),
+            src=dict(type='str', required=True, aliases=['path', 'destfile', 'name']),
             state=dict(type='str', default='present', choices=['absent', 'present']),
             marker=dict(type='str', default='# {mark} ANSIBLE MANAGED BLOCK'),
             block=dict(type='str', default='', aliases=['content']),
@@ -284,14 +302,14 @@ def main():
     params = module.params
 
     arg_defs = dict(
-        dest=dict(arg_type="data_set_or_path", aliases=['path', 'destfile', 'destds', 'name'], required=True),
+        src=dict(arg_type="data_set_or_path", aliases=['path', 'destfile', 'name'], required=True),
         state=dict(arg_type='str', default='present',choices=['absent', 'present']),
-        marker=dict(arg_type='str', default='# {mark} ANSIBLE MANAGED BLOCK'),
-        block=dict(arg_type='str', default='', aliases=['content']),
+        marker=dict(arg_type='str', default='# {mark} ANSIBLE MANAGED BLOCK', required=False),
+        block=dict(arg_type='str', default='', aliases=['content'], required=False),
         insertafter=dict(arg_type="str", required=False),
         insertbefore=dict(arg_type="str", required=False),
-        marker_begin=dict(arg_type='str', default='BEGIN'),
-        marker_end=dict(arg_type='str', default='END'),
+        marker_begin=dict(arg_type='str', default='BEGIN', required=False),
+        marker_end=dict(arg_type='str', default='END', required=False),
         encoding=dict(arg_type="str", default="IBM-1047", required=False),
         backup=dict(arg_type="bool", default=False, required=False),
         backup_file=dict(arg_type="data_set_or_path", required=False, default=None),
@@ -307,7 +325,7 @@ def main():
     backup = parsed_args.get('backup')
     if parsed_args.get('backup_file') and backup:
         backup = parsed_args.get('backup_file')
-    dest = parsed_args.get('dest')
+    src = parsed_args.get('src')
     ins_aft = parsed_args.get('insertafter')
     ins_bef = parsed_args.get('insertbefore')
     encoding = parsed_args.get('encoding')
@@ -337,7 +355,7 @@ def main():
     block = '\\n'.join(blocklines)
 
     # analysis the file type
-    ds_utils = data_set.DataSetUtils(dest)
+    ds_utils = data_set.DataSetUtils(src)
     file_type = ds_utils.ds_type()
     if file_type == 'USS':
         file_type = 1
@@ -355,17 +373,17 @@ def main():
             backup = None
         try:
             if file_type:
-                result['backup_file'] = Backup.uss_file_backup(dest, backup_name=backup, compress=False)
+                result['backup_file'] = Backup.uss_file_backup(src, backup_name=backup, compress=False)
             else:
-                result['backup_file'] = Backup.mvs_file_backup(dsn=dest, bk_dsn=backup)
+                result['backup_file'] = Backup.mvs_file_backup(dsn=src, bk_dsn=backup)
         except Exception:
             module.fail_json(msg="creating backup has failed")
     # state=present, insert/replace a block with matching regex pattern
     # state=absent, delete blocks with matching regex pattern
     if parsed_args.get('state') == 'present':
-        return_content = present(dest, quotedString(block), quotedString(marker), quotedString(ins_aft), quotedString(ins_bef), encoding)
+        return_content = present(src, quotedString(block), quotedString(marker), quotedString(ins_aft), quotedString(ins_bef), encoding)
     else:
-        return_content = absent(dest, quotedString(marker), encoding)
+        return_content = absent(src, quotedString(marker), encoding)
     try:
         # change the return string to be loadable by json.loads()
         return_content = return_content.replace('/c\\', '/c\\\\')

@@ -339,6 +339,18 @@ def extract_member_name(data_set):
     return member
 
 
+def is_empty(data_set):
+    """Determine whether a given partitioned data set is empty
+
+    Arguments:
+        data_set {str} -- Input source name
+
+    Returns:
+        {bool} -- Whether the data set is empty
+    """
+    return Datasets.list_members(data_set) is None
+
+
 def temp_member_name():
     """Generate a temp member name"""
     first_char_set = ascii_uppercase + '#@$'

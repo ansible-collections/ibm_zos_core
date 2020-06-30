@@ -846,11 +846,11 @@ class PDSECopyHandler(CopyHandler):
             src_ds_type {str} -- The type of source
         """
         new_src = temp_path or conv_path or src
-        if self.dest_exists:
+        if self.dest_exists and not data_set.is_empty(dest):
             rc = Datasets.delete_members(dest + "(*)")
             if rc != 0:
                 self.fail_json(
-                    msg="Unable to delete data set member for data set {0}".format(dest),
+                    msg="Unable to delete data set members for data set {0}".format(dest),
                     rc=rc
                 )
 
@@ -1256,7 +1256,11 @@ def run_module(module, arg_def):
             module.exit_json(note="Destination exists. No data was copied")
 
         if backup or backup_file:
-            backup_file = backup_data(dest, dest_ds_type, backup_file)
+            if (dest_ds_type in MVS_PARTITIONED and data_set.is_empty(dest_name)):
+                # The partitioned data set is empty
+                res_args['note'] = "Destination is emtpy, backup request ignored"
+            else:
+                backup_file = backup_data(dest, dest_ds_type, backup_file)
     # ********************************************************************
     # If destination does not exist, it must be created. To determine
     # what type of data set destination must be, a couple of simple checks

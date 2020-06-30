@@ -38,6 +38,7 @@ class ActionModule(ActionBase):
         dest = self._task.args.get('dest', None)
         b_dest = to_bytes(dest, errors='surrogate_or_strict')
         content = self._task.args.get('content', None)
+        force = _process_boolean(self._task.args.get('force'), default=True)
         backup = _process_boolean(self._task.args.get('backup'), default=False)
         local_follow = _process_boolean(self._task.args.get('local_follow'), default=False)
         remote_src = _process_boolean(self._task.args.get('remote_src'), default=False)
@@ -158,7 +159,8 @@ class ActionModule(ActionBase):
             module_args=new_module_args,
             task_vars=task_vars
         )
-        if copy_res.get('note'):
+
+        if copy_res.get('note') and not force:
             result['note'] = copy_res.get('note')
             return result
 
@@ -248,6 +250,8 @@ def _update_result(is_binary, copy_res, original_args):
     """ Helper function to update output result with the provided values """
     ds_type = copy_res.get("ds_type")
     src = copy_res.get("src")
+    note = copy_res.get("note")
+    backup_file = copy_res.get("backup_file")
     updated_result = dict(
         dest=copy_res.get('dest'),
         is_binary=is_binary,
@@ -256,6 +260,11 @@ def _update_result(is_binary, copy_res, original_args):
     )
     if src:
         updated_result['src'] = src
+    if note:
+        updated_result['note'] = note
+    if backup_file:
+        updated_result['backup_file'] = backup_file
+
     if ds_type == "USS":
         updated_result.update(
             dict(
@@ -271,10 +280,6 @@ def _update_result(is_binary, copy_res, original_args):
         checksum = copy_res.get("checksum")
         if checksum:
             updated_result['checksum'] = checksum
-
-    backup_file = copy_res.get("backup_file")
-    if backup_file:
-        updated_result['backup_file'] = backup_file
 
     return updated_result
 

@@ -420,6 +420,7 @@ import tempfile
 import math
 import stat
 import shutil
+import glob
 
 from pathlib import Path
 from hashlib import sha256
@@ -1114,26 +1115,26 @@ def cleanup(src_list):
         src_list {list} -- A list of file paths
     """
     module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
-    for src in src_list:
-        if src and os.path.exists(src):
-            if os.path.isdir(src):
-                shutil.rmtree(src)
-            else:
-                os.remove(src)
+    tmp_prefix = tempfile.gettempprefix()
+    tmp_dir = os.path.realpath("/" + tmp_prefix)
+    dir_list = glob.glob(tmp_dir + "/ansible-zos-copy-payload*")
+    conv_list = glob.glob(tmp_dir + "/converted*")
+    tmp_list = glob.glob(tmp_dir + "/{0}*".format(tmp_prefix))
 
-    tmp_dir = os.path.realpath("/" + tempfile.gettempprefix())
-    rc, out, err = module.run_command(
-        "rm -rf tmp* ansible.* converted* ansible-zos-copy-payload*",
-        use_unsafe_shell=True, cwd=tmp_dir
-    )
-    if rc != 0:
-        module.fail_json(
-            msg="Error while performing cleanup",
-            stdout=out, stderr=err,
-            stdout_lines=out.splitlines(),
-            stderr_lines=err.splitlines(),
-            rc=rc
-        )
+    for file in (dir_list + conv_list + tmp_list + src_list):
+        try:
+            if file and os.path.exists(file):
+                if os.path.isfile(file):
+                    os.remove(file)
+                else:
+                    os.rmdir(file)
+        except OSError as err:
+            err = str(err)
+            if "Permission denied" not in err:
+                module.fail_json(
+                    msg="Error during clean up of file {0}".format(file),
+                    stderr=err
+                )
 
 
 def run_module(module, arg_def):

@@ -58,7 +58,7 @@ def set_ds_test_env(test_name, hosts, test_env):
     # simplifying dataset name, zos_encode seems to have issues with some dataset names (can be from ZOAU)
     encoding = "ENC"
     test_env["DS_NAME"] = test_name.upper() + "." + encoding + "." + test_env["DS_TYPE"]
-    cmdStr = "python -c \"from zoautil_py import Datasets; Datasets.create('" + test_env["DS_NAME"] + "', type='" + test_env["DS_TYPE"] + "')\" "
+    cmdStr = "python3 -c \"from zoautil_py import Datasets; Datasets.create('" + test_env["DS_NAME"] + "', type='" + test_env["DS_TYPE"] + "')\" "
 
     try:
         hosts.all.shell(cmd=cmdStr)
@@ -87,7 +87,7 @@ def set_ds_test_env(test_name, hosts, test_env):
 
 def clean_ds_test_env(ds_name, hosts):
     ds_name = ds_name.replace("(MEM)", "")
-    cmdStr = "python -c \"from zoautil_py import Datasets; Datasets.delete('" + ds_name + "')\" "
+    cmdStr = "python3 -c \"from zoautil_py import Datasets; Datasets.delete('" + ds_name + "')\" "
     try:
         hosts.all.shell(cmd=cmdStr)
     except Exception:

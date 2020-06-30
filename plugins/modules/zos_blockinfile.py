@@ -200,6 +200,40 @@ EXAMPLES = r'''
     - { name: host3, ip: 10.10.1.12 }
 '''
 
+RETURN = r"""
+changed:
+  description: Indicates if the source was modified
+  returned: success
+  type: bool
+  sample: 1
+found:
+  description: Number of the matching patterns
+  returned: success
+  type: int
+  sample: 5
+cmd:
+  description: constructed dmod shell cmd based on the parameters
+  returned: success
+  type: str
+  sample: dmodhelper -d -b -c IBM-1047 -m "BEGIN\nEND\n# {mark} ANSIBLE MANAGED BLOCK" \
+  -s -e "/^PATH=/a\\PATH=/dir/bin:$PATH/$" -e "$ a\\PATH=/dir/bin:$PATH"/etc/profile
+msg:
+  description: The module messages
+  returned: failure
+  type: str
+  sample: Parameter verification failed
+return_content:
+  description: The error messages from ZOAU dmod
+  returned: failure
+  type: str
+  sample: BGYSC1311E Iconv error, cannot open converter from ISO-88955-1 to IBM-1047
+backup_file:
+    description: Name of the backup file or data set that was created.
+    returned: if backup=true
+    type: str
+    sample: /path/to/file.txt.2015-02-03@04:15~
+"""
+
 import re
 import os
 import tempfile

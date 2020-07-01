@@ -315,7 +315,7 @@ def is_empty(data_set):
     """
     du = DataSetUtils(data_set)
     if du.ds_type() == "PO":
-        return Datasets.list_members(data_set) is None
+        return _pds_empty(data_set)
     elif du.ds_type() == "PS":
         return Datasets.read_last(data_set) is None
     elif du.ds_type() == "VSAM":
@@ -390,6 +390,22 @@ def _vsam_empty(ds):
         return True
     elif rc != 0:
         return False
+
+
+def _pds_empty(data_set):
+    """Determine if a partitioned data set is empty
+
+    Arguments:
+        data_set {str} -- The name of the PDS/PDSE
+
+    Returns:
+        bool - If PDS/PDSE is empty.
+        Returns True if it is empty. False otherwise.
+    """
+    module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+    ls_cmd = "mls {0}".format(data_set)
+    rc, out, err = module.run_command(ls_cmd)
+    return rc == 2
 
 
 class MVSCmdExecError(Exception):

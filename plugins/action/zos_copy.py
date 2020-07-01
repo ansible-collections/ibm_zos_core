@@ -192,6 +192,7 @@ class ActionModule(ActionBase):
         stdin = "put -r {0} {1}".format(src, temp_path)
 
         if is_dir:
+            src = src.rstrip('/') if src.endswith('/') else src
             base = os.path.basename(src)
             self._connection.exec_command("mkdir -p {0}/{1}".format(temp_path, base))
         else:

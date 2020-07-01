@@ -854,6 +854,9 @@ class PDSECopyHandler(CopyHandler):
                         msg="Unable to delete data set members for data set {0}".format(dest),
                         rc=rc
                     )
+            if src.endswith('/'):
+                new_src = "{0}/{1}".format(temp_path, os.path.basename(os.path.dirname(src)))
+
             path, dirs, files = next(os.walk(new_src))
             for file in files:
                 member_name = file[:file.rfind('.')] if '.' in file else file

@@ -1488,6 +1488,10 @@ if PY3:
 else:
     from pipes import quote
 
+
+ENCODING_ENVIRONMENT_VARS = {"_BPXK_AUTOCVT": "OFF"}
+
+
 # hold backup names in easy to access location in
 # in case exception is raised
 # this global list is only used in case of exception
@@ -2928,9 +2932,11 @@ def get_content(formatted_name, binary=False, from_encoding=None, to_encoding=No
             quote(from_encoding), quote(to_encoding)
         )
     # * name argument should already be quoted by the time it reaches here
+    # TODO: determine if response should be byte object
     rc, stdout, stderr = module.run_command(
-        "env -i cat {0}{1}".format(formatted_name, conversion_command),
+        "cat {0}{1}".format(formatted_name, conversion_command),
         use_unsafe_shell=True,
+        environ_update=ENCODING_ENVIRONMENT_VARS,
     )
     if rc:
         return ""

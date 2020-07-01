@@ -304,6 +304,24 @@ def is_data_set(data_set):
     return True
 
 
+def is_empty(data_set):
+    """Determine whether a given data set is empty
+
+    Arguments:
+        data_set {str} -- Input source name
+
+    Returns:
+        {bool} -- Whether the data set is empty
+    """
+    du = DataSetUtils(data_set)
+    if du.ds_type() == "PO":
+        return Datasets.list_members(data_set) is None
+    elif du.ds_type() == "PS":
+        return Datasets.read_last(data_set) is None
+    elif du.ds_type() == "VSAM":
+        return _vsam_empty(data_set)
+
+
 def extract_dsname(data_set):
     """Extract the actual name of the data set from a given input source
 
@@ -339,18 +357,6 @@ def extract_member_name(data_set):
     return member
 
 
-def is_empty(data_set):
-    """Determine whether a given partitioned data set is empty
-
-    Arguments:
-        data_set {str} -- Input source name
-
-    Returns:
-        {bool} -- Whether the data set is empty
-    """
-    return Datasets.list_members(data_set) is None
-
-
 def temp_member_name():
     """Generate a temp member name"""
     first_char_set = ascii_uppercase + '#@$'
@@ -359,6 +365,31 @@ def temp_member_name():
     for i in range(7):
         temp_name += rest_char_set[randint(0, len(rest_char_set) - 1)]
     return temp_name
+
+
+def _vsam_empty(ds):
+    """Determine if a VSAM data set is empty.
+
+    Arguments:
+        ds {str} -- The name of the VSAM data set.
+
+    Returns:
+        bool - If VSAM data set is empty.
+        Returns True if VSAM data set exists and is empty.
+        False otherwise.
+    """
+    module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+    empty_cmd = """  PRINT -
+    INFILE(MYDSET) -
+    COUNT(1)"""
+    rc, out, err = module.run_command(
+        "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin --mydset={0}".format(ds),
+        data=empty_cmd,
+    )
+    if rc == 4 or "VSAM OPEN RETURN CODE IS 160" in out:
+        return True
+    elif rc != 0:
+        return False
 
 
 class MVSCmdExecError(Exception):

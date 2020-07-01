@@ -21,7 +21,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.file import make_dirs
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
-    is_member, extract_dsname, temp_member_name
+    is_member, extract_dsname, temp_member_name, is_empty
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.mvs_cmd import iebcopy
 
@@ -173,7 +173,7 @@ def _copy_ds(ds, bk_ds):
                 ds, out, err
             )
         )
-    if rc != 0 and _vsam_empty(ds):
+    if rc != 0 and is_empty(ds):
         rc = 0
     return rc
 
@@ -201,31 +201,6 @@ def _allocate_model(ds, model):
             )
         )
     return rc
-
-
-def _vsam_empty(ds):
-    """Determine if a VSAM data set is empty.
-
-    Arguments:
-        ds {str} -- The name of the VSAM data set.
-
-    Returns:
-        bool - If VSAM data set is empty.
-        Returns True if VSAM data set exists and is empty.
-        False otherwise.
-    """
-    module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
-    empty_cmd = """  PRINT -
-    INFILE(MYDSET) -
-    COUNT(1)"""
-    rc, out, err = module.run_command(
-        "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin --mydset={0}".format(ds),
-        data=empty_cmd,
-    )
-    if rc == 4 or "VSAM OPEN RETURN CODE IS 160" in out:
-        return True
-    elif rc != 0:
-        return False
 
 
 def _copy_pds(ds, bk_dsn):

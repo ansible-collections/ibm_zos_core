@@ -846,15 +846,14 @@ class PDSECopyHandler(CopyHandler):
             src_ds_type {str} -- The type of source
         """
         new_src = temp_path or conv_path or src
-        if self.dest_exists and not data_set.is_empty(dest):
-            rc = Datasets.delete_members(dest + "(*)")
-            if rc != 0:
-                self.fail_json(
-                    msg="Unable to delete data set members for data set {0}".format(dest),
-                    rc=rc
-                )
-
         if src_ds_type == "USS":
+            if self.dest_exists and not data_set.is_empty(dest):
+                rc = Datasets.delete_members(dest + "(*)")
+                if rc != 0:
+                    self.fail_json(
+                        msg="Unable to delete data set members for data set {0}".format(dest),
+                        rc=rc
+                    )
             path, dirs, files = next(os.walk(new_src))
             for file in files:
                 member_name = file[:file.rfind('.')] if '.' in file else file
@@ -863,6 +862,11 @@ class PDSECopyHandler(CopyHandler):
                     full_file_path, None, None, "{0}({1})".format(dest, member_name), copy_member=True
                 )
         else:
+            if self.dest_exists:
+                temp_ds = Datasets.temp_name()
+                Datasets.move(dest, temp_ds)
+                self.allocate_model(dest, new_src)
+                Datasets.delete(temp_ds)
             dds = dict(OUTPUT=dest, INPUT=new_src)
             copy_cmd = "   COPY OUTDD=OUTPUT,INDD=((INPUT,R))"
             rc, out, err = mvs_cmd.iebcopy(copy_cmd, dds=dds)
@@ -1127,7 +1131,7 @@ def cleanup(src_list):
                 if os.path.isfile(file):
                     os.remove(file)
                 else:
-                    os.rmdir(file)
+                    shutil.rmtree(file)
         except OSError as err:
             err = str(err)
             if "Permission denied" not in err:

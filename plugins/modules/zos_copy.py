@@ -865,11 +865,9 @@ class PDSECopyHandler(CopyHandler):
                     full_file_path, None, None, "{0}({1})".format(dest, member_name), copy_member=True
                 )
         else:
-            if self.dest_exists:
-                temp_ds = Datasets.temp_name()
-                Datasets.move(dest, temp_ds)
+            if self.dest_exists and Datasets.delete(dest) == 0:
                 self.allocate_model(dest, new_src)
-                Datasets.delete(temp_ds)
+    
             dds = dict(OUTPUT=dest, INPUT=new_src)
             copy_cmd = "   COPY OUTDD=OUTPUT,INDD=((INPUT,R))"
             rc, out, err = mvs_cmd.iebcopy(copy_cmd, dds=dds)

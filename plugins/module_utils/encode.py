@@ -243,6 +243,7 @@ class EncodeUtils(object):
         finally:
             if temp_fo:
                 try:
+                    os.close(temp_fo)
                     unlink(temp_fi)
                 except OSError as e:
                     if e.errno != errno.ENOENT:

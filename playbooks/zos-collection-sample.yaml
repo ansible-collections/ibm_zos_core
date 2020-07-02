@@ -15,19 +15,19 @@
 # Notes:
 #  This sample demonstrates various ways to perform tasks using Ansible z/OS
 #  core modules. Each module has options available on how automation can be
-#  controlled. This sample does not demonstrate all options, refer to
-#  documentation or ansible-doc for those options.
+#  controlled. This sample does not demonstrate all options; refer to
+#  the documentation or use ansible-doc to learn more about those options.
 #
-#  When running this playbook, review the comments on how ths sample will
-#  interact with your target, ensure you have the required authority and
-#  permissions such as writing the the target directories or creating data sets.
+#  When running this playbook, review the comments on how this sample
+#  interacts with your target. Ensure that you have the required authority and
+#  permissions such as writing to the target directories or creating data sets.
 #
-#  Data sets created for this sample will follow this pattern
-#  <USER<.SOME.DATA.SET where USER will be the user who submits the playbook.
+#  Data sets created for this sample will follow the pattern
+#  <USER<.SOME.DATA.SET, where USER indicates the user who submits the playbook.
 #  The user is identified by the Ansible variable `ansible_user`.
 #
 #  Additional facts for this playbook can be configured to override the defaults
-#  by reviewing the "Fact setting" section of this playbook, for example,
+#  by reviewing the "Fact setting" section of this playbook; for example,
 #  `data_set_name` and `system_name`.
 #
 # Requirements:
@@ -35,17 +35,17 @@
 #   ZOAU 1.0.1 or later
 #
 # Configure:
-#   tgt_tmp_dir - this is the USS directory on the target which will be written
-#                 to for this example.
-#   ctl_tmp_dir - this is the directory on the controller which will be written
-#                 to for this example.
+#   tgt_tmp_dir - this is the USS directory on the target which will be modified
+#                 for this example.
+#   ctl_tmp_dir - this is the directory on the controller which will be modified
+#                 for this example.
 # Optional:
-#   data_set_name - this is the data set name that will be created during
+#   data_set_name - name of the data set that will be created during
 #                   execution of this sample.
-#   system_name - this is the system name that will be used during this example,
+#   system_name - the system name that will be used during this example,
 #                 determined by executing `uname -n` on the target.
-#   job_name - this is the job name what will be used in this sample, if you
-#              change the HELLO.JCL job name, you must update this variable
+#   job_name - the job name that will be used in this sample. If you
+#              change the HELLO.JCL job name, you must update this variable.
 ###############################################################################
 
 ---
@@ -103,6 +103,11 @@
     # | submit the target JCL, query for the submitted job and obtain the
     # | job output, demonstrate creating and deleting data sets
     # +-------------------------------------------------------------------------
+
+    - name: Remove directory {{ tgt_tmp_dir }}/ansible/jcl on USS if it already exists
+      file:
+        path: "{{ tgt_tmp_dir }}/ansible/jcl"
+        state: absent
 
     - name: Create directory {{ tgt_tmp_dir }}/ansible/jcl on USS
             target {{ system_name }}

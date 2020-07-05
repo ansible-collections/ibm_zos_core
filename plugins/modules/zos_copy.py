@@ -865,9 +865,15 @@ class PDSECopyHandler(CopyHandler):
                     full_file_path, None, None, "{0}({1})".format(dest, member_name), copy_member=True
                 )
         else:
-            if self.dest_exists and Datasets.delete(dest) == 0:
+            if self.dest_exists:
+                rc = Datasets.delete(dest)
+                if rc != 0:
+                    self.fail_json(
+                        msg="Error while removing existing destination {0}".format(dest),
+                        rc=rc
+                    )
                 self.allocate_model(dest, new_src)
-    
+
             dds = dict(OUTPUT=dest, INPUT=new_src)
             copy_cmd = "   COPY OUTDD=OUTPUT,INDD=((INPUT,R))"
             rc, out, err = mvs_cmd.iebcopy(copy_cmd, dds=dds)
@@ -905,7 +911,7 @@ class PDSECopyHandler(CopyHandler):
             or '/' in src
         )
         if src and is_uss_src and not copy_member:
-            dest = "{0}({1})".format(dest, os.path.basename(src))
+            dest = "{0}({1})".format(dest, os.path.basename(src).replace('$', "\\$"))
 
         new_src = temp_path or conv_path or src
         if is_uss_src:
@@ -922,7 +928,7 @@ class PDSECopyHandler(CopyHandler):
                     msg="Unable to copy data set member {0} to {1}".format(new_src, dest),
                     rc=rc
                 )
-        return dest
+        return dest.replace('\\', '')
 
     def create_pdse(
         self, src, dest_name, size, src_ds_type, remote_src=False, vol=None

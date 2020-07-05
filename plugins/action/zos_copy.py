@@ -189,7 +189,7 @@ class ActionModule(ActionBase):
         ansible_host = self._play_context.remote_addr
         temp_path = "/{0}/{1}".format(gettempprefix(), _create_temp_path_name())
         cmd = ['sftp', ansible_user + '@' + ansible_host]
-        stdin = "put -r {0} {1}".format(src, temp_path)
+        stdin = "put -r {0} {1}".format(src.replace('#', '\\#'), temp_path)
 
         if is_dir:
             src = src.rstrip('/') if src.endswith('/') else src

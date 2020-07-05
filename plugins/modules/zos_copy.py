@@ -911,9 +911,11 @@ class PDSECopyHandler(CopyHandler):
             or '/' in src
         )
         if src and is_uss_src and not copy_member:
-            dest = "{0}({1})".format(dest, os.path.basename(src).replace('$', "\\$"))
+            dest = "{0}({1})".format(dest, os.path.basename(src))
 
-        new_src = temp_path or conv_path or src
+        new_src = (temp_path or conv_path or src).replace('$', "\\$")
+        dest = dest.replace('$', "\\$")
+
         if is_uss_src:
             rc = Datasets.copy(new_src, dest)
             if rc != 0:

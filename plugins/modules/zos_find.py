@@ -4,6 +4,7 @@
 # Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
 from __future__ import (absolute_import, division, print_function)
+from plugins.modules.zos_copy import run_module
 __metaclass__ = type
 
 ANSIBLE_METADATA = {'metadata_version': '1.1',
@@ -42,29 +43,26 @@ options:
     required: false
   contains:
     description:
-      - A regular expression or pattern which should be matched against the data
-        set content.
+      - A word which should be matched against the data set content or data 
+        set member content.
     type: str
     required: false
   excludes:
     description:
-      - One or more (shell or regex) patterns, which type is controlled by C(use_regex) option.
       - Data sets whose names match an excludes pattern are culled from patterns matches. 
         Multiple patterns can be specified using a list.
+      - The pattern can be a regular expression.
     type: list
     required: false
     aliases: ['exclude']
   patterns:
     description:
-      - One or more (shell or regex) patterns, which type is controlled by C(use_regex) option.
+      - One or more data set patterns.
       - The patterns restrict the list of data sets to be returned to those whose 
         names match at least one of the patterns specified. Multiple patterns 
         can be specified using a list.
-      - When using regexes, the pattern MUST match the ENTIRE data set name, not just 
-        parts of it.
-      - This parameter expects a list, which can be either comma separated or YAML. 
-        If any of the patterns contain a comma, make sure to put them in a list 
-        to avoid splitting the patterns in undesirable ways.
+      - This parameter expects a list, which can be either comma separated or YAML.
+      - When searching for members within a PDS/PDSE, pattern can be a regular expression.
     type: list
     required: true
   size:
@@ -75,16 +73,10 @@ options:
         specify bytes, kilobytes, megabytes, gigabytes, and terabytes, respectively.
     type: str
     required: false
-  use_regex:
-    description:
-      - If C(true), patterns will be interpreted as python regex. Default is C(false).
-    type: bool
-    required: false
-    default: false
   paths:
     description:
       - List of PDS/PDSE to search. Wild-card possible.
-      - Required only when searching for members, otherwise ignored.
+      - Required only when searching for data set members, otherwise ignored.
     type: list
     required: false
   file_type;
@@ -120,24 +112,22 @@ EXAMPLES = r"""
     patterns:
       - IMS.*
       - IMSTEST.*
-    contains: hello
+    contains: 'hello'
     age: 2d
 
 - name: Exclude data sets that have a low level qualifier 'TEST'
   zos_find:
-    patterns: '^IMS[1-9].*'
-    contains: '^hello[a-z0-9]$'
+    patterns: 'IMS.*'
+    contains: 'hello'
     excludes: '*.TEST'
-    use_regex: true
 
 - name: Find all members starting with characters 'TE' in a list of PDS
   zos_find:
-    patterns: '^TE*'
+    patterns: 'TE*'
     paths:
       - IMSTEST.TEST.*
       - IMSTEST.USER.*
       - USER.*.LIB
-    use_regex: true
 
 - name: Find all data sets greater than 2MB and allocated in one of the specified volumes
   zos_find:
@@ -179,3 +169,41 @@ examined:
     type: int
     sample: 158
 """
+
+
+import os
+
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
+    MissingZOAUImport
+)
+
+try:
+    from zoautil_py import Datasets
+except Exception:
+    Datasets = MissingZOAUImport()
+    MVSCmd = MissingZOAUImport()
+    types = MissingZOAUImport()
+
+
+def data_set_filter():
+    pass
+
+
+def volume_filter():
+    pass
+
+
+def content_filter():
+    pass
+
+
+def run_module():
+    pass
+
+
+def main():
+    pass
+
+
+if __name__ == '__main__':
+    main()

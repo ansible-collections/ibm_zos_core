@@ -120,6 +120,15 @@ options:
     type: bool
     default: false
     required: false
+  model_ds:
+    description:
+      - When copying a local directory to a non-existing PDS/PDSE, specify a model
+        PDS/PDSE to allocate the destination after.
+      - If this parameter is not provided, the destination PDS will be allocated based
+        the size of the local directory with C(recfm=FB) and C(lrecl=80).
+      - Only valid if C(src) is a local directory and C(dest) does not exist.
+    type: str
+    required: False
   local_follow:
     description:
       - This flag indicates that any existing filesystem links in the source tree
@@ -933,9 +942,9 @@ class PDSECopyHandler(CopyHandler):
         return dest.replace('\\', '')
 
     def create_pdse(
-        self, src, dest_name, size, src_ds_type, remote_src=False, vol=None
+        self, src, dest_name, size, src_ds_type, remote_src=False, vol=None, model_ds=None
     ):
-        """Create a partitiomned data set specified by 'dest_name'
+        """Create a partitioned data set specified by 'dest_name'
 
         Arguments:
             src {str} -- Name of the source data set
@@ -966,7 +975,7 @@ class PDSECopyHandler(CopyHandler):
                 size = sum(Path(path + "/" + f).stat().st_size for f in files)
                 rc = self._allocate_pdse(dest_name, size=size)
         else:
-            rc = self._allocate_pdse(dest_name, size=size)
+            rc = self._allocate_pdse(dest_name, size=size, model_ds=model_ds)
         if rc != 0:
             self.fail_json(
                 msg="Unable to allocate destination data set to copy {0}".format(src),
@@ -975,7 +984,7 @@ class PDSECopyHandler(CopyHandler):
                 stderr_lines=err.splitlines() if err else None
             )
 
-    def _allocate_pdse(self, ds_name, size=None, vol=None, src=None):
+    def _allocate_pdse(self, ds_name, size=None, vol=None, src=None, model_ds=None):
         """Allocate a partitioned extended data set. If 'size'
         is provided, allocate PDSE using this given size. If neither of them
         are provided, obtain the 'src' data set size from vtoc and allocate using
@@ -989,25 +998,30 @@ class PDSECopyHandler(CopyHandler):
             src {str} -- The name of the source data set from which to get the size
             vol {str} -- Volume of the source data set
         """
-        recfm = "FB"
-        lrecl = 80
-        alloc_size = size
-        if not alloc_size:
-            if vol:
-                ds_vtoc = vtoc.VolumeTableOfContents(self.module)
-                vtoc_info = ds_vtoc.get_data_set_entry(src, vol)
-                tracks = int(vtoc_info.get("last_block_pointer").get("track"))
-                blocks = int(vtoc_info.get("last_block_pointer").get("block"))
-                blksize = int(vtoc_info.get("block_size"))
-                bytes_per_trk = 56664
-                alloc_size = (tracks * bytes_per_trk) + (blocks * blksize)
-                recfm = vtoc_info.get("record_format") or recfm
-                lrecl = int(vtoc_info.get("record_length")) or lrecl
-            else:
-                alloc_size = 5242880    # Use the default 5 Megabytes
+        rc = -1
+        if model_ds:
+            rc = self.allocate_model(ds_name, model_ds)
+        else:
+            recfm = "FB"
+            lrecl = 80
+            alloc_size = size
+            if not alloc_size:
+                if vol:
+                    ds_vtoc = vtoc.VolumeTableOfContents(self.module)
+                    vtoc_info = ds_vtoc.get_data_set_entry(src, vol)
+                    tracks = int(vtoc_info.get("last_block_pointer").get("track"))
+                    blocks = int(vtoc_info.get("last_block_pointer").get("block"))
+                    blksize = int(vtoc_info.get("block_size"))
+                    bytes_per_trk = 56664
+                    alloc_size = (tracks * bytes_per_trk) + (blocks * blksize)
+                    recfm = vtoc_info.get("record_format") or recfm
+                    lrecl = int(vtoc_info.get("record_length")) or lrecl
+                else:
+                    alloc_size = 5242880    # Use the default 5 Megabytes
 
-        alloc_size = "{0}K".format(str(int(math.ceil(alloc_size / 1024))))
-        return Datasets.create(ds_name, "PDSE", alloc_size, recfm, "", lrecl)
+            alloc_size = "{0}K".format(str(int(math.ceil(alloc_size / 1024))))
+            rc = Datasets.create(ds_name, "PDSE", alloc_size, recfm, "", lrecl)
+        return rc
 
 
 def backup_data(ds_name, ds_type, backup_file):
@@ -1166,13 +1180,12 @@ def run_module(module, arg_def):
     src = parsed_args.get('src')
     b_src = to_bytes(src, errors='surrogate_or_strict')
     dest = parsed_args.get('dest')
-    b_dest = to_bytes(dest, errors='surrogate_or_strict')
     remote_src = parsed_args.get('remote_src')
     is_binary = parsed_args.get('is_binary')
-    content = parsed_args.get('content')
     force = parsed_args.get('force')
     backup = parsed_args.get('backup')
     backup_file = parsed_args.get('backup_file')
+    model_ds = parsed_args.get('model_ds')
     validate = parsed_args.get('validate')
     mode = module.params.get('mode')
     group = module.params.get('group')
@@ -1299,7 +1312,7 @@ def run_module(module, arg_def):
                 pch = PDSECopyHandler(module, dest_exists, backup_file=backup_file)
                 pch.create_pdse(
                     src, dest_name, alloc_size, src_ds_type,
-                    remote_src=remote_src, vol=src_ds_vol
+                    remote_src=remote_src, vol=src_ds_vol, model_ds=model_ds
                 )
             elif src_ds_type == "VSAM":
                 dest_ds_type = "VSAM"
@@ -1408,6 +1421,7 @@ def main():
             content=dict(type='str', no_log=True),
             backup=dict(type='bool', default=False),
             backup_file=dict(type='str'),
+            model_ds=dict(type='str', required=False),
             local_follow=dict(type='bool', default=True),
             force=dict(type='bool', default=True),
             remote_src=dict(type='bool', default=False),
@@ -1430,6 +1444,7 @@ def main():
         content=dict(arg_type='str', required=False),
         backup=dict(arg_type='bool', default=False, required=False),
         backup_file=dict(arg_type='data_set_or_path', required=False),
+        model_ds=dict(arg_type='data_set', required=False),
         force=dict(arg_type='bool', default=True, required=False),
         local_follow=dict(arg_type='bool', default=True, required=False),
         remote_src=dict(arg_type='bool', default=False, required=False),

@@ -4,6 +4,8 @@
 # Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
 from __future__ import (absolute_import, division, print_function)
+
+from ansible.module_utils.basic import AnsibleModule
 from plugins.modules.zos_copy import run_module
 __metaclass__ = type
 
@@ -73,7 +75,7 @@ options:
         specify bytes, kilobytes, megabytes, gigabytes, and terabytes, respectively.
     type: str
     required: false
-  paths:
+  pds_paths:
     description:
       - List of PDS/PDSE to search. Wild-card possible.
       - Required only when searching for data set members, otherwise ignored.
@@ -124,7 +126,7 @@ EXAMPLES = r"""
 - name: Find all members starting with characters 'TE' in a list of PDS
   zos_find:
     patterns: 'TE*'
-    paths:
+    pds_paths:
       - IMSTEST.TEST.*
       - IMSTEST.USER.*
       - USER.*.LIB
@@ -173,6 +175,10 @@ examined:
 
 import os
 
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
+    better_arg_parser,
+)
+
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     MissingZOAUImport
 )
@@ -197,12 +203,57 @@ def content_filter():
     pass
 
 
-def run_module():
-    pass
+def run_module(module, arg_def):
+    parsed_args = None
+    try:
+        parser = better_arg_parser.BetterArgParser(arg_def)
+        parsed_args = parser.parse_args(module.params)
+    except ValueError as err:
+        module.fail_json(
+            msg="Parameter verification failed", stderr=str(err)
+        )
+
+    age = parsed_args.get('age')
+    age_stamp = parsed_args.get('age_stamp')
+    contains = parsed_args.get('contains')
+    excludes = parsed_args.get('excludes') or parsed_args.get('exclude')
+    patterns = parsed_args.get('patterns')
+    size = parsed_args.get('size')
+    paths = parsed_args.get('paths')
+    file_type = parsed_args.get('file_type')
+    volume = parsed_args.get('volume') or parsed_args.get('volumes')
+    
 
 
 def main():
-    pass
+    module = AnsibleModule(
+        argument_spec=dict(
+            age=dict(type='str', required=False),
+            age_stamp=dict(type='str', required=False, default='r_date', choices=['c_date', 'r_date']),
+            contains=dict(type='str', required=False),
+            excludes=dict(type='list', required=False, aliases=['exclude']),
+            patterns=dict(type='list', required=True),
+            size=dict(type='str', required=False),
+            paths=dict(type='list', required=False),
+            file_type=dict(type='str', required=False, default='NONVSAM', choices=['VSAM', 'NONVSAM']),
+            volume=dict(type='list', required=False, aliases=['volumes'])
+        )
+    )
+
+    arg_def = dict(
+        age=dict(arg_type='str', required=False),
+        age_stamp=dict(arg_type='str', required=False, default='r_date', choices=['c_date', 'r_date']),
+        contains=dict(arg_type='str', required=False),
+        excludes=dict(arg_type='list', required=False, aliases=['exclude']),
+        patterns=dict(arg_type='list', required=True),
+        size=dict(arg_type='str', required=False),
+        paths=dict(arg_type='list', required=False),
+        file_type=dict(arg_type='str', required=False, default='NONVSAM', choices=['VSAM', 'NONVSAM']),
+        volume=dict(arg_type='list', required=False, aliases=['volumes'])
+    )
+
+    res_args = run_module(module, arg_def)
+    module.exit_json(**res_args)
 
 
 if __name__ == '__main__':

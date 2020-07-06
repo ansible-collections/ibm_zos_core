@@ -31,7 +31,7 @@ DEFAULT_VOLUME = "000000"
 
 def test_failing_name_format(ansible_zos_module):
     hosts = ansible_zos_module
-    results = hosts.all.zos_raw(
+    results = hosts.all.zos_mvs_raw(
         program_name="idcams",
         dds=[dict(dd_data_set=dict(dd_name=DEFAULT_DD, data_set_name="!!^&.BAD.NAME"))],
     )
@@ -43,7 +43,7 @@ def test_failing_name_format(ansible_zos_module):
 def test_disposition_new(ansible_zos_module):
     hosts = ansible_zos_module
     hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
-    results = hosts.all.zos_raw(
+    results = hosts.all.zos_mvs_raw(
         program_name="idcams",
         auth=True,
         dds=[
@@ -77,7 +77,7 @@ def test_dispositions_for_existing_data_set(ansible_zos_module, disposition):
     hosts.all.zos_data_set(
         name=DEFAULT_DATA_SET, type="seq", state="present", replace=True
     )
-    results = hosts.all.zos_raw(
+    results = hosts.all.zos_mvs_raw(
         program_name="idcams",
         auth=True,
         dds=[
@@ -106,7 +106,7 @@ def test_dispositions_for_existing_data_set(ansible_zos_module, disposition):
 def test_new_disposition_for_data_set_members(ansible_zos_module):
     hosts = ansible_zos_module
     hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
-    results = hosts.all.zos_raw(
+    results = hosts.all.zos_mvs_raw(
         program_name="idcams",
         auth=True,
         dds=[
@@ -140,7 +140,7 @@ def test_dispositions_for_existing_data_set_members(ansible_zos_module, disposit
     hosts.all.zos_data_set(
         name=DEFAULT_DATA_SET, type="pds", state="present", replace=True
     )
-    results = hosts.all.zos_raw(
+    results = hosts.all.zos_mvs_raw(
         program_name="idcams",
         auth=True,
         dds=[
@@ -178,7 +178,7 @@ def test_normal_dispositions_data_set(ansible_zos_module, normal_disposition, ch
         replace=True,
         volumes=[DEFAULT_VOLUME],
     )
-    results = hosts.all.zos_raw(
+    results = hosts.all.zos_mvs_raw(
         program_name="idcams",
         auth=True,
         dds=[
@@ -220,7 +220,7 @@ def test_normal_dispositions_data_set(ansible_zos_module, normal_disposition, ch
 def test_space_types(ansible_zos_module, space_type, primary, secondary, expected):
     hosts = ansible_zos_module
     hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
-    results = hosts.all.zos_raw(
+    results = hosts.all.zos_mvs_raw(
         program_name="idcams",
         auth=True,
         dds=[
@@ -261,7 +261,7 @@ def test_space_types(ansible_zos_module, space_type, primary, secondary, expecte
 def test_data_set_types_non_vsam(ansible_zos_module, data_set_type):
     hosts = ansible_zos_module
     hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
-    results = hosts.all.zos_raw(
+    results = hosts.all.zos_mvs_raw(
         program_name="idcams",
         auth=True,
         dds=[
@@ -300,7 +300,7 @@ def test_data_set_types_non_vsam(ansible_zos_module, data_set_type):
 def test_data_set_types_vsam(ansible_zos_module, data_set_type):
     hosts = ansible_zos_module
     hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
-    results = hosts.all.zos_raw(
+    results = hosts.all.zos_mvs_raw(
         program_name="idcams",
         auth=True,
         dds=[
@@ -354,7 +354,7 @@ def test_data_set_types_vsam(ansible_zos_module, data_set_type):
 def test_record_formats(ansible_zos_module, record_format):
     hosts = ansible_zos_module
     hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
-    results = hosts.all.zos_raw(
+    results = hosts.all.zos_mvs_raw(
         program_name="idcams",
         auth=True,
         dds=[
@@ -405,7 +405,7 @@ def test_return_content_type(ansible_zos_module, return_content_type, expected):
         replace=True,
         volumes=[DEFAULT_VOLUME],
     )
-    results = hosts.all.zos_raw(
+    results = hosts.all.zos_mvs_raw(
         program_name="idcams",
         auth=True,
         dds=[
@@ -449,7 +449,7 @@ def test_return_text_content_encodings(
         replace=True,
         volumes=[DEFAULT_VOLUME],
     )
-    results = hosts.all.zos_raw(
+    results = hosts.all.zos_mvs_raw(
         program_name="idcams",
         auth=True,
         dds=[
@@ -484,7 +484,7 @@ def test_reuse_existing_data_set(ansible_zos_module):
     hosts.all.zos_data_set(
         name=DEFAULT_DATA_SET, type="seq", state="present", replace=True
     )
-    results = hosts.all.zos_raw(
+    results = hosts.all.zos_mvs_raw(
         program_name="IDCAMS",
         auth=True,
         dds=[
@@ -516,7 +516,7 @@ def test_replace_existing_data_set(ansible_zos_module):
     hosts.all.zos_data_set(
         name=DEFAULT_DATA_SET, type="seq", state="present", replace=True
     )
-    results = hosts.all.zos_raw(
+    results = hosts.all.zos_mvs_raw(
         program_name="IDCAMS",
         auth=True,
         dds=[
@@ -546,7 +546,7 @@ def test_replace_existing_data_set(ansible_zos_module):
 def test_replace_existing_data_set_make_backup(ansible_zos_module):
     hosts = ansible_zos_module
     hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
-    hosts.all.zos_raw(
+    hosts.all.zos_mvs_raw(
         program_name="IDCAMS",
         auth=True,
         dds=[
@@ -563,7 +563,7 @@ def test_replace_existing_data_set_make_backup(ansible_zos_module):
             dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
         ],
     )
-    results = hosts.all.zos_raw(
+    results = hosts.all.zos_mvs_raw(
         program_name="IDCAMS",
         auth=True,
         dds=[
@@ -614,7 +614,7 @@ def test_replace_existing_data_set_make_backup(ansible_zos_module):
 def test_input_empty(ansible_zos_module):
     hosts = ansible_zos_module
     hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
-    results = hosts.all.zos_raw(
+    results = hosts.all.zos_mvs_raw(
         program_name="idcams",
         auth=True,
         dds=[
@@ -646,7 +646,7 @@ def test_input_large(ansible_zos_module):
     contents = ""
     for i in range(50000):
         contents += "this is line {0}\n".format(i)
-    results = hosts.all.zos_raw(
+    results = hosts.all.zos_mvs_raw(
         program_name="idcams",
         auth=True,
         dds=[
@@ -679,7 +679,7 @@ def test_input_provided_as_list(ansible_zos_module):
     contents = []
     for i in range(10):
         contents.append(IDCAMS_STDIN)
-    results = hosts.all.zos_raw(
+    results = hosts.all.zos_mvs_raw(
         program_name="idcams",
         auth=True,
         dds=[
@@ -719,7 +719,7 @@ def test_input_provided_as_list(ansible_zos_module):
 def test_input_return_content_types(ansible_zos_module, return_content_type, expected):
     hosts = ansible_zos_module
     hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
-    results = hosts.all.zos_raw(
+    results = hosts.all.zos_mvs_raw(
         program_name="idcams",
         auth=True,
         dds=[
@@ -767,7 +767,7 @@ def test_input_return_text_content_encodings(
 ):
     hosts = ansible_zos_module
     hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
-    results = hosts.all.zos_raw(
+    results = hosts.all.zos_mvs_raw(
         program_name="idcams",
         auth=True,
         dds=[
@@ -810,7 +810,7 @@ def test_input_return_text_content_encodings(
 
 def test_failing_path_name(ansible_zos_module):
     hosts = ansible_zos_module
-    results = hosts.all.zos_raw(
+    results = hosts.all.zos_mvs_raw(
         program_name="idcams",
         auth=True,
         dds=[
@@ -828,7 +828,7 @@ def test_create_new_file(ansible_zos_module):
     hosts = ansible_zos_module
     hosts.all.file(path=DEFAULT_PATH, state="directory")
     hosts.all.file(path=DEFAULT_PATH_WITH_FILE, state="absent")
-    results = hosts.all.zos_raw(
+    results = hosts.all.zos_mvs_raw(
         program_name="idcams",
         auth=True,
         dds=[
@@ -850,7 +850,7 @@ def test_write_to_existing_file(ansible_zos_module):
     hosts = ansible_zos_module
     hosts.all.file(path=DEFAULT_PATH, state="directory")
     hosts.all.file(path=DEFAULT_PATH_WITH_FILE, state="present")
-    results = hosts.all.zos_raw(
+    results = hosts.all.zos_mvs_raw(
         program_name="idcams",
         auth=True,
         dds=[
@@ -875,7 +875,7 @@ def test_file_normal_disposition(ansible_zos_module, normal_disposition, expecte
     hosts = ansible_zos_module
     hosts.all.file(path=DEFAULT_PATH, state="directory")
     hosts.all.file(path=DEFAULT_PATH_WITH_FILE, state="present")
-    results = hosts.all.zos_raw(
+    results = hosts.all.zos_mvs_raw(
         program_name="idcams",
         auth=True,
         dds=[
@@ -903,7 +903,7 @@ def test_file_normal_disposition(ansible_zos_module, normal_disposition, expecte
 def test_file_modes(ansible_zos_module, mode, expected):
     hosts = ansible_zos_module
     hosts.all.file(path=DEFAULT_PATH, state="directory")
-    results = hosts.all.zos_raw(
+    results = hosts.all.zos_mvs_raw(
         program_name="idcams",
         auth=True,
         dds=[
@@ -936,7 +936,7 @@ def test_file_modes(ansible_zos_module, mode, expected):
 def test_file_path_options(ansible_zos_module, access_group, status_group):
     hosts = ansible_zos_module
     hosts.all.file(path=DEFAULT_PATH, state="directory")
-    results = hosts.all.zos_raw(
+    results = hosts.all.zos_mvs_raw(
         program_name="idcams",
         auth=True,
         dds=[
@@ -968,7 +968,7 @@ def test_file_block_size(ansible_zos_module, block_size):
     hosts = ansible_zos_module
     hosts.all.file(path=DEFAULT_PATH, state="directory")
     hosts.all.file(path=DEFAULT_PATH_WITH_FILE, state="absent")
-    results = hosts.all.zos_raw(
+    results = hosts.all.zos_mvs_raw(
         program_name="idcams",
         auth=True,
         dds=[
@@ -999,7 +999,7 @@ def test_file_record_length(ansible_zos_module, record_length):
     hosts = ansible_zos_module
     hosts.all.file(path=DEFAULT_PATH, state="directory")
     hosts.all.file(path=DEFAULT_PATH_WITH_FILE, state="absent")
-    results = hosts.all.zos_raw(
+    results = hosts.all.zos_mvs_raw(
         program_name="idcams",
         auth=True,
         dds=[
@@ -1030,7 +1030,7 @@ def test_file_record_format(ansible_zos_module, record_format):
     hosts = ansible_zos_module
     hosts.all.file(path=DEFAULT_PATH, state="directory")
     hosts.all.file(path=DEFAULT_PATH_WITH_FILE, state="absent")
-    results = hosts.all.zos_raw(
+    results = hosts.all.zos_mvs_raw(
         program_name="idcams",
         auth=True,
         dds=[
@@ -1068,7 +1068,7 @@ def test_file_return_content(ansible_zos_module, return_content_type, expected):
     hosts = ansible_zos_module
     hosts.all.file(path=DEFAULT_PATH, state="directory")
     hosts.all.file(path=DEFAULT_PATH_WITH_FILE, state="absent")
-    results = hosts.all.zos_raw(
+    results = hosts.all.zos_mvs_raw(
         program_name="idcams",
         auth=True,
         dds=[
@@ -1103,7 +1103,7 @@ def test_file_return_text_content_encodings(
     hosts = ansible_zos_module
     hosts.all.file(path=DEFAULT_PATH, state="directory")
     hosts.all.file(path=DEFAULT_PATH_WITH_FILE, state="absent")
-    results = hosts.all.zos_raw(
+    results = hosts.all.zos_mvs_raw(
         program_name="idcams",
         auth=True,
         dds=[
@@ -1138,7 +1138,7 @@ def test_dummy(ansible_zos_module):
     hosts = ansible_zos_module
     hosts.all.file(path=DEFAULT_PATH, state="directory")
     hosts.all.file(path=DEFAULT_PATH_WITH_FILE, state="absent")
-    results = hosts.all.zos_raw(
+    results = hosts.all.zos_mvs_raw(
         program_name="idcams",
         auth=True,
         dds=[
@@ -1162,7 +1162,7 @@ def test_concatenation_with_data_set_dd_and_response(ansible_zos_module):
     hosts = ansible_zos_module
     hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
     hosts.all.zos_data_set(name=DEFAULT_DATA_SET_2, state="absent")
-    results = hosts.all.zos_raw(
+    results = hosts.all.zos_mvs_raw(
         program_name="idcams",
         auth=True,
         dds=[
@@ -1206,7 +1206,7 @@ def test_concatenation_with_data_set_dd_with_replace_and_backup(ansible_zos_modu
     hosts = ansible_zos_module
     hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="present", type="seq")
     hosts.all.zos_data_set(name=DEFAULT_DATA_SET_2, state="present", type="seq")
-    results = hosts.all.zos_raw(
+    results = hosts.all.zos_mvs_raw(
         program_name="idcams",
         auth=True,
         dds=[
@@ -1267,7 +1267,7 @@ def test_concatenation_with_data_set_member(ansible_zos_module):
     hosts = ansible_zos_module
     hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="present", type="pds")
     hosts.all.zos_data_set(name=DEFAULT_DATA_SET_2, state="absent")
-    results = hosts.all.zos_raw(
+    results = hosts.all.zos_mvs_raw(
         program_name="idcams",
         auth=True,
         dds=[
@@ -1317,7 +1317,7 @@ def test_concatenation_with_unix_dd_and_response(ansible_zos_module):
     hosts.all.file(path=DEFAULT_PATH, state="directory")
     hosts.all.file(path=DEFAULT_PATH_WITH_FILE, state="absent")
     hosts.all.zos_data_set(name=DEFAULT_DATA_SET_2, state="absent")
-    results = hosts.all.zos_raw(
+    results = hosts.all.zos_mvs_raw(
         program_name="idcams",
         auth=True,
         dds=[
@@ -1359,7 +1359,7 @@ def test_concatenation_with_unix_dd_and_response(ansible_zos_module):
     hosts = ansible_zos_module
     hosts.all.file(path=DEFAULT_PATH, state="directory")
     hosts.all.file(path=DEFAULT_PATH_WITH_FILE, state="absent")
-    results = hosts.all.zos_raw(
+    results = hosts.all.zos_mvs_raw(
         program_name="idcams",
         auth=True,
         dds=[
@@ -1396,7 +1396,7 @@ def test_concatenation_with_unix_dd_and_response(ansible_zos_module):
 
 def test_concatenation_fail_with_unsupported_dd_type(ansible_zos_module):
     hosts = ansible_zos_module
-    results = hosts.all.zos_raw(
+    results = hosts.all.zos_mvs_raw(
         program_name="idcams",
         auth=True,
         dds=[
@@ -1532,7 +1532,7 @@ def test_concatenation_all_dd_types(ansible_zos_module, dds, input_pos, input_co
     hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="present", type="seq")
     hosts.all.file(path=DEFAULT_PATH, state="directory")
     hosts.all.file(path=DEFAULT_PATH_WITH_FILE, state="absent")
-    results = hosts.all.zos_raw(program_name="idcams", auth=True, dds=dds)
+    results = hosts.all.zos_mvs_raw(program_name="idcams", auth=True, dds=dds)
     hosts.all.file(name=DEFAULT_PATH, state="absent")
     hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
     for result in results.contacted.values():
@@ -1553,7 +1553,7 @@ def test_concatenation_all_dd_types(ansible_zos_module, dds, input_pos, input_co
 def test_authorized_program_run_unauthorized(ansible_zos_module):
     hosts = ansible_zos_module
     hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
-    results = hosts.all.zos_raw(program_name="idcams", auth=False, dds=[],)
+    results = hosts.all.zos_mvs_raw(program_name="idcams", auth=False, dds=[],)
     hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
     for result in results.contacted.values():
         pprint(result)
@@ -1565,7 +1565,7 @@ def test_authorized_program_run_unauthorized(ansible_zos_module):
 def test_unauthorized_program_run_authorized(ansible_zos_module):
     hosts = ansible_zos_module
     hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
-    results = hosts.all.zos_raw(program_name="DSPURX00", auth=True, dds=[],)
+    results = hosts.all.zos_mvs_raw(program_name="DSPURX00", auth=True, dds=[],)
     hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
     for result in results.contacted.values():
         pprint(result)
@@ -1577,7 +1577,7 @@ def test_unauthorized_program_run_authorized(ansible_zos_module):
 def test_authorized_program_run_authorized(ansible_zos_module):
     hosts = ansible_zos_module
     hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
-    results = hosts.all.zos_raw(program_name="idcams", auth=True, dds=[],)
+    results = hosts.all.zos_mvs_raw(program_name="idcams", auth=True, dds=[],)
     hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
     for result in results.contacted.values():
         pprint(result)
@@ -1589,7 +1589,7 @@ def test_authorized_program_run_authorized(ansible_zos_module):
 def test_unauthorized_program_run_unauthorized(ansible_zos_module):
     hosts = ansible_zos_module
     hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
-    results = hosts.all.zos_raw(program_name="IEFBR14", auth=False, dds=[],)
+    results = hosts.all.zos_mvs_raw(program_name="IEFBR14", auth=False, dds=[],)
     hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
     for result in results.contacted.values():
         pprint(result)
@@ -1601,7 +1601,7 @@ def test_unauthorized_program_run_unauthorized(ansible_zos_module):
 def test_missing_program_name(ansible_zos_module):
     hosts = ansible_zos_module
     hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
-    results = hosts.all.zos_raw(auth=False, dds=[],)
+    results = hosts.all.zos_mvs_raw(auth=False, dds=[],)
     hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
     for result in results.contacted.values():
         pprint(result)
@@ -1613,7 +1613,9 @@ def test_missing_program_name(ansible_zos_module):
 def test_with_parms(ansible_zos_module):
     hosts = ansible_zos_module
     hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
-    results = hosts.all.zos_raw(pgm="iefbr14", auth=False, parm="P1,123,P2=5", dds=[],)
+    results = hosts.all.zos_mvs_raw(
+        pgm="iefbr14", auth=False, parm="P1,123,P2=5", dds=[],
+    )
     hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
     for result in results.contacted.values():
         pprint(result)
@@ -1624,7 +1626,7 @@ def test_with_parms(ansible_zos_module):
 def test_with_multiple_of_same_dd_name(ansible_zos_module):
     hosts = ansible_zos_module
     hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
-    results = hosts.all.zos_raw(
+    results = hosts.all.zos_mvs_raw(
         pgm="idcams",
         auth=True,
         dds=[
@@ -1647,7 +1649,7 @@ def test_with_multiple_of_same_dd_name(ansible_zos_module):
 
 def test_vio_as_output(ansible_zos_module):
     hosts = ansible_zos_module
-    results = hosts.all.zos_raw(
+    results = hosts.all.zos_mvs_raw(
         program_name="idcams",
         auth=True,
         dds=[
@@ -1669,7 +1671,7 @@ def test_vio_as_output(ansible_zos_module):
 def test_output_dd(ansible_zos_module):
     hosts = ansible_zos_module
 
-    results = hosts.all.zos_raw(
+    results = hosts.all.zos_mvs_raw(
         program_name="idcams",
         auth=True,
         dds=[

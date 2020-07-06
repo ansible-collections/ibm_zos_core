@@ -10,7 +10,7 @@ __metaclass__ = type
 
 import pytest
 
-IMPORT_NAME = "ibm_zos_core.plugins.modules.zos_raw"
+IMPORT_NAME = "ibm_zos_core.plugins.modules.zos_mvs_raw"
 
 
 class DummyModule(object):

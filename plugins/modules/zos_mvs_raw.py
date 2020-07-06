@@ -15,7 +15,7 @@ ANSIBLE_METADATA = {
 }
 
 DOCUMENTATION = r"""
-module: zos_raw
+module: zos_mvs_raw
 author:
   - "Xiao Yuan Ma (@bjmaxy)"
   - "Blake Becker (@blakeinate)"
@@ -1199,7 +1199,7 @@ backups:
 EXAMPLES = r"""
 - name: List data sets matching pattern in catalog,
     save output to a new sequential data set and return output as text.
-  zos_raw:
+  zos_mvs_raw:
     program_name: idcams
     auth: true
     dds:
@@ -1223,7 +1223,7 @@ EXAMPLES = r"""
 
 - name: List data sets matching patterns in catalog,
     save output to a new sequential data set and return output as text.
-  zos_raw:
+  zos_mvs_raw:
     program_name: idcams
     auth: true
     dds:
@@ -1251,7 +1251,7 @@ EXAMPLES = r"""
 - name: List data sets matching pattern in catalog,
     save output to an existing sequential data set and
     return output as text.
-  zos_raw:
+  zos_mvs_raw:
     program_name: idcams
     auth: true
     dds:
@@ -1268,7 +1268,7 @@ EXAMPLES = r"""
 - name: List data sets matching pattern in catalog,
     save output to a sequential data set. If the data set exists,
     then reuse it, if it does not exist, create it. Returns output as text.
-  zos_raw:
+  zos_mvs_raw:
     program_name: idcams
     auth: true
     dds:
@@ -1296,7 +1296,7 @@ EXAMPLES = r"""
     If the data set does not exist, create it.
     Returns backup name (if a backup was made) and output as text,
     and backup name.
-  zos_raw:
+  zos_mvs_raw:
     program_name: idcams
     auth: true
     dds:
@@ -1323,7 +1323,7 @@ EXAMPLES = r"""
 
 - name: List data sets matching pattern in catalog,
     save output to a file in unix system services.
-  zos_raw:
+  zos_mvs_raw:
     program_name: idcams
     auth: true
     dds:
@@ -1338,7 +1338,7 @@ EXAMPLES = r"""
     save output to a file in unix system services.
     Return the contents of the file in encoding IBM-1047,
     while the file is encoded in ISO8859-1.
-  zos_raw:
+  zos_mvs_raw:
     program_name: idcams
     auth: true
     dds:
@@ -1357,7 +1357,7 @@ EXAMPLES = r"""
     save output to a file in unix system services.
     Return the contents of the file in encoding IBM-1047,
     while the file is encoded in ISO8859-1.
-  zos_raw:
+  zos_mvs_raw:
     program_name: idcams
     auth: true
     dds:
@@ -1376,7 +1376,7 @@ EXAMPLES = r"""
     return output to user, but don't store in persistent storage.
     Return the contents of the file in encoding IBM-1047,
     while the file is encoded in ISO8859-1.
-  zos_raw:
+  zos_mvs_raw:
     program_name: idcams
     auth: true
     dds:
@@ -1391,7 +1391,7 @@ EXAMPLES = r"""
           content: " LISTCAT ENTRIES('SOME.DATASET.*')"
 
 - name: Take a set of data sets and write them to an archive.
-  zos_raw:
+  zos_mvs_raw:
     program_name: adrdssu
     auth: yes
     dds:
@@ -1407,7 +1407,7 @@ EXAMPLES = r"""
           dd_name: sysprint
 
 - name: Merge two sequential data sets and write them to new data set
-  zos_raw:
+  zos_mvs_raw:
     program_name: sort
     auth: no
     parm: "MSGPRT=CRITICAL,LIST"
@@ -1438,7 +1438,7 @@ EXAMPLES = r"""
 - name: List data sets matching pattern in catalog,
     save output to a concatenation of data set members and
     files.
-  zos_raw:
+  zos_mvs_raw:
     pgm: idcams
     auth: yes
     dds:
@@ -1474,7 +1474,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dd_statement impo
 )
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import DataSet
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.zos_raw import MVSCmd
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.zos_mvs_raw import MVSCmd
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     backup as zos_backup,
 )

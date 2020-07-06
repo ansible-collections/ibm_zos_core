@@ -490,7 +490,7 @@ class CopyHandler(object):
         """ Wrapper for AnsibleModule.run_command """
         return self.module.run_command(cmd, **kwargs)
 
-    def copy_to_seq(self, src, temp_path, conv_path, dest, src_ds_type):
+    def copy_to_seq(self, src, temp_path, conv_path, dest, src_ds_type, model_ds=None):
         """Copy source to a sequential data set.
 
         Arguments:
@@ -502,10 +502,12 @@ class CopyHandler(object):
         """
         new_src = temp_path or conv_path or src
         if src_ds_type == "USS":
+            if model_ds:
+                self.allocate_model(dest, model_ds)
             try:
                 copy.copy_uss2mvs(new_src, dest, "PS", is_binary=self.is_binary)
             except Exception as err:
-                self.fail_json(msg=err)
+                self.fail_json(msg=str(err))
         else:
             rc = Datasets.copy(new_src, dest)
             # *****************************************************************
@@ -1371,7 +1373,9 @@ def run_module(module, arg_def):
     # Copy to sequential data set
     # ---------------------------------------------------------------------
     elif dest_ds_type in MVS_SEQ:
-        copy_handler.copy_to_seq(src, temp_path, conv_path, dest, src_ds_type)
+        copy_handler.copy_to_seq(
+            src, temp_path, conv_path, dest, src_ds_type, model_ds=model_ds
+        )
 
     # ------------------------------- o -----------------------------------
     # Copy to PDS/PDSE

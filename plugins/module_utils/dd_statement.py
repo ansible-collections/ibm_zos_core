@@ -576,11 +576,11 @@ class InputDefinition(StdinDefinition):
 class OutputDefinition(DataDefinition):
     def __init__(
         self,
-        record_format="VB",
-        space_primary=5,
-        space_secondary=5,
-        space_type="M",
-        record_length=80,
+        record_format="FBA",
+        space_primary=100,
+        space_secondary=50,
+        space_type="trk",
+        record_length=121,
     ):
         """Output DD Data type to be used in a DDStatement.
         This should be used in cases where user wants to receive

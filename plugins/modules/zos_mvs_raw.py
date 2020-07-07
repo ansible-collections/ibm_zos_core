@@ -1662,13 +1662,13 @@ def run_module():
         )
     )
 
-    dd_data_set = dict(type="dict", options=dict(**dd_name_base, **dd_data_set_base))
-    dd_unix = dict(type="dict", options=dict(**dd_name_base, **dd_unix_base))
-    dd_input = dict(type="dict", options=dict(**dd_name_base, **dd_input_base))
-    dd_output = dict(type="dict", options=dict(**dd_name_base, **dd_output_base))
-    dd_dummy = dict(type="dict", options=dict(**dd_name_base, **dd_dummy_base))
-    dd_vio = dict(type="dict", options=dict(**dd_name_base, **dd_vio_base))
-    dd_concat = dict(type="dict", options=dict(**dd_name_base, **dd_concat_base))
+    dd_data_set = dict(type="dict", options=combine_dicts(dd_name_base, dd_data_set_base))
+    dd_unix = dict(type="dict", options=combine_dicts(dd_name_base, dd_unix_base))
+    dd_input = dict(type="dict", options=combine_dicts(dd_name_base, dd_input_base))
+    dd_output = dict(type="dict", options=combine_dicts(dd_name_base, dd_output_base))
+    dd_dummy = dict(type="dict", options=combine_dicts(dd_name_base, dd_dummy_base))
+    dd_vio = dict(type="dict", options=combine_dicts(dd_name_base, dd_vio_base))
+    dd_concat = dict(type="dict", options=combine_dicts(dd_name_base, dd_concat_base))
 
     module_args = dict(
         program_name=dict(type="str", aliases=["program", "pgm"], required=True),
@@ -1722,7 +1722,7 @@ def run_module():
             module.fail_json(msg=repr(e), **result)
     else:
         result = dict(changed=True, dd_names=[], ret_code=dict(code=0))
-    to_return = {**result, **response}
+    to_return = combine_dicts(result, response)
     module.exit_json(**to_return)
 
     # ---------------------------------------------------------------------------- #
@@ -1875,13 +1875,13 @@ def parse_and_validate_args(params):
         )
     )
 
-    dd_data_set = dict(type="dict", options=dict(**dd_name_base, **dd_data_set_base))
-    dd_unix = dict(type="dict", options=dict(**dd_name_base, **dd_unix_base))
-    dd_input = dict(type="dict", options=dict(**dd_name_base, **dd_input_base))
-    dd_output = dict(type="dict", options=dict(**dd_name_base, **dd_output_base))
-    dd_dummy = dict(type="dict", options=dict(**dd_name_base, **dd_dummy_base))
-    dd_vio = dict(type="dict", options=dict(**dd_name_base, **dd_vio_base))
-    dd_concat = dict(type="dict", options=dict(**dd_name_base, **dd_concat_base))
+    dd_data_set = dict(type="dict", options=combine_dicts(dd_name_base, dd_data_set_base))
+    dd_unix = dict(type="dict", options=combine_dicts(dd_name_base, dd_unix_base))
+    dd_input = dict(type="dict", options=combine_dicts(dd_name_base, dd_input_base))
+    dd_output = dict(type="dict", options=combine_dicts(dd_name_base, dd_output_base))
+    dd_dummy = dict(type="dict", options=combine_dicts(dd_name_base, dd_dummy_base))
+    dd_vio = dict(type="dict", options=combine_dicts(dd_name_base, dd_vio_base))
+    dd_concat = dict(type="dict", options=combine_dicts(dd_name_base, dd_concat_base))
 
     module_args = dict(
         program_name=dict(type="str", aliases=["program", "pgm"], required=True),
@@ -1906,6 +1906,22 @@ def parse_and_validate_args(params):
     parser = BetterArgParser(module_args)
     parsed_args = parser.parse_args(params)
     return parsed_args
+
+
+def combine_dicts(dict1, dict2):
+    """Combine two dictionaries.
+    Provides clean way to combine two dictionaries in python >= 2
+
+    Args:
+        dict1 (dict): The first dict to add to combine
+        dict2 (dict): The second dict to add to combine
+
+    Returns:
+        dict: The combination of dict1 and dict2.
+    """
+    merged_dict = dict1.copy()
+    merged_dict.update(dict2)
+    return merged_dict
 
 
 def key_length(contents, dependencies):

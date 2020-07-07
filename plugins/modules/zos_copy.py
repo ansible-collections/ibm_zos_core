@@ -626,6 +626,10 @@ class CopyHandler(object):
         alloc_cmd = """  ALLOC -
         DS('{0}') -
         LIKE('{1}')""".format(ds_name, model)
+        blksize = data_set.DataSetUtils(model).blksize()
+        if blksize:
+            alloc_cmd += " BLKSIZE({0})".format(blksize)
+
         rc, out, err = mvs_cmd.ikjeft01(alloc_cmd, authorized=True)
         if rc != 0:
             self.fail_json(

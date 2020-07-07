@@ -163,6 +163,22 @@ class DataSetUtils(object):
             )
         return self.ds_info.get('lrecl')
 
+    def blksize(self):
+        """Retrieves the BLKSIZE of the input data set.
+
+        Returns:
+            int -- The blksize of the input data set
+            None -- If the data set does not exist or the data set is VSAM
+
+        Raises:
+            AttributeError -- When input data set is a USS file or directory
+        """
+        if self.is_uss_path:
+            raise AttributeError(
+                "USS file or directory has no attribute 'blksize'"
+            )
+        return self.ds_info.get('blksize')
+
     def recfm(self):
         """Retrieves the record format of the input data set.
 
@@ -261,7 +277,10 @@ class DataSetUtils(object):
                 result['dsorg'] = ds_params[-1]
                 if result.get('dsorg') != "VSAM":
                     result['recfm'] = ds_params[0]
-                    result['lrecl'] = ds_params[1]
+                    result['lrecl'] = int(ds_params[1])
+                    if len(ds_params) > 2:
+                        result['blksize'] = int(ds_params[2])
+
         return result
 
     def _process_listcat_output(self, output):

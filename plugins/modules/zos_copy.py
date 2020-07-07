@@ -502,7 +502,7 @@ class CopyHandler(object):
         """
         new_src = temp_path or conv_path or src
         if src_ds_type == "USS":
-            if model_ds:
+            if model_ds and not self.dest_exists:
                 self.allocate_model(dest, model_ds)
             try:
                 copy.copy_uss2mvs(new_src, dest, "PS", is_binary=self.is_binary)

@@ -301,7 +301,7 @@ options:
             description:
               - The logical record length. (e.g C(80)).
               - For variable data sets, the length must include the 4-byte prefix area.
-              - Defaults vary depending on format: If FB/FBA 80, if VB/VBA 137, if U 0.
+              - "Defaults vary depending on format: If FB/FBA 80, if VB/VBA 137, if U 0."
               - Valid values are (1-32760 for non-vsam,  1-32761 for vsam).
               - Maps to LRECL on z/OS.
             type: int
@@ -889,7 +889,7 @@ options:
                     description:
                       - The logical record length. (e.g C(80)).
                       - For variable data sets, the length must include the 4-byte prefix area.
-                      - Defaults vary depending on format: If FB/FBA 80, if VB/VBA 137, if U 0.
+                      - "Defaults vary depending on format: If FB/FBA 80, if VB/VBA 137, if U 0."
                       - Valid values are (1-32760 for non-vsam,  1-32761 for vsam).
                       - Maps to LRECL on z/OS.
                     type: int

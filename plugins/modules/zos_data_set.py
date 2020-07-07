@@ -153,7 +153,7 @@ options:
     description:
       - The length, in bytes, of each record in the data set.
       - For variable data sets, the length must include the 4-byte prefix area.
-      - Defaults vary depending on format: If FB/FBA 80, if VB/VBA 137, if U 0
+      - "Defaults vary depending on format: If FB/FBA 80, if VB/VBA 137, if U 0."
     type: int
     required: false
     version_added: "2.9"
@@ -356,7 +356,7 @@ options:
         description:
           - The length, in bytes, of each record in the data set.
           - For variable data sets, the length must include the 4-byte prefix area.
-          - Defaults vary depending on format: If FB/FBA 80, if VB/VBA 137, if U 0
+          - "Defaults vary depending on format: If FB/FBA 80, if VB/VBA 137, if U 0."
         type: int
         required: false
         version_added: "2.9"
@@ -501,7 +501,7 @@ EXAMPLES = r"""
     name: someds.name.here(mydata)
     type: MEMBER
 
-- name: Remove a member from an existing PDS 
+- name: Remove a member from an existing PDS
   zos_data_set:
     name: someds.name.here(mydata)
     state: absent

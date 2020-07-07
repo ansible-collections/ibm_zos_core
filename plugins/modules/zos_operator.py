@@ -159,8 +159,7 @@ def run_operator_command(params):
     verbose = "-v" if params.get("verbose") else ""
     debug = "-d" if params.get("debug") else ""
     rc, stdout, stderr = module.run_command(
-        "opercmd {0} {1} {2}".format(verbose, debug, quote(command)),
-        use_unsafe_shell=True,
+        "opercmd {0} {1} {2}".format(verbose, debug, command),
     )
     message = stdout + stderr
     if rc > 0:

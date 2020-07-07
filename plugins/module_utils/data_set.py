@@ -105,7 +105,7 @@ class DataSet(object):
                     Defaults to None.
             space_primary (int, optional): The amount of primary space to allocate for the dataset.
                     Defaults to None.
-            space_secondary (int, optional):  The amount of primary space to allocate for the dataset.
+            space_secondary (int, optional):  The amount of secondary space to allocate for the dataset.
                     Defaults to None.
             space_type (str, optional): The unit of measurement to use when defining primary and secondary space.
                     Defaults to None.
@@ -116,7 +116,7 @@ class DataSet(object):
                     Defaults to None.
             block_size (int, optional): The block size to use for the data set.
                     Defaults to None.
-            directory_blocks (int, optional): The number of directory blocks to give to the data set.
+            directory_blocks (int, optional): The number of directory blocks to allocate to the data set.
                     Defaults to None.
             key_length (int, optional): The key length of a record.
                     Required for Key Sequenced Datasets (KSDS).
@@ -379,7 +379,7 @@ class DataSet(object):
                     Defaults to None.
             space_primary (int, optional): The amount of primary space to allocate for the dataset.
                     Defaults to None.
-            space_secondary (int, optional):  The amount of primary space to allocate for the dataset.
+            space_secondary (int, optional):  The amount of secondary space to allocate for the dataset.
                     Defaults to None.
             space_type (str, optional): The unit of measurement to use when defining primary and secondary space.
                     Defaults to None.
@@ -390,7 +390,7 @@ class DataSet(object):
                     Defaults to None.
             block_size (int, optional): The block size to use for the data set.
                     Defaults to None.
-            directory_blocks (int, optional): The number of directory blocks to give to the data set.
+            directory_blocks (int, optional): The number of directory blocks to allocate to the data set.
                     Defaults to None.
             key_length (int, optional): The key length of a record.
                     Required for Key Sequenced Datasets (KSDS).
@@ -489,7 +489,7 @@ class DataSet(object):
                     Defaults to None.
             space_primary (int, optional): The amount of primary space to allocate for the dataset.
                     Defaults to None.
-            space_secondary (int, optional):  The amount of primary space to allocate for the dataset.
+            space_secondary (int, optional):  The amount of secondary space to allocate for the dataset.
                     Defaults to None.
             space_type (str, optional): The unit of measurement to use when defining primary and secondary space.
                     Defaults to None.
@@ -500,7 +500,7 @@ class DataSet(object):
                     Defaults to None.
             block_size (int, optional): The block size to use for the data set.
                     Defaults to None.
-            directory_blocks (int, optional): The number of directory blocks to give to the data set.
+            directory_blocks (int, optional): The number of directory blocks to allocate to the data set.
                     Defaults to None.
             key_length (int, optional): The key length of a record.
                     Required for Key Sequenced Datasets (KSDS).
@@ -607,8 +607,8 @@ class DataSet(object):
         """Catalog an uncataloged data set
 
         Arguments:
-            name (str) -- The name of the data set to catalog
-            volumes (list[str]) -- The volume(s) the data set resides on
+            name (str) -- The name of the data set to catalog.
+            volumes (list[str]) -- The volume(s) the data set resides on.
         """
         if DataSet.is_vsam(name, volumes):
             DataSet._catalog_vsam(name, volumes)
@@ -858,7 +858,7 @@ class DataSet(object):
                     Defaults to "FB".
             space_primary (int, optional): The amount of primary space to allocate for the dataset.
                     Defaults to 5.
-            space_secondary (int, optional):  The amount of primary space to allocate for the dataset.
+            space_secondary (int, optional):  The amount of secondary space to allocate for the dataset.
                     Defaults to 5.
             space_type (str, optional): The unit of measurement to use when defining primary and secondary space.
                     Defaults to "M".

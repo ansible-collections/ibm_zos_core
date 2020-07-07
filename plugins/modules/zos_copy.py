@@ -18,6 +18,8 @@ short_description: Copy data to z/OS
 description:
   - The M(zos_copy) module copies a file or data set from a local or a
     remote machine to a location on the remote machine.
+  - If the destination exists, no data will be copied. Set C(force=true) to
+    replace existing destination.
   - Use the M(zos_fetch) module to copy files or data sets from remote
     locations to the local machine.
 author: "Asif Mahmud (@asifmahmud)"

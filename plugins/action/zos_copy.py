@@ -102,6 +102,9 @@ class ActionModule(ActionBase):
                 msg = "Cannot specify 'mode', 'owner' or 'group' for MVS destination"
                 return self._fail_acton(result, msg)
 
+        if (not force) and self._dest_exists(dest, task_vars):
+            return self._exit_action(result, "Destination exists. No data was copied.")
+
         if not remote_src:
             if local_follow and not src:
                 msg = "No path given for local symlink"
@@ -233,6 +236,34 @@ class ActionModule(ActionBase):
                     module_args=module_args,
                     task_vars=task_vars
                 )
+
+    def _dest_exists(self, dest, task_vars):
+        if '/' in dest:
+            rc, out, err = self._connection.exec_command("ls {0}".format(dest))
+            if rc != 0 and "FSUM6785" in to_text(out):
+                return False
+        else:
+            cmd = "LISTDS '{0}'".format(dest)
+            tso_cmd = self._execute_module(
+                module_name='zos_tso_command',
+                module_args=dict(commands=[cmd]),
+                task_vars=task_vars
+            ).get('output')[0]
+            if tso_cmd.get('rc') != 0:
+                for line in tso_cmd.get('content'):
+                    if "NOT IN CATALOG" in line:
+                        return False
+        return True
+
+    def _exit_action(self, result, msg):
+        """Exit action plugin with a message"""
+        result.update(
+            dict(
+                changed=False, note=msg,
+                invocation=dict(module_args=self._task.args)
+            )
+        )
+        return result
 
     def _fail_acton(self, result, msg):
         """Fail action plugin with a failure message"""

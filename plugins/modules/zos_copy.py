@@ -97,7 +97,7 @@ options:
       - If set to C(false) and destination exists, the module exits with a note to
         the user.
     type: bool
-    default: true
+    default: false
     required: false
   mode:
     description:
@@ -122,11 +122,11 @@ options:
     required: false
   model_ds:
     description:
-      - When copying a local directory to a non-existing PDS/PDSE, specify a model
-        PDS/PDSE to allocate the destination after.
-      - If this parameter is not provided, the destination PDS will be allocated based
-        the size of the local directory with C(recfm=FB) and C(lrecl=80).
-      - Only valid if C(src) is a local directory and C(dest) does not exist.
+      - When copying a local file/directory to a non-existing PDS, PDSE or PS, specify a model
+        data set to allocate the destination after.
+      - If this parameter is not provided, the destination data set will be allocated based
+        on the size of the local file/directory.
+      - Only valid if C(src) is a local file or directory and C(dest) does not exist.
     type: str
     required: False
   local_follow:
@@ -1188,7 +1188,6 @@ def run_module(module, arg_def):
     dest = parsed_args.get('dest')
     remote_src = parsed_args.get('remote_src')
     is_binary = parsed_args.get('is_binary')
-    force = parsed_args.get('force')
     backup = parsed_args.get('backup')
     backup_file = parsed_args.get('backup_file')
     model_ds = parsed_args.get('model_ds')
@@ -1284,9 +1283,6 @@ def run_module(module, arg_def):
     # the module exits with a note to the user.
     # ********************************************************************
     if dest_exists:
-        if not force:
-            module.exit_json(note="Destination exists. No data was copied")
-
         if backup or backup_file:
             if (dest_ds_type in MVS_PARTITIONED and data_set.is_empty(dest_name)):
                 # The partitioned data set is empty
@@ -1431,7 +1427,7 @@ def main():
             backup_file=dict(type='str'),
             model_ds=dict(type='str', required=False),
             local_follow=dict(type='bool', default=True),
-            force=dict(type='bool', default=True),
+            force=dict(type='bool', default=False),
             remote_src=dict(type='bool', default=False),
             validate=dict(type='bool'),
             is_uss=dict(type='bool'),
@@ -1453,7 +1449,7 @@ def main():
         backup=dict(arg_type='bool', default=False, required=False),
         backup_file=dict(arg_type='data_set_or_path', required=False),
         model_ds=dict(arg_type='data_set', required=False),
-        force=dict(arg_type='bool', default=True, required=False),
+        force=dict(arg_type='bool', default=False, required=False),
         local_follow=dict(arg_type='bool', default=True, required=False),
         remote_src=dict(arg_type='bool', default=False, required=False),
         checksum=dict(arg_type='str', required=False),

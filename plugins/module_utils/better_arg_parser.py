@@ -720,7 +720,7 @@ class BetterArgParser(object):
 
         Arguments:
             arg_dict {dict} -- The arguments to parse where key=argument name/alias
-            and value=argument contents
+            and value=argument contents.
 
         Returns:
             dict -- The arguments with alias names swapped for real names

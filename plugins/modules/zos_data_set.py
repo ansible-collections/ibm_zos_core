@@ -153,7 +153,7 @@ options:
     description:
       - The length, in bytes, of each record in the data set.
       - For variable data sets, the length must include the 4-byte prefix area.
-      - Defaults vary depending on format. If FB/FBA 80, if VB/VBA 137, if U 0
+      - "Defaults vary depending on format: If FB/FBA 80, if VB/VBA 137, if U 0."
     type: int
     required: false
     version_added: "2.9"
@@ -165,7 +165,7 @@ options:
     version_added: "2.9"
   directory_blocks:
     description:
-      - The number of directory blocks to give to the data set.
+      - The number of directory blocks to allocate to the data set.
     type: int
     required: false
     version_added: "2.9"
@@ -211,8 +211,8 @@ options:
       - When I(replace=True), and I(state=present), existing data set matching I(name) will be replaced.
       - >
         Replacement is performed by deleting the existing data set and creating a new data set with the same name and desired
-        attributes. This may lead to an inconsistent state if data set creations fails.
-        after the old data set is deleted.
+        attributes. Since the existing data set will be deleted prior to creating
+        the new data set, no data set will exist if creation of the new data set fails.
       - If I(replace=True), all data in the original data set will be lost.
     type: bool
     required: false
@@ -356,7 +356,7 @@ options:
         description:
           - The length, in bytes, of each record in the data set.
           - For variable data sets, the length must include the 4-byte prefix area.
-          - Defaults vary depending on format. If FB/FBA 80, if VB/VBA 137, if U 0
+          - "Defaults vary depending on format: If FB/FBA 80, if VB/VBA 137, if U 0."
         type: int
         required: false
         version_added: "2.9"
@@ -368,7 +368,7 @@ options:
         version_added: "2.9"
       directory_blocks:
         description:
-          - The number of directory blocks to give to the data set.
+          - The number of directory blocks to allocate to the data set.
         type: int
         required: false
         version_added: "2.9"
@@ -414,8 +414,8 @@ options:
           - When I(replace=True), and I(state=present), existing data set matching I(name) will be replaced.
           - >
             Replacement is performed by deleting the existing data set and creating a new data set with
-            the same name and desired attributes. This may lead to an inconsistent state if data set creations fails
-            after the old data set is deleted.
+            the same name and desired attributes. Since the existing data set will
+            be deleted prior to creating the new data set, no data set will exist if creation of the new data set fails.
           - If I(replace=True), all data in the original data set will be lost.
         type: bool
         required: false
@@ -450,7 +450,7 @@ EXAMPLES = r"""
     record_length: 25
     replace: yes
 
-- name: Attempt to replace a data set if it exists. If not found in catalog, check if on volume 222222 and catalog if found.
+- name: Attempt to replace a data set if it exists. If not found in the catalog, check if it is available on volume 222222, and catalog if found.
   zos_data_set:
     name: someds.name.here
     type: pds
@@ -461,12 +461,12 @@ EXAMPLES = r"""
     volumes: "222222"
     replace: yes
 
-- name: Create an ESDS data set is it does not exist
+- name: Create an ESDS data set if it does not exist
   zos_data_set:
     name: someds.name.here
     type: esds
 
-- name: Create a KSDS data set is it does not exist
+- name: Create a KSDS data set if it does not exist
   zos_data_set:
     name: someds.name.here
     type: ksds
@@ -484,24 +484,24 @@ EXAMPLES = r"""
     name: someds.name.here
     state: absent
 
-- name: Delete a data set if it exists. If data set not cataloged, check on volume 222222 for the data set, then catalog and delete if found.
+- name: Delete a data set if it exists. If data set not cataloged, check on volume 222222 for the data set, and then catalog and delete if found.
   zos_data_set:
     name: someds.name.here
     state: absent
     volumes: "222222"
 
-- name: Write a member to existing PDS, replace if member exists
+- name: Write a member to an existing PDS; replace if member exists
   zos_data_set:
     name: someds.name.here(mydata)
     type: MEMBER
     replace: yes
 
-- name: Write a member to existing PDS, do not replace if member exists
+- name: Write a member to an existing PDS; do not replace if member exists
   zos_data_set:
     name: someds.name.here(mydata)
     type: MEMBER
 
-- name: Remove a member from existing PDS if it exists
+- name: Remove a member from an existing PDS
   zos_data_set:
     name: someds.name.here(mydata)
     state: absent

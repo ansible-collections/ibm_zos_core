@@ -196,8 +196,8 @@
         that:
           - bool_zos_operator_action_continue
           - filtered_zos_operator_action_query_verify is defined and  (filtered_zos_operator_action_query_verify | length == 0)
-        success_msg: "All actionable messages that match 'IEE094D SPECIFY OPERAND' have been cancelled"
-        fail_msg: "There are more than one remaining actionable messages that match 'IEE094D SPECIFY OPERAND' , unable to reply to more than one action. "
+        success_msg: "All actionable messages that match 'IEE094D SPECIFY OPERAND' have been canceled"
+        fail_msg: "There are more than one remaining actionable messages that match 'IEE094D SPECIFY OPERAND'; unable to reply to more than one action. "
       ignore_errors: yes
 
     # ##########################################################################
@@ -686,7 +686,7 @@
         replace: yes
       register: result
 
-    - name: Response create a PDS data set {{ data_set_name }}
+    - name: Response for create a PDS data set {{ data_set_name }}
       debug:
         msg: "{{ result }}"
 

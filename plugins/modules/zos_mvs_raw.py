@@ -27,7 +27,7 @@ description:
 version_added: "2.9"
 options:
   program_name:
-    description: The name of the z/OS program to run (e.g. IDCAMS, IEFBR14, IEBGENER, etc.).
+    description: The name of the z/OS program to run (e.g. IDCAMS, IEFBR14, IEBGENER etc.).
     required: true
     type: str
     aliases:
@@ -51,7 +51,7 @@ options:
       - The input data source.
       - I(dds) supports 6 types of sources
         - I(dd_data_set) for data set files.
-        - I(dd_unix) for Unix files.
+        - I(dd_unix) for UNIX files.
         - I(dd_input) for in-stream data set.
         - I(dd_dummy) for no content input.
         - I(dd_concat) for a data set concatenation.
@@ -69,7 +69,7 @@ options:
         type: dict
         suboptions:
           dd_name:
-            description: The dd name.
+            description: The DD name.
             required: true
             type: str
           data_set_name:
@@ -105,7 +105,7 @@ options:
               - old
           disposition_normal:
             description:
-              - I(disposition_normal) tells the system what to do with the data set after normal termination of the program.
+              - I(disposition_normal) tells the system what to do with the data set after a normal termination of the program.
             type: str
             required: false
             choices:
@@ -117,7 +117,7 @@ options:
               - uncatalog
           disposition_abnormal:
             description:
-              - I(disposition_abnormal) tells the system what to do with the data set after abnormal termination of the
+              - I(disposition_abnormal) tells the system what to do with the data set after an abnormal termination of the
                 program.
             type: str
             required: false
@@ -130,7 +130,7 @@ options:
               - uncatalog
           reuse:
             description:
-              - Determines if data set should be reused if I(disposition=NEW) and a data set with matching name already exists.
+              - Determines if a data set should be reused if I(disposition=NEW) and if a data set with a matching name already exists.
               - If I(reuse=true), I(disposition) will be automatically switched to C(SHR).
               - If I(reuse=false), and a data set with a matching name already exists, allocation will fail.
               - Mutually exclusive with I(replace).
@@ -139,7 +139,7 @@ options:
             default: false
           replace:
             description:
-              - Determines if data set should be replaced if I(disposition=NEW) and a data set with matching name already exists.
+              - Determines if a data set should be replaced if I(disposition=NEW) and a data set with a matching name already exists.
               - If I(replace=true), the original data set will be deleted, and a new data set created.
               - If I(replace=false), and a data set with a matching name already exists, allocation will fail.
               - Mutually exclusive with I(reuse).
@@ -149,7 +149,7 @@ options:
             default: false
           backup:
             description:
-              - Determines if a backup should be made of existing data set when I(disposition=NEW), I(replace=true),
+              - Determines if a backup should be made of an existing data set when I(disposition=NEW), I(replace=true),
                 and a data set with the desired name is found.
               - I(backup) is only used when I(replace=true).
             type: bool
@@ -189,21 +189,21 @@ options:
             description:
               - The desired management class for a new SMS-managed data set.
               - I(sms_management_class) is ignored if specified for an existing data set.
-              - All values must be between 1-8 alpha-numeric chars
+              - All values must be between 1-8 alpha-numeric characters.
             type: str
             required: false
           sms_storage_class:
             description:
               - The desired storage class for a new SMS-managed data set.
               - I(sms_storage_class) is ignored if specified for an existing data set.
-              - All values must be between 1-8 alpha-numeric chars
+              - All values must be between 1-8 alpha-numeric characters.
             type: str
             required: false
           sms_data_class:
             description:
               - The desired data class for a new SMS-managed data set.
               - I(sms_data_class) is ignored if specified for an existing data set.
-              - All values must be between 1-8 alpha-numeric chars
+              - All values must be between 1-8 alpha-numeric characters.
             type: str
             required: false
           block_size:
@@ -214,7 +214,7 @@ options:
             required: false
           directory_blocks:
             description:
-              - The number of directory blocks to give to the data set.
+              - The number of directory blocks to allocate to the data set.
             type: int
             required: false
           key_label:
@@ -301,7 +301,7 @@ options:
             description:
               - The logical record length. (e.g C(80)).
               - For variable data sets, the length must include the 4-byte prefix area.
-              - Defaults vary depending on format. If FB/FBA 80, if VB/VBA 137, if U 0.
+              - "Defaults vary depending on format: If FB/FBA 80, if VB/VBA 137, if U 0."
               - Valid values are (1-32760 for non-vsam,  1-32761 for vsam).
               - Maps to LRECL on z/OS.
             type: int
@@ -345,24 +345,24 @@ options:
                 default: iso8859-1
       dd_unix:
         description:
-          - The path to a file in Unix System Services (USS).
+          - The path to a file in UNIX System Services (USS).
         required: false
         type: dict
         suboptions:
           dd_name:
-            description: The dd name.
+            description: The DD name.
             required: true
             type: str
           path:
             description:
-              - The path to an existing Unix file.
-              - Or provide the path to an new created Unix file when I(status_group=OCREAT).
+              - The path to an existing UNIX file.
+              - Or provide the path to an new created UNIX file when I(status_group=OCREAT).
               - The provided path must be absolute.
             required: true
             type: str
           disposition_normal:
             description:
-              - Tells the system what to do with the Unix file after normal termination of
+              - Tells the system what to do with the UNIX file after normal termination of
                 the program.
             type: str
             choices:
@@ -370,7 +370,7 @@ options:
               - delete
           disposition_abnormal:
             description:
-              - Tells the system what to do with the Unix file after abnormal termination of
+              - Tells the system what to do with the UNIX file after abnormal termination of
                 the program.
             type: str
             choices:
@@ -378,22 +378,21 @@ options:
               - delete
           mode:
             description:
-              - The file access attributes when the Unix file is created specified in I(path).
+              - The file access attributes when the UNIX file is created specified in I(path).
               - Specify the mode as an octal number similarly to chmod.
               - Maps to PATHMODE on z/OS.
             type: int
           status_group:
             description:
-              - The status for the Unix file specified in I(path).
-              - If you do not code a value on the I(status_group) parameter the module assumes that the
+              - The status for the UNIX file specified in I(path).
+              - If you do not code a value on the I(status_group) parameter, the module assumes that the
                 pathname exists, searches for it, and fails the module if the pathname does not exist.
               - Maps to PATHOPTS status group file options on z/OS.
-              - You can specify up to 6 choices
+              - You can specify up to 6 choices.
               - I(oappend) sets the file offset to the end of the file before each write,
                 so that data is written at the end of the file.
-              - I(ocreat) Specifies that if the file does not exist, the system is to create it.
-                If a directory specified in the pathname does not exist, one is not created,
-                and the new file is not created.
+              - I(ocreat) specifies that if the file does not exist, the system is to create it.
+                If a directory specified in the pathname does not exist, a new directory and a new file are not created.
                 If the file already exists and I(oexcl) was not specified,
                 the system allows the program to use the existing file.
                 If the file already exists and I(oexcl) was specified,
@@ -442,7 +441,7 @@ options:
             required: false
           access_group:
             description:
-              - The kind of access to request for the Unix file specified in I(path).
+              - The kind of access to request for the UNIX file specified in I(path).
             type: str
             choices:
               - r
@@ -467,25 +466,25 @@ options:
               - record
           block_size:
             description:
-              - The block size, in bytes, for the Unix file.
+              - The block size, in bytes, for the UNIX file.
               - Default is dependent on I(record_format)
             type: int
             required: false
           record_length:
             description:
-              - The logical record length for the Unix file.
+              - The logical record length for the UNIX file.
               - I(record_length) is required in situations where the data will be processed as
                 records and therefore, I(record_length), I(block_size) and I(record_format) need to be supplied since
-                a Unix file would normally be treated as a stream of bytes.
+                a UNIX file would normally be treated as a stream of bytes.
               - Maps to LRECL on z/OS.
             type: int
             required: false
           record_format:
             description:
-              - The record format for the Unix file.
+              - The record format for the UNIX file.
               - I(record_format) is required in situations where the data will be processed as
                 records and therefore, I(record_length), I(block_size) and I(record_format) need to be supplied since
-                a Unix file would normally be treated as a stream of bytes.
+                a UNIX file would normally be treated as a stream of bytes.
             type: str
             choices:
               - u
@@ -528,7 +527,7 @@ options:
         type: dict
         suboptions:
           dd_name:
-            description: The dd name.
+            description: The DD name.
             required: true
             type: str
           content:
@@ -577,7 +576,7 @@ options:
         type: dict
         suboptions:
           dd_name:
-            description: The dd name.
+            description: The DD name.
             required: true
             type: str
           return_content:
@@ -618,7 +617,7 @@ options:
         type: dict
         suboptions:
           dd_name:
-            description: The dd name.
+            description: The DD name.
             required: true
             type: str
       dd_vio:
@@ -633,7 +632,7 @@ options:
         type: dict
         suboptions:
           dd_name:
-            description: The dd name.
+            description: The DD name.
             required: true
             type: str
       dd_concat:
@@ -643,7 +642,7 @@ options:
         type: dict
         suboptions:
           dd_name:
-            description: The dd name.
+            description: The DD name.
             required: true
             type: str
           dds:
@@ -778,21 +777,21 @@ options:
                     description:
                       - The desired management class for a new SMS-managed data set.
                       - I(sms_management_class) is ignored if specified for an existing data set.
-                      - All values must be between 1-8 alpha-numeric chars
+                      - All values must be between 1-8 alpha-numeric characters.
                     type: str
                     required: false
                   sms_storage_class:
                     description:
                       - The desired storage class for a new SMS-managed data set.
                       - I(sms_storage_class) is ignored if specified for an existing data set.
-                      - All values must be between 1-8 alpha-numeric chars
+                      - All values must be between 1-8 alpha-numeric characters.
                     type: str
                     required: false
                   sms_data_class:
                     description:
                       - The desired data class for a new SMS-managed data set.
                       - I(sms_data_class) is ignored if specified for an existing data set.
-                      - All values must be between 1-8 alpha-numeric chars
+                      - All values must be between 1-8 alpha-numeric characters.
                     type: str
                     required: false
                   block_size:
@@ -803,7 +802,7 @@ options:
                     required: false
                   directory_blocks:
                     description:
-                      - The number of directory blocks to give to the data set.
+                      - The number of directory blocks to allocate to the data set.
                     type: int
                     required: false
                   key_label:
@@ -890,7 +889,7 @@ options:
                     description:
                       - The logical record length. (e.g C(80)).
                       - For variable data sets, the length must include the 4-byte prefix area.
-                      - Defaults vary depending on format. If FB/FBA 80, if VB/VBA 137, if U 0.
+                      - "Defaults vary depending on format: If FB/FBA 80, if VB/VBA 137, if U 0."
                       - Valid values are (1-32760 for non-vsam,  1-32761 for vsam).
                       - Maps to LRECL on z/OS.
                     type: int
@@ -934,20 +933,20 @@ options:
                         default: iso8859-1
               dd_unix:
                 description:
-                  - The path to a file in Unix System Services (USS).
+                  - The path to a file in UNIX System Services (USS).
                 required: false
                 type: dict
                 suboptions:
                   path:
                     description:
-                      - The path to an existing Unix file.
-                      - Or provide the path to an new created Unix file when I(status_group=OCREAT).
+                      - The path to an existing UNIX file.
+                      - Or provide the path to an new created UNIX file when I(status_group=OCREAT).
                       - The provided path must be absolute.
                     required: true
                     type: str
                   disposition_normal:
                     description:
-                      - Tells the system what to do with the Unix file after normal termination of
+                      - Tells the system what to do with the UNIX file after normal termination of
                         the program.
                     type: str
                     choices:
@@ -955,7 +954,7 @@ options:
                       - delete
                   disposition_abnormal:
                     description:
-                      - Tells the system what to do with the Unix file after abnormal termination of
+                      - Tells the system what to do with the UNIX file after abnormal termination of
                         the program.
                     type: str
                     choices:
@@ -963,20 +962,20 @@ options:
                       - delete
                   mode:
                     description:
-                      - The file access attributes when the Unix file is created specified in I(path).
-                      - Specify the mode as an octal number similarly to chmod.
+                      - The file access attributes when the UNIX file is created specified in I(path).
+                      - Specify the mode as an octal number similar to chmod.
                       - Maps to PATHMODE on z/OS.
                     type: int
                   status_group:
                     description:
-                      - The status for the Unix file specified in I(path).
+                      - The status for the UNIX file specified in I(path).
                       - If you do not code a value on the I(status_group) parameter the module assumes that the
                         pathname exists, searches for it, and fails the module if the pathname does not exist.
                       - Maps to PATHOPTS status group file options on z/OS.
-                      - You can specify up to 6 choices
+                      - You can specify up to 6 choices.
                       - I(oappend) sets the file offset to the end of the file before each write,
                         so that data is written at the end of the file.
-                      - I(ocreat) Specifies that if the file does not exist, the system is to create it.
+                      - I(ocreat) specifies that if the file does not exist, the system is to create it.
                         If a directory specified in the pathname does not exist, one is not created,
                         and the new file is not created.
                         If the file already exists and I(oexcl) was not specified,
@@ -1027,7 +1026,7 @@ options:
                     required: false
                   access_group:
                     description:
-                      - The kind of access to request for the Unix file specified in I(path).
+                      - The kind of access to request for the UNIX file specified in I(path).
                     type: str
                     choices:
                       - r
@@ -1051,25 +1050,25 @@ options:
                       - record
                   block_size:
                     description:
-                      - The block size, in bytes, for the Unix file.
+                      - The block size, in bytes, for the UNIX file.
                       - Default is dependent on I(record_format)
                     type: int
                     required: false
                   record_length:
                     description:
-                      - The logical record length for the Unix file.
+                      - The logical record length for the UNIX file.
                       - I(record_length) is required in situations where the data will be processed as
                         records and therefore, I(record_length), I(block_size) and I(record_format) need to be supplied since
-                        a Unix file would normally be treated as a stream of bytes.
+                        a UNIX file would normally be treated as a stream of bytes.
                       - Maps to LRECL on z/OS.
                     type: int
                     required: false
                   record_format:
                     description:
-                      - The record format for the Unix file.
+                      - The record format for the UNIX file.
                       - I(record_format) is required in situations where the data will be processed as
                         records and therefore, I(record_length), I(block_size) and I(record_format) need to be supplied since
-                        a Unix file would normally be treated as a stream of bytes.
+                        a UNIX file would normally be treated as a stream of bytes.
                     type: str
                     choices:
                       - u
@@ -1322,7 +1321,9 @@ EXAMPLES = r"""
           content: " LISTCAT ENTRIES('SOME.DATASET.*')"
 
 - name: List data sets matching pattern in catalog,
-    save output to a file in unix system services.
+    save output to a file in UNIX System Services.
+  zos_raw:
+    save output to a file in UNIX System Services.
   zos_mvs_raw:
     program_name: idcams
     auth: true
@@ -1335,7 +1336,7 @@ EXAMPLES = r"""
           content: " LISTCAT ENTRIES('SOME.DATASET.*')"
 
 - name: List data sets matching pattern in catalog,
-    save output to a file in unix system services.
+    save output to a file in UNIX System Services.
     Return the contents of the file in encoding IBM-1047,
     while the file is encoded in ISO8859-1.
   zos_mvs_raw:
@@ -1354,7 +1355,7 @@ EXAMPLES = r"""
           content: " LISTCAT ENTRIES('SOME.DATASET.*')"
 
 - name: List data sets matching pattern in catalog,
-    save output to a file in unix system services.
+    save output to a file in UNIX System Services.
     Return the contents of the file in encoding IBM-1047,
     while the file is encoded in ISO8859-1.
   zos_mvs_raw:
@@ -1435,7 +1436,7 @@ EXAMPLES = r"""
             - ocreat
           access_group: w
 
-- name: List data sets matching pattern in catalog,
+- name: List data sets matching a pattern in catalog,
     save output to a concatenation of data set members and
     files.
   zos_mvs_raw:
@@ -2238,7 +2239,7 @@ def build_dd_statements(parms):
 
 
 def get_dd_name(dd):
-    """Get the DD name from a dd parm as specified in module parms.
+    """Get the DD name from a DD parm as specified in module parms.
 
     Args:
         dd (dict): A single DD parm as specified in module parms.
@@ -2467,16 +2468,16 @@ class RawFileDefinition(FileDefinition):
         """Initialize RawFileDefinition
 
         Args:
-            path (str): An absolute Unix file path.
+            path (str): An absolute UNIX file path.
             disposition_normal (str, optional): What to do with path after normal program termination. Defaults to None.
             disposition_abnormal (str, optional): What to do with path after abnormal program termination. Defaults to None.
-            mode (int, optional): The file access attributes for the Unix file being allocated. Defaults to None.
-            access_group (str, optional): the access mode for Unix file. Defaults to None.
-            status_group (list[str], optional): The status for Unix file being allocated. Defaults to None.
-            file_data_type (str, optional): The type of data that is (or will be) stored in the Unix file. Defaults to None.
-            record_length (int, optional): The specified logical record length for the Unix file. Defaults to None.
-            block_size (int, optional): the specified block size for the Unix file being allocated. Defaults to None.
-            record_format (str, optional): The specified record format for the Unix file. Defaults to None.
+            mode (int, optional): The file access attributes for the UNIX file being allocated. Defaults to None.
+            access_group (str, optional): the access mode for UNIX file. Defaults to None.
+            status_group (list[str], optional): The status for UNIX file being allocated. Defaults to None.
+            file_data_type (str, optional): The type of data that is (or will be) stored in the UNIX file. Defaults to None.
+            record_length (int, optional): The specified logical record length for the UNIX file. Defaults to None.
+            block_size (int, optional): the specified block size for the UNIX file being allocated. Defaults to None.
+            record_format (str, optional): The specified record format for the UNIX file. Defaults to None.
             return_content (dict, optional): Determines how content should be returned to the user. Defaults to None.
         """
         self.return_content = ReturnContent(**(return_content or {}))
@@ -2816,7 +2817,7 @@ def get_data_set_output(dd_statement):
 
 
 def get_unix_file_output(dd_statement):
-    """Get the output of a single unix file DD statement.
+    """Get the output of a single UNIX file DD statement.
 
     Args:
         dd_statement (DDStatement): A single DD statement.
@@ -2844,7 +2845,7 @@ def get_concatenation_output(dd_statement):
         dd_statement (DDStatement): A single DD statement.
 
     Returns:
-        list[dict]: The output of a single DD, in format expected for response on module completion.
+        list[dict]: The output of a single DD, in the format expected for response on module completion.
                 Response can contain multiple outputs.
     """
     # create new DDStatement objects for each concat member
@@ -2863,11 +2864,11 @@ def build_dd_response(dd_name, name, contents):
 
     Args:
         dd_name (str): The DD name associated with this response.
-        name (str): The data set or unix file name associated with the response.
-        contents (str): The raw contents taken from the data set or unix file.
+        name (str): The data set or UNIX file name associated with the response.
+        contents (str): The raw contents taken from the data set or UNIX file.
 
     Returns:
-        dict: Response content info of a single DD, in format expected for response on module completion.
+        dict: Response content info of a single DD, in the format expected for response on module completion.
     """
     dd_response = {}
     dd_response["dd_name"] = dd_name
@@ -2899,31 +2900,31 @@ def get_data_set_content(name, binary=False, from_encoding=None, to_encoding=Non
 
 
 def get_unix_content(name, binary=False, from_encoding=None, to_encoding=None):
-    """Retrieve the raw contents of a unix file.
+    """Retrieve the raw contents of a UNIX file.
 
     Args:
-        name (str): The name of the unix file.
+        name (str): The name of the UNIX file.
         binary (bool, optional): Determines if contents are retrieved without encoding conversion. Defaults to False.
-        from_encoding (str, optional): The encoding of the unix file on the z/OS system. Defaults to None.
+        from_encoding (str, optional): The encoding of the UNIX file on the z/OS system. Defaults to None.
         to_encoding (str, optional): The encoding to receive the data back in. Defaults to None.
 
     Returns:
-        str: The raw content of the unix file.
+        str: The raw content of the UNIX file.
     """
     return get_content("{0}".format(quote(name)), binary, from_encoding, to_encoding)
 
 
 def get_content(formatted_name, binary=False, from_encoding=None, to_encoding=None):
-    """Retrieve raw contents of a data set or unix file.
+    """Retrieve raw contents of a data set or UNIXfile.
 
     Args:
-        name (str): The name of the data set or unix file, formatted and quoted for proper usage in command.
+        name (str): The name of the data set or UNIX file, formatted and quoted for proper usage in command.
         binary (bool, optional): Determines if contents are retrieved without encoding conversion. Defaults to False.
-        from_encoding (str, optional): The encoding of the data set or unix file on the z/OS system. Defaults to None.
+        from_encoding (str, optional): The encoding of the data set or UNIX file on the z/OS system. Defaults to None.
         to_encoding (str, optional): The encoding to receive the data back in. Defaults to None.
 
     Returns:
-        str: The raw content of the data set or unix file. If unsuccessful in retrieving data, returns empty string.
+        str: The raw content of the data set or UNIX file. If unsuccessful in retrieving data, returns empty string.
     """
     module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
     conversion_command = ""

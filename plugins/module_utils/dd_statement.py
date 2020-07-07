@@ -148,34 +148,34 @@ class FileDefinition(DataDefinition):
         Defaults and validation are handled my mvscmd.
 
         Args:
-            path_name (str): An absolute Unix file path.
+            path_name (str): An absolute UNIX file path.
             normal_disposition (str, optional): What to do with path after normal program termination.
                 May be one of keep, delete.
                 Defaults to None.
             conditional_disposition (str, optional): What to do with path after abnormal program termination.
                 May be one of keep, delete.
                 Defaults to None.
-            path_mode (Union[str, int], optional): The file access attributes for the Unix file.
+            path_mode (Union[str, int], optional): The file access attributes for the UNIX file.
                 Provide in chmod-like number format. Defaults to None.
-            access_group (str, optional): the access mode for Unix file.
+            access_group (str, optional): the access mode for UNIX file.
                 Options are: ORDWR, ORDONLY, OWRONLY.
                 Defaults to None.
-            status_group (list[str], optional): the status for Unix file.
+            status_group (list[str], optional): the status for UNIX file.
                 Specify up to 6 of: OCREAT, OEXCL, OAPPEND, ONOCTTY, ONONBLOCK, OSYNC, OTRUNC.
                 Defaults to None.
-            file_data (str, optional): the type of data that is (or will be) stored in the Unix file.
+            file_data (str, optional): the type of data that is (or will be) stored in the UNIX file.
                 Defaults to None.
             record_length (int, optional): the specified logical record length for the
-                Unix file being allocated. This is required in situations where the data will be processed as
+                UNIX file being allocated. This is required in situations where the data will be processed as
                 records and therefore, the record length, block size and record format need to be supplied since
-                a Unix file would normally be treated as a stream of bytes.
+                a UNIX file would normally be treated as a stream of bytes.
                 Defaults to None.
-            block_size (int, optional): the specified block size for the Unix file
-                being allocated since a Unix file would normally
+            block_size (int, optional): the specified block size for the UNIX file
+                being allocated since a UNIX file would normally
                 be treated as a stream of bytes.
                 Defaults to None.
-            record_format (str, optional): the specified record format for the Unix file
-                being allocated since an Unix file would normally
+            record_format (str, optional): the specified record format for the UNIX file
+                being allocated since an UNIX file would normally
                 be treated as a stream of bytes.
                 Defaults to None.
         """
@@ -272,7 +272,7 @@ class DatasetDefinition(DataDefinition):
                 May be one of: K or KB (kilobytes), M or MB (megabytes),
                 G or GB (gigabytes), C or CYL (cylinders), T or TRK (tracks).
                 Defaults to "TRK".
-            secondary (int, optional): The amount of primary space to allocate for the dataset.
+            secondary (int, optional): The amount of secondary space to allocate for the dataset.
                 Defaults to None.
             secondary_unit (str, optional): The unit of size to use when specifying secondary space.
                 May be one of: K or KB (kilobytes), M or MB (megabytes),
@@ -511,14 +511,14 @@ class StdinDefinition(DataDefinition):
 
         Args:
             content (Union[str, list[str]]): The content to write to temporary data set / stdin.
-                    Contents can be provided as a string or a list of string where each list item
+                    Content can be provided as a string or a list of strings where each list item
                     corresponds to a single line.
             record_format (str, optional): The record format to use for the dataset.
                     Valid options are: FB, VB, FBA, VBA, U.
                     Defaults to "FB".
             space_primary (int, optional): The amount of primary space to allocate for the dataset.
                     Defaults to 5.
-            space_secondary (int, optional):  The amount of primary space to allocate for the dataset.
+            space_secondary (int, optional):  The amount of secondary space to allocate for the dataset.
                     Defaults to 5.
             space_type (str, optional): The unit of measurement to use when defining primary and secondary space.
                     Defaults to "M".
@@ -555,14 +555,14 @@ class InputDefinition(StdinDefinition):
     Added for consistent naming with OutputDefinition, is exact same as StdinDefinition.
     Args:
         content (Union[str, list[str]]): The content to write to temporary data set / stdin.
-                Contents can be provided as a string or a list of string where each list item
+                Content can be provided as a string or a list of strings where each list item
                 corresponds to a single line.
         record_format (str, optional): The record format to use for the dataset.
                 Valid options are: FB, VB, FBA, VBA, U.
                 Defaults to "FB".
         space_primary (int, optional): The amount of primary space to allocate for the dataset.
                 Defaults to 5.
-        space_secondary (int, optional):  The amount of primary space to allocate for the dataset.
+        space_secondary (int, optional):  The amount of secondary space to allocate for the dataset.
                 Defaults to 5.
         space_type (str, optional): The unit of measurement to use when defining primary and secondary space.
                 Defaults to "M".
@@ -593,7 +593,7 @@ class OutputDefinition(DataDefinition):
                     Defaults to "VB".
             space_primary (int, optional): The amount of primary space to allocate for the dataset.
                     Defaults to 5.
-            space_secondary (int, optional):  The amount of primary space to allocate for the dataset.
+            space_secondary (int, optional):  The amount of secondary space to allocate for the dataset.
                     Defaults to 5.
             space_type (str, optional): The unit of measurement to use when defining primary and secondary space.
                     Defaults to "M".

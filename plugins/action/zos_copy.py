@@ -57,27 +57,27 @@ class ActionModule(ActionBase):
         if dest:
             if not isinstance(dest, string_types):
                 msg = "Invalid type supplied for 'dest' option, it must be a string"
-                return self._fail_acton(result, msg)
+                return self._exit_action(result, msg, failed=True)
             else:
                 is_uss = '/' in dest
                 is_mvs_dest = is_data_set(dest)
                 copy_member = is_member(dest)
         else:
             msg = "Destination is required"
-            return self._fail_acton(result, msg)
+            return self._exit_action(result, msg, failed=True)
 
         if src:
             if content:
                 msg = "Either 'src' or 'content' can be provided; not both."
-                return self._fail_acton(result, msg)
+                return self._exit_action(result, msg, failed=True)
 
             elif not isinstance(src, string_types):
                 msg = "Invalid type supplied for 'src' option, it must be a string"
-                return self._fail_acton(result, msg)
+                return self._exit_action(result, msg, failed=True)
 
             elif len(src) < 1 or len(dest) < 1:
                 msg = "'src' or 'dest' must not be empty"
-                return self._fail_acton(result, msg)
+                return self._exit_action(result, msg, failed=True)
             else:
                 src_member = is_member(src)
                 if not remote_src:
@@ -87,20 +87,20 @@ class ActionModule(ActionBase):
 
         if not src and not content:
             msg = "'src' or 'content' is required"
-            return self._fail_acton(result, msg)
+            return self._exit_action(result, msg, failed=True)
 
         if encoding and is_binary:
             msg = "The 'encoding' parameter is not valid for binary transfer"
-            return self._fail_acton(result, msg)
+            return self._exit_action(result, msg, failed=True)
 
         if (not backup) and backup_file is not None:
             msg = "Backup file provided but 'backup' parameter is False"
-            return self._fail_acton(result, msg)
+            return self._exit_action(result, msg, failed=True)
 
         if not is_uss:
             if mode or owner or group:
                 msg = "Cannot specify 'mode', 'owner' or 'group' for MVS destination"
-                return self._fail_acton(result, msg)
+                return self._exit_action(result, msg, failed=True)
 
         if (not force) and self._dest_exists(dest, task_vars):
             return self._exit_action(result, "Destination exists. No data was copied.")
@@ -108,18 +108,18 @@ class ActionModule(ActionBase):
         if not remote_src:
             if local_follow and not src:
                 msg = "No path given for local symlink"
-                return self._fail_acton(result, msg)
+                return self._exit_action(result, msg, failed=True)
 
             elif src and not os.path.exists(b_src):
                 msg = "The local file {0} does not exist".format(src)
-                return self._fail_acton(result, msg)
+                return self._exit_action(result, msg, failed=True)
 
             elif src and not os.access(b_src, os.R_OK):
                 msg = (
                     "The local file {0} does not have appropriate "
                     "read permission".format(src)
                 )
-                return self._fail_acton(result, msg)
+                return self._exit_action(result, msg, failed=True)
 
             if content:
                 try:
@@ -255,26 +255,18 @@ class ActionModule(ActionBase):
                         return False
         return True
 
-    def _exit_action(self, result, msg):
+    def _exit_action(self, result, msg, failed=False):
         """Exit action plugin with a message"""
         result.update(
             dict(
-                changed=False, note=msg,
+                changed=False, failed=failed,
                 invocation=dict(module_args=self._task.args)
             )
         )
-        return result
-
-    def _fail_acton(self, result, msg):
-        """Fail action plugin with a failure message"""
-        src = self._task.args.get('src')
-        dest = self._task.args.get('dest')
-        result.update(
-            dict(
-                changed=False, failed=True, msg=msg,
-                invocation=dict(module_args=self._task.args)
-            )
-        )
+        if failed:
+            result['msg'] = msg
+        else:
+            result['note'] = msg
         return result
 
 

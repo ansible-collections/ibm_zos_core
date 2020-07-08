@@ -105,7 +105,7 @@ options:
               - old
           disposition_normal:
             description:
-              - I(disposition_normal) tells the system what to do with the data set after a normal termination of the program.
+              - I(disposition_normal) indicates what to do with the data set after a normal termination of the program.
             type: str
             required: false
             choices:
@@ -117,7 +117,7 @@ options:
               - uncatalog
           disposition_abnormal:
             description:
-              - I(disposition_abnormal) tells the system what to do with the data set after an abnormal termination of the
+              - I(disposition_abnormal) indicates what to do with the data set after an abnormal termination of the
                 program.
             type: str
             required: false
@@ -363,7 +363,7 @@ options:
             type: str
           disposition_normal:
             description:
-              - Tells the system what to do with the UNIX file after normal termination of
+              - Indicates what to do with the UNIX file after normal termination of
                 the program.
             type: str
             choices:
@@ -371,7 +371,7 @@ options:
               - delete
           disposition_abnormal:
             description:
-              - Tells the system what to do with the UNIX file after abnormal termination of
+              - Indicates what to do with the UNIX file after abnormal termination of
                 the program.
             type: str
             choices:
@@ -697,7 +697,7 @@ options:
                       - old
                   disposition_normal:
                     description:
-                      - I(disposition_normal) tells the system what to do with the data set after normal termination of the program.
+                      - I(disposition_normal) indicates what to do with the data set after normal termination of the program.
                     type: str
                     required: false
                     choices:
@@ -709,7 +709,7 @@ options:
                       - uncatalog
                   disposition_abnormal:
                     description:
-                      - I(disposition_abnormal) tells the system what to do with the data set after abnormal termination of the
+                      - I(disposition_abnormal) indicates what to do with the data set after abnormal termination of the
                         program.
                     type: str
                     required: false
@@ -951,7 +951,7 @@ options:
                     type: str
                   disposition_normal:
                     description:
-                      - Tells the system what to do with the UNIX file after normal termination of
+                      - Indicates what to do with the UNIX file after normal termination of
                         the program.
                     type: str
                     choices:
@@ -959,7 +959,7 @@ options:
                       - delete
                   disposition_abnormal:
                     description:
-                      - Tells the system what to do with the UNIX file after abnormal termination of
+                      - Indicates what to do with the UNIX file after abnormal termination of
                         the program.
                     type: str
                     choices:

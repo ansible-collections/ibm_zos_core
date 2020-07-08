@@ -117,6 +117,12 @@ EXAMPLES = r"""
     contains: 'hello'
     age: 2d
 
+- name: Search for 'rexx' in all datasets matching IBM.TSO.*.C??
+  zos_find:
+    patterns:
+      - IBM.TSO.*.C??
+    contains: 'rexx'
+
 - name: Exclude data sets that have a low level qualifier 'TEST'
   zos_find:
     patterns: 'IMS.*'
@@ -176,7 +182,7 @@ examined:
 import os
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
-    better_arg_parser,
+    better_arg_parser, data_set
 )
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
@@ -195,12 +201,76 @@ def data_set_filter():
     pass
 
 
-def volume_filter():
+def volume_filter(data_sets, volumes):
     pass
 
 
-def content_filter():
-    pass
+def _dgrep_wrapper(
+    data_set_pattern, content=None, ignore_case=False, line_num=False, verbose=False, context=None
+):
+    """A wrapper for ZOAU 'dgrep' shell command"""
+    dgrep_cmd = "dgrep"
+    if ignore_case:
+        dgrep_cmd += " -i"
+    if line_num:
+        dgrep_cmd += " -n"
+    if verbose:
+        dgrep_cmd += " -v"
+    if context:
+        dgrep_cmd += " -C{0}".format(context)
+    if content:
+        dgrep_cmd += " '{0}'".format(content)
+
+    for pattern in data_set_pattern:
+        dgrep_cmd += " '{0}'".format(pattern)
+    
+    module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+    return module.run_command(dgrep_cmd)
+
+
+def _dls_wrapper(
+    data_set_pattern, list_details=False, u_time=False, size=False, verbose=False, migrated=False
+):
+    """A wrapper for ZOAU 'dls' shell command"""
+    dls_cmd = "dls"
+    if migrated:
+        dls_cmd += " -m"
+    else:
+        if list_details:
+            dls_cmd += " -l"
+        if u_time:
+            dls_cmd += " -u"
+        if size:
+            dls_cmd += " -s"
+    if verbose:
+        dls_cmd += " -v"
+
+    for pattern in data_set_pattern:
+        dls_cmd += " '{0}'".format(pattern)
+    
+    module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+    return module.run_command(dls_cmd)
+
+
+def _vls_wrapper(patterns, details=False, verbose=False):
+    """A wrapper for ZOAU 'vls' shell command"""
+    vls_cmd = "vls"
+    if details:
+        vls_cmd += " -l"
+    if verbose:
+        vls_cmd += " -v"
+
+    for pattern in patterns:
+        vls_cmd += " '{0}'".format(pattern)
+    
+    module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+    return module.run_command(vls_cmd)
+
+
+def _in_volume(data_set, vol):
+    """Determine if the given input data set is allocated in 'vol'"""
+    volume = data_set.DataSetUtils(data_set).volume()
+    return vol == volume
 
 
 def run_module(module, arg_def):
@@ -222,7 +292,6 @@ def run_module(module, arg_def):
     paths = parsed_args.get('paths')
     file_type = parsed_args.get('file_type')
     volume = parsed_args.get('volume') or parsed_args.get('volumes')
-    
 
 
 def main():

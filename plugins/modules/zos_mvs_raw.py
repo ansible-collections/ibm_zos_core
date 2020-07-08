@@ -326,7 +326,8 @@ options:
               type:
                 description:
                   - The type of the content to be returned.
-                  - C(text) means return content in ASCII, converted from EBCDIC.
+                  - C(text) means return content in encoding specified by I(response_encoding).
+                  - I(src_encoding) and I(response_encoding) are only used when I(type=text).
                   - C(base64) means return content in binary mode.
                 type: str
                 choices:
@@ -502,7 +503,8 @@ options:
               type:
                 description:
                   - The type of the content to be returned.
-                  - C(text) means return content in ASCII, converted from EBCDIC.
+                  - C(text) means return content in encoding specified by I(response_encoding).
+                  - I(src_encoding) and I(response_encoding) are only used when I(type=text).
                   - C(base64) means return content in binary mode.
                 type: str
                 choices:
@@ -550,7 +552,8 @@ options:
               type:
                 description:
                   - The type of the content to be returned.
-                  - C(text) means return content in ASCII, converted from EBCDIC.
+                  - C(text) means return content in encoding specified by I(response_encoding).
+                  - I(src_encoding) and I(response_encoding) are only used when I(type=text).
                   - C(base64) means return content in binary mode.
                 type: str
                 choices:
@@ -589,7 +592,8 @@ options:
               type:
                 description:
                   - The type of the content to be returned.
-                  - C(text) means return content in ASCII, converted from EBCDIC.
+                  - C(text) means return content in encoding specified by I(response_encoding).
+                  - I(src_encoding) and I(response_encoding) are only used when I(type=text).
                   - C(base64) means return content in binary mode.
                 type: str
                 choices:
@@ -914,7 +918,8 @@ options:
                       type:
                         description:
                           - The type of the content to be returned.
-                          - C(text) means return content in ASCII, converted from EBCDIC.
+                          - C(text) means return content in encoding specified by I(response_encoding).
+                          - I(src_encoding) and I(response_encoding) are only used when I(type=text).
                           - C(base64) means return content in binary mode.
                         type: str
                         choices:
@@ -1086,7 +1091,8 @@ options:
                       type:
                         description:
                           - The type of the content to be returned.
-                          - C(text) means return content in ASCII, converted from EBCDIC.
+                          - C(text) means return content in encoding specified by I(response_encoding).
+                          - I(src_encoding) and I(response_encoding) are only used when I(type=text).
                           - C(base64) means return content in binary mode.
                         type: str
                         choices:
@@ -1130,7 +1136,8 @@ options:
                       type:
                         description:
                           - The type of the content to be returned.
-                          - C(text) means return content in ASCII, converted from EBCDIC.
+                          - C(text) means return content in encoding specified by I(response_encoding).
+                          - I(src_encoding) and I(response_encoding) are only used when I(type=text).
                           - C(base64) means return content in binary mode.
                         type: str
                         choices:
@@ -1662,7 +1669,9 @@ def run_module():
         )
     )
 
-    dd_data_set = dict(type="dict", options=combine_dicts(dd_name_base, dd_data_set_base))
+    dd_data_set = dict(
+        type="dict", options=combine_dicts(dd_name_base, dd_data_set_base)
+    )
     dd_unix = dict(type="dict", options=combine_dicts(dd_name_base, dd_unix_base))
     dd_input = dict(type="dict", options=combine_dicts(dd_name_base, dd_input_base))
     dd_output = dict(type="dict", options=combine_dicts(dd_name_base, dd_output_base))
@@ -1875,7 +1884,9 @@ def parse_and_validate_args(params):
         )
     )
 
-    dd_data_set = dict(type="dict", options=combine_dicts(dd_name_base, dd_data_set_base))
+    dd_data_set = dict(
+        type="dict", options=combine_dicts(dd_name_base, dd_data_set_base)
+    )
     dd_unix = dict(type="dict", options=combine_dicts(dd_name_base, dd_unix_base))
     dd_input = dict(type="dict", options=combine_dicts(dd_name_base, dd_input_base))
     dd_output = dict(type="dict", options=combine_dicts(dd_name_base, dd_output_base))

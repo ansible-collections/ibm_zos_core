@@ -38,7 +38,7 @@ class ActionModule(ActionBase):
         dest = self._task.args.get('dest', None)
         b_dest = to_bytes(dest, errors='surrogate_or_strict')
         content = self._task.args.get('content', None)
-        force = _process_boolean(self._task.args.get('force'), default=True)
+        force = _process_boolean(self._task.args.get('force'), default=False)
         backup = _process_boolean(self._task.args.get('backup'), default=False)
         local_follow = _process_boolean(self._task.args.get('local_follow'), default=False)
         remote_src = _process_boolean(self._task.args.get('remote_src'), default=False)

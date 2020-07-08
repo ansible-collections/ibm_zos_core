@@ -830,6 +830,21 @@ class DataSet(object):
         return False
 
     @staticmethod
+    def temp_name(hlq=""):
+        """Get temporary data set name.
+
+        Args:
+            hlq (str, optional): The HLQ to use for the temporary data set. Defaults to "".
+
+        Returns:
+            str: The temporary data set name.
+        """
+        if not hlq:
+            hlq = Datasets.hlq()
+        temp_name = Datasets.temp_name(hlq)
+        return temp_name
+
+    @staticmethod
     def create_temp(
         hlq="",
         type="SEQ",
@@ -862,9 +877,7 @@ class DataSet(object):
         Returns:
             str -- The name of the temporary data set.
         """
-        if not hlq:
-            Datasets.hlq()
-        temp_name = Datasets.temp_name(hlq)
+        temp_name = DataSet.temp_name(hlq)
         DataSet.create(
             temp_name,
             type=type,

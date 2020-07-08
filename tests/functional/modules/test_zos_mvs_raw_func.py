@@ -311,7 +311,7 @@ def test_data_set_types_vsam(ansible_zos_module, data_set_type):
                     data_set_name=DEFAULT_DATA_SET,
                     disposition="new",
                     type=data_set_type,
-                    volumes=["000000"],
+                    volumes=[DEFAULT_VOLUME],
                 ),
             )
             if data_set_type != "ksds"
@@ -323,7 +323,7 @@ def test_data_set_types_vsam(ansible_zos_module, data_set_type):
                     type=data_set_type,
                     key_length=5,
                     key_offset=0,
-                    volumes=["000000"],
+                    volumes=[DEFAULT_VOLUME],
                 ),
             ),
             dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),

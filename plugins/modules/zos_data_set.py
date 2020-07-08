@@ -26,7 +26,9 @@ options:
   name:
     description:
       - The name of the data set being managed. (e.g C(USER.TEST))
-      - Name field is required unless using batch option
+      - If I(name) is not provided, a randomized data set name will be generated
+        with the HLQ matching the module-runners username.
+      - Required if I(type=MEMBER) or I(state!=present) and not using I(batch).
     type: str
     required: false
     version_added: "2.9"
@@ -35,20 +37,47 @@ options:
       - The final state desired for specified data set.
       - >
         If I(state=absent) and the data set does not exist on the managed node,
-        no action taken, returns successful with I(changed=False).
+        no action taken, module completes successfully with I(changed=False).
       - >
         If I(state=absent) and the data set does exist on the managed node,
-        remove the data set, returns successful with I(changed=True).
+        remove the data set, module completes successfully with I(changed=True).
+      - >
+        If I(state=absent) and I(volumes) is provided, and the data set is not
+        found in the catalog, the module attempts to perform catalog using supplied
+        I(name) and I(volumes). If the attempt to catalog the data set catalog is successful,
+        then the data set is removed. Module completes successfully with I(changed=True).
+      - >
+        If I(state=absent) and I(volumes) is provided, and the data set is not
+        found in the catalog, the module attempts to perform catalog using supplied
+        I(name) and I(volumes). If the attempt to catalog the data set catalog fails,
+        then no action is taken. Module completes successfully with I(changed=False).
       - >
         If I(state=present) and the data set does not exist on the managed node,
-        create the data set, returns successful with I(changed=True).
+        create and catalog the data set, module completes successfully with I(changed=True).
       - >
         If I(state=present) and I(replace=True) and the data set is present on
-        the managed node, delete the data set and create the data set with the
-        desired attributes, returns successful with I(changed=True).
+        the managed node the existing data set is deleted, and a new data set is created and cataloged
+        with the desired attributes, module completes successfully with I(changed=True).
       - >
         If I(state=present) and I(replace=False) and the data set is present
-        on the managed node, no action taken, returns successful with I(changed=False).
+        on the managed node, no action taken, module completes successfully with I(changed=False).
+      - >
+        If I(state=cataloged) and I(volumes) is provided and the data set is already cataloged,
+        no action taken, module completes successfully with I(changed=False).
+      - >
+        If I(state=cataloged) and I(volumes) is provided and the data set is not cataloged,
+        module attempts to perform catalog using supplied I(name) and I(volumes). If the attempt to
+        catalog the data set catalog is successful, module completes successfully with I(changed=True).
+      - >
+        If I(state=cataloged) and I(volumes) is provided and the data set is not cataloged,
+        module attempts to perform catalog using supplied I(name) and I(volumes). If the attempt to
+        catalog the data set catalog fails, returns failure with I(changed=False).
+      - >
+        If I(state=uncataloged) and the data set is not found,
+        no action taken , module completes successfully with I(changed=False).
+      - >
+        If I(state=uncataloged) and the data set is found,
+        the data set is uncataloged, module completes successfully with I(changed=True).
     required: false
     type: str
     default: present
@@ -229,29 +258,58 @@ options:
       name:
         description:
           - The name of the data set being managed. (e.g C(USER.TEST))
-          - Name field is required unless using batch option.
+          - If I(name) is not provided, a randomized data set name will be generated
+            with the HLQ matching the module-runners username.
+          - Required if I(type=MEMBER) or I(state!=present)
         type: str
-        required: true
+        required: false
         version_added: "2.9"
       state:
         description:
           - The final state desired for specified data set.
           - >
             If I(state=absent) and the data set does not exist on the managed node,
-            no action taken, returns successful with I(changed=False).
+            no action taken, module completes successfully with I(changed=False).
           - >
             If I(state=absent) and the data set does exist on the managed node,
-            remove the data set, returns successful with I(changed=True).
+            remove the data set, module completes successfully with I(changed=True).
+          - >
+            If I(state=absent) and I(volumes) is provided, and the data set is not
+            found in the catalog, the module attempts to perform catalog using supplied
+            I(name) and I(volumes). If the attempt to catalog the data set catalog is successful,
+            then the data set is removed. Module completes successfully with I(changed=True).
+          - >
+            If I(state=absent) and I(volumes) is provided, and the data set is not
+            found in the catalog, the module attempts to perform catalog using supplied
+            I(name) and I(volumes). If the attempt to catalog the data set catalog fails,
+            then no action is taken. Module completes successfully with I(changed=False).
           - >
             If I(state=present) and the data set does not exist on the managed node,
-            create the data set, returns successful with I(changed=True).
+            create and catalog the data set, module completes successfully with I(changed=True).
           - >
             If I(state=present) and I(replace=True) and the data set is present on
-            the managed node, delete the data set and create the data set with the
-            desired attributes, returns successful with I(changed=True).
+            the managed node the existing data set is deleted, and a new data set is created and cataloged
+            with the desired attributes, module completes successfully with I(changed=True).
           - >
             If I(state=present) and I(replace=False) and the data set is present
-            on the managed node, no action taken, returns successful with I(changed=False).
+            on the managed node, no action taken, module completes successfully with I(changed=False).
+          - >
+            If I(state=cataloged) and I(volumes) is provided and the data set is already cataloged,
+            no action taken, module completes successfully with I(changed=False).
+          - >
+            If I(state=cataloged) and I(volumes) is provided and the data set is not cataloged,
+            module attempts to perform catalog using supplied I(name) and I(volumes). If the attempt to
+            catalog the data set catalog is successful, module completes successfully with I(changed=True).
+          - >
+            If I(state=cataloged) and I(volumes) is provided and the data set is not cataloged,
+            module attempts to perform catalog using supplied I(name) and I(volumes). If the attempt to
+            catalog the data set catalog fails, returns failure with I(changed=False).
+          - >
+            If I(state=uncataloged) and the data set is not found,
+            no action taken , module completes successfully with I(changed=False).
+          - >
+            If I(state=uncataloged) and the data set is found,
+            the data set is uncataloged, module completes successfully with I(changed=True).
         required: false
         type: str
         default: present
@@ -544,7 +602,11 @@ EXAMPLES = r"""
       - "222222"
 """
 RETURN = r"""
-
+names:
+  description: The data set names, including temporary generated data set names, in the order provided to the module.
+  returned: always
+  type: list
+  elements: str
 """
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
@@ -627,6 +689,17 @@ def get_individual_data_set_parameters(params):
 def data_set_name(contents, dependencies):
     """Validates provided data set name(s) are valid.
     Returns a list containing the name(s) of data sets."""
+    if dependencies.get("batch"):
+        return None
+    if contents is None:
+        if dependencies.get("state") != "present":
+            raise ValueError('Data set name must be provided when "state!=present"')
+        if dependencies.get("type") != "MEMBER":
+            contents = DataSet.temp_name()
+        else:
+            raise ValueError(
+                'Data set and member name must be provided when "type=MEMBER"'
+            )
     dsname = str(contents)
     if not re.fullmatch(
         r"^(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}$",
@@ -832,14 +905,45 @@ def perform_data_set_operations(name, state, **extra_args):
     return changed
 
 
+def fix_old_size_arg(params):
+    """ for backwards compatibility with old styled size argument """
+    match = None
+    if params.get("size"):
+        match = re.fullmatch(
+            r"([1-9][0-9]*)(M|G|K|TRK|CYL)", str(params.get("size")), re.IGNORECASE
+        )
+        if not match:
+            raise ValueError(
+                'Value {0} is invalid for size argument. Valid size measurements are "K", "M", "G", "TRK" or "CYL".'.format(
+                    str(params.get("size"))
+                )
+            )
+    if params.get("space_primary"):
+        match = re.fullmatch(
+            r"([1-9][0-9]*)(M|G|K|TRK|CYL)",
+            str(params.get("space_primary")),
+            re.IGNORECASE,
+        )
+    if match:
+        params["space_primary"] = int(match.group(1))
+        params["space_type"] = match.group(2)
+    return params
+
+
 def parse_and_validate_args(params):
+    params = fix_old_size_arg(params)
+
     arg_defs = dict(
         # Used for batch data set args
         batch=dict(
             type="list",
             elements="dict",
             options=dict(
-                name=dict(type=data_set_name, required=True, dependencies=["type"]),
+                name=dict(
+                    type=data_set_name,
+                    default=data_set_name,
+                    dependencies=["type", "state"],
+                ),
                 state=dict(
                     type="str",
                     default="present",
@@ -854,13 +958,22 @@ def parse_and_validate_args(params):
                     type="int", required=False, dependencies=["state"]
                 ),
                 record_format=dict(
-                    type=record_format, required=False, dependencies=["state"],
+                    type=record_format,
+                    required=False,
+                    dependencies=["state"],
+                    aliases=["format"],
                 ),
                 sms_management_class=dict(
                     type=sms_class, required=False, dependencies=["state"]
                 ),
+                # I know this alias is odd, ZOAU used to document they supported
+                # SMS data class when they were actually passing as storage class
+                # support for backwards compatability with previous module versions
                 sms_storage_class=dict(
-                    type=sms_class, required=False, dependencies=["state"]
+                    type=sms_class,
+                    required=False,
+                    dependencies=["state"],
+                    aliases=["data_class"],
                 ),
                 sms_data_class=dict(
                     type=sms_class, required=False, dependencies=["state"]
@@ -900,7 +1013,12 @@ def parse_and_validate_args(params):
             ),
         ),
         # For individual data set args
-        name=dict(type=data_set_name, required=False, dependencies=["type"]),
+        name=dict(
+            type=data_set_name,
+            default=data_set_name,
+            required=False,
+            dependencies=["type", "state", "batch"],
+        ),
         state=dict(
             type="str",
             default="present",
@@ -910,11 +1028,24 @@ def parse_and_validate_args(params):
         space_type=dict(type=space_type, required=False, dependencies=["state"]),
         space_primary=dict(type="int", required=False, dependencies=["state"]),
         space_secondary=dict(type="int", required=False, dependencies=["state"]),
-        record_format=dict(type=record_format, required=False, dependencies=["state"],),
+        record_format=dict(
+            type=record_format,
+            required=False,
+            dependencies=["state"],
+            aliases=["format"],
+        ),
         sms_management_class=dict(
             type=sms_class, required=False, dependencies=["state"]
         ),
-        sms_storage_class=dict(type=sms_class, required=False, dependencies=["state"]),
+        # I know this alias is odd, ZOAU used to document they supported
+        # SMS data class when they were actually passing as storage class
+        # support for backwards compatability with previous module versions
+        sms_storage_class=dict(
+            type=sms_class,
+            required=False,
+            dependencies=["state"],
+            aliases=["data_class"],
+        ),
         sms_data_class=dict(type=sms_class, required=False, dependencies=["state"]),
         block_size=dict(
             type=valid_when_state_present, required=False, dependencies=["state"],
@@ -966,7 +1097,7 @@ def run_module():
             type="list",
             elements="dict",
             options=dict(
-                name=dict(type="str", required=True,),
+                name=dict(type="str", required=False,),
                 state=dict(
                     type="str",
                     default="present",
@@ -974,11 +1105,16 @@ def run_module():
                 ),
                 type=dict(type="str", required=False),
                 space_type=dict(type="str", required=False,),
-                space_primary=dict(type="int", required=False),
+                space_primary=dict(type="int", required=False, aliases=["size"]),
                 space_secondary=dict(type="int", required=False),
-                record_format=dict(type="str", required=False,),
+                record_format=dict(type="str", required=False, aliases=["format"]),
                 sms_management_class=dict(type="str", required=False),
-                sms_storage_class=dict(type="str", required=False),
+                # I know this alias is odd, ZOAU used to document they supported
+                # SMS data class when they were actually passing as storage class
+                # support for backwards compatability with previous module versions
+                sms_storage_class=dict(
+                    type="str", required=False, aliases=["data_class"]
+                ),
                 sms_data_class=dict(type="str", required=False),
                 block_size=dict(type="int", required=False,),
                 directory_blocks=dict(type="int", required=False,),
@@ -999,11 +1135,14 @@ def run_module():
         ),
         type=dict(type="str", required=False),
         space_type=dict(type="str", required=False),
-        space_primary=dict(type="int", required=False),
+        space_primary=dict(type="raw", required=False, aliases=["size"]),
         space_secondary=dict(type="int", required=False),
-        record_format=dict(type="str", required=False,),
+        record_format=dict(type="str", required=False, aliases=["format"]),
         sms_management_class=dict(type="str", required=False),
-        sms_storage_class=dict(type="str", required=False),
+        # I know this alias is odd, ZOAU used to document they supported
+        # SMS data class when they were actually passing as storage class
+        # support for backwards compatability with previous module versions
+        sms_storage_class=dict(type="str", required=False, aliases=["data_class"]),
         sms_data_class=dict(type="str", required=False),
         block_size=dict(type="int", required=False,),
         directory_blocks=dict(type="int", required=False,),
@@ -1013,7 +1152,7 @@ def run_module():
         replace=dict(type="bool", default=False,),
         volumes=dict(type="raw", required=False, aliases=["volume"],),
     )
-    result = dict(changed=False, message="")
+    result = dict(changed=False, message="", names=[])
 
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
 
@@ -1021,6 +1160,7 @@ def run_module():
         try:
             params = parse_and_validate_args(module.params)
             data_set_param_list = get_individual_data_set_parameters(params)
+            result["names"] = [d.get("name", "") for d in data_set_param_list]
 
             for data_set_params in data_set_param_list:
                 # remove unnecessary empty batch argument

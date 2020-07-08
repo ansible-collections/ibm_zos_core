@@ -136,12 +136,10 @@ class DataSet(object):
                     Not valid for datasets that are not SMS-managed.
                     Note that all non-linear VSAM datasets are SMS-managed.
                     Defaults to None.
-                    Defaults to None.
             sms_management_class (str, optional): The management class for an SMS-managed dataset.
                     Optional for SMS-managed datasets that do not match an SMS-rule.
                     Not valid for datasets that are not SMS-managed.
                     Note that all non-linear VSAM datasets are SMS-managed.
-                    Defaults to None.
                     Defaults to None.
             volumes (Union[str, list[str]], optional): A list of volume serials.
                     When providing multiple volumes, processing will begin with
@@ -410,12 +408,10 @@ class DataSet(object):
                     Not valid for datasets that are not SMS-managed.
                     Note that all non-linear VSAM datasets are SMS-managed.
                     Defaults to None.
-                    Defaults to None.
             sms_management_class (str, optional): The management class for an SMS-managed dataset.
                     Optional for SMS-managed datasets that do not match an SMS-rule.
                     Not valid for datasets that are not SMS-managed.
                     Note that all non-linear VSAM datasets are SMS-managed.
-                    Defaults to None.
                     Defaults to None.
             volumes (Union[str, list[str]], optional): A list of volume serials.
                     When providing multiple volumes, processing will begin with
@@ -520,12 +516,10 @@ class DataSet(object):
                     Not valid for datasets that are not SMS-managed.
                     Note that all non-linear VSAM datasets are SMS-managed.
                     Defaults to None.
-                    Defaults to None.
             sms_management_class (str, optional): The management class for an SMS-managed dataset.
                     Optional for SMS-managed datasets that do not match an SMS-rule.
                     Not valid for datasets that are not SMS-managed.
                     Note that all non-linear VSAM datasets are SMS-managed.
-                    Defaults to None.
                     Defaults to None.
             volumes (Union[str, list[str]], optional): A list of volume serials.
                     When providing multiple volumes, processing will begin with

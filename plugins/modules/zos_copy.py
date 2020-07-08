@@ -1015,8 +1015,7 @@ class PDSECopyHandler(CopyHandler):
             alloc_size = size
             if not alloc_size:
                 if vol:
-                    ds_vtoc = vtoc.VolumeTableOfContents(self.module)
-                    vtoc_info = ds_vtoc.get_data_set_entry(src, vol)
+                    vtoc_info = vtoc.get_data_set_entry(src, vol)
                     tracks = int(vtoc_info.get("last_block_pointer").get("track"))
                     blocks = int(vtoc_info.get("last_block_pointer").get("block"))
                     blksize = int(vtoc_info.get("block_size"))

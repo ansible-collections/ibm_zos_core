@@ -1125,35 +1125,6 @@ class DataSetUtils(object):
             return "USS"
         return self.ds_info.get("dsorg")
 
-    @staticmethod
-    def create_temp_data_set(LLQ, ds_type="SEQ", size="5M", ds_format="FB", lrecl=80):
-        """Creates a temporary data set with the given low level qualifier.
-
-        Arguments:
-            LLQ {str} -- Low Level Qualifier to be used for temporary data set
-            ds_type {str} -- The data set type, default: Sequential
-            size {str} -- The size of the data set, default: 5M
-            format {str} -- The record format of the data set, default: FB
-            lrecl {int} -- The record length of the data set, default: 80
-
-        Returns:
-            str -- Name of the created data set
-
-        Raises:
-            OSError: When non-zero return code is received
-            from Datasets.create()
-        """
-        chars = ascii_uppercase
-        HLQ2 = "".join(choice(chars) for i in range(5))
-        HLQ3 = "".join(choice(chars) for i in range(6))
-        temp_ds_name = "{0}.{1}.{2}.{3}".format(Datasets.hlq(), HLQ2, HLQ3, LLQ)
-
-        rc = Datasets.create(temp_ds_name, ds_type, size, ds_format, "", lrecl)
-        if rc != 0:
-            raise OSError("Unable to create temporary data set")
-
-        return temp_ds_name
-
     def volume(self):
         """Retrieves the volume name where the input data set is stored.
 
@@ -1238,7 +1209,7 @@ class DataSetUtils(object):
         else:
             if (re.findall(r"ALREADY IN USE", listds_out)):
                 raise DatasetBusyError(self.data_set)
-            if (re.findall(r"NOT IN CATALOG|NOT FOUND|NOT LISTED", listds_out)):
+            if (re.findall(r"NOT IN CATALOG", listds_out)):
                 self.ds_info['exists'] = False
             else:
                 raise MVSCmdExecError(listds_rc, listds_out, listds_err)

@@ -386,7 +386,7 @@ options:
           status_group:
             description:
               - The status for the UNIX file specified in I(path).
-              - If you do not code a value on the I(status_group) parameter, the module assumes that the
+              - If you do not specify a value for the I(status_group) parameter, the module assumes that the
                 pathname exists, searches for it, and fails the module if the pathname does not exist.
               - Maps to PATHOPTS status group file options on z/OS.
               - You can specify up to 6 choices.
@@ -974,7 +974,7 @@ options:
                   status_group:
                     description:
                       - The status for the UNIX file specified in I(path).
-                      - If you do not code a value on the I(status_group) parameter the module assumes that the
+                      - If you do not specify a value for the I(status_group) parameter the module assumes that the
                         pathname exists, searches for it, and fails the module if the pathname does not exist.
                       - Maps to PATHOPTS status group file options on z/OS.
                       - You can specify up to 6 choices.

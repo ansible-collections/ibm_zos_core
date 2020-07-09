@@ -1,7 +1,7 @@
 # Copyright (c) IBM Corporation 2019, 2020
 # Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
@@ -53,6 +53,6 @@ class ZTestHelper(object):
         This is useful in situations where no environment variables are assumed to be set. """
         interpreter_string = ""
         for key, value in self._environment.items():
-            interpreter_string += "export {0}={1} ;".format(key, value)
+            interpreter_string += "export {0}={1} ; ".format(key, value)
         interpreter_string += self._python_path
         return interpreter_string

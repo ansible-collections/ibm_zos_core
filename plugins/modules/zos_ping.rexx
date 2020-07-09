@@ -47,7 +47,7 @@ Parse Arg argFile .
 
 pythonName       = 'Python'
 majVersionPython = 3
-minVersionPython = 6
+minVersionPython = 8
 warningJsonList = ''
 
 If (argFile = '') Then Do
@@ -55,7 +55,7 @@ If (argFile = '') Then Do
 End
 newArgFile1 = argFile || 1
 /* Check for iconv utility by converting the JSON argument file form ASCII to EBCDIC */
-retC = bpxwunix('iconv -f ISO8859-1 -t IBM-1047 ' argFile,,stdout.,stderr.)
+retC = bpxwunix('iconv -f ISO8859-1 -t IBM-1047 ' argFile,,stderr.)
 
 If (retC <> 0) Then Do
     failModule('Command iconv not found.', stderr, retC)
@@ -70,8 +70,8 @@ If (rc <> 0 | returnCode <> HWTJ_OK) Then Do
     failModule(errmsg, "", retC)
 End
 
-/* Check for Python version eg: 'Python 3.6.9' */
-retC = bpxwunix('python3 --version',, out., err.)
+/* Check for Python version >= 3.8 eg: 'Python 3.8.2' */
+retC = bpxwunix('python3 --version', out., err.)
 If (err.0 > 0) Then Do
     Do index=1 To err.0
         warningJsonList = addWarningToList(warningJsonList, 'Python Warning: ' || err.index)

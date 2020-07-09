@@ -19,8 +19,7 @@ from ansible.module_utils.parsing.convert_bool import boolean
 from ansible.plugins.action import ActionBase
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
-    is_member,
-    is_data_set
+    is_member, is_data_set, extract_member_name
 )
 
 
@@ -36,14 +35,12 @@ class ActionModule(ActionBase):
         src = self._task.args.get('src', None)
         b_src = to_bytes(src, errors='surrogate_or_strict')
         dest = self._task.args.get('dest', None)
-        b_dest = to_bytes(dest, errors='surrogate_or_strict')
         content = self._task.args.get('content', None)
-        force = _process_boolean(self._task.args.get('force'), default=False)
+        force = _process_boolean(self._task.args.get('force'), default=True)
         backup = _process_boolean(self._task.args.get('backup'), default=False)
         local_follow = _process_boolean(self._task.args.get('local_follow'), default=False)
         remote_src = _process_boolean(self._task.args.get('remote_src'), default=False)
         is_binary = _process_boolean(self._task.args.get('is_binary'), default=False)
-        validate = _process_boolean(self._task.args.get('validate'), default=False)
         backup_file = self._task.args.get("backup_file", None)
         encoding = self._task.args.get('encoding', None)
         mode = self._task.args.get('mode', None)
@@ -102,7 +99,7 @@ class ActionModule(ActionBase):
                 msg = "Cannot specify 'mode', 'owner' or 'group' for MVS destination"
                 return self._exit_action(result, msg, failed=True)
 
-        if (not force) and self._dest_exists(dest, task_vars):
+        if (not force) and self._dest_exists(src, dest, task_vars):
             return self._exit_action(result, "Destination exists. No data was copied.")
 
         if not remote_src:
@@ -237,10 +234,21 @@ class ActionModule(ActionBase):
                     task_vars=task_vars
                 )
 
-    def _dest_exists(self, dest, task_vars):
+    def _dest_exists(self, src, dest, task_vars):
+        """Determine if destination exists on remote z/OS system"""
         if '/' in dest:
-            rc, out, err = self._connection.exec_command("ls {0}".format(dest))
-            if rc != 0 and "FSUM6785" in to_text(out):
+            rc, out, err = self._connection.exec_command("ls -l {0}".format(dest))
+            if rc != 0:
+                return False
+            if len(to_text(out).split("\n")) == 2:
+                return True
+            if '/' in src:
+                src = src.rstrip('/') if src.endswith('/') else src
+                dest += "/" + os.path.basename(src)
+            else:
+                dest += "/" + extract_member_name(src) if is_member(src) else src
+            rc, out, err = self._connection.exec_command("ls -l {0}".format(dest))
+            if rc != 0:
                 return False
         else:
             cmd = "LISTDS '{0}'".format(dest)

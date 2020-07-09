@@ -18,8 +18,6 @@ short_description: Copy data to z/OS
 description:
   - The M(zos_copy) module copies a file or data set from a local or a
     remote machine to a location on the remote machine.
-  - If the destination exists, no data will be copied. Set C(force=true) to
-    replace existing destination.
   - Use the M(zos_fetch) module to copy files or data sets from remote
     locations to the local machine.
 author: "Asif Mahmud (@asifmahmud)"
@@ -1428,7 +1426,6 @@ def main():
             backup_file=dict(type='str'),
             model_ds=dict(type='str', required=False),
             local_follow=dict(type='bool', default=True),
-            force=dict(type='bool', default=False),
             remote_src=dict(type='bool', default=False),
             validate=dict(type='bool'),
             is_uss=dict(type='bool'),
@@ -1450,7 +1447,6 @@ def main():
         backup=dict(arg_type='bool', default=False, required=False),
         backup_file=dict(arg_type='data_set_or_path', required=False),
         model_ds=dict(arg_type='data_set', required=False),
-        force=dict(arg_type='bool', default=False, required=False),
         local_follow=dict(arg_type='bool', default=True, required=False),
         remote_src=dict(arg_type='bool', default=False, required=False),
         checksum=dict(arg_type='str', required=False),

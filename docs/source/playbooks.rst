@@ -229,10 +229,11 @@ for Python and ``ZOAU`` have been added and used through the configuration.
      LANG: "C"
 
 .. note::
-   Rocket python is unsupported; if this is the only available python on the
-   target, the following environment variables have been noted to work. Please
-   review the README.ZOS guide included with the ported python for further
-   configurations.
+   Currently, the supported python on the target is
+   IBM Open Enterprise Python for z/OS. If Rocket Python is the only available
+   python on the target, the following environment variables must be set in
+   the provided ``all.yml`` configuration. Please review the README.ZOS guide
+   included with the ported python for further configurations.
 
 .. code-block:: yaml
 

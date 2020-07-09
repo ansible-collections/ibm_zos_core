@@ -110,7 +110,7 @@ options:
   space_primary:
     description:
       - The amount of primary space to allocate for the dataset.
-      - The unit of space used is set using M(space_type).
+      - The unit of space used is set using I(space_type).
     type: int
     required: false
     default: 5
@@ -118,7 +118,7 @@ options:
   space_secondary:
     description:
       - The amount of secondary space to allocate for the dataset.
-      - The unit of space used is set using M(space_type).
+      - The unit of space used is set using I(space_type).
     type: int
     required: false
     default: 3
@@ -342,7 +342,7 @@ options:
       space_primary:
         description:
           - The amount of primary space to allocate for the dataset.
-          - The unit of space used is set using M(space_type).
+          - The unit of space used is set using I(space_type).
         type: int
         required: false
         default: 5
@@ -350,7 +350,7 @@ options:
       space_secondary:
         description:
           - The amount of secondary space to allocate for the dataset.
-          - The unit of space used is set using M(space_type).
+          - The unit of space used is set using I(space_type).
         type: int
         required: false
         default: 3

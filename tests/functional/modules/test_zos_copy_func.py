@@ -85,7 +85,6 @@ def test_copy_local_file_to_existing_uss_file(ansible_zos_module):
             assert result.get("msg") is None
         for result in stat_res.contacted.values():
             assert result.get("stat").get("exists") is True
-            assert result.get("stat").get("atime") != timestamp
     finally:
         hosts.all.file(path=dest_path, state="absent")
 

@@ -12,7 +12,7 @@ zos_tso_command -- Execute TSO commands
 .. contents::
    :local:
    :depth: 1
-   
+
 
 Synopsis
 --------
@@ -26,14 +26,15 @@ Parameters
 ----------
 
 
- 
      
 commands
-  The TSO commands to execute on the target z/OS system.
+  One or more TSO commands to execute on the target z/OS system.
+
+  Accepts a single string or list of strings as input.
 
 
   | **required**: True
-  | **type**: list
+  | **type**: raw
 
 
 
@@ -67,63 +68,52 @@ Examples
 Return Values
 -------------
 
+
+   
+                              
+       output
+        | List of each TSO command output.
+      
+        | **returned**: always
+        | **type**: list
+              
+   
+                              
+        command
+          | The executed TSO command.
+      
+          | **returned**: always
+          | **type**: str
+      
       
                               
-         output
-            | List of each TSO command output.
+        rc
+          | The return code from the executed TSO command.
       
-            | **returned**: always
-            
-            | **type**: list
-
+          | **returned**: always
+          | **type**: int
       
-                    
+      
                               
-          command
-              | The executed TSO command.
+        content
+          | The response resulting from the execution of the TSO command.
       
-              | **returned**: always
-            
-              | **type**: str
+          | **returned**: always
+          | **type**: list      
+          | **sample**:
 
-      
-      
-         
-                              
-          rc
-              | The return code from the executed TSO command.
-      
-              | **returned**: always
-            
-              | **type**: int
-
-      
-      
-         
-                              
-          content
-              | The response resulting from the execution of the TSO command.
-      
-              | **returned**: always
-            
-              | **type**: list
-
-            
-              **sample**: ::
+              .. code-block::
 
                        ["NO MODEL DATA SET                                                OMVSADM", "TERMUACC                                                                ", "SUBGROUP(S)= VSAMDSET SYSCTLG  BATCH    SASS     MASS     IMSGRP1       ", "             IMSGRP2  IMSGRP3  DSNCAT   DSN120   J42      M63           ", "             J91      J09      J97      J93      M82      D67           ", "             D52      M12      CCG      D17      M32      IMSVS         ", "             DSN210   DSN130   RAD      CATLG4   VCAT     CSP           "]
             
       
-         
+      
                               
-          lines
-              | The line number of the content.
+        lines
+          | The line number of the content.
       
-              | **returned**: always
-            
-              | **type**: int
-
-      
+          | **returned**: always
+          | **type**: int
       
         
       

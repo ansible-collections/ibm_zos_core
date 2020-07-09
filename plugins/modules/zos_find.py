@@ -109,11 +109,11 @@ seealso:
 
 
 EXAMPLES = r"""
-- name: Find all data sets with HLQ 'IMS' or 'IMSTEST' that contain the word 'hello'
+- name: Find all data sets with HLQ 'IMS.LIB' or 'IMSTEST.LIB' that contain the word 'hello'
   zos_find:
     patterns:
-      - IMS.*
-      - IMSTEST.*
+      - IMS.LIB.*
+      - IMSTEST.LIB.*
     contains: 'hello'
     age: 2d
 
@@ -125,7 +125,7 @@ EXAMPLES = r"""
 
 - name: Exclude data sets that have a low level qualifier 'TEST'
   zos_find:
-    patterns: 'IMS.*'
+    patterns: 'IMS.LIB.*'
     contains: 'hello'
     excludes: '*.TEST'
 
@@ -139,7 +139,7 @@ EXAMPLES = r"""
 
 - name: Find all data sets greater than 2MB and allocated in one of the specified volumes
   zos_find:
-    patterns: '*'
+    patterns: 'USER.*'
     size: 2m
     volumes:
       - SCR03
@@ -182,7 +182,7 @@ examined:
 import os
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
-    better_arg_parser, data_set
+    better_arg_parser, vtoc
 )
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
@@ -197,12 +197,32 @@ except Exception:
     types = MissingZOAUImport()
 
 
-def data_set_filter():
+def data_set_filter(patterns, content, age, excludes, size):
+    filtered_data_sets = set()
+
+
+def pds_filter(pds_patterns, member_patterns):
     pass
 
 
 def volume_filter(data_sets, volumes):
-    pass
+    """Return only the data sets that are allocated in one of the volumes from
+    the list input volumes.
+
+    Arguments:
+        data_sets {set[str]} -- A set of data sets to be filtered
+        volumes {list[str]} -- A list of input volumes
+
+    Returns:
+        {set} -- The filtered data sets
+    """
+    filtered_data_sets = set()
+    for volume in volumes:
+        vtoc_entries = vtoc.get_volume_entry(volume)
+        for ds in vtoc_entries:
+            if ds.get('data_set_name') in data_sets:
+                filtered_data_sets.add(ds)
+    return filtered_data_sets
 
 
 def _dgrep_wrapper(
@@ -267,12 +287,6 @@ def _vls_wrapper(patterns, details=False, verbose=False):
     return module.run_command(vls_cmd)
 
 
-def _in_volume(data_set, vol):
-    """Determine if the given input data set is allocated in 'vol'"""
-    volume = data_set.DataSetUtils(data_set).volume()
-    return vol == volume
-
-
 def run_module(module, arg_def):
     parsed_args = None
     try:
@@ -303,7 +317,7 @@ def main():
             excludes=dict(type='list', required=False, aliases=['exclude']),
             patterns=dict(type='list', required=True),
             size=dict(type='str', required=False),
-            paths=dict(type='list', required=False),
+            pds_paths=dict(type='list', required=False),
             file_type=dict(type='str', required=False, default='NONVSAM', choices=['VSAM', 'NONVSAM']),
             volume=dict(type='list', required=False, aliases=['volumes'])
         )
@@ -316,13 +330,12 @@ def main():
         excludes=dict(arg_type='list', required=False, aliases=['exclude']),
         patterns=dict(arg_type='list', required=True),
         size=dict(arg_type='str', required=False),
-        paths=dict(arg_type='list', required=False),
+        pds_paths=dict(arg_type='list', required=False),
         file_type=dict(arg_type='str', required=False, default='NONVSAM', choices=['VSAM', 'NONVSAM']),
         volume=dict(arg_type='list', required=False, aliases=['volumes'])
     )
 
-    res_args = run_module(module, arg_def)
-    module.exit_json(**res_args)
+    module.exit_json(**run_module(module, arg_def))
 
 
 if __name__ == '__main__':

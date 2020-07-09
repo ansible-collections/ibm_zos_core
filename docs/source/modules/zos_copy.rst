@@ -207,7 +207,7 @@ src
   Required unless using ``content``.
 
 
-  | **required**: false
+  | **required**: False
   | **type**: str
 
 

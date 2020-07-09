@@ -81,7 +81,7 @@ dds
       A list of DD statements, which can contain any of the following types: *dd_data_set*, *dd_unix*, and *dd_input*.
 
 
-      | **required**: false
+      | **required**: False
       | **type**: list
 
 
@@ -103,7 +103,7 @@ dds
           *backup* is only used when *replace=true*.
 
 
-          | **required**: false
+          | **required**: False
           | **type**: bool
 
 
@@ -296,7 +296,7 @@ dds
           The format and characteristics of the records for new data set.
 
 
-          | **required**: false
+          | **required**: False
           | **type**: str
           | **choices**: u, vb, vba, fb, fba
 
@@ -333,7 +333,7 @@ dds
           *replace* will result in loss of all data in the original data set unless *backup* is specified.
 
 
-          | **required**: false
+          | **required**: False
           | **type**: bool
 
 
@@ -353,7 +353,7 @@ dds
             The encoding to use when returning the contents of the data set.
 
 
-            | **required**: false
+            | **required**: False
             | **type**: str
             | **default**: iso8859-1
 
@@ -363,7 +363,7 @@ dds
             The encoding of the data set on the z/OS system.
 
 
-            | **required**: false
+            | **required**: False
             | **type**: str
             | **default**: ibm-1047
 
@@ -398,7 +398,7 @@ dds
           *reuse* is only considered when *disposition=NEW*
 
 
-          | **required**: false
+          | **required**: False
           | **type**: bool
 
 
@@ -450,7 +450,7 @@ dds
           Not applicable when *space_type=blklgth* or *space_type=reclgth*.
 
 
-          | **required**: false
+          | **required**: False
           | **type**: int
 
 
@@ -463,7 +463,7 @@ dds
           Not applicable when *space_type=blklgth* or *space_type=reclgth*.
 
 
-          | **required**: false
+          | **required**: False
           | **type**: int
 
 
@@ -472,7 +472,7 @@ dds
           The unit of measurement to use when allocating space for a new data set using *space_primary* and *space_secondary*.
 
 
-          | **required**: false
+          | **required**: False
           | **type**: str
           | **choices**: trk, cyl, b, k, m, g
 
@@ -484,7 +484,7 @@ dds
           Maps to DSNTYPE on z/OS.
 
 
-          | **required**: false
+          | **required**: False
           | **type**: str
           | **choices**: library, pds, pdse, large, basic, seq, rrds, esds, lds, ksds
 
@@ -543,7 +543,7 @@ dds
             The encoding to use when returning the contents of the data set.
 
 
-            | **required**: false
+            | **required**: False
             | **type**: str
             | **default**: iso8859-1
 
@@ -555,7 +555,7 @@ dds
             for *dd_input*, *src_encoding* should generally not need to be changed.
 
 
-            | **required**: false
+            | **required**: False
             | **type**: str
             | **default**: ibm-1047
 
@@ -592,7 +592,7 @@ dds
           The kind of access to request for the UNIX file specified in *path*.
 
 
-          | **required**: false
+          | **required**: False
           | **type**: str
           | **choices**: r, w, rw, read_only, write_only, read_write, ordonly, owronly, ordwr
 
@@ -613,7 +613,7 @@ dds
           Indicates what to do with the UNIX file after abnormal termination of the program.
 
 
-          | **required**: false
+          | **required**: False
           | **type**: str
           | **choices**: keep, delete
 
@@ -623,7 +623,7 @@ dds
           Indicates what to do with the UNIX file after normal termination of the program.
 
 
-          | **required**: false
+          | **required**: False
           | **type**: str
           | **choices**: keep, delete
 
@@ -635,7 +635,7 @@ dds
           Maps to FILEDATA on z/OS.
 
 
-          | **required**: false
+          | **required**: False
           | **type**: str
           | **default**: binary
           | **choices**: binary, text, record
@@ -650,7 +650,7 @@ dds
           Maps to PATHMODE on z/OS.
 
 
-          | **required**: false
+          | **required**: False
           | **type**: int
 
 
@@ -674,7 +674,7 @@ dds
           *record_format* is required in situations where the data will be processed as records and therefore, *record_length*, *block_size* and *record_format* need to be supplied since a UNIX file would normally be treated as a stream of bytes.
 
 
-          | **required**: false
+          | **required**: False
           | **type**: str
           | **choices**: u, vb, vba, fb, fba
 
@@ -708,7 +708,7 @@ dds
             The encoding to use when returning the contents of the file.
 
 
-            | **required**: false
+            | **required**: False
             | **type**: str
             | **default**: iso8859-1
 
@@ -718,7 +718,7 @@ dds
             The encoding of the file on the z/OS system.
 
 
-            | **required**: false
+            | **required**: False
             | **type**: str
             | **default**: ibm-1047
 
@@ -803,7 +803,7 @@ dds
       *backup* is only used when *replace=true*.
 
 
-      | **required**: false
+      | **required**: False
       | **type**: bool
 
 
@@ -1005,7 +1005,7 @@ dds
       The format and characteristics of the records for new data set.
 
 
-      | **required**: false
+      | **required**: False
       | **type**: str
       | **choices**: u, vb, vba, fb, fba
 
@@ -1042,7 +1042,7 @@ dds
       *replace* will result in loss of all data in the original data set unless *backup* is specified.
 
 
-      | **required**: false
+      | **required**: False
       | **type**: bool
 
 
@@ -1062,7 +1062,7 @@ dds
         The encoding to use when returning the contents of the data set.
 
 
-        | **required**: false
+        | **required**: False
         | **type**: str
         | **default**: iso8859-1
 
@@ -1072,7 +1072,7 @@ dds
         The encoding of the data set on the z/OS system.
 
 
-        | **required**: false
+        | **required**: False
         | **type**: str
         | **default**: ibm-1047
 
@@ -1107,7 +1107,7 @@ dds
       *reuse* is only considered when *disposition=NEW*
 
 
-      | **required**: false
+      | **required**: False
       | **type**: bool
 
 
@@ -1159,7 +1159,7 @@ dds
       Not applicable when *space_type=blklgth* or *space_type=reclgth*.
 
 
-      | **required**: false
+      | **required**: False
       | **type**: int
 
 
@@ -1172,7 +1172,7 @@ dds
       Not applicable when *space_type=blklgth* or *space_type=reclgth*.
 
 
-      | **required**: false
+      | **required**: False
       | **type**: int
 
 
@@ -1181,7 +1181,7 @@ dds
       The unit of measurement to use when allocating space for a new data set using *space_primary* and *space_secondary*.
 
 
-      | **required**: false
+      | **required**: False
       | **type**: str
       | **choices**: trk, cyl, b, k, m, g
 
@@ -1193,7 +1193,7 @@ dds
       Maps to DSNTYPE on z/OS.
 
 
-      | **required**: false
+      | **required**: False
       | **type**: str
       | **choices**: library, pds, pdse, large, basic, seq, rrds, esds, lds, ksds
 
@@ -1282,7 +1282,7 @@ dds
         The encoding to use when returning the contents of the data set.
 
 
-        | **required**: false
+        | **required**: False
         | **type**: str
         | **default**: iso8859-1
 
@@ -1294,7 +1294,7 @@ dds
         for *dd_input*, *src_encoding* should generally not need to be changed.
 
 
-        | **required**: false
+        | **required**: False
         | **type**: str
         | **default**: ibm-1047
 
@@ -1351,7 +1351,7 @@ dds
         The encoding to use when returning the contents of the data set.
 
 
-        | **required**: false
+        | **required**: False
         | **type**: str
         | **default**: iso8859-1
 
@@ -1363,7 +1363,7 @@ dds
         for *dd_input*, *src_encoding* should generally not need to be changed.
 
 
-        | **required**: false
+        | **required**: False
         | **type**: str
         | **default**: ibm-1047
 
@@ -1430,7 +1430,7 @@ dds
       Indicates what to do with the UNIX file after abnormal termination of the program.
 
 
-      | **required**: false
+      | **required**: False
       | **type**: str
       | **choices**: keep, delete
 
@@ -1440,7 +1440,7 @@ dds
       Indicates what to do with the UNIX file after normal termination of the program.
 
 
-      | **required**: false
+      | **required**: False
       | **type**: str
       | **choices**: keep, delete
 
@@ -1452,7 +1452,7 @@ dds
       Maps to FILEDATA on z/OS.
 
 
-      | **required**: false
+      | **required**: False
       | **type**: str
       | **default**: binary
       | **choices**: binary, text, record
@@ -1467,7 +1467,7 @@ dds
       Maps to PATHMODE on z/OS.
 
 
-      | **required**: false
+      | **required**: False
       | **type**: int
 
 
@@ -1491,7 +1491,7 @@ dds
       *record_format* is required in situations where the data will be processed as records and therefore, *record_length*, *block_size* and *record_format* need to be supplied since a UNIX file would normally be treated as a stream of bytes.
 
 
-      | **required**: false
+      | **required**: False
       | **type**: str
       | **choices**: u, vb, vba, fb, fba
 
@@ -1525,7 +1525,7 @@ dds
         The encoding to use when returning the contents of the file.
 
 
-        | **required**: false
+        | **required**: False
         | **type**: str
         | **default**: iso8859-1
 
@@ -1535,7 +1535,7 @@ dds
         The encoding of the file on the z/OS system.
 
 
-        | **required**: false
+        | **required**: False
         | **type**: str
         | **default**: ibm-1047
 

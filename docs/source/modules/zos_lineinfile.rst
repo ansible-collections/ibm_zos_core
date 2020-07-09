@@ -192,7 +192,7 @@ state
   Whether the line should be inserted/replaced(present) or removed(absent).
 
 
-  | **required**: false
+  | **required**: False
   | **type**: str
   | **default**: present
   | **choices**: absent, present

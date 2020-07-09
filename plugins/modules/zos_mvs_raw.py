@@ -63,6 +63,7 @@ options:
         - I(dd_concat) for a data set concatenation.
 
         - I(dds) supports any combination of source types.
+
     required: false
     type: list
     elements: dict
@@ -421,14 +422,16 @@ options:
                     an open function for reading-only returns without delay.
 
                 - With I(ononblock) not specified and I(ordonly) access,
-                  an open function for reading-only blocks (waits) until a process opens the file for writing.
+                  an open function for reading-only blocks (waits) until a
+                  process opens the file for writing.
 
                 - With I(ononblock) specified and I(owronly) access,
-                  an open function for writing-only returns an error if no process
-                  currently has the file open for reading.
+                  an open function for writing-only returns an error if no
+                  process currently has the file open for reading.
 
                 - With I(ononblock) not specified and I(owronly) access,
-                    an open function for writing-only blocks (waits) until a process opens the file for reading.
+                  an open function for writing-only blocks (waits) until a
+                  process opens the file for reading.
 
                 - For a character special file that supports nonblocking open
 
@@ -436,8 +439,8 @@ options:
                   blocking (waiting) until the device is ready or available.
                   Device response depends on the type of device.
 
-                - If I(ononblock) is not specified, an open function blocks (waits)
-                   until the device is ready or available.
+                - If I(ononblock) is not specified, an open function blocks
+                  (waits) until the device is ready or available.
 
               - I(ononblock) has no effect on other file types.
 
@@ -678,6 +681,7 @@ options:
             description:
               - "A list of DD statements, which can contain any of the following types:
                 I(dd_data_set), I(dd_unix), and I(dd_input)."
+            required: false
             type: list
             elements: dict
             suboptions:
@@ -1022,27 +1026,33 @@ options:
 
                         - For a FIFO special file
 
-                          - With I(ononblock) specified and I(ordonly) access,
-                            an open function for reading-only returns without delay.
+                        - With I(ononblock) specified and I(ordonly) access,
+                          an open function for reading-only returns without
+                          delay.
 
-                          - With I(ononblock) not specified and I(ordonly) access,
-                            an open function for reading-only blocks (waits) until a process opens the file for writing.
+                        - With I(ononblock) not specified and I(ordonly) access,
+                          an open function for reading-only blocks (waits) until
+                          a process opens the file for writing.
 
-                          - With I(ononblock) specified and I(owronly) access,
-                            an open function for writing-only returns an error if no process
-                            currently has the file open for reading.
+                        - With I(ononblock) specified and I(owronly) access,
+                          an open function for writing-only returns an error if
+                          no process currently has the file open for reading.
 
-                          - With I(ononblock) not specified and I(owronly) access,
-                            an open function for writing-only blocks (waits) until a process opens the file for reading.
+                        - With I(ononblock) not specified and I(owronly) access,
+                          an open function for writing-only blocks (waits) until
+                          a process opens the file for reading.
 
-                          - For a character special file that supports nonblocking open
+                        - For a character special file that supports nonblocking
+                          open
 
-                          - If I(ononblock) is specified, an open function returns without blocking (waiting)
-                            until the device is ready or available.
-                            Device response depends on the type of device.
+                        - If I(ononblock) is specified, an open function returns
+                          without blocking (waiting) until the device is ready
+                          or available. Device response depends on the type of
+                          device.
 
-                          - If I(ononblock) is not specified, an open function blocks (waits)
-                            until the device is ready or available.
+                        - If I(ononblock) is not specified, an open function
+                          blocks (waits) until the device is ready or available.
+
                       - I(ononblock) has no effect on other file types.
                       - I(osync) specifies that the system is to move data from buffer storage
                         to permanent storage before returning control from a callable service that performs a write.

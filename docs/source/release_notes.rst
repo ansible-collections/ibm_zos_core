@@ -19,6 +19,11 @@ Notes
    * Bug fixes
    * Documentation updates
    * New samples
+   * Module enhancements:
+
+     * zos_data_set - includes full multi-volume support for data set creation,
+       addition of secondary space option, improved SMS support with storage,
+       data, and management classes
 
 Availability
   * Galaxy
@@ -31,11 +36,9 @@ Reference
   * Supported by z/OS V2R3
   * The z/OS® shell
 
-Releases
-========
 
 Version 1.1.0
--------------------
+-------------
 
 Notes
    * Update recommended

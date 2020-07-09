@@ -511,7 +511,7 @@ def test_vsam_backup(ansible_zos_module):
     hosts.all.zos_data_set(name=MVS_VS, state="absent")
     hosts.all.zos_data_set(name=MVS_PS, state="absent")
     hosts.all.zos_data_set(
-        name=MVS_PS, state="present", record_length=200, type="seq", format="VB"
+        name=MVS_PS, state="present", record_length=200, type="seq", record_format="VB"
     )
     hosts.all.file(path=TEMP_JCL_PATH, state="directory")
     hosts.all.shell(
@@ -549,7 +549,7 @@ def test_vsam_backup(ansible_zos_module):
         backup_file=BACKUP_DATA_SET,
     )
     hosts.all.zos_data_set(
-        name=MVS_PS, state="present", record_length=200, type="seq", format="VB"
+        name=MVS_PS, state="present", record_length=200, type="seq", record_format="VB"
     )
     hosts.all.zos_encode(
         src=BACKUP_DATA_SET,

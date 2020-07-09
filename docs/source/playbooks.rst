@@ -114,7 +114,8 @@ connecting to the host; for example, ``ansible_user: omvsadm``.
 The value for the property **ansible_python_interpreter** is the target host
 Python path. This is useful for systems with more than one Python installation,
 or when Python is not installed in the default location **/usr/bin/python**;
-for example, ``ansible_python_interpreter: /usr/lpp/rsusr/python36/bin/python``
+for example,
+``ansible_python_interpreter: /usr/lpp/IBM/cyp/v3r8/pyz/bin/python3``
 
 For more information on Python configuration requirements on z/OS, refer to
 Ansible `FAQ`_.
@@ -212,15 +213,15 @@ for Python and ``ZOAU`` have been added and used through the configuration.
 
 .. code-block:: yaml
 
-   PYZ: "/u/oeusr01/python/pyz_3_8_2/usr/lpp/IBM/cyp/v3r8/pyz"
+   PYZ: "/usr/lpp/IBM/cyp/v3r8/pyz"
    ZOAU: "/usr/lpp/IBM/zoautil"
 
    environment_vars:
      _BPXK_AUTOCVT: "ON"
      ZOAU_HOME: "{{ ZOAU }}"
-     PYTHONPATH: "{{ ZOAU_HOME }}/lib"
-     LIBPATH: "{{ ZOAU_HOME }}/lib:{{ PYZ }}/lib:/lib:/usr/lib:."
-     PATH: "{{ ZOAU_HOME }}/bin:{{ PYZ }}/bin:/bin:/var/bin:/usr/lpp/java/J8.0/bin"
+     PYTHONPATH: "{{ ZOAU }}/lib"
+     LIBPATH: "{{ ZOAU }}/lib:{{ PYZ }}/lib:/lib:/usr/lib:."
+     PATH: "{{ ZOAU }}/bin:{{ PYZ }}/bin:/bin:/var/bin:/usr/lpp/java/J8.0/bin"
      _CEE_RUNOPTS: "FILETAG(AUTOCVT,AUTOTAG) POSIX(ON)"
      _TAG_REDIR_ERR: "txt"
      _TAG_REDIR_IN: "txt"

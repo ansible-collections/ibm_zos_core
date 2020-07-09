@@ -228,6 +228,25 @@ for Python and ``ZOAU`` have been added and used through the configuration.
      _TAG_REDIR_OUT: "txt"
      LANG: "C"
 
+.. note::
+   Rocket python is unsupported; if this is the only available python on the
+   target, the following environment variables have been noted to work. Please
+   review the README.ZOS guide included with the ported python for further
+   configurations.
+
+.. code-block:: yaml
+
+   PYZ: "/usr/lpp/rsusr/python36"
+   ZOAU: "/usr/lpp/IBM/zoautil"
+
+   environment_vars:
+     ZOAU_ROOT: "{{ ZOAU }}"
+     ZOAU_HOME: "{{ ZOAU }}"
+     PYTHONPATH: "{{ ZOAU }}/lib:{{ PYZ }}:/lib:/usr/lib"
+     _BPXK_AUTOCVT: "ON"
+     PATH: "{{ ZOAU }}/bin:/bin:/var/bin:{{ PYZ }}/bin"
+     LIBPATH: "{{ ZOAU }}/lib:{{ PYZ }}/lib:/lib:/usr/lib"
+
 
 Run the playbook
 ----------------

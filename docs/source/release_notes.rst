@@ -5,6 +5,35 @@
 Releases
 ========
 
+Version 1.2.0-beta.1
+--------------------
+
+Notes
+   * Update recommended
+   * New modules
+
+     * zos_copy
+     * zos_lineinfile
+     * zos_mvs_raw
+
+   * Bug fixes
+   * Documentation updates
+   * New samples
+
+Availability
+  * Galaxy
+  * GitHub
+
+Reference
+  * Supported by IBM Open Enterprise Python for z/OS: 3.8.2 or later
+  * Supported by IBM Z Open Automation Utilities:
+      1.0.3 PTF UI70141 / APAR PH26560 or later
+  * Supported by z/OS V2R3
+  * The z/OS® shell
+
+Releases
+========
+
 Version 1.1.0
 -------------------
 

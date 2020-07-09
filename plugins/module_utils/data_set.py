@@ -1278,7 +1278,6 @@ class DataSetUtils(object):
                     result['lrecl'] = ds_params[1]
                     if len(ds_params) > 2:
                         result['blksize'] = int(ds_params[2])
-
         return result
 
     def _process_listcat_output(self, output):

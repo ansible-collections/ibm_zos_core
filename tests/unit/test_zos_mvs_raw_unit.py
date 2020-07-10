@@ -164,6 +164,11 @@ def test_argument_parsing_data_set(
         create=True,
         return_value=DummyModule(),
     )
+    mocker.patch(
+        "{0}.AnsibleModuleHelper".format(IMPORT_NAME),
+        create=True,
+        return_value=DummyModule(),
+    )
     valid_args = {
         "program_name": "idcams",
         "auth": True,
@@ -261,6 +266,11 @@ def test_argument_parsing_unix(
     raw = importer(IMPORT_NAME)
     mocker.patch(
         "{0}.AnsibleModule".format(IMPORT_NAME),
+        create=True,
+        return_value=DummyModule(),
+    )
+    mocker.patch(
+        "{0}.AnsibleModuleHelper".format(IMPORT_NAME),
         create=True,
         return_value=DummyModule(),
     )
@@ -433,6 +443,11 @@ def test_argument_parsing_data_set_failure_path(
         create=True,
         return_value=DummyModule(),
     )
+    mocker.patch(
+        "{0}.AnsibleModuleHelper".format(IMPORT_NAME),
+        create=True,
+        return_value=DummyModule(),
+    )
     valid_args = {
         "program_name": "idcams",
         "auth": True,
@@ -542,6 +557,11 @@ def test_argument_parsing_unix_failure_path(
         "ansible.module_utils.basic.AnsibleModule.__init__",
         create=True,
         return_value=None,
+    )
+    mocker.patch(
+        "{0}.AnsibleModuleHelper".format(IMPORT_NAME),
+        create=True,
+        return_value=DummyModule(),
     )
     valid_args = {
         "program_name": "idcams",

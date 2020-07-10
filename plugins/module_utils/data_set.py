@@ -11,7 +11,9 @@ from os import path
 from random import choice
 from string import ascii_uppercase
 from ansible.module_utils._text import to_bytes
-from ansible.module_utils.basic import AnsibleModule
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
+    AnsibleModuleHelper,
+)
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     MissingZOAUImport,
     MissingImport,
@@ -258,7 +260,7 @@ class DataSet(object):
             bool -- If data is is cataloged.
         """
         name = name.upper()
-        module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+        module = AnsibleModuleHelper(argument_spec={})
         stdin = " LISTCAT ENTRIES('{0}')".format(name)
         rc, stdout, stderr = module.run_command(
             "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=stdin
@@ -296,7 +298,7 @@ class DataSet(object):
         Returns:
             bool -- If data set member exists.
         """
-        module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+        module = AnsibleModuleHelper(argument_spec={})
         rc, stdout, stderr = module.run_command("head \"//'{0}'\"".format(name))
         if rc != 0 or (stderr and "EDC5067I" in stderr):
             return False
@@ -568,7 +570,7 @@ class DataSet(object):
             DatasetNotFoundError: If data set cannot be found.
             DatasetMemberCreateError: If member creation fails.
         """
-        module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+        module = AnsibleModuleHelper(argument_spec={})
         base_dsname = name.split("(")[0]
         if not base_dsname or not DataSet.data_set_cataloged(base_dsname):
             raise DatasetNotFoundError(name)
@@ -621,7 +623,7 @@ class DataSet(object):
         Raises:
             DatasetCatalogError: When attempt at catalog fails.
         """
-        module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+        module = AnsibleModuleHelper(argument_spec={})
         iehprogm_input = DataSet._build_non_vsam_catalog_command(name.upper(), volumes)
         temp_name = None
         try:
@@ -722,7 +724,7 @@ class DataSet(object):
         Raises:
             DatasetUncatalogError: When uncataloging fails.
         """
-        module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+        module = AnsibleModuleHelper(argument_spec={})
         iehprogm_input = DataSet._NON_VSAM_UNCATALOG_COMMAND.format(name)
         temp_name = None
         try:
@@ -820,7 +822,7 @@ class DataSet(object):
         Returns:
             bool -- If the data set is VSAM.
         """
-        module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+        module = AnsibleModuleHelper(argument_spec={})
         stdin = " LISTCAT ENTRIES('{0}')".format(name.upper())
         rc, stdout, stderr = module.run_command(
             "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=stdin
@@ -901,7 +903,7 @@ class DataSet(object):
             DatasetWriteError: When write to the data set fails.
         """
         # rc = Datasets.write(name, contents)
-        module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+        module = AnsibleModuleHelper(argument_spec={})
         temp = tempfile.NamedTemporaryFile(delete=False)
         with open(temp.name, "w") as f:
             f.write(contents)
@@ -1066,7 +1068,7 @@ class DataSetUtils(object):
         Arguments:
             data_set {str} -- Name of the input data set
         """
-        self.module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+        self.module = AnsibleModuleHelper(argument_spec={})
         self.data_set = data_set
         self.is_uss_path = "/" in data_set
         self.ds_info = dict()

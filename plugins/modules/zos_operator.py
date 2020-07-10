@@ -95,17 +95,12 @@ changed:
 
 
 from ansible.module_utils.basic import AnsibleModule
-import re
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
+    AnsibleModuleHelper,
+)
 from ansible.module_utils.six import PY3
 
-# from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-#     MissingZOAUImport,
-# )
 
-# try:
-#     from zoautil_py import OperatorCmd
-# except Exception:
-#     OperatorCmd = MissingZOAUImport()
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,
 )
@@ -154,7 +149,7 @@ def parse_params(params):
 
 
 def run_operator_command(params):
-    module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+    module = AnsibleModuleHelper(argument_spec={})
     command = params.get("cmd")
     verbose = "-v" if params.get("verbose") else ""
     debug = "-d" if params.get("debug") else ""

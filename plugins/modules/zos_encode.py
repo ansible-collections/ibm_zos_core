@@ -246,6 +246,9 @@ import re
 from os import path, makedirs
 from ansible.module_utils.six import PY3
 from ansible.module_utils.basic import AnsibleModule
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
+    AnsibleModuleHelper,
+)
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser,
     data_set,
@@ -282,7 +285,7 @@ def check_mvs_dataset(ds):
     """ To call data_set utils to check if the MVS data set exists or not """
     check_rc = False
     ds_type = None
-    module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+    module = AnsibleModuleHelper(argument_spec={})
     du = data_set.DataSetUtils(ds)
     if not du.exists():
         raise EncodeError(
@@ -307,7 +310,7 @@ def check_file(file):
     else:
         ds = file.upper()
         if "(" in ds:
-            dsn = ds[0: ds.rfind("(", 1)]
+            dsn = ds[0 : ds.rfind("(", 1)]
             mem = "".join(re.findall(r"[(](.*?)[)]", ds))
             rc, ds_type = check_mvs_dataset(dsn)
             if rc:

@@ -46,12 +46,18 @@ dds
   The input data source.
 
   *dds* supports 6 types of sources
-- *dd_data_set* for data set files.
-- *dd_unix* for UNIX files.
-- *dd_input* for in-stream data set.
-- *dd_dummy* for no content input.
-- *dd_concat* for a data set concatenation.
-- *dds* supports any combination of source types.
+
+  1. *dd_data_set* for data set files.
+
+  2. *dd_unix* for UNIX files.
+
+  3. *dd_input* for in-stream data set.
+
+  4. *dd_dummy* for no content input.
+
+  5. *dd_concat* for a data set concatenation.
+
+  6. *dds* supports any combination of source types.
 
 
   | **required**: False
@@ -759,14 +765,22 @@ dds
           *onoctty* specifies that if the PATH parameter identifies a terminal device, opening of the file does not make the terminal device the controlling terminal for the process.
 
           *ononblock* specifies the following, depending on the type of file
-- For a FIFO special file
-- With *ononblock* specified and *ordonly* access, an open function for reading-only returns without delay.
-- With *ononblock* not specified and *ordonly* access, an open function for reading-only blocks (waits) until a process opens the file for writing.
-- With *ononblock* specified and *owronly* access, an open function for writing-only returns an error if no process currently has the file open for reading.
-- With *ononblock* not specified and *owronly* access, an open function for writing-only blocks (waits) until a process opens the file for reading.
-- For a character special file that supports nonblocking open
-- If *ononblock* is specified, an open function returns without blocking (waiting) until the device is ready or available. Device response depends on the type of device.
-- If *ononblock* is not specified, an open function blocks (waits) until the device is ready or available.
+
+          For a FIFO special file
+
+          1. With *ononblock* specified and *ordonly* access, an open function for reading-only returns without delay.
+
+          2. With *ononblock* not specified and *ordonly* access, an open function for reading-only blocks (waits) until a process opens the file for writing.
+
+          3. With *ononblock* specified and *owronly* access, an open function for writing-only returns an error if no process currently has the file open for reading.
+
+          4. With *ononblock* not specified and *owronly* access, an open function for writing-only blocks (waits) until a process opens the file for reading.
+
+          5. For a character special file that supports nonblocking open
+
+          6. If *ononblock* is specified, an open function returns without blocking (waiting) until the device is ready or available. Device response depends on the type of device.
+
+          7. If *ononblock* is not specified, an open function blocks (waits) until the device is ready or available.
 
           *ononblock* has no effect on other file types.
 
@@ -1576,14 +1590,22 @@ dds
       *onoctty* specifies that if the PATH parameter identifies a terminal device, opening of the file does not make the terminal device the controlling terminal for the process.
 
       *ononblock* specifies the following, depending on the type of file
-- For a FIFO special file
-- With *ononblock* specified and *ordonly* access, an open function for reading-only returns without delay.
-- With *ononblock* not specified and *ordonly* access, an open function for reading-only blocks (waits) until a process opens the file for writing.
-- With *ononblock* specified and *owronly* access, an open function for writing-only returns an error if no process currently has the file open for reading.
-- With *ononblock* not specified and *owronly* access, an open function for writing-only blocks (waits) until a process opens the file for reading.
-- For a character special file that supports nonblocking open
-- If *ononblock* is specified, an open function returns without blocking (waiting) until the device is ready or available. Device response depends on the type of device.
-- If *ononblock* is not specified, an open function blocks (waits) until the device is ready or available.
+
+      For a FIFO special file
+
+      1. With *ononblock* specified and *ordonly* access, an open function for reading-only returns without delay.
+
+      2. With *ononblock* not specified and *ordonly* access, an open function for reading-only blocks (waits) until a process opens the file for writing.
+
+      3. With *ononblock* specified and *owronly* access, an open function for writing-only returns an error if no process currently has the file open for reading.
+
+      4. With *ononblock* not specified and *owronly* access, an open function for writing-only blocks (waits) until a process opens the file for reading.
+
+      5. For a character special file that supports nonblocking open
+
+      6. If *ononblock* is specified, an open function returns without blocking (waiting) until the device is ready or available. Device response depends on the type of device.
+
+      7. If *ononblock* is not specified, an open function blocks (waits) until the device is ready or available.
 
       *ononblock* has no effect on other file types.
 

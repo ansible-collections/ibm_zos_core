@@ -285,7 +285,6 @@ def check_mvs_dataset(ds):
     """ To call data_set utils to check if the MVS data set exists or not """
     check_rc = False
     ds_type = None
-    module = AnsibleModuleHelper(argument_spec={})
     du = data_set.DataSetUtils(ds)
     if not du.exists():
         raise EncodeError(
@@ -310,7 +309,7 @@ def check_file(file):
     else:
         ds = file.upper()
         if "(" in ds:
-            dsn = ds[0 : ds.rfind("(", 1)]
+            dsn = ds[0: ds.rfind("(", 1)]
             mem = "".join(re.findall(r"[(](.*?)[)]", ds))
             rc, ds_type = check_mvs_dataset(dsn)
             if rc:

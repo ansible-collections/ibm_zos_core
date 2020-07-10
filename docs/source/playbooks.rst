@@ -232,10 +232,10 @@ for Python and ``ZOAU`` have been added and used through the configuration.
 
    Currently, IBM Open Enterprise Python for z/OS is the supported and
    recommended Python distribution for use on z/OS with Ansible and ZOAU. If
-   Rocket Python is the only available python on the target, the following
-   environment variables must be set in the provided ``all.yml`` configuration.
-   Please review the README.ZOS guide included with the ported python for
-   further configurations.
+   Rocket Python is the only available python on the target, please review the
+   suggested environment variables for use with Rocket Python.
+
+file:///Users/ddimatos/git/github/ibm_zos_core/docs/build/html/playbooks.html#group-vars
 
 .. code-block:: yaml
 

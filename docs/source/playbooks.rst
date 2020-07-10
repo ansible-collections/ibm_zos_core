@@ -248,7 +248,7 @@ file:///Users/ddimatos/git/github/ibm_zos_core/docs/build/html/playbooks.html#gr
      PYTHONPATH: "{{ ZOAU }}/lib:{{ PYZ }}:/lib:/usr/lib"
      _BPXK_AUTOCVT: "ON"
      PATH: "{{ ZOAU }}/bin:/bin:/var/bin:{{ PYZ }}/bin"
-     LIBPATH: "{{ ZOAU }}/lib:{{ PYZ }}/lib:/lib:/usr/lib"
+     LIBPATH: "{{ ZOAU }}/lib:{{ PYZ }}/lib:/lib:/usr/lib:."
 
 
 Run the playbook

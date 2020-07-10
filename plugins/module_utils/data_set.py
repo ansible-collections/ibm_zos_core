@@ -9,7 +9,8 @@ import re
 import tempfile
 from os import path
 from random import choice
-from string import ascii_uppercase
+from string import ascii_uppercase, digits
+from random import randint
 from ansible.module_utils._text import to_bytes
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
     AnsibleModuleHelper,
@@ -17,6 +18,11 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module im
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     MissingZOAUImport,
     MissingImport,
+)
+
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
+    better_arg_parser,
+    mvs_cmd,
 )
 
 try:
@@ -1122,35 +1128,6 @@ class DataSetUtils(object):
             return "USS"
         return self.ds_info.get("dsorg")
 
-    @staticmethod
-    def create_temp_data_set(LLQ, ds_type="SEQ", size="5M", ds_format="FB", lrecl=80):
-        """Creates a temporary data set with the given low level qualifier.
-
-        Arguments:
-            LLQ {str} -- Low Level Qualifier to be used for temporary data set
-            ds_type {str} -- The data set type, default: Sequential
-            size {str} -- The size of the data set, default: 5M
-            format {str} -- The record format of the data set, default: FB
-            lrecl {int} -- The record length of the data set, default: 80
-
-        Returns:
-            str -- Name of the created data set
-
-        Raises:
-            OSError: When non-zero return code is received
-            from Datasets.create()
-        """
-        chars = ascii_uppercase
-        HLQ2 = "".join(choice(chars) for i in range(5))
-        HLQ3 = "".join(choice(chars) for i in range(6))
-        temp_ds_name = "{0}.{1}.{2}.{3}".format(Datasets.hlq(), HLQ2, HLQ3, LLQ)
-
-        rc = Datasets.create(temp_ds_name, ds_type, size, ds_format, "", lrecl)
-        if rc != 0:
-            raise OSError("Unable to create temporary data set")
-
-        return temp_ds_name
-
     def volume(self):
         """Retrieves the volume name where the input data set is stored.
 
@@ -1179,6 +1156,20 @@ class DataSetUtils(object):
         if self.is_uss_path:
             raise AttributeError("USS file or directory has no attribute 'lrecl'")
         return self.ds_info.get("lrecl")
+
+    def blksize(self):
+        """Retrieves the BLKSIZE of the input data set.
+
+        Returns:
+            int -- The blksize of the input data set
+            None -- If the data set does not exist or the data set is VSAM
+
+        Raises:
+            AttributeError -- When input data set is a USS file or directory
+        """
+        if self.is_uss_path:
+            raise AttributeError("USS file or directory has no attribute 'blksize'")
+        return self.ds_info.get("blksize")
 
     def recfm(self):
         """Retrieves the record format of the input data set.
@@ -1211,54 +1202,30 @@ class DataSetUtils(object):
             dict -- Dictionary containing data set attributes
         """
         result = dict()
-
-        try:
-            listds_out = self._run_mvs_cmd(
-                "IKJEFT01", LISTDS_COMMAND.format(self.data_set)
-            )
-            listcat_out = self._run_mvs_cmd(
-                "IDCAMS", LISTCAT_COMMAND.format(self.data_set)
-            )
-        except Exception:
-            raise
-        result.update(self._process_listds_output(listds_out))
-        result.update(self._process_listcat_output(listcat_out))
-        return result
-
-    def _run_mvs_cmd(self, pgm, input_cmd):
-        """Executes mvscmd with the given program and input command.
-
-        Arguments:
-            pgm {str} -- The name of the MVS program to execute
-            input_cmd {str} -- The command to execute
-
-        Returns:
-            str -- The generated 'sysprint' of the executed command
-
-        Raises:
-            MVSCmdExecError: When non-zero return code is received while
-            executing MVSCmd
-
-            DatasetBusyError: When the data set is being edited by another user
-        """
-        sysprint = "sysprint"
-        sysin = "sysin"
-        if pgm == "IKJEFT01":
-            sysprint = "systsprt"
-            sysin = "systsin"
-
-        rc, out, err = self.module.run_command(
-            "mvscmdauth --pgm={0} --{1}=* --{2}=stdin".format(pgm, sysprint, sysin),
-            data=input_cmd,
+        listds_rc, listds_out, listds_err = mvs_cmd.ikjeft01(
+            LISTDS_COMMAND.format(self.data_set), authorized=True
         )
-        if rc != 0:
-            if re.findall(r"ALREADY IN USE", out):
+        if listds_rc == 0:
+            result.update(self._process_listds_output(listds_out))
+        else:
+            if re.findall(r"ALREADY IN USE", listds_out):
                 raise DatasetBusyError(self.data_set)
-            if re.findall(r"NOT IN CATALOG|NOT FOUND|NOT LISTED", out):
+            if re.findall(r"NOT IN CATALOG", listds_out):
                 self.ds_info["exists"] = False
             else:
-                raise MVSCmdExecError(rc, out, err)
-        return out
+                raise MVSCmdExecError(listds_rc, listds_out, listds_err)
+
+        listcat_rc, listcat_out, listcat_err = mvs_cmd.idcams(
+            LISTCAT_COMMAND.format(self.data_set), authorized=True
+        )
+        if listcat_rc == 0:
+            result.update(self._process_listcat_output(listcat_out))
+        else:
+            if re.findall(r"NOT FOUND|NOT LISTED", listcat_out):
+                self.ds_info["exists"] = False
+            else:
+                raise MVSCmdExecError(listcat_rc, listcat_out, listcat_err)
+        return result
 
     def _process_listds_output(self, output):
         """Parses the output generated by LISTDS command.
@@ -1281,6 +1248,8 @@ class DataSetUtils(object):
                 if result.get("dsorg") != "VSAM":
                     result["recfm"] = ds_params[0]
                     result["lrecl"] = ds_params[1]
+                    if len(ds_params) > 2:
+                        result["blksize"] = int(ds_params[2])
         return result
 
     def _process_listcat_output(self, output):
@@ -1299,6 +1268,132 @@ class DataSetUtils(object):
                 re.findall(r"-[A-Z|0-9]*", volser_output[0])
             ).replace("-", "")
         return result
+
+
+def is_member(data_set):
+    """Determine whether the input string specifies a data set member"""
+    try:
+        arg_def = dict(data_set=dict(arg_type="data_set_member"))
+        parser = better_arg_parser.BetterArgParser(arg_def)
+        parser.parse_args({"data_set": data_set})
+    except ValueError:
+        return False
+    return True
+
+
+def is_data_set(data_set):
+    """Determine whether the input string specifies a data set name"""
+    try:
+        arg_def = dict(data_set=dict(arg_type="data_set_base"))
+        parser = better_arg_parser.BetterArgParser(arg_def)
+        parser.parse_args({"data_set": data_set})
+    except ValueError:
+        return False
+    return True
+
+
+def is_empty(data_set):
+    """Determine whether a given data set is empty
+
+    Arguments:
+        data_set {str} -- Input source name
+
+    Returns:
+        {bool} -- Whether the data set is empty
+    """
+    du = DataSetUtils(data_set)
+    if du.ds_type() == "PO":
+        return _pds_empty(data_set)
+    elif du.ds_type() == "PS":
+        return Datasets.read_last(data_set) is None
+    elif du.ds_type() == "VSAM":
+        return _vsam_empty(data_set)
+
+
+def extract_dsname(data_set):
+    """Extract the actual name of the data set from a given input source
+
+    Arguments:
+        data_set {str} -- Input data set name
+
+    Returns:
+        {str} -- The actual name of the data set
+    """
+    result = ""
+    for c in data_set:
+        if c == "(":
+            break
+        result += c
+    return result
+
+
+def extract_member_name(data_set):
+    """Extract the member name from a given input source
+
+    Arguments:
+        data_set {str} -- Input source name
+
+    Returns:
+        {str} -- The member name
+    """
+    start = data_set.find("(")
+    member = ""
+    for i in range(start + 1, len(data_set)):
+        if data_set[i] == ")":
+            break
+        member += data_set[i]
+    return member
+
+
+def temp_member_name():
+    """Generate a temp member name"""
+    first_char_set = ascii_uppercase + "#@$"
+    rest_char_set = ascii_uppercase + digits + "#@$"
+    temp_name = first_char_set[randint(0, len(first_char_set) - 1)]
+    for i in range(7):
+        temp_name += rest_char_set[randint(0, len(rest_char_set) - 1)]
+    return temp_name
+
+
+def _vsam_empty(ds):
+    """Determine if a VSAM data set is empty.
+
+    Arguments:
+        ds {str} -- The name of the VSAM data set.
+
+    Returns:
+        bool - If VSAM data set is empty.
+        Returns True if VSAM data set exists and is empty.
+        False otherwise.
+    """
+    module = AnsibleModuleHelper(argument_spec={})
+    empty_cmd = """  PRINT -
+    INFILE(MYDSET) -
+    COUNT(1)"""
+    rc, out, err = module.run_command(
+        "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin --mydset={0}".format(ds),
+        data=empty_cmd,
+    )
+    if rc == 4 or "VSAM OPEN RETURN CODE IS 160" in out:
+        return True
+    elif rc != 0:
+        return False
+
+
+def _pds_empty(data_set):
+    """Determine if a partitioned data set is empty
+
+    Arguments:
+        data_set {str} -- The name of the PDS/PDSE
+
+    Returns:
+        bool - If PDS/PDSE is empty.
+        Returns True if it is empty. False otherwise.
+    """
+    module = AnsibleModuleHelper(argument_spec={})
+    ls_cmd = "mls {0}".format(data_set)
+    rc, out, err = module.run_command(ls_cmd)
+    return rc == 2
 
 
 class MVSCmdExecError(Exception):

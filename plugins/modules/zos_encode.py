@@ -285,15 +285,14 @@ def check_mvs_dataset(ds):
     """ To call data_set utils to check if the MVS data set exists or not """
     check_rc = False
     ds_type = None
-    du = data_set.DataSetUtils(ds)
-    if not du.exists():
+    if not data_set.DataSet.data_set_exists(ds):
         raise EncodeError(
             "Data set {0} is not cataloged, please check data set provided in"
             "the src option.".format(ds)
         )
     else:
         check_rc = True
-        ds_type = du.ds_type()
+        ds_type = data_set.DataSetUtils(ds).ds_type()
         if not ds_type:
             raise EncodeError("Unable to determine data set type of {0}".format(ds))
     return check_rc, ds_type

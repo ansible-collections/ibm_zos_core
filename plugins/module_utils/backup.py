@@ -23,6 +23,14 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.file import make_dirs
 
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
+    is_member,
+    extract_dsname,
+    temp_member_name,
+    is_empty,
+)
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.mvs_cmd import iebcopy
+
 try:
     from zoautil_py import Datasets
 except Exception:
@@ -52,25 +60,29 @@ def mvs_file_backup(dsn, bk_dsn=None):
         BackupError: When backup data set exists.
         BackupError: When creation of backup data set fails.
     """
-    if not bk_dsn:
-        hlq = Datasets.hlq()
-        bk_dsn = Datasets.temp_name(hlq)
     dsn = _validate_data_set_name(dsn).upper()
-    bk_dsn = _validate_data_set_name(bk_dsn).upper()
-
-    cp_rc = _copy_ds(dsn, bk_dsn)
-    # The data set is probably a PDS or PDSE
-    if cp_rc == 12:
-        # Delete allocated backup that was created when attempting to use _copy_ds()
-        # Safe to delete because _copy_ds() would have raised an exception if it did
-        # not successfully create the backup data set, so no risk of it predating module invocation
-        Datasets.delete(bk_dsn)
-        if Datasets.move(dsn, bk_dsn) == 0:
-            _allocate_model(dsn, bk_dsn)
-        else:
-            raise BackupError(
-                "Unable to backup data set {0} to {1}".format(dsn, bk_dsn)
-            )
+    if is_member(dsn):
+        if not bk_dsn:
+            bk_dsn = extract_dsname(dsn) + "({0})".format(temp_member_name())
+        bk_dsn = _validate_data_set_name(bk_dsn).upper()
+        if Datasets.copy(dsn, bk_dsn) != 0:
+            raise BackupError("Unable to backup {0} to {1}".format(dsn, bk_dsn))
+    else:
+        if not bk_dsn:
+            bk_dsn = Datasets.temp_name(Datasets.hlq())
+        bk_dsn = _validate_data_set_name(bk_dsn).upper()
+        cp_rc = _copy_ds(dsn, bk_dsn)
+        if cp_rc == 12:  # The data set is probably a PDS or PDSE
+            # Delete allocated backup that was created when attempting to use _copy_ds()
+            # Safe to delete because _copy_ds() would have raised an exception if it did
+            # not successfully create the backup data set, so no risk of it predating module invocation
+            Datasets.delete(bk_dsn)
+            _allocate_model(bk_dsn, dsn)
+            rc, out, err = _copy_pds(dsn, bk_dsn)
+            if rc != 0:
+                raise BackupError(
+                    "Unable to backup data set {0} to {1}".format(dsn, bk_dsn)
+                )
     return bk_dsn
 
 
@@ -167,7 +179,7 @@ def _copy_ds(ds, bk_ds):
                 ds, out, err
             )
         )
-    if rc != 0 and _vsam_empty(ds):
+    if rc != 0 and is_empty(ds):
         rc = 0
     return rc
 
@@ -199,29 +211,10 @@ def _allocate_model(ds, model):
     return rc
 
 
-def _vsam_empty(ds):
-    """Determine if a VSAM data set is empty.
-
-    Arguments:
-        ds {str} -- The name of the VSAM data set.
-
-    Returns:
-        bool - If VSAM data set is empty.
-        Returns True if VSAM data set exists and is empty.
-        False otherwise.
-    """
-    module = AnsibleModuleHelper(argument_spec={})
-    empty_cmd = """  PRINT -
-    INFILE(MYDSET) -
-    COUNT(1)"""
-    rc, out, err = module.run_command(
-        "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin --mydset={0}".format(ds),
-        data=empty_cmd,
-    )
-    if rc == 4 or "VSAM OPEN RETURN CODE IS 160" in out:
-        return True
-    elif rc != 0:
-        return False
+def _copy_pds(ds, bk_dsn):
+    dds = dict(OUTPUT=bk_dsn, INPUT=ds)
+    copy_cmd = "   COPY OUTDD=OUTPUT,INDD=((INPUT,R))"
+    return iebcopy(copy_cmd, dds=dds)
 
 
 class BackupError(Exception):

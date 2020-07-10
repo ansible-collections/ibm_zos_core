@@ -13,7 +13,9 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dd_statement impo
 )
 
 
-from ansible.module_utils.basic import AnsibleModule
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
+    AnsibleModuleHelper,
+)
 
 
 class MVSCmd(object):
@@ -32,7 +34,7 @@ class MVSCmd(object):
         Returns:
             MVSCmdResponse: The response of the command.
         """
-        module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+        module = AnsibleModuleHelper(argument_spec={})
         command = "mvscmd {0} {1} {2} ".format(
             "-d" if debug else "",
             "-v" if verbose else "",
@@ -53,7 +55,7 @@ class MVSCmd(object):
         Returns:
             MVSCmdResponse: The response of the command.
         """
-        module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+        module = AnsibleModuleHelper(argument_spec={})
         command = "mvscmdauth {0} {1} {2} ".format(
             "-d" if debug else "",
             "-v" if verbose else "",

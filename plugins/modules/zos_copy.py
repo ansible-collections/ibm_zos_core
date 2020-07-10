@@ -435,6 +435,9 @@ from pathlib import Path
 from hashlib import sha256
 
 from ansible.module_utils.basic import AnsibleModule
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
+    AnsibleModuleHelper,
+)
 from ansible.module_utils._text import to_bytes
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
@@ -1043,7 +1046,7 @@ def backup_data(ds_name, ds_type, backup_file):
     Returns:
         {str} -- The USS path or data set name where data was backed up
     """
-    module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+    module = AnsibleModuleHelper(argument_spec={})
     try:
         if ds_type == "USS":
             return backup.uss_file_backup(ds_name, backup_name=backup_file)
@@ -1146,7 +1149,7 @@ def cleanup(src_list):
     Arguments:
         src_list {list} -- A list of file paths
     """
-    module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+    module = AnsibleModuleHelper(argument_spec={})
     tmp_prefix = tempfile.gettempprefix()
     tmp_dir = os.path.realpath("/" + tmp_prefix)
     dir_list = glob.glob(tmp_dir + "/ansible-zos-copy-payload*")

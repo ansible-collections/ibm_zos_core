@@ -12,14 +12,17 @@ from random import choice
 from string import ascii_uppercase, digits
 from random import randint
 from ansible.module_utils._text import to_bytes
-from ansible.module_utils.basic import AnsibleModule
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
+    AnsibleModuleHelper,
+)
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     MissingZOAUImport,
     MissingImport,
 )
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
-    better_arg_parser, mvs_cmd
+    better_arg_parser,
+    mvs_cmd,
 )
 
 try:
@@ -263,7 +266,7 @@ class DataSet(object):
             bool -- If data is is cataloged.
         """
         name = name.upper()
-        module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+        module = AnsibleModuleHelper(argument_spec={})
         stdin = " LISTCAT ENTRIES('{0}')".format(name)
         rc, stdout, stderr = module.run_command(
             "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=stdin
@@ -301,7 +304,7 @@ class DataSet(object):
         Returns:
             bool -- If data set member exists.
         """
-        module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+        module = AnsibleModuleHelper(argument_spec={})
         rc, stdout, stderr = module.run_command("head \"//'{0}'\"".format(name))
         if rc != 0 or (stderr and "EDC5067I" in stderr):
             return False
@@ -573,7 +576,7 @@ class DataSet(object):
             DatasetNotFoundError: If data set cannot be found.
             DatasetMemberCreateError: If member creation fails.
         """
-        module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+        module = AnsibleModuleHelper(argument_spec={})
         base_dsname = name.split("(")[0]
         if not base_dsname or not DataSet.data_set_cataloged(base_dsname):
             raise DatasetNotFoundError(name)
@@ -626,7 +629,7 @@ class DataSet(object):
         Raises:
             DatasetCatalogError: When attempt at catalog fails.
         """
-        module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+        module = AnsibleModuleHelper(argument_spec={})
         iehprogm_input = DataSet._build_non_vsam_catalog_command(name.upper(), volumes)
         temp_name = None
         try:
@@ -727,7 +730,7 @@ class DataSet(object):
         Raises:
             DatasetUncatalogError: When uncataloging fails.
         """
-        module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+        module = AnsibleModuleHelper(argument_spec={})
         iehprogm_input = DataSet._NON_VSAM_UNCATALOG_COMMAND.format(name)
         temp_name = None
         try:
@@ -825,7 +828,7 @@ class DataSet(object):
         Returns:
             bool -- If the data set is VSAM.
         """
-        module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+        module = AnsibleModuleHelper(argument_spec={})
         stdin = " LISTCAT ENTRIES('{0}')".format(name.upper())
         rc, stdout, stderr = module.run_command(
             "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=stdin
@@ -906,7 +909,7 @@ class DataSet(object):
             DatasetWriteError: When write to the data set fails.
         """
         # rc = Datasets.write(name, contents)
-        module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+        module = AnsibleModuleHelper(argument_spec={})
         temp = tempfile.NamedTemporaryFile(delete=False)
         with open(temp.name, "w") as f:
             f.write(contents)
@@ -1071,7 +1074,7 @@ class DataSetUtils(object):
         Arguments:
             data_set {str} -- Name of the input data set
         """
-        self.module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+        self.module = AnsibleModuleHelper(argument_spec={})
         self.data_set = data_set
         self.is_uss_path = "/" in data_set
         self.ds_info = dict()
@@ -1165,10 +1168,8 @@ class DataSetUtils(object):
             AttributeError -- When input data set is a USS file or directory
         """
         if self.is_uss_path:
-            raise AttributeError(
-                "USS file or directory has no attribute 'blksize'"
-            )
-        return self.ds_info.get('blksize')
+            raise AttributeError("USS file or directory has no attribute 'blksize'")
+        return self.ds_info.get("blksize")
 
     def recfm(self):
         """Retrieves the record format of the input data set.
@@ -1207,10 +1208,10 @@ class DataSetUtils(object):
         if listds_rc == 0:
             result.update(self._process_listds_output(listds_out))
         else:
-            if (re.findall(r"ALREADY IN USE", listds_out)):
+            if re.findall(r"ALREADY IN USE", listds_out):
                 raise DatasetBusyError(self.data_set)
-            if (re.findall(r"NOT IN CATALOG", listds_out)):
-                self.ds_info['exists'] = False
+            if re.findall(r"NOT IN CATALOG", listds_out):
+                self.ds_info["exists"] = False
             else:
                 raise MVSCmdExecError(listds_rc, listds_out, listds_err)
 
@@ -1220,8 +1221,8 @@ class DataSetUtils(object):
         if listcat_rc == 0:
             result.update(self._process_listcat_output(listcat_out))
         else:
-            if (re.findall(r"NOT FOUND|NOT LISTED", listcat_out)):
-                self.ds_info['exists'] = False
+            if re.findall(r"NOT FOUND|NOT LISTED", listcat_out):
+                self.ds_info["exists"] = False
             else:
                 raise MVSCmdExecError(listcat_rc, listcat_out, listcat_err)
         return result
@@ -1243,12 +1244,12 @@ class DataSetUtils(object):
             ds_search = re.search(r"(-|--)DSORG(-\s*|\s*)\n(.*)", output, re.MULTILINE)
             if ds_search:
                 ds_params = ds_search.group(3).split()
-                result['dsorg'] = ds_params[-1]
-                if result.get('dsorg') != "VSAM":
-                    result['recfm'] = ds_params[0]
-                    result['lrecl'] = ds_params[1]
+                result["dsorg"] = ds_params[-1]
+                if result.get("dsorg") != "VSAM":
+                    result["recfm"] = ds_params[0]
+                    result["lrecl"] = ds_params[1]
                     if len(ds_params) > 2:
-                        result['blksize'] = int(ds_params[2])
+                        result["blksize"] = int(ds_params[2])
         return result
 
     def _process_listcat_output(self, output):
@@ -1272,9 +1273,9 @@ class DataSetUtils(object):
 def is_member(data_set):
     """Determine whether the input string specifies a data set member"""
     try:
-        arg_def = dict(data_set=dict(arg_type='data_set_member'))
+        arg_def = dict(data_set=dict(arg_type="data_set_member"))
         parser = better_arg_parser.BetterArgParser(arg_def)
-        parser.parse_args({'data_set': data_set})
+        parser.parse_args({"data_set": data_set})
     except ValueError:
         return False
     return True
@@ -1283,9 +1284,9 @@ def is_member(data_set):
 def is_data_set(data_set):
     """Determine whether the input string specifies a data set name"""
     try:
-        arg_def = dict(data_set=dict(arg_type='data_set_base'))
+        arg_def = dict(data_set=dict(arg_type="data_set_base"))
         parser = better_arg_parser.BetterArgParser(arg_def)
-        parser.parse_args({'data_set': data_set})
+        parser.parse_args({"data_set": data_set})
     except ValueError:
         return False
     return True
@@ -1320,7 +1321,7 @@ def extract_dsname(data_set):
     """
     result = ""
     for c in data_set:
-        if c == '(':
+        if c == "(":
             break
         result += c
     return result
@@ -1335,10 +1336,10 @@ def extract_member_name(data_set):
     Returns:
         {str} -- The member name
     """
-    start = data_set.find('(')
+    start = data_set.find("(")
     member = ""
     for i in range(start + 1, len(data_set)):
-        if data_set[i] == ')':
+        if data_set[i] == ")":
             break
         member += data_set[i]
     return member
@@ -1346,8 +1347,8 @@ def extract_member_name(data_set):
 
 def temp_member_name():
     """Generate a temp member name"""
-    first_char_set = ascii_uppercase + '#@$'
-    rest_char_set = ascii_uppercase + digits + '#@$'
+    first_char_set = ascii_uppercase + "#@$"
+    rest_char_set = ascii_uppercase + digits + "#@$"
     temp_name = first_char_set[randint(0, len(first_char_set) - 1)]
     for i in range(7):
         temp_name += rest_char_set[randint(0, len(rest_char_set) - 1)]
@@ -1365,7 +1366,7 @@ def _vsam_empty(ds):
         Returns True if VSAM data set exists and is empty.
         False otherwise.
     """
-    module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+    module = AnsibleModuleHelper(argument_spec={})
     empty_cmd = """  PRINT -
     INFILE(MYDSET) -
     COUNT(1)"""
@@ -1389,7 +1390,7 @@ def _pds_empty(data_set):
         bool - If PDS/PDSE is empty.
         Returns True if it is empty. False otherwise.
     """
-    module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+    module = AnsibleModuleHelper(argument_spec={})
     ls_cmd = "mls {0}".format(data_set)
     rc, out, err = module.run_command(ls_cmd)
     return rc == 2

@@ -8,7 +8,10 @@ __metaclass__ = type
 
 import os
 from ansible.module_utils.six import PY3
-from ansible.module_utils.basic import AnsibleModule
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
+    AnsibleModuleHelper,
+)
+
 import time
 from shutil import copy2, copytree, rmtree
 from stat import S_IREAD, S_IWRITE, ST_MODE
@@ -21,7 +24,10 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.file import make_dirs
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
-    is_member, extract_dsname, temp_member_name, is_empty
+    is_member,
+    extract_dsname,
+    temp_member_name,
+    is_empty,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.mvs_cmd import iebcopy
 
@@ -66,7 +72,7 @@ def mvs_file_backup(dsn, bk_dsn=None):
             bk_dsn = Datasets.temp_name(Datasets.hlq())
         bk_dsn = _validate_data_set_name(bk_dsn).upper()
         cp_rc = _copy_ds(dsn, bk_dsn)
-        if cp_rc == 12:     # The data set is probably a PDS or PDSE
+        if cp_rc == 12:  # The data set is probably a PDS or PDSE
             # Delete allocated backup that was created when attempting to use _copy_ds()
             # Safe to delete because _copy_ds() would have raised an exception if it did
             # not successfully create the backup data set, so no risk of it predating module invocation
@@ -101,7 +107,7 @@ def uss_file_backup(path, backup_name=None, compress=False):
     if not os.path.exists(abs_path):
         raise BackupError("Path to be backed up does not exist.")
 
-    module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+    module = AnsibleModuleHelper(argument_spec={})
 
     ext = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()).lower()
     if os.path.isdir(abs_path):
@@ -156,7 +162,7 @@ def _copy_ds(ds, bk_ds):
     Raises:
         BackupError: When copying data fails
     """
-    module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+    module = AnsibleModuleHelper(argument_spec={})
     _allocate_model(bk_ds, ds)
     repro_cmd = """  REPRO -
     INDATASET({0}) -
@@ -188,7 +194,7 @@ def _allocate_model(ds, model):
     Raises:
         BackupError: When allocation fails
     """
-    module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+    module = AnsibleModuleHelper(argument_spec={})
     alloc_cmd = """  ALLOC -
     DS('{0}') -
     LIKE('{1}')""".format(

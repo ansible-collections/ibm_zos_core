@@ -1532,6 +1532,9 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
 )
 
 from ansible.module_utils.basic import AnsibleModule
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
+    AnsibleModuleHelper,
+)
 import re
 from ansible.module_utils.six import PY3
 
@@ -2103,7 +2106,7 @@ def get_valid_encodings():
     Returns:
         list[str]: list of all valid encodings on the system
     """
-    module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+    module = AnsibleModuleHelper(argument_spec={})
     valid_encodings = []
     rc, stdout, stderr = module.run_command("iconv -l")
     if rc or stderr:
@@ -2997,7 +3000,7 @@ def get_content(formatted_name, binary=False, from_encoding=None, to_encoding=No
     Returns:
         str: The raw content of the data set or UNIX file. If unsuccessful in retrieving data, returns empty string.
     """
-    module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+    module = AnsibleModuleHelper(argument_spec={})
     conversion_command = ""
     if not binary:
         conversion_command = " | iconv -f {0} -t {1}".format(

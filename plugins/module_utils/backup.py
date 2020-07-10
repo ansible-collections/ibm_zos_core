@@ -8,7 +8,10 @@ __metaclass__ = type
 
 import os
 from ansible.module_utils.six import PY3
-from ansible.module_utils.basic import AnsibleModule
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
+    AnsibleModuleHelper,
+)
+
 import time
 from shutil import copy2, copytree, rmtree
 from stat import S_IREAD, S_IWRITE, ST_MODE
@@ -92,7 +95,7 @@ def uss_file_backup(path, backup_name=None, compress=False):
     if not os.path.exists(abs_path):
         raise BackupError("Path to be backed up does not exist.")
 
-    module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+    module = AnsibleModuleHelper(argument_spec={})
 
     ext = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()).lower()
     if os.path.isdir(abs_path):
@@ -147,7 +150,7 @@ def _copy_ds(ds, bk_ds):
     Raises:
         BackupError: When copying data fails
     """
-    module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+    module = AnsibleModuleHelper(argument_spec={})
     _allocate_model(bk_ds, ds)
     repro_cmd = """  REPRO -
     INDATASET({0}) -
@@ -179,7 +182,7 @@ def _allocate_model(ds, model):
     Raises:
         BackupError: When allocation fails
     """
-    module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+    module = AnsibleModuleHelper(argument_spec={})
     alloc_cmd = """  ALLOC -
     DS('{0}') -
     LIKE('{1}')""".format(
@@ -207,7 +210,7 @@ def _vsam_empty(ds):
         Returns True if VSAM data set exists and is empty.
         False otherwise.
     """
-    module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+    module = AnsibleModuleHelper(argument_spec={})
     empty_cmd = """  PRINT -
     INFILE(MYDSET) -
     COUNT(1)"""

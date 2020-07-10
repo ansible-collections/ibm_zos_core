@@ -36,12 +36,13 @@ Managed node
 * `IBM Open Enterprise Python for z/OS`_
 * z/OS `V2R3`_ or `later`_
 * `IBM Z Open Automation Utilities`_ (ZOAU)
-* The z/OS® shell
 
    * IBM z/OS core collections are dependent on specific versions of ZOAU.
      For information about the required version of ZOAU, review the
      `release notes`_.
+
 * `z/OS OpenSSH`_
+* The z/OS® shell
 
 .. note::
    Currently, the only supported shell is the ``z/OS® shell``; this is because

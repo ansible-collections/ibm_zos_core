@@ -11,7 +11,6 @@ import time
 import subprocess
 
 from tempfile import mkstemp, gettempprefix
-from pathlib import Path
 
 from ansible.errors import AnsibleError
 from ansible.module_utils._text import to_bytes, to_text
@@ -19,8 +18,8 @@ from ansible.module_utils.six import string_types
 from ansible.module_utils.parsing.convert_bool import boolean
 from ansible.plugins.action import ActionBase
 
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
-    better_arg_parser
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
+    is_member, is_data_set, extract_member_name
 )
 
 
@@ -36,13 +35,12 @@ class ActionModule(ActionBase):
         src = self._task.args.get('src', None)
         b_src = to_bytes(src, errors='surrogate_or_strict')
         dest = self._task.args.get('dest', None)
-        b_dest = to_bytes(dest, errors='surrogate_or_strict')
         content = self._task.args.get('content', None)
+        force = _process_boolean(self._task.args.get('force'), default=True)
         backup = _process_boolean(self._task.args.get('backup'), default=False)
         local_follow = _process_boolean(self._task.args.get('local_follow'), default=False)
         remote_src = _process_boolean(self._task.args.get('remote_src'), default=False)
         is_binary = _process_boolean(self._task.args.get('is_binary'), default=False)
-        validate = _process_boolean(self._task.args.get('validate'), default=False)
         backup_file = self._task.args.get("backup_file", None)
         encoding = self._task.args.get('encoding', None)
         mode = self._task.args.get('mode', None)
@@ -56,29 +54,29 @@ class ActionModule(ActionBase):
         if dest:
             if not isinstance(dest, string_types):
                 msg = "Invalid type supplied for 'dest' option, it must be a string"
-                return self._fail_acton(result, msg)
+                return self._exit_action(result, msg, failed=True)
             else:
                 is_uss = '/' in dest
-                is_mvs_dest = _is_data_set(dest)
-                copy_member = _is_member(dest)
+                is_mvs_dest = is_data_set(dest)
+                copy_member = is_member(dest)
         else:
             msg = "Destination is required"
-            return self._fail_acton(result, msg)
+            return self._exit_action(result, msg, failed=True)
 
         if src:
             if content:
                 msg = "Either 'src' or 'content' can be provided; not both."
-                return self._fail_acton(result, msg)
+                return self._exit_action(result, msg, failed=True)
 
             elif not isinstance(src, string_types):
                 msg = "Invalid type supplied for 'src' option, it must be a string"
-                return self._fail_acton(result, msg)
+                return self._exit_action(result, msg, failed=True)
 
             elif len(src) < 1 or len(dest) < 1:
                 msg = "'src' or 'dest' must not be empty"
-                return self._fail_acton(result, msg)
+                return self._exit_action(result, msg, failed=True)
             else:
-                src_member = _is_member(src)
+                src_member = is_member(src)
                 if not remote_src:
                     src = os.path.realpath(src)
                     is_src_dir = os.path.isdir(src)
@@ -86,36 +84,39 @@ class ActionModule(ActionBase):
 
         if not src and not content:
             msg = "'src' or 'content' is required"
-            return self._fail_acton(result, msg)
+            return self._exit_action(result, msg, failed=True)
 
         if encoding and is_binary:
             msg = "The 'encoding' parameter is not valid for binary transfer"
-            return self._fail_acton(result, msg)
+            return self._exit_action(result, msg, failed=True)
 
         if (not backup) and backup_file is not None:
             msg = "Backup file provided but 'backup' parameter is False"
-            return self._fail_acton(result, msg)
+            return self._exit_action(result, msg, failed=True)
 
         if not is_uss:
             if mode or owner or group:
                 msg = "Cannot specify 'mode', 'owner' or 'group' for MVS destination"
-                return self._fail_acton(result, msg)
+                return self._exit_action(result, msg, failed=True)
+
+        if (not force) and self._dest_exists(src, dest, task_vars):
+            return self._exit_action(result, "Destination exists. No data was copied.")
 
         if not remote_src:
             if local_follow and not src:
                 msg = "No path given for local symlink"
-                return self._fail_acton(result, msg)
+                return self._exit_action(result, msg, failed=True)
 
             elif src and not os.path.exists(b_src):
                 msg = "The local file {0} does not exist".format(src)
-                return self._fail_acton(result, msg)
+                return self._exit_action(result, msg, failed=True)
 
             elif src and not os.access(b_src, os.R_OK):
                 msg = (
                     "The local file {0} does not have appropriate "
                     "read permission".format(src)
                 )
-                return self._fail_acton(result, msg)
+                return self._exit_action(result, msg, failed=True)
 
             if content:
                 try:
@@ -131,12 +132,12 @@ class ActionModule(ActionBase):
                         result.update(dict(src=src, dest=dest, changed=False, failed=True))
                         return result
                     new_module_args['size'] = sum(
-                        Path(path + "/" + f).stat().st_size for f in files
+                        os.stat(path + "/" + f).st_size for f in files
                     )
                 else:
                     if mode == 'preserve':
                         new_module_args['mode'] = '0{0:o}'.format(stat.S_IMODE(os.stat(b_src).st_mode))
-                    new_module_args['size'] = Path(src).stat().st_size
+                    new_module_args['size'] = os.stat(src).st_size
                 transfer_res = self._copy_to_remote(src, is_dir=is_src_dir)
 
             temp_path = transfer_res.get("temp_path")
@@ -158,7 +159,8 @@ class ActionModule(ActionBase):
             module_args=new_module_args,
             task_vars=task_vars
         )
-        if copy_res.get('note'):
+
+        if copy_res.get('note') and not force:
             result['note'] = copy_res.get('note')
             return result
 
@@ -187,9 +189,10 @@ class ActionModule(ActionBase):
         ansible_host = self._play_context.remote_addr
         temp_path = "/{0}/{1}".format(gettempprefix(), _create_temp_path_name())
         cmd = ['sftp', ansible_user + '@' + ansible_host]
-        stdin = "put -r {0} {1}".format(src, temp_path)
+        stdin = "put -r {0} {1}".format(src.replace('#', '\\#'), temp_path)
 
         if is_dir:
+            src = src.rstrip('/') if src.endswith('/') else src
             base = os.path.basename(src)
             self._connection.exec_command("mkdir -p {0}/{1}".format(temp_path, base))
         else:
@@ -223,7 +226,7 @@ class ActionModule(ActionBase):
                 self._connection.exec_command("rm -rf {0}".format(dest))
             else:
                 module_args = dict(name=dest, state='absent')
-                if _is_member(dest):
+                if is_member(dest):
                     module_args['type'] = "MEMBER"
                 self._execute_module(
                     module_name='zos_data_set',
@@ -231,16 +234,47 @@ class ActionModule(ActionBase):
                     task_vars=task_vars
                 )
 
-    def _fail_acton(self, result, msg):
-        """Fail action plugin with a failure message"""
-        src = self._task.args.get('src')
-        dest = self._task.args.get('dest')
+    def _dest_exists(self, src, dest, task_vars):
+        """Determine if destination exists on remote z/OS system"""
+        if '/' in dest:
+            rc, out, err = self._connection.exec_command("ls -l {0}".format(dest))
+            if rc != 0:
+                return False
+            if len(to_text(out).split("\n")) == 2:
+                return True
+            if '/' in src:
+                src = src.rstrip('/') if src.endswith('/') else src
+                dest += "/" + os.path.basename(src)
+            else:
+                dest += "/" + extract_member_name(src) if is_member(src) else src
+            rc, out, err = self._connection.exec_command("ls -l {0}".format(dest))
+            if rc != 0:
+                return False
+        else:
+            cmd = "LISTDS '{0}'".format(dest)
+            tso_cmd = self._execute_module(
+                module_name='zos_tso_command',
+                module_args=dict(commands=[cmd]),
+                task_vars=task_vars
+            ).get('output')[0]
+            if tso_cmd.get('rc') != 0:
+                for line in tso_cmd.get('content'):
+                    if "NOT IN CATALOG" in line:
+                        return False
+        return True
+
+    def _exit_action(self, result, msg, failed=False):
+        """Exit action plugin with a message"""
         result.update(
             dict(
-                changed=False, failed=True, msg=msg,
+                changed=False, failed=failed,
                 invocation=dict(module_args=self._task.args)
             )
         )
+        if failed:
+            result['msg'] = msg
+        else:
+            result['note'] = msg
         return result
 
 
@@ -248,6 +282,8 @@ def _update_result(is_binary, copy_res, original_args):
     """ Helper function to update output result with the provided values """
     ds_type = copy_res.get("ds_type")
     src = copy_res.get("src")
+    note = copy_res.get("note")
+    backup_file = copy_res.get("backup_file")
     updated_result = dict(
         dest=copy_res.get('dest'),
         is_binary=is_binary,
@@ -256,6 +292,11 @@ def _update_result(is_binary, copy_res, original_args):
     )
     if src:
         updated_result['src'] = src
+    if note:
+        updated_result['note'] = note
+    if backup_file:
+        updated_result['backup_file'] = backup_file
+
     if ds_type == "USS":
         updated_result.update(
             dict(
@@ -272,10 +313,6 @@ def _update_result(is_binary, copy_res, original_args):
         if checksum:
             updated_result['checksum'] = checksum
 
-    backup_file = copy_res.get("backup_file")
-    if backup_file:
-        updated_result['backup_file'] = backup_file
-
     return updated_result
 
 
@@ -284,28 +321,6 @@ def _process_boolean(arg, default=False):
         return boolean(arg)
     except TypeError:
         return default
-
-
-def _is_member(data_set):
-    """Determine whether the input string specifies a data set member"""
-    try:
-        arg_def = dict(data_set=dict(arg_type='data_set_member'))
-        parser = better_arg_parser.BetterArgParser(arg_def)
-        parser.parse_args({'data_set': data_set})
-    except ValueError:
-        return False
-    return True
-
-
-def _is_data_set(data_set):
-    """Determine whether the input string specifies a data set name"""
-    try:
-        arg_def = dict(data_set=dict(arg_type='data_set_base'))
-        parser = better_arg_parser.BetterArgParser(arg_def)
-        parser.parse_args({'data_set': data_set})
-    except ValueError:
-        return False
-    return True
 
 
 def _create_temp_path_name():

@@ -310,14 +310,14 @@ class FetchHandler:
 
     def _copy_vsam_to_temp_data_set(self, ds_name):
         """ Copy VSAM data set to a temporary sequential data set """
-        check_rc = 0
         mvs_rc = 0
         vsam_size = self._get_vsam_size(ds_name)
+        sysprint = sysin = out_ds_name = None
         try:
-            sysin = data_set.DataSetUtils.create_temp_data_set("SYSIN")
-            sysprint = data_set.DataSetUtils.create_temp_data_set("SYSPRINT")
-            out_ds_name = data_set.DataSetUtils.create_temp_data_set(
-                "VSM", size="{0}K".format(vsam_size)
+            sysin = data_set.DataSet.create_temp("MVSTMP")
+            sysprint = data_set.DataSet.create_temp("MVSTMP")
+            out_ds_name = data_set.DataSet.create_temp(
+                "MSVTMP", space_primary=vsam_size, space_type="K"
             )
             repro_sysin = " REPRO INFILE(INPUT)  OUTFILE(OUTPUT) "
             Datasets.write(sysin, repro_sysin)

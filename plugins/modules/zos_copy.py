@@ -72,7 +72,7 @@ options:
     required: false
   backup_file:
     description:
-      - Specify an unique USS file name or data set name for the destination backup.
+      - Specify a unique USS file name or data set name for the destination backup.
       - If the destination (dest) is a USS file or path, the backup_file name must be a file
         or path name, and the USS path or file must be an absolute path name.
       - If the destination is an MVS data set, the backup_file name must be an MVS
@@ -103,14 +103,18 @@ options:
     description:
       - The permission of the destination file or directory.
       - If C(dest) is USS, this will act as Unix file mode, otherwise ignored.
-      - It should be kept in mind that modes are actually octal numbers.
-        The user must either add a leading zero so that Ansible's YAML parser knows it is an octal number
-        (like C(0644) or C(01777))or quote it (like C('644') or C('1777')) so Ansible receives a string
-        and can do its own conversion from string into number. Giving Ansible a number without following
-        one of these rules will end up with a decimal number which will have unexpected results.
-      - As of Ansible 1.8, the mode may be specified as a symbolic mode (for example, C(u+rwx) or C(u=rw,g=r,o=r)).
-      - As of Ansible 2.3, the mode may also be the special string C(preserve).
-      - C(preserve) means that the file will be given the same permissions as the source file.
+      - It should be noted that modes are octal numbers.
+        The user must either add a leading zero so that Ansible's YAML parser
+        knows it is an octal number (like C(0644) or C(01777))or quote it
+        (like C('644') or C('1777')) so Ansible receives a string and can do its
+        own conversion from string into number. Giving Ansible a number without
+        following one of these rules will end up with a decimal number which
+        will have unexpected results.
+      - The mode may also be specified as a symbolic mode
+        (for example, ``u+rwx`` or ``u=rw,g=r,o=r``) or a special
+        string `preserve`.
+      - C(preserve) means that the file will be given the same permissions as
+        the source file.
     type: str
     required: false
   remote_src:
@@ -188,8 +192,6 @@ notes:
     - For supported character sets used to encode data, refer to
       U(https://ansible-collections.github.io/ibm_zos_core/supplementary.html#encode)
 seealso:
-- module: copy
-- module: fetch
 - module: zos_fetch
 - module: zos_data_set
 """

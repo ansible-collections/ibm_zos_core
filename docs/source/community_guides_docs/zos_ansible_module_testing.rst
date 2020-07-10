@@ -5,28 +5,59 @@
 Prerequisites
 =============
 
-The following prerequisites must be met before you develop and run test cases for z/OS Ansible modules.
+The following prerequisites must be met before you develop and run test cases
+for z/OS Ansible modules.
 
-Control Node
+Control node
 ------------
-* Latest Python 3.X (recommended)
-* Ansible 2.8 or later 
+
+* `Ansible version`_: 2.9 or later
+* `Python`_: 3 or later
+* `OpenSSH`_
+
+.. _Ansible version:
+   https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html
+.. _Python:
+   https://www.python.org/downloads/release/latest
+.. _OpenSSH:
+   https://www.openssh.com/
 
 
-z/OS Target Host
-----------------
-* `Z Open Automation Utilities`_
-* Python 3 >= 3.6
+Managed node
+------------
 
-.. _Z Open Automation Utilities:
-   https://www.ibm.com/support/knowledgecenter/en/SSKFYE_1.0.0/zoautil_overview.html
+* `IBM Open Enterprise Python for z/OS`_
+* z/OS `V2R3`_ or `later`_
+* `IBM Z Open Automation Utilities`_ (ZOAU)
+* The z/OS® shell
+
+   * IBM z/OS collections are dependent on specific versions of ZOAU. When
+     configuring the dependencies, refer to the collections requirements
+     and dependencies to ensure proper execution.
+* `z/OS OpenSSH`_
+
+
+.. _IBM Open Enterprise Python for z/OS:
+   http://www.ibm.com/products/open-enterprise-python-zos
+
+.. _V2R3:
+   https://www.ibm.com/support/knowledgecenter/SSLTBW_2.3.0/com.ibm.zos.v2r3/en/homepage.html
+
+.. _later:
+   https://www.ibm.com/support/knowledgecenter/SSLTBW
+
+.. _IBM Z Open Automation Utilities:
+   https://www.ibm.com/support/knowledgecenter/en/SSKFYE
+
+.. _z/OS OpenSSH:
+   https://www.ibm.com/support/knowledgecenter/SSLTBW_2.2.0/com.ibm.zos.v2r2.e0za100/ch1openssh.htm
 
 
 Configuration and Dependencies
 ==============================
 
 This section explains how to configure the environment and which dependencies to
-install to run both the functional and unti test cases.
+install to run both the functional and unit test cases.
 
 Install dependencies
 --------------------
@@ -94,39 +125,22 @@ Example YAML configuration:
 
 .. code-block:: yaml
 
-   host: tivlp02.svl.ibm.com
-   user: bbecker
-   python_path: /var/python27/python27/bin/python
+   host: some.host.name
+   user: myuser
+   python_path: /usr/lpp/IBM/cyp/v3r8/pyz
    environment:
-       INSTALL_PYTHON: /var/python27
-       RELEASE_NAME: python-2017-04-12
-       RELEASE_TYPE: py27
-       RELEASE_DIR: /var/python27
-       PKGS_BASE: /var/python27/pkgs
-       PYTHON_ENV: python27
-       PYTHON_HOME: /var/python27/python27
-       PYTHON: /var/python27/python27/bin
-       LIBPATH: /var/python27/python27/lib:${LIBPATH}
-       FFI_LIB: /var/python27/python27/lib/ffi
-       TERMINFO: /var/python27/python27/share/terminfo
-       PKG_CONFIG_PATH: /var/python27/python27/share/pkgconfig:/var/python27/python27/lib/pkgconfig
-       CURL_CA_BUNDLE: /var/python27/python27/etc/ssl/cacert.pem
-       # environment variables for mvsutils/mvscmd
-       _: /hsstools/bin/env
-       _BPXK_AUTOCVT: ON
-       # * ensure quotations are provided correctly where needed!!
-       _CEE_RUNOPTS: '"FILETAG(AUTOCVT,AUTOTAG) POSIX(ON)"'
-       _TAG_REDIR_ERR: txt
-       _TAG_REDIR_IN: txt
-       _TAG_REDIR_OUT: txt
-       TOOLS_ROOT: /hsstools
-       GIT_SHELL: /hsstools/bin/bash
-       GIT_EXEC_PATH: /hsstools/git-2.14.4/libexec/git-core
-       GIT_TEMPLATE_DIR: /hsstools/git-2.14.4/share/git-core/templates
-       PATH: /hsstools/git-2.14.4/bin:/bin:/var/bin:/usr/lpp/java/J8.0/bin:/var/python27/python-2017-04-12-py27/python27/bin
-       # Java environment
-       JAVA_HOME: /usr/lpp/java/J8.0_64
-
+     _BPXK_AUTOCVT: "ON"
+     _CEE_RUNOPTS: "'FILETAG(AUTOCVT,AUTOTAG) POSIX(ON)'"
+     _TAG_REDIR_ERR: txt
+     _TAG_REDIR_IN: txt
+     _TAG_REDIR_OUT: txt
+     LANG: C
+     ZOAU_ROOT: "/usr/lpp/IBM/zoautil"
+     ZOAU_HOME: "/usr/lpp/IBM/zoautil"
+     LIBPATH: "/usr/lpp/IBM/zoautil/lib:/usr/lpp/IBM/cyp/v3r8/pyz/lib:/lib:/usr/lib:."
+     ZOAUTIL_DIR: "/usr/lpp/IBM/zoautil"
+     PYTHONPATH: "/usr/lpp/IBM/zoautil/lib"
+     PATH: "/usr/lpp/IBM/zoautil/bin:/usr/lpp/IBM/cyp/v3r8/pyz/bin:/bin:/var/bin"
 
 Run Functional and Unit Tests
 =============================

@@ -27,7 +27,8 @@ description:
 version_added: "2.9"
 options:
   program_name:
-    description: The name of the z/OS program to run (e.g. IDCAMS, IEFBR14, IEBGENER etc.).
+    description:
+      - The name of the z/OS program to run (e.g. IDCAMS, IEFBR14, IEBGENER etc.).
     required: true
     type: str
     aliases:
@@ -50,12 +51,13 @@ options:
     description:
       - The input data source.
       - I(dds) supports 6 types of sources
-        - I(dd_data_set) for data set files.
-        - I(dd_unix) for UNIX files.
-        - I(dd_input) for in-stream data set.
-        - I(dd_dummy) for no content input.
-        - I(dd_concat) for a data set concatenation.
-      - I(dds) supports any combination of source types.
+      - 1. I(dd_data_set) for data set files.
+      - 2. I(dd_unix) for UNIX files.
+      - 3. I(dd_input) for in-stream data set.
+      - 4. I(dd_dummy) for no content input.
+      - 5. I(dd_concat) for a data set concatenation.
+      - 6. I(dds) supports any combination of source types.
+
     required: false
     type: list
     elements: dict
@@ -69,11 +71,13 @@ options:
         type: dict
         suboptions:
           dd_name:
-            description: The DD name.
+            description:
+              - The DD name.
             required: true
             type: str
           data_set_name:
-            description: The data set name.
+            description:
+              - The data set name.
             type: str
             required: false
           type:
@@ -351,7 +355,8 @@ options:
         type: dict
         suboptions:
           dd_name:
-            description: The DD name.
+            description:
+              - The DD name.
             required: true
             type: str
           path:
@@ -404,23 +409,25 @@ options:
               - I(onoctty) specifies that if the PATH parameter identifies a terminal device,
                 opening of the file does not make the terminal device the controlling terminal for the process.
               - I(ononblock) specifies the following, depending on the type of file
-                - For a FIFO special file
-                  - With I(ononblock) specified and I(ordonly) access,
-                  an open function for reading-only returns without delay.
-                  - With I(ononblock) not specified and I(ordonly) access,
-                  an open function for reading-only blocks (waits) until a process opens the file for writing.
-                  - With I(ononblock) specified and I(owronly) access,
-                  an open function for writing-only returns an error if no process
-                  currently has the file open for reading.
-                  - With I(ononblock) not specified and I(owronly) access,
-                  an open function for writing-only blocks (waits) until a process opens the file for reading.
-                - For a character special file that supports nonblocking open
-                  - If I(ononblock) is specified, an open function returns without blocking (waiting)
-                  until the device is ready or available.
-                  Device response depends on the type of device.
-                  - If I(ononblock) is not specified, an open function blocks (waits)
-                  until the device is ready or available.
-                - I(ononblock) has no effect on other file types.
+              - For a FIFO special file
+              - 1. With I(ononblock) specified and I(ordonly) access,
+                   an open function for reading-only returns without delay.
+              - 2. With I(ononblock) not specified and I(ordonly) access,
+                   an open function for reading-only blocks (waits) until a
+                   process opens the file for writing.
+              - 3. With I(ononblock) specified and I(owronly) access,
+                   an open function for writing-only returns an error if no
+                   process currently has the file open for reading.
+              - 4. With I(ononblock) not specified and I(owronly) access,
+                   an open function for writing-only blocks (waits) until a
+                   process opens the file for reading.
+              - 5. For a character special file that supports nonblocking open
+              - 6. If I(ononblock) is specified, an open function returns without
+                   blocking (waiting) until the device is ready or available.
+                   Device response depends on the type of device.
+              - 7. If I(ononblock) is not specified, an open function blocks
+                   (waits) until the device is ready or available.
+              - I(ononblock) has no effect on other file types.
               - I(osync) specifies that the system is to move data from buffer storage
                 to permanent storage before returning control from a callable service that performs a write.
               - "I(otrunc) specifies that the system is to truncate the file length to zero if
@@ -529,7 +536,8 @@ options:
         type: dict
         suboptions:
           dd_name:
-            description: The DD name.
+            description:
+              - The DD name.
             required: true
             type: str
           content:
@@ -579,7 +587,8 @@ options:
         type: dict
         suboptions:
           dd_name:
-            description: The DD name.
+            description:
+              - The DD name.
             required: true
             type: str
           return_content:
@@ -621,7 +630,8 @@ options:
         type: dict
         suboptions:
           dd_name:
-            description: The DD name.
+            description:
+              - The DD name.
             required: true
             type: str
       dd_vio:
@@ -636,7 +646,8 @@ options:
         type: dict
         suboptions:
           dd_name:
-            description: The DD name.
+            description:
+              - The DD name.
             required: true
             type: str
       dd_concat:
@@ -646,13 +657,15 @@ options:
         type: dict
         suboptions:
           dd_name:
-            description: The DD name.
+            description:
+              - The DD name.
             required: true
             type: str
           dds:
             description:
               - "A list of DD statements, which can contain any of the following types:
                 I(dd_data_set), I(dd_unix), and I(dd_input)."
+            required: false
             type: list
             elements: dict
             suboptions:
@@ -665,7 +678,8 @@ options:
                 type: dict
                 suboptions:
                   data_set_name:
-                    description: The data set name.
+                    description:
+                      - The data set name.
                     type: str
                     required: false
                   type:
@@ -993,23 +1007,28 @@ options:
                       - I(onoctty) specifies that if the PATH parameter identifies a terminal device,
                         opening of the file does not make the terminal device the controlling terminal for the process.
                       - I(ononblock) specifies the following, depending on the type of file
-                        - For a FIFO special file
-                          - With I(ononblock) specified and I(ordonly) access,
-                          an open function for reading-only returns without delay.
-                          - With I(ononblock) not specified and I(ordonly) access,
-                          an open function for reading-only blocks (waits) until a process opens the file for writing.
-                          - With I(ononblock) specified and I(owronly) access,
-                          an open function for writing-only returns an error if no process
-                          currently has the file open for reading.
-                          - With I(ononblock) not specified and I(owronly) access,
-                          an open function for writing-only blocks (waits) until a process opens the file for reading.
-                        - For a character special file that supports nonblocking open
-                          - If I(ononblock) is specified, an open function returns without blocking (waiting)
-                          until the device is ready or available.
-                          Device response depends on the type of device.
-                          - If I(ononblock) is not specified, an open function blocks (waits)
-                          until the device is ready or available.
-                        - I(ononblock) has no effect on other file types.
+                      - For a FIFO special file
+                      - 1. With I(ononblock) specified and I(ordonly) access,
+                           an open function for reading-only returns without
+                           delay.
+                      - 2. With I(ononblock) not specified and I(ordonly) access,
+                           an open function for reading-only blocks (waits) until
+                           a process opens the file for writing.
+                      - 3. With I(ononblock) specified and I(owronly) access,
+                           an open function for writing-only returns an error if
+                           no process currently has the file open for reading.
+                      - 4. With I(ononblock) not specified and I(owronly) access,
+                           an open function for writing-only blocks (waits) until
+                           a process opens the file for reading.
+                      - 5. For a character special file that supports nonblocking
+                           open
+                      - 6. If I(ononblock) is specified, an open function returns
+                           without blocking (waiting) until the device is ready
+                           or available. Device response depends on the type of
+                           device.
+                      - 7. If I(ononblock) is not specified, an open function
+                           blocks (waits) until the device is ready or available.
+                      - I(ononblock) has no effect on other file types.
                       - I(osync) specifies that the system is to move data from buffer storage
                         to permanent storage before returning control from a callable service that performs a write.
                       - "I(otrunc) specifies that the system is to truncate the file length to zero if

@@ -1,7 +1,7 @@
 # Copyright (c) IBM Corporation 2019, 2020
 # Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
-from __future__ import absolute_import, division, print_function
+from __future__ import (absolute_import, division, print_function)
 
 __metaclass__ = type
 
@@ -17,29 +17,27 @@ from ansible.plugins.action import ActionBase
 from ansible.errors import AnsibleError
 
 
-SUPPORTED_DS_TYPES = frozenset(("PS", "PO", "VSAM", "USS"))
+SUPPORTED_DS_TYPES = frozenset({'PS', 'PO', 'VSAM', 'USS'})
 
 
 def _update_result(result, src, dest, ds_type="USS", is_binary=False):
     """ Helper function to update output result with the provided values """
     data_set_types = {
-        "PS": "Sequential",
-        "PO": "Partitioned",
-        "PDSE": "Partitioned Extended",
-        "PE": "Partitioned Extended",
-        "VSAM": "VSAM",
-        "USS": "USS",
+        'PS': "Sequential",
+        'PO': "Partitioned",
+        'PDSE': "Partitioned Extended",
+        'PE': "Partitioned Extended",
+        'VSAM': "VSAM",
+        'USS': "USS"
     }
-    file_or_ds = "file" if ds_type == "USS" else "data set"
+    file_or_ds = "file" if ds_type == 'USS' else "data set"
     updated_result = dict((k, v) for k, v in result.items())
-    updated_result.update(
-        {
-            "file": src,
-            "dest": dest,
-            "data_set_type": data_set_types[ds_type],
-            "is_binary": is_binary,
-        }
-    )
+    updated_result.update({
+        'file': src,
+        'dest': dest,
+        'data_set_type': data_set_types[ds_type],
+        'is_binary': is_binary
+    })
     return updated_result
 
 
@@ -61,7 +59,7 @@ def _get_file_checksum(src):
     blksize = 64 * 1024
     hash_digest = sha256()
     try:
-        with open(to_bytes(src, errors="surrogate_or_strict"), "rb") as infile:
+        with open(to_bytes(src, errors='surrogate_or_strict'), 'rb') as infile:
             block = infile.read(blksize)
             while block:
                 hash_digest.update(block)
@@ -93,13 +91,13 @@ class ActionModule(ActionBase):
         #                 Parameter initializations                  #
         # ********************************************************** #
 
-        src = self._task.args.get("src")
-        dest = self._task.args.get("dest")
-        encoding = self._task.args.get("encoding")
-        flat = _process_boolean(self._task.args.get("flat"), default=False)
-        is_binary = _process_boolean(self._task.args.get("is_binary"))
+        src = self._task.args.get('src')
+        dest = self._task.args.get('dest')
+        encoding = self._task.args.get('encoding')
+        flat = _process_boolean(self._task.args.get('flat'), default=False)
+        is_binary = _process_boolean(self._task.args.get('is_binary'))
         validate_checksum = _process_boolean(
-            self._task.args.get("validate_checksum"), default=True
+            self._task.args.get('validate_checksum'), default=True
         )
 
         # ********************************************************** #
@@ -110,24 +108,27 @@ class ActionModule(ActionBase):
         if src is None or dest is None:
             msg = "Source and destination are required"
         elif not isinstance(src, string_types):
-            msg = "Invalid type supplied for 'source' option, " "it must be a string"
+            msg = (
+                "Invalid type supplied for 'source' option, "
+                "it must be a string"
+            )
         elif not isinstance(dest, string_types):
             msg = (
-                "Invalid type supplied for 'destination' option, " "it must be a string"
+                "Invalid type supplied for 'destination' option, "
+                "it must be a string"
             )
         elif len(src) < 1 or len(dest) < 1:
             msg = "Source and destination parameters must not be empty"
 
         if msg:
-            result["msg"] = msg
-            result["failed"] = True
+            result['msg'] = msg
+            result['failed'] = True
             return result
 
         ds_type = None
-        fetch_member = "(" in src and src.endswith(")")
+        fetch_member = '(' in src and src.endswith(')')
         if fetch_member:
-            member_name = src[src.find("(") + 1: src.find(")")]
-
+            member_name = src[src.find('(') + 1:src.find(')')]
         src = self._connection._shell.join_path(src)
         src = self._remote_expand_user(src)
 
@@ -147,23 +148,24 @@ class ActionModule(ActionBase):
         #  and dest is: /tmp/, then updated dest would be /tmp/DATA  #
         # ********************************************************** #
 
-        if os.path.sep not in self._connection._shell.join_path("a", ""):
+        if os.path.sep not in self._connection._shell.join_path('a', ''):
             src = self._connection._shell._unquote(src)
-            source_local = src.replace("\\", "/")
+            source_local = src.replace('\\', '/')
         else:
             source_local = src
 
         dest = os.path.expanduser(dest)
         if flat:
-            if os.path.isdir(
-                to_bytes(dest, errors="surrogate_or_strict")
-            ) and not dest.endswith(os.sep):
-                result["msg"] = (
+            if (
+                os.path.isdir(to_bytes(dest, errors='surrogate_or_strict')) and
+                not dest.endswith(os.sep)
+            ):
+                result['msg'] = (
                     "dest is an existing directory, append a forward "
                     "slash to the dest if you want to fetch src into "
                     "that directory"
                 )
-                result["failed"] = True
+                result['failed'] = True
                 return result
             if dest.endswith(os.sep):
                 if fetch_member:
@@ -175,22 +177,22 @@ class ActionModule(ActionBase):
             if not dest.startswith("/"):
                 dest = self._loader.path_dwim(dest)
         else:
-            if "inventory_hostname" in task_vars:
-                target_name = task_vars["inventory_hostname"]
+            if 'inventory_hostname' in task_vars:
+                target_name = task_vars['inventory_hostname']
             else:
                 target_name = self._play_context.remote_addr
             suffix = member_name if fetch_member else source_local
             dest = "{0}/{1}/{2}".format(
-                self._loader.path_dwim(dest), target_name, suffix
+                self._loader.path_dwim(dest),
+                target_name,
+                suffix
             )
             try:
                 dirname = os.path.dirname(dest).replace("//", "/")
                 if not os.path.exists(dirname):
                     os.makedirs(dirname)
             except OSError as err:
-                result["msg"] = "Unable to create destination directory {0}".format(
-                    dirname
-                )
+                result["msg"] = "Unable to create destination directory {0}".format(dirname)
                 result["stderr"] = str(err)
                 result["stderr_lines"] = str(err).splitlines()
                 result["failed"] = True
@@ -205,64 +207,56 @@ class ActionModule(ActionBase):
 
         try:
             fetch_res = self._execute_module(
-                module_name="zos_fetch",
+                module_name='zos_fetch',
                 module_args=self._task.args,
-                task_vars=task_vars,
+                task_vars=task_vars
             )
-            ds_type = fetch_res.get("ds_type")
-            src = fetch_res.get("file")
-            remote_path = fetch_res.get("remote_path")
+            ds_type = fetch_res.get('ds_type')
+            src = fetch_res.get('file')
+            remote_path = fetch_res.get('remote_path')
 
-            if fetch_res.get("msg"):
-                result["msg"] = fetch_res.get("msg")
-                result["stdout"] = fetch_res.get("stdout") or fetch_res.get(
-                    "module_stdout"
-                )
-                result["stderr"] = fetch_res.get("stderr") or fetch_res.get(
-                    "module_stderr"
-                )
-                result["stdout_lines"] = fetch_res.get("stdout_lines")
-                result["stderr_lines"] = fetch_res.get("stderr_lines")
+            if fetch_res.get('msg'):
+                result['msg'] = fetch_res.get('msg')
+                result['stdout'] = fetch_res.get('stdout') or fetch_res.get("module_stdout")
+                result['stderr'] = fetch_res.get('stderr') or fetch_res.get("module_stderr")
+                result['stdout_lines'] = fetch_res.get('stdout_lines')
+                result['stderr_lines'] = fetch_res.get('stderr_lines')
                 result["rc"] = fetch_res.get("rc")
-                result["failed"] = True
+                result['failed'] = True
                 return result
 
-            elif fetch_res.get("note"):
-                result["note"] = fetch_res.get("note")
+            elif fetch_res.get('note'):
+                result['note'] = fetch_res.get('note')
                 return result
 
             if ds_type in SUPPORTED_DS_TYPES:
                 if ds_type == "PO" and os.path.isfile(dest) and not fetch_member:
-                    result[
-                        "msg"
-                    ] = "Destination must be a directory to fetch a partitioned data set"
+                    result["msg"] = "Destination must be a directory to fetch a partitioned data set"
                     result["failed"] = True
                     return result
-                fetch_content = self._transfer_remote_content(
-                    dest, remote_path, ds_type, encoding
-                )
-                if fetch_content.get("msg"):
+                fetch_content = self._transfer_remote_content(dest, remote_path, ds_type, encoding)
+                if fetch_content.get('msg'):
                     return fetch_content
 
                 if validate_checksum and ds_type != "PO" and not is_binary:
                     new_checksum = _get_file_checksum(dest)
-                    result["changed"] = local_checksum != new_checksum
-                    result["checksum"] = new_checksum
+                    result['changed'] = local_checksum != new_checksum
+                    result['checksum'] = new_checksum
                 else:
-                    result["changed"] = True
+                    result['changed'] = True
 
             else:
-                result["msg"] = (
+                result['msg'] = (
                     "The data set type '{0}' is not"
                     " currently supported".format(ds_type)
                 )
-                result["failed"] = True
+                result['failed'] = True
                 return result
         except Exception as err:
-            result["msg"] = "Failure during module execution"
-            result["stderr"] = str(err)
-            result["stderr_lines"] = str(err).splitlines()
-            result["failed"] = True
+            result['msg'] = "Failure during module execution"
+            result['stderr'] = str(err)
+            result['stderr_lines'] = str(err).splitlines()
+            result['failed'] = True
             return result
 
         # ********************************************************** #
@@ -282,26 +276,27 @@ class ActionModule(ActionBase):
         ansible_user = self._play_context.remote_user
         ansible_host = self._play_context.remote_addr
 
-        cmd = ["sftp", ansible_user + "@" + ansible_host]
+        cmd = ['sftp', ansible_user + '@' + ansible_host]
         stdin = "get -r {0} {1}".format(remote_path, dest)
         if src_type != "PO":
             stdin = stdin.replace(" -r", "")
 
         transfer_pds = subprocess.Popen(
-            cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            cmd,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
         )
         out, err = transfer_pds.communicate(to_bytes(stdin))
         err = _detect_sftp_errors(err)
         if re.findall(r"Permission denied", err):
-            result["msg"] = "Insufficient write permission for destination {0}".format(
-                dest
-            )
+            result["msg"] = "Insufficient write permission for destination {0}".format(dest)
         elif transfer_pds.returncode != 0 or err:
-            result["msg"] = "Error transferring remote data from z/OS system"
-            result["rc"] = transfer_pds.returncode
+            result['msg'] = "Error transferring remote data from z/OS system"
+            result['rc'] = transfer_pds.returncode
         if result.get("msg"):
-            result["stderr"] = err
-            result["failed"] = True
+            result['stderr'] = err
+            result['failed'] = True
         return result
 
     def _remote_cleanup(self, remote_path, src_type, encoding):

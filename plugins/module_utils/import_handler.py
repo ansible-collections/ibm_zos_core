@@ -17,3 +17,14 @@ class MissingZOAUImport(object):
             )
 
         return method
+
+
+class MissingImport(object):
+    def __init__(self, import_name=""):
+        self.import_name = import_name
+
+    def __getattr__(self, name):
+        def method(*args, **kwargs):
+            raise ImportError("Import {0} was not available.".format(self.import_name))
+
+        return method

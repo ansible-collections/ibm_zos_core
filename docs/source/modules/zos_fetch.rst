@@ -17,10 +17,10 @@ zos_fetch -- Fetch data from z/OS
 Synopsis
 --------
 - This module fetches a UNIX System Services (USS) file, PS(sequential data set), PDS, PDSE, member of a PDS or PDSE, or KSDS(VSAM data set) from a remote z/OS system.
-- In the case of a PDS or PDSE member, the destination will be the same as the dest parameter. When fetching a member, destination will be a file.
 - When fetching a sequential data set, the destination file name will be the same as the data set name.
 - When fetching a PDS or PDSE, the destination will be a directory with the same name as the PDS or PDSE.
-- Files that already exist at dest will be overwritten if they are different than the src.
+- When fetching a PDS/PDSE member, destination will be a file.
+- Files that already exist at ``dest`` will be overwritten if they are different than ``src``.
 
 
 
@@ -54,7 +54,7 @@ encoding
   from
     The character set of the source *src*.
 
-    Supported character sets rely on the target version; the most common character sets are supported.
+    Supported character sets rely on the charset conversion utility (iconv) version; the most common character sets are supported.
 
 
     | **required**: True
@@ -65,7 +65,7 @@ encoding
   to
     The destination *dest* character set for the output to be written as.
 
-    Supported character sets rely on the target version; the most common character sets are supported.
+    Supported character sets rely on the charset conversion utility (iconv) version; the most common character sets are supported.
 
 
     | **required**: True

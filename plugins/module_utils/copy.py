@@ -8,7 +8,9 @@ __metaclass__ = type
 
 
 from ansible.module_utils.six import PY3
-from ansible.module_utils.basic import AnsibleModule
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
+    AnsibleModuleHelper,
+)
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,
 )
@@ -55,13 +57,13 @@ def copy_uss2mvs(src, dest, ds_type, is_binary=False):
         str -- The stdout after the copy command executed successfully
         str -- The stderr after the copy command executed successfully
     """
-    module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+    module = AnsibleModuleHelper(argument_spec={})
     src = _validate_path(src)
     dest = _validate_data_set_name(dest)
     if ds_type == "PO":
         cp_uss2mvs = "cp -CM -F rec {0} \"//'{1}'\"".format(quote(src), dest)
     else:
-        cp_uss2mvs = "cp -F rec {0} \"//'{1}'\" ".format(quote(src), dest)
+        cp_uss2mvs = "cp -F rec {0} \"//'{1}'\"".format(quote(src), dest)
     if is_binary:
         cp_uss2mvs = cp_uss2mvs.replace("rec", "bin", 1)
     rc, out, err = module.run_command(cp_uss2mvs)
@@ -88,7 +90,7 @@ def copy_ps2uss(src, dest, is_binary=False):
         str -- The stdout after the copy command executed successfully
         str -- The stderr after the copy command executed successfully
     """
-    module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+    module = AnsibleModuleHelper(argument_spec={})
     src = _validate_data_set_name(src)
     dest = _validate_path(dest)
     cp_ps2uss = "cp -F rec \"//'{0}'\" {1}".format(src, quote(dest))
@@ -117,7 +119,7 @@ def copy_pds2uss(src, dest, is_binary=False):
         str -- The stdout after the USS command executed successfully
         str -- The stderr after the USS command executed successfully
     """
-    module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+    module = AnsibleModuleHelper(argument_spec={})
     src = _validate_data_set_name(src)
     dest = _validate_path(dest)
     cp_pds2uss = "cp -U -F rec \"//'{0}'\" {1}".format(src, quote(dest))
@@ -142,7 +144,7 @@ def copy_uss2uss_binary(src, dest):
         str -- The stdout after the USS command executed successfully
         str -- The stderr after the USS command executed successfully
     """
-    module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+    module = AnsibleModuleHelper(argument_spec={})
     src = _validate_path(src)
     dest = _validate_path(dest)
     cp_uss2uss = "cp -F bin {0} {1}".format(quote(src), quote(dest))
@@ -169,7 +171,7 @@ def copy_mvs2mvs(src, dest, is_binary=False):
         str -- The stdout after the USS command executed successfully
         str -- The stderr after the USS command executed successfully
     """
-    module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+    module = AnsibleModuleHelper(argument_spec={})
     src = _validate_data_set_name(src)
     dest = _validate_data_set_name(dest)
     cp_mvs2mvs = "cp -F rec \"//'{0}'\" \"//'{1}'\"".format(src, dest)
@@ -195,7 +197,7 @@ def copy_vsam_ps(src, dest):
         str -- The stdout after the USS command executed successfully
         str -- The stderr after the USS command executed successfully
     """
-    module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+    module = AnsibleModuleHelper(argument_spec={})
     src = _validate_data_set_name(src)
     dest = _validate_data_set_name(dest)
     repro_cmd = REPRO.format(src, dest)

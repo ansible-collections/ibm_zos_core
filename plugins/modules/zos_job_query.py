@@ -161,7 +161,6 @@ def run_module():
         validate_arguments(module.params)
         jobs_raw = query_jobs(module.params)
         jobs = parsing_jobs(jobs_raw)
-
     except Exception as e:
         module.fail_json(msg=e, **result)
     result["jobs"] = jobs

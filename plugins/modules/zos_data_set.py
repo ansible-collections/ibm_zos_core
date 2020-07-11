@@ -480,7 +480,6 @@ options:
         default: false
         version_added: "2.9"
 
-
 """
 EXAMPLES = r"""
 - name: Create a sequential data set if it does not exist

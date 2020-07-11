@@ -54,6 +54,7 @@ options:
       - Data sets whose names match an excludes pattern are culled from patterns matches. 
         Multiple patterns can be specified using a list.
       - The pattern can be a regular expression.
+      - If the pattern is a regular expression, it must match the full data set name.
     type: list
     required: false
     aliases: ['exclude']
@@ -102,9 +103,14 @@ notes:
   - Only cataloged data sets will be searched. If an uncataloged data set needs to
     be searched, it should be cataloged first.
   - The M(zos_find) module currently does not support wildcards for high level qualifiers.
-    For example, C(SOME.*.DATA.SET) is a valid pattern, but C(*.DATA.SET) is not. 
+    For example, C(SOME.*.DATA.SET) is a valid pattern, but C(*.DATA.SET) is not.
+  - If a data set pattern is specified as C(USER.*), the matching data sets will have two
+    name segments such as C(USER.ABC), C(USER.XYZ) etc. If a wildcard is specified 
+    as C(USER.*.ABC), the matching data sets will have three name segments such as
+    C(USER.XYZ.ABC), C(USER.TEST.ABC) etc.
 seealso:
 - module: find
+- module: zos_data_set
 """
 
 
@@ -178,16 +184,26 @@ examined:
     sample: 158
 """
 
+import re
 
-import os
+from ansible.module_utils.six import PY3
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser, vtoc
 )
 
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
+    AnsibleModuleHelper
+)
+
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     MissingZOAUImport
 )
+
+if PY3:
+    from shlex import quote
+else:
+    from pipes import quote
 
 try:
     from zoautil_py import Datasets
@@ -197,17 +213,46 @@ except Exception:
     types = MissingZOAUImport()
 
 
-def data_set_filter(patterns, content, age, excludes, size):
-    filtered_data_sets = set()
+def data_set_filter(patterns, content, excludes):
+    filtered_data_sets = dict(ps=set(), pds=dict(), searched=set())
+    for pattern in patterns:
+        rc, out, err = _dgrep_wrapper(pattern, content=content, verbose=True)
+        for line in out.split("\n"):
+            if line.startswith("BGYSC1005I"):
+                filtered_data_sets['searched'].add(line.split(":")[1].strip(" "))
+            else:
+                result = line.split()
+                if len(result) > 2:
+                    filtered_data_sets['pds'][result[0]] = result[1]
+                else:
+                    filtered_data_sets['ps'].add(result[0])
+    
+    for data_set in filtered_data_sets["ps"].union(set(filtered_data_sets['pds'].keys())):
+        for ex_pat in excludes:
+            if re.fullmatch(ex_pat, data_set, re.IGNORECASE):
+                if data_set in filtered_data_sets["ps"]:
+                    filtered_data_sets.remove(data_set)
+                else:
+                    filtered_data_sets['pds'].pop(data_set)
+    return filtered_data_sets
 
 
-def pds_filter(pds_patterns, member_patterns):
+def pds_filter(pds_list, member_patterns):
+    filtered_pds = set()
+    for pds, member in pds_list.items():
+        for mem_pat in member_patterns:
+            if re.fullmatch(mem_pat, member, re.IGNORECASE):
+                filtered_pds.add(pds)
+    return filtered_pds
+
+
+def data_set_attribute_filter(data_sets, size, age, age_stamp):
     pass
 
 
 def volume_filter(data_sets, volumes):
     """Return only the data sets that are allocated in one of the volumes from
-    the list input volumes.
+    the list of input volumes.
 
     Arguments:
         data_sets {set[str]} -- A set of data sets to be filtered
@@ -218,15 +263,19 @@ def volume_filter(data_sets, volumes):
     """
     filtered_data_sets = set()
     for volume in volumes:
-        vtoc_entries = vtoc.get_volume_entry(volume)
-        for ds in vtoc_entries:
+        for ds in vtoc.get_volume_entry(volume):
             if ds.get('data_set_name') in data_sets:
                 filtered_data_sets.add(ds)
     return filtered_data_sets
 
 
 def _dgrep_wrapper(
-    data_set_pattern, content=None, ignore_case=False, line_num=False, verbose=False, context=None
+    data_set_pattern, 
+    content=None, 
+    ignore_case=False, 
+    line_num=False, 
+    verbose=False, 
+    context=None
 ):
     """A wrapper for ZOAU 'dgrep' shell command"""
     dgrep_cmd = "dgrep"
@@ -239,17 +288,19 @@ def _dgrep_wrapper(
     if context:
         dgrep_cmd += " -C{0}".format(context)
     if content:
-        dgrep_cmd += " '{0}'".format(content)
+        dgrep_cmd += " {0}".format(quote(content))
 
-    for pattern in data_set_pattern:
-        dgrep_cmd += " '{0}'".format(pattern)
-    
-    module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
-    return module.run_command(dgrep_cmd)
+    dgrep_cmd += " {0}".format(quote(data_set_pattern))
+    return AnsibleModuleHelper(argument_spec={}).run_command(dgrep_cmd)
 
 
 def _dls_wrapper(
-    data_set_pattern, list_details=False, u_time=False, size=False, verbose=False, migrated=False
+    data_set_pattern, 
+    list_details=False, 
+    u_time=False, 
+    size=False, 
+    verbose=False, 
+    migrated=False
 ):
     """A wrapper for ZOAU 'dls' shell command"""
     dls_cmd = "dls"
@@ -265,14 +316,11 @@ def _dls_wrapper(
     if verbose:
         dls_cmd += " -v"
 
-    for pattern in data_set_pattern:
-        dls_cmd += " '{0}'".format(pattern)
-    
-    module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
-    return module.run_command(dls_cmd)
+    dls_cmd += " {0}".format(quote(data_set_pattern))
+    return AnsibleModuleHelper(argument_spec={}).run_command(dls_cmd)
 
 
-def _vls_wrapper(patterns, details=False, verbose=False):
+def _vls_wrapper(pattern, details=False, verbose=False):
     """A wrapper for ZOAU 'vls' shell command"""
     vls_cmd = "vls"
     if details:
@@ -280,11 +328,8 @@ def _vls_wrapper(patterns, details=False, verbose=False):
     if verbose:
         vls_cmd += " -v"
 
-    for pattern in patterns:
-        vls_cmd += " '{0}'".format(pattern)
-    
-    module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
-    return module.run_command(vls_cmd)
+    vls_cmd += " {0}".format(quote(pattern))
+    return AnsibleModuleHelper(argument_spec={}).run_command(vls_cmd)
 
 
 def run_module(module, arg_def):

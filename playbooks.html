@@ -166,7 +166,7 @@
         
             
             
-              <a href="https://github.com/ansible-collections/ibm_zos_core/blob/v1.1.0/docs/source/playbooks.rst" class="fa fa-github"> Edit on GitHub</a>
+              <a href="https://github.com/ansible-collections/ibm_zos_core/blob/v1.2.0-beta.1/docs/source/playbooks.rst" class="fa fa-github"> Edit on GitHub</a>
             
           
         
@@ -264,7 +264,8 @@ connecting to the host; for example, <code class="docutils literal notranslate">
 <p>The value for the property <strong>ansible_python_interpreter</strong> is the target host
 Python path. This is useful for systems with more than one Python installation,
 or when Python is not installed in the default location <strong>/usr/bin/python</strong>;
-for example, <code class="docutils literal notranslate"><span class="pre">ansible_python_interpreter:</span> <span class="pre">/usr/lpp/rsusr/python36/bin/python</span></code></p>
+for example,
+<code class="docutils literal notranslate"><span class="pre">ansible_python_interpreter:</span> <span class="pre">/usr/lpp/IBM/cyp/v3r8/pyz/bin/python3</span></code></p>
 <p>For more information on Python configuration requirements on z/OS, refer to
 Ansible <a class="reference external" href="https://docs.ansible.com/ansible/latest/reference_appendices/faq.html#running-on-z-os">FAQ</a>.</p>
 <p>Behavioral inventory parameters such as <code class="docutils literal notranslate"><span class="pre">ansible_port</span></code> which allows you
@@ -329,7 +330,7 @@ dependency variables and rely on variable expansion to substitute the values.
 This is preferred, because it tends to reduce misconfiguration when copying
 dependency paths. In this example, the top level dependency variables <code class="docutils literal notranslate"><span class="pre">PYZ</span></code>
 for Python and <code class="docutils literal notranslate"><span class="pre">ZOAU</span></code> have been added and used through the configuration.</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">PYZ</span><span class="p">:</span> <span class="s">&quot;/u/oeusr01/python/pyz_3_8_2/usr/lpp/IBM/cyp/v3r8/pyz&quot;</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">PYZ</span><span class="p">:</span> <span class="s">&quot;/usr/lpp/IBM/cyp/v3r8/pyz&quot;</span>
 <span class="nt">ZOAU</span><span class="p">:</span> <span class="s">&quot;/usr/lpp/IBM/zoautil&quot;</span>
 
 <span class="nt">environment_vars</span><span class="p">:</span>
@@ -343,6 +344,28 @@ for Python and <code class="docutils literal notranslate"><span class="pre">ZOAU
   <span class="nt">_TAG_REDIR_IN</span><span class="p">:</span> <span class="s">&quot;txt&quot;</span>
   <span class="nt">_TAG_REDIR_OUT</span><span class="p">:</span> <span class="s">&quot;txt&quot;</span>
   <span class="nt">LANG</span><span class="p">:</span> <span class="s">&quot;C&quot;</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Currently, IBM Open Enterprise Python for z/OS is the supported and
+recommended Python distribution for use on z/OS with Ansible and ZOAU. If
+Rocket Python is the only available python on the target, please review the
+suggested environment variables below for use with Rocket Python.</p>
+</div>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1">########################################</span>
+<span class="c1"># Rocket suggested environment variables</span>
+<span class="c1">########################################</span>
+<span class="nt">PYZ</span><span class="p">:</span> <span class="s">&quot;/usr/lpp/rsusr/python36&quot;</span>
+<span class="nt">ZOAU</span><span class="p">:</span> <span class="s">&quot;/usr/lpp/IBM/zoautil&quot;</span>
+
+<span class="nt">environment_vars</span><span class="p">:</span>
+  <span class="nt">ZOAU_ROOT</span><span class="p">:</span> <span class="s">&quot;{{</span><span class="nv"> </span><span class="s">ZOAU</span><span class="nv"> </span><span class="s">}}&quot;</span>
+  <span class="nt">ZOAU_HOME</span><span class="p">:</span> <span class="s">&quot;{{</span><span class="nv"> </span><span class="s">ZOAU</span><span class="nv"> </span><span class="s">}}&quot;</span>
+  <span class="nt">PYTHONPATH</span><span class="p">:</span> <span class="s">&quot;{{</span><span class="nv"> </span><span class="s">ZOAU</span><span class="nv"> </span><span class="s">}}/lib:{{</span><span class="nv"> </span><span class="s">PYZ</span><span class="nv"> </span><span class="s">}}:/lib:/usr/lib&quot;</span>
+  <span class="nt">_BPXK_AUTOCVT</span><span class="p">:</span> <span class="s">&quot;ON&quot;</span>
+  <span class="nt">PATH</span><span class="p">:</span> <span class="s">&quot;{{</span><span class="nv"> </span><span class="s">ZOAU</span><span class="nv"> </span><span class="s">}}/bin:/bin:/var/bin:{{</span><span class="nv"> </span><span class="s">PYZ</span><span class="nv"> </span><span class="s">}}/bin&quot;</span>
+  <span class="nt">LIBPATH</span><span class="p">:</span> <span class="s">&quot;{{</span><span class="nv"> </span><span class="s">ZOAU</span><span class="nv"> </span><span class="s">}}/lib:{{</span><span class="nv"> </span><span class="s">PYZ</span><span class="nv"> </span><span class="s">}}/lib:/lib:/usr/lib:.&quot;</span>
 </pre></div>
 </div>
 </div>
@@ -432,12 +455,13 @@ see the JCL notes section included in the collection.</p>
 <div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
     <span class="rst-current-version" data-toggle="rst-current-version">
         <span class="fa fa-book"> Other Versions</span>
-        v: v1.1.0
+        v: v1.2.0-beta.1
         <span class="fa fa-caret-down"></span>
     </span>
     <div class="rst-other-versions">
         <dl>
             <dt>Tags</dt>
+            <dd><a href="v1.2.0-beta.1/playbooks.html">v1.2.0-beta.1</a></dd>
             <dd><a href="v1.1.0/playbooks.html">v1.1.0</a></dd>
             <dd><a href="v1.1.0-beta1/playbooks.html">v1.1.0-beta1</a></dd>
             <dd><a href="v1.0.0/playbooks.html">v1.0.0</a></dd>

@@ -1,0 +1,468 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Releases &mdash; IBM z/OS core collection 1.0.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/banner.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Requirements" href="requirements.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> IBM z/OS core collection
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="plugins.html">Plugins</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="filters.html">Filters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="playbooks.html">Playbooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="supplementary.html">Supplementary</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Community guides</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="community_guides.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="community_guides.html#development">Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="community_guides.html#helpful-links">Helpful Links</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Requirements</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="requirements.html">Requirements</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Appendices</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Releases</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#version-1-2-0-beta-1">Version 1.2.0-beta.1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#version-1-1-0">Version 1.1.0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#version-1-1-0-beta1">Version 1.1.0-beta1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#version-1-0-0">Version 1.0.0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#version-0-0-4">Version 0.0.4</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#version-0-0-3">Version 0.0.3</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#version-0-0-2">Version 0.0.2</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#version-0-0-1">Version 0.0.1</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">IBM z/OS core collection</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Releases</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            
+              <a href="https://github.com/ansible-collections/ibm_zos_core/blob/v1.2.0-beta.1/docs/source/release_notes.rst" class="fa fa-github"> Edit on GitHub</a>
+            
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+
+
+
+
+
+<div class="section" id="releases">
+<h1>Releases<a class="headerlink" href="#releases" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="version-1-2-0-beta-1">
+<h2>Version 1.2.0-beta.1<a class="headerlink" href="#version-1-2-0-beta-1" title="Permalink to this headline">¶</a></h2>
+<dl class="simple">
+<dt>Notes</dt><dd><ul class="simple">
+<li><p>Update recommended</p></li>
+<li><p>New modules</p>
+<ul>
+<li><p>zos_copy</p></li>
+<li><p>zos_lineinfile</p></li>
+<li><p>zos_mvs_raw</p></li>
+</ul>
+</li>
+<li><p>Bug fixes</p></li>
+<li><p>Documentation updates</p></li>
+<li><p>New samples</p></li>
+<li><p>Module enhancements:</p>
+<ul>
+<li><p>zos_data_set - includes full multi-volume support for data set creation,
+addition of secondary space option, improved SMS support with storage,
+data, and management classes</p></li>
+</ul>
+</li>
+</ul>
+</dd>
+<dt>Availability</dt><dd><ul class="simple">
+<li><p>Galaxy</p></li>
+<li><p>GitHub</p></li>
+</ul>
+</dd>
+<dt>Reference</dt><dd><ul class="simple">
+<li><p>Supported by IBM Open Enterprise Python for z/OS: 3.8.2 or later</p></li>
+<li><p>Supported by IBM Z Open Automation Utilities
+1.0.3 PTF UI70435 or later</p></li>
+<li><p>Supported by z/OS V2R3</p></li>
+<li><p>The z/OS® shell</p></li>
+</ul>
+</dd>
+</dl>
+</div>
+<div class="section" id="version-1-1-0">
+<h2>Version 1.1.0<a class="headerlink" href="#version-1-1-0" title="Permalink to this headline">¶</a></h2>
+<dl class="simple">
+<dt>Notes</dt><dd><ul class="simple">
+<li><p>Update recommended</p></li>
+<li><p>New modules</p>
+<ul>
+<li><p>zos_fetch</p></li>
+<li><p>zos_encode</p></li>
+<li><p>zos_operator_action_query</p></li>
+<li><p>zos_operator</p></li>
+<li><p>zos_tso_command</p></li>
+<li><p>zos_ping</p></li>
+</ul>
+</li>
+<li><p>New filter</p></li>
+<li><p>Improved error handling and messages</p></li>
+<li><p>Bug fixes</p></li>
+<li><p>Documentation updates</p></li>
+<li><p>New samples</p></li>
+</ul>
+</dd>
+<dt>Availability</dt><dd><ul class="simple">
+<li><p>Automation Hub</p></li>
+<li><p>Galaxy</p></li>
+<li><p>GitHub</p></li>
+</ul>
+</dd>
+<dt>Reference</dt><dd><ul class="simple">
+<li><p>Supported by IBM Open Enterprise Python for z/OS: 3.8.2 or later</p></li>
+<li><p>Supported by IBM Z Open Automation Utilities: 1.0.3 or later</p></li>
+<li><p>Supported by z/OS V2R3</p></li>
+<li><p>The z/OS® shell</p></li>
+</ul>
+</dd>
+</dl>
+</div>
+<div class="section" id="version-1-1-0-beta1">
+<h2>Version 1.1.0-beta1<a class="headerlink" href="#version-1-1-0-beta1" title="Permalink to this headline">¶</a></h2>
+<dl class="simple">
+<dt>Notes</dt><dd><ul class="simple">
+<li><p>Update recommended</p></li>
+<li><p>New modules</p>
+<ul>
+<li><p>zos_fetch, zos_encode, zos_operator_action_query, zos_operator,
+zos_tso_command, zos_ping</p></li>
+</ul>
+</li>
+<li><p>New filter</p></li>
+<li><p>Improved error handling and messages</p></li>
+<li><p>Bug fixes</p></li>
+<li><p>Documentation updates</p></li>
+<li><p>New samples</p></li>
+</ul>
+</dd>
+<dt>Availability</dt><dd><ul class="simple">
+<li><p>Galaxy</p></li>
+<li><p>GitHub</p></li>
+</ul>
+</dd>
+<dt>Reference</dt><dd><ul class="simple">
+<li><p>Supported by IBM Z Open Automation Utilities: 1.0.2 or later</p></li>
+</ul>
+</dd>
+</dl>
+</div>
+<div class="section" id="version-1-0-0">
+<h2>Version 1.0.0<a class="headerlink" href="#version-1-0-0" title="Permalink to this headline">¶</a></h2>
+<dl class="simple">
+<dt>Notes</dt><dd><ul class="simple">
+<li><p>Update recommended</p></li>
+<li><p>Security vulnerabilities fixed</p></li>
+<li><p>Improved test, security and injection coverage</p></li>
+<li><p>Module zos_data_set catalog support added</p></li>
+<li><p>Documentation updates</p></li>
+</ul>
+</dd>
+<dt>Availability</dt><dd><ul class="simple">
+<li><p>Automation Hub</p></li>
+<li><p>Galaxy</p></li>
+<li><p>GitHub</p></li>
+</ul>
+</dd>
+<dt>Reference</dt><dd><ul class="simple">
+<li><p>Supported by IBM Z Open Automation Utilities: 1.0.1 (PTF UI66957 or later)</p></li>
+</ul>
+</dd>
+</dl>
+</div>
+<div class="section" id="version-0-0-4">
+<h2>Version 0.0.4<a class="headerlink" href="#version-0-0-4" title="Permalink to this headline">¶</a></h2>
+<dl class="simple">
+<dt>Notes</dt><dd><ul class="simple">
+<li><p>Update recommended</p></li>
+<li><p>Includes fixes to modules zos_job_output and zos_job_submit</p></li>
+<li><p>Improved buffer utilization</p></li>
+<li><p>Optimized JSON response</p></li>
+<li><p>Functional test cases for all modules</p></li>
+<li><p>Updated document references</p></li>
+</ul>
+</dd>
+<dt>Availability</dt><dd><ul class="simple">
+<li><p>Galaxy</p></li>
+<li><p>GitHub</p></li>
+</ul>
+</dd>
+<dt>Reference:</dt><dd><ul class="simple">
+<li><p>Supported by IBM Z Open Automation Utilities: 1.0.1 (PTF UI66957 or later)</p></li>
+</ul>
+</dd>
+</dl>
+</div>
+<div class="section" id="version-0-0-3">
+<h2>Version 0.0.3<a class="headerlink" href="#version-0-0-3" title="Permalink to this headline">¶</a></h2>
+<dl class="simple">
+<dt>Notes</dt><dd><ul class="simple">
+<li><p>Update recommended</p></li>
+<li><p>Includes updates to README.md for a malformed URL and product direction</p></li>
+<li><p>Includes fixes for zos_data_set module</p></li>
+</ul>
+</dd>
+<dt>Availability</dt><dd><ul class="simple">
+<li><p>Galaxy</p></li>
+<li><p>GitHub</p></li>
+</ul>
+</dd>
+<dt>Reference</dt><dd><ul class="simple">
+<li><p>Supported by IBM Z Open Automation Utilities: 1.0.1 (PTF UI66957 or later)</p></li>
+</ul>
+</dd>
+</dl>
+</div>
+<div class="section" id="version-0-0-2">
+<h2>Version 0.0.2<a class="headerlink" href="#version-0-0-2" title="Permalink to this headline">¶</a></h2>
+<dl class="simple">
+<dt>Notes</dt><dd><ul class="simple">
+<li><p>Update not required</p></li>
+<li><p>Updates to the README and included docs</p></li>
+</ul>
+</dd>
+<dt>Availability</dt><dd><ul class="simple">
+<li><p>Galaxy</p></li>
+<li><p>GitHub</p></li>
+</ul>
+</dd>
+<dt>Reference</dt><dd><ul class="simple">
+<li><p>Supported by IBM Z Open Automation Utilities: 1.0.1 (PTF UI66957 or later)</p></li>
+</ul>
+</dd>
+</dl>
+</div>
+<div class="section" id="version-0-0-1">
+<h2>Version 0.0.1<a class="headerlink" href="#version-0-0-1" title="Permalink to this headline">¶</a></h2>
+<dl class="simple">
+<dt>Notes</dt><dd><ul class="simple">
+<li><p>Initial beta release of IBM Z core collection, referred to as ibm_zos_core
+which is part of the broader offering
+Red Hat® Ansible Certified Content for IBM Z.</p></li>
+</ul>
+</dd>
+<dt>Availability</dt><dd><ul class="simple">
+<li><p>Galaxy</p></li>
+<li><p>GitHub</p></li>
+</ul>
+</dd>
+<dt>Reference</dt><dd><ul class="simple">
+<li><p>Supported by IBM Z Open Automation Utilities: 1.0.1 (PTF UI66957 or later)</p></li>
+</ul>
+</dd>
+</dl>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="requirements.html" class="btn btn-neutral float-left" title="Requirements" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, IBM
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+<div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+        <span class="fa fa-book"> Other Versions</span>
+        v: v1.2.0-beta.1
+        <span class="fa fa-caret-down"></span>
+    </span>
+    <div class="rst-other-versions">
+        <dl>
+            <dt>Tags</dt>
+            <dd><a href="release_notes.html">v1.2.0-beta.1</a></dd>
+            <dd><a href="../v1.1.0/release_notes.html">v1.1.0</a></dd>
+            <dd><a href="../v1.1.0-beta1/release_notes.html">v1.1.0-beta1</a></dd>
+            <dd><a href="../v1.0.0/release_notes.html">v1.0.0</a></dd>
+        </dl>
+    </div>
+</div>
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -100,8 +100,8 @@
 <li class="toctree-l1 current"><a class="reference internal" href="../community_guides.html#development">Development</a><ul class="current">
 <li class="toctree-l2 current"><a class="reference internal" href="../community_guides.html#z-os-ansible-module-testing">z/OS Ansible Module Testing</a><ul class="current">
 <li class="toctree-l3 current"><a class="current reference internal" href="#">Prerequisites</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#control-node">Control Node</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#z-os-target-host">z/OS Target Host</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#control-node">Control node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#managed-node">Managed node</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#configuration-and-dependencies">Configuration and Dependencies</a><ul>
@@ -199,7 +199,7 @@
         
             
             
-              <a href="https://github.com/ansible-collections/ibm_zos_core/blob/v1.1.0/docs/source/community_guides_docs/zos_ansible_module_testing.rst" class="fa fa-github"> Edit on GitHub</a>
+              <a href="https://github.com/ansible-collections/ibm_zos_core/blob/v1.2.0-beta.1/docs/source/community_guides_docs/zos_ansible_module_testing.rst" class="fa fa-github"> Edit on GitHub</a>
             
           
         
@@ -221,26 +221,39 @@
 
 <div class="section" id="prerequisites">
 <h1>Prerequisites<a class="headerlink" href="#prerequisites" title="Permalink to this headline">¶</a></h1>
-<p>The following prerequisites must be met before you develop and run test cases for z/OS Ansible modules.</p>
+<p>The following prerequisites must be met before you develop and run test cases
+for z/OS Ansible modules.</p>
 <div class="section" id="control-node">
-<h2>Control Node<a class="headerlink" href="#control-node" title="Permalink to this headline">¶</a></h2>
+<h2>Control node<a class="headerlink" href="#control-node" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
-<li><p>Latest Python 3.X (recommended)</p></li>
-<li><p>Ansible 2.8 or later</p></li>
+<li><p><a class="reference external" href="https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html">Ansible version</a>: 2.9 or later</p></li>
+<li><p><a class="reference external" href="https://www.python.org/downloads/release/latest">Python</a>: 3 or later</p></li>
+<li><p><a class="reference external" href="https://www.openssh.com/">OpenSSH</a></p></li>
 </ul>
 </div>
-<div class="section" id="z-os-target-host">
-<h2>z/OS Target Host<a class="headerlink" href="#z-os-target-host" title="Permalink to this headline">¶</a></h2>
-<ul class="simple">
-<li><p><a class="reference external" href="https://www.ibm.com/support/knowledgecenter/en/SSKFYE_1.0.0/zoautil_overview.html">Z Open Automation Utilities</a></p></li>
-<li><p>Python 3 &gt;= 3.6</p></li>
+<div class="section" id="managed-node">
+<h2>Managed node<a class="headerlink" href="#managed-node" title="Permalink to this headline">¶</a></h2>
+<ul>
+<li><p><a class="reference external" href="http://www.ibm.com/products/open-enterprise-python-zos">IBM Open Enterprise Python for z/OS</a></p></li>
+<li><p>z/OS <a class="reference external" href="https://www.ibm.com/support/knowledgecenter/SSLTBW_2.3.0/com.ibm.zos.v2r3/en/homepage.html">V2R3</a> or <a class="reference external" href="https://www.ibm.com/support/knowledgecenter/SSLTBW">later</a></p></li>
+<li><p><a class="reference external" href="https://www.ibm.com/support/knowledgecenter/en/SSKFYE">IBM Z Open Automation Utilities</a> (ZOAU)</p></li>
+<li><p>The z/OS® shell</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>IBM z/OS collections are dependent on specific versions of ZOAU. When
+configuring the dependencies, refer to the collections requirements
+and dependencies to ensure proper execution.</p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p><a class="reference external" href="https://www.ibm.com/support/knowledgecenter/SSLTBW_2.2.0/com.ibm.zos.v2r2.e0za100/ch1openssh.htm">z/OS OpenSSH</a></p></li>
 </ul>
 </div>
 </div>
 <div class="section" id="configuration-and-dependencies">
 <h1>Configuration and Dependencies<a class="headerlink" href="#configuration-and-dependencies" title="Permalink to this headline">¶</a></h1>
 <p>This section explains how to configure the environment and which dependencies to
-install to run both the functional and unti test cases.</p>
+install to run both the functional and unit test cases.</p>
 <div class="section" id="install-dependencies">
 <h2>Install dependencies<a class="headerlink" href="#install-dependencies" title="Permalink to this headline">¶</a></h2>
 <p>Install the requirements using the supplied <code class="docutils literal notranslate"><span class="pre">requirements.txt</span></code> with <code class="docutils literal notranslate"><span class="pre">pip3</span></code>.
@@ -302,38 +315,22 @@ run the command with the additional <code class="docutils literal notranslate"><
 </tbody>
 </table>
 <p>Example YAML configuration:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">host</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">tivlp02.svl.ibm.com</span>
-<span class="nt">user</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">bbecker</span>
-<span class="nt">python_path</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/var/python27/python27/bin/python</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">host</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">some.host.name</span>
+<span class="nt">user</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">myuser</span>
+<span class="nt">python_path</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/usr/lpp/IBM/cyp/v3r8/pyz</span>
 <span class="nt">environment</span><span class="p">:</span>
-    <span class="nt">INSTALL_PYTHON</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/var/python27</span>
-    <span class="nt">RELEASE_NAME</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">python-2017-04-12</span>
-    <span class="nt">RELEASE_TYPE</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">py27</span>
-    <span class="nt">RELEASE_DIR</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/var/python27</span>
-    <span class="nt">PKGS_BASE</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/var/python27/pkgs</span>
-    <span class="nt">PYTHON_ENV</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">python27</span>
-    <span class="nt">PYTHON_HOME</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/var/python27/python27</span>
-    <span class="nt">PYTHON</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/var/python27/python27/bin</span>
-    <span class="nt">LIBPATH</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/var/python27/python27/lib:${LIBPATH}</span>
-    <span class="nt">FFI_LIB</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/var/python27/python27/lib/ffi</span>
-    <span class="nt">TERMINFO</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/var/python27/python27/share/terminfo</span>
-    <span class="nt">PKG_CONFIG_PATH</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/var/python27/python27/share/pkgconfig:/var/python27/python27/lib/pkgconfig</span>
-    <span class="nt">CURL_CA_BUNDLE</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/var/python27/python27/etc/ssl/cacert.pem</span>
-    <span class="c1"># environment variables for mvsutils/mvscmd</span>
-    <span class="nt">_</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/hsstools/bin/env</span>
-    <span class="nt">_BPXK_AUTOCVT</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ON</span>
-    <span class="c1"># * ensure quotations are provided correctly where needed!!</span>
-    <span class="nt">_CEE_RUNOPTS</span><span class="p">:</span> <span class="s">&#39;&quot;FILETAG(AUTOCVT,AUTOTAG)</span><span class="nv"> </span><span class="s">POSIX(ON)&quot;&#39;</span>
-    <span class="nt">_TAG_REDIR_ERR</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">txt</span>
-    <span class="nt">_TAG_REDIR_IN</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">txt</span>
-    <span class="nt">_TAG_REDIR_OUT</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">txt</span>
-    <span class="nt">TOOLS_ROOT</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/hsstools</span>
-    <span class="nt">GIT_SHELL</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/hsstools/bin/bash</span>
-    <span class="nt">GIT_EXEC_PATH</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/hsstools/git-2.14.4/libexec/git-core</span>
-    <span class="nt">GIT_TEMPLATE_DIR</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/hsstools/git-2.14.4/share/git-core/templates</span>
-    <span class="nt">PATH</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/hsstools/git-2.14.4/bin:/bin:/var/bin:/usr/lpp/java/J8.0/bin:/var/python27/python-2017-04-12-py27/python27/bin</span>
-    <span class="c1"># Java environment</span>
-    <span class="nt">JAVA_HOME</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/usr/lpp/java/J8.0_64</span>
+  <span class="nt">_BPXK_AUTOCVT</span><span class="p">:</span> <span class="s">&quot;ON&quot;</span>
+  <span class="nt">_CEE_RUNOPTS</span><span class="p">:</span> <span class="s">&quot;&#39;FILETAG(AUTOCVT,AUTOTAG)</span><span class="nv"> </span><span class="s">POSIX(ON)&#39;&quot;</span>
+  <span class="nt">_TAG_REDIR_ERR</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">txt</span>
+  <span class="nt">_TAG_REDIR_IN</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">txt</span>
+  <span class="nt">_TAG_REDIR_OUT</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">txt</span>
+  <span class="nt">LANG</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">C</span>
+  <span class="nt">ZOAU_ROOT</span><span class="p">:</span> <span class="s">&quot;/usr/lpp/IBM/zoautil&quot;</span>
+  <span class="nt">ZOAU_HOME</span><span class="p">:</span> <span class="s">&quot;/usr/lpp/IBM/zoautil&quot;</span>
+  <span class="nt">LIBPATH</span><span class="p">:</span> <span class="s">&quot;/usr/lpp/IBM/zoautil/lib:/usr/lpp/IBM/cyp/v3r8/pyz/lib:/lib:/usr/lib:.&quot;</span>
+  <span class="nt">ZOAUTIL_DIR</span><span class="p">:</span> <span class="s">&quot;/usr/lpp/IBM/zoautil&quot;</span>
+  <span class="nt">PYTHONPATH</span><span class="p">:</span> <span class="s">&quot;/usr/lpp/IBM/zoautil/lib&quot;</span>
+  <span class="nt">PATH</span><span class="p">:</span> <span class="s">&quot;/usr/lpp/IBM/zoautil/bin:/usr/lpp/IBM/cyp/v3r8/pyz/bin:/bin:/var/bin&quot;</span>
 </pre></div>
 </div>
 </div>
@@ -774,12 +771,13 @@ Assuming the absolute path of the YAML configuration file is
 <div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
     <span class="rst-current-version" data-toggle="rst-current-version">
         <span class="fa fa-book"> Other Versions</span>
-        v: v1.1.0
+        v: v1.2.0-beta.1
         <span class="fa fa-caret-down"></span>
     </span>
     <div class="rst-other-versions">
         <dl>
             <dt>Tags</dt>
+            <dd><a href="../v1.2.0-beta.1/community_guides_docs/zos_ansible_module_testing.html">v1.2.0-beta.1</a></dd>
             <dd><a href="../v1.1.0/community_guides_docs/zos_ansible_module_testing.html">v1.1.0</a></dd>
             <dd><a href="../v1.1.0-beta1/index.html">v1.1.0-beta1</a></dd>
             <dd><a href="../v1.0.0/index.html">v1.0.0</a></dd>

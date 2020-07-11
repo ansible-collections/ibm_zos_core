@@ -36,7 +36,7 @@
   <link rel="stylesheet" href="_static/banner.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="zos_data_set – Manage data sets" href="modules/zos_data_set.html" />
+    <link rel="next" title="zos_copy – Copy data to z/OS" href="modules/zos_copy.html" />
     <link rel="prev" title="Plugins" href="plugins.html" /> 
 </head>
 
@@ -91,12 +91,15 @@
 <li class="toctree-l1"><a class="reference internal" href="plugins.html">Plugins</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Modules</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#module-reference">Module reference</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules/zos_copy.html">zos_copy – Copy data to z/OS</a></li>
 <li class="toctree-l3"><a class="reference internal" href="modules/zos_data_set.html">zos_data_set – Manage data sets</a></li>
 <li class="toctree-l3"><a class="reference internal" href="modules/zos_encode.html">zos_encode – Perform encoding operations.</a></li>
 <li class="toctree-l3"><a class="reference internal" href="modules/zos_fetch.html">zos_fetch – Fetch data from z/OS</a></li>
 <li class="toctree-l3"><a class="reference internal" href="modules/zos_job_output.html">zos_job_output – Display job output</a></li>
 <li class="toctree-l3"><a class="reference internal" href="modules/zos_job_query.html">zos_job_query – Query job status</a></li>
 <li class="toctree-l3"><a class="reference internal" href="modules/zos_job_submit.html">zos_job_submit – Submit JCL</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules/zos_lineinfile.html">zos_lineinfile – Manage textual data on z/OS</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules/zos_mvs_raw.html">zos_mvs_raw – Run a z/OS program.</a></li>
 <li class="toctree-l3"><a class="reference internal" href="modules/zos_operator.html">zos_operator – Execute operator command</a></li>
 <li class="toctree-l3"><a class="reference internal" href="modules/zos_operator_action_query.html">zos_operator_action_query – Display messages requiring action</a></li>
 <li class="toctree-l3"><a class="reference internal" href="modules/zos_ping.html">zos_ping – Ping z/OS and check dependencies.</a></li>
@@ -174,7 +177,7 @@
         
             
             
-              <a href="https://github.com/ansible-collections/ibm_zos_core/blob/v1.1.0/docs/source/modules.rst" class="fa fa-github"> Edit on GitHub</a>
+              <a href="https://github.com/ansible-collections/ibm_zos_core/blob/v1.2.0-beta.1/docs/source/modules.rst" class="fa fa-github"> Edit on GitHub</a>
             
           
         
@@ -207,12 +210,15 @@ parameters and their expected values.</p>
 <div class="toctree-wrapper compound">
 <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul>
+<li class="toctree-l1"><a class="reference internal" href="modules/zos_copy.html">zos_copy – Copy data to z/OS</a></li>
 <li class="toctree-l1"><a class="reference internal" href="modules/zos_data_set.html">zos_data_set – Manage data sets</a></li>
 <li class="toctree-l1"><a class="reference internal" href="modules/zos_encode.html">zos_encode – Perform encoding operations.</a></li>
 <li class="toctree-l1"><a class="reference internal" href="modules/zos_fetch.html">zos_fetch – Fetch data from z/OS</a></li>
 <li class="toctree-l1"><a class="reference internal" href="modules/zos_job_output.html">zos_job_output – Display job output</a></li>
 <li class="toctree-l1"><a class="reference internal" href="modules/zos_job_query.html">zos_job_query – Query job status</a></li>
 <li class="toctree-l1"><a class="reference internal" href="modules/zos_job_submit.html">zos_job_submit – Submit JCL</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules/zos_lineinfile.html">zos_lineinfile – Manage textual data on z/OS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules/zos_mvs_raw.html">zos_mvs_raw – Run a z/OS program.</a></li>
 <li class="toctree-l1"><a class="reference internal" href="modules/zos_operator.html">zos_operator – Execute operator command</a></li>
 <li class="toctree-l1"><a class="reference internal" href="modules/zos_operator_action_query.html">zos_operator_action_query – Display messages requiring action</a></li>
 <li class="toctree-l1"><a class="reference internal" href="modules/zos_ping.html">zos_ping – Ping z/OS and check dependencies.</a></li>
@@ -230,7 +236,7 @@ parameters and their expected values.</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="modules/zos_data_set.html" class="btn btn-neutral float-right" title="zos_data_set – Manage data sets" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="modules/zos_copy.html" class="btn btn-neutral float-right" title="zos_copy – Copy data to z/OS" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
         <a href="plugins.html" class="btn btn-neutral float-left" title="Plugins" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
@@ -260,12 +266,13 @@ parameters and their expected values.</p>
 <div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
     <span class="rst-current-version" data-toggle="rst-current-version">
         <span class="fa fa-book"> Other Versions</span>
-        v: v1.1.0
+        v: v1.2.0-beta.1
         <span class="fa fa-caret-down"></span>
     </span>
     <div class="rst-other-versions">
         <dl>
             <dt>Tags</dt>
+            <dd><a href="v1.2.0-beta.1/modules.html">v1.2.0-beta.1</a></dd>
             <dd><a href="v1.1.0/modules.html">v1.1.0</a></dd>
             <dd><a href="v1.1.0-beta1/modules.html">v1.1.0-beta1</a></dd>
             <dd><a href="v1.0.0/modules.html">v1.0.0</a></dd>

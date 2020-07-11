@@ -91,6 +91,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../plugins.html">Plugins</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../modules.html">Modules</a><ul class="current">
 <li class="toctree-l2 current"><a class="reference internal" href="../modules.html#module-reference">Module reference</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="zos_copy.html">zos_copy – Copy data to z/OS</a></li>
 <li class="toctree-l3"><a class="reference internal" href="zos_data_set.html">zos_data_set – Manage data sets</a></li>
 <li class="toctree-l3"><a class="reference internal" href="zos_encode.html">zos_encode – Perform encoding operations.</a></li>
 <li class="toctree-l3 current"><a class="current reference internal" href="#">zos_fetch – Fetch data from z/OS</a><ul>
@@ -105,6 +106,8 @@
 <li class="toctree-l3"><a class="reference internal" href="zos_job_output.html">zos_job_output – Display job output</a></li>
 <li class="toctree-l3"><a class="reference internal" href="zos_job_query.html">zos_job_query – Query job status</a></li>
 <li class="toctree-l3"><a class="reference internal" href="zos_job_submit.html">zos_job_submit – Submit JCL</a></li>
+<li class="toctree-l3"><a class="reference internal" href="zos_lineinfile.html">zos_lineinfile – Manage textual data on z/OS</a></li>
+<li class="toctree-l3"><a class="reference internal" href="zos_mvs_raw.html">zos_mvs_raw – Run a z/OS program.</a></li>
 <li class="toctree-l3"><a class="reference internal" href="zos_operator.html">zos_operator – Execute operator command</a></li>
 <li class="toctree-l3"><a class="reference internal" href="zos_operator_action_query.html">zos_operator_action_query – Display messages requiring action</a></li>
 <li class="toctree-l3"><a class="reference internal" href="zos_ping.html">zos_ping – Ping z/OS and check dependencies.</a></li>
@@ -223,10 +226,10 @@
 <h2><a class="toc-backref" href="#id1">Synopsis</a><a class="headerlink" href="#synopsis" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
 <li><p>This module fetches a UNIX System Services (USS) file, PS(sequential data set), PDS, PDSE, member of a PDS or PDSE, or KSDS(VSAM data set) from a remote z/OS system.</p></li>
-<li><p>In the case of a PDS or PDSE member, the destination will be the same as the dest parameter. When fetching a member, destination will be a file.</p></li>
 <li><p>When fetching a sequential data set, the destination file name will be the same as the data set name.</p></li>
 <li><p>When fetching a PDS or PDSE, the destination will be a directory with the same name as the PDS or PDSE.</p></li>
-<li><p>Files that already exist at dest will be overwritten if they are different than the src.</p></li>
+<li><p>When fetching a PDS/PDSE member, destination will be a file.</p></li>
+<li><p>Files that already exist at <code class="docutils literal notranslate"><span class="pre">dest</span></code> will be overwritten if they are different than <code class="docutils literal notranslate"><span class="pre">src</span></code>.</p></li>
 </ul>
 </div>
 <div class="section" id="parameters">
@@ -246,14 +249,14 @@
 </div>
 <dl>
 <dt>from</dt><dd><p>The character set of the source <em>src</em>.</p>
-<p>Supported character sets rely on the target version; the most common character sets are supported.</p>
+<p>Supported character sets rely on the charset conversion utility (iconv) version; the most common character sets are supported.</p>
 <div class="line-block">
 <div class="line"><strong>required</strong>: True</div>
 <div class="line"><strong>type</strong>: str</div>
 </div>
 </dd>
 <dt>to</dt><dd><p>The destination <em>dest</em> character set for the output to be written as.</p>
-<p>Supported character sets rely on the target version; the most common character sets are supported.</p>
+<p>Supported character sets rely on the charset conversion utility (iconv) version; the most common character sets are supported.</p>
 <div class="line-block">
 <div class="line"><strong>required</strong>: True</div>
 <div class="line"><strong>type</strong>: str</div>
@@ -545,12 +548,13 @@
 <div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
     <span class="rst-current-version" data-toggle="rst-current-version">
         <span class="fa fa-book"> Other Versions</span>
-        v: v1.1.0
+        v: v1.2.0-beta.1
         <span class="fa fa-caret-down"></span>
     </span>
     <div class="rst-other-versions">
         <dl>
             <dt>Tags</dt>
+            <dd><a href="../v1.2.0-beta.1/modules/zos_fetch.html">v1.2.0-beta.1</a></dd>
             <dd><a href="../v1.1.0/modules/zos_fetch.html">v1.1.0</a></dd>
             <dd><a href="../v1.1.0-beta1/modules/zos_fetch.html">v1.1.0-beta1</a></dd>
             <dd><a href="../v1.0.0/index.html">v1.0.0</a></dd>

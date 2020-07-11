@@ -91,6 +91,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../plugins.html">Plugins</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../modules.html">Modules</a><ul class="current">
 <li class="toctree-l2 current"><a class="reference internal" href="../modules.html#module-reference">Module reference</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="zos_copy.html">zos_copy – Copy data to z/OS</a></li>
 <li class="toctree-l3"><a class="reference internal" href="zos_data_set.html">zos_data_set – Manage data sets</a></li>
 <li class="toctree-l3 current"><a class="current reference internal" href="#">zos_encode – Perform encoding operations.</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#synopsis">Synopsis</a></li>
@@ -104,6 +105,8 @@
 <li class="toctree-l3"><a class="reference internal" href="zos_job_output.html">zos_job_output – Display job output</a></li>
 <li class="toctree-l3"><a class="reference internal" href="zos_job_query.html">zos_job_query – Query job status</a></li>
 <li class="toctree-l3"><a class="reference internal" href="zos_job_submit.html">zos_job_submit – Submit JCL</a></li>
+<li class="toctree-l3"><a class="reference internal" href="zos_lineinfile.html">zos_lineinfile – Manage textual data on z/OS</a></li>
+<li class="toctree-l3"><a class="reference internal" href="zos_mvs_raw.html">zos_mvs_raw – Run a z/OS program.</a></li>
 <li class="toctree-l3"><a class="reference internal" href="zos_operator.html">zos_operator – Execute operator command</a></li>
 <li class="toctree-l3"><a class="reference internal" href="zos_operator_action_query.html">zos_operator_action_query – Display messages requiring action</a></li>
 <li class="toctree-l3"><a class="reference internal" href="zos_ping.html">zos_ping – Ping z/OS and check dependencies.</a></li>
@@ -251,7 +254,7 @@
 </div>
 </dd>
 <dt>dest</dt><dd><p>The location where the converted characters are output.</p>
-<p>The destination <em>dest</em> can be a UNIX System Services (USS) file or path, PS(sequential data set), member of a PDS or PDSE, PDS, PDSE or KSDS(VSAM data set).</p>
+<p>The destination <em>dest</em> can be a UNIX System Services (USS) file or path, PS(sequential data set), PDS, PDSE, member of a PDS or PDSE, or KSDS(VSAM data set).</p>
 <p>If the length of the PDSE member name used in <em>dest</em> is greater than 8 characters, the member name will be truncated when written out.</p>
 <p>If <em>dest</em> is not specified, the <em>src</em> will be used as the destination and will overwrite the <em>src</em> with the character set in the option <em>to_encoding</em>.</p>
 <p>The USS file or path must be an absolute pathname.</p>
@@ -261,24 +264,23 @@
 </div>
 </dd>
 <dt>from_encoding</dt><dd><p>The character set of the source <em>src</em>.</p>
-<p>Supported character sets rely on the target version; the most common character sets are supported.</p>
+<p>Supported character sets rely on the charset conversion utility (iconv) version; the most common character sets are supported.</p>
 <div class="line-block">
 <div class="line"><strong>required</strong>: False</div>
 <div class="line"><strong>type</strong>: str</div>
 <div class="line"><strong>default</strong>: IBM-1047</div>
 </div>
 </dd>
-<dt>src</dt><dd><p>The location of the input characters.</p>
-<p>The location can be a UNIX System Services (USS) file or path, PS(sequential data set), member of a PDS or PDSE, PDS, PDSE, or KSDS(VSAM data set).</p>
+<dt>src</dt><dd><p>The location can be a UNIX System Services (USS) file or path, PS(sequential data set), PDS, PDSE, member of a PDS or PDSE, or KSDS(VSAM data set).</p>
 <p>The USS path or file must be an absolute pathname.</p>
-<p>If <em>src</em> is a USS directory, all files will be encoded. It is the playbook author or user’s responsibility to avoid files that should not be encoded, such as binary files. A user is described as the remote user, configured either for the playbook or playbook tasks, who can also obtain escalated privileges to execute as root or another user.</p>
+<p>If <em>src</em> is a USS directory, all files will be encoded.</p>
 <div class="line-block">
 <div class="line"><strong>required</strong>: True</div>
 <div class="line"><strong>type</strong>: str</div>
 </div>
 </dd>
 <dt>to_encoding</dt><dd><p>The destination <em>dest</em> character set for the output to be written as.</p>
-<p>Supported character sets rely on the target version; the most common character sets are supported.</p>
+<p>Supported character sets rely on the charset conversion utility (iconv) version; the most common character sets are supported.</p>
 <div class="line-block">
 <div class="line"><strong>required</strong>: False</div>
 <div class="line"><strong>type</strong>: str</div>
@@ -404,6 +406,7 @@
 <h2><a class="toc-backref" href="#id4">Notes</a><a class="headerlink" href="#notes" title="Permalink to this headline">¶</a></h2>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
+<p>It is the playbook author or user’s responsibility to avoid files that should not be encoded, such as binary files. A user is described as the remote user, configured either for the playbook or playbook tasks, who can also obtain escalated privileges to execute as root or another user.</p>
 <p>All data sets are always assumed to be cataloged. If an uncataloged data set needs to be encoded, it should be cataloged first.</p>
 <p>For supported character sets used to encode data, refer to <a class="reference external" href="https://ansible-collections.github.io/ibm_zos_core/supplementary.html#encode">https://ansible-collections.github.io/ibm_zos_core/supplementary.html#encode</a></p>
 </div>
@@ -480,12 +483,13 @@
 <div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
     <span class="rst-current-version" data-toggle="rst-current-version">
         <span class="fa fa-book"> Other Versions</span>
-        v: v1.1.0
+        v: v1.2.0-beta.1
         <span class="fa fa-caret-down"></span>
     </span>
     <div class="rst-other-versions">
         <dl>
             <dt>Tags</dt>
+            <dd><a href="../v1.2.0-beta.1/modules/zos_encode.html">v1.2.0-beta.1</a></dd>
             <dd><a href="../v1.1.0/modules/zos_encode.html">v1.1.0</a></dd>
             <dd><a href="../v1.1.0-beta1/modules/zos_encode.html">v1.1.0-beta1</a></dd>
             <dd><a href="../v1.0.0/index.html">v1.0.0</a></dd>

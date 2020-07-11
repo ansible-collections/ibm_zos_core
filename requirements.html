@@ -165,7 +165,7 @@
         
             
             
-              <a href="https://github.com/ansible-collections/ibm_zos_core/blob/v1.1.0/docs/source/requirements.rst" class="fa fa-github"> Edit on GitHub</a>
+              <a href="https://github.com/ansible-collections/ibm_zos_core/blob/v1.2.0-beta.1/docs/source/requirements.rst" class="fa fa-github"> Edit on GitHub</a>
             
           
         
@@ -207,8 +207,7 @@ enabled.</p>
 <ul>
 <li><p><a class="reference external" href="http://www.ibm.com/products/open-enterprise-python-zos">IBM Open Enterprise Python for z/OS</a></p></li>
 <li><p>z/OS <a class="reference external" href="https://www.ibm.com/support/knowledgecenter/SSLTBW_2.3.0/com.ibm.zos.v2r3/en/homepage.html">V2R3</a> or <a class="reference external" href="https://www.ibm.com/support/knowledgecenter/SSLTBW">later</a></p></li>
-<li><p><a class="reference external" href="requirements.html#id1">IBM Z Open Automation Utilities</a> (ZOAU)</p></li>
-<li><p>The z/OS® shell</p>
+<li><p><a class="reference external" href="requirements.html#id1">IBM Z Open Automation Utilities</a> (ZOAU)</p>
 <blockquote>
 <div><ul class="simple">
 <li><p>IBM z/OS core collections are dependent on specific versions of ZOAU.
@@ -218,6 +217,7 @@ For information about the required version of ZOAU, review the
 </div></blockquote>
 </li>
 <li><p><a class="reference external" href="https://www.ibm.com/support/knowledgecenter/SSLTBW_2.2.0/com.ibm.zos.v2r2.e0za100/ch1openssh.htm">z/OS OpenSSH</a></p></li>
+<li><p>The z/OS® shell</p></li>
 </ul>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -256,6 +256,13 @@ instructions.</p></li>
 <li><p>Optionally download <strong>IBM Open Enterprise Python for z/OS</strong>, <a class="reference external" href="https://www-01.ibm.com/marketing/iwm/platform/mrs/assets?source=swg-ibmoep">here</a></p></li>
 <li><p>For the Python supported version, refer to the <a class="reference external" href="release_notes.html">release notes</a>.</p></li>
 </ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Currently, IBM Open Enterprise Python for z/OS is the supported and
+recommended Python distribution for use on z/OS with Ansible and ZOAU. If
+Rocket Python is the only available python on the target, review the
+<a class="reference external" href="playbooks.html#group-vars">recommended environment variables</a> for Rocket Python.</p>
+</div>
 </div>
 <div class="section" id="zoau">
 <h2>ZOAU<a class="headerlink" href="#zoau" title="Permalink to this headline">¶</a></h2>
@@ -316,12 +323,13 @@ latest PTF, installation and configuration instructions.</p></li>
 <div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
     <span class="rst-current-version" data-toggle="rst-current-version">
         <span class="fa fa-book"> Other Versions</span>
-        v: v1.1.0
+        v: v1.2.0-beta.1
         <span class="fa fa-caret-down"></span>
     </span>
     <div class="rst-other-versions">
         <dl>
             <dt>Tags</dt>
+            <dd><a href="v1.2.0-beta.1/requirements.html">v1.2.0-beta.1</a></dd>
             <dd><a href="v1.1.0/requirements.html">v1.1.0</a></dd>
             <dd><a href="v1.1.0-beta1/requirements.html">v1.1.0-beta1</a></dd>
             <dd><a href="v1.0.0/requirements.html">v1.0.0</a></dd>

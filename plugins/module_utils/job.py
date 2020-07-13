@@ -13,7 +13,9 @@ import re
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,
 )
-from ansible.module_utils.basic import AnsibleModule
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
+    AnsibleModuleHelper,
+)
 
 
 def job_output(job_id=None, owner=None, job_name=None, dd_name=None):
@@ -199,7 +201,7 @@ Parse Arg string
 Return translate(string, '4040'x, '1525'x)
 """
     try:
-        module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+        module = AnsibleModuleHelper(argument_spec={})
         if dd_name is None or dd_name == "?":
             dd_name = ""
         jobid_param = "jobid=" + job_id
@@ -328,6 +330,7 @@ do ix=1 to isfrows
     Say '"'||'job_id'||'":"'||value('JOBID'||"."||ix)||'",'
     Say '"'||'job_name'||'":"'||value('JNAME'||"."||ix)||'",'
     Say '"'||'subsystem'||'":"'||value('ESYSID'||"."||ix)||'",'
+    Say '"'||'system'||'":"'||value('SYSNAME'||"."||ix)||'",'
     Say '"'||'owner'||'":"'||value('OWNERID'||"."||ix)||'",'
     Say '"'||'ret_code'||'":{"'||'msg'||'":"'||value('RETCODE'||"."||ix)||'"},'
     Say '"'||'class'||'":"'||value('JCLASS'||"."||ix)||'",'
@@ -355,7 +358,7 @@ Parse Arg string
 Return translate(string, '4040'x, '1525'x)
 """
     try:
-        module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+        module = AnsibleModuleHelper(argument_spec={})
         jobid_param = "jobid=" + job_id
         owner_param = "owner=" + owner
         jobname_param = "jobname=" + job_name

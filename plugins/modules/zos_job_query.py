@@ -161,7 +161,6 @@ def run_module():
         validate_arguments(module.params)
         jobs_raw = query_jobs(module.params)
         jobs = parsing_jobs(jobs_raw)
-
     except Exception as e:
         module.fail_json(msg=e, **result)
     result["jobs"] = jobs
@@ -243,6 +242,8 @@ def parsing_jobs(jobs_raw):
             "job_name": job.get("job_name"),
             "owner": job.get("owner"),
             "job_id": job.get("job_id"),
+            "system": job.get("system"),
+            "subsystem": job.get("subsystem"),
             "ret_code": ret_code,
         }
         jobs.append(job_dict)

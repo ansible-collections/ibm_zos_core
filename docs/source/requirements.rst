@@ -36,12 +36,13 @@ Managed node
 * `IBM Open Enterprise Python for z/OS`_
 * z/OS `V2R3`_ or `later`_
 * `IBM Z Open Automation Utilities`_ (ZOAU)
-* The z/OS® shell
 
    * IBM z/OS core collections are dependent on specific versions of ZOAU.
      For information about the required version of ZOAU, review the
      `release notes`_.
+
 * `z/OS OpenSSH`_
+* The z/OS® shell
 
 .. note::
    Currently, the only supported shell is the ``z/OS® shell``; this is because
@@ -103,7 +104,17 @@ and required by **IBM z/OS core Collection**.
    http://www.ibm.com/products/open-enterprise-python-zos
 
 .. _here:
-   ftp://public.dhe.ibm.com/systems/pythonz
+   https://www-01.ibm.com/marketing/iwm/platform/mrs/assets?source=swg-ibmoep
+
+.. note::
+
+   Currently, IBM Open Enterprise Python for z/OS is the supported and
+   recommended Python distribution for use on z/OS with Ansible and ZOAU. If
+   Rocket Python is the only available python on the target, review the
+   `recommended environment variables`_ for Rocket Python.
+
+.. _recommended environment variables:
+   playbooks.html#group-vars
 
 ZOAU
 ----

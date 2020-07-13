@@ -12,7 +12,7 @@ zos_job_query -- Query job status
 .. contents::
    :local:
    :depth: 1
-   
+
 
 Synopsis
 --------
@@ -29,7 +29,6 @@ Parameters
 ----------
 
 
- 
      
 job_id
   The job number that has been assigned to the job. These normally begin with STC, JOB, TSU and are followed by 5 digits.
@@ -39,7 +38,6 @@ job_id
   | **type**: str
 
 
- 
      
 job_name
   The job name to query.
@@ -50,7 +48,6 @@ job_name
   | **default**: *
 
 
- 
      
 owner
   Identifies the owner of the job.
@@ -99,122 +96,102 @@ Examples
 Return Values
 -------------
 
+
+   
+                              
+       changed
+        | True if the state was changed, otherwise False.
+      
+        | **returned**: always
+        | **type**: bool
+      
       
                               
-         changed
-            | True if the state was changed, otherwise False.
+       jobs
+        | The list of z/OS job(s) and status.
       
-            | **returned**: always
-            
-            | **type**: bool
+        | **returned**: success
+        | **type**: list      
+        | **sample**:
 
-      
-      
-         
-                              
-         jobs
-            | The list of z/OS job(s) and status.
-      
-            | **returned**: success
-            
-            | **type**: list
-
-            
-            **sample**: ::
+              .. code-block::
 
                        [{"job_id": "JOB01427", "job_name": "IYK3ZNA1", "owner": "BROWNAD", "ret_code": "null"}, {"job_id": "JOB16577", "job_name": "IYK3ZNA2", "owner": "BROWNAD", "ret_code": {"code": "null", "msg": "CANCELED"}}]
             
-                    
+              
+   
                               
-          job_name
-              | The name of the batch job.
+        job_name
+          | The name of the batch job.
       
-            
-              | **type**: str
-
-                  
-              | **sample**: IYK3ZNA2
-      
-            
-      
-         
-                              
-          owner
-              | The owner who ran the job.
-      
-            
-              | **type**: str
-
-                  
-              | **sample**: BROWNAD
-      
-            
-      
-         
-                              
-          job_id
-              | Unique job id assigned to the job by JES.
-      
-            
-              | **type**: str
-
-                  
-              | **sample**: JOB01427
-      
-            
-      
-         
-                              
-          ret_code
-              | Return code output collected from job log.
-      
-            
-              | **type**: dict
+          | **type**: str
+          | **sample**: IYK3ZNA2
 
             
-              **sample**: ::
+      
+      
+                              
+        owner
+          | The owner who ran the job.
+      
+          | **type**: str
+          | **sample**: BROWNAD
+
+            
+      
+      
+                              
+        job_id
+          | Unique job id assigned to the job by JES.
+      
+          | **type**: str
+          | **sample**: JOB01427
+
+            
+      
+      
+                              
+        ret_code
+          | Return code output collected from job log.
+      
+          | **type**: dict      
+          | **sample**:
+
+              .. code-block::
 
                        [{"code": 0}, {"msg": "CC 0000"}]
             
-                    
+              
+   
                               
-           msg
-                | Return code or abend resulting from the job submission.
+         msg
+            | Return code or abend resulting from the job submission.
       
-            
-                | **type**: str
-
-                  
-                | **sample**: CC 0000
-      
-            
-      
-         
-                              
-           code
-                | Return code converted to integer value (when possible).
-      
-            
-                | **type**: int
-
-      
-      
-        
-      
-        
-      
-         
-                              
-         message
-            | Message returned on failure.
-      
-            | **returned**: failure
-            
             | **type**: str
+            | **sample**: CC 0000
 
-                  
-            | **sample**: {'msg': 'List FAILED! no such job been found: IYK3Z0R9'}
+            
       
+      
+                              
+         code
+            | Return code converted to integer value (when possible).
+      
+            | **type**: int
+      
+        
+      
+        
+      
+      
+                              
+       message
+        | Message returned on failure.
+      
+        | **returned**: failure
+        | **type**: str
+        | **sample**: {'msg': 'List FAILED! no such job been found: IYK3Z0R9'}
+
             
       
         

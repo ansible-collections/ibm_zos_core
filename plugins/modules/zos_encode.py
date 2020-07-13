@@ -246,6 +246,9 @@ import re
 from os import path, makedirs
 from ansible.module_utils.six import PY3
 from ansible.module_utils.basic import AnsibleModule
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
+    AnsibleModuleHelper,
+)
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser,
     data_set,
@@ -282,16 +285,14 @@ def check_mvs_dataset(ds):
     """ To call data_set utils to check if the MVS data set exists or not """
     check_rc = False
     ds_type = None
-    module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
-    du = data_set.DataSetUtils(ds)
-    if not du.exists():
+    if not data_set.DataSet.data_set_exists(ds):
         raise EncodeError(
             "Data set {0} is not cataloged, please check data set provided in"
             "the src option.".format(ds)
         )
     else:
         check_rc = True
-        ds_type = du.ds_type()
+        ds_type = data_set.DataSetUtils(ds).ds_type()
         if not ds_type:
             raise EncodeError("Unable to determine data set type of {0}".format(ds))
     return check_rc, ds_type

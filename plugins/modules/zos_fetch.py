@@ -23,14 +23,13 @@ description:
   - This module fetches a UNIX System Services (USS) file,
     PS(sequential data set), PDS, PDSE, member of a PDS or PDSE, or
     KSDS(VSAM data set) from a remote z/OS system.
-  - In the case of a PDS or PDSE member, the destination will be the same as
-    the dest parameter. When fetching a member, destination will be a file.
   - When fetching a sequential data set, the destination file name will be the
     same as the data set name.
   - When fetching a PDS or PDSE, the destination will be a directory with the
     same name as the PDS or PDSE.
-  - Files that already exist at dest will be overwritten if they are different
-    than the src.
+  - When fetching a PDS/PDSE member, destination will be a file.
+  - Files that already exist at C(dest) will be overwritten if they are different
+    than C(src).
 author: "Asif Mahmud (@asifmahmud)"
 options:
   src:
@@ -311,14 +310,14 @@ class FetchHandler:
 
     def _copy_vsam_to_temp_data_set(self, ds_name):
         """ Copy VSAM data set to a temporary sequential data set """
-        check_rc = 0
         mvs_rc = 0
         vsam_size = self._get_vsam_size(ds_name)
+        sysprint = sysin = out_ds_name = None
         try:
-            sysin = data_set.DataSetUtils.create_temp_data_set("SYSIN")
-            sysprint = data_set.DataSetUtils.create_temp_data_set("SYSPRINT")
-            out_ds_name = data_set.DataSetUtils.create_temp_data_set(
-                "VSM", size="{0}K".format(vsam_size)
+            sysin = data_set.DataSet.create_temp("MVSTMP")
+            sysprint = data_set.DataSet.create_temp("MVSTMP")
+            out_ds_name = data_set.DataSet.create_temp(
+                "MSVTMP", space_primary=vsam_size, space_type="K"
             )
             repro_sysin = " REPRO INFILE(INPUT)  OUTFILE(OUTPUT) "
             Datasets.write(sysin, repro_sysin)

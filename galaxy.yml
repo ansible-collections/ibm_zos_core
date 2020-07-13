@@ -6,7 +6,7 @@ namespace: ibm
 name: ibm_zos_core
 
 # The collection version
-version: 1.1.0-beta1
+version: 1.2.0-beta.1
 
 # Collection README file
 readme: README.md
@@ -50,7 +50,7 @@ tags:
   ]
 
 # Collections that this collection requires to be installed for it to be usable.
-# dependencies: { # This collection depends on no other collections # } 
+# dependencies: { # This collection depends on no other collections # }
 
 # The URL of the originating SCM repository
 repository: https://github.com/ansible-collections/ibm_zos_core

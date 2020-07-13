@@ -12,7 +12,7 @@ zos_operator_action_query -- Display messages requiring action
 .. contents::
    :local:
    :depth: 1
-   
+
 
 Synopsis
 --------
@@ -26,7 +26,6 @@ Parameters
 ----------
 
 
- 
      
 job_name
   Return outstanding messages requiring operator action awaiting a reply for a particular job name.
@@ -40,7 +39,6 @@ job_name
   | **type**: str
 
 
- 
      
 message_id
   Return outstanding messages requiring operator action awaiting a reply for a particular message identifier.
@@ -54,7 +52,6 @@ message_id
   | **type**: str
 
 
- 
      
 system
   Return outstanding messages requiring operator action awaiting a reply for a particular system.
@@ -111,141 +108,115 @@ See Also
 Return Values
 -------------
 
+
+   
+                              
+       changed
+        | Indicates if any changes were made during module operation. Given operator action commands query for messages, True is always returned unless either a module or command failure has occurred.
+      
+        | **returned**: always
+        | **type**: bool
+      
       
                               
-         changed
-            | Indicates if any changes were made during module operation. Given operator action commands query for messages, True is always returned unless either a module or command failure has occurred.
+       count
+        | The total number of outstanding messages.
       
-            | **returned**: always
-            
-            | **type**: bool
+        | **returned**: on success
+        | **type**: int
+        | **sample**: 12
 
+            
       
       
-         
                               
-         count
-            | The total number of outstanding messages.
+       actions
+        | The list of the outstanding messages.
       
-            | **returned**: on success
-            
-            | **type**: int
+        | **returned**: success
+        | **type**: list      
+        | **sample**:
 
-                  
-            | **sample**: 12
-      
-            
-      
-         
-                              
-         actions
-            | The list of the outstanding messages.
-      
-            | **returned**: success
-            
-            | **type**: list
-
-            
-            **sample**: ::
+              .. code-block::
 
                        [{"job_id": "STC01537", "job_name": "IM5HCONN", "message_id": "HWSC0000I", "message_text": "*399 HWSC0000I *IMS CONNECT READY* IM5HCONN", "number": "001", "system": "MV27", "type": "R"}, {"job_id": "STC01533", "job_name": "IM5HCTRL", "message_id": "DFS3139I", "message_text": "*400 DFS3139I IMS INITIALIZED, AUTOMATIC RESTART PROCEEDING IM5H", "number": "002", "system": "MV27", "type": "R"}]
             
-                    
+              
+   
                               
-          number
-              | The message identification number.
+        number
+          | The message identification number.
       
-              | **returned**: on success
-            
-              | **type**: int
+          | **returned**: on success
+          | **type**: int
+          | **sample**: 1
 
-                  
-              | **sample**: 1
-      
             
       
-         
+      
                               
-          type
-              | The action type,'R' means request.
+        type
+          | The action type,'R' means request.
       
-              | **returned**: on success
-            
-              | **type**: str
+          | **returned**: on success
+          | **type**: str
+          | **sample**: R
 
-                  
-              | **sample**: R
-      
             
       
-         
+      
                               
-          system
-              | System on which the outstanding message requiring operator action awaiting a reply.
+        system
+          | System on which the outstanding message requiring operator action awaiting a reply.
       
-              | **returned**: on success
-            
-              | **type**: str
+          | **returned**: on success
+          | **type**: str
+          | **sample**: MV27
 
-                  
-              | **sample**: MV27
-      
             
       
-         
+      
                               
-          job_id
-              | Job identifier for the outstanding message requiring operator action awaiting a reply.
+        job_id
+          | Job identifier for the outstanding message requiring operator action awaiting a reply.
       
-              | **returned**: on success
-            
-              | **type**: str
+          | **returned**: on success
+          | **type**: str
+          | **sample**: STC01537
 
-                  
-              | **sample**: STC01537
-      
             
       
-         
+      
                               
-          message_text
-              | Job identifier for outstanding message requiring operator action awaiting a reply.
+        message_text
+          | Job identifier for outstanding message requiring operator action awaiting a reply.
       
-              | **returned**: success
-            
-              | **type**: str
+          | **returned**: success
+          | **type**: str
+          | **sample**: *399 HWSC0000I *IMS CONNECT READY* IM5HCONN
 
-                  
-              | **sample**: *399 HWSC0000I *IMS CONNECT READY* IM5HCONN
-      
             
       
-         
+      
                               
-          job_name
-              | Job name for outstanding message requiring operator action awaiting a reply.
+        job_name
+          | Job name for outstanding message requiring operator action awaiting a reply.
       
-              | **returned**: success
-            
-              | **type**: str
+          | **returned**: success
+          | **type**: str
+          | **sample**: IM5HCONN
 
-                  
-              | **sample**: IM5HCONN
-      
             
       
-         
+      
                               
-          message_id
-              | Message identifier for outstanding message requiring operator action awaiting a reply.
+        message_id
+          | Message identifier for outstanding message requiring operator action awaiting a reply.
       
-              | **returned**: success
-            
-              | **type**: str
+          | **returned**: success
+          | **type**: str
+          | **sample**: HWSC0000I
 
-                  
-              | **sample**: HWSC0000I
-      
             
       
         

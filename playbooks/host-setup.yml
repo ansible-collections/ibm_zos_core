@@ -1,0 +1,140 @@
+###############################################################################
+# Copyright (c) IBM Corporation 2020
+###############################################################################
+- hosts: all
+  gather_facts: no
+  vars:
+    # minimum_zoau_version only accepts integers and "."
+    minimum_zoau_version: 1.0.3
+
+  tasks:
+    - name: Gather potential dependency paths
+      raw: find / -level 15 -type f -perm -111 -name "python*" -o -type f -perm -111 -name "dtouch" 2>/dev/null
+      register: dependency_paths
+
+    - set_fact:
+        potential_paths: "{{ dependency_paths|potential_paths }}"
+
+    - name: Assert potential python installs were found
+      fail:
+        msg: No potential python installs were found.
+      when: potential_paths.get('python')|length == 0
+
+    - name: Assert potential ZOAU installs were found
+      fail:
+        msg: No potential ZOAU installs were found.
+      when: potential_paths.get('zoau')|length == 0
+
+    - debug:
+        var: potential_paths
+
+    - name: Find valid python installation
+      include_tasks:
+        file: "{{ playbook_dir }}/choose-python.yml"
+      loop: "{{ potential_paths.get('python', []) }}"
+
+    - name: Assert a valid python install was found
+      fail:
+        msg: No useable python installation was found
+      when: chosen_python is not defined
+
+    - name: Find valid ZOAU install
+      include_tasks:
+        file: "{{ playbook_dir }}/choose-zoau.yml"
+
+    - name: Assert a valid ZOAU install was found
+      fail:
+        msg: No ZOAU installation found meeting requirements.
+      when: chosen_zoau is not defined
+
+    - name: Create temporary file
+      tempfile:
+        state: file
+      register: tempfile_1
+      delegate_to: localhost
+
+    - block:
+        - name: Write to temporary file
+          template:
+            src: "{{ playbook_dir }}/templates/test-vars.j2"
+            dest: "{{ tempfile_1.path }}"
+          vars:
+            python_root: "{{ chosen_python.get('root') }}"
+            python_interpreter: "{{ chosen_python.get('interpreter') }}"
+            zoau_root: "{{ chosen_zoau.get('root') }}"
+          delegate_to: localhost
+
+        - name: Load variables from temp file
+          include_vars:
+            file: "{{ tempfile_1.path }}"
+
+        - name: Attempt to run zos_data_set using chosen dependency paths
+          ibm.ibm_zos_core.zos_data_set:
+            state: present
+          vars:
+            ansible_python_interpreter: "{{ chosen_python.get('interpreter') }}"
+          environment: "{{ environment_vars }}"
+          register: zos_data_set_response
+          failed_when: false
+
+        - name: Assert zos_data_set completed successfully
+          fail:
+            msg: "Generated config failed final test."
+          when: zos_data_set_response is not defined or zos_data_set_response.get('names', [])|length == 0
+
+      always:
+        - name: Remove temporary file
+          file:
+            path: "{{ tempfile_1.path }}"
+            state: absent
+          delegate_to: localhost
+          when: tempfile_1 is defined
+        - name: Remove temporary data set
+          ibm.ibm_zos_core.zos_data_set:
+            name: "{{ zos_data_set_response.get('names')[0] }}"
+            state: absent
+          vars:
+            ansible_python_interpreter: "{{ chosen_python.get('interpreter') }}"
+          environment: "{{ environment_vars }}"
+          when: zos_data_set_response is defined and zos_data_set_response.get('names', [])|length > 0
+
+    - name: Create host_vars directory if it does not already exist
+      file:
+        path: "{{ playbook_dir }}/host_vars"
+        state: directory
+      delegate_to: localhost
+
+    - name: Create host_vars file
+      template:
+        src: "{{ playbook_dir }}/templates/host-vars.j2"
+        dest: "{{ playbook_dir }}/host_vars/{{ inventory_hostname_short }}.yml"
+        force: yes
+        backup: yes
+      vars:
+        python_root: "{{ chosen_python.get('root') }}"
+        python_interpreter: "{{ chosen_python.get('interpreter') }}"
+        zoau_root: "{{ chosen_zoau.get('root') }}"
+      delegate_to: localhost
+
+    - set_fact:
+        target_user: "{{ ansible_user }}"
+
+    - set_fact:
+        target_host: "{{ ansible_host }}"
+
+    - name: Create inventory file
+      template:
+        src: "{{ playbook_dir }}/templates/inventory.j2"
+        dest: "{{ playbook_dir }}/{{ inventory_hostname_short }}"
+        force: yes
+        backup: yes
+      vars:
+        python_interpreter: "{{ chosen_python.get('interpreter') }}"
+      delegate_to: localhost
+
+    - debug:
+        var: potential_paths
+
+    - debug:
+        msg: "Inventory file placed at '{{ playbook_dir }}/{{ inventory_hostname_short }}', 
+        host_vars file placed at '{{ playbook_dir }}/host_vars/{{ inventory_hostname_short }}.yml'"

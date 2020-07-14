@@ -1,0 +1,18 @@
+###############################################################################
+# Copyright (c) IBM Corporation 2020
+###############################################################################
+- name: Get ZOAU build dates
+  raw: "{{ potential_paths | zoau_version_command_string }}"
+  register: zoau_build_dates
+
+- debug:
+    var: zoau_build_dates
+
+- name: Filter potential ZOAU options based on
+  set_fact:
+    filtered_zoau: "{{ potential_paths.get('zoau') | filter_zoau_installs(zoau_build_dates.get('stdout_lines'), minimum_zoau_version) }}"
+
+- name: Set ZOAU installation
+  set_fact:
+    chosen_zoau: "{{ filtered_zoau[0] }}"
+  when: filtered_zoau is defined and filtered_zoau|length > 0

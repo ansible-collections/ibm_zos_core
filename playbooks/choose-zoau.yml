@@ -2,7 +2,7 @@
 # Copyright (c) IBM Corporation 2020
 ###############################################################################
 - name: Get ZOAU build dates
-  raw: "{{ potential_paths | zoau_version_command_string }}"
+  raw: "{{ potential_paths | zoau_version_command_string }} 2>&1 || :"
   register: zoau_build_dates
 
 - debug:

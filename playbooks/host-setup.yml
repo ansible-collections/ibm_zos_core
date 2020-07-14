@@ -9,7 +9,7 @@
 
   tasks:
     - name: Gather potential dependency paths
-      raw: find / -level 15 -type f -perm -111 -name "python*" -o -type f -perm -111 -name "dtouch" 2>/dev/null
+      raw: 'find / -level 15 -type f -perm -111 -name "python*" -o -type f -perm -111 -name "dtouch" 2>/dev/null || :'
       register: dependency_paths
 
     - set_fact:

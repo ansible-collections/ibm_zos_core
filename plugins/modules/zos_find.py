@@ -4,6 +4,7 @@
 # Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
 from __future__ import (absolute_import, division, print_function)
+from re import search
 from typing import Pattern
 
 from ansible.module_utils.basic import AnsibleModule
@@ -159,10 +160,10 @@ data_sets:
     type: list
     sample: [
       { name: "SOME.DATA.SET",
-        members: [
+        members: \[
             "MEMBER1",
             "MEMBER2"
-        ]
+        \]
       },
       { name: "SAMPLE.DATA.SET"
       },
@@ -230,7 +231,22 @@ except Exception:
     types = MissingZOAUImport()
 
 
-def data_set_filter(module, patterns, content, excludes):
+def content_filter(module, patterns, content):
+    """ Find data sets that match any pattern in a list of patterns and
+    contains the given content
+
+    Arguments:
+        module {AnsibleModule} -- The Ansible module object being used in the module
+        patterns {list[str]} -- A list of data set patterns
+        content {str} -- The content string to search for within matched data sets
+
+    Returns:
+        dict[ps=set, pds=dict[str, str], searched=int] -- A dictionary containing 
+        a set of matched "PS" data sets, a dictionary containing "PDS" data sets
+        and members corresponding to each PDS, an int representing number of total
+        data sets examined.
+
+    """
     filtered_data_sets = dict(ps=set(), pds=dict(), searched=0)
     for pattern in patterns:
         rc, out, err = _dgrep_wrapper(pattern, content=content, verbose=True, ignore_case=True)
@@ -251,14 +267,42 @@ def data_set_filter(module, patterns, content, excludes):
                         filtered_data_sets['pds'][result[0]] = [result[1]]
                 else:
                     filtered_data_sets['ps'].add(result[0])
+    return filtered_data_sets
 
-    for ds in filtered_data_sets['ps'].union(set(filtered_data_sets['pds'].keys())):
-        for ex_pat in excludes:
-            if re.fullmatch(ex_pat, ds, re.IGNORECASE):
-                if ds in filtered_data_sets['ps']:
-                    filtered_data_sets['ps'].remove(ds)
-                else:
-                    filtered_data_sets['pds'].pop(ds)
+
+def data_set_filter(module, patterns):
+    """ Find data sets that match any pattern in a list of patterns.
+
+    Arguments:
+        module {AnsibleModule} -- The Ansible module object being used
+        patterns {list[str]} -- A list of data set patterns
+
+    Returns:
+        dict[ps=set, pds=dict[str, str], searched=int] -- A dictionary containing 
+        a set of matched "PS" data sets, a dictionary containing "PDS" data sets
+        and members corresponding to each PDS, an int representing number of total
+        data sets examined.
+
+    """
+    filtered_data_sets = dict(ps=set(), pds=dict(), searched=0)
+    for pattern in patterns:
+        rc, out, err = _dls_wrapper(pattern, list_details=True)
+        if rc != 0:
+            module.fail_json(
+                msg="Non-zero return code received while executing ZOAU shell command 'dls'",
+                rc=rc, stdout=out, stderr=err
+            )
+        for line in out.split("\n"):
+            result = line.split()
+            filtered_data_sets['searched'] += 1
+            if result[1] == "P0":
+                mls_rc, mls_out, mls_err = module.run_command("mls '{0}(*)'".format(result[0]))
+                if mls_rc == 2:
+                    filtered_data_sets["pds"][result[0]] = []
+                    continue
+                filtered_data_sets["pds"][result[0]] = mls_out.split("\n")
+            else:
+                filtered_data_sets["ps"].add(result[0])
     return filtered_data_sets
 
 
@@ -266,9 +310,21 @@ def data_set_filter(module, patterns, content, excludes):
 # Seems to be unavoidable due to the fact that each PDS could have multiple
 # matched members and each member needs to be compared against multiple member patterns.
 # Try to reduce the complexity to O(n^2) or less if possible.
-def pds_filter(pds_list, member_patterns):
+def pds_filter(pds_dict, member_patterns):
+    """ Return all PDS/PDSE data sets whose members match any of the patterns
+    in the given list of member patterns.
+
+    Arguments:
+        pds_dict {dict[str, str]} -- A dictionary where each key is the name of
+                                    of the PDS/PDSE and the value is a list of 
+                                    members belonging to the PDS/PDSE
+        member_patterns {list} -- A list of member patterns to search for
+
+    Returns:
+        dict[str, str] -- Filtered PDS/PDSE with corresponding members 
+    """
     filtered_pds = dict()
-    for pds, member in pds_list.items():
+    for pds, member in pds_dict.items():
         for m in member:
             for mem_pat in member_patterns:
                 if re.fullmatch(mem_pat, m, re.IGNORECASE):
@@ -279,7 +335,17 @@ def pds_filter(pds_list, member_patterns):
     return filtered_pds
 
 
-def vsam_filter(module, patterns, excludes):
+def vsam_filter(module, patterns):
+    """ Return all VSAM data sets that match any of the patterns
+    in the given list of patterns.
+
+    Arguments:
+        module {AnsibleModule} -- The Ansible module object being used
+        patterns {list[str]} -- A list of data set patterns
+
+    Returns:
+        set[str]-- Matched VSAM data sets 
+    """
     filtered_data_sets = set()
     for pattern in patterns:
         rc, out, err = _vls_wrapper(pattern, details=True)
@@ -290,15 +356,21 @@ def vsam_filter(module, patterns, excludes):
             )
         for line in out.split("\n"):
             filtered_data_sets.add(line.split()[0].strip())
-
-    for ds in set(filtered_data_sets):
-        for ex_pat in excludes:
-            if re.fullmatch(ex_pat, ds, re.IGNORECASE):
-                filtered_data_sets.remove(ds)
     return filtered_data_sets
 
 
 def data_set_attribute_filter(module, data_sets, size=None, age=None):
+    """ Filter data sets based on attributes such as age or size.
+
+    Arguments:
+        module {AnsibleModule} -- The Ansible module object being used
+        data_sets {set[str]} -- A set of data set names
+        size {int} -- The size, in bytes, that should be used to filter data sets
+        age {int} -- The age, in days, that should be used to filter data sets
+
+    Returns:
+        set[str] -- Matched data sets filtered by age and size
+    """
     filtered_data_sets = set()
     now = time.time()
     for ds in data_sets:
@@ -310,11 +382,11 @@ def data_set_attribute_filter(module, data_sets, size=None, age=None):
             )
         for line in out.split("\n"):
             result = line.split()
-            if age and size and _age_filter(result[1], now, age) and int(result[6]) >= size:
+            if age and size and _age_filter(result[1], now, age) and _size_filter(int(result[6]), size):
                 filtered_data_sets.add(ds)
             elif age and not size and _age_filter(result[1], now, age):
                 filtered_data_sets.add(ds)
-            elif size and not age and int(result[5]) >= size:
+            elif size and not age and _size_filter(int(result[5]), size):
                 filtered_data_sets.add(ds)
     return filtered_data_sets
 
@@ -331,7 +403,7 @@ def volume_filter(data_sets, volumes):
         volumes {list[str]} -- A list of input volumes
 
     Returns:
-        {set} -- The filtered data sets
+        set[str] -- The filtered data sets
     """
     filtered_data_sets = set()
     for volume in volumes:
@@ -341,7 +413,35 @@ def volume_filter(data_sets, volumes):
     return filtered_data_sets
 
 
+def exclude_data_sets(data_set_list, excludes):
+    """Remove data sets that match any pattern in a list of patterns
+
+    Arguments:
+        data_set_list {set[str]} -- A set of data sets to be filtered
+        excludes {list[str]} -- A list of data set patterns to be excluded
+
+    Returns:
+        set[str] -- The remaining data sets that have not been excluded
+    """
+    for ds in set(data_set_list):
+        for ex_pat in excludes:
+            if re.fullmatch(ex_pat, ds, re.IGNORECASE):
+                data_set_list.remove(ds)
+                break
+    return data_set_list
+
+
 def _age_filter(ds_date, now, age):
+    """ Determine whether a given date is older than 'age'
+
+    Arguments:
+        ds_date {str} -- The input date in the format YYYY/MM/DD
+        now {float} -- The time elapsed since the last epoch
+        age {int} -- The age, in days, to compare against
+
+    Returns:
+        bool -- Whether 'ds_date' is older than 'age'
+    """
     year, month, day = ds_date.split("/")
     if year == "0000":
         return age >= 0
@@ -355,9 +455,26 @@ def _age_filter(ds_date, now, age):
     return False
 
 
+def _size_filter(ds_size, size):
+    """ Determine whether a given size is greater than the input size
+
+    Arguments:
+        ds_size {int} -- The input size, in bytes
+        size {int} -- The size, in bytes, to compare against
+
+    Returns:
+        bool -- Whether 'ds_size' is greater than 'age'
+    """
+    if size >= 0 and ds_size >= abs(size):
+        return True
+    if size < 0 and ds_size <= abs(size):
+        return True
+    return False
+
+
 def _dgrep_wrapper(
     data_set_pattern, 
-    content=None, 
+    content, 
     ignore_case=False, 
     line_num=False, 
     verbose=False, 
@@ -373,10 +490,8 @@ def _dgrep_wrapper(
         dgrep_cmd += " -v"
     if context:
         dgrep_cmd += " -C{0}".format(context)
-    if content:
-        dgrep_cmd += " {0}".format(quote(content))
 
-    dgrep_cmd += " {0}".format(quote(data_set_pattern))
+    dgrep_cmd += " {0} {1}".format(quote(content), quote(data_set_pattern))
     return AnsibleModuleHelper(argument_spec={}).run_command(dgrep_cmd)
 
 
@@ -418,26 +533,19 @@ def _vls_wrapper(pattern, details=False, verbose=False):
     return AnsibleModuleHelper(argument_spec={}).run_command(vls_cmd)
 
 
-def run_module(module, arg_def):
-    parsed_args = None
-    try:
-        parser = better_arg_parser.BetterArgParser(arg_def)
-        parsed_args = parser.parse_args(module.params)
-    except ValueError as err:
-        module.fail_json(
-            msg="Parameter verification failed", stderr=str(err)
-        )
+def run_module(module):
+    # Parameter initialization
+    age = module.params.get('age')
+    contains = module.params.get('contains')
+    excludes = module.params.get('excludes') or module.params.get('exclude')
+    patterns = module.params.get('patterns')
+    size = module.params.get('size')
+    pds_paths = module.params.get('pds_paths')
+    ds_type = module.params.get('ds_type')
+    volume = module.params.get('volume') or module.params.get('volumes')
 
     res_args = dict(data_sets=[])
     filtered_data_sets = filtered_pds = None
-    age = parsed_args.get('age')
-    contains = parsed_args.get('contains')
-    excludes = parsed_args.get('excludes') or parsed_args.get('exclude')
-    patterns = parsed_args.get('patterns')
-    size = parsed_args.get('size')
-    pds_paths = parsed_args.get('pds_paths')
-    ds_type = parsed_args.get('ds_type')
-    volume = parsed_args.get('volume') or parsed_args.get('volumes')
 
     # convert age to days:
     m = re.match(r"^(-?\d+)(d|w|m|y)?$", age.lower())
@@ -456,7 +564,10 @@ def run_module(module, arg_def):
         module.fail_json(size=size, msg="failed to process size")
 
     if ds_type == "NONVSAM":
-        init_filtered_data_sets = data_set_filter(module, patterns, contains, excludes)
+        if contains:
+            init_filtered_data_sets = content_filter(module, patterns, contains)
+        else:
+            init_filtered_data_sets = data_set_filter(module, patterns)
         if pds_paths:
             filtered_pds = pds_filter(init_filtered_data_sets.get("pds"), patterns)
             filtered_data_sets = set(filtered_pds.keys())
@@ -468,9 +579,10 @@ def run_module(module, arg_def):
             filtered_data_sets = volume_filter(filtered_data_sets, volume)
         res_args['examined'] = init_filtered_data_sets.get("searched")
     else:
-        filtered_data_sets = vsam_filter(module, patterns, excludes)
+        filtered_data_sets = vsam_filter(module, patterns)
+        res_args['examined'] = len(filtered_data_sets)
     
-    for ds in filtered_data_sets:
+    for ds in exclude_data_sets(filtered_data_sets, excludes):
         if pds_paths:
             res_args['data_sets'].append(dict(name=ds, members=[m for m in filtered_pds[ds]]))
         else:
@@ -504,8 +616,14 @@ def main():
         ds_type=dict(arg_type='str', required=False, default='NONVSAM', choices=['VSAM', 'NONVSAM']),
         volume=dict(arg_type='list', required=False, aliases=['volumes'])
     )
-
-    module.exit_json(**run_module(module, arg_def))
+    try:
+        parser = better_arg_parser.BetterArgParser(arg_def)
+        parser.parse_args(module.params)
+    except ValueError as err:
+        module.fail_json(
+            msg="Parameter verification failed", stderr=str(err)
+        )
+    module.exit_json(**run_module(module))
 
 
 if __name__ == '__main__':

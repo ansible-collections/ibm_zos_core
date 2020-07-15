@@ -72,9 +72,10 @@ options:
       - List of PDS/PDSE to search. Wild-card possible.
       - Required only when searching for data set members, otherwise ignored.
       - if C(pds_paths) is provided, C(patterns) must be member patterns.
+      - Only valid for NONVSAM data set types. Otherwise ignored.
     type: list
     required: false
-  file_type;
+  ds_type;
     description:
       - The type of resource to search. The two choices are 'NONVSAM' and 'VSAM'.
       - 'NONVSAM' refers to one of SEQ, LIBRARY (PDSE), PDS, LARGE, BASIC, EXTREQ, EXTPREF.
@@ -147,7 +148,7 @@ EXAMPLES = r"""
   zos_find:
     patterns:
       - USER.*
-    file_type: VSAM
+    ds_type: VSAM
 """
 
 
@@ -158,7 +159,10 @@ data_sets:
     type: list
     sample: [
       { name: "SOME.DATA.SET",
-        "...": "...",
+        members: [
+            "MEMBER1",
+            "MEMBER2"
+        ]
       },
       { name: "SAMPLE.DATA.SET,
         "...": "...",
@@ -183,7 +187,7 @@ import datetime
 from ansible.module_utils.six import PY3
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
-    better_arg_parser, vtoc, data_set
+    better_arg_parser, vtoc
 )
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
@@ -222,26 +226,37 @@ def data_set_filter(module, patterns, content, excludes):
             else:
                 result = line.split()
                 if len(result) > 2:
-                    filtered_data_sets['pds'][result[0]] = result[1]
+                    try:
+                        filtered_data_sets['pds'][result[0]].append(result[1])
+                    except KeyError:
+                        filtered_data_sets['pds'][result[0]] = [result[1]]
                 else:
                     filtered_data_sets['ps'].add(result[0])
 
-    for ds in filtered_data_sets["ps"].union(set(filtered_data_sets['pds'].keys())):
+    for ds in filtered_data_sets['ps'].union(set(filtered_data_sets['pds'].keys())):
         for ex_pat in excludes:
             if re.fullmatch(ex_pat, ds, re.IGNORECASE):
-                if ds in filtered_data_sets["ps"]:
-                    filtered_data_sets.remove(ds)
+                if ds in filtered_data_sets['ps']:
+                    filtered_data_sets['ps'].remove(ds)
                 else:
                     filtered_data_sets['pds'].pop(ds)
     return filtered_data_sets
 
 
+#TODO: pds_filter() currently has O(n^3) time complexity. 
+# Seems to be unavoidable due to the fact that each PDS could have multiple
+# matched members and each member needs to be compared against multiple member patterns.
+# Try to reduce the complexity to O(n^2) or less if possible.
 def pds_filter(pds_list, member_patterns):
-    filtered_pds = set()
+    filtered_pds = dict()
     for pds, member in pds_list.items():
-        for mem_pat in member_patterns:
-            if re.fullmatch(mem_pat, member, re.IGNORECASE):
-                filtered_pds.add(pds)
+        for m in member:
+            for mem_pat in member_patterns:
+                if re.fullmatch(mem_pat, m, re.IGNORECASE):
+                    try:
+                        filtered_pds[pds].append(m)
+                    except KeyError:
+                        filtered_pds[pds] = [m]
     return filtered_pds
 
 
@@ -257,7 +272,7 @@ def vsam_filter(module, patterns, excludes):
         for line in out.split("\n"):
             filtered_data_sets.add(line.split()[0].strip())
 
-    for ds in filtered_data_sets:
+    for ds in set(filtered_data_sets):
         for ex_pat in excludes:
             if re.fullmatch(ex_pat, ds, re.IGNORECASE):
                 filtered_data_sets.remove(ds)
@@ -395,14 +410,14 @@ def run_module(module, arg_def):
         )
 
     res_args = dict(data_sets=[])
-    filtered_data_sets = None
+    filtered_data_sets = filtered_pds = None
     age = parsed_args.get('age')
     contains = parsed_args.get('contains')
     excludes = parsed_args.get('excludes') or parsed_args.get('exclude')
     patterns = parsed_args.get('patterns')
     size = parsed_args.get('size')
     pds_paths = parsed_args.get('pds_paths')
-    file_type = parsed_args.get('file_type')
+    ds_type = parsed_args.get('ds_type')
     volume = parsed_args.get('volume') or parsed_args.get('volumes')
 
     # convert age to days:
@@ -412,11 +427,20 @@ def run_module(module, arg_def):
         age = int(m.group(1)) * days_per_unit.get(m.group(2), 1)
     else:
         module.fail_json(age=age, msg="failed to process age")
-    
-    if file_type == "NONVSAM":
+
+    # convert size to bytes:
+    m = re.match(r"^(-?\d+)(b|k|m|g|t)?$", size.lower())
+    bytes_per_unit = {"b": 1, "k": 1024, "m": 1024**2, "g": 1024**3, "t": 1024**4}
+    if m:
+        size = int(m.group(1)) * bytes_per_unit.get(m.group(2), 1)
+    else:
+        module.fail_json(size=size, msg="failed to process size")
+
+    if ds_type == "NONVSAM":
         init_filtered_data_sets = data_set_filter(module, patterns, contains, excludes)
         if pds_paths:
-            filtered_data_sets = pds_filter(init_filtered_data_sets.get("pds"), patterns)
+            filtered_pds = pds_filter(init_filtered_data_sets.get("pds"), patterns)
+            filtered_data_sets = set(filtered_pds.keys())
         else:
             filtered_data_sets = init_filtered_data_sets.get("ps")
         if size or age:
@@ -428,7 +452,11 @@ def run_module(module, arg_def):
         filtered_data_sets = vsam_filter(module, patterns, excludes)
     
     for ds in filtered_data_sets:
-        res_args['data_sets'].append(dict(name=ds))
+        if pds_paths:
+            res_args['data_sets'].append(dict(name=ds, members=[m for m in filtered_pds[ds]]))
+        else:
+            res_args['data_sets'].append(dict(name=ds))
+
     res_args['matched'] = len(filtered_data_sets)
     return res_args
 
@@ -442,7 +470,7 @@ def main():
             patterns=dict(type='list', required=True),
             size=dict(type='str', required=False),
             pds_paths=dict(type='list', required=False),
-            file_type=dict(type='str', required=False, default='NONVSAM', choices=['VSAM', 'NONVSAM']),
+            ds_type=dict(type='str', required=False, default='NONVSAM', choices=['VSAM', 'NONVSAM']),
             volume=dict(type='list', required=False, aliases=['volumes'])
         )
     )
@@ -454,7 +482,7 @@ def main():
         patterns=dict(arg_type='list', required=True),
         size=dict(arg_type='str', required=False),
         pds_paths=dict(arg_type='list', required=False),
-        file_type=dict(arg_type='str', required=False, default='NONVSAM', choices=['VSAM', 'NONVSAM']),
+        ds_type=dict(arg_type='str', required=False, default='NONVSAM', choices=['VSAM', 'NONVSAM']),
         volume=dict(arg_type='list', required=False, aliases=['volumes'])
     )
 

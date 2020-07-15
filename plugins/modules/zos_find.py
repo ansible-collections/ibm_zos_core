@@ -4,6 +4,7 @@
 # Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
 from __future__ import (absolute_import, division, print_function)
+from typing import Pattern
 
 from ansible.module_utils.basic import AnsibleModule
 from plugins.modules.zos_copy import run_module
@@ -28,20 +29,10 @@ options:
     description:
       - Select data sets whose age is equal to or greater than the specified time.
       - Use a negative age to find data sets equal to or less than the specified time.
-      - You can choose seconds, minutes, hours, days, or weeks by specifying the
-        first letter of any of those words (e.g., "1w").
+      - You can choose days, weeks, months or years by specifying the first letter of 
+        any of those words (e.g., "1w"). If no letter is specified, it is assumed to be days.
+      - Age is determined by using the 'referenced date' of the data set.
     type: str
-    required: false
-  age_stamp:
-    description:
-      - Choose the date property against which to compare age.
-      - C(c_date) refers to creation date and C(r_date) refers to referenced date.
-      - Only valid if C(age) is provided.
-    type: str
-    choices:
-      - c_date
-      - r_date
-    default: r_date
     required: false
   contains:
     description:
@@ -80,6 +71,7 @@ options:
     description:
       - List of PDS/PDSE to search. Wild-card possible.
       - Required only when searching for data set members, otherwise ignored.
+      - if C(pds_paths) is provided, C(patterns) must be member patterns.
     type: list
     required: false
   file_type;
@@ -94,8 +86,8 @@ options:
     default: NONVSAM
   volume:
     description:
-      - If provided, only the data sets allocated in the specified list of volumes will be
-        searched.
+      - If provided, only the data sets allocated in the specified list of 
+        volumes will be searched.
     type: list
     required: false
     aliases: ['volumes']
@@ -185,11 +177,13 @@ examined:
 """
 
 import re
+import time
+import datetime
 
 from ansible.module_utils.six import PY3
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
-    better_arg_parser, vtoc
+    better_arg_parser, vtoc, data_set
 )
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
@@ -213,27 +207,32 @@ except Exception:
     types = MissingZOAUImport()
 
 
-def data_set_filter(patterns, content, excludes):
-    filtered_data_sets = dict(ps=set(), pds=dict(), searched=set())
+def data_set_filter(module, patterns, content, excludes):
+    filtered_data_sets = dict(ps=set(), pds=dict(), searched=0)
     for pattern in patterns:
-        rc, out, err = _dgrep_wrapper(pattern, content=content, verbose=True)
+        rc, out, err = _dgrep_wrapper(pattern, content=content, verbose=True, ignore_case=True)
+        if rc > 4:
+            module.fail_json(
+                msg="Non-zero return code received while executing ZOAU shell command 'dgrep'",
+                rc=rc, stdout=out, stderr=err
+            )
         for line in out.split("\n"):
             if line.startswith("BGYSC1005I"):
-                filtered_data_sets['searched'].add(line.split(":")[1].strip(" "))
+                filtered_data_sets['searched'] += 1
             else:
                 result = line.split()
                 if len(result) > 2:
                     filtered_data_sets['pds'][result[0]] = result[1]
                 else:
                     filtered_data_sets['ps'].add(result[0])
-    
-    for data_set in filtered_data_sets["ps"].union(set(filtered_data_sets['pds'].keys())):
+
+    for ds in filtered_data_sets["ps"].union(set(filtered_data_sets['pds'].keys())):
         for ex_pat in excludes:
-            if re.fullmatch(ex_pat, data_set, re.IGNORECASE):
-                if data_set in filtered_data_sets["ps"]:
-                    filtered_data_sets.remove(data_set)
+            if re.fullmatch(ex_pat, ds, re.IGNORECASE):
+                if ds in filtered_data_sets["ps"]:
+                    filtered_data_sets.remove(ds)
                 else:
-                    filtered_data_sets['pds'].pop(data_set)
+                    filtered_data_sets['pds'].pop(ds)
     return filtered_data_sets
 
 
@@ -246,10 +245,49 @@ def pds_filter(pds_list, member_patterns):
     return filtered_pds
 
 
-def data_set_attribute_filter(data_sets, size, age, age_stamp):
-    pass
+def vsam_filter(module, patterns, excludes):
+    filtered_data_sets = set()
+    for pattern in patterns:
+        rc, out, err = _vls_wrapper(pattern, details=True)
+        if rc != 0:
+            module.fail_json(
+                msg="Non-zero return code received while executing ZOAU shell command 'vls'",
+                rc=rc, stdout=out, stderr=err
+            )
+        for line in out.split("\n"):
+            filtered_data_sets.add(line.split()[0].strip())
+
+    for ds in filtered_data_sets:
+        for ex_pat in excludes:
+            if re.fullmatch(ex_pat, ds, re.IGNORECASE):
+                filtered_data_sets.remove(ds)
+    return filtered_data_sets
 
 
+def data_set_attribute_filter(module, data_sets, size=None, age=None):
+    filtered_data_sets = set()
+    now = time.time()
+    for ds in data_sets:
+        rc, out, err = _dls_wrapper(ds, u_time=age is not None, size=size is not None)
+        if rc != 0:
+            module.fail_json(
+                msg="Non-zero return code received while executing ZOAU shell command 'dls'",
+                rc=rc, stdout=out, stderr=err
+            )
+        for line in out.split("\n"):
+            result = line.split()
+            if age and size and _age_filter(result[1], now, age) and int(result[6]) >= size:
+                filtered_data_sets.add(ds)
+            elif age and not size and _age_filter(result[1], now, age):
+                filtered_data_sets.add(ds)
+            elif size and not age and int(result[5]) >= size:
+                filtered_data_sets.add(ds)
+    return filtered_data_sets
+
+
+#TODO: 
+# Implement volume_filter() using "vtocls" shell command from ZOAU 
+# when it becomes available.
 def volume_filter(data_sets, volumes):
     """Return only the data sets that are allocated in one of the volumes from
     the list of input volumes.
@@ -267,6 +305,20 @@ def volume_filter(data_sets, volumes):
             if ds.get('data_set_name') in data_sets:
                 filtered_data_sets.add(ds)
     return filtered_data_sets
+
+
+def _age_filter(ds_date, now, age):
+    year, month, day = ds_date.split("/")
+    if year == "0000":
+        return age >= 0
+
+    # Seconds per day = 86400
+    ds_age = (datetime.datetime(year, month, day).timestamp())/86400
+    if age >= 0 and now - ds_age >= abs(age):
+        return True
+    elif age < 0 and now - ds_age <= abs(age):
+        return True
+    return False
 
 
 def _dgrep_wrapper(
@@ -342,22 +394,49 @@ def run_module(module, arg_def):
             msg="Parameter verification failed", stderr=str(err)
         )
 
+    res_args = dict(data_sets=[])
+    filtered_data_sets = None
     age = parsed_args.get('age')
-    age_stamp = parsed_args.get('age_stamp')
     contains = parsed_args.get('contains')
     excludes = parsed_args.get('excludes') or parsed_args.get('exclude')
     patterns = parsed_args.get('patterns')
     size = parsed_args.get('size')
-    paths = parsed_args.get('paths')
+    pds_paths = parsed_args.get('pds_paths')
     file_type = parsed_args.get('file_type')
     volume = parsed_args.get('volume') or parsed_args.get('volumes')
+
+    # convert age to days:
+    m = re.match(r"^(-?\d+)(d|w|m|y)?$", age.lower())
+    days_per_unit = {"d": 1, "w": 7, "m": 30, "y": 365}
+    if m:
+        age = int(m.group(1)) * days_per_unit.get(m.group(2), 1)
+    else:
+        module.fail_json(age=age, msg="failed to process age")
+    
+    if file_type == "NONVSAM":
+        init_filtered_data_sets = data_set_filter(module, patterns, contains, excludes)
+        if pds_paths:
+            filtered_data_sets = pds_filter(init_filtered_data_sets.get("pds"), patterns)
+        else:
+            filtered_data_sets = init_filtered_data_sets.get("ps")
+        if size or age:
+            filtered_data_sets = data_set_attribute_filter(module, filtered_data_sets, size=size, age=age)
+        if volume:
+            filtered_data_sets = volume_filter(filtered_data_sets, volume)
+        res_args['examined'] = init_filtered_data_sets.get("searched")
+    else:
+        filtered_data_sets = vsam_filter(module, patterns, excludes)
+    
+    for ds in filtered_data_sets:
+        res_args['data_sets'].append(dict(name=ds))
+    res_args['matched'] = len(filtered_data_sets)
+    return res_args
 
 
 def main():
     module = AnsibleModule(
         argument_spec=dict(
             age=dict(type='str', required=False),
-            age_stamp=dict(type='str', required=False, default='r_date', choices=['c_date', 'r_date']),
             contains=dict(type='str', required=False),
             excludes=dict(type='list', required=False, aliases=['exclude']),
             patterns=dict(type='list', required=True),
@@ -370,7 +449,6 @@ def main():
 
     arg_def = dict(
         age=dict(arg_type='str', required=False),
-        age_stamp=dict(arg_type='str', required=False, default='r_date', choices=['c_date', 'r_date']),
         contains=dict(arg_type='str', required=False),
         excludes=dict(arg_type='list', required=False, aliases=['exclude']),
         patterns=dict(arg_type='list', required=True),

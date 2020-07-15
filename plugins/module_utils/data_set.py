@@ -141,20 +141,6 @@ class DataSetUtils(object):
             )
         return self.ds_info.get('volser')
 
-    def creation_date(self):
-        """Retrieves the date the data set was created in the format "YYYY.days".
-        For example, if the data set was created on 07/06/2020, the output would
-        be '2020.188'.
-
-        Returns:
-            str -- Data set creation date
-            None -- If the data set does not exist
-
-        Raises:
-            AttributeError -- When input data set is a USS file or directory
-        """
-        return self.ds_info.get('creation_date')
-
     def lrecl(self):
         """Retrieves the record length of the input data set. Record length
         specifies the length, in bytes, of each record in the data set.
@@ -285,12 +271,8 @@ class DataSetUtils(object):
         result = dict()
         if "NOT FOUND" not in output:
             volser_output = re.findall(r"VOLSER-*[A-Z|0-9]*", output)
-            creation_output = re.findall(r"CREATION-*[A-Z|0-9]*", output)
             result['volser'] = ''.join(
                 re.findall(r"-[A-Z|0-9]*", volser_output[0])
-            ).replace('-', '')
-            result['creation_date'] = ''.join(
-                re.findall(r"-[A-Z|0-9]*", creation_output[0])
             ).replace('-', '')
         return result
 

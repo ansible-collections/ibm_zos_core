@@ -164,8 +164,7 @@ data_sets:
             "MEMBER2"
         ]
       },
-      { name: "SAMPLE.DATA.SET,
-        "...": "...",
+      { name: "SAMPLE.DATA.SET"
       },
     ]
 matched:
@@ -178,6 +177,26 @@ examined:
     returned: success
     type: int
     sample: 158
+msg:
+    description: Failure message returned by the module.
+    returned: failure
+    type: str
+    sample: Error while gathering data set information
+stdout:
+    description: The stdout from a USS command or MVS command, if applicable.
+    returned: failure
+    type: str
+    sample: Copying local file /tmp/foo/src to remote path /tmp/foo/dest
+stderr:
+    description: The stderr of a USS command or MVS command, if applicable.
+    returned: failure
+    type: str
+    sample: No such file or directory "/tmp/foo"
+rc:
+    description: The return code of a USS or MVS command, if applicable.
+    returned: failure
+    type: int
+    sample: 8
 """
 
 import re

@@ -10,7 +10,9 @@ from tempfile import NamedTemporaryFile, TemporaryDirectory, mkstemp
 from math import floor, ceil
 from os import path, walk, makedirs, unlink
 from ansible.module_utils.six import PY3
-from ansible.module_utils.basic import AnsibleModule
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
+    AnsibleModuleHelper,
+)
 import shutil
 import errno
 import os
@@ -48,7 +50,7 @@ class EncodeUtils(object):
         Arguments:
             module {AnsibleModule} -- The AnsibleModule object from currently running module
         """
-        self.module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+        self.module = AnsibleModuleHelper(argument_spec={})
 
     def _validate_data_set_name(self, ds):
         arg_defs = dict(ds=dict(arg_type="data_set"),)

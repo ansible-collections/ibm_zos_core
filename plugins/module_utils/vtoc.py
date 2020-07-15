@@ -7,7 +7,9 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 import re
-from ansible.module_utils.basic import AnsibleModule
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
+    AnsibleModuleHelper,
+)
 
 
 def get_volume_entry(volume):
@@ -85,7 +87,7 @@ def _iehlist(dd, stdin):
     Returns:
         str -- The sysprint response of IEHLIST.
     """
-    module = AnsibleModule(argument_spec={}, check_invalid_arguments=False)
+    module = AnsibleModuleHelper(argument_spec={})
     response = None
     rc, stdout, stderr = module.run_command(
         "mvscmd --pgm=iehlist --sysprint=* --dd={0} --sysin=stdin ".format(dd),

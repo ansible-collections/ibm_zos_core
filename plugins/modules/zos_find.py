@@ -4,11 +4,8 @@
 # Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
 from __future__ import (absolute_import, division, print_function)
-from re import search
-from typing import Pattern
+from re import VERBOSE
 
-from ansible.module_utils.basic import AnsibleModule
-from plugins.modules.zos_copy import run_module
 __metaclass__ = type
 
 ANSIBLE_METADATA = {'metadata_version': '1.1',
@@ -131,7 +128,7 @@ EXAMPLES = r"""
 
 - name: Find all members starting with characters 'TE' in a list of PDS
   zos_find:
-    patterns: 'TE*'
+    patterns: '^te.*'
     pds_paths:
       - IMSTEST.TEST.*
       - IMSTEST.USER.*
@@ -159,25 +156,23 @@ data_sets:
     returned: success
     type: list
     sample: [
-      { name: "SOME.DATA.SET",
-        members: \[
-            "MEMBER1",
-            "MEMBER2"
-        \]
+      { 
+        "members": \[
+            "TINAD",
+            "TINAD",
+            "TINAD"
+        \],
+        "name": "IMS.CICS13.USERLIB"
       },
-      { name: "SAMPLE.DATA.SET"
-      },
+      { 
+          name: "SAMPLE.DATA.SET"
+      }
     ]
 matched:
     description: The number of matched data sets found
     returned: success
     type: int
     sample: 49
-examined:
-    description: Number of data sets looked at
-    returned: success
-    type: int
-    sample: 158
 msg:
     description: Failure message returned by the module.
     returned: failure
@@ -205,9 +200,10 @@ import time
 import datetime
 
 from ansible.module_utils.six import PY3
+from ansible.module_utils.basic import AnsibleModule
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
-    better_arg_parser, vtoc
+    better_arg_parser, vtoc, data_set
 )
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
@@ -222,13 +218,6 @@ if PY3:
     from shlex import quote
 else:
     from pipes import quote
-
-try:
-    from zoautil_py import Datasets
-except Exception:
-    Datasets = MissingZOAUImport()
-    MVSCmd = MissingZOAUImport()
-    types = MissingZOAUImport()
 
 
 def content_filter(module, patterns, content):
@@ -245,12 +234,11 @@ def content_filter(module, patterns, content):
         a set of matched "PS" data sets, a dictionary containing "PDS" data sets
         and members corresponding to each PDS, an int representing number of total
         data sets examined.
-
     """
     filtered_data_sets = dict(ps=set(), pds=dict(), searched=0)
     for pattern in patterns:
         rc, out, err = _dgrep_wrapper(pattern, content=content, verbose=True, ignore_case=True)
-        if rc > 4:
+        if rc > 4 and rc != 28:
             module.fail_json(
                 msg="Non-zero return code received while executing ZOAU shell command 'dgrep'",
                 rc=rc, stdout=out, stderr=err
@@ -260,13 +248,15 @@ def content_filter(module, patterns, content):
                 filtered_data_sets['searched'] += 1
             else:
                 result = line.split()
-                if len(result) > 2:
-                    try:
-                        filtered_data_sets['pds'][result[0]].append(result[1])
-                    except KeyError:
-                        filtered_data_sets['pds'][result[0]] = [result[1]]
-                else:
-                    filtered_data_sets['ps'].add(result[0])
+                if result:
+                    ds_type = data_set.DataSetUtils(result[0]).ds_type()
+                    if ds_type == "PO":
+                        try:
+                            filtered_data_sets['pds'][result[0]].append(result[1])
+                        except KeyError:
+                            filtered_data_sets['pds'][result[0]] = [result[1]]
+                    else:
+                        filtered_data_sets['ps'].add(result[0])
     return filtered_data_sets
 
 
@@ -282,7 +272,6 @@ def data_set_filter(module, patterns):
         a set of matched "PS" data sets, a dictionary containing "PDS" data sets
         and members corresponding to each PDS, an int representing number of total
         data sets examined.
-
     """
     filtered_data_sets = dict(ps=set(), pds=dict(), searched=0)
     for pattern in patterns:
@@ -294,15 +283,18 @@ def data_set_filter(module, patterns):
             )
         for line in out.split("\n"):
             result = line.split()
-            filtered_data_sets['searched'] += 1
-            if result[1] == "P0":
-                mls_rc, mls_out, mls_err = module.run_command("mls '{0}(*)'".format(result[0]))
-                if mls_rc == 2:
-                    filtered_data_sets["pds"][result[0]] = []
-                    continue
-                filtered_data_sets["pds"][result[0]] = mls_out.split("\n")
-            else:
-                filtered_data_sets["ps"].add(result[0])
+            if result:
+                filtered_data_sets['searched'] += 1
+                if result[1] == "PO":
+                    mls_rc, mls_out, mls_err = module.run_command(
+                        "mls '{0}(*)'".format(result[0])
+                    )
+                    if mls_rc == 2:
+                        filtered_data_sets["pds"][result[0]] = []
+                        continue
+                    filtered_data_sets["pds"][result[0]] = mls_out.split("\n")
+                else:
+                    filtered_data_sets["ps"].add(result[0])
     return filtered_data_sets
 
 
@@ -324,10 +316,10 @@ def pds_filter(pds_dict, member_patterns):
         dict[str, str] -- Filtered PDS/PDSE with corresponding members 
     """
     filtered_pds = dict()
-    for pds, member in pds_dict.items():
-        for m in member:
+    for pds, members in pds_dict.items():
+        for m in members:
             for mem_pat in member_patterns:
-                if re.fullmatch(mem_pat, m, re.IGNORECASE):
+                if re.match(mem_pat, m, re.IGNORECASE):
                     try:
                         filtered_pds[pds].append(m)
                     except KeyError:
@@ -545,46 +537,67 @@ def run_module(module):
     volume = module.params.get('volume') or module.params.get('volumes')
 
     res_args = dict(data_sets=[])
-    filtered_data_sets = filtered_pds = None
+    filtered_data_sets = set()
+    init_filtered_data_sets = filtered_pds = dict()
 
-    # convert age to days:
-    m = re.match(r"^(-?\d+)(d|w|m|y)?$", age.lower())
-    days_per_unit = {"d": 1, "w": 7, "m": 30, "y": 365}
-    if m:
-        age = int(m.group(1)) * days_per_unit.get(m.group(2), 1)
-    else:
-        module.fail_json(age=age, msg="failed to process age")
+    if age:
+        # convert age to days:
+        m = re.match(r"^(-?\d+)(d|w|m|y)?$", age.lower())
+        days_per_unit = {"d": 1, "w": 7, "m": 30, "y": 365}
+        if m:
+            age = int(m.group(1)) * days_per_unit.get(m.group(2), 1)
+        else:
+            module.fail_json(age=age, msg="failed to process age")
 
-    # convert size to bytes:
-    m = re.match(r"^(-?\d+)(b|k|m|g|t)?$", size.lower())
-    bytes_per_unit = {"b": 1, "k": 1024, "m": 1024**2, "g": 1024**3, "t": 1024**4}
-    if m:
-        size = int(m.group(1)) * bytes_per_unit.get(m.group(2), 1)
-    else:
-        module.fail_json(size=size, msg="failed to process size")
+    if size:
+        # convert size to bytes:
+        m = re.match(r"^(-?\d+)(b|k|m|g|t)?$", size.lower())
+        bytes_per_unit = {"b": 1, "k": 1024, "m": 1024**2, "g": 1024**3, "t": 1024**4}
+        if m:
+            size = int(m.group(1)) * bytes_per_unit.get(m.group(2), 1)
+        else:
+            module.fail_json(size=size, msg="failed to process size")
 
     if ds_type == "NONVSAM":
         if contains:
-            init_filtered_data_sets = content_filter(module, patterns, contains)
+            init_filtered_data_sets = content_filter(
+                module, 
+                pds_paths if pds_paths else patterns, contains
+            )
         else:
-            init_filtered_data_sets = data_set_filter(module, patterns)
+            init_filtered_data_sets = data_set_filter(
+                module, 
+                pds_paths if pds_paths else patterns
+            )
+
         if pds_paths:
             filtered_pds = pds_filter(init_filtered_data_sets.get("pds"), patterns)
             filtered_data_sets = set(filtered_pds.keys())
         else:
-            filtered_data_sets = init_filtered_data_sets.get("ps")
+            filtered_data_sets = init_filtered_data_sets.get("ps").union(set(init_filtered_data_sets['pds'].keys()))
+
         if size or age:
-            filtered_data_sets = data_set_attribute_filter(module, filtered_data_sets, size=size, age=age)
+            filtered_data_sets = data_set_attribute_filter(
+                module, filtered_data_sets, size=size, age=age
+            )
         if volume:
             filtered_data_sets = volume_filter(filtered_data_sets, volume)
-        res_args['examined'] = init_filtered_data_sets.get("searched")
+
+        #res_args['examined'] = init_filtered_data_sets.get("searched")
     else:
         filtered_data_sets = vsam_filter(module, patterns)
-        res_args['examined'] = len(filtered_data_sets)
-    
-    for ds in exclude_data_sets(filtered_data_sets, excludes):
-        if pds_paths:
-            res_args['data_sets'].append(dict(name=ds, members=[m for m in filtered_pds[ds]]))
+        #res_args['examined'] = len(filtered_data_sets)
+
+    if excludes:
+        filtered_data_sets = exclude_data_sets(filtered_data_sets, excludes)
+
+    for ds in filtered_data_sets:
+        if ds_type == "NONVSAM":
+            members = filtered_pds.get(ds) or init_filtered_data_sets['pds'].get(ds)
+            if members:
+                res_args['data_sets'].append(dict(name=ds, members=[m for m in members]))
+            else:
+                res_args['data_sets'].append(dict(name=ds))
         else:
             res_args['data_sets'].append(dict(name=ds))
 

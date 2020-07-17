@@ -52,10 +52,9 @@ def set_ds_test_env(test_name, hosts, test_env):
     if(len(hlq) > 8):
         hlq = hlq[:8]
     test_env["DS_NAME"] = hlq + "." + test_name.upper() + "." + test_env["DS_TYPE"]
-    cmdStr = "python -c \"from zoautil_py import Datasets; Datasets.create('" + test_env["DS_NAME"] + "', type='" + test_env["DS_TYPE"] + "')\" "
 
     try:
-        hosts.all.shell(cmd=cmdStr)
+        hosts.all.zos_data_set(name=test_env["DS_NAME"], type=test_env["DS_TYPE"])
         hosts.all.shell(cmd="echo \"{0}\" > {1}".format(test_env["TEST_CONT"], TEMP_FILE))
         if test_env["DS_TYPE"] in ["PDS", "PDSE"]:
             test_env["DS_NAME"] = test_env["DS_NAME"] + "(MEM)"
@@ -83,9 +82,8 @@ def set_ds_test_env(test_name, hosts, test_env):
 
 def clean_ds_test_env(ds_name, hosts):
     ds_name = ds_name.replace("(MEM)", "")
-    cmdStr = "python -c \"from zoautil_py import Datasets; Datasets.delete('" + ds_name + "')\" "
     try:
-        hosts.all.shell(cmd=cmdStr)
+        hosts.all.zos_data_set(name=ds_name, state="absent")
     except Exception:
         assert 1 == 0, "Failed to clean the test env"
 

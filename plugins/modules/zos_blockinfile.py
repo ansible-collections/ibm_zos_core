@@ -151,27 +151,28 @@ notes:
 '''
 
 EXAMPLES = r'''
-- name: Insert/Update "Match User" configuration block in /etc/ssh/sshd_config
+- name: Insert/Update new mount point
   zos_blockinfile:
-    path: /etc/ssh/sshd_config
+    src: SYS1.PARMLIB(BPXPRM00)
+    marker: "/* {mark} ANSIBLE MANAGED BLOCK */"
     block: |
-      Match User ansible-agent
-      PasswordAuthentication no
+      " MOUNT FILESYSTEM('SOME.DATA.SET') TYPE(ZFS) MODE(READ)"
+      "    MOUNTPOINT('/tmp/src/somedirectory')"
 
-- name: Insert/Update eth0 configuration stanza in /etc/network/interfaces
-        (it might be better to copy files into /etc/network/interfaces.d/)
+- name: Remove a library as well as surrounding markers
   zos_blockinfile:
-    path: /etc/network/interfaces
+    src: SYS1.PARMLIB(PROG00)
+    marker: "/* {mark} ANSIBLE MANAGED BLOCK FOR SOME.DATA.SET */"
+    block: ""
+
+- name: Insert/Update eth0 configuration in /etc/network/interfaces
+  zos_blockinfile:
+    src: /etc/network/interfaces
+    insertafter: "auto eth0"
     block: |
       iface eth0 inet static
           address 192.0.2.23
           netmask 255.255.255.0
-
-- name: Insert/Update configuration using a local file and validate it
-  zos_blockinfile:
-    block: "{{ lookup('file', './local/sshd_config') }}"
-    src: /etc/ssh/sshd_config
-    backup: yes
 
 - name: Insert/Update HTML surrounded by custom markers after <body> line
   zos_blockinfile:
@@ -185,6 +186,7 @@ EXAMPLES = r'''
 - name: Remove HTML as well as surrounding markers
   zos_blockinfile:
     path: /var/www/html/index.html
+    state: absent
     marker: "<!-- {mark} ANSIBLE MANAGED BLOCK -->"
     block: ""
 
@@ -309,26 +311,63 @@ def absent(src, marker, encoding):
     """
     return Datasets.blockinfile(src, marker=marker, encoding=encoding, state=False)
 
+
 def quotedString(string):
     # add escape if string was quoted
     if not isinstance(string, str):
         return string
     return string.replace('"', '\\\"')
 
+
 def main():
     module = AnsibleModule(
         argument_spec=dict(
-            src=dict(type='str', required=True, aliases=['path', 'destfile', 'name']),
-            state=dict(type='str', default='present', choices=['absent', 'present']),
-            marker=dict(type='str', default='# {mark} ANSIBLE MANAGED BLOCK'),
-            block=dict(type='str', default='', aliases=['content']),
-            insertafter=dict(type='str'),
-            insertbefore=dict(type='str'),
-            marker_begin=dict(type='str', default='BEGIN'),
-            marker_end=dict(type='str', default='END'),
-            backup=dict(type='bool', default=False),
-            backup_file=dict(type='str', required=False, default=None),
-            encoding=dict(type=str, default="IBM-1047"),
+            src=dict(
+                type='str',
+                required=True,
+                aliases=['path', 'destfile', 'name']
+            ),
+            state=dict(
+                type='str',
+                default='present',
+                choices=['absent', 'present']
+            ),
+            marker=dict(
+                type='str',
+                default='# {mark} ANSIBLE MANAGED BLOCK'
+            ),
+            block=dict(
+                type='str',
+                default='',
+                aliases=['content']
+            ),
+            insertafter=dict(
+                type='str'
+            ),
+            insertbefore=dict(
+                type='str'
+            ),
+            marker_begin=dict(
+                type='str',
+                default='BEGIN'
+            ),
+            marker_end=dict(
+                type='str',
+                default='END'
+            ),
+            backup=dict(
+                type='bool',
+                default=False
+            ),
+            backup_file=dict(
+                type='str',
+                required=False,
+                default=None
+            ),
+            encoding=dict(
+                type=str,
+                default="IBM-1047"
+            ),
         ),
         mutually_exclusive=[['insertbefore', 'insertafter']],
     )
@@ -442,6 +481,7 @@ def main():
             messageDict['backup_file'] = result['backup_file']
         module.fail_json(**messageDict)
     module.exit_json(**result)
+
 
 if __name__ == '__main__':
     main()

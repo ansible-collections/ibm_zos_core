@@ -4,7 +4,6 @@
 # Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
 from __future__ import (absolute_import, division, print_function)
-from re import VERBOSE
 
 __metaclass__ = type
 
@@ -198,12 +197,15 @@ rc:
 import re
 import time
 import datetime
+from tempfile import NamedTemporaryFile
+from os import chmod, path, remove
+from stat import S_IEXEC, S_IREAD, S_IWRITE
 
 from ansible.module_utils.six import PY3
 from ansible.module_utils.basic import AnsibleModule
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
-    better_arg_parser, vtoc, data_set
+    better_arg_parser, vtoc, data_set, mvs_cmd
 )
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
@@ -244,19 +246,19 @@ def content_filter(module, patterns, content):
                 rc=rc, stdout=out, stderr=err
             )
         for line in out.split("\n"):
-            if line.startswith("BGYSC1005I"):
-                filtered_data_sets['searched'] += 1
-            else:
-                result = line.split()
-                if result:
-                    ds_type = data_set.DataSetUtils(result[0]).ds_type()
-                    if ds_type == "PO":
-                        try:
-                            filtered_data_sets['pds'][result[0]].append(result[1])
-                        except KeyError:
-                            filtered_data_sets['pds'][result[0]] = [result[1]]
-                    else:
-                        filtered_data_sets['ps'].add(result[0])
+            # if line.startswith("BGYSC1005I"):
+            #     filtered_data_sets['searched'] += 1
+            # else:
+            result = line.split()
+            if result:
+                ds_type = data_set.DataSetUtils(result[0]).ds_type()
+                if ds_type == "PO":
+                    try:
+                        filtered_data_sets['pds'][result[0]].append(result[1])
+                    except KeyError:
+                        filtered_data_sets['pds'][result[0]] = [result[1]]
+                else:
+                    filtered_data_sets['ps'].add(result[0])
     return filtered_data_sets
 
 
@@ -284,7 +286,7 @@ def data_set_filter(module, patterns):
         for line in out.split("\n"):
             result = line.split()
             if result:
-                filtered_data_sets['searched'] += 1
+                #filtered_data_sets['searched'] += 1
                 if result[1] == "PO":
                     mls_rc, mls_out, mls_err = module.run_command(
                         "mls '{0}(*)'".format(result[0])
@@ -373,13 +375,14 @@ def data_set_attribute_filter(module, data_sets, size=None, age=None):
                 rc=rc, stdout=out, stderr=err
             )
         for line in out.split("\n"):
-            result = line.split()
-            if age and size and _age_filter(result[1], now, age) and _size_filter(int(result[6]), size):
-                filtered_data_sets.add(ds)
-            elif age and not size and _age_filter(result[1], now, age):
-                filtered_data_sets.add(ds)
-            elif size and not age and _size_filter(int(result[5]), size):
-                filtered_data_sets.add(ds)
+            if line:
+                result = line.split()
+                if age and size and _age_filter(result[1], now, age) and _size_filter(int(result[6]), size):
+                    filtered_data_sets.add(ds)
+                elif age and not size and _age_filter(result[1], now, age):
+                    filtered_data_sets.add(ds)
+                elif size and not age and _size_filter(int(result[5]), size):
+                    filtered_data_sets.add(ds)
     return filtered_data_sets
 
 
@@ -424,7 +427,7 @@ def exclude_data_sets(data_set_list, excludes):
 
 
 def _age_filter(ds_date, now, age):
-    """ Determine whether a given date is older than 'age'
+    """Determine whether a given date is older than 'age'
 
     Arguments:
         ds_date {str} -- The input date in the format YYYY/MM/DD
@@ -562,7 +565,8 @@ def run_module(module):
         if contains:
             init_filtered_data_sets = content_filter(
                 module, 
-                pds_paths if pds_paths else patterns, contains
+                pds_paths if pds_paths else patterns, 
+                contains
             )
         else:
             init_filtered_data_sets = data_set_filter(

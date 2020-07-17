@@ -377,7 +377,12 @@ def data_set_attribute_filter(module, data_sets, size=None, age=None):
         for line in out.split("\n"):
             if line:
                 result = line.split()
-                if age and size and _age_filter(result[1], now, age) and _size_filter(int(result[6]), size):
+                if (
+                    age
+                    and size
+                    and _age_filter(result[1], now, age)
+                    and _size_filter(int(result[6]), size)
+                ):
                     filtered_data_sets.add(ds)
                 elif age and not size and _age_filter(result[1], now, age):
                     filtered_data_sets.add(ds)

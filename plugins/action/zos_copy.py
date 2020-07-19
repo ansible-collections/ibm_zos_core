@@ -36,6 +36,7 @@ class ActionModule(ActionBase):
         b_src = to_bytes(src, errors='surrogate_or_strict')
         dest = self._task.args.get('dest', None)
         content = self._task.args.get('content', None)
+        sftp_port = self._task.args.get('sftp_port', 22)
         force = _process_boolean(self._task.args.get('force'), default=True)
         backup = _process_boolean(self._task.args.get('backup'), default=False)
         local_follow = _process_boolean(self._task.args.get('local_follow'), default=False)
@@ -138,7 +139,7 @@ class ActionModule(ActionBase):
                     if mode == 'preserve':
                         new_module_args['mode'] = '0{0:o}'.format(stat.S_IMODE(os.stat(b_src).st_mode))
                     new_module_args['size'] = os.stat(src).st_size
-                transfer_res = self._copy_to_remote(src, is_dir=is_src_dir)
+                transfer_res = self._copy_to_remote(src, sftp_port, is_dir=is_src_dir)
 
             temp_path = transfer_res.get("temp_path")
             if transfer_res.get("msg"):
@@ -183,12 +184,12 @@ class ActionModule(ActionBase):
 
         return _update_result(is_binary, copy_res, self._task.args)
 
-    def _copy_to_remote(self, src, is_dir=False):
+    def _copy_to_remote(self, src, port, is_dir=False):
         """Copy a file or directory to the remote z/OS system """
         ansible_user = self._play_context.remote_user
         ansible_host = self._play_context.remote_addr
         temp_path = "/{0}/{1}".format(gettempprefix(), _create_temp_path_name())
-        cmd = ['sftp', ansible_user + '@' + ansible_host]
+        cmd = ['sftp', "-oPort={0}".format(port), ansible_user + '@' + ansible_host]
         stdin = "put -r {0} {1}".format(src.replace('#', '\\#'), temp_path)
 
         if is_dir:

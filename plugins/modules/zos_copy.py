@@ -149,7 +149,7 @@ options:
     required: false
   sftp_port:
     description:
-      - Indiciates which port should be used to connect to the remote z/OS
+      - Indicates which port should be used to connect to the remote z/OS
         system to perform data transfer. Default is port 22.
     type: int
     required: false

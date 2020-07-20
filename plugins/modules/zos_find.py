@@ -157,8 +157,8 @@ data_sets:
     sample: [
       { 
         "members": \[
-            "TINAD",
-            "TINAD",
+            "COBU",
+            "MC2CNAM",
             "TINAD"
         \],
         "name": "IMS.CICS13.USERLIB"
@@ -197,23 +197,20 @@ rc:
 import re
 import time
 import datetime
-from tempfile import NamedTemporaryFile
-from os import chmod, path, remove
-from stat import S_IEXEC, S_IREAD, S_IWRITE
 
 from ansible.module_utils.six import PY3
 from ansible.module_utils.basic import AnsibleModule
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
-    better_arg_parser, vtoc, data_set, mvs_cmd
+    vtoc, data_set, mvs_cmd
+)
+
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
+    BetterArgParser
 )
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
     AnsibleModuleHelper
-)
-
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingZOAUImport
 )
 
 if PY3:
@@ -254,9 +251,9 @@ def content_filter(module, patterns, content):
                 ds_type = data_set.DataSetUtils(result[0]).ds_type()
                 if ds_type == "PO":
                     try:
-                        filtered_data_sets['pds'][result[0]].append(result[1])
+                        filtered_data_sets['pds'][result[0]].add(result[1])
                     except KeyError:
-                        filtered_data_sets['pds'][result[0]] = [result[1]]
+                        filtered_data_sets['pds'][result[0]] = set(result[1])
                 else:
                     filtered_data_sets['ps'].add(result[0])
     return filtered_data_sets
@@ -292,9 +289,9 @@ def data_set_filter(module, patterns):
                         "mls '{0}(*)'".format(result[0])
                     )
                     if mls_rc == 2:
-                        filtered_data_sets["pds"][result[0]] = []
+                        filtered_data_sets["pds"][result[0]] = {}
                         continue
-                    filtered_data_sets["pds"][result[0]] = mls_out.split("\n")
+                    filtered_data_sets["pds"][result[0]] = set(mls_out.split("\n"))
                 else:
                     filtered_data_sets["ps"].add(result[0])
     return filtered_data_sets
@@ -315,7 +312,7 @@ def pds_filter(pds_dict, member_patterns):
         member_patterns {list} -- A list of member patterns to search for
 
     Returns:
-        dict[str, str] -- Filtered PDS/PDSE with corresponding members 
+        dict[str, set[str]] -- Filtered PDS/PDSE with corresponding members 
     """
     filtered_pds = dict()
     for pds, members in pds_dict.items():
@@ -323,9 +320,9 @@ def pds_filter(pds_dict, member_patterns):
             for mem_pat in member_patterns:
                 if re.match(mem_pat, m, re.IGNORECASE):
                     try:
-                        filtered_pds[pds].append(m)
+                        filtered_pds[pds].add(m)
                     except KeyError:
-                        filtered_pds[pds] = [m]
+                        filtered_pds[pds] = set(m)
     return filtered_pds
 
 
@@ -639,8 +636,7 @@ def main():
         volume=dict(arg_type='list', required=False, aliases=['volumes'])
     )
     try:
-        parser = better_arg_parser.BetterArgParser(arg_def)
-        parser.parse_args(module.params)
+        BetterArgParser(arg_def).parse_args(module.params)
     except ValueError as err:
         module.fail_json(
             msg="Parameter verification failed", stderr=str(err)

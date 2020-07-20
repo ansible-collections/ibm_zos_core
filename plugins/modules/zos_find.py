@@ -301,7 +301,7 @@ def data_set_filter(module, patterns):
 # Seems to be unavoidable due to the fact that each PDS could have multiple
 # matched members and each member needs to be compared against multiple member patterns.
 # Try to reduce the complexity to O(n^2) or less if possible.
-def pds_filter(pds_dict, member_patterns):
+def pds_filter(pds_dict, member_patterns, excludes=[]):
     """ Return all PDS/PDSE data sets whose members match any of the patterns
     in the given list of member patterns.
 
@@ -323,6 +323,13 @@ def pds_filter(pds_dict, member_patterns):
                         filtered_pds[pds].add(m)
                     except KeyError:
                         filtered_pds[pds] = set(m)
+    
+    if excludes:
+        for pds, members in dict(filtered_pds):
+            for m in members:
+                for ex_pat in excludes:
+                    if re.fullmatch(ex_pat, m, re.IGNORECASE):
+                        members.remove(m)
     return filtered_pds
 
 
@@ -577,7 +584,7 @@ def run_module(module):
             )
 
         if pds_paths:
-            filtered_pds = pds_filter(init_filtered_data_sets.get("pds"), patterns)
+            filtered_pds = pds_filter(init_filtered_data_sets.get("pds"), patterns, excludes=excludes)
             filtered_data_sets = set(filtered_pds.keys())
         else:
             filtered_data_sets = init_filtered_data_sets.get("ps").union(set(init_filtered_data_sets['pds'].keys()))
@@ -594,7 +601,7 @@ def run_module(module):
         filtered_data_sets = vsam_filter(module, patterns)
         #res_args['examined'] = len(filtered_data_sets)
 
-    if excludes:
+    if excludes and not pds_paths:
         filtered_data_sets = exclude_data_sets(filtered_data_sets, excludes)
 
     for ds in filtered_data_sets:

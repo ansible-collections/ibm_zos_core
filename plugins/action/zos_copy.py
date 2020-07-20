@@ -122,7 +122,7 @@ class ActionModule(ActionBase):
             if content:
                 try:
                     local_content = _write_content_to_temp_file(content)
-                    transfer_res = self._copy_to_remote(local_content)
+                    transfer_res = self._copy_to_remote(local_content, sftp_port)
                 finally:
                     os.remove(local_content)
             else:

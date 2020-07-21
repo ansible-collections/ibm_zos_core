@@ -30,7 +30,7 @@
 
     - name: Find valid python installation
       include_tasks:
-        file: "{{ playbook_dir }}/choose-python.yml"
+        file: "{{ playbook_dir }}/tasks/choose-python.yml"
       loop: "{{ potential_paths.get('python', []) }}"
 
     - name: Assert a valid python install was found
@@ -38,65 +38,28 @@
         msg: No useable python installation was found
       when: chosen_python is not defined
 
+    - name: Get ZOAU build dates
+      raw: "{{ potential_paths | zoau_version_command_string }} 2>&1 || :"
+      register: zoau_build_dates
+
+    - debug:
+        var: zoau_build_dates
+
+    - name: Filter potential ZOAU options based on
+      set_fact:
+        filtered_zoau: "{{ potential_paths.get('zoau') | filter_zoau_installs(zoau_build_dates.get('stdout_lines'), minimum_zoau_version) }}"
+
     - name: Find valid ZOAU install
       include_tasks:
-        file: "{{ playbook_dir }}/choose-zoau.yml"
+        file: "{{ playbook_dir }}/tasks/choose-zoau.yml"
+      loop: "{{ filtered_zoau }}"
+      when: filtered_zoau is defined and filtered_zoau|length > 0
 
     - name: Assert a valid ZOAU install was found
       fail:
         msg: No ZOAU installation found meeting requirements.
       when: chosen_zoau is not defined
 
-    - name: Create temporary file
-      tempfile:
-        state: file
-      register: tempfile_1
-      delegate_to: localhost
-
-    - block:
-        - name: Write to temporary file
-          template:
-            src: "{{ playbook_dir }}/templates/test-vars.j2"
-            dest: "{{ tempfile_1.path }}"
-          vars:
-            python_root: "{{ chosen_python.get('root') }}"
-            python_interpreter: "{{ chosen_python.get('interpreter') }}"
-            zoau_root: "{{ chosen_zoau.get('root') }}"
-          delegate_to: localhost
-
-        - name: Load variables from temp file
-          include_vars:
-            file: "{{ tempfile_1.path }}"
-
-        - name: Attempt to run zos_data_set using chosen dependency paths
-          ibm.ibm_zos_core.zos_data_set:
-            state: present
-          vars:
-            ansible_python_interpreter: "{{ chosen_python.get('interpreter') }}"
-          environment: "{{ environment_vars }}"
-          register: zos_data_set_response
-          failed_when: false
-
-        - name: Assert zos_data_set completed successfully
-          fail:
-            msg: "Generated config failed final test."
-          when: zos_data_set_response is not defined or zos_data_set_response.get('names', [])|length == 0
-
-      always:
-        - name: Remove temporary file
-          file:
-            path: "{{ tempfile_1.path }}"
-            state: absent
-          delegate_to: localhost
-          when: tempfile_1 is defined
-        - name: Remove temporary data set
-          ibm.ibm_zos_core.zos_data_set:
-            name: "{{ zos_data_set_response.get('names')[0] }}"
-            state: absent
-          vars:
-            ansible_python_interpreter: "{{ chosen_python.get('interpreter') }}"
-          environment: "{{ environment_vars }}"
-          when: zos_data_set_response is defined and zos_data_set_response.get('names', [])|length > 0
 
     - name: Create host_vars directory if it does not already exist
       file:

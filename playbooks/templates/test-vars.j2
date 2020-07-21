@@ -2,7 +2,7 @@
 ################################################################################
 # Playbook enviroment variables
 ################################################################################
-{% if python_interpreter | is_ibm_python %}
+{% if python_interpreter | is_ibm_python or python_interpreter | is_rocket_python %}
 {% if zoau_root is defined %}
 environment_vars:
   _BPXK_AUTOCVT: "ON"

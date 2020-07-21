@@ -88,6 +88,21 @@ def is_ibm_python(python_interpreter):
     return False
 
 
+def is_rocket_python(python_interpreter):
+    """Determines if interpreter string matches format
+    of Rocket Python installation.
+
+    Args:
+        python_interpreter (str): The path to the python interpreter.
+
+    Returns:
+        bool: True if Rocket python otherwise False
+    """
+    if re.match(ROCKET_PYTHON_PATTERN, python_interpreter):
+        return True
+    return False
+
+
 def filter_zoau_installs(zoau_installs, build_info, minimum_zoau_version):
     """Sort and filter potential ZOAU installs based on build date
     and version.
@@ -135,6 +150,7 @@ class FilterModule(object):
         filters = {
             "potential_paths": potential_installation_paths,
             "is_ibm_python": is_ibm_python,
+            "is_rocket_python": is_rocket_python,
             "filter_zoau_installs": filter_zoau_installs,
         }
         return filters

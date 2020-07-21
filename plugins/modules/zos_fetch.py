@@ -529,8 +529,7 @@ def run_module():
         dest=dict(arg_type="path", required=True),
         fail_on_missing=dict(arg_type="bool", required=False, default=True),
         is_binary=dict(arg_type="bool", required=False, default=False),
-        use_qualifier=dict(arg_type="bool", required=False, default=False),
-        sftp_port=dict(arg_type='int', required=False, default=22)
+        use_qualifier=dict(arg_type="bool", required=False, default=False)
     )
 
     if module.params.get("encoding"):

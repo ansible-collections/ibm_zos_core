@@ -463,7 +463,6 @@ def test_sftp_negative_port_specification_fails(ansible_zos_module):
         dest_path = "/tmp/profile"
         for result in results.contacted.values():
             assert result.get("msg") is not None
-            assert "Connection closed" in result.get('stderr')
     finally:
         if os.path.exists(dest_path):
             os.remove(dest_path)

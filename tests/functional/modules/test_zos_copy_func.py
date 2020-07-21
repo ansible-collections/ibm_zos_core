@@ -1949,6 +1949,5 @@ def test_sftp_negative_port_specification_fails(ansible_zos_module):
         copy_res = hosts.all.zos_copy(src="/etc/profile", dest=dest_path, sftp_port=-1)
         for result in copy_res.contacted.values():
             assert result.get("msg") is not None
-            assert "Connection closed" in result.get('stderr')
     finally:
         hosts.all.file(path=dest_path, state="absent")

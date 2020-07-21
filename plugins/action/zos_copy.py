@@ -100,6 +100,10 @@ class ActionModule(ActionBase):
                 msg = "Cannot specify 'mode', 'owner' or 'group' for MVS destination"
                 return self._exit_action(result, msg, failed=True)
 
+        if not isinstance(sftp_port, int) or not 0 < sftp_port <= 65535:
+            msg = "Invalid port provided for SFTP. Expected an integer between 0 to 65535."
+            return self._exit_action(result, msg, failed=True)
+
         if (not force) and self._dest_exists(src, dest, task_vars):
             return self._exit_action(result, "Destination exists. No data was copied.")
 

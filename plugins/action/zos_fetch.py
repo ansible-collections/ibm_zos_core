@@ -121,6 +121,9 @@ class ActionModule(ActionBase):
         elif len(src) < 1 or len(dest) < 1:
             msg = "Source and destination parameters must not be empty"
 
+        elif not isinstance(sftp_port, int) or not 0 < sftp_port <= 65535:
+            msg = "Invalid port provided for SFTP. Expected an integer between 0 to 65535."
+
         if msg:
             result['msg'] = msg
             result['failed'] = True

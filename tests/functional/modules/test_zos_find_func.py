@@ -52,11 +52,12 @@ def test_find_sequential_data_sets_containing_single_string(ansible_zos_module):
             hosts.all.zos_lineinfile(src=ds, line=search_string)
 
         find_res = hosts.all.zos_find(patterns=['TEST.FIND.SEQ.*.*'], contains=search_string)
-        val = list(find_res.contacted.values())[0]
-        assert len(val.get('data_sets')) != 0
-        for ds in val.get('data_sets'):
-            assert ds.get('name') in SEQ_NAMES
-        assert val.get('matched') == len(val.get('data_sets'))
+        for val in find_res.contacted.values():
+            assert val.get('msg') is None
+            assert len(val.get('data_sets')) != 0
+            for ds in val.get('data_sets'):
+                assert ds.get('name') in SEQ_NAMES
+            assert val.get('matched') == len(val.get('data_sets'))
     finally:
         hosts.all.zos_data_set(batch=[dict(name=i, state='absent') for i in SEQ_NAMES])
 

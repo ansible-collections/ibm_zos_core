@@ -3,7 +3,12 @@
 ###############################################################################
 
 ###############################################################################
-# This list of tasks is used to test a discovered Python installation.
+# This list of tasks is used to test a discovered ZOAU installation.
+#
+# Notes:
+#  This is a list of tasks and can not be run directly like a playbook.
+#  This list of tasks is used by the host-setup.yaml playbook during ZOAU
+#  installation selection.
 #
 # Tasks Flow:
 #  - Build a temporary environment variable configuration, including the information for the

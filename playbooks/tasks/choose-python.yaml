@@ -1,6 +1,17 @@
 ###############################################################################
 # Copyright (c) IBM Corporation 2020
 ###############################################################################
+
+###############################################################################
+# This list of tasks is used to test a discovered ZOAU installation.
+#
+# Tasks Flow:
+#  - Build a temporary environment variable configuration.
+#  - Attempt to run the ping module.
+#  - When a Python installation is found that can run the ping module successfully,
+#    save this as our chosen Python and skip checking the remaining Python installations.
+###############################################################################
+
 - block:
     - name: Create temporary file
       tempfile:

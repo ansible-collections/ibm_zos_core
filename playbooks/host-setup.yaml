@@ -41,14 +41,14 @@
 #  - In a loop, iterating over each Python installation, build a temporary environment
 #    variable configuration and attempt to run the ping module. When a Python installation
 #    is found that can run the ping module successfully, save this as our chosen Python
-#    and skip checking of the remaining Python installations.
+#    and skip checking the remaining Python installations.
 #  - Retrieve version information for all potential ZOAU installations.
 #  - Filter and sort discovered ZOAU installations prioritizing most recent build.
 #  - In a loop, iterating over each ZOAU installation, build a temporary environment
 #    variable configuration, including the information for the chosen Python installation,
 #    and attempt to run the zos_data_set module. When a ZOAU installation is found that can
 #    run the zos_data_set module successfully, save this as our chosen ZOAU and skip checking
-#    of the remaining ZOAU installations.
+#    the remaining ZOAU installations.
 #  - Create host_vars directory in same directory as playbook if it does not already exist.
 #  - Create a new host_vars variable file for the host targeted by this playbook, backing up
 #    existing variable files if there are naming conflicts.

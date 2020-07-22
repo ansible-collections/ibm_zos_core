@@ -1,6 +1,18 @@
 ###############################################################################
 # Copyright (c) IBM Corporation 2020
 ###############################################################################
+
+###############################################################################
+# This list of tasks is used to test a discovered Python installation.
+#
+# Tasks Flow:
+#  - Build a temporary environment variable configuration, including the information for the
+#    chosen Python installation.
+#  - Attempt to run the zos_data_set module.
+#  - When a ZOAU installation is found that can run the zos_data_set module successfully,
+#    save this as our chosen ZOAU and skip checking the remaining ZOAU installations.
+###############################################################################
+
 - block:
     - name: Create temporary file
       tempfile:

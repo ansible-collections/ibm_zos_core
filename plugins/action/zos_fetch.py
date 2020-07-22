@@ -94,6 +94,7 @@ class ActionModule(ActionBase):
         src = self._task.args.get('src')
         dest = self._task.args.get('dest')
         encoding = self._task.args.get('encoding')
+        sftp_port = self._task.args.get('sftp_port', 22)
         flat = _process_boolean(self._task.args.get('flat'), default=False)
         is_binary = _process_boolean(self._task.args.get('is_binary'))
         validate_checksum = _process_boolean(
@@ -119,6 +120,9 @@ class ActionModule(ActionBase):
             )
         elif len(src) < 1 or len(dest) < 1:
             msg = "Source and destination parameters must not be empty"
+
+        elif not isinstance(sftp_port, int) or not 0 < sftp_port <= 65535:
+            msg = "Invalid port provided for SFTP. Expected an integer between 0 to 65535."
 
         if msg:
             result['msg'] = msg
@@ -234,7 +238,8 @@ class ActionModule(ActionBase):
                     result["msg"] = "Destination must be a directory to fetch a partitioned data set"
                     result["failed"] = True
                     return result
-                fetch_content = self._transfer_remote_content(dest, remote_path, ds_type, encoding)
+
+                fetch_content = self._transfer_remote_content(dest, remote_path, ds_type, sftp_port)
                 if fetch_content.get('msg'):
                     return fetch_content
 
@@ -267,7 +272,7 @@ class ActionModule(ActionBase):
             self._remote_cleanup(remote_path, ds_type, encoding)
         return _update_result(result, src, dest, ds_type, is_binary=is_binary)
 
-    def _transfer_remote_content(self, dest, remote_path, src_type, encoding):
+    def _transfer_remote_content(self, dest, remote_path, src_type, port):
         """ Transfer a file or directory from USS to local machine.
             After the transfer is complete, the USS file or directory will
             be removed.
@@ -276,7 +281,7 @@ class ActionModule(ActionBase):
         ansible_user = self._play_context.remote_user
         ansible_host = self._play_context.remote_addr
 
-        cmd = ['sftp', ansible_user + '@' + ansible_host]
+        cmd = ['sftp', "-oPort={0}".format(port), ansible_user + '@' + ansible_host]
         stdin = "get -r {0} {1}".format(remote_path, dest)
         if src_type != "PO":
             stdin = stdin.replace(" -r", "")

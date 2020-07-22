@@ -6,10 +6,11 @@
   vars:
     # minimum_zoau_version only accepts integers and "."
     minimum_zoau_version: 1.0.3
+    max_search_depth: 15
 
   tasks:
     - name: Gather potential dependency paths
-      raw: 'find / -level 15 -type f -perm -111 -name "python*" -o -type f -perm -111 -name "dtouch" 2>/dev/null || :'
+      raw: 'find / -level {{ max_search_depth }} -type f -perm -111 -name "python*" -o -type f -perm -111 -name "dtouch" 2>/dev/null || :'
       register: dependency_paths
 
     - set_fact:

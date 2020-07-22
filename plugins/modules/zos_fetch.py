@@ -81,6 +81,13 @@ options:
     required: false
     default: "false"
     type: bool
+  sftp_port:
+    description:
+      - Indicates which port should be used to connect to the remote z/OS
+        system to perform data transfer. Default is port 22.
+    type: int
+    required: false
+    default: 22
   encoding:
     description:
       - Specifies which encodings the fetched data set should be converted from
@@ -505,6 +512,7 @@ def run_module():
             use_qualifier=dict(required=False, default=False, type="bool"),
             validate_checksum=dict(required=False, default=True, type="bool"),
             encoding=dict(required=False, type="dict"),
+            sftp_port=dict(type='int', default=22, required=False)
         )
     )
 
@@ -521,7 +529,7 @@ def run_module():
         dest=dict(arg_type="path", required=True),
         fail_on_missing=dict(arg_type="bool", required=False, default=True),
         is_binary=dict(arg_type="bool", required=False, default=False),
-        use_qualifier=dict(arg_type="bool", required=False, default=False),
+        use_qualifier=dict(arg_type="bool", required=False, default=False)
     )
 
     if module.params.get("encoding"):

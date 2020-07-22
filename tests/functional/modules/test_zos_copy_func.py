@@ -5,12 +5,6 @@ from __future__ import absolute_import, division, print_function
 import os
 import shutil
 import tempfile
-import stat
-
-import ansible.utils
-import pytest
-
-from ansible.utils.hashing import checksum
 
 __metaclass__ = type
 
@@ -1946,3 +1940,14 @@ def test_copy_sequential_data_set_to_vsam_fails(ansible_zos_module):
             assert "Incompatible" in result.get("msg")
     finally:
         hosts.all.zos_data_set(name=dest, state="absent")
+
+
+def test_sftp_negative_port_specification_fails(ansible_zos_module):
+    hosts = ansible_zos_module
+    dest_path = "/tmp/profile"
+    try:
+        copy_res = hosts.all.zos_copy(src="/etc/profile", dest=dest_path, sftp_port=-1)
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is not None
+    finally:
+        hosts.all.file(path=dest_path, state="absent")

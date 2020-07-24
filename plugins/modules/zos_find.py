@@ -74,14 +74,18 @@ options:
     required: false
   ds_type;
     description:
-      - The type of resource to search. The two choices are 'NONVSAM' and 'VSAM'.
-      - 'NONVSAM' refers to one of SEQ, LIBRARY (PDSE), PDS, LARGE, BASIC, EXTREQ, EXTPREF.
+      - The type of resource to search.
+      - 'nonvsam' refers to one of SEQ, LIBRARY (PDSE), PDS, LARGE, BASIC, EXTREQ, EXTPREF.
+      - 'cluster' refers to a VSAM cluster. The 'data' and 'index' are the data and index
+        components of a VSAM cluster.
     choices:
-      - NONVSAM
-      - VSAM
+      - nonvsam
+      - cluster
+      - data
+      - index
     type: str
     required: false
-    default: NONVSAM
+    default: nonvsam
   volume:
     description:
       - If provided, only the data sets allocated in the specified list of 
@@ -156,15 +160,17 @@ data_sets:
     type: list
     sample: [
       { 
+        "name": "IMS.CICS13.USERLIB",
         "members": \[
             "COBU",
             "MC2CNAM",
             "TINAD"
         \],
-        "name": "IMS.CICS13.USERLIB"
+        "type": "NONVSAM"
       },
       { 
-          name: "SAMPLE.DATA.SET"
+        "name": "SAMPLE.DATA.SET",
+        "type": "CLUSTER"
       }
     ]
 matched:
@@ -197,6 +203,8 @@ rc:
 import re
 import time
 import datetime
+
+from copy import deepcopy
 
 from ansible.module_utils.six import PY3
 from ansible.module_utils.basic import AnsibleModule
@@ -290,22 +298,19 @@ def data_set_filter(module, patterns):
                     )
                     if mls_rc == 2:
                         filtered_data_sets["pds"][result[0]] = {}
-                        continue
-                    filtered_data_sets["pds"][result[0]] = set(mls_out.split("\n"))
+                    else:
+                        filtered_data_sets["pds"][result[0]] = set(filter(None, mls_out.split('\n')))
                 else:
                     filtered_data_sets["ps"].add(result[0])
     return filtered_data_sets
 
 
-#TODO: pds_filter() currently has O(n^3) time complexity. 
-# Seems to be unavoidable due to the fact that each PDS could have multiple
-# matched members and each member needs to be compared against multiple member patterns.
-# Try to reduce the complexity to O(n^2) or less if possible.
-def pds_filter(pds_dict, member_patterns, excludes=[]):
+def pds_filter(module, pds_dict, member_patterns, excludes=[]):
     """ Return all PDS/PDSE data sets whose members match any of the patterns
     in the given list of member patterns.
 
     Arguments:
+        module {AnsibleModule} -- The Ansible module object being used in the module
         pds_dict {dict[str, str]} -- A dictionary where each key is the name of
                                     of the PDS/PDSE and the value is a list of 
                                     members belonging to the PDS/PDSE
@@ -318,22 +323,23 @@ def pds_filter(pds_dict, member_patterns, excludes=[]):
     for pds, members in pds_dict.items():
         for m in members:
             for mem_pat in member_patterns:
-                if re.match(mem_pat, m, re.IGNORECASE):
+                if _match_regex(module, mem_pat, m):
                     try:
                         filtered_pds[pds].add(m)
                     except KeyError:
-                        filtered_pds[pds] = set(m)
-    
+                        filtered_pds[pds] = set({m})
+
     if excludes:
-        for pds, members in dict(filtered_pds):
+        for pds, members in deepcopy(filtered_pds).items():
             for m in members:
                 for ex_pat in excludes:
-                    if re.fullmatch(ex_pat, m, re.IGNORECASE):
-                        members.remove(m)
+                    if _match_regex(module, ex_pat, m):
+                        filtered_pds[pds].remove(m)
+                        break
     return filtered_pds
 
 
-def vsam_filter(module, patterns):
+def vsam_filter(module, patterns, ds_type):
     """ Return all VSAM data sets that match any of the patterns
     in the given list of patterns.
 
@@ -344,16 +350,23 @@ def vsam_filter(module, patterns):
     Returns:
         set[str]-- Matched VSAM data sets 
     """
+    def filter_result(x):
+        if ds_type == "DATA":
+            return x != "" and x.endswith("DATA")
+        elif ds_type == "INDEX":
+            return x != "" and x.endswith("INDEX")
+        else:
+            return x != ""
+
     filtered_data_sets = set()
     for pattern in patterns:
         rc, out, err = _vls_wrapper(pattern, details=True)
-        if rc != 0:
+        if rc > 4:
             module.fail_json(
                 msg="Non-zero return code received while executing ZOAU shell command 'vls'",
                 rc=rc, stdout=out, stderr=err
             )
-        for line in out.split("\n"):
-            filtered_data_sets.add(line.split()[0].strip())
+        filtered_data_sets = filtered_data_sets.union(set(filter(filter_result, out.split('\n'))))
     return filtered_data_sets
 
 
@@ -382,15 +395,19 @@ def data_set_attribute_filter(module, data_sets, size=None, age=None):
             if line:
                 result = line.split()
                 if (
-                    age
-                    and size
-                    and _age_filter(result[1], now, age)
-                    and _size_filter(int(result[6]), size)
+                    (
+                        age
+                        and size
+                        and _age_filter(result[1], now, age)
+                        and _size_filter(int(result[6]), size)
+                    ) or
+                    (
+                        age and not size and _age_filter(result[1], now, age)
+                    ) or
+                    (
+                        size and not age and _size_filter(int(result[5]), size)
+                    )
                 ):
-                    filtered_data_sets.add(ds)
-                elif age and not size and _age_filter(result[1], now, age):
-                    filtered_data_sets.add(ds)
-                elif size and not age and _size_filter(int(result[5]), size):
                     filtered_data_sets.add(ds)
     return filtered_data_sets
 
@@ -417,10 +434,11 @@ def volume_filter(data_sets, volumes):
     return filtered_data_sets
 
 
-def exclude_data_sets(data_set_list, excludes):
+def exclude_data_sets(module, data_set_list, excludes):
     """Remove data sets that match any pattern in a list of patterns
 
     Arguments:
+        module {AnsibleModule} -- The Ansible module object being used in the module
         data_set_list {set[str]} -- A set of data sets to be filtered
         excludes {list[str]} -- A list of data set patterns to be excluded
 
@@ -429,7 +447,7 @@ def exclude_data_sets(data_set_list, excludes):
     """
     for ds in set(data_set_list):
         for ex_pat in excludes:
-            if re.fullmatch(ex_pat, ds, re.IGNORECASE):
+            if _match_regex(module, ex_pat, ds):
                 data_set_list.remove(ds)
                 break
     return data_set_list
@@ -537,6 +555,26 @@ def _vls_wrapper(pattern, details=False, verbose=False):
     return AnsibleModuleHelper(argument_spec={}).run_command(vls_cmd)
 
 
+def _match_regex(module, pattern, string):
+    """ Determine whether the input regex pattern matches the string
+
+    Arguments:
+        module {AnsibleModule} -- The Ansible module object being used
+        pattern {str} -- The regular expression to match
+        string {str} -- The string to match
+
+    Returns:
+        bool -- Whether the pattern matches the string
+    """
+    try:
+        return re.fullmatch(pattern, string, re.IGNORECASE)
+    except re.error as err:
+        module.fail_json(
+            msg="Invalid regular expression '{0}'".format(pattern),
+            stderr=repr(err)
+        )
+
+
 def run_module(module):
     # Parameter initialization
     age = module.params.get('age')
@@ -545,7 +583,7 @@ def run_module(module):
     patterns = module.params.get('patterns')
     size = module.params.get('size')
     pds_paths = module.params.get('pds_paths')
-    ds_type = module.params.get('ds_type')
+    ds_type = module.params.get('ds_type').upper()
     volume = module.params.get('volume') or module.params.get('volumes')
 
     res_args = dict(data_sets=[])
@@ -584,7 +622,9 @@ def run_module(module):
             )
 
         if pds_paths:
-            filtered_pds = pds_filter(init_filtered_data_sets.get("pds"), patterns, excludes=excludes)
+            filtered_pds = pds_filter(
+                module, init_filtered_data_sets.get("pds"), patterns, excludes=excludes
+            )
             filtered_data_sets = set(filtered_pds.keys())
         else:
             filtered_data_sets = init_filtered_data_sets.get("ps").union(set(init_filtered_data_sets['pds'].keys()))
@@ -598,21 +638,30 @@ def run_module(module):
 
         #res_args['examined'] = init_filtered_data_sets.get("searched")
     else:
-        filtered_data_sets = vsam_filter(module, patterns)
+        filtered_data_sets = vsam_filter(module, patterns, ds_type)
         #res_args['examined'] = len(filtered_data_sets)
 
     if excludes and not pds_paths:
-        filtered_data_sets = exclude_data_sets(filtered_data_sets, excludes)
+        filtered_data_sets = exclude_data_sets(module, filtered_data_sets, excludes)
 
     for ds in filtered_data_sets:
         if ds_type == "NONVSAM":
             members = filtered_pds.get(ds) or init_filtered_data_sets['pds'].get(ds)
             if members:
-                res_args['data_sets'].append(dict(name=ds, members=[m for m in members]))
+                res_args['data_sets'].append(
+                    dict(name=ds, members=[m for m in members], type="NONVSAM")
+                )
             else:
-                res_args['data_sets'].append(dict(name=ds))
+                res_args['data_sets'].append(dict(name=ds, type="NONVSAM"))
+
+        elif ds_type == 'DATA':
+            res_args['data_sets'].append(dict(name=ds, type='DATA'))
+        
+        elif ds_type == 'INDEX':
+            res_args['data_sets'].append(dict(name=ds, type='INDEX'))
+
         else:
-            res_args['data_sets'].append(dict(name=ds))
+            res_args['data_sets'].append(dict(name=ds, type='CLUSTER'))
 
     res_args['matched'] = len(filtered_data_sets)
     return res_args
@@ -627,7 +676,10 @@ def main():
             patterns=dict(type='list', required=True),
             size=dict(type='str', required=False),
             pds_paths=dict(type='list', required=False),
-            ds_type=dict(type='str', required=False, default='NONVSAM', choices=['VSAM', 'NONVSAM']),
+            ds_type=dict(
+                type='str', required=False, default='nonvsam', 
+                choices=['cluster', 'data', 'index', 'nonvsam']
+            ),
             volume=dict(type='list', required=False, aliases=['volumes'])
         )
     )
@@ -639,7 +691,10 @@ def main():
         patterns=dict(arg_type='list', required=True),
         size=dict(arg_type='str', required=False),
         pds_paths=dict(arg_type='list', required=False),
-        ds_type=dict(arg_type='str', required=False, default='NONVSAM', choices=['VSAM', 'NONVSAM']),
+        ds_type=dict(
+            arg_type='str', required=False, default='nonvsam', 
+            choices=['cluster', 'data', 'index', 'nonvsam']
+        ),
         volume=dict(arg_type='list', required=False, aliases=['volumes'])
     )
     try:

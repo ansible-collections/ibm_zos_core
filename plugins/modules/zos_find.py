@@ -31,6 +31,18 @@ options:
       - Age is determined by using the 'referenced date' of the data set.
     type: str
     required: false
+  age_stamp:
+    description:
+      - Choose the age property against which to compare age.
+      - C(creation_date) is the date the data set was created and C(ref_date) is the date
+        the data set was last referenced.
+      - C(ref_date) is only applicable to non-VSAM resources.
+    choices:
+      - creation_date
+      - ref_date
+    default: creation_date
+    type: str
+    required: false
   contains:
     description:
       - A word which should be matched against the data set content or data 
@@ -48,11 +60,12 @@ options:
     aliases: ['exclude']
   patterns:
     description:
-      - One or more data set patterns.
-      - The patterns restrict the list of data sets to be returned to those whose 
+      - One or more data set or member patterns.
+      - The patterns restrict the list of data sets or members to be returned to those whose 
         names match at least one of the patterns specified. Multiple patterns 
         can be specified using a list.
       - This parameter expects a list, which can be either comma separated or YAML.
+      - If C(pds_patterns) is provided, C(patterns) must be member patterns.
       - When searching for members within a PDS/PDSE, pattern can be a regular expression.
     type: list
     required: true
@@ -62,9 +75,10 @@ options:
       - Use a negative size to find files equal to or less than the specified size.
       - Unqualified values are in bytes but b, k, m, g, and t can be appended to 
         specify bytes, kilobytes, megabytes, gigabytes, and terabytes, respectively.
+      - Filtering by size is currently only valid for non-VSAM resources.
     type: str
     required: false
-  pds_paths:
+  pds_patterns:
     description:
       - List of PDS/PDSE to search. Wild-card possible.
       - Required only when searching for data set members, otherwise ignored.
@@ -72,7 +86,8 @@ options:
       - Only valid for NONVSAM data set types. Otherwise ignored.
     type: list
     required: false
-  ds_type;
+    aliases: ['pds_pattern', 'pds_paths']
+  resource_type;
     description:
       - The type of resource to search.
       - 'nonvsam' refers to one of SEQ, LIBRARY (PDSE), PDS, LARGE, BASIC, EXTREQ, EXTPREF.
@@ -132,7 +147,7 @@ EXAMPLES = r"""
 - name: Find all members starting with characters 'TE' in a list of PDS
   zos_find:
     patterns: '^te.*'
-    pds_paths:
+    pds_patterns:
       - IMSTEST.TEST.*
       - IMSTEST.USER.*
       - USER.*.LIB
@@ -149,7 +164,7 @@ EXAMPLES = r"""
   zos_find:
     patterns:
       - USER.*
-    ds_type: VSAM
+    resource_type: VSAM
 """
 
 
@@ -171,6 +186,10 @@ data_sets:
       { 
         "name": "SAMPLE.DATA.SET",
         "type": "CLUSTER"
+      },
+      { 
+        "name": "SAMPLE.VSAM.DATA",
+        "type": "DATA"
       }
     ]
 matched:
@@ -203,6 +222,7 @@ rc:
 import re
 import time
 import datetime
+import math
 
 from copy import deepcopy
 
@@ -339,7 +359,7 @@ def pds_filter(module, pds_dict, member_patterns, excludes=[]):
     return filtered_pds
 
 
-def vsam_filter(module, patterns, ds_type):
+def vsam_filter(module, patterns, resource_type, age=None):
     """ Return all VSAM data sets that match any of the patterns
     in the given list of patterns.
 
@@ -350,15 +370,8 @@ def vsam_filter(module, patterns, ds_type):
     Returns:
         set[str]-- Matched VSAM data sets 
     """
-    def filter_result(x):
-        if ds_type == "DATA":
-            return x != "" and x.endswith("DATA")
-        elif ds_type == "INDEX":
-            return x != "" and x.endswith("INDEX")
-        else:
-            return x != ""
-
     filtered_data_sets = set()
+    now = time.time()
     for pattern in patterns:
         rc, out, err = _vls_wrapper(pattern, details=True)
         if rc > 4:
@@ -366,11 +379,18 @@ def vsam_filter(module, patterns, ds_type):
                 msg="Non-zero return code received while executing ZOAU shell command 'vls'",
                 rc=rc, stdout=out, stderr=err
             )
-        filtered_data_sets = filtered_data_sets.union(set(filter(filter_result, out.split('\n'))))
+        for entry in out.split("\n"):
+            if entry:
+                vsam_props = entry.split()
+                if age:
+                    if _age_filter(vsam_props[1], now, age):
+                        filtered_data_sets.add(vsam_props[0])
+                else:
+                    filtered_data_sets.add(vsam_props[0])
     return filtered_data_sets
 
 
-def data_set_attribute_filter(module, data_sets, size=None, age=None):
+def data_set_attribute_filter(module, data_sets, size=None, age=None, age_stamp="creation_date"):
     """ Filter data sets based on attributes such as age or size.
 
     Arguments:
@@ -391,24 +411,23 @@ def data_set_attribute_filter(module, data_sets, size=None, age=None):
                 msg="Non-zero return code received while executing ZOAU shell command 'dls'",
                 rc=rc, stdout=out, stderr=err
             )
-        for line in out.split("\n"):
-            if line:
-                result = line.split()
-                if (
-                    (
-                        age
-                        and size
-                        and _age_filter(result[1], now, age)
-                        and _size_filter(int(result[6]), size)
-                    ) or
-                    (
-                        age and not size and _age_filter(result[1], now, age)
-                    ) or
-                    (
-                        size and not age and _size_filter(int(result[5]), size)
-                    )
-                ):
-                    filtered_data_sets.add(ds)
+        out = out.strip().split()
+        ds_age = out[1] if age_stamp == "ref_date" else _get_creation_date(module, ds)
+        if (
+            (
+                age
+                and size
+                and _age_filter(ds_age, now, age)
+                and _size_filter(int(out[6]), size)
+            ) or
+            (
+                age and not size and _age_filter(ds_age, now, age)
+            ) or
+            (
+                size and not age and _size_filter(int(out[5]), size)
+            )
+        ):
+            filtered_data_sets.add(ds)
     return filtered_data_sets
 
 
@@ -438,7 +457,7 @@ def exclude_data_sets(module, data_set_list, excludes):
     """Remove data sets that match any pattern in a list of patterns
 
     Arguments:
-        module {AnsibleModule} -- The Ansible module object being used in the module
+        module {AnsibleModule} -- The Ansible module object being used
         data_set_list {set[str]} -- A set of data sets to be filtered
         excludes {list[str]} -- A list of data set patterns to be excluded
 
@@ -464,17 +483,46 @@ def _age_filter(ds_date, now, age):
     Returns:
         bool -- Whether 'ds_date' is older than 'age'
     """
-    year, month, day = ds_date.split("/")
+    year, month, day = map(lambda x: int(x), ds_date.split("/"))
     if year == "0000":
         return age >= 0
 
     # Seconds per day = 86400
-    ds_age = (datetime.datetime(year, month, day).timestamp())/86400
-    if age >= 0 and now - ds_age >= abs(age):
+    ds_age = datetime.datetime(year, month, day).timestamp()
+    if age >= 0 and (now - ds_age)/86400 >= abs(age):
         return True
-    elif age < 0 and now - ds_age <= abs(age):
+    elif age < 0 and (now - ds_age)/86400 <= abs(age):
         return True
     return False
+
+
+def _get_creation_date(module, ds):
+    """Retrieve the creation date for a given data set
+
+    Arguments:
+        module {AnsibleModule} -- The Ansible module object being used
+        ds {str} -- The name of the data set
+
+    Returns:
+        str -- The data set creation date in the format "YYYY/MM/DD"
+    """
+    rc, out, err = mvs_cmd.idcams(
+        "  LISTCAT ENT('{0}') HISTORY".format(ds), authorized=True
+    )
+    if rc != 0:
+        module.fail_json(
+            msg="Non-zero return code received while retrieving data set age",
+            rc=rc, stderr=err, stdout=out
+        )
+    out = re.findall(r"CREATION-*[A-Z|0-9]*", out.strip())
+    years, days = "".join(re.findall(r"-[A-Z|0-9]*", out)).replace("-", "").split(".")
+    days = int(days)
+    days_per_month = 30.4167
+    return "{0}/{1}/{3}".format(
+        years, 
+        math.ceil(days/days_per_month), 
+        math.ceil(days % days_per_month)
+    )
 
 
 def _size_filter(ds_size, size):
@@ -564,7 +612,7 @@ def _match_regex(module, pattern, string):
         string {str} -- The string to match
 
     Returns:
-        bool -- Whether the pattern matches the string
+        re.Match -- A Match object that matches the pattern to string
     """
     try:
         return re.fullmatch(pattern, string, re.IGNORECASE)
@@ -578,12 +626,17 @@ def _match_regex(module, pattern, string):
 def run_module(module):
     # Parameter initialization
     age = module.params.get('age')
+    age_stamp = module.params.get('age_stamp')
     contains = module.params.get('contains')
     excludes = module.params.get('excludes') or module.params.get('exclude')
     patterns = module.params.get('patterns')
     size = module.params.get('size')
-    pds_paths = module.params.get('pds_paths')
-    ds_type = module.params.get('ds_type').upper()
+    pds_paths = (
+        module.params.get('pds_paths') 
+        or module.params.get('pds_patterns') 
+        or module.params.get('pds_pattern')
+    )
+    resource_type = module.params.get('resource_type').upper()
     volume = module.params.get('volume') or module.params.get('volumes')
 
     res_args = dict(data_sets=[])
@@ -608,7 +661,7 @@ def run_module(module):
         else:
             module.fail_json(size=size, msg="failed to process size")
 
-    if ds_type == "NONVSAM":
+    if resource_type == "NONVSAM":
         if contains:
             init_filtered_data_sets = content_filter(
                 module, 
@@ -629,39 +682,36 @@ def run_module(module):
         else:
             filtered_data_sets = init_filtered_data_sets.get("ps").union(set(init_filtered_data_sets['pds'].keys()))
 
+        # Filter data sets by age or size
         if size or age:
             filtered_data_sets = data_set_attribute_filter(
-                module, filtered_data_sets, size=size, age=age
+                module, filtered_data_sets, size=size, age=age, age_stamp=age_stamp
             )
+        
+        # Filter data sets by volume
         if volume:
             filtered_data_sets = volume_filter(filtered_data_sets, volume)
 
         #res_args['examined'] = init_filtered_data_sets.get("searched")
     else:
-        filtered_data_sets = vsam_filter(module, patterns, ds_type)
+        filtered_data_sets = vsam_filter(module, patterns, resource_type, age=age)
         #res_args['examined'] = len(filtered_data_sets)
 
+    # Filter out data sets that match one of the patterns in 'excludes'
     if excludes and not pds_paths:
         filtered_data_sets = exclude_data_sets(module, filtered_data_sets, excludes)
 
     for ds in filtered_data_sets:
-        if ds_type == "NONVSAM":
+        if resource_type == "NONVSAM":
             members = filtered_pds.get(ds) or init_filtered_data_sets['pds'].get(ds)
             if members:
                 res_args['data_sets'].append(
-                    dict(name=ds, members=[m for m in members], type="NONVSAM")
+                    dict(name=ds, members=[m for m in members], type=resource_type)
                 )
             else:
-                res_args['data_sets'].append(dict(name=ds, type="NONVSAM"))
-
-        elif ds_type == 'DATA':
-            res_args['data_sets'].append(dict(name=ds, type='DATA'))
-        
-        elif ds_type == 'INDEX':
-            res_args['data_sets'].append(dict(name=ds, type='INDEX'))
-
+                res_args['data_sets'].append(dict(name=ds, type=resource_type))
         else:
-            res_args['data_sets'].append(dict(name=ds, type='CLUSTER'))
+            res_args['data_sets'].append(dict(name=ds, type=resource_type))
 
     res_args['matched'] = len(filtered_data_sets)
     return res_args
@@ -671,12 +721,18 @@ def main():
     module = AnsibleModule(
         argument_spec=dict(
             age=dict(type='str', required=False),
+            age_stamp=dict(
+                type='str',
+                required=False, 
+                choices=['creation_date', 'ref_date'], 
+                default='creation_date'
+            ),
             contains=dict(type='str', required=False),
             excludes=dict(type='list', required=False, aliases=['exclude']),
             patterns=dict(type='list', required=True),
             size=dict(type='str', required=False),
-            pds_paths=dict(type='list', required=False),
-            ds_type=dict(
+            pds_patterns=dict(type='list', required=False, aliases=['pds_pattern', 'pds_paths']),
+            resource_type=dict(
                 type='str', required=False, default='nonvsam', 
                 choices=['cluster', 'data', 'index', 'nonvsam']
             ),
@@ -686,13 +742,21 @@ def main():
 
     arg_def = dict(
         age=dict(arg_type='str', required=False),
+        age_stamp=dict(
+            arg_type='str',
+            required=False, 
+            choices=['creation_date', 'ref_date'], 
+            default='creation_date'
+        ),
         contains=dict(arg_type='str', required=False),
         excludes=dict(arg_type='list', required=False, aliases=['exclude']),
         patterns=dict(arg_type='list', required=True),
         size=dict(arg_type='str', required=False),
-        pds_paths=dict(arg_type='list', required=False),
-        ds_type=dict(
-            arg_type='str', required=False, default='nonvsam', 
+        pds_patterns=dict(arg_type='list', required=False, aliases=['pds_pattern', 'pds_paths']),
+        resource_type=dict(
+            arg_type='str',
+            required=False, 
+            default='nonvsam', 
             choices=['cluster', 'data', 'index', 'nonvsam']
         ),
         volume=dict(arg_type='list', required=False, aliases=['volumes'])

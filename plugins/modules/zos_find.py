@@ -197,6 +197,11 @@ matched:
     returned: success
     type: int
     sample: 49
+examined:
+    description: The number of data sets searched
+    returned: success
+    type: int
+    sample: 158
 msg:
     description: Failure message returned by the module.
     returned: failure
@@ -270,20 +275,21 @@ def content_filter(module, patterns, content):
                 msg="Non-zero return code received while executing ZOAU shell command 'dgrep'",
                 rc=rc, stdout=out, stderr=err
             )
-        for line in out.split("\n"):
-            if line.strip().startswith("BGYSC1005I"):
+        for line in err.split("\n"):
+            if line and line.strip().startswith("BGYSC1005I"):
                 filtered_data_sets['searched'] += 1
-            else:
-                result = line.split()
-                if result:
-                    ds_type = data_set.DataSetUtils(result[0]).ds_type()
-                    if ds_type == "PO":
-                        try:
-                            filtered_data_sets['pds'][result[0]].add(result[1])
-                        except KeyError:
-                            filtered_data_sets['pds'][result[0]] = set(result[1])
-                    else:
-                        filtered_data_sets['ps'].add(result[0])
+
+        for line in out.split("\n"):
+            result = line.split()
+            if result:
+                ds_type = data_set.DataSetUtils(result[0]).ds_type()
+                if ds_type == "PO":
+                    try:
+                        filtered_data_sets['pds'][result[0]].add(result[1])
+                    except KeyError:
+                        filtered_data_sets['pds'][result[0]] = set(result[1])
+                else:
+                    filtered_data_sets['ps'].add(result[0])
     return filtered_data_sets
 
 
@@ -308,10 +314,13 @@ def data_set_filter(module, patterns):
                 msg="Non-zero return code received while executing ZOAU shell command 'dls'",
                 rc=rc, stdout=out, stderr=err
             )
+        for ds in err.split("\n"):
+            if ds and ds.strip().startswith("BGYSC1005I"):
+                filtered_data_sets['searched'] += 1
+
         for line in out.split("\n"):
             result = line.split()
             if result:
-                filtered_data_sets['searched'] += 1
                 if result[1] == "PO":
                     mls_rc, mls_out, mls_err = module.run_command(
                         "mls '{0}(*)'".format(result[0])
@@ -687,7 +696,7 @@ def run_module(module):
             filtered_data_sets = data_set_attribute_filter(
                 module, filtered_data_sets, size=size, age=age, age_stamp=age_stamp
             )
-        
+
         # Filter data sets by volume
         if volume:
             filtered_data_sets = volume_filter(filtered_data_sets, volume)

@@ -271,19 +271,19 @@ def content_filter(module, patterns, content):
                 rc=rc, stdout=out, stderr=err
             )
         for line in out.split("\n"):
-            # if line.startswith("BGYSC1005I"):
-            #     filtered_data_sets['searched'] += 1
-            # else:
-            result = line.split()
-            if result:
-                ds_type = data_set.DataSetUtils(result[0]).ds_type()
-                if ds_type == "PO":
-                    try:
-                        filtered_data_sets['pds'][result[0]].add(result[1])
-                    except KeyError:
-                        filtered_data_sets['pds'][result[0]] = set(result[1])
-                else:
-                    filtered_data_sets['ps'].add(result[0])
+            if line.strip().startswith("BGYSC1005I"):
+                filtered_data_sets['searched'] += 1
+            else:
+                result = line.split()
+                if result:
+                    ds_type = data_set.DataSetUtils(result[0]).ds_type()
+                    if ds_type == "PO":
+                        try:
+                            filtered_data_sets['pds'][result[0]].add(result[1])
+                        except KeyError:
+                            filtered_data_sets['pds'][result[0]] = set(result[1])
+                    else:
+                        filtered_data_sets['ps'].add(result[0])
     return filtered_data_sets
 
 
@@ -311,7 +311,7 @@ def data_set_filter(module, patterns):
         for line in out.split("\n"):
             result = line.split()
             if result:
-                #filtered_data_sets['searched'] += 1
+                filtered_data_sets['searched'] += 1
                 if result[1] == "PO":
                     mls_rc, mls_out, mls_err = module.run_command(
                         "mls '{0}(*)'".format(result[0])
@@ -692,10 +692,10 @@ def run_module(module):
         if volume:
             filtered_data_sets = volume_filter(filtered_data_sets, volume)
 
-        #res_args['examined'] = init_filtered_data_sets.get("searched")
+        res_args['examined'] = init_filtered_data_sets.get("searched")
     else:
         filtered_data_sets = vsam_filter(module, patterns, resource_type, age=age)
-        #res_args['examined'] = len(filtered_data_sets)
+        res_args['examined'] = len(filtered_data_sets)
 
     # Filter out data sets that match one of the patterns in 'excludes'
     if excludes and not pds_paths:

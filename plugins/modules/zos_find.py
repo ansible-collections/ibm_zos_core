@@ -14,11 +14,11 @@ ANSIBLE_METADATA = {'metadata_version': '1.1',
 DOCUMENTATION = r"""
 ---
 module: zos_find
-version_added: '2.9'
+version_added: "2.9"
 short_description: Find matching data sets
 description:
-  - Return a list of data sets based on specific criteria. 
-  - Multiple criteria are AND’d together.
+  - Return a list of data sets based on specific criteria.
+  - Multiple criteria are AND'd together.
   - Use the M(find) module to find USS files.
 author: "Asif Mahmud (@asifmahmud)"
 options:
@@ -26,7 +26,7 @@ options:
     description:
       - Select data sets whose age is equal to or greater than the specified time.
       - Use a negative age to find data sets equal to or less than the specified time.
-      - You can choose days, weeks, months or years by specifying the first letter of 
+      - You can choose days, weeks, months or years by specifying the first letter of
         any of those words (e.g., "1w"). If no letter is specified, it is assumed to be days.
       - Age is determined by using the 'referenced date' of the data set.
     type: str
@@ -36,7 +36,7 @@ options:
       - Choose the age property against which to compare age.
       - C(creation_date) is the date the data set was created and C(ref_date) is the date
         the data set was last referenced.
-      - C(ref_date) is only applicable to non-VSAM resources.
+      - C(ref_date) is only applicable to sequential and partitioned data sets.
     choices:
       - creation_date
       - ref_date
@@ -45,24 +45,25 @@ options:
     required: false
   contains:
     description:
-      - A word which should be matched against the data set content or data 
+      - A word which should be matched against the data set content or data
         set member content.
     type: str
     required: false
   excludes:
     description:
-      - Data sets whose names match an excludes pattern are culled from patterns matches. 
+      - Data sets whose names match an excludes pattern are culled from patterns matches.
         Multiple patterns can be specified using a list.
       - The pattern can be a regular expression.
       - If the pattern is a regular expression, it must match the full data set name.
+    aliases:
+      - exclude
     type: list
     required: false
-    aliases: ['exclude']
   patterns:
     description:
       - One or more data set or member patterns.
-      - The patterns restrict the list of data sets or members to be returned to those whose 
-        names match at least one of the patterns specified. Multiple patterns 
+      - The patterns restrict the list of data sets or members to be returned to those whose
+        names match at least one of the patterns specified. Multiple patterns
         can be specified using a list.
       - This parameter expects a list, which can be either comma separated or YAML.
       - If C(pds_patterns) is provided, C(patterns) must be member patterns.
@@ -73,25 +74,26 @@ options:
     description:
       - Select data sets whose size is equal to or greater than the specified size.
       - Use a negative size to find files equal to or less than the specified size.
-      - Unqualified values are in bytes but b, k, m, g, and t can be appended to 
+      - Unqualified values are in bytes but b, k, m, g, and t can be appended to
         specify bytes, kilobytes, megabytes, gigabytes, and terabytes, respectively.
-      - Filtering by size is currently only valid for non-VSAM resources.
-    type: str
+      - Filtering by size is currently only valid for sequential and partitioned data sets.
     required: false
+    type: str
   pds_patterns:
     description:
-      - List of PDS/PDSE to search. Wild-card possible.
-      - Required only when searching for data set members, otherwise ignored.
-      - if C(pds_paths) is provided, C(patterns) must be member patterns.
-      - Only valid for NONVSAM data set types. Otherwise ignored.
+      - List of PDS/PDSE to search. Wildcard possible.
+      - Required when searching for data set members.
+      - Only valid for C(nonvsam) resource types. Otherwise ignored.
+    aliases:
+      - pds_paths
+      - pds_pattern
     type: list
     required: false
-    aliases: ['pds_pattern', 'pds_paths']
-  resource_type;
+  resource_type:
     description:
       - The type of resource to search.
-      - 'nonvsam' refers to one of SEQ, LIBRARY (PDSE), PDS, LARGE, BASIC, EXTREQ, EXTPREF.
-      - 'cluster' refers to a VSAM cluster. The 'data' and 'index' are the data and index
+      - C(nonvsam) refers to one of SEQ, LIBRARY (PDSE), PDS, LARGE, BASIC, EXTREQ, EXTPREF.
+      - C(cluster) refers to a VSAM cluster. The C(data) and C(index) are the data and index
         components of a VSAM cluster.
     choices:
       - nonvsam
@@ -100,21 +102,22 @@ options:
       - index
     type: str
     required: false
-    default: nonvsam
+    default: "nonvsam"
   volume:
     description:
-      - If provided, only the data sets allocated in the specified list of 
+      - If provided, only the data sets allocated in the specified list of
         volumes will be searched.
     type: list
     required: false
-    aliases: ['volumes']
+    aliases:
+      - volumes
 notes:
   - Only cataloged data sets will be searched. If an uncataloged data set needs to
     be searched, it should be cataloged first.
   - The M(zos_find) module currently does not support wildcards for high level qualifiers.
     For example, C(SOME.*.DATA.SET) is a valid pattern, but C(*.DATA.SET) is not.
   - If a data set pattern is specified as C(USER.*), the matching data sets will have two
-    name segments such as C(USER.ABC), C(USER.XYZ) etc. If a wildcard is specified 
+    name segments such as C(USER.ABC), C(USER.XYZ) etc. If a wildcard is specified
     as C(USER.*.ABC), the matching data sets will have three name segments such as
     C(USER.XYZ.ABC), C(USER.TEST.ABC) etc.
 seealso:
@@ -144,7 +147,7 @@ EXAMPLES = r"""
     contains: 'hello'
     excludes: '*.TEST'
 
-- name: Find all members starting with characters 'TE' in a list of PDS
+- name: Find all members starting with characters 'TE' in a given list of PDS patterns
   zos_find:
     patterns: '^te.*'
     pds_patterns:
@@ -174,20 +177,20 @@ data_sets:
     returned: success
     type: list
     sample: [
-      { 
+      {
         "name": "IMS.CICS13.USERLIB",
-        "members": \[
+        "members": {
             "COBU",
             "MC2CNAM",
             "TINAD"
-        \],
+        },
         "type": "NONVSAM"
       },
-      { 
+      {
         "name": "SAMPLE.DATA.SET",
         "type": "CLUSTER"
       },
-      { 
+      {
         "name": "SAMPLE.VSAM.DATA",
         "type": "DATA"
       }
@@ -211,7 +214,7 @@ stdout:
     description: The stdout from a USS command or MVS command, if applicable.
     returned: failure
     type: str
-    sample: Copying local file /tmp/foo/src to remote path /tmp/foo/dest
+    sample: Searching dataset IMSTESTL.COMNUC
 stderr:
     description: The stderr of a USS command or MVS command, if applicable.
     returned: failure
@@ -262,7 +265,7 @@ def content_filter(module, patterns, content):
         content {str} -- The content string to search for within matched data sets
 
     Returns:
-        dict[ps=set, pds=dict[str, str], searched=int] -- A dictionary containing 
+        dict[ps=set, pds=dict[str, str], searched=int] -- A dictionary containing
         a set of matched "PS" data sets, a dictionary containing "PDS" data sets
         and members corresponding to each PDS, an int representing number of total
         data sets examined.
@@ -301,7 +304,7 @@ def data_set_filter(module, patterns):
         patterns {list[str]} -- A list of data set patterns
 
     Returns:
-        dict[ps=set, pds=dict[str, str], searched=int] -- A dictionary containing 
+        dict[ps=set, pds=dict[str, str], searched=int] -- A dictionary containing
         a set of matched "PS" data sets, a dictionary containing "PDS" data sets
         and members corresponding to each PDS, an int representing number of total
         data sets examined.
@@ -334,19 +337,19 @@ def data_set_filter(module, patterns):
     return filtered_data_sets
 
 
-def pds_filter(module, pds_dict, member_patterns, excludes=[]):
+def pds_filter(module, pds_dict, member_patterns, excludes=None):
     """ Return all PDS/PDSE data sets whose members match any of the patterns
     in the given list of member patterns.
 
     Arguments:
         module {AnsibleModule} -- The Ansible module object being used in the module
         pds_dict {dict[str, str]} -- A dictionary where each key is the name of
-                                    of the PDS/PDSE and the value is a list of 
+                                    of the PDS/PDSE and the value is a list of
                                     members belonging to the PDS/PDSE
         member_patterns {list} -- A list of member patterns to search for
 
     Returns:
-        dict[str, set[str]] -- Filtered PDS/PDSE with corresponding members 
+        dict[str, set[str]] -- Filtered PDS/PDSE with corresponding members
     """
     filtered_pds = dict()
     for pds, members in pds_dict.items():
@@ -357,7 +360,13 @@ def pds_filter(module, pds_dict, member_patterns, excludes=[]):
                         filtered_pds[pds].add(m)
                     except KeyError:
                         filtered_pds[pds] = set({m})
-
+    # ************************************************************************
+    # Exclude any member that matches a given pattern in 'excludes'.
+    # Changes will be made to 'filtered_pds' each iteration. Therefore,
+    # iteration should be performed over a copy of 'filtered_pds'. Because
+    # Python performs a shallow copy when copying a dictionary, a deep copy
+    # should be performed.
+    # ************************************************************************
     if excludes:
         for pds, members in deepcopy(filtered_pds).items():
             for m in members:
@@ -377,7 +386,7 @@ def vsam_filter(module, patterns, resource_type, age=None):
         patterns {list[str]} -- A list of data set patterns
 
     Returns:
-        set[str]-- Matched VSAM data sets 
+        set[str]-- Matched VSAM data sets
     """
     filtered_data_sets = set()
     now = time.time()
@@ -440,8 +449,8 @@ def data_set_attribute_filter(module, data_sets, size=None, age=None, age_stamp=
     return filtered_data_sets
 
 
-#TODO: 
-# Implement volume_filter() using "vtocls" shell command from ZOAU 
+# TODO:
+# Implement volume_filter() using "vtocls" shell command from ZOAU
 # when it becomes available.
 def volume_filter(data_sets, volumes):
     """Return only the data sets that are allocated in one of the volumes from
@@ -492,15 +501,15 @@ def _age_filter(ds_date, now, age):
     Returns:
         bool -- Whether 'ds_date' is older than 'age'
     """
-    year, month, day = map(lambda x: int(x), ds_date.split("/"))
+    year, month, day = map(int, ds_date.split("/"))
     if year == "0000":
         return age >= 0
 
     # Seconds per day = 86400
     ds_age = datetime.datetime(year, month, day).timestamp()
-    if age >= 0 and (now - ds_age)/86400 >= abs(age):
+    if age >= 0 and (now - ds_age) / 86400 >= abs(age):
         return True
-    elif age < 0 and (now - ds_age)/86400 <= abs(age):
+    elif age < 0 and (now - ds_age) / 86400 <= abs(age):
         return True
     return False
 
@@ -528,8 +537,8 @@ def _get_creation_date(module, ds):
     days = int(days)
     days_per_month = 30.4167
     return "{0}/{1}/{3}".format(
-        years, 
-        math.ceil(days/days_per_month), 
+        years,
+        math.ceil(days / days_per_month),
         math.ceil(days % days_per_month)
     )
 
@@ -551,12 +560,32 @@ def _size_filter(ds_size, size):
     return False
 
 
+def _match_regex(module, pattern, string):
+    """ Determine whether the input regex pattern matches the string
+
+    Arguments:
+        module {AnsibleModule} -- The Ansible module object being used
+        pattern {str} -- The regular expression to match
+        string {str} -- The string to match
+
+    Returns:
+        re.Match -- A Match object that matches the pattern to string
+    """
+    try:
+        return re.fullmatch(pattern, string, re.IGNORECASE)
+    except re.error as err:
+        module.fail_json(
+            msg="Invalid regular expression '{0}'".format(pattern),
+            stderr=repr(err)
+        )
+
+
 def _dgrep_wrapper(
-    data_set_pattern, 
-    content, 
-    ignore_case=False, 
-    line_num=False, 
-    verbose=False, 
+    data_set_pattern,
+    content,
+    ignore_case=False,
+    line_num=False,
+    verbose=False,
     context=None
 ):
     """A wrapper for ZOAU 'dgrep' shell command"""
@@ -575,11 +604,11 @@ def _dgrep_wrapper(
 
 
 def _dls_wrapper(
-    data_set_pattern, 
-    list_details=False, 
-    u_time=False, 
-    size=False, 
-    verbose=False, 
+    data_set_pattern,
+    list_details=False,
+    u_time=False,
+    size=False,
+    verbose=False,
     migrated=False
 ):
     """A wrapper for ZOAU 'dls' shell command"""
@@ -612,26 +641,6 @@ def _vls_wrapper(pattern, details=False, verbose=False):
     return AnsibleModuleHelper(argument_spec={}).run_command(vls_cmd)
 
 
-def _match_regex(module, pattern, string):
-    """ Determine whether the input regex pattern matches the string
-
-    Arguments:
-        module {AnsibleModule} -- The Ansible module object being used
-        pattern {str} -- The regular expression to match
-        string {str} -- The string to match
-
-    Returns:
-        re.Match -- A Match object that matches the pattern to string
-    """
-    try:
-        return re.fullmatch(pattern, string, re.IGNORECASE)
-    except re.error as err:
-        module.fail_json(
-            msg="Invalid regular expression '{0}'".format(pattern),
-            stderr=repr(err)
-        )
-
-
 def run_module(module):
     # Parameter initialization
     age = module.params.get('age')
@@ -641,8 +650,8 @@ def run_module(module):
     patterns = module.params.get('patterns')
     size = module.params.get('size')
     pds_paths = (
-        module.params.get('pds_paths') 
-        or module.params.get('pds_patterns') 
+        module.params.get('pds_paths')
+        or module.params.get('pds_patterns')
         or module.params.get('pds_pattern')
     )
     resource_type = module.params.get('resource_type').upper()
@@ -673,13 +682,13 @@ def run_module(module):
     if resource_type == "NONVSAM":
         if contains:
             init_filtered_data_sets = content_filter(
-                module, 
-                pds_paths if pds_paths else patterns, 
+                module,
+                pds_paths if pds_paths else patterns,
                 contains
             )
         else:
             init_filtered_data_sets = data_set_filter(
-                module, 
+                module,
                 pds_paths if pds_paths else patterns
             )
 
@@ -715,7 +724,7 @@ def run_module(module):
             members = filtered_pds.get(ds) or init_filtered_data_sets['pds'].get(ds)
             if members:
                 res_args['data_sets'].append(
-                    dict(name=ds, members=[m for m in members], type=resource_type)
+                    dict(name=ds, members=members, type=resource_type)
                 )
             else:
                 res_args['data_sets'].append(dict(name=ds, type=resource_type))
@@ -729,46 +738,46 @@ def run_module(module):
 def main():
     module = AnsibleModule(
         argument_spec=dict(
-            age=dict(type='str', required=False),
+            age=dict(type="str", required=False),
             age_stamp=dict(
-                type='str',
-                required=False, 
-                choices=['creation_date', 'ref_date'], 
-                default='creation_date'
+                type="str",
+                required=False,
+                choices=["creation_date", "ref_date"],
+                default="creation_date"
             ),
-            contains=dict(type='str', required=False),
-            excludes=dict(type='list', required=False, aliases=['exclude']),
-            patterns=dict(type='list', required=True),
-            size=dict(type='str', required=False),
-            pds_patterns=dict(type='list', required=False, aliases=['pds_pattern', 'pds_paths']),
+            contains=dict(type="str", required=False),
+            excludes=dict(type="list", required=False, aliases=["exclude"]),
+            patterns=dict(type="list", required=True),
+            size=dict(type="str", required=False),
+            pds_patterns=dict(type="list", required=False, aliases=["pds_pattern", "pds_paths"]),
             resource_type=dict(
-                type='str', required=False, default='nonvsam', 
-                choices=['cluster', 'data', 'index', 'nonvsam']
+                type="str", required=False, default="nonvsam",
+                choices=["cluster", "data", "index", "nonvsam"]
             ),
-            volume=dict(type='list', required=False, aliases=['volumes'])
+            volume=dict(type="list", required=False, aliases=["volumes"])
         )
     )
 
     arg_def = dict(
-        age=dict(arg_type='str', required=False),
+        age=dict(arg_type="str", required=False),
         age_stamp=dict(
-            arg_type='str',
-            required=False, 
-            choices=['creation_date', 'ref_date'], 
-            default='creation_date'
+            arg_type="str",
+            required=False,
+            choices=["creation_date", "ref_date"],
+            default="creation_date"
         ),
-        contains=dict(arg_type='str', required=False),
-        excludes=dict(arg_type='list', required=False, aliases=['exclude']),
-        patterns=dict(arg_type='list', required=True),
-        size=dict(arg_type='str', required=False),
-        pds_patterns=dict(arg_type='list', required=False, aliases=['pds_pattern', 'pds_paths']),
+        contains=dict(arg_type="str", required=False),
+        excludes=dict(arg_type="list", required=False, aliases=["exclude"]),
+        patterns=dict(arg_type="list", required=True),
+        size=dict(arg_type="str", required=False),
+        pds_patterns=dict(arg_type="list", required=False, aliases=["pds_pattern", "pds_paths"]),
         resource_type=dict(
-            arg_type='str',
-            required=False, 
-            default='nonvsam', 
-            choices=['cluster', 'data', 'index', 'nonvsam']
+            arg_type="str",
+            required=False,
+            default="nonvsam",
+            choices=["cluster", "data", "index", "nonvsam"]
         ),
-        volume=dict(arg_type='list', required=False, aliases=['volumes'])
+        volume=dict(arg_type="list", required=False, aliases=["volumes"])
     )
     try:
         BetterArgParser(arg_def).parse_args(module.params)

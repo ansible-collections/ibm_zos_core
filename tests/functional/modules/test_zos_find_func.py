@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import absolute_import, division, print_function
-from typing import Pattern
 
 __metaclass__ = type
 
@@ -139,7 +138,7 @@ def test_exclude_members_from_matched_list(ansible_zos_module):
 def test_find_data_sets_older_than_age(ansible_zos_module):
     hosts = ansible_zos_module
     find_res = hosts.all.zos_find(
-        patterns=['IMSTESTL.IMS01.RESTART', 'IMSTESTL.IMS01.LGMSGL'], 
+        patterns=['IMSTESTL.IMS01.RESTART', 'IMSTESTL.IMS01.LGMSGL'],
         age='2d'
     )
     for val in find_res.contacted.values():

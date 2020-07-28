@@ -440,7 +440,7 @@ import stat
 import shutil
 import glob
 
-#from pathlib import Path
+from pathlib import Path
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
@@ -452,13 +452,13 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     data_set,
     encode,
     vtoc,
-    backup,
+#    backup,
     copy,
-    mvs_cmd
+    mvs_cmd,
 )
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingZOAUImport
+    MissingZOAUImport,
 )
 
 try:
@@ -493,6 +493,8 @@ def run_module(module, arg_def):
     res_args = dict()
 
     unmount = parsed_args.get('unmount')
+    if( unmount != True ):
+        unmount = False
     file_system = parsed_args.get('file_system')
     mount_point = parsed_args.get('mount_point')
     file_system_type = parsed_args.get('file_system_type')
@@ -526,7 +528,11 @@ def run_module(module, arg_def):
             automove_list = automove_list,
             cmd = 'not built',
             changed = changed,
-            unmount_extension = unmount_extension
+            unmount_extension = unmount_extension,
+            comment = 'starting',
+            rc = 0,
+            stdout = '',
+            stderr = ''
         )
     )
 
@@ -536,7 +542,7 @@ def run_module(module, arg_def):
     if( fs_exists == False):
         module.fail_json (
             msg = "Mount source (" + file_system + ") doesn't exist",
-            stderr = res_args
+            stderr = str(res_args)
         )
 
 # Validate mountpoint exists if mounting
@@ -545,20 +551,21 @@ def run_module(module, arg_def):
         if( mp_exists == False ):
             module.fail_json (
                 msg = "Mount destination (" + mount_point + ") doesn't exist",
-                atderr = res_args
+                atderr = str(res_args)
             )
 
 # Need to see if mountpoint is in use for idempotence (how?)
 ## df | grep file_system will do the trick
 ## this can also be used as validation for unmount
     currently_mounted = False
-    rc, stdout, stderr = module.run_command( 'sh df | grep ' + file_system )
+    rc, stdout, stderr = module.run_command( 'df | grep ' + file_system + ' | wc -m',use_unsafe_shell=True )
     if rc != 0:
         module.fail_json (
             msg = "Checking for file_system (" + file_system +") failed with error",
-            stderr = res_args
+            stderr = str(res_args)
         )
-    if stdout != "":    ## blank means not found
+    tmpint = int(stdout)
+    if tmpint != 0:	    ## zero bytes means not found
         currently_mounted = True
 
 
@@ -569,22 +576,22 @@ def run_module(module, arg_def):
     # Assemble the mount command - icky part
 
     if( unmount == False ):
-        fullcmd = "tsocmd MOUNT FILESYSTEM('{1}') MOUNTPOINT('{2}') TYPE('{3}')".format( file_systemm, mount_point, file_system_type )
-        
+        fullcmd = "tsocmd MOUNT FILESYSTEM\( \\'{0}\\' \) MOUNTPOINT\( \\'{1}\\' \) TYPE\( '{2}' \)".format( file_system, mount_point, file_system_type )
+        fullcmd = fullcmd + ' MODE\('
         if( open_read_only ):
             fullcmd = fullcmd + 'READ'
         else:
             fullcmd = fullcmd + 'RDWR'
-        fullcmd = fullcmd + ')'
-        if( file_system_params.size() > 1 ):
-            fullcmd = fullcmd + ' PARM(' + file_system_params + ')'
-        if( settag_ccsid.size() > 0):
-            fullcmd = fullcmd + ' TAG('
+        fullcmd = fullcmd + '\)'
+        if( len(file_system_params) > 1 ):
+            fullcmd = fullcmd + ' PARM\(\'' + file_system_params + '\'\)'
+        if( len(settag_ccsid) > 0):
+            fullcmd = fullcmd + ' TAG\('
             if( settag_flag ):
                 fullcmd = fullcmd + 'NOTEXT'
             else: 
                 fullcmd = fullcmd + 'TEXT'
-            fullcmd = fullcmd + ',' + settag_ccsid + ')'
+            fullcmd = fullcmd + ',' + settag_ccsid + '\)'
         if( respect_uids ):
             fullcmd = fullcmd + ' SETUID'
         else:
@@ -597,15 +604,15 @@ def run_module(module, arg_def):
             fullcmd = fullcmd + ' SECURITY'
         else:
             fullcmd = fullcmd + ' NOSECURITY'
-        if( sysname.size() > 1 ):
-            fullcmd = fullcmd + ' SYSNAME(' + sysname + ')'
-        if( automove.size() > 1):
+        if( len(sysname) > 1 ):
+            fullcmd = fullcmd + ' SYSNAME\(' + sysname + '\)'
+        if( len(automove) > 1):
             fullcmd = fullcmd + ' ' + automove
-            if( automove_list.size() > 1):
-                fullcmd = fullcmd + '(' + automove_list + ')'
+            if( len(automove_list) > 1):
+                fullcmd = fullcmd + '\(' + automove_list + '\)'
     else:       # unmount
-        fullcmd = "tsocmd UNMOUNT FILESYSTEM('{1}')".format( file_system )
-        if( unmount_extension.size() < 2 ):
+        fullcmd = "tsocmd UNMOUNT FILESYSTEM\(\'{0}\'\)".format( file_system )
+        if( len(unmount_extension) < 2 ):
             unmount_extension = "NORMAL"
         fullcmd = fullcmd + ' ' + unmount_extension
 
@@ -624,17 +631,19 @@ def run_module(module, arg_def):
         else:
             comment = 'Mount called on data set that is already mounted.'
 
-    rc = -1
+    rc = 0
     stdout = stderr = None
 
     if( changed ):  ## got something to do
         if( module.check_mode == False ):
             try:
-                rc, stdout, stderr = module.run_command( fullcommand )
+                (rc, stdout, stderr) = module.run_command( fullcmd,use_unsafe_shell=True )
+                comment = "ran command"
             except Exception as err:
-                module.fail_json(msg=str(err),stderr=res_args)
+                module.fail_json(msg=str(err),stderr=str(res_args))
         else:
             comment = comment + 'NO Action taken: ANSIBLE CHECK MODE'
+            stdout = 'ANSIBLE CHECK MODE'
 
     res_args.update(
         dict(
@@ -642,7 +651,6 @@ def run_module(module, arg_def):
             comment = comment,
             cmd = fullcmd,
             rc = rc,
-            stdout = stdout,
             stderr = stderr
         )
     )
@@ -678,21 +686,21 @@ def main():
     )
 
     arg_def = dict(
-        unmount=dict(arg_type='bool', required=False),
+        unmount=dict(arg_type='bool', default=False, required=False),
         file_system=dict(arg_type='data_set', required=True),
         mount_point=dict(arg_type='path', required=True),
         file_system_type=dict(arg_type='str', required=True),
-        open_read_only=dict(arg_type='bool', required=False),
-        file_system_params=dict(arg_type='str', required=False),
+        open_read_only=dict(arg_type='bool', default=False, required=False),
+        file_system_params=dict(arg_type='str', default='', required=False),
         settag_flag = dict(arg_type='bool', default=False, required=False),
-        settag_ccsid = dict(arg_type='str', required=False),
+        settag_ccsid = dict(arg_type='str', default='', required=False),
         respect_uids = dict(arg_type='bool', default=True, required=False),
         wait_until_done = dict(arg_type='bool', default=True, required=False),
         normal_security = dict(arg_type='bool', default=True, required=False),
-        sysname = dict(arg_type='str', required=False),
+        sysname = dict(arg_type='str', default='', required=False),
         automove = dict(arg_type='str', default='AUTOMOVE', required=False),
-        automove_list = dict(arg_type='str', required=False),
-        unmount_extension = dict(arg_type='str', required=False)
+        automove_list = dict(arg_type='str', default='', required=False),
+        unmount_extension = dict(arg_type='str', default='', required=False)
     )
 
     try:

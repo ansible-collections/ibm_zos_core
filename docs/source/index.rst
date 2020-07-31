@@ -2,6 +2,7 @@
 .. © Copyright IBM Corporation 2020                                          .
 .. ...........................................................................
 
+========================
 IBM z/OS core collection
 ========================
 
@@ -54,57 +55,45 @@ ansible-doc to automate tasks on z/OS.
    https://github.com/ansible-collections/ibm_zos_core/tree/master/plugins/filter/
 
 
-Copyright
-=========
-
-© Copyright IBM Corporation 2020
-
-License
-=======
-
-Some portions of this collection are licensed under
-`GNU General Public License, Version 3.0`_, and other portions of this
-collection are licensed under `Apache License, Version 2.0`_.
-
-See individual files for applicable licenses.
-
-.. _GNU General Public License, Version 3.0:
-    https://opensource.org/licenses/GPL-3.0
-
-.. _Apache License, Version 2.0:
-    https://opensource.org/licenses/Apache-2.0
-
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Getting Started
 
+   requirements
    installation
-   quickstart
+   playbooks-single
 
 .. toctree::
-   :maxdepth: 3
-   :caption: Reference
+   :maxdepth: 1
+   :caption: Ansible Content
 
    plugins
    modules
    filters
-   playbooks
-   supplementary
 
 .. toctree::
    :maxdepth: 1
-   :caption: Community guides
-
-   community_guides
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Requirements
-
-   requirements
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Appendices
+   :caption: Release Notes
 
    release_notes
+
+.. .. toctree::
+..    :maxdepth: 1
+..    :caption: FAQs
+..
+..    faqs
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Reference
+
+   community_guides
+   license
+
+
+
+
+
+
+
+

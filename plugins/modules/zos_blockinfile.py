@@ -100,21 +100,21 @@ options:
     description:
       - Creates a backup file or backup data set for I(src), including the
         timestamp information to ensure that you retrieve the original file.
-      - I(backup_file) can be used to specify a backup file name
+      - I(back_name) can be used to specify a backup file name
         if I(backup=true).
       - The backup file name will be returned on both success and failure
         of module execution such that data can be retrieved.
     required: false
     type: bool
     default: false
-  backup_file:
+  back_name:
     description:
       - Specify the USS file name or data set name for the destination backup.
-      - If the source I(src) is a USS file or path, the backup_file name must be a file
+      - If the source I(src) is a USS file or path, the back_name name must be a file
         or path name, and the USS file or path must be an absolute path name.
-      - If the source is an MVS data set, the backup_file name must be an MVS
+      - If the source is an MVS data set, the back_name name must be an MVS
         data set name.
-      - If the backup_file is not provided, the default backup_file name will
+      - If the back_name is not provided, the default back_name name will
         be used. If the source is a USS file or path, the name of the backup
         file will be the source file or path name appended with a
         timestamp, e.g. C(/path/file_name.2020-04-23-08-32-29-bak.tar).
@@ -218,27 +218,32 @@ cmd:
   returned: success
   type: str
   sample: dmodhelper -d -b -c IBM-1047 -m "BEGIN\nEND\n# {mark} ANSIBLE MANAGED BLOCK" \
-  -s -e "/^PATH=/a\\PATH=/dir/bin:$PATH/$" -e "$ a\\PATH=/dir/bin:$PATH"/etc/profile
+  -s -e "/^PATH=/a\\PATH=/dir/bin:$PATH/$" -e "$ a\\PATH=/dir/bin:$PATH" /etc/profile
 msg:
   description: The module messages
   returned: failure
   type: str
   sample: Parameter verification failed
-return_content:
+stdout:
+  description: The stdout from ZOAU dmod when json.loads() fails
+  returned: failure
+  type: str
+stderr:
   description: The error messages from ZOAU dmod
   returned: failure
   type: str
   sample: BGYSC1311E Iconv error, cannot open converter from ISO-88955-1 to IBM-1047
-backup_file:
+rc:
+  description: The return code from ZOAU dmod when json.loads() fails
+  returned: failure
+  type: bool
+back_name:
     description: Name of the backup file or data set that was created.
     returned: if backup=true
     type: str
     sample: /path/to/file.txt.2015-02-03@04:15~
 """
 
-import re
-import os
-import tempfile
 import json
 from ansible.module_utils.six import b
 from ansible.module_utils.basic import AnsibleModule
@@ -255,7 +260,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser
 )
 
 try:
-    from zoautil_py import Datasets
+    from zoautil_py import datasets
 except Exception:
     Datasets = MissingZOAUImport()
 
@@ -266,6 +271,7 @@ else:
 
 # supported data set types
 DS_TYPE = ['PS', 'PO']
+
 
 def present(src, block, marker, ins_aft, ins_bef, encoding):
     """Replace a block with the matching regex pattern
@@ -292,7 +298,7 @@ def present(src, block, marker, ins_aft, ins_bef, encoding):
             found: {int} -- Number of matching regex pattern
             changed: {bool} -- Indicates if the destination was modified.
     """
-    return Datasets.blockinfile(src, block, marker, ins_aft, ins_bef, encoding, state=True)
+    return datasets.blockinfile(src, block=block, marker=marker, ins_aft=ins_aft, ins_bef=ins_bef, encoding=encoding, state=True, debug=True)
 
 
 def absent(src, marker, encoding):
@@ -309,7 +315,7 @@ def absent(src, marker, encoding):
             found: {int} -- Number of matching regex pattern
             changed: {bool} -- Indicates if the destination was modified.
     """
-    return Datasets.blockinfile(src, marker=marker, encoding=encoding, state=False)
+    return datasets.blockinfile(src, marker=marker, encoding=encoding, state=False, debug=True)
 
 
 def quotedString(string):
@@ -359,7 +365,7 @@ def main():
                 type='bool',
                 default=False
             ),
-            backup_file=dict(
+            back_name=dict(
                 type='str',
                 required=False,
                 default=None
@@ -385,7 +391,7 @@ def main():
         marker_end=dict(arg_type='str', default='END', required=False),
         encoding=dict(arg_type="str", default="IBM-1047", required=False),
         backup=dict(arg_type="bool", default=False, required=False),
-        backup_file=dict(arg_type="data_set_or_path", required=False, default=None),
+        back_name=dict(arg_type="data_set_or_path", required=False, default=None),
         mutually_exclusive=[["insertbefore","insertafter"]],
     )
     result = dict(changed=False, cmd='', found=0)
@@ -396,8 +402,8 @@ def main():
         module.fail_json(msg="Parameter verification failed", stderr=str(err))
 
     backup = parsed_args.get('backup')
-    if parsed_args.get('backup_file') and backup:
-        backup = parsed_args.get('backup_file')
+    if parsed_args.get('back_name') and backup:
+        backup = parsed_args.get('back_name')
     src = parsed_args.get('src')
     ins_aft = parsed_args.get('insertafter')
     ins_bef = parsed_args.get('insertbefore')
@@ -439,16 +445,16 @@ def main():
         file_type = 0
 
     if backup:
-        # backup can be True(bool) or none-zero length string. string indicates that backup_file was provided.
-        # setting backup to None if backup_file wasn't provided. if backup=None, Backup module will use
+        # backup can be True(bool) or none-zero length string. string indicates that back_name was provided.
+        # setting backup to None if back_name wasn't provided. if backup=None, Backup module will use
         # pre-defined naming scheme and return the created destination name.
         if isinstance(backup, bool):
             backup = None
         try:
             if file_type:
-                result['backup_file'] = Backup.uss_file_backup(src, backup_name=backup, compress=False)
+                result['back_name'] = Backup.uss_file_backup(src, backup_name=backup, compress=False)
             else:
-                result['backup_file'] = Backup.mvs_file_backup(dsn=src, bk_dsn=backup)
+                result['back_name'] = Backup.mvs_file_backup(dsn=src, bk_dsn=backup)
         except Exception:
             module.fail_json(msg="creating backup has failed")
     # state=present, insert/replace a block with matching regex pattern
@@ -457,28 +463,31 @@ def main():
         return_content = present(src, quotedString(block), quotedString(marker), quotedString(ins_aft), quotedString(ins_bef), encoding)
     else:
         return_content = absent(src, quotedString(marker), encoding)
+    stdout = return_content.stdout_response
+    stderr = return_content.stderr_response
+    rc = return_content.rc
     try:
         # change the return string to be loadable by json.loads()
-        return_content = return_content.replace('/c\\', '/c\\\\')
-        return_content = return_content.replace('/a\\', '/a\\\\')
-        return_content = return_content.replace('/i\\', '/i\\\\')
-        return_content = return_content.replace('$ a\\', '$ a\\\\')
-        return_content = return_content.replace('1 i\\', '1 i\\\\')
+        stdout = stdout.replace('/c\\', '/c\\\\')
+        stdout = stdout.replace('/a\\', '/a\\\\')
+        stdout = stdout.replace('/i\\', '/i\\\\')
+        stdout = stdout.replace('$ a\\', '$ a\\\\')
+        stdout = stdout.replace('1 i\\', '1 i\\\\')
         if block:
-            return_content = return_content.replace(block, quotedString(block))
+            stdout = stdout.replace(block, quotedString(block))
         if ins_aft:
-            return_content = return_content.replace(ins_aft, quotedString(ins_aft))
+            stdout = stdout.replace(ins_aft, quotedString(ins_aft))
         if ins_bef:
-            return_content = return_content.replace(ins_bef, quotedString(ins_bef))
-        # Try to extract information from return_content
-        ret = json.loads(return_content)
+            stdout = stdout.replace(ins_bef, quotedString(ins_bef))
+        # Try to extract information from stdout
+        ret = json.loads(stdout)
         result['cmd'] = ret['cmd']
         result['changed'] = ret['changed']
         result['found'] = ret['found']
     except Exception:
-        messageDict = dict(msg="dmod return content is NOT in json format", return_content=str(return_content))
-        if result.get('backup_file'):
-            messageDict['backup_file'] = result['backup_file']
+        messageDict = dict(msg="dmod return content is NOT in json format", stdout=str(stdout), stderr=str(stderr), rc=rc)
+        if result.get('back_name'):
+            messageDict['back_name'] = result['back_name']
         module.fail_json(**messageDict)
     module.exit_json(**result)
 

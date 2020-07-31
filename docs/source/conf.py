@@ -48,7 +48,7 @@ templates_path = ['../templates']
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = ['playbooks.rst', 'playbook_config_setup.rst',
-'playbook_group_vars.rst', 'playbook_inventory.rst', 'playbook_run.rst']
+   'playbook_group_vars.rst', 'playbook_inventory.rst', 'playbook_run.rst']
 
 ##############################################################################
 # Options for HTML output

@@ -42,7 +42,7 @@ class ActionModule(ActionBase):
         local_follow = _process_boolean(self._task.args.get('local_follow'), default=False)
         remote_src = _process_boolean(self._task.args.get('remote_src'), default=False)
         is_binary = _process_boolean(self._task.args.get('is_binary'), default=False)
-        backup_file = self._task.args.get("backup_file", None)
+        backup_name = self._task.args.get("backup_name", None)
         encoding = self._task.args.get('encoding', None)
         mode = self._task.args.get('mode', None)
         owner = self._task.args.get('owner', None)
@@ -91,7 +91,7 @@ class ActionModule(ActionBase):
             msg = "The 'encoding' parameter is not valid for binary transfer"
             return self._exit_action(result, msg, failed=True)
 
-        if (not backup) and backup_file is not None:
+        if (not backup) and backup_name is not None:
             msg = "Backup file provided but 'backup' parameter is False"
             return self._exit_action(result, msg, failed=True)
 
@@ -181,8 +181,8 @@ class ActionModule(ActionBase):
                     invocation=dict(module_args=self._task.args)
                 )
             )
-            if backup or backup_file:
-                result['backup_file'] = copy_res.get("backup_file")
+            if backup or backup_name:
+                result['backup_name'] = copy_res.get("backup_name")
             self._remote_cleanup(dest, copy_res.get("dest_exists"), task_vars)
             return result
 
@@ -288,7 +288,7 @@ def _update_result(is_binary, copy_res, original_args):
     ds_type = copy_res.get("ds_type")
     src = copy_res.get("src")
     note = copy_res.get("note")
-    backup_file = copy_res.get("backup_file")
+    backup_name = copy_res.get("backup_name")
     updated_result = dict(
         dest=copy_res.get('dest'),
         is_binary=is_binary,
@@ -299,8 +299,8 @@ def _update_result(is_binary, copy_res, original_args):
         updated_result['src'] = src
     if note:
         updated_result['note'] = note
-    if backup_file:
-        updated_result['backup_file'] = backup_file
+    if backup_name:
+        updated_result['backup_name'] = backup_name
 
     if ds_type == "USS":
         updated_result.update(

@@ -18,13 +18,13 @@ author:
   - "Behnam (@balkajbaf)"
 short_description: Manage block of multi-line textual data on z/OS
 description:
-  - Manage block of multi-lines in z/OS Unix System Services (USS) files,
+  - Manage block of multi-lines in z/OS UNIX System Services (USS) files,
     PS(sequential data set), PDS, PDSE, or member of a PDS or PDSE.
   - This module ensures a particular block of multi-line text surrounded
-    by customizable marker lines is in a USS file or data set, or
-    replace an existing block identified by the markers.
+    by customizable marker lines is present in a USS file or data set, or
+    replaces an existing block identified by the markers.
   - This is primarily useful when you want to change a block of multi-line
-    in a USS file or data set.
+    text in a USS file or data set.
 options:
   src:
     description:
@@ -36,7 +36,7 @@ options:
     required: true
   state:
     description:
-      - Whether the block should be inserted/replaced(present) or removed(absent).
+      - Whether the block should be inserted/replaced (present) or removed (absent).
     type: str
     choices:
       - absent
@@ -57,31 +57,31 @@ options:
     - The text to insert inside the marker lines.
     - If it is missing or an empty string, the block will be removed as if
       C(state) were specified to C(absent).
-    - Multi-line can separated by '\n'
+    - Multi-line can be separated by '\n'.
     required: false
     type: str
     default: ''
     aliases: [ content ]
   insertafter:
     description:
-    - If specified, the block will be inserted after the last match of specified
+    - If specified, the block will be inserted after the last match of the specified
       regular expression.
-    - A special value is available; C(EOF) for inserting the block
-      at the end of the file.
-    - If specified regular expression has no matches, C(EOF) will be used instead.
-    - Choices are EOF or '*regex*'
-    - Default is EOF
+    - A special value C(EOF) for inserting a block at the end of the file is
+      available.
+    - If a specified regular expression has no matches, C(EOF) will be used instead.
+    - Choices are EOF or '*regex*'.
+    - Default is EOF.
     required: false
     type: str
   insertbefore:
     description:
     - If specified, the block will be inserted before the last match of specified
       regular expression.
-    - A special value is available; C(BOF) for inserting the block
-      at the beginning of the file.
-    - If specified regular expression has no matches, the block will be inserted
+    - A special value C(BOF) for inserting the block at the beginning of the file
+      is available.
+    - If a specified regular expression has no matches, the block will be inserted
       at the end of the file.
-    - Choices are BOF or '*regex*'
+    - Choices are BOF or '*regex*'.
     required: false
     type: str
   marker_begin:
@@ -102,7 +102,7 @@ options:
         timestamp information to ensure that you retrieve the original file.
       - I(backup_file) can be used to specify a backup file name
         if I(backup=true).
-      - The backup file name will be return on either success or failure
+      - The backup file name will be returned on both success and failure
         of module execution such that data can be retrieved.
     required: false
     type: bool
@@ -146,7 +146,7 @@ notes:
     U(https://ansible-collections.github.io/ibm_zos_core/supplementary.html#encode)
   - When using 'with_*' loops be aware that if you do not set a unique mark
     the block will be overwritten on each iteration.
-  - When more then one block should be handled in one file you must change
+  - When more then one block should be handled in a file you must change
     the I(marker) per task.
 '''
 

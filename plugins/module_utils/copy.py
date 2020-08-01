@@ -41,15 +41,12 @@ def _validate_path(path):
 
 def copy_uss2mvs(src, dest, ds_type, is_binary=False):
     """Copy uss a file or path to an MVS data set
-
     Arguments:
         src: {str} -- The uss file or path to be copied
         dest: {str} -- The destination MVS data set, it must be a PS or PDS(E)
         ds_type: {str} -- The dsorg of the dest.
-
     Keyword Arguments:
         is_binary: {bool} -- Whether the file to be copied contains binary data
-
     Raises:
         USSCmdExecError: When any exception is raised during the conversion.
     Returns:
@@ -61,15 +58,17 @@ def copy_uss2mvs(src, dest, ds_type, is_binary=False):
     src = _validate_path(src)
     dest = _validate_data_set_name(dest)
     if ds_type == "PO":
-        cp_uss2mvs = "cp -CM -F rec {0} \"//'{1}'\"".format(quote(src), dest)
+        cp_uss2mvs = "cp -CM -F {0} {1} \"//'{2}'\"".format(
+            "bin" if is_binary else "rec",
+            quote(src),
+            dest
+        )
     else:
-        cp_uss2mvs = "cp {0} \"//'{1}'\"".format(quote(src), dest)
-
-    if is_binary:
-        if ds_type == "PO":
-            cp_uss2mvs = cp_uss2mvs.replace("rec", "bin", 1)
-        else:
-            cp_uss2mvs = cp_uss2mvs.replace("cp", "cp -F bin", 1)
+        cp_uss2mvs = "cp {0} {1} \"//'{2}'\"".format(
+            "-F bin" if is_binary else "",
+            quote(src),
+            dest
+        )
 
     rc, out, err = module.run_command(cp_uss2mvs)
     if rc:

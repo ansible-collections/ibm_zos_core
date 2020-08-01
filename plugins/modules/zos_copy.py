@@ -464,7 +464,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
 )
 
 try:
-    from zoautil_py import Datasets, MVSCmd, types
+    from zoautil_py import Datasets
 except Exception:
     Datasets = MissingZOAUImport()
     MVSCmd = MissingZOAUImport()
@@ -514,8 +514,12 @@ class CopyHandler(object):
         """
         new_src = temp_path or conv_path or src
         if src_ds_type == "USS":
-            if model_ds and not self.dest_exists:
-                self.allocate_model(dest, model_ds)
+            if not self.dest_exists:
+                if model_ds:
+                    self.allocate_model(dest, model_ds)
+                else:
+                    ps_size = "{0}K".format(math.ceil(Path(new_src).stat().st_size / 1024))
+                    self._allocate_ps(dest, size=ps_size)
             try:
                 copy.copy_uss2mvs(new_src, dest, "PS", is_binary=self.is_binary)
             except Exception as err:
@@ -529,7 +533,7 @@ class CopyHandler(object):
             # the destination data set before copying.
             # *****************************************************************
             if rc != 0:
-                Datasets.create(dest, "SEQ")
+                self._allocate_ps(dest)
                 rc = Datasets.copy(new_src, dest)
                 if rc != 0:
                     self.fail_json(
@@ -695,6 +699,18 @@ class CopyHandler(object):
                 stdout=out, stderr=err, rc=rc,
                 stdout_lines=out.splitlines(),
                 stderr_lines=err.splitlines()
+            )
+
+    def _allocate_ps(self, name, size="5M"):
+        """Allocate a sequential data set
+
+        Arguments:
+            name {str} -- Name of the data set to allocate
+            size {str} -- The size to allocate
+        """
+        if Datasets.create(name, "SEQ", size) != 0:
+            self.fail_json(
+                msg="Unable to allocate destination data set {0}".format(name)
             )
 
 

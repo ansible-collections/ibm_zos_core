@@ -63,9 +63,14 @@ def copy_uss2mvs(src, dest, ds_type, is_binary=False):
     if ds_type == "PO":
         cp_uss2mvs = "cp -CM -F rec {0} \"//'{1}'\"".format(quote(src), dest)
     else:
-        cp_uss2mvs = "cp -F rec {0} \"//'{1}'\"".format(quote(src), dest)
+        cp_uss2mvs = "cp {0} \"//'{1}'\"".format(quote(src), dest)
+
     if is_binary:
-        cp_uss2mvs = cp_uss2mvs.replace("rec", "bin", 1)
+        if ds_type == "PO":
+            cp_uss2mvs = cp_uss2mvs.replace("rec", "bin", 1)
+        else:
+            cp_uss2mvs = cp_uss2mvs.replace("cp", "cp -F bin", 1)
+
     rc, out, err = module.run_command(cp_uss2mvs)
     if rc:
         raise USSCmdExecError(cp_uss2mvs, rc, out, err)

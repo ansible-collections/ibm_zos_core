@@ -1,9 +1,11 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+
 # Copyright (c) IBM Corporation 2019, 2020
 # Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
 from __future__ import (absolute_import, division, print_function)
+
 __metaclass__ = type
 
 ANSIBLE_METADATA = {'metadata_version': '1.1',
@@ -13,114 +15,128 @@ ANSIBLE_METADATA = {'metadata_version': '1.1',
 DOCUMENTATION = r"""
 ---
 module: zos_mount
-version_added: '2.9.1'
-short_description: Mount a filesystem for omvs
+author: 
+    - "Rich Parker (@richp405)"
+short_description: Mount a filesystem for Unix System Services (USS)
 description:
-  - zos_mount connects an existing, mountable file to an omvs system.
-  - mountable file needs a valid, unique FQDN, target folder will be 
-      unmounted if needed
-author: "Rich Parker (@richp405)"
-
+  - zos_mount connects an existing, mountable file to USS.
+  - Mountable file needs a valid, unique Fully Qualified Name.
+  - Target folder will be created and/or unmounted if needed
 options:
-    Overview:
-        This will attach(mount) or detach (unmount) a data set to the omvs file system
-    
-    unmount:
+    path: 
         description:
-            - if true, the file_system dataset is UNMOUNTED.  Other values are ignored
-            - if false (default), the file_system is mounted to the mount_point
-        type: bool
-        required: false
-        default: false
-
-    file_system:
-        description:
-            - The name of the file system to be added to the file system hierarchy. 
-            - Should be FQDN of a mountable file.
-            - Cannot be a PDS member.
-            - The file system name that is specified must be unique among.
-               previously mounted file systems. 
-            - The file system name that is supplied is changed to all uppercase characters.
+            - The absolute path name onto which the file system is to be mounted
+            - The path is case sensitive, and < 1023 characters long
         type: str
-        required: true
-
-    mount_point:
+        required: True
+    src:
         description:
-            - Specifies the path name of the mount point directory, the place 
-              within the file hierarchy where the file system is to be mounted.
-            - Specifies the path name of the mount point. The path name must
-              be enclosed in single quotation marks. 
-            - The name can be a relative path name or an absolute path name. 
-                - A relative path name is relative to the working directory of 
-                  the TSO/E session 
-                - You should usually specify an absolute path name. 
-                - It can be up to 1023 characters long. 
-                - Path names are case-sensitive.
-                - Mount point must be a directory
-                - Only one file system can be mounted to a mount point at a time.
+            - The file in zos that is to be mounted
         type: str
-        required: true
-
-    file_system_type:
+        required: True
+    fstype: 
         description:
             - The type of file system that will perform the logical mount request.
-            - The system converts the TYPE operand value to uppercase letters. 
-        
-            - This name must match the TYPE operand of the FILESYSTYPE statement 
-              that activates this physical file system in the BPXPRMxx parmlib member. 
-            - The file_system_type value can be up to 8 characters long. 
+            - The system converts the TYPE operand value to uppercase letters.
+            - The value can be up to 8 characters long.
         type: str
-        required: true
-
-    open_read_only:
+        choices:
+            - HFS for a hierarchical file system (HFS).
+            - zFS for a z/OS File System (zFS).
+            - NFS for accessing remote files.
+            - TFS for a temporary file system (TFS).
+        required: True
+    state:
         description:
-            - Specifies the type of access the file system is to be opened for.
-                - FALSE
-                    -The file system is to be mounted for read and write access.
-                - TRUE
-                    - The file system is to be mounted for read-only access.
-            - The z/OS UNIX file system allows a file system that is mounted using 
-              the MODE(READ) option to be shared as read-only with other systems 
-              that share the same DASD.
-        type: bool
-        required: false
-        default: false
-
-    file_system_params:
+            - The desired status of the described mount (choice)
+            - >
+                If I(mounted) and mount not present, mount point will be created.
+                Module completes successfully with I(changed=True).
+            - >
+                If I(mounted) and mount source is in use, no action performed.
+                Module completes successfully with I(changed=False)
+            - If I(mounted) and I(changed=True) mount will be added to BPXPRMxx.
+            - >
+                If I(tmpmount) and mount not present, mount point will be created. 
+                Module completes successfully with I(changed=True).
+            - >
+                If I(tmpmount) and mount source is in use, no action taken.
+                Module completes successfully with I(changed=False).
+            - >
+                If I(unmounted) and mount source is in use, device will be unmounted.
+                Module completes successfully with I(changed=True).
+            - >
+                If I(unmounted) and mount source is not in use, no action taken.
+                Module completes successfully with I(changed=False).
+            - If I(present) device will be configured in BPXPRMxx.
+            - If I(absent) the device mount's entry will be removed from BPXPRMxx.
+            - If I(absent) the device will be unmounted and the mount point removed.
+            - If I(remounted) the device is unmounted and mounted again.
+        type: str
+        choices:
+            - mounted
+            - tmpmount
+            - unmounted
+            - present
+            - absent
+            - remounted
+        required: False
+        default: mounted
+    unmount_opts:
+        description: 
+            - Describes how the unmount it to be performed
+        type: str
+        choices:
+            - DRAIN
+            - FORCE
+            - IMMEDIATE
+            - NORMAL
+            - REMOUNT
+            - RESET
+        required: False
+        default: NORMAL
+    opts:
+        description:
+            - Options available to the mount
+            - If I(ro) on a mounted/tmpmount/remount, mount is performed read-only.
+            - If I(same) and (unmount_opts=REMOUNT), mount is opened is same mode as previously.
+            - If I(nowait), mount is performed asynchronously.
+            - If I(nosecurity), Security checks are not enforced for files in this file system. 
+        type: str
+        choices:
+            - ro 
+            - rw
+            - same
+            - nowait
+            - nosecurity
+        required: False
+        default: rw
+    src_params:
         description:
             - Specifies a parameter string to be passed to the file system type. 
             - The parameter format and content are specified by the file system type. 
         type: string
-        required: false
-        default: blank
-
-    settag_flag:
+        required: False
+        default: None
+    tag_flag:
         description:
-            - Specifies whether the file tags for untagged files in the mounted
-              file system are implicitly set. 
-            - File tagging controls the ability to convert a file's data during 
-              file reading and writing. 
-            - Implicit, in this case, means that the tag is not permanently 
-              stored with the file. Rather, the tag is associated with the file 
-              during reading or writing, or when stat() type functions are issued.
-            - Either TEXT or NOTEXT, and ccsid must be specified when TAG is specified.
+            - If present, tags get written to any untagged file
             - When the file system is unmounted, the tags are lost.
-            - false 
-                - NOTEXT
-                - Specifies that none of the untagged files in the file system are 
+            - If I(False) NOTEXT none of the untagged files in the file system are 
                   automatically converted during file reading and writing.
-            - true 
-                - TEXT
-                - Specifies that each untagged file is implicitly marked as 
+            - If I(True) TEXT each untagged file is implicitly marked as 
                   containing pure text data that can be converted.
-        type: bool
-        required: false
-        default: blank
-
-    settag_ccsid:
+            - If this flag is used, use of tag_ccsid is encouraged.
+        type: str
+        choices:
+            - TEXT
+            - NOTEXT
+        required: False
+        default: None
+    tag_ccsid:
         description:
             - CCSID for untagged files in the mounted file system
-            - only required it settag_flag is present
+            - only required it tag_flag is present
             - ccsid
                 - Identifies the coded character set identifier to be implicitly 
                   set for the untagged file. ccsid is specified as a decimal value
@@ -129,279 +145,220 @@ options:
                   checked as being valid and the corresponding code page is not 
                   checked as being installed.
         type: numeric value 0-65535
-        required: only if settag_flag is non-blank
-        default: blank
-
-    respect_uids:
+        required: only if tag_flag is non-blank
+        default: None
+    allow_uids:
         description:
+            - >
             Specifies whether the SETUID and SETGID mode bits on executables in 
-            this file system are respected. Also determines whether the APF 
+            this file system are considered. Also determines whether the APF 
             extended attribute or the Program Control extended attribute is 
             honored.
-            - true
-              - Specifies that the SETUID and SETGID mode bits be respected when a program 
-                in this file system is run. SETUID is the default.
-            - false
-              - Specifies that the SETUID and SETGID mode bits not be respected when a
-                program in this file system is run. The program runs as though the 
-                SETUID and SETGID mode bits were not set. Also, if you specify the 
-                NOSETUID option on MOUNT, the APF extended attribute and the Program Control 
+            - >
+              If I(True) the SETUID and SETGID mode bits are considered when a 
+              program in this file system is run. SETUID is the default.
+            - >
+              If I(False) the SETUID and SETGID mode bits are ignored when a
+              program in this file system is run. The program runs as though the 
+              SETUID and SETGID mode bits were not set. Also, if you specify the 
+              NOSETUID option on MOUNT, the APF extended attribute and the Program Control 
+              Bit values are ignored.
         type: bool
-        required: false
-        default: true
-
-    wait_until_done:
-        description: 
-            Specifies whether to wait for an asynchronous mount to complete before returning.
-        true:
-            Specifies that MOUNT is to wait for the mount to complete before returning. 
-        false:
-            Specifies that if the file system cannot be mounted immediately (for example, 
-            a network mount must be done), then the command will return with a return code 
-            indicating that an asynchronous mount is in progress. 
-        type: bool
-        required: false
-        default: true
-
-    normal_security:
-        description:
-            Specifies whether security checks are to be enforced for files in this 
-            file system. When a z/OS UNIX file system is mounted with the 
-            NOSECURITY option enabled, any new files or directories that are
-            created are assigned an owner of UID 0, 
-            no matter what UID issued the request.
-        true:
-            Specifies that normal security checking is done.
-        false:
-            Specifies that security checking will not be enforced for files in 
-            this file system. 
-            A user can access or change any file or directory in any way.
-            Security auditing will still be performed if the installation is auditing successes.
-            The SETUID, SETGID, APF, and Program Control attributes may be turned
-            on in files in this file system, but they are not honored while it is 
-            mounted with NOSECURITY.
-        type: bool
-        required: false
-        default: true
-
+        required: False
+        default: True
     sysname:
         description:
-            For systems participating in shared file system, SYSNAME specifies 
-            the particular system on which a mount should be performed. This 
-            system will then become the owner of the file system mounted. This 
-            system must be IPLed with SYSPLEX(YES).
-
-            IBM® recommends that you omit the SYSNAME parameter or specify 
-            system_name where system_name is the name of this system.
-        sysname:
-            sysname is a 1–8 alphanumeric name of a system participating in 
-            shared file system. 
+            - >
+              For systems participating in shared file system, SYSNAME specifies 
+              the particular system on which a mount should be performed. This 
+              system will then become the owner of the file system mounted. This 
+              system must be IPLed with SYSPLEX(YES).
+            - >
+              IBM® recommends that you omit the SYSNAME parameter or specify 
+              system_name where system_name is the name of this system.
+            - >
+              sysname is a 1–8 alphanumeric name of a system participating in shared file system. 
         type: string
-        required: false
-        default: blank
-      
+        required: False
+        default: None
     automove:
         description:
-            These parameters apply only in a sysplex where systems are exploiting 
-            the shared file system capability. They specify what is to happens to 
-            the ownership of a file system when a shutdown, PFS termination, dead 
-            system takeover, or file system move occurs. The default setting is 
-            AUTOMOVE where the file system will be randomly moved to another system (no system list used).
-
-
-        AUTOMOVE:
-            AUTOMOVE indicates that ownership of the file system can be 
-            automatically moved to another system participating in a shared file 
-            system. 
-
-        AUTOMOVE(INCLUDE,sysname1,sysname2,...,sysnameN): 
-            or AUTOMOVE(I,sysname1,sysname2,...,sysnameN)
-            The INCLUDE indicator with a system list provides an ordered list of 
-            systems to which the file system's ownership could be moved. sysnameN
-            may be a system name, or an asterisk (*). The asterisk acts as a 
-            wildcard to allow ownership to move to any other participating 
-            system and is only permitted in place of a system name as the last 
-            entry of a system list.
-
-        AUTOMOVE(EXCLUDE,sysname1,sysname2,...,sysnameN):
-            or AUTOMOVE(E,sysname1,sysname2,...,sysnameN)
-            The EXCLUDE indicator with a system list provides a list of systems to 
-            which the file system's ownership should not be moved.
-
-        NOAUTOMOVE:
-            NOAUTOMOVE prevents movement of the file system's ownership in 
-            some situations.
-
-        UNMOUNT:
-            UNMOUNT allows the file system to be unmounted in some situations. 
-
-        type: type, optional list with indicator and string
-        required: false
+            - >
+              These parameters apply only in a sysplex where systems are exploiting 
+              the shared file system capability. They specify what is to happens to 
+              the ownership of a file system when a shutdown, PFS termination, dead 
+              system takeover, or file system move occurs. The default setting is 
+              AUTOMOVE where the file system will be randomly moved to another system 
+              (no system list used).
+            - >
+              I(AUTOMOVE) indicates that ownership of the file system can be 
+              automatically moved to another system participating in a shared file system. 
+            - >
+              I(NOAUTOMOVE) prevents movement of the file system's ownership in some situations.
+            - >
+              I(UNMOUNT) allows the file system to be unmounted in some situations. 
+        type: str
+        choices:
+            - AUTOMOVE
+            - NOAUTOMOVE
+            - UNMOUNT
+        required: False
         default: AUTOMOVE
-
     automove_list:
         description:
-            - If automove is set to AUTOMOVE, this will be checked
-            - This specifies the list of servers to include or exclude
-            - Blank is a valid value, meaning 'move anywhere'
+            - If(automove=AUTOMOVE), this option will be checked
+            - This specifies the list of servers to include or exclude as destinations
+            - None is a valid value, meaning 'move anywhere'
             - Indicator is either INCLUDE or EXCLUDE, which can also be abbreviated as I or E
         type: str
-        required: false
-        default: blank
+        required: False
+        default: None
 
-    unmount_extension:
-        description:
-            - unmount only: this is the optional, secondary command
-            - DRAIN, FORCE, IMMEDIATE, NORMAL, REMOUNT or RESET
-            - In the case of REMOUNT, there is an optional sub-value: (READ),(RDWR),(SAMEMODE)
-        type: str
-        required: false
-        default: NORMAL
 """
-
-#original cmd source: 
-#https://www.ibm.com/support/knowledgecenter/SSLTBW_2.1.0/com.ibm.zos.v2r1.bpxa500/tsomount.htm
 
 EXAMPLES = r"""
 - name: Mount a filesystem.
   zos_mount:
-    file_system: SOMEUSER.VVV.ZFS
-    mount_point: /u/omvsadm/core
-    file_system_type: 3380
+    src: SOMEUSER.VVV.ZFS
+    path: /u/omvsadm/core
+    fstype: ZFS
+    state: mounted
 
 - name: Unmount a filesystem.
   zos_mount:
-    unmount: true
-    file_system: SOMEUSER.VVV.ZFS
-    unmount_extension: REMOUNT(SAMEMODE)
+    src: SOMEUSER.VVV.ZFS
+    path: /dontcare
+    fstype: ZFS
+    state: unmounted
+    unmount_opts: REMOUNT
+    opts: same
 
 - name: Mount a filesystem readonly.
   zos_mount:
-    file_system: SOMEUSER.VVV.ZFS
-    mount_point: /u/omvsadm/core
-    file_system_type: 3380
-    open_read_only: yes
+    src: SOMEUSER.VVV.ZFS
+    path: /u/omvsadm/core
+    fstype: ZFS
+    state: mounted
+    opts: ro
 
 - name: Mount a filesystem ignoring uid/gid values.
   zos_mount:
-    file_system: SOMEUSER.VVV.ZFS
-    mount_point: /u/omvsadm/core
-    file_system_type: 3380
-    respect_uids: no
+    src: SOMEUSER.VVV.ZFS
+    path: /u/omvsadm/core
+    fstype: ZFS
+    state: mounted
+    allow_uids: no
 
 - name: Mount a filesystem asynchronously (don't wait for completion).
   zos_mount:
-    file_system: SOMEUSER.VVV.ZFS
-    mount_point: /u/omvsadm/core
-    file_system_type: 3380
-    wait_until_done: no
+    src: SOMEUSER.VVV.ZFS
+    path: /u/omvsadm/core
+    fstype: ZFS
+    state: mounted
+    opts: nowait
 
 - name: Mount a filesystem with no security checks.
   zos_mount:
-    file_system: SOMEUSER.VVV.ZFS
-    mount_point: /u/omvsadm/core
-    file_system_type: 3380
-    normal_security: no
+    src: SOMEUSER.VVV.ZFS
+    path: /u/omvsadm/core
+    fstype: ZFS
+    state: mounted
+    opts: nosecurity
 
 - name: Mount a filesystem, limiting automove to 4 devices.
   zos_mount:
-    file_system: SOMEUSER.VVV.ZFS
-    mount_point: /u/omvsadm/core
-    file_system_type: 3380
+    src: SOMEUSER.VVV.ZFS
+    path: /u/omvsadm/core
+    fstype: ZFS
+    state: mounted
     automove: AUTOMOVE
     automove_list: I,DEV1,DEV2,DEV3,DEV9
 
 - name: Mount a filesystem, limiting automove to all except 4 devices.
   zos_mount:
-    file_system: SOMEUSER.VVV.ZFS
-    mount_point: /u/omvsadm/core
-    file_system_type: 3380
+    src: SOMEUSER.VVV.ZFS
+    path: /u/omvsadm/core
+    fstype: ZFS
+    state: mounted
     automove: AUTOMOVE
-    automove_list: E,DEV4,DEV5,DEV6,DEV7
+    automove_list: EXCLUDE,DEV4,DEV5,DEV6,DEV7
+
 """
 
 RETURN = r"""
-unmount:
-    description: Indicates if this was an unmount request
+path: 
+    description: The absolute path name onto which the file system is to be mounted
     returned: always
-    type: bool
-    sample: no
-file_system:
-    description: Source file or data set being mounted.
+    type: str
+    sample: /u/omvsadm/core
+src:
+    description: The file in zos that is to be mounted
     returned: always
     type: str
     sample: SOMEUSER.VVV.ZFS
-mount_point:
-    description: Destination folder of mount.
-    returned: success
-    type: str
-    sample: /u/omvsadm/core
-file_system_type:
-    description: The device type passed to the command.
+fstype: 
+    description: The type of file system that will perform the logical mount request.
     returned: always
     type: str
-    sample: 3380
-open_read_only:
-    description: Indicator of whether readonly was requested.
-    returned: success
-    type: bool
-    sample: yes
-file_system_params:
-    description: Indicator of parameters passed to the command.
+    sample: ZFS
+state:
+    description: The desired status of the described mount
     returned: always
     type: str
-    sample: (FSACK=TRUE,ITEM=DEVIDNO)
-settag_flag:
-    description: Indicates if tag values were set. 
-    returned: success
-    type: bool
-    sample: yes
-settag_ccsid:
-    description: Indicator of ccsid value set.
-    returned: success
+    sample: mounted
+unmount_opts:
+    description: Describes how the unmount it to be performed
+    returned: changed and if state=unmounted or absent
     type: str
-    sample: 8515
-respect_uids:
-    description: Specifies whether the SETUID and SETGID mode bits on 
-        executables in this file system are respected
-    returned: success
-    type: bool
-    sample: yes
-wait_until_done:
-    description: Indicates if mount was called (yes) sych or (no) asynchronously
+    sample: DRAIN
+opts:
+    description: Options available to the mount
+    returned: whenever non-None
+    type: str
+    sample: rw,nosecurity
+src_params:
+    description: Specifies a parameter string to be passed to the file system type. 
+    returned: whenever non-None
+    type: str
+    sample: D(101)
+tag_flag:
+    description: Indicates if tags should be written to untagged files
+    returned: whenever Non-None
+    type: str
+    sample: TEXT
+tag_ccsid:
+    description: CCSID for untagged files in the mounted file system
+    returned: when tag_flag is defined
+    type: numeric value 0-65535
+    sample: 819
+allow_uids:
+    description: Whether the SETUID and SETGID mode bits on executables in this file system are considered.
     returned: always
-    type: bool
-    sample: yes
-normal_security:
-    description: Indicates if mount was given (yes) normal or (no) non-secure
-    returned: success
     type: bool
     sample: yes
 sysname:
-    description: System name, if provided
-    returned: success
+    description: SYSNAME specifies the particular system on which a mount should be performed.
+    returned: if Non-None
     type: str
-    sample: MYSYS01
+    sample: MVSSYS01
 automove:
-    description: AUTOMOVE parameter for this mount
-    returned: success
-    type: list [AUTOMOVE,NOAUTOMOVE,UNMOUNT]
+    description: 
+        - >
+          Specifies what is to happens to the ownership of a file system during
+          a shutdown, PFS termination, dead system takeover, or file system move occurs.
+    returned: if Non-None
+    type: str
     sample: AUTOMOVE
 automove_list:
-    description: Lis of devices to include or exclude from automove action
-    returned: success
+    description:: This specifies the list of servers to include or exclude as destinations.
+    returned: if Non-None
     type: str
-    sample: I,DEV1,DEV2,DEV3
-size:
-    description: Size(in bytes) of the target, after execution.
-    returned: success and dest is USS
-    type: int
-    sample: 1220
+    sample: I,SERV01,SERV02,SERV03,SERV04
 msg:
     description: Failure message returned by the module.
     returned: failure
     type: str
-    sample: Error while gathering data set information
+    sample: Error while gathering information
 stdout:
     description: The stdout from the tso mount command.
     returned: always
@@ -422,16 +379,17 @@ stderr_lines:
     returned: failure
     type: list
     sample: [u"FileNotFoundError: No such file or directory '/tmp/foo'"]
-rc:
-    description: The return code of the mount command, if applicable.
-    returned: failure
-    type: int
-    sample: 8
 cmd:
     description: The actual tso command that was attempted.
     returned: failure
     type: str
     sample: MOUNT EXAMPLE.DATA.SET /u/omvsadm/sample 3380
+rc:
+    description: The return code of the mount command, if applicable.
+    returned: failure
+    type: int
+    sample: 8  
+
 """
 
 import os
@@ -492,43 +450,41 @@ def run_module(module, arg_def):
     changed = False
     res_args = dict()
 
-    unmount = parsed_args.get('unmount')
-    if( unmount != True ):
-        unmount = False
-    file_system = parsed_args.get('file_system')
-    mount_point = parsed_args.get('mount_point')
-    file_system_type = parsed_args.get('file_system_type')
-    open_read_only = parsed_args.get('open_read_only')
-    file_system_params = parsed_args.get('file_system_params')
-    settag_flag = parsed_args.get('settag_flag')
-    settag_ccsid = parsed_args.get('settag_ccsid')
-    respect_uids = parsed_args.get('respect_uids')
-    wait_until_done = parsed_args.get('wait_until_done')
-    normal_security = parsed_args.get('normal_security')
+    src = parsed_args.get('src')
+    path = parsed_args.get('path')
+    fstype = parsed_args.get('fstype')
+    state = parsed_args.get('state')
+    unmount_opts = parsed_args.get('unmount_opts')
+    opts = parsed_args.get('opts')
+    src_params = parsed_args.get('src_params')
+    tag_flag = parsed_args.get('tag_flag')
+    tag_ccsid = parsed_args.get('tag_ccsid')
+    allow_uids = parsed_args.get('allow_uids')
     sysname = parsed_args.get('sysname')
     automove = parsed_args.get('automove')
     automove_list = parsed_args.get('automove_list')
-    unmount_extension = parsed_args.get('unmount_extension')
+
+    gonnamount = True
+    if( 'unmounted' in state or 'absent' in state or 'remounted' in state):
+        gonnamount = False
 
     res_args.update(
         dict(
-            unmount = unmount,
-            file_system = file_system,
-            mount_point = mount_point,
-            file_system_type = file_system_type,
-            open_read_only = open_read_only,
-            file_system_params = file_system_params,
-            settag_flag = settag_flag,
-            settag_ccsid = settag_ccsid,
-            respect_uids = respect_uids,
-            wait_until_done = wait_until_done,
-            normal_security = normal_security,
+            src = src,
+            path = path,
+            fstype = fstype,
+            state = state,
+            unmount_opts = unmount_opts,
+            opts = opts,
+            src_params = src_params,
+            tag_flag = tag_flag,
+            tag_ccsid = tag_ccsid,
+            allow_uids = allow_uids,
             sysname = sysname,
             automove = automove,
             automove_list = automove_list,
             cmd = 'not built',
             changed = changed,
-            unmount_extension = unmount_extension,
             comment = 'starting',
             rc = 0,
             stdout = '',
@@ -537,31 +493,31 @@ def run_module(module, arg_def):
     )
 
 # file_system to be mounted must exist
-    fs_du = data_set.DataSetUtils(file_system)
+    fs_du = data_set.DataSetUtils(src)
     fs_exists = fs_du.exists()
     if( fs_exists == False):
         module.fail_json (
-            msg = "Mount source (" + file_system + ") doesn't exist",
+            msg = "Mount source (" + src + ") doesn't exist",
             stderr = str(res_args)
         )
 
 # Validate mountpoint exists if mounting
-    if( unmount == False ):
-        mp_exists = os.path.exists(mount_point)
+    if( gonnamount ):
+        mp_exists = os.path.exists(path)
         if( mp_exists == False ):
             module.fail_json (
-                msg = "Mount destination (" + mount_point + ") doesn't exist",
-                atderr = str(res_args)
+                msg = "Mount destination (" + path + ") doesn't exist",
+                stderr = str(res_args)
             )
 
 # Need to see if mountpoint is in use for idempotence (how?)
 ## df | grep file_system will do the trick
 ## this can also be used as validation for unmount
     currently_mounted = False
-    rc, stdout, stderr = module.run_command( 'df | grep ' + file_system + ' | wc -m',use_unsafe_shell=True )
+    rc, stdout, stderr = module.run_command( 'df | grep ' + src + ' | wc -m',use_unsafe_shell=True )
     if rc != 0:
         module.fail_json (
-            msg = "Checking for file_system (" + file_system +") failed with error",
+            msg = "Checking for source (" + src +") failed with error",
             stderr = str(res_args)
         )
     tmpint = int(stdout)
@@ -575,52 +531,61 @@ def run_module(module, arg_def):
     ############################################
     # Assemble the mount command - icky part
 
-    if( unmount == False ):
-        fullcmd = "tsocmd MOUNT FILESYSTEM\( \\'{0}\\' \) MOUNTPOINT\( \\'{1}\\' \) TYPE\( '{2}' \)".format( file_system, mount_point, file_system_type )
-        fullcmd = fullcmd + ' MODE\('
-        if( open_read_only ):
-            fullcmd = fullcmd + 'READ'
+    if( gonnamount ):
+#        fullcmd = "tsocmd MOUNT FILESYSTEM\( \\'{0}\\' \) MOUNTPOINT\( \\'{1}\\' \) TYPE\( '{2}' \)".format( src, path, fstype )
+        fullcmd = "tsocmd MOUNT FILESYSTEM( \\'{0}\\' ) MOUNTPOINT( \\'{1}\\' ) TYPE( '{2}' )".format( src, path, fstype )
+        
+#        fullcmd = fullcmd + ' MODE('
+        if( 'ro' in opts or 'RO' in opts ):
+#            fullcmd = fullcmd + 'READ'
+            subcmd = 'READ'
         else:
-            fullcmd = fullcmd + 'RDWR'
-        fullcmd = fullcmd + '\)'
-        if( len(file_system_params) > 1 ):
-            fullcmd = fullcmd + ' PARM\(\'' + file_system_params + '\'\)'
-        if( len(settag_ccsid) > 0):
-            fullcmd = fullcmd + ' TAG\('
-            if( settag_flag ):
-                fullcmd = fullcmd + 'NOTEXT'
-            else: 
-                fullcmd = fullcmd + 'TEXT'
-            fullcmd = fullcmd + ',' + settag_ccsid + '\)'
-        if( respect_uids ):
+#            fullcmd = fullcmd + 'RDWR'
+            subcmd = 'RDWR'
+#        fullcmd = fullcmd + ")"
+        fullcmd = "{0} MODE({1})".format(fullcmd, subcmd)
+
+        if( len(src_params) > 1 ):
+            fullcmd = "{0} PARM(\'{1}\')".format(fullcmd, src_params )
+
+        if( len(tag_flag) > 0):
+            fullcmd = "{0} TAG({1},{2})".format(fullcmd, tag_flag, tag_ccsid)
+#            fullcmd = fullcmd + ' TAG\('
+#            fullcmd = fullcmd + tag_flag
+#            fullcmd = fullcmd + ',' + tag_ccsid + '\)'
+
+        if( allow_uids ):
             fullcmd = fullcmd + ' SETUID'
         else:
             fullcmd = fullcmd + ' NOSETUID'
-        if( wait_until_done):
-            fullcmd = fullcmd + ' WAIT'
-        else:
+
+        if( 'NOWAIT' in opts or 'nowait' in opts):
             fullcmd = fullcmd + ' NOWAIT'
-        if( normal_security):
-            fullcmd = fullcmd + ' SECURITY'
         else:
+            fullcmd = fullcmd + ' WAIT'
+
+        if( 'NOSECURITY' in opts or 'nosecurity' in opts):
             fullcmd = fullcmd + ' NOSECURITY'
+        else:
+            fullcmd = fullcmd + ' SECURITY'
+
         if( len(sysname) > 1 ):
-            fullcmd = fullcmd + ' SYSNAME\(' + sysname + '\)'
+#            fullcmd = fullcmd + ' SYSNAME\(' + sysname + '\)'
+            fullcmd = "{0} SYSNAME({1})".format(fullcmd, sysname)
+
         if( len(automove) > 1):
             fullcmd = fullcmd + ' ' + automove
             if( len(automove_list) > 1):
-                fullcmd = fullcmd + '\(' + automove_list + '\)'
+                fullcmd = fullcmd + '(' + automove_list + ')'
     else:       # unmount
-        fullcmd = "tsocmd UNMOUNT FILESYSTEM\(\'{0}\'\)".format( file_system )
-        if( len(unmount_extension) < 2 ):
-            unmount_extension = "NORMAL"
-        fullcmd = fullcmd + ' ' + unmount_extension
+        fullcmd = "tsocmd UNMOUNT FILESYSTEM(\'{0}\')".format( src )
+        if( len(unmount_opts) < 2 ):
+            unmount_opts = "NORMAL"
+        fullcmd = fullcmd + ' ' + unmount_opts
 
-    conv_path = None
-    src_ds_vol = None
     comment = ''
 
-    if( unmount ):
+    if( gonnamount == False ):
         if( currently_mounted ):
             changed = True
         else:
@@ -651,6 +616,7 @@ def run_module(module, arg_def):
             comment = comment,
             cmd = fullcmd,
             rc = rc,
+            stdout = stdout,
             stderr = stderr
         )
     )
@@ -665,42 +631,38 @@ def main():
 
     module = AnsibleModule(
         argument_spec=dict(
-            unmount = dict(type='bool', required=False),
-            file_system=dict(type='str', required=True),
-            mount_point=dict(type='str', required=True),
-            file_system_type=dict(type='str', required=True),
-            open_read_only=dict(type='bool', required=False),
-            file_system_params=dict(type='str', required=False),
-            settag_flag = dict(type='bool', default=False, required=False),
-            settag_ccsid = dict(type='str', required=False),
-            respect_uids = dict(type='bool', default=True, required=False),
-            wait_until_done = dict(type='bool', default=True, required=False),
-            normal_security = dict(type='bool', default=True, required=False),
+            src=dict(type='str', required=True),
+            path=dict(type='str', required=True),
+            fstype=dict(type='str', required=True),
+            state=dict(type='str', default='mounted', required=False),
+            unmount_opts=dict(type='str',default='NORMAL', required=False),
+            opts=dict(type='str',default='rw', required=False),
+            src_params=dict(type='str', required=False),
+            tag_flag = dict(type='str', default='', required=False),
+            tag_ccsid = dict(type='str', default='819', required=False),
+            allow_uids = dict(type='bool', default=True, required=False),
             sysname = dict(type='str', required=False),
             automove = dict(type='str', default='AUTOMOVE', required=False),
-            automove_list = dict(type='str', required=False),
-            unmount_extension = dict(type='str', required=False)
+            automove_list = dict(type='str', required=False)
         ),
         add_file_common_args=True,
         supports_check_mode=True
     )
 
     arg_def = dict(
-        unmount=dict(arg_type='bool', default=False, required=False),
-        file_system=dict(arg_type='data_set', required=True),
-        mount_point=dict(arg_type='path', required=True),
-        file_system_type=dict(arg_type='str', required=True),
-        open_read_only=dict(arg_type='bool', default=False, required=False),
-        file_system_params=dict(arg_type='str', default='', required=False),
-        settag_flag = dict(arg_type='bool', default=False, required=False),
-        settag_ccsid = dict(arg_type='str', default='', required=False),
-        respect_uids = dict(arg_type='bool', default=True, required=False),
-        wait_until_done = dict(arg_type='bool', default=True, required=False),
-        normal_security = dict(arg_type='bool', default=True, required=False),
+        src=dict(arg_type='data_set', required=True),
+        path=dict(arg_type='path', required=True),
+        fstype=dict(arg_type='str', required=True),
+        state=dict(arg_type='str', default='mounted', required=False),
+        unmount_opts=dict(type='str', default='NORMAL', required=False),
+        opts=dict(type='str', default='rw', required=False),
+        src_params=dict(arg_type='str', default='', required=False),
+        tag_flag = dict(arg_type='str', default='', required=False),
+        tag_ccsid = dict(arg_type='str', default='819', required=False),
+        allow_uids = dict(arg_type='bool', default=True, required=False),
         sysname = dict(arg_type='str', default='', required=False),
         automove = dict(arg_type='str', default='AUTOMOVE', required=False),
-        automove_list = dict(arg_type='str', default='', required=False),
-        unmount_extension = dict(arg_type='str', default='', required=False)
+        automove_list = dict(arg_type='str', default='', required=False)
     )
 
     try:
@@ -709,7 +671,6 @@ def main():
         module.exit_json(**res_args)
     finally:
         pass
-#        cleanup([temp_path, conv_path])
 
 
 if __name__ == '__main__':

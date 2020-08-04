@@ -513,17 +513,18 @@ class CopyHandler(object):
             src_ds_type {str} -- The type of source
         """
         new_src = temp_path or conv_path or src
+        if self.dest_exists:
+            Datasets.delete(dest)
+        if model_ds:
+            self.allocate_model(dest, model_ds)
         if src_ds_type == "USS":
-            if not self.dest_exists:
-                if model_ds:
-                    self.allocate_model(dest, model_ds)
-                else:
-                    ps_size = "{0}K".format(math.ceil(Path(new_src).stat().st_size / 1024))
-                    self._allocate_ps(dest, size=ps_size)
-            try:
-                copy.copy_uss2mvs(new_src, dest, "PS", is_binary=self.is_binary)
-            except Exception as err:
-                self.fail_json(msg=str(err))
+            if not model_ds:
+                ps_size = "{0}K".format(math.ceil(Path(new_src).stat().st_size / 1024))
+                self._allocate_ps(dest, size=ps_size)
+            if Datasets.copy(new_src, dest) != 0:
+                self.fail_json(
+                    msg="Error calling ZOAU 'copy' command while copying {0} to {1}".format(src, dest)
+                )
         else:
             rc = Datasets.copy(new_src, dest)
             # *****************************************************************
@@ -708,7 +709,7 @@ class CopyHandler(object):
             name {str} -- Name of the data set to allocate
             size {str} -- The size to allocate
         """
-        if Datasets.create(name, "SEQ", size) != 0:
+        if Datasets.create(name, "SEQ", size, "FB", "", 1028, block_size=6144) != 0:
             self.fail_json(
                 msg="Unable to allocate destination data set {0}".format(name)
             )

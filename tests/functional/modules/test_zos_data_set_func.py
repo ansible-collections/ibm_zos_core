@@ -9,7 +9,6 @@ __metaclass__ = type
 
 import pytest
 from pipes import quote
-from pprint import pprint
 
 # TODO: determine if data set names need to be more generic for testcases
 # TODO: add additional tests to check additional data set creation parameter combinations
@@ -574,11 +573,9 @@ def test_filesystem_create_and_mount(ansible_zos_module, filesystem):
         assert result.get("changed") is True
         assert result.get("module_stderr") is None
     for result in results2.contacted.values():
-        pprint(result)
         assert result.get("changed") is True
         assert result.get("stderr") == ""
     for result in results3.contacted.values():
-        pprint(result)
         assert result.get("changed") is True
         assert result.get("stderr") == ""
         assert DEFAULT_DATA_SET_NAME.upper() in result.get("stdout", "")
@@ -586,10 +583,8 @@ def test_filesystem_create_and_mount(ansible_zos_module, filesystem):
         assert result.get("changed") is True
         assert result.get("stderr") == ""
     for result in results5.contacted.values():
-        pprint(result)
         assert result.get("changed") is True
         assert result.get("module_stderr") is None
     for result in results6.contacted.values():
-        pprint(result)
         assert result.get("changed") is True
         assert result.get("module_stderr") is None

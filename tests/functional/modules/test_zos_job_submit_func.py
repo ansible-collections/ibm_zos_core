@@ -3,7 +3,7 @@
 # Copyright (c) IBM Corporation 2019, 2020
 # Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
@@ -33,6 +33,7 @@ HELLO, WORLD
 
 TEMP_PATH = "/tmp/ansible/jcl"
 DATA_SET_NAME = "imstestl.ims1.test05"
+DATA_SET_NAME_SPECIAL_CHARS = "imstestl.im@1.xxx05"
 
 
 def test_job_submit_PDS(ansible_zos_module):
@@ -49,6 +50,32 @@ def test_job_submit_PDS(ansible_zos_module):
     )
     results = hosts.all.zos_job_submit(
         src="{0}(SAMPLE)".format(DATA_SET_NAME), location="DATA_SET", wait=True
+    )
+    hosts.all.file(path=TEMP_PATH, state="absent")
+    for result in results.contacted.values():
+        assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
+        assert result.get("jobs")[0].get("ret_code").get("code") == 0
+        assert result.get("changed") is True
+
+
+def test_job_submit_PDS_special_characters(ansible_zos_module):
+    hosts = ansible_zos_module
+    hosts.all.file(path=TEMP_PATH, state="directory")
+    hosts.all.shell(
+        cmd="echo {0} > {1}/SAMPLE".format(quote(JCL_FILE_CONTENTS), TEMP_PATH)
+    )
+    hosts.all.zos_data_set(
+        name=DATA_SET_NAME_SPECIAL_CHARS, state="present", type="pds", replace=True
+    )
+    hosts.all.shell(
+        cmd="cp {0}/SAMPLE \"//'{1}(SAMPLE)'\"".format(
+            TEMP_PATH, DATA_SET_NAME_SPECIAL_CHARS
+        )
+    )
+    results = hosts.all.zos_job_submit(
+        src="{0}(SAMPLE)".format(DATA_SET_NAME_SPECIAL_CHARS),
+        location="DATA_SET",
+        wait=True,
     )
     hosts.all.file(path=TEMP_PATH, state="absent")
     for result in results.contacted.values():
@@ -78,9 +105,7 @@ def test_job_submit_LOCAL(ansible_zos_module):
     with open(tmp_file.name, "w") as f:
         f.write(JCL_FILE_CONTENTS)
     hosts = ansible_zos_module
-    results = hosts.all.zos_job_submit(
-        src=tmp_file.name, location="LOCAL", wait=True
-    )
+    results = hosts.all.zos_job_submit(src=tmp_file.name, location="LOCAL", wait=True)
 
     for result in results.contacted.values():
         print(result)

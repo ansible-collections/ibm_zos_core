@@ -514,13 +514,20 @@ class CopyHandler(object):
             src_ds_type {str} -- The type of source
         """
         new_src = temp_path or conv_path or src
+        if self.dest_exists:
+            datasets.delete(dest)
+        if model_ds:
+            self.allocate_model(dest, model_ds)
         if src_ds_type == "USS":
-            if model_ds and not self.dest_exists:
-                self.allocate_model(dest, model_ds)
-            try:
-                copy.copy_uss2mvs(new_src, dest, "PS", is_binary=self.is_binary)
-            except Exception as err:
-                self.fail_json(msg=str(err))
+            if not model_ds:
+                ps_size = "{0}K".format(math.ceil(Path(new_src).stat().st_size / 1024))
+                self._allocate_ps(dest, size=ps_size)
+            if datasets.copy(new_src, dest) != 0:
+                self.fail_json(
+                    msg="Error calling ZOAU 'copy' command while copying {0} to {1}".format(
+                        src, dest
+                    )
+                )
         else:
             rc = datasets.copy(new_src, dest)
             # *****************************************************************
@@ -530,7 +537,8 @@ class CopyHandler(object):
             # the destination data set before copying.
             # *****************************************************************
             if rc != 0:
-                datasets.create(dest, "SEQ")
+
+                self._allocate_ps(dest)
                 rc = datasets.copy(new_src, dest)
                 if rc != 0:
                     self.fail_json(
@@ -713,6 +721,26 @@ class CopyHandler(object):
                 rc=rc,
                 stdout_lines=out.splitlines(),
                 stderr_lines=err.splitlines(),
+            )
+
+    def _allocate_ps(self, name, size="5M"):
+        """Allocate a sequential data set
+
+        Arguments:
+            name {str} -- Name of the data set to allocate
+            size {str} -- The size to allocate
+        """
+        response = datasets._create(
+            name=name,
+            type="SEQ",
+            primary_space=size,
+            record_format="FB",
+            record_length=1028,
+            block_size=6144,
+        )
+        if response.rc != 0:
+            self.fail_json(
+                msg="Unable to allocate destination data set {0}".format(name)
             )
 
 

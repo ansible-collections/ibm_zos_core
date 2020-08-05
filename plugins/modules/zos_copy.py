@@ -183,6 +183,15 @@ options:
     type: bool
     required: false
     default: false
+  ignore_sftp_stderr:
+    description:
+      - During data transfer through sftp, the module fails if the sftp command
+        directs any content to stderr. The user is able to override this behavior
+        by setting this parameter to C(true). By doing so, the module would
+        essentially ignore the stderr stream produced by sftp and continue execution.
+    type: bool
+    required: false
+    default: false
 notes:
     - Destination data sets are assumed to be in catalog. When trying to copy
       to an uncataloged data set, the module assumes that the data set does
@@ -1457,6 +1466,7 @@ def main():
             local_follow=dict(type='bool', default=True),
             remote_src=dict(type='bool', default=False),
             sftp_port=dict(type='int', default=22),
+            ignore_sftp_stderr=dict(type='bool', default=False),
             validate=dict(type='bool'),
             is_uss=dict(type='bool'),
             is_pds=dict(type='bool'),

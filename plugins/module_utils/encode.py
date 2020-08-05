@@ -27,10 +27,9 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import copy
 
 try:
-    from zoautil_py import Datasets, MVSCmd
+    from zoautil_py import datasets
 except Exception:
-    Datasets = MissingZOAUImport()
-    MVSCmd = MissingZOAUImport()
+    datasets = MissingZOAUImport()
 
 
 if PY3:
@@ -148,10 +147,16 @@ class EncodeUtils(object):
             OSError: When any exception is raised during the data set allocation
         """
         size = str(space_u * 2) + "K"
-        hlq = Datasets.hlq()
-        temp_ps = Datasets.temp_name(hlq)
-        rc = Datasets.create(temp_ps, "SEQ", size, "VB", "", reclen)
-        if rc:
+        hlq = datasets.hlq()
+        temp_ps = datasets.tmp_name(hlq)
+        response = datasets._create(
+            name=temp_ps,
+            type="SEQ",
+            primary_space=size,
+            record_format="VB",
+            record_length=reclen,
+        )
+        if response.rc:
             raise OSError("Failed when allocating temporary sequential data set!")
         return temp_ps
 
@@ -390,7 +395,7 @@ class EncodeUtils(object):
             raise
         finally:
             if temp_ps:
-                Datasets.delete(temp_ps)
+                datasets.delete(temp_ps)
         return convert_rc
 
 

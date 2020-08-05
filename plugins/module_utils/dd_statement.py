@@ -12,9 +12,9 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import DataSet
 
 try:
-    from zoautil_py import Datasets
+    from zoautil_py import datasets
 except ImportError:
-    Datasets = MissingZOAUImport()
+    datasets = MissingZOAUImport()
 
 space_units = {"b": "", "kb": "k", "mb": "m", "gb": "g"}
 
@@ -628,8 +628,8 @@ class VIODefinition(DataDefinition):
         A temporary data set will be created for use in cases where VIO is unavailable.
         Defaults for VIODefinition should be sufficient.
         """
-        hlq = Datasets.hlq()
-        name = Datasets.temp_name(hlq)
+        hlq = datasets.hlq()
+        name = datasets.tmp_name(hlq)
         super().__init__(name)
 
     def __del__(self):

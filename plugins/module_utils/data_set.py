@@ -8,7 +8,6 @@ __metaclass__ = type
 import re
 import tempfile
 from os import path
-from random import choice
 from string import ascii_uppercase, digits
 from random import randint
 from ansible.module_utils._text import to_bytes
@@ -31,10 +30,10 @@ except ImportError:
     vtoc = MissingImport("vtoc")
 
 try:
-    from zoautil_py import Datasets, MVSCmd, types
+    from zoautil_py import datasets, mvscmd, types
 except ImportError:
-    Datasets = MissingZOAUImport()
-    MVSCmd = MissingZOAUImport()
+    datasets = MissingZOAUImport()
+    mvscmd = MissingZOAUImport()
     types = MissingZOAUImport()
 
 
@@ -45,16 +44,17 @@ class DataSet(object):
     _ZOAU_DS_CREATE_ARGS = {
         "name": "name",
         "type": "type",
-        "space_primary": "size",
+        "space_primary": "primary_space",
         "space_secondary": "secondary_space",
-        "record_format": "format",
-        "sms_storage_class": "class_name",
-        "sms_data_class": "data_class",
-        "sms_management_class": "management_class",
-        "record_length": "length",
+        "record_format": "record_format",
+        "sms_storage_class": "storage_class_name",
+        "sms_data_class": "data_class_name",
+        "sms_management_class": "management_class_name",
+        "record_length": "record_length",
         "key_offset": "offset",
         "key_length": "key_length",
         "block_size": "block_size",
+        "directory_blocks": "directory_blocks",
         "volumes": "volumes",
     }
 
@@ -88,7 +88,7 @@ class DataSet(object):
     def ensure_present(
         name,
         replace,
-        type=None,
+        type,
         space_primary=None,
         space_secondary=None,
         space_type=None,
@@ -169,6 +169,8 @@ class DataSet(object):
             DataSet.replace(**arguments)
         else:
             DataSet.create(**arguments)
+        if type.upper() == "ZFS":
+            DataSet.format_zfs(name)
         return True
 
     @staticmethod
@@ -361,7 +363,7 @@ class DataSet(object):
     @staticmethod
     def replace(
         name,
-        type=None,
+        type,
         space_primary=None,
         space_secondary=None,
         space_type=None,
@@ -449,9 +451,14 @@ class DataSet(object):
             if space_type:
                 secondary += space_type
 
+        type = kwargs.get("type")
+        if type and type == "ZFS":
+            type = "LDS"
+
         volumes = ",".join(volumes) if volumes else None
         kwargs["space_primary"] = primary
         kwargs["space_secondary"] = secondary
+        kwargs["type"] = type
         kwargs["volumes"] = volumes
         kwargs.pop("space_type", None)
         renamed_args = {}
@@ -467,7 +474,7 @@ class DataSet(object):
     @staticmethod
     def create(
         name,
-        type=None,
+        type,
         space_primary=None,
         space_secondary=None,
         space_type=None,
@@ -542,9 +549,9 @@ class DataSet(object):
         """
         original_args = locals()
         formatted_args = DataSet._build_zoau_args(**original_args)
-        rc = Datasets.create(**formatted_args)
-        if rc > 0:
-            raise DatasetCreateError(name, rc)
+        response = datasets._create(**formatted_args)
+        if response.rc > 0:
+            raise DatasetCreateError(name, response.rc)
         return
 
     @staticmethod
@@ -558,7 +565,7 @@ class DataSet(object):
         Raises:
             DatasetDeleteError: When data set deletion fails.
         """
-        rc = Datasets.delete(name)
+        rc = datasets.delete(name)
         if rc > 0:
             raise DatasetDeleteError(name, rc)
         return
@@ -599,7 +606,7 @@ class DataSet(object):
         Raises:
             DatasetMemberDeleteError: When data set member deletion fails.
         """
-        rc = Datasets.delete_members(name)
+        rc = datasets.delete_members(name)
         if rc > 0:
             raise DatasetMemberDeleteError(name, rc)
         return
@@ -631,22 +638,20 @@ class DataSet(object):
         """
         module = AnsibleModuleHelper(argument_spec={})
         iehprogm_input = DataSet._build_non_vsam_catalog_command(name.upper(), volumes)
-        temp_name = None
-        try:
-            temp_name = DataSet.create_temp(name.split(".")[0])
-            DataSet.write(temp_name, iehprogm_input)
-            rc, stdout, stderr = module.run_command(
-                "mvscmdauth --pgm=iehprogm --sysprint=* --sysin={0}".format(
-                    temp_name.upper()
-                )
-            )
-            if rc != 0 or "NORMAL END OF TASK RETURNED" not in stdout:
-                raise DatasetCatalogError(name, volumes, rc)
-        except Exception:
-            raise
-        finally:
-            if temp_name:
-                Datasets.delete(temp_name)
+        # temp_name = None
+        # try:
+        #     temp_name = DataSet.create_temp(name.split(".")[0])
+        # DataSet.write(temp_name, iehprogm_input)
+        rc, stdout, stderr = module.run_command(
+            "mvscmdauth --pgm=iehprogm --sysprint=* --sysin=stdin", data=iehprogm_input
+        )
+        if rc != 0 or "NORMAL END OF TASK RETURNED" not in stdout:
+            raise DatasetCatalogError(name, volumes, rc)
+        # except Exception:
+        #     raise
+        # finally:
+        #     if temp_name:
+        #         datasets.delete(temp_name)
         return
 
     @staticmethod
@@ -661,50 +666,33 @@ class DataSet(object):
         Raises:
             DatasetCatalogError: When attempt at catalog fails.
         """
+        module = AnsibleModuleHelper(argument_spec={})
         data_set_name = name.upper()
-        # data_set_volume = volume.upper()
         success = False
-        temp_name = None
-        try:
-            temp_name = DataSet.create_temp(name.split(".")[0])
-            command_rc = 0
-            for data_set_type in ["", "LINEAR", "INDEXED", "NONINDEXED", "NUMBERED"]:
-                if data_set_type != "INDEXED":
-                    command = DataSet._VSAM_CATALOG_COMMAND_NOT_INDEXED.format(
-                        data_set_name,
-                        DataSet._build_volume_string_idcams(volumes),
-                        data_set_type,
-                    )
-                else:
-                    command = DataSet._VSAM_CATALOG_COMMAND_INDEXED.format(
-                        data_set_name,
-                        DataSet._build_volume_string_idcams(volumes),
-                        data_set_type,
-                    )
-                DataSet.write(temp_name, command)
-                dd_statements = []
-                dd_statements.append(
-                    types.DDStatement(ddName="sysin", dataset=temp_name)
+        command_rc = 0
+        for data_set_type in ["", "LINEAR", "INDEXED", "NONINDEXED", "NUMBERED"]:
+            if data_set_type != "INDEXED":
+                command = DataSet._VSAM_CATALOG_COMMAND_NOT_INDEXED.format(
+                    data_set_name,
+                    DataSet._build_volume_string_idcams(volumes),
+                    data_set_type,
                 )
-                dd_statements.append(types.DDStatement(ddName="sysprint", dataset="*"))
-                command_rc = MVSCmd.execute_authorized(
-                    pgm="idcams", args="", dds=dd_statements
+            else:
+                command = DataSet._VSAM_CATALOG_COMMAND_INDEXED.format(
+                    data_set_name,
+                    DataSet._build_volume_string_idcams(volumes),
+                    data_set_type,
                 )
-                if command_rc == 0:
-                    success = True
-                    break
-            if not success:
-                raise DatasetCatalogError(
-                    name,
-                    volumes,
-                    command_rc,
-                    "Attempt to catalog VSAM data set failed.",
-                )
-        except Exception:
-            raise
-        finally:
-            if temp_name:
-                Datasets.delete(temp_name)
+            command_rc, stdout, stderr = module.run_command(
+                "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=command
+            )
+            if command_rc == 0:
+                success = True
+                break
+        if not success:
+            raise DatasetCatalogError(
+                name, volumes, command_rc, "Attempt to catalog VSAM data set failed.",
+            )
         return
 
     @staticmethod
@@ -745,7 +733,7 @@ class DataSet(object):
             raise
         finally:
             if temp_name:
-                Datasets.delete(temp_name)
+                datasets.delete(temp_name)
         return
 
     @staticmethod
@@ -758,23 +746,15 @@ class DataSet(object):
         Raises:
             DatasetUncatalogError: When uncatalog fails.
         """
+        module = AnsibleModuleHelper(argument_spec={})
         idcams_input = DataSet._VSAM_UNCATALOG_COMMAND.format(name)
-        temp_name = None
-        try:
-            temp_name = DataSet.create_temp(name.split(".")[0])
-            DataSet.write(temp_name, idcams_input)
-            dd_statements = []
-            dd_statements.append(types.DDStatement(ddName="sysin", dataset=temp_name))
-            dd_statements.append(types.DDStatement(ddName="sysprint", dataset="*"))
-            rc = MVSCmd.execute_authorized(pgm="idcams", args="", dds=dd_statements)
-            if rc != 0:
-                raise DatasetUncatalogError(name, rc)
-        except Exception:
-            raise
-        finally:
-            if temp_name:
-                Datasets.delete(temp_name)
-        return
+
+        rc, stdout, stderr = module.run_command(
+            "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=idcams_input
+        )
+
+        if rc != 0:
+            raise DatasetUncatalogError(name, rc)
 
     @staticmethod
     def is_vsam(name, volumes=None):
@@ -848,8 +828,8 @@ class DataSet(object):
             str: The temporary data set name.
         """
         if not hlq:
-            hlq = Datasets.hlq()
-        temp_name = Datasets.temp_name(hlq)
+            hlq = datasets.hlq()
+        temp_name = datasets.tmp_name(hlq)
         return temp_name
 
     @staticmethod
@@ -898,6 +878,24 @@ class DataSet(object):
         return temp_name
 
     @staticmethod
+    def format_zfs(name):
+        """Format an existing LDS as a ZFS file system.
+
+        Args:
+            name (str): The name of the data set to format.
+
+        Raises:
+            DatasetFormatError: When data set formatting fails.
+        """
+        module = AnsibleModuleHelper(argument_spec={})
+        rc, stdout, stderr = module.run_command(
+            "zfsadm format -aggregate {0}".format(name)
+        )
+        if rc != 0:
+            raise DatasetFormatError(name, rc, "{0} {1}".format(stdout, stderr))
+        return
+
+    @staticmethod
     def write(name, contents):
         """Write text to a data set.
 
@@ -908,7 +906,6 @@ class DataSet(object):
         Raises:
             DatasetWriteError: When write to the data set fails.
         """
-        # rc = Datasets.write(name, contents)
         module = AnsibleModuleHelper(argument_spec={})
         temp = tempfile.NamedTemporaryFile(delete=False)
         with open(temp.name, "w") as f:
@@ -1239,7 +1236,7 @@ def is_empty(data_set):
     if du.ds_type() == "PO":
         return _pds_empty(data_set)
     elif du.ds_type() == "PS":
-        return Datasets.read_last(data_set) is None
+        return datasets.read(data_set, tail=10) is None
     elif du.ds_type() == "VSAM":
         return _vsam_empty(data_set)
 
@@ -1387,6 +1384,14 @@ class DatasetUncatalogError(Exception):
 class DatasetWriteError(Exception):
     def __init__(self, data_set, rc, message=""):
         self.msg = 'An error occurred during write of data set "{0}". RC={1}. {2}'.format(
+            data_set, rc, message
+        )
+        super().__init__(self.msg)
+
+
+class DatasetFormatError(Exception):
+    def __init__(self, data_set, rc, message=""):
+        self.msg = 'An error occurred during format of data set "{0}". RC={1}. {2}'.format(
             data_set, rc, message
         )
         super().__init__(self.msg)

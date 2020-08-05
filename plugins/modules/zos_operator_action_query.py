@@ -176,9 +176,9 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
 )
 
 try:
-    from zoautil_py import OperatorCmd
+    from zoautil_py import opercmd
 except Exception:
-    OperatorCmd = MissingZOAUImport()
+    opercmd = MissingZOAUImport()
 
 
 def run_module():
@@ -298,9 +298,9 @@ def handle_conditions(list, condition_type, value):
 
 
 def execute_command(operator_cmd):
-    rc_message = OperatorCmd.execute(operator_cmd)
-    rc = rc_message.get("rc")
-    message = rc_message.get("message")
+    response = opercmd.execute(operator_cmd)
+    rc = response.rc
+    message = response.stdout_response + " " + response.stderr_response
     if rc > 0:
         raise OperatorCmdError(message)
     return message

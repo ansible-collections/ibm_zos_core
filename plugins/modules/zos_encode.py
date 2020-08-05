@@ -266,15 +266,14 @@ else:
     from pipes import quote
 
 try:
-    from zoautil_py import Datasets, MVSCmd
+    from zoautil_py import datasets
 except Exception:
-    Datasets = MissingZOAUImport()
-    MVSCmd = MissingZOAUImport()
+    datasets = MissingZOAUImport()
 
 
 def check_pds_member(ds, mem):
     check_rc = False
-    if mem in Datasets.list_members(ds):
+    if mem in datasets.list_members(ds):
         check_rc = True
     else:
         raise EncodeError("Cannot find member {0} in {1}".format(mem, ds))
@@ -308,7 +307,7 @@ def check_file(file):
     else:
         ds = file.upper()
         if "(" in ds:
-            dsn = ds[0: ds.rfind("(", 1)]
+            dsn = ds[0 : ds.rfind("(", 1)]
             mem = "".join(re.findall(r"[(](.*?)[)]", ds))
             rc, ds_type = check_mvs_dataset(dsn)
             if rc:

@@ -259,17 +259,17 @@ from ansible.module_utils.parsing.convert_bool import boolean
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser,
     data_set,
-    encode
+    encode,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     MissingZOAUImport,
 )
 
 try:
-    from zoautil_py import Datasets, MVSCmd, types
+    from zoautil_py import datasets, mvscmd, types
 except Exception:
-    Datasets = MissingZOAUImport()
-    MVSCmd = MissingZOAUImport()
+    datasets = MissingZOAUImport()
+    mvscmd = MissingZOAUImport()
     types = MissingZOAUImport()
 
 
@@ -327,24 +327,38 @@ class FetchHandler:
                 "MSVTMP", space_primary=vsam_size, space_type="K"
             )
             repro_sysin = " REPRO INFILE(INPUT)  OUTFILE(OUTPUT) "
-            Datasets.write(sysin, repro_sysin)
+            datasets.write(sysin, repro_sysin)
 
             dd_statements = []
-            dd_statements.append(types.DDStatement(ddName="sysin", dataset=sysin))
-            dd_statements.append(types.DDStatement(ddName="input", dataset=ds_name))
             dd_statements.append(
-                types.DDStatement(ddName="output", dataset=out_ds_name)
+                types.DDStatement(
+                    name="sysin", definition=types.DatasetDefinition(sysin)
+                )
             )
-            dd_statements.append(types.DDStatement(ddName="sysprint", dataset=sysprint))
+            dd_statements.append(
+                types.DDStatement(
+                    name="input", definition=types.DatasetDefinition(ds_name)
+                )
+            )
+            dd_statements.append(
+                types.DDStatement(
+                    name="output", definition=types.DatasetDefinition(out_ds_name)
+                )
+            )
+            dd_statements.append(
+                types.DDStatement(
+                    name="sysprint", definition=types.DatasetDefinition(sysprint)
+                )
+            )
 
-            mvs_rc = MVSCmd.execute_authorized(pgm="idcams", args="", dds=dd_statements)
+            mvs_rc = mvscmd.execute_authorized(pgm="idcams", dds=dd_statements)
 
         except OSError as err:
             self._fail_json(msg=str(err))
 
         except Exception as err:
-            if Datasets.exists(out_ds_name):
-                Datasets.delete(out_ds_name)
+            if datasets.exists(out_ds_name):
+                datasets.delete(out_ds_name)
 
             if mvs_rc != 0:
                 self._fail_json(
@@ -364,8 +378,8 @@ class FetchHandler:
             )
 
         finally:
-            Datasets.delete(sysprint)
-            Datasets.delete(sysin)
+            datasets.delete(sysprint)
+            datasets.delete(sysin)
 
         return out_ds_name
 
@@ -380,7 +394,9 @@ class FetchHandler:
             to_code_set = encoding.get("to")
             enc_utils = encode.EncodeUtils()
             try:
-                enc_utils.uss_convert_encoding(src, file_path, from_code_set, to_code_set)
+                enc_utils.uss_convert_encoding(
+                    src, file_path, from_code_set, to_code_set
+                )
             except Exception as err:
                 os.remove(file_path)
                 self._fail_json(
@@ -402,7 +418,7 @@ class FetchHandler:
         """
         temp_ds = self._copy_vsam_to_temp_data_set(src)
         file_path = self._fetch_mvs_data(temp_ds, is_binary, encoding)
-        rc = Datasets.delete(temp_ds)
+        rc = datasets.delete(temp_ds)
         if rc != 0:
             os.remove(file_path)
             self._fail_json(
@@ -512,13 +528,13 @@ def run_module():
             use_qualifier=dict(required=False, default=False, type="bool"),
             validate_checksum=dict(required=False, default=True, type="bool"),
             encoding=dict(required=False, type="dict"),
-            sftp_port=dict(type='int', default=22, required=False)
+            sftp_port=dict(type="int", default=22, required=False),
         )
     )
 
     src = module.params.get("src")
     if module.params.get("use_qualifier"):
-        module.params["src"] = Datasets.hlq() + "." + src
+        module.params["src"] = datasets.hlq() + "." + src
 
     # ********************************************************** #
     #                   Verify paramater validity                #
@@ -529,7 +545,7 @@ def run_module():
         dest=dict(arg_type="path", required=True),
         fail_on_missing=dict(arg_type="bool", required=False, default=True),
         is_binary=dict(arg_type="bool", required=False, default=False),
-        use_qualifier=dict(arg_type="bool", required=False, default=False)
+        use_qualifier=dict(arg_type="bool", required=False, default=False),
     )
 
     if module.params.get("encoding"):
@@ -603,7 +619,7 @@ def run_module():
 
     elif ds_type == "PO":
         if _fetch_member:
-            member_name = src[src.find("(") + 1: src.find(")")]
+            member_name = src[src.find("(") + 1 : src.find(")")]
             if not ds_utils.member_exists(member_name):
                 module.fail_json(
                     msg=(

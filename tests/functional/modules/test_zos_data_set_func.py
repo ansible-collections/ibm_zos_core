@@ -20,7 +20,6 @@ data_set_types = [
     ("esds"),
     ("rrds"),
     ("lds"),
-    (None),
 ]
 
 DEFAULT_VOLUME = "000000"

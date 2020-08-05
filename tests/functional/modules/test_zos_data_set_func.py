@@ -566,9 +566,9 @@ def test_filesystem_create_and_mount(ansible_zos_module, filesystem):
     results3 = hosts.all.shell(cmd="cd {0} ; df .".format(temp_dir_name))
 
     # clean up
-    hosts.all.command(cmd="unmount {0}".format(temp_dir_name))
-    hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
-    hosts.all.file(path=temp_dir_name, state="absent")
+    results4 = hosts.all.command(cmd="unmount {0}".format(temp_dir_name))
+    results5 = hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
+    results6 = hosts.all.file(path=temp_dir_name, state="absent")
 
     for result in results.contacted.values():
         assert result.get("changed") is True
@@ -582,3 +582,14 @@ def test_filesystem_create_and_mount(ansible_zos_module, filesystem):
         assert result.get("changed") is True
         assert result.get("stderr") == ""
         assert DEFAULT_DATA_SET_NAME.upper() in result.get("stdout", "")
+    for result in results4.contacted.values():
+        assert result.get("changed") is True
+        assert result.get("stderr") == ""
+    for result in results5.contacted.values():
+        pprint(result)
+        assert result.get("changed") is True
+        assert result.get("module_stderr") is None
+    for result in results6.contacted.values():
+        pprint(result)
+        assert result.get("changed") is True
+        assert result.get("module_stderr") is None

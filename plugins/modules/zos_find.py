@@ -18,7 +18,7 @@ version_added: "2.9"
 short_description: Find matching data sets
 description:
   - Return a list of data sets based on specific criteria.
-  - Multiple criteria are AND'd together.
+  - Multiple criteria can be added (AND'd) together.
   - Use the M(find) module to find USS files.
 author: "Asif Mahmud (@asifmahmud)"
 options:
@@ -27,7 +27,7 @@ options:
       - Select data sets whose age is equal to or greater than the specified time.
       - Use a negative age to find data sets equal to or less than the specified time.
       - You can choose days, weeks, months or years by specifying the first letter of
-        any of those words (e.g., "1w"). If no letter is specified, it is assumed to be days.
+        any of those words (e.g., "1w"). The default is days.
       - Age is determined by using the 'referenced date' of the data set.
     type: str
     required: false
@@ -62,8 +62,8 @@ options:
   patterns:
     description:
       - One or more data set or member patterns.
-      - The patterns restrict the list of data sets or members to be returned to those whose
-        names match at least one of the patterns specified. Multiple patterns
+      - The patterns restrict the list of data sets or members to be returned to those
+        names that match at least one of the patterns specified. Multiple patterns
         can be specified using a list.
       - This parameter expects a list, which can be either comma separated or YAML.
       - If C(pds_patterns) is provided, C(patterns) must be member patterns.
@@ -81,9 +81,9 @@ options:
     type: str
   pds_patterns:
     description:
-      - List of PDS/PDSE to search. Wildcard possible.
+      - List of PDS/PDSE to search. Wildcard is possible.
       - Required when searching for data set members.
-      - Only valid for C(nonvsam) resource types. Otherwise ignored.
+      - Valid only for C(nonvsam) resource types. Otherwise ignored.
     aliases:
       - pds_paths
       - pds_pattern
@@ -92,7 +92,7 @@ options:
   resource_type:
     description:
       - The type of resource to search.
-      - C(nonvsam) refers to one of SEQ, LIBRARY (PDSE), PDS, LARGE, BASIC, EXTREQ, EXTPREF.
+      - C(nonvsam) refers to one of SEQ, LIBRARY (PDSE), PDS, LARGE, BASIC, EXTREQ, or EXTPREF.
       - C(cluster) refers to a VSAM cluster. The C(data) and C(index) are the data and index
         components of a VSAM cluster.
     choices:
@@ -196,12 +196,12 @@ data_sets:
       }
     ]
 matched:
-    description: The number of matched data sets found
+    description: The number of matched data sets found.
     returned: success
     type: int
     sample: 49
 examined:
-    description: The number of data sets searched
+    description: The number of data sets searched.
     returned: success
     type: int
     sample: 158

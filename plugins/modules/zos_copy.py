@@ -530,9 +530,15 @@ class CopyHandler(object):
             if not model_ds:
                 ps_size = "{0}K".format(math.ceil(Path(new_src).stat().st_size / 1024))
                 self._allocate_ps(dest, size=ps_size)
-            if Datasets.copy(new_src, dest) != 0:
+            rc, out, err = self.run_command(
+                "cp {0} {1} \"//'{2}'\"".format(
+                    "-B" if self.is_binary else "", new_src, dest
+                )
+            )
+            if rc != 0:
                 self.fail_json(
-                    msg="Error calling ZOAU 'copy' command while copying {0} to {1}".format(src, dest)
+                    msg="Unable to copy source {0} to {1}".format(src, dest),
+                    rc=rc, stderr=err, stdout=out
                 )
         else:
             rc = Datasets.copy(new_src, dest)

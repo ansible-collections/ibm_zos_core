@@ -31,9 +31,9 @@ Setting ``pipelining = True`` in `ansible.cfg`_ will prevent this error.
 
 You can specify the SSH port used by Ansible and instruct Ansible where to
 write the temporary files on the target. This can be easily done by adding the
-options to your inventory or `ansible.cfg`.
+options to your inventory or to `ansible.cfg`.
 
-An example of adding these options to `ansible.cfg` is shown below. For more
+An example of adding these options to `ansible.cfg` is shown below. For additional
 details, see the sample `ansible.cfg`_ notes.
 
 .. code-block:: yaml

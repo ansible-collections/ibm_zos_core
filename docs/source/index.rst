@@ -14,9 +14,9 @@ retrieving job output, encoding data sets, fetching data sets, operator
 commands, TSO commands, ping and querying operator actions.
 
 The **IBM z/OS core collection** serves as a dependency for other collections
-under the **Red Hat® Ansible Certified Content for IBM Z** umbrella and
-works closely with offerings such as `IBM z/OS IMS collection`_ to deliver
-a solution that will enable you to automate tasks on z/OS subsystems such
+under the **Red Hat® Ansible Certified Content for IBM Z** umbrella. The IBM z/OS
+core collection works closely with offerings such as `IBM z/OS IMS collection`_
+to deliver a solution that enables you to automate tasks on z/OS subsystems such
 as IMS.
 
 .. _IBM z/OS IMS collection:
@@ -33,8 +33,8 @@ configuration management, provisioning, and application deployment in one
 easy-to-use platform.
 
 IBM z/OS core collection, as part of the broader offering
-**Red Hat® Ansible Certified Content for IBM Z**, will be available on both,
-Galaxy as community supported and Automation Hub with enterprise support.
+**Red Hat® Ansible Certified Content for IBM Z**, will be available on both
+Galaxy as a community supported offering and on Automation Hub with enterprise support.
 
 Features
 ========

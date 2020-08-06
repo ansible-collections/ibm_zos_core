@@ -9,7 +9,7 @@ Dependencies
 * z/OS `V2R3`_ or `later`_
 * `IBM Z Open Automation Utilities`_ (ZOAU)
 
-   * IBM z/OS core collections are dependent on specific versions of ZOAU.
+   * IBM z/OS core collection is dependent on specific versions of ZOAU.
      For information about the required version of ZOAU, review the
      `release notes`_.
 
@@ -17,14 +17,16 @@ Dependencies
 * The z/OS® shell
 
 .. note::
-   Currently, the only supported shell is the ``z/OS® shell``; this is because
-   shells such as ``bash`` handle the reading and writing of untagged files
-   differently. ``bash`` added enhanced ASCII support in 4.3 and thus differs
-   from 4.2; we encourage users avoid using ``ansible_shell_executable`` to
-   change the default shell as does `Ansible documentation`_. Should the
-   ``bash`` shell be the only shell available, you will need to control how
-   new and existing files are tagged and encoded, this can be controlled by
-   setting both "_ENCODE_FILE_NEW" and "_ENCODE_FILE_EXISTING"; for example,
+   Currently, only ``z/OS® shell`` is supported. Using ``ansible_shell_executable`` to
+   change the default shell is discouraged. For more information, see
+   `Ansible documentation`_.
+
+   Shells such as ``bash`` are not supported because they handle the reading and
+   writing of untagged files differently. ``bash`` added enhanced ASCII support
+   in version 4.3 and thus differs from 4.2. If ``bash`` shell is the only shell
+   available, you must control how the new and existing files are tagged and encoded.
+   This can be controlled by setting both "_ENCODE_FILE_NEW" and "_ENCODE_FILE_EXISTING".
+   For example,
 
    * _ENCODE_FILE_NEW: "IBM-1047"
    * _ENCODE_FILE_EXISTING: "IBM-1047"
@@ -58,7 +60,7 @@ Python on z/OS
 
 If the Ansible target is z/OS, you must install
 **IBM Open Enterprise Python for z/OS** which is ported for the z/OS platform
-and required by **IBM z/OS core Collection**.
+and required by **IBM z/OS core collection**.
 
 **Installation**
 
@@ -69,8 +71,8 @@ and required by **IBM z/OS core Collection**.
 
   * 5655-PYT for the base product
   * 5655-PYS for service and support
-* Optionally download **IBM Open Enterprise Python for z/OS**, `here`_
-* For the Python supported version, refer to the `release notes`_.
+* Optionally, download **IBM Open Enterprise Python for z/OS**, `here`_
+* For the supported Python version, refer to the `release notes`_.
 
 .. _IBM Open Enterprise Python for z/OS:
    http://www.ibm.com/products/open-enterprise-python-zos
@@ -81,8 +83,8 @@ and required by **IBM z/OS core Collection**.
 .. note::
 
    Currently, IBM Open Enterprise Python for z/OS is the supported and
-   recommended Python distribution for use on z/OS with Ansible and ZOAU. If
-   Rocket Python is the only available python on the target, review the
+   recommended Python distribution for use with Ansible and ZOAU. If
+   Rocket Python is the only available Python on the target, review the
    `recommended environment variables`_ for Rocket Python.
 
 .. _recommended environment variables:
@@ -92,14 +94,14 @@ ZOAU
 ----
 
 IBM Z Open Automation Utilities provide support for executing automation tasks
-on z/OS. With ZOAU, you can run traditional MVS commands, such as IEBCOPY,
+on z/OS. With ZOAU, you can run traditional MVS commands such as IEBCOPY,
 IDCAMS, and IKJEFT01, as well as perform a number of data set operations
 in the scripting language of your choice.
 
 **Installation**
 
 * Visit the `ZOAU`_ product page for the FMID, program directory, fix list,
-  latest PTF, installation and configuration instructions.
+  latest PTF, installation, and configuration instructions.
 * For reference, the Program IDs are:
 
   * 5698-PA1 for the base product

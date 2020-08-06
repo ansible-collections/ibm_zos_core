@@ -16,10 +16,10 @@ The Ansible configuration file `ansible.cfg` can override almost all
 sample `ansible.cfg`_ that can supplement ``ansible-playbook`` with a
 little modification.
 
-In the `ansible.cfg`_, the only required configuration is ``pipelining = True``.
+In `ansible.cfg`_, the only required configuration is ``pipelining = True``.
 Setting the ``pipelining = True`` is **required** because it overrides the
 default behavior which is to transfer Ansible modules to the target in binary
-via SFTP, however this will fail with the error:
+via SFTP. However, this will fail with the error:
 
 .. warning::
    SyntaxError: Non-UTF-8 code starting with '\x83' in file

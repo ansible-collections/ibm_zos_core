@@ -289,7 +289,7 @@ def content_filter(module, patterns, content):
                     try:
                         filtered_data_sets['pds'][result[0]].add(result[1])
                     except KeyError:
-                        filtered_data_sets['pds'][result[0]] = set(result[1])
+                        filtered_data_sets['pds'][result[0]] = set([result[1]])
                 else:
                     filtered_data_sets['ps'].add(result[0])
     return filtered_data_sets

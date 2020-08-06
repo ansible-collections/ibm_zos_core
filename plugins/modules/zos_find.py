@@ -278,15 +278,14 @@ def content_filter(module, patterns, content):
                 msg="Non-zero return code received while executing ZOAU shell command 'dgrep'",
                 rc=rc, stdout=out, stderr=err
             )
-        for line in err.split("\n"):
+        for line in err.splitlines():
             if line and line.strip().startswith("BGYSC1005I"):
                 filtered_data_sets['searched'] += 1
 
-        for line in out.split("\n"):
-            result = line.split()
+        for line in out.splitlines():
+            result = line.replace(content, "").split()
             if result:
-                ds_type = data_set.DataSetUtils(result[0]).ds_type()
-                if ds_type == "PO":
+                if len(result) > 1:
                     try:
                         filtered_data_sets['pds'][result[0]].add(result[1])
                     except KeyError:
@@ -317,11 +316,11 @@ def data_set_filter(module, patterns):
                 msg="Non-zero return code received while executing ZOAU shell command 'dls'",
                 rc=rc, stdout=out, stderr=err
             )
-        for ds in err.split("\n"):
+        for ds in err.splitlines():
             if ds and ds.strip().startswith("BGYSC1005I"):
                 filtered_data_sets['searched'] += 1
 
-        for line in out.split("\n"):
+        for line in out.splitlines():
             result = line.split()
             if result:
                 if result[1] == "PO":
@@ -331,7 +330,7 @@ def data_set_filter(module, patterns):
                     if mls_rc == 2:
                         filtered_data_sets["pds"][result[0]] = {}
                     else:
-                        filtered_data_sets["pds"][result[0]] = set(filter(None, mls_out.split('\n')))
+                        filtered_data_sets["pds"][result[0]] = set(filter(None, mls_out.splitlines()))
                 else:
                     filtered_data_sets["ps"].add(result[0])
     return filtered_data_sets
@@ -397,7 +396,7 @@ def vsam_filter(module, patterns, resource_type, age=None):
                 msg="Non-zero return code received while executing ZOAU shell command 'vls'",
                 rc=rc, stdout=out, stderr=err
             )
-        for entry in out.split("\n"):
+        for entry in out.splitlines():
             if entry:
                 vsam_props = entry.split()
                 if age:

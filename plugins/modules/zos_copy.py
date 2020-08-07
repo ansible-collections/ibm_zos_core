@@ -183,6 +183,15 @@ options:
     type: bool
     required: false
     default: false
+  ignore_sftp_stderr:
+    description:
+      - During data transfer through sftp, the module fails if the sftp command
+        directs any content to stderr. The user is able to override this behavior
+        by setting this parameter to C(true). By doing so, the module would
+        essentially ignore the stderr stream produced by sftp and continue execution.
+    type: bool
+    required: false
+    default: false
 notes:
     - Destination data sets are assumed to be in catalog. When trying to copy
       to an uncataloged data set, the module assumes that the data set does
@@ -521,9 +530,15 @@ class CopyHandler(object):
             if not model_ds:
                 ps_size = "{0}K".format(math.ceil(Path(new_src).stat().st_size / 1024))
                 self._allocate_ps(dest, size=ps_size)
-            if Datasets.copy(new_src, dest) != 0:
+            rc, out, err = self.run_command(
+                "cp {0} {1} \"//'{2}'\"".format(
+                    "-B" if self.is_binary else "", new_src, dest
+                )
+            )
+            if rc != 0:
                 self.fail_json(
-                    msg="Error calling ZOAU 'copy' command while copying {0} to {1}".format(src, dest)
+                    msg="Unable to copy source {0} to {1}".format(src, dest),
+                    rc=rc, stderr=err, stdout=out
                 )
         else:
             rc = Datasets.copy(new_src, dest)
@@ -1457,6 +1472,7 @@ def main():
             local_follow=dict(type='bool', default=True),
             remote_src=dict(type='bool', default=False),
             sftp_port=dict(type='int', default=22),
+            ignore_sftp_stderr=dict(type='bool', default=False),
             validate=dict(type='bool'),
             is_uss=dict(type='bool'),
             is_pds=dict(type='bool'),

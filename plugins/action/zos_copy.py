@@ -47,6 +47,9 @@ class ActionModule(ActionBase):
         mode = self._task.args.get('mode', None)
         owner = self._task.args.get('owner', None)
         group = self._task.args.get('group', None)
+        ignore_sftp_stderr = _process_boolean(
+            self._task.args.get('ignore_sftp_stderr'), default=False
+        )
 
         new_module_args = self._task.args.copy()
         is_pds = is_src_dir = False
@@ -126,7 +129,9 @@ class ActionModule(ActionBase):
             if content:
                 try:
                     local_content = _write_content_to_temp_file(content)
-                    transfer_res = self._copy_to_remote(local_content, sftp_port)
+                    transfer_res = self._copy_to_remote(
+                        local_content, sftp_port, ignore_stderr=ignore_sftp_stderr
+                    )
                 finally:
                     os.remove(local_content)
             else:
@@ -143,7 +148,9 @@ class ActionModule(ActionBase):
                     if mode == 'preserve':
                         new_module_args['mode'] = '0{0:o}'.format(stat.S_IMODE(os.stat(b_src).st_mode))
                     new_module_args['size'] = os.stat(src).st_size
-                transfer_res = self._copy_to_remote(src, sftp_port, is_dir=is_src_dir)
+                transfer_res = self._copy_to_remote(
+                    src, sftp_port, is_dir=is_src_dir, ignore_stderr=ignore_sftp_stderr
+                )
 
             temp_path = transfer_res.get("temp_path")
             if transfer_res.get("msg"):
@@ -188,7 +195,7 @@ class ActionModule(ActionBase):
 
         return _update_result(is_binary, copy_res, self._task.args)
 
-    def _copy_to_remote(self, src, port, is_dir=False):
+    def _copy_to_remote(self, src, port, is_dir=False, ignore_stderr=False):
         """Copy a file or directory to the remote z/OS system """
         ansible_user = self._play_context.remote_user
         ansible_host = self._play_context.remote_addr
@@ -208,7 +215,7 @@ class ActionModule(ActionBase):
         out, err = transfer_data.communicate(to_bytes(stdin))
         err = _detect_sftp_errors(err)
 
-        if transfer_data.returncode != 0 or err:
+        if transfer_data.returncode != 0 or (err and not ignore_stderr):
             return dict(
                 msg="Error transfering source '{0}' to remote z/OS system".format(src),
                 rc=transfer_data.returncode,

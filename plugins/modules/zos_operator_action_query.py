@@ -171,14 +171,8 @@ import re
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,
 )
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingZOAUImport,
-)
 
-try:
-    from zoautil_py import OperatorCmd
-except Exception:
-    OperatorCmd = MissingZOAUImport()
+module = None
 
 
 def run_module():
@@ -190,8 +184,9 @@ def run_module():
 
     result = dict(changed=False)
 
+    global module
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=False)
-
+    requests = []
     try:
         new_params = parse_params(module.params)
         requests = find_required_request(new_params)
@@ -261,8 +256,8 @@ def create_merge_list():
     the results will be merged so that a full list of information returned on condition"""
     operator_cmd_a = "d r,a,s"
     operator_cmd_b = "d r,a,jn"
-    message_a = execute_command(operator_cmd_a)
-    message_b = execute_command(operator_cmd_b)
+    message_a = execute_operator_command(operator_cmd_a)
+    message_b = execute_operator_command(operator_cmd_b)
     list_a = parse_result_a(message_a)
     list_b = parse_result_b(message_b)
     merged_list = merge_list(list_a, list_b)
@@ -297,13 +292,11 @@ def handle_conditions(list, condition_type, value):
     return newlist
 
 
-def execute_command(operator_cmd):
-    rc_message = OperatorCmd.execute(operator_cmd)
-    rc = rc_message.get("rc")
-    message = rc_message.get("message")
+def execute_operator_command(cmd):
+    rc, stdout, stderr = module.run_command("opercmd {0}".format(cmd))
     if rc > 0:
-        raise OperatorCmdError(message)
-    return message
+        raise OperatorCmdError("{0} {1}".format(stdout, stderr))
+    return stdout
 
 
 def parse_result_a(result):

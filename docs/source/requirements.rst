@@ -26,7 +26,7 @@ Managed node
 The managed z/OS node is the host that is managed by Ansible, as identified in the Ansible inventory.
 The managed node has dependencies that are specific to each release of the
 **IBM z/OS core collection**. Review the details of the dependencies before you
- proceed to install the IBM z/OS core collection.
+proceed to install the IBM z/OS core collection.
 
 .. toctree::
    :maxdepth: 3

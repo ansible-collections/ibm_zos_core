@@ -22,6 +22,15 @@ if [[ -f $DOC_DIR/source/playbooks-single.rst  ]]; then
 fi
 
 ################################################################################
+# Delete the requirements-single.rst
+################################################################################
+
+if [[ -f $DOC_DIR/source/requirements-single.rst  ]]; then
+    #echo "Deleting file [$DOC_DIR/source/requirements-single.rst]";
+    rm -rf $DOC_DIR/source/requirements-single.rst
+fi
+
+################################################################################
 # Replace the temporary index
 ################################################################################
 

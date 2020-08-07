@@ -60,6 +60,46 @@ if [[ -f $DOC_DIR/source/playbooks.rst ]]; then
 #    #echo "Unable to create single source RST for [$DOC_DIR/source/playbooks.rst]."
 fi
 
+# Remove all the toctree entries from requirements.rst as a new RST requirements-single.rst
+if [[ -f $DOC_DIR/source/requirements.rst ]]; then
+    #echo "Creating [$DOC_DIR/source/requirements-single.rst] with no toctree entries."
+
+    # Remove the toctree entries
+    awk '/toctree/ {exit} {print}' $DOC_DIR/source/requirements.rst >> $DOC_DIR/source/requirements-single.rst
+
+    # Concat the interested RSTs into requirements-single.rst to create a single RST
+    if [[ -f $DOC_DIR/source/requirements_managed.rst ]]; then
+
+        for file in $DOC_DIR/source/requirements_managed.rst; do
+            #echo "Merging $file into [$DOC_DIR/source/requirements-single.rst]."
+            cat "$file" >> $DOC_DIR/source/requirements-single.rst;
+        done
+
+### we need a check if index-temp here else do ...
+        # Update the temporary index-temp.rst toctree with a new RST playbooks-single entry
+        if [[ -f $DOC_DIR/source/requirements-single.rst ]]; then
+            # echo "Updating [index-temp.rst] with toctree entry [$DOC_DIR/source/requirements-single.rst]."
+
+            if [[ -f $DOC_DIR/source/index-temp.rst ]]; then
+                awk '{ sub(/^   requirements$/,"   requirements-single"); print }' $DOC_DIR/source/index-temp.rst > $DOC_DIR/source/index-temp-temp.rst
+                mv $DOC_DIR/source/index-temp-temp.rst $DOC_DIR/source/index-temp.rst
+            else
+                awk '{ sub(/^   requirements$/,"   requirements-single"); print }' $DOC_DIR/source/index.rst > $DOC_DIR/source/index-temp.rst
+            fi
+        fi
+    else
+        #echo "Unable to merge requirements*.rst files a single [requirements-single.rst]."
+
+        #echo "Removing [$DOC_DIR/source/requirements-single.rst]."
+        rm -rf $DOC_DIR/source/requirements-single.rst
+
+        #echo "Removing [$DOC_DIR/source/index-temp.rst]."
+        rm -rf $DOC_DIR/source/index-temp.rst
+    fi
+#else
+#    #echo "Unable to create single source RST for [$DOC_DIR/source/playbooks.rst]."
+fi
+
 # Backup the original index.rst (without rst extenstion) and move the temporary one
 if [[ -f $DOC_DIR/source/index-temp.rst  ]]; then
     #echo "Backing up [$DOC_DIR/source/index.rst] as [$DOC_DIR/source/index.org]"

@@ -171,8 +171,14 @@ import re
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
+    MissingZOAUImport,
+)
 
-module = None
+try:
+    from zoautil_py import OperatorCmd
+except Exception:
+    OperatorCmd = MissingZOAUImport()
 
 
 def run_module():
@@ -184,7 +190,6 @@ def run_module():
 
     result = dict(changed=False)
 
-    global module
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=False)
     requests = []
     try:
@@ -256,8 +261,8 @@ def create_merge_list():
     the results will be merged so that a full list of information returned on condition"""
     operator_cmd_a = "d r,a,s"
     operator_cmd_b = "d r,a,jn"
-    message_a = execute_operator_command(operator_cmd_a)
-    message_b = execute_operator_command(operator_cmd_b)
+    message_a = execute_command(operator_cmd_a)
+    message_b = execute_command(operator_cmd_b)
     list_a = parse_result_a(message_a)
     list_b = parse_result_b(message_b)
     merged_list = merge_list(list_a, list_b)
@@ -292,11 +297,13 @@ def handle_conditions(list, condition_type, value):
     return newlist
 
 
-def execute_operator_command(cmd):
-    rc, stdout, stderr = module.run_command("opercmd {0}".format(cmd))
+def execute_command(operator_cmd):
+    rc_message = OperatorCmd.execute(operator_cmd)
+    rc = rc_message.get("rc")
+    message = rc_message.get("message")
     if rc > 0:
-        raise OperatorCmdError("{0} {1}".format(stdout, stderr))
-    return stdout
+        raise OperatorCmdError(message)
+    return message
 
 
 def parse_result_a(result):
@@ -308,37 +315,23 @@ def parse_result_a(result):
 
     dict_temp = {}
     list = []
-    request_temp = ""
-    end_flag = False
-    lines = result.split("\n")
 
-    for index, line in enumerate(lines):
-        line = line.strip()
-        pattern = re.compile(
-            r"\s*([0-9]{2,})\s([A-Z]{1})\s([A-Z0-9]{1,8})\s+((?:[A-Z0-9]{1,8})?)\s*[&*]?[0-9]+(.*)"
-        )
-        m = pattern.search(line)
-        if index == (len(lines) - 1):
-            end_flag = True
-        if m or end_flag:
-            if request_temp:
-                dict_temp["message_text"] = request_temp
-                list.append(dict_temp)
-                request_temp = ""
-                dict_temp = {}
-            if m:
-                dict_temp = {
-                    "number": m.group(1),
-                    "type": m.group(2),
-                    "system": m.group(3),
-                }
-                if m.group(4) != "":
-                    dict_temp["job_id"] = (m.group(4),)
-                request_temp = m.group(5).strip()
-                continue
-        else:
-            if request_temp:
-                request_temp = request_temp + " " + line
+    match_iter = re.finditer(
+        r"^\s*([0-9]{2,})\s([A-Z]{1})\s([A-Z0-9]{1,8})\s+((?:[A-Z0-9]{1,8})?)\s*[&*]?[0-9]+(.*)",
+        result,
+        re.MULTILINE,
+    )
+    for match in match_iter:
+        dict_temp = {
+            "number": match.group(1),
+            "type": match.group(2),
+            "system": match.group(3),
+        }
+        if match.group(4) != "":
+            dict_temp["job_id"] = match.group(4)
+        if match.group(5) != "":
+            dict_temp["message_text"] = match.group(5).strip()
+        list.append(dict_temp)
 
     return list
 
@@ -350,21 +343,20 @@ def parse_result_b(result):
 
     dict_temp = {}
     list = []
-    lines = result.split("\n")
-    for index, line in enumerate(lines):
-        line = line.strip()
-        pattern_with_job_name = re.compile(
-            r"\s*([0-9]{2,})\s[A-Z]{1}\s+([A-Z0-9]{1,8})?\s*[&*]?[0-9]+\s([A-Z0-9]+)"
-        )
-        m = pattern_with_job_name.search(line)
-        if m:
-            dict_temp = {
-                "number": m.group(1),
-                "job_name": m.group(2),
-                "message_id": m.group(3),
-            }
-            list.append(dict_temp)
-            continue
+
+    match_iter = re.finditer(
+        r"^\s*([0-9]{2,})\s[A-Z]{1}\s+([A-Z0-9]{1,8})?\s*[&*]?[0-9]+\s([A-Z0-9]+)",
+        result,
+        re.MULTILINE,
+    )
+    for match in match_iter:
+        dict_temp = {
+            "number": match.group(1),
+            "job_name": match.group(2),
+            "message_id": match.group(3),
+        }
+        list.append(dict_temp)
+
     return list
 
 

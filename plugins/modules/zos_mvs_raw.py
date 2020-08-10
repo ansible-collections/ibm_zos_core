@@ -47,6 +47,13 @@ options:
     required: false
     type: bool
     default: false
+  verbose:
+    description:
+      - Determines if verbose output should be returned from the underlying utility used by this module.
+      - When I(verbose=true) verbose output is returned on module failure.
+    required: false
+    type: bool
+    default: false
   dds:
     description:
       - The input data source.
@@ -1704,6 +1711,7 @@ def run_module():
     module_args = dict(
         program_name=dict(type="str", aliases=["program", "pgm"], required=True),
         auth=dict(type="bool", default=False),
+        verbose=dict(type="bool", default=False),
         parm=dict(type="str", required=False),
         dds=dict(
             type="list",
@@ -1718,8 +1726,6 @@ def run_module():
                 dd_dummy=dd_dummy,
             ),
         ),
-        # verbose=dict(type="bool", required=False),
-        # debug=dict(type="bool", required=False),
     )
 
     # ---------------------------------------------------------------------------- #
@@ -1737,14 +1743,19 @@ def run_module():
             program = parms.get("program_name")
             program_parm = parms.get("parm")
             authorized = parms.get("auth")
+            verbose = parms.get("verbose")
             program_response = run_zos_program(
                 program=program,
                 parm=program_parm,
                 dd_statements=dd_statements,
                 authorized=authorized,
+                verbose=verbose,
             )
             if program_response.rc != 0 and program_response.stderr:
-                raise ZOSRawError(program, program_response.stderr)
+                raise ZOSRawError(
+                    program,
+                    "{0} {1}".format(program_response.stdout, program_response.stderr),
+                )
 
             response = build_response(program_response.rc, dd_statements)
             result["changed"] = True
@@ -1919,6 +1930,7 @@ def parse_and_validate_args(params):
     module_args = dict(
         program_name=dict(type="str", aliases=["program", "pgm"], required=True),
         auth=dict(type="bool", default=False),
+        verbose=dict(type="bool", default=False),
         parm=dict(type="str", required=False),
         dds=dict(
             type="list",
@@ -2682,7 +2694,9 @@ def data_set_exists(name, volumes=None):
     return exists
 
 
-def run_zos_program(program, parm="", dd_statements=None, authorized=False):
+def run_zos_program(
+    program, parm="", dd_statements=None, authorized=False, verbose=False
+):
     """Run a program on z/OS.
 
     Args:
@@ -2698,9 +2712,13 @@ def run_zos_program(program, parm="", dd_statements=None, authorized=False):
         dd_statements = []
     response = None
     if authorized:
-        response = MVSCmd.execute_authorized(pgm=program, parm=parm, dds=dd_statements)
+        response = MVSCmd.execute_authorized(
+            pgm=program, parm=parm, dds=dd_statements, verbose=verbose
+        )
     else:
-        response = MVSCmd.execute(pgm=program, parm=parm, dds=dd_statements)
+        response = MVSCmd.execute(
+            pgm=program, parm=parm, dds=dd_statements, verbose=verbose
+        )
     return response
 
 

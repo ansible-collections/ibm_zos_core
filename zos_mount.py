@@ -4,13 +4,15 @@
 # Copyright (c) IBM Corporation 2019, 2020
 # Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+ANSIBLE_METADATA = {
+    'metadata_version': '1.1',
+    'status': ['preview'],
+    'supported_by': 'community',
+}
 
 DOCUMENTATION = r"""
 ---
@@ -117,7 +119,6 @@ options:
             - The parameter format and content are specified by the file system type.
         type: str
         required: False
-        default: None
     tag_flag:
         description:
             - If present, tags get written to any untagged file
@@ -132,7 +133,6 @@ options:
             - TEXT
             - NOTEXT
         required: False
-        default: None
     tag_ccsid:
         description:
             - CCSID for untagged files in the mounted file system
@@ -179,7 +179,6 @@ options:
               sysname is a 1–8 alphanumeric name of a system participating in shared file system.
         type: str
         required: False
-        default: None
     automove:
         description:
             - >
@@ -211,7 +210,6 @@ options:
             - Indicator is either INCLUDE or EXCLUDE, which can also be abbreviated as I or E.
         type: str
         required: False
-        default: None
 
 """
 
@@ -647,23 +645,22 @@ def main():
                 required=False,
                 choices=["ro", "rw", "same", "nowait", "nosecurity"],
             ),
-            src_params=dict(type='str', default=None, required=False),
+            src_params=dict(type='str', required=False),
             tag_flag=dict(
                 type='str',
-                default=None,
                 required=False,
                 choices=["TEXT", "NOTEXT"],
             ),
             tag_ccsid=dict(type='int', default=850, required=False),
             allow_uids=dict(type='bool', default=True, required=False),
-            sysname=dict(type='str', default=None, required=False),
+            sysname=dict(type='str', required=False),
             automove=dict(
                 type='str',
                 default='AUTOMOVE',
                 required=False,
                 choices=["AUTOMOVE", "NOAUTOMOVE", "UNMOUNT"],
             ),
-            automove_list=dict(type='str', default=None, required=False)
+            automove_list=dict(type='str', required=False)
         ),
         add_file_common_args=True,
         supports_check_mode=True
@@ -676,13 +673,13 @@ def main():
         state=dict(arg_type='str', default='mounted', required=False),
         unmount_opts=dict(type='str', default='NORMAL', required=False),
         opts=dict(type='str', default='rw', required=False),
-        src_params=dict(arg_type='str', default=None, required=False),
-        tag_flag=dict(arg_type='str', default=None, required=False),
+        src_params=dict(arg_type='str', required=False),
+        tag_flag=dict(arg_type='str', required=False),
         tag_ccsid=dict(arg_type='int', default=850, required=False),
         allow_uids=dict(arg_type='bool', default=True, required=False),
-        sysname=dict(arg_type='str', default=None, required=False),
+        sysname=dict(arg_type='str', required=False),
         automove=dict(arg_type='str', default='AUTOMOVE', required=False),
-        automove_list=dict(arg_type='str', default=None, required=False)
+        automove_list=dict(arg_type='str', required=False)
     )
 
     try:

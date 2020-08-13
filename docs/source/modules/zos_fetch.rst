@@ -94,6 +94,15 @@ flat
 
 
      
+ignore_sftp_stderr
+  During data transfer through sftp, the module fails if the sftp command directs any content to stderr. The user is able to override this behavior by setting this parameter to ``true``. By doing so, the module would essentially ignore the stderr stream produced by sftp and continue execution.
+
+
+  | **required**: False
+  | **type**: bool
+
+
+     
 is_binary
   Specifies if the file being fetched is a binary.
 
@@ -101,6 +110,16 @@ is_binary
   | **required**: False
   | **type**: bool
   | **default**: false
+
+
+     
+sftp_port
+  Indicates which port should be used to connect to the remote z/OS system to perform data transfer. Default is port 22.
+
+
+  | **required**: False
+  | **type**: int
+  | **default**: 22
 
 
      
@@ -132,26 +151,6 @@ validate_checksum
   | **required**: False
   | **type**: bool
   | **default**: true
-
-
-
-sftp_port
-  Indicates which port should be used to connect to the remote z/OS system to perform data transfer. Default is port 22.
-
-
-  | **required**: False
-  | **type**: int
-  | **default**: 22
-
-
-
-ignore_sftp_stderr
-  During data transfer through sftp, the module fails if the sftp command directs any content to stderr. The user is able to override this behavior by setting this parameter to C(true). By doing so, the module would essentially ignore the stderr stream produced by sftp and continue execution.
-
-
-  | **required**: False
-  | **type**: bool
-  | **default**: false
 
 
 
@@ -233,6 +232,7 @@ See Also
 .. seealso::
 
    - :ref:`zos_data_set_module`
+   - :ref:`zos_copy_module`
 
 
 

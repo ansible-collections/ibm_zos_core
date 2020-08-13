@@ -3,9 +3,16 @@
 ###############################################################################
 
 ###############################################################################
-# This playbook is used to locate required dependencies (Python, ZOAU) and
-# build a suitable host configuration using the discovered dependencies.
-# Be aware execution can take some time.
+# Description:
+#  This playbook is used to locate required dependencies (Python, ZOAU) and
+#  build a suitable host configuration using the discovered dependencies.
+#
+#  This playbook generates a host configuration only for Python and
+#  ZOAU version >= v1.0.3 dependencies.
+#
+#  All potential Python and ZOAU installations are output by the playbook
+#  in case the Python or ZOAU installation desired by the user is different
+#  than the one selected by this playbook.
 #
 # Usage:
 #  ansible-playbook -i <inventory> <playbook>
@@ -16,6 +23,11 @@
 #  ansible-playbook -i inventory host-setup.yaml
 #   or
 #  ansible-playbook -i "mysystem.to.connect.com," host-setup.yaml
+#
+# If the user that connects to the host is different from the user submitting
+# the playbook, you can optionally instruct the playbook to user another user
+# with option '-u <username>' for example:
+# ansible-playbook -i "mysystem.to.connect.com," host-setup.yaml -u myHostUser
 #
 # Notes:
 #  This playbook will attempt to locate Ansible dependencies on a z/OS system

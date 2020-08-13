@@ -12,7 +12,7 @@ supports several sources to configure its behavior and all sources follow the
 Ansible `precedence rules`_.
 
 Although the collection includes sample configurations, it also provides a
-a playbook (`host-setup`_) that will attempt to locate Ansible dependencies on
+playbook (`host-setup`_) that will attempt to locate Ansible dependencies on
 a z/OS system and use them to generate a valid **inventory** and **host_vars**
 file for the host.
 

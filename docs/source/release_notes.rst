@@ -58,7 +58,7 @@ Known issues
        Database Image Copy 2 Utility or Database Recovery Utility in conjunction
        with FlashCopy or Fast Replication.
     #. zos_mvs_raw module execution fails when invoking DFSRRC00 with parm
-       “UPB,PRECOMP”, “UPB, POSTCOMP” or “UPB,PRECOMP,POSTCOMP”. This issue is
+       "UPB,PRECOMP", "UPB, POSTCOMP" or "UPB,PRECOMP,POSTCOMP". This issue is
        addressed by APAR PH28089.
 
 .. _centralized content:

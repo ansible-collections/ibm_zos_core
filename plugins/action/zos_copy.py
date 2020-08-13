@@ -36,7 +36,9 @@ class ActionModule(ActionBase):
         b_src = to_bytes(src, errors='surrogate_or_strict')
         dest = self._task.args.get('dest', None)
         content = self._task.args.get('content', None)
-        sftp_port = self._task.args.get('sftp_port', 22)
+        # If self._play_context.port is None, that implies the default port 22
+        # was used to connect to the remote host.
+        sftp_port = self._task.args.get('sftp_port', self._play_context.port or 22)
         force = _process_boolean(self._task.args.get('force'), default=True)
         backup = _process_boolean(self._task.args.get('backup'), default=False)
         local_follow = _process_boolean(self._task.args.get('local_follow'), default=False)

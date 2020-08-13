@@ -150,10 +150,11 @@ options:
   sftp_port:
     description:
       - Indicates which port should be used to connect to the remote z/OS
-        system to perform data transfer. Default is port 22.
+        system to perform data transfer.
+      - If this parameter is not specified, C(ansible_port) will be used.
+      - If C(ansible_port) is not specified, port 22 will be used.
     type: int
     required: false
-    default: 22
   encoding:
     description:
       - Specifies which encodings the destination file or data set should be
@@ -1471,7 +1472,7 @@ def main():
             model_ds=dict(type='str', required=False),
             local_follow=dict(type='bool', default=True),
             remote_src=dict(type='bool', default=False),
-            sftp_port=dict(type='int', default=22),
+            sftp_port=dict(type='int', required=False),
             ignore_sftp_stderr=dict(type='bool', default=False),
             validate=dict(type='bool'),
             is_uss=dict(type='bool'),
@@ -1497,7 +1498,7 @@ def main():
         remote_src=dict(arg_type='bool', default=False, required=False),
         checksum=dict(arg_type='str', required=False),
         validate=dict(arg_type='bool', required=False),
-        sftp_port=dict(arg_type='int', required=False, default=22)
+        sftp_port=dict(arg_type='int', required=False)
     )
 
     if module.params.get("encoding"):

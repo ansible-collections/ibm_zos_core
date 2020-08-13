@@ -1664,6 +1664,17 @@ program_name
   | **type**: str
 
 
+     
+verbose
+  Determines if verbose output should be returned from the underlying utility used by this module.
+
+  When *verbose=true* verbose output is returned on module failure.
+
+
+  | **required**: False
+  | **type**: bool
+
+
 
 
 Examples
@@ -1936,6 +1947,16 @@ Examples
 
 
 
+
+Notes
+-----
+
+.. note::
+   When executing programs using :ref:`zos_mvs_raw <zos_mvs_raw_module>`, you may encounter errors that originate in the programs implementation. Two such known issues are noted below of which one has been addressed with an APAR.
+
+   1. :ref:`zos_mvs_raw <zos_mvs_raw_module>` module execution fails when invoking Database Image Copy 2 Utility or Database Recovery Utility in conjunction with FlashCopy or Fast Replication.
+
+   2. :ref:`zos_mvs_raw <zos_mvs_raw_module>` module execution fails when invoking DFSRRC00 with parm "UPB,PRECOMP", "UPB, POSTCOMP" or "UPB,PRECOMP,POSTCOMP". This issue is addressed by APAR PH28089.
 
 
 

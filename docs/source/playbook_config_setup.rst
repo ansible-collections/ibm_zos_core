@@ -11,6 +11,14 @@ allow you to customize how Ansible operates in your environment. Ansible
 supports several sources to configure its behavior and all sources follow the
 Ansible `precedence rules`_.
 
+Although the collection includes sample configurations, it also provides a
+playbook (`host-setup`_) that will attempt to locate Ansible dependencies on
+a z/OS system and use them to generate a valid **inventory** and **host_vars**
+file for the host.
+
+.. _host-setup:
+   https://github.com/ansible-collections/ibm_zos_core/blob/dev/playbooks/host-setup.yaml
+
 The Ansible configuration file `ansible.cfg` can override almost all
 ``ansible-playbook`` configurations. Included in the `playbooks directory`_ is a
 sample `ansible.cfg`_ that can supplement ``ansible-playbook`` with a

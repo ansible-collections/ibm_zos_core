@@ -24,7 +24,7 @@ as IMS.
 
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 1
    :caption: Reference
 
    source/plugins

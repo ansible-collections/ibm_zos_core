@@ -81,6 +81,13 @@ options:
     required: false
     default: "false"
     type: bool
+  sftp_port:
+    description:
+      - Indicates which port should be used to connect to the remote z/OS
+        system to perform data transfer. Default is port 22.
+    type: int
+    required: false
+    default: 22
   encoding:
     description:
       - Specifies which encodings the fetched data set should be converted from
@@ -91,19 +98,27 @@ options:
     suboptions:
       from:
         description:
-            - The character set of the source I(src).
-            - Supported character sets rely on the charset conversion utility
-              (iconv) version; the most common character sets are supported.
+          - The character set of the source I(src).
+          - Supported character sets rely on the charset conversion utility
+            (iconv) version; the most common character sets are supported.
         required: true
         type: str
       to:
         description:
-            - The destination I(dest) character set for the output to be written
-              as.
-            - Supported character sets rely on the charset conversion utility
-              (iconv) version; the most common character sets are supported.
+          - The destination I(dest) character set for the output to be written as.
+          - Supported character sets rely on the charset conversion utility
+            (iconv) version; the most common character sets are supported.
         required: true
         type: str
+  ignore_sftp_stderr:
+    description:
+      - During data transfer through sftp, the module fails if the sftp command
+        directs any content to stderr. The user is able to override this behavior
+        by setting this parameter to C(true). By doing so, the module would
+        essentially ignore the stderr stream produced by sftp and continue execution.
+    type: bool
+    required: false
+    default: false
 notes:
     - When fetching PDSE and VSAM data sets, temporary storage will be used
       on the remote z/OS system. After the PDSE or VSAM data set is
@@ -122,6 +137,7 @@ notes:
       U(https://ansible-collections.github.io/ibm_zos_core/supplementary.html#encode)
 seealso:
 - module: zos_data_set
+- module: zos_copy
 """
 
 EXAMPLES = r"""
@@ -505,6 +521,8 @@ def run_module():
             use_qualifier=dict(required=False, default=False, type="bool"),
             validate_checksum=dict(required=False, default=True, type="bool"),
             encoding=dict(required=False, type="dict"),
+            sftp_port=dict(type='int', default=22, required=False),
+            ignore_sftp_stderr=dict(type='bool', default=False, required=False)
         )
     )
 
@@ -521,7 +539,7 @@ def run_module():
         dest=dict(arg_type="path", required=True),
         fail_on_missing=dict(arg_type="bool", required=False, default=True),
         is_binary=dict(arg_type="bool", required=False, default=False),
-        use_qualifier=dict(arg_type="bool", required=False, default=False),
+        use_qualifier=dict(arg_type="bool", required=False, default=False)
     )
 
     if module.params.get("encoding"):

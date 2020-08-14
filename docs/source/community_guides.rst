@@ -2,6 +2,7 @@
 .. © Copyright IBM Corporation 2020                                          .
 .. ...........................................................................
 
+============
 Contributing
 ============
 
@@ -15,6 +16,7 @@ contributions in the future. For the latest information on open issues, see:
 .. _git issues:
    https://github.com/ansible-collections/ibm_zos_core/issues
 
+
 Development
 ===========
 
@@ -26,7 +28,6 @@ Ansible modules.
 
 .. toctree::
    :maxdepth: 1
-   :caption: Contents:
    :glob:
 
    community_guides_docs/zos_ansible_module_testing
@@ -49,17 +50,6 @@ provides examples of dependencies and more:
 
 .. toctree::
    :maxdepth: 1
-   :caption: Contents:
    :glob:
 
    community_guides_docs/better_arg_parser
-
-Helpful Links
-=============
-
-* Getting Started `Ansible guide`_.
-
-.. _Ansible guide:
-   https://docs.ansible.com/ansible/latest/user_guide/intro_getting_started.html
-
-

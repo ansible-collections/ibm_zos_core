@@ -32,5 +32,34 @@ Connection
 .. _zos_ssh quickstart:
    quickstart.html#z-os-connection-plugin
 
+z/OS Connection Plugin
+----------------------
+
+Since EBCDIC encoding is used on z/OS, custom plugins are required to determine
+the correct transport method when targeting a z/OS system. The zos_ssh.py
+connection plugin is a fork of the default ssh.py plugin with the added
+functionality to check if a module is written in REXX.
+
+Since REXX scripts are required be in EBCDIC encoding to run, they must be
+handled differently during transfer. If the string
+``__ANSIBLE_ENCODE_EBCDIC__`` is found in the first line of the module, the
+module is transferred to the target system using SCP. Otherwise, SFTP is used.
+SCP treats files as text, automatically encoding as EBCDIC at transfer time.
+SFTP treats files as binary, performing no encoding changes.
+
+**REXX Module Configuration**:
+
+* Ensure a REXX modules first line is a comment containing the case insensitive keyword ``rexx``
+* Followed by the case sensitive value ``__ANSIBLE_ENCODE_EBCDIC__``
+
+
+**Example REXX module**:
+
+.. code-block:: sh
+
+   /* rexx  __ANSIBLE_ENCODE_EBCDIC__  */
+   x = 55
+   SAY '{"SYSTEM_VERSION":"' x '"}'
+   RETURN 0
 
 

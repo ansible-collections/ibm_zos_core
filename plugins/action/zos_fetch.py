@@ -133,7 +133,7 @@ class ActionModule(ActionBase):
         ds_type = None
         fetch_member = "(" in src and src.endswith(")")
         if fetch_member:
-            member_name = src[src.find("(") + 1 : src.find(")")]
+            member_name = src[src.find("(") + 1: src.find(")")]
         src = self._connection._shell.join_path(src)
         src = self._remote_expand_user(src)
 

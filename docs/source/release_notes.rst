@@ -70,6 +70,7 @@ Known issues
 .. _Galaxy:
    https://galaxy.ansible.com/ibm/ibm_zos_core
 
+
 Version 1.2.0-beta.1
 ====================
 
@@ -103,7 +104,11 @@ Reference
 
 
 Version 1.1.0
+<<<<<<< HEAD
 =============
+=======
+-------------
+>>>>>>> master
 
 Notes
    * Update recommended

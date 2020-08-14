@@ -1,16 +1,18 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-
+#
 # Copyright (c) IBM Corporation 2019, 2020
 # Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+ANSIBLE_METADATA = {
+    'metadata_version': '1.1',
+    'status': ['preview'],
+    'supported_by': 'community',
+}
 
 DOCUMENTATION = r"""
 ---
@@ -41,10 +43,10 @@ options:
             - The value can be up to 8 characters long.
         type: str
         choices:
-            - HFS for a hierarchical file system (HFS).
-            - zFS for a z/OS File System (zFS).
-            - NFS for accessing remote files.
-            - TFS for a temporary file system (TFS).
+            - HFS
+            - zFS
+            - NFS
+            - TFS
         required: True
     state:
         description:
@@ -115,9 +117,8 @@ options:
         description:
             - Specifies a parameter string to be passed to the file system type.
             - The parameter format and content are specified by the file system type.
-        type: string
+        type: str
         required: False
-        default: None
     tag_flag:
         description:
             - If present, tags get written to any untagged file
@@ -132,7 +133,6 @@ options:
             - TEXT
             - NOTEXT
         required: False
-        default: None
     tag_ccsid:
         description:
             - CCSID for untagged files in the mounted file system
@@ -143,9 +143,9 @@ options:
               be between 0 and 65535. Other than this, the value is not
               checked as being valid and the corresponding code page is not
               checked as being installed.
-        type: numeric value 0-65535
+        type: int
         required: False
-        default: None
+        default: 850
     allow_uids:
         description:
             - >
@@ -177,9 +177,8 @@ options:
               system_name where system_name is the name of this system.
             - >
               sysname is a 1–8 alphanumeric name of a system participating in shared file system.
-        type: string
+        type: str
         required: False
-        default: None
     automove:
         description:
             - >
@@ -205,12 +204,11 @@ options:
         default: AUTOMOVE
     automove_list:
         description:
-            - If(automove=AUTOMOVE), this option will be checked
-            - This specifies the list of servers to include or exclude as destinations
-            - None is a valid value, meaning 'move anywhere'
-            - Indicator is either INCLUDE or EXCLUDE, which can also be abbreviated as I or E
+            - List of included/excluded locations used during automove.
+            - If(automove=AUTOMOVE), this option will be evaluated.
+            - None is a valid value, meaning 'move anywhere'.
+            - Indicator is either INCLUDE or EXCLUDE, which can also be abbreviated as I or E.
         type: str
-        default: AUTOMOVE
         required: False
 
 """
@@ -328,7 +326,7 @@ tag_flag:
 tag_ccsid:
     description: CCSID for untagged files in the mounted file system
     returned: when tag_flag is defined
-    type: numeric value 0-65535
+    type: int
     sample: 819
 allow_uids:
     description: Whether the SETUID and SETGID mode bits on executables in this file system are considered.
@@ -349,7 +347,7 @@ automove:
     type: str
     sample: AUTOMOVE
 automove_list:
-    description:: This specifies the list of servers to include or exclude as destinations.
+    description: This specifies the list of servers to include or exclude as destinations.
     returned: if Non-None
     type: str
     sample: I,SERV01,SERV02,SERV03,SERV04
@@ -520,7 +518,7 @@ def run_module(module, arg_def):
     (rc, stdout, stderr) = module.run_command('df | grep ' + src + ' | wc -m', use_unsafe_shell=True)
     if(rc != 0):
         module.fail_json(
-            msg="Checking for source (" + src +") failed with error",
+            msg="Checking for source (" + src + ") failed with error",
             stderr=str(res_args)
         )
     tmpint = int(stdout)
@@ -624,16 +622,44 @@ def main():
         argument_spec=dict(
             src=dict(type='str', required=True),
             path=dict(type='str', required=True),
-            fstype=dict(type='str', required=True),
-            state=dict(type='str', default='mounted', required=False),
-            unmount_opts=dict(type='str', default='NORMAL', required=False),
-            opts=dict(type='str', default='rw', required=False),
+            fstype=dict(
+                type='str',
+                required=True,
+                choices=["HFS", "zFS", "NFS", "TFS"],
+            ),
+            state=dict(
+                type='str',
+                default='mounted',
+                required=False,
+                choices=["mounted", "tmpmount", "unmounted", "present", "absent", "remounted"],
+            ),
+            unmount_opts=dict(
+                type='str',
+                default='NORMAL',
+                required=False,
+                choices=["DRAIN", "FORCE", "IMMEDIATE", "NORMAL", "REMOUNT", "RESET"],
+            ),
+            opts=dict(
+                type='str',
+                default='rw',
+                required=False,
+                choices=["ro", "rw", "same", "nowait", "nosecurity"],
+            ),
             src_params=dict(type='str', required=False),
-            tag_flag=dict(type='str', default='', required=False),
-            tag_ccsid=dict(type='str', default='819', required=False),
+            tag_flag=dict(
+                type='str',
+                required=False,
+                choices=["TEXT", "NOTEXT"],
+            ),
+            tag_ccsid=dict(type='int', default=850, required=False),
             allow_uids=dict(type='bool', default=True, required=False),
             sysname=dict(type='str', required=False),
-            automove=dict(type='str', default='AUTOMOVE', required=False),
+            automove=dict(
+                type='str',
+                default='AUTOMOVE',
+                required=False,
+                choices=["AUTOMOVE", "NOAUTOMOVE", "UNMOUNT"],
+            ),
             automove_list=dict(type='str', required=False)
         ),
         add_file_common_args=True,
@@ -647,13 +673,13 @@ def main():
         state=dict(arg_type='str', default='mounted', required=False),
         unmount_opts=dict(type='str', default='NORMAL', required=False),
         opts=dict(type='str', default='rw', required=False),
-        src_params=dict(arg_type='str', default='', required=False),
-        tag_flag=dict(arg_type='str', default='', required=False),
-        tag_ccsid=dict(arg_type='str', default='819', required=False),
+        src_params=dict(arg_type='str', required=False),
+        tag_flag=dict(arg_type='str', required=False),
+        tag_ccsid=dict(arg_type='int', default=850, required=False),
         allow_uids=dict(arg_type='bool', default=True, required=False),
-        sysname=dict(arg_type='str', default='', required=False),
+        sysname=dict(arg_type='str', required=False),
         automove=dict(arg_type='str', default='AUTOMOVE', required=False),
-        automove_list=dict(arg_type='str', default='', required=False)
+        automove_list=dict(arg_type='str', required=False)
     )
 
     try:

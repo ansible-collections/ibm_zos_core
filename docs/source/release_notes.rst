@@ -103,15 +103,7 @@ Reference
 
 
 Version 1.1.0
-<<<<<<< HEAD
 =============
-=======
-<<<<<<< HEAD
-=============
-=======
--------------
->>>>>>> master
->>>>>>> master
 
 Notes
    * Update recommended

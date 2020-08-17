@@ -34,18 +34,18 @@ class ActionModule(ActionBase):
         result = super(ActionModule, self).run(tmp, task_vars)
         del tmp
 
-        src = self._task.args.get("src", None)
-        b_src = to_bytes(src, errors="surrogate_or_strict")
-        dest = self._task.args.get("dest", None)
-        content = self._task.args.get("content", None)
-        sftp_port = self._task.args.get("sftp_port", 22)
-        force = _process_boolean(self._task.args.get("force"), default=True)
-        backup = _process_boolean(self._task.args.get("backup"), default=False)
-        local_follow = _process_boolean(
-            self._task.args.get("local_follow"), default=False
-        )
-        remote_src = _process_boolean(self._task.args.get("remote_src"), default=False)
-        is_binary = _process_boolean(self._task.args.get("is_binary"), default=False)
+        src = self._task.args.get('src', None)
+        b_src = to_bytes(src, errors='surrogate_or_strict')
+        dest = self._task.args.get('dest', None)
+        content = self._task.args.get('content', None)
+        # If self._play_context.port is None, that implies the default port 22
+        # was used to connect to the remote host.
+        sftp_port = self._task.args.get('sftp_port', self._play_context.port or 22)
+        force = _process_boolean(self._task.args.get('force'), default=True)
+        backup = _process_boolean(self._task.args.get('backup'), default=False)
+        local_follow = _process_boolean(self._task.args.get('local_follow'), default=False)
+        remote_src = _process_boolean(self._task.args.get('remote_src'), default=False)
+        is_binary = _process_boolean(self._task.args.get('is_binary'), default=False)
         backup_name = self._task.args.get("backup_name", None)
         encoding = self._task.args.get("encoding", None)
         mode = self._task.args.get("mode", None)

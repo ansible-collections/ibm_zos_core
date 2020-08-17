@@ -1197,9 +1197,10 @@ class DataSetUtils(object):
         result = dict()
         if "NOT FOUND" not in output:
             volser_output = re.findall(r"VOLSER-*[A-Z|0-9]*", output)
-            result["volser"] = "".join(
-                re.findall(r"-[A-Z|0-9]*", volser_output[0])
-            ).replace("-", "")
+            if volser_output:
+                result["volser"] = "".join(
+                    re.findall(r"-[A-Z|0-9]*", volser_output[0])
+                ).replace("-", "")
         return result
 
 

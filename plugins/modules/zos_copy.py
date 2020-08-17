@@ -459,13 +459,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module im
 from ansible.module_utils._text import to_bytes
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
-    better_arg_parser,
-    data_set,
-    encode,
-    vtoc,
-    backup,
-    copy,
-    mvs_cmd
+    better_arg_parser, data_set, encode, vtoc, backup, copy, mvs_cmd
 )
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (

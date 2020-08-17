@@ -6,6 +6,33 @@
 Releases
 ========
 
+Version 1.2.0-beta.3
+====================
+
+Notes
+-----
+
+* Update recommended
+* Bugfix
+
+  * Fixes a bug which causes action plugins to fail when collections are
+    referenced using fully qualified collection names instead of playbook
+    level imports
+
+Availability
+------------
+
+* Galaxy
+* GitHub
+
+Reference
+---------
+
+* Supported by IBM Open Enterprise Python for z/OS: 3.8.2 or later
+* Supported by IBM Z Open Automation Utilities 1.0.3 PTF UI70435 or later
+* Supported by z/OS V2R3
+* The z/OS® shell
+
 Version 1.2.0-beta.2
 ====================
 
@@ -70,7 +97,6 @@ Known issues
 .. _Galaxy:
    https://galaxy.ansible.com/ibm/ibm_zos_core
 
-
 Version 1.2.0-beta.1
 ====================
 
@@ -104,11 +130,7 @@ Reference
 
 
 Version 1.1.0
-<<<<<<< HEAD
 =============
-=======
--------------
->>>>>>> master
 
 Notes
    * Update recommended

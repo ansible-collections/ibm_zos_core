@@ -60,7 +60,7 @@ ansible-doc to automate tasks on z/OS.
    :caption: Getting Started
 
    installation
-   requirements
+   requirements-single
    playbooks-single
 
 .. toctree::

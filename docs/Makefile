@@ -76,23 +76,20 @@ module-doc:
 	@echo "Completed restructured text generation, run 'make html'"
 
 pre:
-	@$(shell scripts/pre-doc-gen.sh)
+	@$(shell scripts/auto-doc-gen.sh)
 
 html:
 
-	@scripts/pre-doc-gen.sh
-	@echo "Completed pre-doc-generation"
+	@scripts/auto-doc-gen.sh
+	@echo "Completed auto-doc-generation"
 
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 	@echo "Completed HTML generation"
 
-	@scripts/post-doc-gen.sh
-	@echo "Completed post-doc-generation, run 'make view-html'"
-
-post:
-	@$(shell scripts/post-doc-gen.sh)
-
 html-all:
+	@scripts/auto-doc-gen.sh
+	@echo "Completed auto-doc-generation"
+
 	# @sphinx-versioning -l "$(ROOT_DIR)"/source/conf.py build  "$(ROOT_DIR)"/source/ "$(ROOT_DIR)"/build/html -- -D html_show_sphinx=False
 	@sphinx-versioning -l "$(ROOT_DIR)"/source/conf.py build  "$(ROOT_DIR)"/source/ "$(ROOT_DIR)"/build/html
 	@echo "Completed HTML generation for git repository branches and/or tags, run 'make view-html'"

@@ -1498,7 +1498,8 @@ def main():
         sftp_port=dict(arg_type='int', required=False)
     )
 
-    if (not module.params.get("encoding") 
+    if (
+        not module.params.get("encoding")
         and not module.params.get("remote_src")
         and not module.params.get("is_binary")
     ):

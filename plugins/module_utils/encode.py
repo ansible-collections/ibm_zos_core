@@ -425,4 +425,4 @@ class DiscoverCharsetError(Exception):
             ("An error occurred while determining default charset of remote system; ")
             ("stderr: {0}; stdout: {1}; rc: {2}".format(rc, out, err))
         )
-        super(EncodeError, self).__init__(self.msg)
+        super(DiscoverCharsetError, self).__init__(self.msg)

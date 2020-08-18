@@ -6,7 +6,7 @@ namespace: ibm
 name: ibm_zos_core
 
 # The collection version
-version: 1.2.0-beta.1
+version: 1.2.0-beta.2
 
 # Collection README file
 readme: README.md
@@ -56,7 +56,7 @@ tags:
 repository: https://github.com/ansible-collections/ibm_zos_core
 
 # The URL to any online docs
-documentation: https://ansible-collections.github.io/ibm_zos_core/index.html
+documentation: https://ibm.github.io/z_ansible_collections_doc/index.html
 
 # The URL to the homepage of the collection/project
 homepage: https://www.ibm.com/support/z-content-solutions/ansible/

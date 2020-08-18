@@ -33,7 +33,24 @@ def z_python_interpreter(request):
     yield (interpreter_str, inventory)
 
 
-@pytest.fixture(scope="function")
+def clean_logs(adhoc):
+    """Attempt to clean up logs and messages on the system."""
+    # purge logs
+    adhoc.all.command(cmd="opercmd '$PJ(*)'")
+    # clean up wtor messages
+    results = adhoc.all.command(cmd="uname -n")
+    system_name = ""
+    for result in results.contacted.values():
+        system_name = result.get("stdout")
+    results = adhoc.all.zos_operator_action_query(system=system_name)
+    actions = []
+    for result in results.contacted.values():
+        actions = result.get("actions", [])
+    for action in actions:
+        adhoc.all.zos_operator(cmd="{0}cancel".format(action.get("number")))
+
+
+@pytest.fixture(scope="session")
 def ansible_zos_module(request, z_python_interpreter):
     """ Initialize pytest-ansible plugin with values from
     our YAML config and inject interpreter path into inventory. """
@@ -47,7 +64,7 @@ def ansible_zos_module(request, z_python_interpreter):
         host.vars["ansible_python_interpreter"] = interpreter
         host.vars["ansible_connection"] = "zos_ssh"
     yield adhoc
-    adhoc.all.command(cmd="opercmd '$PJ(*)'")
+    clean_logs(adhoc)
 
 
 # * We no longer edit sys.modules directly to add zoautil_py mock

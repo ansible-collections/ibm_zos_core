@@ -36,16 +36,20 @@ class ActionModule(ActionBase):
         b_src = to_bytes(src, errors='surrogate_or_strict')
         dest = self._task.args.get('dest', None)
         content = self._task.args.get('content', None)
+        sftp_port = self._task.args.get('sftp_port', 22)
         force = _process_boolean(self._task.args.get('force'), default=True)
         backup = _process_boolean(self._task.args.get('backup'), default=False)
         local_follow = _process_boolean(self._task.args.get('local_follow'), default=False)
         remote_src = _process_boolean(self._task.args.get('remote_src'), default=False)
         is_binary = _process_boolean(self._task.args.get('is_binary'), default=False)
-        backup_file = self._task.args.get("backup_file", None)
+        backup_name = self._task.args.get("backup_name", None)
         encoding = self._task.args.get('encoding', None)
         mode = self._task.args.get('mode', None)
         owner = self._task.args.get('owner', None)
         group = self._task.args.get('group', None)
+        ignore_sftp_stderr = _process_boolean(
+            self._task.args.get('ignore_sftp_stderr'), default=False
+        )
 
         new_module_args = self._task.args.copy()
         is_pds = is_src_dir = False
@@ -90,7 +94,7 @@ class ActionModule(ActionBase):
             msg = "The 'encoding' parameter is not valid for binary transfer"
             return self._exit_action(result, msg, failed=True)
 
-        if (not backup) and backup_file is not None:
+        if (not backup) and backup_name is not None:
             msg = "Backup file provided but 'backup' parameter is False"
             return self._exit_action(result, msg, failed=True)
 
@@ -98,6 +102,10 @@ class ActionModule(ActionBase):
             if mode or owner or group:
                 msg = "Cannot specify 'mode', 'owner' or 'group' for MVS destination"
                 return self._exit_action(result, msg, failed=True)
+
+        if not isinstance(sftp_port, int) or not 0 < sftp_port <= 65535:
+            msg = "Invalid port provided for SFTP. Expected an integer between 0 to 65535."
+            return self._exit_action(result, msg, failed=True)
 
         if (not force) and self._dest_exists(src, dest, task_vars):
             return self._exit_action(result, "Destination exists. No data was copied.")
@@ -121,7 +129,9 @@ class ActionModule(ActionBase):
             if content:
                 try:
                     local_content = _write_content_to_temp_file(content)
-                    transfer_res = self._copy_to_remote(local_content)
+                    transfer_res = self._copy_to_remote(
+                        local_content, sftp_port, ignore_stderr=ignore_sftp_stderr
+                    )
                 finally:
                     os.remove(local_content)
             else:
@@ -138,7 +148,9 @@ class ActionModule(ActionBase):
                     if mode == 'preserve':
                         new_module_args['mode'] = '0{0:o}'.format(stat.S_IMODE(os.stat(b_src).st_mode))
                     new_module_args['size'] = os.stat(src).st_size
-                transfer_res = self._copy_to_remote(src, is_dir=is_src_dir)
+                transfer_res = self._copy_to_remote(
+                    src, sftp_port, is_dir=is_src_dir, ignore_stderr=ignore_sftp_stderr
+                )
 
             temp_path = transfer_res.get("temp_path")
             if transfer_res.get("msg"):
@@ -176,19 +188,19 @@ class ActionModule(ActionBase):
                     invocation=dict(module_args=self._task.args)
                 )
             )
-            if backup or backup_file:
-                result['backup_file'] = copy_res.get("backup_file")
+            if backup or backup_name:
+                result['backup_name'] = copy_res.get("backup_name")
             self._remote_cleanup(dest, copy_res.get("dest_exists"), task_vars)
             return result
 
         return _update_result(is_binary, copy_res, self._task.args)
 
-    def _copy_to_remote(self, src, is_dir=False):
+    def _copy_to_remote(self, src, port, is_dir=False, ignore_stderr=False):
         """Copy a file or directory to the remote z/OS system """
         ansible_user = self._play_context.remote_user
         ansible_host = self._play_context.remote_addr
         temp_path = "/{0}/{1}".format(gettempprefix(), _create_temp_path_name())
-        cmd = ['sftp', ansible_user + '@' + ansible_host]
+        cmd = ['sftp', "-oPort={0}".format(port), ansible_user + '@' + ansible_host]
         stdin = "put -r {0} {1}".format(src.replace('#', '\\#'), temp_path)
 
         if is_dir:
@@ -203,7 +215,7 @@ class ActionModule(ActionBase):
         out, err = transfer_data.communicate(to_bytes(stdin))
         err = _detect_sftp_errors(err)
 
-        if transfer_data.returncode != 0 or err:
+        if transfer_data.returncode != 0 or (err and not ignore_stderr):
             return dict(
                 msg="Error transfering source '{0}' to remote z/OS system".format(src),
                 rc=transfer_data.returncode,
@@ -283,7 +295,7 @@ def _update_result(is_binary, copy_res, original_args):
     ds_type = copy_res.get("ds_type")
     src = copy_res.get("src")
     note = copy_res.get("note")
-    backup_file = copy_res.get("backup_file")
+    backup_name = copy_res.get("backup_name")
     updated_result = dict(
         dest=copy_res.get('dest'),
         is_binary=is_binary,
@@ -294,8 +306,8 @@ def _update_result(is_binary, copy_res, original_args):
         updated_result['src'] = src
     if note:
         updated_result['note'] = note
-    if backup_file:
-        updated_result['backup_file'] = backup_file
+    if backup_name:
+        updated_result['backup_name'] = backup_name
 
     if ds_type == "USS":
         updated_result.update(

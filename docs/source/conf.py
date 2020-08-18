@@ -174,5 +174,7 @@ scv_show_banner = True
 # The greatest tag is desirable behavior for this site.
 # scv_banner_greatest_tag = True
 
-# Temporary work around to promote the latest git tag in the banner
+# Temporary work around to promote the latest git tag in the banner, for some
+# reason pre-release semantic versioning used with scv_banner_greatest_tag does
+# not generate the correct latest banner.
 scv_banner_recent_tag = True

@@ -1180,7 +1180,8 @@ class DataSetUtils(object):
                 result["dsorg"] = ds_params[-1]
                 if result.get("dsorg") != "VSAM":
                     result["recfm"] = ds_params[0]
-                    result["lrecl"] = ds_params[1]
+                    if ds_params[1].isdigit():
+                        result["lrecl"] = int(ds_params[1])
                     if len(ds_params) > 2 and ds_params[2].isdigit():
                         result["blksize"] = int(ds_params[2])
         return result

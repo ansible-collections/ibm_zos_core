@@ -543,22 +543,23 @@ def run_module():
         use_qualifier=dict(arg_type="bool", required=False, default=False)
     )
 
+    if not module.params.get("encoding") and not module.params.get("is_binary"):
+        module.params["encoding"] = {
+            'from': encode.EncodeUtils().remote_charset(),
+            'to': encode.Defaults.DEFAULT_LOCAL_CHARSET
+        }
+
     if module.params.get("encoding"):
-        module.params.update(
-            dict(
-                from_encoding=module.params.get("encoding").get("from"),
-                to_encoding=module.params.get("encoding").get("to"),
-            )
+        module.params.update(dict(
+            from_encoding=module.params.get('encoding').get('from'),
+            to_encoding=module.params.get('encoding').get('to'))
         )
-        arg_def.update(
-            dict(
-                from_encoding=dict(arg_type="encoding"),
-                to_encoding=dict(arg_type="encoding"),
-            )
-        )
+        arg_def.update(dict(
+            from_encoding=dict(arg_type='encoding'),
+            to_encoding=dict(arg_type='encoding')
+        ))
 
     fetch_handler = FetchHandler(module)
-
     try:
         parser = better_arg_parser.BetterArgParser(arg_def)
         parsed_args = parser.parse_args(module.params)
@@ -567,7 +568,6 @@ def run_module():
     src = parsed_args.get("src")
     b_src = to_bytes(src)
     fail_on_missing = boolean(parsed_args.get("fail_on_missing"))
-    use_qualifier = boolean(parsed_args.get("use_qualifier"))
     is_binary = boolean(parsed_args.get("is_binary"))
     encoding = module.params.get("encoding")
 

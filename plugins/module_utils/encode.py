@@ -39,7 +39,9 @@ else:
     from pipes import quote
 
 
-LISTCAT = " LISTCAT ENT('{}') ALL"
+class Defaults:
+    DEFAULT_LOCAL_CHARSET = "ISO8859-1"
+    DEFAULT_REMOTE_CHARSET = "IBM-1047"
 
 
 class EncodeUtils(object):
@@ -92,7 +94,7 @@ class EncodeUtils(object):
         ds = self._validate_data_set_name(ds)
         reclen = 80
         space_u = 1024
-        listcat_cmd = LISTCAT.format(ds)
+        listcat_cmd = " LISTCAT ENT('{0}') ALL".format(ds)
         cmd = "mvscmdauth --pgm=ikjeft01 --systsprt=stdout --systsin=stdin"
         rc, out, err = self.module.run_command(cmd, data=listcat_cmd)
         if rc:
@@ -393,6 +395,17 @@ class EncodeUtils(object):
                 Datasets.delete(temp_ps)
         return convert_rc
 
+    def remote_charset(self):
+        """Discover the default charset of remote z/OS system
+
+        Returns:
+            str -- The charset of remote z/OS system
+        """
+        rc, out, err = self.module.run_command("locale -c charmap")
+        if rc != 0:
+            raise DiscoverCharsetError(rc, out, err)
+        return Defaults.DEFAULT_REMOTE_CHARSET if not out else out.strip()
+
 
 class EncodeError(Exception):
     def __init__(self, message):
@@ -404,3 +417,12 @@ class MoveFileError(Exception):
     def __init__(self, src, dest, e):
         self.msg = "Failed when moving {0} to {1}: {2}".format(src, dest, e)
         super().__init__(self.msg)
+
+
+class DiscoverCharsetError(Exception):
+    def __init__(self, rc, out, err):
+        self.msg = (
+            ("An error occurred while determining default charset of remote system; ")
+            ("stderr: {0}; stdout: {1}; rc: {2}".format(rc, out, err))
+        )
+        super(EncodeError, self).__init__(self.msg)

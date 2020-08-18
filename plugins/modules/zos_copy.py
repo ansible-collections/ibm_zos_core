@@ -1498,17 +1498,24 @@ def main():
         sftp_port=dict(arg_type='int', required=False)
     )
 
-    if not module.params.get("encoding"):
-        module.params["encoding"] = {'from': 'ISO8859-1', 'to': 'IBM-1047'}
+    if (not module.params.get("encoding") 
+        and not module.params.get("remote_src")
+        and not module.params.get("is_binary")
+    ):
+        module.params["encoding"] = {
+            'from': encode.Defaults.DEFAULT_LOCAL_CHARSET,
+            'to': encode.EncodeUtils().remote_charset()
+        }
 
-    module.params.update(dict(
-        from_encoding=module.params.get('encoding').get('from'),
-        to_encoding=module.params.get('encoding').get('to'))
-    )
-    arg_def.update(dict(
-        from_encoding=dict(arg_type='encoding'),
-        to_encoding=dict(arg_type='encoding')
-    ))
+    if module.params.get("encoding"):
+        module.params.update(dict(
+            from_encoding=module.params.get('encoding').get('from'),
+            to_encoding=module.params.get('encoding').get('to'))
+        )
+        arg_def.update(dict(
+            from_encoding=dict(arg_type='encoding'),
+            to_encoding=dict(arg_type='encoding')
+        ))
     try:
         res_args = temp_path = conv_path = None
         res_args, temp_path, conv_path = run_module(module, arg_def)

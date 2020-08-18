@@ -150,7 +150,8 @@ scv_greatest_tag = True
 # White list which Git tags documentation will be generated and linked into the
 # version selection box. This is currently a manual selection, until more
 # versions are released, there are no regular expressions used.
-scv_whitelist_tags = ('v1.0.0', 'v1.1.0', 'v1.2.0-beta.1', 'v1.2.0-beta.2')
+scv_whitelist_tags = ('v1.0.0', 'v1.1.0', 'v1.2.0-beta.1', 'v1.2.0-beta.2',
+                      'v1.2.0-beta.3' )
 
 # Sort versions by one or more values. Valid values are semver, alpha, and time.
 # Semantic is referred to as 'semver', this would ensure our latest VRM is
@@ -173,7 +174,5 @@ scv_show_banner = True
 # The greatest tag is desirable behavior for this site.
 # scv_banner_greatest_tag = True
 
-# Temporary work around to promote the latest git tag in the banner, for some
-# reason pre-release semantic versioning used with scv_banner_greatest_tag does
-# not generate the correct latest banner.
+# Temporary work around to promote the latest git tag in the banner
 scv_banner_recent_tag = True

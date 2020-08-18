@@ -67,7 +67,7 @@ proceed to install the IBM z/OS core collection.
    https://docs.ansible.com/ansible/2.7/user_guide/intro_inventory.html
 
 .. _Python on z/OS:
-   requirements.html#id1
+   requirements-single.html#id1
 
 .. _V2R3:
    https://www.ibm.com/support/knowledgecenter/SSLTBW_2.3.0/com.ibm.zos.v2r3/en/homepage.html
@@ -76,7 +76,7 @@ proceed to install the IBM z/OS core collection.
    https://www.ibm.com/support/knowledgecenter/SSLTBW
 
 .. _IBM Z Open Automation Utilities:
-   requirements.html#id1
+   requirements-single.html#id1
 
 .. _z/OS OpenSSH:
    https://www.ibm.com/support/knowledgecenter/SSLTBW_2.2.0/com.ibm.zos.v2r2.e0za100/ch1openssh.htm
@@ -117,7 +117,7 @@ and required by **IBM z/OS core collection**.
    `recommended environment variables`_ for Rocket Python.
 
 .. _recommended environment variables:
-   playbooks.html#group-vars
+   playbooks-single.html#group-vars
 
 ZOAU
 ----

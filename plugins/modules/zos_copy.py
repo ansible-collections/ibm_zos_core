@@ -150,10 +150,11 @@ options:
   sftp_port:
     description:
       - Indicates which port should be used to connect to the remote z/OS
-        system to perform data transfer. Default is port 22.
+        system to perform data transfer.
+      - If this parameter is not specified, C(ansible_port) will be used.
+      - If C(ansible_port) is not specified, port 22 will be used.
     type: int
     required: false
-    default: 22
   encoding:
     description:
       - Specifies which encodings the destination file or data set should be
@@ -459,13 +460,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module im
 from ansible.module_utils._text import to_bytes
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
-    better_arg_parser,
-    data_set,
-    encode,
-    vtoc,
-    backup,
-    copy,
-    mvs_cmd
+    better_arg_parser, data_set, encode, vtoc, backup, copy, mvs_cmd
 )
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
@@ -871,8 +866,11 @@ class USSCopyHandler(CopyHandler):
                 except FileExistsError:
                     pass
         try:
-            if src_ds_type in MVS_SEQ:
-                copy.copy_ps2uss(src, dest, is_binary=self.is_binary)
+            if src_member or src_ds_type in MVS_SEQ:
+                if Datasets.copy(src, dest) != 0:
+                    self.fail_json(
+                        msg="Error while copying source {0} to {1}".format(src, dest)
+                    )
             else:
                 copy.copy_pds2uss(src, dest, is_binary=self.is_binary)
         except Exception as err:
@@ -1471,7 +1469,7 @@ def main():
             model_ds=dict(type='str', required=False),
             local_follow=dict(type='bool', default=True),
             remote_src=dict(type='bool', default=False),
-            sftp_port=dict(type='int', default=22),
+            sftp_port=dict(type='int', required=False),
             ignore_sftp_stderr=dict(type='bool', default=False),
             validate=dict(type='bool'),
             is_uss=dict(type='bool'),
@@ -1497,8 +1495,18 @@ def main():
         remote_src=dict(arg_type='bool', default=False, required=False),
         checksum=dict(arg_type='str', required=False),
         validate=dict(arg_type='bool', required=False),
-        sftp_port=dict(arg_type='int', required=False, default=22)
+        sftp_port=dict(arg_type='int', required=False)
     )
+
+    if (
+        not module.params.get("encoding")
+        and not module.params.get("remote_src")
+        and not module.params.get("is_binary")
+    ):
+        module.params["encoding"] = {
+            'from': encode.Defaults.DEFAULT_LOCAL_CHARSET,
+            'to': encode.EncodeUtils().remote_charset()
+        }
 
     if module.params.get("encoding"):
         module.params.update(dict(

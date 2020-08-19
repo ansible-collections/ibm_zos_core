@@ -91,12 +91,14 @@ class ActionModule(ActionBase):
         #                 Parameter initializations                  #
         # ********************************************************** #
 
-        src = self._task.args.get("src")
-        dest = self._task.args.get("dest")
-        encoding = self._task.args.get("encoding")
-        sftp_port = self._task.args.get("sftp_port", 22)
-        flat = _process_boolean(self._task.args.get("flat"), default=False)
-        is_binary = _process_boolean(self._task.args.get("is_binary"))
+        src = self._task.args.get('src')
+        dest = self._task.args.get('dest')
+        encoding = self._task.args.get('encoding')
+        # If self._play_context.port is None, that implies the default port 22
+        # was used to connect to the remote host.
+        sftp_port = self._task.args.get('sftp_port', self._play_context.port or 22)
+        flat = _process_boolean(self._task.args.get('flat'), default=False)
+        is_binary = _process_boolean(self._task.args.get('is_binary'))
         ignore_sftp_stderr = _process_boolean(
             self._task.args.get("ignore_sftp_stderr"), default=False
         )

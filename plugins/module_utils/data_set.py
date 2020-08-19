@@ -8,7 +8,6 @@ __metaclass__ = type
 import re
 import tempfile
 from os import path
-from random import choice
 from string import ascii_uppercase, digits
 from random import randint
 from ansible.module_utils._text import to_bytes
@@ -1181,8 +1180,9 @@ class DataSetUtils(object):
                 result["dsorg"] = ds_params[-1]
                 if result.get("dsorg") != "VSAM":
                     result["recfm"] = ds_params[0]
-                    result["lrecl"] = ds_params[1]
-                    if len(ds_params) > 2:
+                    if ds_params[1].isdigit():
+                        result["lrecl"] = int(ds_params[1])
+                    if len(ds_params) > 2 and ds_params[2].isdigit():
                         result["blksize"] = int(ds_params[2])
         return result
 
@@ -1198,9 +1198,10 @@ class DataSetUtils(object):
         result = dict()
         if "NOT FOUND" not in output:
             volser_output = re.findall(r"VOLSER-*[A-Z|0-9]*", output)
-            result["volser"] = "".join(
-                re.findall(r"-[A-Z|0-9]*", volser_output[0])
-            ).replace("-", "")
+            if volser_output:
+                result["volser"] = "".join(
+                    re.findall(r"-[A-Z|0-9]*", volser_output[0])
+                ).replace("-", "")
         return result
 
 

@@ -15,20 +15,26 @@ __metaclass__ = type
 
 TEST_INFO = dict(
     test_add_del = dict(
-        dsname="", state="present"
+        dsname="", state="present", force_dynamic=True
     ),
     test_add_del_volume = dict(
-        dsname="", volume=" ", state="present"
+        dsname="", volume=" ", state="present", force_dynamic=True
     ),
     test_add_del_persist = dict(
-        dsname="", persistent=dict(persistds="", marker="/* {mark} BLOCK */"), state="present"
+        dsname="", persistent=dict(persistds="", marker="/* {mark} BLOCK */"), state="present", force_dynamic=True
     ),
     test_add_del_volume_persist = dict(
-        dsname="", volume=" ", persistent=dict(persistds="", marker="/* {mark} BLOCK */"), state="present"
+        dsname="", volume=" ", persistent=dict(persistds="", marker="/* {mark} BLOCK */"), state="present", force_dynamic=True
     ),
     test_batch_add_del = dict(
         batch=[dict(dsname="", volume=" "), dict(dsname="", volume=" "), dict(dsname="", volume=" ")],
-        persistent=dict(persistds="", marker="/* {mark} BLOCK */"), state="present"
+        persistent=dict(persistds="", marker="/* {mark} BLOCK */"), state="present", force_dynamic=True
+    ),
+    test_operation_list = dict(
+        operation="list"
+    ),
+    test_operation_list_with_filter = dict(
+        operation="list", dsname=""
     )
 )
 
@@ -72,6 +78,11 @@ def persistds_create(hosts):
     return prstds
 
 
+def persistds_delele(hosts, ds):
+    cmdStr = "drm {0}".format(ds)
+    run_shell_cmd(hosts, cmdStr)
+
+
 def set_test_env(hosts, test_info):
     #results = hosts.all.zos_data_set(name=ds, type="SEQ")
     cmdStr = "mvstmp APFTEST"
@@ -93,8 +104,7 @@ def clean_test_env(hosts, test_info):
     run_shell_cmd(hosts, cmdStr)
     if test_info.get('persistent'):
         #hosts.all.zos_data_set(name=test_info['persistent']['persistds'], state='absent')
-        cmdStr = "drm {0}".format(test_info['persistent']['persistds'])
-        run_shell_cmd(hosts, cmdStr)
+        persistds_delele(hosts, test_info['persistent']['persistds'])
 
 
 def test_add_del(ansible_zos_module):
@@ -207,3 +217,118 @@ def test_batch_add_del(ansible_zos_module):
     assert actual == del_exptd
     for item in test_info['batch']:
         clean_test_env(hosts, item)
+    persistds_delele(hosts, test_info['persistent']['persistds'])
+
+
+def test_operation_list(ansible_zos_module):
+    hosts = ansible_zos_module
+    test_info = TEST_INFO['test_operation_list']
+    results = hosts.all.zos_apf(**test_info)
+    pprint(vars(results))
+    for result in results.contacted.values():
+        listJson = result.get("stdout")
+    import json
+    data = json.loads(listJson)
+    assert data[0]['format'] in ['DYNAMIC', 'STATIC']
+    del json
+
+
+def test_operation_list_with_filter(ansible_zos_module):
+    hosts = ansible_zos_module
+    test_info = TEST_INFO['test_add_del']
+    test_info['state'] = 'present'
+    set_test_env(hosts, test_info)
+    hosts.all.zos_apf(**test_info)
+    ti = TEST_INFO['test_operation_list_with_filter']
+    ti['dsname'] = "APFTEST.*"
+    results = hosts.all.zos_apf(**ti)
+    pprint(vars(results))
+    for result in results.contacted.values():
+        listFiltered = result.get("stdout")
+    assert test_info['dsname'] in listFiltered
+    test_info['state'] = 'absent'
+    hosts.all.zos_apf(**test_info)
+    clean_test_env(hosts, test_info)
+
+#
+# Negative tests
+#
+
+def test_add_already_present(ansible_zos_module):
+    hosts = ansible_zos_module
+    test_info = TEST_INFO['test_add_del']
+    test_info['state'] = 'present'
+    set_test_env(hosts, test_info)
+    results = hosts.all.zos_apf(**test_info)
+    pprint(vars(results))
+    for result in results.contacted.values():
+        assert result.get("rc") == 0
+    results = hosts.all.zos_apf(**test_info)
+    pprint(vars(results))
+    for result in results.contacted.values():
+        assert result.get("rc") == 16
+    test_info['state'] = 'absent'
+    hosts.all.zos_apf(**test_info)
+    clean_test_env(hosts, test_info)
+
+
+def test_del_not_present(ansible_zos_module):
+    hosts = ansible_zos_module
+    test_info = TEST_INFO['test_add_del']
+    set_test_env(hosts, test_info)
+    test_info['state'] = 'absent'
+    results = hosts.all.zos_apf(**test_info)
+    pprint(vars(results))
+    for result in results.contacted.values():
+        assert result.get("rc") == 16
+    clean_test_env(hosts, test_info)
+
+
+def test_add_not_found(ansible_zos_module):
+    hosts = ansible_zos_module
+    test_info = TEST_INFO['test_add_del']
+    test_info['dsname'] = 'APFTEST.FOO.BAR'
+    results = hosts.all.zos_apf(**test_info)
+    pprint(vars(results))
+    for result in results.contacted.values():
+        assert result.get("rc") == 16
+
+
+def test_add_with_wrong_volume(ansible_zos_module):
+    hosts = ansible_zos_module
+    test_info = TEST_INFO['test_add_del_volume']
+    test_info['state'] = 'present'
+    set_test_env(hosts, test_info)
+    test_info['volume'] = 'T12345'
+    results = hosts.all.zos_apf(**test_info)
+    pprint(vars(results))
+    for result in results.contacted.values():
+        assert result.get("rc") == 16
+    clean_test_env(hosts, test_info)
+
+
+def test_persist_invalid_ds_format(ansible_zos_module):
+    hosts = ansible_zos_module
+    test_info = TEST_INFO['test_add_del_persist']
+    test_info['state'] = 'present'
+    set_test_env(hosts, test_info)
+    cmdStr = "decho \"some text to test persistds format validattion.\" \"{0}\"".format(test_info['persistent']['persistds'])
+    run_shell_cmd(hosts, cmdStr)
+    results = hosts.all.zos_apf(**test_info)
+    pprint(vars(results))
+    for result in results.contacted.values():
+        assert result.get("rc") == 8
+    clean_test_env(hosts, test_info)
+
+
+def test_persist_invalid_marker(ansible_zos_module):
+    hosts = ansible_zos_module
+    test_info = TEST_INFO['test_add_del_persist']
+    test_info['state'] = 'present'
+    set_test_env(hosts, test_info)
+    test_info['persistent']['marker'] = "# Invalid marker format"
+    results = hosts.all.zos_apf(**test_info)
+    pprint(vars(results))
+    for result in results.contacted.values():
+        assert result.get("rc") == 4
+    clean_test_env(hosts, test_info)

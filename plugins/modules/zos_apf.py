@@ -313,7 +313,7 @@ def main():
                 default='present',
                 choices=['absent', 'present']
             ),
-            forse_dynamic=dict(
+            force_dynamic=dict(
                 type='bool',
                 default=False
             ),
@@ -396,7 +396,7 @@ def main():
     arg_defs = dict(
         dsname=dict(arg_type='str', required=False, aliases=['lib', 'library', 'name']),
         state=dict(arg_type='str', default='present', choices=['absent', 'present']),
-        forse_dynamic=dict(arg_type='bool', default=False),
+        force_dynamic=dict(arg_type='bool', default=False),
         volume=dict(arg_type='str', required=False),
         sms=dict(arg_type='bool', required=False, default=False),
         operation=dict(arg_type='str', required=False, choices=['set_dynamic', 'set_static', 'check_format', 'list']),
@@ -434,7 +434,7 @@ def main():
     
     dsname = parsed_args.get('dsname')
     state = parsed_args.get('state')
-    forse_dynamic = parsed_args.get('forse_dynamic')
+    force_dynamic = parsed_args.get('force_dynamic')
     volume = parsed_args.get('volume')
     sms = parsed_args.get('sms')
     operation = parsed_args.get('operation')
@@ -467,11 +467,11 @@ def main():
         if batch:
             for item in batch:
                 item['opt'] = opt
-            ret = zsystem.apf(batch=batch, forceDynamic=forse_dynamic, persistent=persistent)
+            ret = zsystem.apf(batch=batch, forceDynamic=force_dynamic, persistent=persistent)
         else:
             if not dsname:
                 module.fail_json(msg='dsname is required')
-            ret = zsystem.apf(opt=opt, dsname=dsname, volume=volume, sms=sms, forceDynamic=forse_dynamic, persistent=persistent)
+            ret = zsystem.apf(opt=opt, dsname=dsname, volume=volume, sms=sms, forceDynamic=force_dynamic, persistent=persistent)
 
     operOut = ret.stdout_response
     operErr = ret.stderr_response

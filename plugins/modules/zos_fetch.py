@@ -446,7 +446,7 @@ class FetchHandler:
             )
         if (not is_binary) and encoding:
             enc_utils = encode.EncodeUtils()
-            from_code_set = encode.Defaults.DEFAULT_MVS_CHARSET
+            from_code_set = encoding.get('from')
             to_code_set = encoding.get("to")
             root, dirs, files = next(os.walk(dir_path))
             try:
@@ -489,7 +489,7 @@ class FetchHandler:
             )
         if (not is_binary) and encoding:
             enc_utils = encode.EncodeUtils()
-            from_code_set = encode.Defaults.DEFAULT_MVS_CHARSET
+            from_code_set = encoding.get('from')
             to_code_set = encoding.get("to")
             try:
                 enc_utils.uss_convert_encoding(
@@ -544,8 +544,10 @@ def run_module():
     )
 
     if not module.params.get("encoding") and not module.params.get("is_binary"):
+        mvs_src = data_set.is_data_set(src)
+        remote_charset = encode.EncodeUtils().remote_charset()
         module.params["encoding"] = {
-            'from': encode.EncodeUtils().remote_charset(),
+            'from': encode.Defaults.DEFAULT_MVS_CHARSET if mvs_src else remote_charset,
             'to': encode.Defaults.DEFAULT_LOCAL_CHARSET
         }
 

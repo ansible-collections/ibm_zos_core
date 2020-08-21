@@ -9,6 +9,7 @@ __metaclass__ = type
 from tempfile import NamedTemporaryFile, TemporaryDirectory, mkstemp
 from math import floor, ceil
 from os import path, walk, makedirs, unlink
+from platform import platform
 from ansible.module_utils.six import PY3
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
     AnsibleModuleHelper,
@@ -17,7 +18,7 @@ import shutil
 import errno
 import os
 import re
-import time
+import locale
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     MissingZOAUImport,
 )
@@ -40,9 +41,48 @@ else:
 
 
 class Defaults:
-    DEFAULT_LOCAL_CHARSET = "ISO8859-1"
-    DEFAULT_REMOTE_CHARSET = "IBM-1047"
-    DEFAULT_MVS_CHARSET = "IBM-037"
+    DEFAULT_POSIX_CHARSET = "UTF-8"
+    DEFAULT_WIN_CHARSET = "UTF-8"
+    DEFAULT_ZOS_USS_CHARSET = "IBM-1047"
+    DEFAULT_ZOS_MVS_CHARSET = "IBM-037"
+
+    @staticmethod
+    def get_default_system_charset():
+        """Get the default encoding of the current machine
+
+        Returns:
+            str -- The encoding of the current machine
+        """
+        module = AnsibleModuleHelper(argument_spec={})
+        system_charset = locale.getdefaultlocale()[1]
+        if system_charset is None:
+            rc, out, err = module.run_command("locale -c charmap")
+            if rc != 0:
+                raise DiscoverCharsetError(rc, out, err)
+            out = out.splitlines()
+            if out:
+                system_charset = out[1] if len(out) > 1 else out[0]
+            else:
+                current_platform = platform()
+                if Defaults.is_zos(current_platform):
+                    system_charset = Defaults.DEFAULT_ZOS_USS_CHARSET
+                else:
+                    system_charset = Defaults.DEFAULT_POSIX_CHARSET
+
+        return system_charset
+
+    @staticmethod
+    def is_zos(current_platform):
+        """ Determine whether the current platform is a z/OS distribution
+        """
+        NON_ZOS_PLATFORMS = frozenset(
+            {
+                "linux", "linux2", "darwin", "win32", "cygwin",
+                "msys", "os2", "os2emx", "riscos", "atheos", "freebsd7",
+                "freebsd8", "freebsdN", "openbsd6", "aix"
+            }
+        )
+        return current_platform not in NON_ZOS_PLATFORMS
 
 
 class EncodeUtils(object):

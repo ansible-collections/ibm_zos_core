@@ -1377,6 +1377,9 @@ def run_module(module, arg_def):
                 msg="Encoding conversion is only valid for USS source"
             )
         # 'conv_path' points to the converted src file or directory
+        if is_mvs_dest:
+            encoding['to'] = encode.Defaults.DEFAULT_MVS_CHARSET
+
         conv_path = copy_handler.convert_encoding(src, temp_path, encoding)
 
     # ------------------------------- o -----------------------------------

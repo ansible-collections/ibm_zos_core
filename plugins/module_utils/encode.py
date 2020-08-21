@@ -42,6 +42,7 @@ else:
 class Defaults:
     DEFAULT_LOCAL_CHARSET = "ISO8859-1"
     DEFAULT_REMOTE_CHARSET = "IBM-1047"
+    DEFAULT_MVS_CHARSET = "IBM-037"
 
 
 class EncodeUtils(object):

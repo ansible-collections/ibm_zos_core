@@ -89,8 +89,8 @@ options:
     description:
       - Specifies which encoding the local JCL file should be converted from
         and to, before submitting the job.
-      - If this parameter is not provided, the JCL file will be converted from
-        ISO8859-1 to IBM-1047 by default.
+      - If this parameter is not provided, and the z/OS systems default encoding can not be identified,
+        the JCL file will be converted from ISO8859-1 to IBM-1047 by default.
     required: false
     type: dict
     suboptions:
@@ -105,7 +105,9 @@ options:
       to:
         description:
           - The character set to convert the local JCL file to on the remote
-            z/OS system; defaults to IBM-1047.
+            z/OS system; defaults to IBM-1047 when z/OS systems default encoding can not be identified.
+          - If not provided, the module will attempt to identify and use the default
+            encoding on the z/OS system.
           - Supported character sets rely on the target version; the most
             common character sets are supported.
         required: false
@@ -510,6 +512,14 @@ DEFAULT_ASCII_CHARSET = "ISO8859-1"
 DEFAULT_EBCDIC_CHARSET = "IBM-1047"
 
 
+def get_locale(module):
+    rc, stdout, stderr = module.run_command("locale -c charmap")
+    if rc:
+        return None
+    else:
+        return stdout
+
+
 def submit_pds_jcl(src, module):
     """ A wrapper around zoautil_py Jobs submit to raise exceptions on failure. """
     rc, stdout, stderr = module.run_command(
@@ -634,11 +644,14 @@ def run_module():
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
     encoding = module.params.get("encoding")
     if encoding is None:
-        encoding = {"from": DEFAULT_ASCII_CHARSET, "to": DEFAULT_EBCDIC_CHARSET}
+        encoding = {
+            "from": DEFAULT_ASCII_CHARSET,
+            "to": get_locale(module) or DEFAULT_EBCDIC_CHARSET,
+        }
     if encoding.get("from") is None:
         encoding["from"] = DEFAULT_ASCII_CHARSET
     if encoding.get("to") is None:
-        encoding["to"] = DEFAULT_EBCDIC_CHARSET
+        encoding["to"] = get_locale(module) or DEFAULT_EBCDIC_CHARSET
 
     arg_defs = dict(
         src=dict(arg_type="data_set_or_path", required=True),

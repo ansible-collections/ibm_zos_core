@@ -517,7 +517,7 @@ def get_locale(module):
     if rc:
         return None
     else:
-        return stdout
+        return stdout.strip()
 
 
 def submit_pds_jcl(src, module):

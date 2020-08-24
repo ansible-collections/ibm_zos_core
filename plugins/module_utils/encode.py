@@ -9,7 +9,6 @@ __metaclass__ = type
 from tempfile import NamedTemporaryFile, TemporaryDirectory, mkstemp
 from math import floor, ceil
 from os import path, walk, makedirs, unlink
-from platform import platform
 from ansible.module_utils.six import PY3
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
     AnsibleModuleHelper,

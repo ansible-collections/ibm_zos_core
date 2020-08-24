@@ -42,9 +42,9 @@ else:
 
 
 class Defaults:
-    DEFAULT_NON_ZOS_CHARSET = "UTF-8"
-    DEFAULT_ZOS_USS_CHARSET = "IBM-1047"
-    DEFAULT_ZOS_MVS_CHARSET = "IBM-037"
+    DEFAULT_ASCII_CHARSET = "UTF-8"
+    DEFAULT_EBCDIC_USS_CHARSET = "IBM-1047"
+    DEFAULT_EBCDIC_MVS_CHARSET = "IBM-037"
 
     @staticmethod
     def get_default_system_charset():
@@ -64,9 +64,9 @@ class Defaults:
                 system_charset = out[1].strip() if len(out) > 1 else out[0].strip()
             else:
                 if system.is_zos():
-                    system_charset = Defaults.DEFAULT_ZOS_USS_CHARSET
+                    system_charset = Defaults.DEFAULT_EBCDIC_USS_CHARSET
                 else:
-                    system_charset = Defaults.DEFAULT_NON_ZOS_CHARSET
+                    system_charset = Defaults.DEFAULT_ASCII_CHARSET
 
         return system_charset
 

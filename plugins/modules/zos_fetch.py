@@ -553,7 +553,7 @@ def run_module():
             module.fail_json(msg=str(err))
 
         module.params["encoding"] = {
-            'from': encode.Defaults.DEFAULT_MVS_CHARSET if mvs_src else remote_charset,
+            'from': encode.Defaults.DEFAULT_EBCDIC_MVS_CHARSET if mvs_src else remote_charset,
             'to': module.params.get("local_charset")
         }
 

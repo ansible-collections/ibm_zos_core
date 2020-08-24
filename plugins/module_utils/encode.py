@@ -25,7 +25,9 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,
 )
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import copy
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
+    copy, system
+)
 
 try:
     from zoautil_py import Datasets, MVSCmd
@@ -41,8 +43,7 @@ else:
 
 
 class Defaults:
-    DEFAULT_POSIX_CHARSET = "UTF-8"
-    DEFAULT_WIN_CHARSET = "UTF-8"
+    DEFAULT_NON_ZOS_CHARSET = "UTF-8"
     DEFAULT_ZOS_USS_CHARSET = "IBM-1047"
     DEFAULT_ZOS_MVS_CHARSET = "IBM-037"
 
@@ -61,28 +62,14 @@ class Defaults:
                 raise DiscoverCharsetError(rc, out, err)
             out = out.splitlines()
             if out:
-                system_charset = out[1] if len(out) > 1 else out[0]
+                system_charset = out[1].strip() if len(out) > 1 else out[0].strip()
             else:
-                current_platform = platform()
-                if Defaults.is_zos(current_platform):
+                if system.is_zos():
                     system_charset = Defaults.DEFAULT_ZOS_USS_CHARSET
                 else:
-                    system_charset = Defaults.DEFAULT_POSIX_CHARSET
+                    system_charset = Defaults.DEFAULT_NON_ZOS_CHARSET
 
         return system_charset
-
-    @staticmethod
-    def is_zos(current_platform):
-        """ Determine whether the current platform is a z/OS distribution
-        """
-        NON_ZOS_PLATFORMS = frozenset(
-            {
-                "linux", "linux2", "darwin", "win32", "cygwin",
-                "msys", "os2", "os2emx", "riscos", "atheos", "freebsd7",
-                "freebsd8", "freebsdN", "openbsd6", "aix"
-            }
-        )
-        return current_platform not in NON_ZOS_PLATFORMS
 
 
 class EncodeUtils(object):
@@ -435,17 +422,6 @@ class EncodeUtils(object):
             if temp_ps:
                 Datasets.delete(temp_ps)
         return convert_rc
-
-    def remote_charset(self):
-        """Discover the default charset of remote z/OS system
-
-        Returns:
-            str -- The charset of remote z/OS system
-        """
-        rc, out, err = self.module.run_command("locale -c charmap")
-        if rc != 0:
-            raise DiscoverCharsetError(rc, out, err)
-        return Defaults.DEFAULT_REMOTE_CHARSET if not out else out.strip()
 
 
 class EncodeError(Exception):

@@ -16,6 +16,8 @@ from ansible.module_utils.parsing.convert_bool import boolean
 from ansible.plugins.action import ActionBase
 from ansible.errors import AnsibleError
 
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import encode
+
 
 SUPPORTED_DS_TYPES = frozenset({"PS", "PO", "VSAM", "USS"})
 
@@ -214,10 +216,14 @@ class ActionModule(ActionBase):
         #                Execute module on remote host               #
         # ********************************************************** #
 
+        new_module_args = self._task.args.copy()
+        new_module_args.update(
+            dict(local_charset=encode.Defaults.get_default_system_charset())
+        )
         try:
             fetch_res = self._execute_module(
                 module_name="ibm.ibm_zos_core.zos_fetch",
-                module_args=self._task.args,
+                module_args=new_module_args,
                 task_vars=task_vars
             )
             ds_type = fetch_res.get('ds_type')

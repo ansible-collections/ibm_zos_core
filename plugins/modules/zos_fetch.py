@@ -523,7 +523,8 @@ def run_module():
             validate_checksum=dict(required=False, default=True, type="bool"),
             encoding=dict(required=False, type="dict"),
             sftp_port=dict(type='int', required=False),
-            ignore_sftp_stderr=dict(type='bool', default=False, required=False)
+            ignore_sftp_stderr=dict(type='bool', default=False, required=False),
+            local_charset=dict(type='str')
         )
     )
 
@@ -545,10 +546,15 @@ def run_module():
 
     if not module.params.get("encoding") and not module.params.get("is_binary"):
         mvs_src = data_set.is_data_set(src)
-        remote_charset = encode.EncodeUtils().remote_charset()
+        remote_charset = None
+        try:
+            remote_charset = encode.Defaults.get_default_system_charset()
+        except Exception as err:
+            module.fail_json(msg=str(err))
+
         module.params["encoding"] = {
             'from': encode.Defaults.DEFAULT_MVS_CHARSET if mvs_src else remote_charset,
-            'to': encode.Defaults.DEFAULT_LOCAL_CHARSET
+            'to': module.params.get("local_charset")
         }
 
     if module.params.get("encoding"):

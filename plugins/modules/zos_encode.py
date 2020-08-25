@@ -88,7 +88,7 @@ options:
         e.g. /path/file_name.2020-04-23-08-32-29-bak.tar. If dest is an
         MVS data set, the default backup name will be a random name generated
         by IBM Z Open Automation Utilities.
-      - C(backup_name) will be returned on either success or failure of module 
+      - C(backup_name) will be returned on either success or failure of module
         execution such that data can be retrieved.
     required: false
     type: str

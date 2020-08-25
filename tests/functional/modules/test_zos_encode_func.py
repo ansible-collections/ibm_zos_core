@@ -74,10 +74,10 @@ def test_uss_encoding_conversion_with_invalid_encoding(ansible_zos_module):
     pprint(vars(results))
     for result in results.contacted.values():
         assert result.get("src") == USS_FILE
-        assert result.get("dest") is None
+        assert result.get("dest") == USS_FILE
         assert result.get("backup_name") is None
         assert result.get("changed") is False
-        assert "Invalid codeset: Please check the value" in result.get("msg")
+        assert result.get("msg") is not None
 
 
 def test_uss_encoding_conversion_with_the_same_encoding(ansible_zos_module):
@@ -88,13 +88,10 @@ def test_uss_encoding_conversion_with_the_same_encoding(ansible_zos_module):
     pprint(vars(results))
     for result in results.contacted.values():
         assert result.get("src") == USS_FILE
-        assert result.get("dest") is None
+        assert result.get("dest") == USS_FILE
         assert result.get("backup_name") is None
         assert result.get("changed") is False
-        assert (
-            "The value of the from_encoding and to_encoding "
-            "are the same, no need to do the conversion!"
-        ) in result.get("msg")
+        assert result.get("msg") is not None
 
 
 def test_uss_encoding_conversion_without_dest(ansible_zos_module):
@@ -693,6 +690,7 @@ def test_return_backup_name_on_module_success_and_failure(ansible_zos_module):
     )
 
     for content in enc_ds.contacted.values():
+        assert content.get("msg") is not None
         assert content.get("backup_name") is not None
         assert content.get("backup_name") == BACKUP_DATA_SET
 

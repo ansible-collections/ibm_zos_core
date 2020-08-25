@@ -487,7 +487,7 @@ def test_ps_backup(ansible_zos_module):
     hosts = ansible_zos_module
     hosts.all.zos_data_set(name=BACKUP_DATA_SET, state="absent")
     hosts.all.zos_data_set(name=MVS_PS, state="absent")
-    hosts.all.zos_data_set(name=MVS_PS, state="present", type="ps")
+    hosts.all.zos_data_set(name=MVS_PS, state="present", type="seq")
     hosts.all.shell(cmd="echo '{0}' > {1}".format(TEST_FILE_TEXT, TEMP_JCL_PATH))
     hosts.all.shell(cmd="cp {0} \"//'{1}'\"".format(TEMP_JCL_PATH, MVS_PS))
     hosts.all.zos_encode(
@@ -663,3 +663,39 @@ def test_uss_backup_entire_folder_to_default_backup_location_compressed(
     results = hosts.all.shell(cmd="ls -la {0}".format(backup_name[:-4] + "*"))
     for result in results.contacted.values():
         assert backup_name in result.get("stdout")
+
+
+def test_return_backup_name_on_module_success_and_failure(ansible_zos_module):
+    hosts = ansible_zos_module
+    hosts.all.zos_data_set(name=MVS_PS, state="absent")
+    hosts.all.zos_data_set(name=BACKUP_DATA_SET, state="absent")
+    hosts.all.zos_data_set(name=MVS_PS, state="present", type="seq")
+    hosts.all.shell(cmd="echo '{0}' > {1}".format(TEST_FILE_TEXT, TEMP_JCL_PATH))
+    hosts.all.zos_copy(src=TEMP_JCL_PATH, dest=MVS_PS, remote_src=True)
+    enc_ds = hosts.all.zos_encode(
+        src=MVS_PS,
+        from_encoding=FROM_ENCODING,
+        to_encoding=TO_ENCODING,
+        backup=True,
+        backup_name=BACKUP_DATA_SET,
+    )
+    for content in enc_ds.contacted.values():
+        assert content.get("backup_name") is not None
+        assert content.get("backup_name") == BACKUP_DATA_SET
+
+    hosts.all.zos_data_set(name=BACKUP_DATA_SET, state="absent")
+    enc_ds = hosts.all.zos_encode(
+        src=MVS_PS,
+        from_encoding=INVALID_ENCODING,
+        to_encoding=TO_ENCODING,
+        backup=True,
+        backup_name=BACKUP_DATA_SET,
+    )
+
+    for content in enc_ds.contacted.values():
+        assert content.get("backup_name") is not None
+        assert content.get("backup_name") == BACKUP_DATA_SET
+
+    hosts.all.file(path=TEMP_JCL_PATH, state="absent")
+    hosts.all.zos_data_set(name=MVS_PS, state="absent")
+    hosts.all.zos_data_set(name=BACKUP_DATA_SET, state="absent")

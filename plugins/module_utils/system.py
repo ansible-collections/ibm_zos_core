@@ -41,7 +41,7 @@ def is_nix():
     """
     if not is_posix():
         return False
-    system_platform = platform()
+    system_platform = platform().lower()
     for p_name in NIX_PLATFORMS:
         if p_name in system_platform:
             return True
@@ -54,7 +54,7 @@ def is_win():
     Returns:
         bool -- Whether the system is Windows
     """
-    return "win32" in platform() or OS_NAME == "nt"
+    return "win32" in platform().lower() or OS_NAME == "nt"
 
 
 def is_zos():

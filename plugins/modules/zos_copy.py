@@ -1499,13 +1499,10 @@ def main():
         and not module.params.get("remote_src")
         and not module.params.get("is_binary")
     ):
-        try:
-            module.params["encoding"] = {
-                'from': module.params.get("local_charset"),
-                'to': encode.Defaults.get_default_system_charset()
-            }
-        except Exception as err:
-            module.fail_json(msg=str(err))
+        module.params["encoding"] = {
+            'from': module.params.get("local_charset"),
+            'to': encode.Defaults.get_default_system_charset()
+        }
 
     if module.params.get("encoding"):
         module.params.update(dict(

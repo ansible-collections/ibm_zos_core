@@ -215,7 +215,6 @@ class ActionModule(ActionBase):
         # ********************************************************** #
         #                Execute module on remote host               #
         # ********************************************************** #
-
         new_module_args = self._task.args.copy()
         new_module_args.update(
             dict(local_charset=encode.Defaults.get_default_system_charset())

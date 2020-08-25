@@ -546,11 +546,7 @@ def run_module():
 
     if not module.params.get("encoding") and not module.params.get("is_binary"):
         mvs_src = data_set.is_data_set(src)
-        remote_charset = None
-        try:
-            remote_charset = encode.Defaults.get_default_system_charset()
-        except Exception as err:
-            module.fail_json(msg=str(err))
+        remote_charset = encode.Defaults.get_default_system_charset()
 
         module.params["encoding"] = {
             'from': encode.Defaults.DEFAULT_EBCDIC_MVS_CHARSET if mvs_src else remote_charset,

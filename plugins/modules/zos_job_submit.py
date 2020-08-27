@@ -495,7 +495,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import job_ou
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,
 )
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.encode import EncodeUtils
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import encode
 from stat import S_IEXEC, S_IREAD, S_IWRITE
 from ansible.module_utils.six import PY3
 
@@ -639,12 +639,12 @@ def run_module():
     if encoding is None:
         encoding = {
             "from": DEFAULT_ASCII_CHARSET,
-            "to": EncodeUtils().remote_charset(),
+            "to": encode.Defaults.get_default_system_charset(),
         }
     if encoding.get("from") is None:
         encoding["from"] = DEFAULT_ASCII_CHARSET
     if encoding.get("to") is None:
-        encoding["to"] = EncodeUtils().remote_charset()
+        encoding["to"] = encode.Defaults.get_default_system_charset()
 
     arg_defs = dict(
         src=dict(arg_type="data_set_or_path", required=True),

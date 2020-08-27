@@ -495,6 +495,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import job_ou
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.encode import EncodeUtils
 from stat import S_IEXEC, S_IREAD, S_IWRITE
 from ansible.module_utils.six import PY3
 
@@ -510,14 +511,6 @@ POLLING_COUNT = 60
 JOB_COMPLETION_MESSAGES = ["CC", "ABEND", "SEC"]
 DEFAULT_ASCII_CHARSET = "ISO8859-1"
 DEFAULT_EBCDIC_CHARSET = "IBM-1047"
-
-
-def get_encoding_from_locale(module):
-    rc, stdout, stderr = module.run_command("locale -c charmap")
-    if rc:
-        return None
-    else:
-        return stdout.strip()
 
 
 def submit_pds_jcl(src, module):
@@ -646,12 +639,12 @@ def run_module():
     if encoding is None:
         encoding = {
             "from": DEFAULT_ASCII_CHARSET,
-            "to": get_encoding_from_locale(module) or DEFAULT_EBCDIC_CHARSET,
+            "to": EncodeUtils().remote_charset(),
         }
     if encoding.get("from") is None:
         encoding["from"] = DEFAULT_ASCII_CHARSET
     if encoding.get("to") is None:
-        encoding["to"] = get_encoding_from_locale(module) or DEFAULT_EBCDIC_CHARSET
+        encoding["to"] = EncodeUtils().remote_charset()
 
     arg_defs = dict(
         src=dict(arg_type="data_set_or_path", required=True),

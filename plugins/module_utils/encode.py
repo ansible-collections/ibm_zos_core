@@ -10,24 +10,28 @@ from tempfile import NamedTemporaryFile, TemporaryDirectory, mkstemp
 from math import floor, ceil
 from os import path, walk, makedirs, unlink
 from ansible.module_utils.six import PY3
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
-    AnsibleModuleHelper,
-)
+
 import shutil
 import errno
 import os
 import re
-import time
+import locale
+
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     MissingZOAUImport,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,
 )
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import copy
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
+    copy, system
+)
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
+    AnsibleModuleHelper,
+)
 
 try:
-    from zoautil_py import Datasets, MVSCmd
+    from zoautil_py import Datasets
 except Exception:
     Datasets = MissingZOAUImport()
     MVSCmd = MissingZOAUImport()
@@ -40,8 +44,30 @@ else:
 
 
 class Defaults:
-    DEFAULT_LOCAL_CHARSET = "ISO8859-1"
-    DEFAULT_REMOTE_CHARSET = "IBM-1047"
+    DEFAULT_ASCII_CHARSET = "UTF-8"
+    DEFAULT_EBCDIC_USS_CHARSET = "IBM-1047"
+    DEFAULT_EBCDIC_MVS_CHARSET = "IBM-037"
+
+    @staticmethod
+    def get_default_system_charset():
+        """Get the default encoding of the current machine
+
+        Returns:
+            str -- The encoding of the current machine
+        """
+        system_charset = locale.getdefaultlocale()[1]
+        if system_charset is None:
+            rc, out, err = system.run_command("locale -c charmap")
+            if rc != 0 or not out or err:
+                if system.is_zos():
+                    system_charset = Defaults.DEFAULT_EBCDIC_USS_CHARSET
+                else:
+                    system_charset = Defaults.DEFAULT_ASCII_CHARSET
+            else:
+                out = out.splitlines()
+                system_charset = out[1].strip() if len(out) > 1 else out[0].strip()
+
+        return system_charset
 
 
 class EncodeUtils(object):
@@ -395,17 +421,6 @@ class EncodeUtils(object):
                 Datasets.delete(temp_ps)
         return convert_rc
 
-    def remote_charset(self):
-        """Discover the default charset of remote z/OS system
-
-        Returns:
-            str -- The charset of remote z/OS system
-        """
-        rc, out, err = self.module.run_command("locale -c charmap")
-        if rc != 0:
-            raise DiscoverCharsetError(rc, out, err)
-        return Defaults.DEFAULT_REMOTE_CHARSET if not out else out.strip()
-
 
 class EncodeError(Exception):
     def __init__(self, message):
@@ -417,12 +432,3 @@ class MoveFileError(Exception):
     def __init__(self, src, dest, e):
         self.msg = "Failed when moving {0} to {1}: {2}".format(src, dest, e)
         super().__init__(self.msg)
-
-
-class DiscoverCharsetError(Exception):
-    def __init__(self, rc, out, err):
-        self.msg = (
-            ("An error occurred while determining default charset of remote system; ")
-            ("stderr: {0}; stdout: {1}; rc: {2}".format(rc, out, err))
-        )
-        super(DiscoverCharsetError, self).__init__(self.msg)

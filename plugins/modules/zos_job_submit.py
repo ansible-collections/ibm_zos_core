@@ -496,7 +496,6 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser
     BetterArgParser,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.encode import (
-    EncodeUtils,
     Defaults,
 )
 from stat import S_IEXEC, S_IREAD, S_IWRITE
@@ -641,13 +640,13 @@ def run_module():
     encoding = module.params.get("encoding")
     if encoding is None:
         encoding = {
-            "from": Defaults.DEFAULT_LOCAL_CHARSET,
-            "to": EncodeUtils().remote_charset(),
+            "from": Defaults.DEFAULT_ASCII_CHARSET,
+            "to": Defaults.get_default_system_charset(),
         }
     if encoding.get("from") is None:
-        encoding["from"] = Defaults.DEFAULT_LOCAL_CHARSET
+        encoding["from"] = Defaults.DEFAULT_ASCII_CHARSET
     if encoding.get("to") is None:
-        encoding["to"] = EncodeUtils().remote_charset()
+        encoding["to"] = Defaults.get_default_system_charset()
 
     arg_defs = dict(
         src=dict(arg_type="data_set_or_path", required=True),
@@ -657,8 +656,10 @@ def run_module():
             default="DATA_SET",
             choices=["DATA_SET", "USS", "LOCAL"],
         ),
-        from_encoding=dict(arg_type="encoding", default=Defaults.DEFAULT_LOCAL_CHARSET),
-        to_encoding=dict(arg_type="encoding", default=Defaults.DEFAULT_REMOTE_CHARSET),
+        from_encoding=dict(arg_type="encoding", default=Defaults.DEFAULT_ASCII_CHARSET),
+        to_encoding=dict(
+            arg_type="encoding", default=Defaults.DEFAULT_EBCDIC_USS_CHARSET
+        ),
         volume=dict(arg_type="volume", required=False),
         return_output=dict(arg_type="bool", default=True),
         wait_time_s=dict(arg_type="int", required=False, default=60),

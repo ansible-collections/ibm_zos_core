@@ -495,7 +495,10 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import job_ou
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,
 )
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import encode
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.encode import (
+    EncodeUtils,
+    Defaults,
+)
 from stat import S_IEXEC, S_IREAD, S_IWRITE
 from ansible.module_utils.six import PY3
 
@@ -509,8 +512,6 @@ POLLING_INTERVAL = 1
 POLLING_COUNT = 60
 
 JOB_COMPLETION_MESSAGES = ["CC", "ABEND", "SEC"]
-DEFAULT_ASCII_CHARSET = "ISO8859-1"
-DEFAULT_EBCDIC_CHARSET = "IBM-1047"
 
 
 def submit_pds_jcl(src, module):
@@ -624,7 +625,9 @@ def run_module():
         src=dict(type="str", required=True),
         wait=dict(type="bool", required=False),
         location=dict(
-            type="str", default="DATA_SET", choices=["DATA_SET", "USS", "LOCAL"],
+            type="str",
+            default="DATA_SET",
+            choices=["DATA_SET", "USS", "LOCAL"],
         ),
         encoding=dict(type="dict", required=False),
         volume=dict(type="str", required=False),
@@ -638,22 +641,24 @@ def run_module():
     encoding = module.params.get("encoding")
     if encoding is None:
         encoding = {
-            "from": DEFAULT_ASCII_CHARSET,
-            "to": encode.Defaults.get_default_system_charset(),
+            "from": Defaults.DEFAULT_LOCAL_CHARSET,
+            "to": EncodeUtils().remote_charset(),
         }
     if encoding.get("from") is None:
-        encoding["from"] = DEFAULT_ASCII_CHARSET
+        encoding["from"] = Defaults.DEFAULT_LOCAL_CHARSET
     if encoding.get("to") is None:
-        encoding["to"] = encode.Defaults.get_default_system_charset()
+        encoding["to"] = EncodeUtils().remote_charset()
 
     arg_defs = dict(
         src=dict(arg_type="data_set_or_path", required=True),
         wait=dict(arg_type="bool", required=False),
         location=dict(
-            arg_type="str", default="DATA_SET", choices=["DATA_SET", "USS", "LOCAL"],
+            arg_type="str",
+            default="DATA_SET",
+            choices=["DATA_SET", "USS", "LOCAL"],
         ),
-        from_encoding=dict(arg_type="encoding", default=DEFAULT_ASCII_CHARSET),
-        to_encoding=dict(arg_type="encoding", default=DEFAULT_EBCDIC_CHARSET),
+        from_encoding=dict(arg_type="encoding", default=Defaults.DEFAULT_LOCAL_CHARSET),
+        to_encoding=dict(arg_type="encoding", default=Defaults.DEFAULT_REMOTE_CHARSET),
         volume=dict(arg_type="volume", required=False),
         return_output=dict(arg_type="bool", default=True),
         wait_time_s=dict(arg_type="int", required=False, default=60),
@@ -663,7 +668,10 @@ def run_module():
 
     result = dict(changed=False)
     module.params.update(
-        dict(from_encoding=encoding.get("from"), to_encoding=encoding.get("to"),)
+        dict(
+            from_encoding=encoding.get("from"),
+            to_encoding=encoding.get("to"),
+        )
     )
     try:
         parser = BetterArgParser(arg_defs)

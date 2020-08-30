@@ -3,7 +3,9 @@
 from __future__ import absolute_import, division, print_function
 
 import os
+from os import replace
 import shutil
+from sys import executable
 import tempfile
 
 __metaclass__ = type
@@ -1951,3 +1953,38 @@ def test_sftp_negative_port_specification_fails(ansible_zos_module):
             assert result.get("msg") is not None
     finally:
         hosts.all.file(path=dest_path, state="absent")
+
+
+def test_copy_multiple_data_set_members(ansible_zos_module):
+    hosts = ansible_zos_module
+    src = "USER.FUNCTEST.SRC.PDS"
+    dest = "USER.FUNCTEST.DEST.PDS"
+    member_list = ["MEMBER1", "ABCXYZ", "ABCASD"]
+    ds_list = ["{0}({1})".format(src, i) for i in member_list]
+    try:
+        hosts.all.zos_data_set(name=src, type="pds")
+        hosts.all.zos_data_set(name=dest, type="pds")
+        hosts.all.zos_data_set(
+            batch=[dict(src=i, type="MEMBER", replace="yes") for i in ds_list]
+        )
+
+        for i in ds_list:
+            hosts.all.zos_copy(content=DUMMY_DATA, dest=i)
+
+        copy_res = hosts.all.zos_copy(src=src + "(ABC*)", dest=dest, remote_src=True)
+        for res in copy_res.contacted.values():
+            assert res.get("msg") is None
+
+        verify_copy = hosts.all.shell(
+            cmd="mls {0}".format(dest), executable=SHELL_EXECUTABLE
+        )
+
+        for v_cp in verify_copy.contacted.values():
+            assert v_cp.get("rc") == 0
+            stdout = v_cp.get("stdout")
+            assert stdout is not None
+            assert(len(stdout.splitlines())) == 2
+
+    finally:
+        hosts.all.zos_data_set(name=dest, state="absent")
+        hosts.all.zos_data_set(name=src, state="absent")

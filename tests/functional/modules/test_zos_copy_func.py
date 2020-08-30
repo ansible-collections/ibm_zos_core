@@ -3,9 +3,7 @@
 from __future__ import absolute_import, division, print_function
 
 import os
-from os import replace
 import shutil
-from sys import executable
 import tempfile
 
 __metaclass__ = type

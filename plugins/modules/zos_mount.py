@@ -443,8 +443,10 @@ import math
 import stat
 import shutil
 import glob
-import time
 import re
+import time
+import tempfile
+
 from datetime import datetime
 from pathlib import Path
 from ansible.module_utils.basic import AnsibleModule
@@ -483,13 +485,13 @@ def swap_text(original, adding, removing):
     original now should be a list of lines without newlines
     return is the consolidated file value
     """
-    # content_lines = original.split('\n')
     content_lines = original
 
     remove_starting_at_index = None
     remove_ending_at_index = None
 
-    ms = re.compile(r"^\s*MOUNT\s+FILESYSTEM\('" + removing.upper() + r"'\)")
+## reminder to add \s* around apostrophes 
+    ms = re.compile(r"^\s*MOUNT\s+FILESYSTEM\(\s*'" + removing.upper() + r"'\s*\)")
     print(ms)
     boneyard = dict()
 
@@ -529,7 +531,7 @@ def swap_text(original, adding, removing):
 
     for startidx in reversed(boneyard.keys()):
         endidx = boneyard[startidx]
-        del(content_lines[startidx:endidx])
+        del(content_lines[startidx:endidx+1])
 
     if(len(adding) > 0):
         content_lines.extend(adding.split('\n'))
@@ -774,7 +776,11 @@ def run_module(module, arg_def):
                 stderr=str(res_args)
             )
 
-        fullcmd = "cp \"//'" + fstab + "'\" /tmp/txtentry"
+        tmp_file = tempfile.NamedTemporaryFile(delete=True)
+        tmp_file_filename = tmp_file.name
+        tmp_file.close()
+
+        fullcmd = "cp \"//'" + fstab + "'\" " + tmp_file_filename
         try:
             (rc, stdout, stderr) = module.run_command(
                 fullcmd, use_unsafe_shell=True)
@@ -782,7 +788,7 @@ def run_module(module, arg_def):
             module.fail_json(msg=str(err), stderr=str(res_args))
 
         if len(backup) > 0:
-            fullcmd = "cp /tmp/txtentry \"//'" + backup + "'\""
+            fullcmd = "cp " + tmp_file_filename + " \"//'" + backup + "'\""
             try:
                 (rc, stdout, stderr) = module.run_command(
                     fullcmd, use_unsafe_shell=True)
@@ -790,21 +796,25 @@ def run_module(module, arg_def):
                 module.fail_json(msg=str(err), stderr=str(res_args))
             comment += "Wrote backup to " + backup + "\n"
 
-        with open('/tmp/txtentry', 'r') as fh:
-            content = fh.read().replace('/n', '')
+        with open(tmp_file_filename, 'r') as fh:
+            content = fh.read().splitlines()
 
         newtext = swap_text(content, parmtext, src)
-        if(newtext != content):
-            fh = open('/tmp/txtentry', 'w')
+        if newtext != content:
+            fh = open(tmp_file_filename, 'w')
             fh.write(newtext)
             fh.close()
-            fullcmd = "cp /tmp/txtentry \"//'" + fstab + "'\""
+            fullcmd = "cp " + tmp_file_filename + " \"//'" + fstab + "'\""
             try:
                 (rc, stdout, stderr) = module.run_command(
                     fullcmd, use_unsafe_shell=True)
             except Exception as err:
                 module.fail_json(msg=str(err), stderr=str(res_args))
             comment += "Modified " + fstab + " in place\n"
+
+        if os.path.isfile(tmp_file_filename):
+            os.unlink(tmp_file_filename)
+
 
     res_args.update(
         dict(
@@ -843,8 +853,7 @@ def main():
             opts=dict(type='str', default='rw', choices=[
                       'ro', 'rw', 'same', 'nowait', 'nosecurity'], required=False),
             src_params=dict(type='str', required=False),
-            tag_flag=dict(type='str', default='', choices=[
-                          'TEXT', 'NOTEXT'], required=False),
+            tag_flag=dict(type='str', default='', choices=['','TEXT', 'NOTEXT'], required=False),
             tag_ccsid=dict(type='int', required=False),
             allow_uids=dict(type='bool', default=True, required=False),
             sysname=dict(type='str', required=False),
@@ -871,8 +880,7 @@ def main():
         opts=dict(arg_type='str', default='rw', choices=[
                   'ro', 'rw', 'same', 'nowait', 'nosecurity'], required=False),
         src_params=dict(arg_type='str', default='', required=False),
-        tag_flag=dict(arg_type='str', default='', choices=[
-                      'TEXT', 'NOTEXT'], required=False),
+        tag_flag=dict(arg_type='str', default='', choices=['','TEXT', 'NOTEXT'], required=False),
         tag_ccsid=dict(arg_type='str', required=False),
         allow_uids=dict(arg_type='bool', default=True, required=False),
         sysname=dict(arg_type='str', default='', required=False),

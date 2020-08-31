@@ -21,8 +21,10 @@ from ansible.plugins.action import ActionBase
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
     is_member,
     is_data_set,
-    extract_member_name,
+    extract_member_name
 )
+
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import encode
 
 
 class ActionModule(ActionBase):
@@ -32,30 +34,29 @@ class ActionModule(ActionBase):
             task_vars = dict()
 
         result = super(ActionModule, self).run(tmp, task_vars)
+        task_args = self._task.args.copy()
         del tmp
 
-        src = self._task.args.get('src', None)
+        src = task_args.get('src', None)
         b_src = to_bytes(src, errors='surrogate_or_strict')
-        dest = self._task.args.get('dest', None)
-        content = self._task.args.get('content', None)
+        dest = task_args.get('dest', None)
+        content = task_args.get('content', None)
+
         # If self._play_context.port is None, that implies the default port 22
         # was used to connect to the remote host.
-        sftp_port = self._task.args.get('sftp_port', self._play_context.port or 22)
-        force = _process_boolean(self._task.args.get('force'), default=True)
-        backup = _process_boolean(self._task.args.get('backup'), default=False)
-        local_follow = _process_boolean(self._task.args.get('local_follow'), default=False)
-        remote_src = _process_boolean(self._task.args.get('remote_src'), default=False)
-        is_binary = _process_boolean(self._task.args.get('is_binary'), default=False)
-        backup_name = self._task.args.get("backup_name", None)
-        encoding = self._task.args.get("encoding", None)
-        mode = self._task.args.get("mode", None)
-        owner = self._task.args.get("owner", None)
-        group = self._task.args.get("group", None)
-        ignore_sftp_stderr = _process_boolean(
-            self._task.args.get("ignore_sftp_stderr"), default=False
-        )
+        sftp_port = task_args.get('sftp_port', self._play_context.port or 22)
+        force = _process_boolean(task_args.get('force'), default=True)
+        backup = _process_boolean(task_args.get('backup'), default=False)
+        local_follow = _process_boolean(task_args.get('local_follow'), default=False)
+        remote_src = _process_boolean(task_args.get('remote_src'), default=False)
+        is_binary = _process_boolean(task_args.get('is_binary'), default=False)
+        ignore_sftp_stderr = _process_boolean(task_args.get("ignore_sftp_stderr"), default=False)
+        backup_name = task_args.get("backup_name", None)
+        encoding = task_args.get("encoding", None)
+        mode = task_args.get("mode", None)
+        owner = task_args.get("owner", None)
+        group = task_args.get("group", None)
 
-        new_module_args = self._task.args.copy()
         is_pds = is_src_dir = False
         temp_path = is_uss = is_mvs_dest = copy_member = src_member = None
 
@@ -147,15 +148,15 @@ class ActionModule(ActionBase):
                             dict(src=src, dest=dest, changed=False, failed=True)
                         )
                         return result
-                    new_module_args["size"] = sum(
+                    task_args["size"] = sum(
                         os.stat(path + "/" + f).st_size for f in files
                     )
                 else:
                     if mode == "preserve":
-                        new_module_args["mode"] = "0{0:o}".format(
+                        task_args["mode"] = "0{0:o}".format(
                             stat.S_IMODE(os.stat(b_src).st_mode)
                         )
-                    new_module_args["size"] = os.stat(src).st_size
+                    task_args["size"] = os.stat(src).st_size
                 transfer_res = self._copy_to_remote(
                     src, sftp_port, is_dir=is_src_dir, ignore_stderr=ignore_sftp_stderr
                 )
@@ -164,7 +165,7 @@ class ActionModule(ActionBase):
             if transfer_res.get("msg"):
                 return transfer_res
 
-        new_module_args.update(
+        task_args.update(
             dict(
                 is_uss=is_uss,
                 is_pds=is_pds,
@@ -172,11 +173,12 @@ class ActionModule(ActionBase):
                 src_member=src_member,
                 temp_path=temp_path,
                 is_mvs_dest=is_mvs_dest,
+                local_charset=encode.Defaults.get_default_system_charset()
             )
         )
         copy_res = self._execute_module(
             module_name="ibm.ibm_zos_core.zos_copy",
-            module_args=new_module_args,
+            module_args=task_args,
             task_vars=task_vars,
         )
 

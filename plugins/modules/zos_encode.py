@@ -366,6 +366,8 @@ def run_module():
     changed = False
 
     result = dict(changed=changed, src=src, dest=dest)
+    if backup:
+      result["backup_name"] = None
 
     try:
         # Check the src is a USS file/path or an MVS data set

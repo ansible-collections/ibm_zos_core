@@ -73,11 +73,9 @@ def test_uss_encoding_conversion_with_invalid_encoding(ansible_zos_module):
     )
     pprint(vars(results))
     for result in results.contacted.values():
-        assert result.get("src") == USS_FILE
-        assert result.get("dest") == USS_FILE
+        assert result.get("msg") is not None
         assert result.get("backup_name") is None
         assert result.get("changed") is False
-        assert result.get("msg") is not None
 
 
 def test_uss_encoding_conversion_with_the_same_encoding(ansible_zos_module):
@@ -87,11 +85,9 @@ def test_uss_encoding_conversion_with_the_same_encoding(ansible_zos_module):
     )
     pprint(vars(results))
     for result in results.contacted.values():
-        assert result.get("src") == USS_FILE
-        assert result.get("dest") == USS_FILE
+        assert result.get("msg") is not None
         assert result.get("backup_name") is None
         assert result.get("changed") is False
-        assert result.get("msg") is not None
 
 
 def test_uss_encoding_conversion_without_dest(ansible_zos_module):

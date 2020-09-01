@@ -51,17 +51,14 @@ def job_output(job_id=None, owner=None, job_name=None, dd_name=None):
     owner = parsed_args.get("owner") or "*"
     dd_name = parsed_args.get("ddname") or ""
 
-    job_detail_json = {}
-    rc, out, err = _get_job_output_str(job_id, owner, job_name, dd_name)
-    if rc != 0:
-        raise RuntimeError(
-            "Failed to retrieve job output. RC: {0} Error: {1}".format(
-                str(rc), str(err)
-            )
-        )
-    if not out:
-        raise RuntimeError("Failed to retrieve job output. No job output found.")
-    job_detail_json = json.loads(out, strict=False)
+    job_detail_json = _get_job_output(job_id, owner, job_name, dd_name)
+    if len(job_detail_json) == 0:
+        # some systems have issues with "*" while some require it to see results
+        job_id = "" if job_id == "*" else job_id
+        owner = "" if owner == "*" else owner
+        job_name = "" if job_name == "*" else job_name
+        job_detail_json = _get_job_output(job_id, owner, job_name, dd_name)
+
     for job in job_detail_json:
         job["ret_code"] = {} if job.get("ret_code") is None else job.get("ret_code")
         job["ret_code"]["code"] = _get_return_code_num(
@@ -73,6 +70,21 @@ def job_output(job_id=None, owner=None, job_name=None, dd_name=None):
         job["ret_code"]["msg_txt"] = ""
         if job.get("ret_code").get("msg", "") == "":
             job["ret_code"]["msg"] = "AC"
+    return job_detail_json
+
+
+def _get_job_output(job_id="*", owner="*", job_name="*", dd_name=""):
+    job_detail_json = {}
+    rc, out, err = _get_job_output_str(job_id, owner, job_name, dd_name)
+    if rc != 0:
+        raise RuntimeError(
+            "Failed to retrieve job output. RC: {0} Error: {1}".format(
+                str(rc), str(err)
+            )
+        )
+    if not out:
+        raise RuntimeError("Failed to retrieve job output. No job output found.")
+    job_detail_json = json.loads(out, strict=False)
     return job_detail_json
 
 
@@ -252,17 +264,13 @@ def job_status(job_id=None, owner=None, job_name=None):
     job_name = parsed_args.get("job_name") or "*"
     owner = parsed_args.get("owner") or "*"
 
-    job_status_json = {}
-    rc, out, err = _get_job_status_str(job_id, owner, job_name)
-    if rc != 0:
-        raise RuntimeError(
-            "Failed to retrieve job status. RC: {0} Error: {1}".format(
-                str(rc), str(err)
-            )
-        )
-    if not out:
-        raise RuntimeError("Failed to retrieve job status. No job status found.")
-    job_status_json = json.loads(out, strict=False)
+    job_status_json = _get_job_status(job_id, owner, job_name)
+    if len(job_status_json) == 0:
+        job_id = "" if job_id == "*" else job_id
+        job_name = "" if job_name == "*" else job_name
+        owner = "" if owner == "*" else owner
+        job_status_json = _get_job_status(job_id, owner, job_name)
+
     for job in job_status_json:
         job["ret_code"] = {} if job.get("ret_code") is None else job.get("ret_code")
         job["ret_code"]["code"] = _get_return_code_num(
@@ -274,6 +282,21 @@ def job_status(job_id=None, owner=None, job_name=None):
         job["ret_code"]["msg_txt"] = ""
         if job.get("ret_code").get("msg", "") == "":
             job["ret_code"]["msg"] = "AC"
+    return job_status_json
+
+
+def _get_job_status(job_id="*", owner="*", job_name="*"):
+    job_status_json = {}
+    rc, out, err = _get_job_status_str(job_id, owner, job_name)
+    if rc != 0:
+        raise RuntimeError(
+            "Failed to retrieve job status. RC: {0} Error: {1}".format(
+                str(rc), str(err)
+            )
+        )
+    if not out:
+        raise RuntimeError("Failed to retrieve job status. No job status found.")
+    job_status_json = json.loads(out, strict=False)
     return job_status_json
 
 

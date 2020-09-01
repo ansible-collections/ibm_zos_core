@@ -17,7 +17,7 @@ environment_vars:
   ZOAU_HOME: "{{ ZOAU }}"
   PYTHONPATH: "{{ ZOAU }}/lib"
   LIBPATH: "{{ ZOAU }}/lib:{{ PYZ }}/lib:/lib:/usr/lib:."
-  PATH: "{{ ZOAU }}/bin:{{ PYZ }}/bin:/bin:/var/bin"
+  PATH: "{{ ZOAU }}/bin:{{ PYZ }}/bin:/bin:/usr/sbin:/var/bin"
   _CEE_RUNOPTS: "FILETAG(AUTOCVT,AUTOTAG) POSIX(ON)"
   _TAG_REDIR_ERR: "txt"
   _TAG_REDIR_IN: "txt"
@@ -29,7 +29,7 @@ environment_vars:
 environment_vars:
   _BPXK_AUTOCVT: "ON"
   LIBPATH: "{{ PYZ }}/lib:/lib:/usr/lib:."
-  PATH: "{{ PYZ }}/bin:/bin:/var/bin"
+  PATH: "{{ PYZ }}/bin:/bin:/usr/sbin:/var/bin"
   _CEE_RUNOPTS: "FILETAG(AUTOCVT,AUTOTAG) POSIX(ON)"
   _TAG_REDIR_ERR: "txt"
   _TAG_REDIR_IN: "txt"
@@ -45,7 +45,7 @@ environment_vars:
   ZOAU_HOME: "{{ ZOAU }}"
   PYTHONPATH: "{{ ZOAU }}/lib:{{ PYZ }}:/lib:/usr/lib"
   _BPXK_AUTOCVT: "ON"
-  PATH: "{{ ZOAU }}/bin:/bin:/var/bin:{{ PYZ }}/bin"
+  PATH: "{{ ZOAU }}/bin:/bin:/usr/sbin:/var/bin:{{ PYZ }}/bin"
   LIBPATH: "{{ ZOAU }}/lib:{{ PYZ }}/lib:/lib:/usr/lib:."
 {% endraw %}
 {% else %}
@@ -53,7 +53,7 @@ environment_vars:
 environment_vars:
   PYTHONPATH: "{{ PYZ }}:/lib:/usr/lib"
   _BPXK_AUTOCVT: "ON"
-  PATH: "/bin:/var/bin:{{ PYZ }}/bin"
+  PATH: "/bin:/usr/sbin:/var/bin:{{ PYZ }}/bin"
   LIBPATH: "{{ PYZ }}/lib:/lib:/usr/lib:."
 {% endraw %}
 {% endif %}

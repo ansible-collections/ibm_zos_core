@@ -10,16 +10,10 @@ automate tasks on z/OS. Ansible executes each module on the target node and
 returns the result back to the controller. While different modules perform
 different tasks, their interfaces and responses follow similar patterns.
 
-Module reference
-----------------
-
-Reference material for each module contains documentation on the accepted
-parameters and their expected values.
-
+Each module contains parameter documentation, samples and return values.
 
 .. toctree::
    :maxdepth: 1
-   :caption: Contents:
    :glob:
 
    modules/*

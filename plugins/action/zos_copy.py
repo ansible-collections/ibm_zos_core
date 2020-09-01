@@ -1,7 +1,7 @@
 # Copyright (c) IBM Corporation 2019, 2020
 # Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
@@ -19,8 +19,12 @@ from ansible.module_utils.parsing.convert_bool import boolean
 from ansible.plugins.action import ActionBase
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
-    is_member, is_data_set, extract_member_name
+    is_member,
+    is_data_set,
+    extract_member_name
 )
+
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import encode
 
 
 class ActionModule(ActionBase):
@@ -30,25 +34,29 @@ class ActionModule(ActionBase):
             task_vars = dict()
 
         result = super(ActionModule, self).run(tmp, task_vars)
+        task_args = self._task.args.copy()
         del tmp
 
-        src = self._task.args.get('src', None)
+        src = task_args.get('src', None)
         b_src = to_bytes(src, errors='surrogate_or_strict')
-        dest = self._task.args.get('dest', None)
-        content = self._task.args.get('content', None)
-        sftp_port = self._task.args.get('sftp_port', 22)
-        force = _process_boolean(self._task.args.get('force'), default=True)
-        backup = _process_boolean(self._task.args.get('backup'), default=False)
-        local_follow = _process_boolean(self._task.args.get('local_follow'), default=False)
-        remote_src = _process_boolean(self._task.args.get('remote_src'), default=False)
-        is_binary = _process_boolean(self._task.args.get('is_binary'), default=False)
-        backup_file = self._task.args.get("backup_file", None)
-        encoding = self._task.args.get('encoding', None)
-        mode = self._task.args.get('mode', None)
-        owner = self._task.args.get('owner', None)
-        group = self._task.args.get('group', None)
+        dest = task_args.get('dest', None)
+        content = task_args.get('content', None)
 
-        new_module_args = self._task.args.copy()
+        # If self._play_context.port is None, that implies the default port 22
+        # was used to connect to the remote host.
+        sftp_port = task_args.get('sftp_port', self._play_context.port or 22)
+        force = _process_boolean(task_args.get('force'), default=True)
+        backup = _process_boolean(task_args.get('backup'), default=False)
+        local_follow = _process_boolean(task_args.get('local_follow'), default=False)
+        remote_src = _process_boolean(task_args.get('remote_src'), default=False)
+        is_binary = _process_boolean(task_args.get('is_binary'), default=False)
+        ignore_sftp_stderr = _process_boolean(task_args.get("ignore_sftp_stderr"), default=False)
+        backup_name = task_args.get("backup_name", None)
+        encoding = task_args.get("encoding", None)
+        mode = task_args.get("mode", None)
+        owner = task_args.get("owner", None)
+        group = task_args.get("group", None)
+
         is_pds = is_src_dir = False
         temp_path = is_uss = is_mvs_dest = copy_member = src_member = None
 
@@ -57,7 +65,7 @@ class ActionModule(ActionBase):
                 msg = "Invalid type supplied for 'dest' option, it must be a string"
                 return self._exit_action(result, msg, failed=True)
             else:
-                is_uss = '/' in dest
+                is_uss = "/" in dest
                 is_mvs_dest = is_data_set(dest)
                 copy_member = is_member(dest)
         else:
@@ -91,7 +99,7 @@ class ActionModule(ActionBase):
             msg = "The 'encoding' parameter is not valid for binary transfer"
             return self._exit_action(result, msg, failed=True)
 
-        if (not backup) and backup_file is not None:
+        if (not backup) and backup_name is not None:
             msg = "Backup file provided but 'backup' parameter is False"
             return self._exit_action(result, msg, failed=True)
 
@@ -126,78 +134,87 @@ class ActionModule(ActionBase):
             if content:
                 try:
                     local_content = _write_content_to_temp_file(content)
-                    transfer_res = self._copy_to_remote(local_content, sftp_port)
+                    transfer_res = self._copy_to_remote(
+                        local_content, sftp_port, ignore_stderr=ignore_sftp_stderr
+                    )
                 finally:
                     os.remove(local_content)
             else:
                 if is_src_dir:
                     path, dirs, files = next(os.walk(src))
                     if dirs:
-                        result['msg'] = "Subdirectory found inside source directory"
-                        result.update(dict(src=src, dest=dest, changed=False, failed=True))
+                        result["msg"] = "Subdirectory found inside source directory"
+                        result.update(
+                            dict(src=src, dest=dest, changed=False, failed=True)
+                        )
                         return result
-                    new_module_args['size'] = sum(
+                    task_args["size"] = sum(
                         os.stat(path + "/" + f).st_size for f in files
                     )
                 else:
-                    if mode == 'preserve':
-                        new_module_args['mode'] = '0{0:o}'.format(stat.S_IMODE(os.stat(b_src).st_mode))
-                    new_module_args['size'] = os.stat(src).st_size
-                transfer_res = self._copy_to_remote(src, sftp_port, is_dir=is_src_dir)
+                    if mode == "preserve":
+                        task_args["mode"] = "0{0:o}".format(
+                            stat.S_IMODE(os.stat(b_src).st_mode)
+                        )
+                    task_args["size"] = os.stat(src).st_size
+                transfer_res = self._copy_to_remote(
+                    src, sftp_port, is_dir=is_src_dir, ignore_stderr=ignore_sftp_stderr
+                )
 
             temp_path = transfer_res.get("temp_path")
             if transfer_res.get("msg"):
                 return transfer_res
 
-        new_module_args.update(
+        task_args.update(
             dict(
                 is_uss=is_uss,
                 is_pds=is_pds,
                 copy_member=copy_member,
                 src_member=src_member,
                 temp_path=temp_path,
-                is_mvs_dest=is_mvs_dest
+                is_mvs_dest=is_mvs_dest,
+                local_charset=encode.Defaults.get_default_system_charset()
             )
         )
         copy_res = self._execute_module(
-            module_name='zos_copy',
-            module_args=new_module_args,
-            task_vars=task_vars
+            module_name="ibm.ibm_zos_core.zos_copy",
+            module_args=task_args,
+            task_vars=task_vars,
         )
 
-        if copy_res.get('note') and not force:
-            result['note'] = copy_res.get('note')
+        if copy_res.get("note") and not force:
+            result["note"] = copy_res.get("note")
             return result
 
-        if copy_res.get('msg'):
+        if copy_res.get("msg"):
             result.update(
                 dict(
-                    msg=copy_res.get('msg'),
-                    stdout=copy_res.get('stdout') or copy_res.get("module_stdout"),
-                    stderr=copy_res.get('stderr') or copy_res.get("module_stderr"),
+                    msg=copy_res.get("msg"),
+                    stdout=copy_res.get("stdout") or copy_res.get("module_stdout"),
+                    stderr=copy_res.get("stderr") or copy_res.get("module_stderr"),
                     stdout_lines=copy_res.get("stdout_lines"),
                     stderr_lines=copy_res.get("stderr_lines"),
-                    rc=copy_res.get('rc'),
-                    invocation=dict(module_args=self._task.args)
+                    rc=copy_res.get("rc"),
+                    invocation=dict(module_args=self._task.args),
                 )
             )
-            if backup or backup_file:
-                result['backup_file'] = copy_res.get("backup_file")
+            if backup or backup_name:
+                result["backup_name"] = copy_res.get("backup_name")
             self._remote_cleanup(dest, copy_res.get("dest_exists"), task_vars)
             return result
 
         return _update_result(is_binary, copy_res, self._task.args)
 
-    def _copy_to_remote(self, src, port, is_dir=False):
+    def _copy_to_remote(self, src, port, is_dir=False, ignore_stderr=False):
         """Copy a file or directory to the remote z/OS system """
         ansible_user = self._play_context.remote_user
         ansible_host = self._play_context.remote_addr
         temp_path = "/{0}/{1}".format(gettempprefix(), _create_temp_path_name())
-        cmd = ['sftp', "-oPort={0}".format(port), ansible_user + '@' + ansible_host]
-        stdin = "put -r {0} {1}".format(src.replace('#', '\\#'), temp_path)
+        cmd = ["sftp", "-oPort={0}".format(port), ansible_user + "@" + ansible_host]
+        stdin = "put -r {0} {1}".format(src.replace("#", "\\#"), temp_path)
 
         if is_dir:
-            src = src.rstrip('/') if src.endswith('/') else src
+            src = src.rstrip("/") if src.endswith("/") else src
             base = os.path.basename(src)
             self._connection.exec_command("mkdir -p {0}/{1}".format(temp_path, base))
         else:
@@ -208,13 +225,13 @@ class ActionModule(ActionBase):
         out, err = transfer_data.communicate(to_bytes(stdin))
         err = _detect_sftp_errors(err)
 
-        if transfer_data.returncode != 0 or err:
+        if transfer_data.returncode != 0 or (err and not ignore_stderr):
             return dict(
                 msg="Error transfering source '{0}' to remote z/OS system".format(src),
                 rc=transfer_data.returncode,
                 stderr=err,
                 stderr_lines=err.splitlines(),
-                failed=True
+                failed=True,
             )
 
         return dict(temp_path=temp_path)
@@ -227,28 +244,28 @@ class ActionModule(ActionBase):
         created files or data sets.
         """
         if dest_exists is False:
-            if '/' in dest:
+            if "/" in dest:
                 self._connection.exec_command("rm -rf {0}".format(dest))
             else:
-                module_args = dict(name=dest, state='absent')
+                module_args = dict(name=dest, state="absent")
                 if is_member(dest):
-                    module_args['type'] = "MEMBER"
+                    module_args["type"] = "MEMBER"
                 self._execute_module(
-                    module_name='zos_data_set',
+                    module_name="ibm.ibm_zos_core.zos_data_set",
                     module_args=module_args,
-                    task_vars=task_vars
+                    task_vars=task_vars,
                 )
 
     def _dest_exists(self, src, dest, task_vars):
         """Determine if destination exists on remote z/OS system"""
-        if '/' in dest:
+        if "/" in dest:
             rc, out, err = self._connection.exec_command("ls -l {0}".format(dest))
             if rc != 0:
                 return False
             if len(to_text(out).split("\n")) == 2:
                 return True
-            if '/' in src:
-                src = src.rstrip('/') if src.endswith('/') else src
+            if "/" in src:
+                src = src.rstrip("/") if src.endswith("/") else src
                 dest += "/" + os.path.basename(src)
             else:
                 dest += "/" + extract_member_name(src) if is_member(src) else src
@@ -258,12 +275,12 @@ class ActionModule(ActionBase):
         else:
             cmd = "LISTDS '{0}'".format(dest)
             tso_cmd = self._execute_module(
-                module_name='zos_tso_command',
+                module_name="ibm.ibm_zos_core.zos_tso_command",
                 module_args=dict(commands=[cmd]),
-                task_vars=task_vars
-            ).get('output')[0]
-            if tso_cmd.get('rc') != 0:
-                for line in tso_cmd.get('content'):
+                task_vars=task_vars,
+            ).get("output")[0]
+            if tso_cmd.get("rc") != 0:
+                for line in tso_cmd.get("content"):
                     if "NOT IN CATALOG" in line:
                         return False
         return True
@@ -272,14 +289,15 @@ class ActionModule(ActionBase):
         """Exit action plugin with a message"""
         result.update(
             dict(
-                changed=False, failed=failed,
-                invocation=dict(module_args=self._task.args)
+                changed=False,
+                failed=failed,
+                invocation=dict(module_args=self._task.args),
             )
         )
         if failed:
-            result['msg'] = msg
+            result["msg"] = msg
         else:
-            result['note'] = msg
+            result["note"] = msg
         return result
 
 
@@ -288,19 +306,19 @@ def _update_result(is_binary, copy_res, original_args):
     ds_type = copy_res.get("ds_type")
     src = copy_res.get("src")
     note = copy_res.get("note")
-    backup_file = copy_res.get("backup_file")
+    backup_name = copy_res.get("backup_name")
     updated_result = dict(
-        dest=copy_res.get('dest'),
+        dest=copy_res.get("dest"),
         is_binary=is_binary,
         changed=copy_res.get("changed"),
-        invocation=dict(module_args=original_args)
+        invocation=dict(module_args=original_args),
     )
     if src:
-        updated_result['src'] = src
+        updated_result["src"] = src
     if note:
-        updated_result['note'] = note
-    if backup_file:
-        updated_result['backup_file'] = backup_file
+        updated_result["note"] = note
+    if backup_name:
+        updated_result["backup_name"] = backup_name
 
     if ds_type == "USS":
         updated_result.update(
@@ -316,7 +334,7 @@ def _update_result(is_binary, copy_res, original_args):
         )
         checksum = copy_res.get("checksum")
         if checksum:
-            updated_result['checksum'] = checksum
+            updated_result["checksum"] = checksum
 
     return updated_result
 
@@ -353,7 +371,7 @@ def _write_content_to_temp_file(content):
     """Write given content to a temp file and return its path """
     fd, path = mkstemp()
     try:
-        with os.fdopen(fd, 'w') as infile:
+        with os.fdopen(fd, "w") as infile:
             infile.write(content)
     except (OSError, IOError) as err:
         os.remove(path)

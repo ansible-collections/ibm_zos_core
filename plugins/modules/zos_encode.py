@@ -70,19 +70,19 @@ options:
     description:
       - Creates a backup file or backup data set for I(dest), including the
         timestamp information to ensure that you retrieve the original file.
-      - I(backup_file) can be used to specify a backup file name
+      - I(backup_name) can be used to specify a backup file name
         if I(backup=true).
     required: false
     type: bool
     default: false
-  backup_file:
+  backup_name:
     description:
       - Specify the USS file name or data set name for the dest backup.
-      - If dest is a USS file or path, I(backup_file) must be a file or
+      - If dest is a USS file or path, I(backup_name) must be a file or
         path name, and the USS path or file must be an absolute pathname.
-      - If dest is an MVS data set, the I(backup_file) must be an MVS data
+      - If dest is an MVS data set, the I(backup_name) must be an MVS data
         set name.
-      - If I(backup_file) is not provided, the default backup name will be used.
+      - If I(backup_name) is not provided, the default backup name will be used.
         The default backup name for a USS file or path will be the destination
         file or path name appended with a timestamp,
         e.g. /path/file_name.2020-04-23-08-32-29-bak.tar. If dest is an
@@ -233,7 +233,7 @@ dest:
        status will also be returned.
     returned: always
     type: str
-backup_file:
+backup_name:
     description:
        Name of the backup file created.
     returned: changed and if backup=yes
@@ -337,7 +337,7 @@ def run_module():
         from_encoding=dict(type="str", default="IBM-1047"),
         to_encoding=dict(type="str", default="ISO8859-1"),
         backup=dict(type="bool", default=False),
-        backup_file=dict(type="str", required=False, default=None),
+        backup_name=dict(type="str", required=False, default=None),
         backup_compress=dict(type="bool", required=False, default=False),
     )
 
@@ -349,7 +349,7 @@ def run_module():
         from_encoding=dict(arg_type="str", default="IBM-1047"),
         to_encoding=dict(arg_type="str", default="ISO8859-1", required=False),
         backup=dict(arg_type="bool", default=False, required=False),
-        backup_file=dict(arg_type="data_set_or_path", required=False, default=None),
+        backup_name=dict(arg_type="data_set_or_path", required=False, default=None),
         backup_compress=dict(arg_type="bool", required=False, default=False),
     )
 
@@ -358,7 +358,7 @@ def run_module():
     src = parsed_args.get("src")
     dest = parsed_args.get("dest")
     backup = parsed_args.get("backup")
-    backup_file = parsed_args.get("backup_file")
+    backup_name = parsed_args.get("backup_name")
     backup_compress = parsed_args.get("backup_compress")
     from_encoding = parsed_args.get("from_encoding").upper()
     to_encoding = parsed_args.get("to_encoding").upper()
@@ -430,12 +430,12 @@ def run_module():
         # Check if the dest is required to be backup before conversion
         if backup:
             if is_uss_dest:
-                backup_file = zos_backup.uss_file_backup(
-                    dest, backup_file, backup_compress
+                backup_name = zos_backup.uss_file_backup(
+                    dest, backup_name, backup_compress
                 )
             if is_mvs_dest:
-                backup_file = zos_backup.mvs_file_backup(dest, backup_file)
-            result["backup_file"] = backup_file
+                backup_name = zos_backup.mvs_file_backup(dest, backup_name)
+            result["backup_name"] = backup_name
 
         if is_uss_src and is_uss_dest:
             convert_rc = eu.uss_convert_encoding_prev(
@@ -453,9 +453,9 @@ def run_module():
 
         if convert_rc:
             changed = True
-            result = dict(changed=changed, src=src, dest=dest, backup_file=backup_file)
+            result = dict(changed=changed, src=src, dest=dest, backup_name=backup_name)
         else:
-            result = dict(src=src, dest=dest, changed=changed, backup_file=backup_file)
+            result = dict(src=src, dest=dest, changed=changed, backup_name=backup_name)
     except Exception as e:
         module.fail_json(msg=repr(e), **result)
 

@@ -1566,42 +1566,42 @@ def test_backup_uss_file_default_backup_path(ansible_zos_module):
     hosts = ansible_zos_module
     src = "/etc/profile"
     dest = "/tmp/profile"
-    backup_file = None
+    backup_name = None
     try:
         hosts.all.file(path=dest, state="touch")
         copy_res = hosts.all.zos_copy(src=src, dest=dest, backup=True)
 
         for result in copy_res.contacted.values():
             assert result.get("msg") is None
-            backup_file = result.get("backup_file")
-            assert backup_file is not None
+            backup_name = result.get("backup_name")
+            assert backup_name is not None
 
-        stat_res = hosts.all.stat(path=backup_file)
+        stat_res = hosts.all.stat(path=backup_name)
         for result in stat_res.contacted.values():
             assert result.get("stat").get("exists") is True
 
     finally:
         hosts.all.file(path=dest, state="absent")
-        if backup_file:
-            hosts.all.file(path=backup_file, state="absent")
+        if backup_name:
+            hosts.all.file(path=backup_name, state="absent")
 
 
 def test_backup_sequential_data_set_default_backup_path(ansible_zos_module):
     hosts = ansible_zos_module
     src = "/etc/profile"
     dest = "USER.TEST.SEQ.FUNCTEST"
-    backup_file = None
+    backup_name = None
     try:
         hosts.all.zos_data_set(name=dest, type="seq", state="present")
         copy_res = hosts.all.zos_copy(src=src, dest=dest, backup=True)
 
         for result in copy_res.contacted.values():
             assert result.get("msg") is None
-            backup_file = result.get("backup_file")
-            assert backup_file is not None
+            backup_name = result.get("backup_name")
+            assert backup_name is not None
 
         stat_res = hosts.all.shell(
-            cmd="tsocmd \"LISTDS '{0}'\"".format(backup_file),
+            cmd="tsocmd \"LISTDS '{0}'\"".format(backup_name),
             executable=SHELL_EXECUTABLE,
         )
         for result in stat_res.contacted.values():
@@ -1611,15 +1611,15 @@ def test_backup_sequential_data_set_default_backup_path(ansible_zos_module):
 
     finally:
         hosts.all.zos_data_set(name=dest, state="absent")
-        if backup_file:
-            hosts.all.zos_data_set(name=backup_file, state="absent")
+        if backup_name:
+            hosts.all.zos_data_set(name=backup_name, state="absent")
 
 
 def test_backup_pds_default_backup_path(ansible_zos_module):
     hosts = ansible_zos_module
     src = tempfile.mkdtemp()
     dest = "USER.TEST.PDS.FUNCTEST"
-    backup_file = None
+    backup_name = None
     try:
         populate_dir(src)
         hosts.all.zos_data_set(
@@ -1635,11 +1635,11 @@ def test_backup_pds_default_backup_path(ansible_zos_module):
 
         for result in copy_res.contacted.values():
             assert result.get("msg") is None
-            backup_file = result.get("backup_file")
-            assert backup_file is not None
+            backup_name = result.get("backup_name")
+            assert backup_name is not None
 
         stat_res = hosts.all.shell(
-            cmd="tsocmd \"LISTDS '{0}'\"".format(backup_file),
+            cmd="tsocmd \"LISTDS '{0}'\"".format(backup_name),
             executable=SHELL_EXECUTABLE,
         )
         for result in stat_res.contacted.values():
@@ -1650,15 +1650,15 @@ def test_backup_pds_default_backup_path(ansible_zos_module):
     finally:
         shutil.rmtree(src)
         hosts.all.zos_data_set(name=dest, state="absent")
-        if backup_file:
-            hosts.all.zos_data_set(name=backup_file, state="absent")
+        if backup_name:
+            hosts.all.zos_data_set(name=backup_name, state="absent")
 
 
 def test_backup_pdse_default_backup_path(ansible_zos_module):
     hosts = ansible_zos_module
     src = tempfile.mkdtemp()
     dest = "USER.TEST.PDSE.FUNCTEST"
-    backup_file = None
+    backup_name = None
     try:
         populate_dir(src)
         hosts.all.zos_data_set(
@@ -1674,11 +1674,11 @@ def test_backup_pdse_default_backup_path(ansible_zos_module):
 
         for result in copy_res.contacted.values():
             assert result.get("msg") is None
-            backup_file = result.get("backup_file")
-            assert backup_file is not None
+            backup_name = result.get("backup_name")
+            assert backup_name is not None
 
         stat_res = hosts.all.shell(
-            cmd="tsocmd \"LISTDS '{0}'\"".format(backup_file),
+            cmd="tsocmd \"LISTDS '{0}'\"".format(backup_name),
             executable=SHELL_EXECUTABLE,
         )
         for result in stat_res.contacted.values():
@@ -1689,26 +1689,26 @@ def test_backup_pdse_default_backup_path(ansible_zos_module):
     finally:
         shutil.rmtree(src)
         hosts.all.zos_data_set(name=dest, state="absent")
-        if backup_file:
-            hosts.all.zos_data_set(name=backup_file, state="absent")
+        if backup_name:
+            hosts.all.zos_data_set(name=backup_name, state="absent")
 
 
 def test_backup_vsam_default_backup_path(ansible_zos_module):
     hosts = ansible_zos_module
     src = "SYS1.STGINDEX"
     dest = "USER.TEST.VSAM.KSDS"
-    backup_file = None
+    backup_name = None
     try:
         create_vsam_ksds(dest, ansible_zos_module)
         copy_res = hosts.all.zos_copy(src=src, dest=dest, backup=True, remote_src=True)
 
         for result in copy_res.contacted.values():
             assert result.get("msg") is None
-            backup_file = result.get("backup_file")
-            assert backup_file is not None
+            backup_name = result.get("backup_name")
+            assert backup_name is not None
 
         stat_res = hosts.all.shell(
-            cmd="tsocmd \"LISTDS '{0}'\"".format(backup_file),
+            cmd="tsocmd \"LISTDS '{0}'\"".format(backup_name),
             executable=SHELL_EXECUTABLE,
         )
         for result in stat_res.contacted.values():
@@ -1718,52 +1718,52 @@ def test_backup_vsam_default_backup_path(ansible_zos_module):
 
     finally:
         hosts.all.zos_data_set(name=dest, state="absent")
-        if backup_file:
-            hosts.all.zos_data_set(name=backup_file, state="absent")
+        if backup_name:
+            hosts.all.zos_data_set(name=backup_name, state="absent")
 
 
 def test_backup_uss_file_user_backup_path(ansible_zos_module):
     hosts = ansible_zos_module
     src = "/etc/profile"
     dest = "/tmp/profile"
-    backup_file = "/tmp/uss_backup"
+    backup_name = "/tmp/uss_backup"
     try:
         hosts.all.file(path=dest, state="touch")
         copy_res = hosts.all.zos_copy(
-            src=src, dest=dest, backup=True, backup_file=backup_file
+            src=src, dest=dest, backup=True, backup_name=backup_name
         )
 
         for result in copy_res.contacted.values():
             assert result.get("msg") is None
-            result.get("backup_file") == backup_file
+            result.get("backup_name") == backup_name
 
-        stat_res = hosts.all.stat(path=backup_file)
+        stat_res = hosts.all.stat(path=backup_name)
         for result in stat_res.contacted.values():
             assert result.get("stat").get("exists") is True
 
     finally:
         hosts.all.file(path=dest, state="absent")
-        if backup_file:
-            hosts.all.file(path=backup_file, state="absent")
+        if backup_name:
+            hosts.all.file(path=backup_name, state="absent")
 
 
 def test_backup_sequential_data_set_user_backup_path(ansible_zos_module):
     hosts = ansible_zos_module
     src = "/etc/profile"
     dest = "USER.TEST.SEQ.FUNCTEST"
-    backup_file = "USER.TEST.SEQ.FUNCTEST.BACK"
+    backup_name = "USER.TEST.SEQ.FUNCTEST.BACK"
     try:
         hosts.all.zos_data_set(name=dest, type="seq", state="present")
         copy_res = hosts.all.zos_copy(
-            src=src, dest=dest, backup=True, backup_file=backup_file
+            src=src, dest=dest, backup=True, backup_name=backup_name
         )
 
         for result in copy_res.contacted.values():
             assert result.get("msg") is None
-            result.get("backup_file") == backup_file
+            result.get("backup_name") == backup_name
 
         stat_res = hosts.all.shell(
-            cmd="tsocmd \"LISTDS '{0}'\"".format(backup_file),
+            cmd="tsocmd \"LISTDS '{0}'\"".format(backup_name),
             executable=SHELL_EXECUTABLE,
         )
         for result in stat_res.contacted.values():
@@ -1773,15 +1773,15 @@ def test_backup_sequential_data_set_user_backup_path(ansible_zos_module):
 
     finally:
         hosts.all.zos_data_set(name=dest, state="absent")
-        if backup_file:
-            hosts.all.zos_data_set(name=backup_file, state="absent")
+        if backup_name:
+            hosts.all.zos_data_set(name=backup_name, state="absent")
 
 
 def test_backup_pds_user_backup_path(ansible_zos_module):
     hosts = ansible_zos_module
     src = tempfile.mkdtemp()
     dest = "USER.TEST.PDS.FUNCTEST"
-    backup_file = "USER.TEST.PDS.FUNCTEST.BACK"
+    backup_name = "USER.TEST.PDS.FUNCTEST.BACK"
     try:
         populate_dir(src)
         hosts.all.zos_data_set(
@@ -1794,15 +1794,15 @@ def test_backup_pds_user_backup_path(ansible_zos_module):
         )
         hosts.all.zos_data_set(name=dest + "(FILE1)", type="MEMBER", replace="yes")
         copy_res = hosts.all.zos_copy(
-            src=src, dest=dest, backup=True, backup_file=backup_file
+            src=src, dest=dest, backup=True, backup_name=backup_name
         )
 
         for result in copy_res.contacted.values():
             assert result.get("msg") is None
-            result.get("backup_file") == backup_file
+            result.get("backup_name") == backup_name
 
         stat_res = hosts.all.shell(
-            cmd="tsocmd \"LISTDS '{0}'\"".format(backup_file),
+            cmd="tsocmd \"LISTDS '{0}'\"".format(backup_name),
             executable=SHELL_EXECUTABLE,
         )
         for result in stat_res.contacted.values():
@@ -1813,15 +1813,15 @@ def test_backup_pds_user_backup_path(ansible_zos_module):
     finally:
         shutil.rmtree(src)
         hosts.all.zos_data_set(name=dest, state="absent")
-        if backup_file:
-            hosts.all.zos_data_set(name=backup_file, state="absent")
+        if backup_name:
+            hosts.all.zos_data_set(name=backup_name, state="absent")
 
 
 def test_backup_pdse_user_backup_path(ansible_zos_module):
     hosts = ansible_zos_module
     src = tempfile.mkdtemp()
     dest = "USER.TEST.PDSE.FUNCTEST"
-    backup_file = "USER.TEST.PDSE.FUNCTEST.BACK"
+    backup_name = "USER.TEST.PDSE.FUNCTEST.BACK"
     try:
         populate_dir(src)
         hosts.all.zos_data_set(
@@ -1834,15 +1834,15 @@ def test_backup_pdse_user_backup_path(ansible_zos_module):
         )
         hosts.all.zos_data_set(name=dest + "(FILE1)", type="MEMBER", replace="yes")
         copy_res = hosts.all.zos_copy(
-            src=src, dest=dest, backup=True, backup_file=backup_file
+            src=src, dest=dest, backup=True, backup_name=backup_name
         )
 
         for result in copy_res.contacted.values():
             assert result.get("msg") is None
-            result.get("backup_file") == backup_file
+            result.get("backup_name") == backup_name
 
         stat_res = hosts.all.shell(
-            cmd="tsocmd \"LISTDS '{0}'\"".format(backup_file),
+            cmd="tsocmd \"LISTDS '{0}'\"".format(backup_name),
             executable=SHELL_EXECUTABLE,
         )
         for result in stat_res.contacted.values():
@@ -1853,27 +1853,27 @@ def test_backup_pdse_user_backup_path(ansible_zos_module):
     finally:
         shutil.rmtree(src)
         hosts.all.zos_data_set(name=dest, state="absent")
-        if backup_file:
-            hosts.all.zos_data_set(name=backup_file, state="absent")
+        if backup_name:
+            hosts.all.zos_data_set(name=backup_name, state="absent")
 
 
 def test_backup_vsam_user_backup_path(ansible_zos_module):
     hosts = ansible_zos_module
     src = "SYS1.STGINDEX"
     dest = "USER.TEST.VSAM.KSDS"
-    backup_file = "USER.TEST.VSAM.KSDS.BACK"
+    backup_name = "USER.TEST.VSAM.KSDS.BACK"
     try:
         create_vsam_ksds(dest, ansible_zos_module)
         copy_res = hosts.all.zos_copy(
-            src=src, dest=dest, backup=True, remote_src=True, backup_file=backup_file
+            src=src, dest=dest, backup=True, remote_src=True, backup_name=backup_name
         )
 
         for result in copy_res.contacted.values():
             assert result.get("msg") is None
-            result.get("backup_file") == backup_file
+            result.get("backup_name") == backup_name
 
         stat_res = hosts.all.shell(
-            cmd="tsocmd \"LISTDS '{0}'\"".format(backup_file),
+            cmd="tsocmd \"LISTDS '{0}'\"".format(backup_name),
             executable=SHELL_EXECUTABLE,
         )
         for result in stat_res.contacted.values():
@@ -1883,8 +1883,8 @@ def test_backup_vsam_user_backup_path(ansible_zos_module):
 
     finally:
         hosts.all.zos_data_set(name=dest, state="absent")
-        if backup_file:
-            hosts.all.zos_data_set(name=backup_file, state="absent")
+        if backup_name:
+            hosts.all.zos_data_set(name=backup_name, state="absent")
 
 
 def test_copy_local_file_insufficient_read_permission_fails(ansible_zos_module):

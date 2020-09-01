@@ -143,6 +143,7 @@ options:
             - If this flag is used, use of tag_ccsid is encouraged.
         type: str
         choices:
+            - ''
             - TEXT
             - NOTEXT
         required: False
@@ -438,18 +439,20 @@ rc:
     sample: 8
 
 """
-import os
+
+import glob
 import math
+import os
+import re
 import stat
 import shutil
-import glob
-import re
 import time
 import tempfile
 
 from datetime import datetime
 from pathlib import Path
 from ansible.module_utils.basic import AnsibleModule
+
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
     AnsibleModuleHelper,
 )
@@ -490,8 +493,10 @@ def swap_text(original, adding, removing):
     remove_starting_at_index = None
     remove_ending_at_index = None
 
-## reminder to add \s* around apostrophes 
-    ms = re.compile(r"^\s*MOUNT\s+FILESYSTEM\(\s*'" + removing.upper() + r"'\s*\)")
+    ms = re.compile(
+        r"^\s*MOUNT\s+FILESYSTEM\(\s*'" +
+        removing.upper() +
+        r"'\s*\)")
     print(ms)
     boneyard = dict()
 
@@ -509,10 +514,12 @@ def swap_text(original, adding, removing):
             else:
                 doit = True
             if doit:
-                if content_lines[remove_starting_at_index - 1][0:6] == '/* VVV':
+                if content_lines[remove_starting_at_index -
+                                 1][0:6] == '/* VVV':
                     remove_starting_at_index -= 1
                     if remove_starting_at_index > 0:
-                        if len(content_lines[remove_starting_at_index - 1]) < 1:
+                        if len(
+                                content_lines[remove_starting_at_index - 1]) < 1:
                             remove_starting_at_index -= 1
 
                 boneyard[remove_starting_at_index] = remove_ending_at_index
@@ -522,7 +529,8 @@ def swap_text(original, adding, removing):
     if remove_starting_at_index is not None:
         if remove_ending_at_index is not None:
             if remove_starting_at_index != remove_ending_at_index:
-                if content_lines[remove_starting_at_index - 1][0:6] == '/* VVV':
+                if content_lines[remove_starting_at_index -
+                                 1][0:6] == '/* VVV':
                     remove_starting_at_index -= 1
                 if remove_starting_at_index > 0:
                     if len(content_lines[remove_starting_at_index - 1]) < 1:
@@ -531,7 +539,7 @@ def swap_text(original, adding, removing):
 
     for startidx in reversed(boneyard.keys()):
         endidx = boneyard[startidx]
-        del(content_lines[startidx:endidx+1])
+        del(content_lines[startidx:endidx + 1])
 
     if(len(adding) > 0):
         content_lines.extend(adding.split('\n'))
@@ -815,7 +823,6 @@ def run_module(module, arg_def):
         if os.path.isfile(tmp_file_filename):
             os.unlink(tmp_file_filename)
 
-
     res_args.update(
         dict(
             changed=changed,
@@ -843,22 +850,65 @@ def main():
             path=dict(type='str', required=True),
             fstype=dict(type='str', choices=[
                         'HFS', 'zFS', 'NFS', 'TFS'], required=True),
-            state=dict(type='str', default='mounted', choices=[
-                       'absent', 'mounted', 'unmounted', 'present', 'remounted'], required=False),
-            fstab=dict(type='str', required=False, aliases=["bpxfile", "bpxprm"]),
+            state=dict(
+                type='str',
+                default='mounted',
+                choices=[
+                    'absent',
+                    'mounted',
+                    'unmounted',
+                    'present',
+                    'remounted'],
+                required=False),
+            fstab=dict(
+                type='str',
+                required=False,
+                aliases=[
+                    'bpxfile',
+                    'bpxprm']),
             backup=dict(type='str', required=False),
             tabcomment=dict(type='str', required=False),
-            unmount_opts=dict(type='str', default='NORMAL', choices=[
-                              'DRAIN', 'FORCE', 'IMMEDIATE', 'NORMAL', 'REMOUNT', 'RESET'], required=False),
-            opts=dict(type='str', default='rw', choices=[
-                      'ro', 'rw', 'same', 'nowait', 'nosecurity'], required=False),
+            unmount_opts=dict(
+                type='str',
+                default='NORMAL',
+                choices=[
+                    'DRAIN',
+                    'FORCE',
+                    'IMMEDIATE',
+                    'NORMAL',
+                    'REMOUNT',
+                    'RESET'],
+                required=False),
+            opts=dict(
+                type='str',
+                default='rw',
+                choices=[
+                    'ro',
+                    'rw',
+                    'same',
+                    'nowait',
+                    'nosecurity'],
+                required=False),
             src_params=dict(type='str', required=False),
-            tag_flag=dict(type='str', default='', choices=['','TEXT', 'NOTEXT'], required=False),
+            tag_flag=dict(
+                type='str',
+                default='',
+                choices=[
+                    '',
+                    'TEXT',
+                    'NOTEXT'],
+                required=False),
             tag_ccsid=dict(type='int', required=False),
             allow_uids=dict(type='bool', default=True, required=False),
             sysname=dict(type='str', required=False),
-            automove=dict(type='str', default='AUTOMOVE', choices=[
-                          "AUTOMOVE", "NOAUTOMOVE", "UNMOUNT"], required=False),
+            automove=dict(
+                type='str',
+                default='AUTOMOVE',
+                choices=[
+                    'AUTOMOVE',
+                    'NOAUTOMOVE',
+                    'UNMOUNT'],
+                required=False),
             automove_list=dict(type='str', required=False)
         ),
         add_file_common_args=True,
@@ -870,22 +920,66 @@ def main():
         path=dict(arg_type='path', required=True),
         fstype=dict(arg_type='str', choices=[
                     "HFS", "zFS", "NFS", "TFS"], required=True),
-        state=dict(arg_type='str', default='mounted', choices=[
-                   'absent', 'mounted', 'unmounted', 'present', 'remounted'], required=False),
-        fstab=dict(arg_type='str', default='', required=False, aliases=["bpxfile", "bpxprm"]),
+        state=dict(
+            arg_type='str',
+            default='mounted',
+            choices=[
+                'absent',
+                'mounted',
+                'unmounted',
+                'present',
+                'remounted'],
+            required=False),
+        fstab=dict(
+            arg_type='str',
+            default='',
+            required=False,
+            aliases=[
+                'bpxfile',
+                'bpxprm']),
         backup=dict(arg_type='str', default='', required=False),
         tabcomment=dict(arg_type='str', default='', required=False),
-        unmount_opts=dict(arg_type='str', default='NORMAL', choices=[
-                          'DRAIN', 'FORCE', 'IMMEDIATE', 'NORMAL', 'REMOUNT', 'RESET'], required=False),
-        opts=dict(arg_type='str', default='rw', choices=[
-                  'ro', 'rw', 'same', 'nowait', 'nosecurity'], required=False),
+        unmount_opts=dict(
+            arg_type='str',
+            default='NORMAL',
+            choices=[
+                'DRAIN',
+                'FORCE',
+                'IMMEDIATE',
+                'NORMAL',
+                'REMOUNT',
+                'RESET'],
+            required=False),
+        opts=dict(
+            arg_type='str',
+            default='rw',
+            choices=[
+                'ro',
+                'rw',
+                'same',
+                'nowait',
+                'nosecurity'],
+            required=False),
         src_params=dict(arg_type='str', default='', required=False),
-        tag_flag=dict(arg_type='str', default='', choices=['','TEXT', 'NOTEXT'], required=False),
+        tag_flag=dict(
+            arg_type='str',
+            default='',
+            choices=[
+                '',
+                'TEXT',
+                'NOTEXT'],
+            required=False),
         tag_ccsid=dict(arg_type='str', required=False),
         allow_uids=dict(arg_type='bool', default=True, required=False),
         sysname=dict(arg_type='str', default='', required=False),
-        automove=dict(arg_type='str', default='AUTOMOVE', choices=[
-                      "AUTOMOVE", "NOAUTOMOVE", "UNMOUNT"], required=False),
+        automove=dict(
+            arg_type='str',
+            default='AUTOMOVE',
+            choices=[
+                'AUTOMOVE',
+                'NOAUTOMOVE',
+                'UNMOUNT'],
+            required=False),
         automove_list=dict(arg_type='str', default='', required=False)
     )
 

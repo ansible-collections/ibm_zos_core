@@ -431,7 +431,6 @@ class DataSet(object):
         arguments = locals()
         DataSet.delete(name)
         DataSet.create(**arguments)
-        return
 
     @staticmethod
     def _build_zoau_args(**kwargs):
@@ -439,11 +438,11 @@ class DataSet(object):
         secondary = kwargs.get("space_secondary")
         space_type = kwargs.get("space_type")
         volumes = kwargs.get("volumes")
-        if primary:
+        if primary is not None:
             primary = str(primary)
             if space_type:
                 primary += space_type
-        if secondary:
+        if secondary is not None:
             secondary = str(secondary)
             if space_type:
                 secondary += space_type
@@ -544,7 +543,6 @@ class DataSet(object):
         rc = Datasets.create(**formatted_args)
         if rc > 0:
             raise DatasetCreateError(name, rc)
-        return
 
     @staticmethod
     def delete(name):
@@ -560,7 +558,6 @@ class DataSet(object):
         rc = Datasets.delete(name)
         if rc > 0:
             raise DatasetDeleteError(name, rc)
-        return
 
     @staticmethod
     # TODO: verify that this method works for all lengths etc
@@ -585,7 +582,6 @@ class DataSet(object):
         )
         if rc != 0:
             raise DatasetMemberCreateError(name, rc)
-        return
 
     @staticmethod
     def delete_member(name):
@@ -601,7 +597,6 @@ class DataSet(object):
         rc = Datasets.delete_members(name)
         if rc > 0:
             raise DatasetMemberDeleteError(name, rc)
-        return
 
     @staticmethod
     def catalog(name, volumes):
@@ -641,12 +636,9 @@ class DataSet(object):
             )
             if rc != 0 or "NORMAL END OF TASK RETURNED" not in stdout:
                 raise DatasetCatalogError(name, volumes, rc)
-        except Exception:
-            raise
         finally:
             if temp_name:
                 Datasets.delete(temp_name)
-        return
 
     @staticmethod
     # TODO: extend for multi volume data sets
@@ -661,7 +653,6 @@ class DataSet(object):
             DatasetCatalogError: When attempt at catalog fails.
         """
         data_set_name = name.upper()
-        # data_set_volume = volume.upper()
         success = False
         temp_name = None
         try:
@@ -699,12 +690,9 @@ class DataSet(object):
                     command_rc,
                     "Attempt to catalog VSAM data set failed.",
                 )
-        except Exception:
-            raise
         finally:
             if temp_name:
                 Datasets.delete(temp_name)
-        return
 
     @staticmethod
     def uncatalog(name):
@@ -717,7 +705,6 @@ class DataSet(object):
             DataSet._uncatalog_vsam(name)
         else:
             DataSet._uncatalog_non_vsam(name)
-        return
 
     @staticmethod
     def _uncatalog_non_vsam(name):
@@ -740,12 +727,9 @@ class DataSet(object):
             )
             if rc != 0 or "NORMAL END OF TASK RETURNED" not in stdout:
                 raise DatasetUncatalogError(name, rc)
-        except Exception:
-            raise
         finally:
             if temp_name:
                 Datasets.delete(temp_name)
-        return
 
     @staticmethod
     def _uncatalog_vsam(name):
@@ -768,12 +752,9 @@ class DataSet(object):
             rc = MVSCmd.execute_authorized(pgm="idcams", args="", dds=dd_statements)
             if rc != 0:
                 raise DatasetUncatalogError(name, rc)
-        except Exception:
-            raise
         finally:
             if temp_name:
                 Datasets.delete(temp_name)
-        return
 
     @staticmethod
     def is_vsam(name, volumes=None):
@@ -812,9 +793,8 @@ class DataSet(object):
         data_set = vtoc.find_data_set_in_volume_output(vsam_name, data_sets)
         if data_set is None:
             data_set = vtoc.find_data_set_in_volume_output(name, data_sets)
-        if data_set is not None:
-            if data_set.get("data_set_organization", "") == "VS":
-                return True
+        if data_set is not None and data_set.get("data_set_organization", "") == "VS":
+            return True
         return False
 
     @staticmethod
@@ -907,7 +887,6 @@ class DataSet(object):
         Raises:
             DatasetWriteError: When write to the data set fails.
         """
-        # rc = Datasets.write(name, contents)
         module = AnsibleModuleHelper(argument_spec={})
         temp = tempfile.NamedTemporaryFile(delete=False)
         with open(temp.name, "w") as f:
@@ -917,7 +896,6 @@ class DataSet(object):
         )
         if rc != 0:
             raise DatasetWriteError(name, rc)
-        return
 
     @staticmethod
     def _build_non_vsam_catalog_command(name, volumes):

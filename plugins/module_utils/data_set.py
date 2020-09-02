@@ -794,7 +794,7 @@ class DataSet(object):
         if data_set is None:
             data_set = vtoc.find_data_set_in_volume_output(name, data_sets)
         if data_set is not None and data_set.get("data_set_organization", "") == "VS":
-                return True
+            return True
         return False
 
     @staticmethod

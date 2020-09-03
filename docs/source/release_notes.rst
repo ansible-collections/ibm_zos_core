@@ -6,6 +6,36 @@
 Releases
 ========
 
+Version 1.2.0-beta.4
+====================
+
+Notes
+-----
+
+* Update recommended
+* Bugfix
+
+  * Fixes a bug for `zos_data_set` module where some parameters were not
+    getting passed correctly because python considers integer value of 0
+    to be false.
+  * Fixes documentation in module `zos_job_submit` where **wait_time_s** should
+    have been written as **duration_s**.
+  * Fixes requirements version in sample playbook hosts-setup.yaml
+
+Availability
+------------
+
+* Galaxy
+* GitHub
+
+Reference
+---------
+
+* Supported by IBM Open Enterprise Python for z/OS: 3.8.2 or later
+* Supported by IBM Z Open Automation Utilities 1.0.3 PTF UI70435
+* Supported by z/OS V2R3
+* The z/OS® shell
+
 Version 1.2.0-beta.3
 ====================
 
@@ -123,8 +153,7 @@ Availability
 
 Reference
   * Supported by IBM Open Enterprise Python for z/OS: 3.8.2 or later
-  * Supported by IBM Z Open Automation Utilities
-    1.0.3 PTF UI70435 or later
+  * Supported by IBM Z Open Automation Utilities 1.0.3 PTF UI70435
   * Supported by z/OS V2R3
   * The z/OS® shell
 
@@ -156,7 +185,7 @@ Availability
 
 Reference
   * Supported by IBM Open Enterprise Python for z/OS: 3.8.2 or later
-  * Supported by IBM Z Open Automation Utilities: 1.0.3 or later
+  * Supported by IBM Z Open Automation Utilities: 1.0.3 PTF UI70435
   * Supported by z/OS V2R3
   * The z/OS® shell
 
@@ -181,7 +210,7 @@ Availability
   * GitHub
 
 Reference
-  * Supported by IBM Z Open Automation Utilities: 1.0.2 or later
+  * Supported by IBM Z Open Automation Utilities: 1.0.2 or 1.0.3 PTF UI70435
 
 Version 1.0.0
 =============
@@ -198,7 +227,8 @@ Availability
   * GitHub
 
 Reference
-  * Supported by IBM Z Open Automation Utilities: 1.0.1 (PTF UI66957 or later)
+  * Supported by IBM Z Open Automation Utilities: 1.0.1 PTF UI66957 through
+    1.0.3 PTF UI70435
 
 Version 0.0.4
 =============
@@ -216,7 +246,8 @@ Availability
   * GitHub
 
 Reference:
-  * Supported by IBM Z Open Automation Utilities: 1.0.1 (PTF UI66957 or later)
+  * Supported by IBM Z Open Automation Utilities: 1.0.1 PTF UI66957 through
+    1.0.3 PTF UI70435
 
 Version 0.0.3
 =============
@@ -230,7 +261,8 @@ Availability
   * GitHub
 
 Reference
-  * Supported by IBM Z Open Automation Utilities: 1.0.1 (PTF UI66957 or later)
+  * Supported by IBM Z Open Automation Utilities: 1.0.1 PTF UI66957 through
+    1.0.3 PTF UI70435
 
 Version 0.0.2
 =============
@@ -243,7 +275,8 @@ Availability
   * GitHub
 
 Reference
-  * Supported by IBM Z Open Automation Utilities: 1.0.1 (PTF UI66957 or later)
+  * Supported by IBM Z Open Automation Utilities: 1.0.1 PTF UI66957 through
+    1.0.3 PTF UI70435
 
 Version 0.0.1
 =============
@@ -257,4 +290,5 @@ Availability
   * GitHub
 
 Reference
-  * Supported by IBM Z Open Automation Utilities: 1.0.1 (PTF UI66957 or later)
+  * Supported by IBM Z Open Automation Utilities: 1.0.1 PTF UI66957 through
+    1.0.3 PTF UI70435

@@ -32,6 +32,7 @@ options:
       - If C(src) is a file and dest ends with "/" or destination is a directory, the
         file is copied to the directory with the same filename as src.
       - If C(src) is a VSAM data set, destination must also be a VSAM.
+      - Wildcards can be used to copy multiple PDS/PDSE members to another PDS/PDSE.
       - Required unless using C(content).
     type: str
   dest:
@@ -344,6 +345,18 @@ EXAMPLES = r"""
     src: SRC.PDS
     dest: /tmp
     remote_src: true
+
+- name: Copy all members inside a PDS to another PDS
+  zos_copy:
+    src: SOME.SRC.PDS(*)
+    dest: SOME.DEST.PDS
+    remote_src: true
+
+- name: Copy all members starting with 'ABC' inside a PDS to another PDS
+  zos_copy:
+    src: SOME.SRC.PDS(ABC*)
+    dest: SOME.DEST.PDS
+    remote_src: true
 """
 
 RETURN = r"""
@@ -453,6 +466,7 @@ import glob
 
 from pathlib import Path
 from hashlib import sha256
+from re import fullmatch, IGNORECASE
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
@@ -506,6 +520,12 @@ class CopyHandler(object):
     def run_command(self, cmd, **kwargs):
         """ Wrapper for AnsibleModule.run_command """
         return self.module.run_command(cmd, **kwargs)
+
+    def exit_json(self, **kwargs):
+        """ Wrapper for AnsibleModule.exit_json """
+        self.module.exit_json(
+            **kwargs, dest_exists=self.dest_exists, backup_name=self.backup_name
+        )
 
     def copy_to_seq(self, src, temp_path, conv_path, dest, src_ds_type, model_ds=None):
         """Copy source to a sequential data set.
@@ -923,26 +943,43 @@ class PDSECopyHandler(CopyHandler):
                     full_file_path, None, None, "{0}({1})".format(dest, member_name), copy_member=True
                 )
         else:
-            if self.dest_exists:
-                rc = Datasets.delete(dest)
+            if is_member_wildcard(src):
+                members = []
+                data_set_base = data_set.extract_dsname(src)
+                try:
+                    members = list(map(str.strip, Datasets.list_members(src).splitlines()))
+                except AttributeError:
+                    self.exit_json(
+                        note="The src {0} is likely empty. No data was copied".format(data_set_base)
+                    )
+                for member in members:
+                    self.copy_to_member(
+                        "{0}({1})".format(data_set_base, member),
+                        None,
+                        None,
+                        "{0}({1})".format(dest, member)
+                    )
+            else:
+                if self.dest_exists:
+                    rc = Datasets.delete(dest)
+                    if rc != 0:
+                        self.fail_json(
+                            msg="Error while removing existing destination {0}".format(dest),
+                            rc=rc
+                        )
+                    self.allocate_model(dest, new_src)
+
+                dds = dict(OUTPUT=dest, INPUT=new_src)
+                copy_cmd = "   COPY OUTDD=OUTPUT,INDD=((INPUT,R))"
+                rc, out, err = mvs_cmd.iebcopy(copy_cmd, dds=dds)
                 if rc != 0:
                     self.fail_json(
-                        msg="Error while removing existing destination {0}".format(dest),
-                        rc=rc
+                        msg="IEBCOPY encountered a problem while copying {0} to {1}".format(new_src, dest),
+                        stdout=out, stderr=err, rc=rc,
+                        stdout_lines=out.splitlines(),
+                        stderr_lines=err.splitlines(),
+                        cmd=copy_cmd
                     )
-                self.allocate_model(dest, new_src)
-
-            dds = dict(OUTPUT=dest, INPUT=new_src)
-            copy_cmd = "   COPY OUTDD=OUTPUT,INDD=((INPUT,R))"
-            rc, out, err = mvs_cmd.iebcopy(copy_cmd, dds=dds)
-            if rc != 0:
-                self.fail_json(
-                    msg="IEBCOPY encountered a problem while copying {0} to {1}".format(new_src, dest),
-                    stdout=out, stderr=err, rc=rc,
-                    stdout_lines=out.splitlines(),
-                    stderr_lines=err.splitlines(),
-                    cmd=copy_cmd
-                )
 
     def copy_to_member(self, src, temp_path, conv_path, dest, copy_member=False):
         """Copy source to a PDS/PDSE member. The only valid sources are:
@@ -1212,7 +1249,38 @@ def cleanup(src_list):
                 )
 
 
-def run_module(module):
+def is_member_wildcard(src):
+    """Determine whether src specifies a data set member wildcard in the
+    form 'SOME.DATA.SET(*)' or 'SOME.DATA.SET(ABC*)'
+
+    Arguments:
+        src {str} -- The data set name
+
+    Returns:
+        re.Match -- If the data set specifies a member wildcard
+        None -- If the data set does not specify a member wildcard
+    """
+    return fullmatch(
+        r"^(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}\([A-Z$#@\*]{1}[A-Z0-9$#@\*]{0,7}\)$",
+        src,
+        IGNORECASE
+    )
+
+
+def run_module(module, arg_def):
+    # ********************************************************************
+    # Verify the validity of module args. BetterArgParser raises ValueError
+    # when a parameter fails its validation check
+    # ********************************************************************
+    try:
+        parser = better_arg_parser.BetterArgParser(arg_def)
+        parser.parse_args(module.params)
+    except ValueError as err:
+        # Bypass BetterArgParser when src is of the form 'SOME.DATA.SET(*)'
+        if not is_member_wildcard(module.params['src']):
+            module.fail_json(
+                msg="Parameter verification failed", stderr=str(err)
+            )
     # ********************************************************************
     # Initialize module variables
     # ********************************************************************
@@ -1515,19 +1583,9 @@ def main():
         ))
 
     res_args = temp_path = conv_path = None
-    # ********************************************************************
-    # Verify the validity of module args. BetterArgParser raises ValueError
-    # when a parameter fails its validation check
-    # ********************************************************************
     try:
-        parser = better_arg_parser.BetterArgParser(arg_def)
-        parser.parse_args(module.params)
-        res_args, temp_path, conv_path = run_module(module)
+        res_args, temp_path, conv_path = run_module(module, arg_def)
         module.exit_json(**res_args)
-    except ValueError as err:
-        module.fail_json(
-            msg="Parameter verification failed", stderr=str(err)
-        )
     finally:
         cleanup([temp_path, conv_path])
 

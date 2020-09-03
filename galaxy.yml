@@ -6,7 +6,11 @@ namespace: ibm
 name: ibm_zos_core
 
 # The collection version
+<<<<<<< HEAD
 version: 1.2.0-beta.4
+=======
+version: 1.2.0-beta.2
+>>>>>>> master
 
 # Collection README file
 readme: README.md

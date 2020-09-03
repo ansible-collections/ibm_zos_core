@@ -22,6 +22,11 @@ Notes
     have been written as **duration_s**.
   * Fixes requirements version in sample playbook hosts-setup.yaml
 
+* Module Changes
+
+  * Module ``zos_copy`` can now use wildcards to copy multiple PDS/PDSE members
+    to another PDS/PDSE
+
 Availability
 ------------
 

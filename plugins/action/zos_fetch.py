@@ -16,6 +16,7 @@ from ansible.module_utils.parsing.convert_bool import boolean
 from ansible.plugins.action import ActionBase
 from ansible.errors import AnsibleError
 
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import encode
 
 SUPPORTED_DS_TYPES = frozenset({"PS", "PO", "VSAM", "USS"})
 
@@ -93,12 +94,14 @@ class ActionModule(ActionBase):
         #                 Parameter initializations                  #
         # ********************************************************** #
 
-        src = self._task.args.get("src")
-        dest = self._task.args.get("dest")
-        encoding = self._task.args.get("encoding")
-        sftp_port = self._task.args.get("sftp_port", 22)
-        flat = _process_boolean(self._task.args.get("flat"), default=False)
-        is_binary = _process_boolean(self._task.args.get("is_binary"))
+        src = self._task.args.get('src')
+        dest = self._task.args.get('dest')
+        encoding = self._task.args.get('encoding')
+        # If self._play_context.port is None, that implies the default port 22
+        # was used to connect to the remote host.
+        sftp_port = self._task.args.get('sftp_port', self._play_context.port or 22)
+        flat = _process_boolean(self._task.args.get('flat'), default=False)
+        is_binary = _process_boolean(self._task.args.get('is_binary'))
         ignore_sftp_stderr = _process_boolean(
             self._task.args.get("ignore_sftp_stderr"), default=False
         )
@@ -208,12 +211,15 @@ class ActionModule(ActionBase):
         # ********************************************************** #
         #                Execute module on remote host               #
         # ********************************************************** #
-
+        new_module_args = self._task.args.copy()
+        new_module_args.update(
+            dict(local_charset=encode.Defaults.get_default_system_charset())
+        )
         try:
             fetch_res = self._execute_module(
                 module_name="ibm.ibm_zos_core.zos_fetch",
-                module_args=self._task.args,
-                task_vars=task_vars,
+                module_args=new_module_args,
+                task_vars=task_vars
             )
             ds_type = fetch_res.get("ds_type")
             src = fetch_res.get("file")

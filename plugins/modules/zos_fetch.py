@@ -84,10 +84,11 @@ options:
   sftp_port:
     description:
       - Indicates which port should be used to connect to the remote z/OS
-        system to perform data transfer. Default is port 22.
+        system to perform data transfer.
+      - If this parameter is not specified, C(ansible_port) will be used.
+      - If C(ansible_port) is not specified, port 22 will be used.
     type: int
     required: false
-    default: 22
   encoding:
     description:
       - Specifies which encodings the fetched data set should be converted from
@@ -521,8 +522,9 @@ def run_module():
             use_qualifier=dict(required=False, default=False, type="bool"),
             validate_checksum=dict(required=False, default=True, type="bool"),
             encoding=dict(required=False, type="dict"),
-            sftp_port=dict(type='int', default=22, required=False),
-            ignore_sftp_stderr=dict(type='bool', default=False, required=False)
+            sftp_port=dict(type='int', required=False),
+            ignore_sftp_stderr=dict(type='bool', default=False, required=False),
+            local_charset=dict(type='str')
         )
     )
 
@@ -542,22 +544,26 @@ def run_module():
         use_qualifier=dict(arg_type="bool", required=False, default=False)
     )
 
+    if not module.params.get("encoding") and not module.params.get("is_binary"):
+        mvs_src = data_set.is_data_set(src)
+        remote_charset = encode.Defaults.get_default_system_charset()
+
+        module.params["encoding"] = {
+            'from': encode.Defaults.DEFAULT_EBCDIC_MVS_CHARSET if mvs_src else remote_charset,
+            'to': module.params.get("local_charset")
+        }
+
     if module.params.get("encoding"):
-        module.params.update(
-            dict(
-                from_encoding=module.params.get("encoding").get("from"),
-                to_encoding=module.params.get("encoding").get("to"),
-            )
+        module.params.update(dict(
+            from_encoding=module.params.get('encoding').get('from'),
+            to_encoding=module.params.get('encoding').get('to'))
         )
-        arg_def.update(
-            dict(
-                from_encoding=dict(arg_type="encoding"),
-                to_encoding=dict(arg_type="encoding"),
-            )
-        )
+        arg_def.update(dict(
+            from_encoding=dict(arg_type='encoding'),
+            to_encoding=dict(arg_type='encoding')
+        ))
 
     fetch_handler = FetchHandler(module)
-
     try:
         parser = better_arg_parser.BetterArgParser(arg_def)
         parsed_args = parser.parse_args(module.params)
@@ -566,7 +572,6 @@ def run_module():
     src = parsed_args.get("src")
     b_src = to_bytes(src)
     fail_on_missing = boolean(parsed_args.get("fail_on_missing"))
-    use_qualifier = boolean(parsed_args.get("use_qualifier"))
     is_binary = boolean(parsed_args.get("is_binary"))
     encoding = module.params.get("encoding")
 

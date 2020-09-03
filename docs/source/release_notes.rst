@@ -29,7 +29,7 @@ Reference
 ---------
 
 * Supported by IBM Open Enterprise Python for z/OS: 3.8.2 or later
-* Supported by IBM Z Open Automation Utilities 1.0.3 PTF UI70435 or later
+* Supported by IBM Z Open Automation Utilities 1.0.3 PTF UI70435
 * Supported by z/OS V2R3
 * The z/OS® shell
 
@@ -68,7 +68,7 @@ Reference
 ---------
 
 * Supported by IBM Open Enterprise Python for z/OS: 3.8.2 or later
-* Supported by IBM Z Open Automation Utilities 1.0.3 PTF UI70435 or later
+* Supported by IBM Z Open Automation Utilities 1.0.3 PTF UI70435
 * Supported by z/OS V2R3
 * The z/OS® shell
 
@@ -123,8 +123,7 @@ Availability
 
 Reference
   * Supported by IBM Open Enterprise Python for z/OS: 3.8.2 or later
-  * Supported by IBM Z Open Automation Utilities
-    1.0.3 PTF UI70435 or later
+  * Supported by IBM Z Open Automation Utilities 1.0.3 PTF UI70435
   * Supported by z/OS V2R3
   * The z/OS® shell
 
@@ -156,7 +155,7 @@ Availability
 
 Reference
   * Supported by IBM Open Enterprise Python for z/OS: 3.8.2 or later
-  * Supported by IBM Z Open Automation Utilities: 1.0.3 or later
+  * Supported by IBM Z Open Automation Utilities: 1.0.3
   * Supported by z/OS V2R3
   * The z/OS® shell
 

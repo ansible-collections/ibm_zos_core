@@ -150,16 +150,18 @@ options:
   sftp_port:
     description:
       - Indicates which port should be used to connect to the remote z/OS
-        system to perform data transfer. Default is port 22.
+        system to perform data transfer.
+      - If this parameter is not specified, C(ansible_port) will be used.
+      - If C(ansible_port) is not specified, port 22 will be used.
     type: int
     required: false
-    default: 22
   encoding:
     description:
       - Specifies which encodings the destination file or data set should be
         converted from and to.
-      - If C(encoding) is not provided, no encoding conversions will take
-        place.
+      - If C(encoding) is not provided, the module determines which local and remote
+        charsets to convert the data from and to. Note that this is only done for text
+        data and not binary data.
       - If C(encoding) is provided and C(src) is an MVS data set, task will fail.
       - Only valid if C(is_binary) is false.
     type: dict
@@ -459,13 +461,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module im
 from ansible.module_utils._text import to_bytes
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
-    better_arg_parser,
-    data_set,
-    encode,
-    vtoc,
-    backup,
-    copy,
-    mvs_cmd
+    better_arg_parser, data_set, encode, vtoc, backup, copy, mvs_cmd
 )
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
@@ -871,8 +867,11 @@ class USSCopyHandler(CopyHandler):
                 except FileExistsError:
                     pass
         try:
-            if src_ds_type in MVS_SEQ:
-                copy.copy_ps2uss(src, dest, is_binary=self.is_binary)
+            if src_member or src_ds_type in MVS_SEQ:
+                if Datasets.copy(src, dest) != 0:
+                    self.fail_json(
+                        msg="Error while copying source {0} to {1}".format(src, dest)
+                    )
             else:
                 copy.copy_pds2uss(src, dest, is_binary=self.is_binary)
         except Exception as err:
@@ -1213,28 +1212,19 @@ def cleanup(src_list):
                 )
 
 
-def run_module(module, arg_def):
+def run_module(module):
     # ********************************************************************
-    # Verify the validity of module args. BetterArgParser raises ValueError
-    # when a parameter fails its validation check
+    # Initialize module variables
     # ********************************************************************
-    try:
-        parser = better_arg_parser.BetterArgParser(arg_def)
-        parsed_args = parser.parse_args(module.params)
-    except ValueError as err:
-        module.fail_json(
-            msg="Parameter verification failed", stderr=str(err)
-        )
-
-    src = parsed_args.get('src')
+    src = module.params.get('src')
     b_src = to_bytes(src, errors='surrogate_or_strict')
-    dest = parsed_args.get('dest')
-    remote_src = parsed_args.get('remote_src')
-    is_binary = parsed_args.get('is_binary')
-    backup = parsed_args.get('backup')
-    backup_name = parsed_args.get('backup_name')
-    model_ds = parsed_args.get('model_ds')
-    validate = parsed_args.get('validate')
+    dest = module.params.get('dest')
+    remote_src = module.params.get('remote_src')
+    is_binary = module.params.get('is_binary')
+    backup = module.params.get('backup')
+    backup_name = module.params.get('backup_name')
+    model_ds = module.params.get('model_ds')
+    validate = module.params.get('validate')
     mode = module.params.get('mode')
     group = module.params.get('group')
     owner = module.params.get('owner')
@@ -1379,6 +1369,9 @@ def run_module(module, arg_def):
                 msg="Encoding conversion is only valid for USS source"
             )
         # 'conv_path' points to the converted src file or directory
+        if is_mvs_dest:
+            encoding['to'] = encode.Defaults.DEFAULT_EBCDIC_MVS_CHARSET
+
         conv_path = copy_handler.convert_encoding(src, temp_path, encoding)
 
     # ------------------------------- o -----------------------------------
@@ -1471,7 +1464,7 @@ def main():
             model_ds=dict(type='str', required=False),
             local_follow=dict(type='bool', default=True),
             remote_src=dict(type='bool', default=False),
-            sftp_port=dict(type='int', default=22),
+            sftp_port=dict(type='int', required=False),
             ignore_sftp_stderr=dict(type='bool', default=False),
             validate=dict(type='bool'),
             is_uss=dict(type='bool'),
@@ -1480,7 +1473,8 @@ def main():
             size=dict(type='int'),
             temp_path=dict(type='str'),
             copy_member=dict(type='bool'),
-            src_member=dict(type='bool')
+            src_member=dict(type='bool'),
+            local_charset=dict(type='str')
         ),
         add_file_common_args=True
     )
@@ -1497,8 +1491,18 @@ def main():
         remote_src=dict(arg_type='bool', default=False, required=False),
         checksum=dict(arg_type='str', required=False),
         validate=dict(arg_type='bool', required=False),
-        sftp_port=dict(arg_type='int', required=False, default=22)
+        sftp_port=dict(arg_type='int', required=False)
     )
+
+    if (
+        not module.params.get("encoding")
+        and not module.params.get("remote_src")
+        and not module.params.get("is_binary")
+    ):
+        module.params["encoding"] = {
+            'from': module.params.get("local_charset"),
+            'to': encode.Defaults.get_default_system_charset()
+        }
 
     if module.params.get("encoding"):
         module.params.update(dict(
@@ -1509,10 +1513,21 @@ def main():
             from_encoding=dict(arg_type='encoding'),
             to_encoding=dict(arg_type='encoding')
         ))
+
+    res_args = temp_path = conv_path = None
+    # ********************************************************************
+    # Verify the validity of module args. BetterArgParser raises ValueError
+    # when a parameter fails its validation check
+    # ********************************************************************
     try:
-        res_args = temp_path = conv_path = None
-        res_args, temp_path, conv_path = run_module(module, arg_def)
+        parser = better_arg_parser.BetterArgParser(arg_def)
+        parser.parse_args(module.params)
+        res_args, temp_path, conv_path = run_module(module)
         module.exit_json(**res_args)
+    except ValueError as err:
+        module.fail_json(
+            msg="Parameter verification failed", stderr=str(err)
+        )
     finally:
         cleanup([temp_path, conv_path])
 

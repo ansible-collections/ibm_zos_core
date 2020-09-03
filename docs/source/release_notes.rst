@@ -30,8 +30,8 @@ Notes
 Availability
 ------------
 
-* Galaxy
-* GitHub
+* `Galaxy`_
+* `GitHub`_
 
 Reference
 ---------
@@ -40,6 +40,22 @@ Reference
 * Supported by IBM Z Open Automation Utilities 1.0.3 PTF UI70435
 * Supported by z/OS V2R3
 * The z/OS® shell
+
+Known issues
+------------
+
+* Modules
+
+  * When executing programs using ``zos_mvs_raw``, you may encounter errors
+    that originate in the programs implementation. Two such known issues are
+    noted below of which one has been addressed with an APAR.
+
+    #. ``zos_mvs_raw`` module execution fails when invoking
+       Database Image Copy 2 Utility or Database Recovery Utility in conjunction
+       with FlashCopy or Fast Replication.
+    #. ``zos_mvs_raw`` module execution fails when invoking DFSRRC00 with parm
+       "UPB,PRECOMP", "UPB, POSTCOMP" or "UPB,PRECOMP,POSTCOMP". This issue is
+       addressed by APAR PH28089.
 
 Version 1.2.0-beta.3
 ====================
@@ -57,8 +73,8 @@ Notes
 Availability
 ------------
 
-* Galaxy
-* GitHub
+* `Galaxy`_
+* `GitHub`_
 
 Reference
 ---------
@@ -68,7 +84,22 @@ Reference
 * Supported by z/OS V2R3
 * The z/OS® shell
 
-=======
+Known issues
+------------
+
+* Modules
+
+  * When executing programs using ``zos_mvs_raw``, you may encounter errors
+    that originate in the programs implementation. Two such known issues are
+    noted below of which one has been addressed with an APAR.
+
+    #. ``zos_mvs_raw`` module execution fails when invoking
+       Database Image Copy 2 Utility or Database Recovery Utility in conjunction
+       with FlashCopy or Fast Replication.
+    #. ``zos_mvs_raw`` module execution fails when invoking DFSRRC00 with parm
+       "UPB,PRECOMP", "UPB, POSTCOMP" or "UPB,PRECOMP,POSTCOMP". This issue is
+       addressed by APAR PH28089.
+
 Version 1.2.0-beta.2
 ====================
 
@@ -113,25 +144,20 @@ Known issues
 
 * Modules
 
-  * When executing programs using zos_mvs_raw, you may encounter errors
+  * When executing programs using ``zos_mvs_raw``, you may encounter errors
     that originate in the programs implementation. Two such known issues are
     noted below of which one has been addressed with an APAR.
 
-    #. zos_mvs_raw module execution fails when invoking
+    #. ``zos_mvs_raw`` module execution fails when invoking
        Database Image Copy 2 Utility or Database Recovery Utility in conjunction
        with FlashCopy or Fast Replication.
-    #. zos_mvs_raw module execution fails when invoking DFSRRC00 with parm
+    #. ``zos_mvs_raw`` module execution fails when invoking DFSRRC00 with parm
        "UPB,PRECOMP", "UPB, POSTCOMP" or "UPB,PRECOMP,POSTCOMP". This issue is
        addressed by APAR PH28089.
 
 .. _centralized content:
    https://ibm.github.io/z_ansible_collections_doc/index.html
 
-.. _GitHub:
-   https://github.com/ansible-collections/ibm_zos_core
-
-.. _Galaxy:
-   https://galaxy.ansible.com/ibm/ibm_zos_core
 
 Version 1.2.0-beta.1
 ====================
@@ -260,6 +286,7 @@ Reference
 * Supported by IBM Z Open Automation Utilities: 1.0.1 PTF UI66957 through
   1.0.3 PTF UI70435
 
+
 Version 0.0.4
 =============
 
@@ -284,6 +311,7 @@ Reference
 
 * Supported by IBM Z Open Automation Utilities: 1.0.1 PTF UI66957 through
   1.0.3 PTF UI70435
+
 
 Version 0.0.3
 =============
@@ -328,6 +356,7 @@ Reference
 * Supported by IBM Z Open Automation Utilities: 1.0.1 PTF UI66957 through
   1.0.3 PTF UI70435
 
+
 Version 0.0.1
 =============
 
@@ -349,3 +378,13 @@ Reference
 
 * Supported by IBM Z Open Automation Utilities: 1.0.1 PTF UI66957 through
   1.0.3 PTF UI70435
+
+.. .............................................................................
+.. Global Links
+.. .............................................................................
+
+.. _GitHub:
+   https://github.com/ansible-collections/ibm_zos_core
+
+.. _Galaxy:
+   https://galaxy.ansible.com/ibm/ibm_zos_core

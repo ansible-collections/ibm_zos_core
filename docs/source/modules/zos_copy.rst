@@ -238,6 +238,8 @@ src
 
   If ``src`` is a VSAM data set, destination must also be a VSAM.
 
+  Wildcards can be used to copy multiple PDS/PDSE members to another PDS/PDSE.
+
   Required unless using ``content``.
 
 
@@ -392,6 +394,18 @@ Examples
      zos_copy:
        src: SRC.PDS
        dest: /tmp
+       remote_src: true
+
+   - name: Copy all members inside a PDS to another PDS
+     zos_copy:
+       src: SOME.SRC.PDS(*)
+       dest: SOME.DEST.PDS
+       remote_src: true
+
+   - name: Copy all members starting with 'ABC' inside a PDS to another PDS
+     zos_copy:
+       src: SOME.SRC.PDS(ABC*)
+       dest: SOME.DEST.PDS
        remote_src: true
 
 

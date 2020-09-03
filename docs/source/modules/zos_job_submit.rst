@@ -135,7 +135,7 @@ volume
 wait
   Wait for the Job to finish and capture the output. Default is false.
 
-  User can specify the wait time, see option ``duration_s``.
+  User can specify the wait time, see option ``wait_time_s``.
 
 
   | **required**: False

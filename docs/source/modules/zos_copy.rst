@@ -101,7 +101,7 @@ dest
 encoding
   Specifies which encodings the destination file or data set should be converted from and to.
 
-  If ``encoding`` is not provided, no encoding conversions will take place.
+  If ``encoding`` is not provided, the module determines which local and remote charsets to convert the data from and to. Note that this is only done for text data and not binary data.
 
   If ``encoding`` is provided and ``src`` is an MVS data set, task will fail.
 
@@ -215,12 +215,15 @@ remote_src
 
      
 sftp_port
-  Indicates which port should be used to connect to the remote z/OS system to perform data transfer. Default is port 22.
+  Indicates which port should be used to connect to the remote z/OS system to perform data transfer.
+
+  If this parameter is not specified, ``ansible_port`` will be used.
+
+  If ``ansible_port`` is not specified, port 22 will be used.
 
 
   | **required**: False
   | **type**: int
-  | **default**: 22
 
 
      
@@ -234,6 +237,8 @@ src
   If ``src`` is a file and dest ends with "/" or destination is a directory, the file is copied to the directory with the same filename as src.
 
   If ``src`` is a VSAM data set, destination must also be a VSAM.
+
+  Wildcards can be used to copy multiple PDS/PDSE members to another PDS/PDSE.
 
   Required unless using ``content``.
 
@@ -389,6 +394,18 @@ Examples
      zos_copy:
        src: SRC.PDS
        dest: /tmp
+       remote_src: true
+
+   - name: Copy all members inside a PDS to another PDS
+     zos_copy:
+       src: SOME.SRC.PDS(*)
+       dest: SOME.DEST.PDS
+       remote_src: true
+
+   - name: Copy all members starting with 'ABC' inside a PDS to another PDS
+     zos_copy:
+       src: SOME.SRC.PDS(ABC*)
+       dest: SOME.DEST.PDS
        remote_src: true
 
 

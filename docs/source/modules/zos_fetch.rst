@@ -114,12 +114,15 @@ is_binary
 
      
 sftp_port
-  Indicates which port should be used to connect to the remote z/OS system to perform data transfer. Default is port 22.
+  Indicates which port should be used to connect to the remote z/OS system to perform data transfer.
+
+  If this parameter is not specified, ``ansible_port`` will be used.
+
+  If ``ansible_port`` is not specified, port 22 will be used.
 
 
   | **required**: False
   | **type**: int
-  | **default**: 22
 
 
      

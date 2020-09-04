@@ -33,7 +33,7 @@ Parameters
 encoding
   Specifies which encoding the local JCL file should be converted from and to, before submitting the job.
 
-  If this parameter is not provided, the JCL file will be converted from ISO8859-1 to IBM-1047 by default.
+  If this parameter is not provided, and the z/OS systems default encoding can not be identified, the JCL file will be converted from ISO8859-1 to IBM-1047 by default.
 
 
   | **required**: False
@@ -54,7 +54,9 @@ encoding
 
      
   to
-    The character set to convert the local JCL file to on the remote z/OS system; defaults to IBM-1047.
+    The character set to convert the local JCL file to on the remote z/OS system; defaults to IBM-1047 when z/OS systems default encoding can not be identified.
+
+    If not provided, the module will attempt to identify and use the default encoding on the z/OS system.
 
     Supported character sets rely on the target version; the most common character sets are supported.
 
@@ -133,7 +135,7 @@ volume
 wait
   Wait for the Job to finish and capture the output. Default is false.
 
-  User can specify the wait time, see option ``duration_s``.
+  User can specify the wait time, see option ``wait_time_s``.
 
 
   | **required**: False

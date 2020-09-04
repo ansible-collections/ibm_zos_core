@@ -16,8 +16,9 @@ from ansible.module_utils.parsing.convert_bool import boolean
 from ansible.plugins.action import ActionBase
 from ansible.errors import AnsibleError
 
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import encode
 
-SUPPORTED_DS_TYPES = frozenset({'PS', 'PO', 'VSAM', 'USS'})
+SUPPORTED_DS_TYPES = frozenset({"PS", "PO", "VSAM", "USS"})
 
 
 def _update_result(result, src, dest, ds_type="USS", is_binary=False):
@@ -96,11 +97,13 @@ class ActionModule(ActionBase):
         src = self._task.args.get('src')
         dest = self._task.args.get('dest')
         encoding = self._task.args.get('encoding')
-        sftp_port = self._task.args.get('sftp_port', 22)
+        # If self._play_context.port is None, that implies the default port 22
+        # was used to connect to the remote host.
+        sftp_port = self._task.args.get('sftp_port', self._play_context.port or 22)
         flat = _process_boolean(self._task.args.get('flat'), default=False)
         is_binary = _process_boolean(self._task.args.get('is_binary'))
         ignore_sftp_stderr = _process_boolean(
-            self._task.args.get('ignore_sftp_stderr'), default=False
+            self._task.args.get("ignore_sftp_stderr"), default=False
         )
         validate_checksum = _process_boolean(
             self._task.args.get("validate_checksum"), default=True
@@ -133,7 +136,7 @@ class ActionModule(ActionBase):
         ds_type = None
         fetch_member = "(" in src and src.endswith(")")
         if fetch_member:
-            member_name = src[src.find('(') + 1:src.find(')')]
+            member_name = src[src.find("(") + 1: src.find(")")]
         src = self._connection._shell.join_path(src)
         src = self._remote_expand_user(src)
 
@@ -208,12 +211,15 @@ class ActionModule(ActionBase):
         # ********************************************************** #
         #                Execute module on remote host               #
         # ********************************************************** #
-
+        new_module_args = self._task.args.copy()
+        new_module_args.update(
+            dict(local_charset=encode.Defaults.get_default_system_charset())
+        )
         try:
             fetch_res = self._execute_module(
-                module_name='zos_fetch',
-                module_args=self._task.args,
-                task_vars=task_vars,
+                module_name="ibm.ibm_zos_core.zos_fetch",
+                module_args=new_module_args,
+                task_vars=task_vars
             )
             ds_type = fetch_res.get("ds_type")
             src = fetch_res.get("file")
@@ -246,7 +252,11 @@ class ActionModule(ActionBase):
                     return result
 
                 fetch_content = self._transfer_remote_content(
-                    dest, remote_path, ds_type, sftp_port, ignore_stderr=ignore_sftp_stderr
+                    dest,
+                    remote_path,
+                    ds_type,
+                    sftp_port,
+                    ignore_stderr=ignore_sftp_stderr,
                 )
                 if fetch_content.get("msg"):
                     return fetch_content
@@ -280,7 +290,9 @@ class ActionModule(ActionBase):
             self._remote_cleanup(remote_path, ds_type, encoding)
         return _update_result(result, src, dest, ds_type, is_binary=is_binary)
 
-    def _transfer_remote_content(self, dest, remote_path, src_type, port, ignore_stderr=False):
+    def _transfer_remote_content(
+        self, dest, remote_path, src_type, port, ignore_stderr=False
+    ):
         """ Transfer a file or directory from USS to local machine.
             After the transfer is complete, the USS file or directory will
             be removed.
@@ -289,7 +301,7 @@ class ActionModule(ActionBase):
         ansible_user = self._play_context.remote_user
         ansible_host = self._play_context.remote_addr
 
-        cmd = ['sftp', "-oPort={0}".format(port), ansible_user + '@' + ansible_host]
+        cmd = ["sftp", "-oPort={0}".format(port), ansible_user + "@" + ansible_host]
         stdin = "get -r {0} {1}".format(remote_path, dest)
         if src_type != "PO":
             stdin = stdin.replace(" -r", "")
@@ -300,10 +312,12 @@ class ActionModule(ActionBase):
         out, err = transfer_pds.communicate(to_bytes(stdin))
         err = _detect_sftp_errors(err)
         if re.findall(r"Permission denied", err):
-            result["msg"] = "Insufficient write permission for destination {0}".format(dest)
+            result["msg"] = "Insufficient write permission for destination {0}".format(
+                dest
+            )
         elif transfer_pds.returncode != 0 or (err and not ignore_stderr):
-            result['msg'] = "Error transferring remote data from z/OS system"
-            result['rc'] = transfer_pds.returncode
+            result["msg"] = "Error transferring remote data from z/OS system"
+            result["rc"] = transfer_pds.returncode
         if result.get("msg"):
             result["stderr"] = err
             result["failed"] = True

@@ -88,6 +88,8 @@ options:
         e.g. /path/file_name.2020-04-23-08-32-29-bak.tar. If dest is an
         MVS data set, the default backup name will be a random name generated
         by IBM Z Open Automation Utilities.
+      - C(backup_name) will be returned on either success or failure of module
+        execution such that data can be retrieved.
     required: false
     type: str
   backup_compress:
@@ -241,14 +243,9 @@ backup_name:
     sample: /path/file_name.2020-04-23-08-32-29-bak.tar
 """
 
-import time
 import re
 from os import path, makedirs
-from ansible.module_utils.six import PY3
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
-    AnsibleModuleHelper,
-)
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser,
     data_set,
@@ -259,14 +256,8 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
     MissingZOAUImport,
 )
 
-
-if PY3:
-    from shlex import quote
-else:
-    from pipes import quote
-
 try:
-    from zoautil_py import Datasets, MVSCmd
+    from zoautil_py import Datasets
 except Exception:
     Datasets = MissingZOAUImport()
     MVSCmd = MissingZOAUImport()
@@ -375,28 +366,10 @@ def run_module():
     changed = False
 
     result = dict(changed=changed, src=src, dest=dest)
+    if backup:
+        result["backup_name"] = None
 
     try:
-
-        eu = encode.EncodeUtils()
-
-        # Check input code set is valid or not
-        # If the value specified in from_encoding or to_encoding is not in the code_set, exit with an error message
-        # If the values specified in from_encoding and to_encoding are the same, exit with an message
-        code_set = eu.get_codeset()
-        if from_encoding not in code_set:
-            raise EncodeError(
-                "Invalid codeset: Please check the value of the from_encoding!"
-            )
-        if to_encoding not in code_set:
-            raise EncodeError(
-                "Invalid codeset: Please check the value of the to_encoding!"
-            )
-        if from_encoding == to_encoding:
-            raise EncodeError(
-                "The value of the from_encoding and to_encoding are the same, no need to do the conversion!"
-            )
-
         # Check the src is a USS file/path or an MVS data set
         is_uss_src, is_mvs_src, ds_type_src = check_file(src)
         if is_uss_src:
@@ -436,6 +409,24 @@ def run_module():
             if is_mvs_dest:
                 backup_name = zos_backup.mvs_file_backup(dest, backup_name)
             result["backup_name"] = backup_name
+
+        eu = encode.EncodeUtils()
+        # Check input code set is valid or not
+        # If the value specified in from_encoding or to_encoding is not in the code_set, exit with an error message
+        # If the values specified in from_encoding and to_encoding are the same, exit with an message
+        code_set = eu.get_codeset()
+        if from_encoding not in code_set:
+            raise EncodeError(
+                "Invalid codeset: Please check the value of the from_encoding!"
+            )
+        if to_encoding not in code_set:
+            raise EncodeError(
+                "Invalid codeset: Please check the value of the to_encoding!"
+            )
+        if from_encoding == to_encoding:
+            raise EncodeError(
+                "The value of the from_encoding and to_encoding are the same, no need to do the conversion!"
+            )
 
         if is_uss_src and is_uss_dest:
             convert_rc = eu.uss_convert_encoding_prev(

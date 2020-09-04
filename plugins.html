@@ -37,7 +37,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Modules" href="modules.html" />
-    <link rel="prev" title="Quickstart" href="quickstart.html" /> 
+    <link rel="prev" title="Playbooks" href="playbooks-single.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -84,33 +84,28 @@
               <p class="caption"><span class="caption-text">Getting Started</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="requirements-single.html">Requirements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="playbooks-single.html">Playbooks</a></li>
 </ul>
-<p class="caption"><span class="caption-text">Reference</span></p>
+<p class="caption"><span class="caption-text">Ansible Content</span></p>
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Plugins</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#action">Action</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#connection">Connection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#z-os-connection-plugin">z/OS Connection Plugin</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="modules.html">Modules</a></li>
 <li class="toctree-l1"><a class="reference internal" href="filters.html">Filters</a></li>
-<li class="toctree-l1"><a class="reference internal" href="playbooks.html">Playbooks</a></li>
-<li class="toctree-l1"><a class="reference internal" href="supplementary.html">Supplementary</a></li>
 </ul>
-<p class="caption"><span class="caption-text">Community guides</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="community_guides.html">Contributing</a></li>
-<li class="toctree-l1"><a class="reference internal" href="community_guides.html#development">Development</a></li>
-<li class="toctree-l1"><a class="reference internal" href="community_guides.html#helpful-links">Helpful Links</a></li>
-</ul>
-<p class="caption"><span class="caption-text">Requirements</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="requirements.html">Requirements</a></li>
-</ul>
-<p class="caption"><span class="caption-text">Appendices</span></p>
+<p class="caption"><span class="caption-text">Release Notes</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="release_notes.html">Releases</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="community_guides.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
 </ul>
 
             
@@ -159,16 +154,7 @@
       <li>Plugins</li>
     
     
-      <li class="wy-breadcrumbs-aside">
-        
-            
-            
-              <a href="https://github.com/ansible-collections/ibm_zos_core/blob/v1.2.0-beta.1/docs/source/plugins.rst" class="fa fa-github"> Edit on GitHub</a>
-            
-          
-        
-      </li>
-    
+
   </ul>
 
   
@@ -180,12 +166,9 @@
   
 
 
-    
-    
 
 
 
-    <p class="scv-banner scv-sphinx_rtd_theme"><a href="v1.2.0-beta.3/plugins.html"><b>Warning:</b> This document is for an old version of IBM z/OS core collection. The latest version is v1.2.0-beta.3.</a></p>
 <div class="section" id="plugins">
 <h1>Plugins<a class="headerlink" href="#plugins" title="Permalink to this headline">¶</a></h1>
 <p>Plugins that come with the <strong>IBM z/OS core collection</strong> augment Ansible’s core
@@ -202,8 +185,33 @@ and expandable feature set.</p>
 <h2>Connection<a class="headerlink" href="#connection" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">zos_ssh</span></code>: Enables the Ansible controller to communicate with a z/OS target machine by using SSH, with the added support to transfer ASCII as EBCDIC when transferring REXX modules. This connection plugin was forked from the Ansible <a class="reference external" href="https://github.com/ansible/ansible/blob/devel/lib/ansible/plugins/connection/ssh.py">ssh.py</a> connection plugin.</p></li>
-<li><p>For further reference, see the <a class="reference external" href="quickstart.html#z-os-connection-plugin">zos_ssh quickstart</a> guide.</p></li>
+<li><p>For further reference, see <strong>z/OS Connection Plugin</strong>.</p></li>
 </ul>
+</div>
+<div class="section" id="z-os-connection-plugin">
+<h2>z/OS Connection Plugin<a class="headerlink" href="#z-os-connection-plugin" title="Permalink to this headline">¶</a></h2>
+<p>Since EBCDIC encoding is used on z/OS, custom plugins are required to determine
+the correct transport method when targeting a z/OS system. The zos_ssh.py
+connection plugin is a fork of the default ssh.py plugin with the added
+functionality to check if a module is written in REXX.</p>
+<p>Since REXX scripts are required be in EBCDIC encoding to run, they must be
+handled differently during transfer. If the string
+<code class="docutils literal notranslate"><span class="pre">__ANSIBLE_ENCODE_EBCDIC__</span></code> is found in the first line of the module, the
+module is transferred to the target system using SCP. Otherwise, SFTP is used.
+SCP treats files as text, automatically encoding as EBCDIC at transfer time.
+SFTP treats files as binary, performing no encoding changes.</p>
+<p><strong>REXX Module Configuration</strong>:</p>
+<ul class="simple">
+<li><p>Ensure a REXX modules first line is a comment containing the case insensitive keyword <code class="docutils literal notranslate"><span class="pre">rexx</span></code></p></li>
+<li><p>Followed by the case sensitive value <code class="docutils literal notranslate"><span class="pre">__ANSIBLE_ENCODE_EBCDIC__</span></code></p></li>
+</ul>
+<p><strong>Example REXX module</strong>:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>/* rexx  __ANSIBLE_ENCODE_EBCDIC__  */
+<span class="nv">x</span> <span class="o">=</span> <span class="m">55</span>
+SAY <span class="s1">&#39;{&quot;SYSTEM_VERSION&quot;:&quot;&#39;</span> x <span class="s1">&#39;&quot;}&#39;</span>
+RETURN <span class="m">0</span>
+</pre></div>
+</div>
 </div>
 </div>
 
@@ -218,7 +226,7 @@ and expandable feature set.</p>
         <a href="modules.html" class="btn btn-neutral float-right" title="Modules" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="quickstart.html" class="btn btn-neutral float-left" title="Quickstart" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="playbooks-single.html" class="btn btn-neutral float-left" title="Playbooks" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -245,18 +253,15 @@ and expandable feature set.</p>
 <div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
     <span class="rst-current-version" data-toggle="rst-current-version">
         <span class="fa fa-book"> Other Versions</span>
-        v: v1.2.0-beta.1
+        v: v1.2.0-beta.4
         <span class="fa fa-caret-down"></span>
     </span>
     <div class="rst-other-versions">
         <dl>
             <dt>Tags</dt>
-            <dd><a href="v1.2.0-beta.1/plugins.html">v1.2.0-beta.1</a></dd>
-            <dd><a href="v1.2.0-beta.2/plugins.html">v1.2.0-beta.2</a></dd>
-            <dd><a href="v1.2.0-beta.3/plugins.html">v1.2.0-beta.3</a></dd>
-            <dd><a href="v1.1.0/plugins.html">v1.1.0</a></dd>
-            <dd><a href="v1.1.0-beta1/plugins.html">v1.1.0-beta1</a></dd>
             <dd><a href="v1.0.0/plugins.html">v1.0.0</a></dd>
+            <dd><a href="v1.1.0/plugins.html">v1.1.0</a></dd>
+            <dd><a href="v1.2.0-beta.4/plugins.html">v1.2.0-beta.4</a></dd>
         </dl>
     </div>
 </div>

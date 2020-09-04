@@ -1,0 +1,1736 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>zos_mvs_raw – Run a z/OS program. &mdash; IBM z/OS core collection 1.0.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/banner.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="zos_operator – Execute operator command" href="zos_operator.html" />
+    <link rel="prev" title="zos_lineinfile – Manage textual data on z/OS" href="zos_lineinfile.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> IBM z/OS core collection
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../requirements-single.html">Requirements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../playbooks-single.html">Playbooks</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Ansible Content</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../plugins.html">Plugins</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../modules.html">Modules</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="zos_copy.html">zos_copy – Copy data to z/OS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zos_data_set.html">zos_data_set – Manage data sets</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zos_encode.html">zos_encode – Perform encoding operations.</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zos_fetch.html">zos_fetch – Fetch data from z/OS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zos_job_output.html">zos_job_output – Display job output</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zos_job_query.html">zos_job_query – Query job status</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zos_job_submit.html">zos_job_submit – Submit JCL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zos_lineinfile.html">zos_lineinfile – Manage textual data on z/OS</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">zos_mvs_raw – Run a z/OS program.</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#synopsis">Synopsis</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#parameters">Parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#examples">Examples</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#notes">Notes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#return-values">Return Values</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="zos_operator.html">zos_operator – Execute operator command</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zos_operator_action_query.html">zos_operator_action_query – Display messages requiring action</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zos_ping.html">zos_ping – Ping z/OS and check dependencies.</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zos_tso_command.html">zos_tso_command – Execute TSO commands</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../filters.html">Filters</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Release Notes</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../release_notes.html">Releases</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../community_guides.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../license.html">License</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">IBM z/OS core collection</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../modules.html">Modules</a> &raquo;</li>
+        
+      <li>zos_mvs_raw – Run a z/OS program.</li>
+    
+    
+
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+
+
+
+
+
+<div class="section" id="zos-mvs-raw-run-a-z-os-program">
+<span id="zos-mvs-raw-module"></span><h1>zos_mvs_raw – Run a z/OS program.<a class="headerlink" href="#zos-mvs-raw-run-a-z-os-program" title="Permalink to this headline">¶</a></h1>
+<div class="contents local topic" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#synopsis" id="id1">Synopsis</a></p></li>
+<li><p><a class="reference internal" href="#parameters" id="id2">Parameters</a></p></li>
+<li><p><a class="reference internal" href="#examples" id="id3">Examples</a></p></li>
+<li><p><a class="reference internal" href="#notes" id="id4">Notes</a></p></li>
+<li><p><a class="reference internal" href="#return-values" id="id5">Return Values</a></p></li>
+</ul>
+</div>
+<div class="section" id="synopsis">
+<h2><a class="toc-backref" href="#id1">Synopsis</a><a class="headerlink" href="#synopsis" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p>Run a z/OS program.</p></li>
+<li><p>This is analogous to a job step in JCL.</p></li>
+<li><p>Defaults will be determined by underlying API if value not provided.</p></li>
+</ul>
+</div>
+<div class="section" id="parameters">
+<h2><a class="toc-backref" href="#id2">Parameters</a><a class="headerlink" href="#parameters" title="Permalink to this headline">¶</a></h2>
+<dl>
+<dt>auth</dt><dd><p>Determines whether this program should run with authorized privileges.</p>
+<p>If <em>auth=true</em>, the program runs as APF authorized.</p>
+<p>If <em>auth=false</em>, the program runs as unauthorized.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: bool</div>
+</div>
+</dd>
+<dt>dds</dt><dd><p>The input data source.</p>
+<p><em>dds</em> supports 6 types of sources</p>
+<ol class="arabic simple">
+<li><p><em>dd_data_set</em> for data set files.</p></li>
+<li><p><em>dd_unix</em> for UNIX files.</p></li>
+<li><p><em>dd_input</em> for in-stream data set.</p></li>
+<li><p><em>dd_dummy</em> for no content input.</p></li>
+<li><p><em>dd_concat</em> for a data set concatenation.</p></li>
+<li><p><em>dds</em> supports any combination of source types.</p></li>
+</ol>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: list</div>
+</div>
+<dl>
+<dt>dd_concat</dt><dd><p><em>dd_concat</em> is used to specify a data set concatenation.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: dict</div>
+</div>
+<dl>
+<dt>dd_name</dt><dd><p>The DD name.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: True</div>
+<div class="line"><strong>type</strong>: str</div>
+</div>
+</dd>
+<dt>dds</dt><dd><p>A list of DD statements, which can contain any of the following types: <em>dd_data_set</em>, <em>dd_unix</em>, and <em>dd_input</em>.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: list</div>
+</div>
+<dl>
+<dt>dd_data_set</dt><dd><p>Specify a data set.</p>
+<p><em>dd_data_set</em> can reference an existing data set or be used to define a new data set to be created during execution.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: dict</div>
+</div>
+<dl>
+<dt>backup</dt><dd><p>Determines if a backup should be made of existing data set when <em>disposition=NEW</em>, <em>replace=true</em>, and a data set with the desired name is found.</p>
+<p><em>backup</em> is only used when <em>replace=true</em>.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: bool</div>
+</div>
+</dd>
+<dt>block_size</dt><dd><p>The maximum length of a block in bytes.</p>
+<p>Default is dependent on <em>record_format</em></p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: int</div>
+</div>
+</dd>
+<dt>data_set_name</dt><dd><p>The data set name.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: str</div>
+</div>
+</dd>
+<dt>directory_blocks</dt><dd><p>The number of directory blocks to allocate to the data set.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: int</div>
+</div>
+</dd>
+<dt>disposition</dt><dd><p><em>disposition</em> indicates the status of a data set.</p>
+<p>Defaults to shr.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: str</div>
+<div class="line"><strong>choices</strong>: new, shr, mod, old</div>
+</div>
+</dd>
+<dt>disposition_abnormal</dt><dd><p><em>disposition_abnormal</em> indicates what to do with the data set after abnormal termination of the program.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: str</div>
+<div class="line"><strong>choices</strong>: delete, keep, catlg, catalog, uncatlg, uncatalog</div>
+</div>
+</dd>
+<dt>disposition_normal</dt><dd><p><em>disposition_normal</em> indicates what to do with the data set after normal termination of the program.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: str</div>
+<div class="line"><strong>choices</strong>: delete, keep, catlg, catalog, uncatlg, uncatalog</div>
+</div>
+</dd>
+<dt>encryption_key_1</dt><dd><p>The encrypting key used by the Encryption Key Manager.</p>
+<p>Specification of the key labels does not by itself enable encryption. Encryption must be enabled by a data class that specifies an encryption format.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: dict</div>
+</div>
+<dl>
+<dt>encoding</dt><dd><p>How the label for the key encrypting key specified by <em>label</em> is encoded by the Encryption Key Manager.</p>
+<p><em>encoding</em> can either be set to <code class="docutils literal notranslate"><span class="pre">L</span></code> for label encoding, or <code class="docutils literal notranslate"><span class="pre">H</span></code> for hash encoding.</p>
+<p>Maps to KEYCD1 on z/OS.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: True</div>
+<div class="line"><strong>type</strong>: str</div>
+<div class="line"><strong>choices</strong>: l, h</div>
+</div>
+</dd>
+<dt>label</dt><dd><p>The label for the key encrypting key used by the Encryption Key Manager.</p>
+<p>Key label must have a private key associated with it.</p>
+<p><em>label</em> can be a maximum of 64 characters.</p>
+<p>Maps to KEYLAB1 on z/OS.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: True</div>
+<div class="line"><strong>type</strong>: str</div>
+</div>
+</dd>
+</dl>
+</dd>
+<dt>encryption_key_2</dt><dd><p>The encrypting key used by the Encryption Key Manager.</p>
+<p>Specification of the key labels does not by itself enable encryption. Encryption must be enabled by a data class that specifies an encryption format.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: dict</div>
+</div>
+<dl>
+<dt>encoding</dt><dd><p>How the label for the key encrypting key specified by <em>label</em> is encoded by the Encryption Key Manager.</p>
+<p><em>encoding</em> can either be set to <code class="docutils literal notranslate"><span class="pre">L</span></code> for label encoding, or <code class="docutils literal notranslate"><span class="pre">H</span></code> for hash encoding.</p>
+<p>Maps to KEYCD2 on z/OS.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: True</div>
+<div class="line"><strong>type</strong>: str</div>
+<div class="line"><strong>choices</strong>: l, h</div>
+</div>
+</dd>
+<dt>label</dt><dd><p>The label for the key encrypting key used by the Encryption Key Manager.</p>
+<p>Key label must have a private key associated with it.</p>
+<p><em>label</em> can be a maximum of 64 characters.</p>
+<p>Maps to KEYLAB2 on z/OS.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: True</div>
+<div class="line"><strong>type</strong>: str</div>
+</div>
+</dd>
+</dl>
+</dd>
+<dt>key_label</dt><dd><p>The label for the encryption key used by the system to encrypt the data set.</p>
+<p><em>key_label</em> is the public name of a protected encryption key in the ICSF key repository.</p>
+<p><em>key_label</em> should only be provided when creating an extended format data set.</p>
+<p>Maps to DSKEYLBL on z/OS.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: str</div>
+</div>
+</dd>
+<dt>key_length</dt><dd><p>The length of the keys used in a new data set.</p>
+<p>If using SMS, setting <em>key_length</em> overrides the key length defined in the SMS data class of the data set.</p>
+<p>Valid values are (0-255 non-vsam), (1-255 vsam).</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: int</div>
+</div>
+</dd>
+<dt>key_offset</dt><dd><p>The position of the first byte of the record key in each logical record of a new VSAM data set.</p>
+<p>The first byte of a logical record is position 0.</p>
+<p>Provide <em>key_offset</em> only for VSAM key-sequenced data sets.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: int</div>
+</div>
+</dd>
+<dt>record_format</dt><dd><p>The format and characteristics of the records for new data set.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: str</div>
+<div class="line"><strong>choices</strong>: u, vb, vba, fb, fba</div>
+</div>
+</dd>
+<dt>record_length</dt><dd><p>The logical record length. (e.g <code class="docutils literal notranslate"><span class="pre">80</span></code>).</p>
+<p>For variable data sets, the length must include the 4-byte prefix area.</p>
+<p>Defaults vary depending on format: If FB/FBA 80, if VB/VBA 137, if U 0.</p>
+<p>Valid values are (1-32760 for non-vsam,  1-32761 for vsam).</p>
+<p>Maps to LRECL on z/OS.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: int</div>
+</div>
+</dd>
+<dt>replace</dt><dd><p>Determines if data set should be replaced if <em>disposition=NEW</em> and a data set with matching name already exists.</p>
+<p>If <em>replace=true</em>, the original data set will be deleted, and a new data set created.</p>
+<p>If <em>replace=false</em>, and a data set with a matching name already exists, allocation will fail.</p>
+<p>Mutually exclusive with <em>reuse</em>.</p>
+<p><em>replace</em> is only considered when <em>disposition=NEW</em></p>
+<p><em>replace</em> will result in loss of all data in the original data set unless <em>backup</em> is specified.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: bool</div>
+</div>
+</dd>
+<dt>return_content</dt><dd><p>Determines how content should be returned to the user.</p>
+<p>If not provided, no content from the DD is returned.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: dict</div>
+</div>
+<dl>
+<dt>response_encoding</dt><dd><p>The encoding to use when returning the contents of the data set.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: str</div>
+<div class="line"><strong>default</strong>: iso8859-1</div>
+</div>
+</dd>
+<dt>src_encoding</dt><dd><p>The encoding of the data set on the z/OS system.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: str</div>
+<div class="line"><strong>default</strong>: ibm-1047</div>
+</div>
+</dd>
+<dt>type</dt><dd><p>The type of the content to be returned.</p>
+<p><code class="docutils literal notranslate"><span class="pre">text</span></code> means return content in encoding specified by <em>response_encoding</em>.</p>
+<p><em>src_encoding</em> and <em>response_encoding</em> are only used when <em>type=text</em>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">base64</span></code> means return content in binary mode.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: True</div>
+<div class="line"><strong>type</strong>: str</div>
+<div class="line"><strong>choices</strong>: text, base64</div>
+</div>
+</dd>
+</dl>
+</dd>
+<dt>reuse</dt><dd><p>Determines if data set should be reused if <em>disposition=NEW</em> and a data set with matching name already exists.</p>
+<p>If <em>reuse=true</em>, <em>disposition</em> will be automatically switched to <code class="docutils literal notranslate"><span class="pre">SHR</span></code>.</p>
+<p>If <em>reuse=false</em>, and a data set with a matching name already exists, allocation will fail.</p>
+<p>Mutually exclusive with <em>replace</em>.</p>
+<p><em>reuse</em> is only considered when <em>disposition=NEW</em></p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: bool</div>
+</div>
+</dd>
+<dt>sms_data_class</dt><dd><p>The desired data class for a new SMS-managed data set.</p>
+<p><em>sms_data_class</em> is ignored if specified for an existing data set.</p>
+<p>All values must be between 1-8 alpha-numeric characters.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: str</div>
+</div>
+</dd>
+<dt>sms_management_class</dt><dd><p>The desired management class for a new SMS-managed data set.</p>
+<p><em>sms_management_class</em> is ignored if specified for an existing data set.</p>
+<p>All values must be between 1-8 alpha-numeric characters.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: str</div>
+</div>
+</dd>
+<dt>sms_storage_class</dt><dd><p>The desired storage class for a new SMS-managed data set.</p>
+<p><em>sms_storage_class</em> is ignored if specified for an existing data set.</p>
+<p>All values must be between 1-8 alpha-numeric characters.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: str</div>
+</div>
+</dd>
+<dt>space_primary</dt><dd><p>The primary amount of space to allocate for a new data set.</p>
+<p>The value provided to <em>space_type</em> is used as the unit of space for the allocation.</p>
+<p>Not applicable when <em>space_type=blklgth</em> or <em>space_type=reclgth</em>.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: int</div>
+</div>
+</dd>
+<dt>space_secondary</dt><dd><p>When primary allocation of space is filled, secondary space will be allocated with the provided size as needed.</p>
+<p>The value provided to <em>space_type</em> is used as the unit of space for the allocation.</p>
+<p>Not applicable when <em>space_type=blklgth</em> or <em>space_type=reclgth</em>.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: int</div>
+</div>
+</dd>
+<dt>space_type</dt><dd><p>The unit of measurement to use when allocating space for a new data set using <em>space_primary</em> and <em>space_secondary</em>.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: str</div>
+<div class="line"><strong>choices</strong>: trk, cyl, b, k, m, g</div>
+</div>
+</dd>
+<dt>type</dt><dd><p>The data set type. Only required when <em>disposition=new</em>.</p>
+<p>Maps to DSNTYPE on z/OS.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: str</div>
+<div class="line"><strong>choices</strong>: library, pds, pdse, large, basic, seq, rrds, esds, lds, ksds</div>
+</div>
+</dd>
+<dt>volumes</dt><dd><p>The volume or volumes on which a data set resides or will reside.</p>
+<p>Do not specify the same volume multiple times.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: raw</div>
+</div>
+</dd>
+</dl>
+</dd>
+<dt>dd_input</dt><dd><p><em>dd_input</em> is used to specify an in-stream data set.</p>
+<p>Input will be saved to a temporary data set with a record length of 80.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: dict</div>
+</div>
+<dl>
+<dt>content</dt><dd><p>The input contents for the DD.</p>
+<p><em>dd_input</em> supports single or multiple lines of input.</p>
+<p>Multi-line input can be provided as a multi-line string or a list of strings with 1 line per list item.</p>
+<p>If a list of strings is provided, newlines will be added to each of the lines when used as input.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: raw</div>
+</div>
+</dd>
+<dt>return_content</dt><dd><p>Determines how content should be returned to the user.</p>
+<p>If not provided, no content from the DD is returned.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: dict</div>
+</div>
+<dl>
+<dt>response_encoding</dt><dd><p>The encoding to use when returning the contents of the data set.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: str</div>
+<div class="line"><strong>default</strong>: iso8859-1</div>
+</div>
+</dd>
+<dt>src_encoding</dt><dd><p>The encoding of the data set on the z/OS system.</p>
+<p>for <em>dd_input</em>, <em>src_encoding</em> should generally not need to be changed.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: str</div>
+<div class="line"><strong>default</strong>: ibm-1047</div>
+</div>
+</dd>
+<dt>type</dt><dd><p>The type of the content to be returned.</p>
+<p><code class="docutils literal notranslate"><span class="pre">text</span></code> means return content in encoding specified by <em>response_encoding</em>.</p>
+<p><em>src_encoding</em> and <em>response_encoding</em> are only used when <em>type=text</em>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">base64</span></code> means return content in binary mode.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: True</div>
+<div class="line"><strong>type</strong>: str</div>
+<div class="line"><strong>choices</strong>: text, base64</div>
+</div>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd>
+<dt>dd_unix</dt><dd><p>The path to a file in UNIX System Services (USS).</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: dict</div>
+</div>
+<dl>
+<dt>access_group</dt><dd><p>The kind of access to request for the UNIX file specified in <em>path</em>.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: str</div>
+<div class="line"><strong>choices</strong>: r, w, rw, read_only, write_only, read_write, ordonly, owronly, ordwr</div>
+</div>
+</dd>
+<dt>block_size</dt><dd><p>The block size, in bytes, for the UNIX file.</p>
+<p>Default is dependent on <em>record_format</em></p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: int</div>
+</div>
+</dd>
+<dt>disposition_abnormal</dt><dd><p>Indicates what to do with the UNIX file after abnormal termination of the program.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: str</div>
+<div class="line"><strong>choices</strong>: keep, delete</div>
+</div>
+</dd>
+<dt>disposition_normal</dt><dd><p>Indicates what to do with the UNIX file after normal termination of the program.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: str</div>
+<div class="line"><strong>choices</strong>: keep, delete</div>
+</div>
+</dd>
+<dt>file_data_type</dt><dd><p>The type of data that is (or will be) stored in the file specified in <em>path</em>.</p>
+<p>Maps to FILEDATA on z/OS.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: str</div>
+<div class="line"><strong>default</strong>: binary</div>
+<div class="line"><strong>choices</strong>: binary, text, record</div>
+</div>
+</dd>
+<dt>mode</dt><dd><p>The file access attributes when the UNIX file is created specified in <em>path</em>.</p>
+<p>Specify the mode as an octal number similar to chmod.</p>
+<p>Maps to PATHMODE on z/OS.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: int</div>
+</div>
+</dd>
+<dt>path</dt><dd><p>The path to an existing UNIX file.</p>
+<p>Or provide the path to an new created UNIX file when <em>status_group=OCREAT</em>.</p>
+<p>The provided path must be absolute.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: True</div>
+<div class="line"><strong>type</strong>: str</div>
+</div>
+</dd>
+<dt>record_format</dt><dd><p>The record format for the UNIX file.</p>
+<p><em>record_format</em> is required in situations where the data will be processed as records and therefore, <em>record_length</em>, <em>block_size</em> and <em>record_format</em> need to be supplied since a UNIX file would normally be treated as a stream of bytes.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: str</div>
+<div class="line"><strong>choices</strong>: u, vb, vba, fb, fba</div>
+</div>
+</dd>
+<dt>record_length</dt><dd><p>The logical record length for the UNIX file.</p>
+<p><em>record_length</em> is required in situations where the data will be processed as records and therefore, <em>record_length</em>, <em>block_size</em> and <em>record_format</em> need to be supplied since a UNIX file would normally be treated as a stream of bytes.</p>
+<p>Maps to LRECL on z/OS.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: int</div>
+</div>
+</dd>
+<dt>return_content</dt><dd><p>Determines how content should be returned to the user.</p>
+<p>If not provided, no content from the DD is returned.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: dict</div>
+</div>
+<dl>
+<dt>response_encoding</dt><dd><p>The encoding to use when returning the contents of the file.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: str</div>
+<div class="line"><strong>default</strong>: iso8859-1</div>
+</div>
+</dd>
+<dt>src_encoding</dt><dd><p>The encoding of the file on the z/OS system.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: str</div>
+<div class="line"><strong>default</strong>: ibm-1047</div>
+</div>
+</dd>
+<dt>type</dt><dd><p>The type of the content to be returned.</p>
+<p><code class="docutils literal notranslate"><span class="pre">text</span></code> means return content in encoding specified by <em>response_encoding</em>.</p>
+<p><em>src_encoding</em> and <em>response_encoding</em> are only used when <em>type=text</em>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">base64</span></code> means return content in binary mode.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: True</div>
+<div class="line"><strong>type</strong>: str</div>
+<div class="line"><strong>choices</strong>: text, base64</div>
+</div>
+</dd>
+</dl>
+</dd>
+<dt>status_group</dt><dd><p>The status for the UNIX file specified in <em>path</em>.</p>
+<p>If you do not specify a value for the <em>status_group</em> parameter the module assumes that the pathname exists, searches for it, and fails the module if the pathname does not exist.</p>
+<p>Maps to PATHOPTS status group file options on z/OS.</p>
+<p>You can specify up to 6 choices.</p>
+<p><em>oappend</em> sets the file offset to the end of the file before each write, so that data is written at the end of the file.</p>
+<p><em>ocreat</em> specifies that if the file does not exist, the system is to create it. If a directory specified in the pathname does not exist, one is not created, and the new file is not created. If the file already exists and <em>oexcl</em> was not specified, the system allows the program to use the existing file. If the file already exists and <em>oexcl</em> was specified, the system fails the allocation and the job step.</p>
+<p><em>oexcl</em> specifies that if the file does not exist, the system is to create it. If the file already exists, the system fails the allocation and the job step. The system ignores <em>oexcl</em> if <em>ocreat</em> is not also specified.</p>
+<p><em>onoctty</em> specifies that if the PATH parameter identifies a terminal device, opening of the file does not make the terminal device the controlling terminal for the process.</p>
+<p><em>ononblock</em> specifies the following, depending on the type of file</p>
+<p>For a FIFO special file</p>
+<ol class="arabic simple">
+<li><p>With <em>ononblock</em> specified and <em>ordonly</em> access, an open function for reading-only returns without delay.</p></li>
+<li><p>With <em>ononblock</em> not specified and <em>ordonly</em> access, an open function for reading-only blocks (waits) until a process opens the file for writing.</p></li>
+<li><p>With <em>ononblock</em> specified and <em>owronly</em> access, an open function for writing-only returns an error if no process currently has the file open for reading.</p></li>
+<li><p>With <em>ononblock</em> not specified and <em>owronly</em> access, an open function for writing-only blocks (waits) until a process opens the file for reading.</p></li>
+<li><p>For a character special file that supports nonblocking open</p></li>
+<li><p>If <em>ononblock</em> is specified, an open function returns without blocking (waiting) until the device is ready or available. Device response depends on the type of device.</p></li>
+<li><p>If <em>ononblock</em> is not specified, an open function blocks (waits) until the device is ready or available.</p></li>
+</ol>
+<p><em>ononblock</em> has no effect on other file types.</p>
+<p><em>osync</em> specifies that the system is to move data from buffer storage to permanent storage before returning control from a callable service that performs a write.</p>
+<p><em>otrunc</em> specifies that the system is to truncate the file length to zero if all the following are true: the file specified exists, the file is a regular file, and the file successfully opened with <em>ordwr</em> or <em>owronly</em>.</p>
+<p>When <em>otrunc</em> is specified, the system does not change the mode and owner. <em>otrunc</em> has no effect on FIFO special files or character special files.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: list</div>
+<div class="line"><strong>choices</strong>: oappend, ocreat, oexcl, onoctty, ononblock, osync, otrunc</div>
+</div>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd>
+<dt>dd_data_set</dt><dd><p>Specify a data set.</p>
+<p><em>dd_data_set</em> can reference an existing data set or be used to define a new data set to be created during execution.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: dict</div>
+</div>
+<dl>
+<dt>backup</dt><dd><p>Determines if a backup should be made of an existing data set when <em>disposition=NEW</em>, <em>replace=true</em>, and a data set with the desired name is found.</p>
+<p><em>backup</em> is only used when <em>replace=true</em>.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: bool</div>
+</div>
+</dd>
+<dt>block_size</dt><dd><p>The maximum length of a block in bytes.</p>
+<p>Default is dependent on <em>record_format</em></p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: int</div>
+</div>
+</dd>
+<dt>data_set_name</dt><dd><p>The data set name.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: str</div>
+</div>
+</dd>
+<dt>dd_name</dt><dd><p>The DD name.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: True</div>
+<div class="line"><strong>type</strong>: str</div>
+</div>
+</dd>
+<dt>directory_blocks</dt><dd><p>The number of directory blocks to allocate to the data set.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: int</div>
+</div>
+</dd>
+<dt>disposition</dt><dd><p><em>disposition</em> indicates the status of a data set.</p>
+<p>Defaults to shr.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: str</div>
+<div class="line"><strong>choices</strong>: new, shr, mod, old</div>
+</div>
+</dd>
+<dt>disposition_abnormal</dt><dd><p><em>disposition_abnormal</em> indicates what to do with the data set after an abnormal termination of the program.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: str</div>
+<div class="line"><strong>choices</strong>: delete, keep, catlg, catalog, uncatlg, uncatalog</div>
+</div>
+</dd>
+<dt>disposition_normal</dt><dd><p><em>disposition_normal</em> indicates what to do with the data set after a normal termination of the program.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: str</div>
+<div class="line"><strong>choices</strong>: delete, keep, catlg, catalog, uncatlg, uncatalog</div>
+</div>
+</dd>
+<dt>encryption_key_1</dt><dd><p>The encrypting key used by the Encryption Key Manager.</p>
+<p>Specification of the key labels does not by itself enable encryption. Encryption must be enabled by a data class that specifies an encryption format.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: dict</div>
+</div>
+<dl>
+<dt>encoding</dt><dd><p>How the label for the key encrypting key specified by <em>label</em> is encoded by the Encryption Key Manager.</p>
+<p><em>encoding</em> can either be set to <code class="docutils literal notranslate"><span class="pre">L</span></code> for label encoding, or <code class="docutils literal notranslate"><span class="pre">H</span></code> for hash encoding.</p>
+<p>Maps to KEYCD1 on z/OS.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: True</div>
+<div class="line"><strong>type</strong>: str</div>
+<div class="line"><strong>choices</strong>: l, h</div>
+</div>
+</dd>
+<dt>label</dt><dd><p>The label for the key encrypting key used by the Encryption Key Manager.</p>
+<p>Key label must have a private key associated with it.</p>
+<p><em>label</em> can be a maximum of 64 characters.</p>
+<p>Maps to KEYLAB1 on z/OS.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: True</div>
+<div class="line"><strong>type</strong>: str</div>
+</div>
+</dd>
+</dl>
+</dd>
+<dt>encryption_key_2</dt><dd><p>The encrypting key used by the Encryption Key Manager.</p>
+<p>Specification of the key labels does not by itself enable encryption. Encryption must be enabled by a data class that specifies an encryption format.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: dict</div>
+</div>
+<dl>
+<dt>encoding</dt><dd><p>How the label for the key encrypting key specified by <em>label</em> is encoded by the Encryption Key Manager.</p>
+<p><em>encoding</em> can either be set to <code class="docutils literal notranslate"><span class="pre">L</span></code> for label encoding, or <code class="docutils literal notranslate"><span class="pre">H</span></code> for hash encoding.</p>
+<p>Maps to KEYCD2 on z/OS.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: True</div>
+<div class="line"><strong>type</strong>: str</div>
+<div class="line"><strong>choices</strong>: l, h</div>
+</div>
+</dd>
+<dt>label</dt><dd><p>The label for the key encrypting key used by the Encryption Key Manager.</p>
+<p>Key label must have a private key associated with it.</p>
+<p><em>label</em> can be a maximum of 64 characters.</p>
+<p>Maps to KEYLAB2 on z/OS.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: True</div>
+<div class="line"><strong>type</strong>: str</div>
+</div>
+</dd>
+</dl>
+</dd>
+<dt>key_label</dt><dd><p>The label for the encryption key used by the system to encrypt the data set.</p>
+<p><em>key_label</em> is the public name of a protected encryption key in the ICSF key repository.</p>
+<p><em>key_label</em> should only be provided when creating an extended format data set.</p>
+<p>Maps to DSKEYLBL on z/OS.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: str</div>
+</div>
+</dd>
+<dt>key_length</dt><dd><p>The length of the keys used in a new data set.</p>
+<p>If using SMS, setting <em>key_length</em> overrides the key length defined in the SMS data class of the data set.</p>
+<p>Valid values are (0-255 non-vsam), (1-255 vsam).</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: int</div>
+</div>
+</dd>
+<dt>key_offset</dt><dd><p>The position of the first byte of the record key in each logical record of a new VSAM data set.</p>
+<p>The first byte of a logical record is position 0.</p>
+<p>Provide <em>key_offset</em> only for VSAM key-sequenced data sets.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: int</div>
+</div>
+</dd>
+<dt>record_format</dt><dd><p>The format and characteristics of the records for new data set.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: str</div>
+<div class="line"><strong>choices</strong>: u, vb, vba, fb, fba</div>
+</div>
+</dd>
+<dt>record_length</dt><dd><p>The logical record length. (e.g <code class="docutils literal notranslate"><span class="pre">80</span></code>).</p>
+<p>For variable data sets, the length must include the 4-byte prefix area.</p>
+<p>Defaults vary depending on format: If FB/FBA 80, if VB/VBA 137, if U 0.</p>
+<p>Valid values are (1-32760 for non-vsam,  1-32761 for vsam).</p>
+<p>Maps to LRECL on z/OS.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: int</div>
+</div>
+</dd>
+<dt>replace</dt><dd><p>Determines if a data set should be replaced if <em>disposition=NEW</em> and a data set with a matching name already exists.</p>
+<p>If <em>replace=true</em>, the original data set will be deleted, and a new data set created.</p>
+<p>If <em>replace=false</em>, and a data set with a matching name already exists, allocation will fail.</p>
+<p>Mutually exclusive with <em>reuse</em>.</p>
+<p><em>replace</em> is only considered when <em>disposition=NEW</em></p>
+<p><em>replace</em> will result in loss of all data in the original data set unless <em>backup</em> is specified.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: bool</div>
+</div>
+</dd>
+<dt>return_content</dt><dd><p>Determines how content should be returned to the user.</p>
+<p>If not provided, no content from the DD is returned.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: dict</div>
+</div>
+<dl>
+<dt>response_encoding</dt><dd><p>The encoding to use when returning the contents of the data set.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: str</div>
+<div class="line"><strong>default</strong>: iso8859-1</div>
+</div>
+</dd>
+<dt>src_encoding</dt><dd><p>The encoding of the data set on the z/OS system.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: str</div>
+<div class="line"><strong>default</strong>: ibm-1047</div>
+</div>
+</dd>
+<dt>type</dt><dd><p>The type of the content to be returned.</p>
+<p><code class="docutils literal notranslate"><span class="pre">text</span></code> means return content in encoding specified by <em>response_encoding</em>.</p>
+<p><em>src_encoding</em> and <em>response_encoding</em> are only used when <em>type=text</em>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">base64</span></code> means return content in binary mode.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: True</div>
+<div class="line"><strong>type</strong>: str</div>
+<div class="line"><strong>choices</strong>: text, base64</div>
+</div>
+</dd>
+</dl>
+</dd>
+<dt>reuse</dt><dd><p>Determines if a data set should be reused if <em>disposition=NEW</em> and if a data set with a matching name already exists.</p>
+<p>If <em>reuse=true</em>, <em>disposition</em> will be automatically switched to <code class="docutils literal notranslate"><span class="pre">SHR</span></code>.</p>
+<p>If <em>reuse=false</em>, and a data set with a matching name already exists, allocation will fail.</p>
+<p>Mutually exclusive with <em>replace</em>.</p>
+<p><em>reuse</em> is only considered when <em>disposition=NEW</em></p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: bool</div>
+</div>
+</dd>
+<dt>sms_data_class</dt><dd><p>The desired data class for a new SMS-managed data set.</p>
+<p><em>sms_data_class</em> is ignored if specified for an existing data set.</p>
+<p>All values must be between 1-8 alpha-numeric characters.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: str</div>
+</div>
+</dd>
+<dt>sms_management_class</dt><dd><p>The desired management class for a new SMS-managed data set.</p>
+<p><em>sms_management_class</em> is ignored if specified for an existing data set.</p>
+<p>All values must be between 1-8 alpha-numeric characters.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: str</div>
+</div>
+</dd>
+<dt>sms_storage_class</dt><dd><p>The desired storage class for a new SMS-managed data set.</p>
+<p><em>sms_storage_class</em> is ignored if specified for an existing data set.</p>
+<p>All values must be between 1-8 alpha-numeric characters.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: str</div>
+</div>
+</dd>
+<dt>space_primary</dt><dd><p>The primary amount of space to allocate for a new data set.</p>
+<p>The value provided to <em>space_type</em> is used as the unit of space for the allocation.</p>
+<p>Not applicable when <em>space_type=blklgth</em> or <em>space_type=reclgth</em>.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: int</div>
+</div>
+</dd>
+<dt>space_secondary</dt><dd><p>When primary allocation of space is filled, secondary space will be allocated with the provided size as needed.</p>
+<p>The value provided to <em>space_type</em> is used as the unit of space for the allocation.</p>
+<p>Not applicable when <em>space_type=blklgth</em> or <em>space_type=reclgth</em>.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: int</div>
+</div>
+</dd>
+<dt>space_type</dt><dd><p>The unit of measurement to use when allocating space for a new data set using <em>space_primary</em> and <em>space_secondary</em>.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: str</div>
+<div class="line"><strong>choices</strong>: trk, cyl, b, k, m, g</div>
+</div>
+</dd>
+<dt>type</dt><dd><p>The data set type. Only required when <em>disposition=new</em>.</p>
+<p>Maps to DSNTYPE on z/OS.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: str</div>
+<div class="line"><strong>choices</strong>: library, pds, pdse, large, basic, seq, rrds, esds, lds, ksds</div>
+</div>
+</dd>
+<dt>volumes</dt><dd><p>The volume or volumes on which a data set resides or will reside.</p>
+<p>Do not specify the same volume multiple times.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: raw</div>
+</div>
+</dd>
+</dl>
+</dd>
+<dt>dd_dummy</dt><dd><p>Use <em>dd_dummy</em> to specify - No device or external storage space is to be allocated to the data set. - No disposition processing is to be performed on the data set.</p>
+<p><em>dd_dummy</em> accepts no content input.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: dict</div>
+</div>
+<dl>
+<dt>dd_name</dt><dd><p>The DD name.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: True</div>
+<div class="line"><strong>type</strong>: str</div>
+</div>
+</dd>
+</dl>
+</dd>
+<dt>dd_input</dt><dd><p><em>dd_input</em> is used to specify an in-stream data set.</p>
+<p>Input will be saved to a temporary data set with a record length of 80.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: dict</div>
+</div>
+<dl>
+<dt>content</dt><dd><p>The input contents for the DD.</p>
+<p><em>dd_input</em> supports single or multiple lines of input.</p>
+<p>Multi-line input can be provided as a multi-line string or a list of strings with 1 line per list item.</p>
+<p>If a list of strings is provided, newlines will be added to each of the lines when used as input.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: raw</div>
+</div>
+</dd>
+<dt>dd_name</dt><dd><p>The DD name.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: True</div>
+<div class="line"><strong>type</strong>: str</div>
+</div>
+</dd>
+<dt>return_content</dt><dd><p>Determines how content should be returned to the user.</p>
+<p>If not provided, no content from the DD is returned.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: dict</div>
+</div>
+<dl>
+<dt>response_encoding</dt><dd><p>The encoding to use when returning the contents of the data set.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: str</div>
+<div class="line"><strong>default</strong>: iso8859-1</div>
+</div>
+</dd>
+<dt>src_encoding</dt><dd><p>The encoding of the data set on the z/OS system.</p>
+<p>for <em>dd_input</em>, <em>src_encoding</em> should generally not need to be changed.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: str</div>
+<div class="line"><strong>default</strong>: ibm-1047</div>
+</div>
+</dd>
+<dt>type</dt><dd><p>The type of the content to be returned.</p>
+<p><code class="docutils literal notranslate"><span class="pre">text</span></code> means return content in encoding specified by <em>response_encoding</em>.</p>
+<p><em>src_encoding</em> and <em>response_encoding</em> are only used when <em>type=text</em>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">base64</span></code> means return content in binary mode.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: True</div>
+<div class="line"><strong>type</strong>: str</div>
+<div class="line"><strong>choices</strong>: text, base64</div>
+</div>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd>
+<dt>dd_output</dt><dd><p>Use <em>dd_output</em> to specify - Content sent to the DD should be returned to the user.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: dict</div>
+</div>
+<dl>
+<dt>dd_name</dt><dd><p>The DD name.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: True</div>
+<div class="line"><strong>type</strong>: str</div>
+</div>
+</dd>
+<dt>return_content</dt><dd><p>Determines how content should be returned to the user.</p>
+<p>If not provided, no content from the DD is returned.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: True</div>
+<div class="line"><strong>type</strong>: dict</div>
+</div>
+<dl>
+<dt>response_encoding</dt><dd><p>The encoding to use when returning the contents of the data set.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: str</div>
+<div class="line"><strong>default</strong>: iso8859-1</div>
+</div>
+</dd>
+<dt>src_encoding</dt><dd><p>The encoding of the data set on the z/OS system.</p>
+<p>for <em>dd_input</em>, <em>src_encoding</em> should generally not need to be changed.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: str</div>
+<div class="line"><strong>default</strong>: ibm-1047</div>
+</div>
+</dd>
+<dt>type</dt><dd><p>The type of the content to be returned.</p>
+<p><code class="docutils literal notranslate"><span class="pre">text</span></code> means return content in encoding specified by <em>response_encoding</em>.</p>
+<p><em>src_encoding</em> and <em>response_encoding</em> are only used when <em>type=text</em>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">base64</span></code> means return content in binary mode.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: True</div>
+<div class="line"><strong>type</strong>: str</div>
+<div class="line"><strong>choices</strong>: text, base64</div>
+</div>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd>
+<dt>dd_unix</dt><dd><p>The path to a file in UNIX System Services (USS).</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: dict</div>
+</div>
+<dl>
+<dt>access_group</dt><dd><p>The kind of access to request for the UNIX file specified in <em>path</em>.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: str</div>
+<div class="line"><strong>choices</strong>: r, w, rw, read_only, write_only, read_write, ordonly, owronly, ordwr</div>
+</div>
+</dd>
+<dt>block_size</dt><dd><p>The block size, in bytes, for the UNIX file.</p>
+<p>Default is dependent on <em>record_format</em></p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: int</div>
+</div>
+</dd>
+<dt>dd_name</dt><dd><p>The DD name.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: True</div>
+<div class="line"><strong>type</strong>: str</div>
+</div>
+</dd>
+<dt>disposition_abnormal</dt><dd><p>Indicates what to do with the UNIX file after abnormal termination of the program.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: str</div>
+<div class="line"><strong>choices</strong>: keep, delete</div>
+</div>
+</dd>
+<dt>disposition_normal</dt><dd><p>Indicates what to do with the UNIX file after normal termination of the program.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: str</div>
+<div class="line"><strong>choices</strong>: keep, delete</div>
+</div>
+</dd>
+<dt>file_data_type</dt><dd><p>The type of data that is (or will be) stored in the file specified in <em>path</em>.</p>
+<p>Maps to FILEDATA on z/OS.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: str</div>
+<div class="line"><strong>default</strong>: binary</div>
+<div class="line"><strong>choices</strong>: binary, text, record</div>
+</div>
+</dd>
+<dt>mode</dt><dd><p>The file access attributes when the UNIX file is created specified in <em>path</em>.</p>
+<p>Specify the mode as an octal number similarly to chmod.</p>
+<p>Maps to PATHMODE on z/OS.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: int</div>
+</div>
+</dd>
+<dt>path</dt><dd><p>The path to an existing UNIX file.</p>
+<p>Or provide the path to an new created UNIX file when <em>status_group=OCREAT</em>.</p>
+<p>The provided path must be absolute.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: True</div>
+<div class="line"><strong>type</strong>: str</div>
+</div>
+</dd>
+<dt>record_format</dt><dd><p>The record format for the UNIX file.</p>
+<p><em>record_format</em> is required in situations where the data will be processed as records and therefore, <em>record_length</em>, <em>block_size</em> and <em>record_format</em> need to be supplied since a UNIX file would normally be treated as a stream of bytes.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: str</div>
+<div class="line"><strong>choices</strong>: u, vb, vba, fb, fba</div>
+</div>
+</dd>
+<dt>record_length</dt><dd><p>The logical record length for the UNIX file.</p>
+<p><em>record_length</em> is required in situations where the data will be processed as records and therefore, <em>record_length</em>, <em>block_size</em> and <em>record_format</em> need to be supplied since a UNIX file would normally be treated as a stream of bytes.</p>
+<p>Maps to LRECL on z/OS.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: int</div>
+</div>
+</dd>
+<dt>return_content</dt><dd><p>Determines how content should be returned to the user.</p>
+<p>If not provided, no content from the DD is returned.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: dict</div>
+</div>
+<dl>
+<dt>response_encoding</dt><dd><p>The encoding to use when returning the contents of the file.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: str</div>
+<div class="line"><strong>default</strong>: iso8859-1</div>
+</div>
+</dd>
+<dt>src_encoding</dt><dd><p>The encoding of the file on the z/OS system.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: str</div>
+<div class="line"><strong>default</strong>: ibm-1047</div>
+</div>
+</dd>
+<dt>type</dt><dd><p>The type of the content to be returned.</p>
+<p><code class="docutils literal notranslate"><span class="pre">text</span></code> means return content in encoding specified by <em>response_encoding</em>.</p>
+<p><em>src_encoding</em> and <em>response_encoding</em> are only used when <em>type=text</em>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">base64</span></code> means return content in binary mode.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: True</div>
+<div class="line"><strong>type</strong>: str</div>
+<div class="line"><strong>choices</strong>: text, base64</div>
+</div>
+</dd>
+</dl>
+</dd>
+<dt>status_group</dt><dd><p>The status for the UNIX file specified in <em>path</em>.</p>
+<p>If you do not specify a value for the <em>status_group</em> parameter, the module assumes that the pathname exists, searches for it, and fails the module if the pathname does not exist.</p>
+<p>Maps to PATHOPTS status group file options on z/OS.</p>
+<p>You can specify up to 6 choices.</p>
+<p><em>oappend</em> sets the file offset to the end of the file before each write, so that data is written at the end of the file.</p>
+<p><em>ocreat</em> specifies that if the file does not exist, the system is to create it. If a directory specified in the pathname does not exist, a new directory and a new file are not created. If the file already exists and <em>oexcl</em> was not specified, the system allows the program to use the existing file. If the file already exists and <em>oexcl</em> was specified, the system fails the allocation and the job step.</p>
+<p><em>oexcl</em> specifies that if the file does not exist, the system is to create it. If the file already exists, the system fails the allocation and the job step. The system ignores <em>oexcl</em> if <em>ocreat</em> is not also specified.</p>
+<p><em>onoctty</em> specifies that if the PATH parameter identifies a terminal device, opening of the file does not make the terminal device the controlling terminal for the process.</p>
+<p><em>ononblock</em> specifies the following, depending on the type of file</p>
+<p>For a FIFO special file</p>
+<ol class="arabic simple">
+<li><p>With <em>ononblock</em> specified and <em>ordonly</em> access, an open function for reading-only returns without delay.</p></li>
+<li><p>With <em>ononblock</em> not specified and <em>ordonly</em> access, an open function for reading-only blocks (waits) until a process opens the file for writing.</p></li>
+<li><p>With <em>ononblock</em> specified and <em>owronly</em> access, an open function for writing-only returns an error if no process currently has the file open for reading.</p></li>
+<li><p>With <em>ononblock</em> not specified and <em>owronly</em> access, an open function for writing-only blocks (waits) until a process opens the file for reading.</p></li>
+<li><p>For a character special file that supports nonblocking open</p></li>
+<li><p>If <em>ononblock</em> is specified, an open function returns without blocking (waiting) until the device is ready or available. Device response depends on the type of device.</p></li>
+<li><p>If <em>ononblock</em> is not specified, an open function blocks (waits) until the device is ready or available.</p></li>
+</ol>
+<p><em>ononblock</em> has no effect on other file types.</p>
+<p><em>osync</em> specifies that the system is to move data from buffer storage to permanent storage before returning control from a callable service that performs a write.</p>
+<p><em>otrunc</em> specifies that the system is to truncate the file length to zero if all the following are true: the file specified exists, the file is a regular file, and the file successfully opened with <em>ordwr</em> or <em>owronly</em>.</p>
+<p>When <em>otrunc</em> is specified, the system does not change the mode and owner. <em>otrunc</em> has no effect on FIFO special files or character special files.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: list</div>
+<div class="line"><strong>choices</strong>: oappend, ocreat, oexcl, onoctty, ononblock, osync, otrunc</div>
+</div>
+</dd>
+</dl>
+</dd>
+<dt>dd_vio</dt><dd><p><em>dd_vio</em> is used to handle temporary data sets.</p>
+<p>VIO data sets reside in the paging space; but, to the problem program and the access method, the data sets appear to reside on a direct access storage device.</p>
+<p>You cannot use VIO for permanent data sets, VSAM data sets, or partitioned data sets extended (PDSEs).</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: dict</div>
+</div>
+<dl>
+<dt>dd_name</dt><dd><p>The DD name.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: True</div>
+<div class="line"><strong>type</strong>: str</div>
+</div>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd>
+<dt>parm</dt><dd><p>The program arguments (e.g. -a=’MARGINS(1,72)’).</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: str</div>
+</div>
+</dd>
+<dt>program_name</dt><dd><p>The name of the z/OS program to run (e.g. IDCAMS, IEFBR14, IEBGENER etc.).</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: True</div>
+<div class="line"><strong>type</strong>: str</div>
+</div>
+</dd>
+<dt>verbose</dt><dd><p>Determines if verbose output should be returned from the underlying utility used by this module.</p>
+<p>When <em>verbose=true</em> verbose output is returned on module failure.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: bool</div>
+</div>
+</dd>
+</dl>
+</div>
+<div class="section" id="examples">
+<h2><a class="toc-backref" href="#id3">Examples</a><a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-yaml+jinja notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">List data sets matching pattern in catalog,</span>
+    <span class="l l-Scalar l-Scalar-Plain">save output to a new sequential data set and return output as text.</span>
+  <span class="nt">zos_mvs_raw</span><span class="p">:</span>
+    <span class="nt">program_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">idcams</span>
+    <span class="nt">auth</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
+    <span class="nt">dds</span><span class="p">:</span>
+      <span class="p p-Indicator">-</span> <span class="nt">dd_data_set</span><span class="p">:</span>
+          <span class="nt">dd_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">sysprint</span>
+          <span class="nt">data_set_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">mypgm.output.ds</span>
+          <span class="nt">disposition</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">new</span>
+          <span class="nt">reuse</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">yes</span>
+          <span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">seq</span>
+          <span class="nt">space_primary</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">5</span>
+          <span class="nt">space_secondary</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
+          <span class="nt">space_type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">m</span>
+          <span class="nt">volumes</span><span class="p">:</span>
+            <span class="p p-Indicator">-</span> <span class="s">&quot;000000&quot;</span>
+          <span class="nt">record_format</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">fb</span>
+          <span class="nt">return_content</span><span class="p">:</span>
+            <span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">text</span>
+      <span class="p p-Indicator">-</span> <span class="nt">dd_input</span><span class="p">:</span>
+          <span class="nt">dd_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">sysin</span>
+          <span class="nt">content</span><span class="p">:</span> <span class="s">&quot;</span><span class="nv"> </span><span class="s">LISTCAT</span><span class="nv"> </span><span class="s">ENTRIES(&#39;SOME.DATASET.*&#39;)&quot;</span>
+
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">List data sets matching patterns in catalog,</span>
+    <span class="l l-Scalar l-Scalar-Plain">save output to a new sequential data set and return output as text.</span>
+  <span class="nt">zos_mvs_raw</span><span class="p">:</span>
+    <span class="nt">program_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">idcams</span>
+    <span class="nt">auth</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
+    <span class="nt">dds</span><span class="p">:</span>
+      <span class="p p-Indicator">-</span> <span class="nt">dd_data_set</span><span class="p">:</span>
+          <span class="nt">dd_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">sysprint</span>
+          <span class="nt">data_set_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">mypgm.output.ds</span>
+          <span class="nt">disposition</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">new</span>
+          <span class="nt">reuse</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">yes</span>
+          <span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">seq</span>
+          <span class="nt">space_primary</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">5</span>
+          <span class="nt">space_secondary</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
+          <span class="nt">space_type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">m</span>
+          <span class="nt">volumes</span><span class="p">:</span>
+            <span class="p p-Indicator">-</span> <span class="s">&quot;000000&quot;</span>
+          <span class="nt">record_format</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">fb</span>
+          <span class="nt">return_content</span><span class="p">:</span>
+            <span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">text</span>
+      <span class="p p-Indicator">-</span> <span class="nt">dd_input</span><span class="p">:</span>
+          <span class="nt">dd_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">sysin</span>
+          <span class="nt">content</span><span class="p">:</span>
+            <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">LISTCAT ENTRIES(&#39;SOME.DATASET.*&#39;)</span>
+            <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">LISTCAT ENTRIES(&#39;SOME.OTHER.DS.*&#39;)</span>
+            <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">LISTCAT ENTRIES(&#39;YET.ANOTHER.DS.*&#39;)</span>
+
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">List data sets matching pattern in catalog,</span>
+    <span class="l l-Scalar l-Scalar-Plain">save output to an existing sequential data set and</span>
+    <span class="l l-Scalar l-Scalar-Plain">return output as text.</span>
+  <span class="nt">zos_mvs_raw</span><span class="p">:</span>
+    <span class="nt">program_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">idcams</span>
+    <span class="nt">auth</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
+    <span class="nt">dds</span><span class="p">:</span>
+      <span class="p p-Indicator">-</span> <span class="nt">dd_data_set</span><span class="p">:</span>
+          <span class="nt">dd_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">sysprint</span>
+          <span class="nt">data_set_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">mypgm.output.ds</span>
+          <span class="nt">disposition</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">shr</span>
+          <span class="nt">return_content</span><span class="p">:</span>
+            <span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">text</span>
+      <span class="p p-Indicator">-</span> <span class="nt">dd_input</span><span class="p">:</span>
+          <span class="nt">dd_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">sysin</span>
+          <span class="nt">content</span><span class="p">:</span> <span class="s">&quot;</span><span class="nv"> </span><span class="s">LISTCAT</span><span class="nv"> </span><span class="s">ENTRIES(&#39;SOME.DATASET.*&#39;)&quot;</span>
+
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">List data sets matching pattern in catalog,</span>
+    <span class="l l-Scalar l-Scalar-Plain">save output to a sequential data set. If the data set exists,</span>
+    <span class="l l-Scalar l-Scalar-Plain">then reuse it, if it does not exist, create it. Returns output as text.</span>
+  <span class="nt">zos_mvs_raw</span><span class="p">:</span>
+    <span class="nt">program_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">idcams</span>
+    <span class="nt">auth</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
+    <span class="nt">dds</span><span class="p">:</span>
+      <span class="p p-Indicator">-</span> <span class="nt">dd_data_set</span><span class="p">:</span>
+          <span class="nt">dd_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">sysprint</span>
+          <span class="nt">data_set_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">mypgm.output.ds</span>
+          <span class="nt">disposition</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">new</span>
+          <span class="nt">reuse</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">yes</span>
+          <span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">seq</span>
+          <span class="nt">space_primary</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">5</span>
+          <span class="nt">space_secondary</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
+          <span class="nt">space_type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">m</span>
+          <span class="nt">volumes</span><span class="p">:</span>
+            <span class="p p-Indicator">-</span> <span class="s">&quot;000000&quot;</span>
+          <span class="nt">record_format</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">fb</span>
+          <span class="nt">return_content</span><span class="p">:</span>
+            <span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">text</span>
+      <span class="p p-Indicator">-</span> <span class="nt">dd_input</span><span class="p">:</span>
+          <span class="nt">dd_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">sysin</span>
+          <span class="nt">content</span><span class="p">:</span> <span class="s">&quot;</span><span class="nv"> </span><span class="s">LISTCAT</span><span class="nv"> </span><span class="s">ENTRIES(&#39;SOME.DATASET.*&#39;)&quot;</span>
+
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">List data sets matching pattern in catalog,</span>
+    <span class="l l-Scalar l-Scalar-Plain">save output to a sequential data set. If the data set exists,</span>
+    <span class="l l-Scalar l-Scalar-Plain">then back up the existing data set and replace it.</span>
+    <span class="l l-Scalar l-Scalar-Plain">If the data set does not exist, create it.</span>
+    <span class="l l-Scalar l-Scalar-Plain">Returns backup name (if a backup was made) and output as text,</span>
+    <span class="l l-Scalar l-Scalar-Plain">and backup name.</span>
+  <span class="nt">zos_mvs_raw</span><span class="p">:</span>
+    <span class="nt">program_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">idcams</span>
+    <span class="nt">auth</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
+    <span class="nt">dds</span><span class="p">:</span>
+      <span class="p p-Indicator">-</span> <span class="nt">dd_data_set</span><span class="p">:</span>
+          <span class="nt">dd_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">sysprint</span>
+          <span class="nt">data_set_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">mypgm.output.ds</span>
+          <span class="nt">disposition</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">new</span>
+          <span class="nt">replace</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">yes</span>
+          <span class="nt">backup</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">yes</span>
+          <span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">seq</span>
+          <span class="nt">space_primary</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">5</span>
+          <span class="nt">space_secondary</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
+          <span class="nt">space_type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">m</span>
+          <span class="nt">volumes</span><span class="p">:</span>
+            <span class="p p-Indicator">-</span> <span class="s">&quot;000000&quot;</span>
+            <span class="p p-Indicator">-</span> <span class="s">&quot;111111&quot;</span>
+            <span class="p p-Indicator">-</span> <span class="s">&quot;SCR002&quot;</span>
+          <span class="nt">record_format</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">fb</span>
+          <span class="nt">return_content</span><span class="p">:</span>
+            <span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">text</span>
+      <span class="p p-Indicator">-</span> <span class="nt">dd_input</span><span class="p">:</span>
+          <span class="nt">dd_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">sysin</span>
+          <span class="nt">content</span><span class="p">:</span> <span class="s">&quot;</span><span class="nv"> </span><span class="s">LISTCAT</span><span class="nv"> </span><span class="s">ENTRIES(&#39;SOME.DATASET.*&#39;)&quot;</span>
+
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">List data sets matching pattern in catalog,</span>
+    <span class="l l-Scalar l-Scalar-Plain">save output to a file in UNIX System Services.</span>
+  <span class="nt">zos_raw</span><span class="p">:</span>
+    <span class="l l-Scalar l-Scalar-Plain">save output to a file in UNIX System Services.</span>
+  <span class="nt">zos_mvs_raw</span><span class="p">:</span>
+    <span class="nt">program_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">idcams</span>
+    <span class="nt">auth</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
+    <span class="nt">dds</span><span class="p">:</span>
+      <span class="p p-Indicator">-</span> <span class="nt">dd_unix</span><span class="p">:</span>
+          <span class="nt">dd_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">sysprint</span>
+          <span class="nt">path</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/u/myuser/outputfile.txt</span>
+      <span class="p p-Indicator">-</span> <span class="nt">dd_input</span><span class="p">:</span>
+          <span class="nt">dd_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">sysin</span>
+          <span class="nt">content</span><span class="p">:</span> <span class="s">&quot;</span><span class="nv"> </span><span class="s">LISTCAT</span><span class="nv"> </span><span class="s">ENTRIES(&#39;SOME.DATASET.*&#39;)&quot;</span>
+
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">List data sets matching pattern in catalog,</span>
+    <span class="l l-Scalar l-Scalar-Plain">save output to a file in UNIX System Services.</span>
+    <span class="l l-Scalar l-Scalar-Plain">Return the contents of the file in encoding IBM-1047,</span>
+    <span class="l l-Scalar l-Scalar-Plain">while the file is encoded in ISO8859-1.</span>
+  <span class="nt">zos_mvs_raw</span><span class="p">:</span>
+    <span class="nt">program_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">idcams</span>
+    <span class="nt">auth</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
+    <span class="nt">dds</span><span class="p">:</span>
+      <span class="p p-Indicator">-</span> <span class="nt">dd_unix</span><span class="p">:</span>
+          <span class="nt">dd_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">sysprint</span>
+          <span class="nt">path</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/u/myuser/outputfile.txt</span>
+          <span class="nt">return_content</span><span class="p">:</span>
+            <span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">text</span>
+            <span class="nt">src_encoding</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">iso8859-1</span>
+            <span class="nt">response_encoding</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ibm-1047</span>
+      <span class="p p-Indicator">-</span> <span class="nt">dd_input</span><span class="p">:</span>
+          <span class="nt">dd_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">sysin</span>
+          <span class="nt">content</span><span class="p">:</span> <span class="s">&quot;</span><span class="nv"> </span><span class="s">LISTCAT</span><span class="nv"> </span><span class="s">ENTRIES(&#39;SOME.DATASET.*&#39;)&quot;</span>
+
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">List data sets matching pattern in catalog,</span>
+    <span class="l l-Scalar l-Scalar-Plain">save output to a file in UNIX System Services.</span>
+    <span class="l l-Scalar l-Scalar-Plain">Return the contents of the file in encoding IBM-1047,</span>
+    <span class="l l-Scalar l-Scalar-Plain">while the file is encoded in ISO8859-1.</span>
+  <span class="nt">zos_mvs_raw</span><span class="p">:</span>
+    <span class="nt">program_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">idcams</span>
+    <span class="nt">auth</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
+    <span class="nt">dds</span><span class="p">:</span>
+      <span class="p p-Indicator">-</span> <span class="nt">dd_unix</span><span class="p">:</span>
+          <span class="nt">dd_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">sysprint</span>
+          <span class="nt">path</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/u/myuser/outputfile.txt</span>
+          <span class="nt">return_content</span><span class="p">:</span>
+            <span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">text</span>
+            <span class="nt">src_encoding</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">iso8859-1</span>
+            <span class="nt">response_encoding</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ibm-1047</span>
+      <span class="p p-Indicator">-</span> <span class="nt">dd_input</span><span class="p">:</span>
+          <span class="nt">dd_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">sysin</span>
+          <span class="nt">content</span><span class="p">:</span> <span class="s">&quot;</span><span class="nv"> </span><span class="s">LISTCAT</span><span class="nv"> </span><span class="s">ENTRIES(&#39;SOME.DATASET.*&#39;)&quot;</span>
+
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">List data sets matching pattern in catalog,</span>
+    <span class="l l-Scalar l-Scalar-Plain">return output to user, but don&#39;t store in persistent storage.</span>
+    <span class="l l-Scalar l-Scalar-Plain">Return the contents of the file in encoding IBM-1047,</span>
+    <span class="l l-Scalar l-Scalar-Plain">while the file is encoded in ISO8859-1.</span>
+  <span class="nt">zos_mvs_raw</span><span class="p">:</span>
+    <span class="nt">program_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">idcams</span>
+    <span class="nt">auth</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
+    <span class="nt">dds</span><span class="p">:</span>
+      <span class="p p-Indicator">-</span> <span class="nt">dd_output</span><span class="p">:</span>
+          <span class="nt">dd_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">sysprint</span>
+          <span class="nt">return_content</span><span class="p">:</span>
+            <span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">text</span>
+            <span class="nt">src_encoding</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">iso8859-1</span>
+            <span class="nt">response_encoding</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ibm-1047</span>
+      <span class="p p-Indicator">-</span> <span class="nt">dd_input</span><span class="p">:</span>
+          <span class="nt">dd_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">sysin</span>
+          <span class="nt">content</span><span class="p">:</span> <span class="s">&quot;</span><span class="nv"> </span><span class="s">LISTCAT</span><span class="nv"> </span><span class="s">ENTRIES(&#39;SOME.DATASET.*&#39;)&quot;</span>
+
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Take a set of data sets and write them to an archive.</span>
+  <span class="nt">zos_mvs_raw</span><span class="p">:</span>
+    <span class="nt">program_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">adrdssu</span>
+    <span class="nt">auth</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">yes</span>
+    <span class="nt">dds</span><span class="p">:</span>
+      <span class="p p-Indicator">-</span> <span class="nt">dd_data_set</span><span class="p">:</span>
+          <span class="nt">dd_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">archive</span>
+          <span class="nt">data_set_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">myhlq.stor.darv1</span>
+          <span class="nt">disposition</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">old</span>
+      <span class="p p-Indicator">-</span> <span class="nt">dd_data_set</span><span class="p">:</span>
+          <span class="nt">dd_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">sysin</span>
+          <span class="nt">data_set_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">myhlq.adrdssu.cmd</span>
+          <span class="nt">disposition</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">shr</span>
+      <span class="p p-Indicator">-</span> <span class="nt">dd_dummy</span><span class="p">:</span>
+          <span class="nt">dd_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">sysprint</span>
+
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Merge two sequential data sets and write them to new data set</span>
+  <span class="nt">zos_mvs_raw</span><span class="p">:</span>
+    <span class="nt">program_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">sort</span>
+    <span class="nt">auth</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">no</span>
+    <span class="nt">parm</span><span class="p">:</span> <span class="s">&quot;MSGPRT=CRITICAL,LIST&quot;</span>
+    <span class="nt">dds</span><span class="p">:</span>
+      <span class="p p-Indicator">-</span> <span class="nt">dd_data_set</span><span class="p">:</span>
+          <span class="nt">dd_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">sortin01</span>
+          <span class="nt">data_set_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">myhlq.dfsort.master</span>
+          <span class="nt">disposition</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">shr</span>
+      <span class="p p-Indicator">-</span> <span class="nt">dd_data_set</span><span class="p">:</span>
+          <span class="nt">dd_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">sortin02</span>
+          <span class="nt">data_set_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">myhlq.dfsort.new</span>
+      <span class="p p-Indicator">-</span> <span class="nt">dd_input</span><span class="p">:</span>
+          <span class="nt">dd_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">sysin</span>
+          <span class="nt">content</span><span class="p">:</span> <span class="s">&quot;</span><span class="nv"> </span><span class="s">MERGE</span><span class="nv"> </span><span class="s">FORMAT=CH,FIELDS=(1,9,A)&quot;</span>
+      <span class="p p-Indicator">-</span> <span class="nt">dd_data_set</span><span class="p">:</span>
+          <span class="nt">dd_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">sortout</span>
+          <span class="nt">data_set_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">myhlq.dfsort.merge</span>
+          <span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">seq</span>
+          <span class="nt">disposition</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">new</span>
+      <span class="p p-Indicator">-</span> <span class="nt">dd_unix</span><span class="p">:</span>
+          <span class="nt">dd_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">sysout</span>
+          <span class="nt">path</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/tmp/sortpgmoutput.txt</span>
+          <span class="nt">mode</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">644</span>
+          <span class="nt">status_group</span><span class="p">:</span>
+            <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">ocreat</span>
+          <span class="nt">access_group</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">w</span>
+
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">List data sets matching a pattern in catalog,</span>
+    <span class="l l-Scalar l-Scalar-Plain">save output to a concatenation of data set members and</span>
+    <span class="l l-Scalar l-Scalar-Plain">files.</span>
+  <span class="nt">zos_mvs_raw</span><span class="p">:</span>
+    <span class="nt">pgm</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">idcams</span>
+    <span class="nt">auth</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">yes</span>
+    <span class="nt">dds</span><span class="p">:</span>
+      <span class="p p-Indicator">-</span> <span class="nt">dd_concat</span><span class="p">:</span>
+          <span class="nt">dd_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">sysprint</span>
+          <span class="nt">dds</span><span class="p">:</span>
+            <span class="p p-Indicator">-</span> <span class="nt">dd_data_set</span><span class="p">:</span>
+                <span class="nt">data_set_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">myhlq.ds1.out(out1)</span>
+            <span class="p p-Indicator">-</span> <span class="nt">dd_data_set</span><span class="p">:</span>
+                <span class="nt">data_set_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">myhlq.ds1.out(out2)</span>
+            <span class="p p-Indicator">-</span> <span class="nt">dd_data_set</span><span class="p">:</span>
+                <span class="nt">data_set_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">myhlq.ds1.out(out3)</span>
+            <span class="p p-Indicator">-</span> <span class="nt">dd_unix</span><span class="p">:</span>
+                <span class="nt">path</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/tmp/overflowout.txt</span>
+      <span class="p p-Indicator">-</span> <span class="nt">dd_input</span><span class="p">:</span>
+          <span class="nt">dd_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">sysin</span>
+          <span class="nt">content</span><span class="p">:</span> <span class="s">&quot;</span><span class="nv"> </span><span class="s">LISTCAT</span><span class="nv"> </span><span class="s">ENTRIES(&#39;SYS1.*&#39;)&quot;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="notes">
+<h2><a class="toc-backref" href="#id4">Notes</a><a class="headerlink" href="#notes" title="Permalink to this headline">¶</a></h2>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>When executing programs using <a class="reference internal" href="#zos-mvs-raw-module"><span class="std std-ref">zos_mvs_raw</span></a>, you may encounter errors that originate in the programs implementation. Two such known issues are noted below of which one has been addressed with an APAR.</p>
+<ol class="arabic simple">
+<li><p><a class="reference internal" href="#zos-mvs-raw-module"><span class="std std-ref">zos_mvs_raw</span></a> module execution fails when invoking Database Image Copy 2 Utility or Database Recovery Utility in conjunction with FlashCopy or Fast Replication.</p></li>
+<li><p><a class="reference internal" href="#zos-mvs-raw-module"><span class="std std-ref">zos_mvs_raw</span></a> module execution fails when invoking DFSRRC00 with parm “UPB,PRECOMP”, “UPB, POSTCOMP” or “UPB,PRECOMP,POSTCOMP”. This issue is addressed by APAR PH28089.</p></li>
+</ol>
+</div>
+</div>
+<div class="section" id="return-values">
+<h2><a class="toc-backref" href="#id5">Return Values</a><a class="headerlink" href="#return-values" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div><dl>
+<dt>ret_code</dt><dd><div class="line-block">
+<div class="line">The return code.</div>
+</div>
+<div class="line-block">
+<div class="line"><strong>returned</strong>: always</div>
+<div class="line"><strong>type</strong>: dict</div>
+</div>
+<dl>
+<dt>code</dt><dd><div class="line-block">
+<div class="line">The return code number returned from the program.</div>
+</div>
+<div class="line-block">
+<div class="line"><strong>type</strong>: int</div>
+</div>
+</dd>
+</dl>
+</dd>
+<dt>dd_names</dt><dd><div class="line-block">
+<div class="line">All the related dds with the program.</div>
+</div>
+<div class="line-block">
+<div class="line"><strong>returned</strong>: on success</div>
+<div class="line"><strong>type</strong>: list</div>
+</div>
+<dl>
+<dt>dd_name</dt><dd><div class="line-block">
+<div class="line">The data definition name.</div>
+</div>
+<div class="line-block">
+<div class="line"><strong>type</strong>: str</div>
+</div>
+</dd>
+<dt>name</dt><dd><div class="line-block">
+<div class="line">The data set or path name associated with the data definition.</div>
+</div>
+<div class="line-block">
+<div class="line"><strong>type</strong>: str</div>
+</div>
+</dd>
+<dt>content</dt><dd><div class="line-block">
+<div class="line">The content contained in the data definition.</div>
+</div>
+<div class="line-block">
+<div class="line"><strong>type</strong>: list</div>
+</div>
+</dd>
+<dt>record_count</dt><dd><div class="line-block">
+<div class="line">The lines of the content.</div>
+</div>
+<div class="line-block">
+<div class="line"><strong>type</strong>: int</div>
+</div>
+</dd>
+<dt>byte_count</dt><dd><div class="line-block">
+<div class="line">The number of bytes in the response content.</div>
+</div>
+<div class="line-block">
+<div class="line"><strong>type</strong>: int</div>
+</div>
+</dd>
+</dl>
+</dd>
+<dt>backups</dt><dd><div class="line-block">
+<div class="line">List of any data set backups made during execution.</div>
+</div>
+<div class="line-block">
+<div class="line"><strong>returned</strong>: always</div>
+<div class="line"><strong>type</strong>: dict</div>
+</div>
+<dl>
+<dt>original_name</dt><dd><div class="line-block">
+<div class="line">The original data set name for which a backup was made.</div>
+</div>
+<div class="line-block">
+<div class="line"><strong>type</strong>: str</div>
+</div>
+</dd>
+<dt>backup_name</dt><dd><div class="line-block">
+<div class="line">The name of the data set containing the backup of content from data set in original_name.</div>
+</div>
+<div class="line-block">
+<div class="line"><strong>type</strong>: str</div>
+</div>
+</dd>
+</dl>
+</dd>
+</dl>
+</div></blockquote>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="zos_operator.html" class="btn btn-neutral float-right" title="zos_operator – Execute operator command" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="zos_lineinfile.html" class="btn btn-neutral float-left" title="zos_lineinfile – Manage textual data on z/OS" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, IBM
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+<div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+        <span class="fa fa-book"> Other Versions</span>
+        v: v1.2.0-beta.4
+        <span class="fa fa-caret-down"></span>
+    </span>
+    <div class="rst-other-versions">
+        <dl>
+            <dt>Tags</dt>
+            <dd><a href="../../v1.0.0/index.html">v1.0.0</a></dd>
+            <dd><a href="../../v1.1.0/index.html">v1.1.0</a></dd>
+            <dd><a href="zos_mvs_raw.html">v1.2.0-beta.4</a></dd>
+        </dl>
+    </div>
+</div>
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

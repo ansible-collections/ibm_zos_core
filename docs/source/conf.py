@@ -180,5 +180,5 @@ scv_banner_recent_tag = True
 
 # Invert the order of branches/tags displayed in the sidebars in generated HTML
 # documents. The default order is whatever git prints when
-# running “ git ls-remote --tags ./.”
+# running "git ls-remote --tags ./."
 scv_invert = True

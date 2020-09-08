@@ -23,7 +23,7 @@ short_description: Mount a filesystem for Unix System Services (USS)
 description:
   - zos_mount connects an existing, mountable file to USS.
   - Mountable file needs a valid, unique Fully Qualified Name.
-  - Target folder will be created and/or unmounted if needed
+  - Target folder will be created and/or unmounted if needed.
 options:
     path:
         description:

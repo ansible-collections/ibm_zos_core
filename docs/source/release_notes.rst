@@ -61,6 +61,7 @@ Known issues
        "UPB,PRECOMP", "UPB, POSTCOMP" or "UPB,PRECOMP,POSTCOMP". This issue is
        addressed by APAR PH28089.
 
+
 Version 1.2.0-beta.4
 ====================
 

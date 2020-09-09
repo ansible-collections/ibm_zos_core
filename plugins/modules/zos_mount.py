@@ -116,6 +116,9 @@ options:
             member name.
         required: false
         type: str
+        aliases:
+            - backup_file
+            - backup_bpxprm
     tabcomment:
         description:
             - If provided, this is used in markers around the fstab entry
@@ -683,18 +686,21 @@ def run_module(module, arg_def):
 
 # Need to see if mountpoint is in use for idempotence
     currently_mounted = False
-    rc, stdout, stderr = module.run_command(
-        'df | grep ' + src + ' | wc -m', use_unsafe_shell=False)
+
+    rc, stdout, stderr = module.run_command( 'df', use_unsafe_shell=False)
+
     if rc != 0:
-        module.fail_json(
-            msg="Checking for source (" + src + ") failed with error",
+        module.fail_json( 
+            msg="Checking filesystem list failed with error",
             stderr=str(res_args)
         )
-    tmpint = int(stdout)
-    if tmpint != 0:  # zero bytes means not found
-        currently_mounted = True
-
-
+    sttest = stdout.splitlines()
+    for line in sttest:
+        if src in line:
+            currently_mounted = True
+            # reminder: we can space-split the string and find out mount destination
+            break
+    
 # can type be validated?
 
     # ##########################################
@@ -705,21 +711,22 @@ def run_module(module, arg_def):
     parmtext = '/* BEGIN ANSIBLE MANAGED BLOCK ' + dtstr + ' */\n'
     parmtail = "\n" + parmtext.replace("BEGIN", "END")
 
-    extra = ''
-    ctr = 1
-    for tabline in tabcomment:
-        extra += tabline.rstrip()
-        if len(extra) > 60:
-            tmpx = extra[0, 60]
-            parmtext += "/* C{0}:{1}".format(ctr, tmpx)
-            extra = extra[60:]
-        else:
+    if tabcomment is not None:
+        extra = ''
+        ctr = 1
+        for tabline in tabcomment:
+            extra += tabline.rstrip()
+            if len(extra) > 60:
+                tmpx = extra[0, 60]
+                parmtext += "/* C{0}:{1}".format(ctr, tmpx)
+                extra = extra[60:]
+            else:
+                parmtext += "/* C{0}:{1}".format(ctr, extra)
+                extra = ''
+            parmtext += ' */\n'
+            ctr += 1
+        if len(extra) > 0:
             parmtext += "/* C{0}:{1}".format(ctr, extra)
-            extra = ''
-        parmtext += ' */\n'
-        ctr += 1
-    if len(extra) > 0:
-        parmtext += "/* C{0}:{1}".format(ctr, extra)
 
     fullcmd = ''
     fullumcmd = ''
@@ -919,7 +926,12 @@ def main():
                     'bpxfile',
                     'bpxprm']),
             backup=dict(type='bool', default=False, required=False),
-            backup_name=dict(type='str', required=False),
+            backup_name=dict(
+                type='str', 
+                required=False,
+                aliases=[
+                    'backup_file',
+                    'backup_bpxprm']),
             tabcomment=dict(type='list', required=False),
             unmount_opts=dict(
                 type='str',
@@ -991,7 +1003,13 @@ def main():
                 'bpxfile',
                 'bpxprm']),
         backup=dict(arg_type='bool', default=False, required=False),
-        backup_name=dict(arg_type='str', default='', required=False),
+        backup_name=dict(
+            arg_type='str', 
+            default='', 
+            required=False,
+            aliases=[
+                'backup_file',
+                'backup_bpxprm']),
         tabcomment=dict(arg_type='list', required=False),
         unmount_opts=dict(
             arg_type='str',

@@ -508,22 +508,6 @@ MVS_PARTITIONED = frozenset({"PE", "PO", "PDSE", "PDS"})
 MVS_SEQ = frozenset({"PS", "SEQ"})
 
 
-def combine_dicts(dict1, dict2):
-    """Combine two dictionaries.
-    Provides clean way to combine two dictionaries in python >= 2
-
-    Arguments:
-        dict1 (dict): The first dict to add to combine
-        dict2 (dict): The second dict to add to combine
-
-    Returns:
-        dict: The combination of dict1 and dict2.
-    """
-    merged_dict = dict1.copy()
-    merged_dict.update(dict2)
-    return merged_dict
-
-
 class CopyHandler(object):
     def __init__(self, module, dest_exists, is_binary=False, backup_name=None):
         """Utility class to handle copying data between two targets
@@ -544,9 +528,7 @@ class CopyHandler(object):
     def fail_json(self, **kwargs):
         """ Wrapper for AnsibleModule.fail_json """
         self.module.fail_json(
-            **combine_dicts(
-                kwargs, dict(dest_exists=self.dest_exists, backup_name=self.backup_name)
-            )
+            dest_exists=self.dest_exists, backup_name=self.backup_name, **kwargs
         )
 
     def run_command(self, cmd, **kwargs):
@@ -556,9 +538,7 @@ class CopyHandler(object):
     def exit_json(self, **kwargs):
         """ Wrapper for AnsibleModule.exit_json """
         self.module.exit_json(
-            **combine_dicts(
-                kwargs, dict(dest_exists=self.dest_exists, backup_name=self.backup_name)
-            )
+            dest_exists=self.dest_exists, backup_name=self.backup_name, **kwargs
         )
 
     def copy_to_seq(self, src, temp_path, conv_path, dest, src_ds_type, model_ds=None):

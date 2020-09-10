@@ -551,7 +551,9 @@ class CopyHandler(object):
     def exit_json(self, **kwargs):
         """ Wrapper for AnsibleModule.exit_json """
         self.module.exit_json(
-            **kwargs, dest_exists=self.dest_exists, backup_name=self.backup_name
+            **combine_dicts(
+                kwargs, dict(dest_exists=self.dest_exists, backup_name=self.backup_name)
+            )
         )
 
     def copy_to_seq(self, src, temp_path, conv_path, dest, src_ds_type, model_ds=None):

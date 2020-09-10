@@ -16,7 +16,7 @@ Notes
 * Module changes
 
   * Noteworthy Python 2.x support
-  
+
     * encode - removed TemporaryDirectory usage.
     * zos_copy - fixed regex support, dictionary merge operation fix
     * zos_fetch - fix quote import

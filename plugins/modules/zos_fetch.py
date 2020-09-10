@@ -262,18 +262,24 @@ import os
 
 from math import ceil
 from shutil import rmtree, move
-from shlex import quote
+from ansible.module_utils.six import PY3
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils._text import to_bytes
 from ansible.module_utils.parsing.convert_bool import boolean
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser,
     data_set,
-    encode
+    encode,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     MissingZOAUImport,
 )
+
+
+if PY3:
+    from shlex import quote
+else:
+    from pipes import quote
 
 try:
     from zoautil_py import Datasets, MVSCmd, types
@@ -296,8 +302,8 @@ class FetchHandler:
         return self.module.run_command(cmd, **kwargs)
 
     def _get_vsam_size(self, vsam):
-        """ Invoke IDCAMS LISTCAT command to get the record length and space used.
-            Then estimate the space used by the VSAM data set.
+        """Invoke IDCAMS LISTCAT command to get the record length and space used.
+        Then estimate the space used by the VSAM data set.
         """
         space_pri = 0
         total_size = 0
@@ -380,8 +386,8 @@ class FetchHandler:
         return out_ds_name
 
     def _fetch_uss_file(self, src, is_binary, encoding=None):
-        """ Convert encoding of a USS file. Return a tuple of temporary file
-            name containing converted data.
+        """Convert encoding of a USS file. Return a tuple of temporary file
+        name containing converted data.
         """
         file_path = None
         if (not is_binary) and encoding:
@@ -390,7 +396,9 @@ class FetchHandler:
             to_code_set = encoding.get("to")
             enc_utils = encode.EncodeUtils()
             try:
-                enc_utils.uss_convert_encoding(src, file_path, from_code_set, to_code_set)
+                enc_utils.uss_convert_encoding(
+                    src, file_path, from_code_set, to_code_set
+                )
             except Exception as err:
                 os.remove(file_path)
                 self._fail_json(
@@ -407,8 +415,8 @@ class FetchHandler:
         return file_path if file_path else src
 
     def _fetch_vsam(self, src, is_binary, encoding=None):
-        """ Copy the contents of a VSAM to a sequential data set.
-            Afterwards, copy that data set to a USS file.
+        """Copy the contents of a VSAM to a sequential data set.
+        Afterwards, copy that data set to a USS file.
         """
         temp_ds = self._copy_vsam_to_temp_data_set(src)
         file_path = self._fetch_mvs_data(temp_ds, is_binary, encoding)
@@ -422,9 +430,9 @@ class FetchHandler:
         return file_path
 
     def _fetch_pdse(self, src, is_binary, encoding=None):
-        """ Copy a partitioned data set to a USS directory. If the data set
-            is not being fetched in binary mode, encoding for all members inside
-            the data set will be converted.
+        """Copy a partitioned data set to a USS directory. If the data set
+        is not being fetched in binary mode, encoding for all members inside
+        the data set will be converted.
         """
         dir_path = tempfile.mkdtemp()
         cmd = "cp -B \"//'{0}'\" {1}"
@@ -468,8 +476,8 @@ class FetchHandler:
         return dir_path
 
     def _fetch_mvs_data(self, src, is_binary, encoding=None):
-        """ Copy a sequential data set or a partitioned data set member
-            to a USS file
+        """Copy a sequential data set or a partitioned data set member
+        to a USS file
         """
         fd, file_path = tempfile.mkstemp()
         os.close(fd)
@@ -522,9 +530,9 @@ def run_module():
             use_qualifier=dict(required=False, default=False, type="bool"),
             validate_checksum=dict(required=False, default=True, type="bool"),
             encoding=dict(required=False, type="dict"),
-            sftp_port=dict(type='int', required=False),
-            ignore_sftp_stderr=dict(type='bool', default=False, required=False),
-            local_charset=dict(type='str')
+            sftp_port=dict(type="int", required=False),
+            ignore_sftp_stderr=dict(type="bool", default=False, required=False),
+            local_charset=dict(type="str"),
         )
     )
 
@@ -541,7 +549,7 @@ def run_module():
         dest=dict(arg_type="path", required=True),
         fail_on_missing=dict(arg_type="bool", required=False, default=True),
         is_binary=dict(arg_type="bool", required=False, default=False),
-        use_qualifier=dict(arg_type="bool", required=False, default=False)
+        use_qualifier=dict(arg_type="bool", required=False, default=False),
     )
 
     if not module.params.get("encoding") and not module.params.get("is_binary"):
@@ -549,19 +557,25 @@ def run_module():
         remote_charset = encode.Defaults.get_default_system_charset()
 
         module.params["encoding"] = {
-            'from': encode.Defaults.DEFAULT_EBCDIC_MVS_CHARSET if mvs_src else remote_charset,
-            'to': module.params.get("local_charset")
+            "from": encode.Defaults.DEFAULT_EBCDIC_MVS_CHARSET
+            if mvs_src
+            else remote_charset,
+            "to": module.params.get("local_charset"),
         }
 
     if module.params.get("encoding"):
-        module.params.update(dict(
-            from_encoding=module.params.get('encoding').get('from'),
-            to_encoding=module.params.get('encoding').get('to'))
+        module.params.update(
+            dict(
+                from_encoding=module.params.get("encoding").get("from"),
+                to_encoding=module.params.get("encoding").get("to"),
+            )
         )
-        arg_def.update(dict(
-            from_encoding=dict(arg_type='encoding'),
-            to_encoding=dict(arg_type='encoding')
-        ))
+        arg_def.update(
+            dict(
+                from_encoding=dict(arg_type="encoding"),
+                to_encoding=dict(arg_type="encoding"),
+            )
+        )
 
     fetch_handler = FetchHandler(module)
     try:
@@ -618,7 +632,7 @@ def run_module():
 
     elif ds_type == "PO":
         if _fetch_member:
-            member_name = src[src.find("(") + 1: src.find(")")]
+            member_name = src[src.find("(") + 1 : src.find(")")]
             if not ds_utils.member_exists(member_name):
                 module.fail_json(
                     msg=(

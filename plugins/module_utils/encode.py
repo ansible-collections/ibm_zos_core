@@ -380,7 +380,8 @@ class EncodeUtils(object):
         temp_dest = dest
         try:
             if src_type == "PS":
-                temp_src = mkdtemp()
+                temp_src_fo = NamedTemporaryFile()
+                temp_src = temp_src_fo.name
                 rc, out, err = copy.copy_ps2uss(src, temp_src)
             if src_type == "PO":
                 temp_src = mkdtemp()
@@ -389,10 +390,12 @@ class EncodeUtils(object):
                 reclen, space_u = self.listdsi_data_set(src.upper())
                 temp_ps = self.temp_data_set(reclen, space_u)
                 rc, out, err = copy.copy_vsam_ps(src.upper(), temp_ps)
-                temp_src = mkdtemp()
+                temp_src_fo = NamedTemporaryFile()
+                temp_src = temp_src_fo.name
                 rc, out, err = copy.copy_ps2uss(temp_ps, temp_src)
             if dest_type == "PS" or dest_type == "VSAM":
-                temp_dest = mkdtemp()
+                temp_dest_fo = NamedTemporaryFile()
+                temp_dest = temp_dest_fo.name
             if dest_type == "PO":
                 temp_dest = mkdtemp()
             rc = self.uss_convert_encoding_prev(temp_src, temp_dest, from_code, to_code)
@@ -420,10 +423,13 @@ class EncodeUtils(object):
         finally:
             if temp_ps:
                 Datasets.delete(temp_ps)
-            if temp_src:
-                shutil.rmtree(temp_src)
-            if temp_dest:
-                shutil.rmtree(temp_dest)
+            if temp_src and temp_src != src:
+                if os.path.isdir(temp_src):
+                    shutil.rmtree(temp_src)
+            if temp_dest and temp_dest != dest:
+                if os.path.isdir(temp_dest):
+                    shutil.rmtree(temp_dest)
+
         return convert_rc
 
 

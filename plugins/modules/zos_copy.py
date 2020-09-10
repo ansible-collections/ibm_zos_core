@@ -468,7 +468,8 @@ import shutil
 import glob
 
 from hashlib import sha256
-from re import fullmatch, IGNORECASE
+from re import IGNORECASE
+from ansible.module_utils.six import PY3
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
@@ -489,6 +490,11 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     MissingZOAUImport,
 )
+
+if PY3:
+    from re import fullmatch
+else:
+    from re import match as fullmatch
 
 try:
     from zoautil_py import Datasets

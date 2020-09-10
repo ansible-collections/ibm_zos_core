@@ -467,7 +467,6 @@ import stat
 import shutil
 import glob
 
-from pathlib import Path
 from hashlib import sha256
 from re import fullmatch, IGNORECASE
 
@@ -573,7 +572,7 @@ class CopyHandler(object):
             self.allocate_model(dest, model_ds)
         if src_ds_type == "USS":
             if not model_ds:
-                ps_size = "{0}K".format(math.ceil(Path(new_src).stat().st_size / 1024))
+                ps_size = "{0}K".format(math.ceil(os.stat(new_src).st_size / 1024))
                 self._allocate_ps(dest, size=ps_size)
             rc, out, err = self.run_command(
                 "cp {0} {1} \"//'{2}'\"".format(
@@ -1133,7 +1132,7 @@ class PDSECopyHandler(CopyHandler):
             elif src_ds_type in MVS_SEQ:
                 rc = self._allocate_pdse(dest_name, vol=vol, src=src)
             elif os.path.isfile(src):
-                size = Path(src).stat().st_size
+                size = os.stat(src).st_size
                 rc = self._allocate_pdse(dest_name, size=size)
             elif os.path.isdir(src):
                 path, dirs, files = next(os.walk(src))
@@ -1141,7 +1140,7 @@ class PDSECopyHandler(CopyHandler):
                     self.fail_json(
                         msg="Subdirectory found in source directory {0}".format(src)
                     )
-                size = sum(Path(path + "/" + f).stat().st_size for f in files)
+                size = sum(os.stat(path + "/" + f).st_size for f in files)
                 rc = self._allocate_pdse(dest_name, size=size)
         else:
             rc = self._allocate_pdse(dest_name, size=size, model_ds=model_ds)
@@ -1543,7 +1542,7 @@ def run_module(module, arg_def):
         dest = uss_copy_handler.copy_to_uss(
             conv_path, temp_path, src_ds_type, src_member, member_name
         )
-        res_args["size"] = Path(dest).stat().st_size
+        res_args["size"] = os.stat(dest).st_size
         if validate:
             try:
                 remote_checksum = get_file_checksum(temp_path or src)

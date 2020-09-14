@@ -10,8 +10,10 @@ SOURCEDIR     = source
 BUILDDIR      = build
 ROOT_DIR:=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 
+
 view-html:
-	open build/html/index.html
+	@echo "Display generated HTML in default browser."
+	@open build/html/index.html
 
 # Put it first so that "make" without argument is like "make help".
 help:
@@ -73,9 +75,22 @@ module-doc:
 
 	@echo "Completed restructured text generation, run 'make html'"
 
+pre:
+	@$(shell scripts/pre-doc-gen.sh)
+
 html:
+
+	@scripts/pre-doc-gen.sh
+	@echo "Completed pre-doc-generation"
+
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
-	@echo "Completed HTML generation, run 'make view-html'"
+	@echo "Completed HTML generation"
+
+	@scripts/post-doc-gen.sh
+	@echo "Completed post-doc-generation, run 'make view-html'"
+
+post:
+	@$(shell scripts/post-doc-gen.sh)
 
 html-all:
 	# @sphinx-versioning -l "$(ROOT_DIR)"/source/conf.py build  "$(ROOT_DIR)"/source/ "$(ROOT_DIR)"/build/html -- -D html_show_sphinx=False

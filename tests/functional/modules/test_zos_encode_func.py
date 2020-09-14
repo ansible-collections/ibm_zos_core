@@ -75,7 +75,7 @@ def test_uss_encoding_conversion_with_invalid_encoding(ansible_zos_module):
     for result in results.contacted.values():
         assert result.get("src") == USS_FILE
         assert result.get("dest") is None
-        assert result.get("backup_file") is None
+        assert result.get("backup_name") is None
         assert result.get("changed") is False
         assert "Invalid codeset: Please check the value" in result.get("msg")
 
@@ -89,7 +89,7 @@ def test_uss_encoding_conversion_with_the_same_encoding(ansible_zos_module):
     for result in results.contacted.values():
         assert result.get("src") == USS_FILE
         assert result.get("dest") is None
-        assert result.get("backup_file") is None
+        assert result.get("backup_name") is None
         assert result.get("changed") is False
         assert (
             "The value of the from_encoding and to_encoding "
@@ -108,7 +108,7 @@ def test_uss_encoding_conversion_without_dest(ansible_zos_module):
     for result in results.contacted.values():
         assert result.get("src") == USS_FILE
         assert result.get("dest") == USS_FILE
-        assert result.get("backup_file") is None
+        assert result.get("backup_name") is None
         assert result.get("changed") is True
 
 
@@ -128,7 +128,7 @@ def test_uss_encoding_conversion_when_dest_not_exists_01(ansible_zos_module):
     for result in results.contacted.values():
         assert result.get("src") == USS_FILE
         assert result.get("dest") == USS_NONE_FILE
-        assert result.get("backup_file") is None
+        assert result.get("backup_name") is None
         assert result.get("changed") is False
 
 
@@ -147,7 +147,7 @@ def test_uss_encoding_conversion_when_dest_not_exists_02(ansible_zos_module):
     for result in results.contacted.values():
         assert result.get("src") == MVS_PS
         assert result.get("dest") == MVS_NONE_PS
-        assert result.get("backup_file") is None
+        assert result.get("backup_name") is None
         assert result.get("changed") is False
 
 
@@ -167,7 +167,7 @@ def test_uss_encoding_conversion_uss_file_to_uss_file(ansible_zos_module):
     for result in results.contacted.values():
         assert result.get("src") == USS_FILE
         assert result.get("dest") == USS_DEST_FILE
-        assert result.get("backup_file") is None
+        assert result.get("backup_name") is None
         assert result.get("changed") is True
 
 
@@ -187,7 +187,7 @@ def test_uss_encoding_conversion_uss_file_to_uss_path(ansible_zos_module):
     for result in results.contacted.values():
         assert result.get("src") == USS_FILE
         assert result.get("dest") == USS_DEST_PATH
-        assert result.get("backup_file") is None
+        assert result.get("backup_name") is None
         assert result.get("changed") is True
 
 
@@ -210,7 +210,7 @@ def test_uss_encoding_conversion_uss_path_to_uss_path(ansible_zos_module):
     for result in results.contacted.values():
         assert result.get("src") == USS_PATH
         assert result.get("dest") == USS_DEST_PATH
-        assert result.get("backup_file") is not None
+        assert result.get("backup_name") is not None
         assert result.get("changed") is True
 
 
@@ -225,7 +225,7 @@ def test_uss_encoding_conversion_uss_file_to_mvs_ps(ansible_zos_module):
     for result in results.contacted.values():
         assert result.get("src") == USS_FILE
         assert result.get("dest") == MVS_PS
-        assert result.get("backup_file") is None
+        assert result.get("backup_name") is None
         assert result.get("changed") is True
 
 
@@ -244,7 +244,7 @@ def test_uss_encoding_conversion_mvs_ps_to_uss_file(ansible_zos_module):
     for result in results.contacted.values():
         assert result.get("src") == MVS_PS
         assert result.get("dest") == USS_DEST_FILE
-        assert result.get("backup_file") is not None
+        assert result.get("backup_name") is not None
         assert result.get("changed") is True
 
 
@@ -259,7 +259,7 @@ def test_uss_encoding_conversion_uss_file_to_mvs_pds(ansible_zos_module):
     for result in results.contacted.values():
         assert result.get("src") == USS_FILE
         assert result.get("dest") == MVS_PDS
-        assert result.get("backup_file") is None
+        assert result.get("backup_name") is None
         assert result.get("changed") is True
 
 
@@ -283,7 +283,7 @@ def test_uss_encoding_conversion_uss_file_to_mvs_pds_member(ansible_zos_module):
     for result in results.contacted.values():
         assert result.get("src") == USS_FILE
         assert result.get("dest") == MVS_PDS_MEMBER
-        assert result.get("backup_file") is None
+        assert result.get("backup_name") is None
         assert result.get("changed") is True
 
 
@@ -302,7 +302,7 @@ def test_uss_encoding_conversion_mvs_pds_member_to_uss_file(ansible_zos_module):
     for result in results.contacted.values():
         assert result.get("src") == MVS_PDS_MEMBER
         assert result.get("dest") == USS_DEST_FILE
-        assert result.get("backup_file") is not None
+        assert result.get("backup_name") is not None
         assert result.get("changed") is True
 
 
@@ -320,7 +320,7 @@ def test_uss_encoding_conversion_uss_path_to_mvs_pds(ansible_zos_module):
     for result in results.contacted.values():
         assert result.get("src") == USS_PATH
         assert result.get("dest") == MVS_PDS
-        assert result.get("backup_file") is None
+        assert result.get("backup_name") is None
         assert result.get("changed") is True
 
 
@@ -337,7 +337,7 @@ def test_uss_encoding_conversion_mvs_pds_to_uss_path(ansible_zos_module):
     for result in results.contacted.values():
         assert result.get("src") == MVS_PDS
         assert result.get("dest") == USS_DEST_PATH
-        assert result.get("backup_file") is None
+        assert result.get("backup_name") is None
         assert result.get("changed") is True
 
 
@@ -353,7 +353,7 @@ def test_uss_encoding_conversion_mvs_ps_to_mvs_pds_member(ansible_zos_module):
     for result in results.contacted.values():
         assert result.get("src") == MVS_PS
         assert result.get("dest") == MVS_PDS_MEMBER
-        assert result.get("backup_file") is None
+        assert result.get("backup_name") is None
         assert result.get("changed") is True
 
 
@@ -379,7 +379,7 @@ def test_uss_encoding_conversion_uss_file_to_mvs_vsam(ansible_zos_module):
     for result in results.contacted.values():
         assert result.get("src") == USS_FILE
         assert result.get("dest") == MVS_VS
-        assert result.get("backup_file") is None
+        assert result.get("backup_name") is None
         assert result.get("changed") is True
 
 
@@ -398,7 +398,7 @@ def test_uss_encoding_conversion_mvs_vsam_to_uss_file(ansible_zos_module):
     for result in results.contacted.values():
         assert result.get("src") == MVS_VS
         assert result.get("dest") == USS_DEST_FILE
-        assert result.get("backup_file") is not None
+        assert result.get("backup_name") is not None
         assert result.get("changed") is True
 
 
@@ -413,7 +413,7 @@ def test_uss_encoding_conversion_mvs_vsam_to_mvs_ps(ansible_zos_module):
     for result in results.contacted.values():
         assert result.get("src") == MVS_VS
         assert result.get("dest") == MVS_PS
-        assert result.get("backup_file") is None
+        assert result.get("backup_name") is None
         assert result.get("changed") is True
 
 
@@ -430,7 +430,7 @@ def test_uss_encoding_conversion_mvs_vsam_to_mvs_pds_member(ansible_zos_module):
     for result in results.contacted.values():
         assert result.get("src") == MVS_VS
         assert result.get("dest") == MVS_PDS_MEMBER
-        assert result.get("backup_file") is None
+        assert result.get("backup_name") is None
         assert result.get("changed") is True
 
 
@@ -456,7 +456,7 @@ def test_uss_encoding_conversion_mvs_ps_to_mvs_vsam(ansible_zos_module):
     for result in results.contacted.values():
         assert result.get("src") == MVS_PS
         assert result.get("dest") == MVS_VS
-        assert result.get("backup_file") is None
+        assert result.get("backup_name") is None
         assert result.get("changed") is True
 
 
@@ -472,7 +472,7 @@ def test_pds_backup(ansible_zos_module):
         from_encoding=TO_ENCODING,
         to_encoding=FROM_ENCODING,
         backup=True,
-        backup_file=BACKUP_DATA_SET,
+        backup_name=BACKUP_DATA_SET,
     )
     contents = hosts.all.shell(cmd="cat \"//'{0}(SAMPLE)'\"".format(BACKUP_DATA_SET))
     hosts.all.file(path=TEMP_JCL_PATH, state="absent")
@@ -495,7 +495,7 @@ def test_ps_backup(ansible_zos_module):
         from_encoding=TO_ENCODING,
         to_encoding=FROM_ENCODING,
         backup=True,
-        backup_file=BACKUP_DATA_SET,
+        backup_name=BACKUP_DATA_SET,
     )
     contents = hosts.all.shell(cmd="cat \"//'{0}'\"".format(BACKUP_DATA_SET))
     hosts.all.file(path=TEMP_JCL_PATH, state="absent")
@@ -546,7 +546,7 @@ def test_vsam_backup(ansible_zos_module):
         from_encoding=FROM_ENCODING,
         to_encoding=TO_ENCODING,
         backup=True,
-        backup_file=BACKUP_DATA_SET,
+        backup_name=BACKUP_DATA_SET,
     )
     hosts.all.zos_data_set(
         name=MVS_PS, state="present", record_length=200, type="seq", record_format="VB"
@@ -597,19 +597,19 @@ def test_uss_backup_entire_folder_to_default_backup_location(ansible_zos_module)
         to_encoding=FROM_ENCODING,
         backup=True,
     )
-    backup_file = None
+    backup_name = None
     for result in results.contacted.values():
-        backup_file = result.get("backup_file")
-    assert backup_file
-    contents = hosts.all.shell(cmd="cat {0}".format(backup_file + "file1"))
+        backup_name = result.get("backup_name")
+    assert backup_name
+    contents = hosts.all.shell(cmd="cat {0}".format(backup_name + "file1"))
     content1 = ""
     for content in contents.contacted.values():
         content1 = content.get("stdout")
-    contents = hosts.all.shell(cmd="cat {0}".format(backup_file + "file2"))
+    contents = hosts.all.shell(cmd="cat {0}".format(backup_name + "file2"))
     content2 = ""
     for content in contents.contacted.values():
         content2 = content.get("stdout")
-    contents = hosts.all.shell(cmd="cat {0}".format(backup_file + "file3"))
+    contents = hosts.all.shell(cmd="cat {0}".format(backup_name + "file3"))
     content3 = ""
     for content in contents.contacted.values():
         content3 = content.get("stdout")
@@ -657,9 +657,9 @@ def test_uss_backup_entire_folder_to_default_backup_location_compressed(
         backup=True,
         backup_compress=True,
     )
-    backup_file = None
+    backup_name = None
     for result in results.contacted.values():
-        backup_file = result.get("backup_file")
-    results = hosts.all.shell(cmd="ls -la {0}".format(backup_file[:-4] + "*"))
+        backup_name = result.get("backup_name")
+    results = hosts.all.shell(cmd="ls -la {0}".format(backup_name[:-4] + "*"))
     for result in results.contacted.values():
-        assert backup_file in result.get("stdout")
+        assert backup_name in result.get("stdout")

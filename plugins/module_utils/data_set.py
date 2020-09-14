@@ -8,7 +8,6 @@ __metaclass__ = type
 import re
 import tempfile
 from os import path
-from random import choice
 from string import ascii_uppercase, digits
 from random import randint
 from ansible.module_utils._text import to_bytes
@@ -999,72 +998,6 @@ class DataSet(object):
         return volume_string
 
 
-class DatasetDeleteError(Exception):
-    def __init__(self, data_set, rc):
-        self.msg = 'An error occurred during deletion of data set "{0}". RC={1}'.format(
-            data_set, rc
-        )
-        super().__init__(self.msg)
-
-
-class DatasetCreateError(Exception):
-    def __init__(self, data_set, rc):
-        self.msg = 'An error occurred during creation of data set "{0}". RC={1}'.format(
-            data_set, rc
-        )
-        super().__init__(self.msg)
-
-
-class DatasetMemberDeleteError(Exception):
-    def __init__(self, data_set, rc):
-        self.msg = 'An error occurred during deletion of data set member"{0}". RC={1}'.format(
-            data_set, rc
-        )
-        super().__init__(self.msg)
-
-
-class DatasetMemberCreateError(Exception):
-    def __init__(self, data_set, rc):
-        self.msg = 'An error occurred during creation of data set member"{0}". RC={1}'.format(
-            data_set, rc
-        )
-        super().__init__(self.msg)
-
-
-class DatasetNotFoundError(Exception):
-    def __init__(self, data_set):
-        self.msg = 'The data set "{0}" could not be located.'.format(data_set)
-        super().__init__(self.msg)
-
-
-class DatasetCatalogError(Exception):
-    def __init__(self, data_set, volumes, rc, message=""):
-        self.msg = 'An error occurred during cataloging of data set "{0}" on volume(s) "{1}". RC={2}. {3}'.format(
-            data_set, ", ".join(volumes), rc, message
-        )
-        super().__init__(self.msg)
-
-
-class DatasetUncatalogError(Exception):
-    def __init__(self, data_set, rc):
-        self.msg = 'An error occurred during uncatalog of data set "{0}". RC={1}'.format(
-            data_set, rc
-        )
-        super().__init__(self.msg)
-
-
-class DatasetWriteError(Exception):
-    def __init__(self, data_set, rc, message=""):
-        self.msg = 'An error occurred during write of data set "{0}". RC={1}. {2}'.format(
-            data_set, rc, message
-        )
-        super().__init__(self.msg)
-
-
-LISTDS_COMMAND = "  LISTDS '{0}'"
-LISTCAT_COMMAND = "  LISTCAT ENT({0}) ALL"
-
-
 class DataSetUtils(object):
     def __init__(self, data_set):
         """A standard utility to gather information about
@@ -1203,7 +1136,7 @@ class DataSetUtils(object):
         """
         result = dict()
         listds_rc, listds_out, listds_err = mvs_cmd.ikjeft01(
-            LISTDS_COMMAND.format(self.data_set), authorized=True
+            "  LISTDS '{0}'".format(self.data_set), authorized=True
         )
         if listds_rc == 0:
             result.update(self._process_listds_output(listds_out))
@@ -1216,7 +1149,7 @@ class DataSetUtils(object):
                 raise MVSCmdExecError(listds_rc, listds_out, listds_err)
 
         listcat_rc, listcat_out, listcat_err = mvs_cmd.idcams(
-            LISTCAT_COMMAND.format(self.data_set), authorized=True
+            "  LISTCAT ENT({0}) ALL".format(self.data_set), authorized=True
         )
         if listcat_rc == 0:
             result.update(self._process_listcat_output(listcat_out))
@@ -1247,8 +1180,9 @@ class DataSetUtils(object):
                 result["dsorg"] = ds_params[-1]
                 if result.get("dsorg") != "VSAM":
                     result["recfm"] = ds_params[0]
-                    result["lrecl"] = ds_params[1]
-                    if len(ds_params) > 2:
+                    if ds_params[1].isdigit():
+                        result["lrecl"] = int(ds_params[1])
+                    if len(ds_params) > 2 and ds_params[2].isdigit():
                         result["blksize"] = int(ds_params[2])
         return result
 
@@ -1264,9 +1198,10 @@ class DataSetUtils(object):
         result = dict()
         if "NOT FOUND" not in output:
             volser_output = re.findall(r"VOLSER-*[A-Z|0-9]*", output)
-            result["volser"] = "".join(
-                re.findall(r"-[A-Z|0-9]*", volser_output[0])
-            ).replace("-", "")
+            if volser_output:
+                result["volser"] = "".join(
+                    re.findall(r"-[A-Z|0-9]*", volser_output[0])
+                ).replace("-", "")
         return result
 
 
@@ -1394,6 +1329,68 @@ def _pds_empty(data_set):
     ls_cmd = "mls {0}".format(data_set)
     rc, out, err = module.run_command(ls_cmd)
     return rc == 2
+
+
+class DatasetDeleteError(Exception):
+    def __init__(self, data_set, rc):
+        self.msg = 'An error occurred during deletion of data set "{0}". RC={1}'.format(
+            data_set, rc
+        )
+        super().__init__(self.msg)
+
+
+class DatasetCreateError(Exception):
+    def __init__(self, data_set, rc):
+        self.msg = 'An error occurred during creation of data set "{0}". RC={1}'.format(
+            data_set, rc
+        )
+        super().__init__(self.msg)
+
+
+class DatasetMemberDeleteError(Exception):
+    def __init__(self, data_set, rc):
+        self.msg = 'An error occurred during deletion of data set member"{0}". RC={1}'.format(
+            data_set, rc
+        )
+        super().__init__(self.msg)
+
+
+class DatasetMemberCreateError(Exception):
+    def __init__(self, data_set, rc):
+        self.msg = 'An error occurred during creation of data set member"{0}". RC={1}'.format(
+            data_set, rc
+        )
+        super().__init__(self.msg)
+
+
+class DatasetNotFoundError(Exception):
+    def __init__(self, data_set):
+        self.msg = 'The data set "{0}" could not be located.'.format(data_set)
+        super().__init__(self.msg)
+
+
+class DatasetCatalogError(Exception):
+    def __init__(self, data_set, volumes, rc, message=""):
+        self.msg = 'An error occurred during cataloging of data set "{0}" on volume(s) "{1}". RC={2}. {3}'.format(
+            data_set, ", ".join(volumes), rc, message
+        )
+        super().__init__(self.msg)
+
+
+class DatasetUncatalogError(Exception):
+    def __init__(self, data_set, rc):
+        self.msg = 'An error occurred during uncatalog of data set "{0}". RC={1}'.format(
+            data_set, rc
+        )
+        super().__init__(self.msg)
+
+
+class DatasetWriteError(Exception):
+    def __init__(self, data_set, rc, message=""):
+        self.msg = 'An error occurred during write of data set "{0}". RC={1}. {2}'.format(
+            data_set, rc, message
+        )
+        super().__init__(self.msg)
 
 
 class MVSCmdExecError(Exception):

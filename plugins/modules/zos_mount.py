@@ -23,7 +23,7 @@ short_description: Mount a filesystem for Unix System Services (USS)
 description:
   - zos_mount connects an existing, mountable file to USS.
   - Mountable file needs a valid, unique Fully Qualified Name.
-  - Target folder will be created and/or unmounted if needed.
+  - Target folder will be created and/or unmounted if needed
 options:
     path:
         description:
@@ -116,10 +116,12 @@ options:
             member name.
         required: false
         type: str
+        aliases:
+            - backup_file
+            - backup_bpxprm
     tabcomment:
         description:
             - If provided, this is used in markers around the fstab entry
-            - Only the first 21 characters are copied
         type: list
         required: False
     unmount_opts:
@@ -683,19 +685,23 @@ def run_module(module, arg_def):
 
 # Need to see if mountpoint is in use for idempotence
     currently_mounted = False
-    rc, stdout, stderr = module.run_command(
-        'df | grep ' + src + ' | wc -m', use_unsafe_shell=False)
+
+    rc, stdout, stderr = module.run_command('df', use_unsafe_shell=False)
+
     if rc != 0:
         module.fail_json(
-            msg="Checking for source (" + src + ") failed with error",
+            msg="Checking filesystem list failed with error",
             stderr=str(res_args)
         )
-    tmpint = int(stdout)
-    if tmpint != 0:  # zero bytes means not found
-        currently_mounted = True
-
+    sttest = stdout.splitlines()
+    for line in sttest:
+        if src in line:
+            currently_mounted = True
+            # reminder: we can space-split the string and find out mount destination
+            break
 
 # can type be validated?
+    comment = ''
 
     # ##########################################
     # Assemble the mount command
@@ -705,21 +711,43 @@ def run_module(module, arg_def):
     parmtext = '/* BEGIN ANSIBLE MANAGED BLOCK ' + dtstr + ' */\n'
     parmtail = "\n" + parmtext.replace("BEGIN", "END")
 
-    extra = ''
-    ctr = 1
-    for tabline in tabcomment:
-        extra += tabline.rstrip()
-        if len(extra) > 60:
-            tmpx = extra[0, 60]
-            parmtext += "/* C{0}:{1}".format(ctr, tmpx)
-            extra = extra[60:]
-        else:
-            parmtext += "/* C{0}:{1}".format(ctr, extra)
-            extra = ''
-        parmtext += ' */\n'
-        ctr += 1
-    if len(extra) > 0:
-        parmtext += "/* C{0}:{1}".format(ctr, extra)
+    if tabcomment is not None:
+        extra = ''
+        ctr = 1
+        for tabline in tabcomment:
+            if len(extra) > 0:
+                extra += ' '
+            extra += tabline.strip()
+            if len(extra) > 60:
+                stopper = 60
+                for i in range(59, 48, -1):
+                    if extra[i] == ' ':
+                        stopper = i
+                        break
+                tmpx = extra[0:stopper]
+                parmtext += "/* C{0}:{1}".format(ctr, tmpx)
+                extra = extra[stopper:].strip()
+            else:
+                parmtext += "/* C{0}:{1}".format(ctr, extra)
+                extra = ''
+            parmtext += ' */\n'
+            ctr += 1
+        # This is to handle the possibility of cumulative, multi-line overflow
+        while len(extra) > 0:
+            if len(extra) > 60:
+                stopper = 60
+                for i in range(59, 48, -1):
+                    if extra[i] == ' ':
+                        stopper = i
+                        break
+                tmpx = extra[0:stopper]
+                parmtext += "/* C{0}:{1}".format(ctr, tmpx)
+                extra = extra[stopper:].strip()
+            else:
+                parmtext += "/* C{0}:{1}".format(ctr, extra)
+                extra = ''
+            parmtext += ' */\n'
+            ctr += 1
 
     fullcmd = ''
     fullumcmd = ''
@@ -788,8 +816,6 @@ def run_module(module, arg_def):
             unmount_opts = "NORMAL"
             fullumcmd = fullcmd + ' ' + unmount_opts
 
-    comment = ''
-
     if gonna_unmount:
         if currently_mounted:
             changed = True
@@ -850,10 +876,14 @@ def run_module(module, arg_def):
         # zos_copy could obviate the need for the backup call here
         if backup:
             try:
-                zos_backup.mvs_file_backup(fstab, backup_name)
+                # zos_backup.mvs_file_backup(fstab, backup_name)
+                fullcmd = "cp " + tmp_file_filename + " \"//'" + backup_name + "'\""
+                comment += fullcmd + "\n"
+                (rc, stdout, stderr) = module.run_command(
+                    fullcmd, use_unsafe_shell=False)
             except Exception as err:
                 module.fail_json(msg=str(err), stderr=str(res_args))
-            comment += "Wrote backup to " + backup + "\n"
+            comment += "Wrote backup to " + backup_name + "\n"
 
         with open(tmp_file_filename, 'r') as fh:
             content = fh.read().splitlines()
@@ -919,7 +949,12 @@ def main():
                     'bpxfile',
                     'bpxprm']),
             backup=dict(type='bool', default=False, required=False),
-            backup_name=dict(type='str', required=False),
+            backup_name=dict(
+                type='str',
+                required=False,
+                aliases=[
+                    'backup_file',
+                    'backup_bpxprm']),
             tabcomment=dict(type='list', required=False),
             unmount_opts=dict(
                 type='str',
@@ -991,8 +1026,14 @@ def main():
                 'bpxfile',
                 'bpxprm']),
         backup=dict(arg_type='bool', default=False, required=False),
-        backup_name=dict(arg_type='str', default='', required=False),
-        tabcomment=dict(arg_type='list', required=False),
+        backup_name=dict(
+            arg_type='str',
+            default='',
+            required=False,
+            aliases=[
+                'backup_file',
+                'backup_bpxprm']),
+        tabcomment=dict(arg_type='list', elements='str', required=False),
         unmount_opts=dict(
             arg_type='str',
             default='NORMAL',

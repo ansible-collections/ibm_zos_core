@@ -1082,9 +1082,9 @@ def main():
         res_args = None
         res_args = run_module(module, arg_def)
         module.exit_json(**res_args)
+        
     finally:
         pass
-
 
 if __name__ == '__main__':
     main()

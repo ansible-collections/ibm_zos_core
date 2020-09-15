@@ -389,7 +389,11 @@ class BetterArgHandler(object):
         Returns:
             str -- The arguments contents after any necessary operations.
         """
-        if not fullmatch(r"^[A-Z]{1}[A-Z0-9]{0,7}$", str(contents), IGNORECASE,):
+        if not fullmatch(
+            r"^[A-Z]{1}[A-Z0-9]{0,7}$",
+            str(contents),
+            IGNORECASE,
+        ):
             raise ValueError(
                 'Invalid argument "{0}" for type "qualifier".'.format(contents)
             )
@@ -433,7 +437,11 @@ class BetterArgHandler(object):
         Returns:
             str -- The arguments contents after any necessary operations.
         """
-        if not fullmatch(r"^[A-Z0-9@#$]{1,6}$", str(contents), IGNORECASE,):
+        if not fullmatch(
+            r"^[A-Z0-9@#$]{1,6}$",
+            str(contents),
+            IGNORECASE,
+        ):
             raise ValueError(
                 'Invalid argument "{0}" for type "volume".'.format(contents)
             )
@@ -453,7 +461,11 @@ class BetterArgHandler(object):
         Returns:
             str -- The arguments contents after any necessary operations.
         """
-        if not fullmatch(r"^[A-Z$#@][A-Z0-9@#$]{0,7}$", str(contents), IGNORECASE,):
+        if not fullmatch(
+            r"^[A-Z$#@][A-Z0-9@#$]{0,7}$",
+            str(contents),
+            IGNORECASE,
+        ):
             raise ValueError('Invalid argument "{0}" for type "dd".'.format(contents))
         return str(contents)
 
@@ -687,7 +699,9 @@ class BetterArgParser(object):
         mutually_exclusive = arg_dict.get("mutually_exclusive")
         arg_dict.pop("mutually_exclusive", None)
         argholder = dict(
-            arg_type="dict", mutually_exclusive=mutually_exclusive, options=arg_dict,
+            arg_type="dict",
+            mutually_exclusive=mutually_exclusive,
+            options=arg_dict,
         )
         self.args = OrderedDict()
         self.args[DUMMY_ARG_NAME] = BetterArg(self, DUMMY_ARG_NAME, **argholder)

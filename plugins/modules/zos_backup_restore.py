@@ -17,7 +17,7 @@ ANSIBLE_METADATA = {
 DOCUMENTATION = r"""
 module: zos_backup_restore
 author: "Blake Becker (@blakeinate)"
-short_description: Backup or Restore
+short_description: Backup/restore data sets and volumes
 description:
     - Create and restore from backups of data sets and volumes.
     - Data set backups are performed using logical dumps, volume backups are performed using physical dumps.
@@ -115,7 +115,7 @@ options:
     default: M
     aliases:
       - unit
-  new_hlq:
+  hlq:
     description:
       - Specifies the new HLQ to use for the data sets being restored.
       - Defaults to running user's username.
@@ -197,7 +197,7 @@ EXAMPLES = r"""
     data_sets:
       include: **.TEST
     backup_name: /tmp/temp_backup.dzp
-    new_hlq: MYHLQ
+    hlq: MYHLQ
 
 - name: "Restore data sets from backup stored in UNIX file /tmp/temp_backup.dzp.
          Only restore data sets whose last, or only qualifier is TEST.
@@ -208,14 +208,14 @@ EXAMPLES = r"""
       include: **.TEST
     volume: MYVOL2
     backup_name: /tmp/temp_backup.dzp
-    new_hlq: MYHLQ
+    hlq: MYHLQ
 
 - name: "Restore data sets from backup stored in data set MY.BACKUP.
          Use MYHLQ as the new HLQ for restored data sets."
   zos_backup_restore:
     operation: restore
     backup_name: MY.BACKUP
-    new_hlq: MYHLQ
+    hlq: MYHLQ
 
 - name: "Restore volume from backup stored in data set MY.BACKUP.
          Restore to volume MYVOL2."
@@ -276,7 +276,7 @@ def run_module():
         force=dict(type="bool", default=False),
         sms_storage_class=dict(type="str", required=False),
         sms_management_class=dict(type="str", required=False),
-        new_hlq=dict(type="str", required=False),
+        hlq=dict(type="str", required=False),
     )
 
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=False)
@@ -292,7 +292,7 @@ def run_module():
         force = params.get("force")
         sms_storage_class = params.get("sms_storage_class")
         sms_management_class = params.get("sms_management_class")
-        new_hlq = params.get("new_hlq")
+        hlq = params.get("hlq")
 
         if operation == "backup":
             backup(
@@ -312,7 +312,7 @@ def run_module():
                 exclude_data_sets=data_sets.get("exclude"),
                 volume=volume,
                 full_volume=full_volume,
-                new_hlq=new_hlq,
+                hlq=hlq,
                 space=space,
                 space_type=space_type,
                 sms_storage_class=sms_storage_class,
@@ -347,7 +347,7 @@ def parse_and_validate_args(params):
         sms_management_class=dict(
             type=sms_type, required=False, dependencies=["operation"]
         ),
-        new_hlq=dict(type=hlq_type, default=hlq_default, dependencies=["operation"]),
+        hlq=dict(type=hlq_type, default=hlq_default, dependencies=["operation"]),
     )
 
     parsed_args = BetterArgParser(arg_defs).parse_args(params)
@@ -375,7 +375,7 @@ def restore(
     exclude_data_sets,
     volume,
     full_volume,
-    new_hlq,
+    hlq,
     space,
     space_type,
     sms_storage_class,

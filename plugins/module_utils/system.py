@@ -93,7 +93,7 @@ def run_command(args, stdin=None, **kwargs):
         err = "'args' must be list or string"
         return rc, out, err
 
-    if isinstance(args, text_type):
+    if isinstance(args, (text_type, str)):
         if PY2:
             args = to_bytes(args, errors='surrogate_or_strict')
         elif PY3:

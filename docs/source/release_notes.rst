@@ -6,6 +6,125 @@
 Releases
 ========
 
+Version 1.2.1
+=============
+
+Notes
+-----
+
+* Update required
+* Module changes
+
+  * Noteworthy Python 2.x support
+
+    * encode - removed TemporaryDirectory usage.
+    * zos_copy - fixed regex support, dictionary merge operation fix
+    * zos_fetch - fix quote import
+
+* Collection changes
+
+  * Beginning this release, all sample playbooks previously included with the
+    collection will be made available on the `samples repository`_. The
+    `samples repository`_ explains the playbook concepts,
+    discusses z/OS administration, provides links to the samples support site,
+    blogs and other community resources.
+
+* Documentation changes
+
+  * In this release, documentation related to playbook configuration has been
+    migrated to the `samples repository`_. Each sample contains a README that
+    explains what configurations must be made to run the sample playbook.
+
+.. _samples repository:
+   https://github.com/IBM/z_ansible_collections_samples/blob/master/README.md
+
+Availability
+------------
+
+* `Automation Hub`_
+* `Galaxy`_
+* `GitHub`_
+
+Reference
+---------
+
+* Supported by IBM Open Enterprise Python for z/OS: 3.8.2 or later
+* Supported by IBM Z Open Automation Utilities 1.0.3 PTF UI70435
+* Supported by z/OS V2R3
+* The z/OS® shell
+
+Known issues
+------------
+
+* Modules
+
+  * When executing programs using ``zos_mvs_raw``, you may encounter errors
+    that originate in the programs implementation. Two such known issues are
+    noted below of which one has been addressed with an APAR.
+
+    #. ``zos_mvs_raw`` module execution fails when invoking
+       Database Image Copy 2 Utility or Database Recovery Utility in conjunction
+       with FlashCopy or Fast Replication.
+    #. ``zos_mvs_raw`` module execution fails when invoking DFSRRC00 with parm
+       "UPB,PRECOMP", "UPB, POSTCOMP" or "UPB,PRECOMP,POSTCOMP". This issue is
+       addressed by APAR PH28089.
+
+
+Version 1.2.0
+=============
+
+Notes
+-----
+
+* Update recommended
+* Collection changes
+
+  * Beginning this release, all sample playbooks previously included with the
+    collection will be made available on the `samples repository`_. The
+    `samples repository`_ explains the playbook concepts,
+    discusses z/OS administration, provides links to the samples support site,
+    blogs and other community resources.
+
+* Documentation changes
+
+  * In this release, documentation related to playbook configuration has been
+    migrated to the `samples repository`_. Each sample contains a README that
+    explains what configurations must be made to run the sample playbook.
+
+.. _samples repository:
+   https://github.com/IBM/z_ansible_collections_samples/blob/master/README.md
+
+Availability
+------------
+
+* `Galaxy`_
+* `GitHub`_
+
+Reference
+---------
+
+* Supported by IBM Open Enterprise Python for z/OS: 3.8.2 or later
+* Supported by IBM Z Open Automation Utilities 1.0.3 PTF UI70435
+* Supported by z/OS V2R3
+* The z/OS® shell
+
+Known issues
+------------
+
+* Modules
+
+  * When executing programs using ``zos_mvs_raw``, you may encounter errors
+    that originate in the programs implementation. Two such known issues are
+    noted below of which one has been addressed with an APAR.
+
+    #. ``zos_mvs_raw`` module execution fails when invoking
+       Database Image Copy 2 Utility or Database Recovery Utility in conjunction
+       with FlashCopy or Fast Replication.
+    #. ``zos_mvs_raw`` module execution fails when invoking DFSRRC00 with parm
+       "UPB,PRECOMP", "UPB, POSTCOMP" or "UPB,PRECOMP,POSTCOMP". This issue is
+       addressed by APAR PH28089.
+
+
 Version 1.2.0-beta.4
 ====================
 
@@ -22,7 +141,7 @@ Notes
     have been written as **duration_s**.
   * Fixes requirements version in sample playbook hosts-setup.yaml
 
-* Module Changes
+* Module changes
 
   * Module ``zos_copy`` can now use wildcards to copy multiple PDS/PDSE members
     to another PDS/PDSE
@@ -107,7 +226,7 @@ Notes
 -----
 
 * Update recommended
-* Module Changes
+* Module changes
 
   * Update zos_fetch and zos_copy to allow for user specified SFTP transfer
     port.
@@ -388,3 +507,6 @@ Reference
 
 .. _Galaxy:
    https://galaxy.ansible.com/ibm/ibm_zos_core
+
+.. _Automation Hub:
+   https://www.ansible.com/products/automation-hub

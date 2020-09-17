@@ -373,6 +373,9 @@ def parse_and_validate_args(params):
     )
 
     parsed_args = BetterArgParser(arg_defs).parse_args(params)
+    parsed_args = {
+        key: value for key, value in parsed_args.items() if value is not None
+    }
     return parsed_args
 
 
@@ -592,8 +595,12 @@ def to_dunzip_args(**kwargs):
     if kwargs.get("space"):
         size = str(kwargs.get("space"))
         if kwargs.get("space_type"):
-            size += space_type
+            size += kwargs.get("space_type")
         zoau_args["size"] = size
+
+    if kwargs.get("hlq"):
+        zoau_args["hlq"] = kwargs.get("hlq")
+
     return zoau_args
 
 

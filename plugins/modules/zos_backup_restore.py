@@ -71,22 +71,28 @@ options:
       - When I(operation=restore), the destination data set or UNIX file backup to restore.
     type: str
     required: True
-  force:
+  recover:
     description:
       - Specifies if potentially recoverable errors should be ignored.
       - When I(operation=restore), allows an unmovable data set or a data set allocated by absolute track allocation to be moved.
     type: bool
-    default: True
+    default: False
+  overwrite:
+    description:
+      - When I(operation=backup), specifies if existing data set or UNIX file matching I(backup_name) should be deleted.
+      - When I(operation=restore), specifies if module should overwrite existing data sets with matching name on the target device.
+    type: bool
+    default: False
   sms_storage_class:
     description:
       - Specifies the storage class to use when I(operation=restore).
-      - If none of I(sms_storage_class), I(sms_data_class) or I(sms_management_class) are specified, the z/OS system's Automatic Class Selection (ACS) routines will be used.
+      - If neither of I(sms_storage_class) or I(sms_management_class) are specified, the z/OS system's Automatic Class Selection (ACS) routines will be used.
     type: str
     required: False
   sms_management_class:
     description:
       - Specifies the management class to use when I(operation=restore).
-      - If none of I(sms_storage_class), I(sms_data_class) or I(sms_management_class) are specified, the z/OS system's Automatic Class Selection (ACS) routines will be used.
+      - If neither of I(sms_storage_class) or I(sms_management_class) are specified, the z/OS system's Automatic Class Selection (ACS) routines will be used.
     type: str
     required: False
   space:
@@ -94,6 +100,7 @@ options:
       - If I(operation=backup), specifies the amount of space to allocate for the backup.
         Please note that even when backing up to a UNIX file, backup contents will be temporarily
         held in a data set.
+      - If I(operation=backup), specifies the amount of space to allocate for data sets temporarily created during the restore process.
       - The unit of space used is set using I(space_type).
     type: int
     required: false
@@ -150,7 +157,7 @@ EXAMPLES = r"""
     data_sets:
       include: user.**
     backup_name: /tmp/temp_backup.dzp
-    force: yes
+    recover: yes
 
 - name: "Backup all datasets matching pattern USER.** to data set MY.BACKUP,
          allocate 100MB for data sets used in backup process."
@@ -257,6 +264,7 @@ except ImportError:
 
 
 def run_module():
+    """Run the zos_backup_restore module core functions."""
     result = dict(changed=False, message="", backup_name="")
     module_args = dict(
         operation=dict(type="str", required=True, choices=["backup", "restore"]),
@@ -273,7 +281,8 @@ def run_module():
         volume=dict(type="str", required=False),
         full_volume=dict(type="bool", default=False),
         backup_name=dict(type="str", required=True),
-        force=dict(type="bool", default=False),
+        recover=dict(type="bool", default=False),
+        overwrite=dict(type="bool", default=False),
         sms_storage_class=dict(type="str", required=False),
         sms_management_class=dict(type="str", required=False),
         hlq=dict(type="str", required=False),
@@ -289,7 +298,8 @@ def run_module():
         volume = params.get("volume")
         full_volume = params.get("full_volume")
         backup_name = params.get("backup_name")
-        force = params.get("force")
+        recover = params.get("recover")
+        overwrite = params.get("overwrite")
         sms_storage_class = params.get("sms_storage_class")
         sms_management_class = params.get("sms_management_class")
         hlq = params.get("hlq")
@@ -301,7 +311,8 @@ def run_module():
                 exclude_data_sets=data_sets.get("exclude"),
                 volume=volume,
                 full_volume=full_volume,
-                force=force,
+                overwrite=overwrite,
+                recover=recover,
                 space=space,
                 space_type=space_type,
             )
@@ -312,6 +323,7 @@ def run_module():
                 exclude_data_sets=data_sets.get("exclude"),
                 volume=volume,
                 full_volume=full_volume,
+                overwrite=overwrite,
                 hlq=hlq,
                 space=space,
                 space_type=space_type,
@@ -322,9 +334,18 @@ def run_module():
 
     except Exception as e:
         module.fail_json(msg=repr(e), **result)
+    module.exit_json(**result)
 
 
 def parse_and_validate_args(params):
+    """Parse and validate arguments to be used by remainder of module.
+
+    Args:
+        params (dict): The params as returned from AnsibleModule instantiation.
+
+    Returns:
+        dict: The updated params after additional parsing and validation.
+    """
     arg_defs = dict(
         operation=dict(type="str", required=True, choices=["backup", "restore"]),
         data_sets=dict(
@@ -340,7 +361,8 @@ def parse_and_validate_args(params):
         volume=dict(type="str", required=False, dependencies=["data_sets"]),
         full_volume=dict(type=full_volume_type, default=False, dependencies=["volume"]),
         backup_name=dict(type=backup_name_type, required=False),
-        force=dict(type="bool", default=False),
+        recover=dict(type="bool", default=False),
+        overwrite=dict(type="bool", default=False),
         sms_storage_class=dict(
             type=sms_type, required=False, dependencies=["operation"]
         ),
@@ -360,10 +382,24 @@ def backup(
     exclude_data_sets,
     volume,
     full_volume,
-    force,
+    overwrite,
+    recover,
     space,
     space_type,
 ):
+    """Backup data sets or a volume to a new data set or unix file.
+
+    Args:
+        backup_name (str): The data set or UNIX path to place the backup.
+        include_data_sets (list): A list of data set patterns to include in the backup.
+        exclude_data_sets (list): A list of data set patterns to exclude from the backup.
+        volume (str): The volume that contains the data sets to backup.
+        full_volume (bool): Specifies if a backup will be made of the entire volume.
+        overwrite (bool): Specifies if existing data set or UNIX file matching I(backup_name) should be deleted.
+        recover (bool): Specifies if potentially recoverable errors should be ignored.
+        space (int): Specifies the amount of space to allocate for the backup.
+        space_type (str): The unit of measurement to use when defining data set space.
+    """
     args = locals()
     zoau_args = to_dzip_args(**args)
     datasets.zip(**zoau_args)
@@ -375,12 +411,32 @@ def restore(
     exclude_data_sets,
     volume,
     full_volume,
+    overwrite,
     hlq,
     space,
     space_type,
     sms_storage_class,
     sms_management_class,
 ):
+    """[summary]
+
+    Args:
+        backup_name (str): The data set or UNIX path containing the backup.
+        include_data_sets (list): A list of data set patterns to include in the restore
+          that are present in the backup.
+        exclude_data_sets (list): A list of data set patterns to exclude from the restore
+          that are present in the backup.
+        volume (str): The volume that contains the data sets to backup.
+        full_volume (bool): Specifies if a backup will be made of the entire volume.
+        overwrite (bool): Specifies if module should overwrite existing data sets with
+          matching name on the target device.
+        hlq (str): Specifies the new HLQ to use for the data sets being restored.
+        space (int): Specifies the amount of space to allocate for data sets temporarily
+          created during the restore process.
+        space_type (str): The unit of measurement to use when defining data set space.
+        sms_storage_class (str): Specifies the storage class to use.
+        sms_management_class (str): Specifies the management class to use.
+    """
     args = locals()
     zoau_args = to_dunzip_args(**args)
     datasets.unzip(**zoau_args)
@@ -487,13 +543,16 @@ def to_dzip_args(**kwargs):
     if kwargs.get("exclude_data_sets"):
         zoau_args["exclude"] = ",".join(kwargs.get("exclude_data_sets"))
 
-    if kwargs.get("force"):
-        zoau_args["force"] = kwargs.get("force")
+    if kwargs.get("recover"):
+        zoau_args["force"] = kwargs.get("recover")
+
+    if kwargs.get("overwrite"):
+        zoau_args["overwrite"] = kwargs.get("overwrite")
 
     if kwargs.get("space"):
         size = str(kwargs.get("space"))
         if kwargs.get("space_type"):
-            size += space_type
+            size += kwargs.get("space_type")
         zoau_args["size"] = size
     return zoau_args
 
@@ -518,8 +577,11 @@ def to_dunzip_args(**kwargs):
     if kwargs.get("exclude_data_sets"):
         zoau_args["exclude"] = ",".join(kwargs.get("exclude_data_sets"))
 
-    if kwargs.get("force"):
-        zoau_args["force"] = kwargs.get("force")
+    if kwargs.get("recover"):
+        zoau_args["force"] = kwargs.get("recover")
+
+    if kwargs.get("overwrite"):
+        zoau_args["overwrite"] = kwargs.get("overwrite")
 
     if kwargs.get("sms_storage_class"):
         zoau_args["storage_class_name"] = kwargs.get("sms_storage_class")

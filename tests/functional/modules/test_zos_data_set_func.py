@@ -25,8 +25,10 @@ data_set_types = [
 DEFAULT_VOLUME = "000000"
 DEFAULT_VOLUME2 = "222222"
 DEFAULT_DATA_SET_NAME = "USER.PRIVATE.TESTDS"
-
+DEFAULT_DATA_SET_NAME_WITH_MEMBER = "USER.PRIVATE.TESTDS(TESTME)"
 TEMP_PATH = "/tmp/ansible/jcl"
+
+ECHO_COMMAND = "echo {0} > {1}/SAMPLE"
 
 KSDS_CREATE_JCL = """//CREKSDS    JOB (T043JM,JM00,1,0,0,0),'CREATE KSDS',CLASS=R,
 //             MSGCLASS=X,MSGLEVEL=1,NOTIFY=OMVSADM
@@ -133,12 +135,12 @@ def retrieve_data_set_names(results):
 )
 def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl):
     hosts = ansible_zos_module
-    results = hosts.all.zos_data_set(
+    hosts.all.zos_data_set(
         name=DEFAULT_DATA_SET_NAME, state="cataloged", volumes=DEFAULT_VOLUME
     )
-    results = hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
+    hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
     hosts.all.file(path=TEMP_PATH, state="directory")
-    hosts.all.shell(cmd="echo {0} > {1}/SAMPLE".format(quote(jcl), TEMP_PATH))
+    hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl), TEMP_PATH))
     results = hosts.all.zos_job_submit(
         src=TEMP_PATH + "/SAMPLE", location="USS", wait=True
     )
@@ -167,7 +169,7 @@ def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl):
     for result in results.contacted.values():
         assert result.get("changed") is False
     # clean up
-    results = hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
+    hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
 
 
 @pytest.mark.parametrize(
@@ -181,7 +183,7 @@ def test_data_set_present_when_uncataloged(ansible_zos_module, jcl):
     )
     hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
     hosts.all.file(path=TEMP_PATH, state="directory")
-    hosts.all.shell(cmd="echo {0} > {1}/SAMPLE".format(quote(jcl), TEMP_PATH))
+    hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl), TEMP_PATH))
     results = hosts.all.zos_job_submit(
         src=TEMP_PATH + "/SAMPLE", location="USS", wait=True
     )
@@ -205,7 +207,7 @@ def test_data_set_present_when_uncataloged(ansible_zos_module, jcl):
     )
     for result in results.contacted.values():
         assert result.get("changed") is True
-    results = hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
+    hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
 
 
 @pytest.mark.parametrize(
@@ -219,7 +221,7 @@ def test_data_set_replacement_when_uncataloged(ansible_zos_module, jcl):
     )
     hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
     hosts.all.file(path=TEMP_PATH, state="directory")
-    hosts.all.shell(cmd="echo {0} > {1}/SAMPLE".format(quote(jcl), TEMP_PATH))
+    hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl), TEMP_PATH))
     results = hosts.all.zos_job_submit(
         src=TEMP_PATH + "/SAMPLE", location="USS", wait=True
     )
@@ -246,7 +248,7 @@ def test_data_set_replacement_when_uncataloged(ansible_zos_module, jcl):
     )
     for result in results.contacted.values():
         assert result.get("changed") is True
-    results = hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
+    hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
 
 
 @pytest.mark.parametrize(
@@ -260,7 +262,7 @@ def test_data_set_absent_when_uncataloged(ansible_zos_module, jcl):
     )
     hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
     hosts.all.file(path=TEMP_PATH, state="directory")
-    hosts.all.shell(cmd="echo {0} > {1}/SAMPLE".format(quote(jcl), TEMP_PATH))
+    hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl), TEMP_PATH))
     results = hosts.all.zos_job_submit(
         src=TEMP_PATH + "/SAMPLE", location="USS", wait=True
     )
@@ -278,7 +280,7 @@ def test_data_set_absent_when_uncataloged(ansible_zos_module, jcl):
     )
     for result in results.contacted.values():
         assert result.get("changed") is True
-    results = hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
+    hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
 
 
 @pytest.mark.parametrize("dstype", data_set_types)
@@ -290,6 +292,7 @@ def test_data_set_creation_when_present_no_replace(ansible_zos_module, dstype):
     results = hosts.all.zos_data_set(
         name=DEFAULT_DATA_SET_NAME, state="present", type=dstype
     )
+    hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
     for result in results.contacted.values():
         assert result.get("changed") is False
         assert result.get("module_stderr") is None
@@ -304,6 +307,7 @@ def test_data_set_creation_when_present_replace(ansible_zos_module, dstype):
     results = hosts.all.zos_data_set(
         name=DEFAULT_DATA_SET_NAME, state="present", type=dstype, replace=True
     )
+    hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
     for result in results.contacted.values():
         assert result.get("changed") is True
         assert result.get("module_stderr") is None
@@ -316,6 +320,7 @@ def test_data_set_creation_when_absent(ansible_zos_module, dstype):
     results = hosts.all.zos_data_set(
         name=DEFAULT_DATA_SET_NAME, state="present", type=dstype
     )
+    hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
     for result in results.contacted.values():
         assert result.get("changed") is True
         assert result.get("module_stderr") is None
@@ -376,7 +381,7 @@ def test_batch_data_set_and_member_creation(ansible_zos_module):
 def test_repeated_operations(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_data_set(
-        name="USER.PRIVATE.TEST4",
+        name=DEFAULT_DATA_SET_NAME,
         type="PDS",
         space_primary=5,
         space_type="CYL",
@@ -389,10 +394,8 @@ def test_repeated_operations(ansible_zos_module):
         assert result.get("module_stderr") is None
 
     results = hosts.all.zos_data_set(
-        name="USER.PRIVATE.TEST4",
+        name=DEFAULT_DATA_SET_NAME,
         type="PDS",
-        # size='15TRK',
-        # record_length=30,
         replace=True,
     )
 
@@ -401,21 +404,23 @@ def test_repeated_operations(ansible_zos_module):
         assert result.get("module_stderr") is None
 
     results = hosts.all.zos_data_set(
-        name="USER.PRIVATE.TEST4(testme)", type="MEMBER", replace=True
+        name=DEFAULT_DATA_SET_NAME_WITH_MEMBER, type="MEMBER", replace=True
     )
 
     for result in results.contacted.values():
         assert result.get("changed") is True
         assert result.get("module_stderr") is None
 
-    results = hosts.all.zos_data_set(name="USER.PRIVATE.TEST4(testme)", type="MEMBER")
+    results = hosts.all.zos_data_set(
+        name=DEFAULT_DATA_SET_NAME_WITH_MEMBER, type="MEMBER"
+    )
 
     for result in results.contacted.values():
         assert result.get("changed") is False
         assert result.get("module_stderr") is None
 
     results = hosts.all.zos_data_set(
-        name="USER.PRIVATE.TEST4(testme)", type="MEMBER", state="absent"
+        name=DEFAULT_DATA_SET_NAME_WITH_MEMBER, type="MEMBER", state="absent"
     )
 
     for result in results.contacted.values():
@@ -423,7 +428,7 @@ def test_repeated_operations(ansible_zos_module):
         assert result.get("module_stderr") is None
 
     results = hosts.all.zos_data_set(
-        name="USER.PRIVATE.TEST4(testme)", type="MEMBER", state="absent"
+        name=DEFAULT_DATA_SET_NAME_WITH_MEMBER, type="MEMBER", state="absent"
     )
 
     for result in results.contacted.values():
@@ -512,7 +517,9 @@ def test_data_set_old_aliases(ansible_zos_module):
 
 def test_data_set_temp_data_set_name(ansible_zos_module):
     hosts = ansible_zos_module
-    results = hosts.all.zos_data_set(state="present",)
+    results = hosts.all.zos_data_set(
+        state="present",
+    )
     data_set_names = retrieve_data_set_names(results)
     assert len(data_set_names) == 1
     for name in data_set_names:
@@ -530,9 +537,15 @@ def test_data_set_temp_data_set_name_batch(ansible_zos_module):
     hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
     results = hosts.all.zos_data_set(
         batch=[
-            dict(state="present",),
-            dict(state="present",),
-            dict(state="present",),
+            dict(
+                state="present",
+            ),
+            dict(
+                state="present",
+            ),
+            dict(
+                state="present",
+            ),
             dict(name=DEFAULT_DATA_SET_NAME, state="present"),
         ]
     )
@@ -550,7 +563,8 @@ def test_data_set_temp_data_set_name_batch(ansible_zos_module):
 
 
 @pytest.mark.parametrize(
-    "filesystem", ["HFS", "ZFS"],
+    "filesystem",
+    ["HFS", "ZFS"],
 )
 def test_filesystem_create_and_mount(ansible_zos_module, filesystem):
     hosts = ansible_zos_module
@@ -586,5 +600,23 @@ def test_filesystem_create_and_mount(ansible_zos_module, filesystem):
         assert result.get("changed") is True
         assert result.get("module_stderr") is None
     for result in results6.contacted.values():
+        assert result.get("changed") is True
+        assert result.get("module_stderr") is None
+
+
+def test_data_set_creation_zero_values(ansible_zos_module):
+    hosts = ansible_zos_module
+    results = hosts.all.zos_data_set(
+        name=DEFAULT_DATA_SET_NAME,
+        state="present",
+        type="KSDS",
+        replace=True,
+        space_primary=5,
+        space_secondary=0,
+        key_length=32,
+        key_offset=0,
+    )
+    hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
+    for result in results.contacted.values():
         assert result.get("changed") is True
         assert result.get("module_stderr") is None

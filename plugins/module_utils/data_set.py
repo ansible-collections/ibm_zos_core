@@ -434,7 +434,6 @@ class DataSet(object):
         arguments = locals()
         DataSet.delete(name)
         DataSet.create(**arguments)
-        return
 
     @staticmethod
     def _build_zoau_args(**kwargs):
@@ -442,11 +441,11 @@ class DataSet(object):
         secondary = kwargs.get("space_secondary")
         space_type = kwargs.get("space_type")
         volumes = kwargs.get("volumes")
-        if primary:
+        if primary is not None:
             primary = str(primary)
             if space_type:
                 primary += space_type
-        if secondary:
+        if secondary is not None:
             secondary = str(secondary)
             if space_type:
                 secondary += space_type
@@ -568,7 +567,6 @@ class DataSet(object):
         rc = datasets.delete(name)
         if rc > 0:
             raise DatasetDeleteError(name, rc)
-        return
 
     @staticmethod
     # TODO: verify that this method works for all lengths etc
@@ -593,7 +591,6 @@ class DataSet(object):
         )
         if rc != 0:
             raise DatasetMemberCreateError(name, rc)
-        return
 
     @staticmethod
     def delete_member(name):
@@ -609,7 +606,6 @@ class DataSet(object):
         rc = datasets.delete_members(name)
         if rc > 0:
             raise DatasetMemberDeleteError(name, rc)
-        return
 
     @staticmethod
     def catalog(name, volumes):
@@ -638,20 +634,12 @@ class DataSet(object):
         """
         module = AnsibleModuleHelper(argument_spec={})
         iehprogm_input = DataSet._build_non_vsam_catalog_command(name.upper(), volumes)
-        # temp_name = None
-        # try:
-        #     temp_name = DataSet.create_temp(name.split(".")[0])
-        # DataSet.write(temp_name, iehprogm_input)
+
         rc, stdout, stderr = module.run_command(
             "mvscmdauth --pgm=iehprogm --sysprint=* --sysin=stdin", data=iehprogm_input
         )
         if rc != 0 or "NORMAL END OF TASK RETURNED" not in stdout:
             raise DatasetCatalogError(name, volumes, rc)
-        # except Exception:
-        #     raise
-        # finally:
-        #     if temp_name:
-        #         datasets.delete(temp_name)
         return
 
     @staticmethod
@@ -691,7 +679,10 @@ class DataSet(object):
                 break
         if not success:
             raise DatasetCatalogError(
-                name, volumes, command_rc, "Attempt to catalog VSAM data set failed.",
+                name,
+                volumes,
+                command_rc,
+                "Attempt to catalog VSAM data set failed.",
             )
         return
 
@@ -706,7 +697,6 @@ class DataSet(object):
             DataSet._uncatalog_vsam(name)
         else:
             DataSet._uncatalog_non_vsam(name)
-        return
 
     @staticmethod
     def _uncatalog_non_vsam(name):
@@ -729,8 +719,6 @@ class DataSet(object):
             )
             if rc != 0 or "NORMAL END OF TASK RETURNED" not in stdout:
                 raise DatasetUncatalogError(name, rc)
-        except Exception:
-            raise
         finally:
             if temp_name:
                 datasets.delete(temp_name)
@@ -793,9 +781,8 @@ class DataSet(object):
         data_set = vtoc.find_data_set_in_volume_output(vsam_name, data_sets)
         if data_set is None:
             data_set = vtoc.find_data_set_in_volume_output(name, data_sets)
-        if data_set is not None:
-            if data_set.get("data_set_organization", "") == "VS":
-                return True
+        if data_set is not None and data_set.get("data_set_organization", "") == "VS":
+            return True
         return False
 
     @staticmethod
@@ -915,7 +902,6 @@ class DataSet(object):
         )
         if rc != 0:
             raise DatasetWriteError(name, rc)
-        return
 
     @staticmethod
     def _build_non_vsam_catalog_command(name, volumes):
@@ -1178,8 +1164,9 @@ class DataSetUtils(object):
                 result["dsorg"] = ds_params[-1]
                 if result.get("dsorg") != "VSAM":
                     result["recfm"] = ds_params[0]
-                    result["lrecl"] = ds_params[1]
-                    if len(ds_params) > 2:
+                    if ds_params[1].isdigit():
+                        result["lrecl"] = int(ds_params[1])
+                    if len(ds_params) > 2 and ds_params[2].isdigit():
                         result["blksize"] = int(ds_params[2])
         return result
 
@@ -1195,9 +1182,10 @@ class DataSetUtils(object):
         result = dict()
         if "NOT FOUND" not in output:
             volser_output = re.findall(r"VOLSER-*[A-Z|0-9]*", output)
-            result["volser"] = "".join(
-                re.findall(r"-[A-Z|0-9]*", volser_output[0])
-            ).replace("-", "")
+            if volser_output:
+                result["volser"] = "".join(
+                    re.findall(r"-[A-Z|0-9]*", volser_output[0])
+                ).replace("-", "")
         return result
 
 
@@ -1345,16 +1333,20 @@ class DatasetCreateError(Exception):
 
 class DatasetMemberDeleteError(Exception):
     def __init__(self, data_set, rc):
-        self.msg = 'An error occurred during deletion of data set member"{0}". RC={1}'.format(
-            data_set, rc
+        self.msg = (
+            'An error occurred during deletion of data set member"{0}". RC={1}'.format(
+                data_set, rc
+            )
         )
         super().__init__(self.msg)
 
 
 class DatasetMemberCreateError(Exception):
     def __init__(self, data_set, rc):
-        self.msg = 'An error occurred during creation of data set member"{0}". RC={1}'.format(
-            data_set, rc
+        self.msg = (
+            'An error occurred during creation of data set member"{0}". RC={1}'.format(
+                data_set, rc
+            )
         )
         super().__init__(self.msg)
 
@@ -1375,24 +1367,30 @@ class DatasetCatalogError(Exception):
 
 class DatasetUncatalogError(Exception):
     def __init__(self, data_set, rc):
-        self.msg = 'An error occurred during uncatalog of data set "{0}". RC={1}'.format(
-            data_set, rc
+        self.msg = (
+            'An error occurred during uncatalog of data set "{0}". RC={1}'.format(
+                data_set, rc
+            )
         )
         super().__init__(self.msg)
 
 
 class DatasetWriteError(Exception):
     def __init__(self, data_set, rc, message=""):
-        self.msg = 'An error occurred during write of data set "{0}". RC={1}. {2}'.format(
-            data_set, rc, message
+        self.msg = (
+            'An error occurred during write of data set "{0}". RC={1}. {2}'.format(
+                data_set, rc, message
+            )
         )
         super().__init__(self.msg)
 
 
 class DatasetFormatError(Exception):
     def __init__(self, data_set, rc, message=""):
-        self.msg = 'An error occurred during format of data set "{0}". RC={1}. {2}'.format(
-            data_set, rc, message
+        self.msg = (
+            'An error occurred during format of data set "{0}". RC={1}. {2}'.format(
+                data_set, rc, message
+            )
         )
         super().__init__(self.msg)
 

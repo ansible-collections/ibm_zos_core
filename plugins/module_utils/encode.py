@@ -6,25 +6,27 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-from tempfile import NamedTemporaryFile, TemporaryDirectory, mkstemp
+from tempfile import NamedTemporaryFile, mkstemp, mkdtemp
 from math import floor, ceil
 from os import path, walk, makedirs, unlink
 from ansible.module_utils.six import PY3
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
-    AnsibleModuleHelper,
-)
+
 import shutil
 import errno
 import os
 import re
-import time
+import locale
+
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     MissingZOAUImport,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,
 )
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import copy
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import copy, system
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
+    AnsibleModuleHelper,
+)
 
 try:
     from zoautil_py import datasets
@@ -38,7 +40,31 @@ else:
     from pipes import quote
 
 
-LISTCAT = " LISTCAT ENT('{}') ALL"
+class Defaults:
+    DEFAULT_ASCII_CHARSET = "UTF-8"
+    DEFAULT_EBCDIC_USS_CHARSET = "IBM-1047"
+    DEFAULT_EBCDIC_MVS_CHARSET = "IBM-037"
+
+    @staticmethod
+    def get_default_system_charset():
+        """Get the default encoding of the current machine
+
+        Returns:
+            str -- The encoding of the current machine
+        """
+        system_charset = locale.getdefaultlocale()[1]
+        if system_charset is None:
+            rc, out, err = system.run_command("locale -c charmap")
+            if rc != 0 or not out or err:
+                if system.is_zos():
+                    system_charset = Defaults.DEFAULT_EBCDIC_USS_CHARSET
+                else:
+                    system_charset = Defaults.DEFAULT_ASCII_CHARSET
+            else:
+                out = out.splitlines()
+                system_charset = out[1].strip() if len(out) > 1 else out[0].strip()
+
+        return system_charset
 
 
 class EncodeUtils(object):
@@ -52,25 +78,33 @@ class EncodeUtils(object):
         self.module = AnsibleModuleHelper(argument_spec={})
 
     def _validate_data_set_name(self, ds):
-        arg_defs = dict(ds=dict(arg_type="data_set"),)
+        arg_defs = dict(
+            ds=dict(arg_type="data_set"),
+        )
         parser = BetterArgParser(arg_defs)
         parsed_args = parser.parse_args({"ds": ds})
         return parsed_args.get("ds")
 
     def _validate_path(self, path):
-        arg_defs = dict(path=dict(arg_type="path"),)
+        arg_defs = dict(
+            path=dict(arg_type="path"),
+        )
         parser = BetterArgParser(arg_defs)
         parsed_args = parser.parse_args({"path": path})
         return parsed_args.get("path")
 
     def _validate_data_set_or_path(self, path):
-        arg_defs = dict(path=dict(arg_type="data_set_or_path"),)
+        arg_defs = dict(
+            path=dict(arg_type="data_set_or_path"),
+        )
         parser = BetterArgParser(arg_defs)
         parsed_args = parser.parse_args({"path": path})
         return parsed_args.get("path")
 
     def _validate_encoding(self, encoding):
-        arg_defs = dict(encoding=dict(arg_type="encoding"),)
+        arg_defs = dict(
+            encoding=dict(arg_type="encoding"),
+        )
         parser = BetterArgParser(arg_defs)
         parsed_args = parser.parse_args({"encoding": encoding})
         return parsed_args.get("encoding")
@@ -91,7 +125,7 @@ class EncodeUtils(object):
         ds = self._validate_data_set_name(ds)
         reclen = 80
         space_u = 1024
-        listcat_cmd = LISTCAT.format(ds)
+        listcat_cmd = " LISTCAT ENT('{0}') ALL".format(ds)
         cmd = "mvscmdauth --pgm=ikjeft01 --systsprt=stdout --systsin=stdin"
         rc, out, err = self.module.run_command(cmd, data=listcat_cmd)
         if rc:
@@ -258,7 +292,7 @@ class EncodeUtils(object):
         return convert_rc
 
     def uss_convert_encoding_prev(self, src, dest, from_code, to_code):
-        """ For multiple files conversion, such as a USS path or MVS PDS data set,
+        """For multiple files conversion, such as a USS path or MVS PDS data set,
         use this method to split then do the conversion
 
         Arguments:
@@ -355,8 +389,7 @@ class EncodeUtils(object):
                 temp_src = temp_src_fo.name
                 rc, out, err = copy.copy_ps2uss(src, temp_src)
             if src_type == "PO":
-                temp_src_fo = TemporaryDirectory()
-                temp_src = temp_src_fo.name
+                temp_src = mkdtemp()
                 rc, out, err = copy.copy_pds2uss(src, temp_src)
             if src_type == "VSAM":
                 reclen, space_u = self.listdsi_data_set(src.upper())
@@ -369,8 +402,7 @@ class EncodeUtils(object):
                 temp_dest_fo = NamedTemporaryFile()
                 temp_dest = temp_dest_fo.name
             if dest_type == "PO":
-                temp_dest_fo = TemporaryDirectory()
-                temp_dest = temp_dest_fo.name
+                temp_dest = mkdtemp()
             rc = self.uss_convert_encoding_prev(temp_src, temp_dest, from_code, to_code)
             if rc:
                 if not dest_type:
@@ -396,6 +428,13 @@ class EncodeUtils(object):
         finally:
             if temp_ps:
                 datasets.delete(temp_ps)
+            if temp_src and temp_src != src:
+                if os.path.isdir(temp_src):
+                    shutil.rmtree(temp_src)
+            if temp_dest and temp_dest != dest:
+                if os.path.isdir(temp_dest):
+                    shutil.rmtree(temp_dest)
+
         return convert_rc
 
 

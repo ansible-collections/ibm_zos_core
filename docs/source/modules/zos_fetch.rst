@@ -94,6 +94,15 @@ flat
 
 
      
+ignore_sftp_stderr
+  During data transfer through sftp, the module fails if the sftp command directs any content to stderr. The user is able to override this behavior by setting this parameter to ``true``. By doing so, the module would essentially ignore the stderr stream produced by sftp and continue execution.
+
+
+  | **required**: False
+  | **type**: bool
+
+
+     
 is_binary
   Specifies if the file being fetched is a binary.
 
@@ -101,6 +110,19 @@ is_binary
   | **required**: False
   | **type**: bool
   | **default**: false
+
+
+     
+sftp_port
+  Indicates which port should be used to connect to the remote z/OS system to perform data transfer.
+
+  If this parameter is not specified, ``ansible_port`` will be used.
+
+  If ``ansible_port`` is not specified, port 22 will be used.
+
+
+  | **required**: False
+  | **type**: int
 
 
      
@@ -213,6 +235,7 @@ See Also
 .. seealso::
 
    - :ref:`zos_data_set_module`
+   - :ref:`zos_copy_module`
 
 
 

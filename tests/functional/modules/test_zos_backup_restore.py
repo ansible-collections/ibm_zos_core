@@ -225,6 +225,62 @@ def test_backup_and_restore_of_data_set(
 
 
 @pytest.mark.parametrize(
+    "backup_name,space,space_type",
+    [
+        (DATA_SET_BACKUP_LOCATION, 10, "M"),
+        (DATA_SET_BACKUP_LOCATION, 10000, "K"),
+        (DATA_SET_BACKUP_LOCATION, 10000000, None),
+        (DATA_SET_BACKUP_LOCATION, 2, "CYL"),
+        (DATA_SET_BACKUP_LOCATION, 10, "TRK"),
+        (UNIX_BACKUP_LOCATION, 10, "M"),
+        (UNIX_BACKUP_LOCATION, 10000, "K"),
+        (UNIX_BACKUP_LOCATION, 10000000, None),
+        (UNIX_BACKUP_LOCATION, 2, "CYL"),
+        (UNIX_BACKUP_LOCATION, 10, "TRK"),
+    ],
+)
+def test_backup_and_restore_of_data_set_various_space_measurements(
+    ansible_zos_module, backup_name, space, space_type
+):
+    hosts = ansible_zos_module
+    try:
+        delete_data_set_or_file(hosts, DATA_SET_NAME)
+        delete_data_set_or_file(hosts, DATA_SET_RESTORE_LOCATION)
+        delete_data_set_or_file(hosts, backup_name)
+        create_sequential_data_set_with_contents(
+            hosts, DATA_SET_NAME, DATA_SET_CONTENTS
+        )
+        args = dict(
+            operation="backup",
+            data_sets=dict(include=DATA_SET_NAME),
+            backup_name=backup_name,
+            overwrite=True,
+            space=space,
+        )
+        if space_type:
+            args["space_type"] = space_type
+        results = hosts.zos_backup_restore(**args)
+        assert_module_did_not_fail(results)
+        assert_data_set_or_file_exists(hosts, backup_name)
+        args = dict(
+            operation="restore",
+            backup_name=backup_name,
+            hlq=NEW_HLQ,
+            overwrite=True,
+            space=space,
+        )
+        if space_type:
+            args["space_type"] = space_type
+        results = hosts.zos_backup_restore(**args)
+        assert_module_did_not_fail(results)
+        assert_data_set_exists(hosts, DATA_SET_RESTORE_LOCATION)
+    finally:
+        delete_data_set_or_file(hosts, DATA_SET_NAME)
+        delete_data_set_or_file(hosts, DATA_SET_RESTORE_LOCATION)
+        delete_data_set_or_file(hosts, backup_name)
+
+
+@pytest.mark.parametrize(
     "backup_name,overwrite",
     [
         (DATA_SET_BACKUP_LOCATION, False),

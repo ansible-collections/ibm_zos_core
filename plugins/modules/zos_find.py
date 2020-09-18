@@ -283,15 +283,15 @@ def content_filter(module, patterns, content):
                 filtered_data_sets['searched'] += 1
 
         for line in out.splitlines():
-            result = line.replace(content, "").split()
-            if result:
-                if len(result) > 1:
+            if line:
+                ds, member = _extract_names(line, content.upper())
+                if member:
                     try:
-                        filtered_data_sets['pds'][result[0]].add(result[1])
+                        filtered_data_sets['pds'][ds].add(member)
                     except KeyError:
-                        filtered_data_sets['pds'][result[0]] = set([result[1]])
+                        filtered_data_sets['pds'][ds] = set([member])
                 else:
-                    filtered_data_sets['ps'].add(result[0])
+                    filtered_data_sets['ps'].add(ds)
     return filtered_data_sets
 
 
@@ -500,7 +500,7 @@ def _age_filter(ds_date, now, age):
     Returns:
         bool -- Whether 'ds_date' is older than 'age'
     """
-    year, month, day = map(int, ds_date.split("/"))
+    year, month, day = list(map(int, ds_date.split("/")))
     if year == "0000":
         return age >= 0
 
@@ -532,14 +532,20 @@ def _get_creation_date(module, ds):
             rc=rc, stderr=err, stdout=out
         )
     out = re.findall(r"CREATION-*[A-Z|0-9]*", out.strip())
-    years, days = "".join(re.findall(r"-[A-Z|0-9]*", out)).replace("-", "").split(".")
-    days = int(days)
-    days_per_month = 30.4167
-    return "{0}/{1}/{3}".format(
-        years,
-        math.ceil(days / days_per_month),
-        math.ceil(days % days_per_month)
-    )
+    if out:
+        out = out[0]
+        date = "".join(re.findall(r"-[A-Z|0-9]*", out)).replace("-", "").split(".")
+        days = 1 if len(date) < 2 else int(date[1])
+        years = int(date[0])
+        days_per_month = 30.4167
+        return "{0}/{1}/{2}".format(
+            years,
+            math.ceil(days / days_per_month),
+            math.ceil(days % days_per_month)
+        )
+
+    # If no creation data is found, return default "000/1/1"
+    return "000/1/1"
 
 
 def _size_filter(ds_size, size):
@@ -638,6 +644,27 @@ def _vls_wrapper(pattern, details=False, verbose=False):
 
     vls_cmd += " {0}".format(quote(pattern))
     return AnsibleModuleHelper(argument_spec={}).run_command(vls_cmd)
+
+
+def _extract_names(line, content):
+    """Utility function to extract data set and member names from dgrep
+    output
+
+    Arguments:
+        line {str} -- The line returned by dgrep
+        content {str} -- The content that was being searched for
+
+    Returns:
+        ds {str} -- The data set name
+        member {str} -- The member name if the data set is a PDS/PDSE.
+                        Otherwise an empty string.
+
+    """
+    start = line.find(' ')
+    end = line.find(content)
+    member = line[start:end].split("      ")[-2].strip()
+    ds = line.split()[0]
+    return ds, member
 
 
 def run_module(module):

@@ -43,74 +43,75 @@ def create_vsam_ksds(ds_name, ansible_zos_module, volume="000000"):
     )
 
 
-# def test_find_sequential_data_sets_containing_single_string(ansible_zos_module):
-#     hosts = ansible_zos_module
-#     search_string = "hello"
-#     try:
-#         hosts.all.zos_data_set(batch=[dict(name=i, type='seq', state='present') for i in SEQ_NAMES])
-#         for ds in SEQ_NAMES:
-#             hosts.all.zos_lineinfile(src=ds, line=search_string)
+def test_find_sequential_data_sets_containing_single_string(ansible_zos_module):
+    hosts = ansible_zos_module
+    search_string = "hello"
+    try:
+        hosts.all.zos_data_set(batch=[dict(name=i, type='seq', state='present') for i in SEQ_NAMES])
+        for ds in SEQ_NAMES:
+            hosts.all.zos_lineinfile(src=ds, line=search_string)
 
-#         find_res = hosts.all.zos_find(patterns=['TEST.FIND.SEQ.*.*'], contains=search_string)
-#         for val in find_res.contacted.values():
-#             assert val.get('msg') is None
-#             assert len(val.get('data_sets')) != 0
-#             for ds in val.get('data_sets'):
-#                 assert ds.get('name') in SEQ_NAMES
-#             assert val.get('matched') == len(val.get('data_sets'))
-#     finally:
-#         hosts.all.zos_data_set(batch=[dict(name=i, state='absent') for i in SEQ_NAMES])
-
-
-# def test_find_sequential_data_sets_multiple_patterns(ansible_zos_module):
-#     hosts = ansible_zos_module
-#     search_string = "dummy string"
-#     new_ds ="TEST.FIND.SEQ.FUNCTEST.FOURTH"
-#     try:
-#         hosts.all.zos_data_set(batch=[dict(name=i, type='seq', state='present') for i in SEQ_NAMES])
-#         hosts.all.zos_data_set(name=new_ds, type='seq', state='present')
-#         hosts.all.zos_lineinfile(src=new_ds, line="incorrect string")
-#         for ds in SEQ_NAMES:
-#             hosts.all.zos_lineinfile(src=ds, line=search_string)
-
-#         find_res = hosts.all.zos_find(
-#             patterns=['TEST.FIND.SEQ.*.*', 'TEST.INVALID.*'],
-#             contains=search_string
-#         )
-#         for val in find_res.contacted.values():
-#             assert len(val.get('data_sets')) != 0
-#             for ds in val.get('data_sets'):
-#                 assert ds.get('name') in SEQ_NAMES
-#             assert val.get('matched') == len(val.get('data_sets'))
-#     finally:
-#         hosts.all.zos_data_set(batch=[dict(name=i, state='absent') for i in SEQ_NAMES])
-#         hosts.all.zos_data_set(name=new_ds, state='absent')
+        find_res = hosts.all.zos_find(patterns=['TEST.FIND.SEQ.*.*'], contains=search_string)
+        for val in find_res.contacted.values():
+            assert val.get('msg') is None
+            assert len(val.get('data_sets')) != 0
+            for ds in val.get('data_sets'):
+                assert ds.get('name') in SEQ_NAMES
+            assert val.get('matched') == len(val.get('data_sets'))
+    finally:
+        hosts.all.zos_data_set(batch=[dict(name=i, state='absent') for i in SEQ_NAMES])
 
 
-# def test_find_pds_members_containing_string(ansible_zos_module):
-#     hosts = ansible_zos_module
-#     search_string = "hello"
-#     try:
-#         hosts.all.zos_data_set(batch=[dict(name=i, type='pds', record_length=80) for i in PDS_NAMES])
-#         hosts.all.zos_data_set(batch=[dict(name=i + "(MEMBER)", type="MEMBER") for i in PDS_NAMES])
-#         for ds in SEQ_NAMES:
-#             hosts.all.zos_lineinfile(src=ds + "(MEMBER)", line=search_string)
+def test_find_sequential_data_sets_multiple_patterns(ansible_zos_module):
+    hosts = ansible_zos_module
+    search_string = "dummy string"
+    new_ds ="TEST.FIND.SEQ.FUNCTEST.FOURTH"
+    try:
+        hosts.all.zos_data_set(batch=[dict(name=i, type='seq', state='present') for i in SEQ_NAMES])
+        hosts.all.zos_data_set(name=new_ds, type='seq', state='present')
+        hosts.all.zos_lineinfile(src=new_ds, line="incorrect string")
+        for ds in SEQ_NAMES:
+            hosts.all.zos_lineinfile(src=ds, line=search_string)
 
-#         find_res = hosts.all.zos_find(pds_paths=['TEST.FIND.PDS.*.*'], contains=search_string)
-#         for val in find_res.contacted.values():
-#             assert len(val.get('data_sets')) != 0
-#             for ds in val.get('data_sets'):
-#                 assert ds.get('name') in PDS_NAMES
-#                 assert len(ds.get('members')) == 1
-#     finally:
-#         hosts.all.zos_data_set(batch=[dict(name=i, state='absent') for i in PDS_NAMES])
+        find_res = hosts.all.zos_find(
+            patterns=['TEST.FIND.SEQ.*.*', 'TEST.INVALID.*'],
+            contains=search_string
+        )
+        for val in find_res.contacted.values():
+            assert len(val.get('data_sets')) != 0
+            for ds in val.get('data_sets'):
+                assert ds.get('name') in SEQ_NAMES
+            assert val.get('matched') == len(val.get('data_sets'))
+    finally:
+        hosts.all.zos_data_set(batch=[dict(name=i, state='absent') for i in SEQ_NAMES])
+        hosts.all.zos_data_set(name=new_ds, state='absent')
+
+
+def test_find_pds_members_containing_string(ansible_zos_module):
+    hosts = ansible_zos_module
+    search_string = "hello"
+    try:
+        hosts.all.zos_data_set(batch=[dict(name=i, type='pds', record_length=80) for i in PDS_NAMES])
+        hosts.all.zos_data_set(batch=[dict(name=i + "(MEMBER)", type="MEMBER") for i in PDS_NAMES])
+        for ds in SEQ_NAMES:
+            hosts.all.zos_lineinfile(src=ds + "(MEMBER)", line=search_string)
+
+        find_res = hosts.all.zos_find(pds_paths=['TEST.FIND.PDS.*.*'], contains=search_string)
+        for val in find_res.contacted.values():
+            assert len(val.get('data_sets')) != 0
+            for ds in val.get('data_sets'):
+                assert ds.get('name') in PDS_NAMES
+                assert len(ds.get('members')) == 1
+    finally:
+        hosts.all.zos_data_set(batch=[dict(name=i, state='absent') for i in PDS_NAMES])
 
 
 def test_exclude_data_sets_from_matched_list(ansible_zos_module):
     hosts = ansible_zos_module
     try:
-        hosts.all.zos_data_set(batch=[dict(name=i, type='pds', record_length=80) for i in SEQ_NAMES])
+        hosts.all.zos_data_set(batch=[dict(name=i, type='seq', record_length=80, state='present') for i in SEQ_NAMES])
         find_res = hosts.all.zos_find(patterns=['TEST.FIND.SEQ.*.*'], excludes=['.*THIRD$'])
+        print(vars(find_res))
         for val in find_res.contacted.values():
             assert len(val.get('data_sets')) == 2
             for ds in val.get('data_sets'):
@@ -141,6 +142,7 @@ def test_find_data_sets_older_than_age(ansible_zos_module):
         patterns=['IMSTESTL.IMS01.RESTART', 'IMSTESTL.IMS01.LGMSGL'],
         age='2d'
     )
+    print(vars(find_res))
     for val in find_res.contacted.values():
         assert len(val.get('data_sets')) == 2
         assert val.get('matched') == 2
@@ -169,6 +171,7 @@ def test_find_data_sets_smaller_than_size(ansible_zos_module):
             batch=[dict(name=i, type='seq', space_primary=10, state='present') for i in SEQ_NAMES]
         )
         find_res = hosts.all.zos_find(patterns=['TEST.FIND.SEQ.*.*'], size='-12m')
+        print(vars(find_res))
         for val in find_res.contacted.values():
             assert len(val.get('data_sets')) == 3
             for ds in val.get('data_sets'):

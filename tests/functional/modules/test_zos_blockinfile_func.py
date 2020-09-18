@@ -133,7 +133,7 @@ Note: zos_encode module uses USS cp command for copying from USS file to MVS dat
 I had to develop and use a new tool for converting and copying to data set in order to set up environment for tests to publish results on Jira.
 Until the issue be addressed I disable related tests.
 """
-#ENCODING = ['IBM-1047', 'ISO8859-1', 'UTF-8']
+# ENCODING = ['IBM-1047', 'ISO8859-1', 'UTF-8']
 ENCODING = ['IBM-1047']
 TEST_ENV = dict(
     TEST_CONT=TEST_CONTENT,
@@ -1175,6 +1175,7 @@ def test_ds_block_absent(ansible_zos_module, dstype, encoding):
         TEST_INFO["expected"]["test_uss_block_absent"]
     )
     TEST_ENV["TEST_CONT"] = TEST_CONTENT
+
 
 """
 @pytest.mark.ds

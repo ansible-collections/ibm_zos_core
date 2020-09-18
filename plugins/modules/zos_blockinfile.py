@@ -217,8 +217,7 @@ cmd:
   description: constructed dmod shell cmd based on the parameters
   returned: success
   type: str
-  sample: dmodhelper -d -b -c IBM-1047 -m "BEGIN\nEND\n# {mark} ANSIBLE MANAGED BLOCK" \
-  -s -e "/^PATH=/a\\PATH=/dir/bin:$PATH/$" -e "$ a\\PATH=/dir/bin:$PATH" /etc/profile
+  sample: dmodhelper -d -b -c IBM-1047 -m "BEGIN\nEND\n# {mark} ANSIBLE MANAGED BLOCK" -s -e "/^PATH=/a\\PATH=/dir/bin:$PATH/$" -e "$ a\\PATH=/dir/bin:$PATH" /etc/profile
 msg:
   description: The module messages
   returned: failure
@@ -371,8 +370,8 @@ def main():
                 default=None
             ),
             encoding=dict(
-                type=str,
-                default="IBM-1047"
+                type='str',
+                default='IBM-1047'
             ),
         ),
         mutually_exclusive=[['insertbefore', 'insertafter']],
@@ -381,18 +380,18 @@ def main():
     params = module.params
 
     arg_defs = dict(
-        src=dict(arg_type="data_set_or_path", aliases=['path', 'destfile', 'name'], required=True),
-        state=dict(arg_type='str', default='present',choices=['absent', 'present']),
+        src=dict(arg_type='data_set_or_path', aliases=['path', 'destfile', 'name'], required=True),
+        state=dict(arg_type='str', default='present', choices=['absent', 'present']),
         marker=dict(arg_type='str', default='# {mark} ANSIBLE MANAGED BLOCK', required=False),
         block=dict(arg_type='str', default='', aliases=['content'], required=False),
-        insertafter=dict(arg_type="str", required=False),
-        insertbefore=dict(arg_type="str", required=False),
+        insertafter=dict(arg_type='str', required=False),
+        insertbefore=dict(arg_type='str', required=False),
         marker_begin=dict(arg_type='str', default='BEGIN', required=False),
         marker_end=dict(arg_type='str', default='END', required=False),
-        encoding=dict(arg_type="str", default="IBM-1047", required=False),
-        backup=dict(arg_type="bool", default=False, required=False),
-        back_name=dict(arg_type="data_set_or_path", required=False, default=None),
-        mutually_exclusive=[["insertbefore","insertafter"]],
+        encoding=dict(arg_type='str', default='IBM-1047', required=False),
+        backup=dict(arg_type='bool', default=False, required=False),
+        back_name=dict(arg_type='data_set_or_pat', required=False, default=None),
+        mutually_exclusive=[['insertbefore', 'insertafter']],
     )
     result = dict(changed=False, cmd='', found=0)
     try:

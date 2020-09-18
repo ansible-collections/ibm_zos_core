@@ -1,0 +1,355 @@
+# -*- coding: utf-8 -*-
+
+# Copyright (c) IBM Corporation 2020
+# Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
+
+from __future__ import absolute_import, division, print_function
+from plugins.modules.zos_backup_restore import backup
+
+__metaclass__ = type
+
+import pytest
+from re import search, IGNORECASE, MULTILINE
+
+VOLUME = "000000"
+VOLUME2 = "222222"
+DATA_SET_NAME = "USER.PRIVATE.TESTDS"
+DATA_SET_NAME2 = "USER.PRIVATE.TESTDS2"
+DATA_SET_PATTERN = "USER.PRIVATE.*"
+DATA_SET_CONTENTS = "HELLO world"
+DATA_SET_BACKUP_LOCATION = "MY.BACKUP"
+UNIX_BACKUP_LOCATION = "/tmp/mybackup.dzp"
+NEW_HLQ = "NEWHLQ"
+DATA_SET_RESTORE_LOCATION = "{0}.PRIVATE.TESTDS".format(NEW_HLQ)
+DATA_SET_RESTORE_LOCATION2 = "{0}.PRIVATE.TESTDS2".format(NEW_HLQ)
+# ---------------------------------------------------------------------------- #
+#                               Helper functions                               #
+# ---------------------------------------------------------------------------- #
+
+
+def create_data_set_or_file_with_contents(hosts, name, contents):
+    if name.startswith("/"):
+        create_file_with_contents(hosts, name, contents)
+    else:
+        create_sequential_data_set_with_contents(hosts, name, contents)
+
+
+def create_sequential_data_set_with_contents(hosts, data_set_name, contents):
+    results = hosts.zos_data_set(name=data_set_name, type="seq")
+    assert_module_did_not_fail(results)
+    results = hosts.shell("decho '{0}' {1}".format(contents, data_set_name))
+    assert_module_did_not_fail(results)
+
+
+def create_file_with_contents(hosts, path, contents):
+    results = hosts.shell("echo '{0}' > {1}".format(contents, path))
+    assert_module_did_not_fail(results)
+
+
+def delete_data_set_or_file(hosts, name):
+    if name.startswith("/"):
+        delete_file(hosts, name)
+    else:
+        delete_data_set(hosts, name)
+
+
+def delete_data_set(hosts, data_set_name):
+    hosts.zos_data_set(name=data_set_name, state="absent")
+
+
+def delete_file(hosts, path):
+    hosts.file(path=path, state="absent")
+
+
+def assert_module_did_not_fail(results):
+    for result in results.contacted.values():
+        assert result.get("failed", True) is not True
+
+
+def assert_module_failed(results):
+    for result in results.contacted.values():
+        assert result.get("failed", False) is True
+
+
+def assert_data_set_or_file_exists(hosts, name):
+    if name.startswith("/"):
+        assert_file_exists(hosts, name)
+    else:
+        assert_data_set_exists(hosts, name)
+
+
+def assert_data_set_exists(hosts, data_set_name):
+    results = hosts.shell("dls '{0}'".format(data_set_name.upper()))
+    for result in results.contacted.values():
+        found = search(
+            "^{0}$".format(data_set_name), result.get("stdout"), IGNORECASE | MULTILINE
+        )
+        assert found
+
+
+def assert_data_set_does_not_exists(hosts, data_set_name):
+    results = hosts.shell("dls '{0}'".format(data_set_name.upper()))
+    for result in results.contacted.values():
+        found = search(
+            "^{0}$".format(data_set_name), result.get("stdout"), IGNORECASE | MULTILINE
+        )
+        assert not found
+
+
+def assert_file_exists(hosts, path):
+    results = hosts.all.stat(path=path)
+    for result in results.contacted.values():
+        assert result.get("stat").get("exists") is True
+
+
+# ---------------------------------------------------------------------------- #
+#                                Start of tests                                #
+# ---------------------------------------------------------------------------- #
+
+
+@pytest.mark.parametrize(
+    "backup_name,overwrite,recover",
+    [
+        (DATA_SET_BACKUP_LOCATION, False, False),
+        (DATA_SET_BACKUP_LOCATION, True, True),
+        (DATA_SET_BACKUP_LOCATION, False, True),
+        (DATA_SET_BACKUP_LOCATION, True, False),
+        (UNIX_BACKUP_LOCATION, False, False),
+        (UNIX_BACKUP_LOCATION, True, True),
+        (UNIX_BACKUP_LOCATION, False, True),
+        (UNIX_BACKUP_LOCATION, True, False),
+    ],
+)
+def test_backup_of_data_set(ansible_zos_module, backup_name, overwrite, recover):
+    hosts = ansible_zos_module
+    try:
+        if not overwrite:
+            delete_data_set_or_file(hosts, backup_name)
+        delete_data_set_or_file(hosts, DATA_SET_NAME)
+        create_sequential_data_set_with_contents(
+            hosts, DATA_SET_NAME, DATA_SET_CONTENTS
+        )
+        results = hosts.zos_backup_restore(
+            operation="backup",
+            data_sets=dict(include=DATA_SET_NAME),
+            backup_name=backup_name,
+            overwrite=overwrite,
+            recover=recover,
+        )
+        assert_module_did_not_fail(results)
+        assert_data_set_or_file_exists(hosts, backup_name)
+    finally:
+        delete_data_set_or_file(hosts, DATA_SET_NAME)
+        delete_data_set_or_file(hosts, backup_name)
+
+
+@pytest.mark.parametrize(
+    "backup_name,overwrite",
+    [
+        (DATA_SET_BACKUP_LOCATION, False),
+        (DATA_SET_BACKUP_LOCATION, True),
+        (UNIX_BACKUP_LOCATION, False),
+        (UNIX_BACKUP_LOCATION, True),
+    ],
+)
+def test_backup_of_data_set_when_backup_dest_exists(
+    ansible_zos_module, backup_name, overwrite
+):
+    hosts = ansible_zos_module
+    try:
+        create_data_set_or_file_with_contents(hosts, backup_name, DATA_SET_CONTENTS)
+        create_sequential_data_set_with_contents(
+            hosts, DATA_SET_NAME, DATA_SET_CONTENTS
+        )
+        results = hosts.zos_backup_restore(
+            operation="backup",
+            data_sets=dict(include=DATA_SET_NAME),
+            backup_name=backup_name,
+            overwrite=overwrite,
+        )
+        if overwrite:
+            assert_module_did_not_fail(results)
+        else:
+            assert_module_failed(results)
+        assert_data_set_or_file_exists(hosts, backup_name)
+    finally:
+        delete_data_set_or_file(hosts, DATA_SET_NAME)
+        delete_data_set_or_file(hosts, backup_name)
+
+
+@pytest.mark.parametrize(
+    "backup_name,overwrite,recover",
+    [
+        (DATA_SET_BACKUP_LOCATION, False, False),
+        (DATA_SET_BACKUP_LOCATION, True, True),
+        (DATA_SET_BACKUP_LOCATION, False, True),
+        (DATA_SET_BACKUP_LOCATION, True, False),
+        (UNIX_BACKUP_LOCATION, False, False),
+        (UNIX_BACKUP_LOCATION, True, True),
+        (UNIX_BACKUP_LOCATION, False, True),
+        (UNIX_BACKUP_LOCATION, True, False),
+    ],
+)
+def test_backup_and_restore_of_data_set(
+    ansible_zos_module, backup_name, overwrite, recover
+):
+    hosts = ansible_zos_module
+    try:
+        delete_data_set_or_file(hosts, DATA_SET_NAME)
+        delete_data_set_or_file(hosts, DATA_SET_RESTORE_LOCATION)
+        delete_data_set_or_file(hosts, backup_name)
+        create_sequential_data_set_with_contents(
+            hosts, DATA_SET_NAME, DATA_SET_CONTENTS
+        )
+        results = hosts.zos_backup_restore(
+            operation="backup",
+            data_sets=dict(include=DATA_SET_NAME),
+            backup_name=backup_name,
+            overwrite=overwrite,
+            recover=recover,
+        )
+        assert_module_did_not_fail(results)
+        assert_data_set_or_file_exists(hosts, backup_name)
+        results = hosts.zos_backup_restore(
+            operation="restore",
+            backup_name=backup_name,
+            hlq=NEW_HLQ,
+            overwrite=overwrite,
+        )
+        assert_module_did_not_fail(results)
+        assert_data_set_exists(hosts, DATA_SET_RESTORE_LOCATION)
+    finally:
+        delete_data_set_or_file(hosts, DATA_SET_NAME)
+        delete_data_set_or_file(hosts, DATA_SET_RESTORE_LOCATION)
+        delete_data_set_or_file(hosts, backup_name)
+
+
+@pytest.mark.parametrize(
+    "backup_name,overwrite",
+    [
+        (DATA_SET_BACKUP_LOCATION, False),
+        (DATA_SET_BACKUP_LOCATION, True),
+        (UNIX_BACKUP_LOCATION, False),
+        (UNIX_BACKUP_LOCATION, True),
+    ],
+)
+def test_backup_and_restore_of_data_set_when_restore_location_exists(
+    ansible_zos_module, backup_name, overwrite
+):
+    hosts = ansible_zos_module
+    try:
+        delete_data_set_or_file(hosts, DATA_SET_NAME)
+        delete_data_set_or_file(hosts, DATA_SET_RESTORE_LOCATION)
+        delete_data_set_or_file(hosts, backup_name)
+        create_sequential_data_set_with_contents(
+            hosts, DATA_SET_NAME, DATA_SET_CONTENTS
+        )
+        results = hosts.zos_backup_restore(
+            operation="backup",
+            data_sets=dict(include=DATA_SET_NAME),
+            backup_name=backup_name,
+        )
+        assert_module_did_not_fail(results)
+        assert_data_set_or_file_exists(hosts, backup_name)
+        results = hosts.zos_backup_restore(
+            operation="restore",
+            backup_name=backup_name,
+            hlq=NEW_HLQ,
+        )
+        assert_module_did_not_fail(results)
+        assert_data_set_exists(hosts, DATA_SET_RESTORE_LOCATION)
+        results = hosts.zos_backup_restore(
+            operation="restore",
+            backup_name=backup_name,
+            hlq=NEW_HLQ,
+            overwrite=overwrite,
+        )
+        if overwrite:
+            assert_module_did_not_fail(results)
+        else:
+            assert_module_failed(results)
+    finally:
+        delete_data_set_or_file(hosts, DATA_SET_NAME)
+        delete_data_set_or_file(hosts, DATA_SET_RESTORE_LOCATION)
+        delete_data_set_or_file(hosts, backup_name)
+
+
+@pytest.mark.parametrize(
+    "data_set_include",
+    [
+        [DATA_SET_NAME, DATA_SET_NAME2],
+        DATA_SET_PATTERN,
+    ],
+)
+def test_backup_and_restore_of_multiple_data_sets(ansible_zos_module, data_set_include):
+    hosts = ansible_zos_module
+    try:
+        delete_data_set_or_file(hosts, DATA_SET_NAME)
+        delete_data_set_or_file(hosts, DATA_SET_NAME2)
+        delete_data_set_or_file(hosts, DATA_SET_RESTORE_LOCATION)
+        delete_data_set_or_file(hosts, DATA_SET_RESTORE_LOCATION2)
+        delete_data_set_or_file(hosts, DATA_SET_BACKUP_LOCATION)
+        create_sequential_data_set_with_contents(
+            hosts, DATA_SET_NAME, DATA_SET_CONTENTS
+        )
+        create_sequential_data_set_with_contents(
+            hosts, DATA_SET_NAME2, DATA_SET_CONTENTS
+        )
+        results = hosts.zos_backup_restore(
+            operation="backup",
+            data_sets=dict(include=data_set_include),
+            backup_name=DATA_SET_BACKUP_LOCATION,
+        )
+        assert_module_did_not_fail(results)
+        assert_data_set_or_file_exists(hosts, DATA_SET_BACKUP_LOCATION)
+        results = hosts.zos_backup_restore(
+            operation="restore",
+            backup_name=DATA_SET_BACKUP_LOCATION,
+            hlq=NEW_HLQ,
+        )
+        assert_module_did_not_fail(results)
+        assert_data_set_exists(hosts, DATA_SET_RESTORE_LOCATION)
+        assert_data_set_exists(hosts, DATA_SET_RESTORE_LOCATION2)
+    finally:
+        delete_data_set_or_file(hosts, DATA_SET_NAME)
+        delete_data_set_or_file(hosts, DATA_SET_NAME2)
+        delete_data_set_or_file(hosts, DATA_SET_RESTORE_LOCATION)
+        delete_data_set_or_file(hosts, DATA_SET_RESTORE_LOCATION2)
+        delete_data_set_or_file(hosts, DATA_SET_BACKUP_LOCATION)
+
+
+def test_backup_and_restore_exclude_from_pattern(ansible_zos_module):
+    hosts = ansible_zos_module
+    try:
+        delete_data_set_or_file(hosts, DATA_SET_NAME)
+        delete_data_set_or_file(hosts, DATA_SET_NAME2)
+        delete_data_set_or_file(hosts, DATA_SET_RESTORE_LOCATION)
+        delete_data_set_or_file(hosts, DATA_SET_RESTORE_LOCATION2)
+        delete_data_set_or_file(hosts, DATA_SET_BACKUP_LOCATION)
+        create_sequential_data_set_with_contents(
+            hosts, DATA_SET_NAME, DATA_SET_CONTENTS
+        )
+        create_sequential_data_set_with_contents(
+            hosts, DATA_SET_NAME2, DATA_SET_CONTENTS
+        )
+        results = hosts.zos_backup_restore(
+            operation="backup",
+            data_sets=dict(include=DATA_SET_PATTERN, exclude=DATA_SET_NAME2),
+            backup_name=DATA_SET_BACKUP_LOCATION,
+        )
+        assert_module_did_not_fail(results)
+        assert_data_set_or_file_exists(hosts, DATA_SET_BACKUP_LOCATION)
+        results = hosts.zos_backup_restore(
+            operation="restore",
+            backup_name=DATA_SET_BACKUP_LOCATION,
+            hlq=NEW_HLQ,
+        )
+        assert_module_did_not_fail(results)
+        assert_data_set_exists(hosts, DATA_SET_RESTORE_LOCATION)
+        assert_data_set_does_not_exists(hosts, DATA_SET_RESTORE_LOCATION2)
+    finally:
+        delete_data_set_or_file(hosts, DATA_SET_NAME)
+        delete_data_set_or_file(hosts, DATA_SET_NAME2)
+        delete_data_set_or_file(hosts, DATA_SET_RESTORE_LOCATION)
+        delete_data_set_or_file(hosts, DATA_SET_RESTORE_LOCATION2)
+        delete_data_set_or_file(hosts, DATA_SET_BACKUP_LOCATION)

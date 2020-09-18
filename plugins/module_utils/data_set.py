@@ -990,7 +990,7 @@ class DataSetUtils(object):
         self.is_uss_path = "/" in data_set
         self.ds_info = dict()
         if not self.is_uss_path:
-            self.ds_info = self._gather_data_set_info()
+            self.ds_info.update(self._gather_data_set_info())
 
     def exists(self):
         """Determines whether the input data set exists. The input data
@@ -1116,6 +1116,7 @@ class DataSetUtils(object):
         listds_rc, listds_out, listds_err = mvs_cmd.ikjeft01(
             "  LISTDS '{0}'".format(self.data_set), authorized=True
         )
+
         if listds_rc == 0:
             result.update(self._process_listds_output(listds_out))
         else:

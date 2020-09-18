@@ -938,7 +938,7 @@ class USSCopyHandler(CopyHandler):
                     pass
         try:
             if src_member or src_ds_type in MVS_SEQ:
-                if Datasets.copy(src, dest) != 0:
+                if datasets._copy(src, dest).rc != 0:
                     self.fail_json(
                         msg="Error while copying source {0} to {1}".format(src, dest)
                     )

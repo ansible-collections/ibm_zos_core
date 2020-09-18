@@ -10,7 +10,7 @@ __metaclass__ = type
 
 ANSIBLE_METADATA = {
     "metadata_version": "1.1",
-    "status": ["preview"],
+    "status": ["stableinterface"],
     "supported_by": "community",
 }
 
@@ -173,10 +173,14 @@ def list_or_str_type(contents, dependencies):
 
 
 def run_module():
-    module_args = dict(commands=dict(type="raw", required=True, aliases=["command"]),)
+    module_args = dict(
+        commands=dict(type="raw", required=True, aliases=["command"]),
+    )
 
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
-    result = dict(changed=False,)
+    result = dict(
+        changed=False,
+    )
 
     arg_defs = dict(
         commands=dict(type=list_or_str_type, required=True, aliases=["command"]),

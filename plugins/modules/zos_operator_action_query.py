@@ -10,7 +10,7 @@ __metaclass__ = type
 
 ANSIBLE_METADATA = {
     "metadata_version": "1.1",
-    "status": ["preview"],
+    "status": ["stableinterface"],
     "supported_by": "community",
 }
 
@@ -339,7 +339,7 @@ def parse_result_a(result):
 def parse_result_b(result):
     """Parse the result that comes from command 'd r,a,jn', the main purpose
     to use this command is to get the job_name and message id, which is not
-    included in 'd r,a,s' """
+    included in 'd r,a,s'"""
 
     dict_temp = {}
     list = []
@@ -377,8 +377,10 @@ class Error(Exception):
 
 class ValidationError(Error):
     def __init__(self, message):
-        self.msg = 'An error occurred during validate the input parameters: "{0}"'.format(
-            message
+        self.msg = (
+            'An error occurred during validate the input parameters: "{0}"'.format(
+                message
+            )
         )
 
 

@@ -51,7 +51,7 @@ class DataSet(object):
         "sms_data_class": "data_class_name",
         "sms_management_class": "management_class_name",
         "record_length": "record_length",
-        "key_offset": "offset",
+        "key_offset": "key_offset",
         "key_length": "key_length",
         "block_size": "block_size",
         "directory_blocks": "directory_blocks",

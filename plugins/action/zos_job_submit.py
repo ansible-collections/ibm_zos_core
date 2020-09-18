@@ -1,7 +1,7 @@
 # Copyright (c) IBM Corporation 2019, 2020
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
@@ -115,7 +115,7 @@ class ActionModule(ActionBase):
             )
             result.update(
                 self._execute_module(
-                    module_name="zos_job_submit",
+                    module_name="ibm.ibm_zos_core.zos_job_submit",
                     module_args=module_args,
                     task_vars=task_vars,
                 )
@@ -123,7 +123,7 @@ class ActionModule(ActionBase):
         else:
             result.update(
                 self._execute_module(
-                    module_name="zos_job_submit",
+                    module_name="ibm.ibm_zos_core.zos_job_submit",
                     module_args=module_args,
                     task_vars=task_vars,
                 )

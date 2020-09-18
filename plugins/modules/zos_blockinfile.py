@@ -100,21 +100,21 @@ options:
     description:
       - Creates a backup file or backup data set for I(src), including the
         timestamp information to ensure that you retrieve the original file.
-      - I(back_name) can be used to specify a backup file name
+      - I(backup_name) can be used to specify a backup file name
         if I(backup=true).
       - The backup file name will be returned on both success and failure
         of module execution such that data can be retrieved.
     required: false
     type: bool
     default: false
-  back_name:
+  backup_name:
     description:
       - Specify the USS file name or data set name for the destination backup.
-      - If the source I(src) is a USS file or path, the back_name name must be a file
+      - If the source I(src) is a USS file or path, the backup_name name must be a file
         or path name, and the USS file or path must be an absolute path name.
-      - If the source is an MVS data set, the back_name name must be an MVS
+      - If the source is an MVS data set, the backup_name name must be an MVS
         data set name.
-      - If the back_name is not provided, the default back_name name will
+      - If the backup_name is not provided, the default backup_name name will
         be used. If the source is a USS file or path, the name of the backup
         file will be the source file or path name appended with a
         timestamp, e.g. C(/path/file_name.2020-04-23-08-32-29-bak.tar).
@@ -236,7 +236,7 @@ rc:
   description: The return code from ZOAU dmod when json.loads() fails
   returned: failure
   type: bool
-back_name:
+backup_name:
     description: Name of the backup file or data set that was created.
     returned: if backup=true
     type: str
@@ -364,7 +364,7 @@ def main():
                 type='bool',
                 default=False
             ),
-            back_name=dict(
+            backup_name=dict(
                 type='str',
                 required=False,
                 default=None
@@ -390,7 +390,7 @@ def main():
         marker_end=dict(arg_type='str', default='END', required=False),
         encoding=dict(arg_type='str', default='IBM-1047', required=False),
         backup=dict(arg_type='bool', default=False, required=False),
-        back_name=dict(arg_type='data_set_or_pat', required=False, default=None),
+        backup_name=dict(arg_type='data_set_or_pat', required=False, default=None),
         mutually_exclusive=[['insertbefore', 'insertafter']],
     )
     result = dict(changed=False, cmd='', found=0)
@@ -401,8 +401,8 @@ def main():
         module.fail_json(msg="Parameter verification failed", stderr=str(err))
 
     backup = parsed_args.get('backup')
-    if parsed_args.get('back_name') and backup:
-        backup = parsed_args.get('back_name')
+    if parsed_args.get('backup_name') and backup:
+        backup = parsed_args.get('backup_name')
     src = parsed_args.get('src')
     ins_aft = parsed_args.get('insertafter')
     ins_bef = parsed_args.get('insertbefore')
@@ -444,16 +444,16 @@ def main():
         file_type = 0
 
     if backup:
-        # backup can be True(bool) or none-zero length string. string indicates that back_name was provided.
-        # setting backup to None if back_name wasn't provided. if backup=None, Backup module will use
+        # backup can be True(bool) or none-zero length string. string indicates that backup_name was provided.
+        # setting backup to None if backup_name wasn't provided. if backup=None, Backup module will use
         # pre-defined naming scheme and return the created destination name.
         if isinstance(backup, bool):
             backup = None
         try:
             if file_type:
-                result['back_name'] = Backup.uss_file_backup(src, backup_name=backup, compress=False)
+                result['backup_name'] = Backup.uss_file_backup(src, backup_name=backup, compress=False)
             else:
-                result['back_name'] = Backup.mvs_file_backup(dsn=src, bk_dsn=backup)
+                result['backup_name'] = Backup.mvs_file_backup(dsn=src, bk_dsn=backup)
         except Exception:
             module.fail_json(msg="creating backup has failed")
     # state=present, insert/replace a block with matching regex pattern
@@ -485,8 +485,8 @@ def main():
         result['found'] = ret['found']
     except Exception:
         messageDict = dict(msg="dmod return content is NOT in json format", stdout=str(stdout), stderr=str(stderr), rc=rc)
-        if result.get('back_name'):
-            messageDict['back_name'] = result['back_name']
+        if result.get('backup_name'):
+            messageDict['backup_name'] = result['backup_name']
         module.fail_json(**messageDict)
     module.exit_json(**result)
 

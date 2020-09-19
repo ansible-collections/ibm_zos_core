@@ -20,7 +20,6 @@ data_set_types = [
     ("esds"),
     ("rrds"),
     ("lds"),
-    (None),
 ]
 
 DEFAULT_VOLUME = "000000"
@@ -108,6 +107,15 @@ PDS_CREATE_JCL = """
            DSNTYPE(PDS)
 /*
 """
+
+
+def make_tempfile(hosts, directory=False):
+    """ Create temporary file on z/OS system and return the path """
+    tempfile_name = ""
+    results = hosts.all.tempfile(state="directory")
+    for result in results.contacted.values():
+        tempfile_name = result.get("path", "")
+    return tempfile_name
 
 
 def retrieve_data_set_names(results):
@@ -403,7 +411,9 @@ def test_repeated_operations(ansible_zos_module):
         assert result.get("changed") is True
         assert result.get("module_stderr") is None
 
-    results = hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME_WITH_MEMBER, type="MEMBER")
+    results = hosts.all.zos_data_set(
+        name=DEFAULT_DATA_SET_NAME_WITH_MEMBER, type="MEMBER"
+    )
 
     for result in results.contacted.values():
         assert result.get("changed") is False
@@ -548,6 +558,48 @@ def test_data_set_temp_data_set_name_batch(ansible_zos_module):
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
     for result in results.contacted.values():
+        assert result.get("changed") is True
+        assert result.get("module_stderr") is None
+
+
+@pytest.mark.parametrize(
+    "filesystem",
+    ["HFS", "ZFS"],
+)
+def test_filesystem_create_and_mount(ansible_zos_module, filesystem):
+    hosts = ansible_zos_module
+    hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
+    results = hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, type=filesystem)
+    temp_dir_name = make_tempfile(hosts, directory=True)
+    results2 = hosts.all.command(
+        cmd="mount -t {0} -f {1} {2}".format(
+            filesystem, DEFAULT_DATA_SET_NAME, temp_dir_name
+        )
+    )
+    results3 = hosts.all.shell(cmd="cd {0} ; df .".format(temp_dir_name))
+
+    # clean up
+    results4 = hosts.all.command(cmd="unmount {0}".format(temp_dir_name))
+    results5 = hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
+    results6 = hosts.all.file(path=temp_dir_name, state="absent")
+
+    for result in results.contacted.values():
+        assert result.get("changed") is True
+        assert result.get("module_stderr") is None
+    for result in results2.contacted.values():
+        assert result.get("changed") is True
+        assert result.get("stderr") == ""
+    for result in results3.contacted.values():
+        assert result.get("changed") is True
+        assert result.get("stderr") == ""
+        assert DEFAULT_DATA_SET_NAME.upper() in result.get("stdout", "")
+    for result in results4.contacted.values():
+        assert result.get("changed") is True
+        assert result.get("stderr") == ""
+    for result in results5.contacted.values():
+        assert result.get("changed") is True
+        assert result.get("module_stderr") is None
+    for result in results6.contacted.values():
         assert result.get("changed") is True
         assert result.get("module_stderr") is None
 

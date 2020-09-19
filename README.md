@@ -30,7 +30,7 @@ Ansible Certified Content for IBM Z**, is available on both, **Galaxy**
 as community supported and **Automation Hub** with enterprise support.
 
 For **guides** and **reference**, please visit [the documentation
-site](https://ansible-collections.github.io/ibm_zos_core/).
+site](https://ibm.github.io/z_ansible_collections_doc/index.html).
 
 Features
 ========

@@ -64,7 +64,10 @@ def ansible_zos_module(request, z_python_interpreter):
         host.vars["ansible_python_interpreter"] = interpreter
         host.vars["ansible_connection"] = "zos_ssh"
     yield adhoc
-    clean_logs(adhoc)
+    try:
+        clean_logs(adhoc)
+    except Exception:
+        pass
 
 
 # * We no longer edit sys.modules directly to add zoautil_py mock

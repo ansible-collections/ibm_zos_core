@@ -741,7 +741,7 @@ def space_type(contents, dependencies):
 def sms_class(contents, dependencies):
     """Validates provided sms class is of valid length.
     Returns the sms class. """
-    if dependencies.get("state") == "absent" or not contents:
+    if dependencies.get("state") == "absent" or contents is None:
         return None
     if len(contents) < 1 or len(contents) > 8:
         raise ValueError(
@@ -756,7 +756,7 @@ def sms_class(contents, dependencies):
 def valid_when_state_present(contents, dependencies):
     """ Ensures no arguments that are invalid when state!=present
     are allowed. """
-    if dependencies.get("state") == "absent" or not contents:
+    if dependencies.get("state") == "absent" or contents is None:
         return None
     return contents
 
@@ -770,7 +770,7 @@ def record_length(contents, dependencies):
         return None
     contents = (
         DEFAULT_RECORD_LENGTHS.get(dependencies.get("record_format"), None)
-        if not contents
+        if contents is None
         else int(contents)
     )
     if contents is None:
@@ -825,7 +825,7 @@ def data_set_type(contents, dependencies):
 def volumes(contents, dependencies):
     """Validates volume is valid.
     Returns uppercase volume."""
-    if not contents:
+    if contents is None:
         if dependencies.get("state") == "cataloged":
             raise ValueError("Volume is required when state==cataloged.")
         return None

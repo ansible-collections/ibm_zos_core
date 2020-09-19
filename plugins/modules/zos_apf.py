@@ -18,12 +18,15 @@ author:
   - "Behnam (@balkajbaf)"
 short_description: Add/remove libraries to Authorized Program Facility (APF)
 description:
-
+  - Add/remove libraries to Authorized Program Facility (APF)
+  - Make APF statement persistent entries to data set or data set member
+  - Change APF list format to "DYNAMIC" or "STATIC"
+  - Get current APF list entries
 options:
   dsname:
     description:
       - The name of z/OS data set (library) to be added/removed.
-    required: True
+    required: False
     type: str
     aliases: [ name, lib, library ]
   state:
@@ -141,7 +144,7 @@ options:
         description:
           - The name of z/OS data set (library) to be added/removed.
         type: str
-        required: true
+        required: True
       volume:
         description:
           - The volume identifier for the volume containing the library
@@ -300,6 +303,7 @@ def backupOper(module, src, backup):
 
     return backup_name
 
+
 def main():
     module = AnsibleModule(
         argument_spec=dict(
@@ -449,7 +453,7 @@ def main():
             if persistent.get('backup_name'):
                 backup = persistent.get('backup_name')
                 del persistent['backup_name']
-            result['backp_name'] = backupOper(module, persistDS, backup)
+            result['backup_name'] = backupOper(module, persistDS, backup)
             del persistent['backup']
         if state == "present":
             persistent['addDataset'] = persistDS
@@ -476,7 +480,6 @@ def main():
     operOut = ret.stdout_response
     operErr = ret.stderr_response
     operRc = ret.rc
-    #result['stdout'] = operOut
     result['stderr'] = operErr
     result['rc'] = operRc
     if operation == 'list':

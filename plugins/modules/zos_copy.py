@@ -201,6 +201,7 @@ options:
       - If C(dest) does not exist, specify which volume C(dest) should be
         allocated to.
       - Only valid when the destination is an MVS data sets.
+      - The volume must already be present on the device.
       - If no volume is specified, the default volume '000000' will be used.
     type: str
     required: false
@@ -479,10 +480,11 @@ from hashlib import sha256
 from re import fullmatch, IGNORECASE
 
 from ansible.module_utils.basic import AnsibleModule
+from ansible.module_utils._text import to_bytes
+
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
     AnsibleModuleHelper,
 )
-from ansible.module_utils._text import to_bytes
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser, data_set, encode, vtoc, backup, copy, mvs_cmd
@@ -696,7 +698,7 @@ class CopyHandler(object):
                 self.fail_json(msg=str(err))
         return new_src
 
-    def allocate_model(self, ds_name, model, dsntype=None, vol="000000"):
+    def allocate_model(self, ds_name, model, vol="000000"):
         """Use 'model' data sets allocation paramters to allocate the given
         data set.
 
@@ -710,18 +712,22 @@ class CopyHandler(object):
         Returns:
             {int} -- The return code of executing the allocation command
         """
+        du = data_set.DataSetUtils(model)
+        blksize = du.blksize()
+        dsntype = du.ds_type()
+
         alloc_cmd = """  ALLOC -
         DS('{0}') -
         LIKE('{1}')""".format(ds_name, model)
-        blksize = data_set.DataSetUtils(model).blksize()
+
         if blksize:
             alloc_cmd += " BLKSIZE({0})".format(blksize)
 
-        print("#############")
-        print(dsntype)
-        if dsntype:
-            alloc_cmd += " DSNTYPE({0})".format(dsntype.upper())
+        if dsntype == "PO":
+            alloc_cmd += " DSNTYPE(LIBRARY)"
+
         alloc_cmd += " VOLUME({0})".format(vol.upper())
+        print(alloc_cmd)
 
         rc, out, err = mvs_cmd.ikjeft01(alloc_cmd, authorized=True)
         if rc != 0:
@@ -1448,7 +1454,7 @@ def run_module(module, arg_def):
     member_name = data_set.extract_member_name(src) if src_member else None
 
     conv_path = None
-    src_ds_vol = None
+    src_ds_vol = src_ds_type = dest_ds_type = dest_exists = None
     res_args = dict()
 
     # ********************************************************************
@@ -1607,6 +1613,7 @@ def run_module(module, arg_def):
             member_name
         )
         res_args['size'] = Path(dest).stat().st_size
+        remote_checksum = dest_checksum = None
         if validate:
             try:
                 remote_checksum = get_file_checksum(temp_path or src)
@@ -1661,7 +1668,7 @@ def run_module(module, arg_def):
     # Copy to VSAM data set
     # ---------------------------------------------------------------------
     else:
-        copy_handler.copy_to_vsam(src, dest)
+        copy_handler.copy_to_vsam(src, dest, alloc_vol=volume)
 
     res_args.update(
         dict(

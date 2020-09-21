@@ -117,7 +117,7 @@ and required by **IBM z/OS core collection**.
    `recommended environment variables`_ for Rocket Python.
 
 .. _recommended environment variables:
-   playbooks-single.html#group-vars
+   https://github.com/IBM/z_ansible_collections_samples/blob/master/docs/share/configuration_guide.md#variables
 
 ZOAU
 ----

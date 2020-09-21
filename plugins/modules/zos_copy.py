@@ -1661,7 +1661,7 @@ def run_module(module, arg_def):
             )
         else:
             pdse_copy_handler.copy_to_pdse(
-                src, temp_path, conv_path, dest, src_ds_type
+                src, temp_path, conv_path, dest, src_ds_type, alloc_vol=volume
             )
 
     # ------------------------------- o -----------------------------------

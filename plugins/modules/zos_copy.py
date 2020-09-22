@@ -200,9 +200,10 @@ options:
     description:
       - If C(dest) does not exist, specify which volume C(dest) should be
         allocated to.
-      - Only valid when the destination is an MVS data sets.
+      - Only valid when the destination is an MVS data set.
       - The volume must already be present on the device.
-      - If no volume is specified, the default volume '000000' will be used.
+      - If no volume is specified, an appropriate volume will be chosen to
+        allocate C(dest).
     type: str
     required: false
     default: '000000'
@@ -568,12 +569,15 @@ class CopyHandler(object):
         new_src = temp_path or conv_path or src
         if self.dest_exists:
             Datasets.delete(dest)
+
         if model_ds:
             self.allocate_model(dest, model_ds, vol=alloc_vol)
+
         if src_ds_type == "USS":
             if not model_ds:
                 ps_size = "{0}K".format(math.ceil(Path(new_src).stat().st_size / 1024))
                 self._allocate_ps(dest, size=ps_size, alloc_vol=alloc_vol)
+
             rc, out, err = self.run_command(
                 "cp {0} {1} \"//'{2}'\"".format(
                     "-B" if self.is_binary else "", new_src, dest
@@ -593,7 +597,7 @@ class CopyHandler(object):
             # the destination data set before copying.
             # *****************************************************************
             if rc != 0:
-                self._allocate_ps(dest)
+                self._allocate_ps(dest, alloc_vol=alloc_vol)
                 rc = Datasets.copy(new_src, dest)
                 if rc != 0:
                     self.fail_json(
@@ -698,7 +702,7 @@ class CopyHandler(object):
                 self.fail_json(msg=str(err))
         return new_src
 
-    def allocate_model(self, ds_name, model, vol="000000"):
+    def allocate_model(self, ds_name, model, vol=None):
         """Use 'model' data sets allocation paramters to allocate the given
         data set.
 
@@ -716,18 +720,15 @@ class CopyHandler(object):
         blksize = du.blksize()
         dsntype = du.ds_type()
 
-        alloc_cmd = """  ALLOC -
-        DS('{0}') -
-        LIKE('{1}')""".format(ds_name, model)
-
-        if blksize:
-            alloc_cmd += " BLKSIZE({0})".format(blksize)
-
-        if dsntype == "PO":
-            alloc_cmd += " DSNTYPE(LIBRARY)"
-
-        alloc_cmd += " VOLUME({0})".format(vol.upper())
-        print(alloc_cmd)
+        alloc_cmd = """  ALLOC DS('{0}') -
+    LIKE('{1}') -
+    {2}{3}{4}""".format(
+            ds_name,
+            model,
+            "BLKSIZE({0}) ".format(blksize) if blksize else "",
+            "DSNTYPE(LIBRARY) " if dsntype == "PO" else "",
+            "VOLUME({0})".format(vol.upper() if vol else "")
+        )
 
         rc, out, err = mvs_cmd.ikjeft01(alloc_cmd, authorized=True)
         if rc != 0:

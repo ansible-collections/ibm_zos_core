@@ -10,7 +10,7 @@ __metaclass__ = type
 
 ANSIBLE_METADATA = {
     "metadata_version": "1.1",
-    "status": ["preview"],
+    "status": ["stableinterface"],
     "supported_by": "community",
 }
 
@@ -54,7 +54,7 @@ options:
     type: bool
     description:
       - Wait for the Job to finish and capture the output. Default is false.
-      - User can specify the wait time, see option ``duration_s``.
+      - User can specify the wait time, see option ``wait_time_s``.
   wait_time_s:
     required: false
     default: 60
@@ -89,8 +89,8 @@ options:
     description:
       - Specifies which encoding the local JCL file should be converted from
         and to, before submitting the job.
-      - If this parameter is not provided, the JCL file will be converted from
-        ISO8859-1 to IBM-1047 by default.
+      - If this parameter is not provided, and the z/OS systems default encoding can not be identified,
+        the JCL file will be converted from ISO8859-1 to IBM-1047 by default.
     required: false
     type: dict
     suboptions:
@@ -105,7 +105,9 @@ options:
       to:
         description:
           - The character set to convert the local JCL file to on the remote
-            z/OS system; defaults to IBM-1047.
+            z/OS system; defaults to IBM-1047 when z/OS systems default encoding can not be identified.
+          - If not provided, the module will attempt to identify and use the default
+            encoding on the z/OS system.
           - Supported character sets rely on the target version; the most
             common character sets are supported.
         required: false
@@ -493,6 +495,9 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import job_ou
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.encode import (
+    Defaults,
+)
 from stat import S_IEXEC, S_IREAD, S_IWRITE
 from ansible.module_utils.six import PY3
 
@@ -506,8 +511,6 @@ POLLING_INTERVAL = 1
 POLLING_COUNT = 60
 
 JOB_COMPLETION_MESSAGES = ["CC", "ABEND", "SEC"]
-DEFAULT_ASCII_CHARSET = "ISO8859-1"
-DEFAULT_EBCDIC_CHARSET = "IBM-1047"
 
 
 def submit_pds_jcl(src, module):
@@ -621,7 +624,9 @@ def run_module():
         src=dict(type="str", required=True),
         wait=dict(type="bool", required=False),
         location=dict(
-            type="str", default="DATA_SET", choices=["DATA_SET", "USS", "LOCAL"],
+            type="str",
+            default="DATA_SET",
+            choices=["DATA_SET", "USS", "LOCAL"],
         ),
         encoding=dict(type="dict", required=False),
         volume=dict(type="str", required=False),
@@ -634,20 +639,27 @@ def run_module():
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
     encoding = module.params.get("encoding")
     if encoding is None:
-        encoding = {"from": DEFAULT_ASCII_CHARSET, "to": DEFAULT_EBCDIC_CHARSET}
+        encoding = {
+            "from": Defaults.DEFAULT_ASCII_CHARSET,
+            "to": Defaults.get_default_system_charset(),
+        }
     if encoding.get("from") is None:
-        encoding["from"] = DEFAULT_ASCII_CHARSET
+        encoding["from"] = Defaults.DEFAULT_ASCII_CHARSET
     if encoding.get("to") is None:
-        encoding["to"] = DEFAULT_EBCDIC_CHARSET
+        encoding["to"] = Defaults.get_default_system_charset()
 
     arg_defs = dict(
         src=dict(arg_type="data_set_or_path", required=True),
         wait=dict(arg_type="bool", required=False),
         location=dict(
-            arg_type="str", default="DATA_SET", choices=["DATA_SET", "USS", "LOCAL"],
+            arg_type="str",
+            default="DATA_SET",
+            choices=["DATA_SET", "USS", "LOCAL"],
         ),
-        from_encoding=dict(arg_type="encoding", default=DEFAULT_ASCII_CHARSET),
-        to_encoding=dict(arg_type="encoding", default=DEFAULT_EBCDIC_CHARSET),
+        from_encoding=dict(arg_type="encoding", default=Defaults.DEFAULT_ASCII_CHARSET),
+        to_encoding=dict(
+            arg_type="encoding", default=Defaults.DEFAULT_EBCDIC_USS_CHARSET
+        ),
         volume=dict(arg_type="volume", required=False),
         return_output=dict(arg_type="bool", default=True),
         wait_time_s=dict(arg_type="int", required=False, default=60),
@@ -657,7 +669,10 @@ def run_module():
 
     result = dict(changed=False)
     module.params.update(
-        dict(from_encoding=encoding.get("from"), to_encoding=encoding.get("to"),)
+        dict(
+            from_encoding=encoding.get("from"),
+            to_encoding=encoding.get("to"),
+        )
     )
     try:
         parser = BetterArgParser(arg_defs)

@@ -10,7 +10,7 @@ __metaclass__ = type
 
 ANSIBLE_METADATA = {
     "metadata_version": "1.1",
-    "status": ["preview"],
+    "status": ["stableinterface"],
     "supported_by": "community",
 }
 
@@ -106,6 +106,9 @@ options:
       - BASIC
       - LARGE
       - MEMBER
+      - HFS
+      - ZFS
+    default: PDS
     version_added: "2.9"
   space_primary:
     description:
@@ -338,6 +341,9 @@ options:
           - BASIC
           - LARGE
           - MEMBER
+          - HFS
+          - ZFS
+        default: PDS
         version_added: "2.9"
       space_primary:
         description:
@@ -629,6 +635,8 @@ DATA_SET_TYPES = [
     "LARGE",
     "LIBRARY",
     "MEMBER",
+    "HFS",
+    "ZFS",
 ]
 
 DATA_SET_FORMATS = [
@@ -741,7 +749,7 @@ def space_type(contents, dependencies):
 def sms_class(contents, dependencies):
     """Validates provided sms class is of valid length.
     Returns the sms class. """
-    if dependencies.get("state") == "absent" or not contents:
+    if dependencies.get("state") == "absent" or contents is None:
         return None
     if len(contents) < 1 or len(contents) > 8:
         raise ValueError(
@@ -756,7 +764,7 @@ def sms_class(contents, dependencies):
 def valid_when_state_present(contents, dependencies):
     """ Ensures no arguments that are invalid when state!=present
     are allowed. """
-    if dependencies.get("state") == "absent" or not contents:
+    if dependencies.get("state") == "absent" or contents is None:
         return None
     return contents
 
@@ -770,7 +778,7 @@ def record_length(contents, dependencies):
         return None
     contents = (
         DEFAULT_RECORD_LENGTHS.get(dependencies.get("record_format"), None)
-        if not contents
+        if contents is None
         else int(contents)
     )
     if contents is None:
@@ -810,7 +818,7 @@ def data_set_type(contents, dependencies):
     # if dependencies.get("state") == "absent" and contents != "MEMBER":
     #     return None
     if contents is None:
-        return None
+        return "PDS"
     types = "|".join(DATA_SET_TYPES)
     if not re.fullmatch(types, contents, re.IGNORECASE):
         raise ValueError(
@@ -825,7 +833,7 @@ def data_set_type(contents, dependencies):
 def volumes(contents, dependencies):
     """Validates volume is valid.
     Returns uppercase volume."""
-    if not contents:
+    if contents is None:
         if dependencies.get("state") == "cataloged":
             raise ValueError("Volume is required when state==cataloged.")
         return None
@@ -1064,7 +1072,7 @@ def parse_and_validate_args(params):
         mutually_exclusive=[
             ["batch", "name"],
             # ["batch", "state"],
-            ["batch", "space_type"],
+            # ["batch", "space_type"],
             ["batch", "space_primary"],
             ["batch", "space_secondary"],
             ["batch", "record_format"],
@@ -1102,8 +1110,8 @@ def run_module():
                     default="present",
                     choices=["present", "absent", "cataloged", "uncataloged"],
                 ),
-                type=dict(type="str", required=False),
-                space_type=dict(type="str", required=False,),
+                type=dict(type="str", required=False, default="PDS"),
+                space_type=dict(type="str", required=False, default="M"),
                 space_primary=dict(type="int", required=False, aliases=["size"]),
                 space_secondary=dict(type="int", required=False),
                 record_format=dict(type="str", required=False, aliases=["format"]),
@@ -1132,8 +1140,8 @@ def run_module():
             choices=["present", "absent", "cataloged", "uncataloged"],
             dependencies=["batch"],
         ),
-        type=dict(type="str", required=False),
-        space_type=dict(type="str", required=False),
+        type=dict(type="str", required=False, default="PDS"),
+        space_type=dict(type="str", required=False, default="M"),
         space_primary=dict(type="raw", required=False, aliases=["size"]),
         space_secondary=dict(type="int", required=False),
         record_format=dict(type="str", required=False, aliases=["format"]),

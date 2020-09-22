@@ -12,9 +12,9 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import DataSet
 
 try:
-    from zoautil_py import Datasets
+    from zoautil_py import datasets
 except ImportError:
-    Datasets = MissingZOAUImport()
+    datasets = MissingZOAUImport()
 
 space_units = {"b": "", "kb": "k", "mb": "m", "gb": "g"}
 
@@ -44,11 +44,15 @@ class DDStatement(object):
         mvscmd_string = "--{0}=".format(self.name)
         if isinstance(self.definition, list):
             self._assert_valid_concatenation()
-            dd_strings = [x.name + x._build_arg_string() for x in self.definition]
+            if self.name.lower() != "steplib":
+                dd_strings = [x.name + x._build_arg_string() for x in self.definition]
+            else:
+                dd_strings = [x.name for x in self.definition]
             mvscmd_string += ":".join(dd_strings)
         else:
             mvscmd_string += self.definition.name
-            mvscmd_string += self.definition._build_arg_string()
+            if self.name.lower() != "steplib":
+                mvscmd_string += self.definition._build_arg_string()
         return mvscmd_string
 
     def _assert_valid_definition(self):
@@ -628,8 +632,8 @@ class VIODefinition(DataDefinition):
         A temporary data set will be created for use in cases where VIO is unavailable.
         Defaults for VIODefinition should be sufficient.
         """
-        hlq = Datasets.hlq()
-        name = Datasets.temp_name(hlq)
+        hlq = datasets.hlq()
+        name = datasets.tmp_name(hlq)
         super().__init__(name)
 
     def __del__(self):

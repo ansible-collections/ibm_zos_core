@@ -538,10 +538,10 @@ def to_dzip_args(**kwargs):
 
     if kwargs.get("volume"):
         if kwargs.get("full_volume"):
-            zoau_args["src_volume"] = kwargs.get("volume")
-        else:
             zoau_args["volume"] = True
             zoau_args["target"] = kwargs.get("volume")
+        else:
+            zoau_args["src_volume"] = kwargs.get("volume")
 
     if kwargs.get("exclude_data_sets"):
         zoau_args["exclude"] = ",".join(kwargs.get("exclude_data_sets"))
@@ -572,10 +572,10 @@ def to_dunzip_args(**kwargs):
 
     if kwargs.get("volume"):
         if kwargs.get("full_volume"):
-            zoau_args["src_volume"] = kwargs.get("volume")
-        else:
             zoau_args["volume"] = True
             zoau_args["file"] = kwargs.get("volume")
+        else:
+            zoau_args["src_volume"] = kwargs.get("volume")
 
     if kwargs.get("exclude_data_sets"):
         zoau_args["exclude"] = ",".join(kwargs.get("exclude_data_sets"))

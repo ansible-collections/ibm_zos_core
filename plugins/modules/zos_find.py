@@ -19,7 +19,9 @@ short_description: Find matching data sets
 description:
   - Return a list of data sets based on specific criteria.
   - Multiple criteria can be added (AND'd) together.
-  - Use the M(find) module to find USS files.
+  - The C(zos_find) module can only find MVS data sets. Use the
+    L(find,https://docs.ansible.com/ansible/latest/modules/find_module.html)
+    module to find USS files.
 author: "Asif Mahmud (@asifmahmud)"
 options:
   age:
@@ -113,13 +115,17 @@ options:
       - volumes
 notes:
   - Only cataloged data sets will be searched. If an uncataloged data set needs to
-    be searched, it should be cataloged first.
+    be searched, it should be cataloged first. The M(zos_data_set) module can be
+    used to catalog uncataloged data sets.
   - The M(zos_find) module currently does not support wildcards for high level qualifiers.
     For example, C(SOME.*.DATA.SET) is a valid pattern, but C(*.DATA.SET) is not.
   - If a data set pattern is specified as C(USER.*), the matching data sets will have two
     name segments such as C(USER.ABC), C(USER.XYZ) etc. If a wildcard is specified
     as C(USER.*.ABC), the matching data sets will have three name segments such as
     C(USER.XYZ.ABC), C(USER.TEST.ABC) etc.
+  - The time taken to execute the module is proportional to the number of data
+    sets present on the system and how large the data sets are.
+  - When searching for content within data sets, only non-binary content is considered.
 seealso:
 - module: find
 - module: zos_data_set
@@ -233,12 +239,14 @@ import datetime
 import math
 
 from copy import deepcopy
+from re import match as fullmatch
+
 
 from ansible.module_utils.six import PY3
 from ansible.module_utils.basic import AnsibleModule
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
-    vtoc, data_set, mvs_cmd
+    vtoc, mvs_cmd
 )
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
@@ -577,7 +585,7 @@ def _match_regex(module, pattern, string):
         re.Match -- A Match object that matches the pattern to string
     """
     try:
-        return re.fullmatch(pattern, string, re.IGNORECASE)
+        return fullmatch(pattern, string, re.IGNORECASE)
     except re.error as err:
         module.fail_json(
             msg="Invalid regular expression '{0}'".format(pattern),
@@ -796,7 +804,11 @@ def main():
         excludes=dict(arg_type="list", required=False, aliases=["exclude"]),
         patterns=dict(arg_type="list", required=True),
         size=dict(arg_type="str", required=False),
-        pds_patterns=dict(arg_type="list", required=False, aliases=["pds_pattern", "pds_paths"]),
+        pds_patterns=dict(
+            arg_type="list",
+            required=False,
+            aliases=["pds_pattern", "pds_paths"]
+        ),
         resource_type=dict(
             arg_type="str",
             required=False,

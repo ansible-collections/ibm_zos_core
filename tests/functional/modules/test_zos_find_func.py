@@ -208,33 +208,33 @@ def test_find_data_sets_in_volume(ansible_zos_module):
         hosts.all.zos_data_set(batch=[dict(name=i, state='absent') for i in PDS_NAMES])
 
 
-# def test_find_vsam_pattern(ansible_zos_module):
-#     hosts = ansible_zos_module
-#     try:
-#         for vsam in VSAM_NAMES:
-#             create_vsam_ksds(vsam, hosts)
-#         find_res = hosts.all.zos_find(patterns=['TEST.FIND.VSAM.*.*'])
-#         for val in find_res.contacted.values():
-#             assert len(val.get('data_sets')) == 1
-#             assert val.get('matched') == len(val.get('data_sets'))
-#     finally:
-#         hosts.all.zos_data_set(batch=[dict(name=i, state='absent') for i in VSAM_NAMES])
+def test_find_vsam_pattern(ansible_zos_module):
+    hosts = ansible_zos_module
+    try:
+        for vsam in VSAM_NAMES:
+            create_vsam_ksds(vsam, hosts)
+        find_res = hosts.all.zos_find(patterns=['TEST.FIND.VSAM.*.*'])
+        for val in find_res.contacted.values():
+            assert len(val.get('data_sets')) == 1
+            assert val.get('matched') == len(val.get('data_sets'))
+    finally:
+        hosts.all.zos_data_set(batch=[dict(name=i, state='absent') for i in VSAM_NAMES])
 
 
-# def test_find_vsam_in_volume(ansible_zos_module):
-#     hosts = ansible_zos_module
-#     alternate_vsam = "TEST.FIND.ALTER.VSAM"
-#     try:
-#         for vsam in VSAM_NAMES:
-#             create_vsam_ksds(vsam, hosts, volume="222222")
-#         create_vsam_ksds(alternate_vsam, hosts, volume="000000")
-#         find_res = hosts.all.zos_find(patterns=['TEST.FIND.*.*.*'], volumes=['222222'])
-#         for val in find_res.contacted.values():
-#             assert len(val.get('data_sets')) == 1
-#             assert val.get('matched') == len(val.get('data_sets'))
-#     finally:
-#         hosts.all.zos_data_set(batch=[dict(name=i, state='absent') for i in VSAM_NAMES])
-#         hosts.all.zos_data_set(name=alternate_vsam, state='absent')
+def test_find_vsam_in_volume(ansible_zos_module):
+    hosts = ansible_zos_module
+    alternate_vsam = "TEST.FIND.ALTER.VSAM"
+    try:
+        for vsam in VSAM_NAMES:
+            create_vsam_ksds(vsam, hosts, volume="222222")
+        create_vsam_ksds(alternate_vsam, hosts, volume="000000")
+        find_res = hosts.all.zos_find(patterns=['TEST.FIND.*.*.*'], volumes=['222222'])
+        for val in find_res.contacted.values():
+            assert len(val.get('data_sets')) == 1
+            assert val.get('matched') == len(val.get('data_sets'))
+    finally:
+        hosts.all.zos_data_set(batch=[dict(name=i, state='absent') for i in VSAM_NAMES])
+        hosts.all.zos_data_set(name=alternate_vsam, state='absent')
 
 
 def test_find_invalid_age_indicator_fails(ansible_zos_module):

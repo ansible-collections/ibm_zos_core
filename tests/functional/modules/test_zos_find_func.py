@@ -67,7 +67,7 @@ def test_find_sequential_data_sets_containing_single_string(ansible_zos_module):
 def test_find_sequential_data_sets_multiple_patterns(ansible_zos_module):
     hosts = ansible_zos_module
     search_string = "dummy string"
-    new_ds ="TEST.FIND.SEQ.FUNCTEST.FOURTH"
+    new_ds = "TEST.FIND.SEQ.FUNCTEST.FOURTH"
     try:
         hosts.all.zos_data_set(batch=[dict(name=i, type='seq', state='present') for i in SEQ_NAMES])
         hosts.all.zos_data_set(name=new_ds, type='seq', state='present')

@@ -23,45 +23,6 @@ description:
     locations to the local machine.
 author: "Asif Mahmud (@asifmahmud)"
 options:
-  src:
-    description:
-      - Absolute local path to a file to copy to the remote z/OS system.
-      - If C(remote_src) is true, then src must be the absolute path to a UNIX
-        System Services (USS) file, name of a data set, or data set member.
-      - If C(src) is a directory, destination must be a partitioned data set or
-        a USS directory.
-      - If C(src) is a file and dest ends with "/" or destination is a directory, the
-        file is copied to the directory with the same filename as src.
-      - If C(src) is a VSAM data set, destination must also be a VSAM.
-      - Wildcards can be used to copy multiple PDS/PDSE members to another PDS/PDSE.
-      - Required unless using C(content).
-    type: str
-  dest:
-    description:
-      - Remote absolute path or data set where the file should be copied to.
-      - Destination can be a USS path or an MVS data set name.
-      - If C(dest) is a nonexistent USS file, it will be created.
-      - If C(dest) is a nonexistent data set, it will be allocated.
-      - If C(src) and C(dest) are files and if the parent directory of C(dest)
-        does not exist, then the task will fail.
-      - When the C(dest) is an existing VSAM(KSDS) or VSAM(ESDS), then source
-        can be ESDS, KSDS or RRDS.
-      - When the C(dest) is an existing VSAM(RRDS), then the source must be RRDS.
-      - When C(dest) is and existing VSAM(LDS), then source must be LDS.
-    type: str
-    required: true
-  content:
-    description:
-      - When used instead of C(src), sets the contents of a file or data set
-        directly to the specified value.
-      - Works only when C(dest) is a USS file, sequential data set, or a
-        partitioned data set member.
-      - This is for simple values; for anything complex or with formatting, use
-        U(https://docs.ansible.com/ansible/latest/modules/copy_module.html)
-      - If C(dest) is a directory, then content will be copied to
-        C(/path/to/dest/inline_copy).
-    type: str
-    required: false
   backup:
     description:
       - Specifies whether a backup of destination should be created before
@@ -91,72 +52,32 @@ options:
         member name.
     required: false
     type: str
-  force:
+  content:
     description:
-      - If set to C(true), the remote file or data set will be overwritten.
-      - If set to C(false), the file or data set will only be copied if the destination
-        does not exist.
-      - If set to C(false) and destination exists, the module exits with a note to
-        the user.
-    type: bool
-    default: false
-    required: false
-  mode:
-    description:
-      - The permission of the destination file or directory.
-      - If C(dest) is USS, this will act as Unix file mode, otherwise ignored.
-      - It should be noted that modes are octal numbers.
-        The user must either add a leading zero so that Ansible's YAML parser
-        knows it is an octal number (like C(0644) or C(01777))or quote it
-        (like C('644') or C('1777')) so Ansible receives a string and can do its
-        own conversion from string into number. Giving Ansible a number without
-        following one of these rules will end up with a decimal number which
-        will have unexpected results.
-      - The mode may also be specified as a symbolic mode
-        (for example, ``u+rwx`` or ``u=rw,g=r,o=r``) or a special
-        string `preserve`.
-      - C(preserve) means that the file will be given the same permissions as
-        the source file.
+      - When used instead of C(src), sets the contents of a file or data set
+        directly to the specified value.
+      - Works only when C(dest) is a USS file, sequential data set, or a
+        partitioned data set member.
+      - This is for simple values; for anything complex or with formatting, use
+        U(https://docs.ansible.com/ansible/latest/modules/copy_module.html)
+      - If C(dest) is a directory, then content will be copied to
+        C(/path/to/dest/inline_copy).
     type: str
     required: false
-  remote_src:
+  dest:
     description:
-      - If set to C(false), the module searches for C(src) at the local machine.
-      - If set to C(true), the module goes to the remote/target machine for C(src).
-    type: bool
-    default: false
-    required: false
-  model_ds:
-    description:
-      - When copying a local file/directory to a non-existing PDS, PDSE or PS, specify a model
-        data set to allocate the destination after.
-      - If this parameter is not provided, the destination data set will be allocated based
-        on the size of the local file/directory.
-      - Only valid if C(src) is a local file or directory and C(dest) does not exist.
+      - Remote absolute path or data set where the file should be copied to.
+      - Destination can be a USS path or an MVS data set name.
+      - If C(dest) is a nonexistent USS file, it will be created.
+      - If C(dest) is a nonexistent data set, it will be allocated.
+      - If C(src) and C(dest) are files and if the parent directory of C(dest)
+        does not exist, then the task will fail.
+      - When the C(dest) is an existing VSAM(KSDS) or VSAM(ESDS), then source
+        can be ESDS, KSDS or RRDS.
+      - When the C(dest) is an existing VSAM(RRDS), then the source must be RRDS.
+      - When C(dest) is and existing VSAM(LDS), then source must be LDS.
     type: str
-    required: False
-  local_follow:
-    description:
-      - This flag indicates that any existing filesystem links in the source tree
-        should be followed.
-    type: bool
-    default: true
-    required: false
-  is_binary:
-    description:
-      - If set to C(true), indicates that the file or data set to be copied is a
-        binary file/data set.
-    type: bool
-    default: false
-    required: false
-  sftp_port:
-    description:
-      - Indicates which port should be used to connect to the remote z/OS
-        system to perform data transfer.
-      - If this parameter is not specified, C(ansible_port) will be used.
-      - If C(ansible_port) is not specified, port 22 will be used.
-    type: int
-    required: false
+    required: true
   encoding:
     description:
       - Specifies which encodings the destination file or data set should be
@@ -179,20 +100,99 @@ options:
           - The encoding to be converted to
         required: true
         type: str
-  validate:
+  force:
     description:
-      - Specifies whether to perform checksum validation for source and
-        destination files.
-      - Valid only for USS destination, otherwise ignored.
+      - If set to C(true), the remote file or data set will be overwritten.
+      - If set to C(false), the file or data set will only be copied if the destination
+        does not exist.
+      - If set to C(false) and destination exists, the module exits with a note to
+        the user.
     type: bool
-    required: false
     default: false
+    required: false
   ignore_sftp_stderr:
     description:
       - During data transfer through sftp, the module fails if the sftp command
         directs any content to stderr. The user is able to override this behavior
         by setting this parameter to C(true). By doing so, the module would
         essentially ignore the stderr stream produced by sftp and continue execution.
+    type: bool
+    required: false
+    default: false
+  is_binary:
+    description:
+      - If set to C(true), indicates that the file or data set to be copied is a
+        binary file/data set.
+    type: bool
+    default: false
+    required: false
+  local_follow:
+    description:
+      - This flag indicates that any existing filesystem links in the source tree
+        should be followed.
+    type: bool
+    default: true
+    required: false
+  mode:
+    description:
+      - The permission of the destination file or directory.
+      - If C(dest) is USS, this will act as Unix file mode, otherwise ignored.
+      - It should be noted that modes are octal numbers.
+        The user must either add a leading zero so that Ansible's YAML parser
+        knows it is an octal number (like C(0644) or C(01777))or quote it
+        (like C('644') or C('1777')) so Ansible receives a string and can do its
+        own conversion from string into number. Giving Ansible a number without
+        following one of these rules will end up with a decimal number which
+        will have unexpected results.
+      - The mode may also be specified as a symbolic mode
+        (for example, ``u+rwx`` or ``u=rw,g=r,o=r``) or a special
+        string `preserve`.
+      - C(preserve) means that the file will be given the same permissions as
+        the source file.
+    type: str
+    required: false
+  model_ds:
+    description:
+      - When copying a local file/directory to a non-existing PDS, PDSE or PS, specify a model
+        data set to allocate the destination after.
+      - If this parameter is not provided, the destination data set will be allocated based
+        on the size of the local file/directory.
+      - Only valid if C(src) is a local file or directory and C(dest) does not exist.
+    type: str
+    required: False
+  remote_src:
+    description:
+      - If set to C(false), the module searches for C(src) at the local machine.
+      - If set to C(true), the module goes to the remote/target machine for C(src).
+    type: bool
+    default: false
+    required: false
+  sftp_port:
+    description:
+      - Indicates which port should be used to connect to the remote z/OS
+        system to perform data transfer.
+      - If this parameter is not specified, C(ansible_port) will be used.
+      - If C(ansible_port) is not specified, port 22 will be used.
+    type: int
+    required: false
+  src:
+    description:
+      - Absolute local path to a file to copy to the remote z/OS system.
+      - If C(remote_src) is true, then src must be the absolute path to a UNIX
+        System Services (USS) file, name of a data set, or data set member.
+      - If C(src) is a directory, destination must be a partitioned data set or
+        a USS directory.
+      - If C(src) is a file and dest ends with "/" or destination is a directory, the
+        file is copied to the directory with the same filename as src.
+      - If C(src) is a VSAM data set, destination must also be a VSAM.
+      - Wildcards can be used to copy multiple PDS/PDSE members to another PDS/PDSE.
+      - Required unless using C(content).
+    type: str
+  validate:
+    description:
+      - Specifies whether to perform checksum validation for source and
+        destination files.
+      - Valid only for USS destination, otherwise ignored.
     type: bool
     required: false
     default: false
@@ -206,7 +206,6 @@ options:
         allocate C(dest).
     type: str
     required: false
-    default: '000000'
 notes:
     - Destination data sets are assumed to be in catalog. When trying to copy
       to an uncataloged data set, the module assumes that the data set does
@@ -488,7 +487,11 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module im
 )
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
-    better_arg_parser, data_set, encode, vtoc, backup, copy, mvs_cmd
+    better_arg_parser, data_set, encode, vtoc, backup, copy
+)
+
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.mvs_cmd import (
+    idcams, iebcopy, ikjeft01
 )
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
@@ -532,9 +535,8 @@ class CopyHandler(object):
 
     def fail_json(self, **kwargs):
         """ Wrapper for AnsibleModule.fail_json """
-        self.module.fail_json(
-            **kwargs, dest_exists=self.dest_exists, backup_name=self.backup_name
-        )
+        d = dict(dest_exists=self.dest_exists, backup_name=self.backup_name)
+        self.module.fail_json(self._merge_hash(kwargs, d))
 
     def run_command(self, cmd, **kwargs):
         """ Wrapper for AnsibleModule.run_command """
@@ -542,9 +544,8 @@ class CopyHandler(object):
 
     def exit_json(self, **kwargs):
         """ Wrapper for AnsibleModule.exit_json """
-        self.module.exit_json(
-            **kwargs, dest_exists=self.dest_exists, backup_name=self.backup_name
-        )
+        d = dict(dest_exists=self.dest_exists, backup_name=self.backup_name)
+        self.module.exit_json(self._merge_hash(kwargs, d))
 
     def copy_to_seq(
         self,
@@ -626,7 +627,7 @@ class CopyHandler(object):
         repro_cmd = '''  REPRO -
         INDATASET({0}) -
         OUTDATASET({1})'''.format(src, dest)
-        rc, out, err = mvs_cmd.idcams(repro_cmd, authorized=True)
+        rc, out, err = idcams(repro_cmd, authorized=True)
         if rc != 0:
             self.fail_json(
                 msg=("IDCAMS REPRO encountered a problem while "
@@ -684,15 +685,15 @@ class CopyHandler(object):
                     new_src = temp_src
 
                 rc = enc_utils.uss_convert_encoding(
-                    new_src, 
-                    new_src, 
-                    from_code_set, 
+                    new_src,
+                    new_src,
+                    from_code_set,
                     to_code_set
                 )
                 if not rc:
                     raise EncodingConversionError(
-                        new_src, 
-                        from_code_set, 
+                        new_src,
+                        from_code_set,
                         to_code_set
                     )
                 self._tag_file_encoding(new_src, to_code_set)
@@ -722,15 +723,15 @@ class CopyHandler(object):
 
         alloc_cmd = """  ALLOC DS('{0}') -
     LIKE('{1}') -
-    {2}{3}{4}""".format(
+    {2}{3}""".format(
             ds_name,
             model,
             "BLKSIZE({0}) ".format(blksize) if blksize else "",
-            "DSNTYPE(LIBRARY) " if dsntype == "PO" else "",
+            #"DSNTYPE(LIBRARY) " if dsntype == "PO" else "",
             "VOLUME({0})".format(vol.upper() if vol else "")
         )
 
-        rc, out, err = mvs_cmd.ikjeft01(alloc_cmd, authorized=True)
+        rc, out, err = ikjeft01(alloc_cmd, authorized=True)
         if rc != 0:
             self.fail_json(
                 msg="Unable to allocate destination {0}".format(ds_name),
@@ -805,6 +806,14 @@ class CopyHandler(object):
                 msg="Unable to allocate destination data set {0}".format(name),
                 rc=rc
             )
+
+    def _merge_hash(self, *args):
+        """Combine multiple dictionaries
+        """
+        result = dict()
+        for arg in args:
+            result.update(arg)
+        return result
 
 
 class USSCopyHandler(CopyHandler):
@@ -940,7 +949,7 @@ class USSCopyHandler(CopyHandler):
     def _mvs_copy_to_uss(
         self,
         src,
-        dest, 
+        dest,
         src_ds_type,
         src_member,
         member_name=None
@@ -1070,11 +1079,11 @@ class PDSECopyHandler(CopyHandler):
                             msg="Error while removing existing destination {0}".format(dest),
                             rc=rc
                         )
-                    self.allocate_model(dest, new_src, dsntype="library", vol=alloc_vol)
+                    self.allocate_model(dest, new_src, vol=alloc_vol)
 
                 dds = dict(OUTPUT=dest, INPUT=new_src)
-                copy_cmd = "   COPY OUTDD=OUTPUT,INDD=((INPUT,R))"
-                rc, out, err = mvs_cmd.iebcopy(copy_cmd, dds=dds)
+                copy_cmd = "   COPY OUTDD=OUTPUT,INDD=INPUT"
+                rc, out, err = iebcopy(copy_cmd, dds=dds)
                 if rc != 0:
                     self.fail_json(
                         msg="IEBCOPY encountered a problem while copying {0} to {1}".format(new_src, dest),
@@ -1553,12 +1562,12 @@ def run_module(module, arg_def):
                 dest_ds_type = "PDSE"
                 pch = PDSECopyHandler(module, dest_exists, backup_name=backup_name)
                 pch.create_pdse(
-                    src, 
-                    dest_name, 
-                    alloc_size, 
+                    src,
+                    dest_name,
+                    alloc_size,
                     src_ds_type,
-                    remote_src=remote_src, 
-                    src_vol=src_ds_vol, 
+                    remote_src=remote_src,
+                    src_vol=src_ds_vol,
                     alloc_vol=volume,
                     model_ds=model_ds
                 )
@@ -1700,7 +1709,7 @@ def main():
             sftp_port=dict(type='int', required=False),
             ignore_sftp_stderr=dict(type='bool', default=False),
             validate=dict(type='bool'),
-            volume=dict(type='str', default='000000', required=False),
+            volume=dict(type='str', required=False),
             is_uss=dict(type='bool'),
             is_pds=dict(type='bool'),
             is_mvs_dest=dict(type='bool'),
@@ -1726,7 +1735,7 @@ def main():
         checksum=dict(arg_type='str', required=False),
         validate=dict(arg_type='bool', required=False),
         sftp_port=dict(arg_type='int', required=False),
-        volume=dict(arg_type='str', default='000000', required=False)
+        volume=dict(arg_type='str', required=False)
     )
 
     if (

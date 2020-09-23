@@ -1385,8 +1385,9 @@ def cleanup(src_list):
     dir_list = glob.glob(tmp_dir + "/ansible-zos-copy-payload*")
     conv_list = glob.glob(tmp_dir + "/converted*")
     tmp_list = glob.glob(tmp_dir + "/{0}*".format(tmp_prefix))
+    tmp_ds = glob.glob(tmp_dir + "/*.*.*.*")
 
-    for file in (dir_list + conv_list + tmp_list + src_list):
+    for file in (dir_list + conv_list + tmp_list + tmp_ds + src_list):
         try:
             if file and os.path.exists(file):
                 if os.path.isfile(file):

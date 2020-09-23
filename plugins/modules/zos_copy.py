@@ -368,6 +368,13 @@ EXAMPLES = r"""
     src: SOME.SRC.PDS(ABC*)
     dest: SOME.DEST.PDS
     remote_src: true
+
+- name: Allocate destination in a specific volume
+  zos_copy:
+    src: SOME.SRC.PDS
+    dest: SOME.DEST.PDS
+    volume: 'VOL033'
+    remote_src: true
 """
 
 RETURN = r"""
@@ -808,8 +815,7 @@ class CopyHandler(object):
             )
 
     def _merge_hash(self, *args):
-        """Combine multiple dictionaries
-        """
+        """Combine multiple dictionaries"""
         result = dict()
         for arg in args:
             result.update(arg)

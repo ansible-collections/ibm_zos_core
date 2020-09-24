@@ -47,7 +47,7 @@ options:
     required: false
   contains:
     description:
-      - A word which should be matched against the data set content or data
+      - A string which should be matched against the data set content or data
         set member content.
     type: str
     required: false
@@ -173,7 +173,7 @@ EXAMPLES = r"""
   zos_find:
     patterns:
       - USER.*
-    resource_type: VSAM
+    resource_type: cluster
 """
 
 
@@ -280,7 +280,9 @@ def content_filter(module, patterns, content):
     """
     filtered_data_sets = dict(ps=set(), pds=dict(), searched=0)
     for pattern in patterns:
-        rc, out, err = _dgrep_wrapper(pattern, content=content, verbose=True, ignore_case=True)
+        rc, out, err = _dgrep_wrapper(
+            pattern, content=content, verbose=True, ignore_case=True
+        )
         if rc > 4 and rc != 28:
             module.fail_json(
                 msg="Non-zero return code received while executing ZOAU shell command 'dgrep'",
@@ -292,14 +294,15 @@ def content_filter(module, patterns, content):
 
         for line in out.splitlines():
             if line:
-                ds, member = _extract_names(line, content.upper())
-                if member:
+                line = line.split()
+                ds_name = line[0]
+                if _ds_type(ds_name) == "PO":
                     try:
-                        filtered_data_sets['pds'][ds].add(member)
+                        filtered_data_sets['pds'][ds_name].add(line[1])
                     except KeyError:
-                        filtered_data_sets['pds'][ds] = set([member])
+                        filtered_data_sets['pds'][ds_name] = set([line[1]])
                 else:
-                    filtered_data_sets['ps'].add(ds)
+                    filtered_data_sets['ps'].add(ds_name)
     return filtered_data_sets
 
 
@@ -320,6 +323,9 @@ def data_set_filter(module, patterns):
     for pattern in patterns:
         rc, out, err = _dls_wrapper(pattern, list_details=True)
         if rc != 0:
+            if "BGYSC1103E" in err:
+                return filtered_data_sets
+
             module.fail_json(
                 msg="Non-zero return code received while executing ZOAU shell command 'dls'",
                 rc=rc, stdout=out, stderr=err
@@ -338,7 +344,8 @@ def data_set_filter(module, patterns):
                     if mls_rc == 2:
                         filtered_data_sets["pds"][result[0]] = {}
                     else:
-                        filtered_data_sets["pds"][result[0]] = set(filter(None, mls_out.splitlines()))
+                        filtered_data_sets["pds"][result[0]] = \
+                            set(filter(None, mls_out.splitlines()))
                 else:
                     filtered_data_sets["ps"].add(result[0])
     return filtered_data_sets
@@ -407,15 +414,20 @@ def vsam_filter(module, patterns, resource_type, age=None):
         for entry in out.splitlines():
             if entry:
                 vsam_props = entry.split()
-                if age:
-                    if _age_filter(vsam_props[1], now, age):
-                        filtered_data_sets.add(vsam_props[0])
-                else:
-                    filtered_data_sets.add(vsam_props[0])
+                vsam_name = vsam_props[0]
+                vsam_type = vsam_name.split('.')[-1]
+                if _match_resource_type(resource_type, vsam_type):
+                    if age:
+                        if _age_filter(vsam_props[1], now, age):
+                            filtered_data_sets.add(vsam_name)
+                    else:
+                        filtered_data_sets.add(vsam_name)
     return filtered_data_sets
 
 
-def data_set_attribute_filter(module, data_sets, size=None, age=None, age_stamp="creation_date"):
+def data_set_attribute_filter(
+    module, data_sets, size=None, age=None, age_stamp="creation_date"
+):
     """ Filter data sets based on attributes such as age or size.
 
     Arguments:
@@ -430,7 +442,9 @@ def data_set_attribute_filter(module, data_sets, size=None, age=None, age_stamp=
     filtered_data_sets = set()
     now = time.time()
     for ds in data_sets:
-        rc, out, err = _dls_wrapper(ds, u_time=age is not None, size=size is not None)
+        rc, out, err = _dls_wrapper(
+            ds, u_time=age is not None, size=size is not None
+        )
         if rc != 0:
             module.fail_json(
                 msg="Non-zero return code received while executing ZOAU shell command 'dls'",
@@ -654,25 +668,32 @@ def _vls_wrapper(pattern, details=False, verbose=False):
     return AnsibleModuleHelper(argument_spec={}).run_command(vls_cmd)
 
 
-def _extract_names(line, content):
-    """Utility function to extract data set and member names from dgrep
-    output
+def _match_resource_type(type1, type2):
+    if type1 == type2:
+        return True
+    if type1 == "CLUSTER" and type2 not in ("DATA", "INDEX"):
+        return True
+    return False
+
+
+def _ds_type(ds_name):
+    """Utility function to determine the DSORG of a data set
 
     Arguments:
-        line {str} -- The line returned by dgrep
-        content {str} -- The content that was being searched for
+        ds_name {str} -- The name of the data set
 
     Returns:
-        ds {str} -- The data set name
-        member {str} -- The member name if the data set is a PDS/PDSE.
-                        Otherwise an empty string.
-
+        str -- The DSORG of the data set
     """
-    start = line.find(' ')
-    end = line.find(content)
-    member = line[start:end].split("      ")[-2].strip()
-    ds = line.split()[0]
-    return ds, member
+    rc, out, err = mvs_cmd.ikjeft01(
+        "  LISTDS '{0}'".format(ds_name),
+        authorized=True
+    )
+    if rc == 0:
+        search = re.search(r"(-|--)DSORG(-\s*|\s*)\n(.*)", out, re.MULTILINE)
+        return search.group(3).split()[-1]
+    return None
+    
 
 
 def run_module(module):
@@ -725,14 +746,14 @@ def run_module(module):
                 module,
                 pds_paths if pds_paths else patterns
             )
-
         if pds_paths:
             filtered_pds = pds_filter(
                 module, init_filtered_data_sets.get("pds"), patterns, excludes=excludes
             )
             filtered_data_sets = set(filtered_pds.keys())
         else:
-            filtered_data_sets = init_filtered_data_sets.get("ps").union(set(init_filtered_data_sets['pds'].keys()))
+            filtered_data_sets = \
+                init_filtered_data_sets.get("ps").union(set(init_filtered_data_sets['pds'].keys()))
 
         # Filter data sets by age or size
         if size or age:
@@ -745,6 +766,7 @@ def run_module(module):
             filtered_data_sets = volume_filter(filtered_data_sets, volume)
 
         res_args['examined'] = init_filtered_data_sets.get("searched")
+
     else:
         filtered_data_sets = vsam_filter(module, patterns, resource_type, age=age)
         res_args['examined'] = len(filtered_data_sets)
@@ -783,7 +805,11 @@ def main():
             excludes=dict(type="list", required=False, aliases=["exclude"]),
             patterns=dict(type="list", required=True),
             size=dict(type="str", required=False),
-            pds_patterns=dict(type="list", required=False, aliases=["pds_pattern", "pds_paths"]),
+            pds_patterns=dict(
+                type="list",
+                required=False,
+                aliases=["pds_pattern", "pds_paths"]
+            ),
             resource_type=dict(
                 type="str", required=False, default="nonvsam",
                 choices=["cluster", "data", "index", "nonvsam"]

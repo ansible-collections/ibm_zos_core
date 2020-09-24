@@ -11,20 +11,46 @@ import pytest
 from re import search, IGNORECASE, MULTILINE
 from pprint import pprint
 
-VOLUME = "BLAKE1"
-VOLUME2 = "BLAKE2"
+VOLUME = "blake1"
+VOLUME2 = "blake2"
+VOLUME_TO_BACKUP = VOLUME
+BIG_VOLUME = "DSHRL1"
+BIG_VOLUME2 = "DSHRL2"
 DATA_SET_NAME = "USER.PRIVATE.TESTDS"
 DATA_SET_NAME2 = "USER.PRIVATE.TESTDS2"
 DATA_SET_PATTERN = "USER.PRIVATE.*"
 DATA_SET_CONTENTS = "HELLO world"
+DATA_SET_QUALIFIER = "{0}.PRIVATE.TESTDS"
+DATA_SET_QUALIFIER2 = "{0}.PRIVATE.TESTDS2"
 DATA_SET_BACKUP_LOCATION = "MY.BACKUP"
 UNIX_BACKUP_LOCATION = "/tmp/mybackup.dzp"
 NEW_HLQ = "NEWHLQ"
-DATA_SET_RESTORE_LOCATION = "{0}.PRIVATE.TESTDS".format(NEW_HLQ)
-DATA_SET_RESTORE_LOCATION2 = "{0}.PRIVATE.TESTDS2".format(NEW_HLQ)
+DATA_SET_RESTORE_LOCATION = DATA_SET_QUALIFIER.format(NEW_HLQ)
+DATA_SET_RESTORE_LOCATION2 = DATA_SET_QUALIFIER2.format(NEW_HLQ)
+
 # ---------------------------------------------------------------------------- #
 #                               Helper functions                               #
 # ---------------------------------------------------------------------------- #
+
+
+@pytest.fixture(scope="session")
+def ansible_zos_module(request, z_python_interpreter):
+    """Initialize pytest-ansible plugin with values from
+    our YAML config and inject interpreter path into inventory."""
+    interpreter, inventory = z_python_interpreter
+    # next two lines perform similar action to ansible_adhoc fixture
+    plugin = request.config.pluginmanager.getplugin("ansible")
+    adhoc = plugin.initialize(request.config, request, **inventory)
+    # * Inject our environment
+    hosts = adhoc["options"]["inventory_manager"]._inventory.hosts
+    for host in hosts.values():
+        host.vars["ansible_python_interpreter"] = interpreter
+        host.vars["ansible_connection"] = "zos_ssh"
+    yield adhoc
+    try:
+        clean_logs(adhoc)
+    except Exception:
+        pass
 
 
 def create_data_set_or_file_with_contents(hosts, name, contents):
@@ -484,4 +510,40 @@ def test_backup_and_restore_of_data_set_from_volume_to_new_volume(ansible_zos_mo
         delete_data_set_or_file(hosts, DATA_SET_NAME2)
         delete_data_set_or_file(hosts, DATA_SET_RESTORE_LOCATION)
         delete_data_set_or_file(hosts, DATA_SET_RESTORE_LOCATION2)
+        delete_data_set_or_file(hosts, DATA_SET_BACKUP_LOCATION)
+
+
+def test_backup_and_restore_of_data_set_from_volume_to_new_volume(ansible_zos_module):
+    hosts = ansible_zos_module
+    try:
+        delete_data_set_or_file(hosts, DATA_SET_BACKUP_LOCATION)
+        delete_data_set_or_file(hosts, DATA_SET_NAME)
+        create_sequential_data_set_with_contents(
+            hosts, DATA_SET_NAME, DATA_SET_CONTENTS, VOLUME
+        )
+        results = hosts.all.zos_backup_restore(
+            operation="backup",
+            volume=VOLUME,
+            full_volume=True,
+            temp_volume=BIG_VOLUME,
+            backup_name=DATA_SET_BACKUP_LOCATION,
+            overwrite=True,
+        )
+        assert_module_did_not_fail(results)
+        assert_data_set_or_file_exists(hosts, DATA_SET_BACKUP_LOCATION)
+        delete_data_set_or_file(hosts, DATA_SET_NAME)
+        results = hosts.all.zos_backup_restore(
+            operation="restore",
+            backup_name=DATA_SET_BACKUP_LOCATION,
+            overwrite=True,
+            volume=VOLUME,
+            full_volume=True,
+            temp_volume=BIG_VOLUME,
+        )
+        for result in results.contacted.values():
+            pprint(result)
+        assert_module_did_not_fail(results)
+        assert_data_set_exists_on_volume(hosts, DATA_SET_NAME, VOLUME)
+    finally:
+        delete_data_set_or_file(hosts, DATA_SET_NAME)
         delete_data_set_or_file(hosts, DATA_SET_BACKUP_LOCATION)

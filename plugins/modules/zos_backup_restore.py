@@ -280,6 +280,7 @@ def run_module():
         space_type=dict(type="str", required=False, aliases=["unit"], default="M"),
         volume=dict(type="str", required=False),
         full_volume=dict(type="bool", default=False),
+        temp_volume=dict(type="str", required=False, aliases=["dest_volume"]),
         backup_name=dict(type="str", required=True),
         recover=dict(type="bool", default=False),
         overwrite=dict(type="bool", default=False),
@@ -297,6 +298,7 @@ def run_module():
         space_type = params.get("space_type")
         volume = params.get("volume")
         full_volume = params.get("full_volume")
+        temp_volume = params.get("temp_volume")
         backup_name = params.get("backup_name")
         recover = params.get("recover")
         overwrite = params.get("overwrite")
@@ -311,10 +313,13 @@ def run_module():
                 exclude_data_sets=data_sets.get("exclude"),
                 volume=volume,
                 full_volume=full_volume,
+                temp_volume=temp_volume,
                 overwrite=overwrite,
                 recover=recover,
                 space=space,
                 space_type=space_type,
+                sms_storage_class=sms_storage_class,
+                sms_management_class=sms_management_class,
             )
         else:
             restore(
@@ -323,6 +328,7 @@ def run_module():
                 exclude_data_sets=data_sets.get("exclude"),
                 volume=volume,
                 full_volume=full_volume,
+                temp_volume=temp_volume,
                 overwrite=overwrite,
                 hlq=hlq,
                 space=space,
@@ -360,15 +366,12 @@ def parse_and_validate_args(params):
         space_type=dict(type=space_type, required=False, aliases=["unit"], default="M"),
         volume=dict(type="str", required=False, dependencies=["data_sets"]),
         full_volume=dict(type=full_volume_type, default=False, dependencies=["volume"]),
+        temp_volume=dict(type="str", required=False, aliases=["dest_volume"]),
         backup_name=dict(type=backup_name_type, required=False),
         recover=dict(type="bool", default=False),
         overwrite=dict(type="bool", default=False),
-        sms_storage_class=dict(
-            type=sms_type, required=False, dependencies=["operation"]
-        ),
-        sms_management_class=dict(
-            type=sms_type, required=False, dependencies=["operation"]
-        ),
+        sms_storage_class=dict(type=sms_type, required=False),
+        sms_management_class=dict(type=sms_type, required=False),
         hlq=dict(type=hlq_type, default=hlq_default, dependencies=["operation"]),
     )
 
@@ -385,10 +388,13 @@ def backup(
     exclude_data_sets,
     volume,
     full_volume,
+    temp_volume,
     overwrite,
     recover,
     space,
     space_type,
+    sms_storage_class,
+    sms_management_class,
 ):
     """Backup data sets or a volume to a new data set or unix file.
 
@@ -402,6 +408,8 @@ def backup(
         recover (bool): Specifies if potentially recoverable errors should be ignored.
         space (int): Specifies the amount of space to allocate for the backup.
         space_type (str): The unit of measurement to use when defining data set space.
+        sms_storage_class (str): Specifies the storage class to use.
+        sms_management_class (str): Specifies the management class to use.
     """
     args = locals()
     zoau_args = to_dzip_args(**args)
@@ -414,6 +422,7 @@ def restore(
     exclude_data_sets,
     volume,
     full_volume,
+    temp_volume,
     overwrite,
     hlq,
     space,
@@ -486,8 +495,6 @@ def hlq_default(contents, dependencies):
 def sms_type(contents, dependencies):
     if not contents:
         return None
-    if dependencies.get("operation") == "backup":
-        raise ValueError("SMS parameters are only valid when operation=restore.")
     if not match(r"^[A-Z\$\*\@\#\%]{1}[A-Z0-9\$\*\@\#\%]{0,7}$", contents, IGNORECASE):
         raise ValueError("Invalid argument {0} for SMS class.".format(contents))
     return str(contents).upper()
@@ -543,6 +550,9 @@ def to_dzip_args(**kwargs):
         else:
             zoau_args["src_volume"] = kwargs.get("volume")
 
+    if kwargs.get("temp_volume"):
+        zoau_args["dest_volume"] = kwargs.get("temp_volume")
+
     if kwargs.get("exclude_data_sets"):
         zoau_args["exclude"] = ",".join(kwargs.get("exclude_data_sets"))
 
@@ -551,6 +561,12 @@ def to_dzip_args(**kwargs):
 
     if kwargs.get("overwrite"):
         zoau_args["overwrite"] = kwargs.get("overwrite")
+
+    if kwargs.get("sms_storage_class"):
+        zoau_args["storage_class_name"] = kwargs.get("sms_storage_class")
+
+    if kwargs.get("sms_management_class"):
+        zoau_args["management_class_name"] = kwargs.get("sms_management_class")
 
     if kwargs.get("space"):
         size = str(kwargs.get("space"))
@@ -577,6 +593,9 @@ def to_dunzip_args(**kwargs):
         else:
             zoau_args["src_volume"] = kwargs.get("volume")
 
+    if kwargs.get("temp_volume"):
+        zoau_args["dest_volume"] = kwargs.get("temp_volume")
+
     if kwargs.get("exclude_data_sets"):
         zoau_args["exclude"] = ",".join(kwargs.get("exclude_data_sets"))
 
@@ -586,11 +605,15 @@ def to_dunzip_args(**kwargs):
     if kwargs.get("overwrite"):
         zoau_args["overwrite"] = kwargs.get("overwrite")
 
+    sms_specified = False
     if kwargs.get("sms_storage_class"):
         zoau_args["storage_class_name"] = kwargs.get("sms_storage_class")
 
     if kwargs.get("sms_management_class"):
         zoau_args["management_class_name"] = kwargs.get("sms_management_class")
+
+    if sms_specified:
+        zoau_args["sms_for_tmp"] = True
 
     if kwargs.get("space"):
         size = str(kwargs.get("space"))

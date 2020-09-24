@@ -162,13 +162,28 @@ class DataSet(object):
         """
         arguments = locals()
         arguments.pop("replace", None)
-        present, changed = DataSet.attempt_catalog_if_necessary(name, volumes)
+        present = False
+        changed = False
+        if DataSet.data_set_cataloged(name):
+            present = True
+        if not present:
+            try:
+                DataSet.create(**arguments)
+            except DatasetCreateError as e:
+                raise_error = True
+                # data set exists on volume
+                if "Error Code: 0x4704" in e.msg:
+                    present, changed = DataSet.attempt_catalog_if_necessary(
+                        name, volumes
+                    )
+                    if present and changed:
+                        raise_error = False
+                if raise_error:
+                    raise
         if present:
             if not replace:
                 return changed
             DataSet.replace(**arguments)
-        else:
-            DataSet.create(**arguments)
         if type.upper() == "ZFS":
             DataSet.format_zfs(name)
         return True
@@ -550,7 +565,9 @@ class DataSet(object):
         formatted_args = DataSet._build_zoau_args(**original_args)
         response = datasets._create(**formatted_args)
         if response.rc > 0:
-            raise DatasetCreateError(name, response.rc)
+            raise DatasetCreateError(
+                name, response.rc, response.stdout_response + response.stderr_response
+            )
         return
 
     @staticmethod
@@ -1324,9 +1341,11 @@ class DatasetDeleteError(Exception):
 
 
 class DatasetCreateError(Exception):
-    def __init__(self, data_set, rc):
-        self.msg = 'An error occurred during creation of data set "{0}". RC={1}'.format(
-            data_set, rc
+    def __init__(self, data_set, rc, msg=""):
+        self.msg = (
+            'An error occurred during creation of data set "{0}". RC={1}, {2}'.format(
+                data_set, rc, msg
+            )
         )
         super().__init__(self.msg)
 

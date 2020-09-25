@@ -220,7 +220,7 @@ cmd:
   description: constructed dmod shell cmd based on the parameters
   returned: success
   type: str
-  sample: dmodhelper -d -b -c IBM-1047 -m "BEGIN\nEND\n# {mark} ANSIBLE MANAGED BLOCK" -s -e "/^PATH=/a\\PATH=/dir/bin:$PATH/$" -e "$ a\\PATH=/dir/bin:$PATH" /etc/profile
+  sample: dmodhelper -d -b -c IBM-1047 -m "BEGIN\nEND\n# {mark} ANSIBLE MANAGED BLOCK" -e "$ a\\PATH=/dir/bin:$PATH" /etc/profile
 msg:
   description: The module messages
   returned: failure

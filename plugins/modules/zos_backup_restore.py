@@ -65,6 +65,14 @@ options:
     type: bool
     default: False
     required: False
+  temp_volume:
+    description:
+      - Specifies a particular volume on which temporary data sets created during backup and restore process should be created.
+      - When I(operation=backup) and I(backup_name) is a data set, also specifies the volume the backup should be placed on.
+    type: str
+    required: False
+    aliases:
+      - dest_volume
   backup_name:
     description:
       - When I(operation=backup), the destination data set or UNIX file to hold the backup.
@@ -85,13 +93,15 @@ options:
     default: False
   sms_storage_class:
     description:
-      - Specifies the storage class to use when I(operation=restore).
+      - When I(operation=restore), specifies the storage class to use. The storage class will also be used for temporary data sets created during restore process.
+      - When I(operation=backup), specifies the storage class to use for temporary data sets created during backup process.
       - If neither of I(sms_storage_class) or I(sms_management_class) are specified, the z/OS system's Automatic Class Selection (ACS) routines will be used.
     type: str
     required: False
   sms_management_class:
     description:
-      - Specifies the management class to use when I(operation=restore).
+      - When I(operation=restore), specifies the management class to use. The management class will also be used for temporary data sets created during restore process.
+      - When I(operation=backup), specifies the management class to use for temporary data sets created during backup process.
       - If neither of I(sms_storage_class) or I(sms_management_class) are specified, the z/OS system's Automatic Class Selection (ACS) routines will be used.
     type: str
     required: False
@@ -102,15 +112,16 @@ options:
         held in a data set.
       - If I(operation=backup), specifies the amount of space to allocate for data sets temporarily created during the restore process.
       - The unit of space used is set using I(space_type).
+    - When I(full_volume=True), I(space) defaults to C(1), otherwise default is C(25)
     type: int
     required: false
-    default: 25
     aliases:
       - size
   space_type:
     description:
       - The unit of measurement to use when defining data set space.
       - Valid units of size are C(K), C(M), C(G), C(CYL), and C(TRK).
+      - When I(full_volume=True), I(space_type) defaults to C(G), otherwise default is C(M)
     type: str
     choices:
       - K
@@ -119,7 +130,6 @@ options:
       - CYL
       - TRK
     required: false
-    default: M
     aliases:
       - unit
   hlq:
@@ -276,8 +286,8 @@ def run_module():
                 exclude=dict(type="raw", required=False),
             ),
         ),
-        space=dict(type="int", required=False, aliases=["size"], default=25),
-        space_type=dict(type="str", required=False, aliases=["unit"], default="M"),
+        space=dict(type="int", required=False, aliases=["size"]),
+        space_type=dict(type="str", required=False, aliases=["unit"]),
         volume=dict(type="str", required=False),
         full_volume=dict(type="bool", default=False),
         temp_volume=dict(type="str", required=False, aliases=["dest_volume"]),
@@ -362,8 +372,18 @@ def parse_and_validate_args(params):
                 exclude=dict(type=data_set_pattern_type, required=False),
             ),
         ),
-        space=dict(type="int", required=False, aliases=["size"], default=25),
-        space_type=dict(type=space_type, required=False, aliases=["unit"], default="M"),
+        space=dict(
+            type=space_type,
+            required=False,
+            aliases=["size"],
+            dependencies=["full_volume"],
+        ),
+        space_type=dict(
+            type=space_type_type,
+            required=False,
+            aliases=["unit"],
+            dependencies=["full_volume"],
+        ),
         volume=dict(type="str", required=False, dependencies=["data_sets"]),
         full_volume=dict(type=full_volume_type, default=False, dependencies=["volume"]),
         temp_volume=dict(type="str", required=False, aliases=["dest_volume"]),
@@ -404,6 +424,7 @@ def backup(
         exclude_data_sets (list): A list of data set patterns to exclude from the backup.
         volume (str): The volume that contains the data sets to backup.
         full_volume (bool): Specifies if a backup will be made of the entire volume.
+        temp_volume (bool): Specifies the volume that should be used to store temporary files.
         overwrite (bool): Specifies if existing data set or UNIX file matching I(backup_name) should be deleted.
         recover (bool): Specifies if potentially recoverable errors should be ignored.
         space (int): Specifies the amount of space to allocate for the backup.
@@ -440,6 +461,7 @@ def restore(
           that are present in the backup.
         volume (str): The volume that contains the data sets to backup.
         full_volume (bool): Specifies if a backup will be made of the entire volume.
+        temp_volume (bool): Specifies the volume that should be used to store temporary files.
         overwrite (bool): Specifies if module should overwrite existing data sets with
           matching name on the target device.
         hlq (str): Specifies the new HLQ to use for the data sets being restored.
@@ -455,6 +477,19 @@ def restore(
 
 
 def data_set_pattern_type(contents, dependencies):
+    """Validates provided data set patterns.
+
+    Args:
+        contents (Union[str, list[str]]): One or more data set patterns
+        dependencies (dict): Any dependent arguments
+
+    Raises:
+        ValueError: When provided argument is not a string or a list
+        ValueError: When provided argument is an invalid data set pattern
+
+    Returns:
+        list[str]: A list of uppercase data set patterns
+    """
     if not contents:
         return None
     if isinstance(contents, str):
@@ -476,6 +511,19 @@ def data_set_pattern_type(contents, dependencies):
 
 
 def hlq_type(contents, dependencies):
+    """Validates provided HLQ is valid and is not specified for a backup operation.
+
+    Args:
+        contents (str): The HLQ to use
+        dependencies (dict): Any dependent arguments
+
+    Raises:
+        ValueError: When operation is restore and HLQ is provided
+        ValueError: When an invalid HLQ is provided
+
+    Returns:
+        str: The HLQ to use
+    """
     if not contents:
         return None
     if dependencies.get("operation") == "backup":
@@ -486,6 +534,15 @@ def hlq_type(contents, dependencies):
 
 
 def hlq_default(contents, dependencies):
+    """Sets the default HLQ to use if none is provided.
+
+    Args:
+        contents (str): The HLQ to use
+        dependencies (dict): Any dependent arguments
+
+    Returns:
+        str: The HLQ to use
+    """
     hlq = None
     if dependencies.get("operation") == "restore":
         hlq = datasets.hlq()
@@ -493,6 +550,18 @@ def hlq_default(contents, dependencies):
 
 
 def sms_type(contents, dependencies):
+    """Validates the SMS class provided matches a valid format.
+
+    Args:
+        contents (str): The SMS class name
+        dependencies (dict): Any dependent arguments
+
+    Raises:
+        ValueError: When invalid argument provided for SMS class.
+
+    Returns:
+        str: The uppercase SMS class name
+    """
     if not contents:
         return None
     if not match(r"^[A-Z\$\*\@\#\%]{1}[A-Z0-9\$\*\@\#\%]{0,7}$", contents, IGNORECASE):
@@ -501,10 +570,42 @@ def sms_type(contents, dependencies):
 
 
 def space_type(contents, dependencies):
-    """Validates provided data set unit of space is valid.
-    Returns the unit of space."""
+    """Validates amount of space provided.
+
+    Args:
+        contents (str): The amount of space
+        dependencies (dict): Any dependent arguments
+
+    Returns:
+        int: The amount of space
+    """
     if contents is None:
-        return None
+        if dependencies.get("full_volume"):
+            return 1
+        else:
+            return 25
+    return contents
+
+
+def space_type_type(contents, dependencies):
+    """Validates provided data set unit of space.
+    Returns the unit of space.
+
+    Args:
+        contents (str): The space type to use
+        dependencies (dict): Any dependent arguments
+
+    Raises:
+        ValueError: When an invalid space unit is provided
+
+    Returns:
+        str: The unit of space
+    """
+    if contents is None:
+        if dependencies.get("full_volume"):
+            return "G"
+        else:
+            return "M"
     if not match(r"^(M|G|K|TRK|CYL)$", contents, IGNORECASE):
         raise ValueError(
             'Value {0} is invalid for space_type argument. Valid space types are "K", "M", "G", "TRK" or "CYL".'.format(
@@ -515,6 +616,18 @@ def space_type(contents, dependencies):
 
 
 def backup_name_type(contents, dependencies):
+    """Validates provided backup name.
+
+    Args:
+        contents (str): The backup name to use
+        dependencies (dict): Any dependent arguments
+
+    Raises:
+        ValueError: When an invalid backup name is provided
+
+    Returns:
+        str: The backup name to use
+    """
     if not contents:
         return None
     if not match(
@@ -528,12 +641,29 @@ def backup_name_type(contents, dependencies):
 
 
 def full_volume_type(contents, dependencies):
+    """Validates dependent arguments are also specified for full_volume argument.
+
+    Args:
+        contents (bool): Whether we are making a full volume backup or not
+        dependencies (dict): Any dependent arguments
+
+    Raises:
+        ValueError: When volume argument is not provided
+
+    Returns:
+        bool: Whether we are making a full volume backup or not
+    """
     if contents is True and dependencies.get("volume") is None:
         raise ValueError("full_volume=True is only valid when volume is specified.")
     return contents
 
 
 def to_dzip_args(**kwargs):
+    """API adapter for ZOAU dzip method.
+
+    Returns:
+        dict: The arguments for ZOAU dzip method translated from module arguments
+    """
     zoau_args = {}
     if kwargs.get("backup_name"):
         zoau_args["file"] = kwargs.get("backup_name")
@@ -577,6 +707,11 @@ def to_dzip_args(**kwargs):
 
 
 def to_dunzip_args(**kwargs):
+    """API adapter for ZOAU dunzip method.
+
+    Returns:
+        dict: The arguments for ZOAU dunzip method translated from module arguments
+    """
     zoau_args = {}
     if kwargs.get("backup_name"):
         zoau_args["file"] = kwargs.get("backup_name")
@@ -588,8 +723,7 @@ def to_dunzip_args(**kwargs):
 
     if kwargs.get("volume"):
         if kwargs.get("full_volume"):
-            zoau_args["volume"] = True
-            zoau_args["file"] = kwargs.get("volume")
+            zoau_args["volume"] = kwargs.get("volume")
         else:
             zoau_args["src_volume"] = kwargs.get("volume")
 

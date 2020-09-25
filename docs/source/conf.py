@@ -47,10 +47,7 @@ templates_path = ['../templates']
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ['playbooks.rst', 'playbook_config_setup.rst',
-                    'playbook_group_vars.rst', 'playbook_inventory.rst',
-                    'playbook_run.rst', 'requirements.rst',
-                    'requirements_managed.rst']
+exclude_patterns = ['requirements.rst', 'requirements_managed.rst']
 
 ##############################################################################
 # Options for HTML output
@@ -150,7 +147,7 @@ scv_greatest_tag = True
 # White list which Git tags documentation will be generated and linked into the
 # version selection box. This is currently a manual selection, until more
 # versions are released, there are no regular expressions used.
-scv_whitelist_tags = ('v1.0.0', 'v1.1.0$', 'v1.2.0-beta.4',)
+scv_whitelist_tags = ('v1.0.0', 'v1.1.0$', 'v1.2.1$',)
 
 # Sort versions by one or more values. Valid values are semver, alpha, and time.
 # Semantic is referred to as 'semver', this would ensure our latest VRM is

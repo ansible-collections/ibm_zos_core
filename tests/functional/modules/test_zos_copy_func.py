@@ -98,14 +98,12 @@ def test_copy_local_file_to_uss_dir(ansible_zos_module):
         hosts.all.file(path=dest_path, state="absent")
 
 
-"""
 def test_copy_local_file_to_non_existing_sequential_data_set(ansible_zos_module):
     hosts = ansible_zos_module
     dest = "USER.TEST.SEQ.FUNCTEST"
     src_file = "/etc/profile"
     try:
         copy_result = hosts.all.zos_copy(src=src_file, dest=dest)
-        print(vars(copy_result))
         verify_copy = hosts.all.shell(
             cmd="cat \"//'{0}'\" > /dev/null 2>/dev/null".format(dest),
             executable=SHELL_EXECUTABLE,
@@ -116,7 +114,6 @@ def test_copy_local_file_to_non_existing_sequential_data_set(ansible_zos_module)
             assert v_cp.get("rc") == 0
     finally:
         hosts.all.zos_data_set(name=dest, state="absent")
-"""
 
 
 def test_copy_local_file_to_existing_sequential_data_set(ansible_zos_module):

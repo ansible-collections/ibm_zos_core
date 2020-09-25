@@ -497,11 +497,9 @@ else:
     from re import match as fullmatch
 
 try:
-    from zoautil_py import Datasets
+    from zoautil_py import datasets
 except Exception:
-    Datasets = MissingZOAUImport()
-    MVSCmd = MissingZOAUImport()
-    types = MissingZOAUImport()
+    datasets = MissingZOAUImport()
 
 
 MVS_PARTITIONED = frozenset({"PE", "PO", "PDSE", "PDS"})
@@ -553,7 +551,7 @@ class CopyHandler(object):
         """
         new_src = temp_path or conv_path or src
         if self.dest_exists:
-            Datasets.delete(dest)
+            datasets.delete(dest)
         if model_ds:
             self.allocate_model(dest, model_ds)
         if src_ds_type == "USS":
@@ -573,7 +571,7 @@ class CopyHandler(object):
                     stdout=out,
                 )
         else:
-            rc = Datasets.copy(new_src, dest)
+            rc = datasets.copy(new_src, dest)
             # *****************************************************************
             # When Copying a PDSE member to a non-existent sequential data set
             # using: cp "//'SOME.PDSE.DATA.SET(MEMBER)'" "//'SOME.DEST.SEQ'"
@@ -581,8 +579,9 @@ class CopyHandler(object):
             # the destination data set before copying.
             # *****************************************************************
             if rc != 0:
+
                 self._allocate_ps(dest)
-                rc = Datasets.copy(new_src, dest)
+                rc = datasets.copy(new_src, dest)
                 if rc != 0:
                     self.fail_json(
                         msg="Unable to copy source {0} to {1}".format(new_src, dest),
@@ -598,7 +597,7 @@ class CopyHandler(object):
             dest {str} -- The name of the destination VSAM
         """
         if self.dest_exists:
-            rc = Datasets.delete(dest)
+            rc = datasets.delete(dest)
             if rc != 0:
                 self.fail_json(
                     msg="Unable to delete destination data set {0}".format(dest), rc=rc
@@ -773,7 +772,15 @@ class CopyHandler(object):
             name {str} -- Name of the data set to allocate
             size {str} -- The size to allocate
         """
-        if Datasets.create(name, "SEQ", size, "FB", "", 1028, block_size=6144) != 0:
+        response = datasets._create(
+            name=name,
+            type="SEQ",
+            primary_space=size,
+            record_format="FB",
+            record_length=1028,
+            block_size=6144,
+        )
+        if response.rc != 0:
             self.fail_json(
                 msg="Unable to allocate destination data set {0}".format(name)
             )
@@ -931,7 +938,7 @@ class USSCopyHandler(CopyHandler):
                     pass
         try:
             if src_member or src_ds_type in MVS_SEQ:
-                if Datasets.copy(src, dest) != 0:
+                if datasets._copy(src, dest).rc != 0:
                     self.fail_json(
                         msg="Error while copying source {0} to {1}".format(src, dest)
                     )
@@ -971,7 +978,7 @@ class PDSECopyHandler(CopyHandler):
         new_src = temp_path or conv_path or src
         if src_ds_type == "USS":
             if self.dest_exists and not data_set.is_empty(dest):
-                rc = Datasets.delete_members(dest + "(*)")
+                rc = datasets.delete_members(dest + "(*)")
                 if rc != 0:
                     self.fail_json(
                         msg="Unable to delete data set members for data set {0}".format(
@@ -1000,9 +1007,7 @@ class PDSECopyHandler(CopyHandler):
                 members = []
                 data_set_base = data_set.extract_dsname(src)
                 try:
-                    members = list(
-                        map(str.strip, Datasets.list_members(src).splitlines())
-                    )
+                    members = list(map(str.strip, datasets.list_members(src)))
                 except AttributeError:
                     self.exit_json(
                         note="The src {0} is likely empty. No data was copied".format(
@@ -1018,7 +1023,7 @@ class PDSECopyHandler(CopyHandler):
                     )
             else:
                 if self.dest_exists:
-                    rc = Datasets.delete(dest)
+                    rc = datasets.delete(dest)
                     if rc != 0:
                         self.fail_json(
                             msg="Error while removing existing destination {0}".format(
@@ -1071,14 +1076,14 @@ class PDSECopyHandler(CopyHandler):
         dest = dest.replace("$", "\\$")
 
         if is_uss_src:
-            rc = Datasets.copy(new_src, dest)
+            rc = datasets.copy(new_src, dest)
             if rc != 0:
                 try:
                     copy.copy_uss2mvs(new_src, dest, "PS", is_binary=self.is_binary)
                 except Exception as err:
                     self.fail_json(msg=str(err))
         else:
-            rc = Datasets.copy(new_src, dest)
+            rc = datasets.copy(new_src, dest)
             if rc != 0:
                 self.fail_json(
                     msg="Unable to copy data set member {0} to {1}".format(
@@ -1175,8 +1180,14 @@ class PDSECopyHandler(CopyHandler):
                     alloc_size = 5242880  # Use the default 5 Megabytes
 
             alloc_size = "{0}K".format(str(int(math.ceil(alloc_size / 1024))))
-            rc = Datasets.create(ds_name, "PDSE", alloc_size, recfm, "", lrecl)
-        return rc
+            response = datasets._create(
+                name=ds_name,
+                type="PDSE",
+                primary_space=alloc_size,
+                record_format=recfm,
+                record_length=lrecl,
+            )
+        return response.rc
 
 
 def backup_data(ds_name, ds_type, backup_name):

@@ -10,7 +10,7 @@ __metaclass__ = type
 
 ANSIBLE_METADATA = {
     "metadata_version": "1.1",
-    "status": ["preview"],
+    "status": ["stableinterface"],
     "supported_by": "community",
 }
 
@@ -257,15 +257,14 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
 )
 
 try:
-    from zoautil_py import Datasets
+    from zoautil_py import datasets
 except Exception:
-    Datasets = MissingZOAUImport()
-    MVSCmd = MissingZOAUImport()
+    datasets = MissingZOAUImport()
 
 
 def check_pds_member(ds, mem):
     check_rc = False
-    if mem in Datasets.list_members(ds):
+    if mem in datasets.list_members(ds):
         check_rc = True
     else:
         raise EncodeError("Cannot find member {0} in {1}".format(mem, ds))

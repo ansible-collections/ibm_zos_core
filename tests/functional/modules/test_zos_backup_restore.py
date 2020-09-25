@@ -513,7 +513,7 @@ def test_backup_and_restore_of_data_set_from_volume_to_new_volume(ansible_zos_mo
         delete_data_set_or_file(hosts, DATA_SET_BACKUP_LOCATION)
 
 
-def test_backup_and_restore_of_data_set_from_volume_to_new_volume(ansible_zos_module):
+def test_backup_and_restore_of_full_volume(ansible_zos_module):
     hosts = ansible_zos_module
     try:
         delete_data_set_or_file(hosts, DATA_SET_BACKUP_LOCATION)
@@ -525,9 +525,11 @@ def test_backup_and_restore_of_data_set_from_volume_to_new_volume(ansible_zos_mo
             operation="backup",
             volume=VOLUME,
             full_volume=True,
-            temp_volume=BIG_VOLUME,
+            sms_storage_class="DB2SMS10",
             backup_name=DATA_SET_BACKUP_LOCATION,
             overwrite=True,
+            space=500,
+            space_type="M",
         )
         assert_module_did_not_fail(results)
         assert_data_set_or_file_exists(hosts, DATA_SET_BACKUP_LOCATION)
@@ -538,7 +540,9 @@ def test_backup_and_restore_of_data_set_from_volume_to_new_volume(ansible_zos_mo
             overwrite=True,
             volume=VOLUME,
             full_volume=True,
-            temp_volume=BIG_VOLUME,
+            sms_storage_class="DB2SMS10",
+            space=500,
+            space_type="M",
         )
         for result in results.contacted.values():
             pprint(result)

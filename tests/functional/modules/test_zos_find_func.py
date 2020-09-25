@@ -172,7 +172,7 @@ def test_exclude_members_from_matched_list(ansible_zos_module):
     hosts = ansible_zos_module
     try:
         hosts.all.zos_data_set(
-            batch=[dict(name=i, type='pds', record_length=80) for i in PDS_NAMES]
+            batch=[dict(name=i, type='pds', state='present') for i in PDS_NAMES]
         )
         hosts.all.zos_data_set(
             batch=[dict(name=i + "(MEMBER)", type="MEMBER") for i in PDS_NAMES]
@@ -181,12 +181,12 @@ def test_exclude_members_from_matched_list(ansible_zos_module):
             batch=[dict(name=i + "(FILE)", type="MEMBER") for i in PDS_NAMES]
         )
         find_res = hosts.all.zos_find(
-            pds_paths=['TEST.FIND.PDS.*.*'], excludes=['.*FILE$'], patterns=['.*']
+            pds_paths=['TEST.FIND.PDS.FUNCTEST.*'], excludes=['.*FILE$'], patterns=['.*']
         )
+        print(vars(find_res))
         for val in find_res.contacted.values():
             assert len(val.get('data_sets')) == 3
             for ds in val.get('data_sets'):
-                assert ds.get('name') in PDS_NAMES
                 assert len(ds.get('members')) == 1
     finally:
         hosts.all.zos_data_set(
@@ -208,96 +208,32 @@ def test_find_data_sets_older_than_age(ansible_zos_module):
 
 def test_find_data_sets_larger_than_size(ansible_zos_module):
     hosts = ansible_zos_module
-    try:
-        hosts.all.zos_data_set(
-            batch=[
-                dict(
-                    name=i,
-                    type='seq',
-                    space_primary=10,
-                    state='present'
-                ) for i in SEQ_NAMES
-            ]
-        )
-        find_res = hosts.all.zos_find(patterns=['TEST.FIND.SEQ.*.*'], size='6m')
-        for val in find_res.contacted.values():
-            assert len(val.get('data_sets')) == 3
-            for ds in val.get('data_sets'):
-                assert ds.get('name') in SEQ_NAMES
-            assert val.get('matched') == 3
-    finally:
-        hosts.all.zos_data_set(
-            batch=[dict(name=i, state='absent') for i in SEQ_NAMES]
-        )
+    find_res = hosts.all.zos_find(patterns=['IMSTESTL.MQBATCH.*'], size='100k')
+    print(vars(find_res))
+    for val in find_res.contacted.values():
+        assert len(val.get('data_sets')) == 2
+        assert val.get('matched') == 2
 
 
 def test_find_data_sets_smaller_than_size(ansible_zos_module):
     hosts = ansible_zos_module
-    try:
-        hosts.all.zos_data_set(
-            batch=[
-                dict(
-                    name=i,
-                    type='seq',
-                    pace_primary=10,
-                    state='present'
-                ) for i in SEQ_NAMES
-            ]
-        )
-        find_res = hosts.all.zos_find(patterns=['TEST.FIND.SEQ.*.*'], size='-12m')
-        print(vars(find_res))
-        for val in find_res.contacted.values():
-            assert len(val.get('data_sets')) == 3
-            for ds in val.get('data_sets'):
-                assert ds.get('name') in SEQ_NAMES
-            assert val.get('matched') == len(val.get('data_sets'))
-    finally:
-        hosts.all.zos_data_set(
-            batch=[dict(name=i, state='absent') for i in SEQ_NAMES]
-        )
+    find_res = hosts.all.zos_find(patterns=['IMSTESTL.MQBATCH.*'], size='-1m')
+    print(vars(find_res))
+    for val in find_res.contacted.values():
+        assert len(val.get('data_sets')) == 1
+        assert val.get('matched') == 1
 
 
 def test_find_data_sets_in_volume(ansible_zos_module):
     hosts = ansible_zos_module
-    try:
-        hosts.all.zos_data_set(
-            batch=[
-                dict(
-                    name=i,
-                    type='seq',
-                    volumes='000000',
-                    state='present'
-                ) for i in SEQ_NAMES
-            ]
-        )
-        hosts.all.zos_data_set(
-            batch=[
-                dict(
-                    name=i,
-                    type='pds',
-                    volumes='222222',
-                    state='present'
-                ) for i in PDS_NAMES
-            ]
-        )
-        find_res = hosts.all.zos_find(
-            patterns=['TEST.FIND.*.*.*'], volumes=['000000']
-        )
-        for val in find_res.contacted.values():
-            assert len(val.get('data_sets')) == 3
-            for ds in val.get('data_sets'):
-                assert ds.get('name') in SEQ_NAMES
-            assert val.get('matched') == len(val.get('data_sets'))
 
-        find_res = hosts.all.zos_find(
-            patterns=['TEST.FIND.*.*.*'], volumes=['000000', '222222']
-        )
-        for val in find_res.contacted.values():
-            assert len(val.get('data_sets')) == 6
-            assert val.get('matched') == len(val.get('data_sets'))
-    finally:
-        hosts.all.zos_data_set(batch=[dict(name=i, state='absent') for i in SEQ_NAMES])
-        hosts.all.zos_data_set(batch=[dict(name=i, state='absent') for i in PDS_NAMES])
+    find_res = hosts.all.zos_find(
+        patterns=['USER.*'], volumes=['IMSSUN']
+    )
+    print(vars(find_res))
+    for val in find_res.contacted.values():
+        assert len(val.get('data_sets')) == 5
+        assert val.get('matched') == 5
 
 
 def test_find_vsam_pattern(ansible_zos_module):

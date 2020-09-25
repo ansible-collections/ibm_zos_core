@@ -306,7 +306,7 @@ def content_filter(module, patterns, content):
     return filtered_data_sets
 
 
-def data_set_filter(module, patterns):
+def data_set_filter(module, pds_paths, patterns):
     """ Find data sets that match any pattern in a list of patterns.
 
     Arguments:
@@ -320,6 +320,7 @@ def data_set_filter(module, patterns):
         data sets examined.
     """
     filtered_data_sets = dict(ps=set(), pds=dict(), searched=0)
+    patterns = pds_paths or patterns
     for pattern in patterns:
         rc, out, err = _dls_wrapper(pattern, list_details=True)
         if rc != 0:
@@ -338,14 +339,17 @@ def data_set_filter(module, patterns):
             result = line.split()
             if result:
                 if result[1] == "PO":
-                    mls_rc, mls_out, mls_err = module.run_command(
-                        "mls '{0}(*)'".format(result[0])
-                    )
-                    if mls_rc == 2:
-                        filtered_data_sets["pds"][result[0]] = {}
+                    if pds_paths:
+                        mls_rc, mls_out, mls_err = module.run_command(
+                            "mls '{0}(*)'".format(result[0])
+                        )
+                        if mls_rc == 2:
+                            filtered_data_sets["pds"][result[0]] = {}
+                        else:
+                            filtered_data_sets["pds"][result[0]] = \
+                                set(filter(None, mls_out.splitlines()))
                     else:
-                        filtered_data_sets["pds"][result[0]] = \
-                            set(filter(None, mls_out.splitlines()))
+                        filtered_data_sets["pds"][result[0]] = {}
                 else:
                     filtered_data_sets["ps"].add(result[0])
     return filtered_data_sets
@@ -473,11 +477,12 @@ def data_set_attribute_filter(
 # TODO:
 # Implement volume_filter() using "vtocls" shell command from ZOAU
 # when it becomes available.
-def volume_filter(data_sets, volumes):
+def volume_filter(module, data_sets, volumes):
     """Return only the data sets that are allocated in one of the volumes from
     the list of input volumes.
 
     Arguments:
+        module {AnsibleModule} -- The Ansible module object
         data_sets {set[str]} -- A set of data sets to be filtered
         volumes {list[str]} -- A list of input volumes
 
@@ -486,9 +491,16 @@ def volume_filter(data_sets, volumes):
     """
     filtered_data_sets = set()
     for volume in volumes:
-        for ds in vtoc.get_volume_entry(volume):
-            if ds.get('data_set_name') in data_sets:
-                filtered_data_sets.add(ds)
+        vtoc_entry = vtoc.get_volume_entry(volume)
+        if vtoc_entry:
+            for ds in vtoc_entry:
+                if ds.get('data_set_name') in data_sets:
+                    filtered_data_sets.add(ds.get('data_set_name'))
+        else:
+            module.fail_json(
+                msg="Unable to retrieve VTOC information for volume {0}".format(volume)
+            )
+
     return filtered_data_sets
 
 
@@ -693,7 +705,6 @@ def _ds_type(ds_name):
         search = re.search(r"(-|--)DSORG(-\s*|\s*)\n(.*)", out, re.MULTILINE)
         return search.group(3).split()[-1]
     return None
-    
 
 
 def run_module(module):
@@ -744,7 +755,8 @@ def run_module(module):
         else:
             init_filtered_data_sets = data_set_filter(
                 module,
-                pds_paths if pds_paths else patterns
+                pds_paths,
+                patterns
             )
         if pds_paths:
             filtered_pds = pds_filter(
@@ -763,7 +775,7 @@ def run_module(module):
 
         # Filter data sets by volume
         if volume:
-            filtered_data_sets = volume_filter(filtered_data_sets, volume)
+            filtered_data_sets = volume_filter(module, filtered_data_sets, volume)
 
         res_args['examined'] = init_filtered_data_sets.get("searched")
 

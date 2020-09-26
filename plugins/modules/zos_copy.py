@@ -533,12 +533,15 @@ class CopyHandler(object):
         """Utility class to handle copying data between two targets
 
         Arguments:
-            module {AnsibleModule} -- The AnsibleModule object from currently running module
+            module {AnsibleModule} -- The AnsibleModule object from currently
+                                      running module
             dest_exists {boolean} -- Whether destination already exists
 
         Keyword Arguments:
-            is_binary {bool} -- Whether the file or data set to be copied contains binary data
-            backup_name {str} -- The USS path or data set name of destination backup
+            is_binary {bool} -- Whether the file or data set to be copied
+                                contains binary data
+            backup_name {str} -- The USS path or data set name of destination
+                                 backup
         """
         self.module = module
         self.dest_exists = dest_exists
@@ -548,7 +551,7 @@ class CopyHandler(object):
     def fail_json(self, **kwargs):
         """ Wrapper for AnsibleModule.fail_json """
         d = dict(dest_exists=self.dest_exists, backup_name=self.backup_name)
-        self.module.fail_json(self._merge_hash(kwargs, d))
+        self.module.fail_json(**self._merge_hash(kwargs, d))
 
     def run_command(self, cmd, **kwargs):
         """ Wrapper for AnsibleModule.run_command """
@@ -557,7 +560,7 @@ class CopyHandler(object):
     def exit_json(self, **kwargs):
         """ Wrapper for AnsibleModule.exit_json """
         d = dict(dest_exists=self.dest_exists, backup_name=self.backup_name)
-        self.module.exit_json(self._merge_hash(kwargs, d))
+        self.module.exit_json(**self._merge_hash(kwargs, d))
 
     def copy_to_seq(
         self,
@@ -573,7 +576,8 @@ class CopyHandler(object):
 
         Arguments:
             src {str} -- Path to USS file or data set name
-            temp_path {str} -- Path to the location where the control node transferred data to
+            temp_path {str} -- Path to the location where the control node
+                               transferred data to
             conv_path {str} -- Path to the converted source file
             dest {str} -- Name of destination data set
             src_ds_type {str} -- The type of source
@@ -656,11 +660,14 @@ class CopyHandler(object):
 
         Arguments:
             src {str} -- Path to the USS source file or directory
-            temp_path {str} -- Path to the location where the control node transferred data to
-            encoding {dict} -- Charsets that the source is to be converted from and to
+            temp_path {str} -- Path to the location where the control node
+                               transferred data to
+            encoding {dict} -- Charsets that the source is to be converted
+                               from and to
 
         Raises:
-            EncodingConversionError -- When the encoding of a USS file is not able to be converted
+            EncodingConversionError -- When the encoding of a USS file is not
+                                       able to be converted
 
         Returns:
             {str} -- The USS path where the converted data is stored
@@ -740,7 +747,6 @@ class CopyHandler(object):
             ds_name,
             model,
             "BLKSIZE({0}) ".format(blksize) if blksize else "",
-            #"DSNTYPE(LIBRARY) " if dsntype == "PO" else "",
             "VOLUME({0})".format(vol.upper() if vol else "")
         )
 
@@ -766,7 +772,8 @@ class CopyHandler(object):
             to_code_set {str} -- The character set to convert the files to
 
         Raises
-            EncodingConversionError -- When the encoding of a USS file is not able to be converted
+            EncodingConversionError -- When the encoding of a USS file is not
+                                       able to be converted
         """
         path, dirs, files = next(os.walk(dir_path))
         enc_utils = encode.EncodeUtils()
@@ -790,7 +797,8 @@ class CopyHandler(object):
             tag {str} -- Specifies which code set to tag the file
 
         Keyword Arguments:
-            is_dir {bool} -- Whether 'file_path' specifies a directory. (Default {False})
+            is_dir {bool} -- Whether 'file_path' specifies a directory.
+                             (Default {False})
 
         """
         tag_cmd = "chtag -{0}c {1} {2}".format("R" if is_dir else "t", tag, file_path)
@@ -850,7 +858,8 @@ class USSCopyHandler(CopyHandler):
         """Utility class to handle copying files or data sets to USS target
 
         Arguments:
-            module {AnsibleModule} -- The AnsibleModule object from currently running module
+            module {AnsibleModule} -- The AnsibleModule object from currently
+                                      running module
             dest_exists {boolean} -- Whether destination already exists
 
         Keyword Arguments:
@@ -867,6 +876,8 @@ class USSCopyHandler(CopyHandler):
 
     def copy_to_uss(
         self,
+        src,
+        dest,
         conv_path,
         temp_path,
         src_ds_type,
@@ -876,7 +887,10 @@ class USSCopyHandler(CopyHandler):
         """Copy a file or data set to a USS location
 
         Arguments:
-            temp_path {str} -- Path to the location where the control node transferred data to
+            src {str} -- The USS source
+            dest {str} -- Destination file or directory on USS
+            temp_path {str} -- Path to the location where the control node
+                               transferred data to
             conv_path {str} -- Path to the converted source file or directory
             src_ds_type {str} -- Type of source
             src_member {bool} -- Whether src is a data set member
@@ -885,8 +899,6 @@ class USSCopyHandler(CopyHandler):
         Returns:
             {str} -- Destination where the file was copied to
         """
-        src = self.module.params.get("src")
-        dest = self.module.params.get("dest")
         if src_ds_type in MVS_SEQ.union(MVS_PARTITIONED):
             self._mvs_copy_to_uss(
                 src, dest, src_ds_type, src_member, member_name=member_name
@@ -915,7 +927,8 @@ class USSCopyHandler(CopyHandler):
         Arguments:
             src {str} -- USS source file path
             dest {str} -- USS dest file path
-            temp_path {str} -- Path to the location where the control node transferred data to
+            temp_path {str} -- Path to the location where the control node
+                               transferred data to
             conv_path {str} -- Path to the converted source file or directory
 
         Returns:
@@ -947,7 +960,8 @@ class USSCopyHandler(CopyHandler):
         Arguments:
             src_dir {str} -- USS source directory
             dest {str} -- USS dest directory
-            temp_path {str} -- Path to the location where the control node transferred data to
+            temp_path {str} -- Path to the location where the control node
+                               transferred data to
             conv_path {str} -- Path to the converted source directory
 
         Returns:
@@ -1026,11 +1040,13 @@ class PDSECopyHandler(CopyHandler):
         partitioned data set members.
 
         Arguments:
-            module {AnsibleModule} -- The AnsibleModule object from currently running module
+            module {AnsibleModule} -- The AnsibleModule object from currently
+                                      running module
             dest_exists {boolean} -- Whether destination already exists
 
         Keyword Arguments:
-            is_binary {bool} -- Whether the data set to be copied contains binary data
+            is_binary {bool} -- Whether the data set to be copied contains
+                                binary data
             backup_name {str} -- The USS path or data set name of destination backup
         """
         super().__init__(
@@ -1052,7 +1068,8 @@ class PDSECopyHandler(CopyHandler):
 
         Arguments:
             src {str} -- Path to USS file/directory or data set name.
-            temp_path {str} -- Path to the location where the control node transferred data to
+            temp_path {str} -- Path to the location where the control node
+                               transferred data to
             conv_path {str} -- Path to the converted source file/directory
             dest {str} -- Name of destination data set
             src_ds_type {str} -- The type of source
@@ -1147,12 +1164,14 @@ class PDSECopyHandler(CopyHandler):
 
         Arguments:
             src {str} -- Path to USS file or data set name.
-            temp_path {str} -- Path to the location where the control node transferred data to
+            temp_path {str} -- Path to the location where the control node
+                               transferred data to
             conv_path {str} -- Path to the converted source file/directory
             dest {str} -- Name of destination data set
 
         Keyword Arguments:
-            copy_member {bool} -- Whether destination specifies a member name. (default {False})
+            copy_member {bool} -- Whether destination specifies a member name.
+                                  (default {False})
 
         Returns:
             {str} -- Destination where the member was copied to
@@ -1204,7 +1223,8 @@ class PDSECopyHandler(CopyHandler):
             alloc_vol {str} -- The volume to allocate the PDSE to
 
         Keyword Arguments:
-            remote_src {bool} -- Whether source is located on remote system. (Default {False})
+            remote_src {bool} -- Whether source is located on remote system.
+                                 (Default {False})
             src_vol {str} -- Volume where source data set is stored. (Default {None})
         """
         rc = out = err = None
@@ -1470,7 +1490,6 @@ def run_module(module, arg_def):
     # Initialize module variables
     # ********************************************************************
     src = module.params.get('src')
-    b_src = to_bytes(src, errors='surrogate_or_strict')
     dest = module.params.get('dest')
     remote_src = module.params.get('remote_src')
     is_binary = module.params.get('is_binary')
@@ -1512,12 +1531,13 @@ def run_module(module, arg_def):
     #    to 'preserve'
     # ********************************************************************
     if remote_src and "/" in src:
-        if not os.path.exists(b_src):
+        src = os.path.realpath(src)
+        if not os.path.exists(src):
             module.fail_json(msg="Source {0} does not exist".format(src))
         if not os.access(src, os.R_OK):
             module.fail_json(msg="Source {0} is not readable".format(src))
         if mode == "preserve":
-            mode = "0{0:o}".format(stat.S_IMODE(os.stat(b_src).st_mode))
+            mode = "0{0:o}".format(stat.S_IMODE(os.stat(src).st_mode))
 
     # ********************************************************************
     # 1. Use DataSetUtils to determine the src and dest data set type.
@@ -1593,7 +1613,7 @@ def run_module(module, arg_def):
                 is_pds
                 or copy_member
                 or (src_ds_type in MVS_PARTITIONED and (not src_member) and is_mvs_dest)
-                or (os.path.isdir(b_src) and is_mvs_dest)
+                or (os.path.isdir(src) and is_mvs_dest)
             ):
                 dest_ds_type = "PDSE"
                 pch = PDSECopyHandler(module, dest_exists, backup_name=backup_name)
@@ -1650,6 +1670,8 @@ def run_module(module, arg_def):
             backup_name=backup_name,
         )
         dest = uss_copy_handler.copy_to_uss(
+            src,
+            dest,
             conv_path,
             temp_path,
             src_ds_type,
@@ -1730,7 +1752,7 @@ def run_module(module, arg_def):
 def main():
     module = AnsibleModule(
         argument_spec=dict(
-            src=dict(type='str'),
+            src=dict(type='path'),
             dest=dict(required=True, type='str'),
             is_binary=dict(type='bool', default=False),
             encoding=dict(type='dict'),

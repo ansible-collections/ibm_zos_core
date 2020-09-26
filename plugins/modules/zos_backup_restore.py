@@ -53,7 +53,7 @@ options:
           - Two asterisks are the maximum permissible in a qualifier.
             If there are two asterisks in a qualifier, they must be the first and last characters.
           - "A question mark C(?) or percent sign C(%) matches a single character."
-        type: str
+        type: raw
         required: True
       exclude:
         description:
@@ -70,7 +70,7 @@ options:
           - Two asterisks are the maximum permissible in a qualifier.
             If there are two asterisks in a qualifier, they must be the first and last characters.
           - "A question mark C(?) or percent sign C(%) matches a single character."
-        type: str
+        type: raw
         required: False
   volume:
     description:
@@ -311,7 +311,7 @@ except ImportError:
     exceptions = MissingZOAUImport()
 
 
-def run_module():
+def main():
     """Run the zos_backup_restore module core functions."""
     result = dict(changed=False, message="", backup_name="")
     module_args = dict(
@@ -836,4 +836,4 @@ def to_dunzip_args(**kwargs):
 
 
 if __name__ == "__main__":
-    run_module()
+    main()

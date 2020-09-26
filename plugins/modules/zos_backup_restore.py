@@ -19,18 +19,19 @@ module: zos_backup_restore
 author: "Blake Becker (@blakeinate)"
 short_description: Backup/restore data sets and volumes
 description:
-    - Create and restore from backups of data sets and volumes.
-    - Data set backups are performed using logical dumps, volume backups are performed using physical dumps.
-    - Backups are compressed.
+  - Create and restore from backups of data sets and volumes.
+  - Data set backups are performed using logical dumps, volume backups are performed
+    using physical dumps.
+  - Backups are compressed.
 options:
   operation:
-      description:
-        - Used to specify the operation to perform.
-      required: True
-      type: str
-      choices:
-        - backup
-        - restore
+    description:
+      - Used to specify the operation to perform.
+    required: True
+    type: str
+    choices:
+      - backup
+      - restore
   data_sets:
     description:
       - Determines which data sets to include in the backup.
@@ -39,8 +40,10 @@ options:
     suboptions:
       include:
         description:
-          - When I(operation=backup), specifies a list of data sets or data set patterns to include in the backup.
-          - When I(operation=restore), specifies a list of data sets or data set patterns to include when restoring from a backup.
+          - When I(operation=backup), specifies a list of data sets or data set patterns
+            to include in the backup.
+          - When I(operation=restore), specifies a list of data sets or data set patterns
+            to include when restoring from a backup.
           - "The single asterisk, C(*), is used in place of exactly one qualifier.
             In addition, it can be used to indicate to DFSMSdss that only part of a
             qualifier has been specified."
@@ -54,8 +57,10 @@ options:
         required: True
       exclude:
         description:
-          - When I(operation=backup), specifies a list of data sets or data set patterns to exclude from the backup.
-          - When I(operation=restore), specifies a list of data sets or data set patterns to exclude when restoring from a backup.
+          - When I(operation=backup), specifies a list of data sets or data set patterns
+            to exclude from the backup.
+          - When I(operation=restore), specifies a list of data sets or data set patterns
+            to exclude when restoring from a backup.
           - "The single asterisk, C(*), is used in place of exactly one qualifier.
             In addition, it can be used to indicate that only part of a
             qualifier has been specified."
@@ -69,7 +74,8 @@ options:
         required: False
   volume:
     description:
-      - When I(operation=backup), and I(data_sets) is provided, specifies the volume that contains the data sets to backup.
+      - When I(operation=backup), and I(data_sets) is provided, specifies the volume
+        that contains the data sets to backup.
       - When I(operation=restore), specifies the volume the backup should be restored to.
       - I(volume) is required when restoring a full volume backup.
       - This applies to both data set restores and volume restores.
@@ -77,16 +83,20 @@ options:
     required: False
   full_volume:
     description:
-      - When I(operation=backup) and I(full_volume=True), specifies the entire volume provided to I(volume) should be backed up.
-      - When I(operation=restore) and I(full_volume=True), specifies volume should be restored (default is dataset).
+      - When I(operation=backup) and I(full_volume=True), specifies the entire volume
+        provided to I(volume) should be backed up.
+      - When I(operation=restore) and I(full_volume=True), specifies volume should be
+        restored (default is dataset).
       - I(volume) must be provided when I(full_volume=True).
     type: bool
     default: False
     required: False
   temp_volume:
     description:
-      - Specifies a particular volume on which temporary data sets created during backup and restore process should be created.
-      - When I(operation=backup) and I(backup_name) is a data set, also specifies the volume the backup should be placed on.
+      - Specifies a particular volume on which temporary data sets created during backup
+        and restore process should be created.
+      - When I(operation=backup) and I(backup_name) is a data set, also specifies the
+        volume the backup should be placed on.
     type: str
     required: False
     aliases:
@@ -104,22 +114,30 @@ options:
     default: False
   overwrite:
     description:
-      - When I(operation=backup), specifies if existing data set or UNIX file matching I(backup_name) should be deleted.
-      - When I(operation=restore), specifies if module should overwrite existing data sets with matching name on the target device.
+      - When I(operation=backup), specifies if existing data set or UNIX file matching
+        I(backup_name) should be deleted.
+      - When I(operation=restore), specifies if module should overwrite existing data sets
+        with matching name on the target device.
     type: bool
     default: False
   sms_storage_class:
     description:
-      - When I(operation=restore), specifies the storage class to use. The storage class will also be used for temporary data sets created during restore process.
-      - When I(operation=backup), specifies the storage class to use for temporary data sets created during backup process.
-      - If neither of I(sms_storage_class) or I(sms_management_class) are specified, the z/OS system's Automatic Class Selection (ACS) routines will be used.
+      - When I(operation=restore), specifies the storage class to use. The storage class will
+        also be used for temporary data sets created during restore process.
+      - When I(operation=backup), specifies the storage class to use for temporary data sets
+        created during backup process.
+      - If neither of I(sms_storage_class) or I(sms_management_class) are specified, the z/OS
+        system's Automatic Class Selection (ACS) routines will be used.
     type: str
     required: False
   sms_management_class:
     description:
-      - When I(operation=restore), specifies the management class to use. The management class will also be used for temporary data sets created during restore process.
-      - When I(operation=backup), specifies the management class to use for temporary data sets created during backup process.
-      - If neither of I(sms_storage_class) or I(sms_management_class) are specified, the z/OS system's Automatic Class Selection (ACS) routines will be used.
+      - When I(operation=restore), specifies the management class to use. The management class
+        will also be used for temporary data sets created during restore process.
+      - When I(operation=backup), specifies the management class to use for temporary data sets
+        created during backup process.
+      - If neither of I(sms_storage_class) or I(sms_management_class) are specified, the z/OS
+        system's Automatic Class Selection (ACS) routines will be used.
     type: str
     required: False
   space:
@@ -127,9 +145,10 @@ options:
       - If I(operation=backup), specifies the amount of space to allocate for the backup.
         Please note that even when backing up to a UNIX file, backup contents will be temporarily
         held in a data set.
-      - If I(operation=backup), specifies the amount of space to allocate for data sets temporarily created during the restore process.
+      - If I(operation=backup), specifies the amount of space to allocate for data sets temporarily
+        created during the restore process.
       - The unit of space used is set using I(space_type).
-    - When I(full_volume=True), I(space) defaults to C(1), otherwise default is C(25)
+      - When I(full_volume=True), I(space) defaults to C(1), otherwise default is C(25)
     type: int
     required: false
     aliases:
@@ -168,7 +187,7 @@ EXAMPLES = r"""
     backup_name: MY.BACKUP
 
 - name: "Backup all datasets matching patterns USER.** or PRIVATE.TEST.*
-        excluding datasets matching pattern USER.PRIVATE.* to data set MY.BACKUP"
+    excluding datasets matching pattern USER.PRIVATE.* to data set MY.BACKUP"
   zos_backup_restore:
     operation: backup
     data_sets:
@@ -187,7 +206,7 @@ EXAMPLES = r"""
     recover: yes
 
 - name: "Backup all datasets matching pattern USER.** to data set MY.BACKUP,
-         allocate 100MB for data sets used in backup process."
+    allocate 100MB for data sets used in backup process."
   zos_backup_restore:
     operation: backup
     data_sets:
@@ -196,8 +215,9 @@ EXAMPLES = r"""
     space: 100
     space_type: M
 
-- name: "Backup all datasets matching pattern USER.** that are present on volume MYVOL1 to data set MY.BACKUP,
-         allocate 100MB for data sets used in backup process."
+- name:
+    "Backup all datasets matching pattern USER.** that are present on volume MYVOL1 to data set MY.BACKUP,
+    allocate 100MB for data sets used in backup process."
   zos_backup_restore:
     operation: backup
     data_sets:
@@ -208,7 +228,7 @@ EXAMPLES = r"""
     space_type: M
 
 - name: "Backup an entire volume, MYVOL1, to UNIX file /tmp/temp_backup.dzp,
-         allocate 1GB for data sets used in backup process."
+    allocate 1GB for data sets used in backup process."
   zos_backup_restore:
     operation: backup
     backup_name: /tmp/temp_backup.dzp
@@ -218,41 +238,41 @@ EXAMPLES = r"""
     space_type: G
 
 - name: "Restore data sets from backup stored in UNIX file /tmp/temp_backup.dzp.
-         Use z/OS username as new HLQ."
+    Use z/OS username as new HLQ."
   zos_backup_restore:
     operation: restore
     backup_name: /tmp/temp_backup.dzp
 
 - name: "Restore data sets from backup stored in UNIX file /tmp/temp_backup.dzp.
-         Only restore data sets whose last, or only qualifier is TEST.
-         Use MYHLQ as the new HLQ for restored data sets."
+    Only restore data sets whose last, or only qualifier is TEST.
+    Use MYHLQ as the new HLQ for restored data sets."
   zos_backup_restore:
     operation: restore
     data_sets:
-      include: **.TEST
+      include: "**.TEST"
     backup_name: /tmp/temp_backup.dzp
     hlq: MYHLQ
 
 - name: "Restore data sets from backup stored in UNIX file /tmp/temp_backup.dzp.
-         Only restore data sets whose last, or only qualifier is TEST.
-         Use MYHLQ as the new HLQ for restored data sets. Restore data sets to volume MYVOL2."
+    Only restore data sets whose last, or only qualifier is TEST.
+    Use MYHLQ as the new HLQ for restored data sets. Restore data sets to volume MYVOL2."
   zos_backup_restore:
     operation: restore
     data_sets:
-      include: **.TEST
+      include: "**.TEST"
     volume: MYVOL2
     backup_name: /tmp/temp_backup.dzp
     hlq: MYHLQ
 
 - name: "Restore data sets from backup stored in data set MY.BACKUP.
-         Use MYHLQ as the new HLQ for restored data sets."
+    Use MYHLQ as the new HLQ for restored data sets."
   zos_backup_restore:
     operation: restore
     backup_name: MY.BACKUP
     hlq: MYHLQ
 
 - name: "Restore volume from backup stored in data set MY.BACKUP.
-         Restore to volume MYVOL2."
+    Restore to volume MYVOL2."
   zos_backup_restore:
     operation: restore
     volume: MYVOL2
@@ -262,8 +282,8 @@ EXAMPLES = r"""
     space_type: G
 
 - name: "Restore data sets from backup stored in UNIX file /tmp/temp_backup.dzp.
-         Specify DB2SMS10 for the SMS storage and management classes to use for the restored
-         data sets."
+    Specify DB2SMS10 for the SMS storage and management classes to use for the restored
+    data sets."
   zos_backup_restore:
     operation: restore
     volume: MYVOL2
@@ -554,7 +574,7 @@ def data_set_pattern_type(contents, dependencies):
         )
     for pattern in contents:
         if not match(
-            r"^(?:(?:[A-Za-z$#@\?]{1}[A-Za-z0-9$#@\-\?]{0,7})(?:[.]{1})){1,21}[A-Za-z$#@\*\?]{1}[A-Za-z0-9$#@\-\*\?]{0,7}$",
+            r"^(?:(?:[A-Za-z$#@\?\*]{1}[A-Za-z0-9$#@\-\?\*]{0,7})(?:[.]{1})){1,21}[A-Za-z$#@\*\?]{1}[A-Za-z0-9$#@\-\*\?]{0,7}$",
             str(pattern),
             IGNORECASE,
         ):

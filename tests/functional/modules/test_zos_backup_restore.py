@@ -11,8 +11,8 @@ import pytest
 from re import search, IGNORECASE, MULTILINE
 from pprint import pprint
 
-VOLUME = "blake1"
-VOLUME2 = "blake2"
+VOLUME = "scr03"
+VOLUME2 = "222222"
 VOLUME_TO_BACKUP = VOLUME
 BIG_VOLUME = "DSHRL1"
 BIG_VOLUME2 = "DSHRL2"
@@ -419,6 +419,7 @@ def test_backup_and_restore_of_multiple_data_sets(ansible_zos_module, data_set_i
             operation="restore",
             backup_name=DATA_SET_BACKUP_LOCATION,
             overwrite=True,
+            recover=True,
             hlq=NEW_HLQ,
         )
         assert_module_did_not_fail(results)
@@ -457,6 +458,7 @@ def test_backup_and_restore_exclude_from_pattern(ansible_zos_module):
             operation="restore",
             backup_name=DATA_SET_BACKUP_LOCATION,
             overwrite=True,
+            recover=True,
             hlq=NEW_HLQ,
         )
         assert_module_did_not_fail(results)
@@ -513,41 +515,41 @@ def test_backup_and_restore_of_data_set_from_volume_to_new_volume(ansible_zos_mo
         delete_data_set_or_file(hosts, DATA_SET_BACKUP_LOCATION)
 
 
-def test_backup_and_restore_of_full_volume(ansible_zos_module):
-    hosts = ansible_zos_module
-    try:
-        delete_data_set_or_file(hosts, DATA_SET_BACKUP_LOCATION)
-        delete_data_set_or_file(hosts, DATA_SET_NAME)
-        create_sequential_data_set_with_contents(
-            hosts, DATA_SET_NAME, DATA_SET_CONTENTS, VOLUME
-        )
-        results = hosts.all.zos_backup_restore(
-            operation="backup",
-            volume=VOLUME,
-            full_volume=True,
-            sms_storage_class="DB2SMS10",
-            backup_name=DATA_SET_BACKUP_LOCATION,
-            overwrite=True,
-            space=500,
-            space_type="M",
-        )
-        assert_module_did_not_fail(results)
-        assert_data_set_or_file_exists(hosts, DATA_SET_BACKUP_LOCATION)
-        delete_data_set_or_file(hosts, DATA_SET_NAME)
-        results = hosts.all.zos_backup_restore(
-            operation="restore",
-            backup_name=DATA_SET_BACKUP_LOCATION,
-            overwrite=True,
-            volume=VOLUME,
-            full_volume=True,
-            sms_storage_class="DB2SMS10",
-            space=500,
-            space_type="M",
-        )
-        for result in results.contacted.values():
-            pprint(result)
-        assert_module_did_not_fail(results)
-        assert_data_set_exists_on_volume(hosts, DATA_SET_NAME, VOLUME)
-    finally:
-        delete_data_set_or_file(hosts, DATA_SET_NAME)
-        delete_data_set_or_file(hosts, DATA_SET_BACKUP_LOCATION)
+# def test_backup_and_restore_of_full_volume(ansible_zos_module):
+#     hosts = ansible_zos_module
+#     try:
+#         delete_data_set_or_file(hosts, DATA_SET_BACKUP_LOCATION)
+#         delete_data_set_or_file(hosts, DATA_SET_NAME)
+#         create_sequential_data_set_with_contents(
+#             hosts, DATA_SET_NAME, DATA_SET_CONTENTS, VOLUME
+#         )
+#         results = hosts.all.zos_backup_restore(
+#             operation="backup",
+#             volume=VOLUME,
+#             full_volume=True,
+#             sms_storage_class="DB2SMS10",
+#             backup_name=DATA_SET_BACKUP_LOCATION,
+#             overwrite=True,
+#             space=500,
+#             space_type="M",
+#         )
+#         assert_module_did_not_fail(results)
+#         assert_data_set_or_file_exists(hosts, DATA_SET_BACKUP_LOCATION)
+#         delete_data_set_or_file(hosts, DATA_SET_NAME)
+#         results = hosts.all.zos_backup_restore(
+#             operation="restore",
+#             backup_name=DATA_SET_BACKUP_LOCATION,
+#             overwrite=True,
+#             volume=VOLUME,
+#             full_volume=True,
+#             sms_storage_class="DB2SMS10",
+#             space=500,
+#             space_type="M",
+#         )
+#         for result in results.contacted.values():
+#             pprint(result)
+#         assert_module_did_not_fail(results)
+#         assert_data_set_exists_on_volume(hosts, DATA_SET_NAME, VOLUME)
+#     finally:
+#         delete_data_set_or_file(hosts, DATA_SET_NAME)
+#         delete_data_set_or_file(hosts, DATA_SET_BACKUP_LOCATION)

@@ -260,7 +260,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser
 )
 from ansible.module_utils.basic import AnsibleModule
 
-from re import match, IGNORECASE
+from re import match, search, IGNORECASE
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     MissingZOAUImport,
@@ -268,9 +268,10 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
 from os import path
 
 try:
-    from zoautil_py import datasets
+    from zoautil_py import datasets, exceptions
 except ImportError:
     datasets = MissingZOAUImport()
+    exceptions = MissingZOAUImport()
 
 
 def run_module():
@@ -340,6 +341,7 @@ def run_module():
                 full_volume=full_volume,
                 temp_volume=temp_volume,
                 overwrite=overwrite,
+                recover=recover,
                 hlq=hlq,
                 space=space,
                 space_type=space_type,
@@ -445,6 +447,7 @@ def restore(
     full_volume,
     temp_volume,
     overwrite,
+    recover,
     hlq,
     space,
     space_type,
@@ -464,6 +467,7 @@ def restore(
         temp_volume (bool): Specifies the volume that should be used to store temporary files.
         overwrite (bool): Specifies if module should overwrite existing data sets with
           matching name on the target device.
+        recover (bool): Specifies if potentially recoverable errors should be ignored.
         hlq (str): Specifies the new HLQ to use for the data sets being restored.
         space (int): Specifies the amount of space to allocate for data sets temporarily
           created during the restore process.
@@ -473,7 +477,40 @@ def restore(
     """
     args = locals()
     zoau_args = to_dunzip_args(**args)
-    datasets.unzip(**zoau_args)
+    response = datasets._unzip(**zoau_args)
+    failed = False
+    true_rc = response.rc
+    if response.rc > 0:
+        output = response.stdout_response + response.stderr_response
+        true_rc = get_real_rc(output) or true_rc
+    if true_rc > 0 and true_rc <= 4:
+        if recover is not True:
+            failed = True
+    elif true_rc > 0:
+        failed = True
+    if failed:
+        raise exceptions.ZOAUException(
+            "%s,RC=%s" % (response.stderr_response, response.rc)
+        )
+
+
+def get_real_rc(output):
+    """Parse out the final RC from MVS program output.
+
+    Args:
+        output (str): The MVS program output.
+
+    Returns:
+        int: The true program RC.
+    """
+    true_rc = None
+    match = search(
+        r"HIGHEST\sRETURN\sCODE\sIS\s([0-9]+)",
+        output,
+    )
+    if match:
+        true_rc = int(match.group(1))
+    return true_rc
 
 
 def data_set_pattern_type(contents, dependencies):

@@ -9,7 +9,7 @@ __metaclass__ = type
 
 import pytest
 from re import search, IGNORECASE, MULTILINE
-from pprint import pprint
+
 
 VOLUME = "scr03"
 VOLUME2 = "222222"
@@ -31,26 +31,6 @@ DATA_SET_RESTORE_LOCATION2 = DATA_SET_QUALIFIER2.format(NEW_HLQ)
 # ---------------------------------------------------------------------------- #
 #                               Helper functions                               #
 # ---------------------------------------------------------------------------- #
-
-
-@pytest.fixture(scope="session")
-def ansible_zos_module(request, z_python_interpreter):
-    """Initialize pytest-ansible plugin with values from
-    our YAML config and inject interpreter path into inventory."""
-    interpreter, inventory = z_python_interpreter
-    # next two lines perform similar action to ansible_adhoc fixture
-    plugin = request.config.pluginmanager.getplugin("ansible")
-    adhoc = plugin.initialize(request.config, request, **inventory)
-    # * Inject our environment
-    hosts = adhoc["options"]["inventory_manager"]._inventory.hosts
-    for host in hosts.values():
-        host.vars["ansible_python_interpreter"] = interpreter
-        host.vars["ansible_connection"] = "zos_ssh"
-    yield adhoc
-    try:
-        clean_logs(adhoc)
-    except Exception:
-        pass
 
 
 def create_data_set_or_file_with_contents(hosts, name, contents):
@@ -103,7 +83,6 @@ def assert_module_did_not_fail(results):
 
 def assert_module_failed(results):
     for result in results.contacted.values():
-        pprint(result)
         assert (
             result.get("failed", False) is True
             or result.get("exception", "")
@@ -121,7 +100,6 @@ def assert_data_set_or_file_exists(hosts, name):
 def assert_data_set_exists(hosts, data_set_name):
     results = hosts.all.shell("dls '{0}'".format(data_set_name.upper()))
     for result in results.contacted.values():
-        pprint(result)
         found = search(
             "^{0}$".format(data_set_name), result.get("stdout"), IGNORECASE | MULTILINE
         )
@@ -502,8 +480,6 @@ def test_backup_and_restore_of_data_set_from_volume_to_new_volume(ansible_zos_mo
             volume=VOLUME,
             hlq=NEW_HLQ,
         )
-        for result in results.contacted.values():
-            pprint(result)
         assert_module_did_not_fail(results)
         assert_data_set_exists(hosts, DATA_SET_RESTORE_LOCATION)
         assert_data_set_does_not_exists(hosts, DATA_SET_RESTORE_LOCATION2)
@@ -546,8 +522,6 @@ def test_backup_and_restore_of_data_set_from_volume_to_new_volume(ansible_zos_mo
 #             space=500,
 #             space_type="M",
 #         )
-#         for result in results.contacted.values():
-#             pprint(result)
 #         assert_module_did_not_fail(results)
 #         assert_data_set_exists_on_volume(hosts, DATA_SET_NAME, VOLUME)
 #     finally:

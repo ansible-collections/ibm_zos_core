@@ -41,12 +41,30 @@ options:
         description:
           - When I(operation=backup), specifies a list of data sets or data set patterns to include in the backup.
           - When I(operation=restore), specifies a list of data sets or data set patterns to include when restoring from a backup.
+          - "The single asterisk, C(*), is used in place of exactly one qualifier.
+            In addition, it can be used to indicate to DFSMSdss that only part of a
+            qualifier has been specified."
+          - "When used with other qualifiers, the double asterisk, C(**),
+            indicates either the nonexistence of leading, trailing,
+            or middle qualifiers, or the fact that they play no role in the selection process."
+          - Two asterisks are the maximum permissible in a qualifier.
+            If there are two asterisks in a qualifier, they must be the first and last characters.
+          - "A question mark C(?) or percent sign C(%) matches a single character."
         type: str
         required: True
       exclude:
         description:
           - When I(operation=backup), specifies a list of data sets or data set patterns to exclude from the backup.
           - When I(operation=restore), specifies a list of data sets or data set patterns to exclude when restoring from a backup.
+          - "The single asterisk, C(*), is used in place of exactly one qualifier.
+            In addition, it can be used to indicate that only part of a
+            qualifier has been specified."
+          - "When used with other qualifiers, the double asterisk, C(**),
+            indicates either the nonexistence of leading, trailing,
+            or middle qualifiers, or the fact that they play no role in the selection process."
+          - Two asterisks are the maximum permissible in a qualifier.
+            If there are two asterisks in a qualifier, they must be the first and last characters.
+          - "A question mark C(?) or percent sign C(%) matches a single character."
         type: str
         required: False
   volume:
@@ -82,7 +100,6 @@ options:
   recover:
     description:
       - Specifies if potentially recoverable errors should be ignored.
-      - When I(operation=restore), allows an unmovable data set or a data set allocated by absolute track allocation to be moved.
     type: bool
     default: False
   overwrite:

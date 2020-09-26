@@ -527,7 +527,7 @@ def data_set_pattern_type(contents, dependencies):
     Returns:
         list[str]: A list of uppercase data set patterns
     """
-    if not contents:
+    if contents is None:
         return None
     if isinstance(contents, str):
         contents = [contents]
@@ -561,7 +561,7 @@ def hlq_type(contents, dependencies):
     Returns:
         str: The HLQ to use
     """
-    if not contents:
+    if contents is None:
         return None
     if dependencies.get("operation") == "backup":
         raise ValueError("hlq_type is only valid when operation=restore.")
@@ -599,7 +599,7 @@ def sms_type(contents, dependencies):
     Returns:
         str: The uppercase SMS class name
     """
-    if not contents:
+    if contents is None:
         return None
     if not match(r"^[A-Z\$\*\@\#\%]{1}[A-Z0-9\$\*\@\#\%]{0,7}$", contents, IGNORECASE):
         raise ValueError("Invalid argument {0} for SMS class.".format(contents))
@@ -665,7 +665,7 @@ def backup_name_type(contents, dependencies):
     Returns:
         str: The backup name to use
     """
-    if not contents:
+    if contents is None:
         return None
     if not match(
         r"^(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}(?:\([A-Z$#@]{1}[A-Z0-9$#@]{0,7}\)){0,1}$",

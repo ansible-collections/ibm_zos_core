@@ -1178,7 +1178,45 @@ def test_ds_block_absent(ansible_zos_module, dstype, encoding):
     TEST_ENV["TEST_CONT"] = TEST_CONTENT
 
 
-"""
+#########################
+# Negative tests
+#########################
+
+
+@pytest.mark.ds
+def test_not_exist_ds_block_insertafter_regex(ansible_zos_module):
+    hosts = ansible_zos_module
+    test_info = TEST_INFO["test_uss_block_insertafter_regex"]
+    test_info["path"] = "BIFTEST.NOTEXIST.SEQ"
+    results = hosts.all.zos_blockinfile(**test_info)
+    for result in results.contacted.values():
+        assert "does NOT exist" in result.get("msg")
+
+
+@pytest.mark.ds
+def test_ds_block_insertafter_nomatch_eof_insert(ansible_zos_module):
+    TEST_ENV["DS_TYPE"] = 'SEQ'
+    TEST_ENV["ENCODING"] = 'IBM-1047'
+    TEST_INFO["test_uss_block_insertafter_eof"]["insertafter"] = 'SOME_NON_EXISTING_PATTERN'
+    DsGeneral(
+        TEST_INFO["test_ds_block_insertafter_eof"]["test_name"],
+        ansible_zos_module, TEST_ENV,
+        TEST_INFO["test_uss_block_insertafter_eof"],
+        TEST_INFO["expected"]["test_uss_block_insertafter_eof_defaultmarker"]
+    )
+
+
+@pytest.mark.ds
+def test_ds_block_insertafter_regex_wrongmarker(ansible_zos_module):
+    hosts = ansible_zos_module
+    test_info = TEST_INFO["test_uss_block_insertafter_regex"]
+    test_info["path"] = "BIFTEST.NOTEXIST.SEQ"
+    test_info["marker"] = '# MANAGED BLOCK'
+    results = hosts.all.zos_blockinfile(**test_info)
+    for result in results.contacted.values():
+        assert "marker should have {mark}" in result.get("msg")
+
+
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", NS_DS_TYPE)
 def test_ds_not_supported(ansible_zos_module, dstype):
@@ -1187,4 +1225,3 @@ def test_ds_not_supported(ansible_zos_module, dstype):
         TEST_INFO["test_ds_block_insertafter_regex"]["test_name"], ansible_zos_module,
         TEST_ENV, TEST_INFO["test_uss_block_insertafter_regex"]
     )
-"""

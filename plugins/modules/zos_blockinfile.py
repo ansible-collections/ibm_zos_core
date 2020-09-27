@@ -1,14 +1,14 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020
+# Copyright (c) IBM Corporation 2020
 # Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
+                    'status': ['stableinterface'],
                     'supported_by': 'comminuty'}
 
 DOCUMENTATION = r'''
@@ -55,8 +55,6 @@ options:
   block:
     description:
     - The text to insert inside the marker lines.
-    - If it is missing or an empty string, the block will be removed as if
-      C(state) were specified to C(absent).
     - Multi-line can be separated by '\n'.
     required: false
     type: str
@@ -144,13 +142,16 @@ notes:
     tasks, who can also obtain escalated privileges to execute as root
     or another user.
   - All data sets are always assumed to be cataloged. If an uncataloged data set
-    needs to be encoded, it should be cataloged first.
+    needs to be encoded, it should be cataloged first. The M(zos_data_set) module
+    can be used to catalog uncataloged data sets.
   - For supported character sets used to encode data, refer to
-    U(https://ansible-collections.github.io/ibm_zos_core/supplementary.html#encode)
+    U(https://ibm.github.io/z_ansible_collections_doc/reference/supplementary_content/encode.html)
   - When using 'with_*' loops be aware that if you do not set a unique mark
     the block will be overwritten on each iteration.
   - When more then one block should be handled in a file you must change
     the I(marker) per task.
+seealso:
+- module: zos_data_set
 '''
 
 EXAMPLES = r'''
@@ -168,14 +169,13 @@ EXAMPLES = r'''
     marker: "/* {mark} ANSIBLE MANAGED BLOCK FOR SOME.DATA.SET */"
     block: ""
 
-- name: Insert/Update eth0 configuration in /etc/network/interfaces
-  zos_blockinfile:
-    src: /etc/network/interfaces
-    insertafter: "auto eth0"
+- name: Add ZOAU path to PATH in /etc/profile
+    src: /etc/profile
+    insertafter: "PATH="
     block: |
-      iface eth0 inet static
-          address 192.0.2.23
-          netmask 255.255.255.0
+      ZOAU=/path/to/zoau_dir/bin
+      export ZOAU
+      PATH=$ZOAU:$PATH
 
 - name: Insert/Update HTML surrounded by custom markers after <body> line
   zos_blockinfile:
@@ -217,7 +217,7 @@ found:
   type: int
   sample: 5
 cmd:
-  description: constructed dmod shell cmd based on the parameters
+  description: Constructed ZOAU dmod shell command based on the parameters
   returned: success
   type: str
   sample: dmodhelper -d -b -c IBM-1047 -m "BEGIN\nEND\n# {mark} ANSIBLE MANAGED BLOCK" -e "$ a\\PATH=/dir/bin:$PATH" /etc/profile
@@ -227,7 +227,7 @@ msg:
   type: str
   sample: Parameter verification failed
 stdout:
-  description: The stdout from ZOAU dmod when json.loads() fails
+  description: The stdout from ZOAU dmod when json.loads() fails to parse the result from dmod
   returned: failure
   type: str
 stderr:
@@ -236,12 +236,12 @@ stderr:
   type: str
   sample: BGYSC1311E Iconv error, cannot open converter from ISO-88955-1 to IBM-1047
 rc:
-  description: The return code from ZOAU dmod when json.loads() fails
+  description: The return code from ZOAU dmod when json.loads() fails to parse the result from dmod
   returned: failure
   type: bool
 backup_name:
     description: Name of the backup file or data set that was created.
-    returned: if backup=true
+    returned: if backup=true, always
     type: str
     sample: /path/to/file.txt.2015-02-03@04:15~
 """
@@ -437,6 +437,9 @@ def main():
 
     # analysis the file type
     ds_utils = data_set.DataSetUtils(src)
+    if not ds_utils.exists():
+        message = "{0} does NOT exist".format(str(src))
+        module.fail_json(msg=message)
     file_type = ds_utils.ds_type()
     if file_type == 'USS':
         file_type = 1
@@ -487,7 +490,7 @@ def main():
         result['changed'] = ret['changed']
         result['found'] = ret['found']
     except Exception:
-        messageDict = dict(msg="dmod return content is NOT in json format", stdout=str(stdout), stderr=str(stderr), rc=rc)
+        messageDict = dict(msg="ZOAU dmod return content is NOT in json format", stdout=str(stdout), stderr=str(stderr), rc=rc)
         if result.get('backup_name'):
             messageDict['backup_name'] = result['backup_name']
         module.fail_json(**messageDict)

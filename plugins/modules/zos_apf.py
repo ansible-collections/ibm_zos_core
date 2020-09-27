@@ -217,12 +217,11 @@ stdout:
     - state> stdout of executed the operator command (opercmd), "SETPROG" from ZOAU apfadm
     - operation> stdout of operation options
                  list> Returns a list of dictionaries of APF list entries
-                       [{'vol': 'PP0L6P', 'ds': 'DFH.V5R3M0.CICS.SDFHAUTH'},
-                       {'vol': 'PP0L6P', 'ds': 'DFH.V5R3M0.CICS.SDFJAUTH'}, ...]
+                       "[{'vol': 'PP0L6P', 'ds': 'DFH.V5R3M0.CICS.SDFHAUTH'}, {'vol': 'PP0L6P', 'ds': 'DFH.V5R3M0.CICS.SDFJAUTH'}, ...]"
                  set_dynamic>  Set to DYNAMIC
                  set_static>   Set to STATIC
                  check_format> DYNAMIC or STATIC
-  returned: always     
+  returned: always  
   type: str
 stderr:
   description: The error messages from ZOAU apfadm

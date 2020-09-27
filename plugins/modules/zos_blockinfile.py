@@ -96,12 +96,11 @@ options:
     default: END
   backup:
     description:
-      - Creates a backup file or backup data set for I(src), including the
-        timestamp information to ensure that you retrieve the original file.
-      - I(backup_name) can be used to specify a backup file name
-        if I(backup=true).
-      - The backup file name will be returned on both success and failure
-        of module execution such that data can be retrieved.
+      - Specifies whether a backup of destination should be created before
+        editing the source I(src).
+      - When set to C(true), the module creates a backup file or data set.
+      - The backup file name will be returned on either success or failure of
+        module execution such that data can be retrieved.
     required: false
     type: bool
     default: false
@@ -165,17 +164,18 @@ EXAMPLES = r'''
 
 - name: Remove a library as well as surrounding markers
   zos_blockinfile:
+    state: absent
     src: SYS1.PARMLIB(PROG00)
     marker: "/* {mark} ANSIBLE MANAGED BLOCK FOR SOME.DATA.SET */"
-    block: ""
 
 - name: Add ZOAU path to PATH in /etc/profile
+  zos_blockinfile:
     src: /etc/profile
     insertafter: "PATH="
     block: |
-      ZOAU=/path/to/zoau_dir/bin
-      export ZOAU
-      PATH=$ZOAU:$PATH
+      "ZOAU=/path/to/zoau_dir/bin"
+      "export ZOAU"
+      "PATH=$ZOAU:$PATH"
 
 - name: Insert/Update HTML surrounded by custom markers after <body> line
   zos_blockinfile:
@@ -191,7 +191,6 @@ EXAMPLES = r'''
     path: /var/www/html/index.html
     state: absent
     marker: "<!-- {mark} ANSIBLE MANAGED BLOCK -->"
-    block: ""
 
 - name: Add mappings to /etc/hosts
   zos_blockinfile:

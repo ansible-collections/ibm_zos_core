@@ -235,7 +235,7 @@ stdout:
 stderr:
   description: The error messages from ZOAU apfadm
   type: str
-  sample: BGYSC1310E ADD Error: Dataset COMMON.LINKLIB volume COMN01 is already present in APF list.
+  sample: "BGYSC1310E ADD Error: Dataset COMMON.LINKLIB volume COMN01 is already present in APF list."
 rc:
   description: The return code from ZOAU apfadm
   type: bool
@@ -410,7 +410,11 @@ def main():
                 backup_name=dict(arg_type='str', required=False, default=None),
             )
         ),
-        batch=dict(arg_type='list', elements='dict', required=False, default=None,
+        batch=dict(
+            arg_type='list',
+            elements='dict',
+            required=False,
+            default=None,
             options=dict(
                 dsname=dict(arg_type='str', required=True, aliases=['lib', 'library', 'name']),
                 volume=dict(arg_type='str', required=False),

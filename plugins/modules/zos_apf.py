@@ -212,32 +212,26 @@ EXAMPLES = r'''
 
 RETURN = r'''
 stdout:
-  description: The stdout from ZOAU apfadm. Output varies based on type of operation.
-  state:
-    description: stdout of executed the operator command (opercmd), "SETPROG" from ZOAU apfadm
-  operation:
-    description: stdout of operation options
-    list:
-      description: Returns a list of dictionaries of APF list entries
-      type: list
-      example:
-        [{'vol': 'PP0L6P', 'ds': 'DFH.V5R3M0.CICS.SDFHAUTH'},
-        {'vol': 'PP0L6P', 'ds': 'DFH.V5R3M0.CICS.SDFJAUTH'}, ...]
-    set_dynamic:
-      description: Set to DYNAMIC
-      type: str
-    set_static:
-      description: Set to STATIC
-      type: str
-    check_format:
-      description: DYNAMIC or STATIC
-      type: str
+  description:
+    - The stdout from ZOAU apfadm. Output varies based on type of operation.
+    - state> stdout of executed the operator command (opercmd), "SETPROG" from ZOAU apfadm
+    - operation> stdout of operation options
+                 list> Returns a list of dictionaries of APF list entries
+                       [{'vol': 'PP0L6P', 'ds': 'DFH.V5R3M0.CICS.SDFHAUTH'},
+                       {'vol': 'PP0L6P', 'ds': 'DFH.V5R3M0.CICS.SDFJAUTH'}, ...]
+                 set_dynamic>  Set to DYNAMIC
+                 set_static>   Set to STATIC
+                 check_format> DYNAMIC or STATIC
+  returned: always     
+  type: str
 stderr:
   description: The error messages from ZOAU apfadm
+  returned: always
   type: str
   sample: "BGYSC1310E ADD Error: Dataset COMMON.LINKLIB volume COMN01 is already present in APF list."
 rc:
   description: The return code from ZOAU apfadm
+  returned: always
   type: bool
 msg:
   description: The module messages
@@ -246,7 +240,7 @@ msg:
   sample: Parameter verification failed
 backup_name:
     description: Name of the backup file or data set that was created.
-    returned: if backup=true
+    returned: if backup=true, always
     type: str
 '''
 

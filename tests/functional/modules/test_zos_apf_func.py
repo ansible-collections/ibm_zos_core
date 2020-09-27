@@ -14,26 +14,26 @@ __metaclass__ = type
 
 
 TEST_INFO = dict(
-    test_add_del = dict(
+    test_add_del=dict(
         dsname="", state="present", force_dynamic=True
     ),
-    test_add_del_volume = dict(
+    test_add_del_volume=dict(
         dsname="", volume=" ", state="present", force_dynamic=True
     ),
-    test_add_del_persist = dict(
+    test_add_del_persist=dict(
         dsname="", persistent=dict(persistds="", marker="/* {mark} BLOCK */"), state="present", force_dynamic=True
     ),
-    test_add_del_volume_persist = dict(
+    test_add_del_volume_persist=dict(
         dsname="", volume=" ", persistent=dict(persistds="", marker="/* {mark} BLOCK */"), state="present", force_dynamic=True
     ),
-    test_batch_add_del = dict(
+    test_batch_add_del=dict(
         batch=[dict(dsname="", volume=" "), dict(dsname="", volume=" "), dict(dsname="", volume=" ")],
         persistent=dict(persistds="", marker="/* {mark} BLOCK */"), state="present", force_dynamic=True
     ),
-    test_operation_list = dict(
+    test_operation_list=dict(
         operation="list"
     ),
-    test_operation_list_with_filter = dict(
+    test_operation_list_with_filter=dict(
         operation="list", dsname=""
     )
 )
@@ -84,7 +84,7 @@ def persistds_delele(hosts, ds):
 
 
 def set_test_env(hosts, test_info):
-    #results = hosts.all.zos_data_set(name=ds, type="SEQ")
+    # results = hosts.all.zos_data_set(name=ds, type="SEQ")
     cmdStr = "mvstmp APFTEST"
     ds = run_shell_cmd(hosts, cmdStr)[:25]
     cmdStr = "dtouch -tseq {0}".format(ds)
@@ -99,11 +99,11 @@ def set_test_env(hosts, test_info):
 
 
 def clean_test_env(hosts, test_info):
-    #hosts.all.zos_data_set(name=test_info['dsname'], state='absent')
+    # hosts.all.zos_data_set(name=test_info['dsname'], state='absent')
     cmdStr = "drm {0}".format(test_info['dsname'])
     run_shell_cmd(hosts, cmdStr)
     if test_info.get('persistent'):
-        #hosts.all.zos_data_set(name=test_info['persistent']['persistds'], state='absent')
+        # hosts.all.zos_data_set(name=test_info['persistent']['persistds'], state='absent')
         persistds_delele(hosts, test_info['persistent']['persistds'])
 
 
@@ -253,6 +253,7 @@ def test_operation_list_with_filter(ansible_zos_module):
 #
 # Negative tests
 #
+
 
 def test_add_already_present(ansible_zos_module):
     hosts = ansible_zos_module

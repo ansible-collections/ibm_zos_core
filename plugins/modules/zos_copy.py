@@ -737,9 +737,7 @@ class CopyHandler(object):
         Returns:
             {int} -- The return code of executing the allocation command
         """
-        du = data_set.DataSetUtils(model)
-        blksize = du.blksize()
-        dsntype = du.ds_type()
+        blksize = data_set.DataSetUtils(model).blksize()
 
         alloc_cmd = """  ALLOC DS('{0}') -
     LIKE('{1}') -
@@ -747,7 +745,7 @@ class CopyHandler(object):
             ds_name,
             model,
             "BLKSIZE({0}) ".format(blksize) if blksize else "",
-            "VOLUME({0})".format(vol.upper() if vol else "")
+            "VOLUME({0})".format(vol.upper()) if vol else ""
         )
 
         rc, out, err = ikjeft01(alloc_cmd, authorized=True)
@@ -821,15 +819,18 @@ class CopyHandler(object):
             size {str} -- The size to allocate
             alloc_vol {str} -- The volume where the data set should be allocated
         """
-        response = datasets._create(
+        parms = dict(
             name=name,
             type="SEQ",
             primary_space=size,
             record_format="FB",
             record_length=1028,
-            block_size=6144,
-            volumes=alloc_vol
+            block_size=6144
         )
+        if alloc_vol:
+            parms['volumes'] = alloc_vol
+
+        response = datasets._create(**parms)
         if response.rc != 0:
             self.fail_json(
                 msg="Unable to allocate destination data set {0}".format(name),
@@ -1305,14 +1306,17 @@ class PDSECopyHandler(CopyHandler):
                     alloc_size = 5242880  # Use the default 5 Megabytes
 
             alloc_size = "{0}K".format(str(int(math.ceil(alloc_size / 1024))))
-            response = datasets._create(
+            parms = dict(
                 name=ds_name,
                 type="PDSE",
                 primary_space=alloc_size,
                 record_format=recfm,
-                record_length=lrecl,
-                volumes=alloc_vol
+                record_length=lrecl
             )
+            if alloc_vol:
+                parms['volumes'] = alloc_vol
+
+            response = datasets._create(**parms)
             rc = response.rc
         return rc
 
@@ -1613,7 +1617,7 @@ def run_module(module, arg_def):
                 is_pds
                 or copy_member
                 or (src_ds_type in MVS_PARTITIONED and (not src_member) and is_mvs_dest)
-                or (os.path.isdir(src) and is_mvs_dest)
+                or (src and os.path.isdir(src) and is_mvs_dest)
             ):
                 dest_ds_type = "PDSE"
                 pch = PDSECopyHandler(module, dest_exists, backup_name=backup_name)

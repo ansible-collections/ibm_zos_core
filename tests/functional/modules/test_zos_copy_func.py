@@ -1556,7 +1556,7 @@ def test_ensure_tmp_cleanup(ansible_zos_module):
             cmd="ls -l", executable=SHELL_EXECUTABLE, chdir="/tmp"
         )
         file_count_post = len(list(stat_dir.contacted.values())[0].get("stdout_lines"))
-        assert file_count_post == file_count_pre + 1
+        assert file_count_post <= file_count_pre
 
     finally:
         hosts.all.file(path=dest_path, state="absent")
@@ -1867,6 +1867,7 @@ def test_backup_vsam_user_backup_path(ansible_zos_module):
         copy_res = hosts.all.zos_copy(
             src=src, dest=dest, backup=True, remote_src=True, backup_name=backup_name
         )
+        print(vars(copy_res))
 
         for result in copy_res.contacted.values():
             assert result.get("msg") is None

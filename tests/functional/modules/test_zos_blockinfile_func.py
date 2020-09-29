@@ -1213,6 +1213,7 @@ def test_ds_block_insertafter_regex_wrongmarker(ansible_zos_module):
     test_info["path"] = "BIFTEST.NOTEXIST.SEQ"
     test_info["marker"] = '# MANAGED BLOCK'
     results = hosts.all.zos_blockinfile(**test_info)
+    del test_info["marker"]
     for result in results.contacted.values():
         assert "marker should have {mark}" in result.get("msg")
 

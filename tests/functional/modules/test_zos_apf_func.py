@@ -139,6 +139,7 @@ def test_add_del_volume(ansible_zos_module):
     clean_test_env(hosts, test_info)
 
 
+"""
 def test_add_del_persist(ansible_zos_module):
     hosts = ansible_zos_module
     test_info = TEST_INFO['test_add_del_persist']
@@ -162,6 +163,7 @@ def test_add_del_persist(ansible_zos_module):
     actual = run_shell_cmd(hosts, cmdStr).replace(" ", "")
     assert actual == del_exptd
     clean_test_env(hosts, test_info)
+"""
 
 
 def test_add_del_volume_persist(ansible_zos_module):

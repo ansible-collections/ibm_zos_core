@@ -1342,10 +1342,10 @@ def backup_data(ds_name, ds_type, backup_name):
         return backup.mvs_file_backup(ds_name, backup_name)
     except Exception as err:
         module.fail_json(
-            msg="Unable to back up destination {0}. Make sure that it exists".format(
-                ds_name
-            ),
-            stderr=str(err),
+            msg=str(err.msg),
+            stdout=err.stdout,
+            stderr=err.stderr,
+            rc=err.rc
         )
 
 

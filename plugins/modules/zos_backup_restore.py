@@ -705,12 +705,14 @@ def backup_name_type(contents, dependencies):
     if contents is None:
         return None
     if not match(
-        r"^(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}(?:\([A-Z$#@]{1}[A-Z0-9$#@]{0,7}\)){0,1}$",
+        r"^(?:(?:[A-Za-z$#@\?\*]{1}[A-Za-z0-9$#@\-\?\*]{0,7})(?:[.]{1})){1,21}[A-Za-z$#@\*\?]{1}[A-Za-z0-9$#@\-\*\?]{0,7}$",
         str(contents),
         IGNORECASE,
     ):
         if not path.isabs(str(contents)):
-            raise ValueError('Invalid argument "{0}" for type "data_set" or "path".')
+            raise ValueError(
+                'Invalid argument "{0}" for type "data_set" or "path".'.format(contents)
+            )
     return str(contents)
 
 

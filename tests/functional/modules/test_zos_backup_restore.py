@@ -11,7 +11,7 @@ import pytest
 from re import search, IGNORECASE, MULTILINE
 
 
-VOLUME = "scr03"
+VOLUME = "222222"
 VOLUME2 = "222222"
 VOLUME_TO_BACKUP = VOLUME
 BIG_VOLUME = "DSHRL1"

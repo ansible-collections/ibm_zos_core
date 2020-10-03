@@ -1987,3 +1987,30 @@ def test_copy_multiple_data_set_members(ansible_zos_module):
     finally:
         hosts.all.zos_data_set(name=dest, state="absent")
         hosts.all.zos_data_set(name=src, state="absent")
+
+
+def test_copy_pds_to_volume(ansible_zos_module):
+    hosts = ansible_zos_module
+    remote_pds = "USER.TEST.FUNCTEST.PDS"
+    dest_pds = "USER.TEST.FUNCTEST.DEST"
+    try:
+        hosts.all.zos_data_set(name=remote_pds, type='pds', state='present')
+        copy_res = hosts.all.zos_copy(
+            src=remote_pds,
+            dest=dest_pds,
+            remote_src=True,
+            volume='000000'
+        )
+        for cp in copy_res.contacted.values():
+            assert cp.get('msg') is None
+
+        check_vol = hosts.all.shell(
+            cmd="tsocmd \"LISTDS '{0}'\"".format(dest_pds),
+            executable=SHELL_EXECUTABLE,
+        )
+        for cv in check_vol.contacted.values():
+            assert cv.get('rc') == 0
+            assert "000000" in cv.get('stdout')
+    finally:
+        hosts.all.zos_data_set(name=remote_pds, state='absent')
+        hosts.all.zos_data_set(name=dest_pds, state='absent')

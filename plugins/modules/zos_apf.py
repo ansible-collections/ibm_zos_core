@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020
+# Copyright (c) IBM Corporation 2020
 # Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
 from __future__ import absolute_import, division, print_function
@@ -16,22 +16,22 @@ DOCUMENTATION = r'''
 module: zos_apf
 author:
   - "Behnam (@balkajbaf)"
-short_description: Add/remove libraries to Authorized Program Facility (APF)
+short_description: Adds or removes libraries to or from  Authorized Program Facility (APF)
 description:
-  - Add/remove libraries to Authorized Program Facility (APF)
-  - Make APF statement persistent entries to data set or data set member
-  - Change APF list format to "DYNAMIC" or "STATIC"
-  - Get current APF list entries
+  - Adds or removes libraries to or from Authorized Program Facility (APF)
+  - Manages APF statement persistent entries to data set or data set member
+  - Changes APF list format to "DYNAMIC" or "STATIC"
+  - Gets current APF list entries
 options:
   dsname:
     description:
-      - The name of z/OS data set (library) to be added/removed.
+      - Name of the z/OS data set (library) to be added or removed.
     required: False
     type: str
     aliases: [ name, lib, library ]
   state:
     description:
-      - Ensure the library is added C(state=present) or removed C(state=absent)
+      - Ensures that the library is added C(state=present) or removed C(state=absent)
       - APF list format has to be "DYNAMIC"
     required: False
     type: str
@@ -41,18 +41,18 @@ options:
     default: present
   force_dynamic:
     description:
-      - Ensure APF list format is "DYNAMIC" before add/remove libraries
+      - Ensures that the APF list format is "DYNAMIC" before adding or removing libraries
     required: False
     type: bool
     default: False
   volume:
     description:
       - The volume identifier for the volume containing the library specified on
-        the C(dsname) parameter, value should be one of the following,
+        the C(dsname) parameter, value should be one of the following:
         1. The volume serial number
-        2. Six asterisks (******), indicating that the system is to use the
+        2. Six asterisks (******), indicating that the system must use the
         volume serial number of the current system residence (SYSRES) volume.
-        3. *MCAT*, indicating that the system is to use the volume serial number
+        3. *MCAT*, indicating that the system must use the volume serial number
         of the volume containing the master catalog.
       - If C(volume) is not specified, C(dsname) has to be cataloged.
     required: False
@@ -68,10 +68,10 @@ options:
     default: False
   operation:
     description:
-      - Change AFP list format to "DYNAMIC" or "STATIC"
-      - Display AFP list current format
+      - Change APF list format to "DYNAMIC" or "STATIC"
+      - Display APF list current format
       - Display APF list entries
-      - If C(operation!=None), add/remove operation will be ignored.
+      - If C(operation!=None), add or remove operation will be ignored.
       - If C(operation=list), C(dsname), C(volume) and C(sms) will be used
         as filters
     required: False
@@ -83,14 +83,14 @@ options:
       - list
   persistent:
     description:
-      - Add/remove persistent entries to/from a dataset
-      - C(dsname) will not be persisted/removed if C(persistent=None)
+      - Add or remove persistent entries to or from a data set
+      - C(dsname) will not be persisted or removed if C(persistent=None)
     required: False
     type: dict
     suboptions:
       persistds:
         description:
-          - The dataset be used to Persist or Remove the APF entry
+          - The data set to be used to persist or remove the APF entry
         required: True
         type: str
       marker:
@@ -107,7 +107,7 @@ options:
           - Creates a backup file or backup data set for I(src), including the
             timestamp information to ensure that you retrieve the original file.
           - I(backup_name) can be used to specify a backup file name if I(backup=true).
-          - The backup file name will be return on either success or failure
+          - The backup file name will be returned on either success or failure
             of module execution such that data can be retrieved.
         required: false
         type: bool
@@ -117,9 +117,9 @@ options:
           - Specify the USS file name or data set name for the destination backup.
           - If the source I(src) is a USS file or path, the backup_name name must be a
             file or path name, and the USS file or path must be an absolute path name.
-          - If the source is an MVS data set, the backup_name name must be
+          - If the source is an MVS data set, the backup_name must be
             an MVS data set name.
-          - If the backup_name is not provided, the default backup_name name
+          - If the backup_name is not provided, the default backup_name 
             will be used. If the source is a USS file or path, the name of
             the backup file will be the source file or path name appended
             with a timestamp,
@@ -131,29 +131,29 @@ options:
         type: str
   batch:
     description:
-      - A list of dictionaries for adding/removing libraries
-      - This is mutually exclusive with C(dsname), C(volume), C(sms)
-      - Can be used with C(persistent)
+      - A list of dictionaries for adding or removing libraries.
+      - This is mutually exclusive with C(dsname), C(volume), C(sms) and can be
+        used with C(persistent)
     type: list
     elements: dict
     required: false
     suboptions:
       dsname:
         description:
-          - The name of z/OS data set (library) to be added/removed.
+          - Name of the z/OS data set (library) to be added or removed.
         type: str
         required: True
         aliases: [ name, lib, library ]
       volume:
         description:
           - The volume identifier for the volume containing the library
-            specified on the C(dsname) parameter, value should be one of the
-            following,
-            1. The volume serial number
+            specified on the C(dsname) parameter; value should be one of the
+            following:
+            1. The volume serial number.
             2. Six asterisks (******), indicating that the system is to use the
             volume serial number of the current system residence (SYSRES)
             volume.
-            3. *MCAT*, indicating that the system is to use the volume serial
+            3. *MCAT*, indicating that the system must use the volume serial
             number of the volume containing the master catalog.
           - If C(volume) is not specified, C(dsname) has to be cataloged.
         required: False
@@ -171,24 +171,24 @@ options:
 
 
 EXAMPLES = r'''
-- name: Add a library to APF list
+- name: Add a library to the APF list
   zos_apf:
     dsname: SOME.SEQUENTIAL.DATASET
     volume: T12345
-- name: Add a library (cataloged) to APF list and persistence
+- name: Add a library (cataloged) to the APF list and persistence
   zos_apf:
     dsname: SOME.SEQUENTIAL.DATASET
     force_dynamic: True
     persistent:
       persistds: SOME.PARTITIONED.DATASET(MEM)
-- name: Remove a library from APF list and persistence
+- name: Remove a library from the APF list and persistence
   zos_apf:
     state: absent
     dsname: SOME.SEQUENTIAL.DATASET
     volume: T12345
     persistent:
       persistds: SOME.PARTITIONED.DATASET(MEM)
-- name: Use batch to add a set of libraries to APF list and persistence and custom marker
+- name: Use batch to add a set of libraries to the APF list and persistence and custom marker
   zos_apf:
     persistent:
       persistds: SOME.PARTITIONED.DATASET(MEM)
@@ -199,7 +199,7 @@ EXAMPLES = r'''
         sms: True
       - dsname: SOME.SEQ.DS3
         volume: T12345
-- name: Print APF list matching dsname pattern or volume serial number
+- name: Print APF list matching the dsname pattern or volume serial number
   zos_apf:
     operation: list
     dsname: SOME.SEQ.*

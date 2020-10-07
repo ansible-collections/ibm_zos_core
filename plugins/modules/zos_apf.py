@@ -119,7 +119,7 @@ options:
             file or path name, and the USS file or path must be an absolute path name.
           - If the source is an MVS data set, the backup_name must be
             an MVS data set name.
-          - If the backup_name is not provided, the default backup_name 
+          - If the backup_name is not provided, the default backup_name
             will be used. If the source is a USS file or path, the name of
             the backup file will be the source file or path name appended
             with a timestamp,

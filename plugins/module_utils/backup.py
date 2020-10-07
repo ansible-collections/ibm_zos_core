@@ -65,8 +65,14 @@ def mvs_file_backup(dsn, bk_dsn=None):
         if not bk_dsn:
             bk_dsn = extract_dsname(dsn) + "({0})".format(temp_member_name())
         bk_dsn = _validate_data_set_name(bk_dsn).upper()
-        if datasets.copy(dsn, bk_dsn) != 0:
-            raise BackupError("Unable to backup {0} to {1}".format(dsn, bk_dsn))
+        response = datasets._copy(dsn, bk_dsn)
+        if response.rc != 0:
+            raise BackupError(
+                "Unable to backup {0} to {1}".format(dsn, bk_dsn),
+                rc=response.rc,
+                stdout=response.stdout_response,
+                stderr=response.stderr_response
+            )
     else:
         if not bk_dsn:
             bk_dsn = datasets.tmp_name(datasets.hlq())
@@ -218,6 +224,9 @@ def _copy_pds(ds, bk_dsn):
 
 
 class BackupError(Exception):
-    def __init__(self, message):
+    def __init__(self, message, rc=None, stdout=None, stderr=None):
         self.msg = 'An error occurred during backup: "{0}"'.format(message)
+        self.rc = rc
+        self.stdout = stdout
+        self.stderr = stderr
         super(BackupError, self).__init__(self.msg)

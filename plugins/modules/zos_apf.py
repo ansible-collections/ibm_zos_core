@@ -47,8 +47,8 @@ options:
     default: False
   volume:
     description:
-      - The volume identifier for the volume containing the library specified on
-        the C(dsname) parameter, value should be one of the following:
+      - The identifier for the volume containing the library specified in
+        the C(dsname) parameter. Accepted values are listed below.
         1. The volume serial number
         2. Six asterisks (******), indicating that the system must use the
         volume serial number of the current system residence (SYSRES) volume.
@@ -146,9 +146,8 @@ options:
         aliases: [ name, lib, library ]
       volume:
         description:
-          - The volume identifier for the volume containing the library
-            specified on the C(dsname) parameter; value should be one of the
-            following:
+          - The identifier for the volume containing the library
+            specified in the C(dsname) parameter. Accepted values are listed below.
             1. The volume serial number.
             2. Six asterisks (******), indicating that the system is to use the
             volume serial number of the current system residence (SYSRES)

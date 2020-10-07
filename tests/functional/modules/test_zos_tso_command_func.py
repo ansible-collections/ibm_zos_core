@@ -16,36 +16,6 @@ import ansible.errors
 import ansible.utils
 import pytest
 
-# For the authorized command, you can get the list form Z/os system using command "D IKJTSO,AUTHCMD" in sdsf.
-# For example:
-# IKJ738I TSO/E PARMLIB SETTINGS : 737
-#   SYS1.PARMLIB(IKJTSO00) on volume P2SS01
-#   Activated by **IPL** on 2020-01-31 at 07:43:51 from system MVXX
-#   Applies to :    MVXX
-#           CURRENT PARMLIB SETTINGS FOR AUTHCMD:
-#           CKGRACF   C4RSTAT   C4RCATMN  IFASMFDP  ADYOPCMD  DITTO
-#           EYU9XENF  DITTOA    PING      RECEIVE   SLDSERVE  TRANSMIT
-#           XMIT      LISTD     LISTDS    LISTB     LISTBC    SE
-#           SEND      RACONVRT  RACDCERT  RACMAP    RACTRACE  RACTR
-#           RMM       SYNC      QCBXA     QCBXX     Q         QCBTRACE
-#           TESTAUTH  TESTA     CONSPROF  PARMLIB   SHCDS     WDB
-#           WDBAUTH   AD        ADDSD     ADIR      ADDDIR    AF
-#           ADDFILE   AG        ADDGROUP  AU        ADDUSER   ALG
-#           ALTGROUP  ALD       ALTDSD    ALF       ALTFILE   ALTDIR
-#           ALU       ALTUSER   BLKUPD    CO        CONNECT   DD
-#           DELDSD    DDIR      DELDIR    DF        DELFILE   DG
-#           DELGROUP  DU        DELUSER   LD        LISTDSD   LDIR
-#           LDIRECT   LF        LFILE     LG        LISTGRP   LU
-#           LISTUSER  RALT      RALTER    RDEF      RDEFINE   RDEL
-#           RDELETE   RE        REMOVE    RL        RLIST     RVARY
-#           PW        PASSWORD  PHRASE    PE        PERMIT    PDIR
-#           PERMDIR   PF        PERMFILE  SETR      SETROPTS  SR
-#           SEARCH    SRDIR     SRF       SRFILE    AARSERVE  CONCATD
-#           CONCATF   CONCATMC  CONCMAIN  PA        PERMALOC  PRIV
-#           ERWMAUTH  KERNCP    MVPXDISP  TRACERTE  KILL      DEFINE
-#           ATGACMD   MVS5BEG   CMDISSUE  ATGOMATC  IOEAGFMT  DIAGNOSE
-#           CSFDPKDS  NEWPWPH   RACLINK   IRRDPI00
-
 
 def test_zos_tso_command_run_help(ansible_zos_module):
     hosts = ansible_zos_module
@@ -85,7 +55,6 @@ def test_zos_tso_command_long_unauth_command_116_chars(ansible_zos_module):
 
 
 # The positive path test
-# Run an authorized tso command with auth=true
 def test_zos_tso_command_auth_command_listds(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_tso_command(commands=["LISTDS 'imstestl.ims1.temp.ps'"])
@@ -95,8 +64,7 @@ def test_zos_tso_command_auth_command_listds(ansible_zos_module):
 
 
 # The positive path test
-# Run an authorized tso command with auth=true
-# also tests that single command works as well
+# tests that single command works as well
 def test_zos_tso_single_command_auth_command_listds(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_tso_command(commands="LISTDS 'imstestl.ims1.temp.ps'")
@@ -106,8 +74,7 @@ def test_zos_tso_single_command_auth_command_listds(ansible_zos_module):
 
 
 # The positive path test
-# Run an authorized tso command with auth=true
-# also tests that single command works as well with alias
+# tests that single command works as well with alias
 def test_zos_tso_command_auth_command_listds_using_alias(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_tso_command(command=["LISTDS 'imstestl.ims1.temp.ps'"])
@@ -117,8 +84,7 @@ def test_zos_tso_command_auth_command_listds_using_alias(ansible_zos_module):
 
 
 # The positive path test
-# Run an authorized tso command with auth=true
-# also tests that alias "command" works
+# tests that alias "command" works
 def test_zos_tso_single_command_auth_command_listds_using_alias(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_tso_command(command="LISTDS 'imstestl.ims1.temp.ps'")
@@ -128,7 +94,6 @@ def test_zos_tso_single_command_auth_command_listds_using_alias(ansible_zos_modu
 
 
 # The positive path test
-# Run an unauthorized tso command with auth=False
 def test_zos_tso_command_unauth_command_listcat(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_tso_command(
@@ -140,7 +105,6 @@ def test_zos_tso_command_unauth_command_listcat(ansible_zos_module):
 
 
 # The positive path test
-# Delete dataset is both auth or unauth command
 def test_zos_tso_command_both_unauth_and_auth_command(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_tso_command(commands=["delete 'imstestl.ims1.temp.ps'"])
@@ -150,7 +114,7 @@ def test_zos_tso_command_both_unauth_and_auth_command(ansible_zos_module):
 
 
 # The failure path test
-# Delete dataset is both auth or unauth command, the dataset has be deleted.
+# the dataset has be deleted.
 def test_zos_tso_command_valid_command_failed_as_has_been_deleted(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_tso_command(commands=["delete 'imstestl.ims1.temp.ps'"])
@@ -174,7 +138,7 @@ def test_zos_tso_command_invalid_command(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_tso_command(commands=["xxxxxx"])
     for result in results.contacted.values():
-        assert result.get("output")[0].get("rc") == -3
+        assert result.get("output")[0].get("rc") == 255
         assert result.get("changed") is False
 
 

@@ -1556,7 +1556,7 @@ def test_ensure_tmp_cleanup(ansible_zos_module):
             cmd="ls -l", executable=SHELL_EXECUTABLE, chdir="/tmp"
         )
         file_count_post = len(list(stat_dir.contacted.values())[0].get("stdout_lines"))
-        assert file_count_post == file_count_pre + 1
+        assert file_count_post <= file_count_pre
 
     finally:
         hosts.all.file(path=dest_path, state="absent")
@@ -1867,6 +1867,7 @@ def test_backup_vsam_user_backup_path(ansible_zos_module):
         copy_res = hosts.all.zos_copy(
             src=src, dest=dest, backup=True, remote_src=True, backup_name=backup_name
         )
+        print(vars(copy_res))
 
         for result in copy_res.contacted.values():
             assert result.get("msg") is None
@@ -1951,3 +1952,65 @@ def test_sftp_negative_port_specification_fails(ansible_zos_module):
             assert result.get("msg") is not None
     finally:
         hosts.all.file(path=dest_path, state="absent")
+
+
+def test_copy_multiple_data_set_members(ansible_zos_module):
+    hosts = ansible_zos_module
+    src = "USER.FUNCTEST.SRC.PDS"
+    dest = "USER.FUNCTEST.DEST.PDS"
+    member_list = ["MEMBER1", "ABCXYZ", "ABCASD"]
+    ds_list = ["{0}({1})".format(src, i) for i in member_list]
+    try:
+        hosts.all.zos_data_set(name=src, type="pds")
+        hosts.all.zos_data_set(name=dest, type="pds")
+        hosts.all.zos_data_set(
+            batch=[dict(src=i, type="MEMBER", replace="yes") for i in ds_list]
+        )
+
+        for i in ds_list:
+            hosts.all.zos_copy(content=DUMMY_DATA, dest=i)
+
+        copy_res = hosts.all.zos_copy(src=src + "(ABC*)", dest=dest, remote_src=True)
+        for res in copy_res.contacted.values():
+            assert res.get("msg") is None
+
+        verify_copy = hosts.all.shell(
+            cmd="mls {0}".format(dest), executable=SHELL_EXECUTABLE
+        )
+
+        for v_cp in verify_copy.contacted.values():
+            assert v_cp.get("rc") == 0
+            stdout = v_cp.get("stdout")
+            assert stdout is not None
+            assert(len(stdout.splitlines())) == 2
+
+    finally:
+        hosts.all.zos_data_set(name=dest, state="absent")
+        hosts.all.zos_data_set(name=src, state="absent")
+
+
+def test_copy_pds_to_volume(ansible_zos_module):
+    hosts = ansible_zos_module
+    remote_pds = "USER.TEST.FUNCTEST.PDS"
+    dest_pds = "USER.TEST.FUNCTEST.DEST"
+    try:
+        hosts.all.zos_data_set(name=remote_pds, type='pds', state='present')
+        copy_res = hosts.all.zos_copy(
+            src=remote_pds,
+            dest=dest_pds,
+            remote_src=True,
+            volume='000000'
+        )
+        for cp in copy_res.contacted.values():
+            assert cp.get('msg') is None
+
+        check_vol = hosts.all.shell(
+            cmd="tsocmd \"LISTDS '{0}'\"".format(dest_pds),
+            executable=SHELL_EXECUTABLE,
+        )
+        for cv in check_vol.contacted.values():
+            assert cv.get('rc') == 0
+            assert "000000" in cv.get('stdout')
+    finally:
+        hosts.all.zos_data_set(name=remote_pds, state='absent')
+        hosts.all.zos_data_set(name=dest_pds, state='absent')

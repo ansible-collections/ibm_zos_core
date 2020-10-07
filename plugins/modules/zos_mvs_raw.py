@@ -10,7 +10,7 @@ __metaclass__ = type
 
 ANSIBLE_METADATA = {
     "metadata_version": "1.1",
-    "status": ["preview"],
+    "status": ["stableinterface"],
     "supported_by": "community",
 }
 
@@ -1893,8 +1893,12 @@ def parse_and_validate_args(params):
         disposition_normal=dict(type="str", choices=["keep", "delete"]),
         disposition_abnormal=dict(type="str", choices=["keep", "delete"]),
         mode=dict(type="int"),
-        status_group=dict(type=status_group,),
-        access_group=dict(type=access_group,),
+        status_group=dict(
+            type=status_group,
+        ),
+        access_group=dict(
+            type=access_group,
+        ),
         file_data_type=dict(
             type="str", choices=["binary", "text", "record"], default="binary"
         ),
@@ -2174,7 +2178,11 @@ def volumes(contents, dependencies):
     if not isinstance(contents, list):
         contents = [contents]
     for vol in contents:
-        if not re.fullmatch(r"^[A-Z0-9]{1,6}$", str(vol), re.IGNORECASE,):
+        if not re.fullmatch(
+            r"^[A-Z0-9]{1,6}$",
+            str(vol),
+            re.IGNORECASE,
+        ):
             raise ValueError('Invalid argument "{0}" for type "volumes".'.format(vol))
         vol = vol.upper()
     return contents

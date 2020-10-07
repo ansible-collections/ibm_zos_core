@@ -16,12 +16,12 @@ DOCUMENTATION = r'''
 module: zos_apf
 author:
   - "Behnam (@balkajbaf)"
-short_description: Add/remove libraries to Authorized Program Facility (APF)
+short_description: This module adds or removes libraries to Authorized Program Facility (APF)
 description:
-  - Add/remove libraries to Authorized Program Facility (APF)
-  - Manage APF statement persistent entries to data set or data set member
-  - Change APF list format to "DYNAMIC" or "STATIC"
-  - Get current APF list entries
+  - Adds or removes libraries to Authorized Program Facility (APF).
+  - Manages APF statement persistent entries to a data set or data set member.
+  - Changes APF list format to "DYNAMIC" or "STATIC".
+  - Gets the current APF list entries.
 options:
   library:
     description:
@@ -31,8 +31,8 @@ options:
     aliases: [ name, lib ]
   state:
     description:
-      - Ensure the library is added C(state=present) or removed C(state=absent)
-      - APF list format has to be "DYNAMIC"
+      - Ensure that the library is added C(state=present) or removed C(state=absent).
+      - The APF list format has to be "DYNAMIC".
     required: False
     type: str
     choices:
@@ -41,26 +41,26 @@ options:
     default: present
   force_dynamic:
     description:
-      - Will force the APF list format to "DYNAMIC" before adding or removing libraries
-      - If the format is "STATIC", the format will be changed to "DYNAMIC"
+      - Will force the APF list format to "DYNAMIC" before adding or removing libraries.
+      - If the format is "STATIC", the format will be changed to "DYNAMIC".
     required: False
     type: bool
     default: False
   volume:
     description:
-      - The volume identifier for the volume containing the library specified on
-        the C(library) parameter, value should be one of the following,
-        1. The volume serial number
-        2. Six asterisks (******), indicating that the system is to use the
+      - The identifier for the volume containing the library specified in
+        the C(library) parameter. The values must be one the following.
+        1. The volume serial number.
+        2. Six asterisks (******), indicating that the system must use the
         volume serial number of the current system residence (SYSRES) volume.
-        3. *MCAT*, indicating that the system is to use the volume serial number
+        3. *MCAT*, indicating that the system must use the volume serial number
         of the volume containing the master catalog.
       - If C(volume) is not specified, C(library) has to be cataloged.
     required: False
     type: str
   sms:
     description:
-      - Indicates that the library specified on the C(library) parameter is
+      - Indicates that the library specified in the C(library) parameter is
         managed by the storage management subsystem (SMS), and therefore no
         volume is associated with the library.
       - If C(sms=True), C(volume) value will be ignored.
@@ -73,7 +73,7 @@ options:
       - Display APF list current format C(operation=check_format)
       - Display APF list entries when C(operation=list)
         C(library), C(volume) and C(sms) will be used as filters.
-      - If C(operation) is not set, add/remove operation will be ignored.
+      - If C(operation) is not set, add or remove operation will be ignored.
     required: False
     type: str
     choices:
@@ -83,14 +83,14 @@ options:
       - list
   persistent:
     description:
-      - Add/remove persistent entries to/from I(data_set_name)
-      - C(library) will not be persisted/removed if C(persistent=None)
+      - Add/remove persistent entries to or from I(data_set_name)
+      - C(library) will not be persisted or removed if C(persistent=None)
     required: False
     type: dict
     suboptions:
       data_set_name:
         description:
-          - The data set name used for persisting or removing a C(library) from the APF list
+          - The data set name used for persisting or removing a C(library) from the APF list.
         required: True
         type: str
       marker:
@@ -119,13 +119,13 @@ options:
           - Specify the USS file name or data set name for the destination backup.
           - If the source I(data_set_name) is a USS file or path, the backup_name name must be a
             file or path name, and the USS file or path must be an absolute path name.
-          - If the source is an MVS data set, the backup_name name must be
+          - If the source is an MVS data set, the backup_name must be
             an MVS data set name.
-          - If the backup_name is not provided, the default backup_name name
+          - If the backup_name is not provided, the default backup_name
             will be used. If the source is a USS file or path, the name of
             the backup file will be the source file or path name appended
-            with a timestamp,
-            e.g. C(/path/file_name.2020-04-23-08-32-29-bak.tar).
+            with a timestamp.
+            For example, C(/path/file_name.2020-04-23-08-32-29-bak.tar).
           - If the source is an MVS data set, it will be a data set with a
             random name generated by calling the ZOAU API. The MVS backup
             data set recovery can be done by renaming it.
@@ -133,7 +133,7 @@ options:
         type: str
   batch:
     description:
-      - A list of dictionaries for adding/removing libraries
+      - A list of dictionaries for adding or removing libraries.
       - This is mutually exclusive with C(library), C(volume), C(sms)
       - Can be used with C(persistent)
     type: list
@@ -148,21 +148,21 @@ options:
         aliases: [ name, lib ]
       volume:
         description:
-          - The volume identifier for the volume containing the library
-            specified on the C(library) parameter, value should be one of the
-            following,
+          - The identifier for the volume containing the library
+            specified on the C(library) parameter. The values must be one of the
+            following.
             1. The volume serial number
-            2. Six asterisks (******), indicating that the system is to use the
+            2. Six asterisks (******), indicating that the system must use the
             volume serial number of the current system residence (SYSRES)
             volume.
-            3. *MCAT*, indicating that the system is to use the volume serial
+            3. *MCAT*, indicating that the system must use the volume serial
             number of the volume containing the master catalog.
           - If C(volume) is not specified, C(library) has to be cataloged.
         required: False
         type: str
       sms:
         description:
-          - Indicates that the library specified on the C(library) parameter is
+          - Indicates that the library specified in the C(library) parameter is
             managed by the storage management subsystem (SMS), and therefore no
             volume is associated with the library.
           - If true C(volume) will be ignored.
@@ -187,24 +187,24 @@ notes:
 
 
 EXAMPLES = r'''
-- name: Add a library to APF list
+- name: Add a library to the APF list
   zos_apf:
     library: SOME.SEQUENTIAL.DATASET
     volume: T12345
-- name: Add a library (cataloged) to APF list and persistence
+- name: Add a library (cataloged) to the APF list and persistence
   zos_apf:
     library: SOME.SEQUENTIAL.DATASET
     force_dynamic: True
     persistent:
       data_set_name: SOME.PARTITIONED.DATASET(MEM)
-- name: Remove a library from APF list and persistence
+- name: Remove a library from the APF list and persistence
   zos_apf:
     state: absent
     library: SOME.SEQUENTIAL.DATASET
     volume: T12345
     persistent:
       data_set_name: SOME.PARTITIONED.DATASET(MEM)
-- name: Use batch to add a set of libraries to APF list and persistence and custom marker
+- name: Use batch to add a set of libraries to the APF list and persistence and custom marker
   zos_apf:
     persistent:
       data_set_name: SOME.PARTITIONED.DATASET(MEM)
@@ -215,12 +215,12 @@ EXAMPLES = r'''
         sms: True
       - library: SOME.SEQ.DS3
         volume: T12345
-- name: Print APF list matching library pattern or volume serial number
+- name: Print the APF list matching library pattern or volume serial number
   zos_apf:
     operation: list
     library: SOME.SEQ.*
     volume: T12345
-- name: Set APF list format to STATIC
+- name: Set the APF list format to STATIC
   zos_apf:
     operation: set_static
 '''

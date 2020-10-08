@@ -17,7 +17,7 @@ ANSIBLE_METADATA = {
 DOCUMENTATION = r"""
 module: zos_backup_restore
 author: "Blake Becker (@blakeinate)"
-short_description: Backup/restore data sets and volumes
+short_description: Backup and restore data sets and volumes
 description:
   - Create and restore from backups of data sets and volumes.
   - Data set backups are performed using logical dumps, volume backups are performed
@@ -44,15 +44,15 @@ options:
             to include in the backup.
           - When I(operation=restore), specifies a list of data sets or data set patterns
             to include when restoring from a backup.
-          - "The single asterisk, C(*), is used in place of exactly one qualifier.
+          - The single asterisk, C(*), is used in place of exactly one qualifier.
             In addition, it can be used to indicate to DFSMSdss that only part of a
-            qualifier has been specified."
-          - "When used with other qualifiers, the double asterisk, C(**),
+            qualifier has been specified.
+          - When used with other qualifiers, the double asterisk, C(**),
             indicates either the nonexistence of leading, trailing,
-            or middle qualifiers, or the fact that they play no role in the selection process."
+            or middle qualifiers, or the fact that they play no role in the selection process.
           - Two asterisks are the maximum permissible in a qualifier.
             If there are two asterisks in a qualifier, they must be the first and last characters.
-          - "A question mark C(?) or percent sign C(%) matches a single character."
+          - A question mark C(?) or percent sign C(%) matches a single character.
         type: raw
         required: True
       exclude:
@@ -61,31 +61,31 @@ options:
             to exclude from the backup.
           - When I(operation=restore), specifies a list of data sets or data set patterns
             to exclude when restoring from a backup.
-          - "The single asterisk, C(*), is used in place of exactly one qualifier.
+          - The single asterisk, C(*), is used in place of exactly one qualifier.
             In addition, it can be used to indicate that only part of a
             qualifier has been specified."
-          - "When used with other qualifiers, the double asterisk, C(**),
+          - When used with other qualifiers, the double asterisk, C(**),
             indicates either the nonexistence of leading, trailing,
-            or middle qualifiers, or the fact that they play no role in the selection process."
+            or middle qualifiers, or the fact that they play no role in the selection process.
           - Two asterisks are the maximum permissible in a qualifier.
             If there are two asterisks in a qualifier, they must be the first and last characters.
-          - "A question mark C(?) or percent sign C(%) matches a single character."
+          - A question mark C(?) or percent sign C(%) matches a single character.
         type: raw
         required: False
   volume:
     description:
-      - When I(operation=backup), and I(data_sets) is provided, specifies the volume
+      - This applies to both data set restores and volume restores.
+      - When I(operation=backup) and I(data_sets) are provided, specifies the volume
         that contains the data sets to backup.
       - When I(operation=restore), specifies the volume the backup should be restored to.
       - I(volume) is required when restoring a full volume backup.
-      - This applies to both data set restores and volume restores.
     type: str
     required: False
   full_volume:
     description:
-      - When I(operation=backup) and I(full_volume=True), specifies the entire volume
+      - When I(operation=backup) and I(full_volume=True), specifies that the entire volume
         provided to I(volume) should be backed up.
-      - When I(operation=restore) and I(full_volume=True), specifies volume should be
+      - When I(operation=restore) and I(full_volume=True), specifies that the volume should be
         restored (default is dataset).
       - I(volume) must be provided when I(full_volume=True).
     type: bool
@@ -93,10 +93,10 @@ options:
     required: False
   temp_volume:
     description:
-      - Specifies a particular volume on which temporary data sets created during backup
-        and restore process should be created.
-      - When I(operation=backup) and I(backup_name) is a data set, also specifies the
-        volume the backup should be placed on.
+      - Specifies a particular volume on which the temporary data sets should be
+        created during the backup and restore process.
+      - When I(operation=backup) and I(backup_name) is a data set, specifies the
+        volume the backup should be placed in.
     type: str
     required: False
     aliases:
@@ -114,9 +114,9 @@ options:
     default: False
   overwrite:
     description:
-      - When I(operation=backup), specifies if existing data set or UNIX file matching
+      - When I(operation=backup), specifies if an existing data set or UNIX file matching
         I(backup_name) should be deleted.
-      - When I(operation=restore), specifies if module should overwrite existing data sets
+      - When I(operation=restore), specifies if the module should overwrite existing data sets
         with matching name on the target device.
     type: bool
     default: False
@@ -179,15 +179,15 @@ options:
 RETURN = r""""""
 
 EXAMPLES = r"""
-- name: "Backup all datasets matching pattern USER.** to data set MY.BACKUP"
+- name: Backup all data sets matching the pattern USER.** to data set MY.BACKUP
   zos_backup_restore:
     operation: backup
     data_sets:
       include: user.**
     backup_name: MY.BACKUP
 
-- name: "Backup all datasets matching patterns USER.** or PRIVATE.TEST.*
-    excluding datasets matching pattern USER.PRIVATE.* to data set MY.BACKUP"
+- name: Backup all data sets matching the patterns USER.** or PRIVATE.TEST.*
+    excluding data sets matching the pattern USER.PRIVATE.* to data set MY.BACKUP
   zos_backup_restore:
     operation: backup
     data_sets:
@@ -197,7 +197,7 @@ EXAMPLES = r"""
       exclude: user.private.*
     backup_name: MY.BACKUP
 
-- name: "Backup all datasets matching pattern USER.** to UNIX file /tmp/temp_backup.dzp, ignore recoverable errors."
+- name: Backup all datasets matching the pattern USER.** to UNIX file /tmp/temp_backup.dzp, ignore recoverable errors.
   zos_backup_restore:
     operation: backup
     data_sets:
@@ -205,8 +205,8 @@ EXAMPLES = r"""
     backup_name: /tmp/temp_backup.dzp
     recover: yes
 
-- name: "Backup all datasets matching pattern USER.** to data set MY.BACKUP,
-    allocate 100MB for data sets used in backup process."
+- name: Backup all datasets matching the pattern USER.** to data set MY.BACKUP,
+    allocate 100MB for data sets used in backup process.
   zos_backup_restore:
     operation: backup
     data_sets:
@@ -216,8 +216,8 @@ EXAMPLES = r"""
     space_type: M
 
 - name:
-    "Backup all datasets matching pattern USER.** that are present on volume MYVOL1 to data set MY.BACKUP,
-    allocate 100MB for data sets used in backup process."
+    Backup all datasets matching the pattern USER.** that are present on the volume MYVOL1 to data set MY.BACKUP,
+    allocate 100MB for data sets used in the backup process.
   zos_backup_restore:
     operation: backup
     data_sets:
@@ -227,8 +227,8 @@ EXAMPLES = r"""
     space: 100
     space_type: M
 
-- name: "Backup an entire volume, MYVOL1, to UNIX file /tmp/temp_backup.dzp,
-    allocate 1GB for data sets used in backup process."
+- name: Backup an entire volume, MYVOL1, to the UNIX file /tmp/temp_backup.dzp,
+    allocate 1GB for data sets used in backup process.
   zos_backup_restore:
     operation: backup
     backup_name: /tmp/temp_backup.dzp
@@ -237,15 +237,15 @@ EXAMPLES = r"""
     space: 1
     space_type: G
 
-- name: "Restore data sets from backup stored in UNIX file /tmp/temp_backup.dzp.
-    Use z/OS username as new HLQ."
+- name: Restore data sets from backup stored in the UNIX file /tmp/temp_backup.dzp.
+    Use z/OS username as new HLQ.
   zos_backup_restore:
     operation: restore
     backup_name: /tmp/temp_backup.dzp
 
-- name: "Restore data sets from backup stored in UNIX file /tmp/temp_backup.dzp.
+- name: Restore data sets from backup stored in the UNIX file /tmp/temp_backup.dzp.
     Only restore data sets whose last, or only qualifier is TEST.
-    Use MYHLQ as the new HLQ for restored data sets."
+    Use MYHLQ as the new HLQ for restored data sets.
   zos_backup_restore:
     operation: restore
     data_sets:
@@ -253,9 +253,9 @@ EXAMPLES = r"""
     backup_name: /tmp/temp_backup.dzp
     hlq: MYHLQ
 
-- name: "Restore data sets from backup stored in UNIX file /tmp/temp_backup.dzp.
+- name: Restore data sets from backup stored in the UNIX file /tmp/temp_backup.dzp.
     Only restore data sets whose last, or only qualifier is TEST.
-    Use MYHLQ as the new HLQ for restored data sets. Restore data sets to volume MYVOL2."
+    Use MYHLQ as the new HLQ for restored data sets. Restore data sets to volume MYVOL2.
   zos_backup_restore:
     operation: restore
     data_sets:
@@ -264,15 +264,15 @@ EXAMPLES = r"""
     backup_name: /tmp/temp_backup.dzp
     hlq: MYHLQ
 
-- name: "Restore data sets from backup stored in data set MY.BACKUP.
-    Use MYHLQ as the new HLQ for restored data sets."
+- name: Restore data sets from backup stored in the data set MY.BACKUP.
+    Use MYHLQ as the new HLQ for restored data sets.
   zos_backup_restore:
     operation: restore
     backup_name: MY.BACKUP
     hlq: MYHLQ
 
-- name: "Restore volume from backup stored in data set MY.BACKUP.
-    Restore to volume MYVOL2."
+- name: Restore volume from backup stored in the data set MY.BACKUP.
+    Restore to volume MYVOL2.
   zos_backup_restore:
     operation: restore
     volume: MYVOL2
@@ -281,9 +281,9 @@ EXAMPLES = r"""
     space: 1
     space_type: G
 
-- name: "Restore data sets from backup stored in UNIX file /tmp/temp_backup.dzp.
+- name: Restore data sets from backup stored in the UNIX file /tmp/temp_backup.dzp.
     Specify DB2SMS10 for the SMS storage and management classes to use for the restored
-    data sets."
+    data sets.
   zos_backup_restore:
     operation: restore
     volume: MYVOL2

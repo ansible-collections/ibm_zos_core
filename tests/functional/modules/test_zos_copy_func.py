@@ -3,8 +3,10 @@
 from __future__ import absolute_import, division, print_function
 
 import os
+from os import fdopen
 import shutil
 import tempfile
+from tempfile import mkstemp
 
 __metaclass__ = type
 
@@ -297,7 +299,10 @@ def test_copy_local_file_to_pds_member_binary(ansible_zos_module):
     hosts = ansible_zos_module
     dest = "USER.TEST.PDS.FUNCTEST"
     dest_path = "USER.TEST.PDS.FUNCTEST(DATA)"
-    src_file = "/etc/profile"
+    fd, src_file = mkstemp()
+    with open(src_file, 'w') as infile:
+        infile.write(DUMMY_DATA)
+
     try:
         hosts.all.zos_data_set(
             name=dest,
@@ -319,6 +324,8 @@ def test_copy_local_file_to_pds_member_binary(ansible_zos_module):
             assert v_cp.get("rc") == 0
     finally:
         hosts.all.zos_data_set(name=dest, state="absent")
+        os.close(fd)
+        os.remove(src_file)
 
 
 def test_copy_local_file_to_pdse_member_binary(ansible_zos_module):

@@ -5,6 +5,7 @@ from __future__ import absolute_import, division, print_function
 import os
 import shutil
 import tempfile
+from tempfile import mkstemp
 
 __metaclass__ = type
 
@@ -143,14 +144,15 @@ def test_copy_local_file_to_existing_pdse_member(ansible_zos_module):
     try:
         hosts.all.zos_data_set(
             name=dest,
-            type="pds",
+            type="pdse",
             space_primary=5,
             space_type="M",
             record_format="fba",
-            record_length=25,
+            record_length=80,
         )
         hosts.all.zos_data_set(name=dest_path, type="MEMBER", replace="yes")
         copy_result = hosts.all.zos_copy(src=src_file, dest=dest_path)
+        print(vars(copy_result))
         verify_copy = hosts.all.shell(
             cmd="cat \"//'{0}'\" > /dev/null 2>/dev/null".format(dest_path),
             executable=SHELL_EXECUTABLE,
@@ -170,11 +172,11 @@ def test_copy_local_file_to_non_existing_pdse_member(ansible_zos_module):
     try:
         hosts.all.zos_data_set(
             name=dest,
-            type="pds",
+            type="pdse",
             space_primary=5,
             space_type="M",
             record_format="fba",
-            record_length=25,
+            record_length=80,
         )
         copy_result = hosts.all.zos_copy(src=src_file, dest=dest)
         verify_copy = hosts.all.shell(
@@ -220,7 +222,7 @@ def test_copy_local_dir_to_existing_pdse(ansible_zos_module):
             space_primary=5,
             space_type="M",
             record_format="fba",
-            record_length=25,
+            record_length=80,
         )
         hosts.all.zos_data_set(name=dest + "(FILE1)", type="MEMBER", replace="yes")
         copy_result = hosts.all.zos_copy(src=source_path, dest=dest)
@@ -296,18 +298,21 @@ def test_copy_local_file_to_pds_member_binary(ansible_zos_module):
     hosts = ansible_zos_module
     dest = "USER.TEST.PDS.FUNCTEST"
     dest_path = "USER.TEST.PDS.FUNCTEST(DATA)"
-    src_file = "/etc/profile"
+    fd, src_file = mkstemp()
+    with open(src_file, 'w') as infile:
+        infile.write(DUMMY_DATA)
+
     try:
         hosts.all.zos_data_set(
             name=dest,
             type="pds",
             space_primary=5,
             space_type="M",
-            record_format="fba",
-            record_length=25,
+            record_format="fb",
+            record_length=255,
         )
-        hosts.all.zos_data_set(name=dest_path, type="MEMBER", replace="yes")
         copy_result = hosts.all.zos_copy(src=src_file, dest=dest_path, is_binary=True)
+        print(vars(copy_result))
         verify_copy = hosts.all.shell(
             cmd="cat \"//'{0}'\" > /dev/null 2>/dev/null".format(dest_path),
             executable=SHELL_EXECUTABLE,
@@ -318,23 +323,26 @@ def test_copy_local_file_to_pds_member_binary(ansible_zos_module):
             assert v_cp.get("rc") == 0
     finally:
         hosts.all.zos_data_set(name=dest, state="absent")
+        os.close(fd)
+        os.remove(src_file)
 
 
 def test_copy_local_file_to_pdse_member_binary(ansible_zos_module):
     hosts = ansible_zos_module
     dest = "USER.TEST.PDS.FUNCTEST"
     dest_path = "USER.TEST.PDS.FUNCTEST(DATA)"
-    src_file = "/etc/profile"
+    fd, src_file = mkstemp()
+    with open(src_file, 'w') as infile:
+        infile.write(DUMMY_DATA)
     try:
         hosts.all.zos_data_set(
             name=dest,
             type="pdse",
             space_primary=5,
             space_type="M",
-            record_format="fba",
-            record_length=25,
+            record_format="fb",
+            record_length=255,
         )
-        hosts.all.zos_data_set(name=dest_path, type="MEMBER", replace="yes")
         copy_result = hosts.all.zos_copy(src=src_file, dest=dest_path, is_binary=True)
         verify_copy = hosts.all.shell(
             cmd="cat \"//'{0}'\" > /dev/null 2>/dev/null".format(dest_path),
@@ -346,6 +354,8 @@ def test_copy_local_file_to_pdse_member_binary(ansible_zos_module):
             assert v_cp.get("rc") == 0
     finally:
         hosts.all.zos_data_set(name=dest, state="absent")
+        os.close(fd)
+        os.remove(src_file)
 
 
 def test_copy_uss_file_to_uss_file(ansible_zos_module):
@@ -430,7 +440,7 @@ def test_copy_uss_file_to_non_existing_pdse_member(ansible_zos_module):
             space_primary=5,
             space_type="M",
             record_format="fba",
-            record_length=25,
+            record_length=80,
         )
         copy_result = hosts.all.zos_copy(src=src_file, dest=dest_path, remote_src=True)
         verify_copy = hosts.all.shell(
@@ -457,7 +467,7 @@ def test_copy_uss_file_to_existing_pdse_member(ansible_zos_module):
             space_primary=5,
             space_type="M",
             record_format="fba",
-            record_length=25,
+            record_length=80,
         )
         hosts.all.zos_data_set(name=dest_path, type="MEMBER", replace="yes")
         copy_result = hosts.all.zos_copy(src=src_file, dest=dest_path, remote_src=True)
@@ -484,7 +494,7 @@ def test_copy_uss_dir_to_existing_pdse(ansible_zos_module):
             space_primary=5,
             space_type="M",
             record_format="fba",
-            record_length=25,
+            record_length=80,
         )
         hosts.all.file(path=src_dir, state="directory")
         for i in range(5):
@@ -1628,7 +1638,7 @@ def test_backup_pds_default_backup_path(ansible_zos_module):
             space_primary=5,
             space_type="M",
             record_format="fba",
-            record_length=25,
+            record_length=80,
         )
         hosts.all.zos_data_set(name=dest + "(FILE1)", type="MEMBER", replace="yes")
         copy_res = hosts.all.zos_copy(src=src, dest=dest, backup=True)
@@ -1667,7 +1677,7 @@ def test_backup_pdse_default_backup_path(ansible_zos_module):
             space_primary=5,
             space_type="M",
             record_format="fba",
-            record_length=25,
+            record_length=80,
         )
         hosts.all.zos_data_set(name=dest + "(FILE1)", type="MEMBER", replace="yes")
         copy_res = hosts.all.zos_copy(src=src, dest=dest, backup=True)
@@ -1790,12 +1800,13 @@ def test_backup_pds_user_backup_path(ansible_zos_module):
             space_primary=5,
             space_type="M",
             record_format="fba",
-            record_length=25,
+            record_length=80,
         )
         hosts.all.zos_data_set(name=dest + "(FILE1)", type="MEMBER", replace="yes")
         copy_res = hosts.all.zos_copy(
             src=src, dest=dest, backup=True, backup_name=backup_name
         )
+        print(vars(copy_res))
 
         for result in copy_res.contacted.values():
             assert result.get("msg") is None
@@ -1830,7 +1841,7 @@ def test_backup_pdse_user_backup_path(ansible_zos_module):
             space_primary=5,
             space_type="M",
             record_format="fba",
-            record_length=25,
+            record_length=80,
         )
         hosts.all.zos_data_set(name=dest + "(FILE1)", type="MEMBER", replace="yes")
         copy_res = hosts.all.zos_copy(

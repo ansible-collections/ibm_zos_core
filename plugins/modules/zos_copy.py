@@ -618,11 +618,13 @@ class CopyHandler(object):
             # *****************************************************************
             if rc != 0:
                 self._allocate_ps(dest, alloc_vol=alloc_vol)
-                rc = datasets.copy(new_src, dest)
-                if rc != 0:
+                response = datasets._copy(new_src, dest)
+                if response.rc != 0:
                     self.fail_json(
                         msg="Unable to copy source {0} to {1}".format(new_src, dest),
-                        rc=rc,
+                        rc=response.rc,
+                        stdout=response.stdout_response,
+                        stderr=response.stderr_response
                     )
 
     def copy_to_vsam(self, src, dest, alloc_vol):
@@ -635,10 +637,13 @@ class CopyHandler(object):
             alloc_vol {str} -- The volume where the destination should be allocated
         """
         if self.dest_exists:
-            rc = datasets.delete(dest)
-            if rc != 0:
+            response = datasets._delete(dest)
+            if response.rc != 0:
                 self.fail_json(
-                    msg="Unable to delete destination data set {0}".format(dest), rc=rc
+                    msg="Unable to delete destination data set {0}".format(dest),
+                    rc=response.rc,
+                    stdout=response.stdout_response,
+                    stderr=response.stderr_response
                 )
         self.allocate_model(dest, src, vol=alloc_vol)
 
@@ -1022,9 +1027,13 @@ class USSCopyHandler(CopyHandler):
                     pass
         try:
             if src_member or src_ds_type in MVS_SEQ:
-                if datasets._copy(src, dest).rc != 0:
+                response = datasets._copy(src, dest)
+                if response.rc != 0:
                     self.fail_json(
-                        msg="Error while copying source {0} to {1}".format(src, dest)
+                        msg="Error while copying source {0} to {1}".format(src, dest),
+                        rc=response.rc,
+                        stdout=response.stdout_response,
+                        stderr=response.stderr_response
                     )
             else:
                 copy.copy_pds2uss(src, dest, is_binary=self.is_binary)
@@ -1065,7 +1074,8 @@ class PDSECopyHandler(CopyHandler):
         src,
         temp_path,
         conv_path,
-        dest, src_ds_type,
+        dest,
+        src_ds_type,
         alloc_vol=None
     ):
         """Copy source to a PDS/PDSE or PDS/PDSE member.
@@ -1158,7 +1168,8 @@ class PDSECopyHandler(CopyHandler):
         src,
         temp_path,
         conv_path,
-        dest, copy_member=False
+        dest,
+        copy_member=False
     ):
         """Copy source to a PDS/PDSE member. The only valid sources are:
             - USS files
@@ -1186,23 +1197,21 @@ class PDSECopyHandler(CopyHandler):
 
         new_src = (temp_path or conv_path or src).replace("$", "\\$")
         dest = dest.replace("$", "\\$")
+        response = datasets._copy(new_src, dest)
 
-        if is_uss_src:
-            rc = datasets.copy(new_src, dest)
-            if rc != 0:
-                try:
-                    copy.copy_uss2mvs(new_src, dest, "PS", is_binary=self.is_binary)
-                except Exception as err:
-                    self.fail_json(msg=str(err))
-        else:
-            rc = datasets.copy(new_src, dest)
-            if rc != 0:
-                self.fail_json(
-                    msg="Unable to copy data set member {0} to {1}".format(
-                        new_src, dest
-                    ),
-                    rc=rc,
-                )
+        if response.rc != 0:
+            msg = ""
+            if is_uss_src:
+                msg = "Unable to copy file {0} to data set member {1}".format(src, dest)
+            else:
+                msg = "Unable to copy data set member {0} to {1}".format(src, dest)
+
+            self.fail_json(
+                msg=msg,
+                rc=response.rc,
+                stdout=response.stdout_response,
+                stderr=response.stderr_response
+            )
         return dest.replace("\\", "")
 
     def create_pdse(

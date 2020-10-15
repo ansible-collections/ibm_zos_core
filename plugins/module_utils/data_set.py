@@ -911,7 +911,7 @@ class DataSet(object):
             DatasetWriteError: When write to the data set fails.
         """
         module = AnsibleModuleHelper(argument_spec={})
-        temp = tempfile.NamedTemporaryFile(delete=False)
+        temp = tempfile.NamedTemporaryFile(delete=True)
         with open(temp.name, "w") as f:
             f.write(contents)
         rc, stdout, stderr = module.run_command(

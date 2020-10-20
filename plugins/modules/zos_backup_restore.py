@@ -153,7 +153,7 @@ options:
       - If I(operation=backup), specifies the amount of space to allocate for the backup.
         Please note that even when backing up to a UNIX file, backup contents will be temporarily
         held in a data set.
-      - If I(operation=backup), specifies the amount of space to allocate for data sets temporarily
+      - If I(operation=restore), specifies the amount of space to allocate for data sets temporarily
         created during the restore process.
       - The unit of space used is set using I(space_type).
       - When I(full_volume=True), I(space) defaults to C(1), otherwise default is C(25)

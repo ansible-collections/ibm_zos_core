@@ -22,7 +22,12 @@ description:
   - Create and restore from backups of data sets and volumes.
   - Data set backups are performed using logical dumps, volume backups are performed
     using physical dumps.
-  - Backups are compressed.
+  - Backups are compressed using AMATERSE.
+  - Backups are created by first dumping data sets with ADRDSSU, followed by compression with AMATERSE.
+  - Restoration is performed by first decompressing an archive with AMATERSE, then restoring with ADRDSSU.
+  - Since ADRDSSU and AMATERSE are used to create and restore backups,
+    backups can be restored to systems where Ansible and ZOAU are not available.
+    Conversely, dumps created with ADRDSSU and AMATERSE can be restored using this module.
 options:
   operation:
     description:
@@ -105,6 +110,9 @@ options:
     description:
       - When I(operation=backup), the destination data set or UNIX file to hold the backup.
       - When I(operation=restore), the destination data set or UNIX file backup to restore.
+      - There are no enforced conventions for backup names.
+        However, using a common extension like C(.dzp) for UNIX files and C(.DZP) for data sets will
+        improve readability.
     type: str
     required: True
   recover:
@@ -179,15 +187,15 @@ options:
 RETURN = r""""""
 
 EXAMPLES = r"""
-- name: Backup all data sets matching the pattern USER.** to data set MY.BACKUP
+- name: Backup all data sets matching the pattern USER.** to data set MY.BACKUP.DZP
   zos_backup_restore:
     operation: backup
     data_sets:
       include: user.**
-    backup_name: MY.BACKUP
+    backup_name: MY.BACKUP.DZP
 
 - name: Backup all data sets matching the patterns USER.** or PRIVATE.TEST.*
-    excluding data sets matching the pattern USER.PRIVATE.* to data set MY.BACKUP
+    excluding data sets matching the pattern USER.PRIVATE.* to data set MY.BACKUP.DZP
   zos_backup_restore:
     operation: backup
     data_sets:
@@ -195,7 +203,7 @@ EXAMPLES = r"""
         - user.**
         - private.test.*
       exclude: user.private.*
-    backup_name: MY.BACKUP
+    backup_name: MY.BACKUP.DZP
 
 - name: Backup all datasets matching the pattern USER.** to UNIX file /tmp/temp_backup.dzp, ignore recoverable errors.
   zos_backup_restore:
@@ -205,25 +213,25 @@ EXAMPLES = r"""
     backup_name: /tmp/temp_backup.dzp
     recover: yes
 
-- name: Backup all datasets matching the pattern USER.** to data set MY.BACKUP,
+- name: Backup all datasets matching the pattern USER.** to data set MY.BACKUP.DZP,
     allocate 100MB for data sets used in backup process.
   zos_backup_restore:
     operation: backup
     data_sets:
       include: user.**
-    backup_name: MY.BACKUP
+    backup_name: MY.BACKUP.DZP
     space: 100
     space_type: M
 
 - name:
-    Backup all datasets matching the pattern USER.** that are present on the volume MYVOL1 to data set MY.BACKUP,
+    Backup all datasets matching the pattern USER.** that are present on the volume MYVOL1 to data set MY.BACKUP.DZP,
     allocate 100MB for data sets used in the backup process.
   zos_backup_restore:
     operation: backup
     data_sets:
       include: user.**
     volume: MYVOL1
-    backup_name: MY.BACKUP
+    backup_name: MY.BACKUP.DZP
     space: 100
     space_type: M
 
@@ -264,20 +272,20 @@ EXAMPLES = r"""
     backup_name: /tmp/temp_backup.dzp
     hlq: MYHLQ
 
-- name: Restore data sets from backup stored in the data set MY.BACKUP.
+- name: Restore data sets from backup stored in the data set MY.BACKUP.DZP.
     Use MYHLQ as the new HLQ for restored data sets.
   zos_backup_restore:
     operation: restore
-    backup_name: MY.BACKUP
+    backup_name: MY.BACKUP.DZP
     hlq: MYHLQ
 
-- name: Restore volume from backup stored in the data set MY.BACKUP.
+- name: Restore volume from backup stored in the data set MY.BACKUP.DZP.
     Restore to volume MYVOL2.
   zos_backup_restore:
     operation: restore
     volume: MYVOL2
     full_volume: yes
-    backup_name: MY.BACKUP
+    backup_name: MY.BACKUP.DZP
     space: 1
     space_type: G
 

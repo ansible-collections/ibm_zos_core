@@ -144,6 +144,19 @@ def test_valid_sms_classes(zos_backup_restore_mocker, sms_class):
 
 
 @pytest.mark.parametrize(
+    "volume",
+    ["000000", "MYVOL1", "0myvol", "0@@", "42143", "M@YV#L"],
+)
+def test_valid_volumes(zos_backup_restore_mocker, volume):
+    valid_args = dict(
+        operation="backup",
+        data_sets=dict(include="user.*"),
+        volume=volume,
+    )
+    assert_args_valid(zos_backup_restore_mocker, valid_args)
+
+
+@pytest.mark.parametrize(
     "data_set_pattern",
     [
         "user.**",
@@ -214,6 +227,19 @@ def test_invalid_sms_classes(zos_backup_restore_mocker, sms_class):
         data_sets=dict(include="user.*"),
         sms_storage_class=sms_class,
         sms_management_class=sms_class,
+    )
+    assert_args_invalid(zos_backup_restore_mocker, valid_args)
+
+
+@pytest.mark.parametrize(
+    "volume",
+    ["0000000", "", "@!!&$", "HELLOWORLD"],
+)
+def test_invalid_volumes(zos_backup_restore_mocker, volume):
+    valid_args = dict(
+        operation="backup",
+        data_sets=dict(include="user.*"),
+        volume=volume,
     )
     assert_args_invalid(zos_backup_restore_mocker, valid_args)
 

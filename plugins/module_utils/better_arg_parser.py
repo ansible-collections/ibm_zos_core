@@ -488,7 +488,11 @@ class BetterArgHandler(object):
             str(contents),
             IGNORECASE,
         ):
-            if not path.isabs(str(contents)):
+            content_path = str(contents)
+            if content_path.startswith('~'):
+                content_path = path.expanduser(content_path)
+
+            if not path.isabs(content_path):
                 raise ValueError(
                     'Invalid argument "{0}" for type "data_set" or "path".'
                 )

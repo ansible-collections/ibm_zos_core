@@ -1,0 +1,18 @@
+galaxy_info:
+  author:
+    - Demetrios Dimatos <ddimatos@us.ibm.com>
+  description: Demonstrate an Ansible role on z/OS
+  company: IBM
+  license: license (Apache-2.0)
+  min_ansible_version: 2.9
+  platforms:
+    - name: GenericLinux
+      versions:
+        - all
+
+  galaxy_tags:
+    - zos
+    - sample
+    - uss
+
+dependencies: []

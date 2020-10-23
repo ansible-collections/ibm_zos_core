@@ -1,0 +1,5 @@
+---
+# vars file for role_sample
+language_1: shell
+language_2: Python
+language_3: anything you can code

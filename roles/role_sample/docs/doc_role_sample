@@ -1,0 +1,76 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
+# Copyright (c) IBM Corporation 2020
+# Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
+
+
+DOCUMENTATION = r"""
+module: doc_role_sample
+short_description: Assembles a sentence
+description:
+  - This is a fun sentence assembler, where the sentence is derived based on
+    the variable values.
+  - This sentence takes the form of
+  - Changing the variables changes the story that is told.
+author: "Demetrios Dimatos (@ddimatos)"
+options:
+  comment:
+    description:
+      - The second position in the sentence. I(comment) is inserted
+        after "Hello {{ansible_user}}, Ansible {{ comment }},"
+      - For example, I(comment=is great for automating z/OS tasks)
+    type: str
+    required: False
+    default: is great for automating z/OS tasks
+  action:
+    description:
+      - The third position in the sentence
+    type: str
+    required: False
+  language_1:
+    description:
+      - The fourth position in the sentence
+    type: str
+    required: False
+    default: Python
+  language_2:
+    description:
+      - The fifth position in the sentence
+    type: str
+    required: False
+    default: REXX
+  language_3:
+    description:
+      - The sixth position in the sentence
+    type: str
+    required: False
+    default: and many more languages
+"""
+
+EXAMPLES = r"""
+- hosts: localhost
+  gather_facts: false
+  roles:
+     - { role: ../role_sample }
+
+- hosts: localhost
+  gather_facts: false
+  roles:
+     - { role: ../role_sample, comment: 'is awesome', action: 'and fun', language_1: 'Bash', language_2: 'C', language_3: 'others too'}
+
+- hosts: localhost
+  gather_facts: false
+  vars:
+    is_true: true
+  roles:
+     - { role: ../role_sample, when: is_true }
+"""
+
+RETURN = r"""
+src:
+    description: Source file or data set being copied.
+    returned: changed
+    type: str
+    sample: /path/to/source.log
+"""

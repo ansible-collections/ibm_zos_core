@@ -359,32 +359,6 @@ state:
     returned: always
     type: str
     sample: mounted
-persistent:
-    description: Add/remove mount commands entries to or from I(data_set_name)
-    returned: always
-    type: dict
-    options:
-        data_set_name:
-            description: The data set name used for persisting a mount command.  Usually a bpxprmxx file
-            returned: always
-            type: str
-            sample: BPXPRMAA
-        backup:
-            description: Specifies whether a backup of destination should be created.
-            returned: always
-            type: bool
-            sample: True
-        backup_name:
-            description: Specify a unique data set name for the destination backup.
-            returned: always
-            type: str
-            sample: SYS1.FILESYS(PRMAABAK)
-        comments:
-            description: The text that was used in markers around the persistent/data_set_name entry.
-            returned: always
-            type: list
-            sample:
-                - [u'I did this because..']
 unmount_opts:
     description: Describes how the unmount it to be performed.
     returned: changed and if state=unmounted
@@ -671,7 +645,6 @@ def run_module(module, arg_def):
             path=path,
             fs_type=fs_type,
             state=state,
-            persistent=persistent,
             backup=backup,
             backup_name=backup_name,
             comments=comments,

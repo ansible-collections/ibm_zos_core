@@ -361,9 +361,9 @@ state:
     sample: mounted
 persistent:
     description: Add/remove mount commands entries to or from I(data_set_name)
-    required: False
+    returned: always
     type: dict
-    suboptions:
+    options:
         data_set_name:
             description: The data set name used for persisting a mount command.  Usually a bpxprmxx file
             returned: always

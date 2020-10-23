@@ -185,7 +185,7 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
             state='mounted',
             persistent=dict(
                 data_set_name='IMSTESTU.BPX.PDS(AUTO1)',
-                comments=['bpxtablecomment - try this','second line of comment'],
+                comments=['bpxtablecomment - try this', 'second line of comment'],
                 backup='Yes',
                 backup_name='IMSTESTU.BPX.PDS(AUTO1BAK)'),
         )

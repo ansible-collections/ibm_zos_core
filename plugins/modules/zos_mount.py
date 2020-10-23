@@ -30,7 +30,7 @@ options:
             - The absolute path name onto which the file system is to be mounted.
             - The I(path) is case sensitive and must be less than or equal 1023 characters long.
         type: str
-        required: False.  If I(state=mounted | state=present | state=remounted), True
+        required: False
     src:
         description:
             - The z/OS Unix System Services (USS) file system data set to be mounted.
@@ -40,23 +40,23 @@ options:
         description:
             - The type of file system that will be mounted.
             - The physical file systems data set format to perform the logical mount.
-            - The I(fs_type) is required to be uppercase, any lower case characters will be converted to uppercase. 
+            - The I(fs_type) is required to be uppercase, any lower case characters will be converted to uppercase.
         type: str
         choices:
             - HFS
             - ZFS
             - NFS
             - TFS
-        required: False.  If I(state=mounted | state=present | state=remounted), True
+        required: False
     state:
         description:
             - The desired status of the described mount (choice).
             - >
-                If I(state=mounted) and I(src) is not in use, the module will add the file system entry to 
+                If I(state=mounted) and I(src) is not in use, the module will add the file system entry to
                 I(persistent/data_set_name) parmlib member if not present. The I(path) will be updated and the module
                 will complete successfully with I(changed=True).
             - >
-                If I(state=mounted) and I(src) is in use, the module will add the file system entry to 
+                If I(state=mounted) and I(src) is in use, the module will add the file system entry to
                 I(persistent/data_set_name) parmlib member if not present. The I(path) will not be updated and the module
                 will complete successfully with I(changed=False).
             - >
@@ -115,7 +115,7 @@ options:
                         file or path name, and the USS file or path must be an absolute path name.
                     - If the source is an MVS data set, the backup_name must be
                         an MVS data set name.
-                required: false
+                required: False
                 type: str
 
     unmount_opts:
@@ -275,9 +275,9 @@ EXAMPLES = r"""
     path: /u/omvsadm/core
     fs_type: ZFS
     state: mounted
-    persistent: 
+    persistent:
       data_set_name: SYS1.PARMLIB(BPXPRMAA)
-      comments: 
+      comments:
         - For Tape2 project
 
 - name: Mount a filesystem and record change in BPXPRMAA after backing up to BPXPRMAB.
@@ -290,7 +290,7 @@ EXAMPLES = r"""
         data_set_namee: SYS1.PARMLIB(BPXPRMAA)
         backup: Yes
         backup_name: SYS1.PARMLIB(BPXPRMAB)
-        comments: 
+        comments:
           - For Tape2 project
           - More comments here
 
@@ -621,11 +621,11 @@ def run_module(module, arg_def):
     automove_list = parsed_args.get('automove_list')
 
     if not path:
-      if( 'unmounted' not in state and 'absent' not in state):
-        module.fail_json(
-            msg="path is required for mount/remount state, and was not provided.",
-            stderr=str(res_args)
-        )
+        if('unmounted' not in state and 'absent' not in state):
+            module.fail_json(
+                msg="path is required for mount/remount state, and was not provided.",
+                stderr=str(res_args)
+            )
 
     if persistent:
         data_set_name = persistent.get('data_set_name').upper()
@@ -653,12 +653,12 @@ def run_module(module, arg_def):
 
     if fs_type:
         fs_type = fs_type.upper()
-    elif( 'unmounted' not in state and 'absent' not in state):
+    elif('unmounted' not in state and 'absent' not in state):
         module.fail_json(
             msg="fs_type is required for mount/remount state, and was not provided.",
             stderr=str(res_args)
         )
-    
+
     gonna_unmount = False
     if('unmounted' in state or 'remounted' in state or 'absent' in state):
         gonna_unmount = True
@@ -774,11 +774,11 @@ def run_module(module, arg_def):
     fullumcmd = ''
 
     if gonna_mount:
-# @asifmahmud asifmahmud 4 days ago Collaborator
-#
-# I would suggest not using tsocmd as that command may not be available on some systems our customers use. 
-# Instead I would suggest using ikjeft01 to execute any TSO commands that you want to execute. 
-# There is a module util called mvs_cmd that has an API for ikjeft01.
+        # @asifmahmud asifmahmud 4 days ago Collaborator
+        #
+        # I would suggest not using tsocmd as that command may not be available on some systems our customers use.
+        # Instead I would suggest using ikjeft01 to execute any TSO commands that you want to execute.
+        # There is a module util called mvs_cmd that has an API for ikjeft01.
 
         fullcmd = "tsocmd MOUNT FILESYSTEM\\( \\'{0}\\' \\) MOUNTPOINT\\( \\'{1}\\' \\) TYPE\\( '{2}' \\)".format(
             src, path, fs_type)
@@ -826,7 +826,7 @@ def run_module(module, arg_def):
             parmtext = parmtext + '\n      SECURITY'
 
         if sysname is not None:
-            if len(sysname) > 0 and len(sysname)<9:
+            if len(sysname) > 0 and len(sysname) < 9:
                 fullcmd = "{0} SYSNAME\\({1}\\)".format(fullcmd, sysname)
                 parmtext = "{0}\n      SYSNAME({1})".format(parmtext, sysname)
 
@@ -962,7 +962,7 @@ def main():
             src=dict(type='str', required=True),
             path=dict(type='str', required=False),
             fs_type=dict(type='str', choices=[
-                        'HFS', 'ZFS', 'NFS', 'TFS'], required=False),
+                'HFS', 'ZFS', 'NFS', 'TFS'], required=False),
             state=dict(
                 type='str',
                 default='mounted',
@@ -982,7 +982,7 @@ def main():
                         required=True,
                     ),
                     comments=dict(
-                        type='list', 
+                        type='list',
                         required=False),
                     backup=dict(
                         type='bool',
@@ -1046,7 +1046,7 @@ def main():
         src=dict(arg_type='data_set', required=True),
         path=dict(arg_type='path', required=False),
         fs_type=dict(arg_type='str', choices=[
-                    "HFS", "ZFS", "NFS", "TFS"], required=False),
+            "HFS", "ZFS", "NFS", "TFS"], required=False),
         state=dict(
             arg_type='str',
             default='mounted',
@@ -1066,7 +1066,7 @@ def main():
                 backup=dict(arg_type='bool', default=False),
                 backup_name=dict(arg_type='str', required=False, default=None),
             )
-        ),            
+        ),
         unmount_opts=dict(
             arg_type='str',
             default='NORMAL',

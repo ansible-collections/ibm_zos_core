@@ -100,7 +100,7 @@ def test_basic_mount(ansible_zos_module):
             src=srcfn,
             state='absent'
         )
-        os.rmdir( '/pythonx' )
+        os.rmdir('/pythonx')
 
 
 def test_double_mount(ansible_zos_module):
@@ -131,7 +131,8 @@ def test_double_mount(ansible_zos_module):
             src=srcfn,
             state='absent'
         )
-        os.rmdir( '/pythonx' )
+        os.rmdir('/pythonx')
+
 
 def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module):
     hosts = ansible_zos_module
@@ -162,8 +163,9 @@ def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module):
             src=srcfn,
             state='absent'
         )
-        os.rmdir( '/pythonx' )
-        os.unlink( tmp_file_filename )
+        os.rmdir('/pythonx')
+        os.unlink(tmp_file_filename)
+
 
 def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
     hosts = ansible_zos_module
@@ -181,7 +183,8 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
             path='/pythonx',
             fs_type='ZFS',
             state='mounted',
-            persistent=dict(data_set_name='IMSTESTU.BPX.PDS(AUTO1)',
+            persistent=dict(
+                data_set_name='IMSTESTU.BPX.PDS(AUTO1)',
                 comments=['bpxtablecomment - try this','second line of comment'],
                 backup='Yes',
                 backup_name='IMSTESTU.BPX.PDS(AUTO1BAK)'),
@@ -211,6 +214,6 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
             src=srcfn,
             state='absent'
         )
-        os.rmdir( '/pythonx' )
-        os.unlink( tmp_file_filename )
-        os.unlink( test_tmp_file_filename )
+        os.rmdir('/pythonx')
+        os.unlink(tmp_file_filename)
+        os.unlink(test_tmp_file_filename)

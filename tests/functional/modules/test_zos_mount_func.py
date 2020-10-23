@@ -70,12 +70,12 @@ def create_sourcefile(hosts):
         hosts.all.shell(
             cmd="zfsadm define -aggregate " + thisfile + " -volumes IMSCN1 -cylinders 500 1",
             executable=SHELL_EXECUTABLE,
-            stdin=''
+            stdin='',
         )
         hosts.all.shell(
             cmd="zfsadm format -aggregate " + thisfile,
             executable=SHELL_EXECUTABLE,
-            stdin=''
+            stdin='',
         )
     return thisfile
 
@@ -87,7 +87,7 @@ def test_basic_mount(ansible_zos_module):
         mount_result = hosts.all.zos_mount(
             src=srcfn,
             path='/pythonx',
-            fstype='zFS',
+            fs_type='ZFS',
             state='mounted'
         )
         for result in mount_result.values():
@@ -96,12 +96,11 @@ def test_basic_mount(ansible_zos_module):
             assert result.get("changed") is True
             assert os.path.exists('/pythonx')
     finally:
-        mount_result = hosts.all.zos_mount(
+        hosts.all.zos_mount(
             src=srcfn,
-            path='/pythonx',
-            fstype='zFS',
             state='absent'
         )
+        os.rmdir( '/pythonx' )
 
 
 def test_double_mount(ansible_zos_module):
@@ -111,14 +110,14 @@ def test_double_mount(ansible_zos_module):
         hosts.all.zos_mount(
             src=srcfn,
             path='/pythonx',
-            fstype='zFS',
+            fs_type='ZFS',
             state='mounted'
         )
         # The duplication here is intentional... want to make sure it is seen
         mount_result = hosts.all.zos_mount(
             src=srcfn,
             path='/pythonx',
-            fstype='zFS',
+            fs_type='ZFS',
             state='mounted'
         )
         for result in mount_result.values():
@@ -128,13 +127,43 @@ def test_double_mount(ansible_zos_module):
             assert result.get("changed") is False
             assert os.path.exists('/pythonx')
     finally:
+        hosts.all.zos_mount(
+            src=srcfn,
+            state='absent'
+        )
+        os.rmdir( '/pythonx' )
+
+def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module):
+    hosts = ansible_zos_module
+    srcfn = create_sourcefile(hosts)
+    tmp_file_filename = populate_tmpfile()
+    hosts.all.shell(
+        cmd="cp " + tmp_file_filename +
+            " \"//'IMSTESTU.BPX.PDS(AUTO1)" + "'\"",
+        executable=SHELL_EXECUTABLE,
+        stdin='',
+    )
+    try:
         mount_result = hosts.all.zos_mount(
             src=srcfn,
             path='/pythonx',
-            fstype='zFS',
-            state='absent'
+            fs_type='ZFS',
+            state='mounted',
+            persistent=dict(data_set_name='IMSTESTU.BPX.PDS(AUTO1)'),
         )
 
+        for result in mount_result.values():
+            assert result.get("rc") == 0
+            assert result.get("stdout") != ""
+            assert result.get("changed") is True
+
+    finally:
+        hosts.all.zos_mount(
+            src=srcfn,
+            state='absent'
+        )
+        os.rmdir( '/pythonx' )
+        os.unlink( tmp_file_filename )
 
 def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
     hosts = ansible_zos_module
@@ -144,24 +173,25 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
         cmd="cp " + tmp_file_filename +
             " \"//'IMSTESTU.BPX.PDS(AUTO1)" + "'\"",
         executable=SHELL_EXECUTABLE,
-        stdin=''
+        stdin='',
     )
     try:
         mount_result = hosts.all.zos_mount(
             src=srcfn,
-            path='/python2',
-            fstype='zFS',
+            path='/pythonx',
+            fs_type='ZFS',
             state='mounted',
-            fstab='IMSTESTU.BPX.PDS(AUTO1)',
-            tabcomment='bpxtabcomment - try this',
-            backup='Yes',
-            backup_name='IMSTESTU.BPX.PDS(AUTO1BAK)'
+            persistent=dict(data_set_name='IMSTESTU.BPX.PDS(AUTO1)',
+                comments=['bpxtablecomment - try this','second line of comment'],
+                backup='Yes',
+                backup_name='IMSTESTU.BPX.PDS(AUTO1BAK)'),
         )
+        test_tmp_file_filename = tmp_file_filename + '-a'
         hosts.all.shell(
             cmd="cp \"//'IMSTESTU.BPX.PDS(AUTO1)" +
-            "'\" " + tmp_file_filename + "-a",
+            "'\" " + test_tmp_file_filename + "-a",
             executable=SHELL_EXECUTABLE,
-            stdin=''
+            stdin='',
         )
         with open(tmp_file_filename, 'r') as infile:
             data = infile.read()
@@ -170,16 +200,17 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
             assert result.get("rc") == 0
             assert result.get("stdout") != ""
             assert result.get("changed") is True
-            assert srcfn in data
-            assert 'bpxtabcomment - try this' in data
-            fs_du = data_set.DataSetUtils('IMSTESTU.BPX.PDS(AUTO1BAK)')
-            fs_exists = fs_du.exists()
-            assert(fs_exists)
+
+        assert srcfn in data
+        assert 'bpxtablecomment - try this' in data
+        fs_du = data_set.DataSetUtils('IMSTESTU.BPX.PDS(AUTO1BAK)')
+        fs_exists = fs_du.exists()
+        assert(fs_exists)
     finally:
-        mount_result = hosts.all.zos_mount(
+        hosts.all.zos_mount(
             src=srcfn,
-            path='/pythonx',
-            fstype='zFS',
             state='absent'
         )
-        hosts.all.file(path=tmp_file_filename, state="absent")
+        os.rmdir( '/pythonx' )
+        os.unlink( tmp_file_filename )
+        os.unlink( test_tmp_file_filename )

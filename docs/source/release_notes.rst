@@ -6,6 +6,130 @@
 Releases
 ========
 
+Version 1.3.0-beta.1
+====================
+
+What's New
+----------
+
+* Modules
+
+  * zos_apf - adds or removes libraries to Authorized Program Facility (APF).
+  * zos_backup_restore - Backup and restore data sets and volumes.
+  * zos_blockinfile - Manage block of multi-line textual data on z/OS.
+  * zos_find - Find matching data sets.
+
+* Playbooks
+
+  * Each release, we continue to expand on our use cases and have delivered
+    several new playbooks into our `playbook repository`_ that can easily be
+    tailored to any system.
+
+    * Use our new ``zos_apf`` module and GitHub to ensure that your APF
+      authorized libraries are in synch with GitHub source control.
+    * Automate program execution and ``zos_copy`` data, ``zos_find`` the data,
+      invoke sort using ``zos_mvs_raw`` and ``zos_fetch`` the data back to
+      your Ansible controller with our
+      `copy, sort and fetch data sets on z/OS playbook`_.
+    * User management can be tedious, why not automate the task with our
+      add and remove playbook that grants permissions, generates passwords,
+      creates and mounts a zFS and will even send email notifications
+      throughout the process when deployed to Ansible Tower or AWX.
+    * All playbooks have been updated to use our temporary data set feature
+      to avoid any concurrent data set name problems.
+
+* Blogs
+
+  * When you want to see the latest and want to experience it before you try
+    it, our blogs discuss our playbooks, modules and use cases.
+
+    * `Running Batch Jobs on z/OS using Ansible`_ has done a great job
+      explaining how Ansible can reduce this routine task.
+    * Don't have time to try our user management playbook, well how about
+      reading `z/OS User Management With Ansible`_ learning about it and its
+      optional integration into AWX.
+
+* Documentation
+
+  * We have been carefully reviewing our users feedback and over time we have
+    compiled a list of information that we feel would help everyone and have
+    released this information in our new FAQs.
+
+* Bug Fixes
+
+  * Modules
+
+    * Module ``zos_copy`` was updated to fail gracefully when a it
+      encounters a non-zero return code.
+    * Action plugin ``zos_copy`` was updated to support Python 2.7.
+    * Module ``zos_tso_command`` support was added for when the command output
+      contained special characters.
+
+  * Documentation
+
+    * Documentation correction to the minimum version stated in the
+      `Set Up Host Vars by Configuring Python and ZOAU Installation`_
+      playbook.
+    * Module ``zos_job_submit`` referenced a non-existent option and was
+      corrected to **wait_time_s**.
+
+* Noteworthy Reminders
+
+  * All documentation related to `playbook configuration`_ has been
+    migrated to the `playbook repository`_. Each sample contains a README that
+    explains what configurations must be made to run the sample playbook.
+
+  * In the prior release, all sample playbooks previously included with the
+    collection were migrated to the `playbook repository`_. The
+    `playbook repository`_ explains playbook concepts,
+    discusses z/OS administration, provides links to the samples support site,
+    blogs and other community resources.
+
+.. _playbook repository:
+   https://github.com/IBM/z_ansible_collections_samples/blob/master/README.md
+.. _copy, sort and fetch data sets on z/OS playbook:
+   https://github.com/IBM/z_ansible_collections_samples/tree/master/zos_concepts/data_transfer/copy_sort_fetch
+.. _Running Batch Jobs on z/OS using Ansible:
+   https://community.ibm.com/community/user/ibmz-and-linuxone/blogs/asif-mahmud1/2020/08/04/how-to-run-batch-jobs-on-zos-without-jcl-using-ans
+.. _z/OS User Management With Ansible:
+   https://community.ibm.com/community/user/ibmz-and-linuxone/blogs/blake-becker1/2020/09/03/zos-user-management-with-ansible
+.. _FAQs:
+   https://ibm.github.io/z_ansible_collections_doc/faqs/faqs.html
+.. _playbook configuration:
+   https://github.com/IBM/z_ansible_collections_samples/blob/master/docs/share/configuration_guide.md
+.. _Set Up Host Vars by Configuring Python and ZOAU Installation:
+   https://github.com/IBM/z_ansible_collections_samples/tree/master/zos_administration/host_setup
+
+Availability
+------------
+
+* `Galaxy`_
+* `GitHub`_
+
+Reference
+---------
+
+* Supported by IBM Open Enterprise Python for z/OS: 3.8.2 or later
+* Supported by IBM Z Open Automation Utilities 1.1.0 PTF UI70435
+* Supported by z/OS V2R3
+* The z/OS® shell
+
+Known issues
+------------
+
+* Modules
+
+  * When executing programs using ``zos_mvs_raw``, you may encounter errors
+    that originate in the programs implementation. Two such known issues are
+    noted below of which one has been addressed with an APAR.
+
+    #. ``zos_mvs_raw`` module execution fails when invoking
+       Database Image Copy 2 Utility or Database Recovery Utility in conjunction
+       with FlashCopy or Fast Replication.
+    #. ``zos_mvs_raw`` module execution fails when invoking DFSRRC00 with parm
+       "UPB,PRECOMP", "UPB, POSTCOMP" or "UPB,PRECOMP,POSTCOMP". This issue is
+       addressed by APAR PH28089.
+
 Version 1.2.1
 =============
 

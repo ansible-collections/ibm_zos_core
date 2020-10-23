@@ -38,6 +38,26 @@ clean:
 
 	@echo "Completed cleanup, run 'make module_doc'."
 
+role-doc:
+#	@mkdir build
+#	@echo "Make build directory for Sphinx generated HTML."
+#
+#	@mkdir -p source/roles
+#	@echo "Make source/roles for module RST generated doc."
+#
+	@mv ../roles/role_sample/docs/doc_role_sample ../roles/role_sample/docs/doc_role_sample.py
+	@echo "Move file '../roles/role_sample/docs/doc_role_sample' to '../roles/role_sample/docs/doc_role_sample.py'"
+
+	@ansible-doc-extractor --template templates/module.rst.j2 source/roles ../roles/role_sample/docs/doc_role_sample.py
+	@echo "Extract role doc from '../roles/' into 'source/roles'"
+
+	@if test -e ../roles/role_sample/docs/doc_role_sample.py; \
+	then mv -f ../roles/role_sample/docs/doc_role_sample.py ../roles/role_sample/docs/doc_role_sample; \
+	fi
+	@echo "Reset '../roles/role_sample/docs/doc_role_sample'"
+
+	@echo "Completed restructured role text generation, run 'make html'"
+
 module-doc:
 	@mkdir build
 	@echo "Make build directory for Sphinx generated HTML."

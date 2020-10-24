@@ -85,21 +85,6 @@ What's New
     discusses z/OS administration, provides links to the samples support site,
     blogs and other community resources.
 
-.. _playbook repository:
-   https://github.com/IBM/z_ansible_collections_samples/blob/master/README.md
-.. _copy, sort and fetch data sets on z/OS playbook:
-   https://github.com/IBM/z_ansible_collections_samples/tree/master/zos_concepts/data_transfer/copy_sort_fetch
-.. _Running Batch Jobs on z/OS using Ansible:
-   https://community.ibm.com/community/user/ibmz-and-linuxone/blogs/asif-mahmud1/2020/08/04/how-to-run-batch-jobs-on-zos-without-jcl-using-ans
-.. _z/OS User Management With Ansible:
-   https://community.ibm.com/community/user/ibmz-and-linuxone/blogs/blake-becker1/2020/09/03/zos-user-management-with-ansible
-.. _FAQs:
-   https://ibm.github.io/z_ansible_collections_doc/faqs/faqs.html
-.. _playbook configuration:
-   https://github.com/IBM/z_ansible_collections_samples/blob/master/docs/share/configuration_guide.md
-.. _Set Up Host Vars by Configuring Python and ZOAU Installation:
-   https://github.com/IBM/z_ansible_collections_samples/tree/master/zos_administration/host_setup
-
 Availability
 ------------
 
@@ -109,10 +94,10 @@ Availability
 Reference
 ---------
 
-* Supported by IBM Open Enterprise Python for z/OS: 3.8.2 or later
-* Supported by IBM Z Open Automation Utilities 1.1.0 PTF UI70435
-* Supported by z/OS V2R3
-* The z/OS® shell
+* Supported by `IBM Open Enterprise Python for z/OS`_ 3.8.2 or later
+* Supported by IBM `Z Open Automation Utilities 1.1.0`_
+* Supported by `z/OS V2R3`_ or later
+* The `z/OS® shell`_
 
 Known issues
 ------------
@@ -129,6 +114,15 @@ Known issues
     #. ``zos_mvs_raw`` module execution fails when invoking DFSRRC00 with parm
        "UPB,PRECOMP", "UPB, POSTCOMP" or "UPB,PRECOMP,POSTCOMP". This issue is
        addressed by APAR PH28089.
+
+.. _copy, sort and fetch data sets on z/OS playbook:
+   https://github.com/IBM/z_ansible_collections_samples/tree/master/zos_concepts/data_transfer/copy_sort_fetch
+.. _Running Batch Jobs on z/OS using Ansible:
+   https://community.ibm.com/community/user/ibmz-and-linuxone/blogs/asif-mahmud1/2020/08/04/how-to-run-batch-jobs-on-zos-without-jcl-using-ans
+.. _z/OS User Management With Ansible:
+   https://community.ibm.com/community/user/ibmz-and-linuxone/blogs/blake-becker1/2020/09/03/zos-user-management-with-ansible
+.. _Set Up Host Vars by Configuring Python and ZOAU Installation:
+   https://github.com/IBM/z_ansible_collections_samples/tree/master/zos_administration/host_setup
 
 Version 1.2.1
 =============
@@ -174,7 +168,7 @@ Reference
 
 * Supported by IBM Open Enterprise Python for z/OS: 3.8.2 or later
 * Supported by IBM Z Open Automation Utilities 1.0.3 PTF UI70435
-* Supported by z/OS V2R3
+* Supported by z/OS V2R3 or later
 * The z/OS® shell
 
 Known issues
@@ -634,3 +628,26 @@ Reference
 
 .. _Automation Hub:
    https://www.ansible.com/products/automation-hub
+
+.._IBM Open Enterprise Python for z/OS:
+  https://www.ibm.com/products/open-enterprise-python-zos
+
+.. _Z Open Automation Utilities 1.1.0:
+   https://www.ibm.com/support/knowledgecenter/SSKFYE_1.1.0/install.html
+
+.. _z/OS® shell:
+   https://www.ibm.com/support/knowledgecenter/en/SSLTBW_2.4.0/com.ibm.zos.v2r4.bpxa400/part1.htm
+
+.. _z/OS V2R3:
+   https://www.ibm.com/support/knowledgecenter/SSLTBW_2.3.0/com.ibm.zos.v2r3/en/homepage.html
+
+.. _playbook repository:
+   https://github.com/IBM/z_ansible_collections_samples/blob/master/README.md
+
+.. _FAQs:
+   https://ibm.github.io/z_ansible_collections_doc/faqs/faqs.html
+
+.. _playbook configuration:
+   https://github.com/IBM/z_ansible_collections_samples/blob/master/docs/share/configuration_guide.md
+
+

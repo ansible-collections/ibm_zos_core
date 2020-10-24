@@ -22,8 +22,8 @@ What's New
 * Playbooks
 
   * In each release, we continue to expand on the use cases and deliver
-    several new playbooks in the `playbook repository`_ that can be easily 
-    tailored to any system.  
+    several new playbooks in the `playbook repository`_ that can be easily
+    tailored to any system.
 
     * Use the new ``zos_apf`` module and GitHub to ensure that your APF
       authorized libraries are in synch with GitHub source control.
@@ -67,7 +67,7 @@ What's New
       corrected to **wait_time_s**.
     * We have been carefully reviewing our users feedback and over time we have
       compiled a list of information that we feel would help everyone and have
-      released this information in our new FAQs.
+      released this information in our new `FAQs`_.
 
 * Noteworthy Reminders
 
@@ -92,6 +92,18 @@ Reference
 
 * Supported by `IBM Open Enterprise Python for z/OS`_ 3.8.2 or later
 * Supported by IBM `Z Open Automation Utilities 1.1.0`_
+
+  .. note::
+
+    There is an additional step for `Z Open Automation Utilities 1.1.0`_ (ZOAU)
+    over prior installations of ZOAU on the target z/OS. After you install ZOAU
+    whether from a PAX archive or through SMPe, you will need to perform a PIP
+    installation of the ZOAU Python libraries using this command
+    ``pip install zoautil_py-1.1.0.tar.tar.gz``. This will install the ZOAU
+    Python libraries on the z/OS target for use z/OS Ansible Core and other
+    collections.
+
+
 * Supported by `z/OS V2R3`_ or later
 * The `z/OS® shell`_
 

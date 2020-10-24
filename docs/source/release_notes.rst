@@ -640,8 +640,8 @@ Reference
 .. _Automation Hub:
    https://www.ansible.com/products/automation-hub
 
-.._IBM Open Enterprise Python for z/OS:
-  https://www.ibm.com/products/open-enterprise-python-zos
+.. _IBM Open Enterprise Python for z/OS:
+   https://www.ibm.com/products/open-enterprise-python-zos
 
 .. _Z Open Automation Utilities 1.1.0:
    https://www.ibm.com/support/knowledgecenter/SSKFYE_1.1.0/install.html

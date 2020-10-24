@@ -21,18 +21,18 @@ What's New
 
 * Playbooks
 
-  * Each release, we continue to expand on our use cases and have delivered
-    several new playbooks into our `playbook repository`_ that can easily be
-    tailored to any system.
+  * In each release, we continue to expand on the use cases and deliver
+    several new playbooks in the `playbook repository`_ that can be easily 
+    tailored to any system.  
 
-    * Use our new ``zos_apf`` module and GitHub to ensure that your APF
+    * Use the new ``zos_apf`` module and GitHub to ensure that your APF
       authorized libraries are in synch with GitHub source control.
     * Automate program execution and ``zos_copy`` data, ``zos_find`` the data,
       invoke sort using ``zos_mvs_raw`` and ``zos_fetch`` the data back to
-      your Ansible controller with our
+      your Ansible controller with the
       `copy, sort and fetch data sets on z/OS playbook`_.
-    * User management can be tedious, why not automate the task with our
-      add and remove playbook that grants permissions, generates passwords,
+    * Automate the tedious user management tasks with the add and remove
+      playbook that grants permissions, generates passwords,
       creates and mounts a zFS and will even send email notifications
       throughout the process when deployed to Ansible Tower or AWX.
     * All playbooks have been updated to use our temporary data set feature
@@ -40,20 +40,13 @@ What's New
 
 * Blogs
 
-  * When you want to see the latest and want to experience it before you try
-    it, our blogs discuss our playbooks, modules and use cases.
+  * Learn about the latest features and experience them before you try
+    them through the blogs that discuss playbooks, modules, and use cases.
 
     * `Running Batch Jobs on z/OS using Ansible`_ has done a great job
       explaining how Ansible can reduce this routine task.
-    * Don't have time to try our user management playbook, well how about
-      reading `z/OS User Management With Ansible`_ learning about it and its
-      optional integration into AWX.
-
-* Documentation
-
-  * We have been carefully reviewing our users feedback and over time we have
-    compiled a list of information that we feel would help everyone and have
-    released this information in our new FAQs.
+    * `z/OS User Management With Ansible`_ explains all about the user management
+      playbook and its optional integration into AWX.
 
 * Bug Fixes
 
@@ -72,12 +65,15 @@ What's New
       playbook.
     * Module ``zos_job_submit`` referenced a non-existent option and was
       corrected to **wait_time_s**.
+    * We have been carefully reviewing our users feedback and over time we have
+      compiled a list of information that we feel would help everyone and have
+      released this information in our new FAQs.
 
 * Noteworthy Reminders
 
   * All documentation related to `playbook configuration`_ has been
     migrated to the `playbook repository`_. Each sample contains a README that
-    explains what configurations must be made to run the sample playbook.
+    explains what configurations must be made to run a sample playbook.
 
   * In the prior release, all sample playbooks previously included with the
     collection were migrated to the `playbook repository`_. The
@@ -105,7 +101,7 @@ Known issues
 * Modules
 
   * When executing programs using ``zos_mvs_raw``, you may encounter errors
-    that originate in the programs implementation. Two such known issues are
+    that originate in the implementation of the programs. Two such known issues are
     noted below of which one has been addressed with an APAR.
 
     #. ``zos_mvs_raw`` module execution fails when invoking

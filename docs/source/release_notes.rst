@@ -25,8 +25,9 @@ What's New
     several new playbooks in the `playbook repository`_ that can be easily
     tailored to any system.
 
-    * Use the new ``zos_apf`` module and GitHub to ensure that your APF
-      authorized libraries are in synch with GitHub source control.
+    * Try the playbook that will
+      `synchronize APF authorized libraries on z/OS from a configuration file cloned from GitHub`_
+      that uses the new ``zos_apf``.
     * Automate program execution and ``zos_copy`` data, ``zos_find`` the data,
       invoke sort using ``zos_mvs_raw`` and ``zos_fetch`` the data back to
       your Ansible controller with the
@@ -131,6 +132,8 @@ Known issues
    https://community.ibm.com/community/user/ibmz-and-linuxone/blogs/blake-becker1/2020/09/03/zos-user-management-with-ansible
 .. _Set Up Host Vars by Configuring Python and ZOAU Installation:
    https://github.com/IBM/z_ansible_collections_samples/tree/master/zos_administration/host_setup
+.. _synchronize APF authorized libraries on z/OS from a configuration file cloned from GitHub:
+   https://github.com/IBM/z_ansible_collections_samples/tree/master/zos_concepts/program_authorization/git_apf
 
 Version 1.2.1
 =============

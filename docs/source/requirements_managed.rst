@@ -15,12 +15,19 @@ proceed to install the IBM z/OS core collection.
 * z/OS `V2R3`_ or `later`_
 * `IBM Z Open Automation Utilities`_ (ZOAU)
 
-   * IBM z/OS core collection is dependent on specific versions of ZOAU.
+   .. note::
+
+     IBM z/OS core collection is dependent on specific versions of ZOAU.
      For information about the required version of ZOAU, review the
      `release notes`_.
 
+     Before attempting to run an Ansible playbook, please review the required
+     environment parameters documented in our playbook repository under the
+     `playbook configuration`_ topic. In addition to the
+     `playbook configuration`_, review our `FAQs`_ for additional help.
+
 * `z/OS OpenSSH`_
-* The z/OS® shell
+* The `z/OS® shell`_
 
 .. note::
    Currently, only ``z/OS® shell`` is supported. Using ``ansible_shell_executable`` to
@@ -60,6 +67,15 @@ proceed to install the IBM z/OS core collection.
 
 .. _release notes:
    release_notes.html
+
+.. _playbook configuration:
+   https://github.com/IBM/z_ansible_collections_samples/blob/master/docs/share/configuration_guide.md
+
+.. _FAQs:
+   https://ibm.github.io/z_ansible_collections_doc/faqs/faqs.html
+
+.. _z/OS® shell:
+   https://www.ibm.com/support/knowledgecenter/en/SSLTBW_2.4.0/com.ibm.zos.v2r4.bpxa400/part1.htm
 
 Python on z/OS
 --------------

@@ -127,7 +127,6 @@ notes:
     sets present on the system and how large the data sets are.
   - When searching for content within data sets, only non-binary content is considered.
 seealso:
-- module: find
 - module: zos_data_set
 """
 

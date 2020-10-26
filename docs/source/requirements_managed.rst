@@ -30,7 +30,7 @@ proceed to install the IBM z/OS core collection.
      (ZOAU) over prior installations of ZOAU on the target z/OS. After you
      install ZOAU whether from a PAX archive or through SMPe, you will need to
      perform a PIP installation of the ZOAU Python libraries using this command
-     ``pip install zoautil_py-1.1.0.tar.tar.gz``. This will install the ZOAU
+     ``pip install zoautil_py-1.1.0.tar.gz``. This will install the ZOAU
      Python libraries on the z/OS target for use z/OS Ansible Core and other
      collections.
 

@@ -273,7 +273,8 @@ batch
 
     | **required**: False
     | **type**: str
-    | **choices**: KSDS, ESDS, RRDS, LDS, SEQ, PDS, PDSE, LIBRARY, BASIC, LARGE, MEMBER
+    | **default**: PDS
+    | **choices**: KSDS, ESDS, RRDS, LDS, SEQ, PDS, PDSE, LIBRARY, BASIC, LARGE, MEMBER, HFS, ZFS
 
 
      
@@ -537,7 +538,8 @@ type
 
   | **required**: False
   | **type**: str
-  | **choices**: KSDS, ESDS, RRDS, LDS, SEQ, PDS, PDSE, LIBRARY, BASIC, LARGE, MEMBER
+  | **default**: PDS
+  | **choices**: KSDS, ESDS, RRDS, LDS, SEQ, PDS, PDSE, LIBRARY, BASIC, LARGE, MEMBER, HFS, ZFS
 
 
      

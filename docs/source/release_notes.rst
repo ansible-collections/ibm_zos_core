@@ -25,23 +25,25 @@ What's New
     several new playbooks in the `playbook repository`_ that can be easily
     tailored to any system.
 
-    * Try the playbook that will
+    * Authorize and
       `synchronize APF authorized libraries on z/OS from a configuration file cloned from GitHub`_
-      that uses the new ``zos_apf``.
-    * Automate program execution and ``zos_copy`` data, ``zos_find`` the data,
-      invoke sort using ``zos_mvs_raw`` and ``zos_fetch`` the data back to
-      your Ansible controller with the
+    * Automate program execution with
       `copy, sort and fetch data sets on z/OS playbook`_.
-    * Automate the tedious user management tasks with the add and remove
-      playbook that grants permissions, generates passwords,
-      creates and mounts a zFS and will even send email notifications
-      throughout the process when deployed to Ansible Tower or AWX.
+    * Automate user management with add, remove, grant permission,
+      generate passwords, create zFS, mount zFS and send email
+      notifications when deployed to Ansible Tower or AWX with the
+      `manage z/OS Users Using Ansible`_ playbook.
+    * Use the `configure Python and ZOAU Installation` playbook to scan the
+      **z/OS** target to find the latest supported configuration and generate
+      `inventory`_ and a `variables`_ configuration.
     * All playbooks have been updated to use our temporary data set feature
       to avoid any concurrent data set name problems.
     * In the prior release, all sample playbooks previously included with the
       collection were migrated to the `playbook repository`_. The
-      `playbook repository`_ explains playbook concepts, discusses z/OS administration,
-      provides links to the samples support site, blogs and other community resources.  
+      `playbook repository`_ categorizes playbooks into **z/OS concepts** and
+      **topics**, it also covers `playbook configuration`_ as well as provide
+      additional community content such as **blogs** and where to open
+      `support tickets`_ for the playbooks.
 
 * Bug Fixes
 
@@ -53,27 +55,24 @@ What's New
     * Module ``zos_tso_command`` support was added for when the command output
       contained special characters.
     * Module ``zos_job_submit`` referenced a non-existent option and was
-      corrected to **wait_time_s**.     
+      corrected to **wait_time_s**.
 
 * Documentation
 
     * All documentation related to `playbook configuration`_ has been
-      migrated to the `playbook repository`_. Each sample contains a README that
-      explains what configurations must be made to run a sample playbook.
-    * Documentation correction to the minimum version stated in the
-      `Set Up Host Vars by Configuring Python and ZOAU Installation`_
-      playbook.  
+      migrated to the `playbook repository`_. Each playbook contains a README
+      that explains what configurations must be made to run a sample playbook.
     * We have been carefully reviewing our users feedback and over time we have
       compiled a list of information that we feel would help everyone and have
       released this information in our new `FAQs`_.
     * Learn about the latest features and experience them before you try
-      them through the blogs that discuss playbooks, modules, and use cases:  
-    
+      them through the blogs that discuss playbooks, modules, and use cases:
+
       * `Running Batch Jobs on z/OS using Ansible`_ details how
         to write and execute batch jobs without having to deal with JCL.
-      
+
       * `z/OS User Management With Ansible`_ explains all about the user management
-        playbook and its optional integration into AWX.  
+        playbook and its optional integration into AWX.
 
 Availability
 ------------
@@ -88,15 +87,13 @@ Reference
 * Supported by IBM `Z Open Automation Utilities 1.1.0`_
 
   .. note::
-
-    There is an additional step for `Z Open Automation Utilities 1.1.0`_ (ZOAU)
-    over prior installations of ZOAU on the target z/OS. After you install ZOAU
-    whether from a PAX archive or through SMPe, you will need to perform a PIP
-    installation of the ZOAU Python libraries using this command
-    ``pip install zoautil_py-1.1.0.tar.tar.gz``. This will install the ZOAU
-    Python libraries on the z/OS target for use z/OS Ansible Core and other
-    collections.
-
+     There is an additional step for `Z Open Automation Utilities 1.1.0`_ (ZOAU)
+     over prior installations of ZOAU on the target z/OS. After you install ZOAU
+     whether from a PAX archive or through SMPe, you will need to perform a PIP
+     installation of the ZOAU Python libraries using this command
+     ``pip install zoautil_py-1.1.0.tar.tar.gz``. This will install the ZOAU
+     Python libraries on the z/OS target for use z/OS Ansible Core and other
+     collections.
 
 * Supported by `z/OS V2R3`_ or later
 * The `z/OS® shell`_
@@ -117,16 +114,39 @@ Known issues
        "UPB,PRECOMP", "UPB, POSTCOMP" or "UPB,PRECOMP,POSTCOMP". This issue is
        addressed by APAR PH28089.
 
+
+.. .............................................................................
+.. Playbook Links
+.. .............................................................................
+
+.. _synchronize APF authorized libraries on z/OS from a configuration file cloned from GitHub:
+   https://github.com/IBM/z_ansible_collections_samples/tree/master/zos_concepts/program_authorization/git_apf
 .. _copy, sort and fetch data sets on z/OS playbook:
    https://github.com/IBM/z_ansible_collections_samples/tree/master/zos_concepts/data_transfer/copy_sort_fetch
+.. _manage z/OS Users Using Ansible:
+   https://github.com/IBM/z_ansible_collections_samples/tree/master/zos_concepts/user_management/add_remove_user
+
+.. .............................................................................
+.. Configuration Links
+.. .............................................................................
+
+.. _configure Python and ZOAU Installation:
+   https://github.com/IBM/z_ansible_collections_samples/tree/master/zos_administration/host_setup
+.. _inventory:
+   https://github.com/IBM/z_ansible_collections_samples/blob/master/docs/share/configuration_guide.md#inventory
+.. _variables:
+   https://github.com/IBM/z_ansible_collections_samples/blob/master/docs/share/configuration_guide.md#variables
+.. _support tickets:
+   https://github.com/IBM/z_ansible_collections_samples/issues
+   
+.. .............................................................................
+.. Blog Links
+.. .............................................................................
 .. _Running Batch Jobs on z/OS using Ansible:
    https://community.ibm.com/community/user/ibmz-and-linuxone/blogs/asif-mahmud1/2020/08/04/how-to-run-batch-jobs-on-zos-without-jcl-using-ans
 .. _z/OS User Management With Ansible:
    https://community.ibm.com/community/user/ibmz-and-linuxone/blogs/blake-becker1/2020/09/03/zos-user-management-with-ansible
-.. _Set Up Host Vars by Configuring Python and ZOAU Installation:
-   https://github.com/IBM/z_ansible_collections_samples/tree/master/zos_administration/host_setup
-.. _synchronize APF authorized libraries on z/OS from a configuration file cloned from GitHub:
-   https://github.com/IBM/z_ansible_collections_samples/tree/master/zos_concepts/program_authorization/git_apf
+
 
 Version 1.2.1
 =============

@@ -26,6 +26,14 @@ proceed to install the IBM z/OS core collection.
      `playbook configuration`_ topic. In addition to the
      `playbook configuration`_, review our `FAQs`_ for additional help.
 
+     There is an additional step for `Z Open Automation Utilities 1.1.0`_
+     (ZOAU) over prior installations of ZOAU on the target z/OS. After you
+     install ZOAU whether from a PAX archive or through SMPe, you will need to
+     perform a PIP installation of the ZOAU Python libraries using this command
+     ``pip install zoautil_py-1.1.0.tar.tar.gz``. This will install the ZOAU
+     Python libraries on the z/OS target for use z/OS Ansible Core and other
+     collections.
+
 * `z/OS OpenSSH`_
 * The `z/OS® shell`_
 
@@ -76,6 +84,9 @@ proceed to install the IBM z/OS core collection.
 
 .. _z/OS® shell:
    https://www.ibm.com/support/knowledgecenter/en/SSLTBW_2.4.0/com.ibm.zos.v2r4.bpxa400/part1.htm
+
+.. _Z Open Automation Utilities 1.1.0:
+   https://www.ibm.com/support/knowledgecenter/SSKFYE_1.1.0/install.html
 
 Python on z/OS
 --------------

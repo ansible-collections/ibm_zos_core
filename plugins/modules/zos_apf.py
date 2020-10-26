@@ -16,7 +16,7 @@ DOCUMENTATION = r'''
 module: zos_apf
 author:
   - "Behnam (@balkajbaf)"
-short_description: This module adds or removes libraries to Authorized Program Facility (APF)
+short_description: Add or remove libraries to Authorized Program Facility (APF)
 description:
   - Adds or removes libraries to Authorized Program Facility (APF).
   - Manages APF statement persistent entries to a data set or data set member.
@@ -31,7 +31,8 @@ options:
     aliases: [ name, lib ]
   state:
     description:
-      - Ensure that the library is added C(state=present) or removed C(state=absent).
+      - Ensure that the library is added C(state=present) or removed
+        C(state=absent).
       - The APF list format has to be "DYNAMIC".
     required: False
     type: str
@@ -41,7 +42,8 @@ options:
     default: present
   force_dynamic:
     description:
-      - Will force the APF list format to "DYNAMIC" before adding or removing libraries.
+      - Will force the APF list format to "DYNAMIC" before adding or removing
+        libraries.
       - If the format is "STATIC", the format will be changed to "DYNAMIC".
     required: False
     type: bool
@@ -50,10 +52,10 @@ options:
     description:
       - The identifier for the volume containing the library specified in
         the C(library) parameter. The values must be one the following.
-        1. The volume serial number.
-        2. Six asterisks (******), indicating that the system must use the
+      - 1. The volume serial number.
+      - 2. Six asterisks (******), indicating that the system must use the
         volume serial number of the current system residence (SYSRES) volume.
-        3. *MCAT*, indicating that the system must use the volume serial number
+      - 3. *MCAT*, indicating that the system must use the volume serial number
         of the volume containing the master catalog.
       - If C(volume) is not specified, C(library) has to be cataloged.
     required: False
@@ -69,7 +71,8 @@ options:
     default: False
   operation:
     description:
-      - Change APF list format to "DYNAMIC" C(operation=set_dynamic) or "STATIC" C(operation=set_static)
+      - Change APF list format to "DYNAMIC" C(operation=set_dynamic) or "STATIC"
+        C(operation=set_static)
       - Display APF list current format C(operation=check_format)
       - Display APF list entries when C(operation=list)
         C(library), C(volume) and C(sms) will be used as filters.
@@ -90,7 +93,8 @@ options:
     suboptions:
       data_set_name:
         description:
-          - The data set name used for persisting or removing a C(library) from the APF list.
+          - The data set name used for persisting or removing a C(library) from
+            the APF list.
         required: True
         type: str
       marker:
@@ -102,13 +106,15 @@ options:
           - C({mark}) length may not exceed 72 characters.
         required: False
         type: str
-        default: "/* {mark} ANSIBLE MANAGED BLOCK <timestamp> */"
+        default: "/\\* {mark} ANSIBLE MANAGED BLOCK <timestamp> \\*/"
       backup:
         description:
-          - Creates a backup file or backup data set for I(data_set_name), including the
-            timestamp information to ensure that you retrieve the original APF list
+          - Creates a backup file or backup data set for I(data_set_name),
+            including the timestamp information to ensure that you retrieve the
+            original APF list
             defined in I(data_set_name)".
-          - I(backup_name) can be used to specify a backup file name if I(backup=true).
+          - I(backup_name) can be used to specify a backup file name if
+            I(backup=true).
           - The backup file name will be return on either success or failure
             of module execution such that data can be retrieved.
         required: false
@@ -116,9 +122,11 @@ options:
         default: false
       backup_name:
         description:
-          - Specify the USS file name or data set name for the destination backup.
-          - If the source I(data_set_name) is a USS file or path, the backup_name name must be a
-            file or path name, and the USS file or path must be an absolute path name.
+          - Specify the USS file name or data set name for the destination
+            backup.
+          - If the source I(data_set_name) is a USS file or path, the
+            backup_name name must be a file or path name, and the USS file or
+            path must be an absolute path name.
           - If the source is an MVS data set, the backup_name must be
             an MVS data set name.
           - If the backup_name is not provided, the default backup_name
@@ -151,11 +159,11 @@ options:
           - The identifier for the volume containing the library
             specified on the C(library) parameter. The values must be one of the
             following.
-            1. The volume serial number
-            2. Six asterisks (******), indicating that the system must use the
+          - 1. The volume serial number
+          - 2. Six asterisks (******), indicating that the system must use the
             volume serial number of the current system residence (SYSRES)
             volume.
-            3. *MCAT*, indicating that the system must use the volume serial
+          - 3. *MCAT*, indicating that the system must use the volume serial
             number of the volume containing the master catalog.
           - If C(volume) is not specified, C(library) has to be cataloged.
         required: False
@@ -170,19 +178,22 @@ options:
         type: bool
         default: False
 notes:
-  - It is the playbook author or user's responsibility to ensure they have appropriate
-    authority to the RACF® FACILITY resource class. A user is described as the remote
-    user, configured either for the playbook or playbook tasks, who can also obtain
-    escalated privileges to execute as root or another user.
-  - To add or delete the APF list entry for library libname, you must have UPDATE authority
-    to the RACF® FACILITY resource class entity CSVAPF.libname, or there must be no FACILITY
-    class profile that protects that entity.
-  - To change the format of the APF list to dynamic, you must have UPDATE authority to the
-    RACF FACILITY resource class profile CSVAPF.MVS.SETPROG.FORMAT.DYNAMIC, or there must be
-    no FACILITY class profile that protects that entity.
-  - To change the format of the APF list back to static, you must have UPDATE authority to
-    the RACF FACILITY resource class profile CSVAPF.MVS.SETPROG.FORMAT.STATIC, or there must be
-    no FACILITY class profile that protects that entity.
+    - It is the playbook author or user's responsibility to ensure they have
+      appropriate authority to the RACF® FACILITY resource class. A user is
+      described as the remote user, configured either for the playbook or
+      playbook tasks, who can also obtain escalated privileges to execute as
+      root or another user.
+    - To add or delete the APF list entry for library libname, you must have
+      UPDATE authority to the RACF® FACILITY resource class entity CSVAPF.libname,
+      or there must be no FACILITY class profile that protects that entity.
+    - To change the format of the APF list to dynamic, you must have UPDATE
+      authority to the RACF FACILITY resource class profile
+      CSVAPF.MVS.SETPROG.FORMAT.DYNAMIC, or there must be no FACILITY class
+      profile that protects that entity.
+    - To change the format of the APF list back to static, you must have UPDATE
+      authority to the RACF FACILITY resource class profile
+      CSVAPF.MVS.SETPROG.FORMAT.STATIC, or there must be no FACILITY class profile
+      that protects that entity.
 '''
 
 
@@ -204,7 +215,8 @@ EXAMPLES = r'''
     volume: T12345
     persistent:
       data_set_name: SOME.PARTITIONED.DATASET(MEM)
-- name: Use batch to add a set of libraries to the APF list and persistence and custom marker
+- name: Use batch to add a set of libraries to the APF list and persistence and
+  custom marker
   zos_apf:
     persistent:
       data_set_name: SOME.PARTITIONED.DATASET(MEM)
@@ -229,8 +241,10 @@ EXAMPLES = r'''
 RETURN = r'''
 stdout:
   description:
-    - The stdout from ZOAU command apfadm. Output varies based on the type of operation.
-    - state> stdout of the executed operator command (opercmd), "SETPROG" from ZOAU command apfadm
+    - The stdout from ZOAU command apfadm. Output varies based on the type of
+      operation.
+    - state> stdout of the executed operator command (opercmd), "SETPROG" from
+      ZOAU command apfadm
     - "operation> stdout of operation options
                  list> Returns a list of dictionaries of APF list entries
                        [{'vol': 'PP0L6P', 'ds': 'DFH.V5R3M0.CICS.SDFHAUTH'},
@@ -244,7 +258,8 @@ stderr:
   description: The error messages from ZOAU command apfadm
   returned: always
   type: str
-  sample: "BGYSC1310E ADD Error: Dataset COMMON.LINKLIB volume COMN01 is already present in APF list."
+  sample: "BGYSC1310E ADD Error: Dataset COMMON.LINKLIB volume COMN01 is already
+  present in APF list."
 rc:
   description: The return code from ZOAU command apfadm
   returned: always

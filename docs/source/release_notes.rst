@@ -14,7 +14,7 @@ What's New
 
 * Modules
 
-  * ``zos_apf`` - adds or removes libraries to Authorized Program Facility (APF).
+  * ``zos_apf`` - Add or remove libraries to and from Authorized Program Facility (APF).
   * ``zos_backup_restore`` - Backup and restore data sets and volumes.
   * ``zos_blockinfile`` - Manage block of multi-line textual data on z/OS.
   * ``zos_find`` - Find matching data sets.
@@ -38,16 +38,10 @@ What's New
       throughout the process when deployed to Ansible Tower or AWX.
     * All playbooks have been updated to use our temporary data set feature
       to avoid any concurrent data set name problems.
-
-* Blogs
-
-  * Learn about the latest features and experience them before you try
-    them through the blogs that discuss playbooks, modules, and use cases.
-
-    * `Running Batch Jobs on z/OS using Ansible`_ has done a great job
-      explaining how Ansible can reduce this routine task.
-    * `z/OS User Management With Ansible`_ explains all about the user management
-      playbook and its optional integration into AWX.
+    * In the prior release, all sample playbooks previously included with the
+      collection were migrated to the `playbook repository`_. The
+      `playbook repository`_ explains playbook concepts, discusses z/OS administration,
+      provides links to the samples support site, blogs and other community resources.  
 
 * Bug Fixes
 
@@ -58,29 +52,28 @@ What's New
     * Action plugin ``zos_copy`` was updated to support Python 2.7.
     * Module ``zos_tso_command`` support was added for when the command output
       contained special characters.
+    * Module ``zos_job_submit`` referenced a non-existent option and was
+      corrected to **wait_time_s**.     
 
-  * Documentation
+* Documentation
 
+    * All documentation related to `playbook configuration`_ has been
+      migrated to the `playbook repository`_. Each sample contains a README that
+      explains what configurations must be made to run a sample playbook.
     * Documentation correction to the minimum version stated in the
       `Set Up Host Vars by Configuring Python and ZOAU Installation`_
-      playbook.
-    * Module ``zos_job_submit`` referenced a non-existent option and was
-      corrected to **wait_time_s**.
+      playbook.  
     * We have been carefully reviewing our users feedback and over time we have
       compiled a list of information that we feel would help everyone and have
       released this information in our new `FAQs`_.
-
-* Noteworthy Reminders
-
-  * All documentation related to `playbook configuration`_ has been
-    migrated to the `playbook repository`_. Each sample contains a README that
-    explains what configurations must be made to run a sample playbook.
-
-  * In the prior release, all sample playbooks previously included with the
-    collection were migrated to the `playbook repository`_. The
-    `playbook repository`_ explains playbook concepts,
-    discusses z/OS administration, provides links to the samples support site,
-    blogs and other community resources.
+    * Learn about the latest features and experience them before you try
+      them through the blogs that discuss playbooks, modules, and use cases:  
+    
+      * `Running Batch Jobs on z/OS using Ansible`_ details how
+        to write and execute batch jobs without having to deal with JCL.
+      
+      * `z/OS User Management With Ansible`_ explains all about the user management
+        playbook and its optional integration into AWX.  
 
 Availability
 ------------
@@ -182,22 +175,6 @@ Reference
 * Supported by z/OS V2R3 or later
 * The z/OS® shell
 
-Known issues
-------------
-
-* Modules
-
-  * When executing programs using ``zos_mvs_raw``, you may encounter errors
-    that originate in the programs implementation. Two such known issues are
-    noted below of which one has been addressed with an APAR.
-
-    #. ``zos_mvs_raw`` module execution fails when invoking
-       Database Image Copy 2 Utility or Database Recovery Utility in conjunction
-       with FlashCopy or Fast Replication.
-    #. ``zos_mvs_raw`` module execution fails when invoking DFSRRC00 with parm
-       "UPB,PRECOMP", "UPB, POSTCOMP" or "UPB,PRECOMP,POSTCOMP". This issue is
-       addressed by APAR PH28089.
-
 
 Version 1.2.0
 =============
@@ -236,22 +213,6 @@ Reference
 * Supported by IBM Z Open Automation Utilities 1.0.3 PTF UI70435
 * Supported by z/OS V2R3
 * The z/OS® shell
-
-Known issues
-------------
-
-* Modules
-
-  * When executing programs using ``zos_mvs_raw``, you may encounter errors
-    that originate in the programs implementation. Two such known issues are
-    noted below of which one has been addressed with an APAR.
-
-    #. ``zos_mvs_raw`` module execution fails when invoking
-       Database Image Copy 2 Utility or Database Recovery Utility in conjunction
-       with FlashCopy or Fast Replication.
-    #. ``zos_mvs_raw`` module execution fails when invoking DFSRRC00 with parm
-       "UPB,PRECOMP", "UPB, POSTCOMP" or "UPB,PRECOMP,POSTCOMP". This issue is
-       addressed by APAR PH28089.
 
 
 Version 1.2.0-beta.4

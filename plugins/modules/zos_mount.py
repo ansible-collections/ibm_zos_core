@@ -28,7 +28,7 @@ options:
     path:
         description:
             - The absolute path name onto which the file system is to be mounted.
-            - The I(path) is case sensitive and must be less than or equal 1023 characters long.
+            - The I(path) is case sensitive and must be <= 1023 characters long.
         type: str
         required: False
     src:
@@ -40,7 +40,7 @@ options:
         description:
             - The type of file system that will be mounted.
             - The physical file systems data set format to perform the logical mount.
-            - The I(fs_type) is required to be uppercase, any lower case characters will be converted to uppercase.
+            - The I(fs_type) will be converted to uppercase.
         type: str
         choices:
             - HFS
@@ -52,9 +52,9 @@ options:
         description:
             - The desired status of the described mount (choice).
             - >
-                If I(state=mounted) and I(src) is not in use, the module will add the file system entry to
-                I(persistent/data_set_name) parmlib member if not present. The I(path) will be updated and the module
-                will complete successfully with I(changed=True).
+                If I(state=mounted) and I(src) is not in use, the module will add the
+                file system entry to I(persistent/data_set_name) parmlib member if not present.
+                The I(path) will be updated and the module will complete successfully with I(changed=True).
             - >
                 If I(state=mounted) and I(src) is in use, the module will add the file system entry to
                 I(persistent/data_set_name) parmlib member if not present. The I(path) will not be updated and the module
@@ -126,29 +126,29 @@ options:
                 If I(unmount_opts=DRAIN) The system will wait for all use of the file system to be
                 ended normally before the unmount request is processed or until another UNMOUNT command is issued.
             - >
-                If I(unmount_opts=FORCE) The system is to unmount the file system immediately. 
-                Any users accessing files in the specified file system receive failing return codes. 
+                If I(unmount_opts=FORCE) The system is to unmount the file system immediately.
+                Any users accessing files in the specified file system receive failing return codes.
                 If the data changes to the files cannot be saved, the unmount request continues and data is lost.
                 An UNMOUNT IMMEDIATE request must be issued before you can request a UNMOUNT FORCE of a file system.
                 Otherwise, UNMOUNT FORCE fails.
             - >
-                If I(unmount_opts=IMMEDIATE) The system is to unmount the file system immediately. 
-                Any users accessing files in the specified file system receive failing return codes. 
-                All data changes to files in the specified file system are saved. If the data changes to files 
+                If I(unmount_opts=IMMEDIATE) The system is to unmount the file system immediately.
+                Any users accessing files in the specified file system receive failing return codes.
+                All data changes to files in the specified file system are saved. If the data changes to files
                 cannot be saved, the unmount request fails.
             - >
-                If I(unmount_opts=NORMAL) If no user is accessing any of the files in the specified file system, 
-                the system processes the unmount request. Otherwise, the system rejects the unmount request. 
+                If I(unmount_opts=NORMAL) If no user is accessing any of the files in the specified file system,
+                the system processes the unmount request. Otherwise, the system rejects the unmount request.
             - >
-                If I(unmount_opts=REMOUNT) The specified file system be remounted and its mount mode changed, if necessary. 
+                If I(unmount_opts=REMOUNT) The specified file system be remounted and its mount mode changed, if necessary.
                 REMOUNT takes an optional argument of RDRW, READ, UNMOUNT, or SAMEMODE.
                 If REMOUNT is specified without any arguments, the mount mode is changed from RDWR to READ, or READ to RDWR.
                 If RDWR is specified and the current mode is READ, the file system is remounted in RDWR mode.
                 If READ is specified and the current mode is RDWR, the file system is remounted in READ mode.
-                If SAMEMODE is specified, the file system is remounted (internally unmounted and remounted) without changing 
+                If SAMEMODE is specified, the file system is remounted (internally unmounted and remounted) without changing
                 the mount mode. You can use this option to attempt to regain use of a file system that had I/O errors.
             - >
-                If I(unmount_opts=RESET) A reset request stops a previous UNMOUNT DRAIN request.             
+                If I(unmount_opts=RESET) A reset request stops a previous UNMOUNT DRAIN request.
         type: str
         choices:
             - DRAIN
@@ -897,8 +897,7 @@ def run_module(module, arg_def):
         if fst_exists is False:
             module.fail_json(
                 msg="persistent data_set_name member (" + data_set_name + ") doesn't exist",
-                stderr=str(res_args)
-            )
+                stderr=str(res_args))
 
         tmp_file = tempfile.NamedTemporaryFile(delete=True)
         tmp_file_filename = tmp_file.name

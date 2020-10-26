@@ -219,7 +219,7 @@ EXAMPLES = r'''
   custom marker
   zos_apf:
     persistent:
-      data_set_name: SOME.PARTITIONED.DATASET(MEM)
+      data_set_name: "SOME.PARTITIONED.DATASET(MEM)"
       marker: "/* {mark} PROG001 USR0010 */"
     batch:
       - library: SOME.SEQ.DS1

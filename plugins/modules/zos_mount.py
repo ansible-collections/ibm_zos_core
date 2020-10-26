@@ -33,7 +33,7 @@ options:
         required: False
     src:
         description:
-            - The z/OS Unix System Services (USS) file system data set to be mounted.
+            - The z/OS Unix System Services (USS)-compatible data set to be mounted/unmounted.
         type: str
         required: True
     fs_type:
@@ -120,7 +120,35 @@ options:
 
     unmount_opts:
         description:
-            - Describes how the unmount is to be performed.
+            - >
+                Describes how the unmount is to be performed.
+            - >
+                If I(unmount_opts=DRAIN) The system will wait for all use of the file system to be
+                ended normally before the unmount request is processed or until another UNMOUNT command is issued.
+            - >
+                If I(unmount_opts=FORCE) The system is to unmount the file system immediately. 
+                Any users accessing files in the specified file system receive failing return codes. 
+                If the data changes to the files cannot be saved, the unmount request continues and data is lost.
+                An UNMOUNT IMMEDIATE request must be issued before you can request a UNMOUNT FORCE of a file system.
+                Otherwise, UNMOUNT FORCE fails.
+            - >
+                If I(unmount_opts=IMMEDIATE) The system is to unmount the file system immediately. 
+                Any users accessing files in the specified file system receive failing return codes. 
+                All data changes to files in the specified file system are saved. If the data changes to files 
+                cannot be saved, the unmount request fails.
+            - >
+                If I(unmount_opts=NORMAL) If no user is accessing any of the files in the specified file system, 
+                the system processes the unmount request. Otherwise, the system rejects the unmount request. 
+            - >
+                If I(unmount_opts=REMOUNT) The specified file system be remounted and its mount mode changed, if necessary. 
+                REMOUNT takes an optional argument of RDRW, READ, UNMOUNT, or SAMEMODE.
+                If REMOUNT is specified without any arguments, the mount mode is changed from RDWR to READ, or READ to RDWR.
+                If RDWR is specified and the current mode is READ, the file system is remounted in RDWR mode.
+                If READ is specified and the current mode is RDWR, the file system is remounted in READ mode.
+                If SAMEMODE is specified, the file system is remounted (internally unmounted and remounted) without changing 
+                the mount mode. You can use this option to attempt to regain use of a file system that had I/O errors.
+            - >
+                If I(unmount_opts=RESET) A reset request stops a previous UNMOUNT DRAIN request.             
         type: str
         choices:
             - DRAIN
@@ -128,6 +156,9 @@ options:
             - IMMEDIATE
             - NORMAL
             - REMOUNT
+            - REMOUNT(RDWR)
+            - REMOUNT(READ)
+            - REMOUNT(SAMEMODE)
             - RESET
         required: False
         default: NORMAL
@@ -149,8 +180,8 @@ options:
         default: rw
     src_params:
         description:
-            - Specifies a parameter string to be passed to the file system type.
-            - The parameter format and content are specified by the file system type.
+            - Specifies a parameter string to be passed to the src data set during a mount.
+            - The format and content of this field will vary and is specific to the src.
         type: str
         required: False
     tag_untagged:
@@ -977,6 +1008,9 @@ def main():
                     'IMMEDIATE',
                     'NORMAL',
                     'REMOUNT',
+                    'REMOUNT(RDWR)',
+                    'REMOUNT(READ)',
+                    'REMOUNT(SAMEMODE)',
                     'RESET'],
                 required=False),
             mount_opts=dict(

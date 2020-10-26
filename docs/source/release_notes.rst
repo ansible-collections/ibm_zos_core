@@ -33,7 +33,7 @@ What's New
       generate passwords, create zFS, mount zFS and send email
       notifications when deployed to Ansible Tower or AWX with the
       `manage z/OS Users Using Ansible`_ playbook.
-    * Use the `configure Python and ZOAU Installation` playbook to scan the
+    * Use the `configure Python and ZOAU Installation`_ playbook to scan the
       **z/OS** target to find the latest supported configuration and generate
       `inventory`_ and a `variables`_ configuration.
     * All playbooks have been updated to use our temporary data set feature
@@ -138,7 +138,7 @@ Known issues
    https://github.com/IBM/z_ansible_collections_samples/blob/master/docs/share/configuration_guide.md#variables
 .. _support tickets:
    https://github.com/IBM/z_ansible_collections_samples/issues
-   
+
 .. .............................................................................
 .. Blog Links
 .. .............................................................................

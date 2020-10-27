@@ -15,30 +15,47 @@ proceed to install the IBM z/OS core collection.
 * z/OS `V2R3`_ or `later`_
 * `IBM Z Open Automation Utilities`_ (ZOAU)
 
-   * IBM z/OS core collection is dependent on specific versions of ZOAU.
+   .. note::
+
+     IBM z/OS core collection is dependent on specific versions of ZOAU.
      For information about the required version of ZOAU, review the
      `release notes`_.
 
+     Before attempting to run an Ansible playbook, please review the required
+     environment parameters documented in our playbook repository under the
+     `playbook configuration`_ topic. In addition to the
+     `playbook configuration`_, review our `FAQs`_ for additional help.
+
+     There is an additional step for `Z Open Automation Utilities 1.1.0`_
+     (ZOAU) over prior installations of ZOAU on the target z/OS. After you
+     install ZOAU whether from a PAX archive or through SMPe, you will need to
+     perform a PIP installation of the ZOAU Python libraries using this command
+     ``pip install zoautil_py-1.1.0.tar.gz``. This will install the ZOAU
+     Python libraries on the z/OS target for use z/OS Ansible Core and other
+     collections.
+
 * `z/OS OpenSSH`_
-* The z/OS® shell
+* The `z/OS® shell`_
 
-.. note::
-   Currently, only ``z/OS® shell`` is supported. Using ``ansible_shell_executable`` to
-   change the default shell is discouraged. For more information, see
-   `Ansible documentation`_.
+   .. note::
+      Currently, only ``z/OS® shell`` is supported. Using
+      ``ansible_shell_executable`` to change the default shell is discouraged.
+      For more information, see `Ansible documentation`_.
 
-   Shells such as ``bash`` are not supported because they handle the reading and
-   writing of untagged files differently. ``bash`` added enhanced ASCII support
-   in version 4.3 and thus differs from 4.2. If ``bash`` shell is the only shell
-   available, you must control how the new and existing files are tagged and encoded.
-   This can be controlled by setting both "_ENCODE_FILE_NEW" and "_ENCODE_FILE_EXISTING".
-   For example,
+      Shells such as ``bash`` are not supported because they handle the reading
+      and writing of untagged files differently. ``bash`` added enhanced ASCII
+      support in version 4.3 and thus differs from 4.2. If ``bash`` shell is the
+      only shell available, you must control how the new and existing files are
+      tagged and encoded. This can be controlled by setting both
+      "_ENCODE_FILE_NEW" and "_ENCODE_FILE_EXISTING".
 
-   * _ENCODE_FILE_NEW: "IBM-1047"
-   * _ENCODE_FILE_EXISTING: "IBM-1047"
+      For example,
 
-   Please review the README.ZOS guide included with the ported ``bash`` shell
-   for further configurations.
+      * _ENCODE_FILE_NEW: "IBM-1047"
+      * _ENCODE_FILE_EXISTING: "IBM-1047"
+
+      Please review the README.ZOS guide included with the ported ``bash`` shell
+      for further configurations.
 
 .. _Ansible documentation:
    https://docs.ansible.com/ansible/2.7/user_guide/intro_inventory.html
@@ -60,6 +77,18 @@ proceed to install the IBM z/OS core collection.
 
 .. _release notes:
    release_notes.html
+
+.. _playbook configuration:
+   https://github.com/IBM/z_ansible_collections_samples/blob/master/docs/share/configuration_guide.md
+
+.. _FAQs:
+   https://ibm.github.io/z_ansible_collections_doc/faqs/faqs.html
+
+.. _z/OS® shell:
+   https://www.ibm.com/support/knowledgecenter/en/SSLTBW_2.4.0/com.ibm.zos.v2r4.bpxa400/part1.htm
+
+.. _Z Open Automation Utilities 1.1.0:
+   https://www.ibm.com/support/knowledgecenter/SSKFYE_1.1.0/install.html
 
 Python on z/OS
 --------------

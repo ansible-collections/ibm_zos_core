@@ -228,9 +228,11 @@ sftp_port
 
      
 src
-  Absolute local path to a file to copy to the remote z/OS system.
+  Path to a file/directory or name of a data set to copy to remote z/OS system.
 
-  If ``remote_src`` is true, then src must be the absolute path to a UNIX System Services (USS) file, name of a data set, or data set member.
+  If ``remote_src`` is true, then ``src`` must be the path to a Unix System Services (USS) file, name of a data set, or data set member.
+
+  If ``src`` is a local path or a USS path, it can be absolute or relative.
 
   If ``src`` is a directory, destination must be a partitioned data set or a USS directory.
 
@@ -256,6 +258,21 @@ validate
 
   | **required**: False
   | **type**: bool
+
+
+     
+volume
+  If ``dest`` does not exist, specify which volume ``dest`` should be allocated to.
+
+  Only valid when the destination is an MVS data set.
+
+  The volume must already be present on the device.
+
+  If no volume is specified, an appropriate volume will be chosen to allocate ``dest``.
+
+
+  | **required**: False
+  | **type**: str
 
 
 
@@ -406,6 +423,13 @@ Examples
      zos_copy:
        src: SOME.SRC.PDS(ABC*)
        dest: SOME.DEST.PDS
+       remote_src: true
+
+   - name: Allocate destination in a specific volume
+     zos_copy:
+       src: SOME.SRC.PDS
+       dest: SOME.DEST.PDS
+       volume: 'VOL033'
        remote_src: true
 
 

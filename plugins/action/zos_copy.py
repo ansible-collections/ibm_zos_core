@@ -38,7 +38,6 @@ class ActionModule(ActionBase):
         del tmp
 
         src = task_args.get('src', None)
-        b_src = to_bytes(src, errors='surrogate_or_strict')
         dest = task_args.get('dest', None)
         content = task_args.get('content', None)
 
@@ -87,6 +86,8 @@ class ActionModule(ActionBase):
             else:
                 src_member = is_member(src)
                 if not remote_src:
+                    if src.startswith('~'):
+                        src = os.path.expanduser(src)
                     src = os.path.realpath(src)
                     is_src_dir = os.path.isdir(src)
                     is_pds = is_src_dir and is_mvs_dest
@@ -120,11 +121,11 @@ class ActionModule(ActionBase):
                 msg = "No path given for local symlink"
                 return self._exit_action(result, msg, failed=True)
 
-            elif src and not os.path.exists(b_src):
+            elif src and not os.path.exists(src):
                 msg = "The local file {0} does not exist".format(src)
                 return self._exit_action(result, msg, failed=True)
 
-            elif src and not os.access(b_src, os.R_OK):
+            elif src and not os.access(src, os.R_OK):
                 msg = (
                     "The local file {0} does not have appropriate "
                     "read permission".format(src)
@@ -154,7 +155,7 @@ class ActionModule(ActionBase):
                 else:
                     if mode == "preserve":
                         task_args["mode"] = "0{0:o}".format(
-                            stat.S_IMODE(os.stat(b_src).st_mode)
+                            stat.S_IMODE(os.stat(src).st_mode)
                         )
                     task_args["size"] = os.stat(src).st_size
                 transfer_res = self._copy_to_remote(

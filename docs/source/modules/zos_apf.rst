@@ -249,8 +249,8 @@ Examples
        volume: T12345
        persistent:
          data_set_name: SOME.PARTITIONED.DATASET(MEM)
-     - name: Batch libraries with custom marker, persistence for the APF list
-       zos_apf:
+   - name: Batch libraries with custom marker, persistence for the APF list
+     zos_apf:
        persistent:
          data_set_name: "SOME.PARTITIONED.DATASET(MEM)"
          marker: "/* {mark} PROG001 USR0010 */"

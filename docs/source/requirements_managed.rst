@@ -26,13 +26,48 @@ proceed to install the IBM z/OS core collection.
      `playbook configuration`_ topic. In addition to the
      `playbook configuration`_, review our `FAQs`_ for additional help.
 
-     There is an additional step for `Z Open Automation Utilities 1.1.0`_
-     (ZOAU) over prior installations of ZOAU on the target z/OS. After you
-     install ZOAU whether from a PAX archive or through SMPe, you will need to
-     perform a PIP installation of the ZOAU Python libraries using this command
-     ``pip install zoautil_py-1.1.0.tar.gz``. This will install the ZOAU
-     Python libraries on the z/OS target for use z/OS Ansible Core and other
-     collections.
+     There is an additional step for `Z Open Automation Utilities 1.1.0`_ (ZOAU)
+     over prior installations of ZOAU on the target z/OS. After you have
+     `configured IBM Open Enterprise Python on z/OS`_ **environment variables**
+     on the z/OS target and have installed ZOAU from a PAX archive or through
+     SMPe, you will need to perform a PIP installation of the ZOAU Python
+     libraries and ensure you have either exported or added these environment
+     variables to your **z/OS** host **.profile**.
+
+     **Variables**:
+
+     | ``export ZOAU_HOME=/usr/lpp/IBM/zoautil``
+     | ``export PATH=${ZOAU_HOME}/bin:$PATH``
+     | ``export LIBPATH=${ZOAU_HOME}/lib:${LIBPATH}``
+
+     **PIP installation command**:
+
+     | ``pip install zoautil_py-1.1.0.tar.gz``.
+
+     This will install the ZOAU Python libraries on the **z/OS** target for use
+     by **z/OS Ansible core** and other collections.
+
+     However, the Python installation may not have the the symbolic link for
+     ``pip`` in which case you can use ``pip3`` to install the libraries:
+
+     | ``pip3 install zoautil_py-1.1.0.tar.gz``.
+
+     If the Python installation has not installed the ``wheel`` packaging
+     standard and not updated the ``pip`` version to the latest, the warning
+     messages can be ignored.
+
+     **Example output**:
+
+      | Processing ./zoautil_py-1.1.0.tar.gz
+      | Using legacy setup.py install for zoautil-py, since package 'wheel' is
+       not installed.
+      | Installing collected packages: zoautil-py
+      | Running setup.py install for zoautil-py ... done
+      | Successfully installed zoautil-py-1.1.0
+      | WARNING: You are using pip version 20.1.1; however, version 20.2.4 is
+       available.
+      | You should consider upgrading via the
+       '<python_path>/pyz_3_8_2/usr/lpp/IBM/cyp/v3r8/pyz/bin/python3.8 -m pip install --upgrade pip' command.
 
 * `z/OS OpenSSH`_
 * The `z/OS® shell`_
@@ -89,6 +124,9 @@ proceed to install the IBM z/OS core collection.
 
 .. _Z Open Automation Utilities 1.1.0:
    https://www.ibm.com/support/knowledgecenter/SSKFYE_1.1.0/install.html
+
+.. _configured IBM Open Enterprise Python on z/OS:
+   https://www.ibm.com/support/knowledgecenter/SSCH7P_3.8.0/install.html
 
 Python on z/OS
 --------------

@@ -215,8 +215,7 @@ EXAMPLES = r'''
     volume: T12345
     persistent:
       data_set_name: SOME.PARTITIONED.DATASET(MEM)
-- name: Use batch to add a set of libraries to the APF list and persistence and
-  custom marker
+- name: Batch libraries with custom marker, persistence for the APF list
   zos_apf:
     persistent:
       data_set_name: "SOME.PARTITIONED.DATASET(MEM)"

@@ -18,6 +18,7 @@ What's New
   * ``zos_backup_restore`` - Backup and restore data sets and volumes.
   * ``zos_blockinfile`` - Manage block of multi-line textual data on z/OS.
   * ``zos_find`` - Find matching data sets.
+  * ``zos_data_set`` - added support to allocate and format zFS data sets
 
 * Playbooks
 
@@ -59,20 +60,20 @@ What's New
 
 * Documentation
 
-    * All documentation related to `playbook configuration`_ has been
-      migrated to the `playbook repository`_. Each playbook contains a README
-      that explains what configurations must be made to run a sample playbook.
-    * We have been carefully reviewing our users feedback and over time we have
-      compiled a list of information that we feel would help everyone and have
-      released this information in our new `FAQs`_.
-    * Learn about the latest features and experience them before you try
-      them through the blogs that discuss playbooks, modules, and use cases:
+  * All documentation related to `playbook configuration`_ has been
+    migrated to the `playbook repository`_. Each playbook contains a README
+    that explains what configurations must be made to run a sample playbook.
+  * We have been carefully reviewing our users feedback and over time we have
+    compiled a list of information that we feel would help everyone and have
+    released this information in our new `FAQs`_.
+  * Learn about the latest features and experience them before you try
+    them through the blogs that discuss playbooks, modules, and use cases:
 
-      * `Running Batch Jobs on z/OS using Ansible`_ details how
-        to write and execute batch jobs without having to deal with JCL.
+    * `Running Batch Jobs on z/OS using Ansible`_ details how
+      to write and execute batch jobs without having to deal with JCL.
 
-      * `z/OS User Management With Ansible`_ explains all about the user management
-        playbook and its optional integration into AWX.
+    * `z/OS User Management With Ansible`_ explains all about the user management
+      playbook and its optional integration into AWX.
 
 Availability
 ------------

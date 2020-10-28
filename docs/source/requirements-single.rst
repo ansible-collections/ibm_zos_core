@@ -149,7 +149,7 @@ proceed to install the IBM z/OS core collection.
 
 .. _configured IBM Open Enterprise Python on z/OS:
    https://www.ibm.com/support/knowledgecenter/SSCH7P_3.8.0/install.html
-   
+
 Python on z/OS
 --------------
 

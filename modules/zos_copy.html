@@ -37,7 +37,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="zos_data_set – Manage data sets" href="zos_data_set.html" />
-    <link rel="prev" title="Modules" href="../modules.html" /> 
+    <link rel="prev" title="zos_blockinfile – Manage block of multi-line textual data on z/OS" href="zos_blockinfile.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -91,6 +91,9 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../plugins.html">Plugins</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../modules.html">Modules</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="zos_apf.html">zos_apf – Add or remove libraries to Authorized Program Facility (APF)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zos_backup_restore.html">zos_backup_restore – Backup and restore data sets and volumes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zos_blockinfile.html">zos_blockinfile – Manage block of multi-line textual data on z/OS</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">zos_copy – Copy data to z/OS</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#synopsis">Synopsis</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#parameters">Parameters</a></li>
@@ -103,6 +106,7 @@
 <li class="toctree-l2"><a class="reference internal" href="zos_data_set.html">zos_data_set – Manage data sets</a></li>
 <li class="toctree-l2"><a class="reference internal" href="zos_encode.html">zos_encode – Perform encoding operations.</a></li>
 <li class="toctree-l2"><a class="reference internal" href="zos_fetch.html">zos_fetch – Fetch data from z/OS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zos_find.html">zos_find – Find matching data sets</a></li>
 <li class="toctree-l2"><a class="reference internal" href="zos_job_output.html">zos_job_output – Display job output</a></li>
 <li class="toctree-l2"><a class="reference internal" href="zos_job_query.html">zos_job_query – Query job status</a></li>
 <li class="toctree-l2"><a class="reference internal" href="zos_job_submit.html">zos_job_submit – Submit JCL</a></li>
@@ -337,8 +341,9 @@
 <div class="line"><strong>type</strong>: int</div>
 </div>
 </dd>
-<dt>src</dt><dd><p>Absolute local path to a file to copy to the remote z/OS system.</p>
-<p>If <code class="docutils literal notranslate"><span class="pre">remote_src</span></code> is true, then src must be the absolute path to a UNIX System Services (USS) file, name of a data set, or data set member.</p>
+<dt>src</dt><dd><p>Path to a file/directory or name of a data set to copy to remote z/OS system.</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">remote_src</span></code> is true, then <code class="docutils literal notranslate"><span class="pre">src</span></code> must be the path to a Unix System Services (USS) file, name of a data set, or data set member.</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">src</span></code> is a local path or a USS path, it can be absolute or relative.</p>
 <p>If <code class="docutils literal notranslate"><span class="pre">src</span></code> is a directory, destination must be a partitioned data set or a USS directory.</p>
 <p>If <code class="docutils literal notranslate"><span class="pre">src</span></code> is a file and dest ends with “/” or destination is a directory, the file is copied to the directory with the same filename as src.</p>
 <p>If <code class="docutils literal notranslate"><span class="pre">src</span></code> is a VSAM data set, destination must also be a VSAM.</p>
@@ -354,6 +359,15 @@
 <div class="line-block">
 <div class="line"><strong>required</strong>: False</div>
 <div class="line"><strong>type</strong>: bool</div>
+</div>
+</dd>
+<dt>volume</dt><dd><p>If <code class="docutils literal notranslate"><span class="pre">dest</span></code> does not exist, specify which volume <code class="docutils literal notranslate"><span class="pre">dest</span></code> should be allocated to.</p>
+<p>Only valid when the destination is an MVS data set.</p>
+<p>The volume must already be present on the device.</p>
+<p>If no volume is specified, an appropriate volume will be chosen to allocate <code class="docutils literal notranslate"><span class="pre">dest</span></code>.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: str</div>
 </div>
 </dd>
 </dl>
@@ -500,6 +514,13 @@
   <span class="nt">zos_copy</span><span class="p">:</span>
     <span class="nt">src</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">SOME.SRC.PDS(ABC*)</span>
     <span class="nt">dest</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">SOME.DEST.PDS</span>
+    <span class="nt">remote_src</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
+
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Allocate destination in a specific volume</span>
+  <span class="nt">zos_copy</span><span class="p">:</span>
+    <span class="nt">src</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">SOME.SRC.PDS</span>
+    <span class="nt">dest</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">SOME.DEST.PDS</span>
+    <span class="nt">volume</span><span class="p">:</span> <span class="s">&#39;VOL033&#39;</span>
     <span class="nt">remote_src</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
 </pre></div>
 </div>
@@ -726,7 +747,7 @@
         <a href="zos_data_set.html" class="btn btn-neutral float-right" title="zos_data_set – Manage data sets" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="../modules.html" class="btn btn-neutral float-left" title="Modules" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="zos_blockinfile.html" class="btn btn-neutral float-left" title="zos_blockinfile – Manage block of multi-line textual data on z/OS" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -753,7 +774,7 @@
 <div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
     <span class="rst-current-version" data-toggle="rst-current-version">
         <span class="fa fa-book"> Other Versions</span>
-        v: v1.2.1
+        v: v1.3.0-beta.1
         <span class="fa fa-caret-down"></span>
     </span>
     <div class="rst-other-versions">
@@ -762,6 +783,7 @@
             <dd><a href="../v1.0.0/index.html">v1.0.0</a></dd>
             <dd><a href="../v1.1.0/index.html">v1.1.0</a></dd>
             <dd><a href="../v1.2.1/modules/zos_copy.html">v1.2.1</a></dd>
+            <dd><a href="../v1.3.0-beta.1/modules/zos_copy.html">v1.3.0-beta.1</a></dd>
         </dl>
     </div>
 </div>

@@ -195,27 +195,73 @@ proceed to install the IBM z/OS core collection.</p>
 <li><p>z/OS <a class="reference external" href="https://www.ibm.com/support/knowledgecenter/SSLTBW_2.3.0/com.ibm.zos.v2r3/en/homepage.html">V2R3</a> or <a class="reference external" href="https://www.ibm.com/support/knowledgecenter/SSLTBW">later</a></p></li>
 <li><p><a class="reference external" href="requirements-single.html#id1">IBM Z Open Automation Utilities</a> (ZOAU)</p>
 <blockquote>
-<div><ul class="simple">
-<li><p>IBM z/OS core collection is dependent on specific versions of ZOAU.
+<div><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>IBM z/OS core collection is dependent on specific versions of ZOAU.
 For information about the required version of ZOAU, review the
-<a class="reference external" href="release_notes.html">release notes</a>.</p></li>
-</ul>
+<a class="reference external" href="release_notes.html">release notes</a>.</p>
+<p>Before attempting to run an Ansible playbook, please review the required
+environment parameters documented in our playbook repository under the
+<a class="reference external" href="https://github.com/IBM/z_ansible_collections_samples/blob/master/docs/share/configuration_guide.md">playbook configuration</a> topic. In addition to the
+<a class="reference external" href="https://github.com/IBM/z_ansible_collections_samples/blob/master/docs/share/configuration_guide.md">playbook configuration</a>, review our <a class="reference external" href="https://ibm.github.io/z_ansible_collections_doc/faqs/faqs.html">FAQs</a> for additional help.</p>
+<p>There is an additional step for <a class="reference external" href="https://www.ibm.com/support/knowledgecenter/SSKFYE_1.1.0/install.html">Z Open Automation Utilities 1.1.0</a> (ZOAU)
+over prior installations of ZOAU on the target z/OS. After you have
+<a class="reference external" href="https://www.ibm.com/support/knowledgecenter/SSCH7P_3.8.0/install.html">configured IBM Open Enterprise Python on z/OS</a> <strong>environment variables</strong>
+on the z/OS target and have installed ZOAU from a PAX archive or through
+SMPe, you will need to perform a PIP installation of the ZOAU Python
+libraries and ensure you have either exported or added these environment
+variables to your <strong>z/OS</strong> host <strong>.profile</strong>.</p>
+<p><strong>Variables</strong>:</p>
+<div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">export</span> <span class="pre">ZOAU_HOME=/usr/lpp/IBM/zoautil</span></code></div>
+<div class="line"><code class="docutils literal notranslate"><span class="pre">export</span> <span class="pre">PATH=${ZOAU_HOME}/bin:$PATH</span></code></div>
+<div class="line"><code class="docutils literal notranslate"><span class="pre">export</span> <span class="pre">LIBPATH=${ZOAU_HOME}/lib:${LIBPATH}</span></code></div>
+</div>
+<p><strong>PIP installation command</strong>:</p>
+<div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">zoautil_py-1.1.0.tar.gz</span></code>.</div>
+</div>
+<p>This will install the ZOAU Python libraries on the <strong>z/OS</strong> target for use
+by <strong>z/OS Ansible core</strong> and other collections.</p>
+<p>However, the Python installation may not have the the symbolic link for
+<code class="docutils literal notranslate"><span class="pre">pip</span></code> in which case you can use <code class="docutils literal notranslate"><span class="pre">pip3</span></code> to install the libraries:
+| <code class="docutils literal notranslate"><span class="pre">pip3</span> <span class="pre">install</span> <span class="pre">zoautil_py-1.1.0.tar.gz</span></code>.</p>
+<p>If the Python installation has not installed the <code class="docutils literal notranslate"><span class="pre">wheel</span></code> packaging
+standard and not updated the <code class="docutils literal notranslate"><span class="pre">pip</span></code> version to the latest, the warning
+messages can be ignored.</p>
+<p><strong>Example output</strong>:</p>
+<blockquote>
+<div><div class="line-block">
+<div class="line">Processing ./zoautil_py-1.1.0.tar.gz</div>
+<div class="line">Using legacy setup.py install for zoautil-py, since package ‘wheel’ is
+not installed.</div>
+<div class="line">Installing collected packages: zoautil-py</div>
+<div class="line">Running setup.py install for zoautil-py … done</div>
+<div class="line">Successfully installed zoautil-py-1.1.0</div>
+<div class="line">WARNING: You are using pip version 20.1.1; however, version 20.2.4 is
+available.</div>
+<div class="line">You should consider upgrading via the
+‘&lt;python_path&gt;/pyz_3_8_2/usr/lpp/IBM/cyp/v3r8/pyz/bin/python3.8 -m pip install –upgrade pip’ command.</div>
+</div>
+</div></blockquote>
+</div>
 </div></blockquote>
 </li>
 <li><p><a class="reference external" href="https://www.ibm.com/support/knowledgecenter/SSLTBW_2.2.0/com.ibm.zos.v2r2.e0za100/ch1openssh.htm">z/OS OpenSSH</a></p></li>
-<li><p>The z/OS® shell</p></li>
-</ul>
-<div class="admonition note">
+<li><p>The <a class="reference external" href="https://www.ibm.com/support/knowledgecenter/en/SSLTBW_2.4.0/com.ibm.zos.v2r4.bpxa400/part1.htm">z/OS® shell</a></p>
+<blockquote>
+<div><div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Currently, only <code class="docutils literal notranslate"><span class="pre">z/OS®</span> <span class="pre">shell</span></code> is supported. Using <code class="docutils literal notranslate"><span class="pre">ansible_shell_executable</span></code> to
-change the default shell is discouraged. For more information, see
-<a class="reference external" href="https://docs.ansible.com/ansible/2.7/user_guide/intro_inventory.html">Ansible documentation</a>.</p>
-<p>Shells such as <code class="docutils literal notranslate"><span class="pre">bash</span></code> are not supported because they handle the reading and
-writing of untagged files differently. <code class="docutils literal notranslate"><span class="pre">bash</span></code> added enhanced ASCII support
-in version 4.3 and thus differs from 4.2. If <code class="docutils literal notranslate"><span class="pre">bash</span></code> shell is the only shell
-available, you must control how the new and existing files are tagged and encoded.
-This can be controlled by setting both “_ENCODE_FILE_NEW” and “_ENCODE_FILE_EXISTING”.
-For example,</p>
+<p>Currently, only <code class="docutils literal notranslate"><span class="pre">z/OS®</span> <span class="pre">shell</span></code> is supported. Using
+<code class="docutils literal notranslate"><span class="pre">ansible_shell_executable</span></code> to change the default shell is discouraged.
+For more information, see <a class="reference external" href="https://docs.ansible.com/ansible/2.7/user_guide/intro_inventory.html">Ansible documentation</a>.</p>
+<p>Shells such as <code class="docutils literal notranslate"><span class="pre">bash</span></code> are not supported because they handle the reading
+and writing of untagged files differently. <code class="docutils literal notranslate"><span class="pre">bash</span></code> added enhanced ASCII
+support in version 4.3 and thus differs from 4.2. If <code class="docutils literal notranslate"><span class="pre">bash</span></code> shell is the
+only shell available, you must control how the new and existing files are
+tagged and encoded. This can be controlled by setting both
+“_ENCODE_FILE_NEW” and “_ENCODE_FILE_EXISTING”.</p>
+<p>For example,</p>
 <ul class="simple">
 <li><p>_ENCODE_FILE_NEW: “IBM-1047”</p></li>
 <li><p>_ENCODE_FILE_EXISTING: “IBM-1047”</p></li>
@@ -223,6 +269,9 @@ For example,</p>
 <p>Please review the README.ZOS guide included with the ported <code class="docutils literal notranslate"><span class="pre">bash</span></code> shell
 for further configurations.</p>
 </div>
+</div></blockquote>
+</li>
+</ul>
 <div class="section" id="id1">
 <h3>Python on z/OS<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
 <p>If the Ansible target is z/OS, you must install
@@ -310,7 +359,7 @@ latest PTF, installation, and configuration instructions.</p></li>
 <div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
     <span class="rst-current-version" data-toggle="rst-current-version">
         <span class="fa fa-book"> Other Versions</span>
-        v: v1.2.1
+        v: v1.3.0-beta.1
         <span class="fa fa-caret-down"></span>
     </span>
     <div class="rst-other-versions">
@@ -319,6 +368,7 @@ latest PTF, installation, and configuration instructions.</p></li>
             <dd><a href="v1.0.0/index.html">v1.0.0</a></dd>
             <dd><a href="v1.1.0/index.html">v1.1.0</a></dd>
             <dd><a href="v1.2.1/requirements-single.html">v1.2.1</a></dd>
+            <dd><a href="v1.3.0-beta.1/requirements-single.html">v1.3.0-beta.1</a></dd>
         </dl>
     </div>
 </div>

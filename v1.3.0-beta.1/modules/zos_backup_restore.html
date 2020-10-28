@@ -1,0 +1,526 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>zos_backup_restore – Backup and restore data sets and volumes &mdash; IBM z/OS core collection 1.0.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/banner.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="zos_blockinfile – Manage block of multi-line textual data on z/OS" href="zos_blockinfile.html" />
+    <link rel="prev" title="zos_apf – Add or remove libraries to Authorized Program Facility (APF)" href="zos_apf.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> IBM z/OS core collection
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../requirements-single.html">Requirements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../playbooks.html">Playbooks</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Ansible Content</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../plugins.html">Plugins</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../modules.html">Modules</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="zos_apf.html">zos_apf – Add or remove libraries to Authorized Program Facility (APF)</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">zos_backup_restore – Backup and restore data sets and volumes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#synopsis">Synopsis</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#parameters">Parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#examples">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="zos_blockinfile.html">zos_blockinfile – Manage block of multi-line textual data on z/OS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zos_copy.html">zos_copy – Copy data to z/OS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zos_data_set.html">zos_data_set – Manage data sets</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zos_encode.html">zos_encode – Perform encoding operations.</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zos_fetch.html">zos_fetch – Fetch data from z/OS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zos_find.html">zos_find – Find matching data sets</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zos_job_output.html">zos_job_output – Display job output</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zos_job_query.html">zos_job_query – Query job status</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zos_job_submit.html">zos_job_submit – Submit JCL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zos_lineinfile.html">zos_lineinfile – Manage textual data on z/OS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zos_mvs_raw.html">zos_mvs_raw – Run a z/OS program.</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zos_operator.html">zos_operator – Execute operator command</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zos_operator_action_query.html">zos_operator_action_query – Display messages requiring action</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zos_ping.html">zos_ping – Ping z/OS and check dependencies.</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zos_tso_command.html">zos_tso_command – Execute TSO commands</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../filters.html">Filters</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Release Notes</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../release_notes.html">Releases</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../community_guides.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../license.html">License</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">IBM z/OS core collection</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../modules.html">Modules</a> &raquo;</li>
+        
+      <li>zos_backup_restore – Backup and restore data sets and volumes</li>
+    
+    
+
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+
+
+
+
+
+<div class="section" id="zos-backup-restore-backup-and-restore-data-sets-and-volumes">
+<span id="zos-backup-restore-module"></span><h1>zos_backup_restore – Backup and restore data sets and volumes<a class="headerlink" href="#zos-backup-restore-backup-and-restore-data-sets-and-volumes" title="Permalink to this headline">¶</a></h1>
+<div class="contents local topic" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#synopsis" id="id1">Synopsis</a></p></li>
+<li><p><a class="reference internal" href="#parameters" id="id2">Parameters</a></p></li>
+<li><p><a class="reference internal" href="#examples" id="id3">Examples</a></p></li>
+</ul>
+</div>
+<div class="section" id="synopsis">
+<h2><a class="toc-backref" href="#id1">Synopsis</a><a class="headerlink" href="#synopsis" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p>Create and restore from backups of data sets and volumes.</p></li>
+<li><p>Data set backups are performed using logical dumps, volume backups are performed using physical dumps.</p></li>
+<li><p>Backups are compressed using AMATERSE.</p></li>
+<li><p>Backups are created by first dumping data sets with ADRDSSU, followed by compression with AMATERSE.</p></li>
+<li><p>Restoration is performed by first decompressing an archive with AMATERSE, then restoring with ADRDSSU.</p></li>
+<li><p>Since ADRDSSU and AMATERSE are used to create and restore backups, backups can be restored to systems where Ansible and ZOAU are not available. Conversely, dumps created with ADRDSSU and AMATERSE can be restored using this module.</p></li>
+</ul>
+</div>
+<div class="section" id="parameters">
+<h2><a class="toc-backref" href="#id2">Parameters</a><a class="headerlink" href="#parameters" title="Permalink to this headline">¶</a></h2>
+<dl>
+<dt>backup_name</dt><dd><p>When <em>operation=backup</em>, the destination data set or UNIX file to hold the backup.</p>
+<p>When <em>operation=restore</em>, the destination data set or UNIX file backup to restore.</p>
+<p>There are no enforced conventions for backup names. However, using a common extension like <code class="docutils literal notranslate"><span class="pre">.dzp</span></code> for UNIX files and <code class="docutils literal notranslate"><span class="pre">.DZP</span></code> for data sets will improve readability.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: True</div>
+<div class="line"><strong>type</strong>: str</div>
+</div>
+</dd>
+<dt>data_sets</dt><dd><p>Determines which data sets to include in the backup.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: True</div>
+<div class="line"><strong>type</strong>: dict</div>
+</div>
+<dl>
+<dt>exclude</dt><dd><p>When <em>operation=backup</em>, specifies a list of data sets or data set patterns to exclude from the backup.</p>
+<p>When <em>operation=restore</em>, specifies a list of data sets or data set patterns to exclude when restoring from a backup.</p>
+<p>The single asterisk, <code class="docutils literal notranslate"><span class="pre">*</span></code>, is used in place of exactly one qualifier. In addition, it can be used to indicate that only part of a qualifier has been specified.”</p>
+<p>When used with other qualifiers, the double asterisk, <code class="docutils literal notranslate"><span class="pre">**</span></code>, indicates either the nonexistence of leading, trailing, or middle qualifiers, or the fact that they play no role in the selection process.</p>
+<p>Two asterisks are the maximum permissible in a qualifier. If there are two asterisks in a qualifier, they must be the first and last characters.</p>
+<p>A question mark <code class="docutils literal notranslate"><span class="pre">?</span></code> or percent sign <code class="docutils literal notranslate"><span class="pre">%</span></code> matches a single character.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: raw</div>
+</div>
+</dd>
+<dt>include</dt><dd><p>When <em>operation=backup</em>, specifies a list of data sets or data set patterns to include in the backup.</p>
+<p>When <em>operation=restore</em>, specifies a list of data sets or data set patterns to include when restoring from a backup.</p>
+<p>The single asterisk, <code class="docutils literal notranslate"><span class="pre">*</span></code>, is used in place of exactly one qualifier. In addition, it can be used to indicate to DFSMSdss that only part of a qualifier has been specified.</p>
+<p>When used with other qualifiers, the double asterisk, <code class="docutils literal notranslate"><span class="pre">**</span></code>, indicates either the nonexistence of leading, trailing, or middle qualifiers, or the fact that they play no role in the selection process.</p>
+<p>Two asterisks are the maximum permissible in a qualifier. If there are two asterisks in a qualifier, they must be the first and last characters.</p>
+<p>A question mark <code class="docutils literal notranslate"><span class="pre">?</span></code> or percent sign <code class="docutils literal notranslate"><span class="pre">%</span></code> matches a single character.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: True</div>
+<div class="line"><strong>type</strong>: raw</div>
+</div>
+</dd>
+</dl>
+</dd>
+<dt>full_volume</dt><dd><p>When <em>operation=backup</em> and <em>full_volume=True</em>, specifies that the entire volume provided to <em>volume</em> should be backed up.</p>
+<p>When <em>operation=restore</em> and <em>full_volume=True</em>, specifies that the volume should be restored (default is dataset).</p>
+<p><em>volume</em> must be provided when <em>full_volume=True</em>.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: bool</div>
+</div>
+</dd>
+<dt>hlq</dt><dd><p>Specifies the new HLQ to use for the data sets being restored.</p>
+<p>Defaults to running user’s username.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: str</div>
+</div>
+</dd>
+<dt>operation</dt><dd><p>Used to specify the operation to perform.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: True</div>
+<div class="line"><strong>type</strong>: str</div>
+<div class="line"><strong>choices</strong>: backup, restore</div>
+</div>
+</dd>
+<dt>overwrite</dt><dd><p>When <em>operation=backup</em>, specifies if an existing data set or UNIX file matching <em>backup_name</em> should be deleted.</p>
+<p>When <em>operation=restore</em>, specifies if the module should overwrite existing data sets with matching name on the target device.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: bool</div>
+</div>
+</dd>
+<dt>recover</dt><dd><p>Specifies if potentially recoverable errors should be ignored.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: bool</div>
+</div>
+</dd>
+<dt>sms_management_class</dt><dd><p>When <em>operation=restore</em>, specifies the management class to use. The management class will also be used for temporary data sets created during restore process.</p>
+<p>When <em>operation=backup</em>, specifies the management class to use for temporary data sets created during backup process.</p>
+<p>If neither of <em>sms_storage_class</em> or <em>sms_management_class</em> are specified, the z/OS system’s Automatic Class Selection (ACS) routines will be used.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: str</div>
+</div>
+</dd>
+<dt>sms_storage_class</dt><dd><p>When <em>operation=restore</em>, specifies the storage class to use. The storage class will also be used for temporary data sets created during restore process.</p>
+<p>When <em>operation=backup</em>, specifies the storage class to use for temporary data sets created during backup process.</p>
+<p>If neither of <em>sms_storage_class</em> or <em>sms_management_class</em> are specified, the z/OS system’s Automatic Class Selection (ACS) routines will be used.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: str</div>
+</div>
+</dd>
+<dt>space</dt><dd><p>If <em>operation=backup</em>, specifies the amount of space to allocate for the backup. Please note that even when backing up to a UNIX file, backup contents will be temporarily held in a data set.</p>
+<p>If <em>operation=restore</em>, specifies the amount of space to allocate for data sets temporarily created during the restore process.</p>
+<p>The unit of space used is set using <em>space_type</em>.</p>
+<p>When <em>full_volume=True</em>, <em>space</em> defaults to <code class="docutils literal notranslate"><span class="pre">1</span></code>, otherwise default is <code class="docutils literal notranslate"><span class="pre">25</span></code></p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: int</div>
+</div>
+</dd>
+<dt>space_type</dt><dd><p>The unit of measurement to use when defining data set space.</p>
+<p>Valid units of size are <code class="docutils literal notranslate"><span class="pre">K</span></code>, <code class="docutils literal notranslate"><span class="pre">M</span></code>, <code class="docutils literal notranslate"><span class="pre">G</span></code>, <code class="docutils literal notranslate"><span class="pre">CYL</span></code>, and <code class="docutils literal notranslate"><span class="pre">TRK</span></code>.</p>
+<p>When <em>full_volume=True</em>, <em>space_type</em> defaults to <code class="docutils literal notranslate"><span class="pre">G</span></code>, otherwise default is <code class="docutils literal notranslate"><span class="pre">M</span></code></p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: str</div>
+<div class="line"><strong>choices</strong>: K, M, G, CYL, TRK</div>
+</div>
+</dd>
+<dt>temp_volume</dt><dd><p>Specifies a particular volume on which the temporary data sets should be created during the backup and restore process.</p>
+<p>When <em>operation=backup</em> and <em>backup_name</em> is a data set, specifies the volume the backup should be placed in.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: str</div>
+</div>
+</dd>
+<dt>volume</dt><dd><p>This applies to both data set restores and volume restores.</p>
+<p>When <em>operation=backup</em> and <em>data_sets</em> are provided, specifies the volume that contains the data sets to backup.</p>
+<p>When <em>operation=restore</em>, specifies the volume the backup should be restored to.</p>
+<p><em>volume</em> is required when restoring a full volume backup.</p>
+<div class="line-block">
+<div class="line"><strong>required</strong>: False</div>
+<div class="line"><strong>type</strong>: str</div>
+</div>
+</dd>
+</dl>
+</div>
+<div class="section" id="examples">
+<h2><a class="toc-backref" href="#id3">Examples</a><a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-yaml+jinja notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Backup all data sets matching the pattern USER.** to data set MY.BACKUP.DZP</span>
+  <span class="nt">zos_backup_restore</span><span class="p">:</span>
+    <span class="nt">operation</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">backup</span>
+    <span class="nt">data_sets</span><span class="p">:</span>
+      <span class="nt">include</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">user.**</span>
+    <span class="nt">backup_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">MY.BACKUP.DZP</span>
+
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Backup all data sets matching the patterns USER.** or PRIVATE.TEST.*</span>
+    <span class="l l-Scalar l-Scalar-Plain">excluding data sets matching the pattern USER.PRIVATE.* to data set MY.BACKUP.DZP</span>
+  <span class="nt">zos_backup_restore</span><span class="p">:</span>
+    <span class="nt">operation</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">backup</span>
+    <span class="nt">data_sets</span><span class="p">:</span>
+      <span class="nt">include</span><span class="p">:</span>
+        <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">user.**</span>
+        <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">private.test.*</span>
+      <span class="nt">exclude</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">user.private.*</span>
+    <span class="nt">backup_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">MY.BACKUP.DZP</span>
+
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Backup all datasets matching the pattern USER.** to UNIX file /tmp/temp_backup.dzp, ignore recoverable errors.</span>
+  <span class="nt">zos_backup_restore</span><span class="p">:</span>
+    <span class="nt">operation</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">backup</span>
+    <span class="nt">data_sets</span><span class="p">:</span>
+      <span class="nt">include</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">user.**</span>
+    <span class="nt">backup_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/tmp/temp_backup.dzp</span>
+    <span class="nt">recover</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">yes</span>
+
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Backup all datasets matching the pattern USER.** to data set MY.BACKUP.DZP,</span>
+    <span class="l l-Scalar l-Scalar-Plain">allocate 100MB for data sets used in backup process.</span>
+  <span class="nt">zos_backup_restore</span><span class="p">:</span>
+    <span class="nt">operation</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">backup</span>
+    <span class="nt">data_sets</span><span class="p">:</span>
+      <span class="nt">include</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">user.**</span>
+    <span class="nt">backup_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">MY.BACKUP.DZP</span>
+    <span class="nt">space</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">100</span>
+    <span class="nt">space_type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">M</span>
+
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span>
+    <span class="l l-Scalar l-Scalar-Plain">Backup all datasets matching the pattern USER.** that are present on the volume MYVOL1 to data set MY.BACKUP.DZP,</span>
+    <span class="l l-Scalar l-Scalar-Plain">allocate 100MB for data sets used in the backup process.</span>
+  <span class="nt">zos_backup_restore</span><span class="p">:</span>
+    <span class="nt">operation</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">backup</span>
+    <span class="nt">data_sets</span><span class="p">:</span>
+      <span class="nt">include</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">user.**</span>
+    <span class="nt">volume</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">MYVOL1</span>
+    <span class="nt">backup_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">MY.BACKUP.DZP</span>
+    <span class="nt">space</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">100</span>
+    <span class="nt">space_type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">M</span>
+
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Backup an entire volume, MYVOL1, to the UNIX file /tmp/temp_backup.dzp,</span>
+    <span class="l l-Scalar l-Scalar-Plain">allocate 1GB for data sets used in backup process.</span>
+  <span class="nt">zos_backup_restore</span><span class="p">:</span>
+    <span class="nt">operation</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">backup</span>
+    <span class="nt">backup_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/tmp/temp_backup.dzp</span>
+    <span class="nt">volume</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">MYVOL1</span>
+    <span class="nt">full_volume</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">yes</span>
+    <span class="nt">space</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
+    <span class="nt">space_type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">G</span>
+
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Restore data sets from backup stored in the UNIX file /tmp/temp_backup.dzp.</span>
+    <span class="l l-Scalar l-Scalar-Plain">Use z/OS username as new HLQ.</span>
+  <span class="nt">zos_backup_restore</span><span class="p">:</span>
+    <span class="nt">operation</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">restore</span>
+    <span class="nt">backup_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/tmp/temp_backup.dzp</span>
+
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Restore data sets from backup stored in the UNIX file /tmp/temp_backup.dzp.</span>
+    <span class="l l-Scalar l-Scalar-Plain">Only restore data sets whose last, or only qualifier is TEST.</span>
+    <span class="l l-Scalar l-Scalar-Plain">Use MYHLQ as the new HLQ for restored data sets.</span>
+  <span class="nt">zos_backup_restore</span><span class="p">:</span>
+    <span class="nt">operation</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">restore</span>
+    <span class="nt">data_sets</span><span class="p">:</span>
+      <span class="nt">include</span><span class="p">:</span> <span class="s">&quot;**.TEST&quot;</span>
+    <span class="nt">backup_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/tmp/temp_backup.dzp</span>
+    <span class="nt">hlq</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">MYHLQ</span>
+
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Restore data sets from backup stored in the UNIX file /tmp/temp_backup.dzp.</span>
+    <span class="l l-Scalar l-Scalar-Plain">Only restore data sets whose last, or only qualifier is TEST.</span>
+    <span class="l l-Scalar l-Scalar-Plain">Use MYHLQ as the new HLQ for restored data sets. Restore data sets to volume MYVOL2.</span>
+  <span class="nt">zos_backup_restore</span><span class="p">:</span>
+    <span class="nt">operation</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">restore</span>
+    <span class="nt">data_sets</span><span class="p">:</span>
+      <span class="nt">include</span><span class="p">:</span> <span class="s">&quot;**.TEST&quot;</span>
+    <span class="nt">volume</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">MYVOL2</span>
+    <span class="nt">backup_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/tmp/temp_backup.dzp</span>
+    <span class="nt">hlq</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">MYHLQ</span>
+
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Restore data sets from backup stored in the data set MY.BACKUP.DZP.</span>
+    <span class="l l-Scalar l-Scalar-Plain">Use MYHLQ as the new HLQ for restored data sets.</span>
+  <span class="nt">zos_backup_restore</span><span class="p">:</span>
+    <span class="nt">operation</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">restore</span>
+    <span class="nt">backup_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">MY.BACKUP.DZP</span>
+    <span class="nt">hlq</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">MYHLQ</span>
+
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Restore volume from backup stored in the data set MY.BACKUP.DZP.</span>
+    <span class="l l-Scalar l-Scalar-Plain">Restore to volume MYVOL2.</span>
+  <span class="nt">zos_backup_restore</span><span class="p">:</span>
+    <span class="nt">operation</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">restore</span>
+    <span class="nt">volume</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">MYVOL2</span>
+    <span class="nt">full_volume</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">yes</span>
+    <span class="nt">backup_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">MY.BACKUP.DZP</span>
+    <span class="nt">space</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
+    <span class="nt">space_type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">G</span>
+
+<span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Restore data sets from backup stored in the UNIX file /tmp/temp_backup.dzp.</span>
+    <span class="l l-Scalar l-Scalar-Plain">Specify DB2SMS10 for the SMS storage and management classes to use for the restored</span>
+    <span class="l l-Scalar l-Scalar-Plain">data sets.</span>
+  <span class="nt">zos_backup_restore</span><span class="p">:</span>
+    <span class="nt">operation</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">restore</span>
+    <span class="nt">volume</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">MYVOL2</span>
+    <span class="nt">backup_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/tmp/temp_backup.dzp</span>
+    <span class="nt">sms_storage_class</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">DB2SMS10</span>
+    <span class="nt">sms_management_class</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">DB2SMS10</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="zos_blockinfile.html" class="btn btn-neutral float-right" title="zos_blockinfile – Manage block of multi-line textual data on z/OS" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="zos_apf.html" class="btn btn-neutral float-left" title="zos_apf – Add or remove libraries to Authorized Program Facility (APF)" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, IBM
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+<div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+        <span class="fa fa-book"> Other Versions</span>
+        v: v1.3.0-beta.1
+        <span class="fa fa-caret-down"></span>
+    </span>
+    <div class="rst-other-versions">
+        <dl>
+            <dt>Tags</dt>
+            <dd><a href="../../v1.0.0/index.html">v1.0.0</a></dd>
+            <dd><a href="../../v1.1.0/index.html">v1.1.0</a></dd>
+            <dd><a href="../../v1.2.1/index.html">v1.2.1</a></dd>
+            <dd><a href="zos_backup_restore.html">v1.3.0-beta.1</a></dd>
+        </dl>
+    </div>
+</div>
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

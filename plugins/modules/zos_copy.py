@@ -247,9 +247,6 @@ EXAMPLES = r"""
   zos_copy:
     src: /path/to/file.txt
     dest: /tmp/file.txt
-    encoding:
-      from: ISO8859-1
-      to: IBM-1047
 
 - name: Copy a local directory to a PDSE
   zos_copy:
@@ -270,10 +267,13 @@ EXAMPLES = r"""
     dest: /path/to/uss/location
     local_follow: true
 
-- name: Copy a local file to a PDS member
+- name: Copy a local file to a PDS member and convert encoding
   zos_copy:
     src: /path/to/local/file
     dest: HLQ.SAMPLE.PDSE(MEMBER)
+    encoding:
+      from: UTF-8
+      to: IBM-037
 
 - name: Copy a VSAM(KSDS) to a VSAM(KSDS)
   zos_copy:
@@ -291,9 +291,6 @@ EXAMPLES = r"""
     src: /path/to/remote/uss/file
     dest: SAMPLE.SEQ.DATA.SET
     remote_src: true
-    encoding:
-      from: ISO8859-1
-      to: IBM-1047
 
 - name: Copy a USS directory to another USS directory
   zos_copy:
@@ -587,15 +584,12 @@ class CopyHandler(object):
             alloc_vol {str} -- The volume where destination should be allocated
         """
         new_src = temp_path or conv_path or src
-        if self.dest_exists:
-            datasets.delete(dest)
         if model_ds:
+            if self.dest_exists:
+                datasets.delete(dest)
             self.allocate_model(dest, model_ds, vol=alloc_vol)
 
         if src_ds_type == "USS":
-            if not model_ds:
-                ps_size = "{0}K".format(math.ceil(os.stat(new_src).st_size / 1024))
-                self._allocate_ps(dest, size=ps_size)
             rc, out, err = self.run_command(
                 "cp {0} {1} \"//'{2}'\"".format(
                     "-B" if self.is_binary else "", new_src, dest

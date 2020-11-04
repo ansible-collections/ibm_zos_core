@@ -1,7 +1,9 @@
-
+# Copyright (c) IBM Corporation 2020
 
 ################################################################################
-# Role metadata doc readme
+# Role metadata documentation readme
+# This documents how to create the metadata for roles so that it can be used
+# with the make file target `role-doc`
 ################################################################################
 
 ################################################################################
@@ -11,6 +13,14 @@
 # ansile-doc-extractor follows the same configuration options that apply to
 # Ansible module documenting which can be reviewed at:
 # https://docs.ansible.com/ansible/latest/dev_guide/developing_modules_documenting.html
+#
+# Role meta data file should be named:
+#  Format: doc_<role_name>
+#  In the example, the role name is 'role_sample' so the metadata is
+#  named 'doc_role_sample'
+#
+# Role metadata file should be placed in a directory called `docs` inside the role:
+#  <collection>/roles/<role_name>/docs/doc_<role_name>
 #
 # Role metadata documentation should:
 #

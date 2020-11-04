@@ -93,16 +93,17 @@ def _parse_jobs(output_str):
         for job_str in job_strs:
             job = {}
             job_info_match = re.search(
-                r"job_id:([^\n]*)\njob_name:([^\n]*)\nsubsystem:([^\n]*)\nowner:([^\n]*)\nret_code_msg:([^\n]*)\nclass:([^\n]*)\ncontent_type:([^\n]*)",
+                r"job_id:([^\n]*)\njob_name:([^\n]*)\nsubsystem:([^\n]*)\nsystem:([^\n]*)\nowner:([^\n]*)\nret_code_msg:([^\n]*)\nclass:([^\n]*)\ncontent_type:([^\n]*)",
                 job_str,
             )
             job["job_id"] = job_info_match.group(1).strip()
             job["job_name"] = job_info_match.group(2).strip()
             job["subsystem"] = job_info_match.group(3).strip()
-            job["owner"] = job_info_match.group(4).strip()
+            job["system"] = job_info_match.group(4).strip()
+            job["owner"] = job_info_match.group(5).strip()
 
             job["ret_code"] = {}
-            ret_code_msg = job_info_match.group(5).strip()
+            ret_code_msg = job_info_match.group(6).strip()
             if ret_code_msg:
                 job["ret_code"]["msg"] = ret_code_msg
             job["ret_code"]["code"] = _get_return_code_num(ret_code_msg)
@@ -111,8 +112,8 @@ def _parse_jobs(output_str):
             if ret_code_msg == "":
                 job["ret_code"]["msg"] = "AC"
 
-            job["class"] = job_info_match.group(6).strip()
-            job["content_type"] = job_info_match.group(7).strip()
+            job["class"] = job_info_match.group(7).strip()
+            job["content_type"] = job_info_match.group(8).strip()
 
             job["ddnames"] = _parse_dds(job_str)
             jobs.append(job)
@@ -212,6 +213,7 @@ do ix=1 to isfrows
     Say 'job_id'||':'||value('JOBID'||"."||ix)
     Say 'job_name'||':'||value('JNAME'||"."||ix)
     Say 'subsystem'||':'||value('ESYSID'||"."||ix)
+    Say 'system'||':'||value('SYSNAME'||"."||ix)
     Say 'owner'||':'||value('OWNERID'||"."||ix)
     Say 'ret_code_msg'||':'||value('RETCODE'||"."||ix)
     Say 'class'||':'||value('JCLASS'||"."||ix)
@@ -310,25 +312,14 @@ def job_status(job_id=None, owner=None, job_name=None):
     job_name = parsed_args.get("job_name") or "*"
     owner = parsed_args.get("owner") or "*"
 
-    job_status_json = _get_job_status(job_id, owner, job_name)
-    if len(job_status_json) == 0:
+    job_status = _get_job_status(job_id, owner, job_name)
+    if len(job_status) == 0:
         job_id = "" if job_id == "*" else job_id
         job_name = "" if job_name == "*" else job_name
         owner = "" if owner == "*" else owner
-        job_status_json = _get_job_status(job_id, owner, job_name)
+        job_status = _get_job_status(job_id, owner, job_name)
 
-    for job in job_status_json:
-        job["ret_code"] = {} if job.get("ret_code") is None else job.get("ret_code")
-        job["ret_code"]["code"] = _get_return_code_num(
-            job.get("ret_code").get("msg", "")
-        )
-        job["ret_code"]["msg_code"] = _get_return_code_str(
-            job.get("ret_code").get("msg", "")
-        )
-        job["ret_code"]["msg_txt"] = ""
-        if job.get("ret_code").get("msg", "") == "":
-            job["ret_code"]["msg"] = "AC"
-    return job_status_json
+    return job_status
 
 
 def _get_job_status(job_id="*", owner="*", job_name="*"):
@@ -359,7 +350,7 @@ def _get_job_status_str(job_id="*", owner="*", job_name="*"):
     Returns:
         tuple[int, str, str] -- RC, STDOUT, and STDERR from the REXX script.
     """
-    get_job_status_json_rexx = """/* REXX */
+    get_job_status_rexx = """/* REXX */
 arg options
 parse var options param
 upper param
@@ -395,14 +386,14 @@ do ix=1 to isfrows
     if ix<>1 then do
     end
     Say '-----START OF JOB-----'
-    Say '"'||'job_id'||'":"'||value('JOBID'||"."||ix)||'",'
-    Say '"'||'job_name'||'":"'||value('JNAME'||"."||ix)||'",'
-    Say '"'||'subsystem'||'":"'||value('ESYSID'||"."||ix)||'",'
-    Say '"'||'system'||'":"'||value('SYSNAME'||"."||ix)||'",'
-    Say '"'||'owner'||'":"'||value('OWNERID'||"."||ix)||'",'
-    Say '"'||'ret_code'||'":{"'||'msg'||'":"'||value('RETCODE'||"."||ix)||'"},'
-    Say '"'||'class'||'":"'||value('JCLASS'||"."||ix)||'",'
-    Say '"'||'content_type'||'":"'||value('JTYPE'||"."||ix)||'"'
+    Say 'job_id'||':'||value('JOBID'||"."||ix)
+    Say 'job_name'||':'||value('JNAME'||"."||ix)
+    Say 'subsystem'||':'||value('ESYSID'||"."||ix)
+    Say 'system'||':'||value('SYSNAME'||"."||ix)
+    Say 'owner'||':'||value('OWNERID'||"."||ix)
+    Say 'ret_code_msg'||':'||value('RETCODE'||"."||ix)
+    Say 'class'||':'||value('JCLASS'||"."||ix)
+    Say 'content_type'||':'||value('JTYPE'||"."||ix)
     Say '-----END OF JOB-----'
 end
 end
@@ -419,7 +410,7 @@ return 0
 
         tmp = NamedTemporaryFile(delete=True)
         with open(tmp.name, "w") as f:
-            f.write(get_job_status_json_rexx)
+            f.write(get_job_status_rexx)
         chmod(tmp.name, S_IEXEC | S_IREAD | S_IWRITE)
         args = [jobid_param, owner_param, jobname_param]
 

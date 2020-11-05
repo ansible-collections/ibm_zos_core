@@ -150,3 +150,4 @@ fi
 echo "Generate documentation for sample "
 cd ${PROJECT_ROOT_PATH}/docs/
 make clean;make role-doc;make html;make view-html;
+

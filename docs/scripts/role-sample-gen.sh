@@ -125,6 +125,28 @@ for pkg in ${packages[@]}; do
 	fi
 done
 
+if [ -e $PROJECT_DOC_SOURCE_PATH/index.rst ]
+then
+    echo PROJECT_DOC_SOURCE_PATH/index.rst $PROJECT_DOC_SOURCE_PATH/index.rst
+    # Check that $PROJECT_DOC_SOURCE_PATH/index.rst contains roles in the toctree
+    ROLES_TOC=`cat $PROJECT_DOC_SOURCE_PATH/index.rst |grep -w "roles"`
+    echo ROLES_TOC $ROLES_TOC
+    if [ "$ROLES_TOC" == "" ]; then
+		echo "Was unable to find roles defined in a toctree in $PROJECT_DOC_SOURCE_PATH/index.rst";
+        echo "Edit $PROJECT_DOC_SOURCE_PATH/index.rst and add roles to a toctree for example:";
+        echo ".. toctree::";
+        echo "   :maxdepth: 1";
+        echo "   :caption: Ansible Content";
+        echo "";
+        echo "   plugins";
+        echo "   modules";
+        echo "   filters";
+        echo "   roles";
+        echo "When roles has been added to $PROJECT_DOC_SOURCE_PATH/index.rst press [Enter]"
+        read -p "Press [Enter] key to continue..."
+	fi
+fi
+
 echo "Generate documentation for sample "
 cd ${PROJECT_ROOT_PATH}/docs/
 make clean;make role-doc;make html;make view-html;

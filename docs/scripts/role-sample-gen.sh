@@ -121,16 +121,19 @@ for pkg in ${packages[@]}; do
     PIP_PKG=`pip show $pkg|grep Version:`
 	if [ "$PIP_PKG" == "" ]; then
 		echo "$pkg is not installed, will not be able to generate documentation";
+        echo "Try 'pip install $pkg' and rerun the script";
         exit;
 	fi
 done
 
 if [ -e $PROJECT_DOC_SOURCE_PATH/index.rst ]
 then
-    echo PROJECT_DOC_SOURCE_PATH/index.rst $PROJECT_DOC_SOURCE_PATH/index.rst
     # Check that $PROJECT_DOC_SOURCE_PATH/index.rst contains roles in the toctree
+    echo "Found $PROJECT_DOC_SOURCE_PATH/index.rst, checking if it has a role entry.";
+
     ROLES_TOC=`cat $PROJECT_DOC_SOURCE_PATH/index.rst |grep -w "roles"`
-    echo ROLES_TOC $ROLES_TOC
+    # echo ROLES_TOC $ROLES_TOC
+
     if [ "$ROLES_TOC" == "" ]; then
 		echo "Was unable to find roles defined in a toctree in $PROJECT_DOC_SOURCE_PATH/index.rst";
         echo "Edit $PROJECT_DOC_SOURCE_PATH/index.rst and add roles to a toctree for example:";
@@ -142,9 +145,14 @@ then
         echo "   modules";
         echo "   filters";
         echo "   roles";
-        echo "When roles has been added to $PROJECT_DOC_SOURCE_PATH/index.rst press [Enter]"
-        read -p "Press [Enter] key to continue..."
+        echo "When roles has been added to $PROJECT_DOC_SOURCE_PATH/index.rst press [Enter]";
+        read -p "Press [Enter] key to continue...";
 	fi
+else
+    echo "Was unable to find $PROJECT_DOC_SOURCE_PATH/index.rst, unable to continue to documentation generation.";
+    echo "Please create the $PROJECT_DOC_SOURCE_PATH/index.rst and run commands:";
+    echo "cd ${PROJECT_ROOT_PATH}/docs/";
+    echo "make clean;make role-doc;make html;make view-html;";
 fi
 
 echo "Generate documentation for sample "

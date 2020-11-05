@@ -21,4 +21,3 @@
 #    is_true: true
 #  roles:
 #     - { role: ../role_sample, when: is_true }
-

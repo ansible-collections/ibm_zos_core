@@ -3,6 +3,21 @@
 ################################################################################
 
 ################################################################################
+# Script will set up a sample Ansible role, add the necessary required
+# metadata so that doc can be generated, supply a document on how to write
+# metadata, run the sample and generate role documentation if you have the
+# documentation requirements:
+# pip show ansible-doc-extractor
+# pip show ansible
+# pip show sphinx-rtd-theme
+# pip show sphinx-versions
+# pip show Sphinx
+#
+# Use `git status` to see which files have been created and which ones you
+# should keep.
+################################################################################
+
+################################################################################
 # Script Vars
 ################################################################################
 
@@ -97,6 +112,18 @@ then
     echo "Execute playbook for sample role."
     ansible-playbook $ROLE_PATH/$_ROLE_NAME.yml
 fi
+
+packages=("ansible-doc-extractor" "ansible" "sphinx-rtd-theme" "sphinx-versions" "Sphinx")
+
+printf 'Checking for required %s package.\n' "${packages[@]}"
+
+for pkg in ${packages[@]}; do
+    PIP_PKG=`pip show $pkg|grep Version:`
+	if [ "$PIP_PKG" == "" ]; then
+		echo "$pkg is not installed, will not be able to generate documentation";
+        exit;
+	fi
+done
 
 echo "Generate documentation for sample "
 cd ${PROJECT_ROOT_PATH}/docs/

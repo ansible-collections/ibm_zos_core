@@ -70,7 +70,6 @@ ansible-doc to automate tasks on z/OS.
    plugins
    modules
    filters
-   roles
 
 .. toctree::
    :maxdepth: 1

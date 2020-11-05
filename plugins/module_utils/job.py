@@ -93,7 +93,10 @@ def _parse_jobs(output_str):
         for job_str in job_strs:
             job = {}
             job_info_match = re.search(
-                r"job_id:([^\n]*)\njob_name:([^\n]*)\nsubsystem:([^\n]*)\nsystem:([^\n]*)\nowner:([^\n]*)\nret_code_msg:([^\n]*)\nclass:([^\n]*)\ncontent_type:([^\n]*)",
+                (
+                    r"job_id:([^\n]*)\njob_name:([^\n]*)\nsubsystem:([^\n]*)\nsystem:([^\n]*)\n"
+                    r"owner:([^\n]*)\nret_code_msg:([^\n]*)\nclass:([^\n]*)\ncontent_type:([^\n]*)"
+                ),
                 job_str,
             )
             job["job_id"] = job_info_match.group(1).strip()
@@ -139,7 +142,10 @@ def _parse_dds(job_str):
         for dd_str in dd_strs:
             dd = {}
             dd_info_match = re.search(
-                r"ddname:([^\n]*)\nrecord_count:([^\n]*)\nid:([^\n]*)\nstepname:([^\n]*)\nprocstep:([^\n]*)\nbyte_count:([^\n]*)",
+                (
+                    r"ddname:([^\n]*)\nrecord_count:([^\n]*)\nid:([^\n]*)\nstepname:([^\n]*)\n"
+                    r"procstep:([^\n]*)\nbyte_count:([^\n]*)"
+                ),
                 dd_str,
             )
             dd["ddname"] = dd_info_match.group(1).strip()

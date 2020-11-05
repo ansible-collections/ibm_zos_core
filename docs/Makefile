@@ -98,7 +98,7 @@ role-doc:
 	fi
 
 	@for role_name in `ls ../roles/`; do \
-	if test -e ../roles/$$role_name/docs/doc_$$role_name; then \
+	echo "Detected role name $$role_name"; \
 	if test -e ../roles/$$role_name/docs/doc_$$role_name; then \
 	echo "Copying metadata ../roles/$$role_name/docs/doc_$$role_name to ../roles/$$role_name/docs/doc_$$role_name.py"; \
 	cp ../roles/$$role_name/docs/doc_$$role_name ../roles/$$role_name/docs/doc_$$role_name.py; \
@@ -108,7 +108,6 @@ role-doc:
 	ansible-doc-extractor --template templates/role.rst.j2 source/roles ../roles/$$role_name/docs/doc_$$role_name.py; \
 	echo "Deleting generated metadata ../roles/$$role_name/docs/doc_$$role_name.py"; \
 	rm -rf ../roles/$$role_name/docs/doc_$$role_name.py; \
-	fi; \
 	fi; \
 	done
 

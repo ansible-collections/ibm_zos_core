@@ -1,0 +1,75 @@
+# Copyright (c) IBM Corporation 2020
+
+DOCUMENTATION = r"""
+role: doc_role_sample
+short_description: Role will assemble a sentence
+description:
+  - This is a fun sentence builder, where the sentence is derived on
+    the variables provided.
+  - Changing the variables I(comment), I(action), I(language_1), I(language_2),
+    I(language_3) changes the sentence that is generated.
+  - This sentence takes the form of "Hello {{ansible_user}}, Ansible
+    {{ comment }}, {{ action }} modules can be written in {{ language_1 }},
+    {{ language_2 }} and {{ language_3 }}."
+author: "Demetrios Dimatos (@ddimatos)"
+variables:
+  comment:
+    description:
+      - The second position in the sentence. I(comment) is inserted
+        after "Hello {{ansible_user}}, Ansible {{ comment }},"
+      - For example, I(comment=is easy to learn)
+    type: str
+    required: False
+    default: is great for automating z/OS tasks
+  action:
+    description:
+      - The third position in the sentence
+    type: str
+    required: False
+  language_1:
+    description:
+      - The fourth position in the sentence
+    type: str
+    required: False
+    default: Python
+  language_2:
+    description:
+      - The fifth position in the sentence
+    type: str
+    required: False
+    default: REXX
+  language_3:
+    description:
+      - The sixth position in the sentence
+    type: str
+    required: False
+    default: and many more languages
+dependencies:
+  - Dependency 1
+  - Dependency 2
+  - Dependency 3
+"""
+
+EXAMPLES = r"""
+- hosts: localhost
+  gather_facts: false
+  roles:
+     - { role: ../role_sample }
+
+- hosts: localhost
+  gather_facts: false
+  roles:
+     - { role: ../role_sample, comment: 'is awesome', action: 'and fun', language_1: 'Bash', language_2: 'C', language_3: 'others too'}
+
+- hosts: localhost
+  gather_facts: false
+  vars:
+    is_true: true
+  roles:
+     - { role: ../role_sample, when: is_true }
+"""
+
+# Roles don't return anything, this RETURN block must be defined and remain
+# empty for doc extraction tooling to avoid an error.
+RETURN = r"""
+ """

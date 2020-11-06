@@ -434,7 +434,7 @@ def get_all_files_in_dir_tree(base_path):
     return found_files
 
 
-def get_changed_files(path, branch="dev"):
+def get_changed_files(path, branch="origin/dev"):
     """Get a list of files changed compared to specified branch.
     Deleted files are not included.
 
@@ -482,7 +482,7 @@ def parse_arguments():
     parser.add_argument(
         "-b",
         "--branch",
-        default="dev",
+        default="origin/dev",
         help="The branch to compare current branch with. Used to determine changed files.",
     )
     parser.add_argument(

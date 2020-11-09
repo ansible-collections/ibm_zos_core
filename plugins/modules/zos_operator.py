@@ -35,10 +35,28 @@ options:
     default: false
   debug:
     description:
-      - Return debugging information.
+      - Return rexx debugging information.
     type: bool
     required: false
     default: false
+  security:
+    description:
+      - Call command with (verbose) operator which returns security information.
+    type: bool
+    required: false
+    default: false
+  delay:
+    description:
+      - Set maximum time in seconds to wait for response.
+    type: int
+    required: false
+    default: 0
+  reset:
+    description:
+      - Reset maximume time in seconds after action is called.
+    type: int
+    required: false
+    default: 0
 """
 
 EXAMPLES = r"""
@@ -61,6 +79,21 @@ EXAMPLES = r"""
   zos_operator:
     cmd: "\\$PJ(*)"
 
+- name: Execute operator command to show jobs, returning security information
+  zos_operator:
+    cmd: 'd u,all'
+    security: true
+
+- name: Execute operator command to show jobs, waiting for 5 seconds for response
+  zos_operator:
+    cmd: 'd u,all'
+    delay: 5
+
+- name: Execute operator command to show jobs. Wait for 7 seconds, then reset delay to 2 seconds
+  zos_operator:
+    cmd: 'd u,all'
+    delay: 7
+    reset: 2
 """
 
 RETURN = r"""
@@ -99,7 +132,9 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module im
     AnsibleModuleHelper,
 )
 from ansible.module_utils.six import PY3
-
+from tempfile import NamedTemporaryFile
+from stat import S_IEXEC, S_IREAD, S_IWRITE
+from os import chmod
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,
@@ -114,8 +149,11 @@ else:
 def run_module():
     module_args = dict(
         cmd=dict(type="str", required=True),
-        verbose=dict(type="bool", default=False),
-        debug=dict(type="bool", default=False),
+        verbose=dict(type="bool", required=False, default=False),
+        debug=dict(type="bool", required=False, default=False),
+        security=dict(type="bool", required=False, default=False),
+        delay=dict(type="int", required=False, default=0),
+        reset=dict(type="int", required=False, default=0),
     )
 
     result = dict(changed=False)
@@ -142,6 +180,9 @@ def parse_params(params):
         cmd=dict(arg_type="str", required=True),
         verbose=dict(arg_type="bool", required=False),
         debug=dict(arg_type="bool", required=False),
+        security=dict(arg_type="bool", required=False),
+        delay=dict(arg_type="int", required=False),
+        reset=dict(arg_type="int", required=False),
     )
     parser = BetterArgParser(arg_defs)
     new_params = parser.parse_args(params)
@@ -149,16 +190,124 @@ def parse_params(params):
 
 
 def run_operator_command(params):
+    script="""/*rexx*/
+Address 'TSO'
+IsfRC = isfcalls( "ON" )
+if __argv.0 < 3 then
+  do
+    call usage
+  end
+dumpit = 0
+verbose=""
+do ix = 5 to 8
+  if ix <= __argv.0 then
+    do
+      c = strip(__argv.ix)
+      dumpit=1
+      select
+        when c == "-v" then do
+          say "Showing Security Messages"
+          ISFSECTRACE='ON'
+          end
+
+        when c == "-s" then do
+          say "Verbose sdsf exec option"
+          verbose="( verbose )"
+          end
+
+        when c == "-d" then do
+          say "Rexx regular tracing"
+          trace R
+          end
+
+        otherwise
+          call usage
+        end
+    end
+end
+ISFDELAY=__argv.2
+resetval=__argv.3
+
+if POS(',', __argv.4 ) > 0 then
+  do
+    address SDSF "ISFEXEC '/"__argv.4"'" verbose
+  end
+else
+  do
+    address SDSF "ISFEXEC " __argv.4 verbose
+  end
+saverc = rc
+ISFDELAY=resetval
+IsfRC = isfcalls( "OFF" )
+trace Off
+SAY "===================="
+SAY "result code: " saverc
+SAY "===================="
+if isfresp.0 > 0 then
+  do
+    say ""
+    say "Responses"
+    do ix=1 to isfresp.0
+      say isfresp.ix
+    end
+  end
+if isfulog.0 > 0 then
+  do
+    say ""
+    say "Log Output"
+    do ix=1 to isfulog.0
+      say isfulog.ix
+    end
+  end
+if dumpit > 0 then
+  do
+    say ""
+    say "Action messages"
+    say isfmsg
+    say ""
+    do ix=1 to isfmsg2.0
+      say isfmsg2.ix
+    end
+    say ""
+  end
+EXIT saverc
+
+usage:
+    say "Usage: " __argv.1 " delay command [parameters] [-v] [-d] [-s]"
+    say "       -v: print out verbose security information"
+    say "       -d: print out debug messages"
+    say "       -s: pass (verbose) to the sdsf command"
+    say ""
+    exit -1
+"""
     module = AnsibleModuleHelper(argument_spec={})
+    plist = []
+
+    plist.append( str(params.get("delay")))
+    plist.append( str(params.get("reset")))
     command = params.get("cmd")
-    verbose = "-v" if params.get("verbose") else ""
-    debug = "-d" if params.get("debug") else ""
-    rc, stdout, stderr = module.run_command(
-        "opercmd {0} {1} {2}".format(verbose, debug, command),
-    )
+    plist.append( command)
+
+    if params.get("verbose"):
+      plist.append( "-v" )
+    if params.get("debug"):
+      plist.append( "-d")
+    if params.get("security"):
+      plist.append( "-s" )
+
+    delete_on_close = True
+    tmp_file = NamedTemporaryFile(delete=delete_on_close)
+    with open(tmp_file.name, "w") as f:
+        f.write(script)
+    chmod(tmp_file.name, S_IEXEC | S_IREAD | S_IWRITE)
+
+    rc, stdout, stderr = module.run_command([tmp_file.name, plist])
+
     message = stdout + stderr
+
     if rc > 0:
         raise OperatorCmdError(command, rc, message.split("\n") if message else message)
+
     return {"rc": rc, "message": message}
 
 

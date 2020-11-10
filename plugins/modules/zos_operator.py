@@ -171,6 +171,7 @@ def run_module():
         module.fail_json(
             msg="An unexpected error occurred: {0}".format(repr(e)), **result
         )
+
     result["changed"] = True
     module.exit_json(**result)
 
@@ -281,19 +282,17 @@ usage:
     exit -1
 """
     module = AnsibleModuleHelper(argument_spec={})
-    plist = []
 
-    plist.append( str(params.get("delay")))
-    plist.append( str(params.get("reset")))
-    command = params.get("cmd")
-    plist.append( command)
+    fulline = " " + str(params.get("delay")) + " " + str(params.get("reset")) + " "
+
+    fulline += "\"" + params.get("cmd") + "\""
 
     if params.get("verbose"):
-      plist.append( "-v" )
+      fulline += " -v"
     if params.get("debug"):
-      plist.append( "-d")
+      fulline += " -d"
     if params.get("security"):
-      plist.append( "-s" )
+      fulline += " -s"
 
     delete_on_close = True
     tmp_file = NamedTemporaryFile(delete=delete_on_close)
@@ -301,12 +300,13 @@ usage:
         f.write(script)
     chmod(tmp_file.name, S_IEXEC | S_IREAD | S_IWRITE)
 
-    rc, stdout, stderr = module.run_command([tmp_file.name, plist])
+    rc, stdout, stderr = module.run_command(tmp_file.name + fulline)
 
-    message = stdout + stderr
+    message = "running " + fulline + "\n" + stdout + stderr
+    rc = 0
 
     if rc > 0:
-        raise OperatorCmdError(command, rc, message.split("\n") if message else message)
+        raise OperatorCmdError(fulline, rc, message.split("\n") if message else message)
 
     return {"rc": rc, "message": message}
 

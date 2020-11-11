@@ -194,8 +194,9 @@ def run_operator_command(params):
     script="""/*rexx*/
 Address 'TSO'
 IsfRC = isfcalls( "ON" )
-if __argv.0 < 3 then
+if __argv.0 < 4 then
   do
+    say "locount"
     call usage
   end
 dumpit = 0
@@ -222,23 +223,29 @@ do ix = 5 to 8
           end
 
         otherwise
+          say "c = " c
           call usage
         end
     end
 end
 ISFDELAY=__argv.2
-resetval=__argv.3
-
-if POS(',', __argv.4 ) > 0 then
+sdsfcmd = False
+fwd = WORD(__argv.4, 1)
+ffwd = translate(fwd)
+if( ffwd == 'QUERY' | ffwd == 'SET' | ffwd == 'WHO') then
   do
-    address SDSF "ISFEXEC '/"__argv.4"'" verbose
+    sdsfcmd = True
   end
-else
+if sdsfcmd == True then
   do
     address SDSF "ISFEXEC " __argv.4 verbose
   end
+else
+  do
+    address SDSF "ISFEXEC '/"__argv.4"'" verbose
+  end
 saverc = rc
-ISFDELAY=resetval
+ISFDELAY=__argv.3
 IsfRC = isfcalls( "OFF" )
 trace Off
 SAY "===================="
@@ -274,7 +281,7 @@ if dumpit > 0 then
 EXIT saverc
 
 usage:
-    say "Usage: " __argv.1 " delay command [parameters] [-v] [-d] [-s]"
+    say "Usage: " __argv.1 " delay reset command [parameters] [-v] [-d] [-s]"
     say "       -v: print out verbose security information"
     say "       -d: print out debug messages"
     say "       -s: pass (verbose) to the sdsf command"

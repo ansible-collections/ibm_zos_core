@@ -1202,10 +1202,10 @@ class PDSECopyHandler(CopyHandler):
                 msg = "Unable to copy data set member {0} to {1}".format(src, dest)
 
             # *****************************************************************
-            # while attempting to write a data set member to a PDSE containing
-            # program object members. A PDSE cannot contain both program object
-            # members and data members. This can be resolved by copying the
-            # program object with a "-X" flag
+            # An error occurs while attempting to write a data set member to a
+            # PDSE containing program object members, a PDSE cannot contain
+            # both program object members and data members. This can be
+            # resolved by copying the program object with a "-X" flag.
             # *****************************************************************
             if "FSUM8976" in err and "EDC5091I" in err:
                 rc, out, err = self.run_command(

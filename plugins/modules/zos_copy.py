@@ -1192,20 +1192,30 @@ class PDSECopyHandler(CopyHandler):
         new_src = (temp_path or conv_path or src).replace("$", "\\$")
         dest = dest.replace("$", "\\$")
         response = datasets._copy(new_src, dest)
+        rc, out, err = response.rc, response.stdout_response, response.stderr_response
 
-        if response.rc != 0:
+        if rc != 0:
             msg = ""
             if is_uss_src:
                 msg = "Unable to copy file {0} to data set member {1}".format(src, dest)
             else:
                 msg = "Unable to copy data set member {0} to {1}".format(src, dest)
 
-            self.fail_json(
-                msg=msg,
-                rc=response.rc,
-                stdout=response.stdout_response,
-                stderr=response.stderr_response
-            )
+            # *****************************************************************
+            # An error occurs while attempting to write a data set member to a
+            # PDSE containing program object members, a PDSE cannot contain
+            # both program object members and data members. This can be
+            # resolved by copying the program object with a "-X" flag.
+            # *****************************************************************
+            if "FSUM8976" in err and "EDC5091I" in err:
+                rc, out, err = self.run_command(
+                    "cp -X \"//'{0}'\" \"//'{1}'\"".format(new_src, dest)
+                )
+                if rc != 0:
+                    self.fail_json(msg=msg, rc=rc, stdout=out, stderr=err)
+            else:
+                self.fail_json(msg=msg, rc=rc, stdout=out, stderr=err)
+
         return dest.replace("\\", "")
 
     def create_pdse(

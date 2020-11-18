@@ -579,4 +579,5 @@ if __name__ == "__main__":
                 skip_pattern, test.path, re.IGNORECASE
             ):
                 to_print += test.path + " "
-        print(to_print.rstrip())
+        if to_print:
+            print(to_print.rstrip())

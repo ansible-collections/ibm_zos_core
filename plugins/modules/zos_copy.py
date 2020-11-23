@@ -1535,10 +1535,10 @@ def run_module(module, arg_def):
     # in the form DATA.SET.NAME(MEMBER). When this is the case, extract the
     # actual name of the data set.
     # ********************************************************************
-    dest_name = data_set.extract_dsname(dest)
-    dest_member = data_set.extract_member_name(dest) if copy_member else None
-    src_name = data_set.extract_dsname(src) if src else None
-    member_name = data_set.extract_member_name(src) if src_member else None
+    dest_name = data_set.extract_dsname(dest).upper()
+    dest_member = data_set.extract_member_name(dest).upper() if copy_member else None
+    src_name = data_set.extract_dsname(src).upper() if src else None
+    member_name = data_set.extract_member_name(src).upper() if src_member else None
 
     conv_path = None
     src_ds_vol = src_ds_type = dest_ds_type = dest_exists = None
@@ -1568,6 +1568,7 @@ def run_module(module, arg_def):
             dest_ds_type = "USS"
             dest_exists = os.path.exists(dest)
         else:
+            dest = dest.upper()
             dest_du = data_set.DataSetUtils(dest_name)
             dest_exists = dest_du.exists()
             if copy_member:
@@ -1576,6 +1577,7 @@ def run_module(module, arg_def):
         if temp_path or "/" in src:
             src_ds_type = "USS"
         else:
+            src = src.upper()
             src_du = data_set.DataSetUtils(src_name)
             if src_du.exists():
                 if src_member and not src_du.member_exists(member_name):

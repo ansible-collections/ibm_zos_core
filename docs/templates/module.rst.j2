@@ -151,7 +151,9 @@ See Also
       {% if _returned %}
 {{ "  " * level }}| **returned**: {{ _returned }}
       {% endif %}
+      {% if _type %}
 {{ "  " * level }}| **type**: {{ _type  }}
+      {% endif %}
 
       {%- if _sample -%}
       {% if _type != 'str' and _type != 'int' %}
@@ -184,4 +186,3 @@ Return Values
 
 {{ result_generation(returndocs,1) }}
 {% endif %}
-

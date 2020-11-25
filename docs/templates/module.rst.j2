@@ -158,9 +158,9 @@ See Also
 {%         for _samplex in _sample %}
 {%           if _type != 'str' and _type != 'int' %}
 
-  {{ "  " * level }}  .. code-block::
+  {{ "  " * level }}  .. code-block:: json
 
-  {{ "  " * level }}      {{ _sample[_samplex] | tojson }}
+  {{ "  " * level }}      {{ _sample[_samplex] | tojson(4) | indent(2*level+8) }}
 {%           else %}
 
   {{ "  " * level }}  {{ _sample[_samplex] }}
@@ -171,9 +171,9 @@ See Also
 {%         if _type != 'str' and _type != 'int' %}
   {{ "  " * level }}| **sample**:
 
-  {{ "  " * level }}  .. code-block::
+  {{ "  " * level }}  .. code-block:: json
 
-  {{ "  " * level }}      {{ _sample | tojson }}
+  {{ "  " * level }}      {{ _sample | tojson(4) | indent(2*level+8) }}
 {%         else %}
   {{ "  " * level }}| **sample**: {{ _sample }}
 {%         endif %}

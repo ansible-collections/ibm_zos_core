@@ -153,14 +153,30 @@ See Also
 {%     endif %}
   {{ "  " * level }}| **type**: {{ _type }}
 {%     if _sample %}
-{%       if _type != 'str' and _type != 'int' %}
+{%       if _sample.sample1 %}
+  {{ "  " * level }}| **sample**:
+{%         for _samplex in _sample %}
+{%           if _type != 'str' and _type != 'int' %}
+
+  {{ "  " * level }}  .. code-block::
+
+  {{ "  " * level }}      {{ _sample[_samplex] | tojson }}
+{%           else %}
+
+  {{ "  " * level }}  {{ _sample[_samplex] }}
+{%           endif %}
+{%         endfor %}
+
+{%       else %}
+{%         if _type != 'str' and _type != 'int' %}
   {{ "  " * level }}| **sample**:
 
   {{ "  " * level }}  .. code-block::
 
   {{ "  " * level }}      {{ _sample | tojson }}
-{%       else %}
+{%         else %}
   {{ "  " * level }}| **sample**: {{ _sample }}
+{%         endif %}
 {%       endif %}
 {%     endif %}
 {%     if _contains %}

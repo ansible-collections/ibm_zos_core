@@ -135,6 +135,7 @@ See Also
 {%     set _description  = results[entry].description %}
 {%     set _returned     = results[entry].returned %}
 {%     set _type         = results[entry].type %}
+{%     set _elements     = results[entry].elements %}
 {%     set _contains     = results[entry].contains %}
 {%     set _sample       = results[entry].sample %}
 
@@ -152,6 +153,9 @@ See Also
   {{ "  " * level }}| **returned**: {{ _returned }}
 {%     endif %}
   {{ "  " * level }}| **type**: {{ _type }}
+{%     if _elements %}
+  {{ "  " * level }}| **elements**: {{ _elements }}
+{%     endif %}
 {%     if _sample %}
 {%       if _type != 'str' and _type != 'int' %}
   {{ "  " * level }}| **sample**:

@@ -50,7 +50,7 @@ Synopsis
 {% macro option_generation(opts, level) %}
 {# Control the order of options: true: ordered by name; false: keep source order #}
 {%   set sorted = false %}
-{%   for name, spec in (opts | dictsort if sorted else opts.items()) %}
+{%   for name, spec in (opts | dictsort if sorted else opts.items()) if not name.startswith('_') %}
 
 {{ "  " * level }}{{ name }}
 {%     for para in spec.description %}

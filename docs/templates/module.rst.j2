@@ -48,7 +48,9 @@ Synopsis
 {# ------------------------------------------------------------------------ #}
 
 {% macro option_generation(opts, level) %}
-{%   for name, spec in opts | dictsort recursive %}
+{# Control the order of options: true: ordered by name; false: keep source order #}
+{%   set sorted = false %}
+{%   for name, spec in (opts | dictsort if sorted else opts.items()) %}
 
 {{ "  " * level }}{{ name }}
 {%     for para in spec.description %}
@@ -135,6 +137,7 @@ See Also
 {%     set _description  = results[entry].description %}
 {%     set _returned     = results[entry].returned %}
 {%     set _type         = results[entry].type %}
+{%     set _elements     = results[entry].elements %}
 {%     set _contains     = results[entry].contains %}
 {%     set _sample       = results[entry].sample %}
 
@@ -151,7 +154,12 @@ See Also
 {%     if _returned %}
   {{ "  " * level }}| **returned**: {{ _returned }}
 {%     endif %}
+{%     if _type %}
   {{ "  " * level }}| **type**: {{ _type }}
+{%     endif %}
+{%     if _elements %}
+  {{ "  " * level }}| **elements**: {{ _elements }}
+{%     endif %}
 {%     if _sample %}
 {%       if _sample.sample1 %}
   {{ "  " * level }}| **sample**:

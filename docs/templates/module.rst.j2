@@ -48,7 +48,9 @@ Synopsis
 {# ------------------------------------------------------------------------ #}
 
 {% macro option_generation(opts, level) %}
-{%   for name, spec in opts | dictsort recursive %}
+{# Control the order of options: true: ordered by name; false: keep source order #}
+{%   set sorted = false %}
+{%   for name, spec in (opts | dictsort if sorted else opts.items()) %}
 
 {{ "  " * level }}{{ name }}
 {%     for para in spec.description %}

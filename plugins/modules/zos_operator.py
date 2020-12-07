@@ -191,7 +191,7 @@ def parse_params(params):
 
 
 def run_operator_command(params):
-    script="""/*rexx*/
+    script = """/*rexx*/
 Address 'TSO'
 IsfRC = isfcalls( "ON" )
 if __argv.0 < 4 then
@@ -295,11 +295,11 @@ usage:
     fulline += "\"" + params.get("cmd") + "\""
 
     if params.get("verbose"):
-      fulline += " -v"
+        fulline += " -v"
     if params.get("debug"):
-      fulline += " -d"
+        fulline += " -d"
     if params.get("security"):
-      fulline += " -s"
+        fulline += " -s"
 
     delete_on_close = True
     tmp_file = NamedTemporaryFile(delete=delete_on_close)

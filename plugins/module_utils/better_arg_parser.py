@@ -10,6 +10,7 @@ __metaclass__ = type
 from collections import OrderedDict, defaultdict
 import types
 from os import path
+from pathlib import Path
 import sys
 from re import IGNORECASE
 
@@ -279,6 +280,7 @@ class BetterArgHandler(object):
         Returns:
             str -- The arguments contents after any necessary operations.
         """
+        contents = BetterArgHandler.fix_local_path(contents)
         if not path.isabs(str(contents)):
             raise ValueError('Invalid argument "{0}" for type "path".'.format(contents))
         return str(contents)
@@ -469,6 +471,28 @@ class BetterArgHandler(object):
             raise ValueError('Invalid argument "{0}" for type "dd".'.format(contents))
         return str(contents)
 
+    @staticmethod
+    def fix_local_path(given_path):
+        """Adapter for local/USS path abbreviations
+
+        Arguments:
+            path given as input, which may need adjustment
+
+        Returns:
+            str -- The path, after leading ~, .. or . has been adjusted
+        """
+        final_path = given_path
+        if given_path.startswith('~'):
+            final_path = path.expanduser(given_path)
+        elif given_path.startswith('..'):
+            pwd = str(Path.cwd().parent)
+            final_path = pwd + given_path[2:]
+        elif given_path.startswith('.'):
+            wd = str(Path.cwd())
+            final_path = wd + given_path[1:]
+
+        return str(final_path)
+
     def _data_set_or_path_type(self, contents, resolve_dependencies):
         """Resolver for data_set_or_path type arguments
 
@@ -489,12 +513,11 @@ class BetterArgHandler(object):
             IGNORECASE,
         ):
             content_path = str(contents)
-            if content_path.startswith('~'):
-                content_path = path.expanduser(content_path)
+            contents = BetterArgHandler.fix_local_path(content_path)
 
-            if not path.isabs(content_path):
+            if not path.isabs(contents):
                 raise ValueError(
-                    'Invalid argument "{0}" for type "data_set" or "path".'
+                    'Invalid argument "{0}" for type "data_set" or "path".'.format(contents)
                 )
         return str(contents)
 
@@ -562,15 +585,23 @@ class BetterArgHandler(object):
 
     def _resolve_choices(self):
         """Verify the argument contents are a valid choice when list of choices is provided.
+        This is now case-insensitive, and alters the choice entry to case-match the choice.
 
         Raises:
             ValueError: The provided value is not a valid choice.
         """
         if self.arg_def.choices and len(self.arg_def.choices) > 0:
-            if self.contents not in self.arg_def.choices:
+            # making case-insensitive, but mapping the case-correct choice value back
+            gotit = 0
+            for elem in self.arg_def.choices:
+                if self.contents.casefold() == elem.casefold():
+                    self.contents = str(elem)
+                    gotit = 1
+                    break
+            if gotit == 0:
                 raise ValueError(
                     "Provided value: {0} for arg: {1} is not in a valid choice. Choices: {2}".format(
-                        self.contents, self.arg_name, ", ".join(self.arg_def.choices)
+                    self.contents, self.arg_name, ", ".join(self.arg_def.choices)
                     )
                 )
 

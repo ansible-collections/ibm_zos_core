@@ -29,19 +29,21 @@ options:
     required: true
   verbose:
     description:
-      - Return verbose information.
+      - Return verbose (sec trace) information.
+      - This also shows if the command(s) were issued, and if SAF approved the run.
     type: bool
     required: false
     default: false
   debug:
     description:
-      - Return rexx debugging information.
+      - Return debugging information, step by step through the command execution.
     type: bool
     required: false
     default: false
   security:
     description:
-      - Call command with (verbose) operator which returns security information.
+      - Call command with (verbose) operator which returns more details.
+      - This also shows if the command(s) were issued, and if SAF approved the run.
     type: bool
     required: false
     default: false
@@ -53,7 +55,7 @@ options:
     default: 0
   reset:
     description:
-      - Reset maximume time in seconds after action is called.
+      - Reset maximum time in seconds after action is called.
     type: int
     required: false
     default: 0
@@ -191,21 +193,22 @@ def parse_params(params):
 
 
 def run_operator_command(params):
+    # Usage: (rexfile) delay reset command [parameters] [-v] [-d] [-s]
+    #       -v: print out verbose security information
+    #       -d: print out debug messages
+    #       -s: pass (verbose) to the sdsf command
+
     script = """/*rexx*/
+arg delay resettime command
 Address 'TSO'
 IsfRC = isfcalls( "ON" )
-if __argv.0 < 4 then
-  do
-    say "locount"
-    call usage
-  end
-dumpit = 0
+showoutput = 0
 verbose=""
 do ix = 5 to 8
   if ix <= __argv.0 then
     do
       c = strip(__argv.ix)
-      dumpit=1
+      showoutput=1
       select
         when c == "-v" then do
           say "Showing Security Messages"
@@ -214,23 +217,25 @@ do ix = 5 to 8
 
         when c == "-s" then do
           say "Verbose sdsf exec option"
-          verbose="( verbose )"
+          verbose="( VERBOSE WAIT )"
           end
 
         when c == "-d" then do
-          say "Rexx regular tracing"
+          say "Regular tracing"
           trace R
           end
 
         otherwise
-          say "c = " c
-          call usage
+          exit -1
         end
     end
 end
-ISFDELAY=__argv.2
+ISFDELAY=delay
 sdsfcmd = False
-fwd = WORD(__argv.4, 1)
+if verbose == '' then do
+  verbose='(WAIT)'
+  end
+fwd = WORD(command, 1)
 ffwd = translate(fwd)
 if( ffwd == 'QUERY' | ffwd == 'SET' | ffwd == 'WHO') then
   do
@@ -238,14 +243,14 @@ if( ffwd == 'QUERY' | ffwd == 'SET' | ffwd == 'WHO') then
   end
 if sdsfcmd == True then
   do
-    address SDSF "ISFEXEC " __argv.4 verbose
+    address SDSF "ISFEXEC " command verbose
   end
 else
   do
-    address SDSF "ISFEXEC '/"__argv.4"'" verbose
+    address SDSF "ISFEXEC '/"command"'" verbose
   end
 saverc = rc
-ISFDELAY=__argv.3
+ISFDELAY=resettime
 IsfRC = isfcalls( "OFF" )
 trace Off
 SAY "===================="
@@ -267,7 +272,7 @@ if isfulog.0 > 0 then
       say isfulog.ix
     end
   end
-if dumpit > 0 then
+if showoutput > 0 then
   do
     say ""
     say "Action messages"
@@ -279,14 +284,6 @@ if dumpit > 0 then
     say ""
   end
 EXIT saverc
-
-usage:
-    say "Usage: " __argv.1 " delay reset command [parameters] [-v] [-d] [-s]"
-    say "       -v: print out verbose security information"
-    say "       -d: print out debug messages"
-    say "       -s: pass (verbose) to the sdsf command"
-    say ""
-    exit -1
 """
     module = AnsibleModuleHelper(argument_spec={})
 

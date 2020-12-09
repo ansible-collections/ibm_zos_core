@@ -621,7 +621,9 @@ def run_module():
         src=dict(type="str", required=True),
         wait=dict(type="bool", required=False),
         location=dict(
-            type="str", default="DATA_SET", choices=["DATA_SET", "USS", "LOCAL"],
+            type="str",
+            default="DATA_SET",
+            choices=["DATA_SET", "USS", "LOCAL"],
         ),
         encoding=dict(type="dict", required=False),
         volume=dict(type="str", required=False),
@@ -644,7 +646,9 @@ def run_module():
         src=dict(arg_type="data_set_or_path", required=True),
         wait=dict(arg_type="bool", required=False),
         location=dict(
-            arg_type="str", default="DATA_SET", choices=["DATA_SET", "USS", "LOCAL"],
+            arg_type="str",
+            default="DATA_SET",
+            choices=["DATA_SET", "USS", "LOCAL"],
         ),
         from_encoding=dict(arg_type="encoding", default=DEFAULT_ASCII_CHARSET),
         to_encoding=dict(arg_type="encoding", default=DEFAULT_EBCDIC_CHARSET),
@@ -657,7 +661,10 @@ def run_module():
 
     result = dict(changed=False)
     module.params.update(
-        dict(from_encoding=encoding.get("from"), to_encoding=encoding.get("to"),)
+        dict(
+            from_encoding=encoding.get("from"),
+            to_encoding=encoding.get("to"),
+        )
     )
     try:
         parser = BetterArgParser(arg_defs)
@@ -710,15 +717,15 @@ def run_module():
             if from_encoding == "ISO8859-1":
                 temp_file_3 = NamedTemporaryFile(delete=True)
                 result["cmd0"] = "tr -d '\r' < {0} > {1}".format(
-                        quote(temp_file),
-                        quote(temp_file_3.name),
-                    )
+                    quote(temp_file),
+                    quote(temp_file_3.name),
+                )
                 (conv_rc, stdout, stderr) = module.run_command(
                     result["cmd0"],
                     use_unsafe_shell=True,
                 )
                 if conv_rc == 0:
-                    temp_file=temp_file_3.name
+                    temp_file = temp_file_3.name
                 else:
                     module.fail_json(
                         msg="The Local file preprocessing failed. Please check the source file."
@@ -729,12 +736,14 @@ def run_module():
 
             to_encoding = encoding.get("to")
             result["cmd1"] = "iconv -f {0} -t {1} {2} > {3}".format(
-                    from_encoding,
-                    to_encoding,
-                    quote(temp_file),
-                    quote(temp_file_2.name))
-            result["infile_data"] = {"mode": stat(temp_file).st_mode, "uid": stat(temp_file).st_uid,
-                                   "gid": stat(temp_file).st_gid, "bytesize": stat(temp_file).st_size}
+                from_encoding, to_encoding, quote(temp_file), quote(temp_file_2.name)
+            )
+            result["infile_data"] = {
+                "mode": stat(temp_file).st_mode,
+                "uid": stat(temp_file).st_uid,
+                "gid": stat(temp_file).st_gid,
+                "bytesize": stat(temp_file).st_size,
+            }
             result["given_args"] = parsed_args
 
             (conv_rc, stdout, stderr) = module.run_command(

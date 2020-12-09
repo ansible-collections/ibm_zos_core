@@ -10,7 +10,6 @@ __metaclass__ = type
 from collections import OrderedDict, defaultdict
 import types
 from os import path
-from pathlib import Path
 import sys
 from re import IGNORECASE
 
@@ -482,13 +481,13 @@ class BetterArgHandler(object):
             str -- The path, after leading ~, .. or . has been adjusted
         """
         final_path = given_path
-        if given_path.startswith('~'):
+        if given_path.startswith("~"):
             final_path = path.expanduser(given_path)
-        elif given_path.startswith('..'):
-            pwd = str(Path.cwd().parent)
+        elif given_path.startswith(".."):
+            pwd = str(path.realpath(".."))
             final_path = pwd + given_path[2:]
-        elif given_path.startswith('.'):
-            wd = str(Path.cwd())
+        elif given_path.startswith("."):
+            wd = str(path.realpath("."))
             final_path = wd + given_path[1:]
 
         return str(final_path)
@@ -517,7 +516,9 @@ class BetterArgHandler(object):
 
             if not path.isabs(contents):
                 raise ValueError(
-                    'Invalid argument "{0}" for type "data_set" or "path".'.format(contents)
+                    'Invalid argument "{0}" for type "data_set" or "path".'.format(
+                        contents
+                    )
                 )
         return str(contents)
 
@@ -601,7 +602,7 @@ class BetterArgHandler(object):
             if gotit == 0:
                 raise ValueError(
                     "Provided value: {0} for arg: {1} is not in a valid choice. Choices: {2}".format(
-                    self.contents, self.arg_name, ", ".join(self.arg_def.choices)
+                        self.contents, self.arg_name, ", ".join(self.arg_def.choices)
                     )
                 )
 

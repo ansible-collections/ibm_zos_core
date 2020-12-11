@@ -191,8 +191,6 @@ def parse_params(params):
 
 
 def run_operator_command(params):
-    ## remove reset sequence... the value resets when the script ends.
-
     # Usage: (rexfile) delay reset command [parameters] [-v] [-d] [-s]
     #       -v: print out verbose security information
     #       -d: print out debug messages

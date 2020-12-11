@@ -53,12 +53,6 @@ options:
     type: int
     required: false
     default: 0
-  reset:
-    description:
-      - Reset maximum time in seconds after action is called.
-    type: int
-    required: false
-    default: 0
 """
 
 EXAMPLES = r"""
@@ -90,12 +84,6 @@ EXAMPLES = r"""
   zos_operator:
     cmd: 'd u,all'
     delay: 5
-
-- name: Execute operator command to show jobs. Wait for 7 seconds, then reset delay to 2 seconds
-  zos_operator:
-    cmd: 'd u,all'
-    delay: 7
-    reset: 2
 """
 
 RETURN = r"""
@@ -116,7 +104,19 @@ content:
           "MV2C      2020039  04:29:57.59             IEE457I 04.29.57 UNIT STATUS 948  ",
           "         UNIT TYPE STATUS        VOLSER     VOLSTATE      SS                 ",
           "          0100 3277 OFFLINE                                 0                ",
-          "          0101 3277 OFFLINE                                 0                "
+          "          0101 3277 OFFLINE                                 0                ",
+          "---- if verbose security is true, additional output will resemble:",
+          "ISF050I USER=OMVSADM GROUP= PROC=REXX TERMINAL=09A3233B",
+          "ISF051I SAF Access allowed SAFRC=0 ACCESS=READ CLASS=SDSF RESOURCE=GROUP.ISFSPROG.SDSF",
+          "ISF051I SAF Access allowed SAFRC=0 ACCESS=READ CLASS=SDSF RESOURCE=ISFCMD.FILTER.PREFIX",
+          "ISF055I ACTION=D Access allowed USERLEVEL=7 REQLEVEL=1",
+          "ISF051I SAF Access allowed SAFRC=0 ACCESS=READ CLASS=SDSF RESOURCE=ISFCMD.ODSP.ULOG.JES2",
+          "--- if security is true, output on will resemble:",
+          "ISF147I REXX variable ISFTIMEOUT fetched, return code 00000001 value is ''.",
+          "ISF754I Command 'SET DELAY 5' generated from associated variable ISFDELAY.",
+          "ISF769I System command issued, command text: D U,ALL -S.",
+          "ISF146I REXX variable ISFDIAG set, return code 00000001 value is '00000000 00000000 00000000 00000000 00000000'.",
+          "ISF766I Request completed, status: COMMAND ISSUED."
         ]
 changed:
     description:
@@ -155,7 +155,6 @@ def run_module():
         debug=dict(type="bool", required=False, default=False),
         security=dict(type="bool", required=False, default=False),
         delay=dict(type="int", required=False, default=0),
-        reset=dict(type="int", required=False, default=0),
     )
 
     result = dict(changed=False)
@@ -185,7 +184,6 @@ def parse_params(params):
         debug=dict(arg_type="bool", required=False),
         security=dict(arg_type="bool", required=False),
         delay=dict(arg_type="int", required=False),
-        reset=dict(arg_type="int", required=False),
     )
     parser = BetterArgParser(arg_defs)
     new_params = parser.parse_args(params)
@@ -193,18 +191,20 @@ def parse_params(params):
 
 
 def run_operator_command(params):
+    ## remove reset sequence... the value resets when the script ends.
+
     # Usage: (rexfile) delay reset command [parameters] [-v] [-d] [-s]
     #       -v: print out verbose security information
     #       -d: print out debug messages
     #       -s: pass (verbose) to the sdsf command
 
     script = """/*rexx*/
-arg delay resettime command
+arg delay command
 Address 'TSO'
 IsfRC = isfcalls( "ON" )
 showoutput = 0
 verbose=""
-do ix = 5 to 8
+do ix = 4 to 7
   if ix <= __argv.0 then
     do
       c = strip(__argv.ix)
@@ -250,12 +250,8 @@ else
     address SDSF "ISFEXEC '/"command"'" verbose
   end
 saverc = rc
-ISFDELAY=resettime
 IsfRC = isfcalls( "OFF" )
 trace Off
-SAY "===================="
-SAY "result code: " saverc
-SAY "===================="
 if isfresp.0 > 0 then
   do
     say ""
@@ -274,6 +270,10 @@ if isfulog.0 > 0 then
   end
 if showoutput > 0 then
   do
+    SAY "===================="
+    SAY "result code: " saverc
+    SAY "===================="
+
     say ""
     say "Action messages"
     say isfmsg
@@ -287,9 +287,9 @@ EXIT saverc
 """
     module = AnsibleModuleHelper(argument_spec={})
 
-    fulline = " " + str(params.get("delay")) + " " + str(params.get("reset")) + " "
+    fulline = " " + str(params.get("delay")) + " "
 
-    fulline += "\"" + params.get("cmd") + "\""
+    fulline += '"' + params.get("cmd") + '"'
 
     if params.get("verbose"):
         fulline += " -v"

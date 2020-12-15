@@ -512,12 +512,13 @@ class BetterArgHandler(object):
             IGNORECASE,
         ):
             content_path = str(contents)
-            if content_path.startswith("~"):
-                content_path = path.expanduser(content_path)
+            contents = BetterArgHandler.fix_local_path(content_path)
 
-            if not path.isabs(content_path):
+            if not path.isabs(contents):
                 raise ValueError(
-                    'Invalid argument "{0}" for type "data_set" or "path".'
+                    'Invalid argument "{0}" for type "data_set" or "path".'.format(
+                        contents
+                    )
                 )
         return str(contents)
 
@@ -584,7 +585,7 @@ class BetterArgHandler(object):
         return self.contents
 
     def _resolve_choices(self):
-            """Verify the argument contents are a valid choice when list of choices is provided.
+        """Verify the argument contents are a valid choice when list of choices is provided.
         This is now case-insensitive, and alters the choice entry to case-match the choice.
 
         Raises:

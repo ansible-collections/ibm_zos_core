@@ -29,21 +29,9 @@ options:
     required: true
   verbose:
     description:
-      - Return verbose (sec trace) information.
-      - This also shows if the command(s) were issued, and if SAF approved the run.
-    type: bool
-    required: false
-    default: false
-  debug:
-    description:
-      - Return debugging information, step by step through the command execution.
-    type: bool
-    required: false
-    default: false
-  security:
-    description:
-      - Call command with (verbose) operator which returns more details.
-      - This also shows if the command(s) were issued, and if SAF approved the run.
+      - Return diagnostic messages that lists and describes the execution of the operator commands.
+      - Return security trace messages that help you understand and diagnose the execution of the operator commands
+      - Return trace instructions displaying how the the command's operation is read, evaluated and executed.
     type: bool
     required: false
     default: false
@@ -53,6 +41,12 @@ options:
     type: int
     required: false
     default: 0
+  rapid:
+    description:
+      - What to do with the delay.  True=return quickly, False=wait full time
+    type: bool
+    required: false
+    default: true
 """
 
 EXAMPLES = r"""
@@ -65,37 +59,32 @@ EXAMPLES = r"""
     cmd: 'd u,all'
     verbose: true
 
-- name: Execute an operator command to show active jobs with verbose and debug information
-  zos_operator:
-    cmd: 'd u,all'
-    verbose: true
-    debug: true
-
 - name: Execute an operator command to purge all job logs (requires escaping)
   zos_operator:
     cmd: "\\$PJ(*)"
 
-- name: Execute operator command to show jobs, returning security information
-  zos_operator:
-    cmd: 'd u,all'
-    security: true
-
-- name: Execute operator command to show jobs, waiting for 5 seconds for response
+- name: Execute operator command to show jobs, waiting UP TO 5 seconds for response
   zos_operator:
     cmd: 'd u,all'
     delay: 5
+
+- name: Execute operator command to show jobs, always waiting 7 seconds for response
+  zos_operator:
+    cmd: 'd u,all'
+    delay: 7
+    rapid: false
 """
 
 RETURN = r"""
 rc:
     description:
-       Return code of the operator command
-    returned: on success
+      Return code of the operator command
+    returned: always
     type: int
     sample: 0
 content:
     description:
-       The response resulting from the execution of the operator command
+       The text from the command issued, plus verbose messages if I(verbose=True)
     returned: on success
     type: list
     sample:
@@ -105,13 +94,11 @@ content:
           "         UNIT TYPE STATUS        VOLSER     VOLSTATE      SS                 ",
           "          0100 3277 OFFLINE                                 0                ",
           "          0101 3277 OFFLINE                                 0                ",
-          "---- if verbose security is true, additional output will resemble:",
           "ISF050I USER=OMVSADM GROUP= PROC=REXX TERMINAL=09A3233B",
           "ISF051I SAF Access allowed SAFRC=0 ACCESS=READ CLASS=SDSF RESOURCE=GROUP.ISFSPROG.SDSF",
           "ISF051I SAF Access allowed SAFRC=0 ACCESS=READ CLASS=SDSF RESOURCE=ISFCMD.FILTER.PREFIX",
           "ISF055I ACTION=D Access allowed USERLEVEL=7 REQLEVEL=1",
           "ISF051I SAF Access allowed SAFRC=0 ACCESS=READ CLASS=SDSF RESOURCE=ISFCMD.ODSP.ULOG.JES2",
-          "--- if security is true, output on will resemble:",
           "ISF147I REXX variable ISFTIMEOUT fetched, return code 00000001 value is ''.",
           "ISF754I Command 'SET DELAY 5' generated from associated variable ISFDELAY.",
           "ISF769I System command issued, command text: D U,ALL -S.",
@@ -120,12 +107,13 @@ content:
         ]
 changed:
     description:
-       Indicates if any changes were made during module operation.
-       Given operator commands may introduce changes that are unknown to the
-       module. True is always returned unless either a module or
-       command failure has occurred.
+      Indicates if any changes were made during module operation.
+      Given operator commands may introduce changes that are unknown to the
+      module. True is always returned unless either a module or
+      command failure has occurred.
     returned: always
     type: bool
+    sample: true
 """
 
 
@@ -152,9 +140,8 @@ def run_module():
     module_args = dict(
         cmd=dict(type="str", required=True),
         verbose=dict(type="bool", required=False, default=False),
-        debug=dict(type="bool", required=False, default=False),
-        security=dict(type="bool", required=False, default=False),
         delay=dict(type="int", required=False, default=0),
+        rapid=dict(type="bool", required=False, default=True),
     )
 
     result = dict(changed=False)
@@ -172,7 +159,6 @@ def run_module():
         module.fail_json(
             msg="An unexpected error occurred: {0}".format(repr(e)), **result
         )
-
     result["changed"] = True
     module.exit_json(**result)
 
@@ -181,9 +167,8 @@ def parse_params(params):
     arg_defs = dict(
         cmd=dict(arg_type="str", required=True),
         verbose=dict(arg_type="bool", required=False),
-        debug=dict(arg_type="bool", required=False),
-        security=dict(arg_type="bool", required=False),
         delay=dict(arg_type="int", required=False),
+        rapid=dict(arg_type="bool", required=False),
     )
     parser = BetterArgParser(arg_defs)
     new_params = parser.parse_args(params)
@@ -191,48 +176,38 @@ def parse_params(params):
 
 
 def run_operator_command(params):
-    # Usage: (rexfile) delay reset command [parameters] [-v] [-d] [-s]
+    # Usage: (rexfile) delay command [-v] [-n]
     #       -v: print out verbose security information
-    #       -d: print out debug messages
-    #       -s: pass (verbose) to the sdsf command
+    #       -n: nowait
 
     script = """/*rexx*/
-arg delay command
+arg delay command verbosemode nowait
 Address 'TSO'
 IsfRC = isfcalls( "ON" )
 showoutput = 0
-verbose=""
-do ix = 4 to 7
-  if ix <= __argv.0 then
-    do
-      c = strip(__argv.ix)
-      showoutput=1
-      select
-        when c == "-v" then do
-          say "Showing Security Messages"
-          ISFSECTRACE='ON'
-          end
-
-        when c == "-s" then do
-          say "Verbose sdsf exec option"
-          verbose="( VERBOSE WAIT )"
-          end
-
-        when c == "-d" then do
-          say "Regular tracing"
-          trace R
-          end
-
-        otherwise
-          exit -1
-        end
-    end
-end
-ISFDELAY=delay
-sdsfcmd = False
-if verbose == '' then do
-  verbose='(WAIT)'
+waitmsg = " WAIT"
+if nowait == "NOWAIT" then do
+  waitmsg = ""
   end
+
+verbose = ""
+if verbosemode == "VERB" then do
+  say "Showing Security and Verbose Messages"
+  showoutput = 1
+  ISFSECTRACE="ON"
+  verbose = "( VERBOSE" waitmsg ")"
+  end
+
+if delay > 0 then do
+  ISFDELAY=delay
+  end
+
+sdsfcmd = False
+
+if verbose == "" and waitmsg == " WAIT" then do
+  verbose = "( WAIT )"
+  end
+
 fwd = WORD(command, 1)
 ffwd = translate(fwd)
 if( ffwd == 'QUERY' | ffwd == 'SET' | ffwd == 'WHO') then
@@ -248,6 +223,7 @@ else
     address SDSF "ISFEXEC '/"command"'" verbose
   end
 saverc = rc
+
 IsfRC = isfcalls( "OFF" )
 trace Off
 if isfresp.0 > 0 then
@@ -290,11 +266,12 @@ EXIT saverc
     fulline += '"' + params.get("cmd") + '"'
 
     if params.get("verbose"):
-        fulline += " -v"
-    if params.get("debug"):
-        fulline += " -d"
-    if params.get("security"):
-        fulline += " -s"
+        fulline += " VERB"
+    else:
+        fulline += " QUIET"
+
+    if params.get("rapid"):
+        fulline += " NOWAIT"
 
     delete_on_close = True
     tmp_file = NamedTemporaryFile(delete=delete_on_close)

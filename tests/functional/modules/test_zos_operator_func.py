@@ -10,6 +10,7 @@ __metaclass__ = type
 import os
 import sys
 import warnings
+import time
 
 import ansible.constants
 import ansible.errors
@@ -40,7 +41,7 @@ def test_zos_operator_various_command(ansible_zos_module):
 
 def test_zos_operator_invalid_command(ansible_zos_module):
     hosts = ansible_zos_module
-    results = hosts.all.zos_operator(cmd="invalid,command", verbose=False, debug=False)
+    results = hosts.all.zos_operator(cmd="invalid,command", verbose=False)
     for result in results.contacted.values():
         assert result.get("changed") is False
         assert result.get("exception") is not None
@@ -66,7 +67,13 @@ def test_zos_operator_positive_path_verbose(ansible_zos_module):
 
 def test_zos_operator_positive_verbose_with_full_delay(ansible_zos_module):
     hosts = ansible_zos_module
-    results = hosts.all.zos_operator(cmd="d u,all", verbose=True, delay=5, rapid=False)
+    startmod = time.time()
+    results = hosts.all.zos_operator(
+        cmd="d u,all", verbose=True, wait_time_s=5, wait=True
+    )
+    endmod = time.time()
+    timediff = endmod - startmod
+    assert timediff > 4
     for result in results.contacted.values():
         assert result["rc"] == 0
         assert result.get("changed") is True
@@ -75,7 +82,13 @@ def test_zos_operator_positive_verbose_with_full_delay(ansible_zos_module):
 
 def test_zos_operator_positive_verbose_with_quick_delay(ansible_zos_module):
     hosts = ansible_zos_module
-    results = hosts.all.zos_operator(cmd="d u,all", verbose=True, delay=8, rapid=True)
+    startmod = time.time()
+    results = hosts.all.zos_operator(
+        cmd="d u,all", verbose=True, wait_time_s=8, wait=False
+    )
+    endmod = time.time()
+    timediff = endmod - startmod
+    assert timediff < 5
     for result in results.contacted.values():
         assert result["rc"] == 0
         assert result.get("changed") is True

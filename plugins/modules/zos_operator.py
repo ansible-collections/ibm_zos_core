@@ -35,18 +35,23 @@ options:
     type: bool
     required: false
     default: false
-  delay:
+  wait_time_s:
     description:
-      - Set maximum time in seconds to wait for response.
+      - Set maximum time in seconds to wait for the commands to execute. 0=use defailt.
+      - This option is helpful on a busy system needing more time to execute commands.
+      - Setting I(wait) can instruct if execution should wait the full I(wait_time_s).
     type: int
     required: false
     default: 0
-  rapid:
-    description:
-      - What to do with the delay.  True=return quickly, False=wait full time
-    type: bool
-    required: false
-    default: true
+    wait:
+      description:
+        - Specify to wait the full I(wait_time_s) interval before retrieving responses.
+        - This option is recommended to ensure the responses are accessible and captured by logging facilities and the I(verbose) option.
+        - I(delay=True) waits the full I(wait_time_s) interval.
+        - I(delay=False) returns as soon as the first command executes.
+      type: bool
+      required: false
+      default: true
 """
 
 EXAMPLES = r"""
@@ -66,13 +71,14 @@ EXAMPLES = r"""
 - name: Execute operator command to show jobs, waiting UP TO 5 seconds for response
   zos_operator:
     cmd: 'd u,all'
-    delay: 5
+    wait_time_s: 5
+    wait: false
 
 - name: Execute operator command to show jobs, always waiting 7 seconds for response
   zos_operator:
     cmd: 'd u,all'
-    delay: 7
-    rapid: false
+    wait_time_s: 7
+    wait: true
 """
 
 RETURN = r"""
@@ -140,8 +146,8 @@ def run_module():
     module_args = dict(
         cmd=dict(type="str", required=True),
         verbose=dict(type="bool", required=False, default=False),
-        delay=dict(type="int", required=False, default=0),
-        rapid=dict(type="bool", required=False, default=True),
+        wait_time_s=dict(type="int", required=False, default=0),
+        wait=dict(type="bool", required=False, default=True),
     )
 
     result = dict(changed=False)
@@ -167,8 +173,8 @@ def parse_params(params):
     arg_defs = dict(
         cmd=dict(arg_type="str", required=True),
         verbose=dict(arg_type="bool", required=False),
-        delay=dict(arg_type="int", required=False),
-        rapid=dict(arg_type="bool", required=False),
+        wait_time_s=dict(arg_type="int", required=False),
+        wait=dict(arg_type="bool", required=False),
     )
     parser = BetterArgParser(arg_defs)
     new_params = parser.parse_args(params)
@@ -176,12 +182,12 @@ def parse_params(params):
 
 
 def run_operator_command(params):
-    # Usage: (rexfile) delay command [-v] [-n]
+    # Usage: (rexfile) wait_time_s command [-v] [-n]
     #       -v: print out verbose security information
     #       -n: nowait
 
     script = """/*rexx*/
-arg delay command verbosemode nowait
+arg wait_time command verbosemode nowait
 Address 'TSO'
 IsfRC = isfcalls( "ON" )
 showoutput = 0
@@ -198,8 +204,8 @@ if verbosemode == "VERB" then do
   verbose = "( VERBOSE" waitmsg ")"
   end
 
-if delay > 0 then do
-  ISFDELAY=delay
+if wait_time > 0 then do
+  ISFDELAY=wait_time
   end
 
 sdsfcmd = False
@@ -261,7 +267,7 @@ EXIT saverc
 """
     module = AnsibleModuleHelper(argument_spec={})
 
-    fulline = " " + str(params.get("delay")) + " "
+    fulline = " " + str(params.get("wait_time_s")) + " "
 
     fulline += '"' + params.get("cmd") + '"'
 
@@ -270,7 +276,9 @@ EXIT saverc
     else:
         fulline += " QUIET"
 
-    if params.get("rapid"):
+    if params.get("wait"):
+        fulline += " WAIT"
+    else:
         fulline += " NOWAIT"
 
     delete_on_close = True

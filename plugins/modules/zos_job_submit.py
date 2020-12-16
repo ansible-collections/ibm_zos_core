@@ -10,7 +10,7 @@ __metaclass__ = type
 
 ANSIBLE_METADATA = {
     "metadata_version": "1.1",
-    "status": ["preview"],
+    "status": ["stableinterface"],
     "supported_by": "community",
 }
 
@@ -54,7 +54,7 @@ options:
     type: bool
     description:
       - Wait for the Job to finish and capture the output. Default is false.
-      - User can specify the wait time, see option ``duration_s``.
+      - User can specify the wait time, see option ``wait_time_s``.
   wait_time_s:
     required: false
     default: 60
@@ -89,8 +89,8 @@ options:
     description:
       - Specifies which encoding the local JCL file should be converted from
         and to, before submitting the job.
-      - If this parameter is not provided, the JCL file will be converted from
-        ISO8859-1 to IBM-1047 by default.
+      - If this parameter is not provided, and the z/OS systems default encoding can not be identified,
+        the JCL file will be converted from ISO8859-1 to IBM-1047 by default.
     required: false
     type: dict
     suboptions:
@@ -105,7 +105,9 @@ options:
       to:
         description:
           - The character set to convert the local JCL file to on the remote
-            z/OS system; defaults to IBM-1047.
+            z/OS system; defaults to IBM-1047 when z/OS systems default encoding can not be identified.
+          - If not provided, the module will attempt to identify and use the default
+            encoding on the z/OS system.
           - Supported character sets rely on the target version; the most
             common character sets are supported.
         required: false
@@ -493,6 +495,9 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import job_ou
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.encode import (
+    Defaults,
+)
 from stat import S_IEXEC, S_IREAD, S_IWRITE
 from ansible.module_utils.six import PY3
 
@@ -506,8 +511,6 @@ POLLING_INTERVAL = 1
 POLLING_COUNT = 60
 
 JOB_COMPLETION_MESSAGES = ["CC", "ABEND", "SEC"]
-DEFAULT_ASCII_CHARSET = "ISO8859-1"
-DEFAULT_EBCDIC_CHARSET = "IBM-1047"
 
 
 def submit_pds_jcl(src, module):
@@ -636,11 +639,14 @@ def run_module():
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
     encoding = module.params.get("encoding")
     if encoding is None:
-        encoding = {"from": DEFAULT_ASCII_CHARSET, "to": DEFAULT_EBCDIC_CHARSET}
+        encoding = {
+            "from": Defaults.DEFAULT_ASCII_CHARSET,
+            "to": Defaults.get_default_system_charset(),
+        }
     if encoding.get("from") is None:
-        encoding["from"] = DEFAULT_ASCII_CHARSET
+        encoding["from"] = Defaults.DEFAULT_ASCII_CHARSET
     if encoding.get("to") is None:
-        encoding["to"] = DEFAULT_EBCDIC_CHARSET
+        encoding["to"] = Defaults.get_default_system_charset()
 
     arg_defs = dict(
         src=dict(arg_type="data_set_or_path", required=True),
@@ -650,8 +656,10 @@ def run_module():
             default="DATA_SET",
             choices=["DATA_SET", "USS", "LOCAL"],
         ),
-        from_encoding=dict(arg_type="encoding", default=DEFAULT_ASCII_CHARSET),
-        to_encoding=dict(arg_type="encoding", default=DEFAULT_EBCDIC_CHARSET),
+        from_encoding=dict(arg_type="encoding", default=Defaults.DEFAULT_ASCII_CHARSET),
+        to_encoding=dict(
+            arg_type="encoding", default=Defaults.DEFAULT_EBCDIC_USS_CHARSET
+        ),
         volume=dict(arg_type="volume", required=False),
         return_output=dict(arg_type="bool", default=True),
         wait_time_s=dict(arg_type="int", required=False, default=60),
@@ -690,8 +698,7 @@ def run_module():
             **result
         )
 
-    DSN_REGEX = r"^(([A-Z]{1}[A-Z0-9]{0,7})([.]{1})){1,21}[A-Z]{1}[A-Z0-9]{0,7}([(]([A-Z]{1}[A-Z0-9]{0,7})[)]){0,1}?$"
-
+    DSN_REGEX = r"^(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}(?:\([A-Z$#@]{1}[A-Z0-9$#@]{0,7}\)){0,1}$"
     try:
         if location == "DATA_SET":
             data_set_name_pattern = re.compile(DSN_REGEX, re.IGNORECASE)
@@ -710,10 +717,9 @@ def run_module():
             jobId = submit_uss_jcl(src, module)
         else:
             # For local file, it has been copied to the temp directory in action plugin.
-
             from_encoding = encoding.get("from")
-            # This pre-filter from 8859-1 removes c/r (\r 0x0d) because iconv can't
 
+            # This pre-filter from 8859-1 removes c/r (\r 0x0d) because iconv can't
             if from_encoding == "ISO8859-1":
                 temp_file_3 = NamedTemporaryFile(delete=True)
                 result["cmd0"] = "tr -d '\r' < {0} > {1}".format(
@@ -735,17 +741,6 @@ def run_module():
                     )
 
             to_encoding = encoding.get("to")
-            result["cmd1"] = "iconv -f {0} -t {1} {2} > {3}".format(
-                from_encoding, to_encoding, quote(temp_file), quote(temp_file_2.name)
-            )
-            result["infile_data"] = {
-                "mode": stat(temp_file).st_mode,
-                "uid": stat(temp_file).st_uid,
-                "gid": stat(temp_file).st_gid,
-                "bytesize": stat(temp_file).st_size,
-            }
-            result["given_args"] = parsed_args
-
             (conv_rc, stdout, stderr) = module.run_command(
                 "iconv -f {0} -t {1} {2} > {3}".format(
                     from_encoding,

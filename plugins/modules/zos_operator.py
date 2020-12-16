@@ -37,7 +37,8 @@ options:
     default: false
   wait_time_s:
     description:
-      - Set maximum time in seconds to wait for the commands to execute. 0=use defailt.
+      - Set maximum time in seconds to wait for the commands to execute.
+      - When set to 0, the system default is used.
       - This option is helpful on a busy system needing more time to execute commands.
       - Setting I(wait) can instruct if execution should wait the full I(wait_time_s).
     type: int

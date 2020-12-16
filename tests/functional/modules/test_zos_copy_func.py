@@ -1,11 +1,6 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) IBM Corporation 2020
-# Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
 from __future__ import absolute_import, division, print_function
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
-    extract_member_name
-)
 
 import os
 import shutil
@@ -26,13 +21,6 @@ DUMMY DATA ---- LINE 007 ------
 
 # SHELL_EXECUTABLE = "/usr/lpp/rsusr/ported/bin/bash"
 SHELL_EXECUTABLE = "/bin/sh"
-TEST_PS = "IMSTESTL.IMS01.DDCHKPT"
-TEST_PDS = "IMSTESTL.COMNUC"
-TEST_PDS_MEMBER = "IMSTESTL.COMNUC(ATRQUERY)"
-TEST_VSAM = "IMSTESTL.LDS01.WADS2"
-TEST_VSAM_KSDS = "SYS1.STGINDEX"
-TEST_PDSE = "SYS1.NFSLIBE"
-TEST_PDSE_MEMBER = "SYS1.NFSLIBE(GFSAMAIN)"
 
 
 def populate_dir(dir_path):
@@ -551,7 +539,7 @@ def test_copy_uss_dir_to_non_existing_pdse(ansible_zos_module):
 
 def test_copy_ps_to_existing_uss_file(ansible_zos_module):
     hosts = ansible_zos_module
-    src_ds = TEST_PS
+    src_ds = "IMSTESTL.IMS01.DDCHKPT"
     dest = "/tmp/ddchkpt"
     try:
         hosts.all.file(path=dest, state="touch")
@@ -573,7 +561,7 @@ def test_copy_ps_to_existing_uss_file(ansible_zos_module):
 
 def test_copy_ps_to_non_existing_uss_file(ansible_zos_module):
     hosts = ansible_zos_module
-    src_ds = TEST_PS
+    src_ds = "IMSTESTL.IMS01.DDCHKPT"
     dest = "/tmp/ddchkpt"
     try:
         copy_res = hosts.all.zos_copy(src=src_ds, dest=dest, remote_src=True)
@@ -594,9 +582,9 @@ def test_copy_ps_to_non_existing_uss_file(ansible_zos_module):
 
 def test_copy_ps_to_existing_uss_dir(ansible_zos_module):
     hosts = ansible_zos_module
-    src_ds = TEST_PS
+    src_ds = "IMSTESTL.IMS01.DDCHKPT"
     dest = "/tmp/ddchkpt"
-    dest_path = dest + "/" + TEST_PS
+    dest_path = dest + "/" + "IMSTESTL.IMS01.DDCHKPT"
     try:
         hosts.all.file(path=dest, state="directory")
         copy_res = hosts.all.zos_copy(src=src_ds, dest=dest, remote_src=True)
@@ -617,7 +605,7 @@ def test_copy_ps_to_existing_uss_dir(ansible_zos_module):
 
 def test_copy_ps_to_non_existing_ps(ansible_zos_module):
     hosts = ansible_zos_module
-    src_ds = TEST_PS
+    src_ds = "IMSTESTL.IMS01.DDCHKPT"
     dest = "USER.TEST.SEQ.FUNCTEST"
     try:
         copy_res = hosts.all.zos_copy(src=src_ds, dest=dest, remote_src=True)
@@ -635,7 +623,7 @@ def test_copy_ps_to_non_existing_ps(ansible_zos_module):
 
 def test_copy_ps_to_existing_ps(ansible_zos_module):
     hosts = ansible_zos_module
-    src_ds = TEST_PS
+    src_ds = "IMSTESTL.IMS01.DDCHKPT"
     dest = "USER.TEST.SEQ.FUNCTEST"
     try:
         hosts.all.zos_data_set(name=dest, type="seq", state="present")
@@ -654,7 +642,7 @@ def test_copy_ps_to_existing_ps(ansible_zos_module):
 
 def test_copy_ps_to_existing_pdse_member(ansible_zos_module):
     hosts = ansible_zos_module
-    src_ds = TEST_PS
+    src_ds = "IMSTESTL.IMS01.DDCHKPT"
     dest_ds = "USER.TEST.PDSE.FUNCTEST"
     dest = dest_ds + "(DATA)"
     try:
@@ -675,7 +663,7 @@ def test_copy_ps_to_existing_pdse_member(ansible_zos_module):
 
 def test_copy_ps_to_non_existing_pdse_member(ansible_zos_module):
     hosts = ansible_zos_module
-    src_ds = TEST_PS
+    src_ds = "IMSTESTL.IMS01.DDCHKPT"
     dest_ds = "USER.TEST.PDSE.FUNCTEST"
     dest = dest_ds + "(DATA)"
     try:
@@ -695,9 +683,9 @@ def test_copy_ps_to_non_existing_pdse_member(ansible_zos_module):
 
 def test_copy_pds_to_non_existing_uss_dir(ansible_zos_module):
     hosts = ansible_zos_module
-    src_ds = TEST_PDS
+    src_ds = "IMSTESTL.COMNUC"
     dest = "/tmp/"
-    dest_path = "/tmp/" + TEST_PDS
+    dest_path = "/tmp/IMSTESTL.COMNUC"
     try:
         copy_res = hosts.all.zos_copy(src=src_ds, dest=dest, remote_src=True)
         stat_res = hosts.all.stat(path=dest_path)
@@ -712,7 +700,7 @@ def test_copy_pds_to_non_existing_uss_dir(ansible_zos_module):
 
 def test_copy_pds_to_existing_pds(ansible_zos_module):
     hosts = ansible_zos_module
-    src_ds = TEST_PDS
+    src_ds = "IMSTESTL.COMNUC"
     dest = "USER.TEST.PDS.FUNCTEST"
     try:
         hosts.all.zos_data_set(
@@ -725,9 +713,7 @@ def test_copy_pds_to_existing_pds(ansible_zos_module):
         )
         copy_res = hosts.all.zos_copy(src=src_ds, dest=dest, remote_src=True)
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{0}'\"".format(
-                "{0}({1})".format(dest, extract_member_name(TEST_PDS_MEMBER))
-            ),
+            cmd="cat \"//'{0}'\"".format(dest + "(ATRQUERY)"),
             executable=SHELL_EXECUTABLE,
         )
         for result in copy_res.contacted.values():
@@ -741,14 +727,12 @@ def test_copy_pds_to_existing_pds(ansible_zos_module):
 
 def test_copy_pds_to_non_existing_pds(ansible_zos_module):
     hosts = ansible_zos_module
-    src_ds = TEST_PDS
+    src_ds = "IMSTESTL.COMNUC"
     dest = "USER.TEST.PDS.FUNCTEST"
     try:
         copy_res = hosts.all.zos_copy(src=src_ds, dest=dest, remote_src=True)
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{0}'\"".format(
-                "{0}({1})".format(dest, extract_member_name(TEST_PDS_MEMBER))
-            ),
+            cmd="cat \"//'{0}'\"".format(dest + "(ATRQUERY)"),
             executable=SHELL_EXECUTABLE,
         )
         for result in copy_res.contacted.values():
@@ -762,7 +746,7 @@ def test_copy_pds_to_non_existing_pds(ansible_zos_module):
 
 def test_copy_pds_to_existing_pdse(ansible_zos_module):
     hosts = ansible_zos_module
-    src_ds = TEST_PDS
+    src_ds = "IMSTESTL.COMNUC"
     dest = "USER.TEST.PDSE.FUNCTEST"
     try:
         hosts.all.zos_data_set(
@@ -775,9 +759,7 @@ def test_copy_pds_to_existing_pdse(ansible_zos_module):
         )
         copy_res = hosts.all.zos_copy(src=src_ds, dest=dest, remote_src=True)
         verify_copy = hosts.all.shell(
-            cmd="cat \"//'{0}'\"".format(
-                "{0}({1})".format(dest, extract_member_name(TEST_PDS_MEMBER))
-            ),
+            cmd="cat \"//'{0}'\"".format(dest + "(ATRQUERY)"),
             executable=SHELL_EXECUTABLE,
         )
         for result in copy_res.contacted.values():
@@ -791,9 +773,9 @@ def test_copy_pds_to_existing_pdse(ansible_zos_module):
 
 def test_copy_pdse_to_non_existing_uss_dir(ansible_zos_module):
     hosts = ansible_zos_module
-    src_ds = TEST_PDSE
+    src_ds = "SYS1.NFSLIBE"
     dest = "/tmp/"
-    dest_path = "/tmp/" + src_ds
+    dest_path = "/tmp/SYS1.NFSLIBE"
     try:
         copy_res = hosts.all.zos_copy(src=src_ds, dest=dest, remote_src=True)
         stat_res = hosts.all.stat(path=dest_path)
@@ -808,7 +790,7 @@ def test_copy_pdse_to_non_existing_uss_dir(ansible_zos_module):
 
 def test_copy_pdse_to_existing_pdse(ansible_zos_module):
     hosts = ansible_zos_module
-    src_ds = TEST_PDSE
+    src_ds = "SYS1.NFSLIBE"
     dest = "USER.TEST.PDSE.FUNCTEST"
     try:
         hosts.all.zos_data_set(
@@ -821,9 +803,7 @@ def test_copy_pdse_to_existing_pdse(ansible_zos_module):
         )
         copy_res = hosts.all.zos_copy(src=src_ds, dest=dest, remote_src=True)
         verify_copy = hosts.all.shell(
-            cmd="head \"//'{0}'\"".format(
-                "{0}({1})".format(dest, extract_member_name(TEST_PDSE_MEMBER))
-            ),
+            cmd="head \"//'{0}'\"".format(dest + "(GFSAMAIN)"),
             executable=SHELL_EXECUTABLE,
         )
         for result in copy_res.contacted.values():
@@ -837,14 +817,12 @@ def test_copy_pdse_to_existing_pdse(ansible_zos_module):
 
 def test_copy_pdse_to_non_existing_pdse(ansible_zos_module):
     hosts = ansible_zos_module
-    src_ds = TEST_PDSE
+    src_ds = "SYS1.NFSLIBE"
     dest = "USER.TEST.PDSE.FUNCTEST"
     try:
         copy_res = hosts.all.zos_copy(src=src_ds, dest=dest, remote_src=True)
         verify_copy = hosts.all.shell(
-            cmd="head \"//'{0}'\"".format(
-                "{0}({1})".format(dest, extract_member_name(TEST_PDSE_MEMBER))
-            ),
+            cmd="head \"//'{0}'\"".format(dest + "(GFSAMAIN)"),
             executable=SHELL_EXECUTABLE,
         )
         for result in copy_res.contacted.values():
@@ -858,8 +836,8 @@ def test_copy_pdse_to_non_existing_pdse(ansible_zos_module):
 
 def test_copy_pds_member_to_existing_uss_file(ansible_zos_module):
     hosts = ansible_zos_module
-    src_ds = TEST_PDS_MEMBER
-    dest = "/tmp/" + extract_member_name(src_ds).lower()
+    src_ds = "IMSTESTL.COMNUC(ATRQUERY)"
+    dest = "/tmp/atrquery"
     try:
         hosts.all.file(path=dest, state="touch")
         copy_res = hosts.all.zos_copy(src=src_ds, dest=dest, remote_src=True)
@@ -880,8 +858,8 @@ def test_copy_pds_member_to_existing_uss_file(ansible_zos_module):
 
 def test_copy_pds_member_to_non_existing_uss_file(ansible_zos_module):
     hosts = ansible_zos_module
-    src_ds = TEST_PDS_MEMBER
-    dest = "/tmp/" + extract_member_name(src_ds).lower()
+    src_ds = "IMSTESTL.COMNUC(ATRQUERY)"
+    dest = "/tmp/atrquery"
     try:
         copy_res = hosts.all.zos_copy(src=src_ds, dest=dest, remote_src=True)
         stat_res = hosts.all.stat(path=dest)
@@ -901,7 +879,7 @@ def test_copy_pds_member_to_non_existing_uss_file(ansible_zos_module):
 
 def test_copy_pds_member_to_existing_ps(ansible_zos_module):
     hosts = ansible_zos_module
-    src_ds = TEST_PDS_MEMBER
+    src_ds = "IMSTESTL.COMNUC(ATRQUERY)"
     dest = "USER.TEST.SEQ.FUNCTEST"
     try:
         hosts.all.zos_data_set(name=dest, type="seq", state="present")
@@ -920,7 +898,7 @@ def test_copy_pds_member_to_existing_ps(ansible_zos_module):
 
 def test_copy_pds_member_to_non_existing_ps(ansible_zos_module):
     hosts = ansible_zos_module
-    src_ds = TEST_PDS_MEMBER
+    src_ds = "IMSTESTL.COMNUC(ATRQUERY)"
     dest = "USER.TEST.SEQ.FUNCTEST"
     try:
         copy_res = hosts.all.zos_copy(src=src_ds, dest=dest, remote_src=True)
@@ -938,7 +916,7 @@ def test_copy_pds_member_to_non_existing_ps(ansible_zos_module):
 
 def test_copy_pds_member_to_existing_pds_member(ansible_zos_module):
     hosts = ansible_zos_module
-    src_ds = TEST_PDS_MEMBER
+    src_ds = "IMSTESTL.COMNUC(ATRQUERY)"
     dest_ds = "USER.TEST.PDS.FUNCTEST"
     dest = "USER.TEST.PDS.FUNCTEST(DATA)"
     try:
@@ -966,7 +944,7 @@ def test_copy_pds_member_to_existing_pds_member(ansible_zos_module):
 
 def test_copy_pds_member_to_non_existing_pds_member(ansible_zos_module):
     hosts = ansible_zos_module
-    src_ds = TEST_PDS_MEMBER
+    src_ds = "IMSTESTL.COMNUC(ATRQUERY)"
     dest_ds = "USER.TEST.PDS.FUNCTEST"
     dest = "USER.TEST.PDS.FUNCTEST(DATA)"
     try:
@@ -993,9 +971,9 @@ def test_copy_pds_member_to_non_existing_pds_member(ansible_zos_module):
 
 def test_copy_pds_member_to_existing_pds(ansible_zos_module):
     hosts = ansible_zos_module
-    src_ds = TEST_PDS_MEMBER
+    src_ds = "IMSTESTL.COMNUC(ATRQUERY)"
     dest_ds = "USER.TEST.PDS.FUNCTEST"
-    dest = "USER.TEST.PDS.FUNCTEST({0})".format(extract_member_name(src_ds))
+    dest = "USER.TEST.PDS.FUNCTEST(ATRQUERY)"
     try:
         hosts.all.zos_data_set(
             name=dest_ds,
@@ -1020,7 +998,7 @@ def test_copy_pds_member_to_existing_pds(ansible_zos_module):
 
 def test_copy_pds_member_to_existing_pdse_member(ansible_zos_module):
     hosts = ansible_zos_module
-    src_ds = TEST_PDS_MEMBER
+    src_ds = "IMSTESTL.COMNUC(ATRQUERY)"
     dest_ds = "USER.TEST.PDS.FUNCTEST"
     dest = "USER.TEST.PDS.FUNCTEST(DATA)"
     try:
@@ -1048,7 +1026,7 @@ def test_copy_pds_member_to_existing_pdse_member(ansible_zos_module):
 
 def test_copy_pds_member_to_non_existing_pdse_member(ansible_zos_module):
     hosts = ansible_zos_module
-    src_ds = TEST_PDS_MEMBER
+    src_ds = "IMSTESTL.COMNUC(ATRQUERY)"
     dest_ds = "USER.TEST.PDS.FUNCTEST"
     dest = "USER.TEST.PDS.FUNCTEST(DATA)"
     try:
@@ -1075,8 +1053,8 @@ def test_copy_pds_member_to_non_existing_pdse_member(ansible_zos_module):
 
 def test_copy_pdse_member_to_existing_uss_file(ansible_zos_module):
     hosts = ansible_zos_module
-    src_ds = TEST_PDSE_MEMBER
-    dest = "/tmp/" + extract_member_name(src_ds).lower()
+    src_ds = "SYS1.NFSLIBE(GFSAMAIN)"
+    dest = "/tmp/gfsamain"
     try:
         hosts.all.file(path=dest, state="touch")
         copy_res = hosts.all.zos_copy(src=src_ds, dest=dest, remote_src=True)
@@ -1097,8 +1075,8 @@ def test_copy_pdse_member_to_existing_uss_file(ansible_zos_module):
 
 def test_copy_pdse_member_to_non_existing_uss_file(ansible_zos_module):
     hosts = ansible_zos_module
-    src_ds = TEST_PDSE_MEMBER
-    dest = "/tmp/" + extract_member_name(src_ds).lower()
+    src_ds = "SYS1.NFSLIBE(GFSAMAIN)"
+    dest = "/tmp/gfsamain"
     try:
         copy_res = hosts.all.zos_copy(src=src_ds, dest=dest, remote_src=True)
         stat_res = hosts.all.stat(path=dest)
@@ -1118,7 +1096,7 @@ def test_copy_pdse_member_to_non_existing_uss_file(ansible_zos_module):
 
 def test_copy_pdse_member_to_existing_ps(ansible_zos_module):
     hosts = ansible_zos_module
-    src_ds = TEST_PDSE_MEMBER
+    src_ds = "SYS1.NFSLIBE(GFSAMAIN)"
     dest = "USER.TEST.SEQ.FUNCTEST"
     try:
         hosts.all.zos_data_set(name=dest, type="seq", state="present")
@@ -1137,7 +1115,7 @@ def test_copy_pdse_member_to_existing_ps(ansible_zos_module):
 
 def test_copy_pdse_member_to_non_existing_ps(ansible_zos_module):
     hosts = ansible_zos_module
-    src_ds = TEST_PDSE_MEMBER
+    src_ds = "SYS1.NFSLIBE(GFSAMAIN)"
     dest = "USER.TEST.SEQ.FUNCTEST"
     try:
         copy_res = hosts.all.zos_copy(src=src_ds, dest=dest, remote_src=True)
@@ -1155,7 +1133,7 @@ def test_copy_pdse_member_to_non_existing_ps(ansible_zos_module):
 
 def test_copy_pdse_member_to_existing_pdse_member(ansible_zos_module):
     hosts = ansible_zos_module
-    src_ds = TEST_PDSE_MEMBER
+    src_ds = "SYS1.NFSLIBE(GFSAMAIN)"
     dest_ds = "USER.TEST.PDS.FUNCTEST"
     dest = "USER.TEST.PDS.FUNCTEST(DATA)"
     try:
@@ -1183,7 +1161,7 @@ def test_copy_pdse_member_to_existing_pdse_member(ansible_zos_module):
 
 def test_copy_pdse_member_to_non_existing_pdse_member(ansible_zos_module):
     hosts = ansible_zos_module
-    src_ds = TEST_PDSE_MEMBER
+    src_ds = "SYS1.NFSLIBE(GFSAMAIN)"
     dest_ds = "USER.TEST.PDS.FUNCTEST"
     dest = "USER.TEST.PDS.FUNCTEST(DATA)"
     try:
@@ -1210,7 +1188,7 @@ def test_copy_pdse_member_to_non_existing_pdse_member(ansible_zos_module):
 
 def test_copy_pdse_member_to_existing_pds_member(ansible_zos_module):
     hosts = ansible_zos_module
-    src_ds = TEST_PDSE_MEMBER
+    src_ds = "SYS1.NFSLIBE(GFSAMAIN)"
     dest_ds = "USER.TEST.PDS.FUNCTEST"
     dest = "USER.TEST.PDS.FUNCTEST(DATA)"
     try:
@@ -1238,7 +1216,7 @@ def test_copy_pdse_member_to_existing_pds_member(ansible_zos_module):
 
 def test_copy_pdse_member_to_non_existing_pds_member(ansible_zos_module):
     hosts = ansible_zos_module
-    src_ds = TEST_PDSE_MEMBER
+    src_ds = "SYS1.NFSLIBE(GFSAMAIN)"
     dest_ds = "USER.TEST.PDS.FUNCTEST"
     dest = "USER.TEST.PDS.FUNCTEST(DATA)"
     try:
@@ -1265,9 +1243,9 @@ def test_copy_pdse_member_to_non_existing_pds_member(ansible_zos_module):
 
 def test_copy_pds_member_to_uss_dir(ansible_zos_module):
     hosts = ansible_zos_module
-    src_ds = TEST_PDS_MEMBER
+    src_ds = "IMSTESTL.COMNUC(ATRQUERY)"
     dest = "/tmp/"
-    dest_path = "/tmp/" + extract_member_name(src_ds)
+    dest_path = "/tmp/ATRQUERY"
     try:
         copy_res = hosts.all.zos_copy(src=src_ds, dest=dest, remote_src=True)
         stat_res = hosts.all.stat(path=dest_path)
@@ -1287,9 +1265,9 @@ def test_copy_pds_member_to_uss_dir(ansible_zos_module):
 
 def test_copy_pdse_member_to_uss_dir(ansible_zos_module):
     hosts = ansible_zos_module
-    src_ds = TEST_PDSE_MEMBER
+    src_ds = "SYS1.NFSLIBE(GFSAMAIN)"
     dest = "/tmp/"
-    dest_path = "/tmp/" + extract_member_name(src_ds)
+    dest_path = "/tmp/GFSAMAIN"
     try:
         copy_res = hosts.all.zos_copy(src=src_ds, dest=dest, remote_src=True)
         stat_res = hosts.all.stat(path=dest_path)
@@ -1309,7 +1287,7 @@ def test_copy_pdse_member_to_uss_dir(ansible_zos_module):
 
 def test_copy_vsam_ksds_to_existing_vsam_ksds(ansible_zos_module):
     hosts = ansible_zos_module
-    src_ds = TEST_VSAM_KSDS
+    src_ds = "SYS1.STGINDEX"
     dest_ds = "USER.TEST.VSAM.KSDS"
     try:
         create_vsam_ksds(dest_ds, ansible_zos_module)
@@ -1330,7 +1308,7 @@ def test_copy_vsam_ksds_to_existing_vsam_ksds(ansible_zos_module):
 
 def test_copy_vsam_ksds_to_non_existing_vsam_ksds(ansible_zos_module):
     hosts = ansible_zos_module
-    src_ds = TEST_VSAM_KSDS
+    src_ds = "SYS1.STGINDEX"
     dest_ds = "USER.TEST.VSAM.KSDS"
     try:
         copy_res = hosts.all.zos_copy(src=src_ds, dest=dest_ds, remote_src=True)
@@ -1350,7 +1328,7 @@ def test_copy_vsam_ksds_to_non_existing_vsam_ksds(ansible_zos_module):
 
 def test_copy_empty_vsam_fails(ansible_zos_module):
     hosts = ansible_zos_module
-    src_ds = TEST_VSAM
+    src_ds = "IMSTESTL.LDS01.WADS2"
     dest_ds = "USER.TEST.VSAM.LDS"
     try:
         copy_res = hosts.all.zos_copy(
@@ -1727,7 +1705,7 @@ def test_backup_pdse_default_backup_path(ansible_zos_module):
 
 def test_backup_vsam_default_backup_path(ansible_zos_module):
     hosts = ansible_zos_module
-    src = TEST_VSAM_KSDS
+    src = "SYS1.STGINDEX"
     dest = "USER.TEST.VSAM.KSDS"
     backup_name = None
     try:
@@ -1892,7 +1870,7 @@ def test_backup_pdse_user_backup_path(ansible_zos_module):
 
 def test_backup_vsam_user_backup_path(ansible_zos_module):
     hosts = ansible_zos_module
-    src = TEST_VSAM_KSDS
+    src = "SYS1.STGINDEX"
     dest = "USER.TEST.VSAM.KSDS"
     backup_name = "USER.TEST.VSAM.KSDS.BACK"
     try:
@@ -1964,7 +1942,7 @@ def test_copy_local_file_to_vsam_fails(ansible_zos_module):
 
 def test_copy_sequential_data_set_to_vsam_fails(ansible_zos_module):
     hosts = ansible_zos_module
-    src = TEST_PS
+    src = "IMSTESTL.IMS01.DDCHKPT"
     dest = "USER.TEST.VSAM.KSDS"
     try:
         create_vsam_ksds(dest, ansible_zos_module)

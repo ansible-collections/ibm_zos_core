@@ -43,15 +43,15 @@ options:
     type: int
     required: false
     default: 0
-    wait:
-      description:
-        - Specify to wait the full I(wait_time_s) interval before retrieving responses.
-        - This option is recommended to ensure the responses are accessible and captured by logging facilities and the I(verbose) option.
-        - I(delay=True) waits the full I(wait_time_s) interval.
-        - I(delay=False) returns as soon as the first command executes.
-      type: bool
-      required: false
-      default: true
+  wait:
+    description:
+      - Specify to wait the full I(wait_time_s) interval before retrieving responses.
+      - This option is recommended to ensure the responses are accessible and captured by logging facilities and the I(verbose) option.
+      - I(delay=True) waits the full I(wait_time_s) interval.
+      - I(delay=False) returns as soon as the first command executes.
+    type: bool
+    required: false
+    default: true
 """
 
 EXAMPLES = r"""

@@ -31,9 +31,7 @@ dummy_dict3 = {"cmd": "d u,all"}
 
 dummy_dict4 = {"cmd": "d u,all", "verbose": True}
 
-dummy_dict5 = {
-    "cmd": "d u,all",
-}
+dummy_dict5 = {"cmd": "d u,all", "verbose": "NotTrueOrFalse"}
 
 dummy_return_dict1 = {"rc": 0, "message": "good result"}
 

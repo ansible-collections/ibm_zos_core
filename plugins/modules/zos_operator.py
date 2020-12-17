@@ -29,9 +29,12 @@ options:
     required: true
   verbose:
     description:
-      - Return diagnostic messages that lists and describes the execution of the operator commands.
-      - Return security trace messages that help you understand and diagnose the execution of the operator commands
-      - Return trace instructions displaying how the the command's operation is read, evaluated and executed.
+      - Return diagnostic messages that lists and describes the execution of the
+        operator commands.
+      - Return security trace messages that help you understand and diagnose the
+        execution of the operator commands
+      - Return trace instructions displaying how the the command's operation is
+        read, evaluated and executed.
     type: bool
     required: false
     default: false
@@ -39,15 +42,19 @@ options:
     description:
       - Set maximum time in seconds to wait for the commands to execute.
       - When set to 0, the system default is used.
-      - This option is helpful on a busy system needing more time to execute commands.
-      - Setting I(wait) can instruct if execution should wait the full I(wait_time_s).
+      - This option is helpful on a busy system needing more time to execute
+        commands.
+      - Setting I(wait) can instruct if execution should wait the
+        full I(wait_time_s).
     type: int
     required: false
     default: 0
   wait:
     description:
-      - Specify to wait the full I(wait_time_s) interval before retrieving responses.
-      - This option is recommended to ensure the responses are accessible and captured by logging facilities and the I(verbose) option.
+      - Specify to wait the full I(wait_time_s) interval before retrieving
+        responses.
+      - This option is recommended to ensure the responses are accessible and
+        captured by logging facilities and the I(verbose) option.
       - I(delay=True) waits the full I(wait_time_s) interval.
       - I(delay=False) returns as soon as the first command executes.
     type: bool

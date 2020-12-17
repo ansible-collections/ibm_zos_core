@@ -40,7 +40,7 @@ dummy_dict4 = {
 
 dummy_dict5 = {
     'cmd': 'd u,all',
-    'debug': 123
+    'debug': 12345
 }
 
 dummy_return_dict1 = {

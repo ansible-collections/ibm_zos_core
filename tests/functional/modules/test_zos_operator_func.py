@@ -54,6 +54,13 @@ def test_zos_operator_positive_path(ansible_zos_module):
         assert result.get("changed") is True
         assert result.get("content") is not None
 
+def test_zos_operator_positive_path_duplicate(ansible_zos_module):
+    hosts = ansible_zos_module
+    results = hosts.all.zos_operator(cmd='d u,all', verbose=False, debug=False)
+    for result in results.contacted.values():
+        assert result['rc'] == 0
+        assert result.get("changed") is True
+        assert result.get("content") is not None
 
 def test_zos_operator_positive_path_verbose(ansible_zos_module):
     hosts = ansible_zos_module

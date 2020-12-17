@@ -44,24 +44,47 @@ Synopsis
 {% endif %}
 
 {# ------------------------------------------------------------------------ #}
-{# Parse options and format function                                        #}
+{# Generate the dependencies based on the doc description                   #}
+{# ------------------------------------------------------------------------ #}
+
+Dependencies
+------------
+{% if dependencies -%}
+
+The below requirements are needed on the host that executes this role.
+
+{%   for desc in dependencies %}
+- {{ desc | rst_ify }}
+{%   endfor %}
+
+{% endif %}
+
+
+{# ------------------------------------------------------------------------ #}
+{# Parse variables and format function                                        #}
 {# ------------------------------------------------------------------------ #}
 
 {% macro option_generation(opts, level) %}
-{# Control the order of options: true: ordered by name; false: keep source order #}
-{%   set sorted = false %}
-{%   for name, spec in (opts | dictsort if sorted else opts.items()) if not name.startswith('_') %}
+{%   for name, spec in opts | dictsort recursive %}
+{%     set req = "required" if spec.required else "optional" %}
+
+{# if its a boolean we need to convert to a string for html #}
+{% if spec.type == 'bool' %}
+     {% set default_str = (spec.default | string | lower ) %}
+{% elif spec.type == 'int' %}
+     {% set default_str = (spec.default | string ) %}
+{% else %}
+     {% set default = ", default: " + spec.default if spec.default else "" %}
+{% endif %}
 
 {{ "  " * level }}{{ name }}
 {%     for para in spec.description %}
   {{ "  " * level }}{{ para | rst_ify }}
 
 {%     endfor %}
+
   {{ "  " * level }}| **required**: {{ spec.required | default("False") }}
   {{ "  " * level }}| **type**: {{ spec.type | default("str") }}
-{%     if spec.elements %}
-  {{ "  " * level }}| **elements**: {{ spec.elements }}
-{%     endif %}
 {%     if spec.default %}
   {{ "  " * level }}| **default**: {{ spec.default }}
 {%     endif %}
@@ -76,14 +99,14 @@ Synopsis
 {% endmacro %}
 
 {# ------------------------------------------------------------- #}
-{# Generate the options doc                                      #}
+{# Generate the variabls doc                                      #}
 {# ------------------------------------------------------------- #}
 
-{% if options -%}
-Parameters
-----------
+{% if variables -%}
+Variables
+---------
 
-{{ option_generation(options, 0) }}
+{{ option_generation(variables, 0) }}
 {% endif %}
 
 {# ------------------------------------------------------------- #}
@@ -133,73 +156,56 @@ See Also
 {# ------------------------------------------------------------- #}
 
 {% macro result_generation(results, level) %}
-{%   for entry in results %}
-{%     set _description  = results[entry].description %}
-{%     set _returned     = results[entry].returned %}
-{%     set _type         = results[entry].type %}
-{%     set _elements     = results[entry].elements %}
-{%     set _contains     = results[entry].contains %}
-{%     set _sample       = results[entry].sample %}
 
-{{ "  " * level }}{{ entry }}
-{%     if _description is iterable and _description is not string %}
-{%       for _para in _description %}
-  {{ "  " * level }}{{ _para | rst_ify }}
+   {% for entry in results %}
 
-{%       endfor %}
-{%     else %}
-  {{ "  " * level }}{{ _description | rst_ify }}
+      {%  set _description  = results[entry].description %}
+      {%  set _returned     = results[entry].returned %}
+      {%  set _type         = results[entry].type %}
+      {%  set _contains     = results[entry].contains %}
+      {%  set _sample       = results[entry].sample %}
 
-{%     endif %}
-{%     if _returned %}
-  {{ "  " * level }}| **returned**: {{ _returned }}
-{%     endif %}
-{%     if _type %}
-  {{ "  " * level }}| **type**: {{ _type }}
-{%     endif %}
-{%     if _elements %}
-  {{ "  " * level }}| **elements**: {{ _elements }}
-{%     endif %}
-{%     if _sample %}
-{%       if _sample.sample1 %}
-  {{ "  " * level }}| **sample**:
-{%         for _samplex in _sample %}
-{%           if _type != 'str' and _type != 'int' %}
+      {{ entry | indent(level, True) }}
+      {% if _description is iterable and _description is not string %}
+{{ "  " * (level) }}| {{ _description[0] }}
+      {% else %}
+{{ "  " * (level) }}| {{ _description }}
+      {% endif %}
 
-  {{ "  " * level }}  .. code-block:: json
+      {% if _returned %}
+{{ "  " * level }}| **returned**: {{ _returned }}
+      {% endif %}
+{{ "  " * level }}| **type**: {{ _type  }}
 
-  {{ "  " * level }}      {{ _sample[_samplex] | tojson(4) | indent(2*level+8) }}
-{%           else %}
+      {%- if _sample -%}
+      {% if _type != 'str' and _type != 'int' %}
+      
+      {{ "  " * level }}| **sample**:
 
-  {{ "  " * level }}  {{ _sample[_samplex] }}
-{%           endif %}
-{%         endfor %}
+              .. code-block::
 
-{%       else %}
-{%         if _type != 'str' and _type != 'int' %}
-  {{ "  " * level }}| **sample**:
+                       {{ _sample | tojson }}
+      {% else %}
 
-  {{ "  " * level }}  .. code-block:: json
+      {{ "  " * level }}| **sample**: {{ _sample }}
 
-  {{ "  " * level }}      {{ _sample | tojson(4) | indent(2*level+8) }}
-{%         else %}
-  {{ "  " * level }}| **sample**: {{ _sample }}
-{%         endif %}
-{%       endif %}
-{%     endif %}
-{%     if _contains %}
-{{ result_generation(_contains, level + 1) }}
-{%     endif %}
-{%   endfor %}
-{% endmacro %}
+      {% endif %}
+      {% endif %}
 
+      {% if _contains %}
+        {{ result_generation(_contains, level + 1) }}
+      {% endif %}
+
+      {% endfor  %}
+  {% endmacro %}
 {# ------------------------------------------------------------- #}
 {# Generate the return values doc                                #}
 {# ------------------------------------------------------------- #}
 
-{% if returndocs %}
+{% if returndocs -%}
 Return Values
 -------------
 
-{{ result_generation(returndocs, 0) }}
+{{ result_generation(returndocs,1) }}
 {% endif %}
+

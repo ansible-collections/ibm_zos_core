@@ -72,5 +72,5 @@ Paste group_vars or host_vars  content here
 ##### OS / ENVIRONMENT
 <!--- Provide all relevant information below, e.g. target OS versions, network device firmware, etc. -->
 
-##### Screenshots
+##### SCREENSHOTS
 <!--- If applicable, add screenshots to help explain your problem -->

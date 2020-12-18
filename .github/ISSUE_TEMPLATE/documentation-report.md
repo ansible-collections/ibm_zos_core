@@ -9,11 +9,10 @@ assignees: ''
 
 <!--- Complete *all* sections as described, this helps everyone -->
     
-##### Documentation URL 
+##### DOCUMENTATION URL 
 <!--- Include the URL to the documentation page the issue is open for -->
 
-##### Describe the documentation issue
-
+##### SUMMARY
 <!--- A clear and concise description if it is a documentation bug -->
 <!--- A clear and concise description of the change, enhancement or suggestion --> 
 <!--- If applicable, reproduction steps such as:
@@ -23,15 +22,13 @@ assignees: ''
                    See error '....'
 -->
 
-#####  Include output where possible
-
+##### OUTPUT
 <!--- If the instructed documentation caused an error, share the output of the error -->
 
-##### Screenshots
+##### SCREENSHOT
 <!--- If applicable, add screenshots to help explain your problem -->
 
-##### Browser
-
+##### BROWSER
 <!--- Please share the browser and browser version if this is a documentation bug
               OS: [e.g. iOS8.1]
               Browser [e.g. stock browser, safari]
@@ -41,5 +38,5 @@ assignees: ''
              Device: [e.g. iPhone6]
  -->
 
-##### Additional context
+##### ADDITIONAL
 <!--- Add any other context about the problem here -->

@@ -5,9 +5,7 @@
 /* Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0) */
 
 /*
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+
 
 DOCUMENTATION = '''
 ---

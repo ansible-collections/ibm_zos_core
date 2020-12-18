@@ -7,14 +7,14 @@ assignees: ''
 
 ---
 
-<!--- Complete *all* sections as described, this helps everyone -->
-    
-##### URL 
+<!--- Complete *all* sections as described -->
+
+##### URL
 <!--- Include the URL to the documentation page the issue is open for -->
 
 ##### SUMMARY
-<!--- A clear and concise description if it is a documentation bug -->
-<!--- A clear and concise description of the change, enhancement or suggestion --> 
+<!--- A clear and concise description if it is a documentation bug. -->
+<!--- A clear and concise description of the change, enhancement or suggestion. --> 
 <!--- If applicable, reproduction steps such as:
                    Go to '...'
                    Click on '....'
@@ -23,20 +23,20 @@ assignees: ''
 -->
 
 ##### OUTPUT
-<!--- If the instructed documentation caused an error, share the output of the error -->
+<!--- If the documentation caused an error, share the output of the error. -->
 
 ##### SCREENSHOT
 <!--- If applicable, add screenshots to help explain your problem -->
 
 ##### BROWSER
-<!--- Please share the browser and browser version if this is a documentation bug
+<!--- Share the browser and version if this is a documentation bug.
               OS: [e.g. iOS8.1]
               Browser [e.g. stock browser, safari]
               Version [e.g. 22]
 -->
-<!--- Please share if the smart phone type if this is found on a smart phone and a bug:
+<!--- If this is found on a smart phone; share the device information.
              Device: [e.g. iPhone6]
  -->
 
 ##### ADDITIONAL
-<!--- Add any other context about the problem here -->
+<!--- Add any other context about the problem here. -->

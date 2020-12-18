@@ -10,22 +10,28 @@ assignees: ''
 <!--- Verify first that your feature was not already discussed on
       [GitHub}(https://github.com/ansible-collections/ibm_zos_core/issues).
 -->
-<!--- Complete *all* sections as described. -->
+<!--- Complete sections below as described. -->
 
-##### FEATURE NAME
+##### FEATURE
 <!--- If applicable, the name of the module, plugin, task or new feature the
       request should be added to.
+      Example:
+        - Collection ibm_zos_core could benefit with a module
+          (zos_chksum) that can....
+        - Module zos_data_set could benefit from an option `dynamic_extents`
+          that can....
 -->
 
 ##### USE CASE
 <!-- Is your feature request related to a problem? Describe the use case:
-     - Who is the persona? System programmer, devops, etc
-     - What does the user want to do? Managed resource X, etc
-     - The user's goal: Automate the daily task that such that X ....
+     - Who is the persona? System programmer, system admin, devOps, etc
+     - What does the user want to do? Manage resource XYZ, submit ABC, etc
+     - The user's goal: Automate the daily task that such that XYZ ....
      - The steps the user takes to accomplish a particular task:
--->
-<!-- A clear and concise description of what the problem is.
-     Ex. I'm always challenged when [...]
+        1. User logs in to...
+        2. User copies ....
+        3. User edits ...
+        4. User submits...
 -->
 
 ##### SUMMARY
@@ -33,7 +39,7 @@ assignees: ''
 
 ##### DESIGN
 <!---  Share any implementations, designs, snippets or playbooks you have for
-       this feature
+       this feature.
 -->
 
 ##### ALTERNATIVES

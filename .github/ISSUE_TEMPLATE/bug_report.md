@@ -14,14 +14,18 @@ assignees: ''
       the issue will be closed and will require that the reporter of the issue
       follow the dependencies process to report bugs.
 -->
-<!--- Complete *all* sections as described -->
+<!--- Complete sections below as described. -->
 
 ##### SUMMARY
-<!--- Explain the problem briefly below -->
+<!--- Explain the problem briefly below. -->
+<!--- Example; when using module zos_xyz with options ABC I receive this
+      message "some msg" , yet when I run the same scenario on x3270 it
+      is successful.
+-->
 
 ##### COMPONENT NAME
-<!--- Write the short name of the module, plugin, task or feature below, use
-      your best guess if unsure
+<!--- Specify the name of the module, plugin, task or feature you are
+      experiencing a bug with if it applies.
 -->
 
 ##### STEPS TO REPRODUCE
@@ -32,9 +36,9 @@ assignees: ''
          3. Scroll down to '....'
          4. See error '....'
 -->
-<!--- Paste example playbooks or commands between quotes below. -->
-```
-Example commands, playbooks, yaml
+<!--- Paste example playbooks/yaml between quotes below. -->
+```yaml
+Reproduction playbook/yaml
 ```
 
 ##### EXPECTED RESULTS
@@ -49,36 +53,36 @@ Example commands, playbooks, yaml
 
 <!--- Paste verbatim command output between quotes. -->
 ```
-Playbook output
+Playbook output:
 ```
 
 ##### ANSIBLE VERSION
 <!--- Paste verbatim output from "ansible --version" between quotes. -->
 ```
-Ansible version
+Ansible version output:
 ```
 
 ##### CONFIGURATION
 #### Ansible.cfg
 <!--- Paste verbatim output from "ansible-config dump --only-changed".  -->
 ```
-Paste verbatim output
+'ansible-config dump --only-changed' output:
 ```
 
 #### Inventory
 <!--- Paste the contents of the inventory file. -->
 ```
-Paste inventory content
+Inventory content:
 ```
 
 #### Vars
 <!--- Paste the contents of group_vars or host_vars file. -->
 ```
-Paste group_vars or host_vars content
+'group_vars' or 'host_vars' content:
 ```
 
-##### OS / ENVIRONMENT
-<!--- Provide all relevant information below, e.g. target OS versions, network
+##### ENVIRONMENT
+<!--- Provide all relevant information below, e.g. target z/OS version, network
       device firmware, etc.
 -->
 

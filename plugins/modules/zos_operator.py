@@ -195,7 +195,11 @@ def run_operator_command(params):
     #       -n: nowait
 
     script = """/*rexx*/
-arg wait_time command verbosemode nowait
+wait_time = __argv.2
+command = __argv.3
+verbosemode = __argv.4
+nowait = __argv.5
+
 Address 'TSO'
 IsfRC = isfcalls( "ON" )
 showoutput = 0
@@ -206,10 +210,14 @@ if nowait == "NOWAIT" then do
 
 verbose = ""
 if verbosemode == "VERB" then do
-  say "Showing Security and Verbose Messages"
   showoutput = 1
   ISFSECTRACE="ON"
   verbose = "( VERBOSE" waitmsg ")"
+  end
+else do
+  if waitmsg == " WAIT" then do
+    verbose = "( WAIT )"
+    end
   end
 
 if wait_time > 0 then do
@@ -217,10 +225,6 @@ if wait_time > 0 then do
   end
 
 sdsfcmd = False
-
-if verbose == "" and waitmsg == " WAIT" then do
-  verbose = "( WAIT )"
-  end
 
 fwd = WORD(command, 1)
 ffwd = translate(fwd)
@@ -240,20 +244,16 @@ saverc = rc
 
 IsfRC = isfcalls( "OFF" )
 trace Off
-if isfresp.0 > 0 then
-  do
-    say ""
-    say "Responses"
-    do ix=1 to isfresp.0
-      say isfresp.ix
-    end
-  end
 if isfulog.0 > 0 then
   do
-    say ""
-    say "Log Output"
     do ix=1 to isfulog.0
       say isfulog.ix
+    end
+  end
+if isfresp.0 > 0 then
+  do
+    do ix=1 to isfresp.0
+      say isfresp.ix
     end
   end
 if showoutput > 0 then

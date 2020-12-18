@@ -9,7 +9,7 @@ assignees: ''
 
 <!--- Complete *all* sections as described, this helps everyone -->
     
-##### DOCUMENTATION URL 
+##### URL 
 <!--- Include the URL to the documentation page the issue is open for -->
 
 ##### SUMMARY

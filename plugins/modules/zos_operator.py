@@ -170,13 +170,15 @@ def run_module():
         rc_message = run_operator_command(new_params)
         result["rc"] = rc_message.get("rc")
         result["content"] = rc_message.get("message").split("\n")
+        if result["rc"] == 0:
+            result["changed"] = True
     except Error as e:
         module.fail_json(msg=repr(e), **result)
     except Exception as e:
         module.fail_json(
             msg="An unexpected error occurred: {0}".format(repr(e)), **result
         )
-    result["changed"] = True
+
     module.exit_json(**result)
 
 
@@ -301,7 +303,6 @@ EXIT saverc
     rc, stdout, stderr = module.run_command(tmp_file.name + fulline)
 
     message = "running " + fulline + "\n" + stdout + stderr
-    rc = 0
 
     if rc > 0:
         raise OperatorCmdError(fulline, rc, message.split("\n") if message else message)

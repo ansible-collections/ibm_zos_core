@@ -171,7 +171,7 @@ def run_module():
         result["rc"] = rc_message.get("rc")
         result["content"] = rc_message.get("message").split("\n")
         if result["rc"] == 0:
-          if( len(result["content"] > 2 ):
+          if( len(result["content"] > 2 )):
               if "INVALID" not in result["content"][2]:
                   if "ERROR" note in result["content"][2]:
                     result["changed"] = True

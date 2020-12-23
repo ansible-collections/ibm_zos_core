@@ -175,6 +175,21 @@ def run_module():
                 if "INVALID" not in result["content"][3]:
                     if "ERROR" not in result["content"][3]:
                         result["changed"] = True
+                    else:
+                        module.fail_json(
+                            msg="Error detected: " + result["content"][3], **result
+                        )
+                else:
+                    module.fail_json(
+                        msg="Invalid detected: " + result["content"][3], **result
+                    )
+            else:
+                module.fail_json(msg="Too little response text", **result)
+        else:
+            module.fail_json(
+                msg="Non-0 response from launch script: " + str(result["rc"]), **result
+            )
+
     except Error as e:
         module.fail_json(msg=repr(e), **result)
     except Exception as e:

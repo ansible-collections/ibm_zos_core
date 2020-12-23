@@ -172,19 +172,16 @@ def run_module():
         result["content"] = rc_message.get("message").split("\n")
         if result["rc"] == 0:
             if len(result["content"]) > 3:
-                if "INVALID" not in result["content"][3]:
-                    if "ERROR" not in result["content"][3]:
+                respline = result["content"][2]
+                if "INVALID" not in respline:
+                    if "ERROR" not in respline:
                         result["changed"] = True
                     else:
-                        result["exception"] = "Error detected: " + result["content"][3]
-                        module.fail_json(
-                            msg="Error detected: " + result["content"][3], **result
-                        )
+                        result["exception"] = "Error detected: " + respline
+                        module.fail_json(msg="Error detected: " + respline, **result)
                 else:
-                    result["exception"] = "Invalid detected: " + result["content"][3]
-                    module.fail_json(
-                        msg="Invalid detected: " + result["content"][3], **result
-                    )
+                    result["exception"] = "Invalid detected: " + respline
+                    module.fail_json(msg="Invalid detected: " + respline, **result)
             else:
                 result["exception"] = "Too little response text"
                 module.fail_json(msg="Too little response text", **result)
@@ -324,7 +321,7 @@ EXIT saverc
 
     rc, stdout, stderr = module.run_command(tmp_file.name + fulline)
 
-    message = "running " + fulline + "\n" + stdout + stderr
+    message = stdout + stderr + "\n" + "Ran " + fulline + "\n"
 
     if rc > 0:
         raise OperatorCmdError(fulline, rc, message.split("\n") if message else message)

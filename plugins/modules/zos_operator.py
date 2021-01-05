@@ -183,10 +183,8 @@ def run_module():
                     result["exception"] = "Invalid detected: " + respline
                     module.fail_json(msg="Invalid detected: " + respline, **result)
             else:
-                result["exception"] = "Too little response text"
                 module.fail_json(msg="Too little response text", **result)
         else:
-            result["exception"] = "Non-0 response from launch script"
             module.fail_json(
                 msg="Non-0 response from launch script: " + str(result["rc"]), **result
             )

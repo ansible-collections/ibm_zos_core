@@ -9,15 +9,9 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 ANSIBLE_METADATA = {
-<<<<<<< HEAD
     "metadata_version": "1.1",
     "status": ["stableinterface"],
     "supported_by": "community",
-=======
-    'metadata_version': '1.1',
-    'status': ['stableinterface'],
-    'supported_by': 'community',
->>>>>>> f44ccb892228fa3ab8af54a8eeb0976f82d62aef
 }
 
 DOCUMENTATION = r"""
@@ -34,43 +28,30 @@ options:
     path:
         description:
             - The absolute path name onto which the file system is to be mounted.
-<<<<<<< HEAD
             - The I(path) is case sensitive and must be less than or equal 1023 characters long.
-=======
-            - The I(path) is case sensitive and must be <= 1023 characters long.
->>>>>>> f44ccb892228fa3ab8af54a8eeb0976f82d62aef
         type: str
-        required: False
+        required: True
     src:
         description:
-<<<<<<< HEAD
             - The z/OS Unix System Services (USS) file system data set to be mounted.
-=======
-            - The z/OS Unix System Services (USS)-compatible data set to be mounted/unmounted.
->>>>>>> f44ccb892228fa3ab8af54a8eeb0976f82d62aef
         type: str
         required: True
     fs_type:
         description:
             - The type of file system that will be mounted.
             - The physical file systems data set format to perform the logical mount.
-<<<<<<< HEAD
             - The I(fs_type) is required to be uppercase, any lower case characters will be converted to uppercase.
-=======
-            - The I(fs_type) will be converted to uppercase.
->>>>>>> f44ccb892228fa3ab8af54a8eeb0976f82d62aef
         type: str
         choices:
             - HFS
             - ZFS
             - NFS
             - TFS
-        required: False
+        required: True
     state:
         description:
             - The desired status of the described mount (choice).
             - >
-<<<<<<< HEAD
                 If I(state=mounted) and I(src) is not in use, the module will add the file system entry to
                 I(persistent_ds) parmlib member if not present. The I(path) will be updated and the module
                 will complete successfully with I(changed=True).
@@ -94,31 +75,6 @@ options:
             - >
                 If I(state=remounted) the device is unmounted and mounted again.
                 I(persistent_ds) is not altered, even when provided.
-=======
-                If I(state=mounted) and I(src) is not in use, the module will add the
-                file system entry to I(persistent/data_set_name) parmlib member if not present.
-                The I(path) will be updated and the module will complete successfully with I(changed=True).
-            - >
-                If I(state=mounted) and I(src) is in use, the module will add the file system entry to
-                I(persistent/data_set_name) parmlib member if not present. The I(path) will not be updated and the module
-                will complete successfully with I(changed=False).
-            - >
-                If I(state=unmounted) and I(src) is in use, device will be unmounted.
-                I(persistent/data_set_name) is not altered, even when provided.
-                Module completes successfully with I(changed=True).
-            - >
-                If I(state=unmounted) and I(src) is not in use, no action taken.
-                I(persistent/data_set_name) is not altered, even when provided.
-                Module completes successfully with I(changed=False).
-            - >
-                If I(state=present), if makes sure device is in I(persistent/data_set_name), if provided.
-                Returns I(changed=True) if (persistent/data_set_name) was rewritten.
-            - >
-                If I(state=absent), this will un-mount and alse remove from I(persistent/data_set_name) if provided.
-            - >
-                If I(state=remounted) the device is unmounted and mounted again.
-                I(persistent/data_set_name) is not altered, even when provided.
->>>>>>> f44ccb892228fa3ab8af54a8eeb0976f82d62aef
                 Always returns I(changed=True).
         type: str
         choices:
@@ -129,7 +85,6 @@ options:
             - remounted
         required: False
         default: mounted
-<<<<<<< HEAD
 persistent:
     description:
       - Add/remove mount command entries to or from I(data_set_name)
@@ -216,76 +171,10 @@ persistent:
         - Markers are used to encapsulate the persistent/data_set_name entry such that they can
             easily be understood and located.
         type: list
-=======
-    persistent:
-        description:
-            - Add/remove mount commands entries to or from I(data_set_name)
->>>>>>> f44ccb892228fa3ab8af54a8eeb0976f82d62aef
         required: False
-        type: dict
-        suboptions:
-            data_set_name:
-                description:
-                    - The data set name used for persisting a mount command.  Usually a bpxprmxx file
-                required: True
-                type: str
-            comments:
-                description:
-                    - If provided, this is used in markers around the persistent/data_set_name entry.
-                type: list
-                required: False
-            backup:
-                description:
-                    - Creates a backup data set for I(data_set_name).
-                    - I(backup_name) can be used to specify a backup file name if I(backup=true).
-                required: False
-                type: bool
-                default: False
-            backup_name:
-                description:
-                    - Specify the USS file name or data set name for the destination backup.
-                    - If the source I(data_set_name) is a USS file or path, the backup_name name must be a
-                        file or path name, and the USS file or path must be an absolute path name.
-                    - If the source is an MVS data set, the backup_name must be
-                        an MVS data set name.
-                required: False
-                type: str
-
     unmount_opts:
         description:
-<<<<<<< HEAD
             - Describes how the unmount is to be performed.
-=======
-            - >
-                Describes how the unmount is to be performed.
-            - >
-                If I(unmount_opts=DRAIN) The system will wait for all use of the file system to be
-                ended normally before the unmount request is processed or until another UNMOUNT command is issued.
-            - >
-                If I(unmount_opts=FORCE) The system is to unmount the file system immediately.
-                Any users accessing files in the specified file system receive failing return codes.
-                If the data changes to the files cannot be saved, the unmount request continues and data is lost.
-                An UNMOUNT IMMEDIATE request must be issued before you can request a UNMOUNT FORCE of a file system.
-                Otherwise, UNMOUNT FORCE fails.
-            - >
-                If I(unmount_opts=IMMEDIATE) The system is to unmount the file system immediately.
-                Any users accessing files in the specified file system receive failing return codes.
-                All data changes to files in the specified file system are saved. If the data changes to files
-                cannot be saved, the unmount request fails.
-            - >
-                If I(unmount_opts=NORMAL) If no user is accessing any of the files in the specified file system,
-                the system processes the unmount request. Otherwise, the system rejects the unmount request.
-            - >
-                If I(unmount_opts=REMOUNT) The specified file system be remounted and its mount mode changed, if necessary.
-                REMOUNT takes an optional argument of RDRW, READ, UNMOUNT, or SAMEMODE.
-                If REMOUNT is specified without any arguments, the mount mode is changed from RDWR to READ, or READ to RDWR.
-                If RDWR is specified and the current mode is READ, the file system is remounted in RDWR mode.
-                If READ is specified and the current mode is RDWR, the file system is remounted in READ mode.
-                If SAMEMODE is specified, the file system is remounted (internally unmounted and remounted) without changing
-                the mount mode. You can use this option to attempt to regain use of a file system that had I/O errors.
-            - >
-                If I(unmount_opts=RESET) A reset request stops a previous UNMOUNT DRAIN request.
->>>>>>> f44ccb892228fa3ab8af54a8eeb0976f82d62aef
         type: str
         choices:
             - DRAIN
@@ -293,9 +182,6 @@ persistent:
             - IMMEDIATE
             - NORMAL
             - REMOUNT
-            - REMOUNT(RDWR)
-            - REMOUNT(READ)
-            - REMOUNT(SAMEMODE)
             - RESET
         required: False
         default: NORMAL
@@ -317,8 +203,8 @@ persistent:
         default: rw
     src_params:
         description:
-            - Specifies a parameter string to be passed to the src data set during a mount.
-            - The format and content of this field will vary and is specific to the src.
+            - Specifies a parameter string to be passed to the file system type.
+            - The parameter format and content are specified by the file system type.
         type: str
         required: False
     tag_untagged:
@@ -338,14 +224,9 @@ persistent:
         required: False
     tag_ccsid:
         description:
-<<<<<<< HEAD
             - Coded Character Set Identifier to be used on untagged files.
             - https://www.ibm.com/support/knowledgecenter/SSLTBW_2.2.0/com.ibm.zos.v2r2.idad400/ccsids.htm
             - only required it I(tag_untagged=TEXT).
-=======
-            - CCSID for untagged files in the mounted file system.
-            - only required it tag_untagged is present.
->>>>>>> f44ccb892228fa3ab8af54a8eeb0976f82d62aef
             - ccsid
                 - Identifies the coded character set identifier to be implicitly
                   set for the untagged file. ccsid is specified as a decimal value
@@ -382,11 +263,7 @@ persistent:
               system will then become the owner of the file system mounted. This
               system must be IPLed with SYSPLEX(YES).
             - >
-<<<<<<< HEAD
               I(sysname) is a 1–8 alphanumeric name of a system participating in shared file system.
-=======
-              sysname is a 1–8 alphanumeric name of a system participating in shared file system.
->>>>>>> f44ccb892228fa3ab8af54a8eeb0976f82d62aef
         type: str
         required: False
     automove:
@@ -437,12 +314,11 @@ EXAMPLES = r"""
 - name: Unmount a filesystem.
   zos_mount:
     src: SOMEUSER.VVV.ZFS
-<<<<<<< HEAD
     path: /dontcare
     fs_type: ZFS
-=======
->>>>>>> f44ccb892228fa3ab8af54a8eeb0976f82d62aef
     state: unmounted
+    unmount_opts: REMOUNT
+    opts: same
 
 - name: Mount a filesystem readonly.
   zos_mount:
@@ -458,15 +334,8 @@ EXAMPLES = r"""
     path: /u/omvsadm/core
     fs_type: ZFS
     state: mounted
-<<<<<<< HEAD
     persistent_ds: SYS1.PARMLIB(BPXPRMAA)
     tabcomment: For Tape2 project
-=======
-    persistent:
-      data_set_name: SYS1.PARMLIB(BPXPRMAA)
-      comments:
-        - For Tape2 project
->>>>>>> f44ccb892228fa3ab8af54a8eeb0976f82d62aef
 
 - name: Mount a filesystem and record change in BPXPRMAA after backing up to BPXPRMAB.
   zos_mount:
@@ -474,20 +343,10 @@ EXAMPLES = r"""
     path: /u/omvsadm/core
     fs_type: ZFS
     state: mounted
-<<<<<<< HEAD
     persistent_ds: SYS1.PARMLIB(BPXPRMAA)
     backup: Yes
     backup_name: SYS1.PARMLIB(BPXPRMAB)
     tabcomment: For Tape2 project
-=======
-    persistent:
-        data_set_namee: SYS1.PARMLIB(BPXPRMAA)
-        backup: Yes
-        backup_name: SYS1.PARMLIB(BPXPRMAB)
-        comments:
-          - For Tape2 project
-          - More comments here
->>>>>>> f44ccb892228fa3ab8af54a8eeb0976f82d62aef
 
 - name: Mount a filesystem ignoring uid/gid values.
   zos_mount:
@@ -554,7 +413,6 @@ state:
     returned: always
     type: str
     sample: mounted
-<<<<<<< HEAD
 persistent_ds:
     description: This is the full qualified name of the dataset member to change.
     returned: always
@@ -576,8 +434,6 @@ tabcomment:
     type: list
     sample:
         - [u'I did this because..']
-=======
->>>>>>> f44ccb892228fa3ab8af54a8eeb0976f82d62aef
 unmount_opts:
     description: Describes how the unmount it to be performed.
     returned: changed and if state=unmounted
@@ -653,17 +509,12 @@ stderr_lines:
     sample: [u"FileNotFoundError: No such file or directory '/tmp/foo'"]
 cmd:
     description: The actual tso command that was attempted.
-    returned: always
+    returned: failure
     type: str
     sample: MOUNT EXAMPLE.DATA.SET /u/omvsadm/sample 3380
-comment:
-    description: Step-by-step listing of actions perfor4meed.
-    returned: always
-    type: str
-    sample: started\nRan UNMOUNT command\n
 rc:
-    description: The return code of the last command executed.
-    returned: always
+    description: The return code of the mount command, if applicable.
+    returned: failure
     type: int
     sample: 8
 
@@ -791,7 +642,6 @@ def run_module(module, arg_def):
     changed = False
     res_args = dict()
 
-<<<<<<< HEAD
     src = parsed_args.get("src")
     path = parsed_args.get("path")
     fs_type = parsed_args.get("fs_type").upper()
@@ -831,73 +681,17 @@ def run_module(module, arg_def):
         if persistent:
             if data_set_name:
                 if len(data_set_name) > 0:
-=======
-    src = parsed_args.get('src')
-    path = parsed_args.get('path')
-    fs_type = parsed_args.get('fs_type')
-    state = parsed_args.get('state')
-    persistent = parsed_args.get('persistent')
-    backup = parsed_args.get('backup')
-    backup_name = parsed_args.get('backup_name')
-    unmount_opts = parsed_args.get('unmount_opts')
-    mount_opts = parsed_args.get('mount_opts')
-    src_params = parsed_args.get('src_params')
-    tag_untagged = parsed_args.get('tag_untagged')
-    tag_ccsid = parsed_args.get('tag_ccsid')
-    allow_uid = parsed_args.get('allow_uid')
-    sysname = parsed_args.get('sysname')
-    automove = parsed_args.get('automove')
-    automove_list = parsed_args.get('automove_list')
-
-    if not path:
-        if('unmounted' not in state and 'absent' not in state):
-            module.fail_json(
-                msg="path is required for mount/remount state, and was not provided.",
-                stderr=str(res_args)
-            )
-
-    if persistent:
-        data_set_name = persistent.get('data_set_name').upper()
-        backup = persistent.get('backup')
-        if backup:
-            backup_name = persistent.get('backup_name')
-            if backup_name:
-                backup_name = backup_name.upper()
-            else:
-                backup = False
-        comments = persistent.get('comments')
-    else:
-        comments = 'no comments provided'
-
-    write_persistent = False
-    if('mounted' in state or 'present' in state or 'absent' in state):
-        if persistent:
-            if data_set_name:
-                if(len(data_set_name) > 0):
->>>>>>> f44ccb892228fa3ab8af54a8eeb0976f82d62aef
                     write_persistent = True
 
     gonna_mount = True
     if "unmounted" in state or "absent" in state:
         gonna_mount = False
 
-    if fs_type:
-        fs_type = fs_type.upper()
-    elif('unmounted' not in state and 'absent' not in state):
-        module.fail_json(
-            msg="fs_type is required for mount/remount state, and was not provided.",
-            stderr=str(res_args)
-        )
-
     gonna_unmount = False
     if "unmounted" in state or "remounted" in state or "absent" in state:
         gonna_unmount = True
 
-<<<<<<< HEAD
     comment = "starting"
-=======
-    comment = "starting\n"
->>>>>>> f44ccb892228fa3ab8af54a8eeb0976f82d62aef
 
     res_args.update(
         dict(
@@ -905,13 +699,10 @@ def run_module(module, arg_def):
             path=path,
             fs_type=fs_type,
             state=state,
-<<<<<<< HEAD
             persistent_ds=persistent_ds,
-=======
->>>>>>> f44ccb892228fa3ab8af54a8eeb0976f82d62aef
             backup=backup,
             backup_name=backup_name,
-            comments=comments,
+            tabcomment=tabcomment,
             unmount_opts=unmount_opts,
             mount_opts=mount_opts,
             src_params=src_params,
@@ -972,11 +763,7 @@ def run_module(module, arg_def):
             # reminder: we can space-split the string and find out mount destination
             break
 
-<<<<<<< HEAD
     # can type be validated?
-=======
-# can type be validated?
->>>>>>> f44ccb892228fa3ab8af54a8eeb0976f82d62aef
 
     # ##########################################
     # Assemble the mount command
@@ -986,19 +773,13 @@ def run_module(module, arg_def):
     parmtext = "/* BEGIN ANSIBLE MANAGED BLOCK " + dtstr + " */\n"
     parmtail = "\n" + parmtext.replace("BEGIN", "END")
 
-<<<<<<< HEAD
     if tabcomment is not None:
         extra = ""
-=======
-    if comments is not None:
-        extra = ''
->>>>>>> f44ccb892228fa3ab8af54a8eeb0976f82d62aef
         ctr = 1
-        for tabline in comments:
+        for tabline in tabcomment:
             if len(extra) > 0:
                 extra += " "
             extra += tabline.strip()
-<<<<<<< HEAD
             if len(extra) > 60:
                 stopper = 60
                 for i in range(59, 48, -1):
@@ -1029,23 +810,6 @@ def run_module(module, arg_def):
                 extra = ""
             parmtext += " */\n"
             ctr += 1
-=======
-            while len(extra) > 0:
-                if len(extra) > 60:
-                    stopper = 60
-                    for i in range(59, 48, -1):
-                        if extra[i] == ' ':
-                            stopper = i
-                            break
-                    tmpx = extra[0:stopper]
-                    parmtext += "/* C{0:02d}:{1}".format(ctr, tmpx)
-                    extra = extra[stopper:].strip()
-                else:
-                    parmtext += "/* C{0:02d}:{1}".format(ctr, extra)
-                    extra = ''
-                parmtext += ' */\n'
-                ctr += 1
->>>>>>> f44ccb892228fa3ab8af54a8eeb0976f82d62aef
 
     fullcmd = ""
     fullumcmd = ""
@@ -1058,7 +822,6 @@ def run_module(module, arg_def):
         # There is a module util called mvs_cmd that has an API for ikjeft01.
 
         fullcmd = "tsocmd MOUNT FILESYSTEM\\( \\'{0}\\' \\) MOUNTPOINT\\( \\'{1}\\' \\) TYPE\\( '{2}' \\)".format(
-<<<<<<< HEAD
             src, path, fs_type
         )
         parmtext = (
@@ -1069,14 +832,6 @@ def run_module(module, arg_def):
         )
         if "ro" in mount_opts or "RO" in mount_opts:
             subcmd = "READ"
-=======
-            src, path, fs_type)
-        parmtext = parmtext + \
-            "MOUNT FILESYSTEM('{0}')\n      MOUNTPOINT('{1}')\n      TYPE('{2}')".format(
-                src, path, fs_type)
-        if 'ro' in mount_opts or 'RO' in mount_opts:
-            subcmd = 'READ'
->>>>>>> f44ccb892228fa3ab8af54a8eeb0976f82d62aef
         else:
             subcmd = "RDWR"
         fullcmd = "{0} MODE\\({1}\\)".format(fullcmd, subcmd)
@@ -1090,7 +845,6 @@ def run_module(module, arg_def):
         if tag_untagged is not None:
             if len(tag_untagged) > 0:
                 fullcmd = "{0} TAG\\({1},{2}\\)".format(
-<<<<<<< HEAD
                     fullcmd, tag_untagged, tag_ccsid
                 )
                 parmtext = "{0}\n      TAG({1},{2})".format(
@@ -1100,15 +854,6 @@ def run_module(module, arg_def):
         if allow_uid:
             fullcmd = fullcmd + " SETUID"
             parmtext = parmtext + "\n      SETUID"
-=======
-                    fullcmd, tag_untagged, tag_ccsid)
-                parmtext = "{0}\n      TAG({1},{2})".format(
-                    parmtext, tag_untagged, tag_ccsid)
-
-        if allow_uid:
-            fullcmd = fullcmd + ' SETUID'
-            parmtext = parmtext + '\n      SETUID'
->>>>>>> f44ccb892228fa3ab8af54a8eeb0976f82d62aef
         else:
             fullcmd = fullcmd + " NOSETUID"
             parmtext = parmtext + "\n      NOSETUID"
@@ -1124,13 +869,8 @@ def run_module(module, arg_def):
             fullcmd = fullcmd + " NOSECURITY"
             parmtext = parmtext + "\n      NOSECURITY"
         else:
-<<<<<<< HEAD
             fullcmd = fullcmd + " SECURITY"
             parmtext = parmtext + "\n      SECURITY"
-=======
-            fullcmd = fullcmd + ' SECURITY'
-            parmtext = parmtext + '\n      SECURITY'
->>>>>>> f44ccb892228fa3ab8af54a8eeb0976f82d62aef
 
         if sysname is not None:
             if len(sysname) > 0 and len(sysname) < 9:
@@ -1139,21 +879,12 @@ def run_module(module, arg_def):
 
         if automove is not None:
             if len(automove) > 1:
-<<<<<<< HEAD
                 fullcmd = fullcmd + " " + automove
                 parmtext = parmtext + "\n      " + automove
                 if automove_list is not None:
                     if len(automove_list) > 1:
                         fullcmd = fullcmd + "(" + automove_list + ")"
                         parmtext = parmtext + "(" + automove_list + ")"
-=======
-                fullcmd = fullcmd + ' ' + automove
-                parmtext = parmtext + '\n      ' + automove
-                if automove_list is not None:
-                    if(len(automove_list) > 1):
-                        fullcmd = fullcmd + '(' + automove_list + ')'
-                        parmtext = parmtext + '(' + automove_list + ')'
->>>>>>> f44ccb892228fa3ab8af54a8eeb0976f82d62aef
         parmtext = parmtext + parmtail
     else:
         parmtext = ""
@@ -1162,11 +893,7 @@ def run_module(module, arg_def):
         fullumcmd = "tsocmd UNMOUNT FILESYSTEM\\(\\'{0}\\'\\)".format(src)
         if unmount_opts is None:
             unmount_opts = "NORMAL"
-<<<<<<< HEAD
             fullumcmd = fullcmd + " " + unmount_opts
-=======
-            fullumcmd = fullcmd + ' ' + unmount_opts
->>>>>>> f44ccb892228fa3ab8af54a8eeb0976f82d62aef
         elif len(unmount_opts) < 2:
             unmount_opts = "NORMAL"
             fullumcmd = fullcmd + " " + unmount_opts
@@ -1195,14 +922,9 @@ def run_module(module, arg_def):
             if module.check_mode is False:
                 try:
                     (rc, stdout, stderr) = module.run_command(
-<<<<<<< HEAD
                         fullcmd, use_unsafe_shell=False
                     )
                     comment = "ran command\n"
-=======
-                        fullcmd, use_unsafe_shell=False)
-                    comment += "ran mount command\n"
->>>>>>> f44ccb892228fa3ab8af54a8eeb0976f82d62aef
                 except Exception as err:
                     module.fail_json(msg=str(err), stderr=str(res_args))
             else:
@@ -1219,20 +941,14 @@ def run_module(module, arg_def):
         fst_exists = fst_du.exists()
         if fst_exists is False:
             module.fail_json(
-<<<<<<< HEAD
                 msg="persistent ds set member (" + data_set_name + ") doesn't exist",
                 stderr=str(res_args),
             )
-=======
-                msg="persistent data_set_name member (" + data_set_name + ") doesn't exist",
-                stderr=str(res_args))
->>>>>>> f44ccb892228fa3ab8af54a8eeb0976f82d62aef
 
         tmp_file = tempfile.NamedTemporaryFile(delete=True)
         tmp_file_filename = tmp_file.name
         tmp_file.close()
 
-<<<<<<< HEAD
         # look at using zos_copy here
         # fullcmd = "cp \"//'" + persistds + "'\" " + tmp_file_filename
         # try:
@@ -1241,17 +957,9 @@ def run_module(module, arg_def):
         # except Exception as err:
         #    module.fail_json(msg=str(err), stderr=str(res_args))
         copy_ps2uss(persistent_ds, tmp_file_filename, False)
-=======
-        fullccmd = "cp \"//'" + data_set_name + "'\" " + tmp_file_filename
-        try:
-            (rc, stdout, stderr) = module.run_command(
-                fullccmd, use_unsafe_shell=False)
-        except Exception as err:
-            module.fail_json(msg=str(err), stderr=str(res_args))
->>>>>>> f44ccb892228fa3ab8af54a8eeb0976f82d62aef
 
+        # zos_copy could obviate the need for the backup call here
         if backup:
-<<<<<<< HEAD
             # try:
             # zos_backup.mvs_file_backup(persistds, backup_name)
             #    fullcmd = "cp " + tmp_file_filename + " \"//'" + backup_name + "'\""
@@ -1262,16 +970,6 @@ def run_module(module, arg_def):
             #    module.fail_json(msg=str(err), stderr=str(res_args))
             copy_mvs2mvs(persistent_ds, backup_name, False)
             comment += "Wrote backup to " + backup_name + "\n"
-=======
-            if backup_name:
-                fullccmd = "cp " + tmp_file_filename + " \"//'" + backup_name + "'\""
-                try:
-                    (rc, stdout, stderr) = module.run_command(
-                        fullccmd, use_unsafe_shell=False)
-                except Exception as err:
-                    module.fail_json(msg=str(err), stderr=str(res_args))
-                comment += "Wrote backup to " + backup_name + "\n"
->>>>>>> f44ccb892228fa3ab8af54a8eeb0976f82d62aef
 
         with open(tmp_file_filename, "r") as fh:
             content = fh.read().splitlines()
@@ -1281,7 +979,6 @@ def run_module(module, arg_def):
             fh = open(tmp_file_filename, "w")
             fh.write(newtext)
             fh.close()
-<<<<<<< HEAD
             # look at using zos_copy here
             # fullcmd = "cp " + tmp_file_filename + " \"//'" + persistds + "'\""
             # try:
@@ -1291,15 +988,6 @@ def run_module(module, arg_def):
             #    module.fail_json(msg=str(err), stderr=str(res_args))
             copy_uss2mvs(tmp_file_filename, persistent_ds, "PO", False)
             comment += "Modified " + persistent_ds + " in place\n"
-=======
-            fullccmd = "cp " + tmp_file_filename + " \"//'" + data_set_name + "'\""
-            try:
-                (rc, stdout, stderr) = module.run_command(
-                    fullccmd, use_unsafe_shell=False)
-            except Exception as err:
-                module.fail_json(msg=str(err), stderr=str(res_args))
-            comment += "Modified " + data_set_name + " in place\n"
->>>>>>> f44ccb892228fa3ab8af54a8eeb0976f82d62aef
 
         if os.path.isfile(tmp_file_filename):
             os.unlink(tmp_file_filename)
@@ -1308,7 +996,7 @@ def run_module(module, arg_def):
         dict(
             changed=changed,
             comment=comment,
-            cmd=fullcmd + fullumcmd,
+            cmd=fullcmd,
             rc=rc,
             stdout=stdout,
             stderr=stderr,
@@ -1328,7 +1016,6 @@ def main():
 
     module = AnsibleModule(
         argument_spec=dict(
-<<<<<<< HEAD
             src=dict(type="str", required=True),
             path=dict(type="str", required=True),
             fs_type=dict(
@@ -1372,80 +1059,6 @@ def main():
             tag_ccsid=dict(type="int", required=False),
             allow_uid=dict(type="bool", default=True, required=False),
             sysname=dict(type="str", required=False),
-=======
-            src=dict(type='str', required=True),
-            path=dict(type='str', required=False),
-            fs_type=dict(type='str', choices=[
-                'HFS', 'ZFS', 'NFS', 'TFS'], required=False),
-            state=dict(
-                type='str',
-                default='mounted',
-                choices=[
-                    'absent',
-                    'mounted',
-                    'unmounted',
-                    'present',
-                    'remounted'],
-                required=False),
-            persistent=dict(
-                type='dict',
-                required=False,
-                options=dict(
-                    data_set_name=dict(
-                        type='str',
-                        required=True,
-                    ),
-                    comments=dict(
-                        type='list',
-                        required=False),
-                    backup=dict(
-                        type='bool',
-                        default=False
-                    ),
-                    backup_name=dict(
-                        type='str',
-                        required=False,
-                        default=None
-                    ),
-                )
-            ),
-            unmount_opts=dict(
-                type='str',
-                default='NORMAL',
-                choices=[
-                    'DRAIN',
-                    'FORCE',
-                    'IMMEDIATE',
-                    'NORMAL',
-                    'REMOUNT',
-                    'REMOUNT(RDWR)',
-                    'REMOUNT(READ)',
-                    'REMOUNT(SAMEMODE)',
-                    'RESET'],
-                required=False),
-            mount_opts=dict(
-                type='str',
-                default='rw',
-                choices=[
-                    'ro',
-                    'rw',
-                    'same',
-                    'nowait',
-                    'nosecurity'],
-                required=False),
-            src_params=dict(type='str', required=False),
-            tag_untagged=dict(
-                type='str',
-                default='',
-                choices=[
-                    '',
-                    'TEXT',
-                    'NOTEXT'],
-                required=False),
-            tag_ccsid=dict(type='int', required=False),
-            allow_uid=dict(type='bool', default=True, required=False),
-            sysname=dict(type='str', required=False),
->>>>>>> f44ccb892228fa3ab8af54a8eeb0976f82d62aef
             automove=dict(
                 type="str",
                 default="AUTOMOVE",
@@ -1459,7 +1072,6 @@ def main():
     )
 
     arg_def = dict(
-<<<<<<< HEAD
         src=dict(arg_type="data_set", required=True),
         path=dict(arg_type="path", required=True),
         fs_type=dict(
@@ -1481,32 +1093,6 @@ def main():
             ),
         ),
         tabcomment=dict(arg_type="list", elements="str", required=False),
-=======
-        src=dict(arg_type='data_set', required=True),
-        path=dict(arg_type='path', required=False),
-        fs_type=dict(arg_type='str', choices=[
-            "HFS", "ZFS", "NFS", "TFS"], required=False),
-        state=dict(
-            arg_type='str',
-            default='mounted',
-            choices=[
-                'absent',
-                'mounted',
-                'unmounted',
-                'present',
-                'remounted'],
-            required=False),
-        persistent=dict(
-            arg_type='dict',
-            required=False,
-            options=dict(
-                data_set_name=dict(arg_type='str', required=True),
-                comments=dict(arg_type='list', elements='str', required=False),
-                backup=dict(arg_type='bool', default=False),
-                backup_name=dict(arg_type='str', required=False, default=None),
-            )
-        ),
->>>>>>> f44ccb892228fa3ab8af54a8eeb0976f82d62aef
         unmount_opts=dict(
             arg_type="str",
             default="NORMAL",
@@ -1514,7 +1100,6 @@ def main():
             required=False,
         ),
         mount_opts=dict(
-<<<<<<< HEAD
             arg_type="str",
             default="rw",
             choices=["ro", "rw", "same", "nowait", "nosecurity"],
@@ -1527,29 +1112,6 @@ def main():
         tag_ccsid=dict(arg_type="str", required=False),
         allow_uid=dict(arg_type="bool", default=True, required=False),
         sysname=dict(arg_type="str", default="", required=False),
-=======
-            arg_type='str',
-            default='rw',
-            choices=[
-                'ro',
-                'rw',
-                'same',
-                'nowait',
-                'nosecurity'],
-            required=False),
-        src_params=dict(arg_type='str', default='', required=False),
-        tag_untagged=dict(
-            arg_type='str',
-            default='',
-            choices=[
-                '',
-                'TEXT',
-                'NOTEXT'],
-            required=False),
-        tag_ccsid=dict(arg_type='str', required=False),
-        allow_uid=dict(arg_type='bool', default=True, required=False),
-        sysname=dict(arg_type='str', default='', required=False),
->>>>>>> f44ccb892228fa3ab8af54a8eeb0976f82d62aef
         automove=dict(
             arg_type="str",
             default="AUTOMOVE",

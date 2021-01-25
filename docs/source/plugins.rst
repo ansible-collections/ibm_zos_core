@@ -25,12 +25,10 @@ Connection
 ----------
 
 * ``zos_ssh``: Enables the Ansible controller to communicate with a z/OS target machine by using SSH, with the added support to transfer ASCII as EBCDIC when transferring REXX modules. This connection plugin was forked from the Ansible `ssh.py`_ connection plugin.
-* For further reference, see the `zos_ssh quickstart`_ guide.
+* For further reference, see **z/OS Connection Plugin**.
 
 .. _ssh.py:
         https://github.com/ansible/ansible/blob/devel/lib/ansible/plugins/connection/ssh.py
-.. _zos_ssh quickstart:
-   quickstart.html#z-os-connection-plugin
 
 z/OS Connection Plugin
 ----------------------

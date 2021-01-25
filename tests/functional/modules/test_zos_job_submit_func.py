@@ -101,7 +101,7 @@ def test_job_submit_USS(ansible_zos_module):
 
 
 def test_job_submit_LOCAL(ansible_zos_module):
-    tmp_file = tempfile.NamedTemporaryFile(delete=False)
+    tmp_file = tempfile.NamedTemporaryFile(delete=True)
     with open(tmp_file.name, "w") as f:
         f.write(JCL_FILE_CONTENTS)
     hosts = ansible_zos_module

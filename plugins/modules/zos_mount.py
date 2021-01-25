@@ -1092,21 +1092,6 @@ def main():
                 backup_name=dict(arg_type="str", required=False, default=None),
             ),
         ),
-        # persistent_ds=dict(
-        #    arg_type='str',
-        #    default='',
-        #    required=False,
-        #    aliases=[
-        #        'bpxfile',
-        #        'bpxprm']),
-        # backup=dict(arg_type='bool', default=False, required=False),
-        # backup_name=dict(
-        #    arg_type='str',
-        #    default='',
-        #    required=False,
-        #    aliases=[
-        #        'backup_file',
-        #        'backup_bpxprm']),
         tabcomment=dict(arg_type="list", elements="str", required=False),
         unmount_opts=dict(
             arg_type="str",

@@ -445,10 +445,14 @@ def _get_return_code_num(rc_str):
     Returns:
         Union[int, NoneType] -- Returns integer RC if possible, if not returns NoneType
     """
+
     rc = None
-    match = re.search(r"\s*CC\s*([0-9]+)", rc_str)
-    if match:
-        rc = int(match.group(1))
+    if "JCL ERROR" in rc_str:
+        rc = 16
+    else:
+        match = re.search(r"\s*CC\s*([0-9]+)", rc_str)
+        if match:
+            rc = int(match.group(1))
     return rc
 
 

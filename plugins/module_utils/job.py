@@ -467,7 +467,9 @@ def _get_return_code_str(rc_str):
         Union[str, NoneType] -- Returns string RC or ABEND code if possible, if not returns NoneType
     """
     rc = None
-    match = re.search(r"(?:\s*CC\s*([0-9]+))|(?:ABEND\s*((?:S|U)[0-9]+))", rc_str)
+    match = re.search(
+        r"(?:\s*CC\s*([0-9]+))|(?:ABEND\s*((?:S|U)[0-9]+)|(?:JCL ERROR)))", rc_str
+    )
     if match:
         rc = match.group(1) or match.group(2)
     return rc

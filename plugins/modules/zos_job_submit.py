@@ -513,7 +513,7 @@ else:
 POLLING_INTERVAL = 1
 POLLING_COUNT = 60
 
-JOB_COMPLETION_MESSAGES = ["CC", "ABEND", "SEC"]
+JOB_COMPLETION_MESSAGES = ["CC", "ABEND", "SEC", "JCL ERROR"]
 
 
 def submit_pds_jcl(src, module):
@@ -612,7 +612,7 @@ def query_jobs_status(module, jobId):
             )
     if not output and timeout == 0:
         raise SubmitJCLError(
-            "THE JOB CAN NOT BE QUERIED FROM JES (TIMEOUT=10s). PLEASE CHECK THE ZOS SYSTEM. IT IS SLOW TO RESPONSE."
+            "THE JOB CAN NOT BE QUERIED FROM JES (TIMEOUT=10s). PLEASE CHECK THE ZOS SYSTEM. IT IS SLOW TO RESPOND."
         )
     return output
 

@@ -23,9 +23,9 @@ module: zos_gather_facts
 version_added: "999.999"
 short_description: Gathers facts about remote z/OS hosts.
 description:
-  - things do stuff
+  - Gathers facts from remote z/OS hosts. Gather scripts are a combination of ported Ansible engine scripts, unique z/OS scripts which interface with USS, and any scripts provided by other zos collections.
   - This module emulates ansible's gather_facts module but specificallly for hosts running z/OS.
-  - TODO - actually the setup module is the default one, gather_facts needs to be specified
+  # - TODO - actually the setup module is the default one, gather_facts needs to be specified
 author: "Ketan Kelkar (@ketankelkar)"
 options:
   fact_path:
@@ -68,10 +68,6 @@ https://docs.ansible.com/ansible/latest/collections/ansible/builtin/setup_module
 """
 
 
-the description isnt really about HOW the module works but more about how it can be USED.
-
-
-
 EXAMPLES = r"""
 - name: Gather all (default) available facts from a z/OS host.
   zos_gather_facts:
@@ -102,9 +98,11 @@ EXAMPLES = r"""
     filter: 'zos*' # TODO - pick an actualy viable wildcad string for this filter
     gather_subset: min
 
-
-
 """
+
+
+# will be built out as gather scripts are integrated into the module.
+# following the example of nxos_facts module: https://github.com/ansible/ansible/blob/98f804ecb44278628070829bd1841ca51476f7b9/lib/ansible/modules/network/nxos/nxos_facts.py
 
 RETURN = r"""
 file:

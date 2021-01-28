@@ -45,12 +45,12 @@ options:
       - If supplied, restrict the additional facts collected to the given subset.
       - Possbile values: C(all), C(min), C(harware), C(network), C(virtual), C(ohai), C(facter).
       - TODO - determine whether z/OS have compatibility with ohai and/or facter?
-      - Can specify a list of values to specify a larger subset. 
+      - Can specify a list of values to specify a larger subset.
       - Values can also be used with an initial C(!) to specify that specific subset should not be collected.
       - EG: C(!hardware, !network, !virtual, !ohai, !facter).
       - If C(!all) is specified then only the min susbet is collected. To avoid collecting even the min subset specify C(!all, !min).
       - To collect only specific facts, use C(!all, !min) and specify the particular fact subsets.
-      - Use the filter parameter if you do not want to display some collected facts. 
+      - Use the filter parameter if you do not want to display some collected facts.
     required: false
     default: "all"
     type: str
@@ -109,3 +109,62 @@ file:
 
 
 """
+
+from ansible.module_utils.basic import AnsibleModule
+
+
+# TODO remove following imports if unused
+from ansible.module_utils.facts.namespace import PrefixFactNamespace
+from ansible.module_utils.facts import ansible_collector
+
+# from ansible.module_utils.facts import default_collectors
+from ansible.module_utils.facts.system.python import PythonFactCollector
+
+
+def main():
+    module = AnsibleModule(
+        argument_spec=dict(
+            gather_subset=dict(default=["all"], required=False, type='list', elements='str'),
+            gather_timeout=dict(default=10, required=False, type='int'),
+            filter=dict(default=[], required=False, type='list', elements='str'),
+            fact_path=dict(default='/etc/ansible/facts.d', required=False, type='path'),
+        ),
+        supports_check_mode=True,
+    )
+
+
+    gather_subset = module.params['gather_subset']
+    gather_timeout = module.params['gather_timeout']
+    filter_spec = module.params['filter']
+
+
+    minimal_gather_subset = frozenset(['apparmor', 'caps', 'cmdline', 'date_time', 'distribution', 'dns', 'env', 'fips', 'local', 'lsb','pkg_mgr', 'platform', 'python', 'selinux', 'service_mgr', 'ssh_pub_keys', 'user'])
+
+
+    # all_collector_classes = default_collectors.collectors
+    all_collector_classes = [PythonFactCollector]
+
+    # TODO - change from ansible to IBMZ for z scripts?
+    # rename namespace_name to root_key?
+    namespace = PrefixFactNamespace(namespace_name='ansible', prefix='ansible_')
+
+    fact_collector = \
+        ansible_collector.get_ansible_collector(
+            all_collector_classes=all_collector_classes,
+            namespace=namespace,
+            filter_spec=filter_spec,
+            gather_subset=gather_subset,
+            gather_timeout=gather_timeout,
+            minimal_gather_subset=minimal_gather_subset)
+
+    facts_dict = fact_collector.collect(module=module)
+
+    module.exit_json(ansible_facts=facts_dict)
+    result = { 'facts': facts_dict }
+
+    # print(len(facts_dict))
+
+    module.exit_json(**result)
+
+if __name__ == '__main__':
+    main()

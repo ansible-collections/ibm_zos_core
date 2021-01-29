@@ -7,7 +7,7 @@ z/OS Core
 =========
 
 The **IBM® z/OS® core collection**, also represented as
-**ibm_zos_core** in this document, is  part of the broader
+`ibm_zos_core`_ in this document, is  part of the broader
 initiative to bring Ansible® Automation to IBM Z® through the offering
 **Red Hat® Ansible Certified Content for IBM Z**.
 
@@ -20,9 +20,17 @@ editing textual data in data sets or Unix System Services files,
 finding data sets, backing up and restoring data sets and
 volumes and running z/OS programs without JCL.
 
+The Ansible modules in this collection are written in Python and REXX and
+interact with `Z Open Automation Utilities`_.
+
+.. _ibm_zos_core:
+   https://galaxy.ansible.com/ibm/ibm_zos_core
+.. _Z Open Automation Utilities:
+   https://www.ibm.com/support/knowledgecenter/SSKFYE
+
 .. toctree::
    :maxdepth: 1
-   :caption: Reference
+   :caption: Collection Content
 
    source/plugins
    source/modules

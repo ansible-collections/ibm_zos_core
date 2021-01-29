@@ -20,7 +20,7 @@ __metaclass__ = type
 DOCUMENTATION = r"""
 ---
 module: zos_gather_facts
-version_added: "999.999"
+version_added: "999.999" #TODO
 short_description: Gathers facts about remote z/OS hosts.
 description:
   - Gathers facts from remote z/OS hosts. Gather scripts are a combination of ported Ansible engine scripts, unique z/OS scripts which interface with USS, and any scripts provided by other zos collections.
@@ -117,8 +117,7 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.facts.namespace import PrefixFactNamespace
 from ansible.module_utils.facts import ansible_collector
 
-# from ansible.module_utils.facts import default_collectors
-from ansible.module_utils.facts.system.python import PythonFactCollector
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.facts import zos_default_collectors
 
 
 def main():
@@ -138,15 +137,10 @@ def main():
     filter_spec = module.params['filter']
 
 
-    minimal_gather_subset = frozenset(['apparmor', 'caps', 'cmdline', 'date_time', 'distribution', 'dns', 'env', 'fips', 'local', 'lsb','pkg_mgr', 'platform', 'python', 'selinux', 'service_mgr', 'ssh_pub_keys', 'user'])
-
-
-    # all_collector_classes = default_collectors.collectors
-    all_collector_classes = [PythonFactCollector]
+    all_collector_classes = zos_default_collectors.collectors
 
     # TODO - change from ansible to IBMZ for z scripts?
-    # rename namespace_name to root_key?
-    namespace = PrefixFactNamespace(namespace_name='ansible', prefix='ansible_')
+    namespace = PrefixFactNamespace(namespace_name='zos_ansible', prefix='zos_ansible_')
 
     fact_collector = \
         ansible_collector.get_ansible_collector(
@@ -155,16 +149,11 @@ def main():
             filter_spec=filter_spec,
             gather_subset=gather_subset,
             gather_timeout=gather_timeout,
-            minimal_gather_subset=minimal_gather_subset)
+            minimal_gather_subset=None)
 
     facts_dict = fact_collector.collect(module=module)
 
-    module.exit_json(ansible_facts=facts_dict)
-    result = { 'facts': facts_dict }
-
-    # print(len(facts_dict))
-
-    module.exit_json(**result)
+    module.exit_json(zos_ansible_facts=facts_dict)
 
 if __name__ == '__main__':
     main()

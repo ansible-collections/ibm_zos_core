@@ -250,7 +250,8 @@ sdsfcmd = False
 
 fwd = WORD(command, 1)
 ffwd = translate(fwd)
-if( ffwd == 'QUERY' | ffwd == 'SET' | ffwd == 'WHO') then
+fch = SUBSTR( fwd, 1, 1)
+if( ffwd == 'QUERY' | ffwd == 'SET' | ffwd == 'WHO' | fch == '/' ) then
   do
     sdsfcmd = True
   end

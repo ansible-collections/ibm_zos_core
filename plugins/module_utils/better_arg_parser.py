@@ -586,20 +586,12 @@ class BetterArgHandler(object):
 
     def _resolve_choices(self):
         """Verify the argument contents are a valid choice when list of choices is provided.
-        This is now case-insensitive, and alters the choice entry to case-match the choice.
 
         Raises:
             ValueError: The provided value is not a valid choice.
         """
         if self.arg_def.choices and len(self.arg_def.choices) > 0:
-            # making case-insensitive, but mapping the case-correct choice value back
-            gotit = 0
-            for elem in self.arg_def.choices:
-                if self.contents.casefold() == elem.casefold():
-                    self.contents = str(elem)
-                    gotit = 1
-                    break
-            if gotit == 0:
+            if self.contents not in self.arg_def.choices:
                 raise ValueError(
                     "Provided value: {0} for arg: {1} is not in a valid choice. Choices: {2}".format(
                         self.contents, self.arg_name, ", ".join(self.arg_def.choices)

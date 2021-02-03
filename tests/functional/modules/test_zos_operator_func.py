@@ -92,11 +92,11 @@ def test_zos_operator_positive_verbose_with_quick_delay(ansible_zos_module):
     hosts = ansible_zos_module
     startmod = time.time()
     results = hosts.all.zos_operator(
-        cmd="d u,all", verbose=True, wait_time_s=8, wait=False
+        cmd="d u,all", verbose=True, wait_time_s=15, wait=False
     )
     endmod = time.time()
     timediff = endmod - startmod
-    assert timediff < 5
+    assert timediff < 15
     for result in results.contacted.values():
         assert result["rc"] == 0
         assert result.get("changed") is True

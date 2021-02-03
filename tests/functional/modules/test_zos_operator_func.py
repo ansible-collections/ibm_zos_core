@@ -92,7 +92,7 @@ def test_zos_operator_positive_verbose_with_quick_delay(ansible_zos_module):
     hosts = ansible_zos_module
     startmod = time.time()
     results = hosts.all.zos_operator(
-        cmd="d u,all", verbose=True, wait_time_s=15, wait=False
+        cmd="d u,all", verbose=True, wait_time_s=10, wait=False
     )
     endmod = time.time()
     timediff = endmod - startmod

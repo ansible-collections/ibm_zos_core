@@ -31,6 +31,7 @@ description:
 author:
   - "Vijay Katoch"
   - "Blake Becker (@blakeinate)"
+options: {}
 '''
 
 EXAMPLES = '''

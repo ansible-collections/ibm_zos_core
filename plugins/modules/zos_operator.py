@@ -343,6 +343,7 @@ EXIT saverc
     rc, stdout, stderr = module.run_command(tmp_file.name + fulline)
 
     if rc > 0:
+        message = stdout + stderr + "\nRan: " + fulline
         raise OperatorCmdError(fulline, rc, message.split("\n") if message else message)
 
     return {

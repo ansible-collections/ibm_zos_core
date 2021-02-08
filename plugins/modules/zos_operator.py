@@ -169,19 +169,41 @@ def run_module():
         new_params = parse_params(module.params)
         rc_message = run_operator_command(new_params)
         result["rc"] = rc_message.get("rc")
-        result["content"] = rc_message.get("message").split("\n")
-        if result["rc"] == 0:
-            if len(result["content"]) > 3:
-                respline = result["content"][2]
-                if "INVALID" not in respline:
-                    if "ERROR" not in respline:
-                        result["changed"] = True
-                    else:
-                        result["exception"] = "Error detected: " + respline
-                        module.fail_json(msg="Error detected: " + respline, **result)
-                else:
-                    result["exception"] = "Invalid detected: " + respline
-                    module.fail_json(msg="Invalid detected: " + respline, **result)
+
+        result["content"] = []
+        short_str = []
+        ssctr = 0
+        tstr = rc_message.get("stdout")
+        if tstr is not None:
+            for s in tstr.split("\n"):
+                result["content"].append(s)
+                if ssctr < 5:
+                    short_str.append(s)
+                    ssctr += 1
+        ssctr = 0
+        tstr = rc_message.get("stderr")
+        if tstr is not None:
+            for s in tstr.split("\n"):
+                result["content"].append(s)
+                if ssctr < 5:
+                    short_str.append(s)
+                    ssctr += 1
+
+        result["content"].append("Ran" + rc_message.get("call"))
+        result["changed"] = False
+
+        if int(result["rc"]) == 0:
+            if len(short_str) > 2:
+                result["changed"] = True
+                for linetocheck in short_str:
+                    if "INVALID" in linetocheck:
+                        result["exception"] = "Invalid detected: " + linetocheck
+                        result["changed"] = False
+                        module.fail_json(msg=result["exception"], **result)
+                    elif "ERROR" in linetocheck:
+                        result["exception"] = "Error detected: " + linetocheck
+                        result["changed"] = False
+                        module.fail_json(msg=result["exception"], **result)
             else:
                 module.fail_json(msg="Too little response text", **result)
         else:
@@ -320,12 +342,15 @@ EXIT saverc
 
     rc, stdout, stderr = module.run_command(tmp_file.name + fulline)
 
-    message = stdout + stderr + "\n" + "Ran " + fulline + "\n"
-
     if rc > 0:
         raise OperatorCmdError(fulline, rc, message.split("\n") if message else message)
 
-    return {"rc": rc, "message": message}
+    return {
+        "rc": rc,
+        "stdout": stdout,
+        "stderr": stderr,
+        "call": fulline,
+    }
 
 
 class Error(Exception):

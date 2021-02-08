@@ -720,29 +720,30 @@ def run_module():
             from_encoding = encoding.get("from")
 
             # This pre-filter from 8859-1 removes c/r (\r 0x0d) because iconv can't
-            if from_encoding == "ISO8859-1":
-                temp_file_3 = NamedTemporaryFile(delete=True)
-                result["cmd0"] = "tr -d '\r' < {0} > {1}".format(
-                    quote(temp_file),
-                    quote(temp_file_3.name),
-                )
-                (conv_rc, stdout, stderr) = module.run_command(
-                    result["cmd0"],
-                    use_unsafe_shell=True,
-                )
-                if conv_rc == 0:
-                    temp_file = temp_file_3.name
-                else:
-                    module.fail_json(
-                        msg="The Local file preprocessing failed. Please check the source file."
-                        + stderr
-                        or "",
-                        **result
-                    )
+            # if from_encoding == "ISO8859-1":
+            #    temp_file_3 = NamedTemporaryFile(delete=True)
+            #    result["cmd0"] = "tr -d '\r' < {0} > {1}".format(
+            #        quote(temp_file),
+            #        quote(temp_file_3.name),
+            #    )
+            #    (conv_rc, stdout, stderr) = module.run_command(
+            #        result["cmd0"],
+            #        use_unsafe_shell=True,
+            #    )
+            #    if conv_rc == 0:
+            #        temp_file = temp_file_3.name
+            #    else:
+            #        module.fail_json(
+            #            msg="The Local file preprocessing failed. Please check the source file."
+            #            + stderr
+            #            or "",
+            #            **result
+            #        )
 
+            # added -c to iconv to try and prevent \r from mis-mapping as invalid char to EBCDIC
             to_encoding = encoding.get("to")
             (conv_rc, stdout, stderr) = module.run_command(
-                "iconv -f {0} -t {1} {2} > {3}".format(
+                "iconv -c -f {0} -t {1} {2} > {3}".format(
                     from_encoding,
                     to_encoding,
                     quote(temp_file),

@@ -170,6 +170,13 @@ def run_module():
         rc_message = run_operator_command(new_params)
         result["rc"] = rc_message.get("rc")
 
+        # This section will build 2 lists of strings: content=>user return, and
+        # short_str, which is the first 5 lines of stdout and stderr.
+        # 5: depending on the shell, there can be 1-2 leading blank lines +
+        # ... std output: "address started...\nJCL run\naddress ended...".
+        # If there is an error, it is usually on the line about "JCL run".
+        # short_str is local, and just to check for error/invalid returns.
+        # ssctr is a limit variable so we don't pull more than 5 lines of each.
         result["content"] = []
         short_str = []
         ssctr = 0
@@ -189,9 +196,13 @@ def run_module():
                     short_str.append(s)
                     ssctr += 1
 
+        # call is returned from run_operator_command, specifying what was run.
+        # Adding this to user return can help in tracing compound call errors.
         result["content"].append("Ran" + rc_message.get("call"))
         result["changed"] = False
 
+        # rc=0, something succeeded, but it could still be bad JCL.
+        # As long as there are more than 2 lines, it's worth looking through.
         if int(result["rc"]) == 0:
             if len(short_str) > 2:
                 result["changed"] = True
@@ -210,7 +221,6 @@ def run_module():
             module.fail_json(
                 msg="Non-0 response from launch script: " + str(result["rc"]), **result
             )
-
     except Error as e:
         module.fail_json(msg=repr(e), **result)
     except Exception as e:

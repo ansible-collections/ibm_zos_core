@@ -173,9 +173,12 @@ def run_module():
         # This section will build 2 lists of strings: content=>user return, and
         # short_str, which is the first 5 lines of stdout and stderr.
         # 5: depending on the shell, there can be 1-2 leading blank lines +
-        # ... std output: "address started...\nJCL run\naddress ended...".
-        # If there is an error, it is usually on the line about "JCL run".
-        # short_str is local, and just to check for error/invalid returns.
+        # the first few lines of ouput from the operator call will look like this:
+        # .....ISF031I CONSOLE OMVSADM ACTIVATED
+        # .....-actual command run
+        # .....first result of command
+        # text or other output may then follow
+        # short_str is local, and just to check for problem response values.
         # ssctr is a limit variable so we don't pull more than 5 lines of each.
         result["content"] = []
         short_str = []
@@ -201,7 +204,8 @@ def run_module():
         result["content"].append("Ran" + rc_message.get("call"))
         result["changed"] = False
 
-        # rc=0, something succeeded, but it could still be bad JCL.
+        # rc=0, something succeeded (the calling script ran),
+        # but it could still be a bad/invalid command.
         # As long as there are more than 2 lines, it's worth looking through.
         if int(result["rc"]) == 0:
             if len(short_str) > 2:
@@ -213,6 +217,10 @@ def run_module():
                         module.fail_json(msg=result["exception"], **result)
                     elif "ERROR" in linetocheck:
                         result["exception"] = "Error detected: " + linetocheck
+                        result["changed"] = False
+                        module.fail_json(msg=result["exception"], **result)
+                    elif "UNIDENTIFIABLE" in linetocheck:
+                        result["exception"] = "Unidentifiable detected: " + linetocheck
                         result["changed"] = False
                         module.fail_json(msg=result["exception"], **result)
             else:

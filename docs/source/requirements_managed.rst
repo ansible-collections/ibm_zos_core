@@ -22,10 +22,15 @@ proceed to install the IBM z/OS core collection.
      `release notes`_. For detailed instructions on installation and configuration of ZOAU,
      `Installing and Configuring ZOA Utilities`_.
      
-     Before attempting to run an Ansible playbook, please review the required
-     environment parameters documented in our playbook repository under the
-     `playbook configuration`_ topic. In addition to the
-     `playbook configuration`_, review our `FAQs`_ for additional help.
+     Before running an Ansible playbook, please review these resources:
+     
+     * Basic concepts common to playbooks, required artifacts to run a playbook, and
+       debugging instructions documented in the `playbooks`_ section.
+       
+     * The `playbook configuration`_ topic to learn about the required environment
+       parameters documented in our playbook repository. 
+     
+     * The `FAQs`_ for additional help on configuring playbooks and troubleshooting tips.
 
      
 * `z/OS OpenSSH`_
@@ -47,6 +52,9 @@ proceed to install the IBM z/OS core collection.
    
 .. _Installing and Configuring ZOA Utilities:
    https://www.ibm.com/support/knowledgecenter/en/SSKFYE_1.1.0/install.html
+
+.. _playbooks:
+   https://ibm.github.io/z_ansible_collections_doc/playbooks/playbooks.html
    
 .. _V2R3:
    https://www.ibm.com/support/knowledgecenter/SSLTBW_2.3.0/com.ibm.zos.v2r3/en/homepage.html

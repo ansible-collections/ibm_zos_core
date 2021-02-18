@@ -497,7 +497,7 @@ class BetterArgHandler(object):
             IGNORECASE,
         ):
             content_path = str(contents)
-            if content_path.startswith('~'):
+            if content_path.startswith("~"):
                 content_path = path.expanduser(content_path)
 
             if not path.isabs(content_path):

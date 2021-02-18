@@ -494,6 +494,8 @@ from time import sleep
 from os import chmod, path, remove
 from tempfile import NamedTemporaryFile
 import re
+from timeit import default_timer as timer
+
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import job_output
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,
@@ -697,7 +699,7 @@ def run_module():
 
     if wait_time_s <= 0:
         module.fail_json(
-            msg="The option wait_time_s is not valid it just be greater than 0.",
+            msg="The option wait_time_s is not valid.  It must be greater than 0.",
             **result
         )
 
@@ -751,41 +753,62 @@ def run_module():
 
     result["job_id"] = jobId
     duration = 0
-    if wait is True:
-        # calculate the job elapse time
-        try:
-            waitJob = query_jobs_status(module, jobId)
-            job_msg = waitJob[0].get("ret_code").get("msg")
-        except SubmitJCLError as e:
-            module.fail_json(msg=repr(e), **result)
-        # while (job_msg.startswith("CC") or job_msg.startswith("ABEND")) is False:
-        while not re.search(
-            "^(?:{0})".format("|".join(JOB_COMPLETION_MESSAGES)), job_msg
-        ):
-            sleep(1)
-            duration = duration + 1
-            waitJob = job_output(job_id=jobId)
-            job_msg = waitJob[0].get("ret_code").get("msg")
-            if re.search("^(?:{0})".format("|".join(JOB_COMPLETION_MESSAGES)), job_msg):
-                break
-            if duration == wait_time_s:  # Long running task. timeout return
-                break
+    if not wait:
+        wait_time_s = 10
 
-    try:
-        result = get_job_info(module, jobId, return_output)
+    # real time loop - will be used regardless of 'wait' to capture data
+    starttime = timer()
+    loopdone = False
+    while not loopdone:
+        try:
+            job_output_txt = job_output(job_id=jobId)
+        except IndexError:
+            pass
+        except Exception as e:
+            result["err_detail"] = "{1} {2}.\n".format(
+                "Error during job submission.  The output is:", job_output_txt or " "
+            )
+            module.fail_json(msg=repr(e), **result)
+
+        if bool(job_output_txt):
+            jot_retcode = job_output_txt[0].get("ret_code")
+            if bool(jot_retcode):
+                job_msg = jot_retcode.get("msg")
+                if re.search(
+                    "^(?:{0})".format("|".join(JOB_COMPLETION_MESSAGES)), job_msg
+                ):
+                    loopdone = True
+
+        if not loopdone:
+            checktime = timer()
+            duration = round(checktime - starttime)
+            if duration >= wait_time_s:
+                loopdone = True
+                result["message"] = {
+                    "stdout": "Submit JCL operation succeeded but it is a long running job. Timeout is "
+                    + str(wait_time_s)
+                    + " seconds."
+                }
+            else:
+                sleep(0.5)
+
+    # End real time loop
+    if bool(job_output_txt):
+        result["jobs"] = job_output_txt
         if wait is True and return_output is True and max_rc is not None:
             assert_valid_return_code(
                 max_rc, result.get("jobs")[0].get("ret_code").get("code")
             )
-    except SubmitJCLError as e:
-        module.fail_json(msg=repr(e), **result)
-    except Exception as e:
-        module.fail_json(msg=repr(e), **result)
-    finally:
-        if temp_file:
-            remove(temp_file)
+
+    if temp_file:
+        remove(temp_file)
+    if temp_file_2:
+        remove(temp_file_2)
+
+    checktime = timer()
+    duration = round(checktime - starttime)
     result["duration"] = duration
-    if duration == wait_time_s:
+    if duration >= wait_time_s:
         result["message"] = {
             "stdout": "Submit JCL operation succeeded but it is a long running job. Timeout is "
             + str(wait_time_s)
@@ -793,6 +816,7 @@ def run_module():
         }
     else:
         result["message"] = {"stdout": "Submit JCL operation succeeded."}
+
     result["changed"] = True
     module.exit_json(**result)
 

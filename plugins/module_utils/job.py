@@ -468,7 +468,7 @@ def _get_return_code_str(rc_str):
     """
     rc = None
     match = re.search(
-        r"(?:\s*CC\s*([0-9]+))|(?:ABEND\s*((?:S|U)[0-9]+)|(?:JCL ERROR)))", rc_str
+        r"(?:\s*CC\s*([0-9]+))|(?:ABEND\s*((?:S|U)[0-9]+)|(?:JCL ERROR))", rc_str
     )
     if match:
         rc = match.group(1) or match.group(2)

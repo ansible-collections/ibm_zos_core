@@ -20,7 +20,7 @@ __metaclass__ = type
 DOCUMENTATION = r"""
 ---
 module: zos_gather_facts
-version_added: "999.999" #TODO
+# version_added: #TODO
 short_description: Gathers facts about remote z/OS hosts.
 description:
   - Gathers facts from remote z/OS hosts. Gather scripts are a combination of ported Ansible engine scripts, unique z/OS scripts which interface with USS, and any scripts provided by other zos collections.
@@ -28,10 +28,11 @@ description:
   # - TODO - actually the setup module is the default one, gather_facts needs to be specified
 author: "Ketan Kelkar (@ketankelkar)"
 options:
-  fact_path:
-    description: # TODO - determine if z/OS will support this feature
-    required: false
-    default:
+#   # TODO - determine if z/OS will support this feature
+#   fact_path:
+#     description:
+#     required: false
+#     default:
 
   filter:
     description:
@@ -44,7 +45,7 @@ options:
     description:
       - If supplied, restrict the additional facts collected to the given subset.
       - Possbile values: C(all), C(min), C(harware), C(network), C(virtual), C(ohai), C(facter).
-      - TODO - determine whether z/OS have compatibility with ohai and/or facter?
+      # TODO - determine whether z/OS have compatibility with ohai and/or facter and determine whether the above set of possible values is accurate for z/OS.
       - Can specify a list of values to specify a larger subset.
       - Values can also be used with an initial C(!) to specify that specific subset should not be collected.
       - EG: C(!hardware, !network, !virtual, !ohai, !facter).

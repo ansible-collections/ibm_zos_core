@@ -98,6 +98,7 @@ def _parse_jobs(output_str):
             output_str,
             re.MULTILINE | re.DOTALL,
         )
+        print("Lines found::: {0}".format(str(len(job_strs))))
         for job_str in job_strs:
             job = {}
             job_info_match = re.search(
@@ -107,6 +108,11 @@ def _parse_jobs(output_str):
                 ),
                 job_str,
             )
+            if job_info_match:
+                print("Matched on ::::{0}".format(job_str))
+            else:
+                print("No match on ::::{0}".format(job_str))
+
             job["job_id"] = job_info_match.group(1).strip()
             job["job_name"] = job_info_match.group(2).strip()
             job["subsystem"] = job_info_match.group(3).strip()

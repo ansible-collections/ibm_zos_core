@@ -110,6 +110,12 @@ def _parse_jobs(output_str):
                 job_str,
             )
             if job_info_match is not None:
+                print(
+                    "REadable: job_str:::{0}\n===============================\n".format(
+                        job_str
+                    )
+                )
+
                 job = {}
 
                 job["job_id"] = job_info_match.group(1).strip()
@@ -135,7 +141,7 @@ def _parse_jobs(output_str):
                 jobs.append(job)
             else:
                 print(
-                    "unreadable: job_str:::{0}\n===============================\n".format(
+                    "UNreadable: job_str:::{0}\n===============================\n".format(
                         job_str
                     )
                 )

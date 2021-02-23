@@ -134,7 +134,11 @@ def _parse_jobs(output_str):
                 job["ddnames"] = _parse_dds(job_str)
                 jobs.append(job)
             else:
-                print("job_str:::{0}".format(job_str))
+                print(
+                    "unreadable: job_str:::{0}\n===============================\n".format(
+                        job_str
+                    )
+                )
                 raise RuntimeError("Job output unreadable")
 
     return jobs

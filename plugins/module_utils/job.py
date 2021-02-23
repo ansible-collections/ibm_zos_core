@@ -109,7 +109,7 @@ def _parse_jobs(output_str):
                 ),
                 job_str,
             )
-            if job_info_match:
+            if job_info_match is not None:
                 job = {}
 
                 job["job_id"] = job_info_match.group(1).strip()

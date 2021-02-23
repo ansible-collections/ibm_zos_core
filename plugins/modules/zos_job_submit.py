@@ -608,7 +608,7 @@ def query_jobs_status(module, jobId):
             pass
         except Exception as e:
             raise SubmitJCLError(
-                "{0} {1} {2}".format(repr(e), "The output is", output or " ")
+                "{0} {1} {2}".format(repr(e), "The output is: ", output or " ")
             )
     if not output and timeout == 0:
         raise SubmitJCLError(

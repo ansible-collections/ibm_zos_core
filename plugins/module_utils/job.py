@@ -110,12 +110,6 @@ def _parse_jobs(output_str):
                 job_str,
             )
             if job_info_match is not None:
-                print(
-                    "REadable: job_str:::{0}\n===============================\n".format(
-                        job_str
-                    )
-                )
-
                 job = {}
 
                 job["job_id"] = job_info_match.group(1).strip()
@@ -139,13 +133,6 @@ def _parse_jobs(output_str):
 
                 job["ddnames"] = _parse_dds(job_str)
                 jobs.append(job)
-            else:
-                print(
-                    "UNreadable: job_str:::{0}\n===============================\n".format(
-                        job_str
-                    )
-                )
-                raise RuntimeError("Job output unreadable")
 
     return jobs
 
@@ -186,7 +173,8 @@ def _parse_dds(job_str):
                 dd_str,
                 re.MULTILINE | re.DOTALL,
             )
-            dd["content"] = content_str.group(1).split("\n")
+            if content_str is not None:
+                dd["content"] = content_str.group(1).split("\n")
             dds.append(dd)
     return dds
 

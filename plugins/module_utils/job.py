@@ -90,6 +90,9 @@ def _parse_jobs(output_str):
 
     Returns:
         list[dict]: A list of jobs and their attributes.
+
+    Rais:
+        Runtime error if output wasn't parseable
     """
     jobs = []
     if "-----NO JOBS FOUND-----" not in output_str:
@@ -130,6 +133,10 @@ def _parse_jobs(output_str):
 
                 job["ddnames"] = _parse_dds(job_str)
                 jobs.append(job)
+            else:
+                print("job_str:::{0}".format(job_str))
+                raise RuntimeError("Job output unreadable")
+
     return jobs
 
 

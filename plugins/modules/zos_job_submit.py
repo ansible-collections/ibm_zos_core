@@ -513,7 +513,7 @@ else:
 POLLING_INTERVAL = 1
 POLLING_COUNT = 60
 
-JOB_COMPLETION_MESSAGES = ["CC", "ABEND", "SEC"]
+JOB_COMPLETION_MESSAGES = ["CC", "ABEND", "SEC ERROR"]
 
 
 def submit_pds_jcl(src, module):

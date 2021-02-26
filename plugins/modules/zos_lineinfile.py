@@ -467,6 +467,11 @@ def main():
         result['cmd'] = ret['cmd']
         result['changed'] = ret['changed']
         result['found'] = ret['found']
+        # Only return 'rc' if stderr is not empty to not fail the playbook run in a nomatch case
+        # That information will be given with 'changed' and 'found'
+        if len(stderr):
+            result['stderr'] = str(stderr)
+            result['rc'] = rc
     except Exception:
         messageDict = dict(msg="dsed return content is NOT in json format", stdout=str(stdout), stderr=str(stderr), rc=rc)
         if result.get('backup_name'):

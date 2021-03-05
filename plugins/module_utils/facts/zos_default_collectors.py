@@ -10,10 +10,11 @@
 # limitations under the License.
 
 from __future__ import absolute_import, division, print_function
+from plugins.module_utils.facts.zos_collector import ZosFactCollector
 
 __metaclass__ = type
 
-# from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.facts.zos_collector import ZosFactCollector
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.facts.zos_collector import ZosFactCollector
 
 # from ansible.module_utils.facts import default_collectors
 from ansible.module_utils.facts.system.python import PythonFactCollector
@@ -36,7 +37,6 @@ _base = [
     DistributionFactCollector,
 ]
 
-
 # general info, not required but probably useful for other facts
 _general = [
     PythonFactCollector,
@@ -47,9 +47,13 @@ _general = [
     UserFactCollector
 ]
 
+# _zos = [
+#     ZosFactCollector
+# ]
+
 # other fact sources
 _extra_facts = [
     # LocalFactCollector
 ]
 
-collectors = _base + _general + _extra_facts
+collectors = _base + _general + _extra_facts # + _zos

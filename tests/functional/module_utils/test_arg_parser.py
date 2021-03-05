@@ -24,14 +24,33 @@ arg_defs = dict(
         arg_type="list",
         elements="dict",
         options=dict(
-            name=dict(required=True,),
-            state=dict(arg_type="str", default="present",),
-            type=dict(arg_type="str", required=False,),
+            name=dict(
+                required=True,
+            ),
+            state=dict(
+                arg_type="str",
+                default="present",
+            ),
+            type=dict(
+                arg_type="str",
+                required=False,
+            ),
             size=dict(arg_type="str", required=False),
-            format=dict(arg_type="str", required=False,),
-            data_class=dict(arg_type="str", required=False,),
-            record_length=dict(arg_type="int",),
-            replace=dict(arg_type="bool", default=False,),
+            format=dict(
+                arg_type="str",
+                required=False,
+            ),
+            data_class=dict(
+                arg_type="str",
+                required=False,
+            ),
+            record_length=dict(
+                arg_type="int",
+            ),
+            replace=dict(
+                arg_type="bool",
+                default=False,
+            ),
         ),
     ),
     name=dict(arg_type="str"),
@@ -40,9 +59,15 @@ arg_defs = dict(
         default="present",
         # choices=['present','absent']
     ),
-    type=dict(arg_type="str", required=False,),
+    type=dict(
+        arg_type="str",
+        required=False,
+    ),
     size=dict(arg_type="str", required=False),
-    format=dict(arg_type="str", required=False,),
+    format=dict(
+        arg_type="str",
+        required=False,
+    ),
     data_class=dict(
         arg_type="str",
         required=False,
@@ -120,7 +145,11 @@ provided_args_4 = {"datetime": "97887"}
 )
 def test_alias_resolution(provided_args):
     arg_defs = dict(
-        name=dict(arg_type="str", required=True, default="samplename",),
+        name=dict(
+            arg_type="str",
+            required=True,
+            default="samplename",
+        ),
         date=dict(arg_type="str", default="may 1, 2020", aliases=["bestdate", "dt"]),
         time=dict(arg_type="int", default="3945297", aliases=["sometime", "datetime"]),
     )
@@ -136,7 +165,12 @@ def test_alias_resolution(provided_args):
 
 @pytest.mark.parametrize("arg_val", ["asdfadfa234", "#@#$@fasdfa"])
 def test_str_type_validation_success(arg_val):
-    arg_defs = dict(name=dict(arg_type="str", required=True,))
+    arg_defs = dict(
+        name=dict(
+            arg_type="str",
+            required=True,
+        )
+    )
     parser = BetterArgParser(arg_defs)
     result = parser.parse_args({"name": arg_val})
     assert result.get("name") == arg_val
@@ -148,7 +182,12 @@ def dummyfunc():
 
 @pytest.mark.parametrize("arg_val", [dummyfunc, 32143, True])
 def test_str_type_validation_failure(arg_val):
-    arg_defs = dict(name=dict(arg_type="str", required=True,))
+    arg_defs = dict(
+        name=dict(
+            arg_type="str",
+            required=True,
+        )
+    )
     parser = BetterArgParser(arg_defs)
     with pytest.raises(ValueError):
         parser.parse_args({"name": arg_val})
@@ -156,7 +195,12 @@ def test_str_type_validation_failure(arg_val):
 
 @pytest.mark.parametrize("arg_val", [231, "3124", 0])
 def test_int_type_validation_success(arg_val):
-    arg_defs = dict(somenum=dict(arg_type="int", required=True,))
+    arg_defs = dict(
+        somenum=dict(
+            arg_type="int",
+            required=True,
+        )
+    )
     parser = BetterArgParser(arg_defs)
     result = parser.parse_args({"somenum": arg_val})
     assert result.get("somenum") == int(arg_val)
@@ -164,7 +208,12 @@ def test_int_type_validation_success(arg_val):
 
 @pytest.mark.parametrize("arg_val", [dummyfunc, "3341h132j1231x", True])
 def test_int_type_validation_failure(arg_val):
-    arg_defs = dict(somenum=dict(arg_type="int", required=True,))
+    arg_defs = dict(
+        somenum=dict(
+            arg_type="int",
+            required=True,
+        )
+    )
     parser = BetterArgParser(arg_defs)
     with pytest.raises(ValueError):
         parser.parse_args({"somenum": arg_val})
@@ -172,7 +221,12 @@ def test_int_type_validation_failure(arg_val):
 
 @pytest.mark.parametrize("arg_val", [True, False])
 def test_bool_type_validation_success(arg_val):
-    arg_defs = dict(somebool=dict(arg_type="bool", required=True,))
+    arg_defs = dict(
+        somebool=dict(
+            arg_type="bool",
+            required=True,
+        )
+    )
     parser = BetterArgParser(arg_defs)
     result = parser.parse_args({"somebool": arg_val})
     assert result.get("somebool") == arg_val
@@ -182,7 +236,12 @@ def test_bool_type_validation_success(arg_val):
     "arg_val", [dummyfunc, "3341h132j1231x", 0, 1, "True", "false"]
 )
 def test_bool_type_validation_failure(arg_val):
-    arg_defs = dict(somebool=dict(arg_type="bool", required=True,))
+    arg_defs = dict(
+        somebool=dict(
+            arg_type="bool",
+            required=True,
+        )
+    )
     parser = BetterArgParser(arg_defs)
     with pytest.raises(ValueError):
         parser.parse_args({"somebool": arg_val})
@@ -209,7 +268,12 @@ def always_returns_same_val(value, dependencies):
     ],
 )
 def test_basic_user_provided_type_func(arg_type, expected):
-    arg_defs = dict(someval=dict(arg_type=arg_type, required=True,))
+    arg_defs = dict(
+        someval=dict(
+            arg_type=arg_type,
+            required=True,
+        )
+    )
     parser = BetterArgParser(arg_defs)
     result = parser.parse_args({"someval": expected})
     assert result.get("someval") == expected
@@ -227,7 +291,10 @@ def is_dependency_uppercase(value, dependencies):
 
 def test_user_provided_type_func_with_dependencies():
     arg_defs = dict(
-        uppername=dict(arg_type=make_uppercase, required=True,),
+        uppername=dict(
+            arg_type=make_uppercase,
+            required=True,
+        ),
         verifier=dict(
             arg_type=is_dependency_uppercase, required=True, dependencies=["uppername"]
         ),
@@ -242,7 +309,10 @@ def test_user_provided_type_func_with_dependencies_make_fail():
         uppername=dict(
             arg_type=make_uppercase, required=True, dependencies=["verifier"]
         ),
-        verifier=dict(arg_type=is_dependency_uppercase, required=True,),
+        verifier=dict(
+            arg_type=is_dependency_uppercase,
+            required=True,
+        ),
     )
     parser = BetterArgParser(arg_defs)
     with pytest.raises(TypeError):
@@ -251,7 +321,10 @@ def test_user_provided_type_func_with_dependencies_make_fail():
 
 def test_dependent_required():
     arg_defs = dict(
-        uppername=dict(arg_type="str", required=True,),
+        uppername=dict(
+            arg_type="str",
+            required=True,
+        ),
         verifier=dict(
             arg_type="str", required=is_dependency_uppercase, dependencies=["uppername"]
         ),
@@ -263,7 +336,10 @@ def test_dependent_required():
 
 def test_dependent_required_fail():
     arg_defs = dict(
-        uppername=dict(arg_type="str", required=True,),
+        uppername=dict(
+            arg_type="str",
+            required=True,
+        ),
         verifier=dict(
             arg_type="str", required=is_dependency_uppercase, dependencies=["uppername"]
         ),
@@ -278,7 +354,10 @@ def test_dependent_required_fail():
 )
 def test_dependent_default(arg_val, expected):
     arg_defs = dict(
-        uppername=dict(arg_type="str", required=True,),
+        uppername=dict(
+            arg_type="str",
+            required=True,
+        ),
         verifier=dict(
             arg_type="bool", default=is_dependency_uppercase, dependencies=["uppername"]
         ),
@@ -289,14 +368,26 @@ def test_dependent_default(arg_val, expected):
 
 
 def test_list_of_strings_success():
-    arg_defs = dict(names=dict(arg_type="list", elements="str", required=True,))
+    arg_defs = dict(
+        names=dict(
+            arg_type="list",
+            elements="str",
+            required=True,
+        )
+    )
     parser = BetterArgParser(arg_defs)
     result = parser.parse_args({"names": ["name1", "name2", "name3", "name4"]})
     assert len(result.get("names")) == 4
 
 
 def test_list_of_strings_failure():
-    arg_defs = dict(names=dict(arg_type="list", elements="str", required=True,))
+    arg_defs = dict(
+        names=dict(
+            arg_type="list",
+            elements="str",
+            required=True,
+        )
+    )
     parser = BetterArgParser(arg_defs)
     with pytest.raises(ValueError):
         parser.parse_args({"names": [1, True, "name3", "name4"]})
@@ -304,7 +395,11 @@ def test_list_of_strings_failure():
 
 def test_list_of_strings_function_for_arg_type_success():
     arg_defs = dict(
-        names=dict(arg_type="list", elements=make_uppercase, required=True,)
+        names=dict(
+            arg_type="list",
+            elements=make_uppercase,
+            required=True,
+        )
     )
     parser = BetterArgParser(arg_defs)
     result = parser.parse_args({"names": ["name1", "name2", "name3", "name4"]})
@@ -554,7 +649,11 @@ def test_custom_defined_values_top_level_required():
         return False
 
     arg_defs = dict(
-        name=dict(arg_type="str", required=True, default="samplename",),
+        name=dict(
+            arg_type="str",
+            required=True,
+            default="samplename",
+        ),
         date=dict(arg_type="str", default="may 1, 2020"),
         time=dict(arg_type="int"),
         age=dict(
@@ -657,6 +756,9 @@ def test_data_set_type_no_invalid(arg_type, name):
     assert result.get("dsname") == name
 
 
+# removing "../lpp" test, as localization fix allows this through
+
+
 @pytest.mark.parametrize(
     ("arg_type", "name"),
     [
@@ -677,7 +779,7 @@ def test_data_set_type_no_invalid(arg_type, name):
         ("data_set_or_path", "3asy.data.set(######)"),
         ("data_set_or_path", "e#^#@y.dat#@.set(hello)"),
         ("data_set_or_path", "easy.5at@@a.set(helloo)"),
-        ("data_set_or_path", "../lpp/rsusr"),
+        #        ("data_set_or_path", "../lpp/rsusr"),
     ],
 )
 def test_data_set_type_invalid(arg_type, name):

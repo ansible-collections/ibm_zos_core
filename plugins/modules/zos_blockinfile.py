@@ -164,8 +164,8 @@ EXAMPLES = r'''
     src: SYS1.PARMLIB(BPXPRM00)
     marker: "/* {mark} ANSIBLE MANAGED BLOCK */"
     block: |
-      " MOUNT FILESYSTEM('SOME.DATA.SET') TYPE(ZFS) MODE(READ)"
-      "    MOUNTPOINT('/tmp/src/somedirectory')"
+       MOUNT FILESYSTEM('SOME.DATA.SET') TYPE(ZFS) MODE(READ)
+          MOUNTPOINT('/tmp/src/somedirectory')
 
 - name: Remove a library as well as surrounding markers
   zos_blockinfile:
@@ -178,9 +178,9 @@ EXAMPLES = r'''
     src: /etc/profile
     insertafter: "PATH="
     block: |
-      "ZOAU=/path/to/zoau_dir/bin"
-      "export ZOAU"
-      "PATH=$ZOAU:$PATH"
+      ZOAU=/path/to/zoau_dir/bin
+      export ZOAU
+      PATH=$ZOAU:$PATH
 
 - name: Insert/Update HTML surrounded by custom markers after <body> line
   zos_blockinfile:

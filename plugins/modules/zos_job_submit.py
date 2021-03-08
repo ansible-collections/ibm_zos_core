@@ -491,7 +491,7 @@ EXAMPLES = r"""
 
 from ansible.module_utils.basic import AnsibleModule
 from time import sleep
-from os import chmod, path, remove
+from os import chmod, path, remove, stat
 from tempfile import NamedTemporaryFile
 import re
 from timeit import default_timer as timer
@@ -610,7 +610,7 @@ def query_jobs_status(module, jobId):
             pass
         except Exception as e:
             raise SubmitJCLError(
-                "{0} {1} {2}".format(repr(e), "The output is", output or " ")
+                "{0} {1} {2}".format(repr(e), "The output is: ", output or " ")
             )
     if not output and timeout == 0:
         raise SubmitJCLError(
@@ -723,9 +723,11 @@ def run_module():
         else:
             # For local file, it has been copied to the temp directory in action plugin.
             from_encoding = encoding.get("from")
+
+            # added -c to iconv to try and prevent \r from mis-mapping as invalid char to EBCDIC
             to_encoding = encoding.get("to")
             (conv_rc, stdout, stderr) = module.run_command(
-                "iconv -f {0} -t {1} {2} > {3}".format(
+                "iconv -c -f {0} -t {1} {2} > {3}".format(
                     from_encoding,
                     to_encoding,
                     quote(temp_file),

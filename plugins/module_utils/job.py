@@ -90,6 +90,9 @@ def _parse_jobs(output_str):
 
     Returns:
         list[dict]: A list of jobs and their attributes.
+
+    Rais:
+        Runtime error if output wasn't parseable
     """
     jobs = []
     if "-----NO JOBS FOUND-----" not in output_str:
@@ -99,35 +102,38 @@ def _parse_jobs(output_str):
             re.MULTILINE | re.DOTALL,
         )
         for job_str in job_strs:
-            job = {}
             job_info_match = re.search(
                 (
-                    r"job_id:([^\n]*)\njob_name:([^\n]*)\nsubsystem:([^\n]*)\nsystem:([^\n]*)\n"
-                    r"owner:([^\n]*)\nret_code_msg:([^\n]*)\nclass:([^\n]*)\ncontent_type:([^\n]*)"
+                    r"\s*job_id:([^\n]*)\n\s*job_name:([^\n]*)\n\s*subsystem:([^\n]*)\n\s*system:([^\n]*)\n"
+                    r"\s*owner:([^\n]*)\n\s*ret_code_msg:([^\n]*)\n\s*class:([^\n]*)\n\s*content_type:([^\n]*)"
                 ),
                 job_str,
             )
-            job["job_id"] = job_info_match.group(1).strip()
-            job["job_name"] = job_info_match.group(2).strip()
-            job["subsystem"] = job_info_match.group(3).strip()
-            job["system"] = job_info_match.group(4).strip()
-            job["owner"] = job_info_match.group(5).strip()
+            if job_info_match is not None:
+                job = {}
 
-            job["ret_code"] = {}
-            ret_code_msg = job_info_match.group(6).strip()
-            if ret_code_msg:
-                job["ret_code"]["msg"] = ret_code_msg
-            job["ret_code"]["code"] = _get_return_code_num(ret_code_msg)
-            job["ret_code"]["msg_code"] = _get_return_code_str(ret_code_msg)
-            job["ret_code"]["msg_txt"] = ""
-            if ret_code_msg == "":
-                job["ret_code"]["msg"] = "AC"
+                job["job_id"] = job_info_match.group(1).strip()
+                job["job_name"] = job_info_match.group(2).strip()
+                job["subsystem"] = job_info_match.group(3).strip()
+                job["system"] = job_info_match.group(4).strip()
+                job["owner"] = job_info_match.group(5).strip()
 
-            job["class"] = job_info_match.group(7).strip()
-            job["content_type"] = job_info_match.group(8).strip()
+                job["ret_code"] = {}
+                ret_code_msg = job_info_match.group(6).strip()
+                if ret_code_msg:
+                    job["ret_code"]["msg"] = ret_code_msg
+                job["ret_code"]["code"] = _get_return_code_num(ret_code_msg)
+                job["ret_code"]["msg_code"] = _get_return_code_str(ret_code_msg)
+                job["ret_code"]["msg_txt"] = ""
+                if ret_code_msg == "":
+                    job["ret_code"]["msg"] = "AC"
 
-            job["ddnames"] = _parse_dds(job_str)
-            jobs.append(job)
+                job["class"] = job_info_match.group(7).strip()
+                job["content_type"] = job_info_match.group(8).strip()
+
+                job["ddnames"] = _parse_dds(job_str)
+                jobs.append(job)
+
     return jobs
 
 
@@ -167,7 +173,8 @@ def _parse_dds(job_str):
                 dd_str,
                 re.MULTILINE | re.DOTALL,
             )
-            dd["content"] = content_str.group(1).split("\n")
+            if content_str is not None:
+                dd["content"] = content_str.group(1).split("\n")
             dds.append(dd)
     return dds
 

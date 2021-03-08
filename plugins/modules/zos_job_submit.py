@@ -515,7 +515,7 @@ else:
 POLLING_INTERVAL = 1
 POLLING_COUNT = 60
 
-JOB_COMPLETION_MESSAGES = ["CC", "ABEND", "SEC", "JCL ERROR"]
+JOB_COMPLETION_MESSAGES = ["CC", "ABEND", "SEC", "JCL\sERROR"]
 
 
 def submit_pds_jcl(src, module):
@@ -694,6 +694,7 @@ def run_module():
     max_rc = parsed_args.get("max_rc")
     # get temporary file names for copied files
     temp_file = parsed_args.get("temp_file")
+    temp_file_2 = None
     if temp_file:
         temp_file_2 = NamedTemporaryFile(delete=True)
 
@@ -761,6 +762,7 @@ def run_module():
     # real time loop - will be used regardless of 'wait' to capture data
     starttime = timer()
     loopdone = False
+    foundissue = None
     while not loopdone:
         try:
             job_output_txt = job_output(job_id=jobId)
@@ -780,6 +782,9 @@ def run_module():
                     "^(?:{0})".format("|".join(JOB_COMPLETION_MESSAGES)), job_msg
                 ):
                     loopdone = True
+                    # if the message doesn't have a CC, it is an improper completion (error/abend)
+                    if re.search("^(?:CC)", job_msg) is None:
+                        foundissue = job_msg
 
         if not loopdone:
             checktime = timer()
@@ -794,7 +799,8 @@ def run_module():
             else:
                 sleep(0.5)
 
-    # End real time loop
+    # End real time loop ^^^
+
     if bool(job_output_txt):
         result["jobs"] = job_output_txt
         if wait is True and return_output is True and max_rc is not None:
@@ -810,6 +816,8 @@ def run_module():
     checktime = timer()
     duration = round(checktime - starttime)
     result["duration"] = duration
+    result["changed"] = True
+
     if duration >= wait_time_s:
         result["message"] = {
             "stdout": "Submit JCL operation succeeded but it is a long running job. Timeout is "
@@ -817,9 +825,15 @@ def run_module():
             + " seconds."
         }
     else:
-        result["message"] = {"stdout": "Submit JCL operation succeeded."}
+        if foundissue is not None:
+            result["changed"] = False
+            result["message"] = {
+                "stderr": "Submit succeeded, but job failed: " + foundissue
+            }
+            result["failed"] = True
+        else:
+            result["message"] = {"stdout": "Submit JCL operation succeeded."}
 
-    result["changed"] = True
     module.exit_json(**result)
 
 

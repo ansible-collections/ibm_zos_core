@@ -849,6 +849,7 @@ def run_module():
                 "stderr": "Submit succeeded, but job failed: " + foundissue
             }
             result["failed"] = True
+            module.fail_json("JCL error", **result)
         else:
             result["message"] = {"stdout": "Submit JCL operation succeeded."}
 

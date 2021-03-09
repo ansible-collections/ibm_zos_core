@@ -828,8 +828,6 @@ def run_module():
 
     if temp_file:
         remove(temp_file)
-    if temp_file_2:
-        remove(temp_file_2)
 
     checktime = timer()
     duration = round(checktime - starttime)

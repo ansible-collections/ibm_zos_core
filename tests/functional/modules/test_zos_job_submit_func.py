@@ -139,7 +139,7 @@ def test_job_submit_LOCAL(ansible_zos_module):
     results = hosts.all.zos_job_submit(src=tmp_file.name, location="LOCAL", wait=True)
 
     for result in results.contacted.values():
-        print(result)
+        print("localgood:{0}".format(result))
         assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
         assert result.get("jobs")[0].get("ret_code").get("code") == 0
 
@@ -154,7 +154,7 @@ def test_job_submit_LOCAL_extraR(ansible_zos_module):
     results = hosts.all.zos_job_submit(src=tmp_file.name, location="LOCAL", wait=True)
 
     for result in results.contacted.values():
-        print(result)
+        print("localexr:{0}".format(result))
         assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
         assert result.get("jobs")[0].get("ret_code").get("code") == 0
 
@@ -172,7 +172,6 @@ def test_job_submit_LOCAL_BADJCL(ansible_zos_module):
         print("badjcl:{0}".format(result))
 
         assert result.get("changed") is False
-        assert result.get("failed", False) is True
 
 
 # * currently don't have volume support from ZOAU python API, so this will not be reproduceable

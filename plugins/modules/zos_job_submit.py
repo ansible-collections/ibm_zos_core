@@ -715,7 +715,7 @@ def run_module():
         + str(wait_time_s)
     )
     if temp_file:
-        callstr = callstr + "f1: " + str(temp_file.name)
+        callstr = callstr + "f1: " + str(temp_file)
     if temp_file_2:
         callstr = callstr + "f2: " + str(temp_file_2.name)
     result["call_set"] = callstr

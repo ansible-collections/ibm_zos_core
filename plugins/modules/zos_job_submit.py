@@ -704,12 +704,21 @@ def run_module():
             **result
         )
 
-    callstr = "loc: " + location + "..wait: " + str(wait) + "..src: " + src + "..wts: " = str(wait_time_s)
+    callstr = (
+        "loc: "
+        + str(location)
+        + "..wait: "
+        + str(wait)
+        + "..src: "
+        + src
+        + "..wts: "
+        + str(wait_time_s)
+    )
     if temp_file:
         callstr = callstr + "f1: " + str(temp_file.name)
     if temp_file_2:
         callstr = callstr + "f2: " + str(temp_file_2.name)
-    result["call_set"]  = callstr
+    result["call_set"] = callstr
 
     DSN_REGEX = r"^(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}(?:\([A-Z$#@]{1}[A-Z0-9$#@]{0,7}\)){0,1}$"
     try:
@@ -735,11 +744,11 @@ def run_module():
             # added -c to iconv to try and prevent \r from mis-mapping as invalid char to EBCDIC
             to_encoding = encoding.get("to")
             conv_str = "iconv -c -f {0} -t {1} {2} > {3}".format(
-                    from_encoding,
-                    to_encoding,
-                    quote(temp_file),
-                    quote(temp_file_2.name),
-                )
+                from_encoding,
+                to_encoding,
+                quote(temp_file),
+                quote(temp_file_2.name),
+            )
             result["conv_str"] = conv_str
             (conv_rc, stdout, stderr) = module.run_command(
                 conv_str,

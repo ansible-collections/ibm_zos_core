@@ -704,6 +704,13 @@ def run_module():
             **result
         )
 
+    callstr = "loc: " + location + "..wait: " + str(wait) + "..src: " + src + "..wts: " = str(wait_time_s)
+    if temp_file:
+        callstr = callstr + "f1: " + str(temp_file.name)
+    if temp_file_2:
+        callstr = callstr + "f2: " + str(temp_file_2.name)
+    result["call_set"]  = callstr
+
     DSN_REGEX = r"^(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}(?:\([A-Z$#@]{1}[A-Z0-9$#@]{0,7}\)){0,1}$"
     try:
         if location == "DATA_SET":
@@ -727,13 +734,15 @@ def run_module():
 
             # added -c to iconv to try and prevent \r from mis-mapping as invalid char to EBCDIC
             to_encoding = encoding.get("to")
-            (conv_rc, stdout, stderr) = module.run_command(
-                "iconv -c -f {0} -t {1} {2} > {3}".format(
+            conv_str = "iconv -c -f {0} -t {1} {2} > {3}".format(
                     from_encoding,
                     to_encoding,
                     quote(temp_file),
                     quote(temp_file_2.name),
-                ),
+                )
+            result["conv_str"] = conv_str
+            (conv_rc, stdout, stderr) = module.run_command(
+                conv_str,
                 use_unsafe_shell=True,
             )
             if conv_rc == 0:
@@ -748,7 +757,7 @@ def run_module():
     except SubmitJCLError as e:
         module.fail_json(msg=repr(e), **result)
     if jobId is None or jobId == "":
-        result["job_id"] = jobId
+        result["job_id"] = "-blank-"
         module.fail_json(
             msg="JOB ID RETURNED IS None. PLEASE CHECK WHETHER THE JCL IS CORRECT.",
             **result

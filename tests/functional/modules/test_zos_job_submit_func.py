@@ -169,7 +169,7 @@ def test_job_submit_LOCAL_BADJCL(ansible_zos_module):
     results = hosts.all.zos_job_submit(src=tmp_file.name, location="LOCAL", wait=True)
 
     for result in results.contacted.values():
-        print(result)
+        print("badjcl:{0}".format(result))
 
         assert result.get("changed") is False
         assert result.get("failed", False) is True

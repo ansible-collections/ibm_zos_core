@@ -704,22 +704,6 @@ def run_module():
             **result
         )
 
-    callstr = (
-        "loc: "
-        + str(location)
-        + "..wait: "
-        + str(wait)
-        + "..src: "
-        + src
-        + "..wts: "
-        + str(wait_time_s)
-    )
-    if temp_file:
-        callstr = callstr + "f1: " + str(temp_file)
-    if temp_file_2:
-        callstr = callstr + "f2: " + str(temp_file_2.name)
-    result["call_set"] = callstr
-
     DSN_REGEX = r"^(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}(?:\([A-Z$#@]{1}[A-Z0-9$#@]{0,7}\)){0,1}$"
     try:
         if location == "DATA_SET":
@@ -749,7 +733,6 @@ def run_module():
                 quote(temp_file),
                 quote(temp_file_2.name),
             )
-            result["conv_str"] = conv_str
             (conv_rc, stdout, stderr) = module.run_command(
                 conv_str,
                 use_unsafe_shell=True,

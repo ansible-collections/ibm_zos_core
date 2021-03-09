@@ -139,7 +139,6 @@ def test_job_submit_LOCAL(ansible_zos_module):
     results = hosts.all.zos_job_submit(src=tmp_file.name, location="LOCAL", wait=True)
 
     for result in results.contacted.values():
-        print("localgood:{0}".format(result))
         assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
         assert result.get("jobs")[0].get("ret_code").get("code") == 0
 
@@ -154,7 +153,6 @@ def test_job_submit_LOCAL_extraR(ansible_zos_module):
     results = hosts.all.zos_job_submit(src=tmp_file.name, location="LOCAL", wait=True)
 
     for result in results.contacted.values():
-        print("localexr:{0}".format(result))
         assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
         assert result.get("jobs")[0].get("ret_code").get("code") == 0
 
@@ -169,7 +167,6 @@ def test_job_submit_LOCAL_BADJCL(ansible_zos_module):
     results = hosts.all.zos_job_submit(src=tmp_file.name, location="LOCAL", wait=True)
 
     for result in results.contacted.values():
-        print("badjcl:{0}".format(result))
 
         assert result.get("changed") is False
 

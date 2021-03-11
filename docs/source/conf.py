@@ -75,7 +75,8 @@ html_context = {
 # Currently we are not using these options, for more info follow links:
 # https://sphinx-rtd-theme.readthedocs.io/en/latest/configuring.html
 # https://sphinx-rtd-theme.readthedocs.io/en/stable/
-# html_theme_options = {
+html_theme_options = {
+    'prev_next_buttons_location': None
 #      'canonical_url': '',
 #      'analytics_id': 'UA-XXXXXXX-1',
 #      'logo_only': False,
@@ -90,7 +91,7 @@ html_context = {
 #      'navigation_depth': 4,
 #      'includehidden': True,
 #      'titles_only': False
-# }
+}
 
 
 ##############################################################################

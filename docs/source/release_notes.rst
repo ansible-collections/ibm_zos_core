@@ -38,7 +38,7 @@ What's New
 
   * Playbooks
 
-    * Playbook [zos_operator_basics.yaml](https://github.com/IBM/z_ansible_collections_samples/blob/master/zos_concepts/zos_operator/zos_operator_basics/zos_operator_basics.yaml)
+    * Playbook `zos_operator_basics.yaml`_
       has been updated to use `end` in the WTO reply over the previous use of
       `cancel`. Using `cancel` is not a valid reply and results in an execution
       error.
@@ -58,6 +58,9 @@ Reference
   (previously `IBM Open Enterprise Python for z/OS`_) 3.8.2 or later
 * Supported by IBM `Z Open Automation Utilities 1.1.0`_
 
+.. _zos_operator_basics.yaml:
+   https://github.com/IBM/z_ansible_collections_samples/blob/master/zos_concepts/zos_operator/zos_operator_basics/zos_operator_basics.yaml
+   
 Version 1.3.0-beta.1
 ====================
 

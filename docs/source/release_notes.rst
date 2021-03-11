@@ -31,9 +31,17 @@ What's New
       yield an error:
       **FSUM8976 Error writing <src_data_set_member> to PDSE member
       <dest_data_set_member>**
-    * Job module utility has been updated to use a custom written parsing
-      routine capable of handling special characters to prevent job related
-      reading operations from failing when a special character is encountered.
+    * Job utility is an internal library used by several modules. It has been
+      updated to use a custom written parsing routine capable of handling
+      special characters to prevent job related reading operations from failing
+      when a special character is encountered.
+
+  * Playbooks
+
+    * Playbook [zos_operator_basics.yaml](https://github.com/IBM/z_ansible_collections_samples/blob/master/zos_concepts/zos_operator/zos_operator_basics/zos_operator_basics.yaml)
+      has been updated to use `end` in the WTO reply over the previous use of
+      `cancel`. Using `cancel` is not a valid reply and results in an execution
+      error.
 
 Availability
 ------------

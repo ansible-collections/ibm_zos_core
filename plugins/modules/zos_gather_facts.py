@@ -126,7 +126,10 @@ def main():
         argument_spec=dict(
             gather_subset=dict(default=["all"], required=False, type='list', elements='str'),
             gather_timeout=dict(default=10, required=False, type='int'),
-            filter=dict(default=[], required=False, type='list', elements='str'),
+
+            # the filter parameter was updated to type list in Ansible 2.11
+            # filter=dict(default=[], required=False, type='list', elements='str'),
+            filter=dict(default='', required=False, type='str'),
             fact_path=dict(default='/etc/ansible/facts.d', required=False, type='path'),
         ),
         supports_check_mode=True,
@@ -141,7 +144,7 @@ def main():
     all_collector_classes = zos_default_collectors.collectors
 
     # TODO - change from ansible to IBMZ for z scripts?
-    namespace = PrefixFactNamespace(namespace_name='zos_ansible', prefix='zos_ansible_')
+    namespace = PrefixFactNamespace(namespace_name='ansible', prefix='ansible_')
 
     fact_collector = \
         ansible_collector.get_ansible_collector(

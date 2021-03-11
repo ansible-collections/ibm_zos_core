@@ -27,13 +27,13 @@ What's New
     * Module ``zos_job_submit`` was updated to remove all trailing **\r** from
       jobs that are submitted from the controller.
     * Module ``zos_copy`` was updated to support copying data set members that
-      are program objects to a PDSE. Prior to this update would yield an error:
+      are program objects to a PDSE. Prior to this update, copying data set members would
+      yield an error:
       **FSUM8976 Error writing <src_data_set_member> to PDSE member
-      <dest_data_set_member>: EDC5000I No error occurred**
-    * Job module utility used by several modules when performing job related
-      reading operations would fail when encountering a special character. The
-      utility has been updated to use a custom written parsing routine capable
-      of handling special characters.
+      <dest_data_set_member>**
+    * Job module utility has been updated to use a custom written parsing
+      routine capable of handling special characters to prevent job related
+      reading operations from failing when a special character is encountered.
 
 Availability
 ------------

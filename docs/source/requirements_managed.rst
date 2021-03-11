@@ -11,19 +11,20 @@ The managed node has dependencies that are specific to each release of the
 **IBM z/OS core collection**. Review the details of the dependencies before you
 proceed to install the IBM z/OS core collection.
 
-* `IBM Open Enterprise Python for z/OS`_
 * z/OS `V2R3`_ or `later`_
+* `z/OS OpenSSH`_
+* Supported by `IBM Open Enterprise SDK for Python`_
+  (previously `IBM Open Enterprise Python for z/OS`_) 3.8.2 or later
 * `IBM Z Open Automation Utilities`_ (ZOAU)
 
    .. note::
 
-     IBM z/OS core collection is dependent on specific versions of Z Open Automation
-     Utilities (ZOAU). For information about the required version of ZOAU, review the
-     `release notes`_. For detailed instructions on installation and configuration of ZOAU,
+     IBM z/OS core collection is dependent on specific versions of
+     Z Open Automation Utilities (ZOAU). For information about the required
+     version of ZOAU, review the `release notes`_. For detailed instructions on
+     installation and configuration of ZOAU,
      `Installing and Configuring ZOA Utilities`_.
 
-     
-* `z/OS OpenSSH`_
 * The `z/OS® shell`_
 
    .. note::
@@ -33,16 +34,16 @@ proceed to install the IBM z/OS core collection.
       are not supported because they handle the reading and writing of untagged
       files differently. Please review the README.ZOS guide included with the
       ported ``bash`` shell for further configurations.
-      
+
 .. _Ansible documentation:
    https://docs.ansible.com/ansible/2.7/user_guide/intro_inventory.html
 
 .. _Python on z/OS:
    requirements_managed.html#id1
-   
+
 .. _Installing and Configuring ZOA Utilities:
    https://www.ibm.com/support/knowledgecenter/en/SSKFYE_1.1.0/install.html
-   
+
 .. _V2R3:
    https://www.ibm.com/support/knowledgecenter/SSLTBW_2.3.0/com.ibm.zos.v2r3/en/homepage.html
 
@@ -91,6 +92,8 @@ and required by **IBM z/OS core collection**.
 
 .. _IBM Open Enterprise Python for z/OS:
    http://www.ibm.com/products/open-enterprise-python-zos
+.. _IBM Open Enterprise SDK for Python:
+   https://www.ibm.com/products/open-enterprise-python-zos
 
 .. _here:
    https://www-01.ibm.com/marketing/iwm/platform/mrs/assets?source=swg-ibmoep

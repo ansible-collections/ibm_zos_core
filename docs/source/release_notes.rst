@@ -6,6 +6,61 @@
 Releases
 ========
 
+Version 1.3.0-beta.2
+====================
+
+What's New
+----------
+
+* Modules
+
+  * Utility ``better_arg_parser`` - supports relative paths and removes the
+    choice case sensitivity.
+  * ``zos_operator`` - supports new options **wait** and **wait_time_s** such
+    that you can specify that ``zos_operator`` wait the full **wait_time_s** or
+    return as soon as the first operator command executes.
+
+* Bug Fixes
+
+  * Modules
+
+    * Module ``zos_job_submit`` was updated to remove all trailing **\r** from
+      jobs that are submitted from the controller.
+    * Module ``zos_copy`` was updated to support copying data set members that
+      are program objects to a PDSE. Prior to this update, copying data set members would
+      yield an error:
+      **FSUM8976 Error writing <src_data_set_member> to PDSE member
+      <dest_data_set_member>**
+    * Job utility is an internal library used by several modules. It has been
+      updated to use a custom written parsing routine capable of handling
+      special characters to prevent job related reading operations from failing
+      when a special character is encountered.
+
+  * Playbooks
+
+    * Playbook `zos_operator_basics.yaml`_
+      has been updated to use `end` in the WTO reply over the previous use of
+      `cancel`. Using `cancel` is not a valid reply and results in an execution
+      error.
+
+Availability
+------------
+
+* `Galaxy`_
+* `GitHub`_
+
+Reference
+---------
+
+* Supported by `z/OS V2R3`_ or later
+* Supported by the `z/OS® shell`_
+* Supported by `IBM Open Enterprise SDK for Python`_
+  (previously `IBM Open Enterprise Python for z/OS`_) 3.8.2 or later
+* Supported by IBM `Z Open Automation Utilities 1.1.0`_
+
+.. _zos_operator_basics.yaml:
+   https://github.com/IBM/z_ansible_collections_samples/blob/master/zos_concepts/zos_operator/zos_operator_basics/zos_operator_basics.yaml
+   
 Version 1.3.0-beta.1
 ====================
 
@@ -662,6 +717,9 @@ Reference
 .. _IBM Open Enterprise Python for z/OS:
    https://www.ibm.com/products/open-enterprise-python-zos
 
+.. _IBM Open Enterprise SDK for Python:
+   https://www.ibm.com/products/open-enterprise-python-zos
+
 .. _Z Open Automation Utilities 1.1.0:
    https://www.ibm.com/support/knowledgecenter/SSKFYE_1.1.0/install.html
 
@@ -679,5 +737,6 @@ Reference
 
 .. _playbook configuration:
    https://github.com/IBM/z_ansible_collections_samples/blob/master/docs/share/configuration_guide.md
+
 
 

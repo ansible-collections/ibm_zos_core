@@ -1,0 +1,4 @@
+---
+# tasks file for role_sample
+  - debug:
+      msg: "Hello {{ansible_user}}, Ansible {{ comment }}, {{ action }} modules can be written in {{ language_1 }}, {{ language_2 }} and {{ language_3 }}."

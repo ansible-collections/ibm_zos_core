@@ -2,17 +2,20 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (c) IBM Corporation 2019, 2020
-# Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#     http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-ANSIBLE_METADATA = {
-    "metadata_version": "1.1",
-    "status": ["stableinterface"],
-    "supported_by": "community",
-}
 
 DOCUMENTATION = r"""
 module: zos_job_submit
@@ -488,7 +491,7 @@ EXAMPLES = r"""
 
 from ansible.module_utils.basic import AnsibleModule
 from time import sleep
-from os import chmod, path, remove
+from os import chmod, path, remove, stat
 from tempfile import NamedTemporaryFile
 import re
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import job_output
@@ -510,7 +513,7 @@ else:
 POLLING_INTERVAL = 1
 POLLING_COUNT = 60
 
-JOB_COMPLETION_MESSAGES = ["CC", "ABEND", "SEC"]
+JOB_COMPLETION_MESSAGES = ["CC", "ABEND", "SEC ERROR"]
 
 
 def submit_pds_jcl(src, module):
@@ -605,7 +608,7 @@ def query_jobs_status(module, jobId):
             pass
         except Exception as e:
             raise SubmitJCLError(
-                "{0} {1} {2}".format(repr(e), "The output is", output or " ")
+                "{0} {1} {2}".format(repr(e), "The output is: ", output or " ")
             )
     if not output and timeout == 0:
         raise SubmitJCLError(
@@ -718,9 +721,11 @@ def run_module():
         else:
             # For local file, it has been copied to the temp directory in action plugin.
             from_encoding = encoding.get("from")
+
+            # added -c to iconv to try and prevent \r from mis-mapping as invalid char to EBCDIC
             to_encoding = encoding.get("to")
             (conv_rc, stdout, stderr) = module.run_command(
-                "iconv -f {0} -t {1} {2} > {3}".format(
+                "iconv -c -f {0} -t {1} {2} > {3}".format(
                     from_encoding,
                     to_encoding,
                     quote(temp_file),

@@ -46,22 +46,19 @@ Examples
 
 
 
+
 Return Values
 -------------
 
 
-   
-                              
-       ping
-        | Should contain the value "pong" on success.
-      
-        | **type**: str
-      
-      
-                              
-       warnings
-        | List of warnings returned from stderr when performing resource checks.
-      
-        | **type**: list
-      
-        
+ping
+  Should contain the value "pong" on success.
+
+  | **type**: str
+
+warnings
+  List of warnings returned from stderr when performing resource checks.
+
+  | **type**: list
+  | **elements**: str
+

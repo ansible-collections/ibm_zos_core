@@ -30,89 +30,64 @@ Parameters
 ----------
 
 
-     
+src
+  Name of a UNIX System Services (USS) file, PS(sequential data set), PDS, PDSE, member of a PDS, PDSE or KSDS(VSAM data set).
+
+  USS file paths should be absolute paths.
+
+  | **required**: True
+  | **type**: str
+
+
 dest
   Local path where the file or data set will be stored.
 
   If dest is an existing file or directory, the contents will be overwritten.
 
-
   | **required**: True
   | **type**: path
 
 
-     
-encoding
-  Specifies which encodings the fetched data set should be converted from and to. If this parameter is not provided, encoding conversions will not take place.
-
-
-  | **required**: False
-  | **type**: dict
-
-
-     
-  from
-    The character set of the source *src*.
-
-    Supported character sets rely on the charset conversion utility (iconv) version; the most common character sets are supported.
-
-
-    | **required**: True
-    | **type**: str
-
-
-     
-  to
-    The destination *dest* character set for the output to be written as.
-
-    Supported character sets rely on the charset conversion utility (iconv) version; the most common character sets are supported.
-
-
-    | **required**: True
-    | **type**: str
-
-
-
-     
 fail_on_missing
   When set to true, the task will fail if the source file is missing.
 
+  | **required**: False
+  | **type**: bool
+  | **default**: true
+
+
+validate_checksum
+  Verify that the source and destination checksums match after the files are fetched.
 
   | **required**: False
   | **type**: bool
   | **default**: true
 
 
-     
 flat
   Override the default behavior of appending hostname/path/to/file to the destination. If set to "true", the file or data set will be fetched to the destination directory without appending remote hostname to the destination.
 
-
   | **required**: False
   | **type**: bool
   | **default**: true
 
 
-     
-ignore_sftp_stderr
-  During data transfer through sftp, the module fails if the sftp command directs any content to stderr. The user is able to override this behavior by setting this parameter to ``true``. By doing so, the module would essentially ignore the stderr stream produced by sftp and continue execution.
-
-
-  | **required**: False
-  | **type**: bool
-
-
-     
 is_binary
   Specifies if the file being fetched is a binary.
-
 
   | **required**: False
   | **type**: bool
   | **default**: false
 
 
-     
+use_qualifier
+  Indicates whether the data set high level qualifier should be used when fetching.
+
+  | **required**: False
+  | **type**: bool
+  | **default**: false
+
+
 sftp_port
   Indicates which port should be used to connect to the remote z/OS system to perform data transfer.
 
@@ -120,40 +95,41 @@ sftp_port
 
   If ``ansible_port`` is not specified, port 22 will be used.
 
-
   | **required**: False
   | **type**: int
 
 
-     
-src
-  Name of a UNIX System Services (USS) file, PS(sequential data set), PDS, PDSE, member of a PDS, PDSE or KSDS(VSAM data set).
+encoding
+  Specifies which encodings the fetched data set should be converted from and to. If this parameter is not provided, encoding conversions will not take place.
 
-  USS file paths should be absolute paths.
-
-
-  | **required**: True
-  | **type**: str
+  | **required**: False
+  | **type**: dict
 
 
-     
-use_qualifier
-  Indicates whether the data set high level qualifier should be used when fetching.
+  from
+    The character set of the source *src*.
 
+    Supported character sets rely on the charset conversion utility (iconv) version; the most common character sets are supported.
+
+    | **required**: True
+    | **type**: str
+
+
+  to
+    The destination *dest* character set for the output to be written as.
+
+    Supported character sets rely on the charset conversion utility (iconv) version; the most common character sets are supported.
+
+    | **required**: True
+    | **type**: str
+
+
+
+ignore_sftp_stderr
+  During data transfer through sftp, the module fails if the sftp command directs any content to stderr. The user is able to override this behavior by setting this parameter to ``true``. By doing so, the module would essentially ignore the stderr stream produced by sftp and continue execution.
 
   | **required**: False
   | **type**: bool
-  | **default**: false
-
-
-     
-validate_checksum
-  Verify that the source and destination checksums match after the files are fetched.
-
-
-  | **required**: False
-  | **type**: bool
-  | **default**: true
 
 
 
@@ -239,149 +215,108 @@ See Also
 
 
 
+
 Return Values
 -------------
 
 
-   
-                              
-       file
-        | The source file path or data set on the remote machine.
-      
-        | **returned**: success
-        | **type**: str
-        | **sample**: SOME.DATA.SET
+file
+  The source file path or data set on the remote machine.
 
-            
-      
-      
-                              
-       dest
-        | The destination file path on the controlling machine.
-      
-        | **returned**: success
-        | **type**: str
-        | **sample**: /tmp/SOME.DATA.SET
+  | **returned**: success
+  | **type**: str
+  | **sample**: SOME.DATA.SET
 
-            
-      
-      
-                              
-       is_binary
-        | Indicates the transfer mode that was used to fetch.
-      
-        | **returned**: success
-        | **type**: bool      
-        | **sample**:
+dest
+  The destination file path on the controlling machine.
 
-              .. code-block::
+  | **returned**: success
+  | **type**: str
+  | **sample**: /tmp/SOME.DATA.SET
 
-                       true
-            
-      
-      
-                              
-       checksum
-        | The SHA256 checksum of the fetched file or data set. checksum validation is performed for all USS files and sequential data sets.
-      
-        | **returned**: success and src is a non-partitioned data set
-        | **type**: str
-        | **sample**: 8d320d5f68b048fc97559d771ede68b37a71e8374d1d678d96dcfa2b2da7a64e
+is_binary
+  Indicates the transfer mode that was used to fetch.
 
-            
-      
-      
-                              
-       data_set_type
-        | Indicates the fetched data set type.
-      
-        | **returned**: success
-        | **type**: str
-        | **sample**: PDSE
+  | **returned**: success
+  | **type**: bool
+  | **sample**:
 
-            
-      
-      
-                              
-       note
-        | Notice of module failure when C(fail_on_missing) is false.
-      
-        | **returned**: failure and fail_on_missing=false
-        | **type**: str
-        | **sample**: The data set USER.PROCLIB does not exist. No data was fetched.
+    .. code-block:: json
 
-            
-      
-      
-                              
-       msg
-        | Message returned on failure.
-      
-        | **returned**: failure
-        | **type**: str
-        | **sample**: The source 'TEST.DATA.SET' does not exist or is uncataloged.
+        true
 
-            
-      
-      
-                              
-       stdout
-        | The stdout from a USS command or MVS command, if applicable.
-      
-        | **returned**: failure
-        | **type**: str
-        | **sample**: DATA SET 'USER.PROCLIB' NOT IN CATALOG
+checksum
+  The SHA256 checksum of the fetched file or data set. checksum validation is performed for all USS files and sequential data sets.
 
-            
-      
-      
-                              
-       stderr
-        | The stderr of a USS command or MVS command, if applicable
-      
-        | **returned**: failure
-        | **type**: str
-        | **sample**: File /tmp/result.log not found.
+  | **returned**: success and src is a non-partitioned data set
+  | **type**: str
+  | **sample**: 8d320d5f68b048fc97559d771ede68b37a71e8374d1d678d96dcfa2b2da7a64e
 
-            
-      
-      
-                              
-       stdout_lines
-        | List of strings containing individual lines from stdout
-      
-        | **returned**: failure
-        | **type**: list      
-        | **sample**:
+data_set_type
+  Indicates the fetched data set type.
 
-              .. code-block::
+  | **returned**: success
+  | **type**: str
+  | **sample**: PDSE
 
-                       ["u\u0027USER.TEST.PDS NOT IN CATALOG..\u0027"]
-            
-      
-      
-                              
-       stderr_lines
-        | List of strings containing individual lines from stderr.
-      
-        | **returned**: failure
-        | **type**: list      
-        | **sample**:
+note
+  Notice of module failure when ``fail_on_missing`` is false.
 
-              .. code-block::
+  | **returned**: failure and fail_on_missing=false
+  | **type**: str
+  | **sample**: The data set USER.PROCLIB does not exist. No data was fetched.
 
-                       ["u\u0027Unable to traverse PDS USER.TEST.PDS not found\u0027"]
-            
-      
-      
-                              
-       rc
-        | The return code of a USS command or MVS command, if applicable.
-      
-        | **returned**: failure
-        | **type**: int
-        | **sample**: 8
+msg
+  Message returned on failure.
 
-            
-      
-        
+  | **returned**: failure
+  | **type**: str
+  | **sample**: The source 'TEST.DATA.SET' does not exist or is uncataloged.
+
+stdout
+  The stdout from a USS command or MVS command, if applicable.
+
+  | **returned**: failure
+  | **type**: str
+  | **sample**: DATA SET 'USER.PROCLIB' NOT IN CATALOG
+
+stderr
+  The stderr of a USS command or MVS command, if applicable
+
+  | **returned**: failure
+  | **type**: str
+  | **sample**: File /tmp/result.log not found.
+
+stdout_lines
+  List of strings containing individual lines from stdout
+
+  | **returned**: failure
+  | **type**: list
+  | **sample**:
+
+    .. code-block:: json
+
+        [
+            "u\u0027USER.TEST.PDS NOT IN CATALOG..\u0027"
+        ]
+
+stderr_lines
+  List of strings containing individual lines from stderr.
+
+  | **returned**: failure
+  | **type**: list
+  | **sample**:
+
+    .. code-block:: json
+
+        [
+            "u\u0027Unable to traverse PDS USER.TEST.PDS not found\u0027"
+        ]
+
+rc
+  The return code of a USS command or MVS command, if applicable.
+
+  | **returned**: failure
+  | **type**: int
+  | **sample**: 8
+

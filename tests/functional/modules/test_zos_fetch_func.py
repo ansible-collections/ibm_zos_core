@@ -1,7 +1,20 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import absolute_import, division, print_function
+# Copyright (c) IBM Corporation 2020
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#     http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
+from __future__ import absolute_import, division, print_function
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
+    extract_member_name
+)
 import os
 import shutil
 import stat
@@ -16,6 +29,12 @@ DUMMY_DATA = """DUMMY DATA == LINE 01 ==
 DUMMY DATA == LINE 02 ==
 DUMMY DATA == LINE 03 ==
 """
+
+TEST_PS = "IMSTESTL.IMS01.DDCHKPT"
+TEST_PS_VB = "IMSTESTL.IMS01.SPOOL1"
+TEST_PDS = "IMSTESTL.COMNUC"
+TEST_PDS_MEMBER = "IMSTESTL.COMNUC(ATRQUERY)"
+TEST_VSAM = "IMSTESTL.LDS01.WADS0"
 
 
 def test_fetch_uss_file_not_present_on_local_machine(ansible_zos_module):
@@ -71,8 +90,8 @@ def test_fetch_uss_file_present_on_local_machine(ansible_zos_module):
 
 def test_fetch_sequential_data_set_fixed_block(ansible_zos_module):
     hosts = ansible_zos_module
-    params = dict(src="IMSTESTL.IMS01.DDCHKPT", dest="/tmp/", flat=True)
-    dest_path = "/tmp/IMSTESTL.IMS01.DDCHKPT"
+    params = dict(src=TEST_PS, dest="/tmp/", flat=True)
+    dest_path = "/tmp/" + TEST_PS
     try:
         results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():
@@ -88,8 +107,8 @@ def test_fetch_sequential_data_set_fixed_block(ansible_zos_module):
 
 def test_fetch_sequential_data_set_variable_block(ansible_zos_module):
     hosts = ansible_zos_module
-    params = dict(src="IMSTESTL.IMS01.SPOOL1", dest="/tmp/", flat=True)
-    dest_path = "/tmp/IMSTESTL.IMS01.SPOOL1"
+    params = dict(src=TEST_PS_VB, dest="/tmp/", flat=True)
+    dest_path = "/tmp/" + TEST_PS_VB
     try:
         results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():
@@ -105,8 +124,8 @@ def test_fetch_sequential_data_set_variable_block(ansible_zos_module):
 
 def test_fetch_partitioned_data_set(ansible_zos_module):
     hosts = ansible_zos_module
-    params = dict(src="IMSTESTL.COMN91", dest="/tmp/", flat=True)
-    dest_path = "/tmp/IMSTESTL.COMN91"
+    params = dict(src=TEST_PDS, dest="/tmp/", flat=True)
+    dest_path = "/tmp/" + TEST_PDS
     try:
         results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():
@@ -123,8 +142,8 @@ def test_fetch_partitioned_data_set(ansible_zos_module):
 
 def test_fetch_vsam_data_set(ansible_zos_module):
     hosts = ansible_zos_module
-    params = dict(src="IMSTESTL.LDS01.WADS0", dest="/tmp/", flat=True)
-    dest_path = "/tmp/IMSTESTL.LDS01.WADS0"
+    params = dict(src=TEST_VSAM, dest="/tmp/", flat=True)
+    dest_path = "/tmp/" + TEST_VSAM
     try:
         results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():
@@ -141,9 +160,9 @@ def test_fetch_vsam_data_set(ansible_zos_module):
 def test_fetch_partitioned_data_set_member_in_binary_mode(ansible_zos_module):
     hosts = ansible_zos_module
     params = dict(
-        src="IMSTESTL.COMNUC(ATRQUERY)", dest="/tmp/", flat=True, is_binary=True
+        src=TEST_PDS_MEMBER, dest="/tmp/", flat=True, is_binary=True
     )
-    dest_path = "/tmp/ATRQUERY"
+    dest_path = "/tmp/" + extract_member_name(TEST_PDS_MEMBER)
     try:
         results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():
@@ -161,8 +180,8 @@ def test_fetch_partitioned_data_set_member_in_binary_mode(ansible_zos_module):
 
 def test_fetch_sequential_data_set_in_binary_mode(ansible_zos_module):
     hosts = ansible_zos_module
-    params = dict(src="IMSTESTL.IMS01.DDCHKPT", dest="/tmp/", flat=True, is_binary=True)
-    dest_path = "/tmp/IMSTESTL.IMS01.DDCHKPT"
+    params = dict(src=TEST_PS, dest="/tmp/", flat=True, is_binary=True)
+    dest_path = "/tmp/" + TEST_PS
     try:
         results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():
@@ -178,8 +197,8 @@ def test_fetch_sequential_data_set_in_binary_mode(ansible_zos_module):
 
 def test_fetch_partitioned_data_set_binary_mode(ansible_zos_module):
     hosts = ansible_zos_module
-    params = dict(src="IMSTESTL.COMN91", dest="/tmp/", flat=True, is_binary=True)
-    dest_path = "/tmp/IMSTESTL.COMN91"
+    params = dict(src=TEST_PDS, dest="/tmp/", flat=True, is_binary=True)
+    dest_path = "/tmp/" + TEST_PDS
     try:
         results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():
@@ -196,9 +215,11 @@ def test_fetch_partitioned_data_set_binary_mode(ansible_zos_module):
 
 def test_fetch_sequential_data_set_empty(ansible_zos_module):
     hosts = ansible_zos_module
-    params = dict(src="IMSTESTL.IMSCOM.HOLDER", dest="/tmp/", flat=True)
-    dest_path = "/tmp/IMSTESTL.IMSCOM.HOLDER"
+    src = "USER.TEST.EMPTY.SEQ"
+    params = dict(src=src, dest="/tmp/", flat=True)
+    dest_path = "/tmp/" + src
     try:
+        hosts.all.zos_data_set(name=src, type='seq', state='present')
         results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():
             assert result.get("changed") is True
@@ -210,6 +231,7 @@ def test_fetch_sequential_data_set_empty(ansible_zos_module):
     finally:
         if os.path.exists(dest_path):
             os.remove(dest_path)
+        hosts.all.zos_data_set(name=src, state='absent')
 
 
 def test_fetch_partitioned_data_set_empty_fails(ansible_zos_module):
@@ -308,7 +330,7 @@ def test_fetch_missing_mvs_data_set_does_not_fail(ansible_zos_module):
 
 def test_fetch_partitioned_data_set_member_missing_fails(ansible_zos_module):
     hosts = ansible_zos_module
-    params = dict(src="IMSTESTL.COMNUC(DUMMY)", dest="/tmp/", flat=True)
+    params = dict(src=TEST_PDS + "(DUMMY)", dest="/tmp/", flat=True)
     try:
         results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():
@@ -332,7 +354,7 @@ def test_fetch_mvs_data_set_missing_fails(ansible_zos_module):
 
 def test_fetch_sequential_data_set_replace_on_local_machine(ansible_zos_module):
     hosts = ansible_zos_module
-    ds_name = "IMSTESTL.IMS01.DDCHKPT"
+    ds_name = TEST_PS
     dest_path = "/tmp/" + ds_name
     with open(dest_path, "w") as infile:
         infile.write(DUMMY_DATA)
@@ -402,10 +424,10 @@ def test_fetch_uss_file_insufficient_write_permission_fails(ansible_zos_module):
 
 def test_fetch_pds_dir_insufficient_write_permission_fails(ansible_zos_module):
     hosts = ansible_zos_module
-    dest_path = "/tmp/IMSTESTL.COMNUC"
+    dest_path = "/tmp/" + TEST_PDS
     os.mkdir(dest_path)
     os.chmod(dest_path, stat.S_IREAD)
-    params = dict(src="IMSTESTL.COMNUC", dest="/tmp/", flat=True)
+    params = dict(src=TEST_PDS, dest="/tmp/", flat=True)
     try:
         results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():

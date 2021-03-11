@@ -76,7 +76,7 @@ html_context = {
 # https://sphinx-rtd-theme.readthedocs.io/en/latest/configuring.html
 # https://sphinx-rtd-theme.readthedocs.io/en/stable/
 html_theme_options = {
-    'prev_next_buttons_location': None
+       'prev_next_buttons_location': None
 #      'canonical_url': '',
 #      'analytics_id': 'UA-XXXXXXX-1',
 #      'logo_only': False,

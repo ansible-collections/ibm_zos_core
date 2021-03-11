@@ -31,48 +31,21 @@ Parameters
 ----------
 
 
-     
-backup_name
-  When *operation=backup*, the destination data set or UNIX file to hold the backup.
-
-  When *operation=restore*, the destination data set or UNIX file backup to restore.
-
-  There are no enforced conventions for backup names. However, using a common extension like ``.dzp`` for UNIX files and ``.DZP`` for data sets will improve readability.
-
+operation
+  Used to specify the operation to perform.
 
   | **required**: True
   | **type**: str
+  | **choices**: backup, restore
 
 
-     
 data_sets
   Determines which data sets to include in the backup.
-
 
   | **required**: True
   | **type**: dict
 
 
-     
-  exclude
-    When *operation=backup*, specifies a list of data sets or data set patterns to exclude from the backup.
-
-    When *operation=restore*, specifies a list of data sets or data set patterns to exclude when restoring from a backup.
-
-    The single asterisk, ``*``, is used in place of exactly one qualifier. In addition, it can be used to indicate that only part of a qualifier has been specified."
-
-    When used with other qualifiers, the double asterisk, ``**``, indicates either the nonexistence of leading, trailing, or middle qualifiers, or the fact that they play no role in the selection process.
-
-    Two asterisks are the maximum permissible in a qualifier. If there are two asterisks in a qualifier, they must be the first and last characters.
-
-    A question mark ``?`` or percent sign ``%`` matches a single character.
-
-
-    | **required**: False
-    | **type**: raw
-
-
-     
   include
     When *operation=backup*, specifies a list of data sets or data set patterns to include in the backup.
 
@@ -86,133 +59,28 @@ data_sets
 
     A question mark ``?`` or percent sign ``%`` matches a single character.
 
-
     | **required**: True
     | **type**: raw
 
 
+  exclude
+    When *operation=backup*, specifies a list of data sets or data set patterns to exclude from the backup.
 
-     
-full_volume
-  When *operation=backup* and *full_volume=True*, specifies that the entire volume provided to *volume* should be backed up.
+    When *operation=restore*, specifies a list of data sets or data set patterns to exclude when restoring from a backup.
 
-  When *operation=restore* and *full_volume=True*, specifies that the volume should be restored (default is dataset).
+    The single asterisk, ``*``, is used in place of exactly one qualifier. In addition, it can be used to indicate that only part of a qualifier has been specified."
 
-  *volume* must be provided when *full_volume=True*.
+    When used with other qualifiers, the double asterisk, ``**``, indicates either the nonexistence of leading, trailing, or middle qualifiers, or the fact that they play no role in the selection process.
 
+    Two asterisks are the maximum permissible in a qualifier. If there are two asterisks in a qualifier, they must be the first and last characters.
 
-  | **required**: False
-  | **type**: bool
+    A question mark ``?`` or percent sign ``%`` matches a single character.
 
-
-     
-hlq
-  Specifies the new HLQ to use for the data sets being restored.
-
-  Defaults to running user's username.
+    | **required**: False
+    | **type**: raw
 
 
-  | **required**: False
-  | **type**: str
 
-
-     
-operation
-  Used to specify the operation to perform.
-
-
-  | **required**: True
-  | **type**: str
-  | **choices**: backup, restore
-
-
-     
-overwrite
-  When *operation=backup*, specifies if an existing data set or UNIX file matching *backup_name* should be deleted.
-
-  When *operation=restore*, specifies if the module should overwrite existing data sets with matching name on the target device.
-
-
-  | **required**: False
-  | **type**: bool
-
-
-     
-recover
-  Specifies if potentially recoverable errors should be ignored.
-
-
-  | **required**: False
-  | **type**: bool
-
-
-     
-sms_management_class
-  When *operation=restore*, specifies the management class to use. The management class will also be used for temporary data sets created during restore process.
-
-  When *operation=backup*, specifies the management class to use for temporary data sets created during backup process.
-
-  If neither of *sms_storage_class* or *sms_management_class* are specified, the z/OS system's Automatic Class Selection (ACS) routines will be used.
-
-
-  | **required**: False
-  | **type**: str
-
-
-     
-sms_storage_class
-  When *operation=restore*, specifies the storage class to use. The storage class will also be used for temporary data sets created during restore process.
-
-  When *operation=backup*, specifies the storage class to use for temporary data sets created during backup process.
-
-  If neither of *sms_storage_class* or *sms_management_class* are specified, the z/OS system's Automatic Class Selection (ACS) routines will be used.
-
-
-  | **required**: False
-  | **type**: str
-
-
-     
-space
-  If *operation=backup*, specifies the amount of space to allocate for the backup. Please note that even when backing up to a UNIX file, backup contents will be temporarily held in a data set.
-
-  If *operation=restore*, specifies the amount of space to allocate for data sets temporarily created during the restore process.
-
-  The unit of space used is set using *space_type*.
-
-  When *full_volume=True*, *space* defaults to ``1``, otherwise default is ``25``
-
-
-  | **required**: False
-  | **type**: int
-
-
-     
-space_type
-  The unit of measurement to use when defining data set space.
-
-  Valid units of size are ``K``, ``M``, ``G``, ``CYL``, and ``TRK``.
-
-  When *full_volume=True*, *space_type* defaults to ``G``, otherwise default is ``M``
-
-
-  | **required**: False
-  | **type**: str
-  | **choices**: K, M, G, CYL, TRK
-
-
-     
-temp_volume
-  Specifies a particular volume on which the temporary data sets should be created during the backup and restore process.
-
-  When *operation=backup* and *backup_name* is a data set, specifies the volume the backup should be placed in.
-
-
-  | **required**: False
-  | **type**: str
-
-
-     
 volume
   This applies to both data set restores and volume restores.
 
@@ -222,6 +90,108 @@ volume
 
   *volume* is required when restoring a full volume backup.
 
+  | **required**: False
+  | **type**: str
+
+
+full_volume
+  When *operation=backup* and *full_volume=True*, specifies that the entire volume provided to *volume* should be backed up.
+
+  When *operation=restore* and *full_volume=True*, specifies that the volume should be restored (default is dataset).
+
+  *volume* must be provided when *full_volume=True*.
+
+  | **required**: False
+  | **type**: bool
+
+
+temp_volume
+  Specifies a particular volume on which the temporary data sets should be created during the backup and restore process.
+
+  When *operation=backup* and *backup_name* is a data set, specifies the volume the backup should be placed in.
+
+  | **required**: False
+  | **type**: str
+
+
+backup_name
+  When *operation=backup*, the destination data set or UNIX file to hold the backup.
+
+  When *operation=restore*, the destination data set or UNIX file backup to restore.
+
+  There are no enforced conventions for backup names. However, using a common extension like ``.dzp`` for UNIX files and ``.DZP`` for data sets will improve readability.
+
+  | **required**: True
+  | **type**: str
+
+
+recover
+  Specifies if potentially recoverable errors should be ignored.
+
+  | **required**: False
+  | **type**: bool
+
+
+overwrite
+  When *operation=backup*, specifies if an existing data set or UNIX file matching *backup_name* should be deleted.
+
+  When *operation=restore*, specifies if the module should overwrite existing data sets with matching name on the target device.
+
+  | **required**: False
+  | **type**: bool
+
+
+sms_storage_class
+  When *operation=restore*, specifies the storage class to use. The storage class will also be used for temporary data sets created during restore process.
+
+  When *operation=backup*, specifies the storage class to use for temporary data sets created during backup process.
+
+  If neither of *sms_storage_class* or *sms_management_class* are specified, the z/OS system's Automatic Class Selection (ACS) routines will be used.
+
+  | **required**: False
+  | **type**: str
+
+
+sms_management_class
+  When *operation=restore*, specifies the management class to use. The management class will also be used for temporary data sets created during restore process.
+
+  When *operation=backup*, specifies the management class to use for temporary data sets created during backup process.
+
+  If neither of *sms_storage_class* or *sms_management_class* are specified, the z/OS system's Automatic Class Selection (ACS) routines will be used.
+
+  | **required**: False
+  | **type**: str
+
+
+space
+  If *operation=backup*, specifies the amount of space to allocate for the backup. Please note that even when backing up to a UNIX file, backup contents will be temporarily held in a data set.
+
+  If *operation=restore*, specifies the amount of space to allocate for data sets temporarily created during the restore process.
+
+  The unit of space used is set using *space_type*.
+
+  When *full_volume=True*, *space* defaults to ``1``, otherwise default is ``25``
+
+  | **required**: False
+  | **type**: int
+
+
+space_type
+  The unit of measurement to use when defining data set space.
+
+  Valid units of size are ``K``, ``M``, ``G``, ``CYL``, and ``TRK``.
+
+  When *full_volume=True*, *space_type* defaults to ``G``, otherwise default is ``M``
+
+  | **required**: False
+  | **type**: str
+  | **choices**: K, M, G, CYL, TRK
+
+
+hlq
+  Specifies the new HLQ to use for the data sets being restored.
+
+  Defaults to running user's username.
 
   | **required**: False
   | **type**: str
@@ -346,6 +316,7 @@ Examples
        backup_name: /tmp/temp_backup.dzp
        sms_storage_class: DB2SMS10
        sms_management_class: DB2SMS10
+
 
 
 

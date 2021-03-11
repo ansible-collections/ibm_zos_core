@@ -28,7 +28,89 @@ Parameters
 ----------
 
 
-     
+src
+  The location can be a UNIX System Services (USS) file, PS(sequential data set), member of a PDS or PDSE, PDS, PDSE.
+
+  The USS file must be an absolute pathname.
+
+  | **required**: True
+  | **type**: str
+
+
+state
+  Whether the block should be inserted/replaced (present) or removed (absent).
+
+  | **required**: False
+  | **type**: str
+  | **default**: present
+  | **choices**: absent, present
+
+
+marker
+  The marker line template.
+
+  ``{mark}`` will be replaced with the values ``in marker_begin`` (default="BEGIN") and ``marker_end`` (default="END").
+
+  Using a custom marker without the ``{mark}`` variable may result in the block being repeatedly inserted on subsequent playbook runs.
+
+  | **required**: False
+  | **type**: str
+  | **default**: # {mark} ANSIBLE MANAGED BLOCK
+
+
+block
+  The text to insert inside the marker lines.
+
+  Multi-line can be separated by '\n'.
+
+  | **required**: False
+  | **type**: str
+
+
+insertafter
+  If specified, the block will be inserted after the last match of the specified regular expression.
+
+  A special value ``EOF`` for inserting a block at the end of the file is available.
+
+  If a specified regular expression has no matches, ``EOF`` will be used instead.
+
+  Choices are EOF or '*regex*'.
+
+  Default is EOF.
+
+  | **required**: False
+  | **type**: str
+
+
+insertbefore
+  If specified, the block will be inserted before the last match of specified regular expression.
+
+  A special value ``BOF`` for inserting the block at the beginning of the file is available.
+
+  If a specified regular expression has no matches, the block will be inserted at the end of the file.
+
+  Choices are BOF or '*regex*'.
+
+  | **required**: False
+  | **type**: str
+
+
+marker_begin
+  This will be inserted at ``{mark}`` in the opening ansible block marker.
+
+  | **required**: False
+  | **type**: str
+  | **default**: BEGIN
+
+
+marker_end
+  This will be inserted at ``{mark}`` in the closing ansible block marker.
+
+  | **required**: False
+  | **type**: str
+  | **default**: END
+
+
 backup
   Specifies whether a backup of destination should be created before editing the source *src*.
 
@@ -36,12 +118,10 @@ backup
 
   The backup file name will be returned on either success or failure of module execution such that data can be retrieved.
 
-
   | **required**: False
   | **type**: bool
 
 
-     
 backup_name
   Specify the USS file name or data set name for the destination backup.
 
@@ -55,120 +135,18 @@ backup_name
 
   If *src* is a data set member and backup_name is not provided, the data set member will be backed up to the same partitioned data set with a randomly generated member name.
 
-
   | **required**: False
   | **type**: str
 
 
-     
-block
-  The text to insert inside the marker lines.
-
-  Multi-line can be separated by '\n'.
-
-
-  | **required**: False
-  | **type**: str
-
-
-     
 encoding
   The character set of the source *src*. :ref:`zos_blockinfile <zos_blockinfile_module>` requires to be provided with correct encoding to read the content of USS file or data set. If this parameter is not provided, this module assumes that USS file or data set is encoded in IBM-1047.
 
   Supported character sets rely on the charset conversion utility (iconv) version; the most common character sets are supported.
 
-
   | **required**: False
   | **type**: str
   | **default**: IBM-1047
-
-
-     
-insertafter
-  If specified, the block will be inserted after the last match of the specified regular expression.
-
-  A special value ``EOF`` for inserting a block at the end of the file is available.
-
-  If a specified regular expression has no matches, ``EOF`` will be used instead.
-
-  Choices are EOF or '*regex*'.
-
-  Default is EOF.
-
-
-  | **required**: False
-  | **type**: str
-
-
-     
-insertbefore
-  If specified, the block will be inserted before the last match of specified regular expression.
-
-  A special value ``BOF`` for inserting the block at the beginning of the file is available.
-
-  If a specified regular expression has no matches, the block will be inserted at the end of the file.
-
-  Choices are BOF or '*regex*'.
-
-
-  | **required**: False
-  | **type**: str
-
-
-     
-marker
-  The marker line template.
-
-  ``{mark}`` will be replaced with the values ``in marker_begin`` (default="BEGIN") and ``marker_end`` (default="END").
-
-  Using a custom marker without the ``{mark}`` variable may result in the block being repeatedly inserted on subsequent playbook runs.
-
-
-  | **required**: False
-  | **type**: str
-  | **default**: # {mark} ANSIBLE MANAGED BLOCK
-
-
-     
-marker_begin
-  This will be inserted at ``{mark}`` in the opening ansible block marker.
-
-
-  | **required**: False
-  | **type**: str
-  | **default**: BEGIN
-
-
-     
-marker_end
-  This will be inserted at ``{mark}`` in the closing ansible block marker.
-
-
-  | **required**: False
-  | **type**: str
-  | **default**: END
-
-
-     
-src
-  The location can be a UNIX System Services (USS) file, PS(sequential data set), member of a PDS or PDSE, PDS, PDSE.
-
-  The USS file must be an absolute pathname.
-
-
-  | **required**: True
-  | **type**: str
-
-
-     
-state
-  Whether the block should be inserted/replaced (present) or removed (absent).
-
-
-  | **required**: False
-  | **type**: str
-  | **default**: present
-  | **choices**: absent, present
 
 
 
@@ -184,8 +162,8 @@ Examples
        src: SYS1.PARMLIB(BPXPRM00)
        marker: "/* {mark} ANSIBLE MANAGED BLOCK */"
        block: |
-         " MOUNT FILESYSTEM('SOME.DATA.SET') TYPE(ZFS) MODE(READ)"
-         "    MOUNTPOINT('/tmp/src/somedirectory')"
+          MOUNT FILESYSTEM('SOME.DATA.SET') TYPE(ZFS) MODE(READ)
+             MOUNTPOINT('/tmp/src/somedirectory')
 
    - name: Remove a library as well as surrounding markers
      zos_blockinfile:
@@ -198,9 +176,9 @@ Examples
        src: /etc/profile
        insertafter: "PATH="
        block: |
-         "ZOAU=/path/to/zoau_dir/bin"
-         "export ZOAU"
-         "PATH=$ZOAU:$PATH"
+         ZOAU=/path/to/zoau_dir/bin
+         export ZOAU
+         PATH=$ZOAU:$PATH
 
    - name: Insert/Update HTML surrounded by custom markers after <body> line
      zos_blockinfile:
@@ -256,93 +234,66 @@ See Also
 
 
 
+
 Return Values
 -------------
 
 
-   
-                              
-       changed
-        | Indicates if the source was modified
-      
-        | **returned**: success
-        | **type**: bool      
-        | **sample**:
+changed
+  Indicates if the source was modified
 
-              .. code-block::
+  | **returned**: success
+  | **type**: bool
+  | **sample**:
 
-                       1
-            
-      
-      
-                              
-       found
-        | Number of the matching patterns
-      
-        | **returned**: success
-        | **type**: int
-        | **sample**: 5
+    .. code-block:: json
 
-            
-      
-      
-                              
-       cmd
-        | Constructed ZOAU dmod shell command based on the parameters
-      
-        | **returned**: success
-        | **type**: str
-        | **sample**: dmodhelper -d -b -c IBM-1047 -m "BEGIN\nEND\n# {mark} ANSIBLE MANAGED BLOCK" -e "$ a\\PATH=/dir/bin:$PATH" /etc/profile
+        1
 
-            
-      
-      
-                              
-       msg
-        | The module messages
-      
-        | **returned**: failure
-        | **type**: str
-        | **sample**: Parameter verification failed
+found
+  Number of the matching patterns
 
-            
-      
-      
-                              
-       stdout
-        | The stdout from ZOAU dmod when json.loads() fails to parse the result from dmod
-      
-        | **returned**: failure
-        | **type**: str
-      
-      
-                              
-       stderr
-        | The error messages from ZOAU dmod
-      
-        | **returned**: failure
-        | **type**: str
-        | **sample**: BGYSC1311E Iconv error, cannot open converter from ISO-88955-1 to IBM-1047
+  | **returned**: success
+  | **type**: int
+  | **sample**: 5
 
-            
-      
-      
-                              
-       rc
-        | The return code from ZOAU dmod when json.loads() fails to parse the result from dmod
-      
-        | **returned**: failure
-        | **type**: bool
-      
-      
-                              
-       backup_name
-        | Name of the backup file or data set that was created.
-      
-        | **returned**: if backup=true, always
-        | **type**: str
-        | **sample**: /path/to/file.txt.2015-02-03@04:15~
+cmd
+  Constructed ZOAU dmod shell command based on the parameters
 
-            
-      
-        
+  | **returned**: success
+  | **type**: str
+  | **sample**: dmodhelper -d -b -c IBM-1047 -m "BEGIN\nEND\n# {mark} ANSIBLE MANAGED BLOCK" -e "$ a\\PATH=/dir/bin:$PATH" /etc/profile
+
+msg
+  The module messages
+
+  | **returned**: failure
+  | **type**: str
+  | **sample**: Parameter verification failed
+
+stdout
+  The stdout from ZOAU dmod when json.loads() fails to parse the result from dmod
+
+  | **returned**: failure
+  | **type**: str
+
+stderr
+  The error messages from ZOAU dmod
+
+  | **returned**: failure
+  | **type**: str
+  | **sample**: BGYSC1311E Iconv error, cannot open converter from ISO-88955-1 to IBM-1047
+
+rc
+  The return code from ZOAU dmod when json.loads() fails to parse the result from dmod
+
+  | **returned**: failure
+  | **type**: bool
+
+backup_name
+  Name of the backup file or data set that was created.
+
+  | **returned**: if backup=true, always
+  | **type**: str
+  | **sample**: /path/to/file.txt.2015-02-03@04:15~
+

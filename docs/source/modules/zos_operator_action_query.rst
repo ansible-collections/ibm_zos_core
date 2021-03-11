@@ -26,33 +26,6 @@ Parameters
 ----------
 
 
-     
-job_name
-  Return outstanding messages requiring operator action awaiting a reply for a particular job name.
-
-  If the message job name is not specified, all outstanding messages for all job names are returned.
-
-  A trailing asterisk, (*) wildcard is supported.
-
-
-  | **required**: False
-  | **type**: str
-
-
-     
-message_id
-  Return outstanding messages requiring operator action awaiting a reply for a particular message identifier.
-
-  If the message identifier is not specified, all outstanding messages for all message identifiers are returned.
-
-  A trailing asterisk, (*) wildcard is supported.
-
-
-  | **required**: False
-  | **type**: str
-
-
-     
 system
   Return outstanding messages requiring operator action awaiting a reply for a particular system.
 
@@ -60,6 +33,27 @@ system
 
   A trailing asterisk, (*) wildcard is supported.
 
+  | **required**: False
+  | **type**: str
+
+
+message_id
+  Return outstanding messages requiring operator action awaiting a reply for a particular message identifier.
+
+  If the message identifier is not specified, all outstanding messages for all message identifiers are returned.
+
+  A trailing asterisk, (*) wildcard is supported.
+
+  | **required**: False
+  | **type**: str
+
+
+job_name
+  Return outstanding messages requiring operator action awaiting a reply for a particular job name.
+
+  If the message job name is not specified, all outstanding messages for all job names are returned.
+
+  A trailing asterisk, (*) wildcard is supported.
 
   | **required**: False
   | **type**: str
@@ -105,120 +99,102 @@ See Also
 
 
 
+
 Return Values
 -------------
 
 
-   
-                              
-       changed
-        | Indicates if any changes were made during module operation. Given operator action commands query for messages, True is always returned unless either a module or command failure has occurred.
-      
-        | **returned**: always
-        | **type**: bool
-      
-      
-                              
-       count
-        | The total number of outstanding messages.
-      
-        | **returned**: on success
-        | **type**: int
-        | **sample**: 12
+changed
+  Indicates if any changes were made during module operation. Given operator action commands query for messages, True is always returned unless either a module or command failure has occurred.
 
-            
-      
-      
-                              
-       actions
-        | The list of the outstanding messages.
-      
-        | **returned**: success
-        | **type**: list      
-        | **sample**:
+  | **returned**: always
+  | **type**: bool
 
-              .. code-block::
+count
+  The total number of outstanding messages.
 
-                       [{"job_id": "STC01537", "job_name": "IM5HCONN", "message_id": "HWSC0000I", "message_text": "*399 HWSC0000I *IMS CONNECT READY* IM5HCONN", "number": "001", "system": "MV27", "type": "R"}, {"job_id": "STC01533", "job_name": "IM5HCTRL", "message_id": "DFS3139I", "message_text": "*400 DFS3139I IMS INITIALIZED, AUTOMATIC RESTART PROCEEDING IM5H", "number": "002", "system": "MV27", "type": "R"}]
-            
-              
-   
-                              
-        number
-          | The message identification number.
-      
-          | **returned**: on success
-          | **type**: int
-          | **sample**: 1
+  | **returned**: on success
+  | **type**: int
+  | **sample**: 12
 
-            
-      
-      
-                              
-        type
-          | The action type,'R' means request.
-      
-          | **returned**: on success
-          | **type**: str
-          | **sample**: R
+actions
+  The list of the outstanding messages.
 
-            
-      
-      
-                              
-        system
-          | System on which the outstanding message requiring operator action awaiting a reply.
-      
-          | **returned**: on success
-          | **type**: str
-          | **sample**: MV27
+  | **returned**: success
+  | **type**: list
+  | **elements**: dict
+  | **sample**:
 
-            
-      
-      
-                              
-        job_id
-          | Job identifier for the outstanding message requiring operator action awaiting a reply.
-      
-          | **returned**: on success
-          | **type**: str
-          | **sample**: STC01537
+    .. code-block:: json
 
-            
-      
-      
-                              
-        message_text
-          | Job identifier for outstanding message requiring operator action awaiting a reply.
-      
-          | **returned**: success
-          | **type**: str
-          | **sample**: *399 HWSC0000I *IMS CONNECT READY* IM5HCONN
+        [
+            {
+                "job_id": "STC01537",
+                "job_name": "IM5HCONN",
+                "message_id": "HWSC0000I",
+                "message_text": "*399 HWSC0000I *IMS CONNECT READY* IM5HCONN",
+                "number": "001",
+                "system": "MV27",
+                "type": "R"
+            },
+            {
+                "job_id": "STC01533",
+                "job_name": "IM5HCTRL",
+                "message_id": "DFS3139I",
+                "message_text": "*400 DFS3139I IMS INITIALIZED, AUTOMATIC RESTART PROCEEDING IM5H",
+                "number": "002",
+                "system": "MV27",
+                "type": "R"
+            }
+        ]
 
-            
-      
-      
-                              
-        job_name
-          | Job name for outstanding message requiring operator action awaiting a reply.
-      
-          | **returned**: success
-          | **type**: str
-          | **sample**: IM5HCONN
+  number
+    The message identification number.
 
-            
-      
-      
-                              
-        message_id
-          | Message identifier for outstanding message requiring operator action awaiting a reply.
-      
-          | **returned**: success
-          | **type**: str
-          | **sample**: HWSC0000I
+    | **returned**: on success
+    | **type**: int
+    | **sample**: 1
 
-            
-      
-        
-      
-        
+  type
+    The action type,'R' means request.
+
+    | **returned**: on success
+    | **type**: str
+    | **sample**: R
+
+  system
+    System on which the outstanding message requiring operator action awaiting a reply.
+
+    | **returned**: on success
+    | **type**: str
+    | **sample**: MV27
+
+  job_id
+    Job identifier for the outstanding message requiring operator action awaiting a reply.
+
+    | **returned**: on success
+    | **type**: str
+    | **sample**: STC01537
+
+  message_text
+    Job identifier for outstanding message requiring operator action awaiting a reply.
+
+    | **returned**: success
+    | **type**: str
+    | **sample**: *399 HWSC0000I *IMS CONNECT READY* IM5HCONN
+
+  job_name
+    Job name for outstanding message requiring operator action awaiting a reply.
+
+    | **returned**: success
+    | **type**: str
+    | **sample**: IM5HCONN
+
+  message_id
+    Message identifier for outstanding message requiring operator action awaiting a reply.
+
+    | **returned**: success
+    | **type**: str
+    | **sample**: HWSC0000I
+
+

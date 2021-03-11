@@ -9,7 +9,7 @@ Requirements
 The **IBM z/OS core collection** requires both a **control node** and
 **managed node** be configured with a minimum set of requirements. The
 control node is often referred to as the **controller** and the
-managed node as the **host**.
+managed node as the **host** or **target**.
 
 Control node
 ============

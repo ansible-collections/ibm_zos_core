@@ -515,7 +515,7 @@ else:
 POLLING_INTERVAL = 1
 POLLING_COUNT = 60
 
-JOB_COMPLETION_MESSAGES = ["CC", "ABEND", "SEC", "JCL ERROR"]
+JOB_COMPLETION_MESSAGES = ["CC", "ABEND", "SEC ERROR", "JCL ERROR"]
 
 
 def submit_pds_jcl(src, module):
@@ -749,7 +749,7 @@ def run_module():
     except SubmitJCLError as e:
         module.fail_json(msg=repr(e), **result)
     if jobId is None or jobId == "":
-        result["job_id"] = "-blank-"
+        result["job_id"] = ""
         module.fail_json(
             msg="JOB ID RETURNED IS None. PLEASE CHECK WHETHER THE JCL IS CORRECT.",
             **result

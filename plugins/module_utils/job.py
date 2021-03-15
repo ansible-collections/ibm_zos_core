@@ -127,7 +127,7 @@ def _parse_jobs(output_str):
                 job["ret_code"]["msg_txt"] = ""
                 if ret_code_msg == "":
                     job["ret_code"]["msg"] = "AC"
-
+                job["ret_code"]["stepwise"] = _parse_stepwise(job_str)
                 job["class"] = job_info_match.group(7).strip()
                 job["content_type"] = job_info_match.group(8).strip()
 
@@ -177,6 +177,30 @@ def _parse_dds(job_str):
                 dd["content"] = content_str.group(1).split("\n")
             dds.append(dd)
     return dds
+
+
+def _parse_stepwise(job_str):
+    """Parse the dd section of output of the job retrieved by rexx script, pulling step-wise CC's
+
+    Args:
+        job_str (str): The output string for a particular job returned from job retrieved by the rexx script.
+
+    Returns:
+        list[dict]: A list of step names listed as "step executed" the related CC.
+    """
+    stp = dict()
+    dd_strs = re.findall(
+        r"^-----START\sOF\sDD-----\n(.*?)-----END\sOF\sDD-----",
+        job_str,
+        re.MULTILINE | re.DOTALL,
+    )
+    for dd_str in dd_strs:
+        if "STEP WAS EXECUTED" in dd_str:
+            pile = re.findall("(.*?)\s-\sSTEP\sWAS\sEXECUTED\s-\s(.*?)\n", dd_str)
+            for match in pile:
+                stp[match[0].split()[-1]] = match[1].split()[-1]
+
+    return stp
 
 
 def _get_job_output_str(job_id="*", owner="*", job_name="*", dd_name=""):

@@ -196,7 +196,7 @@ def _parse_stepwise(job_str):
     )
     for dd_str in dd_strs:
         if "STEP WAS EXECUTED" in dd_str:
-            pile = re.findall("(.*?)\s-\sSTEP\sWAS\sEXECUTED\s-\s(.*?)\n", dd_str)
+            pile = re.findall(r"(.*?)\s-\sSTEP\sWAS\sEXECUTED\s-\s(.*?)\n", dd_str)
             for match in pile:
                 stp[match[0].split()[-1]] = match[1].split()[-1]
 

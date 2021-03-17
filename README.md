@@ -1,14 +1,14 @@
 IBM z/OS core collection
 ========================
 
-The **IBM z/OS core collection**, also represented as
+The **IBM® z/OS® core collection**, also represented as
 **ibm_zos_core** in this document, is  part of the broader
 initiative to bring Ansible Automation to IBM Z® through the offering
 **Red Hat® Ansible Certified Content for IBM Z®**. The
 **IBM z/OS core collection** supports automation tasks such as
-creating data sets, submitting jobs, querying jobs,
-retrieving job output, encoding data sets, fetching data sets, copying data
-sets, executing operator commands, executing TSO commands, ping,
+creating data sets, submitting jobs, querying jobs, retrieving job output,
+encoding data, fetching data sets, copying data sets,
+executing operator commands, executing TSO commands, ping,
 querying operator actions, APF authorizing libraries,
 editing textual data in data sets or Unix System Services files,
 finding data sets, backing up and restoring data sets and
@@ -36,7 +36,6 @@ released to [Ansible Automation Hub](https://www.ansible.com/products/automation
 as **certified** and **IBM supported** for
 **Red Hat® Ansible Automation Platform subscribers**.
 
-
 For guides and reference, please review the [documentation](https://ibm.github.io/z_ansible_collections_doc/index.html).
 
 Features
@@ -46,7 +45,6 @@ The **IBM z/OS core collection**, includes
 [action plugins](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/plugins.html#action),
 [modules](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/modules.html),
 [filters](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/filters.html),
-[sample playbooks](https://ibm.github.io/z_ansible_collections_doc/playbooks/playbooks.html)
 and ansible-doc to automate tasks on z/OS.
 
 Copyright

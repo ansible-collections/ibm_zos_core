@@ -114,7 +114,7 @@ role-doc:
 		echo "Copying metadata ../roles/$$role_name/docs/doc_$$role_name to ../roles/$$role_name/docs/doc_$$role_name.py"; \
 		cp ../roles/$$role_name/docs/doc_$$role_name ../roles/$$role_name/docs/doc_$$role_name.py; \
 		echo "Sanitizing metadata ../roles/$$role_name/docs/doc_$$role_name.py"; \
-		sed -i "" "s/role:/module:/g" ../roles/$$role_name/docs/doc_$$role_name.py; \
+		sed -i -e "s/role:/module:/g" ../roles/$$role_name/docs/doc_$$role_name.py; \
 		echo "Generating RST doc for role ../roles/$$role_name"; \
 		ansible-doc-extractor --template templates/role.rst.j2 source/roles ../roles/$$role_name/docs/doc_$$role_name.py; \
 		echo "Deleting generated metadata ../roles/$$role_name/docs/doc_$$role_name.py"; \

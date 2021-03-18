@@ -9,12 +9,11 @@ SPHINXBUILD   ?= sphinx-build
 SOURCEDIR     = source
 BUILDDIR      = build
 ROOT_DIR:=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
+OS_DISTRO := $(shell uname)
+INDEX_HTML = build/html/index.html
 line_header="===================================================================="
 
-
-view-html:
-	@echo "Display generated HTML in default browser."
-	@open build/html/index.html
+.PHONY: help Makefile
 
 # Put it first so that "make" without argument is like "make help".
 help:
@@ -48,7 +47,19 @@ help:
 	@echo $(line_header)
 	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
-.PHONY: help Makefile
+view-html:
+ifeq ($(shell test -e $(INDEX_HTML) && echo true),true)
+	@echo "Display generated HTML '$(INDEX_HTML)' in default browser."
+ifeq ($(OS_DISTRO), Darwin)
+	@open build/html/index.html
+else ifeq ($(OS_DISTRO), Linux)
+	@xdg-open build/html/index.html &> /dev/null &
+else
+	@echo "Unable to launch browser for $(INDEX_HTML), open file with your browser."
+endif
+else
+	@echo "Unable to find generated HTML '$(INDEX_HTML)'."
+endif
 
 clean:
 	@echo $(line_header)
@@ -98,16 +109,16 @@ role-doc:
 	fi
 
 	@for role_name in `ls ../roles/`; do \
-	echo "Detected role name $$role_name"; \
-	if test -e ../roles/$$role_name/docs/doc_$$role_name; then \
-	echo "Copying metadata ../roles/$$role_name/docs/doc_$$role_name to ../roles/$$role_name/docs/doc_$$role_name.py"; \
-	cp ../roles/$$role_name/docs/doc_$$role_name ../roles/$$role_name/docs/doc_$$role_name.py; \
-	echo "Sanitizing metadata ../roles/$$role_name/docs/doc_$$role_name.py"; \
-	sed -i "" "s/role:/module:/g" ../roles/$$role_name/docs/doc_$$role_name.py; \
-	echo "Generating RST doc for role ../roles/$$role_name"; \
-	ansible-doc-extractor --template templates/role.rst.j2 source/roles ../roles/$$role_name/docs/doc_$$role_name.py; \
-	echo "Deleting generated metadata ../roles/$$role_name/docs/doc_$$role_name.py"; \
-	rm -rf ../roles/$$role_name/docs/doc_$$role_name.py; \
+		echo "Detected role name $$role_name"; \
+		if test -e ../roles/$$role_name/docs/doc_$$role_name; then \
+		echo "Copying metadata ../roles/$$role_name/docs/doc_$$role_name to ../roles/$$role_name/docs/doc_$$role_name.py"; \
+		cp ../roles/$$role_name/docs/doc_$$role_name ../roles/$$role_name/docs/doc_$$role_name.py; \
+		echo "Sanitizing metadata ../roles/$$role_name/docs/doc_$$role_name.py"; \
+		sed -i "" "s/role:/module:/g" ../roles/$$role_name/docs/doc_$$role_name.py; \
+		echo "Generating RST doc for role ../roles/$$role_name"; \
+		ansible-doc-extractor --template templates/role.rst.j2 source/roles ../roles/$$role_name/docs/doc_$$role_name.py; \
+		echo "Deleting generated metadata ../roles/$$role_name/docs/doc_$$role_name.py"; \
+		rm -rf ../roles/$$role_name/docs/doc_$$role_name.py; \
 	fi; \
 	done
 

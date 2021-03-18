@@ -75,6 +75,7 @@ then
     cd $ROLE_ROOT
     ansible-galaxy init $_ROLE_NAME
     mkdir -p $ROLE_PATH/docs
+    chmod 777 $ROLE_PATH/docs
 
     # Copy role artifacts to generated role sample
     echo "Populating $_ROLE_NAME with sample artifacts"

@@ -125,6 +125,11 @@ def _parse_jobs(output_str):
                 job["ret_code"]["code"] = _get_return_code_num(ret_code_msg)
                 job["ret_code"]["msg_code"] = _get_return_code_str(ret_code_msg)
                 job["ret_code"]["msg_txt"] = ""
+                if "JCL ERROR" in ret_code_msg:
+                    job["ret_code"][
+                        "msg_txt"
+                    ] = "JCL Error detected.  Check the data dumps for more information."
+
                 if ret_code_msg == "":
                     job["ret_code"]["msg"] = "AC"
 
@@ -454,12 +459,9 @@ def _get_return_code_num(rc_str):
     """
 
     rc = None
-    if "JCL ERROR" in rc_str:
-        rc = 16
-    else:
-        match = re.search(r"\s*CC\s*([0-9]+)", rc_str)
-        if match:
-            rc = int(match.group(1))
+    match = re.search(r"\s*CC\s*([0-9]+)", rc_str)
+    if match:
+        rc = int(match.group(1))
     return rc
 
 

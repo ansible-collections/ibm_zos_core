@@ -221,10 +221,11 @@ jobs:
           description:
              Returns additional information related to the job.
           type: str
-          sample: "No job can be located with this job name: HELLO"
+          sample: "JCL Error detected.  Check the data dumps for more information."
         code:
           description:
              Return code converted to integer value (when possible).
+             For JCL ERRORs, this will be None.
           type: int
           sample: 00
       sample:

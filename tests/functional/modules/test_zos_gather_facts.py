@@ -20,27 +20,26 @@ import pytest
 from pprint import pprint
 __metaclass__ = type
 
+# To minimize the number of times the same facts are repeatedly gathered, the tests have been divided into a check against just the base collectors, just the python collector, and the remaining ansible core engine collectors are lumped into a single test. The facts defined in the base collectors should always be collected because they are dependencies for some of the subsequent collectors. The python collector is separated to double check that the gather_subset parameter works as expected.
 
-# Facts will be gathered once and the result will be checked for accuracy and completeness throughout the test. It does not make sense to repeatedly gather facts on the same target per test. This is why there's one very large test instead of many small ones.
+# The following values are defined in the module and could be changed later:
 
-# the following values are defined in the module and could be changed later.
+# this one is defined in the call to exit_json
 ZOS_ANSIBLE_FACTS_DICT = 'zos_ansible_facts'
+
+# this one is defined as a param to PrefixFactNamespace, which gets passed into the get_ansible_collector method.
 FACTS_PREFIX = 'ansible_'
 
 
-def test_fact_gather(ansible_zos_module):
-    # assert 1 == 0
-    hosts = ansible_zos_module
-    # params = dict(gather_subset=all)
-    # try:
+def test_fact_gather_base(ansible_zos_module):
 
-    results = hosts.all.zos_gather_facts()
+    hosts = ansible_zos_module
+    base_collectors_subset = ['platform', 'distribution']
+    results = hosts.all.zos_gather_facts(gather_subset=base_collectors_subset)
     for result in results.contacted.values():
         print(result)
         # something was returned -- most basic test case.
         assert len(result.get(ZOS_ANSIBLE_FACTS_DICT)) > 0
-
-        # base collectors:
 
         # PlatformFactCollector
         assert result.get(ZOS_ANSIBLE_FACTS_DICT).get(FACTS_PREFIX+'architecture') is not None
@@ -61,9 +60,17 @@ def test_fact_gather(ansible_zos_module):
         assert result.get(ZOS_ANSIBLE_FACTS_DICT).get(FACTS_PREFIX + 'distribution_version') is not None
         assert result.get(ZOS_ANSIBLE_FACTS_DICT).get(FACTS_PREFIX + 'os_family') is not None
 
-        # general collectors:
 
-        # PythonFactCollector
+def test_fact_gather_python_collector(ansible_zos_module):
+    hosts = ansible_zos_module
+
+    results = hosts.all.zos_gather_facts(gather_subset='python')
+    for result in results.contacted.values():
+        print(result)
+        # something was returned -- most basic test case.
+        assert len(result.get(ZOS_ANSIBLE_FACTS_DICT)) > 0
+
+            # PythonFactCollector
         assert result.get(ZOS_ANSIBLE_FACTS_DICT).get(FACTS_PREFIX + 'python') is not None
         assert result.get(ZOS_ANSIBLE_FACTS_DICT).get(FACTS_PREFIX + 'python').get('executable') is not None
         assert result.get(ZOS_ANSIBLE_FACTS_DICT).get(FACTS_PREFIX + 'python').get('has_sslcontext') is not None
@@ -75,6 +82,23 @@ def test_fact_gather(ansible_zos_module):
         assert result.get(ZOS_ANSIBLE_FACTS_DICT).get(FACTS_PREFIX + 'python').get('version').get('releaselevel') is not None
         assert result.get(ZOS_ANSIBLE_FACTS_DICT).get(FACTS_PREFIX + 'python').get('version').get('serial') is not None
         assert result.get(ZOS_ANSIBLE_FACTS_DICT).get(FACTS_PREFIX + 'python').get('version_info') is not None
+
+
+def test_fact_gather_remaining(ansible_zos_module):
+    # assert 1 == 0
+    hosts = ansible_zos_module
+
+    results = hosts.all.zos_gather_facts()
+    for result in results.contacted.values():
+        print(result)
+        # something was returned -- most basic test case.
+        assert len(result.get(ZOS_ANSIBLE_FACTS_DICT)) > 0
+
+        # base collectors are tested separately
+
+        # general collectors:
+
+        # PythonFactCollector is tested separately
 
         # ServiceMgrFactCollector
         assert result.get(ZOS_ANSIBLE_FACTS_DICT).get(FACTS_PREFIX + 'service_mgr') is not None
@@ -114,9 +138,15 @@ def test_fact_gather(ansible_zos_module):
         assert result.get(ZOS_ANSIBLE_FACTS_DICT).get(FACTS_PREFIX + 'user_shell') is not None
 
 
-        # assert result.get("zos_ansible_facts").get("ansible_os_family") is not None
-        # # a specific value was returned at a specific key
-        # assert result.get("zos_ansible_facts").get("ansible_hostname") == 'EC33018A'
+# def test_fact_gather_datetime(ansible_zos_module):
+#     # assert 1 == 0
+#     hosts = ansible_zos_module
 
-        # zos collected facts
-        # assert result.get("zos_ansible_facts").get("ansible_z_symbols").get('rc') == 0
+#     results = hosts.all.zos_gather_facts()
+#     for result in results.contacted.values():
+#         print(result)
+#         # something was returned -- most basic test case.
+#         assert len(result.get(ZOS_ANSIBLE_FACTS_DICT)) > 0
+
+#         # sample test zos collected facts
+#         assert result.get("zos_ansible_facts").get("ansible_z_symbols").get('rc') == 0

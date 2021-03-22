@@ -270,6 +270,7 @@ def test_uss_encoding_conversion_uss_file_to_mvs_pds_member(ansible_zos_module):
     results = hosts.all.zos_data_set(
         name=MVS_PDS_MEMBER, type="member", state="present"
     )
+    pprint(vars(results))
     for result in results.contacted.values():
         assert result.get("changed") is True
         assert result.get("module_stderr") is None
@@ -535,7 +536,10 @@ def test_vsam_backup(ansible_zos_module):
     hosts.all.file(path=TEMP_JCL_PATH, state="absent")
 
     hosts.all.zos_encode(
-        src=MVS_VS, dest=MVS_PS, from_encoding=FROM_ENCODING, to_encoding=TO_ENCODING,
+        src=MVS_VS,
+        dest=MVS_PS,
+        from_encoding=FROM_ENCODING,
+        to_encoding=TO_ENCODING,
     )
     contents = hosts.all.shell(cmd="cat \"//'{0}'\"".format(MVS_PS))
     content1 = ""

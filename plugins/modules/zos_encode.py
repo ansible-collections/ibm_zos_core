@@ -247,7 +247,7 @@ backup_name:
 """
 
 import re
-from os import path, makedirs, listdirs
+from os import path, makedirs, listdir
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser,
@@ -319,7 +319,7 @@ def check_file(file):
 
 def verify_uss_path_exists(file):
     if not path.exists(file):
-        ld = listdirs("/tmp/*")
+        ld = listdir("/tmp/*")
         raise EncodeError("File {0} does not exist. D: {1}".format(file, str(ld)))
     return
 

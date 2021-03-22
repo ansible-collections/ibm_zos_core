@@ -13,6 +13,18 @@
 # limitations under the License.
 
 from __future__ import absolute_import, division, print_function
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
+    MissingZOAUImport,
+)
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
+    better_arg_parser,
+    data_set,
+    encode,
+    backup as zos_backup,
+)
+from ansible.module_utils.basic import AnsibleModule
+from os import path, makedirs, listdir
+import re
 
 __metaclass__ = type
 
@@ -246,18 +258,6 @@ backup_name:
     sample: /path/file_name.2020-04-23-08-32-29-bak.tar
 """
 
-import re
-from os import path, makedirs, listdir
-from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
-    better_arg_parser,
-    data_set,
-    encode,
-    backup as zos_backup,
-)
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingZOAUImport,
-)
 
 try:
     from zoautil_py import datasets
@@ -287,7 +287,8 @@ def check_mvs_dataset(ds):
         check_rc = True
         ds_type = data_set.DataSetUtils(ds).ds_type()
         if not ds_type:
-            raise EncodeError("Unable to determine data set type of {0}".format(ds))
+            raise EncodeError(
+                "Unable to determine data set type of {0}".format(ds))
     return check_rc, ds_type
 
 
@@ -301,7 +302,7 @@ def check_file(file):
     else:
         ds = file.upper()
         if "(" in ds:
-            dsn = ds[0 : ds.rfind("(", 1)]
+            dsn = ds[0: ds.rfind("(", 1)]
             mem = "".join(re.findall(r"[(](.*?)[)]", ds))
             rc, ds_type = check_mvs_dataset(dsn)
             if rc:
@@ -310,7 +311,8 @@ def check_file(file):
                     ds_type = "PS"
                 else:
                     raise EncodeError(
-                        "Data set {0} is not a partitioned data set".format(dsn)
+                        "Data set {0} is not a partitioned data set".format(
+                            dsn)
                     )
         else:
             is_mvs, ds_type = check_mvs_dataset(ds)
@@ -320,7 +322,8 @@ def check_file(file):
 def verify_uss_path_exists(file):
     if not path.exists(file):
         ld = listdir("/tmp/*")
-        raise EncodeError("File {0} does not exist. D: {1}".format(file, str(ld)))
+        raise EncodeError(
+            "File {0} does not exist. D: {1}".format(file, str(ld)))
     return
 
 
@@ -343,7 +346,8 @@ def run_module():
         from_encoding=dict(arg_type="str", default="IBM-1047"),
         to_encoding=dict(arg_type="str", default="ISO8859-1", required=False),
         backup=dict(arg_type="bool", default=False, required=False),
-        backup_name=dict(arg_type="data_set_or_path", required=False, default=None),
+        backup_name=dict(arg_type="data_set_or_path",
+                         required=False, default=None),
         backup_compress=dict(arg_type="bool", required=False, default=False),
     )
 
@@ -400,7 +404,8 @@ def run_module():
                         makedirs(dest)
                     is_uss_dest = True
                 except OSError:
-                    raise EncodeError("Failed when creating the {0}".format(dest))
+                    raise EncodeError(
+                        "Failed when creating the {0}".format(dest))
         result["dest"] = dest
 
         # Check if the dest is required to be backup before conversion
@@ -447,9 +452,11 @@ def run_module():
 
         if convert_rc:
             changed = True
-            result = dict(changed=changed, src=src, dest=dest, backup_name=backup_name)
+            result = dict(changed=changed, src=src,
+                          dest=dest, backup_name=backup_name)
         else:
-            result = dict(src=src, dest=dest, changed=changed, backup_name=backup_name)
+            result = dict(src=src, dest=dest, changed=changed,
+                          backup_name=backup_name)
     except Exception as e:
         module.fail_json(msg=repr(e), **result)
 

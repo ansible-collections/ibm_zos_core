@@ -247,7 +247,7 @@ backup_name:
 """
 
 import re
-from os import path, makedirs
+from os import path, makedirs, listdirs
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser,
@@ -301,7 +301,7 @@ def check_file(file):
     else:
         ds = file.upper()
         if "(" in ds:
-            dsn = ds[0: ds.rfind("(", 1)]
+            dsn = ds[0 : ds.rfind("(", 1)]
             mem = "".join(re.findall(r"[(](.*?)[)]", ds))
             rc, ds_type = check_mvs_dataset(dsn)
             if rc:
@@ -319,7 +319,8 @@ def check_file(file):
 
 def verify_uss_path_exists(file):
     if not path.exists(file):
-        raise EncodeError("File {0} does not exist.".format(file))
+        ld = listdirs("/tmp/*")
+        raise EncodeError("File {0} does not exist. D: {1}".format(file, str(ld)))
     return
 
 

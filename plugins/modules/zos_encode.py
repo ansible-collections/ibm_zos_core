@@ -318,7 +318,8 @@ def check_file(file):
 
 def verify_uss_path_exists(file):
     if not path.exists(file):
-        ld = listdir("/tmp/*")
+        path = "/" + file.split("/")[0] + "/*"
+        ld = listdir(path)
         raise EncodeError("File {0} does not exist. D: {1}".format(file, str(ld)))
     return
 

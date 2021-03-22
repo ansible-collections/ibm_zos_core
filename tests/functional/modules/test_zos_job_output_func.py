@@ -71,6 +71,7 @@ def test_zos_job_output_reject(ansible_zos_module):
 
 
 def test_zos_job_output_job_exists(ansible_zos_module):
+    # adding verification that at least 1 step was returned
     hosts = ansible_zos_module
     hosts.all.file(path=TEMP_PATH, state="directory")
     hosts.all.shell(
@@ -84,3 +85,4 @@ def test_zos_job_output_job_exists(ansible_zos_module):
     for result in results.contacted.values():
         assert result.get("changed") is False
         assert result.get("jobs") is not None
+        assert result.get("jobs")[0].get("steps") is not None

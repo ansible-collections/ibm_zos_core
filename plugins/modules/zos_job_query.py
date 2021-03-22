@@ -107,14 +107,41 @@ jobs:
             Return code or abend resulting from the job submission.
           type: str
           sample: CC 0000
+        msg_code:
+          description:
+            Return code extracted from the `msg` so that it can better
+            evaluated. For example , ABEND(S0C4) would yield ""S0C4".
+          type: str
+          sample: S0C4
+        msg_txt:
+          description:
+             Returns additional information related to the job.
+          type: str
+          sample: "No job can be located with this job name: HELLO"
         code:
           description:
              Return code converted to integer value (when possible).
           type: int
           sample: 00
+        steps:
+          description:
+            Returns a dictionary of steps and their response codes
+          type: dict
+          contains:
+            [stepname]:
+              description:
+                The key is the name of a step shown in DD section.
+                The value is the CC returned.
+              type: str
+              sample: "00"
+
       sample:
          - "code": 0
-         -  "msg": "CC 0000"
+         - "msg": "CC 0000",
+         - "msg_code": "0000",
+         - "msg_txt": "",
+         - "steps":
+            - "STEP0001": "00"
   sample:
     [
         {

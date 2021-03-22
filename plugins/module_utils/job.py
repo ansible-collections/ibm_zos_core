@@ -91,7 +91,7 @@ def _parse_jobs(output_str):
     Returns:
         list[dict]: A list of jobs and their attributes.
 
-    Rais:
+    Raises:
         Runtime error if output wasn't parseable
     """
     jobs = []
@@ -127,7 +127,7 @@ def _parse_jobs(output_str):
                 job["ret_code"]["msg_txt"] = ""
                 if ret_code_msg == "":
                     job["ret_code"]["msg"] = "AC"
-                job["ret_code"]["stepwise"] = _parse_stepwise(job_str)
+                job["ret_code"]["steps"] = _parse_steps(job_str)
                 job["class"] = job_info_match.group(7).strip()
                 job["content_type"] = job_info_match.group(8).strip()
 
@@ -179,7 +179,7 @@ def _parse_dds(job_str):
     return dds
 
 
-def _parse_stepwise(job_str):
+def _parse_steps(job_str):
     """Parse the dd section of output of the job retrieved by rexx script, pulling step-wise CC's
 
     Args:

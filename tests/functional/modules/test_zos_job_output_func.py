@@ -86,3 +86,4 @@ def test_zos_job_output_job_exists(ansible_zos_module):
         assert result.get("changed") is False
         assert result.get("jobs") is not None
         assert result.get("jobs")[0].get("steps") is not None
+        assert result.get("jobs")[0].get("steps")[0].get("stepid") == "STEP0001"

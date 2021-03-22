@@ -198,7 +198,8 @@ def _parse_steps(job_str):
         if "STEP WAS EXECUTED" in dd_str:
             pile = re.findall(r"(.*?)\s-\sSTEP\sWAS\sEXECUTED\s-\s(.*?)\n", dd_str)
             for match in pile:
-                stp[match[0].split()[-1]] = match[1].split()[-1]
+                st = {"stepid": match[0].split()[-1], "stepcc": match[1].split()[-1]}
+                stp.append(st)
 
     return stp
 

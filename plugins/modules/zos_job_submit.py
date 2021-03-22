@@ -229,23 +229,34 @@ jobs:
           sample: 00
         steps:
           description:
-            Returns a dictionary of steps and their response codes
-          type: dict
+            Series of JCL steps that were executed and their return codes.
+          type: list
+          elements: dict
           contains:
-            [stepname]:
+            stepid:
               description:
-                The key is the name of a step shown in DD section.
-                The value is the CC returned.
+                Name of the step shown as "was executed" in the DD section.
+              type: str
+              sample: "STEP0001"
+            stepcc:
+              description:
+                Actual CC returned for this step in the DD section.
               type: str
               sample: "00"
+
       sample:
-         - "code": 0
-         -  "msg": "CC 0000"
-         - "msg_code": "0000"
-         - "msg_txt": ""
-         - "steps":
-            - "STEP0001": "00"
-  sample:
+        ret_code: {
+          "code": 0,
+          "msg": "CC 0000",
+          "msg_code": "0000",
+          "msg_txt": "",
+          "steps": [
+            { "stepid": "STEP0001",
+              "stepcc": "0000"
+            },
+          ]
+        }
+    sample:
      [
           {
               "class": "K",
@@ -451,10 +462,12 @@ jobs:
                   "code": 0,
                   "msg": "CC 0000",
                   "msg_code": "0000",
-                  "msg_txt": ""
-                  "steps": {
-                    "DLORD6": "0000"
-                  }
+                  "msg_txt": "",
+                  "steps": [
+                    { "stepid": "DLORD6",
+                      "stepcc": "0000"
+                    }
+                  ]
               },
               "subsystem": "STL1"
           }

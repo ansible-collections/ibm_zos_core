@@ -255,7 +255,9 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     backup as zos_backup,
 )
 from ansible.module_utils.basic import AnsibleModule
-from os import path, makedirs, listdir
+from os import path
+from os import makedirs
+from os import listdir
 import re
 
 try:
@@ -291,7 +293,7 @@ def check_mvs_dataset(ds):
 
 
 def check_file(file):
-    """ check file is a USS file/path or an MVS data set """
+    """ check file is a USS file or an MVS data set """
     is_uss = False
     is_mvs = False
     ds_type = None
@@ -318,9 +320,9 @@ def check_file(file):
 
 def verify_uss_path_exists(file):
     if not path.exists(file):
-        path = "/" + file.split("/")[0] + "/*"
-        ld = listdir(path)
-        raise EncodeError("File {0} does not exist. D: {1}".format(file, str(ld)))
+        mypath = "/" + file.split("/")[0] + "/*"
+        ld = listdir(mypath)
+        raise EncodeError("File {0} does not exist. D: {1} from {2}".format(file, str(ld), mypath))
     return
 
 

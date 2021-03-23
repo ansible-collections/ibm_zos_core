@@ -142,11 +142,11 @@ then
     # Check that $PROJECT_DOC_SOURCE_PATH/index.rst contains roles in the toctree
     echo "Found $PROJECT_DOC_SOURCE_PATH/index.rst, checking if it has a role entry.";
 
-    ROLES_TOC=`cat $PROJECT_DOC_SOURCE_PATH/index.rst |grep -w "roles"`
+    ROLES_TOC=`grep -oPz '(?s):caption:\s+Ansible Content.*?\sroles\s' $PROJECT_DOC_SOURCE_PATH/index.rst`
     # echo ROLES_TOC $ROLES_TOC
 
     if [ "$ROLES_TOC" == "" ]; then
-		echo "Was unable to find roles defined in a toctree in $PROJECT_DOC_SOURCE_PATH/index.rst";
+        echo "Was unable to find roles defined in a toctree in $PROJECT_DOC_SOURCE_PATH/index.rst";
         echo "Edit $PROJECT_DOC_SOURCE_PATH/index.rst and add roles to a toctree for example:";
         echo ".. toctree::";
         echo "   :maxdepth: 1";
@@ -158,7 +158,7 @@ then
         echo "   roles";
         echo "When roles has been added to $PROJECT_DOC_SOURCE_PATH/index.rst press [Enter]";
         read -p "Press [Enter] key to continue...";
-	fi
+    fi
 else
     echo "Was unable to find $PROJECT_DOC_SOURCE_PATH/index.rst, unable to continue to documentation generation.";
     echo "Please create the $PROJECT_DOC_SOURCE_PATH/index.rst and run commands:";

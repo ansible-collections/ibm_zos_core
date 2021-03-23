@@ -81,7 +81,7 @@ def test_zos_job_output_job_exists(ansible_zos_module):
         src="{0}/SAMPLE".format(TEMP_PATH), location="USS", wait=True, volume=None
     )
     hosts.all.file(path=TEMP_PATH, state="absent")
-    results = hosts.all.zos_job_output(job_name="SAMPLE")
+    results = hosts.all.zos_job_output(job_name="HELLO")    # was SAMPLE?!
     for result in results.contacted.values():
         print(result)
         assert result.get("changed") is False

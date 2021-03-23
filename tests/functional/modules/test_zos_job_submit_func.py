@@ -72,7 +72,7 @@ def test_job_submit_PDS(ansible_zos_module):
     )
     hosts.all.file(path=TEMP_PATH, state="absent")
     for result in results.contacted.values():
-        print(vars(result))
+        print(result)
         assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
         assert result.get("jobs")[0].get("ret_code").get("code") == 0
         assert result.get("changed") is True

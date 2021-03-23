@@ -188,7 +188,7 @@ def _parse_steps(job_str):
     Returns:
         list[dict]: A list of step names listed as "step executed" the related CC.
     """
-    stp = dict()
+    stp = []
     dd_strs = re.findall(
         r"^-----START\sOF\sDD-----\n(.*?)-----END\sOF\sDD-----",
         job_str,

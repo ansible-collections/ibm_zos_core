@@ -124,7 +124,7 @@ notes:
 RETURN = r"""
 jobs:
   description:
-     List of jobs output.
+     List of jobs output, or a single NOTFOUND record.
   returned: success
   type: list
   elements: dict
@@ -229,7 +229,7 @@ jobs:
           sample: 00
       sample:
          - "code": 0
-         -  "msg": "CC 0000"
+         - "msg": "CC 0000"
          - "msg_code": "0000"
          - "msg_txt": ""
   sample:

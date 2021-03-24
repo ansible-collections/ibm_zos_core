@@ -80,7 +80,7 @@ EXAMPLES = r"""
 RETURN = r"""
 jobs:
   description:
-      List of jobs output.
+      List of jobs output, or a single NOTFOUND record.
   returned: success
   type: list
   elements: dict

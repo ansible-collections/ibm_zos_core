@@ -1,7 +1,7 @@
 # Copyright (c) IBM Corporation 2020
 
 DOCUMENTATION = r"""
-role: doc_role_sample
+role: role_sample
 short_description: Role will assemble a sentence
 description:
   - This is a fun sentence builder, where the sentence is derived on

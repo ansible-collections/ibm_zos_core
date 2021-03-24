@@ -31,7 +31,7 @@ ZOS_ANSIBLE_FACTS_DICT = 'zos_ansible_facts'
 FACTS_PREFIX = 'ansible_'
 
 
-def test_fact_gather_base(ansible_zos_module):
+def test_gather_facts_base(ansible_zos_module):
 
     hosts = ansible_zos_module
     base_collectors_subset = ['platform', 'distribution']
@@ -61,7 +61,7 @@ def test_fact_gather_base(ansible_zos_module):
         assert result.get(ZOS_ANSIBLE_FACTS_DICT).get(FACTS_PREFIX + 'os_family') is not None
 
 
-def test_fact_gather_python_collector(ansible_zos_module):
+def test_gather_facts_python_collector(ansible_zos_module):
     hosts = ansible_zos_module
 
     results = hosts.all.zos_gather_facts(gather_subset='python')
@@ -84,7 +84,7 @@ def test_fact_gather_python_collector(ansible_zos_module):
         assert result.get(ZOS_ANSIBLE_FACTS_DICT).get(FACTS_PREFIX + 'python').get('version_info') is not None
 
 
-def test_fact_gather_remaining(ansible_zos_module):
+def test_gather_facts_remaining(ansible_zos_module):
     # assert 1 == 0
     hosts = ansible_zos_module
 
@@ -138,7 +138,7 @@ def test_fact_gather_remaining(ansible_zos_module):
         assert result.get(ZOS_ANSIBLE_FACTS_DICT).get(FACTS_PREFIX + 'user_shell') is not None
 
 
-# def test_fact_gather_datetime(ansible_zos_module):
+# def test_gather_facts_datetime(ansible_zos_module):
 #     # assert 1 == 0
 #     hosts = ansible_zos_module
 

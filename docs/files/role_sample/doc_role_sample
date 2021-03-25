@@ -12,8 +12,7 @@ description:
     {{ comment }}, {{ action }} modules can be written in {{ language_1 }},
     {{ language_2 }} and {{ language_3 }}."
 author: "Demetrios Dimatos (@ddimatos)"
-options: {}
-variables:
+options:
   comment:
     description:
       - The second position in the sentence. I(comment) is inserted

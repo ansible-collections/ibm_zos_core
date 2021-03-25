@@ -65,7 +65,6 @@ def job_output(job_id=None, owner=None, job_name=None, dd_name=None):
         owner = "" if owner == "*" else owner
         job_name = "" if job_name == "*" else job_name
         job_detail = _get_job_output(job_id, owner, job_name, dd_name)
-    print("job output:{0}".format(job_detail))
     return job_detail
 
 

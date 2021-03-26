@@ -86,6 +86,7 @@ def test_zos_job_output_job_exists(ansible_zos_module):
         assert result.get("changed") is False
         assert result.get("jobs") is not None
 
+
 def test_zos_job_output_nonexistant(ansible_zos_module):
     hosts = ansible_zos_module
     # This is for jira 5950: It is unlikely to find a job called "notajob"

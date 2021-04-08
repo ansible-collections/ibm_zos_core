@@ -73,7 +73,7 @@ cmd:
     type: str
     sample: zfsadm grow -aggregate SOMEUSER.VVV.ZFS -size 4096
 rc:
-    description: The return code of the zfsadm command, if applicable.
+    description: The return code of the zfsadm command.
     returned: always
     type: int
     sample: 0
@@ -211,7 +211,6 @@ def run_module(module, arg_def):
             )
     elif oldsize < size:
         cmdstr = cmdstr + " grow "
-
     else:
         cmdstr = None
         module.fail_json(
@@ -233,7 +232,7 @@ def run_module(module, arg_def):
 
         if rc != 0:
             module.fail_json(
-                msg="Resize: resize command failed rc=" + str(rc) + "K.",
+                msg="Resize: resize command returned non-zero code: rc=" + str(rc) + ".",
                 stderr=str(res_args)
             )
         else:
@@ -247,6 +246,11 @@ def run_module(module, arg_def):
                     newfree=newfree,
                 )
             )
+    else:
+        module.fail_json(
+            msg="Resize: could not determine action to take on: '" + target + "'.",
+            stderr=str(res_args)
+        )
 
     return res_args
 

@@ -27,7 +27,9 @@ author: "Ping Xiao (@xiaopingBJ)"
 options:
   cmd:
     description:
-      - The command to execute.
+      - The command to execute.  This command will be wrapped in apostrophes to run.
+      - If the command contains apostrophes/single-quotations, they need to be doubled.
+      - i.e.: change a command "...,P='DSN3EPX,-DBC1,S'" to "...,P=''DSN3EPX,-DBC1,S''".
     type: str
     required: true
   verbose:

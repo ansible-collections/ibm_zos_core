@@ -75,8 +75,10 @@ options:
       dd_data_set:
         description:
           - Specify a data set.
-          - I(dd_data_set) can reference an existing data set or be
-            used to define a new data set to be created during execution.
+          - I(dd_data_set) can reference an existing data set. The data set
+            referenced with C(data_set_name) must be allocated before the
+            module M(zos_mvs_raw) is run, you can use M(zos_data_set) to
+            allocate a data set.
         required: false
         type: dict
         suboptions:
@@ -89,7 +91,7 @@ options:
             description:
               - The data set name.
             type: str
-            required: false
+            required: true
           type:
             description:
               - The data set type. Only required when I(disposition=new).
@@ -682,8 +684,10 @@ options:
               dd_data_set:
                 description:
                   - Specify a data set.
-                  - I(dd_data_set) can reference an existing data set or be
-                    used to define a new data set to be created during execution.
+                  - I(dd_data_set) can reference an existing data set. The
+                    data set referenced with C(data_set_name) must be allocated
+                    before the module M(zos_mvs_raw) is run, you can
+                    use M(zos_data_set) to allocate a data set.
                 required: false
                 type: dict
                 suboptions:
@@ -691,7 +695,7 @@ options:
                     description:
                       - The data set name.
                     type: str
-                    required: false
+                    required: true
                   type:
                     description:
                       - The data set type. Only required when I(disposition=new).
@@ -1194,7 +1198,8 @@ notes:
     - 2. M(zos_mvs_raw) module execution fails when invoking DFSRRC00 with parm
       "UPB,PRECOMP", "UPB, POSTCOMP" or "UPB,PRECOMP,POSTCOMP". This issue is
       addressed by APAR PH28089.
-
+seealso:
+- module: zos_data_set
 """
 
 RETURN = r"""

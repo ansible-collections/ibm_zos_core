@@ -75,10 +75,8 @@ options:
       dd_data_set:
         description:
           - Specify a data set.
-          - I(dd_data_set) can reference an existing data set. The data set
-            referenced with C(data_set_name) must be allocated before the
-            module M(zos_mvs_raw) is run, you can use M(zos_data_set) to
-            allocate a data set.
+          - I(dd_data_set) can reference an existing data set or be
+            used to define a new data set to be created during execution.
         required: false
         type: dict
         suboptions:

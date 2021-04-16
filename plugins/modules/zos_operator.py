@@ -29,7 +29,7 @@ options:
     description:
       - The command to execute.  This command will be wrapped in quotations to run.
       - If the command contains single-quotations, another set of single quotes must be added.
-      - For example : Change the command "...,P='DSN3EPX,-DBC1,S'" to "...,P=''DSN3EPX,-DBC1,S'' ".
+      - For example, Change the command "...,P='DSN3EPX,-DBC1,S'" to "...,P=''DSN3EPX,-DBC1,S'' ".
     type: str
     required: true
   verbose:

@@ -71,7 +71,7 @@ What's New
     * Use the `configure Python and ZOAU Installation`_ playbook to scan the
       **z/OS** target to find the latest supported configuration and generate
       `inventory`_ and a `variables`_ configuration.
-
+    * Automate software management with `SMP/E Playbooks`_
     * All playbooks have been updated to use our temporary data set feature
       to avoid any concurrent data set name problems.
     * In the prior release, all sample playbooks previously included with the
@@ -80,7 +80,6 @@ What's New
       **topics**, it also covers `playbook configuration`_ as well as provide
       additional community content such as **blogs** and where to open
       `support tickets`_ for the playbooks.
-    * SMP/E Playbooks https://github.com/IBM/z_ansible_collections_samples/tree/master/zos_concepts/software_management
 
 * Documentation
 
@@ -277,6 +276,8 @@ Reference
    https://github.com/IBM/z_ansible_collections_samples/tree/master/zos_concepts/user_management/add_remove_user
 .. _zos_operator_basics.yaml:
    https://github.com/IBM/z_ansible_collections_samples/blob/master/zos_concepts/zos_operator/zos_operator_basics/zos_operator_basics.yaml
+.. _SMP/E Playbooks:
+   https://github.com/IBM/z_ansible_collections_samples/tree/master/zos_concepts/software_management
 
 .. .............................................................................
 .. Configuration Links

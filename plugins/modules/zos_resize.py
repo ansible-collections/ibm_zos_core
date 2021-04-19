@@ -14,6 +14,16 @@
 
 
 from __future__ import absolute_import, division, print_function
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
+    MissingZOAUImport,
+)
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
+    better_arg_parser,
+    data_set,
+)
+from ansible.module_utils.basic import AnsibleModule
+import re
+import os
 
 __metaclass__ = type
 
@@ -103,18 +113,6 @@ newfree:
     sample: 48
 """
 
-import os
-import re
-
-from ansible.module_utils.basic import AnsibleModule
-
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
-    better_arg_parser,
-    data_set,
-)
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingZOAUImport,
-)
 
 try:
     from zoautil_py import MVSCmd, types
@@ -122,7 +120,8 @@ except Exception:
     MVSCmd = MissingZOAUImport()
     types = MissingZOAUImport()
 
-def get_agg_size( aggregatename ):
+
+def get_agg_size(aggregatename):
     size = -1
     free = -1
 
@@ -132,12 +131,12 @@ def get_agg_size( aggregatename ):
 
     if rc == 0:
         searchstr = r"^\s*Size:\s*([0-9]*)K\s*Free\s8K\sBlocks:\s*([0-9]*)"
-        found = re.search( searchstr, stdout, re.MULTILINE | re.DOTALL )
+        found = re.search(searchstr, stdout, re.MULTILINE | re.DOTALL)
         if found is not None:
             size = found.group(1).strip()
             free = found.group(2).strip()
 
-    return( size, free)
+    return(size, free)
 
 # #############################################################################
 # ############## run_module: code for zos_resize module #######################
@@ -161,7 +160,7 @@ def run_module(module, arg_def):
     target = parsed_args.get("target")
     size = parsed_args.get("size")
     res_args.update(
-        dict (
+        dict(
             target=target,
             size=size,
             cmd="start",
@@ -181,48 +180,45 @@ def run_module(module, arg_def):
             stderr=str(res_args)
         )
 
-    oldsize, oldfree = get_agg_size( target )
-    if  oldsize < 0 or oldfree < 0:
+    oldsize, oldfree = get_agg_size(target)
+    oldsize = int(oldsize)
+    oldfree = int(oldfree)
+    if oldsize < 0 or oldfree < 0:
         module.fail_json(
             msg="Resize: initial size check failed on '" + target + "'.",
             stderr=str(res_args)
         )
     else:
         res_args.update(
-            dict (
+            dict(
                 cmd="get init size",
                 oldsize=oldsize,
                 oldfree=oldfree,
             )
         )
 
-
+    newsize = -1
+    newfree = -1
     cmdstr = "zfsadm "
 
     if oldsize > size:
         cmdstr = cmdstr + " shrink "
-        diff = oldsize - size
-        oldfreeexpanded = oldfree * 8
-        if diff < oldfreeexpanded:
-            cmdstr = None
-            module.fail_json(
-                msg="Resize: Data set does not have enough free space: " + str(size) + "K versus " + str(oldfreeexpanded) + "K.",
-                stderr=str(res_args)
-            )
     elif oldsize < size:
         cmdstr = cmdstr + " grow "
     else:
         cmdstr = None
-        module.fail_json(
-            msg="Resize: data set is already requested size: " + str(size) + "K.",
-            stderr=str(res_args)
-        )
+        changed = False
+        rc = 0
+        msg = "Resize: data set is already requested size: " + str(size) + "K."
+        stdout = msg
+        newsize = oldsize
+        newfree = oldfree
 
     if cmdstr is not None:
         cmdstr += "-aggregate " + target + " -size " + str(size)
         rc, stdout, stderr = module.run_command(cmdstr)
         res_args.update(
-            dict (
+            dict(
                 cmd=cmdstr,
                 rc=rc,
                 stdout=stdout,
@@ -232,25 +228,23 @@ def run_module(module, arg_def):
 
         if rc != 0:
             module.fail_json(
-                msg="Resize: resize command returned non-zero code: rc=" + str(rc) + ".",
+                msg="Resize: resize command returned non-zero code: rc=" +
+                str(rc) + ".",
                 stderr=str(res_args)
             )
         else:
-            changed=True
-            newsize, newfree = get_agg_size( target )
+            changed = True
+            newsize, newfree = get_agg_size(target)
             # This may error out, as shrinking is a 'long running command'... so take whatever is returned
-            res_args.update(
-                dict (
-                    changed=changed,
-                    newsize=newsize,
-                    newfree=newfree,
-                )
-            )
-    else:
-        module.fail_json(
-            msg="Resize: could not determine action to take on: '" + target + "'.",
-            stderr=str(res_args)
+
+    res_args.update(
+        dict(
+            changed=changed,
+            newsize=newsize,
+            newfree=newfree,
+            stdout=stdout,
         )
+    )
 
     return res_args
 

@@ -40,6 +40,7 @@ def test_resize_bad_aggname(ansible_zos_module):
     for result in results.contacted.values():
         assert result.get("changed") is False
 
+
 def test_resize_missing_aggname(ansible_zos_module):
     # Try to resize an aggregate that does not exist
     hosts = ansible_zos_module
@@ -52,11 +53,14 @@ def test_resize_missing_aggname(ansible_zos_module):
     for result in results.contacted.values():
         assert result.get("changed") is False
 
+
 def test_resize_actual_shrink(ansible_zos_module):
     hosts = ansible_zos_module
-    defstr = "zfsadm define -aggregate {0} -volumes {1} -kilobytes 100 1".format(DEFAULT_RESIZE_DSNAME, DEFAULT_VOLUME)
+    defstr = "zfsadm define -aggregate {0} -volumes {1} -kilobytes 500 1".format(
+        DEFAULT_RESIZE_DSNAME, DEFAULT_VOLUME)
     formstr = "zfsadm format -aggregate {0}".format(DEFAULT_RESIZE_DSNAME)
-    mountstr = "/usr/sbin/mount -t zfs -f {0} {1}".format(DEFAULT_RESIZE_DSNAME, TEMP_RESIZE_PATH)
+    mountstr = "/usr/sbin/mount -t zfs -f {0} {1}".format(
+        DEFAULT_RESIZE_DSNAME, TEMP_RESIZE_PATH)
 
     hosts.all.command(defstr)
     hosts.all.command(formstr)
@@ -67,7 +71,7 @@ def test_resize_actual_shrink(ansible_zos_module):
     # Testing shrink so we don't have to deal with out-of-space scenarios, leading to false-positive failure
     results = hosts.all.zos_resize(
         target=DEFAULT_RESIZE_DSNAME,
-        size=50,
+        size=400,
     )
 
     hosts.all.zos_data_set(name=DEFAULT_RESIZE_DSNAME, state="absent")
@@ -75,5 +79,3 @@ def test_resize_actual_shrink(ansible_zos_module):
 
     for result in results.contacted.values():
         assert result.get("changed") is True
-
-

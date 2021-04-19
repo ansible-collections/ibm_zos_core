@@ -103,7 +103,7 @@ dds
     data_set_name
       The data set name.
 
-      | **required**: False
+      | **required**: True
       | **type**: str
 
 
@@ -822,7 +822,7 @@ dds
       dd_data_set
         Specify a data set.
 
-        *dd_data_set* can reference an existing data set or be used to define a new data set to be created during execution.
+        *dd_data_set* can reference an existing data set. The data set referenced with ``data_set_name`` must be allocated before the module :ref:`zos_mvs_raw <zos_mvs_raw_module>` is run, you can use :ref:`zos_data_set <zos_data_set_module>` to allocate a data set.
 
         | **required**: False
         | **type**: dict
@@ -831,7 +831,7 @@ dds
         data_set_name
           The data set name.
 
-          | **required**: False
+          | **required**: True
           | **type**: str
 
 
@@ -1706,6 +1706,12 @@ Notes
 
 
 
+See Also
+--------
+
+.. seealso::
+
+   - :ref:`zos_data_set_module`
 
 
 

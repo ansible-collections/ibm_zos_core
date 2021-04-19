@@ -13,6 +13,7 @@ What's New
 ----------
 
 * Modules
+
   * ``zos_apf`` - Add or remove libraries to and from Authorized Program Facility (APF).
   * ``zos_backup_restore`` - Backup and restore data sets and volumes.
   * ``zos_blockinfile`` - Manage block of multi-line textual data on z/OS.

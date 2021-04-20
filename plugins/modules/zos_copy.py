@@ -76,13 +76,22 @@ options:
       - Remote absolute path or data set where the file should be copied to.
       - Destination can be a USS path or an MVS data set name.
       - If C(dest) is a nonexistent USS file, it will be created.
-      - If C(dest) is a nonexistent data set, it will be allocated.
+      - If C(dest) is a nonexistent data set, storage management rules will be
+        used to determine the volume where C(dest) will be allocated.
       - If C(src) and C(dest) are files and if the parent directory of C(dest)
         does not exist, then the task will fail.
       - When the C(dest) is an existing VSAM(KSDS) or VSAM(ESDS), then source
-        can be ESDS, KSDS or RRDS.
+        can be ESDS, KSDS or RRDS. The C(dest) will be deleted and storage
+        management rules will be used to determine the volume where C(dest) will
+        be allocated.
       - When the C(dest) is an existing VSAM(RRDS), then the source must be RRDS.
-      - When C(dest) is and existing VSAM(LDS), then source must be LDS.
+        The C(dest) will be deleted and storage management rules will be used to
+        determine the volume where C(dest) will be allocated.
+      - When C(dest) is and existing VSAM(LDS), then source must be LDS. The
+        C(dest) will be deleted and storage management rules will be used to
+        determine the volume where C(dest) will be allocated.
+      - When C(dest) is a data set, you can override storage management rules
+        by specifying both C(volume) and C(model_ds).
     type: str
     required: true
   encoding:
@@ -164,7 +173,8 @@ options:
         specify a model data set to allocate the destination after.
       - If this parameter is not provided, the destination data set will be
         allocated based on the size of the local file/directory.
-      - Only valid if C(src) is a local file or directory and C(dest) does not exist.
+      - Only valid if C(src) is a local file or directory and C(dest) does not
+        exist.
     type: str
     required: False
   remote_src:
@@ -191,10 +201,12 @@ options:
       - If C(src) is a local path or a USS path, it can be absolute or relative.
       - If C(src) is a directory, destination must be a partitioned data set or
         a USS directory.
-      - If C(src) is a file and dest ends with "/" or destination is a directory, the
-        file is copied to the directory with the same filename as src.
+      - If C(src) is a file and dest ends with "/" or destination is a
+        directory, the file is copied to the directory with the same filename as
+        src.
       - If C(src) is a VSAM data set, destination must also be a VSAM.
-      - Wildcards can be used to copy multiple PDS/PDSE members to another PDS/PDSE.
+      - Wildcards can be used to copy multiple PDS/PDSE members to another
+        PDS/PDSE.
       - Required unless using C(content).
     type: str
   validate:
@@ -209,10 +221,17 @@ options:
     description:
       - If C(dest) does not exist, specify which volume C(dest) should be
         allocated to.
+      - C(volume) must be used with C(model_ds), otherwise the C(volume) value
+        is ignored.
       - Only valid when the destination is an MVS data set.
       - The volume must already be present on the device.
-      - If no volume is specified, an appropriate volume will be chosen to
-        allocate C(dest).
+      - If no volume is specified, storage management rules will be used to
+        determine the volume where C(dest) will be allocated.
+      - If the storage administrator has specified a system default unit name
+        and you do not set a C(volume) name for non-system-managed data sets,
+        then the system uses the volumes associated with the default unit name.
+        Check with your storage administrator to determine whether a default
+        unit name has been specified.
     type: str
     required: false
 notes:
@@ -230,6 +249,10 @@ notes:
     - VSAM data sets can only be copied to other VSAM data sets.
     - For supported character sets used to encode data, refer to
       U(https://ansible-collections.github.io/ibm_zos_core/supplementary.html#encode)
+    - M(zos_copy) uses SFTP (Secure File Transfer Protocol) for the underlying
+      transfer protocol; Co:Z SFTP is not supported. In the case of Co:z SFTP,
+      you can exempt the Ansible userid on ZOS from using Co:Z thus falling back
+      to using standard SFTP.
 seealso:
 - module: zos_fetch
 - module: zos_data_set
@@ -1615,7 +1638,7 @@ def run_module(module, arg_def):
         if backup or backup_name:
             if dest_ds_type in MVS_PARTITIONED and data_set.is_empty(dest_name):
                 # The partitioned data set is empty
-                res_args["note"] = "Destination is emtpy, backup request ignored"
+                res_args["note"] = "Destination is empty, backup request ignored"
             else:
                 backup_name = backup_data(dest, dest_ds_type, backup_name)
     # ********************************************************************

@@ -38,9 +38,9 @@ EXAMPLES = r"""
 - name: Ping the z/OS host and perform resource checks
   zos_ping:
   register: result
-'''
+"""
 
-RETURN = '''
+RETURN = r"""
 ping:
   description: Should contain the value "pong" on success.
   returned: always

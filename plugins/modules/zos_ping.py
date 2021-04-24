@@ -47,8 +47,7 @@ ping:
   type: str
   sample: pong
 warnings:
-  description: List of warnings returned from stderr when performing resource
-  checks.
+  description: List of warnings returned from stderr when performing resource checks.
   returned: failure
   type: list
   elements: str

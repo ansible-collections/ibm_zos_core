@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-DOCUMENTATION = '''
+DOCUMENTATION = r"""
 ---
 module: zos_ping
 version_added: 2.9
@@ -32,9 +32,9 @@ author:
   - "Vijay Katoch (@vijayka)"
   - "Blake Becker (@blakeinate)"
 options: {}
-'''
+"""
 
-EXAMPLES = '''
+EXAMPLES = r"""
 - name: Ping the z/OS host and perform resource checks
   zos_ping:
   register: result
@@ -52,4 +52,4 @@ warnings:
   returned: failure
   type: list
   elements: str
-'''
+"""

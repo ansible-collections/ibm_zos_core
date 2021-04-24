@@ -142,7 +142,8 @@ then
     # Check that $PROJECT_DOC_SOURCE_PATH/index.rst contains roles in the toctree
     echo "Found $PROJECT_DOC_SOURCE_PATH/index.rst, checking if it has a role entry.";
 
-    ROLES_TOC=`grep -oPz '(?s):caption:\s+Ansible Content.*?\sroles\s' $PROJECT_DOC_SOURCE_PATH/index.rst`
+    ROLES_TOC=`cat $PROJECT_DOC_SOURCE_PATH/index.rst |grep -w "roles"`
+    # ROLES_TOC=`grep -oPz '(?s):caption:\s+Ansible Content.*?\sroles\s' $PROJECT_DOC_SOURCE_PATH/index.rst`
     # echo ROLES_TOC $ROLES_TOC
 
     if [ "$ROLES_TOC" == "" ]; then

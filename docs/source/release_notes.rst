@@ -6,6 +6,54 @@
 Releases
 ========
 
+Version 1.3.1
+=============
+
+What's New
+----------
+
+* Bug Fixes
+
+  * Modules
+
+    * Connection plugin ``zos_ssh`` was updated to prioritize the execution of
+      modules written in REXX over other implementations such is the case for
+      ``zos_ping``.
+    * ``zos_ping`` was updated to support Automation Hub documentation
+      generation.
+
+Availability
+------------
+
+* `Automation Hub`_
+* `Galaxy`_
+* `GitHub`_
+
+Reference
+---------
+
+* Supported by `z/OS V2R3`_ or later
+* Supported by the `z/OS® shell`_
+* Supported by `IBM Open Enterprise SDK for Python`_ 3.8.2 or later
+* Supported by IBM `Z Open Automation Utilities 1.1.0`_ and
+  `Z Open Automation Utilities 1.1.1`_
+
+Known issues
+------------
+
+* Modules
+
+  * When executing programs using ``zos_mvs_raw``, you may encounter errors
+    that originate in the implementation of the programs. Two such known issues
+    are noted below of which one has been addressed with an APAR.
+
+    #. ``zos_mvs_raw`` module execution fails when invoking
+       Database Image Copy 2 Utility or Database Recovery Utility in conjunction
+       with FlashCopy or Fast Replication.
+    #. ``zos_mvs_raw`` module execution fails when invoking DFSRRC00 with parm
+       "UPB,PRECOMP", "UPB, POSTCOMP" or "UPB,PRECOMP,POSTCOMP". This issue is
+       addressed by APAR PH28089.
+
 Version 1.3.0
 =============
 
@@ -101,7 +149,6 @@ What's New
 Availability
 ------------
 
-* `Automation Hub`_
 * `Galaxy`_
 * `GitHub`_
 

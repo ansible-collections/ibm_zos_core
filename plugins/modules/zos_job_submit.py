@@ -13,21 +13,6 @@
 # limitations under the License.
 
 from __future__ import absolute_import, division, print_function
-from ansible.module_utils.six import PY3
-from stat import S_IEXEC, S_IREAD, S_IWRITE
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.encode import (
-    Defaults,
-)
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
-    BetterArgParser,
-)
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import job_output
-from timeit import default_timer as timer
-import re
-from tempfile import NamedTemporaryFile
-from os import chmod, path, remove, stat
-from time import sleep
-from ansible.module_utils.basic import AnsibleModule
 
 __metaclass__ = type
 
@@ -506,6 +491,22 @@ EXAMPLES = r"""
     wait_time_s: 30
 """
 
+from ansible.module_utils.six import PY3
+from stat import S_IEXEC, S_IREAD, S_IWRITE
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.encode import (
+    Defaults,
+)
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
+    BetterArgParser,
+)
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import job_output
+from timeit import default_timer as timer
+import re
+from tempfile import NamedTemporaryFile
+from os import chmod, path, remove, stat
+from time import sleep
+from ansible.module_utils.basic import AnsibleModule
+
 
 if PY3:
     from shlex import quote
@@ -566,8 +567,7 @@ SAY X
     if "Error" in stdout:
         raise SubmitJCLError("SUBMIT JOB FAILED: " + stdout)
     elif "" == stdout:
-        raise SubmitJCLError(
-            "SUBMIT JOB FAILED, NO JOB ID IS RETURNED : " + stdout)
+        raise SubmitJCLError("SUBMIT JOB FAILED, NO JOB ID IS RETURNED : " + stdout)
     jobId = stdout.replace("\n", "").strip()
     return jobId
 
@@ -580,8 +580,7 @@ def copy_rexx_and_run(script, src, vol, module):
     chmod(tmp_file.name, S_IEXEC | S_IREAD | S_IWRITE)
     pathName = path.dirname(tmp_file.name)
     scriptName = path.basename(tmp_file.name)
-    rc, stdout, stderr = module.run_command(
-        ["./" + scriptName, src, vol], cwd=pathName)
+    rc, stdout, stderr = module.run_command(["./" + scriptName, src, vol], cwd=pathName)
     return rc, stdout, stderr
 
 
@@ -664,8 +663,7 @@ def run_module():
             default="DATA_SET",
             choices=["DATA_SET", "USS", "LOCAL"],
         ),
-        from_encoding=dict(arg_type="encoding",
-                           default=Defaults.DEFAULT_ASCII_CHARSET),
+        from_encoding=dict(arg_type="encoding", default=Defaults.DEFAULT_ASCII_CHARSET),
         to_encoding=dict(
             arg_type="encoding", default=Defaults.DEFAULT_EBCDIC_USS_CHARSET
         ),
@@ -784,8 +782,7 @@ def run_module():
             if bool(jot_retcode):
                 job_msg = jot_retcode.get("msg")
                 if re.search(
-                    "^(?:{0})".format(
-                        "|".join(JOB_COMPLETION_MESSAGES)), job_msg
+                    "^(?:{0})".format("|".join(JOB_COMPLETION_MESSAGES)), job_msg
                 ):
                     loopdone = True
                     # if the message doesn't have a CC, it is an improper completion (error/abend)
@@ -801,7 +798,8 @@ def run_module():
                     "stdout": "Submit JCL operation succeeded but it is a long running job, exceeding the timeout of "
                     + str(wait_time_s)
                     + " seconds.  JobID is "
-                    + str(jobId) + ".  Consider using module zos_job_query to poll for long running jobs."
+                    + str(jobId)
+                    + ".  Consider using module zos_job_query to poll for long running jobs."
                 }
             else:
                 sleep(0.5)
@@ -829,7 +827,8 @@ def run_module():
             "stdout": "Submit JCL operation succeeded but it is a long running job, exceeding the timeout of "
             + str(wait_time_s)
             + " seconds.  JobID is "
-            + str(jobId) + ".  Consider using module zos_job_query to poll for long running jobs."
+            + str(jobId)
+            + ".  Consider using module zos_job_query to poll for long running jobs."
         }
     else:
         if foundissue is not None:
@@ -841,7 +840,10 @@ def run_module():
             module.fail_json(msg=result["message"], **result)
         else:
             result["message"] = {
-                "stdout": "Submit JCL operation succeeded with id of " + str(jobId) + "."}
+                "stdout": "Submit JCL operation succeeded with id of "
+                + str(jobId)
+                + "."
+            }
 
     module.exit_json(**result)
 
@@ -852,8 +854,7 @@ class Error(Exception):
 
 class SubmitJCLError(Error):
     def __init__(self, jobs):
-        self.msg = 'An error occurred during submission of jobs "{0}"'.format(
-            jobs)
+        self.msg = 'An error occurred during submission of jobs "{0}"'.format(jobs)
 
 
 def main():

@@ -13,6 +13,21 @@
 # limitations under the License.
 
 from __future__ import absolute_import, division, print_function
+from ansible.module_utils.six import PY3
+from stat import S_IEXEC, S_IREAD, S_IWRITE
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.encode import (
+    Defaults,
+)
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
+    BetterArgParser,
+)
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import job_output
+from timeit import default_timer as timer
+import re
+from tempfile import NamedTemporaryFile
+from os import chmod, path, remove, stat
+from time import sleep
+from ansible.module_utils.basic import AnsibleModule
 
 __metaclass__ = type
 
@@ -57,15 +72,16 @@ options:
     type: bool
     description:
       - Wait for the Job to finish and capture the output. Default is false.
-      - User can specify the wait time, see option ``wait_time_s``.
+      - When I(wait) is false or absent, the module will wait up to 10 seconds for the job to start,
+        but will not wait for the job to complete.
+      - If I(wait) is true, User can specify the wait time, see option ``wait_time_s``.
   wait_time_s:
     required: false
     default: 60
     type: int
     description:
-      - When wait is true, the module will wait for a maximum of 60 seconds by
-        default.
-      - User can set the wait time manually in this option.
+      - When I(wait) is true, the module will wait for the number of seconds for Job completion.
+      - User can set the wait time manually with this option.
   max_rc:
     required: false
     type: int
@@ -490,22 +506,6 @@ EXAMPLES = r"""
     wait_time_s: 30
 """
 
-from ansible.module_utils.basic import AnsibleModule
-from time import sleep
-from os import chmod, path, remove, stat
-from tempfile import NamedTemporaryFile
-import re
-from timeit import default_timer as timer
-
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import job_output
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
-    BetterArgParser,
-)
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.encode import (
-    Defaults,
-)
-from stat import S_IEXEC, S_IREAD, S_IWRITE
-from ansible.module_utils.six import PY3
 
 if PY3:
     from shlex import quote
@@ -566,7 +566,8 @@ SAY X
     if "Error" in stdout:
         raise SubmitJCLError("SUBMIT JOB FAILED: " + stdout)
     elif "" == stdout:
-        raise SubmitJCLError("SUBMIT JOB FAILED, NO JOB ID IS RETURNED : " + stdout)
+        raise SubmitJCLError(
+            "SUBMIT JOB FAILED, NO JOB ID IS RETURNED : " + stdout)
     jobId = stdout.replace("\n", "").strip()
     return jobId
 
@@ -579,7 +580,8 @@ def copy_rexx_and_run(script, src, vol, module):
     chmod(tmp_file.name, S_IEXEC | S_IREAD | S_IWRITE)
     pathName = path.dirname(tmp_file.name)
     scriptName = path.basename(tmp_file.name)
-    rc, stdout, stderr = module.run_command(["./" + scriptName, src, vol], cwd=pathName)
+    rc, stdout, stderr = module.run_command(
+        ["./" + scriptName, src, vol], cwd=pathName)
     return rc, stdout, stderr
 
 
@@ -662,7 +664,8 @@ def run_module():
             default="DATA_SET",
             choices=["DATA_SET", "USS", "LOCAL"],
         ),
-        from_encoding=dict(arg_type="encoding", default=Defaults.DEFAULT_ASCII_CHARSET),
+        from_encoding=dict(arg_type="encoding",
+                           default=Defaults.DEFAULT_ASCII_CHARSET),
         to_encoding=dict(
             arg_type="encoding", default=Defaults.DEFAULT_EBCDIC_USS_CHARSET
         ),
@@ -752,7 +755,7 @@ def run_module():
     if jobId is None or jobId == "":
         result["job_id"] = ""
         module.fail_json(
-            msg="JOB ID RETURNED IS None. PLEASE CHECK WHETHER THE JCL IS CORRECT.",
+            msg="JOB ID Returned is None. Please check whether the JCL is valid.",
             **result
         )
 
@@ -781,7 +784,8 @@ def run_module():
             if bool(jot_retcode):
                 job_msg = jot_retcode.get("msg")
                 if re.search(
-                    "^(?:{0})".format("|".join(JOB_COMPLETION_MESSAGES)), job_msg
+                    "^(?:{0})".format(
+                        "|".join(JOB_COMPLETION_MESSAGES)), job_msg
                 ):
                     loopdone = True
                     # if the message doesn't have a CC, it is an improper completion (error/abend)
@@ -794,9 +798,10 @@ def run_module():
             if duration >= wait_time_s:
                 loopdone = True
                 result["message"] = {
-                    "stdout": "Submit JCL operation succeeded but it is a long running job. Timeout is "
+                    "stdout": "Submit JCL operation succeeded but it is a long running job, exceeding the timeout of "
                     + str(wait_time_s)
-                    + " seconds."
+                    + " seconds.  JobID is "
+                    + str(jobId) + ".  Consider using module zos_job_query to poll for long running jobs."
                 }
             else:
                 sleep(0.5)
@@ -819,10 +824,12 @@ def run_module():
     result["changed"] = True
 
     if duration >= wait_time_s:
+        # This is a duplicate message, to handle the edge-case where the timeout was crossed after the check
         result["message"] = {
-            "stdout": "Submit JCL operation succeeded but it is a long running job. Timeout is "
+            "stdout": "Submit JCL operation succeeded but it is a long running job, exceeding the timeout of "
             + str(wait_time_s)
-            + " seconds."
+            + " seconds.  JobID is "
+            + str(jobId) + ".  Consider using module zos_job_query to poll for long running jobs."
         }
     else:
         if foundissue is not None:
@@ -833,7 +840,8 @@ def run_module():
             result["failed"] = True
             module.fail_json(msg=result["message"], **result)
         else:
-            result["message"] = {"stdout": "Submit JCL operation succeeded."}
+            result["message"] = {
+                "stdout": "Submit JCL operation succeeded with id of " + str(jobId) + "."}
 
     module.exit_json(**result)
 
@@ -844,7 +852,8 @@ class Error(Exception):
 
 class SubmitJCLError(Error):
     def __init__(self, jobs):
-        self.msg = 'An error occurred during submission of jobs "{0}"'.format(jobs)
+        self.msg = 'An error occurred during submission of jobs "{0}"'.format(
+            jobs)
 
 
 def main():

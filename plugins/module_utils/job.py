@@ -34,12 +34,9 @@ def job_output(job_id=None, owner=None, job_name=None, dd_name=None):
         job_name {str} -- The job name search for (default: {None})
         dd_name {str} -- The data definition to retrieve (default: {None})
 
-    Raises:
-        RuntimeError: When job output cannot be retrieved successfully but job exists.
-        >>>>> NONONONO RuntimeError: When no job output is found
-
     Returns:
         list[dict] -- The output information for a list of jobs matching specified criteria.
+        If no job status is found, this will return an empty job code with msg=Job not found
     """
     arg_defs = dict(
         job_id=dict(arg_type="qualifier_pattern"),
@@ -349,12 +346,10 @@ def job_status(job_id=None, owner=None, job_name=None):
         owner {str} -- The owner of the job (default: {None})
         job_name {str} -- The job name search for (default: {None})
 
-    Raises:
-        RuntimeError: When job status cannot be retrieved successfully but job exists.
-        NONONONO RuntimeError: When no job status is found.
-
     Returns:
         list[dict] -- The status information for a list of jobs matching search criteria.
+        If no job status is found, this will return an empty job code with msg=Job not found
+
     """
     arg_defs = dict(
         job_id=dict(arg_type="qualifier_pattern"),
@@ -528,6 +523,7 @@ def _ddname_pattern(contents, resolve_dependencies):
 
     Raises:
         ValueError: When contents is invalid argument type
+
     Returns:
         str -- The arguments contents after any necessary operations.
     """

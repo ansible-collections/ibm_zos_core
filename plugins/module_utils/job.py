@@ -169,9 +169,9 @@ def _parse_jobs(output_str):
                 job["ddnames"] = _parse_dds(job_str)
                 jobs.append(job)
     else:
-        job = _job_not_found(job_id, owner, job_name, "notused")
+        job = _job_not_found("", "", "", "notused")
         job["ret_code"]["msg"] = "No jobs found"
-        job["ret_code"]["msg_code"] = "No jobs found"
+        job["ret_code"]["msg_code"] = "00"
         job["ret_code"]["msg_txt"] = "No jobs returned from query"
         jobs.append(job)
 

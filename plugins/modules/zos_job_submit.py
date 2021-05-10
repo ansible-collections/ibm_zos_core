@@ -612,7 +612,7 @@ def query_jobs_status(module, jobId):
             )
     if not output and timeout == 0:
         raise SubmitJCLError(
-            "THE JOB CAN NOT BE QUERIED FROM JES (TIMEOUT=10s). PLEASE CHECK THE ZOS SYSTEM. IT IS SLOW TO RESPONSE."
+            "THE JOB CAN NOT BE QUERIED FROM JES (TIMEOUT=10s). PLEASE CHECK THE ZOS SYSTEM. IT IS SLOW TO RESPOND."
         )
     return output
 

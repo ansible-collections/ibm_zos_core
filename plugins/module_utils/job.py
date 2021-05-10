@@ -82,7 +82,7 @@ def _get_job_output(job_id="*", owner="*", job_name="*", dd_name=""):
     return jobs
 
 
-def _job_not_found(job_id, owner, job_name, dd_name):
+def _job_not_found(job_id, owner, job_name, dd_name, ovrr=None):
     jobs = []
 
     job = {}
@@ -111,6 +111,11 @@ def _job_not_found(job_id, owner, job_name, dd_name):
     dd["procstep"] = ""
     dd["byte_count"] = "0"
     job["ddnames"].append(dd)
+
+    if ovrr is not None:
+        job["ret_code"]["msg"] = "No jobs found"
+        job["ret_code"]["msg_code"] = "00"
+        job["ret_code"]["msg_txt"] = "No jobs returned from query"
 
     jobs.append(job)
 
@@ -169,11 +174,7 @@ def _parse_jobs(output_str):
                 job["ddnames"] = _parse_dds(job_str)
                 jobs.append(job)
     else:
-        job = _job_not_found("", "", "", "notused")
-        job["ret_code"]["msg"] = "No jobs found"
-        job["ret_code"]["msg_code"] = "00"
-        job["ret_code"]["msg_txt"] = "No jobs returned from query"
-        jobs.append(job)
+        jobs = _job_not_found("", "", "", "notused")
 
     return jobs
 

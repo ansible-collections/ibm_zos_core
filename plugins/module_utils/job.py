@@ -94,9 +94,9 @@ def _job_not_found(job_id, owner, job_name, dd_name):
     job["owner"] = owner
 
     job["ret_code"] = {}
-    job["ret_code"]["msg"] = "Job not found"
+    job["ret_code"]["msg"] = "Job Not Found"
     job["ret_code"]["code"] = None
-    job["ret_code"]["msg_code"] = "Job not found"
+    job["ret_code"]["msg_code"] = "00"
     job["ret_code"]["msg_txt"] = "The job could not be found"
 
     job["class"] = ""
@@ -107,7 +107,7 @@ def _job_not_found(job_id, owner, job_name, dd_name):
     dd["ddname"] = dd_name
     dd["record_count"] = "0"
     dd["id"] = ""
-    dd["stepname"] = "NOTFND"
+    dd["stepname"] = "NOTFOUND"
     dd["procstep"] = ""
     dd["byte_count"] = "0"
     job["ddnames"].append(dd)
@@ -168,6 +168,12 @@ def _parse_jobs(output_str):
 
                 job["ddnames"] = _parse_dds(job_str)
                 jobs.append(job)
+    else:
+        job = _job_not_found(job_id, owner, job_name, "notused")
+        job["ret_code"]["msg"] = "No jobs found"
+        job["ret_code"]["msg_code"] = "No jobs found"
+        job["ret_code"]["msg_txt"] = "No jobs returned from query"
+        jobs.append(job)
 
     return jobs
 

@@ -96,4 +96,4 @@ def test_zos_job_output_nonexistant(ansible_zos_module):
         print(result)
         assert result.get("changed") is False
         assert result.get("jobs") is not None
-        assert result.get("jobs")[0].get("subsystem") == "NOTFOUND"
+        assert result.get("jobs")[0].get("subsystem") == "NTFD"

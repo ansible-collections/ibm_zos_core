@@ -89,9 +89,9 @@ def _job_not_found(job_id, owner, job_name, dd_name, ovrr=None):
 
     job["job_id"] = job_id
     job["job_name"] = job_name
-    job["subsystem"] = "NOTFOUND"
-    job["system"] = "NOTFOUND"
-    job["owner"] = owner
+    job["subsystem"] = "NTFD"
+    job["system"] = "NTFD"
+    job["owner"] = "NONE"
 
     job["ret_code"] = {}
     job["ret_code"]["msg"] = "Job Not Found"
@@ -130,6 +130,7 @@ def _parse_jobs(output_str):
 
     Returns:
         list[dict]: A list of jobs and their attributes.
+        If no job status is found, this will return an empty job code with msg=Job not found
 
     Rais:
         Runtime error if output wasn't parseable

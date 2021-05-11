@@ -72,12 +72,13 @@ EXAMPLES = r"""
 RETURN = r"""
 changed:
   description:
-     True if the state was changed, otherwise False.
+    True if the state was changed, otherwise False.
   returned: always
   type: bool
 jobs:
   description:
-     The list of z/OS job(s) and status, or a single NOTFOUND record.
+    The output information for a list of jobs matching specified criteria.
+    If no job status is found, this will return an empty job code with msg=Job not found.
   returned: success
   type: list
   elements: dict

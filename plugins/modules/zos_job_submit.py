@@ -125,6 +125,7 @@ RETURN = r"""
 jobs:
   description:
      List of jobs output, or a single NOTFOUND record.
+     If no job status is found, this will return an empty job code with msg=Job not found.
   returned: success
   type: list
   elements: dict

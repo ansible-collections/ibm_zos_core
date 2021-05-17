@@ -107,7 +107,7 @@ def _job_not_found(job_id, owner, job_name, dd_name, ovrr=None):
     dd["ddname"] = dd_name
     dd["record_count"] = "0"
     dd["id"] = ""
-    dd["stepname"] = ""
+    dd["stepname"] = "NOTFOUND"
     dd["procstep"] = ""
     dd["byte_count"] = "0"
     job["ddnames"].append(dd)

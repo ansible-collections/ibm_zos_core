@@ -81,10 +81,13 @@ def test_zos_job_output_job_exists(ansible_zos_module):
         src="{0}/SAMPLE".format(TEMP_PATH), location="USS", wait=True, volume=None
     )
     hosts.all.file(path=TEMP_PATH, state="absent")
-    results = hosts.all.zos_job_output(job_name="HELLO")    # was SAMPLE?!
+    results = hosts.all.zos_job_output(job_name="HELLO")  # was SAMPLE?!
     for result in results.contacted.values():
         print(result)
         assert result.get("changed") is False
         assert result.get("jobs") is not None
         assert result.get("jobs")[0].get("ret_code").get("steps") is not None
-        assert result.get("jobs")[0].get("ret_code").get("steps")[0].get("stepid") == "STEP0001"
+        assert (
+            result.get("jobs")[0].get("ret_code").get("steps")[0].get("step_name")
+            == "STEP0001"
+        )

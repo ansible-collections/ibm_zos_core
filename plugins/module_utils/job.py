@@ -34,12 +34,9 @@ def job_output(job_id=None, owner=None, job_name=None, dd_name=None):
         job_name {str} -- The job name search for (default: {None})
         dd_name {str} -- The data definition to retrieve (default: {None})
 
-    Raises:
-        RuntimeError: When job output cannot be retrieved successfully but job exists.
-        RuntimeError: When no job output is found
-
     Returns:
         list[dict] -- The output information for a list of jobs matching specified criteria.
+        If no job status is found, this will return an empty job code with msg=Job not found
     """
     arg_defs = dict(
         job_id=dict(arg_type="qualifier_pattern"),
@@ -76,9 +73,52 @@ def _get_job_output(job_id="*", owner="*", job_name="*", dd_name=""):
                 str(rc), str(err)
             )
         )
-    if not out:
-        raise RuntimeError("Failed to retrieve job output. No job output found.")
-    jobs = _parse_jobs(out)
+    jobs = []
+    if out:
+        jobs = _parse_jobs(out)
+    if not jobs:
+        jobs = _job_not_found(job_id, owner, job_name, dd_name)
+
+    return jobs
+
+
+def _job_not_found(job_id, owner, job_name, dd_name, ovrr=None):
+    jobs = []
+
+    job = {}
+
+    job["job_id"] = job_id
+    job["job_name"] = job_name
+    job["subsystem"] = None
+    job["system"] = None
+    job["owner"] = None
+
+    job["ret_code"] = {}
+    job["ret_code"]["msg"] = "Job Not Found"
+    job["ret_code"]["code"] = None
+    job["ret_code"]["msg_code"] = "00"
+    job["ret_code"]["msg_txt"] = "The job could not be found"
+
+    job["class"] = ""
+    job["content_type"] = ""
+
+    job["ddnames"] = []
+    dd = {}
+    dd["ddname"] = dd_name
+    dd["record_count"] = "0"
+    dd["id"] = ""
+    dd["step_name"] = "NOTFOUND"
+    dd["procstep"] = ""
+    dd["byte_count"] = "0"
+    job["ddnames"].append(dd)
+
+    if ovrr is not None:
+        job["ret_code"]["msg"] = "No jobs found"
+        job["ret_code"]["msg_code"] = "00"
+        job["ret_code"]["msg_txt"] = "No jobs returned from query"
+
+    jobs.append(job)
+
     return jobs
 
 
@@ -90,6 +130,7 @@ def _parse_jobs(output_str):
 
     Returns:
         list[dict]: A list of jobs and their attributes.
+        If no job status is found, this will return an empty job code with msg=Job not found
 
     Raises:
         Runtime error if output wasn't parseable
@@ -133,6 +174,8 @@ def _parse_jobs(output_str):
 
                 job["ddnames"] = _parse_dds(job_str)
                 jobs.append(job)
+    else:
+        jobs = _job_not_found("", "", "", "notused")
 
     return jobs
 
@@ -198,7 +241,10 @@ def _parse_steps(job_str):
         if "STEP WAS EXECUTED" in dd_str:
             pile = re.findall(r"(.*?)\s-\sSTEP\sWAS\sEXECUTED\s-\s(.*?)\n", dd_str)
             for match in pile:
-                st = {"stepid": match[0].split()[-1], "stepcc": match[1].split()[-1]}
+                st = {
+                    "step_name": match[0].split()[-1],
+                    "step_cc": match[1].split()[-1],
+                }
                 stp.append(st)
 
     return stp
@@ -336,12 +382,10 @@ def job_status(job_id=None, owner=None, job_name=None):
         owner {str} -- The owner of the job (default: {None})
         job_name {str} -- The job name search for (default: {None})
 
-    Raises:
-        RuntimeError: When job status cannot be retrieved successfully but job exists.
-        RuntimeError: When no job status is found.
-
     Returns:
         list[dict] -- The status information for a list of jobs matching search criteria.
+        If no job status is found, this will return an empty job code with msg=Job not found
+
     """
     arg_defs = dict(
         job_id=dict(arg_type="qualifier_pattern"),
@@ -376,9 +420,12 @@ def _get_job_status(job_id="*", owner="*", job_name="*"):
                 str(rc), str(err)
             )
         )
-    if not out:
-        raise RuntimeError("Failed to retrieve job status. No job status found.")
-    jobs = _parse_jobs(out)
+
+    if out:
+        jobs = _parse_jobs(out)
+    if not jobs:
+        jobs = _job_not_found(job_id, owner, job_name, "notused")
+
     for job in jobs:
         job.pop("ddnames", None)
     return jobs
@@ -512,6 +559,7 @@ def _ddname_pattern(contents, resolve_dependencies):
 
     Raises:
         ValueError: When contents is invalid argument type
+
     Returns:
         str -- The arguments contents after any necessary operations.
     """

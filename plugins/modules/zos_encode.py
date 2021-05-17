@@ -302,7 +302,7 @@ def check_file(file):
     else:
         ds = file.upper()
         if "(" in ds:
-            dsn = ds[0: ds.rfind("(", 1)]
+            dsn = ds[0 : ds.rfind("(", 1)]
             mem = "".join(re.findall(r"[(](.*?)[)]", ds))
             rc, ds_type = check_mvs_dataset(dsn)
             if rc:
@@ -322,7 +322,11 @@ def verify_uss_path_exists(file):
     if not path.exists(file):
         mypath = "/" + file.split("/")[0] + "/*"
         ld = listdir(mypath)
-        raise EncodeError("File {0} does not exist. D: {1} from {2}".format(file, str(ld), mypath))
+        raise EncodeError(
+            "File {0} does not exist in directory {1}; files found {2}.".format(
+                file, mypath, str(ld)
+            )
+        )
     return
 
 

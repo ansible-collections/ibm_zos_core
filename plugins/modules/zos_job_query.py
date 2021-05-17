@@ -77,7 +77,7 @@ changed:
   type: bool
 jobs:
   description:
-     The list of z/OS job(s) and status.
+     The list of z/OS job(s) and status, or a single NOTFOUND record.
   returned: success
   type: list
   elements: dict
@@ -129,12 +129,12 @@ jobs:
           type: list
           elements: dict
           contains:
-            stepid:
+            step_name:
               description:
                 Name of the step shown as "was executed" in the DD section.
               type: str
               sample: "STEP0001"
-            stepcc:
+            step_cc:
               description:
                 Actual CC returned for this step in the DD section.
               type: str
@@ -147,8 +147,8 @@ jobs:
          "msg_txt": "",
          "code": 0,
          "steps": [
-            { "stepid": "STEP0001",
-              "stepcc": "0000"
+            { "step_name": "STEP0001",
+              "step_cc": "0000"
             }
           ]
         }
@@ -272,7 +272,7 @@ def parsing_jobs(jobs_raw):
         elif "ABENDU" in status_raw:
             # status = 'Ended abnormally'
             ret_code = {"msg": status_raw, "code": job.get("ret_code").get("code")}
-        elif "CANCELED" or "JCLERR" in status_raw:
+        elif "CANCELED" or "JCLERR" or "JCL ERROR" or "JOB NOT FOUND" in status_raw:
             # status = status_raw
             ret_code = {"msg": status_raw, "code": None}
         else:

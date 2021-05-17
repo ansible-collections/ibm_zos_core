@@ -97,4 +97,4 @@ def test_zos_job_output_nonexistant(ansible_zos_module):
         assert result.get("changed") is False
         assert result.get("jobs") is not None
         assert result.get("jobs")[0].get("ret_code") is not None
-        assert result.get("Jobs")[0].get("ret_code").get("msg") == "Job Not Found"
+        assert result.get("jobs")[0].get("ret_code").get("msg") == "Job Not Found"

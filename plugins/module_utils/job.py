@@ -89,9 +89,9 @@ def _job_not_found(job_id, owner, job_name, dd_name, ovrr=None):
 
     job["job_id"] = job_id
     job["job_name"] = job_name
-    job["subsystem"] = "NTFD"
-    job["system"] = "NTFD"
-    job["owner"] = "NONE"
+    job["subsystem"] = None
+    job["system"] = None
+    job["owner"] = None
 
     job["ret_code"] = {}
     job["ret_code"]["msg"] = "Job Not Found"
@@ -107,7 +107,7 @@ def _job_not_found(job_id, owner, job_name, dd_name, ovrr=None):
     dd["ddname"] = dd_name
     dd["record_count"] = "0"
     dd["id"] = ""
-    dd["stepname"] = "NOTFOUND"
+    dd["stepname"] = ""
     dd["procstep"] = ""
     dd["byte_count"] = "0"
     job["ddnames"].append(dd)

@@ -77,7 +77,8 @@ changed:
   type: bool
 jobs:
   description:
-     The list of z/OS job(s) and status, or a single NOTFOUND record.
+     The list of z/OS job(s) and status.
+     If no job status is found, this will return an empty job code with msg=JOB NOT FOUND.
   returned: success
   type: list
   elements: dict
@@ -109,8 +110,8 @@ jobs:
           sample: CC 0000
         msg_code:
           description:
-            Return code extracted from the `msg` so that it can better
-            evaluated. For example , ABEND(S0C4) would yield ""S0C4".
+            Return code extracted from the `msg` so that it can be evaluated.
+            For example, ABEND(S0C4) would yield "S0C4".
           type: str
           sample: S0C4
         msg_txt:

@@ -94,9 +94,9 @@ def _job_not_found(job_id, owner, job_name, dd_name, ovrr=None):
     job["owner"] = None
 
     job["ret_code"] = {}
-    job["ret_code"]["msg"] = "Job Not Found"
+    job["ret_code"]["msg"] = "JOB NOT FOUND"
     job["ret_code"]["code"] = None
-    job["ret_code"]["msg_code"] = "00"
+    job["ret_code"]["msg_code"] = "NOT FOUND"
     job["ret_code"]["msg_txt"] = "The job could not be found"
 
     job["class"] = ""
@@ -107,7 +107,7 @@ def _job_not_found(job_id, owner, job_name, dd_name, ovrr=None):
     dd["ddname"] = dd_name
     dd["record_count"] = "0"
     dd["id"] = ""
-    dd["step_name"] = "NOTFOUND"
+    dd["stepname"] = None
     dd["procstep"] = ""
     dd["byte_count"] = "0"
     job["ddnames"].append(dd)
@@ -130,7 +130,7 @@ def _parse_jobs(output_str):
 
     Returns:
         list[dict]: A list of jobs and their attributes.
-        If no job status is found, this will return an empty job code with msg=Job not found
+        If no job status is found, this will return an empty job code with msg=JOB NOT FOUND
 
     Raises:
         Runtime error if output wasn't parseable
@@ -166,6 +166,11 @@ def _parse_jobs(output_str):
                 job["ret_code"]["code"] = _get_return_code_num(ret_code_msg)
                 job["ret_code"]["msg_code"] = _get_return_code_str(ret_code_msg)
                 job["ret_code"]["msg_txt"] = ""
+                if "JCL ERROR" in ret_code_msg:
+                    job["ret_code"][
+                        "msg_txt"
+                    ] = "JCL Error detected.  Check the data dumps for more information."
+
                 if ret_code_msg == "":
                     job["ret_code"]["msg"] = "AC"
                 job["ret_code"]["steps"] = _parse_steps(job_str)
@@ -384,7 +389,7 @@ def job_status(job_id=None, owner=None, job_name=None):
 
     Returns:
         list[dict] -- The status information for a list of jobs matching search criteria.
-        If no job status is found, this will return an empty job code with msg=Job not found
+        If no job status is found, this will return an empty job code with msg=JOB NOT FOUND
 
     """
     arg_defs = dict(
@@ -524,6 +529,7 @@ def _get_return_code_num(rc_str):
     Returns:
         Union[int, NoneType] -- Returns integer RC if possible, if not returns NoneType
     """
+
     rc = None
     match = re.search(r"\s*CC\s*([0-9]+)", rc_str)
     if match:
@@ -542,7 +548,9 @@ def _get_return_code_str(rc_str):
         Union[str, NoneType] -- Returns string RC or ABEND code if possible, if not returns NoneType
     """
     rc = None
-    match = re.search(r"(?:\s*CC\s*([0-9]+))|(?:ABEND\s*((?:S|U)[0-9]+))", rc_str)
+    match = re.search(
+        r"(?:\s*CC\s*([0-9]+))|(?:ABEND\s*((?:S|U)[0-9]+)|(?:JCL ERROR))", rc_str
+    )
     if match:
         rc = match.group(1) or match.group(2)
     return rc

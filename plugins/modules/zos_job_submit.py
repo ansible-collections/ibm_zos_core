@@ -213,8 +213,8 @@ jobs:
           sample: CC 0000
         msg_code:
           description:
-            Return code extracted from the `msg` so that it can better
-            evaluated. For example, ABEND(S0C4) would yield ""S0C4".
+            Return code extracted from the `msg` so that it can be evaluated.
+            For example, ABEND(S0C4) would yield "S0C4".
           type: str
           sample: S0C4
         msg_txt:

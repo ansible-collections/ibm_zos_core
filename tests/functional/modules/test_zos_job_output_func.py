@@ -82,5 +82,19 @@ def test_zos_job_output_job_exists(ansible_zos_module):
     hosts.all.file(path=TEMP_PATH, state="absent")
     results = hosts.all.zos_job_output(job_name="SAMPLE")
     for result in results.contacted.values():
+        print(result)
         assert result.get("changed") is False
         assert result.get("jobs") is not None
+
+
+def test_zos_job_output_nonexistant(ansible_zos_module):
+    hosts = ansible_zos_module
+    # This is for jira 5950: It is unlikely to find a job called "notajob"
+    # This is to see if the 'notfound' entry is returned
+    results = hosts.all.zos_job_output(job_name="NOTAJOB")
+    for result in results.contacted.values():
+        print(result)
+        assert result.get("changed") is False
+        assert result.get("jobs") is not None
+        assert result.get("jobs")[0].get("ret_code") is not None
+        assert result.get("jobs")[0].get("ret_code").get("msg") == "JOB NOT FOUND"

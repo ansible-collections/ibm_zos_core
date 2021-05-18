@@ -74,12 +74,13 @@ EXAMPLES = r"""
 RETURN = r"""
 changed:
   description:
-     True if the state was changed, otherwise False.
+    True if the state was changed, otherwise False.
   returned: always
   type: bool
 jobs:
   description:
-     The list of z/OS job(s) and status.
+    The output information for a list of jobs matching specified criteria.
+    If no job status is found, this will return an empty job code with msg=JOB NOT FOUND.
   returned: success
   type: list
   elements: dict
@@ -237,7 +238,7 @@ def parsing_jobs(jobs_raw):
         elif "ABENDU" in status_raw:
             # status = 'Ended abnormally'
             ret_code = {"msg": status_raw, "code": job.get("ret_code").get("code")}
-        elif "CANCELED" or "JCLERR" in status_raw:
+        elif "CANCELED" or "JCLERR" or "JCL ERROR" or "JOB NOT FOUND" in status_raw:
             # status = status_raw
             ret_code = {"msg": status_raw, "code": None}
         else:

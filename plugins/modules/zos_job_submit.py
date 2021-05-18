@@ -126,6 +126,7 @@ RETURN = r"""
 jobs:
   description:
      List of jobs output.
+     If no job status is found, this will return an empty job code with msg=JOB NOT FOUND.
   returned: success
   type: list
   elements: dict
@@ -215,7 +216,7 @@ jobs:
         msg_code:
           description:
             Return code extracted from the `msg` so that it can better
-            evaluated. For example, ABEND(S0C4) would yield ""S0C4".
+            evaluated. For example, ABEND(S0C4) would yield "S0C4".
           type: str
           sample: S0C4
         msg_txt:
@@ -231,7 +232,7 @@ jobs:
           sample: 00
       sample:
          - "code": 0
-         -  "msg": "CC 0000"
+         - "msg": "CC 0000"
          - "msg_code": "0000"
          - "msg_txt": ""
   sample:
@@ -526,14 +527,14 @@ def submit_pds_jcl(src, module):
         'submit -j "//{0}"'.format(quote(src)), use_unsafe_shell=True
     )
     if rc != 0:
-        raise SubmitJCLError("SUBMIT JOB FAILED:  Stderr :" + stderr)
+        raise SubmitJCLError("Submit job failed:  Stderr :" + stderr)
     if "Error" in stderr or "Not accepted by JES" in stderr:
-        raise SubmitJCLError("SUBMIT JOB FAILED: " + stderr)
+        raise SubmitJCLError("Submit job failed: " + stderr)
     if stdout != "":
         jobId = stdout.replace("\n", "").strip()
     else:
         raise SubmitJCLError(
-            "SUBMIT JOB FAILED: NO JOB ID IS RETURNED. PLEASE CHECK THE JCL."
+            "Submit job failed: no job ID was returned.  Please check the JCL."
         )
     return jobId
 
@@ -542,14 +543,14 @@ def submit_uss_jcl(src, module):
     """ Submit uss jcl. Use uss command submit -j jclfile. """
     rc, stdout, stderr = module.run_command(["submit", "-j", src])
     if rc != 0:
-        raise SubmitJCLError("SUBMIT JOB FAILED:  Stderr :" + stderr)
+        raise SubmitJCLError("Submit job failed:  Stderr :" + stderr)
     if "Error" in stderr or "Not accepted by JES" in stderr:
-        raise SubmitJCLError("SUBMIT JOB FAILED: " + stderr)
+        raise SubmitJCLError("Submit job failed: " + stderr)
     if stdout != "":
         jobId = stdout.replace("\n", "").strip()
     else:
         raise SubmitJCLError(
-            "SUBMIT JOB FAILED: NO JOB ID IS RETURNED. PLEASE CHECK THE JCL."
+            "Submit job failed: no job ID was returned.  Please check the JCL."
         )
     return jobId
 
@@ -565,9 +566,9 @@ SAY X
 """
     rc, stdout, stderr = copy_rexx_and_run(script, src, vol, module)
     if "Error" in stdout:
-        raise SubmitJCLError("SUBMIT JOB FAILED: " + stdout)
+        raise SubmitJCLError("Submit job failed: " + stdout)
     elif "" == stdout:
-        raise SubmitJCLError("SUBMIT JOB FAILED, NO JOB ID IS RETURNED : " + stdout)
+        raise SubmitJCLError("Submit job failed, no job ID was returned : " + stdout)
     jobId = stdout.replace("\n", "").strip()
     return jobId
 
@@ -612,11 +613,11 @@ def query_jobs_status(module, jobId):
             pass
         except Exception as e:
             raise SubmitJCLError(
-                "{0} {1} {2}".format(repr(e), "The output is: ", output or " ")
+                "{0} The output is: '{1}'".format(repr(e), output or " ")
             )
     if not output and timeout == 0:
         raise SubmitJCLError(
-            "THE JOB CAN NOT BE QUERIED FROM JES (TIMEOUT=10s). PLEASE CHECK THE ZOS SYSTEM. IT IS SLOW TO RESPOND."
+            "The job can not be queried from JES (Timeout=10s). Please check the zOS system.  It is slow to respond."
         )
     return output
 

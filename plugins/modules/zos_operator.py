@@ -27,7 +27,9 @@ author: "Ping Xiao (@xiaopingBJ)"
 options:
   cmd:
     description:
-      - The command to execute.
+      - The command to execute.  This command will be wrapped in quotations to run.
+      - If the command contains single-quotations, another set of single quotes must be added.
+      - For example, Change the command "...,P='DSN3EPX,-DBC1,S'" to "...,P=''DSN3EPX,-DBC1,S'' ".
     type: str
     required: true
   verbose:
@@ -45,7 +47,7 @@ options:
     description:
       - Set maximum time in seconds to wait for the commands to execute.
       - When set to 0, the system default is used.
-      - This option is helpful on a busy system needing more time to execute
+      - This option is helpful on a busy system requiring more time to execute
         commands.
       - Setting I(wait) can instruct if execution should wait the
         full I(wait_time_s).
@@ -56,7 +58,7 @@ options:
     description:
       - Specify to wait the full I(wait_time_s) interval before retrieving
         responses.
-      - This option is recommended to ensure the responses are accessible and
+      - This option is recommended to ensure that the responses are accessible and
         captured by logging facilities and the I(verbose) option.
       - I(delay=True) waits the full I(wait_time_s) interval.
       - I(delay=False) returns as soon as the first command executes.
@@ -79,7 +81,7 @@ EXAMPLES = r"""
   zos_operator:
     cmd: "\\$PJ(*)"
 
-- name: Execute operator command to show jobs, waiting UP TO 5 seconds for response
+- name: Execute operator command to show jobs, waiting up to 5 seconds for response
   zos_operator:
     cmd: 'd u,all'
     wait_time_s: 5

@@ -1,13 +1,11 @@
 {# ------------------------------------------------------------------------ #}
-{# © Copyright IBM Corporation 2020                                         #}
+{# © Copyright IBM Corporation 2020, 2021                                   #}
 {# ------------------------------------------------------------------------ #}
 
-:github_url: https://github.com/ansible-collections/ibm_zos_core/blob/dev/plugins/modules/{{ module }}.py
-
-.. _{{ module }}_module:
+.. _{{ module }}_role:
 
 {# ------------------------------------------------------------------------ #}
-{# Generate the title based on the module name and doc description          #}
+{# Generate the title based on the role name and doc description            #}
 {# ------------------------------------------------------------------------ #}
 
 {% set title = module + ' -- ' + short_description | rst_ify %}
@@ -47,9 +45,9 @@ Synopsis
 {# Generate the dependencies based on the doc description                   #}
 {# ------------------------------------------------------------------------ #}
 
+{% if dependencies -%}
 Dependencies
 ------------
-{% if dependencies -%}
 
 The below requirements are needed on the host that executes this role.
 
@@ -61,11 +59,13 @@ The below requirements are needed on the host that executes this role.
 
 
 {# ------------------------------------------------------------------------ #}
-{# Parse variables and format function                                        #}
+{# Parse options and format function                                        #}
 {# ------------------------------------------------------------------------ #}
 
 {% macro option_generation(opts, level) %}
-{%   for name, spec in opts | dictsort recursive %}
+{# Control the order of options: true: ordered by name; false: keep source order #}
+{%   set sorted = false %}
+{%   for name, spec in (opts | dictsort if sorted else opts.items()) if not name.startswith('_') %}
 {%     set req = "required" if spec.required else "optional" %}
 
 {# if its a boolean we need to convert to a string for html #}
@@ -99,14 +99,14 @@ The below requirements are needed on the host that executes this role.
 {% endmacro %}
 
 {# ------------------------------------------------------------- #}
-{# Generate the variabls doc                                      #}
+{# Generate the options doc                                      #}
 {# ------------------------------------------------------------- #}
 
-{% if variables -%}
-Variables
----------
+{% if options -%}
+Parameters
+----------
 
-{{ option_generation(variables, 0) }}
+{{ option_generation(options, 0) }}
 {% endif %}
 
 {# ------------------------------------------------------------- #}
@@ -137,7 +137,7 @@ Notes
 {% endif %}
 
 {# ------------------------------------------------------------- #}
-{# Generate the set also doc                                     #}
+{# Generate the see also doc                                     #}
 {# ------------------------------------------------------------- #}
 
 {% if seealso -%}

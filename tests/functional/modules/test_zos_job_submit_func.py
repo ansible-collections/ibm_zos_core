@@ -49,6 +49,18 @@ HELLO, WORLD
 //SYSUT2   DD SYSOUT=*
 //
 """
+JCL_FILE_CONTENTS_BAD = """//HELLO    JOB (T043JM,JM00,1,0,0,0),'HELLO WORLD - JRM',CLASS=R,
+//             MSGCLASS=X,MSGLEVEL=1,NOTIFY=S0JM
+//STEP0001 EXEC PGM=IEBGENER
+//SYSIN    DD DUMMY
+//SYSPRINT DD SYSOUT=*!!
+//SYSUT1   DD *
+HELLO, WORLD
+/*
+//SYSUT2   DD SYSOUT=*
+//
+"""
+
 
 TEMP_PATH = "/tmp/ansible/jcl"
 DATA_SET_NAME = "imstestl.ims1.test05"
@@ -127,7 +139,6 @@ def test_job_submit_LOCAL(ansible_zos_module):
     results = hosts.all.zos_job_submit(src=tmp_file.name, location="LOCAL", wait=True)
 
     for result in results.contacted.values():
-        print(result)
         assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
         assert result.get("jobs")[0].get("ret_code").get("code") == 0
 
@@ -142,11 +153,22 @@ def test_job_submit_LOCAL_extraR(ansible_zos_module):
     results = hosts.all.zos_job_submit(src=tmp_file.name, location="LOCAL", wait=True)
 
     for result in results.contacted.values():
-        print(result)
         assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
         assert result.get("jobs")[0].get("ret_code").get("code") == 0
 
         assert result.get("changed") is True
+
+
+def test_job_submit_LOCAL_BADJCL(ansible_zos_module):
+    tmp_file = tempfile.NamedTemporaryFile(delete=True)
+    with open(tmp_file.name, "w") as f:
+        f.write(JCL_FILE_CONTENTS_BAD)
+    hosts = ansible_zos_module
+    results = hosts.all.zos_job_submit(src=tmp_file.name, location="LOCAL", wait=True)
+
+    for result in results.contacted.values():
+
+        assert result.get("changed") is False
 
 
 # * currently don't have volume support from ZOAU python API, so this will not be reproduceable

@@ -75,15 +75,17 @@ dest
 
   If ``dest`` is a nonexistent USS file, it will be created.
 
-  If ``dest`` is a nonexistent data set, it will be allocated.
+  If ``dest`` is a nonexistent data set, storage management rules will be used to determine the volume where ``dest`` will be allocated.
 
   If ``src`` and ``dest`` are files and if the parent directory of ``dest`` does not exist, then the task will fail.
 
-  When the ``dest`` is an existing VSA:ref:`KSDS <KSDS_module>` or VSA:ref:`ESDS <ESDS_module>`, then source can be ESDS, KSDS or RRDS.
+  When the ``dest`` is an existing VSA:ref:`KSDS <KSDS_module>` or VSA:ref:`ESDS <ESDS_module>`, then source can be ESDS, KSDS or RRDS. The ``dest`` will be deleted and storage management rules will be used to determine the volume where ``dest`` will be allocated.
 
-  When the ``dest`` is an existing VSA:ref:`RRDS <RRDS_module>`, then the source must be RRDS.
+  When the ``dest`` is an existing VSA:ref:`RRDS <RRDS_module>`, then the source must be RRDS. The ``dest`` will be deleted and storage management rules will be used to determine the volume where ``dest`` will be allocated.
 
-  When ``dest`` is and existing VSA:ref:`LDS <LDS_module>`, then source must be LDS.
+  When ``dest`` is and existing VSA:ref:`LDS <LDS_module>`, then source must be LDS. The ``dest`` will be deleted and storage management rules will be used to determine the volume where ``dest`` will be allocated.
+
+  When ``dest`` is a data set, you can override storage management rules by specifying both ``volume`` and ``model_ds``.
 
   | **required**: True
   | **type**: str
@@ -229,11 +231,15 @@ validate
 volume
   If ``dest`` does not exist, specify which volume ``dest`` should be allocated to.
 
+  ``volume`` must be used with ``model_ds``, otherwise the ``volume`` value is ignored.
+
   Only valid when the destination is an MVS data set.
 
   The volume must already be present on the device.
 
-  If no volume is specified, an appropriate volume will be chosen to allocate ``dest``.
+  If no volume is specified, storage management rules will be used to determine the volume where ``dest`` will be allocated.
+
+  If the storage administrator has specified a system default unit name and you do not set a ``volume`` name for non-system-managed data sets, then the system uses the volumes associated with the default unit name. Check with your storage administrator to determine whether a default unit name has been specified.
 
   | **required**: False
   | **type**: str
@@ -409,6 +415,8 @@ Notes
    VSAM data sets can only be copied to other VSAM data sets.
 
    For supported character sets used to encode data, refer to https://ansible-collections.github.io/ibm_zos_core/supplementary.html#encode
+
+   :ref:`zos_copy <zos_copy_module>` uses SFTP (Secure File Transfer Protocol) for the underlying transfer protocol; Co:Z SFTP is not supported. In the case of Co:z SFTP, you can exempt the Ansible userid on ZOS from using Co:Z thus falling back to using standard SFTP.
 
 
 

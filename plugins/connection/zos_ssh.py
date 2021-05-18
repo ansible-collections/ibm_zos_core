@@ -477,6 +477,7 @@ class Connection(ConnectionBase):
 
     transport = "ssh"
     has_pipelining = True
+    module_implementation_preferences = ('.rexx', '.py', '')
 
     def __init__(self, *args, **kwargs):
         super(Connection, self).__init__(*args, **kwargs)

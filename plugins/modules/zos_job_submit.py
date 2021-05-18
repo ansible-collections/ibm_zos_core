@@ -124,8 +124,8 @@ notes:
 RETURN = r"""
 jobs:
   description:
-     List of jobs output, or a single NOTFOUND record.
-     If no job status is found, this will return an empty job code with msg=Job not found.
+     List of jobs output.
+     If no job status is found, this will return an empty job code with msg=JOB NOT FOUND.
   returned: success
   type: list
   elements: dict
@@ -215,7 +215,7 @@ jobs:
         msg_code:
           description:
             Return code extracted from the `msg` so that it can better
-            evaluated. For example, ABEND(S0C4) would yield ""S0C4".
+            evaluated. For example, ABEND(S0C4) would yield "S0C4".
           type: str
           sample: S0C4
         msg_txt:
@@ -609,11 +609,11 @@ def query_jobs_status(module, jobId):
             pass
         except Exception as e:
             raise SubmitJCLError(
-                "{0} {1} {2}".format(repr(e), "The output is: ", output or " ")
+                "{0} The output is: '{1}'".format(repr(e), output or " ")
             )
     if not output and timeout == 0:
         raise SubmitJCLError(
-            "THE JOB CAN NOT BE QUERIED FROM JES (TIMEOUT=10s). PLEASE CHECK THE ZOS SYSTEM. IT IS SLOW TO RESPOND."
+            "The job can not be queried from JES (Timeout=10s). Please check the zOS system.  It is slow to respond."
         )
     return output
 

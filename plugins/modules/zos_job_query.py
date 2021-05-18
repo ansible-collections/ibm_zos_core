@@ -78,7 +78,7 @@ changed:
 jobs:
   description:
     The output information for a list of jobs matching specified criteria.
-    If no job status is found, this will return an empty job code with msg=Job not found.
+    If no job status is found, this will return an empty job code with msg=JOB NOT FOUND.
   returned: success
   type: list
   elements: dict

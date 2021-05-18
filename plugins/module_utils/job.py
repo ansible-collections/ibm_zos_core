@@ -36,7 +36,7 @@ def job_output(job_id=None, owner=None, job_name=None, dd_name=None):
 
     Returns:
         list[dict] -- The output information for a list of jobs matching specified criteria.
-        If no job status is found, this will return an empty job code with msg=Job not found
+        If no job status is found, this will return an empty job code with msg=JOB NOT FOUND
     """
     arg_defs = dict(
         job_id=dict(arg_type="qualifier_pattern"),
@@ -113,8 +113,8 @@ def _job_not_found(job_id, owner, job_name, dd_name, ovrr=None):
     job["ddnames"].append(dd)
 
     if ovrr is not None:
-        job["ret_code"]["msg"] = "No jobs found"
-        job["ret_code"]["msg_code"] = "00"
+        job["ret_code"]["msg"] = "NO JOBS FOUND"
+        job["ret_code"]["msg_code"] = "NOT FOUND"
         job["ret_code"]["msg_txt"] = "No jobs returned from query"
 
     jobs.append(job)

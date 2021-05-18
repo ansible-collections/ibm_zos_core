@@ -44,7 +44,9 @@ options:
   job_id:
     description:
       - The job number that has been assigned to the job. These normally begin
-        with STC, JOB, TSU and are followed by 5 digits.
+        with STC, JOB, TSU and are followed by 5 digits. When job are
+        potentially greather than 99,999, the job number format will begin with
+        S, J, T and are followed by 7 digits.
     type: str
     required: False
 """
@@ -72,13 +74,13 @@ EXAMPLES = r"""
 RETURN = r"""
 changed:
   description:
-     True if the state was changed, otherwise False.
+    True if the state was changed, otherwise False.
   returned: always
   type: bool
 jobs:
   description:
-     The list of z/OS job(s) and status.
-     If no job status is found, this will return an empty job code with msg=JOB NOT FOUND.
+    The output information for a list of jobs matching specified criteria.
+    If no job status is found, this will return an empty job code with msg=JOB NOT FOUND.
   returned: success
   type: list
   elements: dict
@@ -225,7 +227,7 @@ def validate_arguments(params):
             else:
                 raise RuntimeError("Failed to validate the job name: " + job_name_in)
         if job_id:
-            job_id_pattern = re.compile("(JOB|TSU|STC)[0-9]{5}$")
+            job_id_pattern = re.compile("(JOB|TSU|STC)[0-9]{5}|(J|T|S)[0-9]{7}$")
             if not job_id_pattern.search(job_id):
                 raise RuntimeError("Failed to validate the job id: " + job_id)
     else:

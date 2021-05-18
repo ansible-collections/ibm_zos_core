@@ -9,12 +9,11 @@ SPHINXBUILD   ?= sphinx-build
 SOURCEDIR     = source
 BUILDDIR      = build
 ROOT_DIR:=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
+OS_DISTRO := $(shell uname)
+INDEX_HTML = build/html/index.html
 line_header="===================================================================="
 
-
-view-html:
-	@echo "Display generated HTML in default browser."
-	@open build/html/index.html
+.PHONY: help Makefile
 
 # Put it first so that "make" without argument is like "make help".
 help:
@@ -48,7 +47,19 @@ help:
 	@echo $(line_header)
 	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
-.PHONY: help Makefile
+view-html:
+ifeq ($(shell test -e $(INDEX_HTML) && echo true),true)
+	@echo "Display generated HTML '$(INDEX_HTML)' in default browser."
+ifeq ($(OS_DISTRO), Darwin)
+	@open build/html/index.html
+else ifeq ($(OS_DISTRO), Linux)
+	@xdg-open build/html/index.html &> /dev/null &
+else
+	@echo "Unable to launch browser for $(INDEX_HTML), open file with your browser."
+endif
+else
+	@echo "Unable to find generated HTML '$(INDEX_HTML)'."
+endif
 
 clean:
 	@echo $(line_header)
@@ -98,16 +109,16 @@ role-doc:
 	fi
 
 	@for role_name in `ls ../roles/`; do \
-	echo "Detected role name $$role_name"; \
-	if test -e ../roles/$$role_name/docs/doc_$$role_name; then \
-	echo "Copying metadata ../roles/$$role_name/docs/doc_$$role_name to ../roles/$$role_name/docs/doc_$$role_name.py"; \
-	cp ../roles/$$role_name/docs/doc_$$role_name ../roles/$$role_name/docs/doc_$$role_name.py; \
-	echo "Sanitizing metadata ../roles/$$role_name/docs/doc_$$role_name.py"; \
-	sed -i "" "s/role:/module:/g" ../roles/$$role_name/docs/doc_$$role_name.py; \
-	echo "Generating RST doc for role ../roles/$$role_name"; \
-	ansible-doc-extractor --template templates/role.rst.j2 source/roles ../roles/$$role_name/docs/doc_$$role_name.py; \
-	echo "Deleting generated metadata ../roles/$$role_name/docs/doc_$$role_name.py"; \
-	rm -rf ../roles/$$role_name/docs/doc_$$role_name.py; \
+		echo "Detected role name $$role_name"; \
+		if test -e ../roles/$$role_name/docs/doc_$$role_name; then \
+		echo "Copying metadata ../roles/$$role_name/docs/doc_$$role_name to ../roles/$$role_name/docs/doc_$$role_name.py"; \
+		cp ../roles/$$role_name/docs/doc_$$role_name ../roles/$$role_name/docs/doc_$$role_name.py; \
+		echo "Sanitizing metadata ../roles/$$role_name/docs/doc_$$role_name.py"; \
+		sed -i -e "s/^role:/module:/" ../roles/$$role_name/docs/doc_$$role_name.py; \
+		echo "Generating RST doc for role ../roles/$$role_name"; \
+		ansible-doc-extractor --template templates/role.rst.j2 source/roles ../roles/$$role_name/docs/doc_$$role_name.py; \
+		echo "Deleting generated metadata ../roles/$$role_name/docs/doc_$$role_name.py"; \
+		rm -rf ../roles/$$role_name/docs/doc_$$role_name.py; \
 	fi; \
 	done
 
@@ -130,31 +141,31 @@ module-doc:
 	mkdir -p source/modules; \
 	fi
 
-	@if ! test -d ../plugins/modules/rexx_module_doc; then \
-	echo "Make ../plugins/modules/rexx_module_doc directory to extract REXX doc into temporary file."; \
-	mkdir -p ../plugins/modules/rexx_module_doc; \
-	else \
-	echo "Delete ../plugins/modules/rexx_module_doc directory used to extract REXX doc into temporary file."; \
-	rm -rf ../plugins/modules/rexx_module_doc; \
-	echo "Make ../plugins/modules/rexx_module_doc directory to extract REXX doc into temporary file."; \
-	mkdir -p ../plugins/modules/rexx_module_doc; \
-	fi
+	# @if ! test -d ../plugins/modules/rexx_module_doc; then \
+	# echo "Make ../plugins/modules/rexx_module_doc directory to extract REXX doc into temporary file."; \
+	# mkdir -p ../plugins/modules/rexx_module_doc; \
+	# else \
+	# echo "Delete ../plugins/modules/rexx_module_doc directory used to extract REXX doc into temporary file."; \
+	# rm -rf ../plugins/modules/rexx_module_doc; \
+	# echo "Make ../plugins/modules/rexx_module_doc directory to extract REXX doc into temporary file."; \
+	# mkdir -p ../plugins/modules/rexx_module_doc; \
+	# fi
 
-	@for rexx_module in `ls ../plugins/modules/*rexx`; do\
-	   REXX_FILE=`basename $$rexx_module .rexx`; \
-	   echo "Extracting documentation for module $$REXX_FILE into ../plugins/modules/rexx_module_doc/$$REXX_FILE.py"; \
-	   touch ../plugins/modules/rexx_module_doc/$$REXX_FILE.py; \
-	   sed -n "/DOCUMENTATION = '''/,/'''/p" ../plugins/modules/$$REXX_FILE.rexx >> ../plugins/modules/rexx_module_doc/$$REXX_FILE.py; \
-	   sed -n "/EXAMPLES = '''/,/'''/p" ../plugins/modules/$$REXX_FILE.rexx >> ../plugins/modules/rexx_module_doc/$$REXX_FILE.py; \
-	   sed -n "/RETURN = '''/,/'''/p" ../plugins/modules/$$REXX_FILE.rexx >> ../plugins/modules/rexx_module_doc/$$REXX_FILE.py; \
-	   echo "Generating ReStructuredText for module $$REXX_FILE inot source/modules/$$REXX_FILE.rst"; \
-	   ansible-doc-extractor --template templates/module.rst.j2 source/modules ../plugins/modules/rexx_module_doc/$$REXX_FILE.py; \
-	done
+	# @for rexx_module in `ls ../plugins/modules/*rexx`; do\
+	#    REXX_FILE=`basename $$rexx_module .rexx`; \
+	#    echo "Extracting documentation for module $$REXX_FILE into ../plugins/modules/rexx_module_doc/$$REXX_FILE.py"; \
+	#    touch ../plugins/modules/rexx_module_doc/$$REXX_FILE.py; \
+	#    sed -n "/DOCUMENTATION = '''/,/'''/p" ../plugins/modules/$$REXX_FILE.rexx >> ../plugins/modules/rexx_module_doc/$$REXX_FILE.py; \
+	#    sed -n "/EXAMPLES = '''/,/'''/p" ../plugins/modules/$$REXX_FILE.rexx >> ../plugins/modules/rexx_module_doc/$$REXX_FILE.py; \
+	#    sed -n "/RETURN = '''/,/'''/p" ../plugins/modules/$$REXX_FILE.rexx >> ../plugins/modules/rexx_module_doc/$$REXX_FILE.py; \
+	#    echo "Generating ReStructuredText for module $$REXX_FILE inot source/modules/$$REXX_FILE.rst"; \
+	#    ansible-doc-extractor --template templates/module.rst.j2 source/modules ../plugins/modules/rexx_module_doc/$$REXX_FILE.py; \
+	# done
 
-	@if test -d ../plugins/modules/rexx_module_doc; then \
-	echo "Delete ../plugins/modules/rexx_module_doc directory used to extract REXX doc into temporary file."; \
-	rm -rf ../plugins/modules/rexx_module_doc; \
-	fi
+	# @if test -d ../plugins/modules/rexx_module_doc; then \
+	# echo "Delete ../plugins/modules/rexx_module_doc directory used to extract REXX doc into temporary file."; \
+	# rm -rf ../plugins/modules/rexx_module_doc; \
+	# fi
 
 	@if test -e ../plugins/modules/__init__.py; then \
 	echo "Rename file '../plugins/modules/__init__.py' to ../plugins/modules/__init__.py.skip to avoid reading empty python file.'"; \

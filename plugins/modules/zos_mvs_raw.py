@@ -1404,25 +1404,6 @@ EXAMPLES = r"""
           content: " LISTCAT ENTRIES('SOME.DATASET.*')"
 
 - name: List data sets matching pattern in catalog,
-    save output to a file in UNIX System Services.
-    Return the contents of the file in encoding IBM-1047,
-    while the file is encoded in ISO8859-1.
-  zos_mvs_raw:
-    program_name: idcams
-    auth: true
-    dds:
-      - dd_unix:
-          dd_name: sysprint
-          path: /u/myuser/outputfile.txt
-          return_content:
-            type: text
-            src_encoding: iso8859-1
-            response_encoding: ibm-1047
-      - dd_input:
-          dd_name: sysin
-          content: " LISTCAT ENTRIES('SOME.DATASET.*')"
-
-- name: List data sets matching pattern in catalog,
     return output to user, but don't store in persistent storage.
     Return the contents of the file in encoding IBM-1047,
     while the file is encoded in ISO8859-1.

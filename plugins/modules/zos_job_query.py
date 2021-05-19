@@ -110,14 +110,51 @@ jobs:
             Return code or abend resulting from the job submission.
           type: str
           sample: CC 0000
+        msg_code:
+          description:
+            Return code extracted from the `msg` so that it can be evaluated.
+            For example, ABEND(S0C4) would yield "S0C4".
+          type: str
+          sample: S0C4
+        msg_txt:
+          description:
+             Returns additional information related to the job.
+          type: str
+          sample: "No job can be located with this job name: HELLO"
         code:
           description:
              Return code converted to integer value (when possible).
           type: int
           sample: 00
+        steps:
+          description:
+            Series of JCL steps that were executed and their return codes.
+          type: list
+          elements: dict
+          contains:
+            step_name:
+              description:
+                Name of the step shown as "was executed" in the DD section.
+              type: str
+              sample: "STEP0001"
+            step_cc:
+              description:
+                The CC returned for this step in the DD section.
+              type: str
+              sample: "00"
+
       sample:
-         - "code": 0
-         -  "msg": "CC 0000"
+        ret_code: {
+         "msg": "CC 0000",
+         "msg_code": "0000",
+         "msg_txt": "",
+         "code": 0,
+         "steps": [
+            { "step_name": "STEP0001",
+              "step_cc": "0000"
+            }
+          ]
+        }
   sample:
     [
         {

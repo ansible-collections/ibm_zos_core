@@ -114,7 +114,7 @@ def _job_not_found(job_id, owner, job_name, dd_name, ovrr=None):
 
     if ovrr is not None:
         job["ret_code"]["msg"] = "NO JOBS FOUND"
-        job["ret_code"]["msg_code"] = "00"
+        job["ret_code"]["msg_code"] = "NOT FOUND"
         job["ret_code"]["msg_txt"] = "No jobs returned from query"
 
     jobs.append(job)
@@ -132,7 +132,7 @@ def _parse_jobs(output_str):
         list[dict]: A list of jobs and their attributes.
         If no job status is found, this will return an empty job code with msg=JOB NOT FOUND
 
-    Rais:
+    Raises:
         Runtime error if output wasn't parseable
     """
     jobs = []
@@ -173,7 +173,7 @@ def _parse_jobs(output_str):
 
                 if ret_code_msg == "":
                     job["ret_code"]["msg"] = "AC"
-
+                job["ret_code"]["steps"] = _parse_steps(job_str)
                 job["class"] = job_info_match.group(7).strip()
                 job["content_type"] = job_info_match.group(8).strip()
 
@@ -225,6 +225,34 @@ def _parse_dds(job_str):
                 dd["content"] = content_str.group(1).split("\n")
             dds.append(dd)
     return dds
+
+
+def _parse_steps(job_str):
+    """Parse the dd section of output of the job retrieved by rexx script, pulling step-wise CC's
+
+    Args:
+        job_str (str): The output string for a particular job returned from job retrieved by the rexx script.
+
+    Returns:
+        list[dict]: A list of step names listed as "step executed" the related CC.
+    """
+    stp = []
+    dd_strs = re.findall(
+        r"^-----START\sOF\sDD-----\n(.*?)-----END\sOF\sDD-----",
+        job_str,
+        re.MULTILINE | re.DOTALL,
+    )
+    for dd_str in dd_strs:
+        if "STEP WAS EXECUTED" in dd_str:
+            pile = re.findall(r"(.*?)\s-\sSTEP\sWAS\sEXECUTED\s-\s(.*?)\n", dd_str)
+            for match in pile:
+                st = {
+                    "step_name": match[0].split()[-1],
+                    "step_cc": match[1].split()[-1],
+                }
+                stp.append(st)
+
+    return stp
 
 
 def _get_job_output_str(job_id="*", owner="*", job_name="*", dd_name=""):
@@ -361,7 +389,7 @@ def job_status(job_id=None, owner=None, job_name=None):
 
     Returns:
         list[dict] -- The status information for a list of jobs matching search criteria.
-        If no job status is found, this will return an empty job code with msg=Job not found
+        If no job status is found, this will return an empty job code with msg=JOB NOT FOUND
 
     """
     arg_defs = dict(

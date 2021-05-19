@@ -236,14 +236,14 @@ jobs:
           type: list
           elements: dict
           contains:
-            stepid:
+            step_name:
               description:
                 Name of the step shown as "was executed" in the DD section.
               type: str
               sample: "STEP0001"
-            stepcc:
+            step_cc:
               description:
-                Actual CC returned for this step in the DD section.
+                The CC returned for this step in the DD section.
               type: str
               sample: "00"
 
@@ -254,8 +254,8 @@ jobs:
           "msg_code": "0000",
           "msg_txt": "",
           "steps": [
-            { "stepid": "STEP0001",
-              "stepcc": "0000"
+            { "step_name": "STEP0001",
+              "step_cc": "0000"
             },
           ]
         }
@@ -467,8 +467,8 @@ jobs:
                   "msg_code": "0000",
                   "msg_txt": "",
                   "steps": [
-                    { "stepid": "DLORD6",
-                      "stepcc": "0000"
+                    { "step_name": "DLORD6",
+                      "step_cc": "0000"
                     }
                   ]
               },

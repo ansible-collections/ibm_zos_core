@@ -139,7 +139,7 @@ jobs:
               sample: "STEP0001"
             step_cc:
               description:
-                Actual CC returned for this step in the DD section.
+                The CC returned for this step in the DD section.
               type: str
               sample: "00"
 

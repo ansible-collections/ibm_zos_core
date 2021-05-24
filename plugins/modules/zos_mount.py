@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020
+# Copyright (c) IBM Corporation 2019, 2020
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -17,11 +17,6 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-ANSIBLE_METADATA = {
-    "metadata_version": "1.1",
-    "status": ["stableinterface"],
-    "supported_by": "community",
-}
 
 DOCUMENTATION = r"""
 ---
@@ -1028,7 +1023,22 @@ def main():
             src=dict(type="str", required=True),
             path=dict(type="str", required=True),
             fs_type=dict(
-                type="str", choices=["HFS", "ZFS", "NFS", "TFS"], required=True
+                type="str",
+                choices=[
+                    "HFS",
+                    "hfs",
+                    "hFS",
+                    "ZFS",
+                    "zfs",
+                    "zFS",
+                    "NFS",
+                    "nfs",
+                    "nFS",
+                    "TFS",
+                    "tfs",
+                    "tFS",
+                ],
+                required=True,
             ),
             state=dict(
                 type="str",
@@ -1084,7 +1094,22 @@ def main():
         src=dict(arg_type="data_set", required=True),
         path=dict(arg_type="path", required=True),
         fs_type=dict(
-            arg_type="str", choices=["HFS", "ZFS", "NFS", "TFS"], required=True
+            arg_type="str",
+            choices=[
+                "HFS",
+                "hfs",
+                "hFS",
+                "ZFS",
+                "zfs",
+                "zFS",
+                "NFS",
+                "nfs",
+                "nFS",
+                "TFS",
+                "tfs",
+                "tFS",
+            ],
+            required=True,
         ),
         state=dict(
             arg_type="str",

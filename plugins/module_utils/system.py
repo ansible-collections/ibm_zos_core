@@ -1,5 +1,13 @@
 # Copyright (c) IBM Corporation 2020
-# Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#     http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -67,10 +75,7 @@ def is_zos():
     return is_zos_unix and SYS_PLATFORM == "zos"
 
 
-def run_command(
-    args, stdin=None, encoding="utf-8", errors='surrogate_or_strict', **kwargs
-):
-
+def run_command(args, stdin=None, **kwargs):
     """ Execute a shell command on the current system. This function should only
     be used when AnsibleModule.run_command() is not available. This function
     essentially serves as a wrapper for Python subprocess.Popen and supports all
@@ -96,21 +101,27 @@ def run_command(
         err = "'args' must be list or string"
         return rc, out, err
 
-    if isinstance(args, text_type):
+    if isinstance(args, (text_type, str)):
         if PY2:
             args = to_bytes(args, errors='surrogate_or_strict')
         elif PY3:
             args = to_text(args, errors='surrogateescape')
         args = split(args)
 
-    core_args = dict(
-        stdin=PIPE if stdin else None,
-        stderr=PIPE,
-        stdout=PIPE,
-        encoding=encoding,
-        errors=errors
+    kwargs.update(
+        dict(
+            stdin=PIPE if stdin else None,
+            stderr=PIPE,
+            stdout=PIPE
+        )
     )
-    cmd = Popen(args, **core_args, **kwargs)
-    out, err = map(to_text, cmd.communicate())
+    try:
+        cmd = Popen(args, **kwargs)
+    except TypeError as proc_err:
+        rc = -1
+        err = str(proc_err)
+        return rc, out, err
+
+    out, err = tuple(map(to_text, cmd.communicate()))
     rc = cmd.returncode
     return rc, out, err

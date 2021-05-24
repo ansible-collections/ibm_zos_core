@@ -47,10 +47,7 @@ templates_path = ['../templates']
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ['playbooks.rst', 'playbook_config_setup.rst',
-                    'playbook_group_vars.rst', 'playbook_inventory.rst',
-                    'playbook_run.rst', 'requirements.rst',
-                    'requirements_managed.rst']
+exclude_patterns = ['requirements.rst', 'requirements_managed.rst']
 
 ##############################################################################
 # Options for HTML output
@@ -78,22 +75,23 @@ html_context = {
 # Currently we are not using these options, for more info follow links:
 # https://sphinx-rtd-theme.readthedocs.io/en/latest/configuring.html
 # https://sphinx-rtd-theme.readthedocs.io/en/stable/
-# html_theme_options = {
-#      'canonical_url': '',
-#      'analytics_id': 'UA-XXXXXXX-1',
-#      'logo_only': False,
-#      'display_version': True,
-#      'prev_next_buttons_location': 'bottom',
-#      'style_external_links': False,
-#      'vcs_pageview_mode': '',
-#      'style_nav_header_background': 'white',
-#      # Toc options
-#      'collapse_navigation': True,
-#      'sticky_navigation': True,
-#      'navigation_depth': 4,
-#      'includehidden': True,
-#      'titles_only': False
-# }
+html_theme_options = {
+    'prev_next_buttons_location': None,
+    #      'canonical_url': '',
+    #      'analytics_id': 'UA-XXXXXXX-1',
+    #      'logo_only': False,
+    #      'display_version': True,
+    #      'prev_next_buttons_location': 'bottom',
+    #      'style_external_links': False,
+    #      'vcs_pageview_mode': '',
+    #      'style_nav_header_background': 'white',
+    #      # Toc options
+    #      'collapse_navigation': True,
+    #      'sticky_navigation': True,
+    #      'navigation_depth': 4,
+    #      'includehidden': True,
+    #      'titles_only': False
+}
 
 
 ##############################################################################
@@ -150,7 +148,7 @@ scv_greatest_tag = True
 # White list which Git tags documentation will be generated and linked into the
 # version selection box. This is currently a manual selection, until more
 # versions are released, there are no regular expressions used.
-scv_whitelist_tags = ('v1.0.0', 'v1.1.0', 'v1.2.0-beta.1')
+scv_whitelist_tags = ('v1.0.0', 'v1.1.0$', 'v1.2.1$', 'v1.3.0-beta.1$')
 
 # Sort versions by one or more values. Valid values are semver, alpha, and time.
 # Semantic is referred to as 'semver', this would ensure our latest VRM is
@@ -171,4 +169,14 @@ scv_show_banner = True
 # Override banner-main-ref to be the tag with the highest version number. If no
 # tags have docs then this option is ignored and --banner-main-ref is used.
 # The greatest tag is desirable behavior for this site.
-scv_banner_greatest_tag = True
+# scv_banner_greatest_tag = True
+
+# Temporary work around to promote the latest git tag in the banner, for some
+# reason pre-release semantic versioning used with scv_banner_greatest_tag does
+# not generate the correct latest banner.
+scv_banner_recent_tag = True
+
+# Invert the order of branches/tags displayed in the sidebars in generated HTML
+# documents. The default order is whatever git prints when
+# running "git ls-remote --tags ./."
+scv_invert = True

@@ -1,17 +1,20 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+
 # Copyright (c) IBM Corporation 2019, 2020
-# Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#     http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
-
-ANSIBLE_METADATA = {
-    "metadata_version": "1.1",
-    "status": ["preview"],
-    "supported_by": "community",
-}
 
 
 DOCUMENTATION = r"""
@@ -262,24 +265,30 @@ import os
 
 from math import ceil
 from shutil import rmtree, move
-from shlex import quote
+from ansible.module_utils.six import PY3
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils._text import to_bytes
 from ansible.module_utils.parsing.convert_bool import boolean
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser,
     data_set,
-    encode
+    encode,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     MissingZOAUImport,
 )
 
+
+if PY3:
+    from shlex import quote
+else:
+    from pipes import quote
+
 try:
-    from zoautil_py import Datasets, MVSCmd, types
+    from zoautil_py import datasets, mvscmd, types
 except Exception:
-    Datasets = MissingZOAUImport()
-    MVSCmd = MissingZOAUImport()
+    datasets = MissingZOAUImport()
+    mvscmd = MissingZOAUImport()
     types = MissingZOAUImport()
 
 
@@ -296,8 +305,8 @@ class FetchHandler:
         return self.module.run_command(cmd, **kwargs)
 
     def _get_vsam_size(self, vsam):
-        """ Invoke IDCAMS LISTCAT command to get the record length and space used.
-            Then estimate the space used by the VSAM data set.
+        """Invoke IDCAMS LISTCAT command to get the record length and space used.
+        Then estimate the space used by the VSAM data set.
         """
         space_pri = 0
         total_size = 0
@@ -337,24 +346,38 @@ class FetchHandler:
                 "MSVTMP", space_primary=vsam_size, space_type="K"
             )
             repro_sysin = " REPRO INFILE(INPUT)  OUTFILE(OUTPUT) "
-            Datasets.write(sysin, repro_sysin)
+            datasets.write(sysin, repro_sysin)
 
             dd_statements = []
-            dd_statements.append(types.DDStatement(ddName="sysin", dataset=sysin))
-            dd_statements.append(types.DDStatement(ddName="input", dataset=ds_name))
             dd_statements.append(
-                types.DDStatement(ddName="output", dataset=out_ds_name)
+                types.DDStatement(
+                    name="sysin", definition=types.DatasetDefinition(sysin)
+                )
             )
-            dd_statements.append(types.DDStatement(ddName="sysprint", dataset=sysprint))
+            dd_statements.append(
+                types.DDStatement(
+                    name="input", definition=types.DatasetDefinition(ds_name)
+                )
+            )
+            dd_statements.append(
+                types.DDStatement(
+                    name="output", definition=types.DatasetDefinition(out_ds_name)
+                )
+            )
+            dd_statements.append(
+                types.DDStatement(
+                    name="sysprint", definition=types.DatasetDefinition(sysprint)
+                )
+            )
 
-            mvs_rc = MVSCmd.execute_authorized(pgm="idcams", args="", dds=dd_statements)
+            mvs_rc = mvscmd.execute_authorized(pgm="idcams", dds=dd_statements)
 
         except OSError as err:
             self._fail_json(msg=str(err))
 
         except Exception as err:
-            if Datasets.exists(out_ds_name):
-                Datasets.delete(out_ds_name)
+            if datasets.exists(out_ds_name):
+                datasets.delete(out_ds_name)
 
             if mvs_rc != 0:
                 self._fail_json(
@@ -374,14 +397,14 @@ class FetchHandler:
             )
 
         finally:
-            Datasets.delete(sysprint)
-            Datasets.delete(sysin)
+            datasets.delete(sysprint)
+            datasets.delete(sysin)
 
         return out_ds_name
 
     def _fetch_uss_file(self, src, is_binary, encoding=None):
-        """ Convert encoding of a USS file. Return a tuple of temporary file
-            name containing converted data.
+        """Convert encoding of a USS file. Return a tuple of temporary file
+        name containing converted data.
         """
         file_path = None
         if (not is_binary) and encoding:
@@ -390,7 +413,9 @@ class FetchHandler:
             to_code_set = encoding.get("to")
             enc_utils = encode.EncodeUtils()
             try:
-                enc_utils.uss_convert_encoding(src, file_path, from_code_set, to_code_set)
+                enc_utils.uss_convert_encoding(
+                    src, file_path, from_code_set, to_code_set
+                )
             except Exception as err:
                 os.remove(file_path)
                 self._fail_json(
@@ -407,12 +432,12 @@ class FetchHandler:
         return file_path if file_path else src
 
     def _fetch_vsam(self, src, is_binary, encoding=None):
-        """ Copy the contents of a VSAM to a sequential data set.
-            Afterwards, copy that data set to a USS file.
+        """Copy the contents of a VSAM to a sequential data set.
+        Afterwards, copy that data set to a USS file.
         """
         temp_ds = self._copy_vsam_to_temp_data_set(src)
         file_path = self._fetch_mvs_data(temp_ds, is_binary, encoding)
-        rc = Datasets.delete(temp_ds)
+        rc = datasets.delete(temp_ds)
         if rc != 0:
             os.remove(file_path)
             self._fail_json(
@@ -422,9 +447,9 @@ class FetchHandler:
         return file_path
 
     def _fetch_pdse(self, src, is_binary, encoding=None):
-        """ Copy a partitioned data set to a USS directory. If the data set
-            is not being fetched in binary mode, encoding for all members inside
-            the data set will be converted.
+        """Copy a partitioned data set to a USS directory. If the data set
+        is not being fetched in binary mode, encoding for all members inside
+        the data set will be converted.
         """
         dir_path = tempfile.mkdtemp()
         cmd = "cp -B \"//'{0}'\" {1}"
@@ -468,8 +493,8 @@ class FetchHandler:
         return dir_path
 
     def _fetch_mvs_data(self, src, is_binary, encoding=None):
-        """ Copy a sequential data set or a partitioned data set member
-            to a USS file
+        """Copy a sequential data set or a partitioned data set member
+        to a USS file
         """
         fd, file_path = tempfile.mkstemp()
         os.close(fd)
@@ -522,15 +547,15 @@ def run_module():
             use_qualifier=dict(required=False, default=False, type="bool"),
             validate_checksum=dict(required=False, default=True, type="bool"),
             encoding=dict(required=False, type="dict"),
-            sftp_port=dict(type='int', required=False),
-            ignore_sftp_stderr=dict(type='bool', default=False, required=False),
-            local_charset=dict(type='str')
+            sftp_port=dict(type="int", required=False),
+            ignore_sftp_stderr=dict(type="bool", default=False, required=False),
+            local_charset=dict(type="str"),
         )
     )
 
     src = module.params.get("src")
     if module.params.get("use_qualifier"):
-        module.params["src"] = Datasets.hlq() + "." + src
+        module.params["src"] = datasets.hlq() + "." + src
 
     # ********************************************************** #
     #                   Verify paramater validity                #
@@ -541,7 +566,7 @@ def run_module():
         dest=dict(arg_type="path", required=True),
         fail_on_missing=dict(arg_type="bool", required=False, default=True),
         is_binary=dict(arg_type="bool", required=False, default=False),
-        use_qualifier=dict(arg_type="bool", required=False, default=False)
+        use_qualifier=dict(arg_type="bool", required=False, default=False),
     )
 
     if not module.params.get("encoding") and not module.params.get("is_binary"):
@@ -549,19 +574,25 @@ def run_module():
         remote_charset = encode.Defaults.get_default_system_charset()
 
         module.params["encoding"] = {
-            'from': encode.Defaults.DEFAULT_EBCDIC_MVS_CHARSET if mvs_src else remote_charset,
-            'to': module.params.get("local_charset")
+            "from": encode.Defaults.DEFAULT_EBCDIC_MVS_CHARSET
+            if mvs_src
+            else remote_charset,
+            "to": module.params.get("local_charset"),
         }
 
     if module.params.get("encoding"):
-        module.params.update(dict(
-            from_encoding=module.params.get('encoding').get('from'),
-            to_encoding=module.params.get('encoding').get('to'))
+        module.params.update(
+            dict(
+                from_encoding=module.params.get("encoding").get("from"),
+                to_encoding=module.params.get("encoding").get("to"),
+            )
         )
-        arg_def.update(dict(
-            from_encoding=dict(arg_type='encoding'),
-            to_encoding=dict(arg_type='encoding')
-        ))
+        arg_def.update(
+            dict(
+                from_encoding=dict(arg_type="encoding"),
+                to_encoding=dict(arg_type="encoding"),
+            )
+        )
 
     fetch_handler = FetchHandler(module)
     try:

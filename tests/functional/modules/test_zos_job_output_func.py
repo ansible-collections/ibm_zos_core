@@ -1,7 +1,15 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (c) IBM Corporation 2019, 2020
-# Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#     http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 from __future__ import absolute_import, division, print_function
 
@@ -63,6 +71,7 @@ def test_zos_job_output_reject(ansible_zos_module):
 
 
 def test_zos_job_output_job_exists(ansible_zos_module):
+    # adding verification that at least 1 step was returned
     hosts = ansible_zos_module
     hosts.all.file(path=TEMP_PATH, state="directory")
     hosts.all.shell(
@@ -72,7 +81,13 @@ def test_zos_job_output_job_exists(ansible_zos_module):
         src="{0}/SAMPLE".format(TEMP_PATH), location="USS", wait=True, volume=None
     )
     hosts.all.file(path=TEMP_PATH, state="absent")
-    results = hosts.all.zos_job_output(job_name="SAMPLE")
+    results = hosts.all.zos_job_output(job_name="HELLO")  # was SAMPLE?!
     for result in results.contacted.values():
+        print(result)
         assert result.get("changed") is False
         assert result.get("jobs") is not None
+        assert result.get("jobs")[0].get("ret_code").get("steps") is not None
+        assert (
+            result.get("jobs")[0].get("ret_code").get("steps")[0].get("step_name")
+            == "STEP0001"
+        )

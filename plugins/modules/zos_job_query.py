@@ -2,17 +2,20 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (c) IBM Corporation 2019, 2020
-# Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#     http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-ANSIBLE_METADATA = {
-    "metadata_version": "1.1",
-    "status": ["preview"],
-    "supported_by": "community",
-}
 
 DOCUMENTATION = r"""
 ---
@@ -41,7 +44,9 @@ options:
   job_id:
     description:
       - The job number that has been assigned to the job. These normally begin
-        with STC, JOB, TSU and are followed by 5 digits.
+        with STC, JOB, TSU and are followed by 5 digits. When job are
+        potentially greather than 99,999, the job number format will begin with
+        S, J, T and are followed by 7 digits.
     type: str
     required: False
 """
@@ -69,12 +74,13 @@ EXAMPLES = r"""
 RETURN = r"""
 changed:
   description:
-     True if the state was changed, otherwise False.
+    True if the state was changed, otherwise False.
   returned: always
   type: bool
 jobs:
   description:
-     The list of z/OS job(s) and status.
+    The output information for a list of jobs matching specified criteria.
+    If no job status is found, this will return an empty job code with msg=JOB NOT FOUND.
   returned: success
   type: list
   elements: dict
@@ -104,14 +110,51 @@ jobs:
             Return code or abend resulting from the job submission.
           type: str
           sample: CC 0000
+        msg_code:
+          description:
+            Return code extracted from the `msg` so that it can be evaluated.
+            For example, ABEND(S0C4) would yield "S0C4".
+          type: str
+          sample: S0C4
+        msg_txt:
+          description:
+             Returns additional information related to the job.
+          type: str
+          sample: "No job can be located with this job name: HELLO"
         code:
           description:
              Return code converted to integer value (when possible).
           type: int
           sample: 00
+        steps:
+          description:
+            Series of JCL steps that were executed and their return codes.
+          type: list
+          elements: dict
+          contains:
+            step_name:
+              description:
+                Name of the step shown as "was executed" in the DD section.
+              type: str
+              sample: "STEP0001"
+            step_cc:
+              description:
+                The CC returned for this step in the DD section.
+              type: str
+              sample: "00"
+
       sample:
-         - "code": 0
-         -  "msg": "CC 0000"
+        ret_code: {
+         "msg": "CC 0000",
+         "msg_code": "0000",
+         "msg_txt": "",
+         "code": 0,
+         "steps": [
+            { "step_name": "STEP0001",
+              "step_cc": "0000"
+            }
+          ]
+        }
   sample:
     [
         {
@@ -184,7 +227,7 @@ def validate_arguments(params):
             else:
                 raise RuntimeError("Failed to validate the job name: " + job_name_in)
         if job_id:
-            job_id_pattern = re.compile("(JOB|TSU|STC)[0-9]{5}$")
+            job_id_pattern = re.compile("(JOB|TSU|STC)[0-9]{5}|(J|T|S)[0-9]{7}$")
             if not job_id_pattern.search(job_id):
                 raise RuntimeError("Failed to validate the job id: " + job_id)
     else:
@@ -232,7 +275,7 @@ def parsing_jobs(jobs_raw):
         elif "ABENDU" in status_raw:
             # status = 'Ended abnormally'
             ret_code = {"msg": status_raw, "code": job.get("ret_code").get("code")}
-        elif "CANCELED" or "JCLERR" in status_raw:
+        elif "CANCELED" or "JCLERR" or "JCL ERROR" or "JOB NOT FOUND" in status_raw:
             # status = status_raw
             ret_code = {"msg": status_raw, "code": None}
         else:

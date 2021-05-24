@@ -2,17 +2,20 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (c) IBM Corporation 2019, 2020
-# Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#     http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-ANSIBLE_METADATA = {
-    "metadata_version": "1.1",
-    "status": ["preview"],
-    "supported_by": "community",
-}
 
 DOCUMENTATION = r"""
 module: zos_data_set
@@ -106,6 +109,9 @@ options:
       - BASIC
       - LARGE
       - MEMBER
+      - HFS
+      - ZFS
+    default: PDS
     version_added: "2.9"
   space_primary:
     description:
@@ -338,6 +344,9 @@ options:
           - BASIC
           - LARGE
           - MEMBER
+          - HFS
+          - ZFS
+        default: PDS
         version_added: "2.9"
       space_primary:
         description:
@@ -629,6 +638,8 @@ DATA_SET_TYPES = [
     "LARGE",
     "LIBRARY",
     "MEMBER",
+    "HFS",
+    "ZFS",
 ]
 
 DATA_SET_FORMATS = [
@@ -722,7 +733,7 @@ def data_set_name(contents, dependencies):
 # * dependent on state
 def space_type(contents, dependencies):
     """Validates provided data set unit of space is valid.
-    Returns the unit of space. """
+    Returns the unit of space."""
     if dependencies.get("state") == "absent":
         return None
     if contents is None:
@@ -740,8 +751,8 @@ def space_type(contents, dependencies):
 # * dependent on state
 def sms_class(contents, dependencies):
     """Validates provided sms class is of valid length.
-    Returns the sms class. """
-    if dependencies.get("state") == "absent" or not contents:
+    Returns the sms class."""
+    if dependencies.get("state") == "absent" or contents is None:
         return None
     if len(contents) < 1 or len(contents) > 8:
         raise ValueError(
@@ -754,9 +765,9 @@ def sms_class(contents, dependencies):
 
 
 def valid_when_state_present(contents, dependencies):
-    """ Ensures no arguments that are invalid when state!=present
-    are allowed. """
-    if dependencies.get("state") == "absent" or not contents:
+    """Ensures no arguments that are invalid when state!=present
+    are allowed."""
+    if dependencies.get("state") == "absent" or contents is None:
         return None
     return contents
 
@@ -770,7 +781,7 @@ def record_length(contents, dependencies):
         return None
     contents = (
         DEFAULT_RECORD_LENGTHS.get(dependencies.get("record_format"), None)
-        if not contents
+        if contents is None
         else int(contents)
     )
     if contents is None:
@@ -810,7 +821,7 @@ def data_set_type(contents, dependencies):
     # if dependencies.get("state") == "absent" and contents != "MEMBER":
     #     return None
     if contents is None:
-        return None
+        return "PDS"
     types = "|".join(DATA_SET_TYPES)
     if not re.fullmatch(types, contents, re.IGNORECASE):
         raise ValueError(
@@ -825,14 +836,18 @@ def data_set_type(contents, dependencies):
 def volumes(contents, dependencies):
     """Validates volume is valid.
     Returns uppercase volume."""
-    if not contents:
+    if contents is None:
         if dependencies.get("state") == "cataloged":
             raise ValueError("Volume is required when state==cataloged.")
         return None
     if not isinstance(contents, list):
         contents = [contents]
     for vol in contents:
-        if not re.fullmatch(r"^[A-Z0-9]{1,6}$", str(vol), re.IGNORECASE,):
+        if not re.fullmatch(
+            r"^[A-Z0-9]{1,6}$",
+            str(vol),
+            re.IGNORECASE,
+        ):
             raise ValueError(
                 'Invalid argument type for "{0}". expected volume name'.format(vol)
             )
@@ -886,8 +901,8 @@ def key_offset(contents, dependencies):
 
 
 def perform_data_set_operations(name, state, **extra_args):
-    """ Calls functions to perform desired operations on
-    one or more data sets. Returns boolean indicating if changes were made. """
+    """Calls functions to perform desired operations on
+    one or more data sets. Returns boolean indicating if changes were made."""
     changed = False
     if state == "present" and extra_args.get("type") != "MEMBER":
         changed = DataSet.ensure_present(name, **extra_args)
@@ -1002,7 +1017,10 @@ def parse_and_validate_args(params):
                     required=False,
                     dependencies=["state", "type"],
                 ),
-                replace=dict(type="bool", default=False,),
+                replace=dict(
+                    type="bool",
+                    default=False,
+                ),
                 volumes=dict(
                     type=volumes,
                     required=False,
@@ -1047,24 +1065,36 @@ def parse_and_validate_args(params):
         ),
         sms_data_class=dict(type=sms_class, required=False, dependencies=["state"]),
         block_size=dict(
-            type=valid_when_state_present, required=False, dependencies=["state"],
+            type=valid_when_state_present,
+            required=False,
+            dependencies=["state"],
         ),
         directory_blocks=dict(
-            type=valid_when_state_present, required=False, dependencies=["state"],
+            type=valid_when_state_present,
+            required=False,
+            dependencies=["state"],
         ),
         record_length=dict(
-            type=record_length, required=False, dependencies=["state", "record_format"],
+            type=record_length,
+            required=False,
+            dependencies=["state", "record_format"],
         ),
         key_offset=dict(type=valid_when_state_present, required=False),
         key_length=dict(type=valid_when_state_present, required=False),
-        replace=dict(type="bool", default=False,),
+        replace=dict(
+            type="bool",
+            default=False,
+        ),
         volumes=dict(
-            type=volumes, required=False, aliases=["volume"], dependencies=["state"],
+            type=volumes,
+            required=False,
+            aliases=["volume"],
+            dependencies=["state"],
         ),
         mutually_exclusive=[
             ["batch", "name"],
             # ["batch", "state"],
-            ["batch", "space_type"],
+            # ["batch", "space_type"],
             ["batch", "space_primary"],
             ["batch", "space_secondary"],
             ["batch", "record_format"],
@@ -1096,14 +1126,17 @@ def run_module():
             type="list",
             elements="dict",
             options=dict(
-                name=dict(type="str", required=False,),
+                name=dict(
+                    type="str",
+                    required=False,
+                ),
                 state=dict(
                     type="str",
                     default="present",
                     choices=["present", "absent", "cataloged", "uncataloged"],
                 ),
-                type=dict(type="str", required=False),
-                space_type=dict(type="str", required=False,),
+                type=dict(type="str", required=False, default="PDS"),
+                space_type=dict(type="str", required=False, default="M"),
                 space_primary=dict(type="int", required=False, aliases=["size"]),
                 space_secondary=dict(type="int", required=False),
                 record_format=dict(type="str", required=False, aliases=["format"]),
@@ -1115,25 +1148,40 @@ def run_module():
                     type="str", required=False, aliases=["data_class"]
                 ),
                 sms_data_class=dict(type="str", required=False),
-                block_size=dict(type="int", required=False,),
-                directory_blocks=dict(type="int", required=False,),
-                record_length=dict(type="int", required=False,),
+                block_size=dict(
+                    type="int",
+                    required=False,
+                ),
+                directory_blocks=dict(
+                    type="int",
+                    required=False,
+                ),
+                record_length=dict(
+                    type="int",
+                    required=False,
+                ),
                 key_offset=dict(type="int", required=False),
                 key_length=dict(type="int", required=False),
-                replace=dict(type="bool", default=False,),
+                replace=dict(
+                    type="bool",
+                    default=False,
+                ),
                 volumes=dict(type="raw", required=False, aliases=["volume"]),
             ),
         ),
         # For individual data set args
-        name=dict(type="str", required=False,),
+        name=dict(
+            type="str",
+            required=False,
+        ),
         state=dict(
             type="str",
             default="present",
             choices=["present", "absent", "cataloged", "uncataloged"],
             dependencies=["batch"],
         ),
-        type=dict(type="str", required=False),
-        space_type=dict(type="str", required=False),
+        type=dict(type="str", required=False, default="PDS"),
+        space_type=dict(type="str", required=False, default="M"),
         space_primary=dict(type="raw", required=False, aliases=["size"]),
         space_secondary=dict(type="int", required=False),
         record_format=dict(type="str", required=False, aliases=["format"]),
@@ -1143,13 +1191,29 @@ def run_module():
         # support for backwards compatability with previous module versions
         sms_storage_class=dict(type="str", required=False, aliases=["data_class"]),
         sms_data_class=dict(type="str", required=False),
-        block_size=dict(type="int", required=False,),
-        directory_blocks=dict(type="int", required=False,),
-        record_length=dict(type="int", required=False,),
+        block_size=dict(
+            type="int",
+            required=False,
+        ),
+        directory_blocks=dict(
+            type="int",
+            required=False,
+        ),
+        record_length=dict(
+            type="int",
+            required=False,
+        ),
         key_offset=dict(type="int", required=False),
         key_length=dict(type="int", required=False),
-        replace=dict(type="bool", default=False,),
-        volumes=dict(type="raw", required=False, aliases=["volume"],),
+        replace=dict(
+            type="bool",
+            default=False,
+        ),
+        volumes=dict(
+            type="raw",
+            required=False,
+            aliases=["volume"],
+        ),
     )
     result = dict(changed=False, message="", names=[])
 

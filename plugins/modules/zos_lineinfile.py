@@ -2,15 +2,18 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (c) IBM Corporation 2020
-# Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
-
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#     http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
-
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
 
 
 DOCUMENTATION = r"""
@@ -255,9 +258,9 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser
 
 
 try:
-    from zoautil_py import Datasets
+    from zoautil_py import datasets
 except Exception:
-    Datasets = MissingZOAUImport()
+    datasets = MissingZOAUImport()
 
 
 # supported data set types
@@ -292,7 +295,18 @@ def present(src, line, regexp, ins_aft, ins_bef, encoding, first_match, backrefs
             found: {int} -- Number of matching regex pattern
             changed: {bool} -- Indicates if the source was modified.
     """
-    return Datasets.lineinfile(src, line, regexp, ins_aft, ins_bef, encoding, first_match, backrefs, state=True)
+    return datasets.lineinfile(
+        src,
+        line,
+        regex=regexp,
+        ins_aft=ins_aft,
+        ins_bef=ins_bef,
+        encoding=encoding,
+        first_match=first_match,
+        backref=backrefs,
+        state=True,
+        debug=True,
+    )
 
 
 def absent(src, line, regexp, encoding):
@@ -311,7 +325,7 @@ def absent(src, line, regexp, encoding):
             found: {int} -- Number of matching regex pattern
             changed: {bool} -- Indicates if the source was modified.
     """
-    return Datasets.lineinfile(src, line, regexp, encoding=encoding, state=False)
+    return datasets.lineinfile(src, line, regex=regexp, encoding=encoding, state=False, debug=True)
 
 
 def quotedString(string):
@@ -430,28 +444,36 @@ def main():
         return_content = present(src, quotedString(line), quotedString(regexp), quotedString(ins_aft), quotedString(ins_bef), encoding, firstmatch, backrefs)
     else:
         return_content = absent(src, quotedString(line), quotedString(regexp), encoding)
+    stdout = return_content.stdout_response
+    stderr = return_content.stderr_response
+    rc = return_content.rc
     try:
         # change the return string to be loadable by json.loads()
-        return_content = return_content.replace('/c\\', '/c\\\\')
-        return_content = return_content.replace('/a\\', '/a\\\\')
-        return_content = return_content.replace('/i\\', '/i\\\\')
-        return_content = return_content.replace('$ a\\', '$ a\\\\')
-        return_content = return_content.replace('1 i\\', '1 i\\\\')
+        stdout = stdout.replace('/c\\', '/c\\\\')
+        stdout = stdout.replace('/a\\', '/a\\\\')
+        stdout = stdout.replace('/i\\', '/i\\\\')
+        stdout = stdout.replace('$ a\\', '$ a\\\\')
+        stdout = stdout.replace('1 i\\', '1 i\\\\')
         if line:
-            return_content = return_content.replace(line, quotedString(line))
+            stdout = stdout.replace(line, quotedString(line))
         if regexp:
-            return_content = return_content.replace(regexp, quotedString(regexp))
+            stdout = stdout.replace(regexp, quotedString(regexp))
         if ins_aft:
-            return_content = return_content.replace(ins_aft, quotedString(ins_aft))
+            stdout = stdout.replace(ins_aft, quotedString(ins_aft))
         if ins_bef:
-            return_content = return_content.replace(ins_bef, quotedString(ins_bef))
+            stdout = stdout.replace(ins_bef, quotedString(ins_bef))
         # Try to extract information from return_content
-        ret = json.loads(return_content)
+        ret = json.loads(stdout)
         result['cmd'] = ret['cmd']
         result['changed'] = ret['changed']
         result['found'] = ret['found']
+        # Only return 'rc' if stderr is not empty to not fail the playbook run in a nomatch case
+        # That information will be given with 'changed' and 'found'
+        if len(stderr):
+            result['stderr'] = str(stderr)
+            result['rc'] = rc
     except Exception:
-        messageDict = dict(msg="dsed return content is NOT in json format", return_content=str(return_content))
+        messageDict = dict(msg="dsed return content is NOT in json format", stdout=str(stdout), stderr=str(stderr), rc=rc)
         if result.get('backup_name'):
             messageDict['backup_name'] = result['backup_name']
         module.fail_json(**messageDict)

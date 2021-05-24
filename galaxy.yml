@@ -6,7 +6,7 @@ namespace: ibm
 name: ibm_zos_core
 
 # The collection version
-version: 1.2.0-beta.3
+version: 1.3.1
 
 # Collection README file
 readme: README.md
@@ -23,6 +23,8 @@ authors:
   - Behnam Al Kajbaf <behnam@ibm.com>
   - Andrew Nguyen <andy.nguyen@ibm.com>
   - Radha Varadachari <radha.varadachari@ibm.com>
+  - Rich Parker <richp@ibm.com>
+  - Ketan Kelkar <ketan.kelkar@ibm.com>
 
 # Description
 description: The IBM z/OS core collection includes connection plugins, action plugins, modules, filters, sample playbooks and ansible-doc to automate tasks on z/OS.
@@ -66,8 +68,11 @@ issues: https://github.com/ansible-collections/ibm_zos_core/issues
 
 # Ignore files and directories matching the following patterns
 build_ignore:
-  - Dockerfile
   - Jenkinsfile
-  - yamllint.yaml
   - ansible.cfg
   - .gitignore
+  - .github
+  - '*.tar.gz'
+  - tests
+  - docs
+  - collections

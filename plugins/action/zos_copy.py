@@ -1,5 +1,13 @@
 # Copyright (c) IBM Corporation 2019, 2020
-# Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#     http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 from __future__ import absolute_import, division, print_function
 
@@ -38,7 +46,6 @@ class ActionModule(ActionBase):
         del tmp
 
         src = task_args.get('src', None)
-        b_src = to_bytes(src, errors='surrogate_or_strict')
         dest = task_args.get('dest', None)
         content = task_args.get('content', None)
 
@@ -87,6 +94,8 @@ class ActionModule(ActionBase):
             else:
                 src_member = is_member(src)
                 if not remote_src:
+                    if src.startswith('~'):
+                        src = os.path.expanduser(src)
                     src = os.path.realpath(src)
                     is_src_dir = os.path.isdir(src)
                     is_pds = is_src_dir and is_mvs_dest
@@ -120,11 +129,11 @@ class ActionModule(ActionBase):
                 msg = "No path given for local symlink"
                 return self._exit_action(result, msg, failed=True)
 
-            elif src and not os.path.exists(b_src):
+            elif src and not os.path.exists(src):
                 msg = "The local file {0} does not exist".format(src)
                 return self._exit_action(result, msg, failed=True)
 
-            elif src and not os.access(b_src, os.R_OK):
+            elif src and not os.access(src, os.R_OK):
                 msg = (
                     "The local file {0} does not have appropriate "
                     "read permission".format(src)
@@ -154,7 +163,7 @@ class ActionModule(ActionBase):
                 else:
                     if mode == "preserve":
                         task_args["mode"] = "0{0:o}".format(
-                            stat.S_IMODE(os.stat(b_src).st_mode)
+                            stat.S_IMODE(os.stat(src).st_mode)
                         )
                     task_args["size"] = os.stat(src).st_size
                 transfer_res = self._copy_to_remote(

@@ -60,8 +60,8 @@ ansible-doc to automate tasks on z/OS.
    :caption: Getting Started
 
    installation
-   requirements
-   playbooks-single
+   requirements-single
+   playbooks
 
 .. toctree::
    :maxdepth: 1

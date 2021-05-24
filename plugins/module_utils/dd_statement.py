@@ -1,5 +1,13 @@
 # Copyright (c) IBM Corporation 2020
-# Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#     http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 from __future__ import absolute_import, division, print_function
 
@@ -12,9 +20,9 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import DataSet
 
 try:
-    from zoautil_py import Datasets
+    from zoautil_py import datasets
 except ImportError:
-    Datasets = MissingZOAUImport()
+    datasets = MissingZOAUImport()
 
 space_units = {"b": "", "kb": "k", "mb": "m", "gb": "g"}
 
@@ -632,8 +640,8 @@ class VIODefinition(DataDefinition):
         A temporary data set will be created for use in cases where VIO is unavailable.
         Defaults for VIODefinition should be sufficient.
         """
-        hlq = Datasets.hlq()
-        name = Datasets.temp_name(hlq)
+        hlq = datasets.hlq()
+        name = datasets.tmp_name(hlq)
         super().__init__(name)
 
     def __del__(self):

@@ -1,7 +1,15 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (c) IBM Corporation 2019, 2020
-# Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#     http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 from __future__ import absolute_import, division, print_function
 from shellescape import quote
@@ -73,11 +81,9 @@ def test_uss_encoding_conversion_with_invalid_encoding(ansible_zos_module):
     )
     pprint(vars(results))
     for result in results.contacted.values():
-        assert result.get("src") == USS_FILE
-        assert result.get("dest") is None
+        assert result.get("msg") is not None
         assert result.get("backup_name") is None
         assert result.get("changed") is False
-        assert "Invalid codeset: Please check the value" in result.get("msg")
 
 
 def test_uss_encoding_conversion_with_the_same_encoding(ansible_zos_module):
@@ -87,14 +93,9 @@ def test_uss_encoding_conversion_with_the_same_encoding(ansible_zos_module):
     )
     pprint(vars(results))
     for result in results.contacted.values():
-        assert result.get("src") == USS_FILE
-        assert result.get("dest") is None
+        assert result.get("msg") is not None
         assert result.get("backup_name") is None
         assert result.get("changed") is False
-        assert (
-            "The value of the from_encoding and to_encoding "
-            "are the same, no need to do the conversion!"
-        ) in result.get("msg")
 
 
 def test_uss_encoding_conversion_without_dest(ansible_zos_module):
@@ -269,8 +270,10 @@ def test_uss_encoding_conversion_uss_file_to_mvs_pds_member(ansible_zos_module):
     results = hosts.all.zos_data_set(
         name=MVS_PDS_MEMBER, type="member", state="present"
     )
+    pprint(vars(results))
     for result in results.contacted.values():
-        assert result.get("changed") is True
+        # documentation will return changed=False if ds exists and replace=False..
+        # assert result.get("changed") is True
         assert result.get("module_stderr") is None
     results = hosts.all.zos_encode(
         src=USS_FILE,
@@ -444,7 +447,10 @@ def test_uss_encoding_conversion_mvs_ps_to_mvs_vsam(ansible_zos_module):
         src="{0}/SAMPLE".format(TEMP_JCL_PATH), location="USS", wait=True
     )
     hosts.all.file(path=TEMP_JCL_PATH, state="absent")
+    print("test_uss_encoding_conversion_mvs_ps_to_mvs_vsam")
+    pprint(vars(results))
     for result in results.contacted.values():
+        assert result.get("jobs") is not None
         assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
         assert result.get("jobs")[0].get("ret_code").get("code") == 0
         assert result.get("changed") is True
@@ -487,7 +493,7 @@ def test_ps_backup(ansible_zos_module):
     hosts = ansible_zos_module
     hosts.all.zos_data_set(name=BACKUP_DATA_SET, state="absent")
     hosts.all.zos_data_set(name=MVS_PS, state="absent")
-    hosts.all.zos_data_set(name=MVS_PS, state="present", type="ps")
+    hosts.all.zos_data_set(name=MVS_PS, state="present", type="seq")
     hosts.all.shell(cmd="echo '{0}' > {1}".format(TEST_FILE_TEXT, TEMP_JCL_PATH))
     hosts.all.shell(cmd="cp {0} \"//'{1}'\"".format(TEMP_JCL_PATH, MVS_PS))
     hosts.all.zos_encode(
@@ -534,7 +540,10 @@ def test_vsam_backup(ansible_zos_module):
     hosts.all.file(path=TEMP_JCL_PATH, state="absent")
 
     hosts.all.zos_encode(
-        src=MVS_VS, dest=MVS_PS, from_encoding=FROM_ENCODING, to_encoding=TO_ENCODING,
+        src=MVS_VS,
+        dest=MVS_PS,
+        from_encoding=FROM_ENCODING,
+        to_encoding=TO_ENCODING,
     )
     contents = hosts.all.shell(cmd="cat \"//'{0}'\"".format(MVS_PS))
     content1 = ""
@@ -663,3 +672,40 @@ def test_uss_backup_entire_folder_to_default_backup_location_compressed(
     results = hosts.all.shell(cmd="ls -la {0}".format(backup_name[:-4] + "*"))
     for result in results.contacted.values():
         assert backup_name in result.get("stdout")
+
+
+def test_return_backup_name_on_module_success_and_failure(ansible_zos_module):
+    hosts = ansible_zos_module
+    hosts.all.zos_data_set(name=MVS_PS, state="absent")
+    hosts.all.zos_data_set(name=BACKUP_DATA_SET, state="absent")
+    hosts.all.zos_data_set(name=MVS_PS, state="present", type="seq")
+    hosts.all.shell(cmd="echo '{0}' > {1}".format(TEST_FILE_TEXT, TEMP_JCL_PATH))
+    hosts.all.zos_copy(src=TEMP_JCL_PATH, dest=MVS_PS, remote_src=True)
+    enc_ds = hosts.all.zos_encode(
+        src=MVS_PS,
+        from_encoding=FROM_ENCODING,
+        to_encoding=TO_ENCODING,
+        backup=True,
+        backup_name=BACKUP_DATA_SET,
+    )
+    for content in enc_ds.contacted.values():
+        assert content.get("backup_name") is not None
+        assert content.get("backup_name") == BACKUP_DATA_SET
+
+    hosts.all.zos_data_set(name=BACKUP_DATA_SET, state="absent")
+    enc_ds = hosts.all.zos_encode(
+        src=MVS_PS,
+        from_encoding=INVALID_ENCODING,
+        to_encoding=TO_ENCODING,
+        backup=True,
+        backup_name=BACKUP_DATA_SET,
+    )
+
+    for content in enc_ds.contacted.values():
+        assert content.get("msg") is not None
+        assert content.get("backup_name") is not None
+        assert content.get("backup_name") == BACKUP_DATA_SET
+
+    hosts.all.file(path=TEMP_JCL_PATH, state="absent")
+    hosts.all.zos_data_set(name=MVS_PS, state="absent")
+    hosts.all.zos_data_set(name=BACKUP_DATA_SET, state="absent")

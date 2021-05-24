@@ -2,17 +2,20 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (c) IBM Corporation 2019, 2020
-# Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#     http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-ANSIBLE_METADATA = {
-    "metadata_version": "1.1",
-    "status": ["preview"],
-    "supported_by": "community",
-}
 
 DOCUMENTATION = r"""
 module: zos_encode
@@ -88,6 +91,8 @@ options:
         e.g. /path/file_name.2020-04-23-08-32-29-bak.tar. If dest is an
         MVS data set, the default backup name will be a random name generated
         by IBM Z Open Automation Utilities.
+      - C(backup_name) will be returned on either success or failure of module
+        execution such that data can be retrieved.
     required: false
     type: str
   backup_compress:
@@ -240,14 +245,8 @@ backup_name:
     type: str
     sample: /path/file_name.2020-04-23-08-32-29-bak.tar
 """
-
-import time
-import re
-from os import path, makedirs
-from ansible.module_utils.six import PY3
-from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
-    AnsibleModuleHelper,
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
+    MissingZOAUImport,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser,
@@ -255,26 +254,21 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     encode,
     backup as zos_backup,
 )
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingZOAUImport,
-)
-
-
-if PY3:
-    from shlex import quote
-else:
-    from pipes import quote
+from ansible.module_utils.basic import AnsibleModule
+from os import path
+from os import makedirs
+from os import listdir
+import re
 
 try:
-    from zoautil_py import Datasets, MVSCmd
+    from zoautil_py import datasets
 except Exception:
-    Datasets = MissingZOAUImport()
-    MVSCmd = MissingZOAUImport()
+    datasets = MissingZOAUImport()
 
 
 def check_pds_member(ds, mem):
     check_rc = False
-    if mem in Datasets.list_members(ds):
+    if mem in datasets.list_members(ds):
         check_rc = True
     else:
         raise EncodeError("Cannot find member {0} in {1}".format(mem, ds))
@@ -299,7 +293,7 @@ def check_mvs_dataset(ds):
 
 
 def check_file(file):
-    """ check file is a USS file/path or an MVS data set """
+    """ check file is a USS file or an MVS data set """
     is_uss = False
     is_mvs = False
     ds_type = None
@@ -308,7 +302,7 @@ def check_file(file):
     else:
         ds = file.upper()
         if "(" in ds:
-            dsn = ds[0: ds.rfind("(", 1)]
+            dsn = ds[: ds.rfind("(", 1)]
             mem = "".join(re.findall(r"[(](.*?)[)]", ds))
             rc, ds_type = check_mvs_dataset(dsn)
             if rc:
@@ -326,7 +320,13 @@ def check_file(file):
 
 def verify_uss_path_exists(file):
     if not path.exists(file):
-        raise EncodeError("File {0} does not exist.".format(file))
+        mypath = "/" + file.split("/")[0] + "/*"
+        ld = listdir(mypath)
+        raise EncodeError(
+            "File {0} does not exist in directory {1}; files found {2}.".format(
+                file, mypath, str(ld)
+            )
+        )
     return
 
 
@@ -375,28 +375,10 @@ def run_module():
     changed = False
 
     result = dict(changed=changed, src=src, dest=dest)
+    if backup:
+        result["backup_name"] = None
 
     try:
-
-        eu = encode.EncodeUtils()
-
-        # Check input code set is valid or not
-        # If the value specified in from_encoding or to_encoding is not in the code_set, exit with an error message
-        # If the values specified in from_encoding and to_encoding are the same, exit with an message
-        code_set = eu.get_codeset()
-        if from_encoding not in code_set:
-            raise EncodeError(
-                "Invalid codeset: Please check the value of the from_encoding!"
-            )
-        if to_encoding not in code_set:
-            raise EncodeError(
-                "Invalid codeset: Please check the value of the to_encoding!"
-            )
-        if from_encoding == to_encoding:
-            raise EncodeError(
-                "The value of the from_encoding and to_encoding are the same, no need to do the conversion!"
-            )
-
         # Check the src is a USS file/path or an MVS data set
         is_uss_src, is_mvs_src, ds_type_src = check_file(src)
         if is_uss_src:
@@ -436,6 +418,24 @@ def run_module():
             if is_mvs_dest:
                 backup_name = zos_backup.mvs_file_backup(dest, backup_name)
             result["backup_name"] = backup_name
+
+        eu = encode.EncodeUtils()
+        # Check input code set is valid or not
+        # If the value specified in from_encoding or to_encoding is not in the code_set, exit with an error message
+        # If the values specified in from_encoding and to_encoding are the same, exit with an message
+        code_set = eu.get_codeset()
+        if from_encoding not in code_set:
+            raise EncodeError(
+                "Invalid codeset: Please check the value of the from_encoding!"
+            )
+        if to_encoding not in code_set:
+            raise EncodeError(
+                "Invalid codeset: Please check the value of the to_encoding!"
+            )
+        if from_encoding == to_encoding:
+            raise EncodeError(
+                "The value of the from_encoding and to_encoding are the same, no need to do the conversion!"
+            )
 
         if is_uss_src and is_uss_dest:
             convert_rc = eu.uss_convert_encoding_prev(

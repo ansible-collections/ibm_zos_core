@@ -1,0 +1,10 @@
+################################################################################
+# © Copyright IBM Corporation 2021
+################################################################################
+# This file creates an alias for file 'requirements-zos-core.txt' which is used
+# to manage any python dependencies needed by this Collection to run effectively
+# on an Ansible controller.
+################################################################################
+dependencies:
+  python: requirements-zos-core.txt
+version: 1

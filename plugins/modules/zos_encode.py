@@ -2,17 +2,20 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (c) IBM Corporation 2019, 2020
-# Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#     http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-ANSIBLE_METADATA = {
-    "metadata_version": "1.1",
-    "status": ["stableinterface"],
-    "supported_by": "community",
-}
 
 DOCUMENTATION = r"""
 module: zos_encode
@@ -242,19 +245,20 @@ backup_name:
     type: str
     sample: /path/file_name.2020-04-23-08-32-29-bak.tar
 """
-
-import re
-from os import path, makedirs
-from ansible.module_utils.basic import AnsibleModule
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
+    MissingZOAUImport,
+)
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser,
     data_set,
     encode,
     backup as zos_backup,
 )
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingZOAUImport,
-)
+from ansible.module_utils.basic import AnsibleModule
+from os import path
+from os import makedirs
+from os import listdir
+import re
 
 try:
     from zoautil_py import datasets
@@ -289,7 +293,7 @@ def check_mvs_dataset(ds):
 
 
 def check_file(file):
-    """ check file is a USS file/path or an MVS data set """
+    """ check file is a USS file or an MVS data set """
     is_uss = False
     is_mvs = False
     ds_type = None
@@ -298,7 +302,7 @@ def check_file(file):
     else:
         ds = file.upper()
         if "(" in ds:
-            dsn = ds[0: ds.rfind("(", 1)]
+            dsn = ds[: ds.rfind("(", 1)]
             mem = "".join(re.findall(r"[(](.*?)[)]", ds))
             rc, ds_type = check_mvs_dataset(dsn)
             if rc:
@@ -316,7 +320,13 @@ def check_file(file):
 
 def verify_uss_path_exists(file):
     if not path.exists(file):
-        raise EncodeError("File {0} does not exist.".format(file))
+        mypath = "/" + file.split("/")[0] + "/*"
+        ld = listdir(mypath)
+        raise EncodeError(
+            "File {0} does not exist in directory {1}; files found {2}.".format(
+                file, mypath, str(ld)
+            )
+        )
     return
 
 

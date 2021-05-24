@@ -2,15 +2,18 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (c) IBM Corporation 2020
-# Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
-
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#     http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
-
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
 
 
 DOCUMENTATION = r"""
@@ -464,6 +467,11 @@ def main():
         result['cmd'] = ret['cmd']
         result['changed'] = ret['changed']
         result['found'] = ret['found']
+        # Only return 'rc' if stderr is not empty to not fail the playbook run in a nomatch case
+        # That information will be given with 'changed' and 'found'
+        if len(stderr):
+            result['stderr'] = str(stderr)
+            result['rc'] = rc
     except Exception:
         messageDict = dict(msg="dsed return content is NOT in json format", stdout=str(stdout), stderr=str(stderr), rc=rc)
         if result.get('backup_name'):

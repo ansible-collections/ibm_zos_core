@@ -11,40 +11,38 @@ The managed node has dependencies that are specific to each release of the
 **IBM z/OS core collection**. Review the details of the dependencies before you
 proceed to install the IBM z/OS core collection.
 
-* `IBM Open Enterprise Python for z/OS`_
 * z/OS `V2R3`_ or `later`_
+* `z/OS OpenSSH`_
+* Supported by `IBM Open Enterprise SDK for Python`_
+  (previously `IBM Open Enterprise Python for z/OS`_) 3.8.2 or later
 * `IBM Z Open Automation Utilities`_ (ZOAU)
 
-   * IBM z/OS core collection is dependent on specific versions of ZOAU.
-     For information about the required version of ZOAU, review the
-     `release notes`_.
+   .. note::
 
-* `z/OS OpenSSH`_
-* The z/OS® shell
+     IBM z/OS core collection is dependent on specific versions of
+     Z Open Automation Utilities (ZOAU). For information about the required
+     version of ZOAU, review the `release notes`_. For detailed instructions on
+     installation and configuration of ZOAU,
+     `Installing and Configuring ZOA Utilities`_.
 
-.. note::
-   Currently, only ``z/OS® shell`` is supported. Using ``ansible_shell_executable`` to
-   change the default shell is discouraged. For more information, see
-   `Ansible documentation`_.
+* The `z/OS® shell`_
 
-   Shells such as ``bash`` are not supported because they handle the reading and
-   writing of untagged files differently. ``bash`` added enhanced ASCII support
-   in version 4.3 and thus differs from 4.2. If ``bash`` shell is the only shell
-   available, you must control how the new and existing files are tagged and encoded.
-   This can be controlled by setting both "_ENCODE_FILE_NEW" and "_ENCODE_FILE_EXISTING".
-   For example,
-
-   * _ENCODE_FILE_NEW: "IBM-1047"
-   * _ENCODE_FILE_EXISTING: "IBM-1047"
-
-   Please review the README.ZOS guide included with the ported ``bash`` shell
-   for further configurations.
+   .. note::
+      Currently, only ``z/OS® shell`` is supported. Using
+      ``ansible_shell_executable`` to change the default shell is discouraged.
+      For more information, see `Ansible documentation`_. Shells such as ``bash``
+      are not supported because they handle the reading and writing of untagged
+      files differently. Please review the README.ZOS guide included with the
+      ported ``bash`` shell for further configurations.
 
 .. _Ansible documentation:
    https://docs.ansible.com/ansible/2.7/user_guide/intro_inventory.html
 
 .. _Python on z/OS:
    requirements_managed.html#id1
+
+.. _Installing and Configuring ZOA Utilities:
+   https://www.ibm.com/support/knowledgecenter/en/SSKFYE_1.1.0/install.html
 
 .. _V2R3:
    https://www.ibm.com/support/knowledgecenter/SSLTBW_2.3.0/com.ibm.zos.v2r3/en/homepage.html
@@ -60,6 +58,18 @@ proceed to install the IBM z/OS core collection.
 
 .. _release notes:
    release_notes.html
+
+.. _playbook configuration:
+   https://github.com/IBM/z_ansible_collections_samples/blob/master/docs/share/configuration_guide.md
+
+.. _z/OS® shell:
+   https://www.ibm.com/support/knowledgecenter/en/SSLTBW_2.4.0/com.ibm.zos.v2r4.bpxa400/part1.htm
+
+.. _Z Open Automation Utilities 1.1.0:
+   https://www.ibm.com/support/knowledgecenter/SSKFYE_1.1.0/install.html
+
+.. _configured IBM Open Enterprise Python on z/OS:
+   https://www.ibm.com/support/knowledgecenter/SSCH7P_3.8.0/install.html
 
 Python on z/OS
 --------------
@@ -82,6 +92,8 @@ and required by **IBM z/OS core collection**.
 
 .. _IBM Open Enterprise Python for z/OS:
    http://www.ibm.com/products/open-enterprise-python-zos
+.. _IBM Open Enterprise SDK for Python:
+   https://www.ibm.com/products/open-enterprise-python-zos
 
 .. _here:
    https://www-01.ibm.com/marketing/iwm/platform/mrs/assets?source=swg-ibmoep

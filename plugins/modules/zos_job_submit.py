@@ -2,17 +2,20 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (c) IBM Corporation 2019, 2020
-# Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#     http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-ANSIBLE_METADATA = {
-    "metadata_version": "1.1",
-    "status": ["stableinterface"],
-    "supported_by": "community",
-}
 
 DOCUMENTATION = r"""
 module: zos_job_submit
@@ -54,15 +57,16 @@ options:
     type: bool
     description:
       - Wait for the Job to finish and capture the output. Default is false.
-      - User can specify the wait time, see option ``wait_time_s``.
+      - When I(wait) is false or absent, the module will wait up to 10 seconds for the job to start,
+        but will not wait for the job to complete.
+      - If I(wait) is true, User can specify the wait time, see option ``wait_time_s``.
   wait_time_s:
     required: false
     default: 60
     type: int
     description:
-      - When wait is true, the module will wait for a maximum of 60 seconds by
-        default.
-      - User can set the wait time manually in this option.
+      - When I(wait) is true, the module will wait for the number of seconds for Job completion.
+      - User can set the wait time manually with this option.
   max_rc:
     required: false
     type: int
@@ -122,6 +126,7 @@ RETURN = r"""
 jobs:
   description:
      List of jobs output.
+     If no job status is found, this will return an empty job code with msg=JOB NOT FOUND.
   returned: success
   type: list
   elements: dict
@@ -210,26 +215,51 @@ jobs:
           sample: CC 0000
         msg_code:
           description:
-            Return code extracted from the `msg` so that it can better
-            evaluated. For example, ABEND(S0C4) would yield ""S0C4".
+            Return code extracted from the `msg` so that it can be evaluated.
+            For example, ABEND(S0C4) would yield "S0C4".
           type: str
           sample: S0C4
         msg_txt:
           description:
              Returns additional information related to the job.
           type: str
-          sample: "No job can be located with this job name: HELLO"
+          sample: "JCL Error detected.  Check the data dumps for more information."
         code:
           description:
              Return code converted to integer value (when possible).
+             For JCL ERRORs, this will be None.
           type: int
           sample: 00
+        steps:
+          description:
+            Series of JCL steps that were executed and their return codes.
+          type: list
+          elements: dict
+          contains:
+            step_name:
+              description:
+                Name of the step shown as "was executed" in the DD section.
+              type: str
+              sample: "STEP0001"
+            step_cc:
+              description:
+                The CC returned for this step in the DD section.
+              type: str
+              sample: "00"
+
       sample:
-         - "code": 0
-         -  "msg": "CC 0000"
-         - "msg_code": "0000"
-         - "msg_txt": ""
-  sample:
+        ret_code: {
+          "code": 0,
+          "msg": "CC 0000",
+          "msg_code": "0000",
+          "msg_txt": "",
+          "steps": [
+            { "step_name": "STEP0001",
+              "step_cc": "0000"
+            },
+          ]
+        }
+    sample:
      [
           {
               "class": "K",
@@ -435,7 +465,12 @@ jobs:
                   "code": 0,
                   "msg": "CC 0000",
                   "msg_code": "0000",
-                  "msg_txt": ""
+                  "msg_txt": "",
+                  "steps": [
+                    { "step_name": "DLORD6",
+                      "step_cc": "0000"
+                    }
+                  ]
               },
               "subsystem": "STL1"
           }
@@ -486,20 +521,22 @@ EXAMPLES = r"""
     wait_time_s: 30
 """
 
-from ansible.module_utils.basic import AnsibleModule
-from time import sleep
-from os import chmod, path, remove
-from tempfile import NamedTemporaryFile
-import re
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import job_output
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
-    BetterArgParser,
-)
+from ansible.module_utils.six import PY3
+from stat import S_IEXEC, S_IREAD, S_IWRITE
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.encode import (
     Defaults,
 )
-from stat import S_IEXEC, S_IREAD, S_IWRITE
-from ansible.module_utils.six import PY3
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
+    BetterArgParser,
+)
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import job_output
+from timeit import default_timer as timer
+import re
+from tempfile import NamedTemporaryFile
+from os import chmod, path, remove, stat
+from time import sleep
+from ansible.module_utils.basic import AnsibleModule
+
 
 if PY3:
     from shlex import quote
@@ -510,7 +547,7 @@ else:
 POLLING_INTERVAL = 1
 POLLING_COUNT = 60
 
-JOB_COMPLETION_MESSAGES = ["CC", "ABEND", "SEC"]
+JOB_COMPLETION_MESSAGES = ["CC", "ABEND", "SEC ERROR", "JCL ERROR"]
 
 
 def submit_pds_jcl(src, module):
@@ -519,14 +556,14 @@ def submit_pds_jcl(src, module):
         'submit -j "//{0}"'.format(quote(src)), use_unsafe_shell=True
     )
     if rc != 0:
-        raise SubmitJCLError("SUBMIT JOB FAILED:  Stderr :" + stderr)
+        raise SubmitJCLError("Submit job failed:  Stderr :" + stderr)
     if "Error" in stderr or "Not accepted by JES" in stderr:
-        raise SubmitJCLError("SUBMIT JOB FAILED: " + stderr)
+        raise SubmitJCLError("Submit job failed: " + stderr)
     if stdout != "":
         jobId = stdout.replace("\n", "").strip()
     else:
         raise SubmitJCLError(
-            "SUBMIT JOB FAILED: NO JOB ID IS RETURNED. PLEASE CHECK THE JCL."
+            "Submit job failed: no job ID was returned.  Please check the JCL."
         )
     return jobId
 
@@ -535,14 +572,14 @@ def submit_uss_jcl(src, module):
     """ Submit uss jcl. Use uss command submit -j jclfile. """
     rc, stdout, stderr = module.run_command(["submit", "-j", src])
     if rc != 0:
-        raise SubmitJCLError("SUBMIT JOB FAILED:  Stderr :" + stderr)
+        raise SubmitJCLError("Submit job failed:  Stderr :" + stderr)
     if "Error" in stderr or "Not accepted by JES" in stderr:
-        raise SubmitJCLError("SUBMIT JOB FAILED: " + stderr)
+        raise SubmitJCLError("Submit job failed: " + stderr)
     if stdout != "":
         jobId = stdout.replace("\n", "").strip()
     else:
         raise SubmitJCLError(
-            "SUBMIT JOB FAILED: NO JOB ID IS RETURNED. PLEASE CHECK THE JCL."
+            "Submit job failed: no job ID was returned.  Please check the JCL."
         )
     return jobId
 
@@ -558,9 +595,9 @@ SAY X
 """
     rc, stdout, stderr = copy_rexx_and_run(script, src, vol, module)
     if "Error" in stdout:
-        raise SubmitJCLError("SUBMIT JOB FAILED: " + stdout)
+        raise SubmitJCLError("Submit job failed: " + stdout)
     elif "" == stdout:
-        raise SubmitJCLError("SUBMIT JOB FAILED, NO JOB ID IS RETURNED : " + stdout)
+        raise SubmitJCLError("Submit job failed, no job ID was returned : " + stdout)
     jobId = stdout.replace("\n", "").strip()
     return jobId
 
@@ -605,11 +642,11 @@ def query_jobs_status(module, jobId):
             pass
         except Exception as e:
             raise SubmitJCLError(
-                "{0} {1} {2}".format(repr(e), "The output is", output or " ")
+                "{0} The output is: '{1}'".format(repr(e), output or " ")
             )
     if not output and timeout == 0:
         raise SubmitJCLError(
-            "THE JOB CAN NOT BE QUERIED FROM JES (TIMEOUT=10s). PLEASE CHECK THE ZOS SYSTEM. IT IS SLOW TO RESPONSE."
+            "The job can not be queried from JES (Timeout=10s). Please check the zOS system.  It is slow to respond."
         )
     return output
 
@@ -689,12 +726,13 @@ def run_module():
     max_rc = parsed_args.get("max_rc")
     # get temporary file names for copied files
     temp_file = parsed_args.get("temp_file")
+    temp_file_2 = None
     if temp_file:
         temp_file_2 = NamedTemporaryFile(delete=True)
 
     if wait_time_s <= 0:
         module.fail_json(
-            msg="The option wait_time_s is not valid it just be greater than 0.",
+            msg="The option wait_time_s is not valid.  It must be greater than 0.",
             **result
         )
 
@@ -718,14 +756,17 @@ def run_module():
         else:
             # For local file, it has been copied to the temp directory in action plugin.
             from_encoding = encoding.get("from")
+
+            # added -c to iconv to try and prevent \r from mis-mapping as invalid char to EBCDIC
             to_encoding = encoding.get("to")
+            conv_str = "iconv -c -f {0} -t {1} {2} > {3}".format(
+                from_encoding,
+                to_encoding,
+                quote(temp_file),
+                quote(temp_file_2.name),
+            )
             (conv_rc, stdout, stderr) = module.run_command(
-                "iconv -f {0} -t {1} {2} > {3}".format(
-                    from_encoding,
-                    to_encoding,
-                    quote(temp_file),
-                    quote(temp_file_2.name),
-                ),
+                conv_str,
                 use_unsafe_shell=True,
             )
             if conv_rc == 0:
@@ -740,57 +781,100 @@ def run_module():
     except SubmitJCLError as e:
         module.fail_json(msg=repr(e), **result)
     if jobId is None or jobId == "":
-        result["job_id"] = jobId
+        result["job_id"] = ""
         module.fail_json(
-            msg="JOB ID RETURNED IS None. PLEASE CHECK WHETHER THE JCL IS CORRECT.",
+            msg="JOB ID Returned is None. Please check whether the JCL is valid.",
             **result
         )
 
     result["job_id"] = jobId
     duration = 0
-    if wait is True:
-        # calculate the job elapse time
-        try:
-            waitJob = query_jobs_status(module, jobId)
-            job_msg = waitJob[0].get("ret_code").get("msg")
-        except SubmitJCLError as e:
-            module.fail_json(msg=repr(e), **result)
-        # while (job_msg.startswith("CC") or job_msg.startswith("ABEND")) is False:
-        while not re.search(
-            "^(?:{0})".format("|".join(JOB_COMPLETION_MESSAGES)), job_msg
-        ):
-            sleep(1)
-            duration = duration + 1
-            waitJob = job_output(job_id=jobId)
-            job_msg = waitJob[0].get("ret_code").get("msg")
-            if re.search("^(?:{0})".format("|".join(JOB_COMPLETION_MESSAGES)), job_msg):
-                break
-            if duration == wait_time_s:  # Long running task. timeout return
-                break
+    if not wait:
+        wait_time_s = 10
 
-    try:
-        result = get_job_info(module, jobId, return_output)
+    # real time loop - will be used regardless of 'wait' to capture data
+    starttime = timer()
+    loopdone = False
+    foundissue = None
+    while not loopdone:
+        try:
+            job_output_txt = job_output(job_id=jobId)
+        except IndexError:
+            pass
+        except Exception as e:
+            result["err_detail"] = "{1} {2}.\n".format(
+                "Error during job submission.  The output is:", job_output_txt or " "
+            )
+            module.fail_json(msg=repr(e), **result)
+
+        if bool(job_output_txt):
+            jot_retcode = job_output_txt[0].get("ret_code")
+            if bool(jot_retcode):
+                job_msg = jot_retcode.get("msg")
+                if re.search(
+                    "^(?:{0})".format("|".join(JOB_COMPLETION_MESSAGES)), job_msg
+                ):
+                    loopdone = True
+                    # if the message doesn't have a CC, it is an improper completion (error/abend)
+                    if re.search("^(?:CC)", job_msg) is None:
+                        foundissue = job_msg
+
+        if not loopdone:
+            checktime = timer()
+            duration = round(checktime - starttime)
+            if duration >= wait_time_s:
+                loopdone = True
+                result["message"] = {
+                    "stdout": "Submit JCL operation succeeded but it is a long running job, exceeding the timeout of "
+                    + str(wait_time_s)
+                    + " seconds.  JobID is "
+                    + str(jobId)
+                    + ".  Consider using module zos_job_query to poll for long running jobs."
+                }
+            else:
+                sleep(0.5)
+
+    # End real time loop ^^^
+
+    if bool(job_output_txt):
+        result["jobs"] = job_output_txt
         if wait is True and return_output is True and max_rc is not None:
             assert_valid_return_code(
                 max_rc, result.get("jobs")[0].get("ret_code").get("code")
             )
-    except SubmitJCLError as e:
-        module.fail_json(msg=repr(e), **result)
-    except Exception as e:
-        module.fail_json(msg=repr(e), **result)
-    finally:
-        if temp_file:
-            remove(temp_file)
+
+    if temp_file:
+        remove(temp_file)
+
+    checktime = timer()
+    duration = round(checktime - starttime)
     result["duration"] = duration
-    if duration == wait_time_s:
+    result["changed"] = True
+
+    if duration >= wait_time_s:
+        # This is a duplicate message, to handle the edge-case where the timeout was crossed after the check
         result["message"] = {
-            "stdout": "Submit JCL operation succeeded but it is a long running job. Timeout is "
+            "stdout": "Submit JCL operation succeeded but it is a long running job, exceeding the timeout of "
             + str(wait_time_s)
-            + " seconds."
+            + " seconds.  JobID is "
+            + str(jobId)
+            + ".  Consider using module zos_job_query to poll for long running jobs."
         }
     else:
-        result["message"] = {"stdout": "Submit JCL operation succeeded."}
-    result["changed"] = True
+        if foundissue is not None:
+            result["changed"] = False
+            result["message"] = {
+                "stderr": "Submit succeeded, but job failed: " + foundissue
+            }
+            result["failed"] = True
+            module.fail_json(msg=result["message"], **result)
+        else:
+            result["message"] = {
+                "stdout": "Submit JCL operation succeeded with id of "
+                + str(jobId)
+                + "."
+            }
+
     module.exit_json(**result)
 
 

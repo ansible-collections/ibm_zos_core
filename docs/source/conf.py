@@ -75,22 +75,23 @@ html_context = {
 # Currently we are not using these options, for more info follow links:
 # https://sphinx-rtd-theme.readthedocs.io/en/latest/configuring.html
 # https://sphinx-rtd-theme.readthedocs.io/en/stable/
-# html_theme_options = {
-#      'canonical_url': '',
-#      'analytics_id': 'UA-XXXXXXX-1',
-#      'logo_only': False,
-#      'display_version': True,
-#      'prev_next_buttons_location': 'bottom',
-#      'style_external_links': False,
-#      'vcs_pageview_mode': '',
-#      'style_nav_header_background': 'white',
-#      # Toc options
-#      'collapse_navigation': True,
-#      'sticky_navigation': True,
-#      'navigation_depth': 4,
-#      'includehidden': True,
-#      'titles_only': False
-# }
+html_theme_options = {
+    'prev_next_buttons_location': None,
+    #      'canonical_url': '',
+    #      'analytics_id': 'UA-XXXXXXX-1',
+    #      'logo_only': False,
+    #      'display_version': True,
+    #      'prev_next_buttons_location': 'bottom',
+    #      'style_external_links': False,
+    #      'vcs_pageview_mode': '',
+    #      'style_nav_header_background': 'white',
+    #      # Toc options
+    #      'collapse_navigation': True,
+    #      'sticky_navigation': True,
+    #      'navigation_depth': 4,
+    #      'includehidden': True,
+    #      'titles_only': False
+}
 
 
 ##############################################################################
@@ -147,7 +148,7 @@ scv_greatest_tag = True
 # White list which Git tags documentation will be generated and linked into the
 # version selection box. This is currently a manual selection, until more
 # versions are released, there are no regular expressions used.
-scv_whitelist_tags = ('v1.0.0', 'v1.1.0$', 'v1.2.1$',)
+scv_whitelist_tags = ('v1.0.0', 'v1.1.0$', 'v1.2.1$', 'v1.3.0-beta.1$')
 
 # Sort versions by one or more values. Valid values are semver, alpha, and time.
 # Semantic is referred to as 'semver', this would ensure our latest VRM is

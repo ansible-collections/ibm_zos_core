@@ -1,0 +1,23 @@
+# Usage: cd /Users/ddimatos/git/github/ibm_zos_core/roles/role_sample
+#        ansible-playbook roletest.yml
+
+---
+# Sample 1 using role
+- hosts: localhost
+  gather_facts: false
+  roles:
+    - { role: ../role_sample }
+
+# Sample 3 using role
+#- hosts: localhost
+#  gather_facts: false
+#  roles:
+#    - { role: ../role_sample, comment: 'is awesome', action: 'and fun', language_1: 'Bash', language_2: 'C', language_3: 'others too'}
+
+# Sample 3 using role
+#- hosts: localhost
+#  gather_facts: false
+#  vars:
+#    is_true: true
+#  roles:
+#     - { role: ../role_sample, when: is_true }

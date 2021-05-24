@@ -1,7 +1,15 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (c) IBM Corporation 2020
-# Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#     http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 
 from __future__ import absolute_import, division, print_function
@@ -484,6 +492,9 @@ def test_argument_parsing_data_set_failure_path(
         raw.parse_and_validate_args(valid_args)
 
 
+# Removing first entry, since new localizer function resolves "../u" correctly - 3688b (rp)
+
+
 @pytest.mark.parametrize(
     (
         "path,"
@@ -497,17 +508,17 @@ def test_argument_parsing_data_set_failure_path(
         "status_group,"
     ),
     [
-        (
-            "../u/omvsadm",
-            "keep",
-            "delete",
-            0,
-            100,
-            "fb",
-            "record",
-            "r",
-            ["ocreat", "oappend", "onoctty"],
-        ),
+        # (
+        #    "../u/omvsadm",
+        #    "keep",
+        #    "delete",
+        #    0,
+        #    100,
+        #    "fb",
+        #    "record",
+        #    "r",
+        #    ["ocreat", "oappend", "onoctty"],
+        # ),
         (
             "/u/omvsadm",
             "delete",
@@ -589,7 +600,9 @@ def test_argument_parsing_unix_failure_path(
         raw.parse_and_validate_args(valid_args)
 
 
-def test_ksds_defaults(zos_import_mocker,):
+def test_ksds_defaults(
+    zos_import_mocker,
+):
     mocker, importer = zos_import_mocker
     raw = importer(IMPORT_NAME)
     mocker.patch(
@@ -630,7 +643,9 @@ def test_ksds_defaults(zos_import_mocker,):
     )
 
 
-def test_ksds_exception_key_length(zos_import_mocker,):
+def test_ksds_exception_key_length(
+    zos_import_mocker,
+):
     mocker, importer = zos_import_mocker
     raw = importer(IMPORT_NAME)
     mocker.patch(
@@ -658,7 +673,9 @@ def test_ksds_exception_key_length(zos_import_mocker,):
         raw.parse_and_validate_args(valid_args)
 
 
-def test_ksds_exception_key_offset(zos_import_mocker,):
+def test_ksds_exception_key_offset(
+    zos_import_mocker,
+):
     mocker, importer = zos_import_mocker
     raw = importer(IMPORT_NAME)
     mocker.patch(

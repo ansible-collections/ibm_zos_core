@@ -2,17 +2,20 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (c) IBM Corporation 2020
-# Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#     http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-ANSIBLE_METADATA = {
-    "metadata_version": "1.1",
-    "status": ["stableinterface"],
-    "supported_by": "community",
-}
 
 DOCUMENTATION = r"""
 module: zos_mvs_raw
@@ -86,7 +89,7 @@ options:
             description:
               - The data set name.
             type: str
-            required: false
+            required: true
           type:
             description:
               - The data set type. Only required when I(disposition=new).
@@ -679,8 +682,10 @@ options:
               dd_data_set:
                 description:
                   - Specify a data set.
-                  - I(dd_data_set) can reference an existing data set or be
-                    used to define a new data set to be created during execution.
+                  - I(dd_data_set) can reference an existing data set. The
+                    data set referenced with C(data_set_name) must be allocated
+                    before the module M(zos_mvs_raw) is run, you can
+                    use M(zos_data_set) to allocate a data set.
                 required: false
                 type: dict
                 suboptions:
@@ -688,7 +693,7 @@ options:
                     description:
                       - The data set name.
                     type: str
-                    required: false
+                    required: true
                   type:
                     description:
                       - The data set type. Only required when I(disposition=new).
@@ -1191,7 +1196,8 @@ notes:
     - 2. M(zos_mvs_raw) module execution fails when invoking DFSRRC00 with parm
       "UPB,PRECOMP", "UPB, POSTCOMP" or "UPB,PRECOMP,POSTCOMP". This issue is
       addressed by APAR PH28089.
-
+seealso:
+- module: zos_data_set
 """
 
 RETURN = r"""
@@ -1374,25 +1380,6 @@ EXAMPLES = r"""
       - dd_unix:
           dd_name: sysprint
           path: /u/myuser/outputfile.txt
-      - dd_input:
-          dd_name: sysin
-          content: " LISTCAT ENTRIES('SOME.DATASET.*')"
-
-- name: List data sets matching pattern in catalog,
-    save output to a file in UNIX System Services.
-    Return the contents of the file in encoding IBM-1047,
-    while the file is encoded in ISO8859-1.
-  zos_mvs_raw:
-    program_name: idcams
-    auth: true
-    dds:
-      - dd_unix:
-          dd_name: sysprint
-          path: /u/myuser/outputfile.txt
-          return_content:
-            type: text
-            src_encoding: iso8859-1
-            response_encoding: ibm-1047
       - dd_input:
           dd_name: sysin
           content: " LISTCAT ENTRIES('SOME.DATASET.*')"

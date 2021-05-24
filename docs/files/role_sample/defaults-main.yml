@@ -1,0 +1,8 @@
+---
+# defaults file for role_sample
+comment: is great for automating z/OS tasks
+action:
+language_1: Python
+language_2: REXX
+language_3: and many more languages
+ansible_user: John Doe

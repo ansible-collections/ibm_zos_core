@@ -2,17 +2,20 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (c) IBM Corporation 2019, 2020
-# Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#     http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-ANSIBLE_METADATA = {
-    "metadata_version": "1.1",
-    "status": ["stableinterface"],
-    "supported_by": "community",
-}
 
 DOCUMENTATION = r"""
 ---
@@ -77,7 +80,8 @@ EXAMPLES = r"""
 RETURN = r"""
 jobs:
   description:
-      List of jobs output.
+    The output information for a list of jobs matching specified criteria.
+    If no job status is found, this will return an empty job code with msg=JOB NOT FOUND.
   returned: success
   type: list
   elements: dict
@@ -177,8 +181,8 @@ jobs:
           sample: CC 0000
         msg_code:
           description:
-            Return code extracted from the `msg` so that it can better
-            evaluated. For example , ABEND(S0C4) would yield ""S0C4".
+            Return code extracted from the `msg` so that it can be evaluated.
+            For example, ABEND(S0C4) would yield "S0C4".
           type: str
           sample: S0C4
         msg_txt:
@@ -191,11 +195,34 @@ jobs:
              Return code converted to integer value (when possible).
           type: int
           sample: 00
+        steps:
+          description:
+            Series of JCL steps that were executed and their return codes.
+          type: list
+          elements: dict
+          contains:
+            step_name:
+              description:
+                Name of the step shown as "was executed" in the DD section.
+              type: str
+              sample: "STEP0001"
+            step_cc:
+              description:
+                The CC returned for this step in the DD section.
+              type: str
+              sample: "00"
       sample:
-         - "code": 0
-         -  "msg": "CC 0000"
-         - "msg_code": "0000"
-         - "msg_txt": ""
+        ret_code: {
+         "code": 0,
+         "msg": "CC 0000",
+         "msg_code": "0000",
+         "msg_txt": "",
+         "steps": [
+           { "step_name": "STEP0001",
+             "step_cc": "0000"
+           }
+         ]
+        }
   sample:
      [
       {
@@ -315,7 +342,12 @@ jobs:
           "code": 0,
           "msg": "CC 0000",
           "msg_code": "0000",
-          "msg_txt": ""
+          "msg_txt": "",
+          "steps": [
+            { "step_name": "STEP0001",
+              "step_cc": "0000"
+            }
+          ]
         },
         "subsystem": "STL1"
       }

@@ -1,17 +1,21 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+
 # Copyright (c) IBM Corporation 2019, 2020
-# Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#     http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-ANSIBLE_METADATA = {
-    "metadata_version": "1.1",
-    "status": ["stableinterface"],
-    "supported_by": "community",
-}
 
 DOCUMENTATION = r"""
 ---
@@ -72,13 +76,22 @@ options:
       - Remote absolute path or data set where the file should be copied to.
       - Destination can be a USS path or an MVS data set name.
       - If C(dest) is a nonexistent USS file, it will be created.
-      - If C(dest) is a nonexistent data set, it will be allocated.
+      - If C(dest) is a nonexistent data set, storage management rules will be
+        used to determine the volume where C(dest) will be allocated.
       - If C(src) and C(dest) are files and if the parent directory of C(dest)
         does not exist, then the task will fail.
       - When the C(dest) is an existing VSAM(KSDS) or VSAM(ESDS), then source
-        can be ESDS, KSDS or RRDS.
+        can be ESDS, KSDS or RRDS. The C(dest) will be deleted and storage
+        management rules will be used to determine the volume where C(dest) will
+        be allocated.
       - When the C(dest) is an existing VSAM(RRDS), then the source must be RRDS.
-      - When C(dest) is and existing VSAM(LDS), then source must be LDS.
+        The C(dest) will be deleted and storage management rules will be used to
+        determine the volume where C(dest) will be allocated.
+      - When C(dest) is and existing VSAM(LDS), then source must be LDS. The
+        C(dest) will be deleted and storage management rules will be used to
+        determine the volume where C(dest) will be allocated.
+      - When C(dest) is a data set, you can override storage management rules
+        by specifying both C(volume) and C(model_ds).
     type: str
     required: true
   encoding:
@@ -160,7 +173,8 @@ options:
         specify a model data set to allocate the destination after.
       - If this parameter is not provided, the destination data set will be
         allocated based on the size of the local file/directory.
-      - Only valid if C(src) is a local file or directory and C(dest) does not exist.
+      - Only valid if C(src) is a local file or directory and C(dest) does not
+        exist.
     type: str
     required: False
   remote_src:
@@ -187,10 +201,12 @@ options:
       - If C(src) is a local path or a USS path, it can be absolute or relative.
       - If C(src) is a directory, destination must be a partitioned data set or
         a USS directory.
-      - If C(src) is a file and dest ends with "/" or destination is a directory, the
-        file is copied to the directory with the same filename as src.
+      - If C(src) is a file and dest ends with "/" or destination is a
+        directory, the file is copied to the directory with the same filename as
+        src.
       - If C(src) is a VSAM data set, destination must also be a VSAM.
-      - Wildcards can be used to copy multiple PDS/PDSE members to another PDS/PDSE.
+      - Wildcards can be used to copy multiple PDS/PDSE members to another
+        PDS/PDSE.
       - Required unless using C(content).
     type: str
   validate:
@@ -205,10 +221,17 @@ options:
     description:
       - If C(dest) does not exist, specify which volume C(dest) should be
         allocated to.
+      - C(volume) must be used with C(model_ds), otherwise the C(volume) value
+        is ignored.
       - Only valid when the destination is an MVS data set.
       - The volume must already be present on the device.
-      - If no volume is specified, an appropriate volume will be chosen to
-        allocate C(dest).
+      - If no volume is specified, storage management rules will be used to
+        determine the volume where C(dest) will be allocated.
+      - If the storage administrator has specified a system default unit name
+        and you do not set a C(volume) name for non-system-managed data sets,
+        then the system uses the volumes associated with the default unit name.
+        Check with your storage administrator to determine whether a default
+        unit name has been specified.
     type: str
     required: false
 notes:
@@ -226,6 +249,10 @@ notes:
     - VSAM data sets can only be copied to other VSAM data sets.
     - For supported character sets used to encode data, refer to
       U(https://ansible-collections.github.io/ibm_zos_core/supplementary.html#encode)
+    - M(zos_copy) uses SFTP (Secure File Transfer Protocol) for the underlying
+      transfer protocol; Co:Z SFTP is not supported. In the case of Co:z SFTP,
+      you can exempt the Ansible userid on ZOS from using Co:Z thus falling back
+      to using standard SFTP.
 seealso:
 - module: zos_fetch
 - module: zos_data_set
@@ -247,9 +274,6 @@ EXAMPLES = r"""
   zos_copy:
     src: /path/to/file.txt
     dest: /tmp/file.txt
-    encoding:
-      from: ISO8859-1
-      to: IBM-1047
 
 - name: Copy a local directory to a PDSE
   zos_copy:
@@ -270,10 +294,13 @@ EXAMPLES = r"""
     dest: /path/to/uss/location
     local_follow: true
 
-- name: Copy a local file to a PDS member
+- name: Copy a local file to a PDS member and convert encoding
   zos_copy:
     src: /path/to/local/file
     dest: HLQ.SAMPLE.PDSE(MEMBER)
+    encoding:
+      from: UTF-8
+      to: IBM-037
 
 - name: Copy a VSAM(KSDS) to a VSAM(KSDS)
   zos_copy:
@@ -291,9 +318,6 @@ EXAMPLES = r"""
     src: /path/to/remote/uss/file
     dest: SAMPLE.SEQ.DATA.SET
     remote_src: true
-    encoding:
-      from: ISO8859-1
-      to: IBM-1047
 
 - name: Copy a USS directory to another USS directory
   zos_copy:
@@ -587,15 +611,12 @@ class CopyHandler(object):
             alloc_vol {str} -- The volume where destination should be allocated
         """
         new_src = temp_path or conv_path or src
-        if self.dest_exists:
-            datasets.delete(dest)
         if model_ds:
+            if self.dest_exists:
+                datasets.delete(dest)
             self.allocate_model(dest, model_ds, vol=alloc_vol)
 
         if src_ds_type == "USS":
-            if not model_ds:
-                ps_size = "{0}K".format(math.ceil(os.stat(new_src).st_size / 1024))
-                self._allocate_ps(dest, size=ps_size)
             rc, out, err = self.run_command(
                 "cp {0} {1} \"//'{2}'\"".format(
                     "-B" if self.is_binary else "", new_src, dest
@@ -1198,20 +1219,30 @@ class PDSECopyHandler(CopyHandler):
         new_src = (temp_path or conv_path or src).replace("$", "\\$")
         dest = dest.replace("$", "\\$")
         response = datasets._copy(new_src, dest)
+        rc, out, err = response.rc, response.stdout_response, response.stderr_response
 
-        if response.rc != 0:
+        if rc != 0:
             msg = ""
             if is_uss_src:
                 msg = "Unable to copy file {0} to data set member {1}".format(src, dest)
             else:
                 msg = "Unable to copy data set member {0} to {1}".format(src, dest)
 
-            self.fail_json(
-                msg=msg,
-                rc=response.rc,
-                stdout=response.stdout_response,
-                stderr=response.stderr_response
-            )
+            # *****************************************************************
+            # An error occurs while attempting to write a data set member to a
+            # PDSE containing program object members, a PDSE cannot contain
+            # both program object members and data members. This can be
+            # resolved by copying the program object with a "-X" flag.
+            # *****************************************************************
+            if "FSUM8976" in err and "EDC5091I" in err:
+                rc, out, err = self.run_command(
+                    "cp -X \"//'{0}'\" \"//'{1}'\"".format(new_src, dest)
+                )
+                if rc != 0:
+                    self.fail_json(msg=msg, rc=rc, stdout=out, stderr=err)
+            else:
+                self.fail_json(msg=msg, rc=rc, stdout=out, stderr=err)
+
         return dest.replace("\\", "")
 
     def create_pdse(
@@ -1607,7 +1638,7 @@ def run_module(module, arg_def):
         if backup or backup_name:
             if dest_ds_type in MVS_PARTITIONED and data_set.is_empty(dest_name):
                 # The partitioned data set is empty
-                res_args["note"] = "Destination is emtpy, backup request ignored"
+                res_args["note"] = "Destination is empty, backup request ignored"
             else:
                 backup_name = backup_data(dest, dest_ds_type, backup_name)
     # ********************************************************************

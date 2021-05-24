@@ -2,14 +2,19 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (c) IBM Corporation 2020
-# Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#     http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['stableinterface'],
-                    'supported_by': 'comminuty'}
 
 DOCUMENTATION = r'''
 ---
@@ -159,8 +164,8 @@ EXAMPLES = r'''
     src: SYS1.PARMLIB(BPXPRM00)
     marker: "/* {mark} ANSIBLE MANAGED BLOCK */"
     block: |
-      " MOUNT FILESYSTEM('SOME.DATA.SET') TYPE(ZFS) MODE(READ)"
-      "    MOUNTPOINT('/tmp/src/somedirectory')"
+       MOUNT FILESYSTEM('SOME.DATA.SET') TYPE(ZFS) MODE(READ)
+          MOUNTPOINT('/tmp/src/somedirectory')
 
 - name: Remove a library as well as surrounding markers
   zos_blockinfile:
@@ -173,9 +178,9 @@ EXAMPLES = r'''
     src: /etc/profile
     insertafter: "PATH="
     block: |
-      "ZOAU=/path/to/zoau_dir/bin"
-      "export ZOAU"
-      "PATH=$ZOAU:$PATH"
+      ZOAU=/path/to/zoau_dir/bin
+      export ZOAU
+      PATH=$ZOAU:$PATH
 
 - name: Insert/Update HTML surrounded by custom markers after <body> line
   zos_blockinfile:
@@ -488,6 +493,11 @@ def main():
         result['cmd'] = ret['cmd']
         result['changed'] = ret['changed']
         result['found'] = ret['found']
+        # Only return 'rc' if stderr is not empty to not fail the playbook run in a nomatch case
+        # That information will be given with 'changed' and 'found'
+        if len(stderr):
+            result['stderr'] = str(stderr)
+            result['rc'] = rc
     except Exception:
         messageDict = dict(msg="ZOAU dmod return content is NOT in json format", stdout=str(stdout), stderr=str(stderr), rc=rc)
         if result.get('backup_name'):

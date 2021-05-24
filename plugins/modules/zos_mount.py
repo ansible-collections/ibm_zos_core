@@ -383,21 +383,22 @@ persistent:
     description: Values the user provided as input.
     returned: always
     type: dict
-    data_set_name:
-        description: This is the full qualified name of the dataset member to change.
-        returned: always
-        type: str
-        sample: SYS1.FILESYS(BPXPRMAA)
-    backup:
-        description: Specifies whether a backup of destination should be created.
-        returned: always
-        type: bool
-        sample: True
-    backup_name:
-        description: Specify a unique data set name for the destination backup.
-        returned: always
-        type: str
-        sample: SYS1.FILESYS(PRMAABAK)
+    suboptions:
+        data_set_name:
+            description: This is the full qualified name of the dataset member to change.
+            returned: always
+            type: str
+            sample: SYS1.FILESYS(BPXPRMAA)
+        backup:
+            description: Specifies whether a backup of destination should be created.
+            returned: always
+            type: bool
+            sample: True
+        backup_name:
+            description: Specify a unique data set name for the destination backup.
+            returned: always
+            type: str
+            sample: SYS1.FILESYS(PRMAABAK)
 tabcomment:
     description: The text that was used in markers around the Persistent/data_set_name entry.
     returned: always
@@ -510,10 +511,6 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
     MissingZOAUImport,
 )
 
-from ansible_collections.ibm.ibm_zos_core.plugins.modules.zos_apf import (
-    backupOper,
-)
-
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.copy import (
     copy_ps2uss,
     copy_mvs2mvs,
@@ -528,9 +525,32 @@ except Exception:
     types = MissingZOAUImport()
 
 
+# This is a duplicate of backupOper found in zos_apf.py of this collection
+# Ansible doesn't want to import things not in the module_utils folder,
+# necessitating this
 
-def cleanup(src_list):
-    pass
+def mt_backupOper(module, src, backup):
+    # analysis the file type
+    ds_utils = data_set.DataSetUtils(src)
+    file_type = ds_utils.ds_type()
+    if file_type != 'USS' and file_type not in DS_TYPE:
+        message = "{0} data set type is NOT supported".format(str(file_type))
+        module.fail_json(msg=message)
+
+    # backup can be True(bool) or none-zero length string. string indicates that backup_name was provided.
+    # setting backup to None if backup_name wasn't provided. if backup=None, Backup module will use
+    # pre-defined naming scheme and return the created destination name.
+    if isinstance(backup, bool):
+        backup = None
+    try:
+        if file_type == 'USS':
+            backup_name = Backup.uss_file_backup(src, backup_name=backup, compress=False)
+        else:
+            backup_name = Backup.mvs_file_backup(dsn=src, bk_dsn=backup)
+    except Exception:
+        module.fail_json(msg="creating backup has failed")
+
+    return backup_name
 
 
 def swap_text(original, adding, removing):
@@ -641,7 +661,7 @@ def run_module(module, arg_def):
             if persistent.get("backup_name"):
                 backup = persistent.get("backup_name").upper()
                 del persistent["backup_name"]
-            res_args["backup_name"] = backupOper(module, data_set_name, backup)
+            res_args["backup_name"] = mt_backupOper(module, data_set_name, backup)
             del persistent["backup"]
         if state == "present":
             persistent["addDataset"] = data_set_name

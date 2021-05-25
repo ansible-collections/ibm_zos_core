@@ -14,6 +14,16 @@ __metaclass__ = type
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import data_set
 
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
+    MissingZOAUImport,
+)
+
+try:
+    from zoautil_py import Datasets
+except Exception:
+    Datasets = MissingZOAUImport()
+
+
 INITIAL_PRM_MEMBER = """/* Initial file to look like BPXPRM */
 /* some settings at the top */
 something = something else

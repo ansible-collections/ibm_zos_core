@@ -59,11 +59,11 @@ def populate_tmpfile():
 
 def create_sourcefile(hosts):
     starter = get_sysname(hosts)
-    print( "csf: starter={0} is type {1}".format(starter, str(type(starter))))
+    print("csf: starter={0} is type {1}".format(starter, str(type(starter))))
     if len(starter) < 2:
         starter = "IMSTESTU"
     thisfile = starter + ".TST.MNT.ZFS"
-    print( "csf: thisfile={0} is type {1}".format(thisfile, str(type(thisfile))))
+    print("csf: thisfile={0} is type {1}".format(thisfile, str(type(thisfile))))
     fs_du = data_set.DataSetUtils(thisfile)
     fs_exists = fs_du.exists()
     if fs_exists is False:

@@ -58,7 +58,7 @@ def populate_tmpfile():
 
 
 def create_sourcefile(hosts):
-    starter = get_sysname(hosts)
+    starter = get_sysname(hosts).split(".")[0].upper()
     print("csf: starter={0} is type {1}".format(starter, str(type(starter))))
     if len(starter) < 2:
         starter = "IMSTESTU"

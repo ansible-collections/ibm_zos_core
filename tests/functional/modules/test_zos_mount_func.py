@@ -9,7 +9,6 @@ __metaclass__ = type
 
 import os
 import tempfile
-from ansible.module_utils.basic import AnsibleModule
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     data_set,
@@ -70,26 +69,29 @@ def populate_tmpfile():
 
 def create_sourcefile(hosts):
     starter = get_sysname(hosts).split(".")[0].upper()
-    print("csf: starter={0} is type {1}".format(starter, str(type(starter))))
     if len(starter) < 2:
         starter = "IMSTESTU"
     thisfile = starter + ".TST.MNT.ZFS"
-    print("csf: thisfile={0} is type {1}".format(thisfile, str(type(thisfile))))
-    fs_du = data_set.DataSetUtils(thisfile)
-    fs_exists = fs_du.exists()
-    if fs_exists is False:
-        hosts.all.shell(
-            cmd="zfsadm define -aggregate "
-            + thisfile
-            + " -volumes IMSCN1 -cylinders 500 1",
-            executable=SHELL_EXECUTABLE,
-            stdin="",
+    print(
+        "csf: starter={0} thisfile={1} is type {2}".format(
+            starter, thisfile, str(type(thisfile))
         )
-        hosts.all.shell(
-            cmd="zfsadm format -aggregate " + thisfile,
-            executable=SHELL_EXECUTABLE,
-            stdin="",
-        )
+    )
+    # fs_du = data_set.DataSetUtils(thisfile)
+    # fs_exists = fs_du.exists()
+    # if fs_exists is False:
+    hosts.all.shell(
+        cmd="zfsadm define -aggregate "
+        + thisfile
+        + " -volumes IMSCN1 -cylinders 500 1",
+        executable=SHELL_EXECUTABLE,
+        stdin="",
+    )
+    hosts.all.shell(
+        cmd="zfsadm format -aggregate " + thisfile,
+        executable=SHELL_EXECUTABLE,
+        stdin="",
+    )
     return thisfile
 
 

@@ -106,10 +106,10 @@ def test_basic_mount(ansible_zos_module):
             assert result.get("rc") == 0
             assert result.get("stdout") != ""
             assert result.get("changed") is True
-            assert os.path.exists("/pythonx")
+            # assert os.path.exists("/pythonx/") result is local, I'd need to add hosts.. reference here.
     finally:
         hosts.all.zos_mount(src=srcfn, state="absent")
-        os.rmdir("/pythonx")
+        hosts.all.os.rmdir("/pythonx")
 
 
 def test_double_mount(ansible_zos_module):
@@ -126,10 +126,10 @@ def test_double_mount(ansible_zos_module):
             assert "already mounted" in result.get("comment")
             assert result.get("stdout") != ""
             assert result.get("changed") is False
-            assert os.path.exists("/pythonx")
+            # assert os.path.exists("/pythonx") result is local.
     finally:
         hosts.all.zos_mount(src=srcfn, state="absent")
-        os.rmdir("/pythonx")
+        hosts.all.os.rmdir("/pythonx")
 
 
 def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module):
@@ -157,8 +157,8 @@ def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module):
 
     finally:
         hosts.all.zos_mount(src=srcfn, state="absent")
-        os.rmdir("/pythonx")
-        os.unlink(tmp_file_filename)
+        hosts.all.os.rmdir("/pythonx/")
+        hosts.all.os.unlink(tmp_file_filename)
 
 
 def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
@@ -207,6 +207,6 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
         assert fs_exists
     finally:
         hosts.all.zos_mount(src=srcfn, state="absent")
-        os.rmdir("/pythonx")
-        os.unlink(tmp_file_filename)
-        os.unlink(test_tmp_file_filename)
+        hosts.all.os.rmdir("/pythonx")
+        hosts.all.os.unlink(tmp_file_filename)
+        hosts.all.os.unlink(test_tmp_file_filename)

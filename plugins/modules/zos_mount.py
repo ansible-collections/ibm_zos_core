@@ -615,7 +615,7 @@ def swap_text(original, adding, removing):
 
     for startidx in reversed(boneyard.keys()):
         endidx = boneyard[startidx]
-        del content_lines[startidx : endidx + 1]
+        del content_lines[startidx: endidx + 1]
 
     if len(adding) > 0:
         content_lines.extend(adding.split("\n"))

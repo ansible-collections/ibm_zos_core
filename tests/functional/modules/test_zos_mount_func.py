@@ -7,7 +7,6 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-import os
 import tempfile
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
@@ -106,10 +105,13 @@ def test_basic_mount(ansible_zos_module):
             assert result.get("rc") == 0
             assert result.get("stdout") != ""
             assert result.get("changed") is True
-            # assert os.path.exists("/pythonx/") result is local, I'd need to add hosts.. reference here.
     finally:
         hosts.all.zos_mount(src=srcfn, state="absent")
-        hosts.all.os.rmdir("/pythonx")
+        hosts.all.shell(
+            cmd="rmdir /pythonx",
+            executable=SHELL_EXECUTABLE,
+            stdin="",
+        )
 
 
 def test_double_mount(ansible_zos_module):
@@ -129,7 +131,11 @@ def test_double_mount(ansible_zos_module):
             # assert os.path.exists("/pythonx") result is local.
     finally:
         hosts.all.zos_mount(src=srcfn, state="absent")
-        hosts.all.os.rmdir("/pythonx")
+        hosts.all.shell(
+            cmd="rmdir /pythonx",
+            executable=SHELL_EXECUTABLE,
+            stdin="",
+        )
 
 
 def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module):
@@ -157,8 +163,16 @@ def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module):
 
     finally:
         hosts.all.zos_mount(src=srcfn, state="absent")
-        hosts.all.os.rmdir("/pythonx/")
-        hosts.all.os.unlink(tmp_file_filename)
+        hosts.all.shell(
+            cmd="del " + tmp_file_filename,
+            executable=SHELL_EXECUTABLE,
+            stdin="",
+        )
+        hosts.all.shell(
+            cmd="rmdir /pythonx",
+            executable=SHELL_EXECUTABLE,
+            stdin="",
+        )
 
 
 def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
@@ -207,6 +221,19 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
         assert fs_exists
     finally:
         hosts.all.zos_mount(src=srcfn, state="absent")
-        hosts.all.os.rmdir("/pythonx")
-        hosts.all.os.unlink(tmp_file_filename)
-        hosts.all.os.unlink(test_tmp_file_filename)
+        hosts.all.shell(
+            cmd="del " + tmp_file_filename,
+            executable=SHELL_EXECUTABLE,
+            stdin="",
+        )
+        hosts.all.shell(
+            cmd="del " + test_tmp_file_filename,
+            executable=SHELL_EXECUTABLE,
+            stdin="",
+        )
+
+        hosts.all.shell(
+            cmd="rmdir /pythonx",
+            executable=SHELL_EXECUTABLE,
+            stdin="",
+        )

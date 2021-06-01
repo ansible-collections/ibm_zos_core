@@ -505,7 +505,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module im
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser,
     data_set,
-    backup as Backup
+    backup as Backup,
 )
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
@@ -530,14 +530,14 @@ except Exception:
 # Ansible doesn't want to import things not in the module_utils folder,
 # necessitating this
 # supported data set types
-mt_DS_TYPE = ['PS', 'PO']
+mt_DS_TYPE = ["PS", "PO"]
 
 
 def mt_backupOper(module, src, backup):
     # analysis the file type
     ds_utils = data_set.DataSetUtils(src)
     file_type = ds_utils.ds_type()
-    if file_type != 'USS' and file_type not in mt_DS_TYPE:
+    if file_type != "USS" and file_type not in mt_DS_TYPE:
         message = "{0} data set type is NOT supported".format(str(file_type))
         module.fail_json(msg=message)
 
@@ -547,8 +547,10 @@ def mt_backupOper(module, src, backup):
     if isinstance(backup, bool):
         backup = None
     try:
-        if file_type == 'USS':
-            backup_name = Backup.uss_file_backup(src, backup_name=backup, compress=False)
+        if file_type == "USS":
+            backup_name = Backup.uss_file_backup(
+                src, backup_name=backup, compress=False
+            )
         else:
             backup_name = Backup.mvs_file_backup(dsn=src, bk_dsn=backup)
     except Exception:
@@ -613,7 +615,7 @@ def swap_text(original, adding, removing):
 
     for startidx in reversed(boneyard.keys()):
         endidx = boneyard[startidx]
-        del content_lines[startidx: endidx + 1]
+        del content_lines[startidx : endidx + 1]
 
     if len(adding) > 0:
         content_lines.extend(adding.split("\n"))
@@ -885,7 +887,7 @@ def run_module(module, arg_def):
         parmtext = ""
 
     if gonna_unmount:  # unmount/remount
-        fullumcmd = "tsocmd UNMOUNT FILESYSTEM\\(\\'{0}\\'\\)".format(src)
+        fullumcmd = "tsocmd UNMOUNT FILESYSTEM\\( '{0}' \\)".format(src)
         if unmount_opts is None:
             unmount_opts = "NORMAL"
             fullumcmd = fullcmd + " " + unmount_opts

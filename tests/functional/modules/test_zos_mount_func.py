@@ -5,14 +5,15 @@
 
 from __future__ import absolute_import, division, print_function
 
-import os
-import shutil
-import tempfile
-import pytest
-
 __metaclass__ = type
 
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import data_set
+import os
+import tempfile
+from ansible.module_utils.basic import AnsibleModule
+
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
+    data_set,
+)
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     MissingZOAUImport,

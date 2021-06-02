@@ -148,13 +148,13 @@ def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module):
     src_file = tmp_file_filename
 
     hosts.all.zos_data_set(
-            name=dest,
-            type="pdse",
-            space_primary=5,
-            space_type="M",
-            record_format="fba",
-            record_length=80,
-        )
+        name=dest,
+        type="pdse",
+        space_primary=5,
+        space_type="M",
+        record_format="fba",
+        record_length=80,
+    )
     hosts.all.zos_copy(src=src_file, dest=dest_path, remote_src=True)
 
     try:
@@ -192,13 +192,13 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
     src_file = tmp_file_filename
 
     hosts.all.zos_data_set(
-            name=dest,
-            type="pdse",
-            space_primary=5,
-            space_type="M",
-            record_format="fba",
-            record_length=80,
-        )
+        name=dest,
+        type="pdse",
+        space_primary=5,
+        space_type="M",
+        record_format="fba",
+        record_length=80,
+    )
     hosts.all.zos_copy(src=src_file, dest=dest_path, remote_src=True)
 
     hosts.all.shell(

@@ -255,6 +255,7 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
         hosts.all.zos_copy(
             src=dest_path,
             dest=test_tmp_file_filename,
+            remote_src=True,
         )
 
         catresults = hosts.all.shell(

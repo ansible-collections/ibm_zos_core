@@ -665,7 +665,7 @@ def run_module(module, arg_def):
         backup = persistent.get("backup")
         if backup:
             if persistent.get("backup_name"):
-                backup = persistent.get("backup_name").upper()
+                backup_name = persistent.get("backup_name").upper()
                 del persistent["backup_name"]
             res_args["backup_name"] = mt_backupOper(module, data_set_name, backup)
             del persistent["backup"]

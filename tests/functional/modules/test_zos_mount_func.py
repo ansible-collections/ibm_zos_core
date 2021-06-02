@@ -176,12 +176,16 @@ def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module):
         record_length=80,
     )
     print("\nCopying {0} to {1}\n".format(src_file, dest_path))
-    # hosts.all.zos_copy(src=src_file, dest=dest_path, remote_src=True)
-    hosts.all.shell(
-        cmd="cp " + src_file + " \"//'USER.TEST.BPX.PDS\\(AUTO1\\)",
-        executable=SHELL_EXECUTABLE,
-        stdin="",
+    hosts.all.zos_copy(
+        src=src_file,
+        dest=dest_path,
+        remote_src=True
     )
+    # hosts.all.shell(
+    #    cmd="cp " + src_file + " \"//'USER.TEST.BPX.PDS\\(AUTO1\\)",
+    #    executable=SHELL_EXECUTABLE,
+    #    stdin="",
+    #)
     try:
         mount_result = hosts.all.zos_mount(
             src=srcfn,

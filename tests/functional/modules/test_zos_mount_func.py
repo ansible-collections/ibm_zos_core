@@ -154,7 +154,7 @@ def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module):
         stdin=""
     )
     for cr in catresult:
-        print( "shellcat: rc={0}\n, so={1}\n, se={2}\n".format(
+        print("shellcat: rc={0}\n, so={1}\n, se={2}\n".format(
             cr.get("rc"), cr.get("stdout"), cr.get("stderr")
         ))
 
@@ -167,13 +167,13 @@ def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module):
         type="pdse",
         space_primary=5,
         space_type="M",
-        record_format="fba",
+        record_format="fba",ß
         record_length=80,
     )
     print("\nCopying {0} to {1}\n".format(src_file, dest_path))
     # hosts.all.zos_copy(src=src_file, dest=dest_path, remote_src=True)
     hosts.all.shell(
-        cmd="cp " + src_file + " \"//'USER.TEST.BPX.PDS\(AUTO1\)",
+        cmd="cp " + src_file + " \"//'USER.TEST.BPX.PDS\\(AUTO1\\)",
         executable=SHELL_EXECUTABLE,
         stdin="",
     )

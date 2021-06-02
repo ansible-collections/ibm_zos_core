@@ -106,12 +106,13 @@ def test_basic_mount(ansible_zos_module):
             assert result.get("stdout") != ""
             assert result.get("changed") is True
     finally:
-        hosts.all.zos_mount(src=srcfn, state="absent")
-        hosts.all.shell(
-            cmd="rmdir /pythonx",
-            executable=SHELL_EXECUTABLE,
-            stdin="",
+        hosts.all.zos_mount(
+            src=srcfn,
+            path="/pythonx",
+            fs_type="ZFS",
+            state="absent",
         )
+        hosts.all.file(path="/pythonx/", state="absent")
 
 
 def test_double_mount(ansible_zos_module):
@@ -128,14 +129,14 @@ def test_double_mount(ansible_zos_module):
             assert "already mounted" in result.get("comment")
             assert result.get("stdout") != ""
             assert result.get("changed") is False
-            # assert os.path.exists("/pythonx") result is local.
     finally:
-        hosts.all.zos_mount(src=srcfn, state="absent")
-        hosts.all.shell(
-            cmd="rmdir /pythonx",
-            executable=SHELL_EXECUTABLE,
-            stdin="",
+        hosts.all.zos_mount(
+            src=srcfn,
+            path="/pythonx",
+            fs_type="ZFS",
+            state="absent",
         )
+        hosts.all.file(path="/pythonx/", state="absent")
 
 
 def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module):
@@ -163,7 +164,7 @@ def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module):
             path="/pythonx",
             fs_type="ZFS",
             state="mounted",
-            persistent=dict(data_set_name="USER.TEST.BPX.PDS(AUTO1)"),
+            persistent=dict(data_set_name=dest_path),
         )
 
         for result in mount_result.values():
@@ -178,7 +179,7 @@ def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module):
             fs_type="ZFS",
             state="absent",
         )
-        hosts.all.file(path=tmp_file_filename, state="absent")
+        # hosts.all.file(path=tmp_file_filename, state="absent")
         hosts.all.file(path="/pythonx/", state="absent")
 
 

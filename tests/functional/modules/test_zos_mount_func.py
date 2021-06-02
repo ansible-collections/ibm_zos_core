@@ -181,11 +181,6 @@ def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module):
         dest=dest_path,
         remote_src=True
     )
-    # hosts.all.shell(
-    #    cmd="cp " + src_file + " \"//'USER.TEST.BPX.PDS\\(AUTO1\\)",
-    #    executable=SHELL_EXECUTABLE,
-    #    stdin="",
-    # )
     try:
         mount_result = hosts.all.zos_mount(
             src=srcfn,
@@ -243,10 +238,10 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
             state="mounted",
             persistent=dict(
                 data_set_name="USER.TEST.BPX.PDS(AUTO1)",
-                comments=["bpxtablecomment - try this", "second line of comment"],
                 backup="Yes",
                 backup_name="USER.TEST.BPX.PDS(AUTO1BAK)",
             ),
+            tabcomment=["bpxtablecomment - try this", "second line of comment"],
         )
         test_tmp_file_filename = tmp_file_filename + "-a"
         hosts.all.shell(

@@ -143,10 +143,7 @@ def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module):
     hosts = ansible_zos_module
     srcfn = create_sourcefile(hosts)
 
-    # tmp_file_filename = populate_tmpfile()
     tmp_file_filename = "/tmp/testfile.txt"
-    # with open(tmp_file_filename, "w") as fh:
-    #    fh.write(INITIAL_PRM_MEMBER)
     hosts.all.shell(
         cmd="echo \"" + INITIAL_PRM_MEMBER + "\" > " + tmp_file_filename,
         executable=SHELL_EXECUTABLE,
@@ -158,10 +155,10 @@ def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module):
         executable=SHELL_EXECUTABLE,
         stdin=""
     )
-    for cr in catresult.values():
-        print("shellcat: rc={0}\n, so={1}\n, se={2}\n".format(
-            cr.get("rc"), cr.get("stdout"), cr.get("stderr")
-        ))
+    # for cr in catresult.values():
+    #    print("shellcat: rc={0}\n, so={1}\n, se={2}\n".format(
+    #        cr.get("rc"), cr.get("stdout"), cr.get("stderr")
+    #    ))
 
     dest = "USER.TEST.BPX.PDS"
     dest_path = "USER.TEST.BPX.PDS(AUTO1)"
@@ -175,7 +172,7 @@ def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module):
         record_format="fba",
         record_length=80,
     )
-    print("\nCopying {0} to {1}\n".format(src_file, dest_path))
+    print("\nbnn-Copying {0} to {1}\n".format(src_file, dest_path))
     hosts.all.zos_copy(
         src=src_file,
         dest=dest_path,
@@ -209,10 +206,17 @@ def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module):
 def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
     hosts = ansible_zos_module
     srcfn = create_sourcefile(hosts)
-    tmp_file_filename = populate_tmpfile()
+
+    tmp_file_filename = "/tmp/testfile.txt"
+    hosts.all.shell(
+        cmd="echo \"" + INITIAL_PRM_MEMBER + "\" > " + tmp_file_filename,
+        executable=SHELL_EXECUTABLE,
+        stdin=""
+    )
 
     dest = "USER.TEST.BPX.PDS"
-    dest_path = "USER.TEST.BPX.PDS(AUTO1)"
+    dest_path = "USER.TEST.BPX.PDS(AUTO2)"
+    back_dest_path = "USER.TEST.BPX.PDS(AUTO2BAK)"
     src_file = tmp_file_filename
 
     hosts.all.zos_data_set(
@@ -223,13 +227,14 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
         record_format="fba",
         record_length=80,
     )
-    hosts.all.zos_copy(src=src_file, dest=dest_path, remote_src=True)
 
-    hosts.all.shell(
-        cmd="cp " + tmp_file_filename + " \"//'USER.TEST.BPX.PDS(AUTO1)" + "'\"",
-        executable=SHELL_EXECUTABLE,
-        stdin="",
+    print("\nbcb-Copying {0} to {1}\n".format(src_file, dest_path))
+    hosts.all.zos_copy(
+        src=src_file,
+        dest=dest_path,
+        remote_src=True
     )
+
     try:
         mount_result = hosts.all.zos_mount(
             src=srcfn,
@@ -237,23 +242,30 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
             fs_type="ZFS",
             state="mounted",
             persistent=dict(
-                data_set_name="USER.TEST.BPX.PDS(AUTO1)",
+                data_set_name=dest_path,
                 backup="Yes",
-                backup_name="USER.TEST.BPX.PDS(AUTO1BAK)",
+                backup_name=back_dest_path,
             ),
-            tabcomment=["bpxtablecomment - try this", "second line of comment"],
+            tabcomment=[
+                "bpxtablecomment - try this",
+                "second line of comment"
+            ],
         )
         test_tmp_file_filename = tmp_file_filename + "-a"
-        hosts.all.shell(
-            cmd="cp \"//'USER.TEST.BPX.PDS(AUTO1)"
-            + "'\" "
-            + test_tmp_file_filename
-            + "-a",
-            executable=SHELL_EXECUTABLE,
-            stdin="",
+        hosts.all.zos_copy(
+            src=dest_path,
+            dest=test_tmp_file_filename,
         )
-        with open(tmp_file_filename, "r") as infile:
-            data = infile.read()
+
+        catresults = hosts.all.shell(
+            cmd="cat " + test_tmp_file_filename,
+            executable=SHELL_EXECUTABLE,
+            stdin=""
+        )
+        data = ""
+        for result in catresults.values():
+            data += result.get("stdout")
+            print( "\nCat result: {0}\n".format(result.get("stdout")))
 
         for result in mount_result.values():
             assert result.get("rc") == 0
@@ -262,11 +274,16 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
 
         assert srcfn in data
         assert "bpxtablecomment - try this" in data
-        fs_du = data_set.DataSetUtils("USER.TEST.BPX.PDS(AUTO1BAK)")
+        fs_du = data_set.DataSetUtils(back_dest_path)
         fs_exists = fs_du.exists()
         assert fs_exists
     finally:
-        hosts.all.zos_mount(src=srcfn, state="absent")
+        hosts.all.zos_mount(
+            src=srcfn,
+            path="/pythonx",
+            fs_type="ZFS",
+            state="absent",
+        )
         hosts.all.file(path=tmp_file_filename, state="absent")
         hosts.all.file(path=test_tmp_file_filename, state="absent")
         hosts.all.file(path="/pythonx/", state="absent")

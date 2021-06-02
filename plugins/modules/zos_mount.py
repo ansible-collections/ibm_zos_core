@@ -541,8 +541,8 @@ def mt_backupOper(module, src, backup):
         message = "{0} data set type is NOT supported".format(str(file_type))
         module.fail_json(msg=message)
 
-    # backup can be True(bool) or none-zero length string. string indicates that backup_name was provided.
-    # setting backup to None if backup_name wasn't provided. if backup=None, Backup module will use
+    # backup is considered True(bool) if it is a non-zero length string. string indicates that backup_name was provided.
+    # set backup to None if backup_name wasn't provided. if backup=None, Backup module will use
     # pre-defined naming scheme and return the created destination name.
     if isinstance(backup, bool):
         backup = None
@@ -648,7 +648,7 @@ def run_module(module, arg_def):
     state = parsed_args.get("state")
     persistent = parsed_args.get("persistent")
     backup = None
-    backup_name = None
+    backup_name = ""
     tabcomment = parsed_args.get("tabcomment")
     unmount_opts = parsed_args.get("unmount_opts")
     mount_opts = parsed_args.get("mount_opts")
@@ -666,8 +666,12 @@ def run_module(module, arg_def):
         if backup:
             if persistent.get("backup_name"):
                 backup_name = persistent.get("backup_name").upper()
-                del persistent["backup_name"]
-            res_args["backup_name"] = mt_backupOper(module, data_set_name, backup)
+            if len(backup_name) < 1:
+                backup_code = None
+            else:
+                backup_code = backup_name
+            backup_name = mt_backupOper(module, data_set_name, backup_code)
+            res_args["backup_name"] = backup_name
             del persistent["backup"]
         if state == "present":
             persistent["addDataset"] = data_set_name
@@ -948,11 +952,6 @@ def run_module(module, arg_def):
 
         # look at using zos_copy here
         copy_ps2uss(data_set_name, tmp_file_filename, False)
-
-        # zos_copy could obviate the need for the backup call here
-        if backup:
-            copy_mvs2mvs(data_set_name, backup_name, False)
-            comment += "Wrote backup to " + backup_name + "\n"
 
         with open(tmp_file_filename, "r") as fh:
             content = fh.read().splitlines()

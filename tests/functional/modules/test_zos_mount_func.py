@@ -142,7 +142,11 @@ def test_double_mount(ansible_zos_module):
 def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module):
     hosts = ansible_zos_module
     srcfn = create_sourcefile(hosts)
-    tmp_file_filename = populate_tmpfile()
+
+    # tmp_file_filename = populate_tmpfile()
+    tmp_file_filename = "/tmp/testfile.txt"
+    with open(tmp_file_filename, "w") as fh:
+        fh.write(INITIAL_PRM_MEMBER)
 
     dest = "USER.TEST.BPX.PDS"
     dest_path = "USER.TEST.BPX.PDS(AUTO1)"
@@ -156,6 +160,7 @@ def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module):
         record_format="fba",
         record_length=80,
     )
+    print("Copying {0} to {1}".format(src_file, dest))
     hosts.all.zos_copy(src=src_file, dest=dest_path, remote_src=True)
 
     try:

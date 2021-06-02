@@ -265,7 +265,7 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
         data = ""
         for result in catresults.values():
             data += result.get("stdout")
-            print( "\nCat result: {0}\n".format(result.get("stdout")))
+            print("\nCat result: {0}\n".format(result.get("stdout")))
 
         for result in mount_result.values():
             assert result.get("rc") == 0

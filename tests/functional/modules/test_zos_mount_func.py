@@ -145,8 +145,13 @@ def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module):
 
     # tmp_file_filename = populate_tmpfile()
     tmp_file_filename = "/tmp/testfile.txt"
-    with open(tmp_file_filename, "w") as fh:
-        fh.write(INITIAL_PRM_MEMBER)
+    #with open(tmp_file_filename, "w") as fh:
+    #    fh.write(INITIAL_PRM_MEMBER)
+    hosts.all.shell(
+        cmd="echo \"" + INITIAL_PRM_MEMBER + "\" > " + tmp_file_filename,
+        executable=SHELL_EXECUTABLE,
+        stdin=""
+    )
 
     catresult = hosts.all.shell(
         cmd="cat " + tmp_file_filename,

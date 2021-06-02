@@ -58,7 +58,7 @@ def get_sysname(hosts):
 
 
 def populate_tmpfile():
-    tmp_file = tempfile.NamedTemporaryFile(delete=False)
+    tmp_file = tempfile.NamedTemporaryFile(mode='w', delete=False)
     tmp_file_filename = tmp_file.name
     # tmp_file.close()
     # with open(tmp_file_filename, "w") as fh:

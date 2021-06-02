@@ -167,7 +167,7 @@ def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module):
         type="pdse",
         space_primary=5,
         space_type="M",
-        record_format="fba",ß
+        record_format="fba",
         record_length=80,
     )
     print("\nCopying {0} to {1}\n".format(src_file, dest_path))

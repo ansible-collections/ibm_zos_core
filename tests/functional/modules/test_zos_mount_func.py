@@ -58,7 +58,7 @@ def get_sysname(hosts):
 
 
 def populate_tmpfile():
-    tmp_file = tempfile.NamedTemporaryFile(delete=True)
+    tmp_file = tempfile.NamedTemporaryFile(delete=False)
     tmp_file_filename = tmp_file.name
     tmp_file.close()
     with open(tmp_file_filename, "w") as fh:
@@ -142,6 +142,8 @@ def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module):
     hosts = ansible_zos_module
     srcfn = create_sourcefile(hosts)
     tmp_file_filename = populate_tmpfile()
+    # Need to pre-allocate the PDS before pushing members to it.... duh!!!
+
     hosts.all.shell(
         cmd="cp " + tmp_file_filename + " \"//'IMSTESTU.BPX.PDS(AUTO1)" + "'\"",
         executable=SHELL_EXECUTABLE,
@@ -162,7 +164,12 @@ def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module):
             assert result.get("changed") is True
 
     finally:
-        hosts.all.zos_mount(src=srcfn, state="absent")
+        hosts.all.zos_mount(
+            src=srcfn,
+            path="/pythonx",
+            fs_type="ZFS",
+            state="absent",
+        )
         hosts.all.shell(
             cmd="del " + tmp_file_filename,
             executable=SHELL_EXECUTABLE,

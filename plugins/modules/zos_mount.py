@@ -37,7 +37,7 @@ options:
         required: True
     src:
         description:
-            - The z/OS Unix System Services (USS) file system data set to be mounted.
+            - The zFS aggregate data set to be mounted.
         type: str
         required: True
     fs_type:

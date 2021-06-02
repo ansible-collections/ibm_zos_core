@@ -153,7 +153,7 @@ def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module):
         executable=SHELL_EXECUTABLE,
         stdin=""
     )
-    for cr in catresult:
+    for cr in catresult.values():
         print("shellcat: rc={0}\n, so={1}\n, se={2}\n".format(
             cr.get("rc"), cr.get("stdout"), cr.get("stderr")
         ))

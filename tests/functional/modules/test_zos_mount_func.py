@@ -185,7 +185,7 @@ def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module):
     #    cmd="cp " + src_file + " \"//'USER.TEST.BPX.PDS\\(AUTO1\\)",
     #    executable=SHELL_EXECUTABLE,
     #    stdin="",
-    #)
+    # )
     try:
         mount_result = hosts.all.zos_mount(
             src=srcfn,

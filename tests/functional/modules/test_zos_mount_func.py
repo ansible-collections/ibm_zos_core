@@ -163,7 +163,7 @@ def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module):
             path="/pythonx",
             fs_type="ZFS",
             state="mounted",
-            persistent=dict(data_set_name="IMSTESTU.BPX.PDS(AUTO1)"),
+            persistent=dict(data_set_name="USER.TEST.BPX.PDS(AUTO1)"),
         )
 
         for result in mount_result.values():
@@ -202,7 +202,7 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
     hosts.all.zos_copy(src=src_file, dest=dest_path, remote_src=True)
 
     hosts.all.shell(
-        cmd="cp " + tmp_file_filename + " \"//'IMSTESTU.BPX.PDS(AUTO1)" + "'\"",
+        cmd="cp " + tmp_file_filename + " \"//'USER.TEST.BPX.PDS(AUTO1)" + "'\"",
         executable=SHELL_EXECUTABLE,
         stdin="",
     )
@@ -213,15 +213,15 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
             fs_type="ZFS",
             state="mounted",
             persistent=dict(
-                data_set_name="IMSTESTU.BPX.PDS(AUTO1)",
+                data_set_name="USER.TEST.BPX.PDS(AUTO1)",
                 comments=["bpxtablecomment - try this", "second line of comment"],
                 backup="Yes",
-                backup_name="IMSTESTU.BPX.PDS(AUTO1BAK)",
+                backup_name="USER.TEST.BPX.PDS(AUTO1BAK)",
             ),
         )
         test_tmp_file_filename = tmp_file_filename + "-a"
         hosts.all.shell(
-            cmd="cp \"//'IMSTESTU.BPX.PDS(AUTO1)"
+            cmd="cp \"//'USER.TEST.BPX.PDS(AUTO1)"
             + "'\" "
             + test_tmp_file_filename
             + "-a",
@@ -238,15 +238,11 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
 
         assert srcfn in data
         assert "bpxtablecomment - try this" in data
-        fs_du = data_set.DataSetUtils("IMSTESTU.BPX.PDS(AUTO1BAK)")
+        fs_du = data_set.DataSetUtils("USER.TEST.BPX.PDS(AUTO1BAK)")
         fs_exists = fs_du.exists()
         assert fs_exists
     finally:
         hosts.all.zos_mount(src=srcfn, state="absent")
-        hosts.all.shell(
-            cmd="del " + tmp_file_filename,
-            executable=SHELL_EXECUTABLE,
-            stdin="",
-        )
+        hosts.all.file(path=tmp_file_filename, state="absent")
         hosts.all.file(path=test_tmp_file_filename, state="absent")
         hosts.all.file(path="/pythonx/", state="absent")

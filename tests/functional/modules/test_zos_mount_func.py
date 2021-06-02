@@ -148,6 +148,16 @@ def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module):
     with open(tmp_file_filename, "w") as fh:
         fh.write(INITIAL_PRM_MEMBER)
 
+    catresult = hosts.all.shell(
+        cmd="cat " + tmp_file_filename,
+        executable=SHELL_EXECUTABLE,
+        stdin=""
+    )
+    for cr in catresult:
+        print( "shellcat: rc={0}\n, so={1}\n, se={2}\n".format(
+            cr.get("rc"), cr.get("stdout"), cr.get("stderr")
+        ))
+
     dest = "USER.TEST.BPX.PDS"
     dest_path = "USER.TEST.BPX.PDS(AUTO1)"
     src_file = tmp_file_filename
@@ -160,10 +170,10 @@ def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module):
         record_format="fba",
         record_length=80,
     )
-    print("Copying {0} to {1}".format(src_file, dest_path))
+    print("\nCopying {0} to {1}\n".format(src_file, dest_path))
     # hosts.all.zos_copy(src=src_file, dest=dest_path, remote_src=True)
     hosts.all.shell(
-        cmd="cp " + src_file + " \"//'USER.TEST.BPX.PDS(AUTO1)",
+        cmd="cp " + src_file + " \"//'USER.TEST.BPX.PDS\(AUTO1\)",
         executable=SHELL_EXECUTABLE,
         stdin="",
     )
@@ -188,7 +198,7 @@ def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module):
             fs_type="ZFS",
             state="absent",
         )
-        # hosts.all.file(path=tmp_file_filename, state="absent")
+        hosts.all.file(path=tmp_file_filename, state="absent")
         hosts.all.file(path="/pythonx/", state="absent")
 
 

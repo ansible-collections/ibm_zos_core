@@ -229,7 +229,6 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
 
     print("\n====================================================\n")
 
-
     dest = "USER.TEST.BPX.PDS"
     dest_path = "USER.TEST.BPX.PDS(AUTO2)"
     back_dest_path = "USER.TEST.BPX.PDS(AUTO2BAK)"

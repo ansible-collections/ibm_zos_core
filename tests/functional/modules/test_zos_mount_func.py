@@ -170,12 +170,6 @@ def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module):
         executable=SHELL_EXECUTABLE,
         stdin="",
     )
-    # hosts.all.zos_copy(
-    #    src=src_file,
-    #    dest=dest_path,
-    #    remote_src=True,
-    #    is_binary=True,
-    # )
     try:
         mount_result = hosts.all.zos_mount(
             src=srcfn,
@@ -237,10 +231,22 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
         stdin="",
     )
 
+    # because this is with/open, it is showing the content on the ansible server
     with open(tmp_file_filename, 'r') as infile:
         data = infile.read()
-    print("\nbcb-copy-original result:\n{0}\n".format(data))
+    print("\nbcb-copy-original  result:\n{0}\n".format(data))
     data = ""
+    print( "\n====================================================\n")
+    # This should pull the value of the file once copied to the target
+    results = hosts.all.shell(
+        cmd="cat " + tmp_file_filename,
+        executable=SHELL_EXECUTABLE,
+        stdin="",
+    )
+    for result in results.values():
+        print("\nbcb-destination result: {0}\n".format(result.get("stdout")))
+
+    print( "\n====================================================\n")
 
     try:
         mount_result = hosts.all.zos_mount(
@@ -267,15 +273,15 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
             stdin="",
         )
 
-        catresults = hosts.all.shell(
+        results = hosts.all.shell(
             cmd="cat " + test_tmp_file_filename,
             executable=SHELL_EXECUTABLE,
             stdin=""
         )
         data = ""
-        for result in catresults.values():
+        for result in results.values():
+            print("\nbcb-postmount result: {0}\n".format(result.get("stdout")))
             data += result.get("stdout")
-            print("\nbcb-Cat result: {0}\n".format(result.get("stdout")))
 
         for result in mount_result.values():
             assert result.get("rc") == 0

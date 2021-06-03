@@ -17,6 +17,12 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
     MissingZOAUImport,
 )
 
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.copy import (
+    copy_ps2uss,
+    # copy_mvs2mvs,
+    copy_uss2mvs,
+)
+
 try:
     from zoautil_py import Datasets
 except Exception:
@@ -235,14 +241,16 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
 
     print("\nbcb-Copying {0} to {1}\n".format(src_file, dest_path))
     # source file is on ansible server, not on target
-    hosts.all.zos_copy(
-        src=src_file,
-        dest=dest_path,
-        is_binary=True,
-    )
+    # hosts.all.zos_copy(
+    #    src=src_file,
+    #    dest=dest_path,
+    #    is_binary=True,
+    # )
+    copy_uss2mvs(src_file, dest_path, "PDSE", is_binary=True)
+
     with open(tmp_file_filename, 'r') as infile:
         data = infile.read()
-    print("\ncopy-origin result: {0}\n".format(data))
+    print("\ncopy-origin result:\n{0}\n".format(data))
     data = ""
 
     try:
@@ -263,12 +271,13 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
         )
         # copying from dataset to make edit copy on target
         test_tmp_file_filename = tmp_file_filename + "-a"
-        hosts.all.zos_copy(
-            src=dest_path,
-            dest=test_tmp_file_filename,
-            remote_src=True,
-            is_binary=True,
-        )
+        # hosts.all.zos_copy(
+        #    src=dest_path,
+        #    dest=test_tmp_file_filename,
+        #    remote_src=True,
+        #    is_binary=True,
+        # )
+        copy_ps2uss(dest_path, test_tmp_file_filename, is_binary=True)
 
         catresults = hosts.all.shell(
             cmd="cat " + test_tmp_file_filename,

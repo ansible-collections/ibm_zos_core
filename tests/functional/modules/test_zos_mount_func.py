@@ -240,6 +240,16 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
         dest=dest_path,
         is_binary=True,
     )
+    catresults = hosts.all.shell(
+        cmd="cat " + test_tmp_file_filename,
+        executable=SHELL_EXECUTABLE,
+        stdin=""
+    )
+    data = ""
+    for result in catresults.values():
+        data += result.get("stdout")
+        print("\ncopy-Cat result: {0}\n".format(result.get("stdout")))
+    data = ""
 
     try:
         mount_result = hosts.all.zos_mount(
@@ -293,6 +303,6 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
             fs_type="ZFS",
             state="absent",
         )
-        hosts.all.file(path=tmp_file_filename, state="absent")
-        hosts.all.file(path=test_tmp_file_filename, state="absent")
+        # hosts.all.file(path=tmp_file_filename, state="absent")
+        # hosts.all.file(path=test_tmp_file_filename, state="absent")
         hosts.all.file(path="/pythonx/", state="absent")

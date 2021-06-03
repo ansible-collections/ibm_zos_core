@@ -236,7 +236,7 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
         data = infile.read()
     print("\nbcb-copy-original  result:\n{0}\n".format(data))
     data = ""
-    print( "\n====================================================\n")
+    print("\n====================================================\n")
     # This should pull the value of the file once copied to the target
     results = hosts.all.shell(
         cmd="cat " + tmp_file_filename,
@@ -246,7 +246,7 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
     for result in results.values():
         print("\nbcb-destination result: {0}\n".format(result.get("stdout")))
 
-    print( "\n====================================================\n")
+    print("\n====================================================\n")
 
     try:
         mount_result = hosts.all.zos_mount(

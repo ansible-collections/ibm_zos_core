@@ -147,6 +147,11 @@ def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module):
     with open(tmp_file_filename, 'w') as infile:
         infile.write(INITIAL_PRM_MEMBER)
 
+    hosts.all.copy(
+        src=tmp_file_filename,
+        dest=tmp_file_filename,
+    )
+
     dest = "USER.TEST.BPX.PDS"
     dest_path = "USER.TEST.BPX.PDS(AUTO1)"
     src_file = tmp_file_filename

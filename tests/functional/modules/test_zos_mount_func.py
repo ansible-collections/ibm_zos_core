@@ -176,7 +176,8 @@ def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module):
     hosts.all.zos_copy(
         src=src_file,
         dest=dest_path,
-        remote_src=True
+        remote_src=True,
+        is_binary=True,
     )
     try:
         mount_result = hosts.all.zos_mount(
@@ -232,7 +233,8 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
     hosts.all.zos_copy(
         src=src_file,
         dest=dest_path,
-        remote_src=True
+        remote_src=True,
+        is_binary=True,
     )
 
     try:
@@ -256,6 +258,7 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
             src=dest_path,
             dest=test_tmp_file_filename,
             remote_src=True,
+            is_binary=True,
         )
 
         catresults = hosts.all.shell(

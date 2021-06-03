@@ -306,9 +306,9 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
 
         assert srcfn in data
         assert "bpxtablecomment - try this" in data
-        fs_du = data_set.DataSetUtils(back_dest_path)
-        fs_exists = fs_du.exists()
-        assert fs_exists
+        # fs_du = data_set.DataSetUtils(back_dest_path)
+        # fs_exists = fs_du.exists()
+        # assert fs_exists
     finally:
         hosts.all.zos_mount(
             src=srcfn,

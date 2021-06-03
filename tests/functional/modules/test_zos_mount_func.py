@@ -210,11 +210,10 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
     with open(tmp_file_filename, 'w') as infile:
         infile.write(INITIAL_PRM_MEMBER)
 
-    # hosts.all.shell(
-    #    cmd="echo \"" + INITIAL_PRM_MEMBER + "\" > " + tmp_file_filename,
-    #    executable=SHELL_EXECUTABLE,
-    #    stdin=""
-    # )
+    hosts.all.copy(
+        src=tmp_file_filename,
+        dest=tmp_file_filename,
+    )
 
     dest = "USER.TEST.BPX.PDS"
     dest_path = "USER.TEST.BPX.PDS(AUTO2)"
@@ -231,12 +230,7 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
     )
 
     print("\nbcb-Copying {0} to {1}\n".format(src_file, dest_path))
-    # source file is on ansible server, not on target
-    # hosts.all.zos_copy(
-    #    src=src_file,
-    #    dest=dest_path,
-    #    is_binary=True,
-    # )
+
     hosts.all.shell(
         cmd="cp " + tmp_file_filename + " \"//'" + dest_path + "'\"",
         executable=SHELL_EXECUTABLE,
@@ -264,14 +258,9 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
                 "second line of comment"
             ],
         )
-        # copying from dataset to make edit copy on target
+        # copying from dataset to make editable copy on target
         test_tmp_file_filename = tmp_file_filename + "-a"
-        # hosts.all.zos_copy(
-        #    src=dest_path,
-        #    dest=test_tmp_file_filename,
-        #    remote_src=True,
-        #    is_binary=True,
-        # )
+
         hosts.all.shell(
             cmd="cp \"//'" + dest_path + "'\" " + test_tmp_file_filename,
             executable=SHELL_EXECUTABLE,
@@ -305,6 +294,6 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
             fs_type="ZFS",
             state="absent",
         )
-        # hosts.all.file(path=tmp_file_filename, state="absent")
-        # hosts.all.file(path=test_tmp_file_filename, state="absent")
+        hosts.all.file(path=tmp_file_filename, state="absent")
+        hosts.all.file(path=test_tmp_file_filename, state="absent")
         hosts.all.file(path="/pythonx/", state="absent")

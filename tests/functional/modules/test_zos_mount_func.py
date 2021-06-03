@@ -17,12 +17,6 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
     MissingZOAUImport,
 )
 
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.copy import (
-    copy_ps2uss,
-    # copy_mvs2mvs,
-    copy_uss2mvs,
-)
-
 try:
     from zoautil_py import Datasets
 except Exception:
@@ -150,21 +144,8 @@ def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module):
     srcfn = create_sourcefile(hosts)
 
     tmp_file_filename = "/tmp/testfile.txt"
-    hosts.all.shell(
-        cmd="echo \"" + INITIAL_PRM_MEMBER + "\" > " + tmp_file_filename,
-        executable=SHELL_EXECUTABLE,
-        stdin=""
-    )
-
-    catresult = hosts.all.shell(
-        cmd="cat " + tmp_file_filename,
-        executable=SHELL_EXECUTABLE,
-        stdin=""
-    )
-    # for cr in catresult.values():
-    #    print("shellcat: rc={0}\n, so={1}\n, se={2}\n".format(
-    #        cr.get("rc"), cr.get("stdout"), cr.get("stderr")
-    #    ))
+    with open(tmp_file_filename, 'w') as infile:
+        infile.write(INITIAL_PRM_MEMBER)
 
     dest = "USER.TEST.BPX.PDS"
     dest_path = "USER.TEST.BPX.PDS(AUTO1)"
@@ -179,12 +160,17 @@ def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module):
         record_length=80,
     )
     print("\nbnn-Copying {0} to {1}\n".format(src_file, dest_path))
-    hosts.all.zos_copy(
-        src=src_file,
-        dest=dest_path,
-        remote_src=True,
-        is_binary=True,
+    hosts.all.shell(
+        cmd="cp " + tmp_file_filename + "\"//'" + dest_path + "'\"",
+        executable=SHELL_EXECUTABLE,
+        stdin="",
     )
+    # hosts.all.zos_copy(
+    #    src=src_file,
+    #    dest=dest_path,
+    #    remote_src=True,
+    #    is_binary=True,
+    # )
     try:
         mount_result = hosts.all.zos_mount(
             src=srcfn,
@@ -246,11 +232,15 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
     #    dest=dest_path,
     #    is_binary=True,
     # )
-    copy_uss2mvs(src_file, dest_path, "PDSE", is_binary=True)
+    hosts.all.shell(
+        cmd="cp " + tmp_file_filename + "\"//'" + dest_path + "'\"",
+        executable=SHELL_EXECUTABLE,
+        stdin="",
+    )
 
     with open(tmp_file_filename, 'r') as infile:
         data = infile.read()
-    print("\ncopy-origin result:\n{0}\n".format(data))
+    print("\nbcb-copy-original result:\n{0}\n".format(data))
     data = ""
 
     try:
@@ -277,7 +267,11 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
         #    remote_src=True,
         #    is_binary=True,
         # )
-        copy_ps2uss(dest_path, test_tmp_file_filename, is_binary=True)
+        hosts.all.shell(
+            cmd="cp \"//'" + dest_path + "'\" " + test_tmp_file_filename,
+            executable=SHELL_EXECUTABLE,
+            stdin="",
+        )
 
         catresults = hosts.all.shell(
             cmd="cat " + test_tmp_file_filename,
@@ -287,7 +281,7 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
         data = ""
         for result in catresults.values():
             data += result.get("stdout")
-            print("\nCat result: {0}\n".format(result.get("stdout")))
+            print("\nbcb-Cat result: {0}\n".format(result.get("stdout")))
 
         for result in mount_result.values():
             assert result.get("rc") == 0

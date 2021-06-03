@@ -217,8 +217,13 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
         content=INITIAL_PRM_MEMBER,
         dest=tmp_file_filename,
     )
-
+    # discovery: chtag -t -c ISO8859-1 bad2.flag.txt makes it readable at console
     # Pull the values of the file once copied to the target
+    hosts.all.shell(
+        cmd="chtag -t -c ISO8859-1 " + tmp_file_filename,
+        executable=SHELL_EXECUTABLE,
+        stdin="",
+    )
     results = hosts.all.shell(
         cmd="cat " + tmp_file_filename,
         executable=SHELL_EXECUTABLE,

@@ -161,7 +161,7 @@ def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module):
     )
     print("\nbnn-Copying {0} to {1}\n".format(src_file, dest_path))
     hosts.all.shell(
-        cmd="cp " + tmp_file_filename + "\"//'" + dest_path + "'\"",
+        cmd="cp " + tmp_file_filename + " \"//'" + dest_path + "'\"",
         executable=SHELL_EXECUTABLE,
         stdin="",
     )
@@ -233,7 +233,7 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
     #    is_binary=True,
     # )
     hosts.all.shell(
-        cmd="cp " + tmp_file_filename + "\"//'" + dest_path + "'\"",
+        cmd="cp " + tmp_file_filename + " \"//'" + dest_path + "'\"",
         executable=SHELL_EXECUTABLE,
         stdin="",
     )

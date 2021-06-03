@@ -240,15 +240,9 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
         dest=dest_path,
         is_binary=True,
     )
-    catresults = hosts.all.shell(
-        cmd="cat " + test_tmp_file_filename,
-        executable=SHELL_EXECUTABLE,
-        stdin=""
-    )
-    data = ""
-    for result in catresults.values():
-        data += result.get("stdout")
-        print("\ncopy-Cat result: {0}\n".format(result.get("stdout")))
+    with open(tmp_file_filename, 'r') as infile:
+        data = infile.read()
+    print("\ncopy-origin result: {0}\n".format(data))
     data = ""
 
     try:

@@ -204,10 +204,31 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
     with open(tmp_file_filename, 'w') as infile:
         infile.write(INITIAL_PRM_MEMBER)
 
+    # because this is with/open, it is showing the content on the ansible server
+    with open(tmp_file_filename, 'r') as infile:
+        data = infile.read()
+
+    print("\nbcb-pre-copy-original  result:\n{0}\n".format(data))
+    print("\n====================================================\n")
+
+    # put the pre-copy onto targets...trying content to get around translation
     hosts.all.copy(
-        src=tmp_file_filename,
+        # src=tmp_file_filename,
+        content=INITIAL_PRM_MEMBER,
         dest=tmp_file_filename,
     )
+
+    # Pull the values of the file once copied to the target
+    results = hosts.all.shell(
+        cmd="cat " + tmp_file_filename,
+        executable=SHELL_EXECUTABLE,
+        stdin="",
+    )
+    for result in results.values():
+        print("\nbcb-destination result: {0}\n".format(result.get("stdout")))
+
+    print("\n====================================================\n")
+
 
     dest = "USER.TEST.BPX.PDS"
     dest_path = "USER.TEST.BPX.PDS(AUTO2)"
@@ -231,22 +252,7 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
         stdin="",
     )
 
-    # because this is with/open, it is showing the content on the ansible server
-    with open(tmp_file_filename, 'r') as infile:
-        data = infile.read()
-    print("\nbcb-copy-original  result:\n{0}\n".format(data))
     data = ""
-    print("\n====================================================\n")
-    # This should pull the value of the file once copied to the target
-    results = hosts.all.shell(
-        cmd="cat " + tmp_file_filename,
-        executable=SHELL_EXECUTABLE,
-        stdin="",
-    )
-    for result in results.values():
-        print("\nbcb-destination result: {0}\n".format(result.get("stdout")))
-
-    print("\n====================================================\n")
 
     try:
         mount_result = hosts.all.zos_mount(
@@ -282,6 +288,8 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
         for result in results.values():
             print("\nbcb-postmount result: {0}\n".format(result.get("stdout")))
             data += result.get("stdout")
+
+        print("\n====================================================\n")
 
         for result in mount_result.values():
             assert result.get("rc") == 0

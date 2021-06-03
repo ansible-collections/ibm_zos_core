@@ -209,11 +209,15 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
     srcfn = create_sourcefile(hosts)
 
     tmp_file_filename = "/tmp/testfile.txt"
-    hosts.all.shell(
-        cmd="echo \"" + INITIAL_PRM_MEMBER + "\" > " + tmp_file_filename,
-        executable=SHELL_EXECUTABLE,
-        stdin=""
-    )
+    # change to write to localhost
+    with open(tmp_file_filename, 'w') as infile:
+        infile.write(INITIAL_PRM_MEMBER)
+
+    # hosts.all.shell(
+    #    cmd="echo \"" + INITIAL_PRM_MEMBER + "\" > " + tmp_file_filename,
+    #    executable=SHELL_EXECUTABLE,
+    #    stdin=""
+    # )
 
     dest = "USER.TEST.BPX.PDS"
     dest_path = "USER.TEST.BPX.PDS(AUTO2)"
@@ -230,10 +234,10 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
     )
 
     print("\nbcb-Copying {0} to {1}\n".format(src_file, dest_path))
+    # source file is on ansible server, not on target
     hosts.all.zos_copy(
         src=src_file,
         dest=dest_path,
-        remote_src=True,
         is_binary=True,
     )
 
@@ -253,6 +257,7 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
                 "second line of comment"
             ],
         )
+        # copying from dataset to make edit copy on target
         test_tmp_file_filename = tmp_file_filename + "-a"
         hosts.all.zos_copy(
             src=dest_path,

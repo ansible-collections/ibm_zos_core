@@ -172,6 +172,7 @@ def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module):
         src=tmp_file_filename,
         dest=dest_path,
         is_binary=True,
+        remote_src=True,
     )
 
     try:
@@ -246,6 +247,7 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
         src=tmp_file_filename,
         dest=dest_path,
         is_binary=True,
+        remote_src=True,
     )
 
     data = ""

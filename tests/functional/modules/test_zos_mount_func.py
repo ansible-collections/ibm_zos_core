@@ -275,6 +275,7 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
             src=dest_path,
             dest=test_tmp_file_filename,
             is_binary=True,
+            remote_src=True,
         )
         hosts.all.shell(
             cmd="chtag -t -c ISO8859-1 " + test_tmp_file_filename,

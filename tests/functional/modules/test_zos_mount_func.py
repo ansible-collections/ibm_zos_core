@@ -212,10 +212,14 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
     print("\n====================================================\n")
 
     # put the pre-copy onto targets...trying content to get around translation
-    hosts.all.copy(
-        # src=tmp_file_filename,
+    # hosts.all.copy(
+    #    content=INITIAL_PRM_MEMBER,
+    #    dest=tmp_file_filename,
+    # )
+    hosts.all.zos_copy(
         content=INITIAL_PRM_MEMBER,
         dest=tmp_file_filename,
+        is_binary=True,
     )
     # discovery: chtag -t -c ISO8859-1 bad2.flag.txt makes it readable at console
     # Pull the values of the file once copied to the target

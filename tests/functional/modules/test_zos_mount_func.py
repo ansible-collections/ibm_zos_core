@@ -144,17 +144,20 @@ def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module):
     srcfn = create_sourcefile(hosts)
 
     tmp_file_filename = "/tmp/testfile.txt"
-    with open(tmp_file_filename, 'w') as infile:
-        infile.write(INITIAL_PRM_MEMBER)
 
-    hosts.all.copy(
-        src=tmp_file_filename,
+    hosts.all.zos_copy(
+        content=INITIAL_PRM_MEMBER,
         dest=tmp_file_filename,
+        is_binary=True,
+    )
+    hosts.all.shell(
+        cmd="chtag -t -c ISO8859-1 " + tmp_file_filename,
+        executable=SHELL_EXECUTABLE,
+        stdin="",
     )
 
     dest = "USER.TEST.BPX.PDS"
     dest_path = "USER.TEST.BPX.PDS(AUTO1)"
-    src_file = tmp_file_filename
 
     hosts.all.zos_data_set(
         name=dest,
@@ -164,12 +167,13 @@ def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module):
         record_format="fba",
         record_length=80,
     )
-    print("\nbnn-Copying {0} to {1}\n".format(src_file, dest_path))
-    hosts.all.shell(
-        cmd="cp " + tmp_file_filename + " \"//'" + dest_path + "'\"",
-        executable=SHELL_EXECUTABLE,
-        stdin="",
+    print("\nbnn-Copying {0} to {1}\n".format(tmp_file_filename, dest_path))
+    hosts.all.zos_copy(
+        src=tmp_file_filename,
+        dest=dest_path,
+        is_binary=True,
     )
+
     try:
         mount_result = hosts.all.zos_mount(
             src=srcfn,
@@ -200,34 +204,20 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
     srcfn = create_sourcefile(hosts)
 
     tmp_file_filename = "/tmp/testfile.txt"
-    # change to write to localhost
-    with open(tmp_file_filename, 'w') as infile:
-        infile.write(INITIAL_PRM_MEMBER)
 
-    # because this is with/open, it is showing the content on the ansible server
-    with open(tmp_file_filename, 'r') as infile:
-        data = infile.read()
-
-    print("\nbcb-pre-copy-original  result:\n{0}\n".format(data))
-    print("\n====================================================\n")
-
-    # put the pre-copy onto targets...trying content to get around translation
-    # hosts.all.copy(
-    #    content=INITIAL_PRM_MEMBER,
-    #    dest=tmp_file_filename,
-    # )
     hosts.all.zos_copy(
         content=INITIAL_PRM_MEMBER,
         dest=tmp_file_filename,
         is_binary=True,
     )
-    # discovery: chtag -t -c ISO8859-1 bad2.flag.txt makes it readable at console
-    # Pull the values of the file once copied to the target
+    # Make it readable at console
     hosts.all.shell(
         cmd="chtag -t -c ISO8859-1 " + tmp_file_filename,
         executable=SHELL_EXECUTABLE,
         stdin="",
     )
+
+    # Dump the values of the file once copied to the target(s)
     results = hosts.all.shell(
         cmd="cat " + tmp_file_filename,
         executable=SHELL_EXECUTABLE,
@@ -241,7 +231,6 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
     dest = "USER.TEST.BPX.PDS"
     dest_path = "USER.TEST.BPX.PDS(AUTO2)"
     back_dest_path = "USER.TEST.BPX.PDS(AUTO2BAK)"
-    src_file = tmp_file_filename
 
     hosts.all.zos_data_set(
         name=dest,
@@ -252,12 +241,11 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
         record_length=80,
     )
 
-    print("\nbcb-Copying {0} to {1}\n".format(src_file, dest_path))
-
-    hosts.all.shell(
-        cmd="cp " + tmp_file_filename + " \"//'" + dest_path + "'\"",
-        executable=SHELL_EXECUTABLE,
-        stdin="",
+    print("\nbcb-Copying {0} to {1}\n".format(tmp_file_filename, dest_path))
+    hosts.all.zos_copy(
+        src=tmp_file_filename,
+        dest=dest_path,
+        is_binary=True,
     )
 
     data = ""
@@ -281,10 +269,10 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
         # copying from dataset to make editable copy on target
         test_tmp_file_filename = tmp_file_filename + "-a"
 
-        hosts.all.shell(
-            cmd="cp \"//'" + dest_path + "'\" " + test_tmp_file_filename,
-            executable=SHELL_EXECUTABLE,
-            stdin="",
+        hosts.all.zos_copy(
+            src=dest_path,
+            dest=test_tmp_file_filename,
+            is_binary=True,
         )
         hosts.all.shell(
             cmd="chtag -t -c ISO8859-1 " + test_tmp_file_filename,

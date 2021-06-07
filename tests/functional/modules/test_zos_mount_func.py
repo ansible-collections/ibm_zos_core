@@ -79,12 +79,11 @@ def create_sourcefile(hosts):
     # fs_du = data_set.DataSetUtils(thisfile)
     # fs_exists = fs_du.exists()
     # if fs_exists is False:
-    # removed  " -volumes IMSCN1 " from definition"
 
     hosts.all.shell(
         cmd="zfsadm define -aggregate "
         + thisfile
-        + " -cylinders 800 1",
+        + " -volumes IMSCN1 -cylinders 800 1",
         executable=SHELL_EXECUTABLE,
         stdin="",
     )

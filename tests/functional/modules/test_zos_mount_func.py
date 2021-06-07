@@ -58,7 +58,7 @@ def get_sysname(hosts):
 
 
 def populate_tmpfile():
-    tmp_file = tempfile.NamedTemporaryFile(mode='w', delete=False)
+    tmp_file = tempfile.NamedTemporaryFile(mode="w", delete=False)
     tmp_file_filename = tmp_file.name
     # tmp_file.close()
     # with open(tmp_file_filename, "w") as fh:
@@ -198,6 +198,15 @@ def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module):
         )
         hosts.all.file(path=tmp_file_filename, state="absent")
         hosts.all.file(path="/pythonx/", state="absent")
+        hosts.all.zos_data_set(
+            name=dest,
+            state="absent",
+            type="pdse",
+            space_primary=5,
+            space_type="M",
+            record_format="fba",
+            record_length=80,
+        )
 
 
 def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
@@ -263,10 +272,7 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
                 backup="Yes",
                 backup_name=back_dest_path,
             ),
-            tabcomment=[
-                "bpxtablecomment - try this",
-                "second line of comment"
-            ],
+            tabcomment=["bpxtablecomment - try this", "second line of comment"],
         )
         # copying from dataset to make editable copy on target
         test_tmp_file_filename = tmp_file_filename + "-a"
@@ -283,9 +289,7 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
             stdin="",
         )
         results = hosts.all.shell(
-            cmd="cat " + test_tmp_file_filename,
-            executable=SHELL_EXECUTABLE,
-            stdin=""
+            cmd="cat " + test_tmp_file_filename, executable=SHELL_EXECUTABLE, stdin=""
         )
         data = ""
         for result in results.values():
@@ -314,3 +318,12 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
         hosts.all.file(path=tmp_file_filename, state="absent")
         hosts.all.file(path=test_tmp_file_filename, state="absent")
         hosts.all.file(path="/pythonx/", state="absent")
+        hosts.all.zos_data_set(
+            name=dest,
+            state="absent",
+            type="pdse",
+            space_primary=5,
+            space_type="M",
+            record_format="fba",
+            record_length=80,
+        )

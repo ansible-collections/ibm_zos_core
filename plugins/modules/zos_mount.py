@@ -950,7 +950,6 @@ def run_module(module, arg_def):
         tmp_file_filename = tmp_file.name
         tmp_file.close()
 
-        # look at using zos_copy here
         copy_ps2uss(data_set_name, tmp_file_filename, False)
 
         with open(tmp_file_filename, "r") as fh:
@@ -961,13 +960,6 @@ def run_module(module, arg_def):
             fh = open(tmp_file_filename, "w")
             fh.write(newtext)
             fh.close()
-            # look at using zos_copy here
-            # fullcmd = "cp " + tmp_file_filename + " \"//'" + persistds + "'\""
-            # try:
-            #    (rc, stdout, stderr) = module.run_command(
-            #        fullcmd, use_unsafe_shell=False)
-            # except Exception as err:
-            #    module.fail_json(msg=str(err), stderr=str(res_args))
             copy_uss2mvs(tmp_file_filename, data_set_name, "PO", False)
             comment += "Modified " + data_set_name + " in place\n"
 

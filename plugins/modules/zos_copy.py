@@ -234,6 +234,89 @@ options:
         unit name has been specified.
     type: str
     required: false
+  type:
+    description:
+      - If the destination does not exist and is not a USS file, this determines
+        the type of dataset created.
+      - The data set type to be used when creating a data set. (e.g C(pdse))
+      - C(MEMBER) expects to be used with an existing partitioned data set.
+      - Choices are case-insensitive.
+    required: false
+    type: str
+    choices:
+      - KSDS
+      - ESDS
+      - RRDS
+      - LDS
+      - SEQ
+      - PDS
+      - PDSE
+      - LIBRARY
+      - BASIC
+      - LARGE
+      - MEMBER
+      - HFS
+      - ZFS
+    default: BASIC
+  space_primary:
+    description:
+      - If the destination does not exist and is not a USS file, this determines
+        the primary space allocated for the dataset.
+      - The unit of space used is set using I(space_type).
+    type: int
+    required: false
+    default: 5
+  space_secondary:
+    description:
+      - If the destination does not exist and is not a USS file, this determines
+        the amount of secondary space to allocate for the dataset.
+      - The unit of space used is set using I(space_type).
+    type: int
+    required: false
+    default: 3
+  space_type:
+    description:
+      - If the destination does not exist and is not a USS file, this determines
+        the unit of measurement to use when defining primary and secondary space.
+      - Valid units of size are C(K), C(M), C(G), C(CYL), and C(TRK).
+    type: str
+    choices:
+      - K
+      - M
+      - G
+      - CYL
+      - TRK
+    required: false
+    default: M
+  record_format:
+    description:
+      - If the destination does not exist and is not a USS file, this determines
+        the format of the data set. (e.g C(FB))
+      - Choices are case-insensitive.
+    required: false
+    choices:
+      - FB
+      - VB
+      - FBA
+      - VBA
+      - U
+    default: FB
+    type: str
+  record_length:
+    description:
+      - The length, in bytes, of each record in the data set.
+      - For variable data sets, the length must include the 4-byte prefix area.
+      - "Defaults vary depending on format: If FB/FBA 80, if VB/VBA 137, if U 0."
+    type: int
+    required: false
+    version_added: "2.9"
+  block_size:
+    description:
+      - The block size to use for the data set.
+    type: int
+    required: false
+    version_added: "2.9"
+
 notes:
     - Destination data sets are assumed to be in catalog. When trying to copy
       to an uncataloged data set, the module assumes that the data set does
@@ -597,7 +680,14 @@ class CopyHandler(object):
         dest,
         src_ds_type,
         model_ds=None,
-        alloc_vol=None
+        alloc_vol=None,
+        type=type,
+        space_primary=None,
+        space_secondary=None,
+        space_type=None,
+        record_format=None,
+        record_length=None,
+        block_size=None
     ):
         """Copy source to a sequential data set.
 
@@ -617,6 +707,33 @@ class CopyHandler(object):
             self.allocate_model(dest, model_ds, vol=alloc_vol)
 
         if src_ds_type == "USS":
+            # create destination if it doesn't exist
+            if not self.dest_exists:
+                parms = dict(
+                    name=dest,
+                    type=type,
+                    primary_space=space_primary,
+                    secondary_space=space_secondary,
+                    space_type=space_type,
+                    record_format=record_format,
+                    record_length=record_length,
+                    block_size=block_size
+                )
+                if alloc_vol:
+                    parms['volume'] = alloc_vol
+
+                datasets._create(**parms)
+                # if rc == rc:
+                #     self.fail_json(
+                #        msg = "create failed: d{0}-t{1}-pr{2}-se{3}-st{4}-rf{5}-rl{6}-bs{7}".format(
+                #            dest, type, space_primary, space_secondary,
+                #            space_type, record_format, record_length, block_size
+                #        ),
+                #        rc=rc,
+                #        sterr="not defined",
+                #        stdout=":not defined",
+                #     )
+
             rc, out, err = self.run_command(
                 "cp {0} {1} \"//'{2}'\"".format(
                     "-B" if self.is_binary else "", new_src, dest
@@ -633,7 +750,7 @@ class CopyHandler(object):
             rc = datasets.copy(new_src, dest)
             # *****************************************************************
             # When Copying a PDSE member to a non-existent sequential data set
-            # using: cp "//'SOME.PDSE.DATA.SET(MEMBER)'" "//'SOME.DEST.SEQ'"
+            # using cp "//'SOME.PDSE.DATA.SET(MEMBER)'" "//'SOME.DEST.SEQ'"
             # An I/O abend could be trapped and can be resolved by allocating
             # the destination data set before copying.
             # *****************************************************************
@@ -1556,6 +1673,14 @@ def run_module(module, arg_def):
     alloc_size = module.params.get('size')
     src_member = module.params.get('src_member')
     copy_member = module.params.get('copy_member')
+### here
+    type = module.params.get("type") or "BASIC"
+    space_primary = module.params.get("space_primary")
+    space_secondary = module.params.get("space_secondary")
+    space_type = module.params.get("space_type")
+    record_format = module.params.get("record_format")
+    record_length = module.params.get("record_length")
+    block_size = module.params.get("block_size")
 
     # ********************************************************************
     # When copying to and from a data set member, 'dest' or 'src' will be
@@ -1744,6 +1869,10 @@ def run_module(module, arg_def):
     # Copy to sequential data set
     # ---------------------------------------------------------------------
     elif dest_ds_type in MVS_SEQ:
+        res_args["note"] = "Copy to {0} ty {1} sp {2} ss {3} st {4} rf{5} rl{6} bs{7}".format(
+            dest, type, space_primary, space_secondary,
+            space_type, record_format, record_length, block_size
+        )
         copy_handler.copy_to_seq(
             src,
             temp_path,
@@ -1751,7 +1880,14 @@ def run_module(module, arg_def):
             dest,
             src_ds_type,
             model_ds=model_ds,
-            alloc_vol=volume
+            alloc_vol=volume,
+            type=type,
+            space_primary=space_primary,
+            space_secondary=space_secondary,
+            space_type=space_type,
+            record_format=record_format,
+            record_length=record_length,
+            block_size=block_size,
         )
 
     # ------------------------------- o -----------------------------------
@@ -1813,6 +1949,13 @@ def main():
             ignore_sftp_stderr=dict(type='bool', default=False),
             validate=dict(type='bool'),
             volume=dict(type='str', required=False),
+            type=dict(arg_type='str', default='BASIC', required=False),
+            space_primary=dict(arg_type='int', default=5, required=False),
+            space_secondary=dict(arg_type='int', default=3, required=False),
+            space_type=dict(arg_type='str', default='TRK', required=False),
+            record_format=dict(arg_type='str', default='FB', required=False),
+            record_length=dict(arg_type='int', default=80, required=False),
+            block_size=dict(arg_type='int', default=11000, required=False),
             is_uss=dict(type='bool'),
             is_pds=dict(type='bool'),
             is_mvs_dest=dict(type='bool'),
@@ -1838,7 +1981,14 @@ def main():
         checksum=dict(arg_type='str', required=False),
         validate=dict(arg_type='bool', required=False),
         sftp_port=dict(arg_type='int', required=False),
-        volume=dict(arg_type='str', required=False)
+        volume=dict(arg_type='str', required=False),
+        type=dict(arg_type='str', default='BASIC', required=False),
+        space_primary=dict(arg_type='int', default=5, required=False),
+        space_secondary=dict(arg_type='int', default=3, required=False),
+        space_type=dict(arg_type='str', default='TRK', required=False),
+        record_format=dict(arg_type='str', default='FB', required=False),
+        record_length=dict(arg_type='int', default=80, required=False),
+        block_size=dict(arg_type='int', default=13000, required=False),
     )
 
     if (

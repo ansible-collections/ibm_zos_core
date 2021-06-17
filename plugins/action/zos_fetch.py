@@ -125,10 +125,10 @@ class ActionModule(ActionBase):
         if src is None or dest is None:
             msg = "Source and destination are required"
         elif not isinstance(src, string_types):
-            msg = "Invalid type supplied for 'source' option, " "it must be a string"
+            msg = "Invalid type supplied for 'source' option, it must be a string"
         elif not isinstance(dest, string_types):
             msg = (
-                "Invalid type supplied for 'destination' option, " "it must be a string"
+                "Invalid type supplied for 'destination' option, it must be a string"
             )
         elif len(src) < 1 or len(dest) < 1:
             msg = "Source and destination parameters must not be empty"

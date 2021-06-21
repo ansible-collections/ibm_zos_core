@@ -83,7 +83,7 @@ def create_sourcefile(hosts):
     hosts.all.shell(
         cmd="zfsadm define -aggregate "
         + thisfile
-        + " -volumes IMSCN1 -cylinders 800 1",
+        + " -volumes 222222 -cylinders 200 1",
         executable=SHELL_EXECUTABLE,
         stdin="",
     )

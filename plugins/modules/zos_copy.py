@@ -68,7 +68,7 @@ options:
       - This is for simple values; for anything complex or with formatting, use
         U(https://docs.ansible.com/ansible/latest/modules/copy_module.html)
       - If C(dest) is a directory, then content will be copied to
-        C(/path/to/dest/inline_copy).
+        C(/path/to/dest/in173_copy).
     type: str
     required: false
   dest:
@@ -1897,7 +1897,6 @@ def run_module(module, arg_def):
                 src, temp_path, conv_path, dest, src_ds_type, alloc_vol=volume
             )
         dest = dest.upper()
-
 
     # ------------------------------- o -----------------------------------
     # Copy to VSAM data set

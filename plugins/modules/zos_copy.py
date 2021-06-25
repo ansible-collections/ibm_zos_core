@@ -1354,7 +1354,7 @@ class PDSECopyHandler(CopyHandler):
             else:
                 self.fail_json(msg=msg, rc=rc, stdout=out, stderr=err)
 
-        return dest.replace("\\", "")
+        return dest.replace("\\", "").upper()
 
     def create_pdse(
         self,
@@ -1872,6 +1872,7 @@ def run_module(module, arg_def):
             record_length=record_length,
             block_size=block_size,
         )
+        dest = dest.upper()
 
     # ------------------------------- o -----------------------------------
     # Copy to PDS/PDSE
@@ -1895,6 +1896,8 @@ def run_module(module, arg_def):
             pdse_copy_handler.copy_to_pdse(
                 src, temp_path, conv_path, dest, src_ds_type, alloc_vol=volume
             )
+        dest = dest.upper()
+
 
     # ------------------------------- o -----------------------------------
     # Copy to VSAM data set

@@ -334,9 +334,7 @@ do ix=1 to isfrows
         Say 'byte_count'||':'||value('JDS_BYTECNT'||"."||jx)
         Say '-----START OF CONTENT-----'
         Address SDSF "ISFBROWSE ST TOKEN('"token.ix"')"
-        untilline = linecount + JDS_RECCNT.jx
-        startingcount = linecount + 1
-        do kx=linecount+1 to  untilline
+        do kx=1 to isfline.0
             linecount = linecount + 1
             Say isfline.kx
         end

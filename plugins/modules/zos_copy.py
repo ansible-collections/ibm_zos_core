@@ -68,7 +68,7 @@ options:
       - This is for simple values; for anything complex or with formatting, use
         U(https://docs.ansible.com/ansible/latest/modules/copy_module.html)
       - If C(dest) is a directory, then content will be copied to
-        C(/path/to/dest/in173_copy).
+        C(/path/to/dest/inline_copy).
     type: str
     required: false
   dest:
@@ -225,7 +225,7 @@ options:
     required: false
   type:
     description:
-      - If the destination does not exist and is not a USS file, this determines
+      - If the destination data set does not exist, this determines
         the type of dataset created.
       - The data set type to be used when creating a data set. (e.g C(pdse))
       - C(MEMBER) expects to be used with an existing partitioned data set.
@@ -240,12 +240,7 @@ options:
       - SEQ
       - PDS
       - PDSE
-      - LIBRARY
-      - BASIC
-      - LARGE
       - MEMBER
-      - HFS
-      - ZFS
     default: BASIC
   space_primary:
     description:
@@ -293,7 +288,7 @@ options:
     type: str
   record_length:
     description:
-      - The length, in bytes, of each record in the data set.
+      - The length of each record in the data set, in bytes.
       - For variable data sets, the length must include the 4-byte prefix area.
       - "Defaults vary depending on format: If FB/FBA 80, if VB/VBA 137, if U 0."
     type: int
@@ -1936,7 +1931,7 @@ def main():
             type=dict(
                 arg_type='str',
                 default='BASIC',
-                choices=['KSDS', 'ESDS', 'RRDS', 'LDS', 'SEQ', 'PDS', 'PDSE', 'LIBRARY', 'BASIC', 'LARGE', 'MEMBER', 'HFS', 'ZFS'],
+                choices=['KSDS', 'ESDS', 'RRDS', 'LDS', 'SEQ', 'PDS', 'PDSE', 'MEMBER'],
                 required=False,
             ),
             space_primary=dict(arg_type='int', default=5, required=False),

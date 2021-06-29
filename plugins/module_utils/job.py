@@ -304,7 +304,6 @@ Say '-----NO JOBS FOUND-----'
 end
 else do
 do ix=1 to isfrows
-    linecount = 0
 
     Say '-----START OF JOB-----'
     Say 'job_id'||':'||value('JOBID'||"."||ix)
@@ -335,14 +334,10 @@ do ix=1 to isfrows
         Say '-----START OF CONTENT-----'
         Address SDSF "ISFBROWSE ST TOKEN('"token.ix"')"
         do kx=1 to isfline.0
-            linecount = linecount + 1
             Say isfline.kx
         end
         Say '-----END OF CONTENT-----'
         Say '-----END OF DD-----'
-        end
-        else do
-            linecount = linecount + JDS_RECCNT.jx
         end
     end
     Say '-----END OF DD NAMES-----'
@@ -478,7 +473,6 @@ Say '-----NO JOBS FOUND-----'
 end
 else do
 do ix=1 to isfrows
-    linecount = 0
     if ix<>1 then do
     end
     Say '-----START OF JOB-----'

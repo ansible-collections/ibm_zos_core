@@ -37,14 +37,16 @@ options:
         required: True
     src:
         description:
-            - The zFS aggregate data set to be mounted.
+            - The name of the file system to be added to the file system hierarchy.
+            - The file system I(src) must be a data set of type I(fs_type).
+            - The file system I(src) data set must be cataloged.
         type: str
         required: True
     fs_type:
         description:
             - The type of file system that will be mounted.
             - The physical file systems data set format to perform the logical mount.
-            - The I(fs_type) is required to be uppercase, any lower case characters will be converted to uppercase.
+            - The I(fs_type) is required to be uppercase.
         type: str
         choices:
             - HFS
@@ -56,13 +58,16 @@ options:
         description:
             - The desired status of the described mount (choice).
             - >
-                If I(state=mounted) and I(src) is not in use, the module will add the file system entry to
-                I(persistent/data_set_name) parmlib member if not present. The I(path) will be updated and the module
-                will complete successfully with I(changed=True).
+                If I(state=mounted) and I(src) is not in use, the module will add the file
+                system entry to parmlib member I(persistent/data_set_name) if not present. The
+                I(path) will be updated, the device will be mounted and the module will
+                complete successfully with I(changed=True).
             - >
-                If I(state=mounted) and I(src) is in use, the module will add the file system entry to
-                I(persistent/data_set_name) parmlib member if not present. The I(path) will not be updated and the module
-                will complete successfully with I(changed=False).
+                If I(state=mounted) and I(src) is in use, the module will add the file system
+                entry to parmlib member I(persistent/data_set_name) if not present. The I(path)
+                will not be updated, the device will not be mounted and the module will
+                complete successfully with I(changed=False).
+
             - >
                 If I(state=unmounted) and I(src) is in use, device will be unmounted.
                 I(persistent/data_set_name) is not altered, even when provided.
@@ -138,7 +143,7 @@ options:
         required: False
     unmount_opts:
         description:
-            - Describes how the unmount is to be performed.
+            - Describes how the unmount will be performed.
         type: str
         choices:
             - DRAIN
@@ -265,6 +270,12 @@ options:
               Indicator is either INCLUDE or EXCLUDE, which can also be abbreviated as I or E.
         type: str
         required: False
+notes:
+    - All data sets are always assumed to be cataloged.
+    - If an uncataloged data set needs to be fetched, it should be cataloged first.
+    - Uncataloged data sets can be cataloged using the M(zos_data_set) module.
+seealso:
+    - module: zos_data_set
 """
 
 EXAMPLES = r"""
@@ -406,7 +417,7 @@ tabcomment:
     sample:
         - [u'I did this because..']
 unmount_opts:
-    description: Describes how the unmount it to be performed.
+    description: Describes how the unmount is to be performed.
     returned: changed and if state=unmounted
     type: str
     sample: DRAIN
@@ -443,8 +454,8 @@ sysname:
 automove:
     description:
         - >
-          Specifies what is to happens to the ownership of a file system during
-          a shutdown, PFS termination, dead system takeover, or file system move occurs.
+          Specifies what happens to the ownership of a file system during
+          a shutdown, PFS termination, dead system takeover, or when file system move occurs.
     returned: if Non-None
     type: str
     sample: AUTOMOVE
@@ -462,7 +473,7 @@ stdout:
     description: The stdout from the tso mount command.
     returned: always
     type: str
-    sample: Copying local file /tmp/foo/src to remote path /tmp/foo/dest.
+    sample: MOUNT FILESYSTEM( 'source-dataset' ) MOUNTPOINT( '/uss-path' ) TYPE( ZFS )
 stderr:
     description: The stderr from the tso mount command.
     returned: failure
@@ -472,17 +483,17 @@ stdout_lines:
     description: List of strings containing individual lines from stdout.
     returned: failure
     type: list
-    sample: [u"Copying local file /tmp/foo/src to remote path /tmp/foo/dest.."]
+    sample: [u"MOUNT FILESYSTEM( 'source-dataset' ) MOUNTPOINT( '/uss-path' ) TYPE( ZFS )"]
 stderr_lines:
     description: List of strings containing individual lines from stderr.
     returned: failure
     type: list
     sample: [u"FileNotFoundError: No such file or directory '/tmp/foo'"]
 cmd:
-    description: The actual tso command that was attempted.
+    description: The actual tso command that was run by the module.
     returned: failure
     type: str
-    sample: MOUNT EXAMPLE.DATA.SET /u/omvsadm/sample 3380
+    sample: MOUNT FILESYSTEM( 'EXAMPLE.DATA.SET' ) MOUNTPOINT( '/u/omvsadm/sample' ) TYPE( ZFS )
 rc:
     description: The return code of the mount command, if applicable.
     returned: failure
@@ -572,8 +583,7 @@ def swap_text(original, adding, removing):
     remove_ending_at_index = None
 
     ms = re.compile(r"^\s*MOUNT\s+FILESYSTEM\(\s*'" + removing.upper() + r"'\s*\)")
-    print(ms)
-    boneyard = dict()
+    removable = dict()
 
     for index, line in enumerate(content_lines):
         if remove_starting_at_index is None:
@@ -604,17 +614,17 @@ def swap_text(original, adding, removing):
             else:
                 doit = True
             if doit:
-                boneyard[remove_starting_at_index] = remove_ending_at_index
+                removable[remove_starting_at_index] = remove_ending_at_index
                 remove_starting_at_index = None
                 remove_ending_at_index = None
 
     if remove_starting_at_index is not None:
         if remove_ending_at_index is not None:
             if remove_starting_at_index != remove_ending_at_index:
-                boneyard[remove_starting_at_index] = remove_ending_at_index
+                removable[remove_starting_at_index] = remove_ending_at_index
 
-    for startidx in reversed(boneyard.keys()):
-        endidx = boneyard[startidx]
+    for startidx in reversed(removable.keys()):
+        endidx = removable[startidx]
         del content_lines[startidx: endidx + 1]
 
     if len(adding) > 0:
@@ -686,13 +696,13 @@ def run_module(module, arg_def):
                 if len(data_set_name) > 0:
                     write_persistent = True
 
-    gonna_mount = True
+    will_mount = True
     if "unmounted" in state or "absent" in state:
-        gonna_mount = False
+        will_mount = False
 
-    gonna_unmount = False
+    will_unmount = False
     if "unmounted" in state or "remounted" in state or "absent" in state:
-        gonna_unmount = True
+        will_unmount = True
 
     comment = "starting"
 
@@ -731,7 +741,7 @@ def run_module(module, arg_def):
         )
 
     # Validate mountpoint exists if mounting
-    if gonna_mount:
+    if will_mount:
         mp_exists = os.path.exists(path)
         if mp_exists is False:
             try:
@@ -739,7 +749,6 @@ def run_module(module, arg_def):
             except Exception as err:
                 module.fail_json(msg=str(err), stderr=str(res_args))
 
-        comment += "ran unmount command\n"
         currently_mounted = False
         mp_exists = os.path.exists(path)
         if mp_exists is False:
@@ -815,7 +824,7 @@ def run_module(module, arg_def):
     fullcmd = ""
     fullumcmd = ""
 
-    if gonna_mount:
+    if will_mount:
         # @asifmahmud asifmahmud 4 days ago Collaborator
         #
         # I would suggest not using tsocmd as that command may not be available on some systems our customers use.
@@ -890,7 +899,7 @@ def run_module(module, arg_def):
     else:
         parmtext = ""
 
-    if gonna_unmount:  # unmount/remount
+    if will_unmount:  # unmount/remount
         fullumcmd = "tsocmd UNMOUNT FILESYSTEM\\( '{0}' \\)".format(src)
         if unmount_opts is None:
             unmount_opts = "NORMAL"
@@ -899,7 +908,7 @@ def run_module(module, arg_def):
             unmount_opts = "NORMAL"
             fullumcmd = fullcmd + " " + unmount_opts
 
-    if gonna_unmount:
+    if will_unmount:
         if currently_mounted:
             changed = True
             if module.check_mode is False:
@@ -907,7 +916,7 @@ def run_module(module, arg_def):
                     (rc, stdout, stderr) = module.run_command(
                         fullumcmd, use_unsafe_shell=False
                     )
-                    comment += "ran unmount command\n"
+                    comment += "Successfully ran unmount: {0}\n".format(fullumcmd)
                     currently_mounted = False
                 except Exception as err:
                     module.fail_json(msg=str(err), stderr=str(res_args))
@@ -917,7 +926,7 @@ def run_module(module, arg_def):
         else:
             comment += "Unmount called on data set that is not mounted.\n"
 
-    if gonna_mount:
+    if will_mount:
         if currently_mounted is False:
             changed = True
             if module.check_mode is False:
@@ -925,7 +934,7 @@ def run_module(module, arg_def):
                     (rc, stdout, stderr) = module.run_command(
                         fullcmd, use_unsafe_shell=False
                     )
-                    comment = "ran command\n"
+                    comment += "Successfully ran mount: {0}\n".format(fullcmd)
                 except Exception as err:
                     module.fail_json(msg=str(err), stderr=str(res_args))
             else:
@@ -942,7 +951,7 @@ def run_module(module, arg_def):
         fst_exists = fst_du.exists()
         if fst_exists is False:
             module.fail_json(
-                msg="persistent ds set member (" + data_set_name + ") doesn't exist",
+                msg="Persistent data set (" + data_set_name + ") is either not cataloged or does not exist",
                 stderr=str(res_args),
             )
 

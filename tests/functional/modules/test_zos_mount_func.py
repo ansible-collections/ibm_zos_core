@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020
+# Copyright (c) IBM Corporation 2020, 2021
 # Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
 from __future__ import absolute_import, division, print_function
@@ -130,6 +130,27 @@ def test_double_mount(ansible_zos_module):
             assert "already mounted" in result.get("comment")
             assert result.get("stdout") != ""
             assert result.get("changed") is False
+    finally:
+        hosts.all.zos_mount(
+            src=srcfn,
+            path="/pythonx",
+            fs_type="ZFS",
+            state="absent",
+        )
+        hosts.all.file(path="/pythonx/", state="absent")
+
+def test_remount(ansible_zos_module):
+    hosts = ansible_zos_module
+    srcfn = create_sourcefile(hosts)
+    try:
+        hosts.all.zos_mount(src=srcfn, path="/pythonx", fs_type="ZFS", state="mounted")
+        mount_result = hosts.all.zos_mount(
+            src=srcfn, path="/pythonx", fs_type="ZFS", state="remounted"
+        )
+        for result in mount_result.values():
+            assert result.get("rc") == 0
+            assert result.get("stdout") != ""
+            assert result.get("changed") is True
     finally:
         hosts.all.zos_mount(
             src=srcfn,

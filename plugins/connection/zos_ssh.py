@@ -19,6 +19,9 @@ DOCUMENTATION = '''
         - The z/OS ssh plugin is used to connect to a z/OS managed node and
           properly transport EBCDIC encoded files so to execute in their native
           encoding.
+        - To transfer a file from ASCII to EBCDIC such is the case for a REXX
+          written module, the first line of the content be
+          "/* rexx  __ANSIBLE_ENCODE_EBCDIC__  */".
     notes:
         - Many options have been removed from the original connection plugin
           M(ssh) to serve as a minimal portable implementaton. While it may be
@@ -35,6 +38,8 @@ DOCUMENTATION = '''
             - This defines the location of the ssh binary. It defaults to ``ssh`` which will use the first ssh binary available in $PATH.
             - This option is usually not required, it might be useful when access to system ssh is restricted,
               or when using ssh wrappers to connect to remote hosts.
+            - For more on this connection plugin, refer to
+              U(https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/plugins.html#z-os-connection-plugin)
           env: [{name: ANSIBLE_SSH_EXECUTABLE}]
           ini:
           - {key: ssh_executable, section: ssh_connection}
@@ -99,15 +104,11 @@ if version_major == 2 and version_minor >= 11:
     try:
         # Load z/OS connection plugin for versions of Ansible greater or equal to 2.11
         from ansible_collections.ibm.ibm_zos_core.plugins.connection.zos_ssh_2_11 import Connection
-        class Connection(Connection):
-            pass
     except ImportError:
         pass
 else:
     try:
         # Load legacy z/OS connection plugin for versions of Ansible lesser than 2.11
         from ansible_collections.ibm.ibm_zos_core.plugins.connection.zos_ssh_legacy import Connection
-        class Connection(Connection):
-            pass
     except ImportError:
         pass

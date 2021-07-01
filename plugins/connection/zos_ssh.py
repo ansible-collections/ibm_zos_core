@@ -141,7 +141,7 @@ DOCUMENTATION = """
             - key: ssh_extra_args
               section: ssh_connection
               version_added: '2.7'
-      retries:
+      reconnection_retries:
           # constant: ANSIBLE_SSH_RETRIES
           description: Number of attempts to connect.
           default: 3

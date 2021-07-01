@@ -34,8 +34,8 @@ z/OS Connection Plugin
 ----------------------
 
 Since EBCDIC encoding is used on z/OS, custom plugins are required to determine
-the correct transport method when targeting a z/OS system. The zos_ssh.py
-connection plugin is a fork of the default ssh.py plugin with the added
+the correct transport method when targeting a z/OS system. The ``zos_ssh``
+connection plugin is a fork of the default ``ssh`` plugin with the added
 functionality to check if a module is written in REXX.
 
 Since REXX scripts are required be in EBCDIC encoding to run, they must be

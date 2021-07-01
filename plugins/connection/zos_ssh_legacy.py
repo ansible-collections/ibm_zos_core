@@ -338,7 +338,6 @@ from ansible.errors import (
 from ansible.module_utils._text import to_bytes, to_native, to_text
 from ansible.plugins.connection.ssh import Connection
 from ansible.utils.display import Display
-from ansible import cli
 
 display = Display()
 

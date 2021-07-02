@@ -66,7 +66,7 @@ class Connection(connection):
                     if "__ANSIBLE_ENCODE_EBCDIC__" in f.readline():
                         if user_ssh_transfer_method != scp_transfer_method:
                             self.set_option('ssh_transfer_method', scp_transfer_method)
-                            display.vvv(u"SSH transfer method updated from {0} to {1}.".format(user_ssh_transfer_method,scp_transfer_method), host=self.host)
+                            display.vvv(u"SSH transfer method updated from {0} to {1}.".format(user_ssh_transfer_method, scp_transfer_method), host=self.host)
                             # 'user_ssh_transfer_method' should never return as 'None' because the default is 'smart'
                             return user_ssh_transfer_method
                         else:

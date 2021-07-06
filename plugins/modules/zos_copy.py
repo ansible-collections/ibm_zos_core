@@ -1745,6 +1745,15 @@ def run_module(module, arg_def):
             res_args["changed"] = (
                 res_args.get("changed") or remote_checksum != dest_checksum
             )
+        else:
+            try:
+                remote_checksum = get_file_checksum(temp_path or src)
+                dest_checksum = get_file_checksum(dest)
+            except Exception as err:
+                pass
+            res_args["changed"] = (
+                res_args.get("changed") or remote_checksum != dest_checksum
+            )
 
     # ------------------------------- o -----------------------------------
     # Copy to sequential data set
@@ -1826,7 +1835,8 @@ def main():
             temp_path=dict(type='str'),
             copy_member=dict(type='bool'),
             src_member=dict(type='bool'),
-            local_charset=dict(type='str')
+            local_charset=dict(type='str'),
+            force=dict(type='bool', default=False)
         ),
         add_file_common_args=True,
     )

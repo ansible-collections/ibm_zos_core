@@ -476,15 +476,15 @@ def test_fetch_flat_create_dirs(ansible_zos_module, z_python_interpreter):
         if os.path.exists(dest_path):
             shutil.rmtree("/tmp/" + remote_host)
 
-
-def test_sftp_negative_port_specification_fails(ansible_zos_module):
-    hosts = ansible_zos_module
-    params = dict(src="/etc/profile", dest="/tmp/", flat=True, sftp_port=-1)
-    try:
-        results = hosts.all.zos_fetch(**params)
-        dest_path = "/tmp/profile"
-        for result in results.contacted.values():
-            assert result.get("msg") is not None
-    finally:
-        if os.path.exists(dest_path):
-            os.remove(dest_path)
+# Deprecated function for ibm.zos_core.zos_copy in v1.4.0
+# def test_sftp_negative_port_specification_fails(ansible_zos_module):
+#     hosts = ansible_zos_module
+#     params = dict(src="/etc/profile", dest="/tmp/", flat=True, sftp_port=-1)
+#     try:
+#         results = hosts.all.zos_fetch(**params)
+#         dest_path = "/tmp/profile"
+#         for result in results.contacted.values():
+#             assert result.get("msg") is not None
+#     finally:
+#         if os.path.exists(dest_path):
+#             os.remove(dest_path)

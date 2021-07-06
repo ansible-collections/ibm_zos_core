@@ -23,10 +23,13 @@ from ansible.module_utils.six import string_types
 from ansible.module_utils.parsing.convert_bool import boolean
 from ansible.plugins.action import ActionBase
 from ansible.errors import AnsibleError
+from ansible.utils.display import Display
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import encode
 
 SUPPORTED_DS_TYPES = frozenset({"PS", "PO", "VSAM", "USS"})
+
+display = Display()
 
 
 def _update_result(result, src, dest, ds_type="USS", is_binary=False):
@@ -105,8 +108,7 @@ class ActionModule(ActionBase):
         src = self._task.args.get('src')
         dest = self._task.args.get('dest')
         encoding = self._task.args.get('encoding')
-        # If self._play_context.port is None, that implies the default port 22
-        # was used to connect to the remote host.
+        # Option sftp_port is deprecated in 1.4.0 to be removed in 1.5.0
         sftp_port = self._task.args.get('sftp_port', self._play_context.port or 22)
         flat = _process_boolean(self._task.args.get('flat'), default=False)
         is_binary = _process_boolean(self._task.args.get('is_binary'))
@@ -133,8 +135,8 @@ class ActionModule(ActionBase):
         elif len(src) < 1 or len(dest) < 1:
             msg = "Source and destination parameters must not be empty"
 
-        elif not isinstance(sftp_port, int) or not 0 < sftp_port <= 65535:
-            msg = "Invalid port provided for SFTP. Expected an integer between 0 to 65535."
+        # elif not isinstance(sftp_port, int) or not 0 < sftp_port <= 65535:
+        #     msg = "Invalid port provided for SFTP. Expected an integer between 0 to 65535."
 
         if msg:
             result["msg"] = msg
@@ -223,6 +225,7 @@ class ActionModule(ActionBase):
         new_module_args.update(
             dict(local_charset=encode.Defaults.get_default_system_charset())
         )
+        remote_path = None
         try:
             fetch_res = self._execute_module(
                 module_name="ibm.ibm_zos_core.zos_fetch",
@@ -263,7 +266,6 @@ class ActionModule(ActionBase):
                     dest,
                     remote_path,
                     ds_type,
-                    sftp_port,
                     ignore_stderr=ignore_sftp_stderr,
                 )
                 if fetch_content.get("msg"):
@@ -299,33 +301,30 @@ class ActionModule(ActionBase):
         return _update_result(result, src, dest, ds_type, is_binary=is_binary)
 
     def _transfer_remote_content(
-        self, dest, remote_path, src_type, port, ignore_stderr=False
+        self, dest, remote_path, src_type, ignore_stderr=False
     ):
         """ Transfer a file or directory from USS to local machine.
             After the transfer is complete, the USS file or directory will
             be removed.
         """
         result = dict()
-        ansible_user = self._play_context.remote_user
-        ansible_host = self._play_context.remote_addr
+        _sftp_action = 'get'
 
-        cmd = ["sftp", "-oPort={0}".format(port), ansible_user + "@" + ansible_host]
-        stdin = "get -r {0} {1}".format(remote_path, dest)
-        if src_type != "PO":
-            stdin = stdin.replace(" -r", "")
+        if src_type == "PO":
+            _sftp_action += ' -r'    # add '-r` to clone the source trees
 
-        transfer_pds = subprocess.Popen(
-            cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-        )
-        out, err = transfer_pds.communicate(to_bytes(stdin))
-        err = _detect_sftp_errors(err)
+        display.vvv(u"{0} {1} TO {2}".format(_sftp_action, remote_path, dest), host=self._play_context.remote_addr)
+        (returncode, stdout, stderr) = self._connection._file_transport_command(remote_path, dest, _sftp_action)
+
+        err = _detect_sftp_errors(stderr)
+
         if re.findall(r"Permission denied", err):
             result["msg"] = "Insufficient write permission for destination {0}".format(
                 dest
             )
-        elif transfer_pds.returncode != 0 or (err and not ignore_stderr):
+        elif returncode != 0 or (err and not ignore_stderr):
             result["msg"] = "Error transferring remote data from z/OS system"
-            result["rc"] = transfer_pds.returncode
+            result["rc"] = returncode
         if result.get("msg"):
             result["stderr"] = err
             result["failed"] = True

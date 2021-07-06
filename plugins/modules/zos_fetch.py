@@ -20,7 +20,7 @@ __metaclass__ = type
 DOCUMENTATION = r"""
 ---
 module: zos_fetch
-version_added: "2.9"
+version_added: "1.1.0"
 short_description: Fetch data from z/OS
 description:
   - This module fetches a UNIX System Services (USS) file,
@@ -33,7 +33,9 @@ description:
   - When fetching a PDS/PDSE member, destination will be a file.
   - Files that already exist at C(dest) will be overwritten if they are different
     than C(src).
-author: "Asif Mahmud (@asifmahmud)"
+author:
+    - "Asif Mahmud (@asifmahmud)"
+    - "Demetrios Dimatos (@ddimatos)"
 options:
   src:
     description:
@@ -86,9 +88,13 @@ options:
     type: bool
   sftp_port:
     description:
-      - Indicates which port should be used to connect to the remote z/OS
-        system to perform data transfer.
-      - If this parameter is not specified, C(ansible_port) will be used.
+      - Configuring the SFTP port used by the M(zos_fetch) module has been
+        deprecated and will be removed in ibm.ibm_zos_core collection version
+        1.5.0.
+      - Configuring the SFTP port will no longer have any effect on which port
+        is used by the modules use of SFTP.
+      - To configure the SFTP port used for module M(zos_copy), refer to topic
+        L(Using connection plugins,https://docs.ansible.com/ansible/latest/plugins/connection.html#using-connection-plugins)
       - If C(ansible_port) is not specified, port 22 will be used.
     type: int
     required: false
@@ -556,6 +562,12 @@ def run_module():
     src = module.params.get("src")
     if module.params.get("use_qualifier"):
         module.params["src"] = datasets.hlq() + "." + src
+
+    if module.params.get('sftp_port'):
+        module.deprecate(
+            msg='Support for configuring sftp_port has been deprecated.'
+            'Configuring the SFTP port is now managed through Ansible connection plugins option \'ansible_port\'',
+            date='2021-08-01', collection_name='ibm.ibm_zos_core')
 
     # ********************************************************** #
     #                   Verify paramater validity                #

@@ -1985,15 +1985,16 @@ def test_copy_sequential_data_set_to_vsam_fails(ansible_zos_module):
         hosts.all.zos_data_set(name=dest, state="absent")
 
 
-def test_sftp_negative_port_specification_fails(ansible_zos_module):
-    hosts = ansible_zos_module
-    dest_path = "/tmp/profile"
-    try:
-        copy_res = hosts.all.zos_copy(src="/etc/profile", dest=dest_path, sftp_port=-1)
-        for result in copy_res.contacted.values():
-            assert result.get("msg") is not None
-    finally:
-        hosts.all.file(path=dest_path, state="absent")
+# Deprecated function for ibm.zos_core.zos_copy in v1.4.0
+# def test_sftp_negative_port_specification_fails(ansible_zos_module):
+#     hosts = ansible_zos_module
+#     dest_path = "/tmp/profile"
+#     try:
+#         copy_res = hosts.all.zos_copy(src="/etc/profile", dest=dest_path, sftp_port=-1)
+#         for result in copy_res.contacted.values():
+#             assert result.get("msg") is not None
+#     finally:
+#         hosts.all.file(path=dest_path, state="absent")
 
 
 def test_copy_multiple_data_set_members(ansible_zos_module):

@@ -223,83 +223,99 @@ options:
         unit name has been specified.
     type: str
     required: false
-  type:
+### here
+#
+  destination_dataset:
     description:
-      - If the destination data set does not exist, this determines
-        the type of dataset created.
-      - The data set type to be used when creating a data set. (e.g C(pdse))
-      - C(MEMBER) expects to be used with an existing partitioned data set.
-      - Choices are case-insensitive.
+      - These are settings to use when creating the destination data set
     required: false
-    type: str
-    choices:
-      - KSDS
-      - ESDS
-      - RRDS
-      - LDS
-      - SEQ
-      - PDS
-      - PDSE
-      - MEMBER
-    default: BASIC
-  space_primary:
-    description:
-      - If the destination does not exist and is not a USS file, this determines
-        the primary space allocated for the dataset.
-      - The unit of space used is set using I(space_type).
-    type: str
-    required: false
-    default: "5"
-  space_secondary:
-    description:
-      - If the destination does not exist and is not a USS file, this determines
-        the amount of secondary space to allocate for the dataset.
-      - The unit of space used is set using I(space_type).
-    type: str
-    required: false
-    default: "3"
-  space_type:
-    description:
-      - If the destination does not exist and is not a USS file, this determines
-        the unit of measurement to use when defining primary and secondary space.
-      - Valid units of size are C(K), C(M), C(G), C(CYL), and C(TRK).
-    type: str
-    choices:
-      - K
-      - M
-      - G
-      - CYL
-      - TRK
-    required: false
-    default: M
-  record_format:
-    description:
-      - If the destination does not exist and is not a USS file, this determines
-        the format of the data set. (e.g C(FB))
-      - Choices are case-insensitive.
-    required: false
-    choices:
-      - FB
-      - VB
-      - FBA
-      - VBA
-      - U
-    default: FB
-    type: str
-  record_length:
-    description:
-      - The length of each record in the data set, in bytes.
-      - For variable data sets, the length must include the 4-byte prefix area.
-      - "Defaults vary depending on format: If FB/FBA 80, if VB/VBA 137, if U 0."
-    type: int
-    required: false
-    default: 80
-  block_size:
-    description:
-      - The block size to use for the data set.
-    type: int
-    required: false
-
+    type: dict
+    suboptions:
+      always_use:
+        description:
+          - If set to C(true), the settings in this section will be used to allocate the
+            destination dataset, even if it pre-exists.
+          - If set to C(false), the settings will be used if the destination does not exist
+            and the source file is USS.  If the source is a data set, its settings will be used.
+        required: false
+        type: bool
+        default: false
+      type:
+          description:
+            - If the destination data set does not exist, this determines
+                the type of dataset created.
+            - The data set type to be used when creating a data set. (e.g C(pdse))
+            - C(MEMBER) expects to be used with an existing partitioned data set.
+            - Choices are case-insensitive.
+          required: false
+          type: str
+          choices:
+          - KSDS
+          - ESDS
+          - RRDS
+          - LDS
+          - SEQ
+          - PDS
+          - PDSE
+          - MEMBER
+          default: BASIC
+      space_primary:
+          description:
+          - If the destination data set does not exist, this determines
+              the primary space allocated for the dataset.
+          - The unit of space used is set using I(space_type).
+          type: str
+          required: false
+          default: "5"
+      space_secondary:
+          description:
+          - If the destination does not exist and is not a USS file, this determines
+              the amount of secondary space to allocate for the dataset.
+          - The unit of space used is set using I(space_type).
+          type: str
+          required: false
+          default: "3"
+      space_type:
+          description:
+          - If the destination does not exist and is not a USS file, this determines
+              the unit of measurement to use when defining primary and secondary space.
+          - Valid units of size are C(K), C(M), C(G), C(CYL), and C(TRK).
+          type: str
+          choices:
+          - K
+          - M
+          - G
+          - CYL
+          - TRK
+          required: false
+          default: M
+      record_format:
+          description:
+          - If the destination does not exist and is not a USS file, this determines
+              the format of the data set. (e.g C(FB))
+          - Choices are case-insensitive.
+          required: false
+          choices:
+          - FB
+          - VB
+          - FBA
+          - VBA
+          - U
+          default: FB
+          type: str
+      record_length:
+          description:
+          - The length of each record in the data set, in bytes.
+          - For variable data sets, the length must include the 4-byte prefix area.
+          - "Defaults vary depending on format: If FB/FBA 80, if VB/VBA 137, if U 0."
+          type: int
+          required: false
+          default: 80
+      block_size:
+          description:
+          - The block size to use for the data set.
+          type: int
+          required: false
 notes:
     - Destination data sets are assumed to be in catalog. When trying to copy
       to an uncataloged data set, the module assumes that the data set does
@@ -1658,6 +1674,7 @@ def run_module(module, arg_def):
     alloc_size = module.params.get('size')
     src_member = module.params.get('src_member')
     copy_member = module.params.get('copy_member')
+### here    
     type = module.params.get("type") or "BASIC"
     space_primary = module.params.get("space_primary")
     space_secondary = module.params.get("space_secondary")
@@ -1928,6 +1945,7 @@ def main():
             ignore_sftp_stderr=dict(type='bool', default=False),
             validate=dict(type='bool'),
             volume=dict(type='str', required=False),
+### here            
             type=dict(
                 arg_type='str',
                 default='BASIC',
@@ -1975,6 +1993,7 @@ def main():
         validate=dict(arg_type='bool', required=False),
         sftp_port=dict(arg_type='int', required=False),
         volume=dict(arg_type='str', required=False),
+### here        
         type=dict(arg_type='str', default='BASIC', required=False),
         space_primary=dict(arg_type='int', default=5, required=False),
         space_secondary=dict(arg_type='int', default=3, required=False),

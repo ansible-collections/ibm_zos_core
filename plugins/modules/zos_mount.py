@@ -58,33 +58,42 @@ options:
         description:
             - The desired status of the described mount (choice).
             - >
-                If I(state=mounted) and I(src) is not in use, the module will add the file
-                system entry to parmlib member I(persistent/data_set_name) if not present. The
-                I(path) will be updated, the device will be mounted and the module will
-                complete successfully with I(changed=True).
+                If I(state=mounted) and I(src) is not in use, the module will
+                add the file system entry to parmlib member
+                I(persistent/data_set_name) if not present. The I(path) will be
+                updated, the device will be mounted and the module will complete
+                successfully with I(changed=True).
             - >
-                If I(state=mounted) and I(src) is in use, the module will add the file system
-                entry to parmlib member I(persistent/data_set_name) if not present. The I(path)
-                will not be updated, the device will not be mounted and the module will
+                If I(state=mounted) and I(src) is in use, the module will add
+                the file system entry to parmlib member
+                I(persistent/data_set_name) if not present. The I(path) will not
+                be updated, the device will not be mounted and the module will
                 complete successfully with I(changed=False).
-
             - >
-                If I(state=unmounted) and I(src) is in use, device will be unmounted.
-                I(persistent/data_set_name) is not altered, even when provided.
-                Module completes successfully with I(changed=True).
+                If I(state=unmounted) and I(src) is in use, the module will
+                B(not) add the file system entry to parmlib member
+                I(persistent/data_set_name). The device will be unmounted and
+                the module will complete successfully with I(changed=True).
             - >
-                If I(state=unmounted) and I(src) is not in use, no action taken.
-                I(persistent/data_set_name) is not altered, even when provided.
-                Module completes successfully with I(changed=False).
+                If I(state=unmounted) and I(src) is not in use, the module will
+                B(not) add the file system entry to parmlib member
+                I(persistent/data_set_name).The device will remain unchanged and
+                the module will complete successfully with I(changed=False).
             - >
-                If I(state=present), if makes sure device is in I(persistent/data_set_name), if provided.
-                Returns I(changed=True) if I(persistent/data_set_name).
+                If I(state=present), the module will add the file system entry
+                to the provided parmlib member I(persistent/data_set_name)
+                if not present. The module will complete successfully with
+                I(changed=True).
             - >
-                If I(state=absent), this will un-mount and alse remove from I(persistent/data_set_name) if provided.
+                If I(state=absent), the module will remove the file system entry
+                to the provided parmlib member I(persistent/data_set_name) if
+                present. The module will complete successfully with
+                I(changed=True).
             - >
-                If I(state=remounted) the device is unmounted and mounted again.
-                I(persistent/data_set_name) is not altered, even when provided.
-                Always returns I(changed=True).
+                If I(state=remounted), the module will B(not) add the file
+                system entry to parmlib member I(persistent/data_set_name). The
+                device will be unmounted and mounted, the module will complete
+                successfully with I(changed=True).
         type: str
         choices:
             - absent
@@ -96,49 +105,56 @@ options:
         default: mounted
     persistent:
         description:
-            - Add/remove mount command entries to or from I(data_set_name)
+            - Add or remove mount command entries to provided I(data_set_name)
         required: False
         type: dict
         suboptions:
             data_set_name:
                 description:
                     - The data set name used for persisting a mount command.
-                        Usually a BPXPRMxx file, or a copy.
+                      This is usually BPXPRMxx or a copy.
                 required: True
                 type: str
             backup:
                 description:
-                    - Creates a backup file or backup data set for I(data_set_name), including the
-                        timestamp information to ensure that you retrieve the original APF list
-                        defined in I(data_set_name)".
-                    - I(backup_name) can be used to specify a backup file name if I(backup=true).
-                    - The backup file name will be return on either success or failure
-                        of module execution such that data can be retrieved.
+                    - Creates a backup file or backup data set for
+                      I(data_set_name), including the timestamp information to
+                      ensure that you retrieve the original parameters defined
+                      in I(data_set_name).
+                    - I(backup_name) can be used to specify a backup file name
+                      if I(backup=true).
+                    - The backup file name will be returned on either success or
+                      failure of module execution such that data can be
+                      retrieved.
                 required: false
                 type: bool
                 default: false
             backup_name:
                 description:
-                    - Specify the USS file name or data set name for the destination backup.
-                    - If the source I(data_set_name) is a USS file or path, the backup_name name must be a
-                        file or path name, and the USS file or path must be an absolute path name.
+                    - Specify the USS file name or data set name for the
+                      destination backup.
+                    - If the source I(data_set_name) is a USS file or path, the
+                      I(backup_name) name can be relative or absolute for file
+                      or path name.
                     - If the source is an MVS data set, the backup_name must be
-                        an MVS data set name.
-                    - If the backup_name is not provided, the default backup_name
-                        will be used. If the source is a USS file or path, the name of
-                        the backup file will be the source file or path name appended
-                        with a timestamp.
-                        For example, C(/path/file_name.2020-04-23-08-32-29-bak.tar).
-                    - If the source is an MVS data set, it will be a data set with a
-                        random name generated by calling the ZOAU API. The MVS backup
-                        data set recovery can be done by renaming it.
+                      an MVS data set name.
+                    - If the backup_name is not provided, the default
+                      I(backup_name) will be used. If the source is a USS file
+                      or path, the name of the backup file will be the source
+                      file or path name appended with a timestamp.
+                      For example,
+                      C(/path/file_name.2020-04-23-08-32-29-bak.tar).
+                    - If the source is an MVS data set, it will be a data set
+                      with a random name generated by calling the ZOAU API. The
+                      MVS backup data set recovery can be done by renaming it.
                 required: false
                 type: str
     tabcomment:
         description:
-        - If provided, this is used in markers that surround the command in the I(persistent/data_set_name).
-        - Markers are used to encapsulate the I(persistent/data_set_name) entry such that they can
-            easily be understood and located.
+        - If provided, this is used as a comment that surrounds the command in
+          the I(persistent/data_set_name)
+        - Comments are used to encapsulate the I(persistent/data_set_name) entry
+          such that they can easily be understood and located.
         type: list
         required: False
     unmount_opts:
@@ -157,10 +173,13 @@ options:
     mount_opts:
         description:
             - Options available to the mount.
-            - If I(mount_opts=ro) on a mounted/remount, mount is performed read-only.
-            - If I(mount_opts=same) and (unmount_opts=REMOUNT), mount is opened is same mode as previously.
+            - If I(mount_opts=ro) on a mounted/remount, mount is performed
+              read-only.
+            - If I(mount_opts=same) and (unmount_opts=REMOUNT), mount is opened
+              is same mode as previously.
             - If I(mount_opts=nowait), mount is performed asynchronously.
-            - If I(mount_opts=nosecurity), Security checks are not enforced for files in this file system.
+            - If I(mount_opts=nosecurity), security checks are not enforced for
+              files in this file system.
         type: str
         choices:
             - ro
@@ -173,12 +192,13 @@ options:
     src_params:
         description:
             - Specifies a parameter string to be passed to the file system type.
-            - The parameter format and content are specified by the file system type.
+            - The parameter format and content are specified by the file system
+              type.
         type: str
         required: False
     tag_untagged:
         description:
-            - If present, tags get written to any untagged file
+            - If present, tags get written to any untagged file.
             - When the file system is unmounted, the tags are lost.
             - If I(tag_untagged=NOTEXT) none of the untagged files in the file system are
                   automatically converted during file reading and writing.
@@ -193,23 +213,22 @@ options:
         required: False
     tag_ccsid:
         description:
-            - Coded Character Set Identifier to be used on untagged files.
-            - https://www.ibm.com/support/knowledgecenter/SSLTBW_2.2.0/com.ibm.zos.v2r2.idad400/ccsids.htm
-            - only required it I(tag_untagged=TEXT).
-            - ccsid
-                - Identifies the coded character set identifier to be implicitly
-                  set for the untagged file. ccsid is specified as a decimal value
-                  from 0 to 65535. However, when TEXT is specified, the value must
-                  be between 0 and 65535. Other than this, the value is not
-                  checked as being valid and the corresponding code page is not
-                  checked as being installed.
+            - Identifies the coded character set identifier (ccsid) to be
+              implicitly set for the untagged file.
+            - For more on coded character set identifiers, review the IBM
+              documentation topic B(Coded Character Sets).
+            - Specified as a decimal value from 0 to 65535. However, when TEXT
+              is specified, the value must be between 0 and 65535
+            - The value is not checked as being valid and the corresponding code
+              page is not checked as being installed.
+            - Required when I(tag_untagged=TEXT).
         type: int
         required: False
     allow_uid:
         description:
             - >
-              Specifies whether the SETUID and SETGID mode bits on executables in
-              this file system are considered. Also determines whether the APF
+              Specifies whether the SETUID and SETGID mode bits on an executable
+              in this file system are considered. Also determines whether the APF
               extended attribute or the Program Control extended attribute is
               honored.
             - >
@@ -289,7 +308,7 @@ EXAMPLES = r"""
 - name: Unmount a filesystem.
   zos_mount:
     src: SOMEUSER.VVV.ZFS
-    path: /dontcare
+    path: /u/omvsadm/core
     fs_type: ZFS
     state: unmounted
     unmount_opts: REMOUNT
@@ -376,7 +395,7 @@ path:
     type: str
     sample: /u/omvsadm/core
 src:
-    description: The file in zos that is to be mounted.
+    description: The file in z/OS that is to be mounted.
     returned: always
     type: str
     sample: SOMEUSER.VVV.ZFS
@@ -396,22 +415,22 @@ persistent:
     type: dict
     contains:
         data_set_name:
-            description: This is the full qualified name of the dataset member to change.
+            description: The persistent store name where the mount was written too.
             returned: always
             type: str
             sample: SYS1.FILESYS(BPXPRMAA)
         backup:
-            description: Specifies whether a backup of destination should be created.
+            description: Indicates if a backup of destinattion was configured.
             returned: always
             type: bool
             sample: True
         backup_name:
-            description: Specify a unique data set name for the destination backup.
+            description: The unique data set name for the destination backup.
             returned: always
             type: str
             sample: SYS1.FILESYS(PRMAABAK)
 tabcomment:
-    description: The text that was used in markers around the Persistent/data_set_name entry.
+    description: The text that was used in markers around the I(Persistent/data_set_name) entry.
     returned: always
     type: list
     sample:
@@ -737,7 +756,7 @@ def run_module(module, arg_def):
     fs_exists = fs_du.exists()
     if fs_exists is False:
         module.fail_json(
-            msg="Mount source (" + src + ") doesn't exist", stderr=str(res_args)
+            msg="Mount source (" + src + ") either is not cataloged or does not exist.", stderr=str(res_args)
         )
 
     # Validate mountpoint exists if mounting

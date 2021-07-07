@@ -244,24 +244,24 @@ options:
     default: BASIC
   space_primary:
     description:
-      - If the destination does not exist and is not a USS file, this determines
-        the primary space allocated for the dataset.
+      - If the destination I(dest) data set does not exist , this sets the
+        primary space allocated for the data set.
       - The unit of space used is set using I(space_type).
     type: str
     required: false
     default: "5"
   space_secondary:
     description:
-      - If the destination does not exist and is not a USS file, this determines
-        the amount of secondary space to allocate for the dataset.
+      - If the destination I(dest) data set does not exist , this sets the
+        secondary space allocated for the data set.
       - The unit of space used is set using I(space_type).
     type: str
     required: false
     default: "3"
   space_type:
     description:
-      - If the destination does not exist and is not a USS file, this determines
-        the unit of measurement to use when defining primary and secondary space.
+      - If the destination data set does not exist, this sets the unit of
+        measurement to use when defining primary and secondary space.
       - Valid units of size are C(K), C(M), C(G), C(CYL), and C(TRK).
     type: str
     choices:
@@ -274,8 +274,8 @@ options:
     default: M
   record_format:
     description:
-      - If the destination does not exist and is not a USS file, this determines
-        the format of the data set. (e.g C(FB))
+      - If the destination data set does not exist, this sets the format of the
+        data set. (e.g C(FB))
       - Choices are case-insensitive.
     required: false
     choices:

@@ -30,4 +30,4 @@ plugins/modules/zos_apf.py validate-modules:missing-gplv3-license # Licensed und
 docs/source/modules/zos_apf.rst rstcheck!skip #Inline emphasis start-string without end-string
 tests/dependencyfinder.py pylint:global-at-module-level # Ignore for test helper
 tests/dependencyfinder.py shebang # This is not an ansible module but a test helper so this shebang limitation is not required.
-plugins/connection/zos_ssh_2_11.py ansible-doc:!skip #zos_ssh_2_11 missing documentation (or could not parse documentation): unknown doc_fragment(s)
+plugins/connection/zos_ssh_2_11.py ansible-doc!skip #zos_ssh_2_11 missing documentation (or could not parse documentation): unknown doc_fragment(s)

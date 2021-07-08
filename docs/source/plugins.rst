@@ -23,7 +23,7 @@ Action
 
 .. _normal:
    https://github.com/ansible/ansible/blob/devel/lib/ansible/plugins/action/normal.py
-.. _zos ping:
+.. _zos_ping:
    modules/zos_ping.html
 .. _copy data:
    modules/zos_copy.html

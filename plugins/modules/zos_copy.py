@@ -1826,7 +1826,7 @@ def main():
             remote_src=dict(type='bool', default=False),
             sftp_port=dict(type='int', required=False),
             ignore_sftp_stderr=dict(type='bool', default=False),
-            validate=dict(type='bool'),
+            validate=dict(type='bool', default=False),
             volume=dict(type='str', required=False),
             is_uss=dict(type='bool'),
             is_pds=dict(type='bool'),

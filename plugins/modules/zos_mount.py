@@ -933,8 +933,8 @@ def run_module(module, arg_def):
                         fullumcmd, authorized=False
                     )
                     currently_mounted = False
-                except Exception as err:  ### Need to add context to error message
-                    msg = "Exception encountered when running unmount: ".format(str(err))
+                except Exception as err:
+                    msg = "Exception encountered when running unmount: {0}".format(str(err))
                     module.fail_json(msg=msg, stderr=str(stderr) + str(res_args))
             else:
                 stdout = "ANSIBLE CHECK MODE"

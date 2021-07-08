@@ -33,7 +33,7 @@ description:
 author:
   - "Vijay Katoch (@vijayka)"
   - "Blake Becker (@blakeinate)"
-  - "Demetrios Dimatos" (@ddimatos)
+  - "Demetrios Dimatos (@ddimatos)"
 options: {}
 '''
 

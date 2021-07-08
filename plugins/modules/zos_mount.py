@@ -954,8 +954,7 @@ def run_module(module, arg_def):
             else:
                 stdout = "ANSIBLE CHECK MODE"
         else:
-            # comment += "Mount called on data set that is already mounted.\n"
-            pass
+            comment += "Mount called on data set that is already mounted.\n"
 
     rc = 0
     stdout = stderr = None

@@ -60,38 +60,38 @@ options:
             - >
                 If I(state=mounted) and I(src) is not in use, the module will
                 add the file system entry to parmlib member
-                I(persistent/data_set_name) if not present. The I(path) will be
+                I(persistent/data_store) if not present. The I(path) will be
                 updated, the device will be mounted and the module will complete
                 successfully with I(changed=True).
             - >
                 If I(state=mounted) and I(src) is in use, the module will add
                 the file system entry to parmlib member
-                I(persistent/data_set_name) if not present. The I(path) will not
+                I(persistent/data_store) if not present. The I(path) will not
                 be updated, the device will not be mounted and the module will
                 complete successfully with I(changed=False).
             - >
                 If I(state=unmounted) and I(src) is in use, the module will
                 B(not) add the file system entry to parmlib member
-                I(persistent/data_set_name). The device will be unmounted and
+                I(persistent/data_store). The device will be unmounted and
                 the module will complete successfully with I(changed=True).
             - >
                 If I(state=unmounted) and I(src) is not in use, the module will
                 B(not) add the file system entry to parmlib member
-                I(persistent/data_set_name).The device will remain unchanged and
+                I(persistent/data_store).The device will remain unchanged and
                 the module will complete successfully with I(changed=False).
             - >
                 If I(state=present), the module will add the file system entry
-                to the provided parmlib member I(persistent/data_set_name)
+                to the provided parmlib member I(persistent/data_store)
                 if not present. The module will complete successfully with
                 I(changed=True).
             - >
                 If I(state=absent), the module will remove the file system entry
-                to the provided parmlib member I(persistent/data_set_name) if
+                to the provided parmlib member I(persistent/data_store) if
                 present. The module will complete successfully with
                 I(changed=True).
             - >
                 If I(state=remounted), the module will B(not) add the file
-                system entry to parmlib member I(persistent/data_set_name). The
+                system entry to parmlib member I(persistent/data_store). The
                 device will be unmounted and mounted, the module will complete
                 successfully with I(changed=True).
         type: str
@@ -105,11 +105,11 @@ options:
         default: mounted
     persistent:
         description:
-            - Add or remove mount command entries to provided I(data_set_name)
+            - Add or remove mount command entries to provided I(data_store)
         required: False
         type: dict
         suboptions:
-            data_set_name:
+            data_store:
                 description:
                     - The data set name used for persisting a mount command.
                       This is usually BPXPRMxx or a copy.
@@ -118,9 +118,9 @@ options:
             backup:
                 description:
                     - Creates a backup file or backup data set for
-                      I(data_set_name), including the timestamp information to
+                      I(data_store), including the timestamp information to
                       ensure that you retrieve the original parameters defined
-                      in I(data_set_name).
+                      in I(data_store).
                     - I(backup_name) can be used to specify a backup file name
                       if I(backup=true).
                     - The backup file name will be returned on either success or
@@ -133,7 +133,7 @@ options:
                 description:
                     - Specify the USS file name or data set name for the
                       destination backup.
-                    - If the source I(data_set_name) is a USS file or path, the
+                    - If the source I(data_store) is a USS file or path, the
                       I(backup_name) name can be relative or absolute for file
                       or path name.
                     - If the source is an MVS data set, the backup_name must be
@@ -149,17 +149,20 @@ options:
                       MVS backup data set recovery can be done by renaming it.
                 required: false
                 type: str
-    tabcomment:
+    comment:
         description:
         - If provided, this is used as a comment that surrounds the command in
-          the I(persistent/data_set_name)
-        - Comments are used to encapsulate the I(persistent/data_set_name) entry
+          the I(persistent/data_store)
+        - Comments are used to encapsulate the I(persistent/data_store) entry
           such that they can easily be understood and located.
         type: list
         required: False
     unmount_opts:
         description:
             - Describes how the unmount will be performed.
+            - For more on coded character set identifiers, review the IBM
+              documentation topic B(UNMOUNT - Remove a file system from the
+              file hierarchy).
         type: str
         choices:
             - DRAIN
@@ -173,20 +176,20 @@ options:
     mount_opts:
         description:
             - Options available to the mount.
-            - If I(mount_opts=ro) on a mounted/remount, mount is performed
+            - If I(mount_opts=RO) on a mounted/remount, mount is performed
               read-only.
-            - If I(mount_opts=same) and (unmount_opts=REMOUNT), mount is opened
+            - If I(mount_opts=SAME) and (unmount_opts=REMOUNT), mount is opened
               is same mode as previously.
-            - If I(mount_opts=nowait), mount is performed asynchronously.
-            - If I(mount_opts=nosecurity), security checks are not enforced for
+            - If I(mount_opts=NOWAIT), mount is performed asynchronously.
+            - If I(mount_opts=NOSECURITY), security checks are not enforced for
               files in this file system.
         type: str
         choices:
-            - ro
-            - rw
-            - same
-            - nowait
-            - nosecurity
+            - RO
+            - RW
+            - SAME
+            - NOWAIT
+            - NOSECURITY
         required: False
         default: rw
     src_params:
@@ -320,7 +323,7 @@ EXAMPLES = r"""
     path: /u/omvsadm/core
     fs_type: ZFS
     state: mounted
-    mount_opts: ro
+    mount_opts: RO
 
 - name: Mount a filesystem and record change in BPXPRMAA.
   zos_mount:
@@ -329,8 +332,8 @@ EXAMPLES = r"""
     fs_type: ZFS
     state: mounted
     persistent:
-        data_set_name: SYS1.PARMLIB(BPXPRMAA)
-    tabcomment: For Tape2 project
+        data_store: SYS1.PARMLIB(BPXPRMAA)
+    comment: For Tape2 project
 
 - name: Mount a filesystem and record change in BPXPRMAA after backing up to BPXPRMAB.
   zos_mount:
@@ -339,10 +342,10 @@ EXAMPLES = r"""
     fs_type: ZFS
     state: mounted
     persistent:
-        data_set_name: SYS1.PARMLIB(BPXPRMAA)
+        data_store: SYS1.PARMLIB(BPXPRMAA)
         backup: Yes
         backup_name: SYS1.PARMLIB(BPXPRMAB)
-    tabcomment: For Tape2 project
+    comment: For Tape2 project
 
 - name: Mount a filesystem ignoring uid/gid values.
   zos_mount:
@@ -366,7 +369,7 @@ EXAMPLES = r"""
     path: /u/omvsadm/core
     fs_type: ZFS
     state: mounted
-    mount_opts: nosecurity
+    mount_opts: NOSECURITY
 
 - name: Mount a filesystem, limiting automove to 4 devices.
   zos_mount:
@@ -414,7 +417,7 @@ persistent:
     returned: always
     type: dict
     contains:
-        data_set_name:
+        data_store:
             description: The persistent store name where the mount was written too.
             returned: always
             type: str
@@ -429,8 +432,8 @@ persistent:
             returned: always
             type: str
             sample: SYS1.FILESYS(PRMAABAK)
-tabcomment:
-    description: The text that was used in markers around the I(Persistent/data_set_name) entry.
+comment:
+    description: The text that was used in markers around the I(Persistent/data_store) entry.
     returned: always
     type: list
     sample:
@@ -444,7 +447,7 @@ mount_opts:
     description: Options available to the mount.
     returned: whenever non-None
     type: str
-    sample: rw,nosecurity
+    sample: RW,NOSECURITY
 src_params:
     description: Specifies a parameter string to be passed to the file system type.
     returned: whenever non-None
@@ -489,12 +492,12 @@ msg:
     type: str
     sample: Error while gathering information
 stdout:
-    description: The stdout from the tso mount command.
+    description: The stdout from the mount command.
     returned: always
     type: str
     sample: MOUNT FILESYSTEM( 'source-dataset' ) MOUNTPOINT( '/uss-path' ) TYPE( ZFS )
 stderr:
-    description: The stderr from the tso mount command.
+    description: The stderr from the mount command.
     returned: failure
     type: str
     sample: No such file or directory "/tmp/foo"
@@ -509,7 +512,7 @@ stderr_lines:
     type: list
     sample: [u"FileNotFoundError: No such file or directory '/tmp/foo'"]
 cmd:
-    description: The actual tso command that was run by the module.
+    description: The actual command that was run by the module.
     returned: failure
     type: str
     sample: MOUNT FILESYSTEM( 'EXAMPLE.DATA.SET' ) MOUNTPOINT( '/u/omvsadm/sample' ) TYPE( ZFS )
@@ -528,6 +531,7 @@ import tempfile
 from datetime import datetime
 from ansible.module_utils.basic import AnsibleModule
 
+
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
     AnsibleModuleHelper,
 )
@@ -536,6 +540,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser,
     data_set,
     backup as Backup,
+    mvs_cmd,
 )
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
@@ -678,7 +683,7 @@ def run_module(module, arg_def):
     persistent = parsed_args.get("persistent")
     backup = None
     backup_name = ""
-    tabcomment = parsed_args.get("tabcomment")
+    comment = parsed_args.get("comment")
     unmount_opts = parsed_args.get("unmount_opts")
     mount_opts = parsed_args.get("mount_opts")
     src_params = parsed_args.get("src_params")
@@ -690,7 +695,7 @@ def run_module(module, arg_def):
     automove_list = parsed_args.get("automove_list")
 
     if persistent:
-        data_set_name = persistent.get("data_set_name").upper()
+        data_store = persistent.get("data_store").upper()
         backup = persistent.get("backup")
         if backup:
             if persistent.get("backup_name"):
@@ -699,20 +704,20 @@ def run_module(module, arg_def):
                 backup_code = None
             else:
                 backup_code = backup_name
-            backup_name = mt_backupOper(module, data_set_name, backup_code)
+            backup_name = mt_backupOper(module, data_store, backup_code)
             res_args["backup_name"] = backup_name
             del persistent["backup"]
         if state == "present":
-            persistent["addDataset"] = data_set_name
+            persistent["addDataset"] = data_store
         else:
-            persistent["delDataset"] = data_set_name
-        del persistent["data_set_name"]
+            persistent["delDataset"] = data_store
+        del persistent["data_store"]
 
     write_persistent = False
     if "mounted" in state or "present" in state or "absent" in state:
         if persistent:
-            if data_set_name:
-                if len(data_set_name) > 0:
+            if data_store:
+                if len(data_store) > 0:
                     write_persistent = True
 
     will_mount = True
@@ -723,8 +728,6 @@ def run_module(module, arg_def):
     if "unmounted" in state or "remounted" in state or "absent" in state:
         will_unmount = True
 
-    comment = "starting"
-
     res_args.update(
         dict(
             src=src,
@@ -732,7 +735,6 @@ def run_module(module, arg_def):
             fs_type=fs_type,
             state=state,
             persistent=parsed_args.get("persistent"),
-            tabcomment=tabcomment,
             unmount_opts=unmount_opts,
             mount_opts=mount_opts,
             src_params=src_params,
@@ -766,7 +768,8 @@ def run_module(module, arg_def):
             try:
                 os.mkdir(path)
             except Exception as err:
-                module.fail_json(msg=str(err), stderr=str(res_args))
+                msg = "Exception encountered during directory creation: {0}".format(str(err))
+                module.fail_json(msg=msg, stderr=str(res_args))
 
         currently_mounted = False
         mp_exists = os.path.exists(path)
@@ -802,10 +805,10 @@ def run_module(module, arg_def):
     parmtext = "/* BEGIN ANSIBLE MANAGED BLOCK " + dtstr + " */\n"
     parmtail = "\n" + parmtext.replace("BEGIN", "END")
 
-    if tabcomment is not None:
+    if comment is not None:
         extra = ""
         ctr = 1
-        for tabline in tabcomment:
+        for tabline in comment:
             if len(extra) > 0:
                 extra += " "
             extra += tabline.strip()
@@ -844,13 +847,7 @@ def run_module(module, arg_def):
     fullumcmd = ""
 
     if will_mount:
-        # @asifmahmud asifmahmud 4 days ago Collaborator
-        #
-        # I would suggest not using tsocmd as that command may not be available on some systems our customers use.
-        # Instead I would suggest using ikjeft01 to execute any TSO commands that you want to execute.
-        # There is a module util called mvs_cmd that has an API for ikjeft01.
-
-        fullcmd = "tsocmd MOUNT FILESYSTEM\\( \\'{0}\\' \\) MOUNTPOINT\\( \\'{1}\\' \\) TYPE\\( '{2}' \\)".format(
+        fullcmd = "MOUNT FILESYSTEM\\( \\'{0}\\' \\) MOUNTPOINT\\( \\'{1}\\' \\) TYPE\\( '{2}' \\)".format(
             src, path, fs_type
         )
         parmtext = (
@@ -859,7 +856,7 @@ def run_module(module, arg_def):
                 src, path, fs_type
             )
         )
-        if "ro" in mount_opts or "RO" in mount_opts:
+        if "RO" in mount_opts:
             subcmd = "READ"
         else:
             subcmd = "RDWR"
@@ -887,14 +884,14 @@ def run_module(module, arg_def):
             fullcmd = fullcmd + " NOSETUID"
             parmtext = parmtext + "\n      NOSETUID"
 
-        if "NOWAIT" in mount_opts or "nowait" in mount_opts:
+        if "NOWAIT" in mount_opts:
             fullcmd = fullcmd + " NOWAIT"
             parmtext = parmtext + "\n      NOWAIT"
         else:
             fullcmd = fullcmd + " WAIT"
             parmtext = parmtext + "\n      WAIT"
 
-        if "NOSECURITY" in mount_opts or "nosecurity" in mount_opts:
+        if "NOSECURITY" in mount_opts:
             fullcmd = fullcmd + " NOSECURITY"
             parmtext = parmtext + "\n      NOSECURITY"
         else:
@@ -919,7 +916,7 @@ def run_module(module, arg_def):
         parmtext = ""
 
     if will_unmount:  # unmount/remount
-        fullumcmd = "tsocmd UNMOUNT FILESYSTEM\\( '{0}' \\)".format(src)
+        fullumcmd = "UNMOUNT FILESYSTEM\\( '{0}' \\)".format(src)
         if unmount_opts is None:
             unmount_opts = "NORMAL"
             fullumcmd = fullcmd + " " + unmount_opts
@@ -932,45 +929,43 @@ def run_module(module, arg_def):
             changed = True
             if module.check_mode is False:
                 try:
-                    (rc, stdout, stderr) = module.run_command(
-                        fullumcmd, use_unsafe_shell=False
+                    (rc, stdout, stderr) = mvs_cmd.ikjeft01(
+                        fullumcmd, authorized=False
                     )
-                    comment += "Successfully ran unmount: {0}\n".format(fullumcmd)
                     currently_mounted = False
-                except Exception as err:
-                    module.fail_json(msg=str(err), stderr=str(res_args))
+                except Exception as err:  ### Need to add context to error message
+                    msg = "Exception encountered when running unmount: ".format(str(err))
+                    module.fail_json(msg=msg, stderr=str(stderr) + str(res_args))
             else:
-                comment += "(unmount) NO Action taken: ANSIBLE CHECK MODE\n"
                 stdout = "ANSIBLE CHECK MODE"
         else:
-            comment += "Unmount called on data set that is not mounted.\n"
+            pass
 
     if will_mount:
         if currently_mounted is False:
             changed = True
             if module.check_mode is False:
                 try:
-                    (rc, stdout, stderr) = module.run_command(
-                        fullcmd, use_unsafe_shell=False
+                    (rc, stdout, stderr) = mvs_cmd.ikjeft01(
+                        fullcmd, authorized=False
                     )
-                    comment += "Successfully ran mount: {0}\n".format(fullcmd)
                 except Exception as err:
                     module.fail_json(msg=str(err), stderr=str(res_args))
             else:
-                comment += "(mount) NO Action taken: ANSIBLE CHECK MODE\n"
                 stdout = "ANSIBLE CHECK MODE"
         else:
-            comment += "Mount called on data set that is already mounted.\n"
+            # comment += "Mount called on data set that is already mounted.\n"
+            pass
 
     rc = 0
     stdout = stderr = None
 
     if write_persistent and module.check_mode is False:
-        fst_du = data_set.DataSetUtils(data_set_name)
+        fst_du = data_set.DataSetUtils(data_store)
         fst_exists = fst_du.exists()
         if fst_exists is False:
             module.fail_json(
-                msg="Persistent data set (" + data_set_name + ") is either not cataloged or does not exist",
+                msg="Persistent data set (" + data_store + ") is either not cataloged or does not exist",
                 stderr=str(res_args),
             )
 
@@ -978,7 +973,7 @@ def run_module(module, arg_def):
         tmp_file_filename = tmp_file.name
         tmp_file.close()
 
-        copy_ps2uss(data_set_name, tmp_file_filename, False)
+        copy_ps2uss(data_store, tmp_file_filename, False)
 
         with open(tmp_file_filename, "r") as fh:
             content = fh.read().splitlines()
@@ -988,8 +983,7 @@ def run_module(module, arg_def):
             fh = open(tmp_file_filename, "w")
             fh.write(newtext)
             fh.close()
-            copy_uss2mvs(tmp_file_filename, data_set_name, "PO", False)
-            comment += "Modified " + data_set_name + " in place\n"
+            copy_uss2mvs(tmp_file_filename, data_store, "PO", False)
 
         if os.path.isfile(tmp_file_filename):
             os.unlink(tmp_file_filename)
@@ -1040,7 +1034,7 @@ def main():
                 type="dict",
                 required=False,
                 options=dict(
-                    data_set_name=dict(
+                    data_store=dict(
                         type="str",
                         required=True,
                     ),
@@ -1048,7 +1042,7 @@ def main():
                     backup_name=dict(type="str", required=False, default=None),
                 ),
             ),
-            tabcomment=dict(type="list", required=False),
+            comment=dict(type="list", required=False),
             unmount_opts=dict(
                 type="str",
                 default="NORMAL",
@@ -1058,7 +1052,7 @@ def main():
             mount_opts=dict(
                 type="str",
                 default="rw",
-                choices=["ro", "rw", "same", "nowait", "nosecurity"],
+                choices=["RO", "RW", "SAME", "NOWAIT", "NOSECURITY"],
                 required=False,
             ),
             src_params=dict(type="str", required=False),
@@ -1103,12 +1097,12 @@ def main():
             arg_type="dict",
             required=False,
             options=dict(
-                data_set_name=dict(arg_type="str", required=True),
+                dataa_store=dict(arg_type="str", required=True),
                 backup=dict(arg_type="bool", default=False),
                 backup_name=dict(arg_type="str", required=False, default=None),
             ),
         ),
-        tabcomment=dict(arg_type="list", elements="str", required=False),
+        comment=dict(arg_type="list", elements="str", required=False),
         unmount_opts=dict(
             arg_type="str",
             default="NORMAL",
@@ -1118,7 +1112,7 @@ def main():
         mount_opts=dict(
             arg_type="str",
             default="rw",
-            choices=["ro", "rw", "same", "nowait", "nosecurity"],
+            choices=["RO", "RW", "SAME", "NOWAIT", "NOSECURITY"],
             required=False,
         ),
         src_params=dict(arg_type="str", default="", required=False),

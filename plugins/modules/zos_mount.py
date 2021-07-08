@@ -845,6 +845,7 @@ def run_module(module, arg_def):
 
     fullcmd = ""
     fullumcmd = ""
+    stderr = ""
 
     if will_mount:
         fullcmd = "MOUNT FILESYSTEM\\( \\'{0}\\' \\) MOUNTPOINT\\( \\'{1}\\' \\) TYPE\\( '{2}' \\)".format(
@@ -938,8 +939,6 @@ def run_module(module, arg_def):
                     module.fail_json(msg=msg, stderr=str(stderr) + str(res_args))
             else:
                 stdout = "ANSIBLE CHECK MODE"
-        else:
-            pass
 
     if will_mount:
         if currently_mounted is False:
@@ -950,11 +949,12 @@ def run_module(module, arg_def):
                         fullcmd, authorized=False
                     )
                 except Exception as err:
-                    module.fail_json(msg=str(err), stderr=str(res_args))
+                    msg = "Exception occurrend when running mount: {0}".format(str(err))
+                    module.fail_json(msg=msg, stderr=str(res_args))
             else:
                 stdout = "ANSIBLE CHECK MODE"
         else:
-            comment += "Mount called on data set that is already mounted.\n"
+            stderr = "Mount called on data set that is already mounted.\n"
 
     rc = 0
     stdout = stderr = None
@@ -964,7 +964,7 @@ def run_module(module, arg_def):
         fst_exists = fst_du.exists()
         if fst_exists is False:
             module.fail_json(
-                msg="Persistent data set (" + data_store + ") is either not cataloged or does not exist",
+                msg="Persistent data set ({0}) is either not cataloged or does not exist.".format(data_store),
                 stderr=str(res_args),
             )
 

@@ -127,8 +127,7 @@ def test_double_mount(ansible_zos_module):
         )
         for result in mount_result.values():
             assert result.get("rc") == 0
-            assert "already mounted" in result.get("comment")
-            assert result.get("stdout") != ""
+            assert "already mounted" in result.get("stderr")
             assert result.get("changed") is False
     finally:
         hosts.all.zos_mount(

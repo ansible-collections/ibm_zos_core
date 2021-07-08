@@ -191,7 +191,7 @@ options:
             - NOWAIT
             - NOSECURITY
         required: False
-        default: rw
+        default: RW
     src_params:
         description:
             - Specifies a parameter string to be passed to the file system type.
@@ -1051,7 +1051,7 @@ def main():
             ),
             mount_opts=dict(
                 type="str",
-                default="rw",
+                default="RW",
                 choices=["RO", "RW", "SAME", "NOWAIT", "NOSECURITY"],
                 required=False,
             ),
@@ -1111,7 +1111,7 @@ def main():
         ),
         mount_opts=dict(
             arg_type="str",
-            default="rw",
+            default="RW",
             choices=["RO", "RW", "SAME", "NOWAIT", "NOSECURITY"],
             required=False,
         ),

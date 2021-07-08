@@ -934,7 +934,7 @@ def run_module(module, arg_def):
             if module.check_mode is False:
                 try:
                     (rc, stdout, stderr) = mvs_cmd.ikjeft01(
-                        fullumcmd, authorized=False
+                        fullumcmd, authorized=True
                     )
                     currently_mounted = False
                 except Exception as err:
@@ -949,7 +949,7 @@ def run_module(module, arg_def):
             if module.check_mode is False:
                 try:
                     (rc, stdout, stderr) = mvs_cmd.ikjeft01(
-                        fullcmd, authorized=False
+                        fullcmd, authorized=True
                     )
                 except Exception as err:
                     msg = "Exception occurrend when running mount: {0}".format(str(err))

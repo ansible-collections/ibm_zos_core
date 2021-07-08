@@ -916,6 +916,9 @@ def run_module(module, arg_def):
     else:
         parmtext = ""
 
+    rc = 0
+    stdout = stderr = None
+
     if will_unmount:  # unmount/remount
         fullumcmd = "UNMOUNT FILESYSTEM\\( '{0}' \\)".format(src)
         if unmount_opts is None:
@@ -955,9 +958,6 @@ def run_module(module, arg_def):
                 stdout = "ANSIBLE CHECK MODE"
         else:
             stderr = "Mount called on data set that is already mounted.\n"
-
-    rc = 0
-    stdout = stderr = None
 
     if write_persistent and module.check_mode is False:
         fst_du = data_set.DataSetUtils(data_store)

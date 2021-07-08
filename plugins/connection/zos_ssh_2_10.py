@@ -12,9 +12,9 @@ DOCUMENTATION = '''
     connection: ssh
     short_description: connect via ssh client binary
     description:
-        - This connection plugin allows ansible to communicate to the target machines via
-        - Ansible does not expose a channel to allow communication between the user and t
-          a password manually to decrypt an ssh key when using this connection plugin (wh
+        - This connection plugin allows ansible to communicate to the target machines via normal ssh command line.
+        - Ansible does not expose a channel to allow communication between the user and the ssh process to accept
+          a password manually to decrypt an ssh key when using this connection plugin (which is the default). The
           use of ``ssh-agent`` is highly recommended.
     author: ansible (@core)
     version_added: historical
@@ -23,8 +23,8 @@ DOCUMENTATION = '''
           description: Hostname/ip to connect to.
           default: inventory_hostname
           vars:
-              - name: ansible_host
-              - name: ansible_ssh_host
+               - name: ansible_host
+               - name: ansible_ssh_host
       host_key_checking:
           description: Determines if ssh should check host keys
           type: boolean
@@ -44,11 +44,22 @@ DOCUMENTATION = '''
               - name: ansible_ssh_host_key_checking
                 version_added: '2.5'
       password:
-          description: Authentication password for the C(remote_user). Can be supplied as
+          description: Authentication password for the C(remote_user). Can be supplied as CLI option.
           vars:
               - name: ansible_password
               - name: ansible_ssh_pass
               - name: ansible_ssh_password
+      sshpass_prompt:
+          description: Password prompt that sshpass should search for. Supported by sshpass 1.06 and up.
+          default: ''
+          ini:
+              - section: 'ssh_connection'
+                key: 'sshpass_prompt'
+          env:
+              - name: ANSIBLE_SSHPASS_PROMPT
+          vars:
+              - name: ansible_sshpass_prompt
+          version_added: '2.10'
       ssh_args:
           description: Arguments to pass to all ssh cli tools
           default: '-C -o ControlMaster=auto -o ControlPersist=60s'
@@ -74,8 +85,8 @@ DOCUMENTATION = '''
       ssh_executable:
           default: ssh
           description:
-            - This defines the location of the ssh binary. It defaults to ``ssh`` which w
-            - This option is usually not required, it might be useful when access to syst
+            - This defines the location of the ssh binary. It defaults to ``ssh`` which will use the first ssh binary available in $PATH.
+            - This option is usually not required, it might be useful when access to system ssh is restricted,
               or when using ssh wrappers to connect to remote hosts.
           env: [{name: ANSIBLE_SSH_EXECUTABLE}]
           ini:
@@ -88,7 +99,7 @@ DOCUMENTATION = '''
       sftp_executable:
           default: sftp
           description:
-            - This defines the location of the sftp binary. It defaults to ``sftp`` which
+            - This defines the location of the sftp binary. It defaults to ``sftp`` which will use the first binary available in $PATH.
           env: [{name: ANSIBLE_SFTP_EXECUTABLE}]
           ini:
           - {key: sftp_executable, section: ssh_connection}
@@ -99,7 +110,7 @@ DOCUMENTATION = '''
       scp_executable:
           default: scp
           description:
-            - This defines the location of the scp binary. It defaults to `scp` which wil
+            - This defines the location of the scp binary. It defaults to `scp` which will use the first binary available in $PATH.
           env: [{name: ANSIBLE_SCP_EXECUTABLE}]
           ini:
           - {key: scp_executable, section: ssh_connection}
@@ -169,8 +180,8 @@ DOCUMENTATION = '''
             - name: ansible_ssh_port
       remote_user:
           description:
-              - User name with which to login to the remote server, normally set by the r
-              - If no user is supplied, Ansible will let the ssh client binary choose the
+              - User name with which to login to the remote server, normally set by the remote_user keyword.
+              - If no user is supplied, Ansible will let the ssh client binary choose the user as it normally
           ini:
             - section: defaults
               key: remote_user
@@ -182,20 +193,20 @@ DOCUMENTATION = '''
       pipelining:
           default: ANSIBLE_PIPELINING
           description:
-            - Pipelining reduces the number of SSH operations required to execute a modul
+            - Pipelining reduces the number of SSH operations required to execute a module on the remote server,
               by executing many Ansible modules without actual file transfer.
             - This can result in a very significant performance improvement when enabled.
             - However this conflicts with privilege escalation (become).
-              For example, when using sudo operations you must first disable 'requiretty'
+              For example, when using sudo operations you must first disable 'requiretty' in the sudoers file for the target hosts,
               which is why this feature is disabled by default.
           env:
             - name: ANSIBLE_PIPELINING
-            #- name: ANSIBLE_SSH_PIPELINING
+            - name: ANSIBLE_SSH_PIPELINING
           ini:
             - section: defaults
               key: pipelining
-            #- section: ssh_connection
-            #  key: pipelining
+            - section: ssh_connection
+              key: pipelining
           type: boolean
           vars:
             - name: ansible_pipelining
@@ -211,10 +222,11 @@ DOCUMENTATION = '''
           vars:
             - name: ansible_private_key_file
             - name: ansible_ssh_private_key_file
+
       control_path:
         description:
-          - This is the location to save ssh's ControlPath sockets, it uses ssh's variabl
-          - Since 2.3, if null, ansible will generate a unique hash. Use `%(directory)s`
+          - This is the location to save ssh's ControlPath sockets, it uses ssh's variable substitution.
+          - Since 2.3, if null, ansible will generate a unique hash. Use `%(directory)s` to indicate where to use the control dir path setting.
         env:
           - name: ANSIBLE_SSH_CONTROL_PATH
         ini:
@@ -226,7 +238,7 @@ DOCUMENTATION = '''
       control_path_dir:
         default: ~/.ansible/cp
         description:
-          - This sets the directory to use for ssh control path if the control path setti
+          - This sets the directory to use for ssh control path if the control path setting is null.
           - Also, provides the `%(directory)s` variable for the control path setting.
         env:
           - name: ANSIBLE_SSH_CONTROL_PATH_DIR
@@ -249,7 +261,7 @@ DOCUMENTATION = '''
       scp_if_ssh:
         default: smart
         description:
-          - "Prefered method to use when transfering files over ssh"
+          - "Preferred method to use when transfering files over ssh"
           - When set to smart, Ansible will try them until one succeeds or they all fail
           - If set to True, it will force 'scp', if False it will use 'sftp'
         env: [{name: ANSIBLE_SCP_IF_SSH}]
@@ -288,7 +300,7 @@ display = Display()
 
 
 class Connection(connection):
-    ''' Supports Ansible 2.10 or earlier '''
+    ''' Supports Ansible 2.10 '''
 
     module_implementation_preferences = ('.rexx', '.py', '')
     display.vvv(u"Loaded connection plugin {0} ".format(os.path.basename(__file__)))

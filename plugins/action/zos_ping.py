@@ -61,7 +61,7 @@ class ActionModule(ActionBase):
 
                 if is_ssh_transfer_method_updated:
                     display.vvv(u"SSH transfer method updated from {0} to {1}.".format(user_ssh_transfer_method,
-                        scp_transfer_method), host=self._play_context.remote_addr)
+                                scp_transfer_method), host=self._play_context.remote_addr)
 
                 # do work!
                 result = merge_hash(

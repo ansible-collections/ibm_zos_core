@@ -996,6 +996,11 @@ def run_module(module, arg_def):
         if os.path.isfile(tmp_file_filename):
             os.unlink(tmp_file_filename)
 
+    if rc == 0:
+        if len(stdout) < 1:
+            stdout = stderr
+            stderr = ""
+
     res_args.update(
         dict(
             changed=changed,

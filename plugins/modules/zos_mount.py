@@ -997,7 +997,10 @@ def run_module(module, arg_def):
             os.unlink(tmp_file_filename)
 
     if rc == 0:
-        if len(stdout) < 1:
+        if stdout is None:
+            stdout = stderr
+            stderr = ""
+        elif len(stdout) < 1:
             stdout = stderr
             stderr = ""
 

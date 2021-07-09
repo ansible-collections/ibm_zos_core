@@ -49,7 +49,7 @@ def test_fetch_uss_file_not_present_on_local_machine(ansible_zos_module):
 
         for result in results.contacted.values():
             print('RESULT for test \'test_fetch_uss_file_not_present_on_local_machine\' are: {0}'.format(result))
-            print('RESULT for data_set_type is : {0}'.format(assert result.get("data_set_type")))
+            print('RESULT for data_set_type is : {0}'.format(result.get("data_set_type")))
             pp = pprint.PrettyPrinter(indent=4)
             pp.pprint(results)
             # If the dest (file) did not exist locally before the fetch,

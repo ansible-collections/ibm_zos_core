@@ -127,7 +127,7 @@ def test_double_mount(ansible_zos_module):
         )
         for result in mount_result.values():
             assert result.get("rc") == 0
-            assert "already mounted" in result.get("stderr")
+            assert "already mounted" in result.get("stderr") or "already mounted" in result.get("stdout")
             assert result.get("changed") is False
     finally:
         hosts.all.zos_mount(
@@ -149,7 +149,6 @@ def test_remount(ansible_zos_module):
         )
         for result in mount_result.values():
             assert result.get("rc") == 0
-            assert result.get("stdout") != ""
             assert result.get("changed") is True
     finally:
         hosts.all.zos_mount(
@@ -208,7 +207,6 @@ def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module):
 
         for result in mount_result.values():
             assert result.get("rc") == 0
-            assert result.get("stdout") != ""
             assert result.get("changed") is True
 
     finally:
@@ -322,7 +320,6 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
 
         for result in mount_result.values():
             assert result.get("rc") == 0
-            assert result.get("stdout") != ""
             assert result.get("changed") is True
 
         assert srcfn in data

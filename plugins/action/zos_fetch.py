@@ -325,6 +325,7 @@ class ActionModule(ActionBase):
         elif returncode != 0 or (err and not ignore_stderr):
             result["msg"] = "Error transferring remote data from z/OS system"
             result["rc"] = returncode
+            result["stderr"] = err
         if result.get("msg"):
             result["stderr"] = err
             result["failed"] = True

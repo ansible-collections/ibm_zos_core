@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020
+# Copyright (c) IBM Corporation 2020, 2021
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -36,15 +36,24 @@ TEST_PDS = "IMSTESTL.COMNUC"
 TEST_PDS_MEMBER = "IMSTESTL.COMNUC(ATRQUERY)"
 TEST_VSAM = "IMSTESTL.LDS01.WADS0"
 
-
 def test_fetch_uss_file_not_present_on_local_machine(ansible_zos_module):
     hosts = ansible_zos_module
     params = dict(src="/etc/profile", dest="/tmp/", flat=True)
+    dest_path = "/tmp/profile"
+
     try:
         results = hosts.all.zos_fetch(**params)
-        dest_path = "/tmp/profile"
         for result in results.contacted.values():
-            assert result.get("changed") is True
+
+            # If the dest (file) did not exist locally before the fetch,
+            # changed will always be TRUE when comparing the checksum of the
+            # new dest (file) to the src (remote file)
+            if not os.path.exists(dest_path) or os.path.isdir(dest_path):
+                is_changed = True
+            else:
+                is_changed = False
+
+            assert result.get("changed") is is_changed
             assert result.get("data_set_type") == "USS"
             assert result.get("module_stderr") is None
             assert os.path.exists(dest_path)
@@ -476,15 +485,15 @@ def test_fetch_flat_create_dirs(ansible_zos_module, z_python_interpreter):
         if os.path.exists(dest_path):
             shutil.rmtree("/tmp/" + remote_host)
 
-# Deprecated function for ibm.zos_core.zos_copy in v1.4.0
-# def test_sftp_negative_port_specification_fails(ansible_zos_module):
-#     hosts = ansible_zos_module
-#     params = dict(src="/etc/profile", dest="/tmp/", flat=True, sftp_port=-1)
-#     try:
-#         results = hosts.all.zos_fetch(**params)
-#         dest_path = "/tmp/profile"
-#         for result in results.contacted.values():
-#             assert result.get("msg") is not None
-#     finally:
-#         if os.path.exists(dest_path):
-#             os.remove(dest_path)
+
+def test_sftp_negative_port_specification_fails(ansible_zos_module):
+    hosts = ansible_zos_module
+    params = dict(src="/etc/profile", dest="/tmp/", flat=True, sftp_port=-1)
+    try:
+        results = hosts.all.zos_fetch(**params)
+        dest_path = "/tmp/profile"
+        for result in results.contacted.values():
+            assert result.get("msg") is not None
+    finally:
+        if os.path.exists(dest_path):
+            os.remove(dest_path)

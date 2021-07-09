@@ -933,8 +933,13 @@ def run_module(module, arg_def):
             changed = True
             if module.check_mode is False:
                 try:
-                    (rc, stdout, stderr) = mvs_cmd.ikjeft01(
-                        fullumcmd, authorized=True
+                    # Pulled out because it returned errors w/o/r2 auth
+                    # (rc, stdout, stderr) = mvs_cmd.ikjeft01(
+                    #    fullumcmd, authorized=True
+                    # )
+                    fullumcmd = "tsocmd " + fullumcmd
+                    (rc, stdout, stderr) = module.run_command(
+                        fullumcmd, use_unsafe_shell=False
                     )
                     currently_mounted = False
                 except Exception as err:
@@ -948,8 +953,12 @@ def run_module(module, arg_def):
             changed = True
             if module.check_mode is False:
                 try:
-                    (rc, stdout, stderr) = mvs_cmd.ikjeft01(
-                        fullcmd, authorized=True
+                    # (rc, stdout, stderr) = mvs_cmd.ikjeft01(
+                    #    fullcmd, authorized=True
+                    # )
+                    fullcmd = "tsocmd " + fullcmd
+                    (rc, stdout, stderr) = module.run_command(
+                        fullcmd, use_unsafe_shell=False
                     )
                 except Exception as err:
                     msg = "Exception occurrend when running mount: {0}".format(str(err))

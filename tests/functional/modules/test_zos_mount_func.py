@@ -202,7 +202,7 @@ def test_basic_mount_with_bpx_nocomment_nobackup(ansible_zos_module):
             path="/pythonx",
             fs_type="ZFS",
             state="mounted",
-            persistent=dict(data_set_name=dest_path),
+            persistent=dict(data_store=dest_path),
         )
 
         for result in mount_result.values():
@@ -288,7 +288,7 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
             fs_type="ZFS",
             state="mounted",
             persistent=dict(
-                data_set_name=dest_path,
+                data_store=dest_path,
                 backup="Yes",
                 backup_name=back_dest_path,
             ),

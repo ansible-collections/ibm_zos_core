@@ -1113,7 +1113,7 @@ def main():
             arg_type="dict",
             required=False,
             options=dict(
-                dataa_store=dict(arg_type="str", required=True),
+                data_store=dict(arg_type="str", required=True),
                 backup=dict(arg_type="bool", default=False),
                 backup_name=dict(arg_type="str", required=False, default=None),
             ),

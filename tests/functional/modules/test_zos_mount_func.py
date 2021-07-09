@@ -292,7 +292,7 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
                 backup="Yes",
                 backup_name=back_dest_path,
             ),
-            tabcomment=["bpxtablecomment - try this", "second line of comment"],
+            comment=["bpxtablecomment - try this", "second line of comment"],
         )
         # copying from dataset to make editable copy on target
         test_tmp_file_filename = tmp_file_filename + "-a"

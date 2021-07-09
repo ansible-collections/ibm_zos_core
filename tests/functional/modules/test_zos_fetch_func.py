@@ -41,9 +41,11 @@ def test_fetch_uss_file_not_present_on_local_machine(ansible_zos_module):
     hosts = ansible_zos_module
     params = dict(src="/etc/profile", dest="/tmp/", flat=True)
     dest_path = "/tmp/profile"
+    results = None
 
     try:
         results = hosts.all.zos_fetch(**params)
+
         for result in results.contacted.values():
 
             # If the dest (file) did not exist locally before the fetch,
@@ -58,6 +60,8 @@ def test_fetch_uss_file_not_present_on_local_machine(ansible_zos_module):
             assert result.get("data_set_type") == "USS"
             assert result.get("module_stderr") is None
             assert os.path.exists(dest_path)
+    except AssertionError:
+        print('Test \'test_fetch_uss_file_not_present_on_local_machine\' failure, results are {}'.format(results))
     finally:
         if os.path.exists(dest_path):
             os.remove(dest_path)

@@ -53,7 +53,7 @@ class ActionModule(ActionBase):
         content = task_args.get('content', None)
 
         # Option sftp_port is deprecated in 1.4.0 to be removed in 1.5.0
-        sftp_port = task_args.get('sftp_port', if self._play_context.port is not None else 22)
+        sftp_port = task_args.get('sftp_port', self._play_context.port or 22)
         force = _process_boolean(task_args.get('force'), default=True)
         backup = _process_boolean(task_args.get('backup'), default=False)
         local_follow = _process_boolean(task_args.get('local_follow'), default=False)

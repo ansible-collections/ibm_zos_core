@@ -48,7 +48,7 @@ def test_fetch_uss_file_not_present_on_local_machine(ansible_zos_module):
 
         for result in results.contacted.values():
 
-            assert result.get("changed") is is_changed
+            assert result.get("changed") is True
             assert result.get("data_set_type") == "USS"
             assert result.get("module_stderr") is None
             assert os.path.exists(dest_path)

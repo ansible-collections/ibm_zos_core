@@ -47,13 +47,6 @@ def test_fetch_uss_file_not_present_on_local_machine(ansible_zos_module):
         results = hosts.all.zos_fetch(**params)
 
         for result in results.contacted.values():
-            # If the dest (file) did not exist locally before the fetch,
-            # changed will always be TRUE when comparing the checksum of the
-            # new dest (file) to the src (remote file)
-            if not os.path.exists(dest_path) or os.path.isdir(dest_path):
-                is_changed = True
-            else:
-                is_changed = False
 
             assert result.get("changed") is is_changed
             assert result.get("data_set_type") == "USS"

@@ -109,7 +109,7 @@ class ActionModule(ActionBase):
         dest = self._task.args.get('dest')
         encoding = self._task.args.get('encoding')
         # Option sftp_port is deprecated in 1.4.0 to be removed in 1.5.0
-        sftp_port = self._task.args.get('sftp_port', self._play_context.port or 22)
+        sftp_port = self._task.args.get('sftp_port', if self._play_context.port is not None else 22)
         flat = _process_boolean(self._task.args.get('flat'), default=False)
         is_binary = _process_boolean(self._task.args.get('is_binary'))
         ignore_sftp_stderr = _process_boolean(
@@ -316,9 +316,9 @@ class ActionModule(ActionBase):
         display.vvv(u"{0} {1} TO {2}".format(_sftp_action, remote_path, dest), host=self._play_context.remote_addr)
         (returncode, stdout, stderr) = self._connection._file_transport_command(remote_path, dest, _sftp_action)
 
-        display.vvv(u"FETCH RC = {0}".format(returncode), host=self._play_context.remote_addr)
-        display.vvv(u"FETCH stdout = {0}".format(stdout), host=self._play_context.remote_addr)
-        display.vvv(u"FETCH stderr = {0}".format(stderr), host=self._play_context.remote_addr)
+        display.vvv(u"ibm_zos_fetch return code: {0}".format(returncode), host=self._play_context.remote_addr)
+        display.vvv(u"ibm_zos_fetch stdout: {0}".format(stdout), host=self._play_context.remote_addr)
+        display.vvv(u"ibm_zos_fetch stderr: {0}".format(stderr), host=self._play_context.remote_addr)
 
         err = _detect_sftp_errors(stderr)
 

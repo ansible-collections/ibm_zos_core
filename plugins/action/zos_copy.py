@@ -53,7 +53,7 @@ class ActionModule(ActionBase):
         content = task_args.get('content', None)
 
         # Option sftp_port is deprecated in 1.4.0 to be removed in 1.5.0
-        sftp_port = task_args.get('sftp_port', self._play_context.port or 22)
+        sftp_port = task_args.get('sftp_port', if self._play_context.port is not None else 22)
         force = _process_boolean(task_args.get('force'), default=True)
         backup = _process_boolean(task_args.get('backup'), default=False)
         local_follow = _process_boolean(task_args.get('local_follow'), default=False)
@@ -229,8 +229,12 @@ class ActionModule(ActionBase):
             self._connection.exec_command("mkdir -p {0}/{1}".format(temp_path, base))
             _sftp_action += ' -r'    # add '-r` to clone the source trees
 
-        display.vvv(u"{0} {1} TO {2}".format(_sftp_action, _src, temp_path), host=self._play_context.remote_addr)
+        display.vvv(u"ibm_zos_copy: {0} {1} TO {2}".format(_sftp_action, _src, temp_path), host=self._play_context.remote_addr)
         (returncode, stdout, stderr) = self._connection._file_transport_command(_src, temp_path, _sftp_action)
+
+        display.vvv(u"ibm_zos_copy return code: {0}".format(returncode), host=self._play_context.remote_addr)
+        display.vvv(u"ibm_zos_copy stdout: {0}".format(stdout), host=self._play_context.remote_addr)
+        display.vvv(u"ibm_zos_copy stderr: {0}".format(stderr), host=self._play_context.remote_addr)
 
         err = _detect_sftp_errors(stderr)
 

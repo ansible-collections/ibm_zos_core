@@ -316,6 +316,10 @@ class ActionModule(ActionBase):
         display.vvv(u"{0} {1} TO {2}".format(_sftp_action, remote_path, dest), host=self._play_context.remote_addr)
         (returncode, stdout, stderr) = self._connection._file_transport_command(remote_path, dest, _sftp_action)
 
+        display.vvv(u"FETCH RC = ".format(returncode), host=self._play_context.remote_addr)
+        display.vvv(u"FETCH stdout = ".format(stdout), host=self._play_context.remote_addr)
+        display.vvv(u"FETCH stderr = ".format(stderr), host=self._play_context.remote_addr)
+        
         err = _detect_sftp_errors(stderr)
 
         if re.findall(r"Permission denied", err):

@@ -239,6 +239,22 @@ class ActionModule(ActionBase):
 
         err = _detect_sftp_errors(stderr)
 
+        # ************************************************************************* #
+        # When plugin shh connection member _build_command(..) detects verbosity    #
+        # greater than 3, it constructs a command that includes verbosity like      #
+        # 'EXEC sftp -b - -vvv ...' where this then is returned in the connections  #
+        # stream as 'stderr' and if a user has not set ignore_stderr it will fail   #
+        # the modules execution. So in cases where verbosity                        #
+        # (ansible.cfg verbosity = n || CLI -vvv) are collectively summed and       #
+        # amount to greater than 3, ignore_stderr will be set to 'True' so that     #
+        # 'err' which will not be None won't fail the module. 'stderr' does not     #
+        # in our z/OS case actually mean an error happened, it just so happens      #
+        # the verbosity is returned as 'stderr'.                                    #
+        # ************************************************************************* #
+
+        if self._play_context.verbosity > 3:
+            ignore_stderr
+
         if returncode != 0 or (err and not ignore_stderr):
             return dict(
                 msg="Error transfering source '{0}' to remote z/OS system".format(src),

@@ -130,13 +130,23 @@ options:
     required: false
   ignore_sftp_stderr:
     description:
-      - During data transfer through sftp, the module fails if the sftp command
-        directs any content to stderr. The user is able to override this behavior
-        by setting this parameter to C(true). By doing so, the module would
-        essentially ignore the stderr stream produced by sftp and continue execution.
+      - During data transfer through SFTP, the module fails if the SFTP command
+        directs any content to stderr. The user is able to override this
+        behavior by setting this parameter to C(true). By doing so, the module
+        would essentially ignore the stderr stream produced by SFTP and continue
+        execution.
+      - When the verbosity is enabled to greather than 3 either through the
+        command line interface (CLI) using B(-vvv) or setting it through
+        environment variables such as B(verbosity = 1) in the '[defaults]'
+        section, I(ignore_sftp_stderr=true). When verbosity is greater than 3,
+        Ansible connects to SFTP with a verbose mode which returns much of the
+        interaction as a STDERR stream even when return code 0, which then fails
+        the module. Verbosity less than or equal to 3 is acceptable to use with
+        M(ibm_zos_fetch).
     type: bool
     required: false
     default: false
+    version_added: "1.4.0"
   is_binary:
     description:
       - If set to C(true), indicates that the file or data set to be copied is a

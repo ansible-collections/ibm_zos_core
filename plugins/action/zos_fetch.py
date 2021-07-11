@@ -337,7 +337,7 @@ class ActionModule(ActionBase):
         # ************************************************************************* #
 
         if self._play_context.verbosity > 3:
-            ignore_stderr
+            ignore_stderr = True
 
         if re.findall(r"Permission denied", err):
             result["msg"] = "Insufficient write permission for destination {0}".format(

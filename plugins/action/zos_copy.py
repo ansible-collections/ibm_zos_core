@@ -253,7 +253,7 @@ class ActionModule(ActionBase):
         # ************************************************************************* #
 
         if self._play_context.verbosity > 3:
-            ignore_stderr
+            ignore_stderr = True
 
         if returncode != 0 or (err and not ignore_stderr):
             return dict(

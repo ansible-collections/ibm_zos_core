@@ -149,14 +149,14 @@ options:
                       MVS backup data set recovery can be done by renaming it.
                 required: false
                 type: str
-    comment:
-        description:
-        - If provided, this is used as a comment that surrounds the command in
-          the I(persistent/data_store)
-        - Comments are used to encapsulate the I(persistent/data_store) entry
-          such that they can easily be understood and located.
-        type: list
-        required: False
+            comment:
+                description:
+                    - If provided, this is used as a comment that surrounds the
+                      command in the I(persistent/data_store)
+                    - Comments are used to encapsulate the I(persistent/data_store) entry
+                      such that they can easily be understood and located.
+                type: list
+                required: False
     unmount_opts:
         description:
             - Describes how the unmount will be performed.
@@ -333,7 +333,7 @@ EXAMPLES = r"""
     state: mounted
     persistent:
         data_store: SYS1.PARMLIB(BPXPRMAA)
-    comment: For Tape2 project
+        comment: For Tape2 project
 
 - name: Mount a filesystem and record change in BPXPRMAA after backing up to BPXPRMAB.
   zos_mount:
@@ -345,7 +345,7 @@ EXAMPLES = r"""
         data_store: SYS1.PARMLIB(BPXPRMAA)
         backup: Yes
         backup_name: SYS1.PARMLIB(BPXPRMAB)
-    comment: For Tape2 project
+        comment: For Tape2 project
 
 - name: Mount a filesystem ignoring uid/gid values.
   zos_mount:
@@ -432,12 +432,12 @@ persistent:
             returned: always
             type: str
             sample: SYS1.FILESYS(PRMAABAK)
-comment:
-    description: The text that was used in markers around the I(Persistent/data_store) entry.
-    returned: always
-    type: list
-    sample:
-        - [u'I did this because..']
+        comment:
+            description: The text that was used in markers around the I(Persistent/data_store) entry.
+            returned: always
+            type: list
+            sample:
+                - [u'I did this because..']
 unmount_opts:
     description: Describes how the unmount is to be performed.
     returned: changed and if state=unmounted
@@ -683,7 +683,7 @@ def run_module(module, arg_def):
     persistent = parsed_args.get("persistent")
     backup = None
     backup_name = ""
-    comment = parsed_args.get("comment")
+    comment = None
     unmount_opts = parsed_args.get("unmount_opts")
     mount_opts = parsed_args.get("mount_opts")
     src_params = parsed_args.get("src_params")
@@ -696,6 +696,7 @@ def run_module(module, arg_def):
 
     if persistent:
         data_store = persistent.get("data_store").upper()
+        comment = persistent.get("comment")
         backup = persistent.get("backup")
         if backup:
             if persistent.get("backup_name"):
@@ -707,7 +708,7 @@ def run_module(module, arg_def):
             backup_name = mt_backupOper(module, data_store, backup_code)
             res_args["backup_name"] = backup_name
             del persistent["backup"]
-        if state == "present":
+        if "mounted" in state or "present" in state:
             persistent["addDataset"] = data_store
         else:
             persistent["delDataset"] = data_store
@@ -983,15 +984,36 @@ def run_module(module, arg_def):
 
         copy_ps2uss(data_store, tmp_file_filename, False)
 
+        module.run_command(
+            "chtag -tc ISO8859-1 " + tmp_file_filename, use_unsafe_shell=False
+        )
+
         with open(tmp_file_filename, "r") as fh:
             content = fh.read().splitlines()
 
-        newtext = swap_text(content, parmtext, src)
-        if newtext != content:
+        cont = list()
+
+        if stdout is None:
+            stdout = " "
+
+        # removing null entries
+        for line in content:
+            if line is not None:
+                if len(line) > 0:
+                    if (line[0:1] is not None) and (line[0:1] != "\u0000"):
+                        cont.append(line)
+
+        stdout += "\n"
+        newtext = swap_text(cont, parmtext, src)
+        if newtext != cont or cont != content:
             fh = open(tmp_file_filename, "w")
             fh.write(newtext)
             fh.close()
-            copy_uss2mvs(tmp_file_filename, data_store, "PO", False)
+            # pre-clear to prevent caching behavior on the copy-back
+            module.run_command(
+                "mrm " + data_store, use_unsafe_shell=False
+            )
+            copy_uss2mvs(tmp_file_filename, data_store, "", True)
 
         if os.path.isfile(tmp_file_filename):
             os.unlink(tmp_file_filename)
@@ -1007,13 +1029,13 @@ def run_module(module, arg_def):
     res_args.update(
         dict(
             changed=changed,
-            comment=comment,
             cmd=fullcmd,
             rc=rc,
             stdout=stdout,
             stderr=stderr,
         )
     )
+    del res_args["comment"]
 
     return res_args
 
@@ -1056,9 +1078,9 @@ def main():
                     ),
                     backup=dict(type="bool", default=False),
                     backup_name=dict(type="str", required=False, default=None),
+                    comment=dict(type="list", required=False),
                 ),
             ),
-            comment=dict(type="list", required=False),
             unmount_opts=dict(
                 type="str",
                 default="NORMAL",
@@ -1116,9 +1138,9 @@ def main():
                 data_store=dict(arg_type="str", required=True),
                 backup=dict(arg_type="bool", default=False),
                 backup_name=dict(arg_type="str", required=False, default=None),
+                comment=dict(arg_type="list", elements="str", required=False),
             ),
         ),
-        comment=dict(arg_type="list", elements="str", required=False),
         unmount_opts=dict(
             arg_type="str",
             default="NORMAL",

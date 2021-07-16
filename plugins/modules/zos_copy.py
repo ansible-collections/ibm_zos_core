@@ -267,7 +267,7 @@ notes:
       U(https://ansible-collections.github.io/ibm_zos_core/supplementary.html#encode)
     - M(zos_copy) uses SFTP (Secure File Transfer Protocol) for the underlying
       transfer protocol; Co:Z SFTP is not supported. In the case of Co:z SFTP,
-      you can exempt the Ansible userid on ZOS from using Co:Z thus falling back
+      you can exempt the Ansible userid on z/OS from using Co:Z thus falling back
       to using standard SFTP.
 seealso:
 - module: zos_fetch

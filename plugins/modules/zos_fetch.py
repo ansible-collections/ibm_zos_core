@@ -155,6 +155,10 @@ notes:
     - Fetching HFS or ZFS type data sets is currently not supported.
     - For supported character sets used to encode data, refer to
       U(https://ansible-collections.github.io/ibm_zos_core/supplementary.html#encode)
+    - M(zos_fetch) uses SFTP (Secure File Transfer Protocol) for the underlying
+      transfer protocol; Co:Z SFTP is not supported. In the case of Co:z SFTP,
+      you can exempt the Ansible userid on z/OS from using Co:Z thus falling back
+      to using standard SFTP.
 seealso:
 - module: zos_data_set
 - module: zos_copy

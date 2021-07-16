@@ -223,80 +223,83 @@ options:
         unit name has been specified.
     type: str
     required: false
-### here
-#
   destination_dataset:
     description:
       - These are settings to use when creating the destination data set
     required: false
-    type: str
-    choices:
-      - KSDS
-      - ESDS
-      - RRDS
-      - LDS
-      - SEQ
-      - PDS
-      - PDSE
-      - MEMBER
-    default: BASIC
-  space_primary:
-    description:
-      - If the destination I(dest) data set does not exist , this sets the
-        primary space allocated for the data set.
-      - The unit of space used is set using I(space_type).
-    type: str
-    required: false
-    default: "5"
-  space_secondary:
-    description:
-      - If the destination I(dest) data set does not exist , this sets the
-        secondary space allocated for the data set.
-      - The unit of space used is set using I(space_type).
-    type: str
-    required: false
-    default: "3"
-  space_type:
-    description:
-      - If the destination data set does not exist, this sets the unit of
-        measurement to use when defining primary and secondary space.
-      - Valid units of size are C(K), C(M), C(G), C(CYL), and C(TRK).
-    type: str
-    choices:
-      - K
-      - M
-      - G
-      - CYL
-      - TRK
-    required: false
-    default: M
-  record_format:
-    description:
-      - If the destination data set does not exist, this sets the format of the
-        data set. (e.g C(FB))
-      - Choices are case-insensitive.
-    required: false
-    choices:
-      - FB
-      - VB
-      - FBA
-      - VBA
-      - U
-    default: FB
-    type: str
-  record_length:
-    description:
-      - The length of each record in the data set, in bytes.
-      - For variable data sets, the length must include the 4-byte prefix area.
-      - "Defaults vary depending on format: If FB/FBA 80, if VB/VBA 137, if U 0."
-    type: int
-    required: false
-    default: 80
-  block_size:
-    description:
-      - The block size to use for the data set.
-    type: int
-    required: false
+    type: dict
+    suboptions:
+      dd_type:
+        description:
+          - Organization of the destination
+        type: str
+        choices:
+          - KSDS
+          - ESDS
+          - RRDS
+          - LDS
+          - SEQ
+          - PDS
+          - PDSE
+          - MEMBER
+        default: BASIC
+      space_primary:
+        description:
+          - If the destination I(dest) data set does not exist , this sets the
+            primary space allocated for the data set.
+          - The unit of space used is set using I(space_type).
+        type: str
+        required: false
+        default: "5"
+      space_secondary:
+        description:
+          - If the destination I(dest) data set does not exist , this sets the
+            secondary space allocated for the data set.
+          - The unit of space used is set using I(space_type).
+        type: str
+        required: false
+        default: "3"
+      space_type:
+        description:
+          - If the destination data set does not exist, this sets the unit of
+            measurement to use when defining primary and secondary space.
+          - Valid units of size are C(K), C(M), C(G), C(CYL), and C(TRK).
+        type: str
+        choices:
+          - K
+          - M
+          - G
+          - CYL
+          - TRK
+        required: false
+        default: M
+      record_format:
+        description:
+          - If the destination data set does not exist, this sets the format of the
+            data set. (e.g C(FB))
+          - Choices are case-insensitive.
+        required: false
+        choices:
+          - FB
+          - VB
+          - FBA
+          - VBA
+          - U
+        default: FB
+        type: str
+      record_length:
+        description:
+          - The length of each record in the data set, in bytes.
+          - For variable data sets, the length must include the 4-byte prefix area.
+          - "Defaults vary depending on format: If FB/FBA 80, if VB/VBA 137, if U 0."
+        type: int
+        required: false
+        default: 80
+      block_size:
+        description:
+          - The block size to use for the data set.
+        type: int
+        required: false
 
 notes:
     - Destination data sets are assumed to be in catalog. When trying to copy
@@ -688,8 +691,19 @@ class CopyHandler(object):
             block_size {int} - Size of data block
         """
         new_src = temp_path or conv_path or src
-        # Pre-clear data set
+        # Pre-clear data set: get destination stats before deleting if incoming info is all default
         if self.dest_exists:
+            if space_primary is None or space_primary == 5:
+                if record_length is None or record_length == 80:
+                    if block_size is None:
+                        res = datasets.listing(dest)
+                        type = res[0].dsorg
+                        record_format = res[0].recfm
+                        record_length = res[0].lrecl
+                        block_size = res[0].block_size
+                        space_primary = round(res[0].total_space / 1024)
+                        space_type = "K"
+                        space_secondary = 3
             datasets.delete(dest)
             self.dest_exists = False
 
@@ -1656,14 +1670,15 @@ def run_module(module, arg_def):
     alloc_size = module.params.get('size')
     src_member = module.params.get('src_member')
     copy_member = module.params.get('copy_member')
-### here
-    type = module.params.get("type") or "BASIC"
-    space_primary = module.params.get("space_primary")
-    space_secondary = module.params.get("space_secondary")
-    space_type = module.params.get("space_type")
-    record_format = module.params.get("record_format")
-    record_length = module.params.get("record_length")
-    block_size = module.params.get("block_size")
+    destination_dataset = module.params.get('destination_dataset')
+
+    dd_type = destination_dataset.get("dd_type") or "BASIC"
+    space_primary = destination_dataset.get("space_primary")
+    space_secondary = destination_dataset.get("space_secondary")
+    space_type = destination_dataset.get("space_type")
+    record_format = destination_dataset.get("record_format")
+    record_length = destination_dataset.get("record_length")
+    block_size = destination_dataset.get("block_size")
 
     # ********************************************************************
     # When copying to and from a data set member, 'dest' or 'src' will be
@@ -1858,7 +1873,7 @@ def run_module(module, arg_def):
             dest,
             src_ds_type,
             alloc_vol=volume,
-            type=type,
+            type=dd_type,
             space_primary=space_primary,
             space_secondary=space_secondary,
             space_type=space_type,
@@ -1927,29 +1942,31 @@ def main():
             ignore_sftp_stderr=dict(type='bool', default=False),
             validate=dict(type='bool'),
             volume=dict(type='str', required=False),
-### here
-            type=dict(
-                arg_type='str',
-                default='BASIC',
-                choices=['KSDS', 'ESDS', 'RRDS', 'LDS', 'SEQ', 'PDS', 'PDSE', 'MEMBER'],
-                required=False,
+            destination_dataset=dict(
+                type='dict',
+                dd_type=dict(
+                    arg_type='str',
+                    default='BASIC',
+                    choices=['KSDS', 'ESDS', 'RRDS', 'LDS', 'SEQ', 'PDS', 'PDSE', 'MEMBER'],
+                    required=False,
+                ),
+                space_primary=dict(arg_type='int', default=5, required=False),
+                space_secondary=dict(arg_type='int', default=3, required=False),
+                space_type=dict(
+                    arg_type='str',
+                    default='M',
+                    choices=['K', 'M', 'G', 'CYL', 'TRK'],
+                    required=False,
+                ),
+                record_format=dict(
+                    arg_type='str',
+                    default='FB',
+                    choices=["FB", "VB", "FBA", "VBA", "U"],
+                    required=False
+                ),
+                record_length=dict(type='int', default=80, required=False),
+                block_size=dict(type='int', required=False),
             ),
-            space_primary=dict(arg_type='int', default=5, required=False),
-            space_secondary=dict(arg_type='int', default=3, required=False),
-            space_type=dict(
-                arg_type='str',
-                default='M',
-                choices=['K', 'M', 'G', 'CYL', 'TRK'],
-                required=False,
-            ),
-            record_format=dict(
-                arg_type='str',
-                default='FB',
-                choices=["FB", "VB", "FBA", "VBA", "U"],
-                required=False
-            ),
-            record_length=dict(type='int', default=80, required=False),
-            block_size=dict(type='int', required=False),
             is_uss=dict(type='bool'),
             is_pds=dict(type='bool'),
             is_mvs_dest=dict(type='bool'),
@@ -1975,14 +1992,18 @@ def main():
         validate=dict(arg_type='bool', required=False),
         sftp_port=dict(arg_type='int', required=False),
         volume=dict(arg_type='str', required=False),
-### here
-        type=dict(arg_type='str', default='BASIC', required=False),
-        space_primary=dict(arg_type='int', default=5, required=False),
-        space_secondary=dict(arg_type='int', default=3, required=False),
-        space_type=dict(arg_type='str', default='TRK', required=False),
-        record_format=dict(arg_type='str', default='FB', required=False),
-        record_length=dict(arg_type='int', default=80, required=False),
-        block_size=dict(arg_type='int', required=False),
+
+        destination_dataset=dict(
+            arg_type='dict',
+            required=False,
+            dd_type=dict(arg_type='str', default='BASIC', required=False),
+            space_primary=dict(arg_type='int', default=5, required=False),
+            space_secondary=dict(arg_type='int', default=3, required=False),
+            space_type=dict(arg_type='str', default='TRK', required=False),
+            record_format=dict(arg_type='str', default='FB', required=False),
+            record_length=dict(arg_type='int', default=80, required=False),
+            block_size=dict(arg_type='int', required=False),
+        ),
     )
 
     if (

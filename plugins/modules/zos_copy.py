@@ -2030,6 +2030,17 @@ def main():
             )
         )
 
+    if not module.params.get("destination_dataset"):
+        module.params["destination_dataset"] = {
+            "dd_type": "BASIC",
+            "space_primary": 5,
+            "space_secondary": 3,
+            "space_type": 'TRK',
+            "record_format": 'FB',
+            "record_length": 80,
+            "block_size": 6147,
+        }
+
     res_args = temp_path = conv_path = None
     try:
         res_args, temp_path, conv_path = run_module(module, arg_def)

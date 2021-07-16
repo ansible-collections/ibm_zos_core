@@ -1944,28 +1944,31 @@ def main():
             volume=dict(type='str', required=False),
             destination_dataset=dict(
                 type='dict',
-                dd_type=dict(
-                    arg_type='str',
-                    default='BASIC',
-                    choices=['KSDS', 'ESDS', 'RRDS', 'LDS', 'SEQ', 'PDS', 'PDSE', 'MEMBER'],
-                    required=False,
-                ),
-                space_primary=dict(arg_type='int', default=5, required=False),
-                space_secondary=dict(arg_type='int', default=3, required=False),
-                space_type=dict(
-                    arg_type='str',
-                    default='M',
-                    choices=['K', 'M', 'G', 'CYL', 'TRK'],
-                    required=False,
-                ),
-                record_format=dict(
-                    arg_type='str',
-                    default='FB',
-                    choices=["FB", "VB", "FBA", "VBA", "U"],
-                    required=False
-                ),
-                record_length=dict(type='int', default=80, required=False),
-                block_size=dict(type='int', required=False),
+                required=False,
+                options=dict(
+                    dd_type=dict(
+                        arg_type='str',
+                        default='BASIC',
+                        choices=['KSDS', 'ESDS', 'RRDS', 'LDS', 'SEQ', 'PDS', 'PDSE', 'MEMBER'],
+                        required=False,
+                    ),
+                    space_primary=dict(arg_type='int', default=5, required=False),
+                    space_secondary=dict(arg_type='int', default=3, required=False),
+                    space_type=dict(
+                        arg_type='str',
+                        default='M',
+                        choices=['K', 'M', 'G', 'CYL', 'TRK'],
+                        required=False,
+                    ),
+                    record_format=dict(
+                        arg_type='str',
+                        default='FB',
+                        choices=["FB", "VB", "FBA", "VBA", "U"],
+                        required=False
+                    ),
+                    record_length=dict(type='int', default=80, required=False),
+                    block_size=dict(type='int', required=False),
+                )
             ),
             is_uss=dict(type='bool'),
             is_pds=dict(type='bool'),
@@ -1996,13 +1999,15 @@ def main():
         destination_dataset=dict(
             arg_type='dict',
             required=False,
-            dd_type=dict(arg_type='str', default='BASIC', required=False),
-            space_primary=dict(arg_type='int', default=5, required=False),
-            space_secondary=dict(arg_type='int', default=3, required=False),
-            space_type=dict(arg_type='str', default='TRK', required=False),
-            record_format=dict(arg_type='str', default='FB', required=False),
-            record_length=dict(arg_type='int', default=80, required=False),
-            block_size=dict(arg_type='int', required=False),
+            options=dict(
+                dd_type=dict(arg_type='str', default='BASIC', required=False),
+                space_primary=dict(arg_type='int', default=5, required=False),
+                space_secondary=dict(arg_type='int', default=3, required=False),
+                space_type=dict(arg_type='str', default='TRK', required=False),
+                record_format=dict(arg_type='str', default='FB', required=False),
+                record_length=dict(arg_type='int', default=80, required=False),
+                block_size=dict(arg_type='int', required=False),
+            )
         ),
     )
 

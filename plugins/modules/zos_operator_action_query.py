@@ -373,8 +373,6 @@ def parse_result_b(result):
         re.MULTILINE,
     )
 
-    # In some cases where no job is involved such as in a WTOR dump there will
-    # be no job_name so we should clean it up
     for match in match_iter:
         dict_temp = {
             "number": match.group(1),
@@ -382,8 +380,8 @@ def parse_result_b(result):
             "message_id": match.group(3),
         }
 
-        # Sometimes jobname will be null because the operator action is a
-        # WTOR like in a dump command so removing None
+        # Sometimes 'job_name' will be null because the operator action is a
+        # WTOR like in a dump command so remove keys with None types
         dict_temp_result = {
             k: v for k, v in dict_temp.items() if (v is not None)}
         list.append(dict_temp_result)
@@ -416,10 +414,24 @@ class ValidationError(Error):
 
 
 class OperatorQueryResult:
-    def __init__(self, rc, stdout, stderr):
+    def __init__(
+        self,
+        rc,
+        stdout,
+        stderr
+    ):
+        """Response object class to manage the result from executing a command
+        to query for actionable messages. Class will also generate a message
+        by concatinating stdout and stderr
+
+        Arguments:
+            rc {str} -- The return code
+            stdout {str} -- The standard out of the command run
+            stderr {str} -- The standard error of the command run
+        """
         self.rc = rc
         self.stdout = stdout
-        self.stderr = rc
+        self.stderr = stderr
         self.message = stdout + " " + stderr
 
 

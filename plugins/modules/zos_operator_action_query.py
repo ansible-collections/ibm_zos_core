@@ -192,12 +192,37 @@ def run_module():
     )
 
     result = dict(changed=False)
-
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=False)
     requests = []
     try:
         new_params = parse_params(module.params)
-        requests = find_required_request(new_params)
+
+        cmd_result_a = execute_command("d r,a,s")
+        if cmd_result_a.rc > 0:
+            module.fail_json(
+                msg="A non-zero return code was received while querying the operator.",
+                stdout=cmd_result_a.stdout,
+                stderr=cmd_result_a.stderr,
+                rc=cmd_result_a.rc,
+                stdout_lines=cmd_result_a.stdout.splitlines() if cmd_result_a.stdout else None,
+                stderr_lines=cmd_result_a.stderr.splitlines() if cmd_result_a.stderr else None,
+                cmd="d r,a,s",
+            )
+
+        cmd_result_b = execute_command("d r,a,jn")
+        if cmd_result_b.rc > 0:
+            module.fail_json(
+                msg="A non-zero return code was received while querying the operator.",
+                stdout=cmd_result_b.stdout,
+                stderr=cmd_result_b.stderr,
+                rc=cmd_result_b.rc,
+                stdout_lines=cmd_result_b.stdout.splitlines() if cmd_result_b.stdout else None,
+                stderr_lines=cmd_result_b.stderr.splitlines() if cmd_result_b.stderr else None,
+                cmd="d r,a,s",
+            )
+
+        merged_list = create_merge_list(cmd_result_a.message, cmd_result_b.message)
+        requests = find_required_request(merged_list, new_params)
         if requests:
             result["count"] = len(requests)
     except Error as e:
@@ -249,23 +274,18 @@ def validate_parameters_based_on_regex(value, regex):
     return value
 
 
-def find_required_request(params):
+def find_required_request(merged_list, params):
     """Find the request given the options provided."""
-    merged_list = create_merge_list()
     requests = filter_requests(merged_list, params)
     return requests
 
 
-def create_merge_list():
+def create_merge_list(message_a, message_b):
     """Merge the return lists that execute both 'd r,a,s' and 'd r,a,jn'.
     For example, if we have:
     'd r,a,s' response like: "742 R MV28     JOB57578 &742 ARC0055A REPLY 'GO'OR 'CANCEL'"
     'd r,a,jn' response like:"742 R FVFNT29H &742 ARC0055A REPLY 'GO' OR 'CANCEL'"
     the results will be merged so that a full list of information returned on condition"""
-    operator_cmd_a = "d r,a,s"
-    operator_cmd_b = "d r,a,jn"
-    message_a = execute_command(operator_cmd_a)
-    message_b = execute_command(operator_cmd_b)
     list_a = parse_result_a(message_a)
     list_b = parse_result_b(message_b)
     merged_list = merge_list(list_a, list_b)
@@ -301,12 +321,12 @@ def handle_conditions(list, condition_type, value):
 
 
 def execute_command(operator_cmd):
+
     response = opercmd.execute(operator_cmd)
     rc = response.rc
-    message = response.stdout_response + " " + response.stderr_response
-    if rc > 0:
-        raise OperatorCmdError(message)
-    return message
+    stdout = response.stdout_response
+    stderr = response.stderr_response
+    return OperatorQueryResult(rc, stdout, stderr)
 
 
 def parse_result_a(result):
@@ -352,13 +372,21 @@ def parse_result_b(result):
         result,
         re.MULTILINE,
     )
+
+    # In some cases where no job is involved such as in a WTOR dump there will
+    # be no job_name so we should clean it up
     for match in match_iter:
         dict_temp = {
             "number": match.group(1),
             "job_name": match.group(2),
             "message_id": match.group(3),
         }
-        list.append(dict_temp)
+
+        # Sometimes jobname will be null because the operator action is a
+        # WTOR like in a dump command so removing None
+        dict_temp_result = {
+            k: v for k, v in dict_temp.items() if (v is not None)}
+        list.append(dict_temp_result)
 
     return list
 
@@ -387,11 +415,12 @@ class ValidationError(Error):
         )
 
 
-class OperatorCmdError(Error):
-    def __init__(self, message):
-        self.msg = 'An error occurred during issue the operator command, the response is "{0}"'.format(
-            message
-        )
+class OperatorQueryResult:
+    def __init__(self, rc, stdout, stderr):
+        self.rc = rc
+        self.stdout = stdout
+        self.stderr = rc
+        self.message = stdout + " " + stderr
 
 
 def main():

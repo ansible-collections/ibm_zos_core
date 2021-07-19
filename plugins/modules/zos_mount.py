@@ -23,9 +23,9 @@ DOCUMENTATION = r"""
 module: zos_mount
 author:
     - "Rich Parker (@richp405)"
-short_description: Mount a z/OS Unix System Services (USS) file system data set.
+short_description: Mount a z/OS UNIX System Services (USS) file system data set.
 description:
-  - The module M(zos_mount) can mount a z/OS Unix System Services (USS) file system data set.
+  - The module M(zos_mount) can mount a z/OS UNIX System Services (USS) file system data set.
   - The I(src) data set must be unique and a Fully Qualified Name (FQN).
   - The I(path) will be created if needed.
 options:
@@ -58,27 +58,27 @@ options:
         description:
             - The desired status of the described mount (choice).
             - >
-                If I(state=mounted) and I(src) is not in use, the module will
-                add the file system entry to parmlib member
+                If I(state=mounted) and I(src) are not in use, the module will
+                add the file system entry to the parmlib member
                 I(persistent/data_store) if not present. The I(path) will be
                 updated, the device will be mounted and the module will complete
                 successfully with I(changed=True).
             - >
-                If I(state=mounted) and I(src) is in use, the module will add
-                the file system entry to parmlib member
+                If I(state=mounted) and I(src) are in use, the module will add
+                the file system entry to the parmlib member
                 I(persistent/data_store) if not present. The I(path) will not
                 be updated, the device will not be mounted and the module will
                 complete successfully with I(changed=False).
             - >
-                If I(state=unmounted) and I(src) is in use, the module will
-                B(not) add the file system entry to parmlib member
+                If I(state=unmounted) and I(src) are in use, the module will
+                B(not) add the file system entry to the parmlib member
                 I(persistent/data_store). The device will be unmounted and
                 the module will complete successfully with I(changed=True).
             - >
-                If I(state=unmounted) and I(src) is not in use, the module will
+                If I(state=unmounted) and I(src) are not in use, the module will
                 B(not) add the file system entry to parmlib member
                 I(persistent/data_store).The device will remain unchanged and
-                the module will complete successfully with I(changed=False).
+                the module will complete with I(changed=False).
             - >
                 If I(state=present), the module will add the file system entry
                 to the provided parmlib member I(persistent/data_store)
@@ -179,7 +179,7 @@ options:
             - If I(mount_opts=RO) on a mounted/remount, mount is performed
               read-only.
             - If I(mount_opts=SAME) and (unmount_opts=REMOUNT), mount is opened
-              is same mode as previously.
+              in the same mode as previously opened.
             - If I(mount_opts=NOWAIT), mount is performed asynchronously.
             - If I(mount_opts=NOSECURITY), security checks are not enforced for
               files in this file system.
@@ -221,7 +221,7 @@ options:
             - For more on coded character set identifiers, review the IBM
               documentation topic B(Coded Character Sets).
             - Specified as a decimal value from 0 to 65535. However, when TEXT
-              is specified, the value must be between 0 and 65535
+              is specified, the value must be between 0 and 65535.
             - The value is not checked as being valid and the corresponding code
               page is not checked as being installed.
             - Required when I(tag_untagged=TEXT).
@@ -418,7 +418,7 @@ persistent:
     type: dict
     contains:
         data_store:
-            description: The persistent store name where the mount was written too.
+            description: The persistent store name where the mount was written to.
             returned: always
             type: str
             sample: SYS1.FILESYS(BPXPRMAA)

@@ -242,6 +242,7 @@ options:
           - PDS
           - PDSE
           - MEMBER
+          - BASIC
         default: BASIC
       space_primary:
         description:
@@ -1331,12 +1332,20 @@ class PDSECopyHandler(CopyHandler):
             {str} -- Destination where the member was copied to
         """
         is_uss_src = temp_path is not None or conv_path is not None or "/" in src
+        # if constructing, remove periods from member name
         if src and is_uss_src and not copy_member:
-            dest = "{0}({1})".format(dest, os.path.basename(src))
+            dest = "{0}({1})".format(dest, os.path.basename(src).replace(".", "")[0:8])
 
         new_src = (temp_path or conv_path or src).replace("$", "\\$")
-        dest = dest.replace("$", "\\$")
-        response = datasets._copy(new_src, dest)
+
+        dest = dest.replace("$", "\\$").upper()
+        opts = dict()
+
+        # added -B to remove the 'truncated' error when copying uss->fb/pdse style stuff
+        if self.is_binary:
+            opts["options"] = "-B"
+
+        response = datasets._copy(new_src, dest, None, **opts)
         rc, out, err = response.rc, response.stdout_response, response.stderr_response
 
         if rc != 0:
@@ -1949,7 +1958,7 @@ def main():
                     dd_type=dict(
                         arg_type='str',
                         default='BASIC',
-                        choices=['KSDS', 'ESDS', 'RRDS', 'LDS', 'SEQ', 'PDS', 'PDSE', 'MEMBER'],
+                        choices=['BASIC', 'KSDS', 'ESDS', 'RRDS', 'LDS', 'SEQ', 'PDS', 'PDSE', 'MEMBER'],
                         required=False,
                     ),
                     space_primary=dict(arg_type='int', default=5, required=False),

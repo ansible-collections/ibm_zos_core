@@ -26,6 +26,8 @@ class ActionModule(ActionBase):
 
         if not result.get("skipped"):
             user_ssh_transfer_method = None
+            is_ssh_transfer_method_updated = False
+            org_module_implementation_preferences = None
 
             try:
                 if result.get("invocation", {}).get("module_args"):
@@ -43,7 +45,6 @@ class ActionModule(ActionBase):
 
                 # Override the Ansible Connection behavior for this module including execution order for rexx
                 scp_transfer_method = "scp"
-                is_ssh_transfer_method_updated = False
                 org_module_implementation_preferences = self._connection.module_implementation_preferences
                 self._connection.module_implementation_preferences = ('.rexx', '.py', '')
 
@@ -52,12 +53,14 @@ class ActionModule(ActionBase):
 
                     if user_ssh_transfer_method != scp_transfer_method:
                         self._connection.set_option('ssh_transfer_method', scp_transfer_method)
+                        is_ssh_transfer_method_updated = True
 
                 elif version_major == 2 and version_minor <= 10:
                     user_ssh_transfer_method = self._play_context.ssh_transfer_method
 
                     if user_ssh_transfer_method != scp_transfer_method:
                         self._play_context.ssh_transfer_method = scp_transfer_method
+                        is_ssh_transfer_method_updated = True
 
                 if is_ssh_transfer_method_updated:
                     display.vvv(u"SSH transfer method updated from {0} to {1}.".format(user_ssh_transfer_method,
@@ -74,21 +77,21 @@ class ActionModule(ActionBase):
                     result["_ansible_verbose_override"] = True
 
             finally:
-                # Restore the users defined option `ssh_transfer_method`
-                is_ssh_transfer_method_restored = False
+                # Restore the users defined option `ssh_transfer_method` and the
+                # module implementation preferences (order of module execution
+                # by extension)
 
-                if version_major == 2 and version_minor >= 11:
-                    if user_ssh_transfer_method != scp_transfer_method:
-                        self._connection.set_option('ssh_transfer_method', user_ssh_transfer_method)
-                        is_ssh_transfer_method_restored = True
+                if is_ssh_transfer_method_updated:
+                    if version_major == 2 and version_minor >= 11:
+                            self._connection.set_option('ssh_transfer_method', user_ssh_transfer_method)
 
-                elif version_major == 2 and version_minor <= 10:
-                    if user_ssh_transfer_method != scp_transfer_method:
-                        self._play_context.ssh_transfer_method = user_ssh_transfer_method
-                        is_ssh_transfer_method_restored = True
+                    elif version_major == 2 and version_minor <= 10:
+                            self._play_context.ssh_transfer_method = user_ssh_transfer_method
 
-                if is_ssh_transfer_method_restored:
                     display.vvv(u"SSH transfer method restored to {0}".format(user_ssh_transfer_method), host=self._play_context.remote_addr)
+                    is_ssh_transfer_method_updated = False
+
+                self._connection.module_implementation_preferences = org_module_implementation_preferences
 
         if not wrap_async:
             # remove a temporary path we created

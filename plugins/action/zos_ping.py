@@ -83,10 +83,10 @@ class ActionModule(ActionBase):
 
                 if is_ssh_transfer_method_updated:
                     if version_major == 2 and version_minor >= 11:
-                            self._connection.set_option('ssh_transfer_method', user_ssh_transfer_method)
+                        self._connection.set_option('ssh_transfer_method', user_ssh_transfer_method)
 
                     elif version_major == 2 and version_minor <= 10:
-                            self._play_context.ssh_transfer_method = user_ssh_transfer_method
+                        self._play_context.ssh_transfer_method = user_ssh_transfer_method
 
                     display.vvv(u"SSH transfer method restored to {0}".format(user_ssh_transfer_method), host=self._play_context.remote_addr)
                     is_ssh_transfer_method_updated = False

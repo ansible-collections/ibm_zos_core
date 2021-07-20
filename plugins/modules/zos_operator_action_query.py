@@ -218,7 +218,7 @@ def run_module():
                 rc=cmd_result_b.rc,
                 stdout_lines=cmd_result_b.stdout.splitlines() if cmd_result_b.stdout else None,
                 stderr_lines=cmd_result_b.stderr.splitlines() if cmd_result_b.stderr else None,
-                cmd="d r,a,s",
+                cmd="d r,a,jn",
             )
 
         merged_list = create_merge_list(cmd_result_a.message, cmd_result_b.message)
@@ -422,7 +422,7 @@ class OperatorQueryResult:
     ):
         """Response object class to manage the result from executing a command
         to query for actionable messages. Class will also generate a message
-        by concatinating stdout and stderr
+        by concatenating stdout and stderr
 
         Arguments:
             rc {str} -- The return code
@@ -432,7 +432,7 @@ class OperatorQueryResult:
         self.rc = rc
         self.stdout = stdout
         self.stderr = stderr
-        self.message = stdout + " " + stderr
+        self.message = stdout
 
 
 def main():

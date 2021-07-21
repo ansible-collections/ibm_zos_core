@@ -232,18 +232,18 @@ def test_find_data_sets_smaller_than_size(ansible_zos_module):
         assert val.get('matched') == 1
 
 
-# This is being commented out, since there is no reference to where the files were created
-# ... even checked main/master branch
-# def test_find_data_sets_in_volume(ansible_zos_module):
-#    hosts = ansible_zos_module
-#
-#    find_res = hosts.all.zos_find(
-#        patterns=['USER.*'], volumes=['IMSSUN']
-#    )
-#    print(vars(find_res))
-#    for val in find_res.contacted.values():
-#        assert len(val.get('data_sets')) == 5
-#        assert val.get('matched') == 5
+def test_find_data_sets_in_volume(ansible_zos_module):
+    hosts = ansible_zos_module
+
+    find_res = hosts.all.zos_find(
+        patterns=['USER.*'], volumes=['IMSSUN']
+    )
+    print(vars(find_res))
+    for val in find_res.contacted.values():
+        assert len(val.get('data_sets')) >= 1
+        assert val.get('matched') >= 1
+
+
 def test_find_vsam_pattern(ansible_zos_module):
     hosts = ansible_zos_module
     try:

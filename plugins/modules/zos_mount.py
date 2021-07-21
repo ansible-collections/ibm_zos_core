@@ -23,7 +23,7 @@ DOCUMENTATION = r"""
 module: zos_mount
 author:
     - "Rich Parker (@richp405)"
-short_description: Mount a z/OS UNIX System Services (USS) file system data set.
+short_description: Mount a z/OS file system.
 description:
   - The module M(zos_mount) can mount a z/OS UNIX System Services (USS) file system data set.
   - The I(src) data set must be unique and a Fully Qualified Name (FQN).

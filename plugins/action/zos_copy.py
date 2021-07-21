@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2019, 2020
+# Copyright (c) IBM Corporation 2019, 2020, 2021
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -25,6 +25,7 @@ from ansible.module_utils._text import to_bytes, to_text
 from ansible.module_utils.six import string_types
 from ansible.module_utils.parsing.convert_bool import boolean
 from ansible.plugins.action import ActionBase
+from ansible.utils.display import Display
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
     is_member,
@@ -33,6 +34,8 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
 )
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import encode
+
+display = Display()
 
 
 class ActionModule(ActionBase):
@@ -49,8 +52,7 @@ class ActionModule(ActionBase):
         dest = task_args.get('dest', None)
         content = task_args.get('content', None)
 
-        # If self._play_context.port is None, that implies the default port 22
-        # was used to connect to the remote host.
+        # Option sftp_port is deprecated in 1.4.0 to be removed in 1.5.0
         sftp_port = task_args.get('sftp_port', self._play_context.port or 22)
         force = _process_boolean(task_args.get('force'), default=True)
         backup = _process_boolean(task_args.get('backup'), default=False)
@@ -117,9 +119,9 @@ class ActionModule(ActionBase):
                 msg = "Cannot specify 'mode', 'owner' or 'group' for MVS destination"
                 return self._exit_action(result, msg, failed=True)
 
-        if not isinstance(sftp_port, int) or not 0 < sftp_port <= 65535:
-            msg = "Invalid port provided for SFTP. Expected an integer between 0 to 65535."
-            return self._exit_action(result, msg, failed=True)
+        # if not isinstance(sftp_port, int) or not 0 < sftp_port <= 65535:
+        #     msg = "Invalid port provided for SFTP. Expected an integer between 0 to 65535."
+        #     return self._exit_action(result, msg, failed=True)
 
         if (not force) and self._dest_exists(src, dest, task_vars):
             return self._exit_action(result, "Destination exists. No data was copied.")
@@ -144,7 +146,7 @@ class ActionModule(ActionBase):
                 try:
                     local_content = _write_content_to_temp_file(content)
                     transfer_res = self._copy_to_remote(
-                        local_content, sftp_port, ignore_stderr=ignore_sftp_stderr
+                        local_content, ignore_stderr=ignore_sftp_stderr
                     )
                 finally:
                     os.remove(local_content)
@@ -167,7 +169,7 @@ class ActionModule(ActionBase):
                         )
                     task_args["size"] = os.stat(src).st_size
                 transfer_res = self._copy_to_remote(
-                    src, sftp_port, is_dir=is_src_dir, ignore_stderr=ignore_sftp_stderr
+                    src, is_dir=is_src_dir, ignore_stderr=ignore_sftp_stderr
                 )
 
             temp_path = transfer_res.get("temp_path")
@@ -214,30 +216,49 @@ class ActionModule(ActionBase):
 
         return _update_result(is_binary, copy_res, self._task.args)
 
-    def _copy_to_remote(self, src, port, is_dir=False, ignore_stderr=False):
+    def _copy_to_remote(self, src, is_dir=False, ignore_stderr=False):
         """Copy a file or directory to the remote z/OS system """
-        ansible_user = self._play_context.remote_user
-        ansible_host = self._play_context.remote_addr
+
         temp_path = "/{0}/{1}".format(gettempprefix(), _create_temp_path_name())
-        cmd = ["sftp", "-oPort={0}".format(port), ansible_user + "@" + ansible_host]
-        stdin = "put -r {0} {1}".format(src.replace("#", "\\#"), temp_path)
+        _src = src.replace("#", "\\#")
+        _sftp_action = 'put'
 
         if is_dir:
             src = src.rstrip("/") if src.endswith("/") else src
             base = os.path.basename(src)
             self._connection.exec_command("mkdir -p {0}/{1}".format(temp_path, base))
-        else:
-            stdin = stdin.replace(" -r", "", 1)
-        transfer_data = subprocess.Popen(
-            cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-        )
-        out, err = transfer_data.communicate(to_bytes(stdin))
-        err = _detect_sftp_errors(err)
+            _sftp_action += ' -r'    # add '-r` to clone the source trees
 
-        if transfer_data.returncode != 0 or (err and not ignore_stderr):
+        display.vvv(u"ibm_zos_copy: {0} {1} TO {2}".format(_sftp_action, _src, temp_path), host=self._play_context.remote_addr)
+        (returncode, stdout, stderr) = self._connection._file_transport_command(_src, temp_path, _sftp_action)
+
+        display.vvv(u"ibm_zos_copy return code: {0}".format(returncode), host=self._play_context.remote_addr)
+        display.vvv(u"ibm_zos_copy stdout: {0}".format(stdout), host=self._play_context.remote_addr)
+        display.vvv(u"ibm_zos_copy stderr: {0}".format(stderr), host=self._play_context.remote_addr)
+        display.vvv(u"play context verbosity: {0}".format(self._play_context.verbosity), host=self._play_context.remote_addr)
+
+        err = _detect_sftp_errors(stderr)
+
+        # ************************************************************************* #
+        # When plugin shh connection member _build_command(..) detects verbosity    #
+        # greater than 3, it constructs a command that includes verbosity like      #
+        # 'EXEC sftp -b - -vvv ...' where this then is returned in the connections  #
+        # stream as 'stderr' and if a user has not set ignore_stderr it will fail   #
+        # the modules execution. So in cases where verbosity                        #
+        # (ansible.cfg verbosity = n || CLI -vvv) are collectively summed and       #
+        # amount to greater than 3, ignore_stderr will be set to 'True' so that     #
+        # 'err' which will not be None won't fail the module. 'stderr' does not     #
+        # in our z/OS case actually mean an error happened, it just so happens      #
+        # the verbosity is returned as 'stderr'.                                    #
+        # ************************************************************************* #
+
+        if self._play_context.verbosity > 3:
+            ignore_stderr = True
+
+        if returncode != 0 or (err and not ignore_stderr):
             return dict(
                 msg="Error transfering source '{0}' to remote z/OS system".format(src),
-                rc=transfer_data.returncode,
+                rc=returncode,
                 stderr=err,
                 stderr_lines=err.splitlines(),
                 failed=True,

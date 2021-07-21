@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020
+# Copyright (c) IBM Corporation 2019, 2020, 2021
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -20,14 +20,16 @@ __metaclass__ = type
 DOCUMENTATION = r"""
 ---
 module: zos_copy
-version_added: '2.9'
+version_added: '1.2.0'
 short_description: Copy data to z/OS
 description:
   - The M(zos_copy) module copies a file or data set from a local or a
     remote machine to a location on the remote machine.
   - Use the M(zos_fetch) module to copy files or data sets from remote
     locations to the local machine.
-author: "Asif Mahmud (@asifmahmud)"
+author:
+  - "Asif Mahmud (@asifmahmud)"
+  - "Demetrios Dimatos (@ddimatos)"
 options:
   backup:
     description:
@@ -129,13 +131,23 @@ options:
     required: false
   ignore_sftp_stderr:
     description:
-      - During data transfer through sftp, the module fails if the sftp command
-        directs any content to stderr. The user is able to override this behavior
-        by setting this parameter to C(true). By doing so, the module would
-        essentially ignore the stderr stream produced by sftp and continue execution.
+      - During data transfer through SFTP, the module fails if the SFTP command
+        directs any content to stderr. The user is able to override this
+        behavior by setting this parameter to C(true). By doing so, the module
+        would essentially ignore the stderr stream produced by SFTP and continue
+        execution.
+      - When the verbosity is enabled to greather than 3 either through the
+        command line interface (CLI) using B(-vvv) or setting it through
+        environment variables such as B(verbosity = 1) in the '[defaults]'
+        section, I(ignore_sftp_stderr=true). When verbosity is greater than 3,
+        Ansible connects to SFTP with a verbose mode which returns much of the
+        interaction as a STDERR stream even when return code 0, which then fails
+        the module. Verbosity less than or equal to 3 is acceptable to use with
+        M(ibm_zos_fetch).
     type: bool
     required: false
     default: false
+    version_added: "1.4.0"
   is_binary:
     description:
       - If set to C(true), indicates that the file or data set to be copied is a
@@ -177,9 +189,13 @@ options:
     required: false
   sftp_port:
     description:
-      - Indicates which port should be used to connect to the remote z/OS
-        system to perform data transfer.
-      - If this parameter is not specified, C(ansible_port) will be used.
+      - Configuring the SFTP port used by the M(zos_copy) module has been
+        deprecated and will be removed in ibm.ibm_zos_core collection version
+        1.5.0.
+      - Configuring the SFTP port will no longer have any effect on which port
+        is used by the modules use of SFTP.
+      - To configure the SFTP port used for module M(zos_copy), refer to topic
+        L(Using connection plugins,https://docs.ansible.com/ansible/latest/plugins/connection.html#using-connection-plugins)
       - If C(ansible_port) is not specified, port 22 will be used.
     type: int
     required: false
@@ -319,7 +335,7 @@ notes:
       U(https://ansible-collections.github.io/ibm_zos_core/supplementary.html#encode)
     - M(zos_copy) uses SFTP (Secure File Transfer Protocol) for the underlying
       transfer protocol; Co:Z SFTP is not supported. In the case of Co:z SFTP,
-      you can exempt the Ansible userid on ZOS from using Co:Z thus falling back
+      you can exempt the Ansible userid on z/OS from using Co:Z thus falling back
       to using standard SFTP.
 seealso:
 - module: zos_fetch
@@ -1870,6 +1886,15 @@ def run_module(module, arg_def):
             res_args["changed"] = (
                 res_args.get("changed") or remote_checksum != dest_checksum
             )
+        else:
+            try:
+                remote_checksum = get_file_checksum(temp_path or src)
+                dest_checksum = get_file_checksum(dest)
+            except Exception as err:
+                pass
+            res_args["changed"] = (
+                res_args.get("changed") or remote_checksum != dest_checksum
+            )
 
     # ------------------------------- o -----------------------------------
     # Copy to sequential data set
@@ -1949,7 +1974,7 @@ def main():
             remote_src=dict(type='bool', default=False),
             sftp_port=dict(type='int', required=False),
             ignore_sftp_stderr=dict(type='bool', default=False),
-            validate=dict(type='bool'),
+            validate=dict(type='bool', default=False),
             volume=dict(type='str', required=False),
             destination_dataset=dict(
                 type='dict',
@@ -1986,10 +2011,16 @@ def main():
             temp_path=dict(type='str'),
             copy_member=dict(type='bool'),
             src_member=dict(type='bool'),
-            local_charset=dict(type='str')
+            local_charset=dict(type='str'),
+            force=dict(type='bool', default=False)
         ),
         add_file_common_args=True,
     )
+    if module.params.get('sftp_port'):
+        module.deprecate(
+            msg='Support for configuring sftp_port has been deprecated.'
+            'Configuring the SFTP port is now managed through Ansible connection plugins option \'ansible_port\'',
+            date='2021-08-01', collection_name='ibm.ibm_zos_core')
 
     arg_def = dict(
         src=dict(arg_type='data_set_or_path', required=False),

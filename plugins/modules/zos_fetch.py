@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020
+# Copyright (c) IBM Corporation 2019, 2020, 2021
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -20,7 +20,7 @@ __metaclass__ = type
 DOCUMENTATION = r"""
 ---
 module: zos_fetch
-version_added: "2.9"
+version_added: "1.1.0"
 short_description: Fetch data from z/OS
 description:
   - This module fetches a UNIX System Services (USS) file,
@@ -33,7 +33,9 @@ description:
   - When fetching a PDS/PDSE member, destination will be a file.
   - Files that already exist at C(dest) will be overwritten if they are different
     than C(src).
-author: "Asif Mahmud (@asifmahmud)"
+author:
+    - "Asif Mahmud (@asifmahmud)"
+    - "Demetrios Dimatos (@ddimatos)"
 options:
   src:
     description:
@@ -86,9 +88,13 @@ options:
     type: bool
   sftp_port:
     description:
-      - Indicates which port should be used to connect to the remote z/OS
-        system to perform data transfer.
-      - If this parameter is not specified, C(ansible_port) will be used.
+      - Configuring the SFTP port used by the M(zos_fetch) module has been
+        deprecated and will be removed in ibm.ibm_zos_core collection version
+        1.5.0.
+      - Configuring the SFTP port will no longer have any effect on which port
+        is used by the modules use of SFTP.
+      - To configure the SFTP port used for module M(zos_copy), refer to topic
+        L(Using connection plugins,https://docs.ansible.com/ansible/latest/plugins/connection.html#using-connection-plugins)
       - If C(ansible_port) is not specified, port 22 will be used.
     type: int
     required: false
@@ -117,12 +123,22 @@ options:
   ignore_sftp_stderr:
     description:
       - During data transfer through sftp, the module fails if the sftp command
-        directs any content to stderr. The user is able to override this behavior
-        by setting this parameter to C(true). By doing so, the module would
-        essentially ignore the stderr stream produced by sftp and continue execution.
+        directs any content to stderr. The user is able to override this
+        behavior by setting this parameter to C(true). By doing so, the module
+        would essentially ignore the stderr stream produced by sftp and continue
+        execution.
+      - When the verbosity is enabled to greather than 3 either through the
+        command line interface (CLI) using B(-vvv) or setting it through
+        environment variables such as B(verbosity = 1) in the '[defaults]'
+        section, I(ignore_sftp_stderr=true). When verbosity is greater than 3,
+        Ansible connects to SFTP with a verbose mode which returns much of the
+        interaction as a STDERR stream even when return code 0, which then fails
+        the module. Verbosity less than or equal to 3 is acceptable to use with
+        M(ibm_zos_fetch).
     type: bool
     required: false
     default: false
+    version_added: "1.4.0"
 notes:
     - When fetching PDSE and VSAM data sets, temporary storage will be used
       on the remote z/OS system. After the PDSE or VSAM data set is
@@ -139,6 +155,10 @@ notes:
     - Fetching HFS or ZFS type data sets is currently not supported.
     - For supported character sets used to encode data, refer to
       U(https://ansible-collections.github.io/ibm_zos_core/supplementary.html#encode)
+    - M(zos_fetch) uses SFTP (Secure File Transfer Protocol) for the underlying
+      transfer protocol; Co:Z SFTP is not supported. In the case of Co:z SFTP,
+      you can exempt the Ansible userid on z/OS from using Co:Z thus falling back
+      to using standard SFTP.
 seealso:
 - module: zos_data_set
 - module: zos_copy
@@ -556,6 +576,12 @@ def run_module():
     src = module.params.get("src")
     if module.params.get("use_qualifier"):
         module.params["src"] = datasets.hlq() + "." + src
+
+    if module.params.get('sftp_port'):
+        module.deprecate(
+            msg='Support for configuring sftp_port has been deprecated.'
+            'Configuring the SFTP port is now managed through Ansible connection plugins option \'ansible_port\'',
+            date='2021-08-01', collection_name='ibm.ibm_zos_core')
 
     # ********************************************************** #
     #                   Verify paramater validity                #

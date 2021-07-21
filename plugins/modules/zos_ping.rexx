@@ -30,11 +30,10 @@ description:
     return one or more warning messages.
   - If a required dependency is missing from the target host, an explanatory
     message will be returned with the module failure.
-  - The `zos_ssh` connection plugin must be used for this module to function
-    correctly.
 author:
   - "Vijay Katoch (@vijayka)"
   - "Blake Becker (@blakeinate)"
+  - "Demetrios Dimatos (@ddimatos)"
 options: {}
 '''
 

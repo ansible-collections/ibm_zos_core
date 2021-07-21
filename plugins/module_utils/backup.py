@@ -70,8 +70,12 @@ def mvs_file_backup(dsn, bk_dsn=None):
     """
     dsn = _validate_data_set_name(dsn).upper()
     if is_member(dsn):
+        # added the check for a sub-mmember, just in this case
         if not bk_dsn:
             bk_dsn = extract_dsname(dsn) + "({0})".format(temp_member_name())
+        elif "(" not in bk_dsn:
+            bk_dsn = extract_dsname(dsn) + "({0})".format(temp_member_name())
+
         bk_dsn = _validate_data_set_name(bk_dsn).upper()
         response = datasets._copy(dsn, bk_dsn)
         if response.rc != 0:

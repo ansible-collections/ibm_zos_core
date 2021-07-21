@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2020
+# Copyright (c) IBM Corporation 2020, 2021
 
 ################################################################################
 # Role metadata documentation readme
@@ -25,7 +25,7 @@
 # Role metadata documentation should:
 #
 # 1) Include a copyright in the metadata at the top.
-#    Copyright (c) IBM Corporation 2020
+#    Copyright (c) IBM Corporation 2020, 2021
 #
 # 2) Include DOCUMENTATION block (See example doc_role_sample).
 #    DOCUMENTATION = """ properties """ where properties supported:

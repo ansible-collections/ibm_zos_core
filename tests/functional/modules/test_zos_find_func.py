@@ -240,8 +240,8 @@ def test_find_data_sets_in_volume(ansible_zos_module):
     )
     print(vars(find_res))
     for val in find_res.contacted.values():
-        assert len(val.get('data_sets')) == 5
-        assert val.get('matched') == 5
+        assert len(val.get('data_sets')) >= 1
+        assert val.get('matched') >= 1
 
 
 def test_find_vsam_pattern(ansible_zos_module):

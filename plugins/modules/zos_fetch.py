@@ -127,14 +127,10 @@ options:
         behavior by setting this parameter to C(true). By doing so, the module
         would essentially ignore the stderr stream produced by sftp and continue
         execution.
-      - When the verbosity is enabled to greather than 3 either through the
-        command line interface (CLI) using B(-vvv) or setting it through
-        environment variables such as B(verbosity = 1) in the '[defaults]'
-        section, I(ignore_sftp_stderr=true). When verbosity is greater than 3,
-        Ansible connects to SFTP with a verbose mode which returns much of the
-        interaction as a STDERR stream even when return code 0, which then fails
-        the module. Verbosity less than or equal to 3 is acceptable to use with
-        M(ibm_zos_fetch).
+      - When Ansible verbosity is set to greater than 3, either through the
+        command line interface (CLI) using B(-vvvv) or through environment
+        variables such as B(verbosity = 4), then this parameter will
+        automatically be set to C(true).
     type: bool
     required: false
     default: false

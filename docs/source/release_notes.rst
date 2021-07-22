@@ -14,7 +14,8 @@ What's New
 
 * Modules
 
-  * ``zos_mount`` - Mount a z/OS UNIX System Services (USS) file system data set.
+  * ``zos_mount`` can manage mount operations for a
+    z/OS UNIX System Services (USS) file system data set.
 
 * Plugins
 
@@ -32,12 +33,12 @@ What's New
       to the `SSH plugin`_ documentation.
     * ``zos_copy`` was updated to take into account the record length when the
       source is a USS file and the destination is a data set with a record
-      length by inspecting the destination data set attributes and using these
-      attributes.
+      length. This is done by inspecting the destination data set attributes
+      and using these attributes to create a new data set.
     * ``zos_copy`` was updated with the capabilities to define destination
       data sets from within the ``zos_copy`` module. In the case where you are
       copying to data set destination that does not exist, you can now do so
-      using the new option ``destination_dataset``.
+      using the new ``zos_copy`` module option ``destination_dataset``.
     * ``zos_job_output`` was updated to correct possible truncated responses for
       the **ddname** content. This would occur for jobs with very large amounts
       of content from a **ddname**.
@@ -48,17 +49,16 @@ What's New
 
       * ``zos_copy`` and ``zos_fetch`` about Co:Z SFTP support.
       * ``zos_mvs_raw``` had a duplicate example corrected.
-      * document all action plugins
-      * update hyperlinks in documentation
+      * include documentation for all action plugins.
+      * update dated hyperlinks embedded in documentation.
 
 * Deprecated or removed
 
   * ``zos_ssh`` connection plugin has been removed, it is no longer required.
     Remove all playbook references, ie ``connection: ibm.ibm_zos_core.zos_ssh``.
-  * ``zos_copy`` module option **model_ds** has been removed. The logic enabled
-    by the option is now automatically handled and data sets are either created
-    based on the ``src`` data set or overridden by the new option
-    ``destination_dataset``.
+  * ``zos_copy`` module option **model_ds** has been removed. The model_ds logic
+    is now automatically managed and data sets are either created based on the
+    ``src`` data set or overridden by the new option ``destination_dataset``.
   * ``zos_copy`` and ``zos_fetch`` option **sftp_port** has been deprecated. To
     set the SFTP port, use the supported options in the ``ansible.builtin.ssh``
     plugin. Refer to the `SSH port`_ option to configure the port used during
@@ -84,27 +84,38 @@ Known Issues
 
 * You must remove the **zos_ssh** connection plugin from all playbooks that
   reference the plugin, for example ``connection: ibm.ibm_zos_core.zos_ssh``.
-  If you do not remove the deprecated **zos_ssh** connection plugin, you will
+
+  If a playbook includes the deprecated **zos_ssh** connection plugin, it will
   encounter this error which can corrected by safely removing the plugin:
-  **"msg": "the connection plugin 'ibm.ibm_zos_core.zos_ssh' was not found"**
-* When using the ``zos_ssh`` plugin with **Ansible 2.11** with earlier versions
-  of this collection you will encounter the exception:
-  **The error was: AttributeError: module 'ansible.constants' has no attribute
-  'ANSIBLE_SSH_CONTROL_PATH_DIR'**. This is resolved in this release
-  by deprecating the ``zos_ssh`` connection plugin and removing all
-  ``connection: ibm.ibm_zos_core.zos_ssh`` references from playbooks.
-* When using the ``zos_copy`` with option **force** with ansible versions
+
+  .. code-block::
+
+      "msg": "the connection plugin 'ibm.ibm_zos_core.zos_ssh' was not found"
+
+* When using the ``zos_ssh`` plugin with **Ansible 2.11** and earlier versions
+  of this collection, you will encounter the exception:
+
+  .. code-block::
+
+     AttributeError: module 'ansible.constants' has no attribute 'ANSIBLE_SSH_CONTROL_PATH_DIR'.
+
+  This is resolved in this release by deprecating the ``zos_ssh`` connection
+  plugin and removing all ``connection: ibm.ibm_zos_core.zos_ssh`` references
+  from playbooks.
+* When using module ``zos_copy`` and option ``force`` with ansible versions
   greater than **Ansbile 2.10** and earlier versions of this collection, an
   unsupported option exception would occur. This is resolved in this release.
 * When using the ``zos_copy`` or ``zos_fetch`` modules in earlier versions of
   this collection without 'passwordless' SSH configured such that you are using
   ``--ask-pass`` or passing an ``ansible_password`` in a configuration; during
-  the playbook execution a second password prompt for SFTP would appear halting
+  the playbook execution a second password prompt for SFTP would appear pausing
   the playbook execution. This is resolved in this release.
 * When using the ``zos_copy`` or ``zos_fetch`` modules, if you tried to use
-  Ansible connection options such as ``host_key_checking`` or ``sftp_port`` they
-  were not included in the modules execution. This is resolved in this release
-  by ensuring compatibility with the ``ansible.builtin.ssh`` plugin options.
+  Ansible connection options such as ``host_key_checking`` or ``port``, they
+  were not included as part of the modules execution. This is resolved in this
+  release by ensuring compatibility with the ``ansible.builtin.ssh`` plugin
+  options.
+
   Refer to the `SSH plugin`_ documentation to enable supported options.
 * Known issues for modules can be found in the **Notes** section of a modules
   documentation.
@@ -112,7 +123,7 @@ Known Issues
 
 Deprecation Notices
 -------------------
-Features and function are marked as deprecated when they enhanced and now an
+Features and functions are marked as deprecated when they are enhanced and an
 alternative is available. In most cases, the deprecated item will remain
 available unless the deprecated function interferes with the offering.
 Deprecated functions are no longer supported, and will be removed in a future

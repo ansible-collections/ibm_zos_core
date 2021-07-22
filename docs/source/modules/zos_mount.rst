@@ -16,7 +16,7 @@ zos_mount -- Mount a z/OS file system.
 
 Synopsis
 --------
-- The module :ref:`zos_mount <zos_mount_module>` can mount a z/OS UNIX System Services (USS) file system data set.
+- The module :ref:`zos_mount <zos_mount_module>` can manage mount operations for a z/OS UNIX System Services (USS) file system data set.
 - The *src* data set must be unique and a Fully Qualified Name (FQN).
 - The *path* will be created if needed.
 

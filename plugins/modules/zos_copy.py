@@ -68,7 +68,7 @@ options:
       - Works only when C(dest) is a USS file, sequential data set, or a
         partitioned data set member.
       - This is for simple values; for anything complex or with formatting, use
-        U(https://docs.ansible.com/ansible/latest/modules/copy_module.html)
+        L(ansible.builtin.copy,https://docs.ansible.com/ansible/latest/modules/copy_module.html)
       - If C(dest) is a directory, then content will be copied to
         C(/path/to/dest/inline_copy).
     type: str
@@ -188,10 +188,10 @@ options:
       - Configuring the SFTP port used by the M(zos_copy) module has been
         deprecated and will be removed in ibm.ibm_zos_core collection version
         1.5.0.
-      - Configuring the SFTP port will no longer have any effect on which port
-        is used by the modules use of SFTP.
+      - Configuring the SFTP port with I(sftp_port) will no longer have any
+        effect on which port is used by this module.
       - To configure the SFTP port used for module M(zos_copy), refer to topic
-        L(Using connection plugins,https://docs.ansible.com/ansible/latest/plugins/connection.html#using-connection-plugins)
+        L(using connection plugins,https://docs.ansible.com/ansible/latest/plugins/connection.html#using-connection-plugins)
       - If C(ansible_port) is not specified, port 22 will be used.
     type: int
     required: false
@@ -327,8 +327,8 @@ notes:
       files will always be deleted, regardless of success or failure of the
       copy task.
     - VSAM data sets can only be copied to other VSAM data sets.
-    - For supported character sets used to encode data, refer to
-      U(https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html)
+    - For supported character sets used to encode data, refer to the
+      L(documentation,https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html).
     - M(zos_copy) uses SFTP (Secure File Transfer Protocol) for the underlying
       transfer protocol; Co:Z SFTP is not supported. In the case of Co:z SFTP,
       you can exempt the Ansible userid on z/OS from using Co:Z thus falling back

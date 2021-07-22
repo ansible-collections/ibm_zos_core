@@ -109,8 +109,8 @@ notes:
     also obtain escalated privileges to execute as root or another user.
   - All data sets are always assumed to be cataloged. If an uncataloged data
     set needs to be encoded, it should be cataloged first.
-  - For supported character sets used to encode data, refer to
-    U(https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html)
+  - For supported character sets used to encode data, refer to the
+    L(documentation,https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html).
 """
 
 EXAMPLES = r"""

@@ -118,8 +118,8 @@ options:
         type: str
         default: IBM-1047
 notes:
-  - For supported character sets used to encode data, refer to
-    U(https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html)
+  - For supported character sets used to encode data, refer to the
+    L(documentation,https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html).
 """
 
 RETURN = r"""

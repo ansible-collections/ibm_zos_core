@@ -148,8 +148,8 @@ notes:
   - All data sets are always assumed to be cataloged. If an uncataloged data set
     needs to be encoded, it should be cataloged first. The M(zos_data_set) module
     can be used to catalog uncataloged data sets.
-  - For supported character sets used to encode data, refer to
-    U(https://ibm.github.io/z_ansible_collections_doc/reference/supplementary_content/encode.html)
+  - For supported character sets used to encode data, refer to the
+    L(documentation,https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html).
   - When using 'with_*' loops be aware that if you do not set a unique mark
     the block will be overwritten on each iteration.
   - When more then one block should be handled in a file you must change

@@ -119,10 +119,10 @@ Deprecated functions are no longer supported, and will be removed in a future
 release.
 
 .. _SSH plugin:
-https://docs.ansible.com/ansible/latest/collections/ansible/builtin/ssh_connection.html
+   https://docs.ansible.com/ansible/latest/collections/ansible/builtin/ssh_connection.html
 
 .. _SSH port:
-https://docs.ansible.com/ansible/latest/collections/ansible/builtin/ssh_connection.html#parameter-port
+   https://docs.ansible.com/ansible/latest/collections/ansible/builtin/ssh_connection.html#parameter-port
 
 Version 1.3.1
 =============

@@ -16,8 +16,8 @@ zos_encode -- Perform encoding operations.
 
 Synopsis
 --------
-- Converts the encoding of characters that are read from a UNIX System Services (USS) file or path, PS(sequential data set), PDS, PDSE, or KSDS(VSAM data set).
-- Writes the data to a UNIX System Services (USS) file or path, PS(sequential data set), PDS, PDSE, or KSDS(VSAM data set).
+- Converts the encoding of characters that are read from a UNIX System Services (USS) file or path, PS (sequential data set), PDS, PDSE, or KSDS (VSAM data set).
+- Writes the data to a UNIX System Services (USS) file or path, PS (sequential data set), PDS, PDSE, or KSDS (VSAM data set).
 
 
 
@@ -48,7 +48,7 @@ to_encoding
 
 
 src
-  The location can be a UNIX System Services (USS) file or path, PS(sequential data set), PDS, PDSE, member of a PDS or PDSE, or KSDS(VSAM data set).
+  The location can be a UNIX System Services (USS) file or path, PS (sequential data set), PDS, PDSE, member of a PDS or PDSE, or KSDS (VSAM data set).
 
   The USS path or file must be an absolute pathname.
 
@@ -61,7 +61,7 @@ src
 dest
   The location where the converted characters are output.
 
-  The destination *dest* can be a UNIX System Services (USS) file or path, PS(sequential data set), PDS, PDSE, member of a PDS or PDSE, or KSDS(VSAM data set).
+  The destination *dest* can be a UNIX System Services (USS) file or path, PS (sequential data set), PDS, PDSE, member of a PDS or PDSE, or KSDS (VSAM data set).
 
   If the length of the PDSE member name used in *dest* is greater than 8 characters, the member name will be truncated when written out.
 
@@ -235,7 +235,7 @@ Notes
 
    All data sets are always assumed to be cataloged. If an uncataloged data set needs to be encoded, it should be cataloged first.
 
-   For supported character sets used to encode data, refer to https://ansible-collections.github.io/ibm_zos_core/supplementary.html#encode
+   For supported character sets used to encode data, refer to the `documentation <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html>`_.
 
 
 

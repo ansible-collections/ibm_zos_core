@@ -60,16 +60,18 @@ location
 wait
   Wait for the Job to finish and capture the output. Default is false.
 
-  User can specify the wait time, see option ``wait_time_s``.
+  When *wait* is false or absent, the module will wait up to 10 seconds for the job to start, but will not wait for the job to complete.
+
+  If *wait* is true, User can specify the wait time, see option ``wait_time_s``.
 
   | **required**: False
   | **type**: bool
 
 
 wait_time_s
-  When wait is true, the module will wait for a maximum of 60 seconds by default.
+  When *wait* is true, the module will wait for the number of seconds for Job completion.
 
-  User can set the wait time manually in this option.
+  User can set the wait time manually with this option.
 
   | **required**: False
   | **type**: int
@@ -186,7 +188,7 @@ Notes
 -----
 
 .. note::
-   For supported character sets used to encode data, refer to https://ansible-collections.github.io/ibm_zos_core/supplementary.html#encode
+   For supported character sets used to encode data, refer to the `documentation <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html>`_.
 
 
 
@@ -199,225 +201,11 @@ Return Values
 
 
 jobs
-  List of jobs output.
+  List of jobs output. If no job status is found, this will return an empty job code with msg=JOB NOT FOUND.
 
   | **returned**: success
   | **type**: list
   | **elements**: dict
-  | **sample**:
-
-    .. code-block:: json
-
-        [
-            {
-                "class": "K",
-                "content_type": "JOB",
-                "ddnames": [
-                    {
-                        "byte_count": "677",
-                        "content": [
-                            "1                       J E S 2  J O B  L O G  --  S Y S T E M  S T L 1  --  N O D E  S T L 1            ",
-                            "0 ",
-                            " 12.50.08 JOB00361 ---- FRIDAY,    13 MAR 2020 ----",
-                            " 12.50.08 JOB00361  IRR010I  USERID OMVSADM  IS ASSIGNED TO THIS JOB.",
-                            " 12.50.08 JOB00361  ICH70001I OMVSADM  LAST ACCESS AT 12:50:03 ON FRIDAY, MARCH 13, 2020",
-                            " 12.50.08 JOB00361  $HASP373 DBDGEN00 STARTED - INIT 15   - CLASS K        - SYS STL1",
-                            " 12.50.08 JOB00361  SMF000I  DBDGEN00    C           ASMA90      0000",
-                            " 12.50.09 JOB00361  SMF000I  DBDGEN00    L           IEWL        0000",
-                            " 12.50.09 JOB00361  $HASP395 DBDGEN00 ENDED - RC=0000",
-                            "0------ JES2 JOB STATISTICS ------",
-                            "-  13 MAR 2020 JOB EXECUTION DATE",
-                            "-           28 CARDS READ",
-                            "-          158 SYSOUT PRINT RECORDS",
-                            "-            0 SYSOUT PUNCH RECORDS",
-                            "-           12 SYSOUT SPOOL KBYTES",
-                            "-         0.00 MINUTES EXECUTION TIME"
-                        ],
-                        "ddname": "JESMSGLG",
-                        "id": "2",
-                        "procstep": "",
-                        "record_count": "16",
-                        "stepname": "JES2"
-                    },
-                    {
-                        "byte_count": "2136",
-                        "content": [
-                            "         1 //DBDGEN00 JOB MSGLEVEL=1,MSGCLASS=E,CLASS=K,                           JOB00361",
-                            "           //   LINES=999999,TIME=1440,REGION=0M,                                          ",
-                            "           //   MEMLIMIT=NOLIMIT                                                           ",
-                            "         2 /*JOBPARM  SYSAFF=*                                                             ",
-                            "           //*                                                                             ",
-                            "         3 //DBDGEN   PROC MBR=TEMPNAME                                                    ",
-                            "           //C        EXEC PGM=ASMA90,                                                     ",
-                            "           //             PARM=\u0027OBJECT,NODECK,NOLIST\u0027                                      ",
-                            "           //SYSLIB   DD DISP=SHR,                                                         ",
-                            "           //      DSN=IMSBLD.I15RTSMM.SDFSMAC                                             ",
-                            "           //SYSLIN   DD DISP=(NEW,PASS),RECFM=F,LRECL=80,BLKSIZE=80,                      ",
-                            "           //         UNIT=SYSDA,SPACE=(CYL,(10,5),RLSE,,)                                 ",
-                            "           //SYSUT1   DD DISP=(NEW,DELETE),UNIT=SYSDA,SPACE=(CYL,                          ",
-                            "           //         (10,5),,,)                                                           ",
-                            "           //SYSPRINT DD SYSOUT=*                                                          ",
-                            "           //L        EXEC PGM=IEWL,                                                       ",
-                            "           //             PARM=\u0027XREF,NOLIST\u0027,                                              ",
-                            "           //             COND=(0,LT,C)                                                    ",
-                            "           //SYSLMOD  DD DISP=SHR,                                                         ",
-                            "           //      DSN=IMSTESTL.IMS1.DBDLIB(\u0026MBR)                                          ",
-                            "           //SYSLIN   DD DSN=*.C.SYSLIN,DISP=(OLD,DELETE)                                  ",
-                            "           //SYSPRINT DD SYSOUT=*                                                          ",
-                            "           //*                                                                             ",
-                            "           //         PEND                                                                 ",
-                            "         4 //DLORD6   EXEC DBDGEN,                                                         ",
-                            "           //             MBR=DLORD6                                                       ",
-                            "         5 ++DBDGEN   PROC MBR=TEMPNAME                                                    ",
-                            "         6 ++C        EXEC PGM=ASMA90,                                                     ",
-                            "           ++             PARM=\u0027OBJECT,NODECK,NOLIST\u0027                                      ",
-                            "         7 ++SYSLIB   DD DISP=SHR,                                                         ",
-                            "           ++      DSN=IMSBLD.I15RTSMM.SDFSMAC                                             ",
-                            "         8 ++SYSLIN   DD DISP=(NEW,PASS),RECFM=F,LRECL=80,BLKSIZE=80,                      ",
-                            "           ++         UNIT=SYSDA,SPACE=(CYL,(10,5),RLSE,,)                                 ",
-                            "         9 ++SYSUT1   DD DISP=(NEW,DELETE),UNIT=SYSDA,SPACE=(CYL,                          ",
-                            "           ++         (10,5),,,)                                                           ",
-                            "        10 ++SYSPRINT DD SYSOUT=*                                                          ",
-                            "        11 //SYSIN    DD DISP=SHR,                                                         ",
-                            "           //      DSN=IMSTESTL.IMS1.DBDSRC(DLORD6)                                        ",
-                            "        12 ++L        EXEC PGM=IEWL,                                                       ",
-                            "           ++             PARM=\u0027XREF,NOLIST\u0027,                                              ",
-                            "           ++             COND=(0,LT,C)                                                    ",
-                            "        13 ++SYSLMOD  DD DISP=SHR,                                                         ",
-                            "           ++      DSN=IMSTESTL.IMS1.DBDLIB(\u0026MBR)                                          ",
-                            "           IEFC653I SUBSTITUTION JCL - DISP=SHR,DSN=IMSTESTL.IMS1.DBDLIB(DLORD6)",
-                            "        14 ++SYSLIN   DD DSN=*.C.SYSLIN,DISP=(OLD,DELETE)                                  ",
-                            "        15 ++SYSPRINT DD SYSOUT=*                                                          ",
-                            "           ++*                                                                             "
-                        ],
-                        "ddname": "JESJCL",
-                        "id": "3",
-                        "procstep": "",
-                        "record_count": "47",
-                        "stepname": "JES2"
-                    },
-                    {
-                        "byte_count": "2414",
-                        "content": [
-                            "  STMT NO. MESSAGE",
-                            "         4 IEFC001I PROCEDURE DBDGEN WAS EXPANDED USING INSTREAM PROCEDURE DEFINITION",
-                            " ICH70001I OMVSADM  LAST ACCESS AT 12:50:03 ON FRIDAY, MARCH 13, 2020",
-                            " IEF236I ALLOC. FOR DBDGEN00 C DLORD6",
-                            " IEF237I 083C ALLOCATED TO SYSLIB",
-                            " IGD100I 0940 ALLOCATED TO DDNAME SYSLIN   DATACLAS (        )",
-                            " IGD100I 0942 ALLOCATED TO DDNAME SYSUT1   DATACLAS (        )",
-                            " IEF237I JES2 ALLOCATED TO SYSPRINT",
-                            " IEF237I 01A0 ALLOCATED TO SYSIN",
-                            " IEF142I DBDGEN00 C DLORD6 - STEP WAS EXECUTED - COND CODE 0000",
-                            " IEF285I   IMSBLD.I15RTSMM.SDFSMAC                      KEPT          ",
-                            " IEF285I   VOL SER NOS= IMSBG2.                            ",
-                            " IEF285I   SYS20073.T125008.RA000.DBDGEN00.R0101894     PASSED        ",
-                            " IEF285I   VOL SER NOS= 000000.                            ",
-                            " IEF285I   SYS20073.T125008.RA000.DBDGEN00.R0101895     DELETED       ",
-                            " IEF285I   VOL SER NOS= 333333.                            ",
-                            " IEF285I   OMVSADM.DBDGEN00.JOB00361.D0000101.?         SYSOUT        ",
-                            " IEF285I   IMSTESTL.IMS1.DBDSRC                         KEPT          ",
-                            " IEF285I   VOL SER NOS= USER03.                            ",
-                            " IEF373I STEP/C       /START 2020073.1250",
-                            " IEF032I STEP/C       /STOP  2020073.1250 ",
-                            "         CPU:     0 HR  00 MIN  00.03 SEC    SRB:     0 HR  00 MIN  00.00 SEC    ",
-                            "         VIRT:   252K  SYS:   240K  EXT:  1876480K  SYS:    11896K",
-                            "         ATB- REAL:                  1048K  SLOTS:                     0K",
-                            "              VIRT- ALLOC:      14M SHRD:       0M",
-                            " IEF236I ALLOC. FOR DBDGEN00 L DLORD6",
-                            " IEF237I 01A0 ALLOCATED TO SYSLMOD",
-                            " IEF237I 0940 ALLOCATED TO SYSLIN",
-                            " IEF237I JES2 ALLOCATED TO SYSPRINT",
-                            " IEF142I DBDGEN00 L DLORD6 - STEP WAS EXECUTED - COND CODE 0000",
-                            " IEF285I   IMSTESTL.IMS1.DBDLIB                         KEPT          ",
-                            " IEF285I   VOL SER NOS= USER03.                            ",
-                            " IEF285I   SYS20073.T125008.RA000.DBDGEN00.R0101894     DELETED       ",
-                            " IEF285I   VOL SER NOS= 000000.                            ",
-                            " IEF285I   OMVSADM.DBDGEN00.JOB00361.D0000102.?         SYSOUT        ",
-                            " IEF373I STEP/L       /START 2020073.1250",
-                            " IEF032I STEP/L       /STOP  2020073.1250 ",
-                            "         CPU:     0 HR  00 MIN  00.00 SEC    SRB:     0 HR  00 MIN  00.00 SEC    ",
-                            "         VIRT:    92K  SYS:   256K  EXT:     1768K  SYS:    11740K",
-                            "         ATB- REAL:                  1036K  SLOTS:                     0K",
-                            "              VIRT- ALLOC:      11M SHRD:       0M",
-                            " IEF375I  JOB/DBDGEN00/START 2020073.1250",
-                            " IEF033I  JOB/DBDGEN00/STOP  2020073.1250 ",
-                            "         CPU:     0 HR  00 MIN  00.03 SEC    SRB:     0 HR  00 MIN  00.00 SEC    "
-                        ],
-                        "ddname": "JESYSMSG",
-                        "id": "4",
-                        "procstep": "",
-                        "record_count": "44",
-                        "stepname": "JES2"
-                    },
-                    {
-                        "byte_count": "1896",
-                        "content": [
-                            "1z/OS V2 R2 BINDER     12:50:08 FRIDAY MARCH 13, 2020                                                                    ",
-                            " BATCH EMULATOR  JOB(DBDGEN00) STEP(DLORD6  ) PGM= IEWL      PROCEDURE(L       )                                         ",
-                            " IEW2278I B352 INVOCATION PARAMETERS - XREF,NOLIST                                                                       ",
-                            " IEW2650I 5102 MODULE ENTRY NOT PROVIDED.  ENTRY DEFAULTS TO SECTION DLORD6.                                             ",
-                            "                                                                                                                         ",
-                            "                                                                                                                         ",
-                            "1                                       C R O S S - R E F E R E N C E  T A B L E                                         ",
-                            "                                        _________________________________________                                        ",
-                            "                                                                                                                         ",
-                            " TEXT CLASS = B_TEXT                                                                                                     ",
-                            "                                                                                                                         ",
-                            " ---------------  R E F E R E N C E  --------------------------  T A R G E T  -------------------------------------------",
-                            "   CLASS                            ELEMENT       |                                            ELEMENT                  |",
-                            "   OFFSET SECT/PART(ABBREV)          OFFSET  TYPE | SYMBOL(ABBREV)   SECTION (ABBREV)           OFFSET CLASS NAME       |",
-                            "                                                  |                                                                     |",
-                            "                                        *** E N D  O F  C R O S S  R E F E R E N C E ***                                 ",
-                            "1z/OS V2 R2 BINDER     12:50:08 FRIDAY MARCH 13, 2020                                                                    ",
-                            " BATCH EMULATOR  JOB(DBDGEN00) STEP(DLORD6  ) PGM= IEWL      PROCEDURE(L       )                                         ",
-                            " IEW2850I F920 DLORD6 HAS BEEN SAVED WITH AMODE  24 AND RMODE    24.  ENTRY POINT NAME IS DLORD6.                        ",
-                            " IEW2231I 0481 END OF SAVE PROCESSING.                                                                                   ",
-                            " IEW2008I 0F03 PROCESSING COMPLETED.  RETURN CODE =  0.                                                                  ",
-                            "                                                                                                                         ",
-                            "                                                                                                                         ",
-                            "                                                                                                                         ",
-                            "1----------------------                                                                                                  ",
-                            " MESSAGE SUMMARY REPORT                                                                                                  ",
-                            " ----------------------                                                                                                  ",
-                            "  TERMINAL MESSAGES      (SEVERITY = 16)                                                                                 ",
-                            "  NONE                                                                                                                   ",
-                            "                                                                                                                         ",
-                            "  SEVERE MESSAGES        (SEVERITY = 12)                                                                                 ",
-                            "  NONE                                                                                                                   ",
-                            "                                                                                                                         ",
-                            "  ERROR MESSAGES         (SEVERITY = 08)                                                                                 ",
-                            "  NONE                                                                                                                   ",
-                            "                                                                                                                         ",
-                            "  WARNING MESSAGES       (SEVERITY = 04)                                                                                 ",
-                            "  NONE                                                                                                                   ",
-                            "                                                                                                                         ",
-                            "  INFORMATIONAL MESSAGES (SEVERITY = 00)                                                                                 ",
-                            "  2008  2231  2278  2650  2850                                                                                           ",
-                            "                                                                                                                         ",
-                            "                                                                                                                         ",
-                            "  **** END OF MESSAGE SUMMARY REPORT ****                                                                                ",
-                            "                                                                                                                         "
-                        ],
-                        "ddname": "SYSPRINT",
-                        "id": "102",
-                        "procstep": "L",
-                        "record_count": "45",
-                        "stepname": "DLORD6"
-                    }
-                ],
-                "job_id": "JOB00361",
-                "job_name": "DBDGEN00",
-                "owner": "OMVSADM",
-                "ret_code": {
-                    "code": 0,
-                    "msg": "CC 0000",
-                    "msg_code": "0000",
-                    "msg_txt": ""
-                },
-                "subsystem": "STL1"
-            }
-        ]
 
   job_id
     The z/OS job ID of the job containing the spool file.
@@ -514,20 +302,20 @@ jobs
 
       .. code-block:: json
 
-          [
-              {
-                  "code": 0
-              },
-              {
-                  "msg": "CC 0000"
-              },
-              {
-                  "msg_code": "0000"
-              },
-              {
-                  "msg_txt": ""
+          {
+              "ret_code": {
+                  "code": 0,
+                  "msg": "CC 0000",
+                  "msg_code": "0000",
+                  "msg_txt": "",
+                  "steps": [
+                      {
+                          "step_cc": "0000",
+                          "step_name": "STEP0001"
+                      }
+                  ]
               }
-          ]
+          }
 
     msg
       Return code or abend resulting from the job submission.
@@ -536,7 +324,7 @@ jobs
       | **sample**: CC 0000
 
     msg_code
-      Return code extracted from the `msg` so that it can better evaluated. For example, ABEND(S0C4) would yield ""S0C4".
+      Return code extracted from the `msg` so that it can be evaluated. For example, ABEND(S0C4) would yield "S0C4".
 
       | **type**: str
       | **sample**: S0C4
@@ -545,13 +333,34 @@ jobs
       Returns additional information related to the job.
 
       | **type**: str
-      | **sample**: No job can be located with this job name: HELLO
+      | **sample**: JCL Error detected.  Check the data dumps for more information.
 
     code
-      Return code converted to integer value (when possible).
+      Return code converted to integer value (when possible). For JCL ERRORs, this will be None.
 
       | **type**: int
 
+    steps
+      Series of JCL steps that were executed and their return codes.
+
+      | **type**: list
+      | **elements**: dict
+
+      step_name
+        Name of the step shown as "was executed" in the DD section.
+
+        | **type**: str
+        | **sample**: STEP0001
+
+      step_cc
+        The CC returned for this step in the DD section.
+
+        | **type**: str
+        | **sample**: 00
+
+
+
+  sample
 
 
 message

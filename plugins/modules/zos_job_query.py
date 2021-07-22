@@ -45,7 +45,7 @@ options:
     description:
       - The job number that has been assigned to the job. These normally begin
         with STC, JOB, TSU and are followed by 5 digits. When job are
-        potentially greather than 99,999, the job number format will begin with
+        potentially greater than 99,999, the job number format will begin with
         S, J, T and are followed by 7 digits.
     type: str
     required: False

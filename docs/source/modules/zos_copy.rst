@@ -128,7 +128,6 @@ force
 
   | **required**: False
   | **type**: bool
-  | **default**: True
 
 
 ignore_sftp_stderr

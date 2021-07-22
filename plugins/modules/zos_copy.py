@@ -127,7 +127,7 @@ options:
       - If set to C(false) and destination exists, the module exits with a note to
         the user.
     type: bool
-    default: true
+    default: false
     required: false
   ignore_sftp_stderr:
     description:

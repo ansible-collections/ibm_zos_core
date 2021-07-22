@@ -246,7 +246,6 @@ jobs:
                 The CC returned for this step in the DD section.
               type: str
               sample: "00"
-
       sample:
         ret_code: {
           "code": 0,
@@ -259,7 +258,7 @@ jobs:
             },
           ]
         }
-    sample:
+  sample:
      [
           {
               "class": "K",

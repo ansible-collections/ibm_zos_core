@@ -24,7 +24,7 @@ author:
 short_description: Manage textual data on z/OS
 description:
   - Manage lines in z/OS UNIX System Services (USS) files,
-    PS(sequential data set), PDS, PDSE, or member of a PDS or PDSE.
+    PS (sequential data set), PDS, PDSE, or member of a PDS or PDSE.
   - This module ensures a particular line is in a USS file or data set, or
     replace an existing line using a back-referenced regular expression.
   - This is primarily useful when you want to change a single line in a USS
@@ -33,7 +33,7 @@ options:
   src:
     description:
       - The location can be a UNIX System Services (USS) file,
-        PS(sequential data set), member of a PDS or PDSE, PDS, PDSE.
+        PS (sequential data set), member of a PDS or PDSE, PDS, PDSE.
       - The USS file must be an absolute pathname.
     type: str
     aliases: [ path, destfile, name ]

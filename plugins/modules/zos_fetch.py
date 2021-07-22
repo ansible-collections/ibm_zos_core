@@ -24,8 +24,8 @@ version_added: "1.1.0"
 short_description: Fetch data from z/OS
 description:
   - This module fetches a UNIX System Services (USS) file,
-    PS(sequential data set), PDS, PDSE, member of a PDS or PDSE, or
-    KSDS(VSAM data set) from a remote z/OS system.
+    PS (sequential data set), PDS, PDSE, member of a PDS or PDSE, or
+    KSDS (VSAM data set) from a remote z/OS system.
   - When fetching a sequential data set, the destination file name will be the
     same as the data set name.
   - When fetching a PDS or PDSE, the destination will be a directory with the
@@ -39,8 +39,8 @@ author:
 options:
   src:
     description:
-      - Name of a UNIX System Services (USS) file, PS(sequential data set), PDS,
-        PDSE, member of a PDS, PDSE or KSDS(VSAM data set).
+      - Name of a UNIX System Services (USS) file, PS (sequential data set), PDS,
+        PDSE, member of a PDS, PDSE or KSDS (VSAM data set).
       - USS file paths should be absolute paths.
     required: true
     type: str

@@ -25,10 +25,10 @@ author:
 short_description: Perform encoding operations.
 description:
   - Converts the encoding of characters that are read from a UNIX System
-    Services (USS) file or path, PS(sequential data set), PDS, PDSE, or
-    KSDS(VSAM data set).
+    Services (USS) file or path, PS (sequential data set), PDS, PDSE, or
+    KSDS (VSAM data set).
   - Writes the data to a UNIX System Services (USS) file or path,
-    PS(sequential data set), PDS, PDSE, or KSDS(VSAM data set).
+    PS (sequential data set), PDS, PDSE, or KSDS (VSAM data set).
 options:
   from_encoding:
     description:
@@ -49,8 +49,8 @@ options:
   src:
     description:
       - The location can be a UNIX System Services (USS) file or path,
-        PS(sequential data set), PDS, PDSE, member of a PDS or PDSE, or
-        KSDS(VSAM data set).
+        PS (sequential data set), PDS, PDSE, member of a PDS or PDSE, or
+        KSDS (VSAM data set).
       - The USS path or file must be an absolute pathname.
       - If I(src) is a USS directory, all files will be encoded.
     required: true
@@ -59,8 +59,8 @@ options:
     description:
       - The location where the converted characters are output.
       - The destination I(dest) can be a UNIX System Services (USS) file or path,
-        PS(sequential data set), PDS, PDSE, member of a PDS or PDSE, or
-        KSDS(VSAM data set).
+        PS (sequential data set), PDS, PDSE, member of a PDS or PDSE, or
+        KSDS (VSAM data set).
       - If the length of the PDSE member name used in I(dest) is greater
         than 8 characters, the member name will be truncated when written out.
       - If I(dest) is not specified, the I(src) will be used as the destination

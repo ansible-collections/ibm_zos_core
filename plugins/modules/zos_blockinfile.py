@@ -24,7 +24,7 @@ author:
 short_description: Manage block of multi-line textual data on z/OS
 description:
   - Manage block of multi-lines in z/OS UNIX System Services (USS) files,
-    PS(sequential data set), PDS, PDSE, or member of a PDS or PDSE.
+    PS (sequential data set), PDS, PDSE, or member of a PDS or PDSE.
   - This module ensures a particular block of multi-line text surrounded
     by customizable marker lines is present in a USS file or data set, or
     replaces an existing block identified by the markers.
@@ -34,7 +34,7 @@ options:
   src:
     description:
       - The location can be a UNIX System Services (USS) file,
-        PS(sequential data set), member of a PDS or PDSE, PDS, PDSE.
+        PS (sequential data set), member of a PDS or PDSE, PDS, PDSE.
       - The USS file must be an absolute pathname.
     type: str
     aliases: [ path, destfile, name ]

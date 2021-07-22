@@ -82,14 +82,14 @@ options:
         used to determine the volume where C(dest) will be allocated.
       - If C(src) and C(dest) are files and if the parent directory of C(dest)
         does not exist, then the task will fail.
-      - When the C(dest) is an existing VSAM(KSDS) or VSAM(ESDS), then source
+      - When the C(dest) is an existing VSAM (KSDS) or VSAM (ESDS), then source
         can be ESDS, KSDS or RRDS. The C(dest) will be deleted and storage
         management rules will be used to determine the volume where C(dest) will
         be allocated.
-      - When the C(dest) is an existing VSAM(RRDS), then the source must be RRDS.
+      - When the C(dest) is an existing VSAM (RRDS), then the source must be RRDS.
         The C(dest) will be deleted and storage management rules will be used to
         determine the volume where C(dest) will be allocated.
-      - When C(dest) is and existing VSAM(LDS), then source must be LDS. The
+      - When C(dest) is and existing VSAM (LDS), then source must be LDS. The
         C(dest) will be deleted and storage management rules will be used to
         determine the volume where C(dest) will be allocated.
       - When C(dest) is a data set, you can override storage management rules
@@ -382,7 +382,7 @@ EXAMPLES = r"""
       from: UTF-8
       to: IBM-037
 
-- name: Copy a VSAM(KSDS) to a VSAM(KSDS)
+- name: Copy a VSAM (KSDS) to a VSAM (KSDS)
   zos_copy:
     src: SAMPLE.SRC.VSAM
     dest: SAMPLE.DEST.VSAM

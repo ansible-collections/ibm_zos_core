@@ -173,7 +173,7 @@ notes:
   - All data sets are always assumed to be cataloged. If an uncataloged data set
     needs to be encoded, it should be cataloged first.
   - For supported character sets used to encode data, refer to
-    U(https://ansible-collections.github.io/ibm_zos_core/supplementary.html#encode)
+    U(https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html)
 """
 
 EXAMPLES = r"""

@@ -119,7 +119,7 @@ options:
         default: IBM-1047
 notes:
   - For supported character sets used to encode data, refer to
-    U(https://ansible-collections.github.io/ibm_zos_core/supplementary.html#encode)
+    U(https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html)
 """
 
 RETURN = r"""

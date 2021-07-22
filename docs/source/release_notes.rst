@@ -28,29 +28,58 @@ What's New
 
     * ``zos_ping`` was enhanced to remove the need for the ``zos_ssh``
       connection plugin dependency.
-    * ``zos_copy`` and ``zos_fetch`` were updated to support the
-      ``ansible.builtin.ssh`` connection options; for further reference refer
-      to the `SSH plugin`_ documentation.
-    * ``zos_copy`` was updated to take into account the record length when the
-      source is a USS file and the destination is a data set with a record
-      length. This is done by inspecting the destination data set attributes
-      and using these attributes to create a new data set.
-    * ``zos_copy`` was updated with the capabilities to define destination
-      data sets from within the ``zos_copy`` module. In the case where you are
-      copying to data set destination that does not exist, you can now do so
-      using the new ``zos_copy`` module option ``destination_dataset``.
-    * ``zos_job_output`` was updated to correct possible truncated responses for
-      the **ddname** content. This would occur for jobs with very large amounts
-      of content from a **ddname**.
+
+    * ``zos_copy``
+
+      * was enhanced to support the ``ansible.builtin.ssh`` connection options;
+        for further reference refer to the `SSH plugin`_ documentation.
+      * was enhanced to take into account the record length when the
+        source is a USS file and the destination is a data set with a record
+        length. This is done by inspecting the destination data set attributes
+        and using these attributes to create a new data set.
+      * was updated with the capabilities to define destination data sets from
+        within the ``zos_copy`` module. In the case where you are copying to
+        data set destination that does not exist, you can now do so using the
+        new ``zos_copy`` module option ``destination_dataset``.
+
+    * ``zos_fetch`` was enhanced to support the ``ansible.builtin.ssh``
+      connection options; for further reference refer to the
+      `SSH plugin`_ documentation.
+
+    * ``zos_job_output``
+
+      * was updated to correct possible truncated responses for
+        the **ddname** content. This would occur for jobs with very large amounts
+        of content from a **ddname**.
+      * was enhanced to to include the completion code (CC) for each individual
+        jop step as part of the ``ret_code`` response.
+
+    * ``zos_job_query``
+
+      * was enhanced to support a 7 digit job number ID for when there are
+        greater than 99,999 jobs in the history.
+      * was enhanced to handle when an invalid job ID or job name is used with
+        the module and returns a proper response.
+    * ``zos_job_submit``
+
+      * was enhanced to fail fast when a submitted job fails instead of waiting
+        a predetermined time.
+      * was enhanced to check for 'JCL ERROR' when jobs are submitted and result
+        in a proper module response.
+
+    * ``zos_operator_action_query`` response messages were improved with more
+      diagnostic information in the event an error is encountered.
 
   * Documentation
 
-    * Noteworthy updates have been made to:
+    * Noteworthy documentation updates have been made to:
 
       * ``zos_copy`` and ``zos_fetch`` about Co:Z SFTP support.
-      * ``zos_mvs_raw``` had a duplicate example corrected.
+      * ``zos_mvs_raw`` to remove a duplicate example.
       * include documentation for all action plugins.
-      * update dated hyperlinks embedded in documentation.
+      * update hyperlinks embedded in documentation.
+      * ``zos_operator`` to explain how to use single quotes in operator commands.
+
 
 * Deprecated or removed
 
@@ -114,9 +143,7 @@ Known Issues
   Ansible connection options such as ``host_key_checking`` or ``port``, they
   were not included as part of the modules execution. This is resolved in this
   release by ensuring compatibility with the ``ansible.builtin.ssh`` plugin
-  options.
-
-  Refer to the `SSH plugin`_ documentation to enable supported options.
+  options. Refer to the `SSH plugin`_ documentation to enable supported options.
 * Known issues for modules can be found in the **Notes** section of a modules
   documentation.
 

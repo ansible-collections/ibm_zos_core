@@ -1,12 +1,12 @@
 .. ...........................................................................
-.. © Copyright IBM Corporation 2020                                          .
+.. © Copyright IBM Corporation 2020, 2021                                          .
 .. ...........................................................................
 
 ========================
 IBM z/OS core collection
 ========================
 
-The **IBM z/OS core collection**, also represented as **ibm\_zos\_core**
+The **IBM z/OS core collection**, also represented as **ibm_zos_core**
 in this document, is part of the broader offering **Red Hat® Ansible
 Certified Content for IBM Z**. IBM z/OS core collection supports tasks
 such as creating data sets, submitting jobs, querying jobs,

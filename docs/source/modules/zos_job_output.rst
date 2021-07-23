@@ -97,7 +97,7 @@ Return Values
 
 
 jobs
-  List of jobs output.
+  The output information for a list of jobs matching specified criteria. If no job status is found, this will return an empty job code with msg=JOB NOT FOUND.
 
   | **returned**: success
   | **type**: list
@@ -224,7 +224,13 @@ jobs
                     "code": 0,
                     "msg": "CC 0000",
                     "msg_code": "0000",
-                    "msg_txt": ""
+                    "msg_txt": "",
+                    "steps": [
+                        {
+                            "step_cc": "0000",
+                            "step_name": "STEP0001"
+                        }
+                    ]
                 },
                 "subsystem": "STL1"
             }
@@ -337,20 +343,20 @@ jobs
 
       .. code-block:: json
 
-          [
-              {
-                  "code": 0
-              },
-              {
-                  "msg": "CC 0000"
-              },
-              {
-                  "msg_code": "0000"
-              },
-              {
-                  "msg_txt": ""
+          {
+              "ret_code": {
+                  "code": 0,
+                  "msg": "CC 0000",
+                  "msg_code": "0000",
+                  "msg_txt": "",
+                  "steps": [
+                      {
+                          "step_cc": "0000",
+                          "step_name": "STEP0001"
+                      }
+                  ]
               }
-          ]
+          }
 
     msg
       Return code or abend resulting from the job submission.
@@ -359,7 +365,7 @@ jobs
       | **sample**: CC 0000
 
     msg_code
-      Return code extracted from the `msg` so that it can better evaluated. For example , ABEND(S0C4) would yield ""S0C4".
+      Return code extracted from the `msg` so that it can be evaluated. For example, ABEND(S0C4) would yield "S0C4".
 
       | **type**: str
       | **sample**: S0C4
@@ -374,6 +380,25 @@ jobs
       Return code converted to integer value (when possible).
 
       | **type**: int
+
+    steps
+      Series of JCL steps that were executed and their return codes.
+
+      | **type**: list
+      | **elements**: dict
+
+      step_name
+        Name of the step shown as "was executed" in the DD section.
+
+        | **type**: str
+        | **sample**: STEP0001
+
+      step_cc
+        The CC returned for this step in the DD section.
+
+        | **type**: str
+        | **sample**: 00
+
 
 
 

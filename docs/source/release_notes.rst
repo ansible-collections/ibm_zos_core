@@ -1,10 +1,167 @@
 .. ...........................................................................
-.. © Copyright IBM Corporation 2020                                          .
+.. © Copyright IBM Corporation 2020, 2021                                          .
 .. ...........................................................................
 
 ========
 Releases
 ========
+
+Version 1.4.0-beta.1
+====================
+
+What's New
+----------
+
+* Modules
+
+  * ``zos_mount`` can manage mount operations for a
+    z/OS UNIX System Services (USS) file system data set.
+
+* Plugins
+
+  * ``zos_ssh`` connection plugin has been removed from this release and is no
+    longer a dependency for the ``zos_ping`` module.
+
+* Bug fixes and enhancements
+
+  * Modules
+
+    * ``zos_ping`` was enhanced to remove the need for the ``zos_ssh``
+      connection plugin dependency.
+
+    * ``zos_copy``
+
+      * was enhanced to support the ``ansible.builtin.ssh`` connection options;
+        for further reference refer to the `SSH plugin`_ documentation.
+      * was enhanced to take into account the record length when the
+        source is a USS file and the destination is a data set with a record
+        length. This is done by inspecting the destination data set attributes
+        and using these attributes to create a new data set.
+      * was updated with the capabilities to define destination data sets from
+        within the ``zos_copy`` module. In the case where you are copying to
+        data set destination that does not exist, you can now do so using the
+        new ``zos_copy`` module option ``destination_dataset``.
+
+    * ``zos_fetch`` was enhanced to support the ``ansible.builtin.ssh``
+      connection options; for further reference refer to the
+      `SSH plugin`_ documentation.
+
+    * ``zos_job_output``
+
+      * was updated to correct possible truncated responses for
+        the **ddname** content. This would occur for jobs with very large amounts
+        of content from a **ddname**.
+      * was enhanced to to include the completion code (CC) for each individual
+        jop step as part of the ``ret_code`` response.
+
+    * ``zos_job_query``
+
+      * was enhanced to support a 7 digit job number ID for when there are
+        greater than 99,999 jobs in the history.
+      * was enhanced to handle when an invalid job ID or job name is used with
+        the module and returns a proper response.
+    * ``zos_job_submit``
+
+      * was enhanced to fail fast when a submitted job fails instead of waiting
+        a predetermined time.
+      * was enhanced to check for 'JCL ERROR' when jobs are submitted and result
+        in a proper module response.
+
+    * ``zos_operator_action_query`` response messages were improved with more
+      diagnostic information in the event an error is encountered.
+
+  * Documentation
+
+    * Noteworthy documentation updates have been made to:
+
+      * ``zos_copy`` and ``zos_fetch`` about Co:Z SFTP support.
+      * ``zos_mvs_raw`` to remove a duplicate example.
+      * include documentation for all action plugins.
+      * update hyperlinks embedded in documentation.
+      * ``zos_operator`` to explain how to use single quotes in operator commands.
+
+
+* Deprecated or removed
+
+  * ``zos_ssh`` connection plugin has been removed, it is no longer required.
+    Remove all playbook references, ie ``connection: ibm.ibm_zos_core.zos_ssh``.
+  * ``zos_ssh`` connection plugin has been removed, it is no longer required.
+    You must remove the zos_ssh connection plugin from all playbooks that
+    reference the plugin, for example connection: ibm.ibm_zos_core.zos_ssh.
+  * ``zos_copy`` module option **model_ds** has been removed. The model_ds logic
+    is now automatically managed and data sets are either created based on the
+    ``src`` data set or overridden by the new option ``destination_dataset``.
+  * ``zos_copy`` and ``zos_fetch`` option **sftp_port** has been deprecated. To
+    set the SFTP port, use the supported options in the ``ansible.builtin.ssh``
+    plugin. Refer to the `SSH port`_ option to configure the port used during
+    the modules SFTP transport.
+
+Availability
+------------
+
+* `Galaxy`_
+* `GitHub`_
+
+Reference
+---------
+
+* Supported by `z/OS V2R3`_ or later
+* Supported by the `z/OS® shell`_
+* Supported by `IBM Open Enterprise SDK for Python`_ 3.8.2 or later
+* Supported by IBM `Z Open Automation Utilities 1.1.0`_ and
+  `Z Open Automation Utilities 1.1.1`_
+
+Known Issues
+------------
+
+* If a playbook includes the deprecated ``zos_ssh`` connection plugin, for
+  example ``connection: ibm.ibm_zos_core.zos_ssh``, it will
+  encounter this error which can corrected by safely removing the plugin:
+
+  .. code-block::
+
+      "msg": "the connection plugin 'ibm.ibm_zos_core.zos_ssh' was not found"
+
+* When using the ``zos_ssh`` plugin with **Ansible 2.11** and earlier versions
+  of this collection, you will encounter the exception:
+
+  .. code-block::
+
+     AttributeError: module 'ansible.constants' has no attribute 'ANSIBLE_SSH_CONTROL_PATH_DIR'.
+
+  This is resolved in this release by deprecating the ``zos_ssh`` connection
+  plugin and removing all ``connection: ibm.ibm_zos_core.zos_ssh`` references
+  from playbooks.
+* When using module ``zos_copy`` and option ``force`` with ansible versions
+  greater than **Ansbile 2.10** and earlier versions of this collection, an
+  unsupported option exception would occur. This is resolved in this release.
+* When using the ``zos_copy`` or ``zos_fetch`` modules in earlier versions of
+  this collection without 'passwordless' SSH configured such that you are using
+  ``--ask-pass`` or passing an ``ansible_password`` in a configuration; during
+  the playbook execution a second password prompt for SFTP would appear pausing
+  the playbook execution. This is resolved in this release.
+* When using the ``zos_copy`` or ``zos_fetch`` modules, if you tried to use
+  Ansible connection options such as ``host_key_checking`` or ``port``, they
+  were not included as part of the modules execution. This is resolved in this
+  release by ensuring compatibility with the ``ansible.builtin.ssh`` plugin
+  options. Refer to the `SSH plugin`_ documentation to enable supported options.
+* Known issues for modules can be found in the **Notes** section of a modules
+  documentation.
+
+
+Deprecation Notices
+-------------------
+Features and functions are marked as deprecated when they are enhanced and an
+alternative is available. In most cases, the deprecated item will remain
+available unless the deprecated function interferes with the offering.
+Deprecated functions are no longer supported, and will be removed in a future
+release.
+
+.. _SSH plugin:
+   https://docs.ansible.com/ansible/latest/collections/ansible/builtin/ssh_connection.html
+
+.. _SSH port:
+   https://docs.ansible.com/ansible/latest/collections/ansible/builtin/ssh_connection.html#parameter-port
 
 Version 1.3.1
 =============

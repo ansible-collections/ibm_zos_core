@@ -60,16 +60,18 @@ location
 wait
   Wait for the Job to finish and capture the output. Default is false.
 
-  User can specify the wait time, see option ``wait_time_s``.
+  When *wait* is false or absent, the module will wait up to 10 seconds for the job to start, but will not wait for the job to complete.
+
+  If *wait* is true, User can specify the wait time, see option ``wait_time_s``.
 
   | **required**: False
   | **type**: bool
 
 
 wait_time_s
-  When wait is true, the module will wait for a maximum of 60 seconds by default.
+  When *wait* is true, the module will wait for the number of seconds for Job completion.
 
-  User can set the wait time manually in this option.
+  User can set the wait time manually with this option.
 
   | **required**: False
   | **type**: int
@@ -186,7 +188,7 @@ Notes
 -----
 
 .. note::
-   For supported character sets used to encode data, refer to https://ansible-collections.github.io/ibm_zos_core/supplementary.html#encode
+   For supported character sets used to encode data, refer to the `documentation <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html>`_.
 
 
 
@@ -199,7 +201,7 @@ Return Values
 
 
 jobs
-  List of jobs output.
+  List of jobs output. If no job status is found, this will return an empty job code with msg=JOB NOT FOUND.
 
   | **returned**: success
   | **type**: list
@@ -413,7 +415,13 @@ jobs
                     "code": 0,
                     "msg": "CC 0000",
                     "msg_code": "0000",
-                    "msg_txt": ""
+                    "msg_txt": "",
+                    "steps": [
+                        {
+                            "step_cc": "0000",
+                            "step_name": "DLORD6"
+                        }
+                    ]
                 },
                 "subsystem": "STL1"
             }
@@ -514,20 +522,20 @@ jobs
 
       .. code-block:: json
 
-          [
-              {
-                  "code": 0
-              },
-              {
-                  "msg": "CC 0000"
-              },
-              {
-                  "msg_code": "0000"
-              },
-              {
-                  "msg_txt": ""
+          {
+              "ret_code": {
+                  "code": 0,
+                  "msg": "CC 0000",
+                  "msg_code": "0000",
+                  "msg_txt": "",
+                  "steps": [
+                      {
+                          "step_cc": "0000",
+                          "step_name": "STEP0001"
+                      }
+                  ]
               }
-          ]
+          }
 
     msg
       Return code or abend resulting from the job submission.
@@ -536,7 +544,7 @@ jobs
       | **sample**: CC 0000
 
     msg_code
-      Return code extracted from the `msg` so that it can better evaluated. For example, ABEND(S0C4) would yield ""S0C4".
+      Return code extracted from the `msg` so that it can be evaluated. For example, ABEND(S0C4) would yield "S0C4".
 
       | **type**: str
       | **sample**: S0C4
@@ -545,12 +553,31 @@ jobs
       Returns additional information related to the job.
 
       | **type**: str
-      | **sample**: No job can be located with this job name: HELLO
+      | **sample**: JCL Error detected.  Check the data dumps for more information.
 
     code
-      Return code converted to integer value (when possible).
+      Return code converted to integer value (when possible). For JCL ERRORs, this will be None.
 
       | **type**: int
+
+    steps
+      Series of JCL steps that were executed and their return codes.
+
+      | **type**: list
+      | **elements**: dict
+
+      step_name
+        Name of the step shown as "was executed" in the DD section.
+
+        | **type**: str
+        | **sample**: STEP0001
+
+      step_cc
+        The CC returned for this step in the DD section.
+
+        | **type**: str
+        | **sample**: 00
+
 
 
 

@@ -27,7 +27,11 @@ Parameters
 
 
 cmd
-  The command to execute.
+  The command to execute.  This command will be wrapped in quotations to run.
+
+  If the command contains single-quotations, another set of single quotes must be added.
+
+  For example, Change the command "...,P='DSN3EPX,-DBC1,S'" to "...,P=''DSN3EPX,-DBC1,S'' ".
 
   | **required**: True
   | **type**: str
@@ -49,7 +53,7 @@ wait_time_s
 
   When set to 0, the system default is used.
 
-  This option is helpful on a busy system needing more time to execute commands.
+  This option is helpful on a busy system requiring more time to execute commands.
 
   Setting *wait* can instruct if execution should wait the full *wait_time_s*.
 
@@ -60,7 +64,7 @@ wait_time_s
 wait
   Specify to wait the full *wait_time_s* interval before retrieving responses.
 
-  This option is recommended to ensure the responses are accessible and captured by logging facilities and the *verbose* option.
+  This option is recommended to ensure that the responses are accessible and captured by logging facilities and the *verbose* option.
 
   *delay=True* waits the full *wait_time_s* interval.
 
@@ -92,7 +96,7 @@ Examples
      zos_operator:
        cmd: "\\$PJ(*)"
 
-   - name: Execute operator command to show jobs, waiting UP TO 5 seconds for response
+   - name: Execute operator command to show jobs, waiting up to 5 seconds for response
      zos_operator:
        cmd: 'd u,all'
        wait_time_s: 5

@@ -116,9 +116,6 @@ dds
       | **type**: str
       | **choices**: library, pds, pdse, large, basic, seq, rrds, esds, lds, ksds
 
-      | **required**: False
-      | **type**: str
-      | **choices**: library, pds, pdse, large, basic, seq, rrds, esds, lds, ksds
 
     disposition
       *disposition* indicates the status of a data set.
@@ -137,9 +134,6 @@ dds
       | **type**: str
       | **choices**: delete, keep, catlg, catalog, uncatlg, uncatalog
 
-      | **required**: False
-      | **type**: str
-      | **choices**: delete, keep, catlg, catalog, uncatlg, uncatalog
 
     disposition_abnormal
       *disposition_abnormal* indicates what to do with the data set after an abnormal termination of the program.
@@ -148,9 +142,6 @@ dds
       | **type**: str
       | **choices**: delete, keep, catlg, catalog, uncatlg, uncatalog
 
-      | **required**: False
-      | **type**: str
-      | **choices**: delete, keep, catlg, catalog, uncatlg, uncatalog
 
     reuse
       Determines if a data set should be reused if *disposition=NEW* and if a data set with a matching name already exists.
@@ -183,8 +174,6 @@ dds
       | **required**: False
       | **type**: bool
 
-      | **required**: False
-      | **type**: bool
 
     backup
       Determines if a backup should be made of an existing data set when *disposition=NEW*, *replace=true*, and a data set with the desired name is found.
@@ -194,8 +183,6 @@ dds
       | **required**: False
       | **type**: bool
 
-      | **required**: False
-      | **type**: bool
 
     space_type
       The unit of measurement to use when allocating space for a new data set using *space_primary* and *space_secondary*.
@@ -226,8 +213,6 @@ dds
       | **required**: False
       | **type**: int
 
-      | **required**: False
-      | **type**: int
 
     volumes
       The volume or volumes on which a data set resides or will reside.
@@ -248,8 +233,6 @@ dds
       | **required**: False
       | **type**: str
 
-      | **required**: False
-      | **type**: str
 
     sms_storage_class
       The desired storage class for a new SMS-managed data set.
@@ -272,8 +255,6 @@ dds
       | **required**: False
       | **type**: str
 
-      | **required**: False
-      | **type**: str
 
     block_size
       The maximum length of a block in bytes.
@@ -290,8 +271,6 @@ dds
       | **required**: False
       | **type**: int
 
-      | **required**: False
-      | **type**: int
 
     key_label
       The label for the encryption key used by the system to encrypt the data set.
@@ -314,8 +293,6 @@ dds
       | **required**: False
       | **type**: dict
 
-      | **required**: False
-      | **type**: dict
 
       label
         The label for the key encrypting key used by the Encryption Key Manager.
@@ -329,8 +306,6 @@ dds
         | **required**: True
         | **type**: str
 
-        | **required**: True
-        | **type**: str
 
       encoding
         How the label for the key encrypting key specified by *label* is encoded by the Encryption Key Manager.
@@ -615,7 +590,6 @@ dds
       | **type**: str
       | **choices**: u, vb, vba, fb, fba
 
-      *dd_input* supports single or multiple lines of input.
 
     return_content
       Determines how content should be returned to the user.
@@ -705,7 +679,7 @@ dds
 
         ``base64`` means return content in binary mode.
 
-        | **required**: False
+        | **required**: True
         | **type**: str
         | **choices**: text, base64
 
@@ -743,8 +717,6 @@ dds
       | **required**: True
       | **type**: str
 
-      | **required**: True
-      | **type**: str
 
     return_content
       Determines how content should be returned to the user.
@@ -754,8 +726,6 @@ dds
       | **required**: True
       | **type**: dict
 
-      | **required**: True
-      | **type**: dict
 
       type
         The type of the content to be returned.
@@ -770,9 +740,6 @@ dds
         | **type**: str
         | **choices**: text, base64
 
-        | **required**: True
-        | **type**: str
-        | **choices**: text, base64
 
       src_encoding
         The encoding of the data set on the z/OS system.
@@ -783,9 +750,6 @@ dds
         | **type**: str
         | **default**: ibm-1047
 
-        | **required**: False
-        | **type**: str
-        | **default**: ibm-1047
 
       response_encoding
         The encoding to use when returning the contents of the data set.
@@ -846,8 +810,6 @@ dds
       | **required**: True
       | **type**: str
 
-      | **required**: True
-      | **type**: str
 
     dds
       A list of DD statements, which can contain any of the following types: *dd_data_set*, *dd_unix*, and *dd_input*.
@@ -892,9 +854,6 @@ dds
           | **type**: str
           | **choices**: new, shr, mod, old
 
-          | **required**: False
-          | **type**: str
-          | **choices**: new, shr, mod, old
 
         disposition_normal
           *disposition_normal* indicates what to do with the data set after normal termination of the program.
@@ -911,9 +870,6 @@ dds
           | **type**: str
           | **choices**: delete, keep, catlg, catalog, uncatlg, uncatalog
 
-          | **required**: False
-          | **type**: str
-          | **choices**: delete, keep, catlg, catalog, uncatlg, uncatalog
 
         reuse
           Determines if data set should be reused if *disposition=NEW* and a data set with matching name already exists.
@@ -1005,8 +961,6 @@ dds
           | **required**: False
           | **type**: str
 
-          | **required**: False
-          | **type**: str
 
         sms_storage_class
           The desired storage class for a new SMS-managed data set.
@@ -1018,8 +972,6 @@ dds
           | **required**: False
           | **type**: str
 
-          | **required**: False
-          | **type**: str
 
         sms_data_class
           The desired data class for a new SMS-managed data set.
@@ -1031,8 +983,6 @@ dds
           | **required**: False
           | **type**: str
 
-          | **required**: False
-          | **type**: str
 
         block_size
           The maximum length of a block in bytes.
@@ -1084,8 +1034,6 @@ dds
             | **required**: True
             | **type**: str
 
-            | **required**: True
-            | **type**: str
 
           encoding
             How the label for the key encrypting key specified by *label* is encoded by the Encryption Key Manager.
@@ -1098,9 +1046,6 @@ dds
             | **type**: str
             | **choices**: l, h
 
-            | **required**: True
-            | **type**: str
-            | **choices**: l, h
 
 
         encryption_key_2
@@ -1124,8 +1069,6 @@ dds
             | **required**: True
             | **type**: str
 
-            | **required**: True
-            | **type**: str
 
           encoding
             How the label for the key encrypting key specified by *label* is encoded by the Encryption Key Manager.
@@ -1138,7 +1081,6 @@ dds
             | **type**: str
             | **choices**: l, h
 
-            Maps to KEYCD2 on z/OS.
 
 
         key_length
@@ -1162,7 +1104,6 @@ dds
           | **required**: False
           | **type**: int
 
-          Provide *key_offset* only for VSAM key-sequenced data sets.
 
         record_length
           The logical record length. (e.g ``80``).
@@ -1178,7 +1119,6 @@ dds
           | **required**: False
           | **type**: int
 
-          Maps to LRECL on z/OS.
 
         record_format
           The format and characteristics of the records for new data set.
@@ -1196,7 +1136,6 @@ dds
           | **required**: False
           | **type**: dict
 
-          If not provided, no content from the DD is returned.
 
           type
             The type of the content to be returned.
@@ -1211,7 +1150,6 @@ dds
             | **type**: str
             | **choices**: text, base64
 
-            ``base64`` means return content in binary mode.
 
           src_encoding
             The encoding of the data set on the z/OS system.
@@ -1229,9 +1167,6 @@ dds
             | **default**: iso8859-1
 
 
-            | **required**: False
-            | **type**: str
-            | **default**: iso8859-1
 
 
       dd_unix
@@ -1240,8 +1175,6 @@ dds
         | **required**: False
         | **type**: dict
 
-      dd_unix
-        The path to a file in UNIX System Services (USS).
 
         path
           The path to an existing UNIX file.
@@ -1261,8 +1194,6 @@ dds
           | **type**: str
           | **choices**: keep, delete
 
-        disposition_normal
-          Indicates what to do with the UNIX file after normal termination of the program.
 
         disposition_abnormal
           Indicates what to do with the UNIX file after abnormal termination of the program.
@@ -1380,7 +1311,6 @@ dds
           | **type**: str
           | **choices**: u, vb, vba, fb, fba
 
-          *record_format* is required in situations where the data will be processed as records and therefore, *record_length*, *block_size* and *record_format* need to be supplied since a UNIX file would normally be treated as a stream of bytes.
 
         return_content
           Determines how content should be returned to the user.
@@ -1431,7 +1361,6 @@ dds
         | **required**: False
         | **type**: dict
 
-        Input will be saved to a temporary data set with a record length of 80.
 
         content
           The input contents for the DD.
@@ -1635,25 +1564,6 @@ Examples
          - dd_unix:
              dd_name: sysprint
              path: /u/myuser/outputfile.txt
-         - dd_input:
-             dd_name: sysin
-             content: " LISTCAT ENTRIES('SOME.DATASET.*')"
-
-   - name: List data sets matching pattern in catalog,
-       save output to a file in UNIX System Services.
-       Return the contents of the file in encoding IBM-1047,
-       while the file is encoded in ISO8859-1.
-     zos_mvs_raw:
-       program_name: idcams
-       auth: true
-       dds:
-         - dd_unix:
-             dd_name: sysprint
-             path: /u/myuser/outputfile.txt
-             return_content:
-               type: text
-               src_encoding: iso8859-1
-               response_encoding: ibm-1047
          - dd_input:
              dd_name: sysin
              content: " LISTCAT ENTRIES('SOME.DATASET.*')"

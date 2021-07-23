@@ -85,6 +85,9 @@ What's New
 
   * ``zos_ssh`` connection plugin has been removed, it is no longer required.
     Remove all playbook references, ie ``connection: ibm.ibm_zos_core.zos_ssh``.
+  * ``zos_ssh`` connection plugin has been removed, it is no longer required.
+    You must remove the zos_ssh connection plugin from all playbooks that
+    reference the plugin, for example connection: ibm.ibm_zos_core.zos_ssh.
   * ``zos_copy`` module option **model_ds** has been removed. The model_ds logic
     is now automatically managed and data sets are either created based on the
     ``src`` data set or overridden by the new option ``destination_dataset``.
@@ -111,10 +114,8 @@ Reference
 Known Issues
 ------------
 
-* You must remove the **zos_ssh** connection plugin from all playbooks that
-  reference the plugin, for example ``connection: ibm.ibm_zos_core.zos_ssh``.
-
-  If a playbook includes the deprecated **zos_ssh** connection plugin, it will
+* If a playbook includes the deprecated ``zos_ssh`` connection plugin, for
+  example ``connection: ibm.ibm_zos_core.zos_ssh``, it will
   encounter this error which can corrected by safely removing the plugin:
 
   .. code-block::

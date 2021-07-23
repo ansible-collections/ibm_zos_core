@@ -60,7 +60,7 @@ content
 
   Works only when ``dest`` is a USS file, sequential data set, or a partitioned data set member.
 
-  This is for simple values; for anything complex or with formatting, use https://docs.ansible.com/ansible/latest/modules/copy_module.html
+  This is for simple values; for anything complex or with formatting, use `ansible.builtin.copy <https://docs.ansible.com/ansible/latest/modules/copy_module.html>`_
 
   If ``dest`` is a directory, then content will be copied to ``/path/to/dest/inline_copy``.
 
@@ -79,13 +79,13 @@ dest
 
   If ``src`` and ``dest`` are files and if the parent directory of ``dest`` does not exist, then the task will fail.
 
-  When the ``dest`` is an existing VSA:ref:`KSDS <KSDS_module>` or VSA:ref:`ESDS <ESDS_module>`, then source can be ESDS, KSDS or RRDS. The ``dest`` will be deleted and storage management rules will be used to determine the volume where ``dest`` will be allocated.
+  When the ``dest`` is an existing VSAM (KSDS) or VSAM (ESDS), then source can be ESDS, KSDS or RRDS. The ``dest`` will be deleted and storage management rules will be used to determine the volume where ``dest`` will be allocated.
 
-  When the ``dest`` is an existing VSA:ref:`RRDS <RRDS_module>`, then the source must be RRDS. The ``dest`` will be deleted and storage management rules will be used to determine the volume where ``dest`` will be allocated.
+  When the ``dest`` is an existing VSAM (RRDS), then the source must be RRDS. The ``dest`` will be deleted and storage management rules will be used to determine the volume where ``dest`` will be allocated.
 
-  When ``dest`` is and existing VSA:ref:`LDS <LDS_module>`, then source must be LDS. The ``dest`` will be deleted and storage management rules will be used to determine the volume where ``dest`` will be allocated.
+  When ``dest`` is and existing VSAM (LDS), then source must be LDS. The ``dest`` will be deleted and storage management rules will be used to determine the volume where ``dest`` will be allocated.
 
-  When ``dest`` is a data set, you can override storage management rules by specifying both ``volume`` and ``model_ds``.
+  When ``dest`` is a data set, you can override storage management rules by specifying both ``volume`` and other optional DS specs (type, space, record size, etc).
 
   | **required**: True
   | **type**: str
@@ -131,7 +131,9 @@ force
 
 
 ignore_sftp_stderr
-  During data transfer through sftp, the module fails if the sftp command directs any content to stderr. The user is able to override this behavior by setting this parameter to ``true``. By doing so, the module would essentially ignore the stderr stream produced by sftp and continue execution.
+  During data transfer through SFTP, the module fails if the SFTP command directs any content to stderr. The user is able to override this behavior by setting this parameter to ``true``. By doing so, the module would essentially ignore the stderr stream produced by SFTP and continue execution.
+
+  When Ansible verbosity is set to greater than 3, either through the command line interface (CLI) using **-vvvv** or through environment variables such as **verbosity = 4**, then this parameter will automatically be set to ``true``.
 
   | **required**: False
   | **type**: bool
@@ -167,17 +169,6 @@ mode
   | **type**: str
 
 
-model_ds
-  When copying a local file/directory to a non-existing PDS, PDSE or PS, specify a model data set to allocate the destination after.
-
-  If this parameter is not provided, the destination data set will be allocated based on the size of the local file/directory.
-
-  Only valid if ``src`` is a local file or directory and ``dest`` does not exist.
-
-  | **required**: False
-  | **type**: str
-
-
 remote_src
   If set to ``false``, the module searches for ``src`` at the local machine.
 
@@ -188,9 +179,11 @@ remote_src
 
 
 sftp_port
-  Indicates which port should be used to connect to the remote z/OS system to perform data transfer.
+  Configuring the SFTP port used by the :ref:`zos_copy <zos_copy_module>` module has been deprecated and will be removed in ibm.ibm_zos_core collection version 1.5.0.
 
-  If this parameter is not specified, ``ansible_port`` will be used.
+  Configuring the SFTP port with *sftp_port* will no longer have any effect on which port is used by this module.
+
+  To configure the SFTP port used for module :ref:`zos_copy <zos_copy_module>`, refer to topic `using connection plugins <https://docs.ansible.com/ansible/latest/plugins/connection.html#using-connection-plugins>`_
 
   If ``ansible_port`` is not specified, port 22 will be used.
 
@@ -231,8 +224,6 @@ validate
 volume
   If ``dest`` does not exist, specify which volume ``dest`` should be allocated to.
 
-  ``volume`` must be used with ``model_ds``, otherwise the ``volume`` value is ignored.
-
   Only valid when the destination is an MVS data set.
 
   The volume must already be present on the device.
@@ -243,6 +234,84 @@ volume
 
   | **required**: False
   | **type**: str
+
+
+destination_dataset
+  These are settings to use when creating the destination data set
+
+  | **required**: False
+  | **type**: dict
+
+
+  dd_type
+    Organization of the destination
+
+    | **required**: False
+    | **type**: str
+    | **default**: BASIC
+    | **choices**: KSDS, ESDS, RRDS, LDS, SEQ, PDS, PDSE, MEMBER, BASIC
+
+
+  space_primary
+    If the destination *dest* data set does not exist , this sets the primary space allocated for the data set.
+
+    The unit of space used is set using *space_type*.
+
+    | **required**: False
+    | **type**: str
+    | **default**: 5
+
+
+  space_secondary
+    If the destination *dest* data set does not exist , this sets the secondary space allocated for the data set.
+
+    The unit of space used is set using *space_type*.
+
+    | **required**: False
+    | **type**: str
+    | **default**: 3
+
+
+  space_type
+    If the destination data set does not exist, this sets the unit of measurement to use when defining primary and secondary space.
+
+    Valid units of size are ``K``, ``M``, ``G``, ``CYL``, and ``TRK``.
+
+    | **required**: False
+    | **type**: str
+    | **default**: M
+    | **choices**: K, M, G, CYL, TRK
+
+
+  record_format
+    If the destination data set does not exist, this sets the format of the data set. (e.g ``FB``)
+
+    Choices are case-insensitive.
+
+    | **required**: False
+    | **type**: str
+    | **default**: FB
+    | **choices**: FB, VB, FBA, VBA, U
+
+
+  record_length
+    The length of each record in the data set, in bytes.
+
+    For variable data sets, the length must include the 4-byte prefix area.
+
+    Defaults vary depending on format: If FB/FBA 80, if VB/VBA 137, if U 0.
+
+    | **required**: False
+    | **type**: int
+    | **default**: 80
+
+
+  block_size
+    The block size to use for the data set.
+
+    | **required**: False
+    | **type**: int
+
 
 
 
@@ -296,7 +365,7 @@ Examples
          from: UTF-8
          to: IBM-037
 
-   - name: Copy a VSAM(KSDS) to a VSAM(KSDS)
+   - name: Copy a VSAM (KSDS) to a VSAM (KSDS)
      zos_copy:
        src: SAMPLE.SRC.VSAM
        dest: SAMPLE.DEST.VSAM
@@ -414,9 +483,9 @@ Notes
 
    VSAM data sets can only be copied to other VSAM data sets.
 
-   For supported character sets used to encode data, refer to https://ansible-collections.github.io/ibm_zos_core/supplementary.html#encode
+   For supported character sets used to encode data, refer to the `documentation <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html>`_.
 
-   :ref:`zos_copy <zos_copy_module>` uses SFTP (Secure File Transfer Protocol) for the underlying transfer protocol; Co:Z SFTP is not supported. In the case of Co:z SFTP, you can exempt the Ansible userid on ZOS from using Co:Z thus falling back to using standard SFTP.
+   :ref:`zos_copy <zos_copy_module>` uses SFTP (Secure File Transfer Protocol) for the underlying transfer protocol; Co:Z SFTP is not supported. In the case of Co:z SFTP, you can exempt the Ansible userid on z/OS from using Co:Z thus falling back to using standard SFTP.
 
 
 

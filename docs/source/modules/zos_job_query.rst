@@ -47,7 +47,7 @@ owner
 
 
 job_id
-  The job number that has been assigned to the job. These normally begin with STC, JOB, TSU and are followed by 5 digits.
+  The job number that has been assigned to the job. These normally begin with STC, JOB, TSU and are followed by 5 digits. When job are potentially greater than 99,999, the job number format will begin with S, J, T and are followed by 7 digits.
 
   | **required**: False
   | **type**: str
@@ -99,7 +99,7 @@ changed
   | **type**: bool
 
 jobs
-  The list of z/OS job(s) and status.
+  The output information for a list of jobs matching specified criteria. If no job status is found, this will return an empty job code with msg=JOB NOT FOUND.
 
   | **returned**: success
   | **type**: list
@@ -152,14 +152,20 @@ jobs
 
       .. code-block:: json
 
-          [
-              {
-                  "code": 0
-              },
-              {
-                  "msg": "CC 0000"
+          {
+              "ret_code": {
+                  "code": 0,
+                  "msg": "CC 0000",
+                  "msg_code": "0000",
+                  "msg_txt": "",
+                  "steps": [
+                      {
+                          "step_cc": "0000",
+                          "step_name": "STEP0001"
+                      }
+                  ]
               }
-          ]
+          }
 
     msg
       Return code or abend resulting from the job submission.
@@ -167,10 +173,41 @@ jobs
       | **type**: str
       | **sample**: CC 0000
 
+    msg_code
+      Return code extracted from the `msg` so that it can be evaluated. For example, ABEND(S0C4) would yield "S0C4".
+
+      | **type**: str
+      | **sample**: S0C4
+
+    msg_txt
+      Returns additional information related to the job.
+
+      | **type**: str
+      | **sample**: No job can be located with this job name: HELLO
+
     code
       Return code converted to integer value (when possible).
 
       | **type**: int
+
+    steps
+      Series of JCL steps that were executed and their return codes.
+
+      | **type**: list
+      | **elements**: dict
+
+      step_name
+        Name of the step shown as "was executed" in the DD section.
+
+        | **type**: str
+        | **sample**: STEP0001
+
+      step_cc
+        The CC returned for this step in the DD section.
+
+        | **type**: str
+        | **sample**: 00
+
 
 
 

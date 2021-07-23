@@ -16,7 +16,7 @@ zos_fetch -- Fetch data from z/OS
 
 Synopsis
 --------
-- This module fetches a UNIX System Services (USS) file, PS(sequential data set), PDS, PDSE, member of a PDS or PDSE, or KSDS(VSAM data set) from a remote z/OS system.
+- This module fetches a UNIX System Services (USS) file, PS (sequential data set), PDS, PDSE, member of a PDS or PDSE, or KSDS (VSAM data set) from a remote z/OS system.
 - When fetching a sequential data set, the destination file name will be the same as the data set name.
 - When fetching a PDS or PDSE, the destination will be a directory with the same name as the PDS or PDSE.
 - When fetching a PDS/PDSE member, destination will be a file.
@@ -31,7 +31,7 @@ Parameters
 
 
 src
-  Name of a UNIX System Services (USS) file, PS(sequential data set), PDS, PDSE, member of a PDS, PDSE or KSDS(VSAM data set).
+  Name of a UNIX System Services (USS) file, PS (sequential data set), PDS, PDSE, member of a PDS, PDSE or KSDS (VSAM data set).
 
   USS file paths should be absolute paths.
 
@@ -89,9 +89,11 @@ use_qualifier
 
 
 sftp_port
-  Indicates which port should be used to connect to the remote z/OS system to perform data transfer.
+  Configuring the SFTP port used by the :ref:`zos_fetch <zos_fetch_module>` module has been deprecated and will be removed in ibm.ibm_zos_core collection version 1.5.0.
 
-  If this parameter is not specified, ``ansible_port`` will be used.
+  Configuring the SFTP port with *sftp_port* will no longer have any effect on which port is used by this module.
+
+  To configure the SFTP port used for module :ref:`zos_copy <zos_copy_module>`, refer to topic `using connection plugins <https://docs.ansible.com/ansible/latest/plugins/connection.html#using-connection-plugins>`_
 
   If ``ansible_port`` is not specified, port 22 will be used.
 
@@ -127,6 +129,8 @@ encoding
 
 ignore_sftp_stderr
   During data transfer through sftp, the module fails if the sftp command directs any content to stderr. The user is able to override this behavior by setting this parameter to ``true``. By doing so, the module would essentially ignore the stderr stream produced by sftp and continue execution.
+
+  When Ansible verbosity is set to greater than 3, either through the command line interface (CLI) using **-vvvv** or through environment variables such as **verbosity = 4**, then this parameter will automatically be set to ``true``.
 
   | **required**: False
   | **type**: bool
@@ -201,7 +205,9 @@ Notes
 
    Fetching HFS or ZFS type data sets is currently not supported.
 
-   For supported character sets used to encode data, refer to https://ansible-collections.github.io/ibm_zos_core/supplementary.html#encode
+   For supported character sets used to encode data, refer to the `documentation <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html>`_.
+
+   :ref:`zos_fetch <zos_fetch_module>` uses SFTP (Secure File Transfer Protocol) for the underlying transfer protocol; Co:Z SFTP is not supported. In the case of Co:z SFTP, you can exempt the Ansible userid on z/OS from using Co:Z thus falling back to using standard SFTP.
 
 
 

@@ -26,7 +26,9 @@ description:
   - Uses owner to filter the jobs by the job owner.
   - Uses system to filter the jobs by system where the job is running (or ran) on.
   - Uses job_id to filter the jobs by the job id.
-author: "Ping Xiao (@xiaopingBJ)"
+author:
+  - "Ping Xiao (@xiaopingBJ)"
+  - "Demetrios Dimatos (@ddimatos)"
 options:
   job_name:
     description:

@@ -23,7 +23,9 @@ module: zos_operator
 short_description: Execute operator command
 description:
     - Execute an operator command and receive the output.
-author: "Ping Xiao (@xiaopingBJ)"
+author:
+  - "Ping Xiao (@xiaopingBJ)"
+  - "Demetrios Dimatos (@ddimatos)"
 options:
   cmd:
     description:

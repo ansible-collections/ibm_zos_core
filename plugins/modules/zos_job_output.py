@@ -34,7 +34,9 @@ description:
   - If there is no ddname, or if ddname="?", output of all the ddnames under
     the given job will be displayed.
 version_added: "2.9"
-author: "Jack Ho (@jacklotusho)"
+author:
+  - "Jack Ho (@jacklotusho)"
+  - "Demetrios Dimatos (@ddimatos)"
 options:
   job_id:
     description:

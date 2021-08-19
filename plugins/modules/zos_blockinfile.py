@@ -328,7 +328,7 @@ def quotedString(string):
     # add escape if string was quoted
     if not isinstance(string, str):
         return string
-    return string.replace('"', '\\\"')
+    return string.replace('"', "")
 
 
 def main():

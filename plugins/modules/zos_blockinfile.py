@@ -61,6 +61,7 @@ options:
     description:
     - The text to insert inside the marker lines.
     - Multi-line can be separated by '\n'.
+    - Any double-quotation marks will be removed.
     required: false
     type: str
     default: ''

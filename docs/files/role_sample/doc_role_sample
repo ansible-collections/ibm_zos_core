@@ -1,7 +1,7 @@
-# Copyright (c) IBM Corporation 2020
+# Copyright (c) IBM Corporation 2020, 2021
 
 DOCUMENTATION = r"""
-role: doc_role_sample
+role: role_sample
 short_description: Role will assemble a sentence
 description:
   - This is a fun sentence builder, where the sentence is derived on
@@ -12,7 +12,7 @@ description:
     {{ comment }}, {{ action }} modules can be written in {{ language_1 }},
     {{ language_2 }} and {{ language_3 }}."
 author: "Demetrios Dimatos (@ddimatos)"
-variables:
+options:
   comment:
     description:
       - The second position in the sentence. I(comment) is inserted

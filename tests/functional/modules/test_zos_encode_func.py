@@ -270,8 +270,10 @@ def test_uss_encoding_conversion_uss_file_to_mvs_pds_member(ansible_zos_module):
     results = hosts.all.zos_data_set(
         name=MVS_PDS_MEMBER, type="member", state="present"
     )
+    pprint(vars(results))
     for result in results.contacted.values():
-        assert result.get("changed") is True
+        # documentation will return changed=False if ds exists and replace=False..
+        # assert result.get("changed") is True
         assert result.get("module_stderr") is None
     results = hosts.all.zos_encode(
         src=USS_FILE,
@@ -445,7 +447,10 @@ def test_uss_encoding_conversion_mvs_ps_to_mvs_vsam(ansible_zos_module):
         src="{0}/SAMPLE".format(TEMP_JCL_PATH), location="USS", wait=True
     )
     hosts.all.file(path=TEMP_JCL_PATH, state="absent")
+    print("test_uss_encoding_conversion_mvs_ps_to_mvs_vsam")
+    pprint(vars(results))
     for result in results.contacted.values():
+        assert result.get("jobs") is not None
         assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
         assert result.get("jobs")[0].get("ret_code").get("code") == 0
         assert result.get("changed") is True
@@ -535,7 +540,10 @@ def test_vsam_backup(ansible_zos_module):
     hosts.all.file(path=TEMP_JCL_PATH, state="absent")
 
     hosts.all.zos_encode(
-        src=MVS_VS, dest=MVS_PS, from_encoding=FROM_ENCODING, to_encoding=TO_ENCODING,
+        src=MVS_VS,
+        dest=MVS_PS,
+        from_encoding=FROM_ENCODING,
+        to_encoding=TO_ENCODING,
     )
     contents = hosts.all.shell(cmd="cat \"//'{0}'\"".format(MVS_PS))
     content1 = ""

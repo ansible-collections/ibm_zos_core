@@ -16,7 +16,7 @@ zos_lineinfile -- Manage textual data on z/OS
 
 Synopsis
 --------
-- Manage lines in z/OS UNIX System Services (USS) files, PS(sequential data set), PDS, PDSE, or member of a PDS or PDSE.
+- Manage lines in z/OS UNIX System Services (USS) files, PS (sequential data set), PDS, PDSE, or member of a PDS or PDSE.
 - This module ensures a particular line is in a USS file or data set, or replace an existing line using a back-referenced regular expression.
 - This is primarily useful when you want to change a single line in a USS file or data set only.
 
@@ -29,7 +29,7 @@ Parameters
 
 
 src
-  The location can be a UNIX System Services (USS) file, PS(sequential data set), member of a PDS or PDSE, PDS, PDSE.
+  The location can be a UNIX System Services (USS) file, PS (sequential data set), member of a PDS or PDSE, PDS, PDSE.
 
   The USS file must be an absolute pathname.
 
@@ -228,7 +228,7 @@ Notes
 
    All data sets are always assumed to be cataloged. If an uncataloged data set needs to be encoded, it should be cataloged first.
 
-   For supported character sets used to encode data, refer to https://ansible-collections.github.io/ibm_zos_core/supplementary.html#encode
+   For supported character sets used to encode data, refer to the `documentation <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html>`_.
 
 
 

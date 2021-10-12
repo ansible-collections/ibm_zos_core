@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020
+# Copyright (c) IBM Corporation 2019, 2020, 2021
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -20,12 +20,12 @@ __metaclass__ = type
 DOCUMENTATION = r"""
 ---
 module: zos_fetch
-version_added: "2.9"
+version_added: "1.1.0"
 short_description: Fetch data from z/OS
 description:
   - This module fetches a UNIX System Services (USS) file,
-    PS(sequential data set), PDS, PDSE, member of a PDS or PDSE, or
-    KSDS(VSAM data set) from a remote z/OS system.
+    PS (sequential data set), PDS, PDSE, member of a PDS or PDSE, or
+    KSDS (VSAM data set) from a remote z/OS system.
   - When fetching a sequential data set, the destination file name will be the
     same as the data set name.
   - When fetching a PDS or PDSE, the destination will be a directory with the
@@ -33,12 +33,14 @@ description:
   - When fetching a PDS/PDSE member, destination will be a file.
   - Files that already exist at C(dest) will be overwritten if they are different
     than C(src).
-author: "Asif Mahmud (@asifmahmud)"
+author:
+    - "Asif Mahmud (@asifmahmud)"
+    - "Demetrios Dimatos (@ddimatos)"
 options:
   src:
     description:
-      - Name of a UNIX System Services (USS) file, PS(sequential data set), PDS,
-        PDSE, member of a PDS, PDSE or KSDS(VSAM data set).
+      - Name of a UNIX System Services (USS) file, PS (sequential data set), PDS,
+        PDSE, member of a PDS, PDSE or KSDS (VSAM data set).
       - USS file paths should be absolute paths.
     required: true
     type: str
@@ -86,9 +88,13 @@ options:
     type: bool
   sftp_port:
     description:
-      - Indicates which port should be used to connect to the remote z/OS
-        system to perform data transfer.
-      - If this parameter is not specified, C(ansible_port) will be used.
+      - Configuring the SFTP port used by the M(zos_fetch) module has been
+        deprecated and will be removed in ibm.ibm_zos_core collection version
+        1.5.0.
+      - Configuring the SFTP port with I(sftp_port) will no longer have any
+        effect on which port is used by this module.
+      - To configure the SFTP port used for module M(zos_copy), refer to topic
+        L(using connection plugins,https://docs.ansible.com/ansible/latest/plugins/connection.html#using-connection-plugins)
       - If C(ansible_port) is not specified, port 22 will be used.
     type: int
     required: false
@@ -117,12 +123,18 @@ options:
   ignore_sftp_stderr:
     description:
       - During data transfer through sftp, the module fails if the sftp command
-        directs any content to stderr. The user is able to override this behavior
-        by setting this parameter to C(true). By doing so, the module would
-        essentially ignore the stderr stream produced by sftp and continue execution.
+        directs any content to stderr. The user is able to override this
+        behavior by setting this parameter to C(true). By doing so, the module
+        would essentially ignore the stderr stream produced by sftp and continue
+        execution.
+      - When Ansible verbosity is set to greater than 3, either through the
+        command line interface (CLI) using B(-vvvv) or through environment
+        variables such as B(verbosity = 4), then this parameter will
+        automatically be set to C(true).
     type: bool
     required: false
     default: false
+    version_added: "1.4.0"
 notes:
     - When fetching PDSE and VSAM data sets, temporary storage will be used
       on the remote z/OS system. After the PDSE or VSAM data set is
@@ -137,8 +149,12 @@ notes:
     - All data sets are always assumed to be cataloged. If an uncataloged
       data set needs to be fetched, it should be cataloged first.
     - Fetching HFS or ZFS type data sets is currently not supported.
-    - For supported character sets used to encode data, refer to
-      U(https://ansible-collections.github.io/ibm_zos_core/supplementary.html#encode)
+    - For supported character sets used to encode data, refer to the
+      L(documentation,https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html).
+    - M(zos_fetch) uses SFTP (Secure File Transfer Protocol) for the underlying
+      transfer protocol; Co:Z SFTP is not supported. In the case of Co:z SFTP,
+      you can exempt the Ansible userid on z/OS from using Co:Z thus falling back
+      to using standard SFTP.
 seealso:
 - module: zos_data_set
 - module: zos_copy
@@ -556,6 +572,12 @@ def run_module():
     src = module.params.get("src")
     if module.params.get("use_qualifier"):
         module.params["src"] = datasets.hlq() + "." + src
+
+    if module.params.get('sftp_port'):
+        module.deprecate(
+            msg='Support for configuring sftp_port has been deprecated.'
+            'Configuring the SFTP port is now managed through Ansible connection plugins option \'ansible_port\'',
+            date='2021-08-01', collection_name='ibm.ibm_zos_core')
 
     # ********************************************************** #
     #                   Verify paramater validity                #

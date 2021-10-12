@@ -16,7 +16,7 @@ zos_blockinfile -- Manage block of multi-line textual data on z/OS
 
 Synopsis
 --------
-- Manage block of multi-lines in z/OS UNIX System Services (USS) files, PS(sequential data set), PDS, PDSE, or member of a PDS or PDSE.
+- Manage block of multi-lines in z/OS UNIX System Services (USS) files, PS (sequential data set), PDS, PDSE, or member of a PDS or PDSE.
 - This module ensures a particular block of multi-line text surrounded by customizable marker lines is present in a USS file or data set, or replaces an existing block identified by the markers.
 - This is primarily useful when you want to change a block of multi-line text in a USS file or data set.
 
@@ -29,7 +29,7 @@ Parameters
 
 
 src
-  The location can be a UNIX System Services (USS) file, PS(sequential data set), member of a PDS or PDSE, PDS, PDSE.
+  The location can be a UNIX System Services (USS) file, PS (sequential data set), member of a PDS or PDSE, PDS, PDSE.
 
   The USS file must be an absolute pathname.
 
@@ -217,7 +217,7 @@ Notes
 
    All data sets are always assumed to be cataloged. If an uncataloged data set needs to be encoded, it should be cataloged first. The :ref:`zos_data_set <zos_data_set_module>` module can be used to catalog uncataloged data sets.
 
-   For supported character sets used to encode data, refer to https://ibm.github.io/z_ansible_collections_doc/reference/supplementary_content/encode.html
+   For supported character sets used to encode data, refer to the `documentation <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html>`_.
 
    When using 'with_*' loops be aware that if you do not set a unique mark the block will be overwritten on each iteration.
 

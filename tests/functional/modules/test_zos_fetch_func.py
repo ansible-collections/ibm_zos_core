@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020
+# Copyright (c) IBM Corporation 2020, 2021
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -40,10 +40,14 @@ TEST_VSAM = "IMSTESTL.LDS01.WADS0"
 def test_fetch_uss_file_not_present_on_local_machine(ansible_zos_module):
     hosts = ansible_zos_module
     params = dict(src="/etc/profile", dest="/tmp/", flat=True)
+    dest_path = "/tmp/profile"
+    results = None
+
     try:
         results = hosts.all.zos_fetch(**params)
-        dest_path = "/tmp/profile"
+
         for result in results.contacted.values():
+
             assert result.get("changed") is True
             assert result.get("data_set_type") == "USS"
             assert result.get("module_stderr") is None

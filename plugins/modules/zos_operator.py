@@ -26,6 +26,7 @@ description:
 author:
   - "Ping Xiao (@xiaopingBJ)"
   - "Demetrios Dimatos (@ddimatos)"
+  - "Rich Parker (@richp405)"
 options:
   cmd:
     description:
@@ -150,12 +151,24 @@ from os import chmod
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,
 )
+from zoautil_py.types import ZOAUResponse
 
 if PY3:
     from shlex import quote
 else:
     from pipes import quote
 
+try:
+    from zoautil_py import opercmd
+except Exception:
+    opercmd = MissingZOAUImport()
+
+def execute_command(operator_cmd, *args, **kwargs):
+    response = opercmd.execute(operator_cmd, args, kwargs)
+    rc = response.rc
+    stdout = response.stdout_response
+    stderr = response.stderr_response
+    return rc, stdout, stderr
 
 def run_module():
     module_args = dict(
@@ -256,123 +269,42 @@ def parse_params(params):
 
 
 def run_operator_command(params):
-    # Usage: (rexfile) wait_time_s command [-v] [-n]
-    #       -v: print out verbose security information
-    #       -n: nowait
-
-    script = """/*rexx*/
-wait_time = __argv.2
-command = __argv.3
-verbosemode = __argv.4
-nowait = __argv.5
-
-Address 'TSO'
-IsfRC = isfcalls( "ON" )
-showoutput = 0
-waitmsg = " WAIT"
-if nowait == "NOWAIT" then do
-  waitmsg = ""
-  end
-
-verbose = ""
-if verbosemode == "VERB" then do
-  showoutput = 1
-  ISFSECTRACE="ON"
-  verbose = "( VERBOSE" waitmsg ")"
-  end
-else do
-  if waitmsg == " WAIT" then do
-    verbose = "( WAIT )"
-    end
-  end
-
-if wait_time > 0 then do
-  ISFDELAY=wait_time
-  end
-
-sdsfcmd = False
-
-fwd = WORD(command, 1)
-ffwd = translate(fwd)
-fch = SUBSTR( fwd, 1, 1)
-if( ffwd == 'QUERY' | ffwd == 'SET' | ffwd == 'WHO' | fch == '/' ) then
-  do
-    sdsfcmd = True
-  end
-if sdsfcmd == True then
-  do
-    address SDSF "ISFEXEC " command verbose
-  end
-else
-  do
-    address SDSF "ISFEXEC '/"command"'" verbose
-  end
-saverc = rc
-
-IsfRC = isfcalls( "OFF" )
-trace Off
-if isfulog.0 > 0 then
-  do
-    do ix=1 to isfulog.0
-      say isfulog.ix
-    end
-  end
-if isfresp.0 > 0 then
-  do
-    do ix=1 to isfresp.0
-      say isfresp.ix
-    end
-  end
-if showoutput > 0 then
-  do
-    SAY "===================="
-    SAY "result code: " saverc
-    SAY "===================="
-
-    say ""
-    say "Action messages"
-    say isfmsg
-    say ""
-    do ix=1 to isfmsg2.0
-      say isfmsg2.ix
-    end
-    say ""
-  end
-EXIT saverc
-"""
     module = AnsibleModuleHelper(argument_spec={})
 
-    fulline = " " + str(params.get("wait_time_s")) + " "
-
-    fulline += '"' + params.get("cmd") + '"'
+    kwargs = {}
 
     if params.get("verbose"):
-        fulline += " VERB"
-    else:
-        fulline += " QUIET"
+      kwargs.update({"verbose": "verbose"})
+
+    if params.get("debug"):
+      kwargs.update({"debug": "debug"})
 
     if params.get("wait"):
-        fulline += " WAIT"
-    else:
-        fulline += " NOWAIT"
+      wait = params.get("wait_time")
+      if wait:
+          kwargs.update({"parameters": "ISFDELAY={0}".format(wait)})
 
-    delete_on_close = True
-    tmp_file = NamedTemporaryFile(delete=delete_on_close)
-    with open(tmp_file.name, "w") as f:
-        f.write(script)
-    chmod(tmp_file.name, S_IEXEC | S_IREAD | S_IWRITE)
+    # it *appears* IFSdelay is passing through correctly... did 1x-4x tests 0 to 20 seconds
 
-    rc, stdout, stderr = module.run_command(tmp_file.name + fulline)
+    cmdtxt = params.get("cmd")
+
+    args = []
+
+    rc, stdout, stderr = execute_command(cmdtxt, *args, **kwargs )
+
+    extrastdout = ""
+    if params.get("verbose"):
+      extrastdout = "\n====================\nresult code: {0}\n====================".format(rc)
 
     if rc > 0:
-        message = stdout + stderr + "\nRan: " + fulline
-        raise OperatorCmdError(fulline, rc, message.split("\n") if message else message)
+        message = "\nOut: {0}\nErr: {1}\nRan: {2}".format( stdout + extrastdout, stderr, cmdtxt)
+        raise OperatorCmdError(cmdtxt, rc, message.split("\n"))
 
     return {
         "rc": rc,
-        "stdout": stdout,
+        "stdout": stdout + extrastdout,
         "stderr": stderr,
-        "call": fulline,
+        "call": cmdtxt,
     }
 
 

@@ -2017,6 +2017,7 @@ def main():
             msg='Support for configuring sftp_port has been deprecated.'
             'Configuring the SFTP port is now managed through Ansible connection plugins option \'ansible_port\'',
             date='2021-08-01', collection_name='ibm.ibm_zos_core')
+        # Date and collection are supported in Ansbile 2.9.10 or later
 
     arg_def = dict(
         src=dict(arg_type='data_set_or_path', required=False),

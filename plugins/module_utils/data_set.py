@@ -576,7 +576,7 @@ class DataSet(object):
             raise DatasetCreateError(
                 name, response.rc, response.stdout_response + response.stderr_response
             )
-        return
+        return response.rc
 
     @staticmethod
     def delete(name):

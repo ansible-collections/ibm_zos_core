@@ -626,7 +626,8 @@ except Exception:
 
 
 MVS_PARTITIONED = frozenset({"PE", "PO", "PDSE", "PDS"})
-MVS_SEQ = frozenset({"PS", "SEQ"})
+# Underlying code will map both BASIC and SEQ to PS
+MVS_SEQ = frozenset({"SEQ", "BASIC"})
 
 
 class CopyHandler(object):
@@ -704,6 +705,7 @@ class CopyHandler(object):
             block_size {int} - Size of data block
         """
         new_src = temp_path or conv_path or src
+
         # Pre-clear data set: get destination stats before deleting if incoming info is all default
         if self.dest_exists:
             if space_primary is None or space_primary == 5:
@@ -717,27 +719,32 @@ class CopyHandler(object):
                         space_primary = round(res[0].total_space / 1024)
                         space_type = "K"
                         space_secondary = 3
-            datasets.delete(dest)
-            self.dest_exists = False
+            try:
+                data_set.DataSet.delete(dest)
+                self.dest_exists = False
+            except Exception as err:
+                self.fail_json(msg=repr(err))
+
+        if not self.dest_exists:
+            parms = dict(
+                name=dest,
+                type=type,
+                space_primary=space_primary,
+                space_secondary=space_secondary,
+                space_type=space_type,
+                record_format=record_format,
+                record_length=record_length,
+                block_size=block_size
+            )
+            if alloc_vol:
+                parms['volumes'] = [alloc_vol]
+
+            try:
+                data_set.DataSet.create(**parms)
+            except Exception as err:
+                self.fail_json(msg=repr(err))
 
         if src_ds_type == "USS":
-            # create destination if it doesn't exist
-            if not self.dest_exists:
-                parms = dict(
-                    name=dest,
-                    type=type,
-                    primary_space=space_primary,
-                    secondary_space=space_secondary,
-                    space_type=space_type,
-                    record_format=record_format,
-                    record_length=record_length,
-                    block_size=block_size
-                )
-                if alloc_vol:
-                    parms['volume'] = alloc_vol
-
-                datasets._create(**parms)
-
             rc, out, err = self.run_command(
                 "cp {0} {1} \"//'{2}'\"".format(
                     "-B" if self.is_binary else "", new_src, dest
@@ -751,28 +758,22 @@ class CopyHandler(object):
                     stdout=out,
                 )
         else:
-            rc = datasets.copy(new_src, dest)
             # *****************************************************************
             # When Copying a PDSE member to a non-existent sequential data set
             # using cp "//'SOME.PDSE.DATA.SET(MEMBER)'" "//'SOME.DEST.SEQ'",
             # An I/O abend could be trapped and can be resolved by allocating
             # the destination data set before copying.
             # *****************************************************************
-            if rc != 0:
-                sz = None
-                if space_primary is not None:
-                    if space_type in "MK":
-                        sz = str(space_primary) + space_type
 
-                self._allocate_ps(dest, size=sz, alloc_vol=alloc_vol)
-                response = datasets._copy(new_src, dest)
-                if response.rc != 0:
-                    self.fail_json(
-                        msg="Unable to copy source {0} to {1}".format(new_src, dest),
-                        rc=response.rc,
-                        stdout=response.stdout_response,
-                        stderr=response.stderr_response
-                    )
+            response = datasets._copy(new_src, dest)
+            if response.rc != 0:
+                self.fail_json(
+                    msg="Unable to copy source {0} to {1}".format(new_src, dest),
+                    rc=response.rc,
+                    stdout=response.stdout_response,
+                    stderr=response.stderr_response
+                )
+
 
     def copy_to_vsam(self, src, dest, alloc_vol):
         """ Copy source VSAM to destination VSAM. If source VSAM exists, then
@@ -794,6 +795,11 @@ class CopyHandler(object):
                 )
         self.allocate_model(dest, src, vol=alloc_vol)
 
+        #TODO:
+        # We should look to see if a user has passed in their own DS spec for VSAM
+        # in which case we should use that data to create a VSAM over this static
+        # REPRO command and also when do we use the allocate_model over user spec?
+        # In otherwords, which is the default behavior, model or spec?
         repro_cmd = """  REPRO -
         INDATASET({0}) -
         OUTDATASET({1})""".format(src, dest)
@@ -982,13 +988,13 @@ class CopyHandler(object):
         parms = dict(
             name=name,
             type="SEQ",
-            primary_space=size,
+            space_primary=size,
             record_format="FB",
             record_length=1028,
             block_size=6144
         )
         if alloc_vol:
-            parms['volume'] = alloc_vol
+            parms['volumes'] = [alloc_vol]
 
         response = datasets._create(**parms)
         if response.rc != 0:
@@ -1409,19 +1415,17 @@ class PDSECopyHandler(CopyHandler):
                                  (Default {False})
             src_vol {str} -- Volume where source data set is stored. (Default {None})
         """
-        rc = out = err = None
         if remote_src:
             if src_ds_type in MVS_PARTITIONED:
-                rc = self.allocate_model(dest_name, src, vol=alloc_vol)
+                self.allocate_model(dest_name, src, vol=alloc_vol)
 
             elif src_ds_type in MVS_SEQ:
-                rc = self._allocate_pdse(
-                    dest_name, src_vol=src_vol, src=src, alloc_vol=alloc_vol
-                )
+                self._allocate_pdse(
+                    dest_name, src_vol=src_vol, src=src, alloc_vol=alloc_vol)
 
             elif os.path.isfile(src):
                 size = os.stat(src).st_size
-                rc = self._allocate_pdse(dest_name, size=size)
+                self._allocate_pdse(dest_name, size=size, alloc_vol=alloc_vol)
 
             elif os.path.isdir(src):
                 path, dirs, files = next(os.walk(src))
@@ -1430,19 +1434,10 @@ class PDSECopyHandler(CopyHandler):
                         msg="Subdirectory found in source directory {0}".format(src)
                     )
                 size = sum(os.stat(path + "/" + f).st_size for f in files)
-                rc = self._allocate_pdse(dest_name, size=size)
+                self._allocate_pdse(dest_name, size=size, alloc_vol=alloc_vol)
         else:
-            rc = self._allocate_pdse(dest_name, src=src, size=size, alloc_vol=alloc_vol)
+            self._allocate_pdse(dest_name, src=src, size=size, alloc_vol=alloc_vol)
 
-        if rc != 0:
-            self.fail_json(
-                msg="Unable to allocate destination data set {0} to receive {1}".format(dest_name, src),
-                stdout=out,
-                stderr=err,
-                rc=rc,
-                stdout_lines=out.splitlines() if out else None,
-                stderr_lines=err.splitlines() if err else None,
-            )
 
     def _allocate_pdse(
         self,
@@ -1487,15 +1482,17 @@ class PDSECopyHandler(CopyHandler):
         parms = dict(
             name=ds_name,
             type="PDSE",
-            primary_space=alloc_size,
+            space_primary=alloc_size,
             record_format=recfm,
             record_length=lrecl
         )
         if alloc_vol:
-            parms['volume'] = alloc_vol
+            parms['volumes'] = [alloc_vol]
 
-        response = datasets._create(**parms)
-        rc = response.rc
+        try:
+            rc = data_set.DataSet.create(**parms)
+        except Exception as err:
+            self.fail_json(msg=repr(err))
 
         return rc
 
@@ -1515,17 +1512,13 @@ def backup_data(ds_name, ds_type, backup_name):
         {str} -- The USS path or data set name where data was backed up
     """
     module = AnsibleModuleHelper(argument_spec={})
+
     try:
         if ds_type == "USS":
             return backup.uss_file_backup(ds_name, backup_name=backup_name)
         return backup.mvs_file_backup(ds_name, backup_name)
     except Exception as err:
-        module.fail_json(
-            msg=str(err.msg),
-            stdout=err.stdout,
-            stderr=err.stderr,
-            rc=err.rc
-        )
+        module.fail_json(msg=repr(err))
 
 
 def is_compatible(src_type, dest_type, copy_member, src_member):
@@ -1604,7 +1597,7 @@ def get_file_checksum(src):
             while block:
                 hash_digest.update(block)
                 block = infile.read(blksize)
-    except Exception as err:
+    except Exception:
         raise
     return hash_digest.hexdigest()
 
@@ -1744,6 +1737,7 @@ def run_module(module, arg_def):
             if copy_member:
                 dest_exists = dest_exists and dest_du.member_exists(dest_member)
             dest_ds_type = dest_du.ds_type()
+        # If temp_path; the plugin has copied a file from controller to USS for localized operation
         if temp_path or "/" in src:
             src_ds_type = "USS"
         else:
@@ -1785,6 +1779,7 @@ def run_module(module, arg_def):
                 res_args["note"] = "Destination is empty, backup request ignored"
             else:
                 backup_name = backup_data(dest, dest_ds_type, backup_name)
+
     # ********************************************************************
     # If destination does not exist, it must be created. To determine
     # what type of data set destination must be, a couple of simple checks
@@ -1797,6 +1792,9 @@ def run_module(module, arg_def):
     #
     # USS files and sequential data sets are not required to be explicitly
     # created; they are automatically created by the Python/ZOAU API.
+    #
+    # is_pds is determined in the plugin when src is a directory and destination
+    # is data set (is_src_dir and is_mvs_dest)
     # ********************************************************************
     else:
         if not dest_ds_type:
@@ -1807,16 +1805,6 @@ def run_module(module, arg_def):
                 or (src and os.path.isdir(src) and is_mvs_dest)
             ):
                 dest_ds_type = "PDSE"
-                pch = PDSECopyHandler(module, dest_exists, backup_name=backup_name)
-                pch.create_pdse(
-                    src,
-                    dest_name,
-                    alloc_size,
-                    src_ds_type,
-                    remote_src=remote_src,
-                    src_vol=src_ds_vol,
-                    alloc_vol=volume,
-                )
             elif src_ds_type == "VSAM":
                 dest_ds_type = "VSAM"
             elif not is_uss:
@@ -1923,6 +1911,17 @@ def run_module(module, arg_def):
         pdse_copy_handler = PDSECopyHandler(
             module, dest_exists, is_binary=is_binary, backup_name=backup_name
         )
+
+        pdse_copy_handler.create_pdse(
+            src,
+            dest_name,
+            alloc_size,
+            src_ds_type,
+            remote_src=remote_src,
+            src_vol=src_ds_vol,
+            alloc_vol=volume,
+        )
+
         if copy_member or os.path.isfile(temp_path or src) or src_member:
             dest = pdse_copy_handler.copy_to_member(
                 src,

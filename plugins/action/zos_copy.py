@@ -169,6 +169,7 @@ class ActionModule(ActionBase):
                             stat.S_IMODE(os.stat(src).st_mode)
                         )
                     task_args["size"] = os.stat(src).st_size
+                display.vvv(u"ibm_zos_copy calculated size: {0}".format(os.stat(src).st_size), host=self._play_context.remote_addr)
                 transfer_res = self._copy_to_remote(
                     src, is_dir=is_src_dir, ignore_stderr=ignore_sftp_stderr
                 )
@@ -176,6 +177,7 @@ class ActionModule(ActionBase):
             temp_path = transfer_res.get("temp_path")
             if transfer_res.get("msg"):
                 return transfer_res
+            display.vvv(u"ibm_zos_copy temp path: {0}".format(transfer_res.get("temp_path")), host=self._play_context.remote_addr)
 
         task_args.update(
             dict(

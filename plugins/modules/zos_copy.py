@@ -774,7 +774,6 @@ class CopyHandler(object):
                     stderr=response.stderr_response
                 )
 
-
     def copy_to_vsam(self, src, dest, alloc_vol):
         """ Copy source VSAM to destination VSAM. If source VSAM exists, then
         it will be deleted and a new VSAM cluster will be allocated.
@@ -795,7 +794,7 @@ class CopyHandler(object):
                 )
         self.allocate_model(dest, src, vol=alloc_vol)
 
-        #TODO:
+        # TODO:
         # We should look to see if a user has passed in their own DS spec for VSAM
         # in which case we should use that data to create a VSAM over this static
         # REPRO command and also when do we use the allocate_model over user spec?
@@ -1437,7 +1436,6 @@ class PDSECopyHandler(CopyHandler):
                 self._allocate_pdse(dest_name, size=size, alloc_vol=alloc_vol)
         else:
             self._allocate_pdse(dest_name, src=src, size=size, alloc_vol=alloc_vol)
-
 
     def _allocate_pdse(
         self,

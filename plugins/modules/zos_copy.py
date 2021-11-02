@@ -627,7 +627,7 @@ except Exception:
 
 MVS_PARTITIONED = frozenset({"PE", "PO", "PDSE", "PDS"})
 # Underlying code will map both BASIC and SEQ to PS
-MVS_SEQ = frozenset({"SEQ", "BASIC"})
+MVS_SEQ = frozenset({"PS", "SEQ", "BASIC"})
 
 
 class CopyHandler(object):

@@ -1910,15 +1910,16 @@ def run_module(module, arg_def):
             module, dest_exists, is_binary=is_binary, backup_name=backup_name
         )
 
-        pdse_copy_handler.create_pdse(
-            src,
-            dest_name,
-            alloc_size,
-            src_ds_type,
-            remote_src=remote_src,
-            src_vol=src_ds_vol,
-            alloc_vol=volume,
-        )
+        if not dest_ds_type:
+            pdse_copy_handler.create_pdse(
+                src,
+                dest_name,
+                alloc_size,
+                src_ds_type,
+                remote_src=remote_src,
+                src_vol=src_ds_vol,
+                alloc_vol=volume,
+            )
 
         if copy_member or os.path.isfile(temp_path or src) or src_member:
             dest = pdse_copy_handler.copy_to_member(

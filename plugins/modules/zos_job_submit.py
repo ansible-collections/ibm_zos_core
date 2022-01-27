@@ -19,7 +19,9 @@ __metaclass__ = type
 
 DOCUMENTATION = r"""
 module: zos_job_submit
-author: "Xiao Yuan Ma (@bjmaxy)"
+author:
+    - "Xiao Yuan Ma (@bjmaxy)"
+    - "Rich Parker (@richp405)"
 short_description: Submit JCL
 description:
     - Submit JCL from DATA_SET , USS, or LOCAL location.

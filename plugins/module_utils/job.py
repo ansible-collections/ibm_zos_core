@@ -193,13 +193,20 @@ def _zget_job_status(job_id="*", owner="*", job_name="*"):
             job["owner"] = entry.owner
 
             job["ret_code"] = {}
-            job["ret_code"]["msg"] = entry.status
-            job["ret_code"]["code"] = entry.rc
-            job["ret_code"]["msg_code"] = "hmmm"
-            job["ret_code"]["msg_txt"] = "...hmm..."
+            job["ret_code"]["msg"] = entry.status + " " + entry.rc
+            job["ret_code"]["msg_code"] = entry.rc
+
+            job["ret_code"]["code"] = ""
+            if len(entry.rc) > 0:
+                if entry.rc.isdigit():
+                    job["ret_code"]["code"] = int(entry.rc)
+
+            job["ret_code"]["msg_text"] = entry.status
+
             job["class"] = ""
             job["content_type"] = ""
 
+            job["ret_code"]["steps"] = []
             job["ddnames"] = []
             list_of_dds = list_dds(entry.id)
 
@@ -215,9 +222,11 @@ def _zget_job_status(job_id="*", owner="*", job_name="*"):
                 else:
                     dd["proctep"] = None
                 dd["byte_count"] = single_dd["length"]
-                dd["content"] = read_output( entry.id, single_dd["stepname"], single_dd["dataset"])
-                if "JESYSMSG" in single_dd["dataset"]:
-                    job["ret_code"]["steps"] = _parse_steps(dd["content"])
+                tmpcont = read_output( entry.id, single_dd["stepname"], single_dd["dataset"])
+                dd["content"] = tmpcont.split( "\n" )
+                # if "JESYSMSG" in single_dd["dataset"]:
+                #    job["ret_code"]["steps"] = _parse_steps(tmpcont)
+                job["ret_code"]["steps"].extend(_parse_steps(tmpcont))
 
                 job["ddnames"].append(dd)
 

@@ -37,6 +37,7 @@ version_added: "2.9"
 author:
   - "Jack Ho (@jacklotusho)"
   - "Demetrios Dimatos (@ddimatos)"
+  - "Rich Parker (@richp405)"
 options:
   job_id:
     description:
@@ -391,6 +392,11 @@ def run_module():
         results["changed"] = False
     except Exception as e:
         module.fail_json(msg=repr(e))
+
+# need to mod/expand job output here
+# ddnames sections need the content field
+# ret code needs steps subsection
+
     module.exit_json(**results)
 
 

@@ -394,7 +394,6 @@ def run_module():
         module.fail_json(msg=repr(e))
 
 # need to mod/expand job output here
-# ddnames sections need the content field
 # ret code needs steps subsection
 
     module.exit_json(**results)

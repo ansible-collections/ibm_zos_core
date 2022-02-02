@@ -240,7 +240,7 @@ def _zget_job_status(job_id="*", owner="*", job_name="*"):
                 if len(job["subsystem"]) < 1:
                     if "--  N O D E " in tmpcont:
                         tmptext = tmpcont.split("--  N O D E ")[1]
-                        job["subsystem"] = (tmptext.split()[0]).replace(" ", "")
+                        job["subsystem"] = (tmptext.split("\n")[0]).replace(" ", "")
 
 
 

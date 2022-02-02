@@ -233,18 +233,27 @@ def _zget_job_status(job_id="*", owner="*", job_name="*"):
                         job["class"] = tmptext.split(" ")[0]
 
                 if len(job["system"]) < 1:
-                    if "- SYS " in tmpcont:
-                        tmptext = tmpcont.split("- SYS ")[1]
-                        job["system"] = (tmptext.split()[0]).replace(" ", "")
+                    if "--  S Y S T E M  " in tmpcont:
+                        tmptext = tmpcont.split("--  S Y S T E M  ")[1]
+                        job["system"] = (tmptext.split("--",1)[0]).replace(" ", "")
 
                 if len(job["subsystem"]) < 1:
                     if "--  N O D E " in tmpcont:
                         tmptext = tmpcont.split("--  N O D E ")[1]
                         job["subsystem"] = (tmptext.split("\n")[0]).replace(" ", "")
 
+                if job["ret_code"]["msg_code"] == "?":
+                    if "JOB NOT RUN -" in tmpcont:
+                        tmptext = tmpcont.split("JOB NOT RUN -")[1].split("\n")[0]
+                        job["ret_code"]["msg"] = tmptext.strip()
+                        job["ret_code"]["msg_code"] = tmptext.split(" ")[-1].strip()
 
-
-            final_entries.append(job)
+                        job["ret_code"]["code"] = ""
+                        if len(job["ret_code"]["msg_code"]) > 0:
+                            if job["ret_code"]["msg_code"].isdigit():
+                                job["ret_code"]["code"] = int(job["ret_code"]["msg_code"])
+            if len(list_of_dds) > 1:
+                final_entries.append(job)
 
     if not final_entries:
         final_entries = _job_not_found(job_id, owner, job_name, "notused")

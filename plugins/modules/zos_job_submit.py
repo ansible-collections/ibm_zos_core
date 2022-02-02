@@ -548,7 +548,7 @@ else:
 POLLING_INTERVAL = 1
 POLLING_COUNT = 60
 
-JOB_COMPLETION_MESSAGES = ["CC", "ABEND", "SEC ERROR", "JCL ERROR"]
+JOB_COMPLETION_MESSAGES = ["CC", "ABEND", "SEC ERROR", "JCL ERROR", "JCLERR"]
 
 
 def submit_pds_jcl(src, module):
@@ -803,13 +803,7 @@ def run_module():
         except IndexError:
             pass
         except Exception as e:
-            if job_output_txt:
-              result["err_detail"] = "{1} {2}.\n".format(
-                "Error during job submission.  The output is:", job_output_txt or " "
-              )
-            else :
-              result["err_detail"] = "Error during job submission."
-
+            result["err_detail"] = "Error during job submission."
             module.fail_json(msg=repr(e), **result)
 
         if bool(job_output_txt):

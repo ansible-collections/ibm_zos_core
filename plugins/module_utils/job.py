@@ -188,8 +188,8 @@ def _zget_job_status(job_id="*", owner="*", job_name="*"):
 
             job["job_id"] = entry.id
             job["job_name"] = entry.name
-            job["subsystem"] = "unknown"
-            job["system"] = "unknown"
+            job["subsystem"] = ""
+            job["system"] = ""
             job["owner"] = entry.owner
 
             job["ret_code"] = {}
@@ -224,11 +224,25 @@ def _zget_job_status(job_id="*", owner="*", job_name="*"):
                 dd["byte_count"] = single_dd["length"]
                 tmpcont = read_output( entry.id, single_dd["stepname"], single_dd["dataset"])
                 dd["content"] = tmpcont.split( "\n" )
-                # if "JESYSMSG" in single_dd["dataset"]:
-                #    job["ret_code"]["steps"] = _parse_steps(tmpcont)
                 job["ret_code"]["steps"].extend(_parse_steps(tmpcont))
 
                 job["ddnames"].append(dd)
+                if len(job["class"]) < 1:
+                    if "- CLASS " in tmpcont:
+                        tmptext = tmpcont.split("- CLASS ")[1]
+                        job["class"] = tmptext.split(" ")[0]
+
+                if len(job["system"]) < 1:
+                    if "- SYS " in tmpcont:
+                        tmptext = tmpcont.split("- SYS ")[1]
+                        job["system"] = (tmptext.split()[0]).replace(" ", "")
+
+                if len(job["subsystem"]) < 1:
+                    if "--  N O D E " in tmpcont:
+                        tmptext = tmpcont.split("--  N O D E ")[1]
+                        job["subsystem"] = (tmptext.split()[0]).replace(" ", "")
+
+
 
             final_entries.append(job)
 

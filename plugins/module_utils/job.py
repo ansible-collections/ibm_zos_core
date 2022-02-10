@@ -143,6 +143,7 @@ def job_status(job_id=None, owner=None, job_name=None):
 
     return job_status
 
+
 def _parse_steps(job_str):
     """Parse the dd section of output to retrieve step-wise CC's
 
@@ -163,6 +164,7 @@ def _parse_steps(job_str):
             stp.append(st)
 
     return stp
+
 
 def _zget_job_status(job_id="*", owner="*", job_name="*"):
     if job_id == "*":
@@ -222,8 +224,8 @@ def _zget_job_status(job_id="*", owner="*", job_name="*"):
                 else:
                     dd["proctep"] = None
                 dd["byte_count"] = single_dd["length"]
-                tmpcont = read_output( entry.id, single_dd["stepname"], single_dd["dataset"])
-                dd["content"] = tmpcont.split( "\n" )
+                tmpcont = read_output(entry.id, single_dd["stepname"], single_dd["dataset"])
+                dd["content"] = tmpcont.split("\n")
                 job["ret_code"]["steps"].extend(_parse_steps(tmpcont))
 
                 job["ddnames"].append(dd)
@@ -235,7 +237,7 @@ def _zget_job_status(job_id="*", owner="*", job_name="*"):
                 if len(job["system"]) < 1:
                     if "--  S Y S T E M  " in tmpcont:
                         tmptext = tmpcont.split("--  S Y S T E M  ")[1]
-                        job["system"] = (tmptext.split("--",1)[0]).replace(" ", "")
+                        job["system"] = (tmptext.split("--", 1)[0]).replace(" ", "")
 
                 if len(job["subsystem"]) < 1:
                     if "--  N O D E " in tmpcont:
@@ -259,6 +261,7 @@ def _zget_job_status(job_id="*", owner="*", job_name="*"):
         final_entries = _job_not_found(job_id, owner, job_name, "notused")
 
     return final_entries
+
 
 def _ddname_pattern(contents, resolve_dependencies):
     """Resolver for ddname_pattern type arguments

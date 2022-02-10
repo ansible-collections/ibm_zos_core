@@ -163,12 +163,14 @@ try:
 except Exception:
     opercmd = MissingZOAUImport()
 
+
 def execute_command(operator_cmd, *args, **kwargs):
     response = opercmd.execute(operator_cmd, args, kwargs)
     rc = response.rc
     stdout = response.stdout_response
     stderr = response.stderr_response
     return rc, stdout, stderr
+
 
 def run_module():
     module_args = dict(
@@ -274,15 +276,16 @@ def run_operator_command(params):
     kwargs = {}
 
     if params.get("verbose"):
-      kwargs.update({"verbose": "verbose"})
+        kwargs.update({"verbose": "verbose"})
 
     if params.get("debug"):
-      kwargs.update({"debug": "debug"})
+        kwargs.update({"debug": "debug"})
 
     if params.get("wait"):
-      wait = params.get("wait_time")
-      if wait:
-          kwargs.update({"parameters": "ISFDELAY={0}".format(wait)})
+        wait = params.get("wait_time")
+        if wait:
+            # kwargs.update({"parameters": "ISFDELAY={0}".format(wait)})  ## old way based on sdsf
+            kwargs.update({"timeout": "{0}".format(wait)})
 
     # it *appears* IFSdelay is passing through correctly... did 1x-4x tests 0 to 20 seconds
 
@@ -290,14 +293,14 @@ def run_operator_command(params):
 
     args = []
 
-    rc, stdout, stderr = execute_command(cmdtxt, *args, **kwargs )
+    rc, stdout, stderr = execute_command(cmdtxt, *args, **kwargs)
 
     extrastdout = ""
     if params.get("verbose"):
-      extrastdout = "\n====================\nresult code: {0}\n====================".format(rc)
+        extrastdout = "\n====================\nresult code: {0}\n====================".format(rc)
 
     if rc > 0:
-        message = "\nOut: {0}\nErr: {1}\nRan: {2}".format( stdout + extrastdout, stderr, cmdtxt)
+        message = "\nOut: {0}\nErr: {1}\nRan: {2}".format(stdout + extrastdout, stderr, cmdtxt)
         raise OperatorCmdError(cmdtxt, rc, message.split("\n"))
 
     return {

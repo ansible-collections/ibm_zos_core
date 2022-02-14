@@ -143,6 +143,10 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
     AnsibleModuleHelper,
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
+    MissingZOAUImport,
+)
+
 from ansible.module_utils.six import PY3
 from tempfile import NamedTemporaryFile
 from stat import S_IEXEC, S_IREAD, S_IWRITE
@@ -151,7 +155,6 @@ from os import chmod
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,
 )
-from zoautil_py.types import ZOAUResponse
 
 if PY3:
     from shlex import quote
@@ -160,6 +163,7 @@ else:
 
 try:
     from zoautil_py import opercmd
+    from zoautil_py.types import ZOAUResponse
 except Exception:
     opercmd = MissingZOAUImport()
 

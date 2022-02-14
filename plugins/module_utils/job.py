@@ -182,7 +182,8 @@ def _zget_job_status(job_id="*", owner="*", job_name="*"):
     else:
         job_query = job_id
 
-    entries = listing(job_query, owner)
+    # entries = listing(job_query, owner)   1.2.0 has owner paramn, 1.1 does not
+    entries = listing(job_query)
 
     final_entries = []
     if entries:

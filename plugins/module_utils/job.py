@@ -226,20 +226,40 @@ def _zget_job_status(job_id="*", owner="*", job_name="*"):
             for single_dd in list_of_dds:
                 dd = {}
 
+                if not "dataset" in single_dd:
+                    continue
+
                 dd["ddname"] = single_dd["dataset"]
                 if "recnum" in single_dd:
                     dd["record_count"] = single_dd["recnum"]
                 else:
                     dd["record_count"] = "n/a"
 
-                dd["id"] = single_dd["dsid"]
-                dd["stepname"] = single_dd["stepname"]
+                if "dsid" in single_dd:
+                    dd["id"] = single_dd["dsid"]
+                else:
+                    dd["id"] = "?"
+
+                if "stepname" in single_dd:
+                    dd["stepname"] = single_dd["stepname"]
+                else:
+                    dd["stepname"] = "UNAVAIL"
+
                 if "procstep" in single_dd:
                     dd["procstep"] = single_dd["procstep"]
                 else:
                     dd["proctep"] = None
-                dd["byte_count"] = single_dd["length"]
-                tmpcont = read_output(entry.id, single_dd["stepname"], single_dd["dataset"])
+
+                if "length" in single_dd:
+                    dd["byte_count"] = single_dd["length"]
+                else:
+                    dd["byte_count"] = 0
+
+                if ("stepname" in single_dd) and ("dataset" in single_dd):
+                    tmpcont = read_output(entry.id, single_dd["stepname"], single_dd["dataset"])
+                else:
+                    tmpcont = "no content available"
+
                 dd["content"] = tmpcont.split("\n")
                 job["ret_code"]["steps"].extend(_parse_steps(tmpcont))
 

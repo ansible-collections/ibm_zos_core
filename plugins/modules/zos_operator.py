@@ -288,7 +288,8 @@ def run_operator_command(params):
     if params.get("wait"):
         wait = params.get("wait_time")
         if wait:
-            # kwargs.update({"parameters": "ISFDELAY={0}".format(wait)})  ## old way based on sdsf
+            # This is intentionally redundant... first link is for SDSF, second for zoau 1.2
+            kwargs.update({"parameters": "ISFDELAY={0}".format(wait)})
             kwargs.update({"timeout": "{0}".format(wait)})
 
     # it *appears* IFSdelay is passing through correctly... did 1x-4x tests 0 to 20 seconds

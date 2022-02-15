@@ -82,11 +82,11 @@ def test_zos_operator_positive_verbose_with_full_delay(ansible_zos_module):
     endmod = time.time()
     timediff = endmod - startmod
     if timediff < 4:
-        print( "\n........Full delay failed....\n")
-        print( results )
+        print("\n........Full delay failed....\n")
+        print(results)
         for result in results.contacted.values():
-            print( "\n......result.....\n")
-        print( "\n\n\n")
+            print("\n......result.....\n")
+        print("\n\n\n")
 
     assert timediff > 4
     for result in results.contacted.values():

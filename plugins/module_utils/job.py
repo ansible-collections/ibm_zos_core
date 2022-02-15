@@ -226,7 +226,7 @@ def _zget_job_status(job_id="*", owner="*", job_name="*"):
             for single_dd in list_of_dds:
                 dd = {}
 
-                if not "dataset" in single_dd:
+                if "dataset" not in single_dd:
                     continue
 
                 dd["ddname"] = single_dd["dataset"]

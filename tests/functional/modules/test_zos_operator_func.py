@@ -87,7 +87,7 @@ def test_zos_operator_positive_verbose_with_full_delay(ansible_zos_module):
 
         for result in results.contacted.values():
             print("\n......result.....\n")
-            print( "\n.......rc={0}\nchg={1}\ncon={1}\n".format(result["rc"], result.get("changed"), result.get("content")))
+            print( "\n.......rc={0}\nchg={1}\ncon={2}\n".format(result["rc"], result.get("changed"), result.get("content")))
 
         print("\n\n\n")
 

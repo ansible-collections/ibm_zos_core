@@ -227,7 +227,11 @@ def _zget_job_status(job_id="*", owner="*", job_name="*"):
                 dd = {}
 
                 dd["ddname"] = single_dd["dataset"]
-                dd["record_count"] = single_dd["recnum"]
+                if "recnum" in single_dd:
+                    dd["record_count"] = single_dd["recnum"]
+                else:
+                    dd["record_count"] = "n/a"
+
                 dd["id"] = single_dd["dsid"]
                 dd["stepname"] = single_dd["stepname"]
                 if "procstep" in single_dd:

@@ -286,7 +286,7 @@ def run_operator_command(params):
         kwargs.update({"debug": "debug"})
 
     if params.get("wait"):
-        wait = params.get("wait_time")
+        wait = params.get("wait_time_s")
         if wait:
             # This is intentionally redundant... first link is for SDSF, second for zoau 1.2
             kwargs.update({"parameters": "ISFDELAY={0}".format(wait)})

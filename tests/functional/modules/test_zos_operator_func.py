@@ -91,7 +91,7 @@ def test_zos_operator_positive_verbose_with_full_delay(ansible_zos_module):
 
         print("\n\n\n")
 
-    # assert timediff > 4
+    assert timediff > 4
     # for result in results.contacted.values():
     #    assert result["rc"] == 0
     #    assert result.get("changed") is True

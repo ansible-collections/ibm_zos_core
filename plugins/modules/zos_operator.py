@@ -143,10 +143,6 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
     AnsibleModuleHelper,
 )
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingZOAUImport,
-)
-
 from ansible.module_utils.six import PY3
 from tempfile import NamedTemporaryFile
 from stat import S_IEXEC, S_IREAD, S_IWRITE
@@ -155,6 +151,7 @@ from os import chmod
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,
 )
+from zoautil_py.types import ZOAUResponse
 
 if PY3:
     from shlex import quote
@@ -163,13 +160,12 @@ else:
 
 try:
     from zoautil_py import opercmd
-    from zoautil_py.types import ZOAUResponse
 except Exception:
     opercmd = MissingZOAUImport()
 
 
 def execute_command(operator_cmd, *args, **kwargs):
-    response = opercmd.execute(operator_cmd, args, kwargs)
+    response = opercmd.execute(operator_cmd, *args, **kwargs)
     rc = response.rc
     stdout = response.stdout_response
     stderr = response.stderr_response
@@ -288,10 +284,7 @@ def run_operator_command(params):
     if params.get("wait"):
         wait = params.get("wait_time_s")
         if wait:
-            # This is intentionally redundant... first link is for SDSF, second for zoau 1.2
-            # kwargs.update({"parameters": "ISFDELAY={0}".format(wait)})
-            # kwargs.update({"timeout": "{0}".format(wait)})
-            kwargs.update({"parameters": "ISFDELAY={0} timeout={0}".format(wait)})
+            kwargs.update({"parameters": "timeout={0} ISFDELAY={0}".format(wait)})
 
     # it *appears* IFSdelay is passing through correctly... did 1x-4x tests 0 to 20 seconds
 

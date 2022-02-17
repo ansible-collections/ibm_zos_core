@@ -57,7 +57,8 @@ options:
     required: false
   ddname:
     description:
-      - Data definition name. (e.g "JESJCL", "?")
+      - Data definition name (show only this DD on a found job).
+        (e.g "JESJCL", "?")
     type: str
     required: false
 """

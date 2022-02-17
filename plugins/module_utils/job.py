@@ -64,15 +64,13 @@ def job_output(job_id=None, owner=None, job_name=None, dd_name=None):
     owner = parsed_args.get("owner") or "*"
     dd_name = parsed_args.get("ddname") or ""
 
-    # job_detail = _zget_job_status(job_id=job_id, owner=owner, job_name=job_name)
-    job_detail = _zget_job_status(job_id, owner, job_name)
+    job_detail = _zget_job_status(job_id, owner, job_name, dd_name)
     if len(job_detail) == 0:
         # some systems have issues with "*" while some require it to see results
         job_id = "" if job_id == "*" else job_id
         owner = "" if owner == "*" else owner
         job_name = "" if job_name == "*" else job_name
-        # job_detail = _zget_job_status(job_id=job_id, owner=owner, job_name=job_name)
-        job_detail = _zget_job_status(job_id, owner, job_name)
+        job_detail = _zget_job_status(job_id, owner, job_name, dd_name)
     return job_detail
 
 
@@ -85,7 +83,7 @@ def _job_not_found(job_id, owner, job_name, dd_name, ovrr=None):
     job["job_name"] = job_name
     job["subsystem"] = None
     job["system"] = None
-    job["owner"] = None
+    job["owner"] = owner
 
     job["ret_code"] = {}
     job["ret_code"]["msg"] = "JOB NOT FOUND"
@@ -144,12 +142,12 @@ def job_status(job_id=None, owner=None, job_name=None):
     job_name = parsed_args.get("job_name") or "*"
     owner = parsed_args.get("owner") or "*"
 
-    job_status = _zget_job_status(job_id, owner, job_name)
+    job_status = _zget_job_status(job_id, owner, job_name, None)
     if len(job_status) == 0:
         job_id = "" if job_id == "*" else job_id
         job_name = "" if job_name == "*" else job_name
         owner = "" if owner == "*" else owner
-        job_status = _zget_job_status(job_id, owner, job_name)
+        job_status = _zget_job_status(job_id, owner, job_name, None)
 
     return job_status
 
@@ -176,7 +174,7 @@ def _parse_steps(job_str):
     return stp
 
 
-def _zget_job_status(job_id="*", owner="*", job_name="*"):
+def _zget_job_status(job_id="*", owner="*", job_name="*", dd_name=None):
     if job_id == "*":
         job_query = None
     else:
@@ -187,8 +185,6 @@ def _zget_job_status(job_id="*", owner="*", job_name="*"):
 
     final_entries = []
     if entries:
-        # jls output: owner=job[0], name=job[1], id=job[2], status=job[3], rc=job[4]
-        # e.g.: OMVSADM  HELLO    JOB00126 JCLERR   ?
         for entry in entries:
             if owner != "*":
                 if owner != entry.owner:
@@ -225,6 +221,9 @@ def _zget_job_status(job_id="*", owner="*", job_name="*"):
 
             for single_dd in list_of_dds:
                 dd = {}
+                if dd_name is not None:
+                    if dd_name not in single_dd["dataset"]:
+                        continue
 
                 if "dataset" not in single_dd:
                     continue

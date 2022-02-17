@@ -151,7 +151,6 @@ from os import chmod
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,
 )
-from zoautil_py.types import ZOAUResponse
 
 if PY3:
     from shlex import quote
@@ -160,6 +159,7 @@ else:
 
 try:
     from zoautil_py import opercmd
+    from zoautil_py.types import ZOAUResponse
 except Exception:
     opercmd = MissingZOAUImport()
 

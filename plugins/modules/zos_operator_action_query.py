@@ -191,6 +191,7 @@ def run_module():
         system=dict(type="str", required=False),
         message_id=dict(type="str", required=False),
         job_name=dict(type="str", required=False),
+        message_text=dict(type="str", required=False)
     )
 
     result = dict(changed=False)
@@ -243,6 +244,7 @@ def parse_params(params):
         system=dict(arg_type=system_type, required=False),
         message_id=dict(arg_type=message_id_type, required=False),
         job_name=dict(arg_type=job_name_type, required=False),
+        message_text=dict(arg_type=message_text_type, required=False)
     )
     parser = BetterArgParser(arg_defs)
     new_params = parser.parse_args(params)
@@ -265,6 +267,16 @@ def job_name_type(arg_val, params):
     regex = "^(?:[a-zA-Z0-9]{1,8})|(?:[a-zA-Z0-9]{0,7}[*])$"
     validate_parameters_based_on_regex(arg_val, regex)
     return arg_val.upper()
+
+
+def message_text_type(arg_val, params):
+    try:
+        raw_arg_val = r'{0}'.format(arg_val)
+        re.compile(raw_arg_val)
+    except re.error:
+        raise ValidationError(str(arg_val))
+
+    return raw_arg_val
 
 
 def validate_parameters_based_on_regex(value, regex):
@@ -299,13 +311,18 @@ def filter_requests(merged_list, params):
     system = params.get("system")
     message_id = params.get("message_id")
     job_name = params.get("job_name")
+    message_text = params.get("message_text")
     newlist = merged_list
+
     if system:
         newlist = handle_conditions(newlist, "system", system)
     if job_name:
         newlist = handle_conditions(newlist, "job_name", job_name)
     if message_id:
         newlist = handle_conditions(newlist, "message_id", message_id)
+    if message_text:
+        newlist = handle_conditions(newlist, "message_text", message_text)
+
     return newlist
 
 
@@ -313,10 +330,14 @@ def handle_conditions(list, condition_type, value):
     # regex = re.compile(condition_values)
     newlist = []
     for dict in list:
-        if value.endswith("*"):
+        if condition_type == 'message_text':
+            pattern = re.compile(value)
+            exist = pattern.match(dict.get(condition_type))
+        elif value.endswith("*"):
             exist = dict.get(condition_type).startswith(value.rstrip("*"))
         else:
             exist = dict.get(condition_type) == value
+
         if exist:
             newlist.append(dict)
     return newlist

@@ -27,6 +27,7 @@ description:
 author:
   - "Ping Xiao (@xiaoping8385)"
   - "Demetrios Dimatos (@ddimatos)"
+  - "Ivan Moreno (@rexemin)"
 options:
   system:
     description:
@@ -55,6 +56,16 @@ options:
       - A trailing asterisk, (*) wildcard is supported.
     type: str
     required: false
+  message_text:
+    description:
+        - Return outstanding messages requiring operator action awaiting a
+          reply that match a regex filter.
+        - If the message filter is not specified, all outstanding messages
+          are returned regardless of their content.
+        - Valid Python regular expressions are supported. See L(the official 
+          documentation,https://docs.python.org/3/library/re.html) for more information.
+    type: str
+    required: false
 seealso:
 - module: zos_operator
 """
@@ -72,11 +83,16 @@ EXAMPLES = r"""
   zos_operator_action_query:
       message_id: dsi*
 
-- name: Display all outstanding messages given job_name, message_id, system
+- name: Display all outstanding messages that have the text IMS READY in them
+  zos_operator_action_query:
+      message_text: ^.*IMS READY.*$
+
+- name: Display all outstanding messages given job_name, message_id, system, message_text
   zos_operator_action_query:
       job_name: mq*
       message_id: dsi*
       system: mv29
+      message_text: ^.*IMS.*$
 """
 
 RETURN = r"""

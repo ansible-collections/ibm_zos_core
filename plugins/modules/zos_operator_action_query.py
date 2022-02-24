@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from __future__ import absolute_import, division, print_function
+from dataclasses import replace
 
 __metaclass__ = type
 
@@ -58,12 +59,12 @@ options:
     required: false
   message_text:
     description:
-        - Return outstanding messages requiring operator action awaiting a
-          reply that match a regex filter.
-        - If the message filter is not specified, all outstanding messages
-          are returned regardless of their content.
-        - Valid Python regular expressions are supported. See L(the official 
-          documentation,https://docs.python.org/3/library/re.html) for more information.
+      - Return outstanding messages requiring operator action awaiting a
+        reply that match a regex filter.
+      - If the message filter is not specified, all outstanding messages
+        are returned regardless of their content.
+      - The module creates a regex from the value provided that matches
+        it anywhere on the message.
     type: str
     required: false
 seealso:
@@ -85,14 +86,14 @@ EXAMPLES = r"""
 
 - name: Display all outstanding messages that have the text IMS READY in them
   zos_operator_action_query:
-      message_text: ^.*IMS READY.*$
+      message_text: IMS READY
 
 - name: Display all outstanding messages given job_name, message_id, system, message_text
   zos_operator_action_query:
       job_name: mq*
       message_id: dsi*
       system: mv29
-      message_text: ^.*IMS.*$
+      message_text: IMS
 """
 
 RETURN = r"""
@@ -287,7 +288,8 @@ def job_name_type(arg_val, params):
 
 def message_text_type(arg_val, params):
     try:
-        raw_arg_val = r'{0}'.format(arg_val)
+        # Creating a regex that can match literally the arg anywhere in the text.
+        raw_arg_val = r'^.*{0}.*$'.format(re.escape(arg_val))
         re.compile(raw_arg_val)
     except re.error:
         raise ValidationError(str(arg_val))

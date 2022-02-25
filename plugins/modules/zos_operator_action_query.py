@@ -56,7 +56,7 @@ options:
       - A trailing asterisk, (*) wildcard is supported.
     type: str
     required: false
-  message_text:
+  msg_filter:
     description:
         - Return outstanding messages requiring operator action awaiting a
           reply that match a regex filter.
@@ -64,6 +64,7 @@ options:
           are returned regardless of their content.
         - Valid Python regular expressions are supported. See L(the official 
           documentation,https://docs.python.org/3/library/re.html) for more information.
+        - Regular expressions are compiled with the flag re.DOTALL.
     type: str
     required: false
 seealso:
@@ -85,14 +86,14 @@ EXAMPLES = r"""
 
 - name: Display all outstanding messages that have the text IMS READY in them
   zos_operator_action_query:
-      message_text: ^.*IMS READY.*$
+      msg_filter: ^.*IMS READY.*$
 
-- name: Display all outstanding messages given job_name, message_id, system, message_text
+- name: Display all outstanding messages given job_name, message_id, system, msg_filter
   zos_operator_action_query:
       job_name: mq*
       message_id: dsi*
       system: mv29
-      message_text: ^.*IMS.*$
+      msg_filter: ^.*IMS.*$
 """
 
 RETURN = r"""
@@ -207,7 +208,7 @@ def run_module():
         system=dict(type="str", required=False),
         message_id=dict(type="str", required=False),
         job_name=dict(type="str", required=False),
-        message_text=dict(type="str", required=False)
+        msg_filter=dict(type="str", required=False)
     )
 
     result = dict(changed=False)
@@ -240,7 +241,7 @@ def run_module():
                 cmd="d r,a,jn",
             )
 
-        merged_list = create_merge_list(cmd_result_a.message, cmd_result_b.message)
+        merged_list = create_merge_list(cmd_result_a.message, cmd_result_b.message, new_params['msg_filter'])
         requests = find_required_request(merged_list, new_params)
         if requests:
             result["count"] = len(requests)
@@ -260,7 +261,7 @@ def parse_params(params):
         system=dict(arg_type=system_type, required=False),
         message_id=dict(arg_type=message_id_type, required=False),
         job_name=dict(arg_type=job_name_type, required=False),
-        message_text=dict(arg_type=message_text_type, required=False)
+        msg_filter=dict(arg_type=msg_filter_type, required=False)
     )
     parser = BetterArgParser(arg_defs)
     new_params = parser.parse_args(params)
@@ -285,7 +286,7 @@ def job_name_type(arg_val, params):
     return arg_val.upper()
 
 
-def message_text_type(arg_val, params):
+def msg_filter_type(arg_val, params):
     try:
         raw_arg_val = r'{0}'.format(arg_val)
         re.compile(raw_arg_val)
@@ -310,14 +311,14 @@ def find_required_request(merged_list, params):
     return requests
 
 
-def create_merge_list(message_a, message_b):
+def create_merge_list(message_a, message_b, msg_filter):
     """Merge the return lists that execute both 'd r,a,s' and 'd r,a,jn'.
     For example, if we have:
     'd r,a,s' response like: "742 R MV28     JOB57578 &742 ARC0055A REPLY 'GO'OR 'CANCEL'"
     'd r,a,jn' response like:"742 R FVFNT29H &742 ARC0055A REPLY 'GO' OR 'CANCEL'"
     the results will be merged so that a full list of information returned on condition"""
-    list_a = parse_result_a(message_a)
-    list_b = parse_result_b(message_b)
+    list_a = parse_result_a(message_a, msg_filter)
+    list_b = parse_result_b(message_b, msg_filter)
     merged_list = merge_list(list_a, list_b)
     return merged_list
 
@@ -327,7 +328,6 @@ def filter_requests(merged_list, params):
     system = params.get("system")
     message_id = params.get("message_id")
     job_name = params.get("job_name")
-    message_text = params.get("message_text")
     newlist = merged_list
 
     if system:
@@ -336,8 +336,6 @@ def filter_requests(merged_list, params):
         newlist = handle_conditions(newlist, "job_name", job_name)
     if message_id:
         newlist = handle_conditions(newlist, "message_id", message_id)
-    if message_text:
-        newlist = handle_conditions(newlist, "message_text", message_text)
 
     return newlist
 
@@ -346,10 +344,7 @@ def handle_conditions(list, condition_type, value):
     # regex = re.compile(condition_values)
     newlist = []
     for dict in list:
-        if condition_type == 'message_text':
-            pattern = re.compile(value)
-            exist = pattern.match(dict.get(condition_type))
-        elif value.endswith("*"):
+        if value.endswith("*"):
             exist = dict.get(condition_type).startswith(value.rstrip("*"))
         else:
             exist = dict.get(condition_type) == value
@@ -368,7 +363,12 @@ def execute_command(operator_cmd):
     return OperatorQueryResult(rc, stdout, stderr)
 
 
-def parse_result_a(result):
+def match_raw_message(msg, msg_filter):
+    pattern = re.compile(msg_filter, re.DOTALL)
+    return pattern.match(msg)
+
+
+def parse_result_a(result, msg_filter):
     """parsing the result that coming from command 'd r,a,s',
     there are usually two formats:
      - line with job_id: 810 R MV2D     JOB58389 &810 ARC0055A REPLY 'GO' OR 'CANCEL'
@@ -384,6 +384,9 @@ def parse_result_a(result):
         re.MULTILINE,
     )
     for match in match_iter:
+        if msg_filter is not None and not match_raw_message(match.string, msg_filter):
+            continue
+
         dict_temp = {
             "number": match.group(1),
             "type": match.group(2),
@@ -398,7 +401,7 @@ def parse_result_a(result):
     return list
 
 
-def parse_result_b(result):
+def parse_result_b(result, msg_filter):
     """Parse the result that comes from command 'd r,a,jn', the main purpose
     to use this command is to get the job_name and message id, which is not
     included in 'd r,a,s'"""
@@ -413,6 +416,9 @@ def parse_result_b(result):
     )
 
     for match in match_iter:
+        if msg_filter is not None and not match_raw_message(match.string, msg_filter):
+            continue
+
         dict_temp = {
             "number": match.group(1),
             "job_name": match.group(2),

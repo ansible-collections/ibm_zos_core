@@ -38,9 +38,12 @@ dummy_dict4_uppercase = {"message_id": "DFH*", "system": "MV28"}
 
 dummy_dict4_lowercase = {"message_id": "DFH*", "system": "mv28"}
 
-dummy_dict5 = {"system": "mv27", "message_id": "DFS*", "job_name": "IM5H*"}
+dummy_dict5 = {"message_filter": "^.*IMS.*$"}
+
+dummy_dict6 = {"system": "mv27", "message_id": "DFS*", "job_name": "IM5H*", "message_filter": "^.*IMS.*$"}
 
 dummy_dict_invalid_message = {"message_id": "$$#$%#"}
+dummy_dict_invalid_filter = {"message_filter": "*IMS"}
 dummy_dict_invalid_job_name = {"job_name": "IM5H123456"}
 dummy_dict_invalid_system = {"system": "mv2712345"}
 
@@ -52,7 +55,9 @@ test_data = [
     (dummy_dict4_uppercase, True),
     (dummy_dict4_lowercase, True),
     (dummy_dict5, True),
+    (dummy_dict6, True),
     (dummy_dict_invalid_message, False),
+    (dummy_dict_invalid_filter, False),
     (dummy_dict_invalid_job_name, False),
     (dummy_dict_invalid_system, False),
 ]

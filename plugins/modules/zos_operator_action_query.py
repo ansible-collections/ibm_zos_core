@@ -146,8 +146,9 @@ actions:
             sample: STC01537
         message_text:
             description:
-                Job identifier for outstanding message requiring operator
-                action awaiting a reply.
+                Content of the outstanding message requiring operator
+                action awaiting a reply. If I(message_filter) is set,
+                I(message_text) will be filtered accordingly.
             returned: success
             type: str
             sample: "*399 HWSC0000I *IMS CONNECT READY* IM5HCONN"
@@ -159,7 +160,7 @@ actions:
             type: str
             sample: IM5HCONN
         message_id:
-            description:
+            description :
                 Message identifier for outstanding message requiring operator
                 action awaiting a reply.
             returned: success

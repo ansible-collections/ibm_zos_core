@@ -62,7 +62,7 @@ def job_output(job_id=None, owner=None, job_name=None, dd_name=None):
     job_id = parsed_args.get("job_id") or "*"
     job_name = parsed_args.get("job_name") or "*"
     owner = parsed_args.get("owner") or "*"
-    dd_name = parsed_args.get("ddname") or ""
+    dd_name = parsed_args.get("dd_name") or ""
 
     job_detail = _zget_job_status(job_id, owner, job_name, dd_name)
     if len(job_detail) == 0:
@@ -114,13 +114,14 @@ def _job_not_found(job_id, owner, job_name, dd_name, ovrr=None):
     return jobs
 
 
-def job_status(job_id=None, owner=None, job_name=None):
+def job_status(job_id=None, owner=None, job_name=None, dd_name=None):
     """Get the status information of a z/OS job based on various search criteria.
 
     Keyword Arguments:
         job_id {str} -- The job ID to search for (default: {None})
         owner {str} -- The owner of the job (default: {None})
         job_name {str} -- The job name search for (default: {None})
+        dd_name {str} -- If populated, return ONLY this DD in the job list (default: {None})
 
     Returns:
         list[dict] -- The status information for a list of jobs matching search criteria.
@@ -131,23 +132,25 @@ def job_status(job_id=None, owner=None, job_name=None):
         job_id=dict(arg_type="qualifier_pattern"),
         owner=dict(arg_type="qualifier_pattern"),
         job_name=dict(arg_type="qualifier_pattern"),
+        dd_name=dict(arg_type="str"),
     )
 
     parser = BetterArgParser(arg_defs)
     parsed_args = parser.parse_args(
-        {"job_id": job_id, "owner": owner, "job_name": job_name}
+        {"job_id": job_id, "owner": owner, "job_name": job_name, "dd_name": dd_name}
     )
 
     job_id = parsed_args.get("job_id") or "*"
     job_name = parsed_args.get("job_name") or "*"
     owner = parsed_args.get("owner") or "*"
+    dd_name = parsed_args.get("dd_name")
 
-    job_status = _zget_job_status(job_id, owner, job_name, None)
+    job_status = _zget_job_status(job_id, owner, job_name, dd_name)
     if len(job_status) == 0:
         job_id = "" if job_id == "*" else job_id
         job_name = "" if job_name == "*" else job_name
         owner = "" if owner == "*" else owner
-        job_status = _zget_job_status(job_id, owner, job_name, None)
+        job_status = _zget_job_status(job_id, owner, job_name, dd_name)
 
     return job_status
 

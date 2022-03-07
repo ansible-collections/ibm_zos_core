@@ -243,6 +243,7 @@ def query_jobs(params):
     job_name_in = params.get("job_name")
     job_id = params.get("job_id")
     owner = params.get("owner")
+
     jobs = []
     if job_id:
         jobs = job_status(job_id=job_id)

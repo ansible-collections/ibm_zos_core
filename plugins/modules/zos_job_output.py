@@ -389,7 +389,7 @@ def run_module():
 
     try:
         results = {}
-        results["jobs"] = job_output(job_id, owner, job_name, ddname)
+        results["jobs"] = job_output(job_id=job_id, owner=owner, job_name=job_name, dd_name=ddname)
         results["changed"] = False
     except Exception as e:
         module.fail_json(msg=repr(e))

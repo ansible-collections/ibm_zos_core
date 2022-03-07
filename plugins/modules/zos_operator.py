@@ -287,9 +287,8 @@ def run_operator_command(params):
     if params.get("wait"):
         wait = params.get("wait_time_s")
         if wait:
-            kwargs.update({"parameters": "timeout={0} ISFDELAY={0}".format(wait)})
-
-    # it *appears* IFSdelay is passing through correctly... did 1x-4x tests 0 to 20 seconds
+            kwargs.update({"timeout": "{0}".format(wait)})
+            kwargs.update({"parameters": "ISFDELAY={0}".format(wait)})
 
     cmdtxt = params.get("cmd")
 

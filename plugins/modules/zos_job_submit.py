@@ -538,6 +538,8 @@ from os import chmod, path, remove, stat
 from time import sleep
 from ansible.module_utils.basic import AnsibleModule
 
+from zoautil_py.jobs import submit
+from zoautil_py.types import ZOAUResponse, Job
 
 if PY3:
     from shlex import quote
@@ -551,37 +553,58 @@ POLLING_COUNT = 60
 JOB_COMPLETION_MESSAGES = ["CC", "ABEND", "SEC ERROR", "JCL ERROR", "JCLERR"]
 
 
-def submit_pds_jcl(src, module):
+def submit_pds_jcl(src, module, timeout=0):
     """ A wrapper around zoautil_py Jobs submit to raise exceptions on failure. """
-    rc, stdout, stderr = module.run_command(
-        'submit -j "//{0}"'.format(quote(src)), use_unsafe_shell=True
-    )
-    if rc != 0:
-        raise SubmitJCLError("Submit job failed:  Stderr :" + stderr)
-    if "Error" in stderr or "Not accepted by JES" in stderr:
-        raise SubmitJCLError("Submit job failed: " + stderr)
-    if stdout != "":
-        jobId = stdout.replace("\n", "").strip()
-    else:
-        raise SubmitJCLError(
-            "Submit job failed: no job ID was returned.  Please check the JCL."
-        )
+    # rc, stdout, stderr = module.run_command(
+    #     'submit -j "//{0}"'.format(quote(src)), use_unsafe_shell=True
+    # )
+    # if rc != 0:
+    #     raise SubmitJCLError("Submit job failed:  Stderr :" + stderr)
+    # if "Error" in stderr or "Not accepted by JES" in stderr:
+    #     raise SubmitJCLError("Submit job failed: " + stderr)
+    # if stdout != "":
+    #     jobId = stdout.replace("\n", "").strip()
+    # else:
+    #     raise SubmitJCLError(
+    #         "Submit job failed: no job ID was returned.  Please check the JCL."
+    #     )
+    kwargs = {}
+
+    wait=False
+    if timeout > 0:
+      wait=True
+      kwargs.update({"timeout": "{0}".format(timeout)})
+
+    job_listing = submit(src, wait, None, **kwargs)
+
+    jobId = job_listing["id"]
     return jobId
 
 
-def submit_uss_jcl(src, module):
+def submit_uss_jcl(src, module, timeout=0):
     """ Submit uss jcl. Use uss command submit -j jclfile. """
-    rc, stdout, stderr = module.run_command(["submit", "-j", src])
-    if rc != 0:
-        raise SubmitJCLError("Submit job failed:  Stderr :" + stderr)
-    if "Error" in stderr or "Not accepted by JES" in stderr:
-        raise SubmitJCLError("Submit job failed: " + stderr)
-    if stdout != "":
-        jobId = stdout.replace("\n", "").strip()
-    else:
-        raise SubmitJCLError(
-            "Submit job failed: no job ID was returned.  Please check the JCL."
-        )
+    # rc, stdout, stderr = module.run_command(["submit", "-j", src])
+    # if rc != 0:
+    #     raise SubmitJCLError("Submit job failed:  Stderr :" + stderr)
+    # if "Error" in stderr or "Not accepted by JES" in stderr:
+    #     raise SubmitJCLError("Submit job failed: " + stderr)
+    # if stdout != "":
+    #     jobId = stdout.replace("\n", "").strip()
+    # else:
+    #     raise SubmitJCLError(
+    #         "Submit job failed: no job ID was returned.  Please check the JCL."
+    #     )
+    ## kwargs[timeout]
+    kwargs = {}
+
+    wait=False
+    if timeout > 0:
+      wait=True
+      kwargs.update({"timeout": "{0}".format(timeout)})
+
+    job_listing = submit(src, wait, None, **kwargs)
+
+    jobId = job_listing["id"]
     return jobId
 
 
@@ -736,6 +759,8 @@ def run_module():
             msg="The option wait_time_s is not valid.  It must be greater than 0.",
             **result
         )
+    if not wait:
+      wait_time_s = 0
 
     DSN_REGEX = r"^(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}(?:\([A-Z$#@]{1}[A-Z0-9$#@]{0,7}\)){0,1}$"
     try:
@@ -753,7 +778,7 @@ def run_module():
                     **result
                 )
         elif location == "USS":
-            jobId = submit_uss_jcl(src, module)
+            jobId = submit_uss_jcl(src, module, wait_time_s)
         else:
             # For local file, it has been copied to the temp directory in action plugin.
             from_encoding = encoding.get("from")
@@ -771,7 +796,7 @@ def run_module():
                 use_unsafe_shell=True,
             )
             if conv_rc == 0:
-                jobId = submit_uss_jcl(temp_file_2.name, module)
+                jobId = submit_uss_jcl(temp_file_2.name, module, wait_time_s)
             else:
                 module.fail_json(
                     msg="The Local file encoding conversion failed. Please check the source file."

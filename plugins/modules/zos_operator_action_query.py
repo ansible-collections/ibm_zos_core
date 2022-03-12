@@ -62,11 +62,28 @@ options:
           reply that match a regex filter.
         - If the message filter is not specified, all outstanding messages
           are returned regardless of their content.
-        - Valid Python regular expressions are supported. See L(the official 
-          documentation,https://docs.python.org/3/library/re.html) for more information.
-        - Regular expressions are compiled with the flag re.DOTALL.
-    type: str
+    type: dict
     required: false
+    suboptions:
+        filter:
+            description:
+                - Specifies the substring or regex to match to the outstanding messages,
+                  see I(use_regex).
+                - All special characters from a filter string that is not a regex are escaped.
+                - Valid Python regular expressions are supported. See L(the official 
+                documentation,https://docs.python.org/3/library/re.html) for more information.
+                - Regular expressions are compiled with the flag re.DOTALL.
+            required: True
+            type: str
+        use_regex:
+            description: 
+                - If False, the module assumes that I(filter) is not a regex string and 
+                  matches anywhere the I(filter) substring on the outstanding messages.
+                - If True, the module creates a regex from the I(filter) string and matches 
+                  it to the outstanding messages.
+            required: False
+            type: bool
+            default: False
 seealso:
 - module: zos_operator
 """
@@ -86,14 +103,17 @@ EXAMPLES = r"""
 
 - name: Display all outstanding messages that have the text IMS READY in them
   zos_operator_action_query:
-      message_filter: ^.*IMS READY.*$
+      message_filter: 
+          filter: IMS READY
 
 - name: Display all outstanding messages given job_name, message_id, system, message_filter
   zos_operator_action_query:
       job_name: mq*
       message_id: dsi*
       system: mv29
-      message_filter: ^.*IMS.*$
+      message_filter: 
+          filter: ^.*IMS.*$
+          use_regex: yes
 """
 
 RETURN = r"""
@@ -209,7 +229,14 @@ def run_module():
         system=dict(type="str", required=False),
         message_id=dict(type="str", required=False),
         job_name=dict(type="str", required=False),
-        message_filter=dict(type="str", required=False)
+        message_filter=dict(
+            type="dict", 
+            required=False,
+            options=dict(
+                filter=dict(type="str", required=True),
+                use_regex=dict(default=False, type="bool", required=False)
+            )
+        )
     )
 
     result = dict(changed=False)
@@ -289,7 +316,14 @@ def job_name_type(arg_val, params):
 
 def message_filter_type(arg_val, params):
     try:
-        raw_arg_val = r'{0}'.format(arg_val)
+        filter_text = arg_val.get("filter")
+        use_regex = arg_val.get("use_regex")
+
+        if use_regex:
+            raw_arg_val = r'{0}'.format(filter_text)
+        else:
+            raw_arg_val = r'^.*{0}.*$'.format(re.escape(filter_text))
+
         re.compile(raw_arg_val)
     except re.error:
         raise ValidationError(str(arg_val))

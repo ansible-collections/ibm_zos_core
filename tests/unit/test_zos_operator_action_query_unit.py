@@ -38,12 +38,12 @@ dummy_dict4_uppercase = {"message_id": "DFH*", "system": "MV28"}
 
 dummy_dict4_lowercase = {"message_id": "DFH*", "system": "mv28"}
 
-dummy_dict5 = {"message_filter": "^.*IMS.*$"}
+dummy_dict5 = {"message_filter": {"filter": "^.*IMS.*$", "use_regex": True}}
 
-dummy_dict6 = {"system": "mv27", "message_id": "DFS*", "job_name": "IM5H*", "message_filter": "^.*IMS.*$"}
+dummy_dict6 = {"system": "mv27", "message_id": "DFS*", "job_name": "IM5H*", "message_filter": {"filter": "IMS"}}
 
 dummy_dict_invalid_message = {"message_id": "$$#$%#"}
-dummy_dict_invalid_filter = {"message_filter": "*IMS"}
+dummy_dict_invalid_filter = {"message_filter": {"filter": "*IMS", "use_regex": True}}
 dummy_dict_invalid_job_name = {"job_name": "IM5H123456"}
 dummy_dict_invalid_system = {"system": "mv2712345"}
 

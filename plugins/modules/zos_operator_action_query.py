@@ -58,32 +58,32 @@ options:
     required: false
   message_filter:
     description:
-        - Return outstanding messages requiring operator action awaiting a
-          reply that match a regex filter.
-        - If the message filter is not specified, all outstanding messages
-          are returned regardless of their content.
+      - Return outstanding messages requiring operator action awaiting a
+        reply that match a regex filter.
+      - If the message filter is not specified, all outstanding messages
+        are returned regardless of their content.
     type: dict
     required: false
     suboptions:
-        filter:
-            description:
-                - Specifies the substring or regex to match to the outstanding messages,
-                  see I(use_regex).
-                - All special characters from a filter string that is not a regex are escaped.
-                - Valid Python regular expressions are supported. See L(the official 
-                documentation,https://docs.python.org/3/library/re.html) for more information.
-                - Regular expressions are compiled with the flag re.DOTALL.
-            required: True
-            type: str
-        use_regex:
-            description: 
-                - If False, the module assumes that I(filter) is not a regex string and 
-                  matches anywhere the I(filter) substring on the outstanding messages.
-                - If True, the module creates a regex from the I(filter) string and matches 
-                  it to the outstanding messages.
-            required: False
-            type: bool
-            default: False
+      filter:
+        description:
+          - Specifies the substring or regex to match to the outstanding messages,
+            see I(use_regex).
+          - All special characters from a filter string that is not a regex are escaped.
+          - Valid Python regular expressions are supported. See L(the official
+            documentation,https://docs.python.org/3/library/re.html) for more information.
+          - Regular expressions are compiled with the flag re.DOTALL.
+        required: True
+        type: str
+      use_regex:
+        description:
+          - If False, the module assumes that I(filter) is not a regex string and
+            matches anywhere the I(filter) substring on the outstanding messages.
+          - If True, the module creates a regex from the I(filter) string and matches
+            it to the outstanding messages.
+        required: False
+        type: bool
+        default: False
 seealso:
 - module: zos_operator
 """
@@ -103,7 +103,7 @@ EXAMPLES = r"""
 
 - name: Display all outstanding messages that have the text IMS READY in them
   zos_operator_action_query:
-      message_filter: 
+      message_filter:
           filter: IMS READY
 
 - name: Display all outstanding messages given job_name, message_id, system, message_filter
@@ -111,7 +111,7 @@ EXAMPLES = r"""
       job_name: mq*
       message_id: dsi*
       system: mv29
-      message_filter: 
+      message_filter:
           filter: ^.*IMS.*$
           use_regex: yes
 """
@@ -230,7 +230,7 @@ def run_module():
         message_id=dict(type="str", required=False),
         job_name=dict(type="str", required=False),
         message_filter=dict(
-            type="dict", 
+            type="dict",
             required=False,
             options=dict(
                 filter=dict(type="str", required=True),

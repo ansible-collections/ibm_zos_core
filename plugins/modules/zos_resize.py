@@ -14,6 +14,7 @@
 
 
 from __future__ import absolute_import, division, print_function
+from posixpath import split
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     MissingZOAUImport,
 )
@@ -41,7 +42,9 @@ author:
 short_description: Resize a zfs data set.
 description:
   - The module M(zos_resize) can resize a zfs aggregate data set.
-  - The I(target) data set must be unique and a Fully Qualified Name (FQN) of a 1-OS zfs aggregate data set.
+  - The I(target) data set must be either:
+    - A unique and a Fully Qualified Name (FQN) of a 1-OS zfs aggregate data set, or
+    - A full path of a mount point, which will be used to look up the data set's FQDN.
   - The data set must be attached read-write, and contain only one Operating system.
   - I(size) in K must be provided.
 options:
@@ -68,6 +71,12 @@ RETURN = r"""
 target:
     description:
         - The Fully Qualified Name of zfs data set that is to be resized.
+    returned: always
+    type: str
+    sample: SOMEUSER.VVV.ZFS
+mount_target:
+    description:
+        - The original share/mount name provided.
     returned: always
     type: str
     sample: SOMEUSER.VVV.ZFS
@@ -162,6 +171,7 @@ def run_module(module, arg_def):
     res_args.update(
         dict(
             target=target,
+            mount_target=target,
             size=size,
             cmd="start",
             changed=changed,
@@ -171,12 +181,49 @@ def run_module(module, arg_def):
         )
     )
 
-    # data set to be resized must exist
+    # data set to be resized must exist, but could be a mount point
+    # df | grep -i /temp
+    # /temp/agtest   (TESTAG.GGS.ZFS)          8576/12960     4294967292 Available
+
     fs_du = data_set.DataSetUtils(target)
     fs_exists = fs_du.exists()
+    oldsize, oldfree = get_agg_size(target)
+    oldsize = int(oldsize)
+    oldfree = int(oldfree)
+
+    if fs_exists is False or oldsize < 0 or oldfree < 0:
+        cmdstr = "df"
+        rc, stdout, stderr = module.run_command(cmdstr)
+        found = False
+
+        if rc == 0:
+            stdout_lines = stdout.split("\n")
+            for line in stdout_lines:
+                if len(line) > 2:
+                    columns = line.split()
+                    if target in columns[0]:
+                        new_target = columns[1].strip("\t\n\r\')(")
+                        res_args.update(
+                            dict(
+                                target=new_target
+                            )
+                        )
+                        target = new_target
+                        fs_du = data_set.DataSetUtils(target)
+                        fs_exists = fs_du.exists()
+                        found = True
+                        break
+            if found is False:
+                module.fail_json( msg="Resize: could not locate {0}".format(target),
+                    stderr="No error reported: string not found." )
+        else:
+            module.fail_json( msg="Resize: df command failed",
+            stderr=stderr)
+
+
     if fs_exists is False:
         module.fail_json(
-            msg="Resize target (" + target + ") doesn't exist",
+            msg="Resize issue target ({0}) does not exist.".format(target),
             stderr=str(res_args)
         )
 
@@ -185,7 +232,7 @@ def run_module(module, arg_def):
     oldfree = int(oldfree)
     if oldsize < 0 or oldfree < 0:
         module.fail_json(
-            msg="Resize: initial size check failed on '" + target + "'.",
+            msg="Resize: initial size check failed on ({0}).".format(target),
             stderr=str(res_args)
         )
     else:

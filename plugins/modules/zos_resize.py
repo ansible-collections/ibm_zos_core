@@ -198,6 +198,7 @@ def run_module(module, arg_def):
 
         if rc == 0:
             stdout_lines = stdout.split("\n")
+            target = target.rstrip(" \\/")
             for line in stdout_lines:
                 if len(line) > 2:
                     columns = line.split()

@@ -56,11 +56,13 @@ def test_resize_missing_aggname(ansible_zos_module):
 
 def test_resize_actual_shrink(ansible_zos_module):
     hosts = ansible_zos_module
-    defstr = "zfsadm define -aggregate {0} -volumes {1} -kilobytes 500 1".format(
+    defstr = "zfsadm define -aggregate {0} -volumes {1} -kilobytes 5000 1".format(
         DEFAULT_RESIZE_DSNAME, DEFAULT_VOLUME)
     formstr = "zfsadm format -aggregate {0}".format(DEFAULT_RESIZE_DSNAME)
     mountstr = "/usr/sbin/mount -t zfs -f {0} {1}".format(
         DEFAULT_RESIZE_DSNAME, TEMP_RESIZE_PATH)
+    unmountstr = "/usr/sbin/unmount {0}".format(
+        TEMP_RESIZE_PATH)
 
     hosts.all.command(defstr)
     hosts.all.command(formstr)
@@ -71,11 +73,25 @@ def test_resize_actual_shrink(ansible_zos_module):
     # Testing shrink so we don't have to deal with out-of-space scenarios, leading to false-positive failure
     results = hosts.all.zos_resize(
         target=DEFAULT_RESIZE_DSNAME,
-        size=400,
+        size=4000,
     )
-
-    hosts.all.zos_data_set(name=DEFAULT_RESIZE_DSNAME, state="absent")
-    hosts.all.file(path=TEMP_RESIZE_PATH, state="absent")
 
     for result in results.contacted.values():
         assert result.get("changed") is True
+
+    # Testing (re)grow on the same data set, so that it doesn't need re-created
+    # This is also checking that passing the path, instead of the DS, works
+
+    results = hosts.all.zos_resize(
+        target=TEMP_RESIZE_PATH,
+        size=5000,
+    )
+
+    for result in results.contacted.values():
+        assert result.get("changed") is True
+
+
+    hosts.all.command(unmountstr)
+    hosts.all.zos_data_set(name=DEFAULT_RESIZE_DSNAME, state="absent")
+    hosts.all.file(path=TEMP_RESIZE_PATH, state="absent")
+

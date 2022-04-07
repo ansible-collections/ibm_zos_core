@@ -139,6 +139,13 @@ options:
     required: false
     type: str
     default: IBM-1047
+  force:
+    description:
+      - Specifies whether the dmod command should be used with force option or not.
+      - When set to true it adds the -f option to the command call.
+    required: false
+    type: bool
+    default: false
 notes:
   - It is the playbook author or user's responsibility to avoid files
     that should not be encoded, such as binary files. A user is described
@@ -279,7 +286,7 @@ else:
 DS_TYPE = ['PS', 'PO']
 
 
-def present(src, block, marker, ins_aft, ins_bef, encoding):
+def present(src, block, marker, ins_aft, ins_bef, encoding, force):
     """Replace a block with the matching regex pattern
     Insert a block before/after the matching pattern
     Insert a block at BOF/EOF
@@ -297,6 +304,7 @@ def present(src, block, marker, ins_aft, ins_bef, encoding):
                 - BOF
                 - '*regex*'
         encoding: {str} -- Encoding of the src.
+        force: {str} -- If not empty passes the -f option to dmod cmd.
 
     Returns:
         str -- Information in JSON format. keys:
@@ -304,16 +312,17 @@ def present(src, block, marker, ins_aft, ins_bef, encoding):
             found: {int} -- Number of matching regex pattern
             changed: {bool} -- Indicates if the destination was modified.
     """
-    return datasets.blockinfile(src, block=block, marker=marker, ins_aft=ins_aft, ins_bef=ins_bef, encoding=encoding, state=True, debug=True)
+    return datasets.blockinfile(src, block=block, marker=marker, ins_aft=ins_aft, ins_bef=ins_bef, encoding=encoding, state=True, debug=True, options=force)
 
 
-def absent(src, marker, encoding):
+def absent(src, marker, encoding, force):
     """Delete blocks with matching regex pattern
 
     Arguments:
         src: {str} -- The z/OS USS file or data set to modify.
         marker: {str} -- Identifies the block to be removed.
         encoding: {str} -- Encoding of the src.
+        force: {str} -- If not empty passes the -f option to dmod cmd.
 
     Returns:
         str -- Information in JSON format. keys:
@@ -321,7 +330,7 @@ def absent(src, marker, encoding):
             found: {int} -- Number of matching regex pattern
             changed: {bool} -- Indicates if the destination was modified.
     """
-    return datasets.blockinfile(src, marker=marker, encoding=encoding, state=False, debug=True)
+    return datasets.blockinfile(src, marker=marker, encoding=encoding, state=False, debug=True, options=force)
 
 
 def quotedString(string):
@@ -380,6 +389,10 @@ def main():
                 type='str',
                 default='IBM-1047'
             ),
+            force=dict(
+                type='bool',
+                default=False
+            ),
         ),
         mutually_exclusive=[['insertbefore', 'insertafter']],
     )
@@ -396,6 +409,7 @@ def main():
         marker_begin=dict(arg_type='str', default='BEGIN', required=False),
         marker_end=dict(arg_type='str', default='END', required=False),
         encoding=dict(arg_type='str', default='IBM-1047', required=False),
+        force=dict(arg_type='bool', default=False, required=False),
         backup=dict(arg_type='bool', default=False, required=False),
         backup_name=dict(arg_type='data_set_or_pat', required=False, default=None),
         mutually_exclusive=[['insertbefore', 'insertafter']],
@@ -418,6 +432,7 @@ def main():
     marker = parsed_args.get('marker')
     marker_begin = parsed_args.get('marker_begin')
     marker_end = parsed_args.get('marker_end')
+    force = parsed_args.get('force')
 
     if not block and parsed_args.get('state') == 'present':
         module.fail_json(msg='block is required with state=present')
@@ -434,6 +449,7 @@ def main():
         marker_begin = 'BEGIN'
     if not marker_end:
         marker_end = 'END'
+    force = '-f' if force else ''
 
     marker = "{0}\\n{1}\\n{2}".format(marker_begin, marker_end, marker)
     blocklines = block.splitlines()
@@ -469,9 +485,9 @@ def main():
     # state=present, insert/replace a block with matching regex pattern
     # state=absent, delete blocks with matching regex pattern
     if parsed_args.get('state') == 'present':
-        return_content = present(src, quotedString(block), quotedString(marker), quotedString(ins_aft), quotedString(ins_bef), encoding)
+        return_content = present(src, quotedString(block), quotedString(marker), quotedString(ins_aft), quotedString(ins_bef), encoding, force)
     else:
-        return_content = absent(src, quotedString(marker), encoding)
+        return_content = absent(src, quotedString(marker), encoding, force)
     stdout = return_content.stdout_response
     stderr = return_content.stderr_response
     rc = return_content.rc

@@ -1,5 +1,5 @@
 .. ...........................................................................
-.. © Copyright IBM Corporation 2020                                          .
+.. © Copyright IBM Corporation 2020, 2021                                          .
 .. ...........................................................................
 
 =========
@@ -19,6 +19,23 @@ the steps performed. The `playbook repository`_ categorizes playbooks into
 well as provide additional community content such as **blogs** and where to open
 `support tickets`_ for the playbooks.
 
+Before running an Ansible playbook, please review these resources:
+
+   * Basic concepts common to playbooks, required artifacts to run a playbook,
+     and debugging instructions documented in the `playbooks`_ section.
+   * The `playbook configuration`_ topic to learn about the required environment
+     parameters documented in our playbook repository.
+   * The `FAQs`_ for additional help on configuring playbooks and
+     troubleshooting tips.
+
+.. _playbooks:
+   https://ibm.github.io/z_ansible_collections_doc/playbooks/playbooks.html
+
+.. _playbook configuration:
+   https://github.com/IBM/z_ansible_collections_samples/blob/master/docs/share/configuration_guide.md
+
+.. _FAQs:
+   https://ibm.github.io/z_ansible_collections_doc/faqs/faqs.html
 
 .. _Ansible playbook:
    https://docs.ansible.com/ansible/latest/user_guide/playbooks_intro.html#playbooks-intro

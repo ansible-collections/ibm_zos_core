@@ -21,52 +21,36 @@ import sys
 from mock import call
 
 # Used my some mock modules, should match import directly below
-IMPORT_NAME = 'ibm_zos_core.plugins.modules.zos_operator'
+IMPORT_NAME = "ibm_zos_core.plugins.modules.zos_operator"
 
 
 # * Tests for zos_operator
 
 dummy_dict1 = {
-    'verbose': False,
-    'debug': True
+    "verbose": False,
 }
 
 dummy_dict2 = {
-    'cmd': 123,
-    'verbose': True,
-    'debug': False
+    "cmd": 123,
+    "verbose": True,
 }
 
-dummy_dict3 = {
-    'cmd': 'd u,all'
-}
+dummy_dict3 = {"cmd": "d u,all"}
 
-dummy_dict4 = {
-    'cmd': 'd u,all',
-    'verbose': True
-}
+dummy_dict4 = {"cmd": "d u,all", "verbose": True}
 
-dummy_dict5 = {
-    'cmd': 'd u,all',
-    'debug': 123
-}
+dummy_dict5 = {"cmd": "d u,all", "verbose": "NotTrueOrFalse"}
 
-dummy_return_dict1 = {
-    'rc': 0,
-    'message': 'good result'
-}
+dummy_return_dict1 = {"rc": 0, "message": "good result"}
 
-dummy_return_dict2 = {
-    'rc': 1,
-    'message': None
-}
+dummy_return_dict2 = {"rc": 1, "message": None}
 
 test_data = [
     (dummy_dict1, False),
     (dummy_dict2, False),
     (dummy_dict3, True),
     (dummy_dict4, True),
-    (dummy_dict5, False)
+    (dummy_dict5, False),
 ]
 
 

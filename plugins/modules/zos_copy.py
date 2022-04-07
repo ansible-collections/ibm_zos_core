@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020
+# Copyright (c) IBM Corporation 2019, 2020, 2021
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -20,14 +20,16 @@ __metaclass__ = type
 DOCUMENTATION = r"""
 ---
 module: zos_copy
-version_added: '2.9'
+version_added: '1.2.0'
 short_description: Copy data to z/OS
 description:
   - The M(zos_copy) module copies a file or data set from a local or a
     remote machine to a location on the remote machine.
   - Use the M(zos_fetch) module to copy files or data sets from remote
     locations to the local machine.
-author: "Asif Mahmud (@asifmahmud)"
+author:
+  - "Asif Mahmud (@asifmahmud)"
+  - "Demetrios Dimatos (@ddimatos)"
 options:
   backup:
     description:
@@ -66,7 +68,7 @@ options:
       - Works only when C(dest) is a USS file, sequential data set, or a
         partitioned data set member.
       - This is for simple values; for anything complex or with formatting, use
-        U(https://docs.ansible.com/ansible/latest/modules/copy_module.html)
+        L(ansible.builtin.copy,https://docs.ansible.com/ansible/latest/modules/copy_module.html)
       - If C(dest) is a directory, then content will be copied to
         C(/path/to/dest/inline_copy).
     type: str
@@ -76,13 +78,23 @@ options:
       - Remote absolute path or data set where the file should be copied to.
       - Destination can be a USS path or an MVS data set name.
       - If C(dest) is a nonexistent USS file, it will be created.
-      - If C(dest) is a nonexistent data set, it will be allocated.
+      - If C(dest) is a nonexistent data set, storage management rules will be
+        used to determine the volume where C(dest) will be allocated.
       - If C(src) and C(dest) are files and if the parent directory of C(dest)
         does not exist, then the task will fail.
-      - When the C(dest) is an existing VSAM(KSDS) or VSAM(ESDS), then source
-        can be ESDS, KSDS or RRDS.
-      - When the C(dest) is an existing VSAM(RRDS), then the source must be RRDS.
-      - When C(dest) is and existing VSAM(LDS), then source must be LDS.
+      - When the C(dest) is an existing VSAM (KSDS) or VSAM (ESDS), then source
+        can be ESDS, KSDS or RRDS. The C(dest) will be deleted and storage
+        management rules will be used to determine the volume where C(dest) will
+        be allocated.
+      - When the C(dest) is an existing VSAM (RRDS), then the source must be RRDS.
+        The C(dest) will be deleted and storage management rules will be used to
+        determine the volume where C(dest) will be allocated.
+      - When C(dest) is and existing VSAM (LDS), then source must be LDS. The
+        C(dest) will be deleted and storage management rules will be used to
+        determine the volume where C(dest) will be allocated.
+      - When C(dest) is a data set, you can override storage management rules
+        by specifying both C(volume) and other optional DS specs (type, space,
+        record size, etc).
     type: str
     required: true
   encoding:
@@ -119,13 +131,19 @@ options:
     required: false
   ignore_sftp_stderr:
     description:
-      - During data transfer through sftp, the module fails if the sftp command
-        directs any content to stderr. The user is able to override this behavior
-        by setting this parameter to C(true). By doing so, the module would
-        essentially ignore the stderr stream produced by sftp and continue execution.
+      - During data transfer through SFTP, the module fails if the SFTP command
+        directs any content to stderr. The user is able to override this
+        behavior by setting this parameter to C(true). By doing so, the module
+        would essentially ignore the stderr stream produced by SFTP and continue
+        execution.
+      - When Ansible verbosity is set to greater than 3, either through the
+        command line interface (CLI) using B(-vvvv) or through environment
+        variables such as B(verbosity = 4), then this parameter will
+        automatically be set to C(true).
     type: bool
     required: false
     default: false
+    version_added: "1.4.0"
   is_binary:
     description:
       - If set to C(true), indicates that the file or data set to be copied is a
@@ -158,15 +176,6 @@ options:
         the source file.
     type: str
     required: false
-  model_ds:
-    description:
-      - When copying a local file/directory to a non-existing PDS, PDSE or PS,
-        specify a model data set to allocate the destination after.
-      - If this parameter is not provided, the destination data set will be
-        allocated based on the size of the local file/directory.
-      - Only valid if C(src) is a local file or directory and C(dest) does not exist.
-    type: str
-    required: False
   remote_src:
     description:
       - If set to C(false), the module searches for C(src) at the local machine.
@@ -176,9 +185,13 @@ options:
     required: false
   sftp_port:
     description:
-      - Indicates which port should be used to connect to the remote z/OS
-        system to perform data transfer.
-      - If this parameter is not specified, C(ansible_port) will be used.
+      - Configuring the SFTP port used by the M(zos_copy) module has been
+        deprecated and will be removed in ibm.ibm_zos_core collection version
+        1.5.0.
+      - Configuring the SFTP port with I(sftp_port) will no longer have any
+        effect on which port is used by this module.
+      - To configure the SFTP port used for module M(zos_copy), refer to topic
+        L(using connection plugins,https://docs.ansible.com/ansible/latest/plugins/connection.html#using-connection-plugins)
       - If C(ansible_port) is not specified, port 22 will be used.
     type: int
     required: false
@@ -191,10 +204,12 @@ options:
       - If C(src) is a local path or a USS path, it can be absolute or relative.
       - If C(src) is a directory, destination must be a partitioned data set or
         a USS directory.
-      - If C(src) is a file and dest ends with "/" or destination is a directory, the
-        file is copied to the directory with the same filename as src.
+      - If C(src) is a file and dest ends with "/" or destination is a
+        directory, the file is copied to the directory with the same filename as
+        src.
       - If C(src) is a VSAM data set, destination must also be a VSAM.
-      - Wildcards can be used to copy multiple PDS/PDSE members to another PDS/PDSE.
+      - Wildcards can be used to copy multiple PDS/PDSE members to another
+        PDS/PDSE.
       - Required unless using C(content).
     type: str
   validate:
@@ -211,10 +226,94 @@ options:
         allocated to.
       - Only valid when the destination is an MVS data set.
       - The volume must already be present on the device.
-      - If no volume is specified, an appropriate volume will be chosen to
-        allocate C(dest).
+      - If no volume is specified, storage management rules will be used to
+        determine the volume where C(dest) will be allocated.
+      - If the storage administrator has specified a system default unit name
+        and you do not set a C(volume) name for non-system-managed data sets,
+        then the system uses the volumes associated with the default unit name.
+        Check with your storage administrator to determine whether a default
+        unit name has been specified.
     type: str
     required: false
+  destination_dataset:
+    description:
+      - These are settings to use when creating the destination data set
+    required: false
+    type: dict
+    suboptions:
+      dd_type:
+        description:
+          - Organization of the destination
+        type: str
+        choices:
+          - KSDS
+          - ESDS
+          - RRDS
+          - LDS
+          - SEQ
+          - PDS
+          - PDSE
+          - MEMBER
+          - BASIC
+        default: BASIC
+      space_primary:
+        description:
+          - If the destination I(dest) data set does not exist , this sets the
+            primary space allocated for the data set.
+          - The unit of space used is set using I(space_type).
+        type: str
+        required: false
+        default: "5"
+      space_secondary:
+        description:
+          - If the destination I(dest) data set does not exist , this sets the
+            secondary space allocated for the data set.
+          - The unit of space used is set using I(space_type).
+        type: str
+        required: false
+        default: "3"
+      space_type:
+        description:
+          - If the destination data set does not exist, this sets the unit of
+            measurement to use when defining primary and secondary space.
+          - Valid units of size are C(K), C(M), C(G), C(CYL), and C(TRK).
+        type: str
+        choices:
+          - K
+          - M
+          - G
+          - CYL
+          - TRK
+        required: false
+        default: M
+      record_format:
+        description:
+          - If the destination data set does not exist, this sets the format of the
+            data set. (e.g C(FB))
+          - Choices are case-insensitive.
+        required: false
+        choices:
+          - FB
+          - VB
+          - FBA
+          - VBA
+          - U
+        default: FB
+        type: str
+      record_length:
+        description:
+          - The length of each record in the data set, in bytes.
+          - For variable data sets, the length must include the 4-byte prefix area.
+          - "Defaults vary depending on format: If FB/FBA 80, if VB/VBA 137, if U 0."
+        type: int
+        required: false
+        default: 80
+      block_size:
+        description:
+          - The block size to use for the data set.
+        type: int
+        required: false
+
 notes:
     - Destination data sets are assumed to be in catalog. When trying to copy
       to an uncataloged data set, the module assumes that the data set does
@@ -228,8 +327,12 @@ notes:
       files will always be deleted, regardless of success or failure of the
       copy task.
     - VSAM data sets can only be copied to other VSAM data sets.
-    - For supported character sets used to encode data, refer to
-      U(https://ansible-collections.github.io/ibm_zos_core/supplementary.html#encode)
+    - For supported character sets used to encode data, refer to the
+      L(documentation,https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html).
+    - M(zos_copy) uses SFTP (Secure File Transfer Protocol) for the underlying
+      transfer protocol; Co:Z SFTP is not supported. In the case of Co:z SFTP,
+      you can exempt the Ansible userid on z/OS from using Co:Z thus falling back
+      to using standard SFTP.
 seealso:
 - module: zos_fetch
 - module: zos_data_set
@@ -279,7 +382,7 @@ EXAMPLES = r"""
       from: UTF-8
       to: IBM-037
 
-- name: Copy a VSAM(KSDS) to a VSAM(KSDS)
+- name: Copy a VSAM (KSDS) to a VSAM (KSDS)
   zos_copy:
     src: SAMPLE.SRC.VSAM
     dest: SAMPLE.DEST.VSAM
@@ -573,8 +676,14 @@ class CopyHandler(object):
         conv_path,
         dest,
         src_ds_type,
-        model_ds=None,
-        alloc_vol=None
+        alloc_vol=None,
+        type=type,
+        space_primary=None,
+        space_secondary=None,
+        space_type=None,
+        record_format=None,
+        record_length=None,
+        block_size=None
     ):
         """Copy source to a sequential data set.
 
@@ -586,14 +695,49 @@ class CopyHandler(object):
             dest {str} -- Name of destination data set
             src_ds_type {str} -- The type of source
             alloc_vol {str} -- The volume where destination should be allocated
+            type {str} -- Type of data set, if it needs created
+            space_primary {int} -- Primary allocation, if data set needs created
+            space_secondary {int} -- Secondary allocation, if data set needs created
+            space_type {str} - Units of measure (CYL/TRK/K/M) of allocation values
+            record_format {str} - Format (FB/VB) of data set if data set needs created
+            record_length {int} - Size of individual records in the record set
+            block_size {int} - Size of data block
         """
         new_src = temp_path or conv_path or src
-        if model_ds:
-            if self.dest_exists:
-                datasets.delete(dest)
-            self.allocate_model(dest, model_ds, vol=alloc_vol)
+        # Pre-clear data set: get destination stats before deleting if incoming info is all default
+        if self.dest_exists:
+            if space_primary is None or space_primary == 5:
+                if record_length is None or record_length == 80:
+                    if block_size is None:
+                        res = datasets.listing(dest)
+                        type = res[0].dsorg
+                        record_format = res[0].recfm
+                        record_length = res[0].lrecl
+                        block_size = res[0].block_size
+                        space_primary = round(res[0].total_space / 1024)
+                        space_type = "K"
+                        space_secondary = 3
+            datasets.delete(dest)
+            self.dest_exists = False
 
         if src_ds_type == "USS":
+            # create destination if it doesn't exist
+            if not self.dest_exists:
+                parms = dict(
+                    name=dest,
+                    type=type,
+                    primary_space=space_primary,
+                    secondary_space=space_secondary,
+                    space_type=space_type,
+                    record_format=record_format,
+                    record_length=record_length,
+                    block_size=block_size
+                )
+                if alloc_vol:
+                    parms['volume'] = alloc_vol
+
+                datasets._create(**parms)
+
             rc, out, err = self.run_command(
                 "cp {0} {1} \"//'{2}'\"".format(
                     "-B" if self.is_binary else "", new_src, dest
@@ -610,12 +754,17 @@ class CopyHandler(object):
             rc = datasets.copy(new_src, dest)
             # *****************************************************************
             # When Copying a PDSE member to a non-existent sequential data set
-            # using: cp "//'SOME.PDSE.DATA.SET(MEMBER)'" "//'SOME.DEST.SEQ'"
+            # using cp "//'SOME.PDSE.DATA.SET(MEMBER)'" "//'SOME.DEST.SEQ'",
             # An I/O abend could be trapped and can be resolved by allocating
             # the destination data set before copying.
             # *****************************************************************
             if rc != 0:
-                self._allocate_ps(dest, alloc_vol=alloc_vol)
+                sz = None
+                if space_primary is not None:
+                    if space_type in "MK":
+                        sz = str(space_primary) + space_type
+
+                self._allocate_ps(dest, size=sz, alloc_vol=alloc_vol)
                 response = datasets._copy(new_src, dest)
                 if response.rc != 0:
                     self.fail_json(
@@ -825,6 +974,11 @@ class CopyHandler(object):
             size {str} -- The size to allocate
             alloc_vol {str} -- The volume where the data set should be allocated
         """
+        if size is None:
+            size = "5M"
+        elif size == "":
+            size = "5M"
+
         parms = dict(
             name=name,
             type="SEQ",
@@ -834,7 +988,7 @@ class CopyHandler(object):
             block_size=6144
         )
         if alloc_vol:
-            parms['volumes'] = alloc_vol
+            parms['volume'] = alloc_vol
 
         response = datasets._create(**parms)
         if response.rc != 0:
@@ -1190,12 +1344,20 @@ class PDSECopyHandler(CopyHandler):
             {str} -- Destination where the member was copied to
         """
         is_uss_src = temp_path is not None or conv_path is not None or "/" in src
+        # if constructing, remove periods from member name
         if src and is_uss_src and not copy_member:
-            dest = "{0}({1})".format(dest, os.path.basename(src))
+            dest = "{0}({1})".format(dest, os.path.basename(src).replace(".", "")[0:8])
 
         new_src = (temp_path or conv_path or src).replace("$", "\\$")
-        dest = dest.replace("$", "\\$")
-        response = datasets._copy(new_src, dest)
+
+        dest = dest.replace("$", "\\$").upper()
+        opts = dict()
+
+        # added -B to remove the 'truncated' error when copying uss->fb/pdse style stuff
+        if self.is_binary:
+            opts["options"] = "-B"
+
+        response = datasets._copy(new_src, dest, None, **opts)
         rc, out, err = response.rc, response.stdout_response, response.stderr_response
 
         if rc != 0:
@@ -1220,7 +1382,7 @@ class PDSECopyHandler(CopyHandler):
             else:
                 self.fail_json(msg=msg, rc=rc, stdout=out, stderr=err)
 
-        return dest.replace("\\", "")
+        return dest.replace("\\", "").upper()
 
     def create_pdse(
         self,
@@ -1231,7 +1393,6 @@ class PDSECopyHandler(CopyHandler):
         remote_src=False,
         src_vol=None,
         alloc_vol=None,
-        model_ds=None,
     ):
         """Create a partitioned data set specified by 'dest_name'
 
@@ -1271,10 +1432,11 @@ class PDSECopyHandler(CopyHandler):
                 size = sum(os.stat(path + "/" + f).st_size for f in files)
                 rc = self._allocate_pdse(dest_name, size=size)
         else:
-            rc = self._allocate_pdse(dest_name, size=size, model_ds=model_ds)
+            rc = self._allocate_pdse(dest_name, src=src, size=size, alloc_vol=alloc_vol)
+
         if rc != 0:
             self.fail_json(
-                msg="Unable to allocate destination data set to copy {0}".format(src),
+                msg="Unable to allocate destination data set {0} to receive {1}".format(dest_name, src),
                 stdout=out,
                 stderr=err,
                 rc=rc,
@@ -1288,12 +1450,11 @@ class PDSECopyHandler(CopyHandler):
         size=None,
         src_vol=None,
         src=None,
-        model_ds=None,
         alloc_vol=None
     ):
         """Allocate a partitioned extended data set. If 'size'
-        is provided, allocate PDSE using this given size. If neither of them
-        are provided, obtain the 'src' data set size from vtoc and allocate using
+        is provided, allocate PDSE using this given size. If size is not
+        provided, obtain the 'src' data set size from vtoc and allocate using
         that information.
 
         Arguments:
@@ -1306,38 +1467,36 @@ class PDSECopyHandler(CopyHandler):
             allc_vol {str} -- The volume where PDSE should be allocated
         """
         rc = -1
-        if model_ds:
-            rc = self.allocate_model(ds_name, model_ds, vol=alloc_vol)
-        else:
-            recfm = "FB"
-            lrecl = 80
-            alloc_size = size
-            if not alloc_size:
-                if src_vol:
-                    vtoc_info = vtoc.get_data_set_entry(src, src_vol)
-                    tracks = int(vtoc_info.get("last_block_pointer").get("track"))
-                    blocks = int(vtoc_info.get("last_block_pointer").get("block"))
-                    blksize = int(vtoc_info.get("block_size"))
-                    bytes_per_trk = 56664
-                    alloc_size = (tracks * bytes_per_trk) + (blocks * blksize)
-                    recfm = vtoc_info.get("record_format") or recfm
-                    lrecl = int(vtoc_info.get("record_length")) or lrecl
-                else:
-                    alloc_size = 5242880  # Use the default 5 Megabytes
+        recfm = "FB"
+        lrecl = 80
+        alloc_size = size
+        if not alloc_size:
+            if src_vol:
+                vtoc_info = vtoc.get_data_set_entry(src, src_vol)
+                tracks = int(vtoc_info.get("last_block_pointer").get("track"))
+                blocks = int(vtoc_info.get("last_block_pointer").get("block"))
+                blksize = int(vtoc_info.get("block_size"))
+                bytes_per_trk = 56664
+                alloc_size = (tracks * bytes_per_trk) + (blocks * blksize)
+                recfm = vtoc_info.get("record_format") or recfm
+                lrecl = int(vtoc_info.get("record_length")) or lrecl
+            else:
+                alloc_size = 5242880  # Use the default 5 Megabytes
 
-            alloc_size = "{0}K".format(str(int(math.ceil(alloc_size / 1024))))
-            parms = dict(
-                name=ds_name,
-                type="PDSE",
-                primary_space=alloc_size,
-                record_format=recfm,
-                record_length=lrecl
-            )
-            if alloc_vol:
-                parms['volumes'] = alloc_vol
+        alloc_size = "{0}K".format(str(int(math.ceil(alloc_size / 1024))))
+        parms = dict(
+            name=ds_name,
+            type="PDSE",
+            primary_space=alloc_size,
+            record_format=recfm,
+            record_length=lrecl
+        )
+        if alloc_vol:
+            parms['volume'] = alloc_vol
 
-            response = datasets._create(**parms)
-            rc = response.rc
+        response = datasets._create(**parms)
+        rc = response.rc
+
         return rc
 
 
@@ -1519,7 +1678,6 @@ def run_module(module, arg_def):
     is_binary = module.params.get('is_binary')
     backup = module.params.get('backup')
     backup_name = module.params.get('backup_name')
-    model_ds = module.params.get('model_ds')
     validate = module.params.get('validate')
     mode = module.params.get('mode')
     group = module.params.get('group')
@@ -1533,6 +1691,15 @@ def run_module(module, arg_def):
     alloc_size = module.params.get('size')
     src_member = module.params.get('src_member')
     copy_member = module.params.get('copy_member')
+    destination_dataset = module.params.get('destination_dataset')
+
+    dd_type = destination_dataset.get("dd_type") or "BASIC"
+    space_primary = destination_dataset.get("space_primary")
+    space_secondary = destination_dataset.get("space_secondary")
+    space_type = destination_dataset.get("space_type")
+    record_format = destination_dataset.get("record_format")
+    record_length = destination_dataset.get("record_length")
+    block_size = destination_dataset.get("block_size")
 
     # ********************************************************************
     # When copying to and from a data set member, 'dest' or 'src' will be
@@ -1615,7 +1782,7 @@ def run_module(module, arg_def):
         if backup or backup_name:
             if dest_ds_type in MVS_PARTITIONED and data_set.is_empty(dest_name):
                 # The partitioned data set is empty
-                res_args["note"] = "Destination is emtpy, backup request ignored"
+                res_args["note"] = "Destination is empty, backup request ignored"
             else:
                 backup_name = backup_data(dest, dest_ds_type, backup_name)
     # ********************************************************************
@@ -1649,7 +1816,6 @@ def run_module(module, arg_def):
                     remote_src=remote_src,
                     src_vol=src_ds_vol,
                     alloc_vol=volume,
-                    model_ds=model_ds
                 )
             elif src_ds_type == "VSAM":
                 dest_ds_type = "VSAM"
@@ -1716,6 +1882,15 @@ def run_module(module, arg_def):
             res_args["changed"] = (
                 res_args.get("changed") or remote_checksum != dest_checksum
             )
+        else:
+            try:
+                remote_checksum = get_file_checksum(temp_path or src)
+                dest_checksum = get_file_checksum(dest)
+            except Exception as err:
+                pass
+            res_args["changed"] = (
+                res_args.get("changed") or remote_checksum != dest_checksum
+            )
 
     # ------------------------------- o -----------------------------------
     # Copy to sequential data set
@@ -1727,9 +1902,16 @@ def run_module(module, arg_def):
             conv_path,
             dest,
             src_ds_type,
-            model_ds=model_ds,
-            alloc_vol=volume
+            alloc_vol=volume,
+            type=dd_type,
+            space_primary=space_primary,
+            space_secondary=space_secondary,
+            space_type=space_type,
+            record_format=record_format,
+            record_length=record_length,
+            block_size=block_size,
         )
+        dest = dest.upper()
 
     # ------------------------------- o -----------------------------------
     # Copy to PDS/PDSE
@@ -1753,6 +1935,7 @@ def run_module(module, arg_def):
             pdse_copy_handler.copy_to_pdse(
                 src, temp_path, conv_path, dest, src_ds_type, alloc_vol=volume
             )
+        dest = dest.upper()
 
     # ------------------------------- o -----------------------------------
     # Copy to VSAM data set
@@ -1783,13 +1966,40 @@ def main():
             content=dict(type='str', no_log=True),
             backup=dict(type='bool', default=False),
             backup_name=dict(type='str'),
-            model_ds=dict(type='str', required=False),
             local_follow=dict(type='bool', default=True),
             remote_src=dict(type='bool', default=False),
             sftp_port=dict(type='int', required=False),
             ignore_sftp_stderr=dict(type='bool', default=False),
-            validate=dict(type='bool'),
+            validate=dict(type='bool', default=False),
             volume=dict(type='str', required=False),
+            destination_dataset=dict(
+                type='dict',
+                required=False,
+                options=dict(
+                    dd_type=dict(
+                        arg_type='str',
+                        default='BASIC',
+                        choices=['BASIC', 'KSDS', 'ESDS', 'RRDS', 'LDS', 'SEQ', 'PDS', 'PDSE', 'MEMBER'],
+                        required=False,
+                    ),
+                    space_primary=dict(arg_type='int', default=5, required=False),
+                    space_secondary=dict(arg_type='int', default=3, required=False),
+                    space_type=dict(
+                        arg_type='str',
+                        default='M',
+                        choices=['K', 'M', 'G', 'CYL', 'TRK'],
+                        required=False,
+                    ),
+                    record_format=dict(
+                        arg_type='str',
+                        default='FB',
+                        choices=["FB", "VB", "FBA", "VBA", "U"],
+                        required=False
+                    ),
+                    record_length=dict(type='int', default=80, required=False),
+                    block_size=dict(type='int', required=False),
+                )
+            ),
             is_uss=dict(type='bool'),
             is_pds=dict(type='bool'),
             is_mvs_dest=dict(type='bool'),
@@ -1797,10 +2007,17 @@ def main():
             temp_path=dict(type='str'),
             copy_member=dict(type='bool'),
             src_member=dict(type='bool'),
-            local_charset=dict(type='str')
+            local_charset=dict(type='str'),
+            force=dict(type='bool', default=False)
         ),
         add_file_common_args=True,
     )
+    if module.params.get('sftp_port'):
+        module.deprecate(
+            msg='Support for configuring sftp_port has been deprecated.'
+            'Configuring the SFTP port is now managed through Ansible connection plugins option \'ansible_port\'',
+            date='2021-08-01', collection_name='ibm.ibm_zos_core')
+        # Date and collection are supported in Ansbile 2.9.10 or later
 
     arg_def = dict(
         src=dict(arg_type='data_set_or_path', required=False),
@@ -1809,13 +2026,26 @@ def main():
         content=dict(arg_type='str', required=False),
         backup=dict(arg_type='bool', default=False, required=False),
         backup_name=dict(arg_type='data_set_or_path', required=False),
-        model_ds=dict(arg_type='data_set', required=False),
         local_follow=dict(arg_type='bool', default=True, required=False),
         remote_src=dict(arg_type='bool', default=False, required=False),
         checksum=dict(arg_type='str', required=False),
         validate=dict(arg_type='bool', required=False),
         sftp_port=dict(arg_type='int', required=False),
-        volume=dict(arg_type='str', required=False)
+        volume=dict(arg_type='str', required=False),
+
+        destination_dataset=dict(
+            arg_type='dict',
+            required=False,
+            options=dict(
+                dd_type=dict(arg_type='str', default='BASIC', required=False),
+                space_primary=dict(arg_type='int', default=5, required=False),
+                space_secondary=dict(arg_type='int', default=3, required=False),
+                space_type=dict(arg_type='str', default='TRK', required=False),
+                record_format=dict(arg_type='str', default='FB', required=False),
+                record_length=dict(arg_type='int', default=80, required=False),
+                block_size=dict(arg_type='int', required=False),
+            )
+        ),
     )
 
     if (
@@ -1841,6 +2071,17 @@ def main():
                 to_encoding=dict(arg_type="encoding"),
             )
         )
+
+    if not module.params.get("destination_dataset"):
+        module.params["destination_dataset"] = {
+            "dd_type": "BASIC",
+            "space_primary": 5,
+            "space_secondary": 3,
+            "space_type": 'TRK',
+            "record_format": 'FB',
+            "record_length": 80,
+            "block_size": 6147,
+        }
 
     res_args = temp_path = conv_path = None
     try:

@@ -24,7 +24,7 @@ author:
 short_description: Manage block of multi-line textual data on z/OS
 description:
   - Manage block of multi-lines in z/OS UNIX System Services (USS) files,
-    PS(sequential data set), PDS, PDSE, or member of a PDS or PDSE.
+    PS (sequential data set), PDS, PDSE, or member of a PDS or PDSE.
   - This module ensures a particular block of multi-line text surrounded
     by customizable marker lines is present in a USS file or data set, or
     replaces an existing block identified by the markers.
@@ -34,7 +34,7 @@ options:
   src:
     description:
       - The location can be a UNIX System Services (USS) file,
-        PS(sequential data set), member of a PDS or PDSE, PDS, PDSE.
+        PS (sequential data set), member of a PDS or PDSE, PDS, PDSE.
       - The USS file must be an absolute pathname.
     type: str
     aliases: [ path, destfile, name ]
@@ -148,8 +148,8 @@ notes:
   - All data sets are always assumed to be cataloged. If an uncataloged data set
     needs to be encoded, it should be cataloged first. The M(zos_data_set) module
     can be used to catalog uncataloged data sets.
-  - For supported character sets used to encode data, refer to
-    U(https://ibm.github.io/z_ansible_collections_doc/reference/supplementary_content/encode.html)
+  - For supported character sets used to encode data, refer to the
+    L(documentation,https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html).
   - When using 'with_*' loops be aware that if you do not set a unique mark
     the block will be overwritten on each iteration.
   - When more then one block should be handled in a file you must change
@@ -164,8 +164,8 @@ EXAMPLES = r'''
     src: SYS1.PARMLIB(BPXPRM00)
     marker: "/* {mark} ANSIBLE MANAGED BLOCK */"
     block: |
-      " MOUNT FILESYSTEM('SOME.DATA.SET') TYPE(ZFS) MODE(READ)"
-      "    MOUNTPOINT('/tmp/src/somedirectory')"
+       MOUNT FILESYSTEM('SOME.DATA.SET') TYPE(ZFS) MODE(READ)
+          MOUNTPOINT('/tmp/src/somedirectory')
 
 - name: Remove a library as well as surrounding markers
   zos_blockinfile:
@@ -178,9 +178,9 @@ EXAMPLES = r'''
     src: /etc/profile
     insertafter: "PATH="
     block: |
-      "ZOAU=/path/to/zoau_dir/bin"
-      "export ZOAU"
-      "PATH=$ZOAU:$PATH"
+      ZOAU=/path/to/zoau_dir/bin
+      export ZOAU
+      PATH=$ZOAU:$PATH
 
 - name: Insert/Update HTML surrounded by custom markers after <body> line
   zos_blockinfile:
@@ -493,6 +493,11 @@ def main():
         result['cmd'] = ret['cmd']
         result['changed'] = ret['changed']
         result['found'] = ret['found']
+        # Only return 'rc' if stderr is not empty to not fail the playbook run in a nomatch case
+        # That information will be given with 'changed' and 'found'
+        if len(stderr):
+            result['stderr'] = str(stderr)
+            result['rc'] = rc
     except Exception:
         messageDict = dict(msg="ZOAU dmod return content is NOT in json format", stdout=str(stdout), stderr=str(stderr), rc=rc)
         if result.get('backup_name'):

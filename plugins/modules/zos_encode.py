@@ -25,10 +25,10 @@ author:
 short_description: Perform encoding operations.
 description:
   - Converts the encoding of characters that are read from a UNIX System
-    Services (USS) file or path, PS(sequential data set), PDS, PDSE, or
-    KSDS(VSAM data set).
+    Services (USS) file or path, PS (sequential data set), PDS, PDSE, or
+    KSDS (VSAM data set).
   - Writes the data to a UNIX System Services (USS) file or path,
-    PS(sequential data set), PDS, PDSE, or KSDS(VSAM data set).
+    PS (sequential data set), PDS, PDSE, or KSDS (VSAM data set).
 options:
   from_encoding:
     description:
@@ -49,8 +49,8 @@ options:
   src:
     description:
       - The location can be a UNIX System Services (USS) file or path,
-        PS(sequential data set), PDS, PDSE, member of a PDS or PDSE, or
-        KSDS(VSAM data set).
+        PS (sequential data set), PDS, PDSE, member of a PDS or PDSE, or
+        KSDS (VSAM data set).
       - The USS path or file must be an absolute pathname.
       - If I(src) is a USS directory, all files will be encoded.
     required: true
@@ -59,8 +59,8 @@ options:
     description:
       - The location where the converted characters are output.
       - The destination I(dest) can be a UNIX System Services (USS) file or path,
-        PS(sequential data set), PDS, PDSE, member of a PDS or PDSE, or
-        KSDS(VSAM data set).
+        PS (sequential data set), PDS, PDSE, member of a PDS or PDSE, or
+        KSDS (VSAM data set).
       - If the length of the PDSE member name used in I(dest) is greater
         than 8 characters, the member name will be truncated when written out.
       - If I(dest) is not specified, the I(src) will be used as the destination
@@ -109,8 +109,8 @@ notes:
     also obtain escalated privileges to execute as root or another user.
   - All data sets are always assumed to be cataloged. If an uncataloged data
     set needs to be encoded, it should be cataloged first.
-  - For supported character sets used to encode data, refer to
-    U(https://ansible-collections.github.io/ibm_zos_core/supplementary.html#encode)
+  - For supported character sets used to encode data, refer to the
+    L(documentation,https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html).
 """
 
 EXAMPLES = r"""
@@ -245,19 +245,20 @@ backup_name:
     type: str
     sample: /path/file_name.2020-04-23-08-32-29-bak.tar
 """
-
-import re
-from os import path, makedirs
-from ansible.module_utils.basic import AnsibleModule
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
+    MissingZOAUImport,
+)
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser,
     data_set,
     encode,
     backup as zos_backup,
 )
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingZOAUImport,
-)
+from ansible.module_utils.basic import AnsibleModule
+from os import path
+from os import makedirs
+from os import listdir
+import re
 
 try:
     from zoautil_py import datasets
@@ -292,7 +293,7 @@ def check_mvs_dataset(ds):
 
 
 def check_file(file):
-    """ check file is a USS file/path or an MVS data set """
+    """ check file is a USS file or an MVS data set """
     is_uss = False
     is_mvs = False
     ds_type = None
@@ -301,7 +302,7 @@ def check_file(file):
     else:
         ds = file.upper()
         if "(" in ds:
-            dsn = ds[0: ds.rfind("(", 1)]
+            dsn = ds[: ds.rfind("(", 1)]
             mem = "".join(re.findall(r"[(](.*?)[)]", ds))
             rc, ds_type = check_mvs_dataset(dsn)
             if rc:
@@ -319,7 +320,13 @@ def check_file(file):
 
 def verify_uss_path_exists(file):
     if not path.exists(file):
-        raise EncodeError("File {0} does not exist.".format(file))
+        mypath = "/" + file.split("/")[0] + "/*"
+        ld = listdir(mypath)
+        raise EncodeError(
+            "File {0} does not exist in directory {1}; files found {2}.".format(
+                file, mypath, str(ld)
+            )
+        )
     return
 
 

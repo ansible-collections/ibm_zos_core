@@ -28,7 +28,6 @@ Parameters
 ----------
 
 
-     
 age
   Select data sets whose age is equal to or greater than the specified time.
 
@@ -38,12 +37,10 @@ age
 
   Age is determined by using the 'referenced date' of the data set.
 
-
   | **required**: False
   | **type**: str
 
 
-     
 age_stamp
   Choose the age property against which to compare age.
 
@@ -51,23 +48,19 @@ age_stamp
 
   ``ref_date`` is only applicable to sequential and partitioned data sets.
 
-
   | **required**: False
   | **type**: str
   | **default**: creation_date
   | **choices**: creation_date, ref_date
 
 
-     
 contains
   A string which should be matched against the data set content or data set member content.
-
 
   | **required**: False
   | **type**: str
 
 
-     
 excludes
   Data sets whose names match an excludes pattern are culled from patterns matches. Multiple patterns can be specified using a list.
 
@@ -75,12 +68,10 @@ excludes
 
   If the pattern is a regular expression, it must match the full data set name.
 
-
   | **required**: False
   | **type**: list
 
 
-     
 patterns
   One or more data set or member patterns.
 
@@ -92,40 +83,10 @@ patterns
 
   When searching for members within a PDS/PDSE, pattern can be a regular expression.
 
-
   | **required**: True
   | **type**: list
 
 
-     
-pds_patterns
-  List of PDS/PDSE to search. Wildcard is possible.
-
-  Required when searching for data set members.
-
-  Valid only for ``nonvsam`` resource types. Otherwise ignored.
-
-
-  | **required**: False
-  | **type**: list
-
-
-     
-resource_type
-  The type of resource to search.
-
-  ``nonvsam`` refers to one of SEQ, LIBRARY (PDSE), PDS, LARGE, BASIC, EXTREQ, or EXTPREF.
-
-  ``cluster`` refers to a VSAM cluster. The ``data`` and ``index`` are the data and index components of a VSAM cluster.
-
-
-  | **required**: False
-  | **type**: str
-  | **default**: nonvsam
-  | **choices**: nonvsam, cluster, data, index
-
-
-     
 size
   Select data sets whose size is equal to or greater than the specified size.
 
@@ -135,15 +96,36 @@ size
 
   Filtering by size is currently only valid for sequential and partitioned data sets.
 
-
   | **required**: False
   | **type**: str
 
 
-     
+pds_patterns
+  List of PDS/PDSE to search. Wildcard is possible.
+
+  Required when searching for data set members.
+
+  Valid only for ``nonvsam`` resource types. Otherwise ignored.
+
+  | **required**: False
+  | **type**: list
+
+
+resource_type
+  The type of resource to search.
+
+  ``nonvsam`` refers to one of SEQ, LIBRARY (PDSE), PDS, LARGE, BASIC, EXTREQ, or EXTPREF.
+
+  ``cluster`` refers to a VSAM cluster. The ``data`` and ``index`` are the data and index components of a VSAM cluster.
+
+  | **required**: False
+  | **type**: str
+  | **default**: nonvsam
+  | **choices**: nonvsam, cluster, data, index
+
+
 volume
   If provided, only the data sets allocated in the specified list of volumes will be searched.
-
 
   | **required**: False
   | **type**: list
@@ -227,88 +209,79 @@ See Also
 
 
 
+
 Return Values
 -------------
 
 
-   
-                              
-       data_sets
-        | All matches found with the specified criteria.
-      
-        | **returned**: success
-        | **type**: list      
-        | **sample**:
+data_sets
+  All matches found with the specified criteria.
 
-              .. code-block::
+  | **returned**: success
+  | **type**: list
+  | **sample**:
 
-                       [{"members": {"COBU": null, "MC2CNAM": null, "TINAD": null}, "name": "IMS.CICS13.USERLIB", "type": "NONVSAM"}, {"name": "SAMPLE.DATA.SET", "type": "CLUSTER"}, {"name": "SAMPLE.VSAM.DATA", "type": "DATA"}]
-            
-      
-      
-                              
-       matched
-        | The number of matched data sets found.
-      
-        | **returned**: success
-        | **type**: int
-        | **sample**: 49
+    .. code-block:: json
 
-            
-      
-      
-                              
-       examined
-        | The number of data sets searched.
-      
-        | **returned**: success
-        | **type**: int
-        | **sample**: 158
+        [
+            {
+                "members": {
+                    "COBU": null,
+                    "MC2CNAM": null,
+                    "TINAD": null
+                },
+                "name": "IMS.CICS13.USERLIB",
+                "type": "NONVSAM"
+            },
+            {
+                "name": "SAMPLE.DATA.SET",
+                "type": "CLUSTER"
+            },
+            {
+                "name": "SAMPLE.VSAM.DATA",
+                "type": "DATA"
+            }
+        ]
 
-            
-      
-      
-                              
-       msg
-        | Failure message returned by the module.
-      
-        | **returned**: failure
-        | **type**: str
-        | **sample**: Error while gathering data set information
+matched
+  The number of matched data sets found.
 
-            
-      
-      
-                              
-       stdout
-        | The stdout from a USS command or MVS command, if applicable.
-      
-        | **returned**: failure
-        | **type**: str
-        | **sample**: Searching dataset IMSTESTL.COMNUC
+  | **returned**: success
+  | **type**: int
+  | **sample**: 49
 
-            
-      
-      
-                              
-       stderr
-        | The stderr of a USS command or MVS command, if applicable.
-      
-        | **returned**: failure
-        | **type**: str
-        | **sample**: No such file or directory "/tmp/foo"
+examined
+  The number of data sets searched.
 
-            
-      
-      
-                              
-       rc
-        | The return code of a USS or MVS command, if applicable.
-      
-        | **returned**: failure
-        | **type**: int
-        | **sample**: 8
+  | **returned**: success
+  | **type**: int
+  | **sample**: 158
 
-            
-      
-        
+msg
+  Failure message returned by the module.
+
+  | **returned**: failure
+  | **type**: str
+  | **sample**: Error while gathering data set information
+
+stdout
+  The stdout from a USS command or MVS command, if applicable.
+
+  | **returned**: failure
+  | **type**: str
+  | **sample**: Searching dataset IMSTESTL.COMNUC
+
+stderr
+  The stderr of a USS command or MVS command, if applicable.
+
+  | **returned**: failure
+  | **type**: str
+  | **sample**: No such file or directory "/tmp/foo"
+
+rc
+  The return code of a USS or MVS command, if applicable.
+
+  | **returned**: failure
+  | **type**: int
+  | **sample**: 8
+

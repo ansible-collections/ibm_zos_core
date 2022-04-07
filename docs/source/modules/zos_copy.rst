@@ -27,7 +27,6 @@ Parameters
 ----------
 
 
-     
 backup
   Specifies whether a backup of destination should be created before copying data.
 
@@ -35,12 +34,10 @@ backup
 
   The backup file name will be returned on either success or failure of module execution such that data can be retrieved.
 
-
   | **required**: False
   | **type**: bool
 
 
-     
 backup_name
   Specify a unique USS file name or data set name for the destination backup.
 
@@ -54,27 +51,23 @@ backup_name
 
   If ``dest`` is a data set member and ``backup_name`` is not provided, the data set member will be backed up to the same partitioned data set with a randomly generated member name.
 
-
   | **required**: False
   | **type**: str
 
 
-     
 content
   When used instead of ``src``, sets the contents of a file or data set directly to the specified value.
 
   Works only when ``dest`` is a USS file, sequential data set, or a partitioned data set member.
 
-  This is for simple values; for anything complex or with formatting, use https://docs.ansible.com/ansible/latest/modules/copy_module.html
+  This is for simple values; for anything complex or with formatting, use `ansible.builtin.copy <https://docs.ansible.com/ansible/latest/modules/copy_module.html>`_
 
   If ``dest`` is a directory, then content will be copied to ``/path/to/dest/inline_copy``.
-
 
   | **required**: False
   | **type**: str
 
 
-     
 dest
   Remote absolute path or data set where the file should be copied to.
 
@@ -82,22 +75,22 @@ dest
 
   If ``dest`` is a nonexistent USS file, it will be created.
 
-  If ``dest`` is a nonexistent data set, it will be allocated.
+  If ``dest`` is a nonexistent data set, storage management rules will be used to determine the volume where ``dest`` will be allocated.
 
   If ``src`` and ``dest`` are files and if the parent directory of ``dest`` does not exist, then the task will fail.
 
-  When the ``dest`` is an existing VSA:ref:`KSDS <KSDS_module>` or VSA:ref:`ESDS <ESDS_module>`, then source can be ESDS, KSDS or RRDS.
+  When the ``dest`` is an existing VSAM (KSDS) or VSAM (ESDS), then source can be ESDS, KSDS or RRDS. The ``dest`` will be deleted and storage management rules will be used to determine the volume where ``dest`` will be allocated.
 
-  When the ``dest`` is an existing VSA:ref:`RRDS <RRDS_module>`, then the source must be RRDS.
+  When the ``dest`` is an existing VSAM (RRDS), then the source must be RRDS. The ``dest`` will be deleted and storage management rules will be used to determine the volume where ``dest`` will be allocated.
 
-  When ``dest`` is and existing VSA:ref:`LDS <LDS_module>`, then source must be LDS.
+  When ``dest`` is and existing VSAM (LDS), then source must be LDS. The ``dest`` will be deleted and storage management rules will be used to determine the volume where ``dest`` will be allocated.
 
+  When ``dest`` is a data set, you can override storage management rules by specifying both ``volume`` and other optional DS specs (type, space, record size, etc).
 
   | **required**: True
   | **type**: str
 
 
-     
 encoding
   Specifies which encodings the destination file or data set should be converted from and to.
 
@@ -107,31 +100,25 @@ encoding
 
   Only valid if ``is_binary`` is false.
 
-
   | **required**: False
   | **type**: dict
 
 
-     
   from
     The encoding to be converted from
 
-
     | **required**: True
     | **type**: str
 
 
-     
   to
     The encoding to be converted to
 
-
     | **required**: True
     | **type**: str
 
 
 
-     
 force
   If set to ``true``, the remote file or data set will be overwritten.
 
@@ -139,40 +126,34 @@ force
 
   If set to ``false`` and destination exists, the module exits with a note to the user.
 
-
   | **required**: False
   | **type**: bool
 
 
-     
 ignore_sftp_stderr
-  During data transfer through sftp, the module fails if the sftp command directs any content to stderr. The user is able to override this behavior by setting this parameter to ``true``. By doing so, the module would essentially ignore the stderr stream produced by sftp and continue execution.
+  During data transfer through SFTP, the module fails if the SFTP command directs any content to stderr. The user is able to override this behavior by setting this parameter to ``true``. By doing so, the module would essentially ignore the stderr stream produced by SFTP and continue execution.
 
+  When Ansible verbosity is set to greater than 3, either through the command line interface (CLI) using **-vvvv** or through environment variables such as **verbosity = 4**, then this parameter will automatically be set to ``true``.
 
   | **required**: False
   | **type**: bool
 
 
-     
 is_binary
   If set to ``true``, indicates that the file or data set to be copied is a binary file/data set.
 
-
   | **required**: False
   | **type**: bool
 
 
-     
 local_follow
   This flag indicates that any existing filesystem links in the source tree should be followed.
-
 
   | **required**: False
   | **type**: bool
   | **default**: True
 
 
-     
 mode
   The permission of the destination file or directory.
 
@@ -184,49 +165,32 @@ mode
 
   ``preserve`` means that the file will be given the same permissions as the source file.
 
-
   | **required**: False
   | **type**: str
 
 
-     
-model_ds
-  When copying a local file/directory to a non-existing PDS, PDSE or PS, specify a model data set to allocate the destination after.
-
-  If this parameter is not provided, the destination data set will be allocated based on the size of the local file/directory.
-
-  Only valid if ``src`` is a local file or directory and ``dest`` does not exist.
-
-
-  | **required**: False
-  | **type**: str
-
-
-     
 remote_src
   If set to ``false``, the module searches for ``src`` at the local machine.
 
   If set to ``true``, the module goes to the remote/target machine for ``src``.
 
-
   | **required**: False
   | **type**: bool
 
 
-     
 sftp_port
-  Indicates which port should be used to connect to the remote z/OS system to perform data transfer.
+  Configuring the SFTP port used by the :ref:`zos_copy <zos_copy_module>` module has been deprecated and will be removed in ibm.ibm_zos_core collection version 1.5.0.
 
-  If this parameter is not specified, ``ansible_port`` will be used.
+  Configuring the SFTP port with *sftp_port* will no longer have any effect on which port is used by this module.
+
+  To configure the SFTP port used for module :ref:`zos_copy <zos_copy_module>`, refer to topic `using connection plugins <https://docs.ansible.com/ansible/latest/plugins/connection.html#using-connection-plugins>`_
 
   If ``ansible_port`` is not specified, port 22 will be used.
-
 
   | **required**: False
   | **type**: int
 
 
-     
 src
   Path to a file/directory or name of a data set to copy to remote z/OS system.
 
@@ -244,23 +208,19 @@ src
 
   Required unless using ``content``.
 
-
   | **required**: False
   | **type**: str
 
 
-     
 validate
   Specifies whether to perform checksum validation for source and destination files.
 
   Valid only for USS destination, otherwise ignored.
 
-
   | **required**: False
   | **type**: bool
 
 
-     
 volume
   If ``dest`` does not exist, specify which volume ``dest`` should be allocated to.
 
@@ -268,11 +228,90 @@ volume
 
   The volume must already be present on the device.
 
-  If no volume is specified, an appropriate volume will be chosen to allocate ``dest``.
+  If no volume is specified, storage management rules will be used to determine the volume where ``dest`` will be allocated.
 
+  If the storage administrator has specified a system default unit name and you do not set a ``volume`` name for non-system-managed data sets, then the system uses the volumes associated with the default unit name. Check with your storage administrator to determine whether a default unit name has been specified.
 
   | **required**: False
   | **type**: str
+
+
+destination_dataset
+  These are settings to use when creating the destination data set
+
+  | **required**: False
+  | **type**: dict
+
+
+  dd_type
+    Organization of the destination
+
+    | **required**: False
+    | **type**: str
+    | **default**: BASIC
+    | **choices**: KSDS, ESDS, RRDS, LDS, SEQ, PDS, PDSE, MEMBER, BASIC
+
+
+  space_primary
+    If the destination *dest* data set does not exist , this sets the primary space allocated for the data set.
+
+    The unit of space used is set using *space_type*.
+
+    | **required**: False
+    | **type**: str
+    | **default**: 5
+
+
+  space_secondary
+    If the destination *dest* data set does not exist , this sets the secondary space allocated for the data set.
+
+    The unit of space used is set using *space_type*.
+
+    | **required**: False
+    | **type**: str
+    | **default**: 3
+
+
+  space_type
+    If the destination data set does not exist, this sets the unit of measurement to use when defining primary and secondary space.
+
+    Valid units of size are ``K``, ``M``, ``G``, ``CYL``, and ``TRK``.
+
+    | **required**: False
+    | **type**: str
+    | **default**: M
+    | **choices**: K, M, G, CYL, TRK
+
+
+  record_format
+    If the destination data set does not exist, this sets the format of the data set. (e.g ``FB``)
+
+    Choices are case-insensitive.
+
+    | **required**: False
+    | **type**: str
+    | **default**: FB
+    | **choices**: FB, VB, FBA, VBA, U
+
+
+  record_length
+    The length of each record in the data set, in bytes.
+
+    For variable data sets, the length must include the 4-byte prefix area.
+
+    Defaults vary depending on format: If FB/FBA 80, if VB/VBA 137, if U 0.
+
+    | **required**: False
+    | **type**: int
+    | **default**: 80
+
+
+  block_size
+    The block size to use for the data set.
+
+    | **required**: False
+    | **type**: int
+
 
 
 
@@ -298,9 +337,6 @@ Examples
      zos_copy:
        src: /path/to/file.txt
        dest: /tmp/file.txt
-       encoding:
-         from: ISO8859-1
-         to: IBM-1047
 
    - name: Copy a local directory to a PDSE
      zos_copy:
@@ -321,12 +357,15 @@ Examples
        dest: /path/to/uss/location
        local_follow: true
 
-   - name: Copy a local file to a PDS member
+   - name: Copy a local file to a PDS member and convert encoding
      zos_copy:
        src: /path/to/local/file
        dest: HLQ.SAMPLE.PDSE(MEMBER)
+       encoding:
+         from: UTF-8
+         to: IBM-037
 
-   - name: Copy a VSAM(KSDS) to a VSAM(KSDS)
+   - name: Copy a VSAM (KSDS) to a VSAM (KSDS)
      zos_copy:
        src: SAMPLE.SRC.VSAM
        dest: SAMPLE.DEST.VSAM
@@ -342,9 +381,6 @@ Examples
        src: /path/to/remote/uss/file
        dest: SAMPLE.SEQ.DATA.SET
        remote_src: true
-       encoding:
-         from: ISO8859-1
-         to: IBM-1047
 
    - name: Copy a USS directory to another USS directory
      zos_copy:
@@ -447,7 +483,9 @@ Notes
 
    VSAM data sets can only be copied to other VSAM data sets.
 
-   For supported character sets used to encode data, refer to https://ansible-collections.github.io/ibm_zos_core/supplementary.html#encode
+   For supported character sets used to encode data, refer to the `documentation <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html>`_.
+
+   :ref:`zos_copy <zos_copy_module>` uses SFTP (Secure File Transfer Protocol) for the underlying transfer protocol; Co:Z SFTP is not supported. In the case of Co:z SFTP, you can exempt the Ansible userid on z/OS from using Co:Z thus falling back to using standard SFTP.
 
 
 
@@ -461,223 +499,155 @@ See Also
 
 
 
+
 Return Values
 -------------
 
 
-   
-                              
-       src
-        | Source file or data set being copied.
-      
-        | **returned**: changed
-        | **type**: str
-        | **sample**: /path/to/source.log
+src
+  Source file or data set being copied.
 
-            
-      
-      
-                              
-       dest
-        | Destination file/path or data set name.
-      
-        | **returned**: success
-        | **type**: str
-        | **sample**: SAMPLE.SEQ.DATA.SET
+  | **returned**: changed
+  | **type**: str
+  | **sample**: /path/to/source.log
 
-            
-      
-      
-                              
-       checksum
-        | SHA256 checksum of the file after running zos_copy.
-      
-        | **returned**: C(validate) is C(true) and if dest is USS
-        | **type**: str
-        | **sample**: 8d320d5f68b048fc97559d771ede68b37a71e8374d1d678d96dcfa2b2da7a64e
+dest
+  Destination file/path or data set name.
 
-            
-      
-      
-                              
-       backup_name
-        | Name of the backup file or data set that was created.
-      
-        | **returned**: if backup=true or backup_name=true
-        | **type**: str
-        | **sample**: /path/to/file.txt.2015-02-03@04:15~
+  | **returned**: success
+  | **type**: str
+  | **sample**: SAMPLE.SEQ.DATA.SET
 
-            
-      
-      
-                              
-       gid
-        | Group id of the file, after execution.
-      
-        | **returned**: success and if dest is USS
-        | **type**: int
-        | **sample**: 100
+checksum
+  SHA256 checksum of the file after running zos_copy.
 
-            
-      
-      
-                              
-       group
-        | Group of the file, after execution.
-      
-        | **returned**: success and if dest is USS
-        | **type**: str
-        | **sample**: httpd
+  | **returned**: C(validate) is C(true) and if dest is USS
+  | **type**: str
+  | **sample**: 8d320d5f68b048fc97559d771ede68b37a71e8374d1d678d96dcfa2b2da7a64e
 
-            
-      
-      
-                              
-       owner
-        | Owner of the file, after execution.
-      
-        | **returned**: success and if dest is USS
-        | **type**: str
-        | **sample**: httpd
+backup_name
+  Name of the backup file or data set that was created.
 
-            
-      
-      
-                              
-       uid
-        | Owner id of the file, after execution.
-      
-        | **returned**: success and if dest is USS
-        | **type**: int
-        | **sample**: 100
+  | **returned**: if backup=true or backup_name=true
+  | **type**: str
+  | **sample**: /path/to/file.txt.2015-02-03@04:15~
 
-            
-      
-      
-                              
-       mode
-        | Permissions of the target, after execution.
-      
-        | **returned**: success and if dest is USS
-        | **type**: str
-        | **sample**: 420
+gid
+  Group id of the file, after execution.
 
-            
-      
-      
-                              
-       size
-        | Size(in bytes) of the target, after execution.
-      
-        | **returned**: success and dest is USS
-        | **type**: int
-        | **sample**: 1220
+  | **returned**: success and if dest is USS
+  | **type**: int
+  | **sample**: 100
 
-            
-      
-      
-                              
-       state
-        | State of the target, after execution.
-      
-        | **returned**: success and if dest is USS
-        | **type**: str
-        | **sample**: file
+group
+  Group of the file, after execution.
 
-            
-      
-      
-                              
-       note
-        | A note to the user after module terminates.
-      
-        | **returned**: C(force) is C(false) and dest exists
-        | **type**: str
-        | **sample**: No data was copied
+  | **returned**: success and if dest is USS
+  | **type**: str
+  | **sample**: httpd
 
-            
-      
-      
-                              
-       msg
-        | Failure message returned by the module.
-      
-        | **returned**: failure
-        | **type**: str
-        | **sample**: Error while gathering data set information
+owner
+  Owner of the file, after execution.
 
-            
-      
-      
-                              
-       stdout
-        | The stdout from a USS command or MVS command, if applicable.
-      
-        | **returned**: failure
-        | **type**: str
-        | **sample**: Copying local file /tmp/foo/src to remote path /tmp/foo/dest
+  | **returned**: success and if dest is USS
+  | **type**: str
+  | **sample**: httpd
 
-            
-      
-      
-                              
-       stderr
-        | The stderr of a USS command or MVS command, if applicable.
-      
-        | **returned**: failure
-        | **type**: str
-        | **sample**: No such file or directory "/tmp/foo"
+uid
+  Owner id of the file, after execution.
 
-            
-      
-      
-                              
-       stdout_lines
-        | List of strings containing individual lines from stdout.
-      
-        | **returned**: failure
-        | **type**: list      
-        | **sample**:
+  | **returned**: success and if dest is USS
+  | **type**: int
+  | **sample**: 100
 
-              .. code-block::
+mode
+  Permissions of the target, after execution.
 
-                       ["u\"Copying local file /tmp/foo/src to remote path /tmp/foo/dest..\""]
-            
-      
-      
-                              
-       stderr_lines
-        | List of strings containing individual lines from stderr.
-      
-        | **returned**: failure
-        | **type**: list      
-        | **sample**:
+  | **returned**: success and if dest is USS
+  | **type**: str
+  | **sample**: 420
 
-              .. code-block::
+size
+  Size(in bytes) of the target, after execution.
 
-                       [{"u\"FileNotFoundError": "No such file or directory \u0027/tmp/foo\u0027\""}]
-            
-      
-      
-                              
-       rc
-        | The return code of a USS or MVS command, if applicable.
-      
-        | **returned**: failure
-        | **type**: int
-        | **sample**: 8
+  | **returned**: success and dest is USS
+  | **type**: int
+  | **sample**: 1220
 
-            
-      
-      
-                              
-       cmd
-        | The MVS command issued, if applicable.
-      
-        | **returned**: failure
-        | **type**: str
-        | **sample**: REPRO INDATASET(SAMPLE.DATA.SET) OUTDATASET(SAMPLE.DEST.DATA.SET)
+state
+  State of the target, after execution.
 
-            
-      
-        
+  | **returned**: success and if dest is USS
+  | **type**: str
+  | **sample**: file
+
+note
+  A note to the user after module terminates.
+
+  | **returned**: C(force) is C(false) and dest exists
+  | **type**: str
+  | **sample**: No data was copied
+
+msg
+  Failure message returned by the module.
+
+  | **returned**: failure
+  | **type**: str
+  | **sample**: Error while gathering data set information
+
+stdout
+  The stdout from a USS command or MVS command, if applicable.
+
+  | **returned**: failure
+  | **type**: str
+  | **sample**: Copying local file /tmp/foo/src to remote path /tmp/foo/dest
+
+stderr
+  The stderr of a USS command or MVS command, if applicable.
+
+  | **returned**: failure
+  | **type**: str
+  | **sample**: No such file or directory "/tmp/foo"
+
+stdout_lines
+  List of strings containing individual lines from stdout.
+
+  | **returned**: failure
+  | **type**: list
+  | **sample**:
+
+    .. code-block:: json
+
+        [
+            "u\"Copying local file /tmp/foo/src to remote path /tmp/foo/dest..\""
+        ]
+
+stderr_lines
+  List of strings containing individual lines from stderr.
+
+  | **returned**: failure
+  | **type**: list
+  | **sample**:
+
+    .. code-block:: json
+
+        [
+            {
+                "u\"FileNotFoundError": "No such file or directory \u0027/tmp/foo\u0027\""
+            }
+        ]
+
+rc
+  The return code of a USS or MVS command, if applicable.
+
+  | **returned**: failure
+  | **type**: int
+  | **sample**: 8
+
+cmd
+  The MVS command issued, if applicable.
+
+  | **returned**: failure
+  | **type**: str
+  | **sample**: REPRO INDATASET(SAMPLE.DATA.SET) OUTDATASET(SAMPLE.DEST.DATA.SET)
+

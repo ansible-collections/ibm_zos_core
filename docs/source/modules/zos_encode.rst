@@ -16,8 +16,8 @@ zos_encode -- Perform encoding operations.
 
 Synopsis
 --------
-- Converts the encoding of characters that are read from a UNIX System Services (USS) file or path, PS(sequential data set), PDS, PDSE, or KSDS(VSAM data set).
-- Writes the data to a UNIX System Services (USS) file or path, PS(sequential data set), PDS, PDSE, or KSDS(VSAM data set).
+- Converts the encoding of characters that are read from a UNIX System Services (USS) file or path, PS (sequential data set), PDS, PDSE, or KSDS (VSAM data set).
+- Writes the data to a UNIX System Services (USS) file or path, PS (sequential data set), PDS, PDSE, or KSDS (VSAM data set).
 
 
 
@@ -27,29 +27,61 @@ Parameters
 ----------
 
 
-     
+from_encoding
+  The character set of the source *src*.
+
+  Supported character sets rely on the charset conversion utility (iconv) version; the most common character sets are supported.
+
+  | **required**: False
+  | **type**: str
+  | **default**: IBM-1047
+
+
+to_encoding
+  The destination *dest* character set for the output to be written as.
+
+  Supported character sets rely on the charset conversion utility (iconv) version; the most common character sets are supported.
+
+  | **required**: False
+  | **type**: str
+  | **default**: ISO8859-1
+
+
+src
+  The location can be a UNIX System Services (USS) file or path, PS (sequential data set), PDS, PDSE, member of a PDS or PDSE, or KSDS (VSAM data set).
+
+  The USS path or file must be an absolute pathname.
+
+  If *src* is a USS directory, all files will be encoded.
+
+  | **required**: True
+  | **type**: str
+
+
+dest
+  The location where the converted characters are output.
+
+  The destination *dest* can be a UNIX System Services (USS) file or path, PS (sequential data set), PDS, PDSE, member of a PDS or PDSE, or KSDS (VSAM data set).
+
+  If the length of the PDSE member name used in *dest* is greater than 8 characters, the member name will be truncated when written out.
+
+  If *dest* is not specified, the *src* will be used as the destination and will overwrite the *src* with the character set in the option *to_encoding*.
+
+  The USS file or path must be an absolute pathname.
+
+  | **required**: False
+  | **type**: str
+
+
 backup
   Creates a backup file or backup data set for *dest*, including the timestamp information to ensure that you retrieve the original file.
 
   *backup_name* can be used to specify a backup file name if *backup=true*.
 
-
   | **required**: False
   | **type**: bool
 
 
-     
-backup_compress
-  Determines if backups to USS files or paths should be compressed.
-
-  *backup_compress* is only used when *backup=true*.
-
-
-  | **required**: False
-  | **type**: bool
-
-
-     
 backup_name
   Specify the USS file name or data set name for the dest backup.
 
@@ -61,63 +93,17 @@ backup_name
 
   ``backup_name`` will be returned on either success or failure of module execution such that data can be retrieved.
 
-
   | **required**: False
   | **type**: str
 
 
-     
-dest
-  The location where the converted characters are output.
+backup_compress
+  Determines if backups to USS files or paths should be compressed.
 
-  The destination *dest* can be a UNIX System Services (USS) file or path, PS(sequential data set), PDS, PDSE, member of a PDS or PDSE, or KSDS(VSAM data set).
-
-  If the length of the PDSE member name used in *dest* is greater than 8 characters, the member name will be truncated when written out.
-
-  If *dest* is not specified, the *src* will be used as the destination and will overwrite the *src* with the character set in the option *to_encoding*.
-
-  The USS file or path must be an absolute pathname.
-
+  *backup_compress* is only used when *backup=true*.
 
   | **required**: False
-  | **type**: str
-
-
-     
-from_encoding
-  The character set of the source *src*.
-
-  Supported character sets rely on the charset conversion utility (iconv) version; the most common character sets are supported.
-
-
-  | **required**: False
-  | **type**: str
-  | **default**: IBM-1047
-
-
-     
-src
-  The location can be a UNIX System Services (USS) file or path, PS(sequential data set), PDS, PDSE, member of a PDS or PDSE, or KSDS(VSAM data set).
-
-  The USS path or file must be an absolute pathname.
-
-  If *src* is a USS directory, all files will be encoded.
-
-
-  | **required**: True
-  | **type**: str
-
-
-     
-to_encoding
-  The destination *dest* character set for the output to be written as.
-
-  Supported character sets rely on the charset conversion utility (iconv) version; the most common character sets are supported.
-
-
-  | **required**: False
-  | **type**: str
-  | **default**: ISO8859-1
+  | **type**: bool
 
 
 
@@ -249,7 +235,8 @@ Notes
 
    All data sets are always assumed to be cataloged. If an uncataloged data set needs to be encoded, it should be cataloged first.
 
-   For supported character sets used to encode data, refer to https://ansible-collections.github.io/ibm_zos_core/supplementary.html#encode
+   For supported character sets used to encode data, refer to the `documentation <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html>`_.
+
 
 
 
@@ -260,31 +247,22 @@ Return Values
 -------------
 
 
-   
-                              
-       src
-        | The location of the input characters identified in option I(src).
-      
-        | **returned**: always
-        | **type**: str
-      
-      
-                              
-       dest
-        | The name of the output file or data set. If dest is a USS file or path and the status has been changed in the conversion, the file status will also be returned.
-      
-        | **returned**: always
-        | **type**: str
-      
-      
-                              
-       backup_name
-        | Name of the backup file created.
-      
-        | **returned**: changed and if backup=yes
-        | **type**: str
-        | **sample**: /path/file_name.2020-04-23-08-32-29-bak.tar
+src
+  The location of the input characters identified in option *src*.
 
-            
-      
-        
+  | **returned**: always
+  | **type**: str
+
+dest
+  The name of the output file or data set. If dest is a USS file or path and the status has been changed in the conversion, the file status will also be returned.
+
+  | **returned**: always
+  | **type**: str
+
+backup_name
+  Name of the backup file created.
+
+  | **returned**: changed and if backup=yes
+  | **type**: str
+  | **sample**: /path/file_name.2020-04-23-08-32-29-bak.tar
+

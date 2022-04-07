@@ -287,6 +287,7 @@ class BetterArgHandler(object):
         Returns:
             str -- The arguments contents after any necessary operations.
         """
+        contents = BetterArgHandler.fix_local_path(contents)
         if not path.isabs(str(contents)):
             raise ValueError('Invalid argument "{0}" for type "path".'.format(contents))
         return str(contents)
@@ -477,6 +478,28 @@ class BetterArgHandler(object):
             raise ValueError('Invalid argument "{0}" for type "dd".'.format(contents))
         return str(contents)
 
+    @staticmethod
+    def fix_local_path(given_path):
+        """Adapter for local/USS path abbreviations
+
+        Arguments:
+            path given as input, which may need adjustment
+
+        Returns:
+            str -- The path, after leading ~, .. or . has been adjusted
+        """
+        final_path = given_path
+        if given_path.startswith("~"):
+            final_path = path.expanduser(given_path)
+        elif given_path.startswith(".."):
+            pwd = str(path.realpath(".."))
+            final_path = pwd + given_path[2:]
+        elif given_path.startswith("."):
+            wd = str(path.realpath("."))
+            final_path = wd + given_path[1:]
+
+        return str(final_path)
+
     def _data_set_or_path_type(self, contents, resolve_dependencies):
         """Resolver for data_set_or_path type arguments
 
@@ -497,12 +520,13 @@ class BetterArgHandler(object):
             IGNORECASE,
         ):
             content_path = str(contents)
-            if content_path.startswith('~'):
-                content_path = path.expanduser(content_path)
+            contents = BetterArgHandler.fix_local_path(content_path)
 
-            if not path.isabs(content_path):
+            if not path.isabs(contents):
                 raise ValueError(
-                    'Invalid argument "{0}" for type "data_set" or "path".'
+                    'Invalid argument "{0}" for type "data_set" or "path".'.format(
+                        contents
+                    )
                 )
         return str(contents)
 

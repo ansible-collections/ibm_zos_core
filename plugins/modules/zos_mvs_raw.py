@@ -89,7 +89,7 @@ options:
             description:
               - The data set name.
             type: str
-            required: false
+            required: true
           type:
             description:
               - The data set type. Only required when I(disposition=new).
@@ -682,8 +682,10 @@ options:
               dd_data_set:
                 description:
                   - Specify a data set.
-                  - I(dd_data_set) can reference an existing data set or be
-                    used to define a new data set to be created during execution.
+                  - I(dd_data_set) can reference an existing data set. The
+                    data set referenced with C(data_set_name) must be allocated
+                    before the module M(zos_mvs_raw) is run, you can
+                    use M(zos_data_set) to allocate a data set.
                 required: false
                 type: dict
                 suboptions:
@@ -691,7 +693,7 @@ options:
                     description:
                       - The data set name.
                     type: str
-                    required: false
+                    required: true
                   type:
                     description:
                       - The data set type. Only required when I(disposition=new).
@@ -1194,7 +1196,8 @@ notes:
     - 2. M(zos_mvs_raw) module execution fails when invoking DFSRRC00 with parm
       "UPB,PRECOMP", "UPB, POSTCOMP" or "UPB,PRECOMP,POSTCOMP". This issue is
       addressed by APAR PH28089.
-
+seealso:
+- module: zos_data_set
 """
 
 RETURN = r"""
@@ -1377,25 +1380,6 @@ EXAMPLES = r"""
       - dd_unix:
           dd_name: sysprint
           path: /u/myuser/outputfile.txt
-      - dd_input:
-          dd_name: sysin
-          content: " LISTCAT ENTRIES('SOME.DATASET.*')"
-
-- name: List data sets matching pattern in catalog,
-    save output to a file in UNIX System Services.
-    Return the contents of the file in encoding IBM-1047,
-    while the file is encoded in ISO8859-1.
-  zos_mvs_raw:
-    program_name: idcams
-    auth: true
-    dds:
-      - dd_unix:
-          dd_name: sysprint
-          path: /u/myuser/outputfile.txt
-          return_content:
-            type: text
-            src_encoding: iso8859-1
-            response_encoding: ibm-1047
       - dd_input:
           dd_name: sysin
           content: " LISTCAT ENTRIES('SOME.DATASET.*')"

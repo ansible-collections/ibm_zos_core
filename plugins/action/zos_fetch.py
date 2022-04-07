@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2019, 2020
+# Copyright (c) IBM Corporation 2019, 2020, 2021
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -23,10 +23,14 @@ from ansible.module_utils.six import string_types
 from ansible.module_utils.parsing.convert_bool import boolean
 from ansible.plugins.action import ActionBase
 from ansible.errors import AnsibleError
+from ansible.utils.display import Display
+from ansible import cli
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import encode
 
 SUPPORTED_DS_TYPES = frozenset({"PS", "PO", "VSAM", "USS"})
+
+display = Display()
 
 
 def _update_result(result, src, dest, ds_type="USS", is_binary=False):
@@ -105,8 +109,7 @@ class ActionModule(ActionBase):
         src = self._task.args.get('src')
         dest = self._task.args.get('dest')
         encoding = self._task.args.get('encoding')
-        # If self._play_context.port is None, that implies the default port 22
-        # was used to connect to the remote host.
+        # Option sftp_port is deprecated in 1.4.0 to be removed in 1.5.0
         sftp_port = self._task.args.get('sftp_port', self._play_context.port or 22)
         flat = _process_boolean(self._task.args.get('flat'), default=False)
         is_binary = _process_boolean(self._task.args.get('is_binary'))
@@ -125,16 +128,16 @@ class ActionModule(ActionBase):
         if src is None or dest is None:
             msg = "Source and destination are required"
         elif not isinstance(src, string_types):
-            msg = "Invalid type supplied for 'source' option, " "it must be a string"
+            msg = "Invalid type supplied for 'source' option, it must be a string"
         elif not isinstance(dest, string_types):
             msg = (
-                "Invalid type supplied for 'destination' option, " "it must be a string"
+                "Invalid type supplied for 'destination' option, it must be a string"
             )
         elif len(src) < 1 or len(dest) < 1:
             msg = "Source and destination parameters must not be empty"
 
-        elif not isinstance(sftp_port, int) or not 0 < sftp_port <= 65535:
-            msg = "Invalid port provided for SFTP. Expected an integer between 0 to 65535."
+        # elif not isinstance(sftp_port, int) or not 0 < sftp_port <= 65535:
+        #     msg = "Invalid port provided for SFTP. Expected an integer between 0 to 65535."
 
         if msg:
             result["msg"] = msg
@@ -223,6 +226,7 @@ class ActionModule(ActionBase):
         new_module_args.update(
             dict(local_charset=encode.Defaults.get_default_system_charset())
         )
+        remote_path = None
         try:
             fetch_res = self._execute_module(
                 module_name="ibm.ibm_zos_core.zos_fetch",
@@ -263,7 +267,6 @@ class ActionModule(ActionBase):
                     dest,
                     remote_path,
                     ds_type,
-                    sftp_port,
                     ignore_stderr=ignore_sftp_stderr,
                 )
                 if fetch_content.get("msg"):
@@ -299,36 +302,97 @@ class ActionModule(ActionBase):
         return _update_result(result, src, dest, ds_type, is_binary=is_binary)
 
     def _transfer_remote_content(
-        self, dest, remote_path, src_type, port, ignore_stderr=False
+        self, dest, remote_path, src_type, ignore_stderr=False
     ):
         """ Transfer a file or directory from USS to local machine.
             After the transfer is complete, the USS file or directory will
             be removed.
         """
         result = dict()
-        ansible_user = self._play_context.remote_user
-        ansible_host = self._play_context.remote_addr
+        _sftp_action = 'get'
 
-        cmd = ["sftp", "-oPort={0}".format(port), ansible_user + "@" + ansible_host]
-        stdin = "get -r {0} {1}".format(remote_path, dest)
-        if src_type != "PO":
-            stdin = stdin.replace(" -r", "")
+        if src_type == "PO":
+            _sftp_action += ' -r'    # add '-r` to clone the source trees
 
-        transfer_pds = subprocess.Popen(
-            cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-        )
-        out, err = transfer_pds.communicate(to_bytes(stdin))
-        err = _detect_sftp_errors(err)
-        if re.findall(r"Permission denied", err):
-            result["msg"] = "Insufficient write permission for destination {0}".format(
-                dest
-            )
-        elif transfer_pds.returncode != 0 or (err and not ignore_stderr):
-            result["msg"] = "Error transferring remote data from z/OS system"
-            result["rc"] = transfer_pds.returncode
-        if result.get("msg"):
-            result["stderr"] = err
-            result["failed"] = True
+        # To support multiple Ansible versions we must do some version detection and act accordingly
+        version_inf = cli.CLI.version_info(False)
+        version_major = version_inf['major']
+        version_minor = version_inf['minor']
+
+        # Override the Ansible Connection behavior for this module and track users configuration
+        sftp_transfer_method = "sftp"
+        user_ssh_transfer_method = None
+        is_ssh_transfer_method_updated = False
+
+        try:
+            if version_major == 2 and version_minor >= 11:
+                user_ssh_transfer_method = self._connection.get_option('ssh_transfer_method')
+
+                if user_ssh_transfer_method != sftp_transfer_method:
+                    self._connection.set_option('ssh_transfer_method', sftp_transfer_method)
+                    is_ssh_transfer_method_updated = True
+
+            elif version_major == 2 and version_minor <= 10:
+                user_ssh_transfer_method = self._play_context.ssh_transfer_method
+
+                if user_ssh_transfer_method != sftp_transfer_method:
+                    self._play_context.ssh_transfer_method = sftp_transfer_method
+                    is_ssh_transfer_method_updated = True
+
+            if is_ssh_transfer_method_updated:
+                display.vvv(u"ibm_zos_fetch SSH transfer method updated from {0} to {1}.".format(user_ssh_transfer_method,
+                            sftp_transfer_method), host=self._play_context.remote_addr)
+
+            display.vvv(u"{0} {1} TO {2}".format(_sftp_action, remote_path, dest), host=self._play_context.remote_addr)
+            (returncode, stdout, stderr) = self._connection._file_transport_command(remote_path, dest, _sftp_action)
+
+            display.vvv(u"ibm_zos_fetch return code: {0}".format(returncode), host=self._play_context.remote_addr)
+            display.vvv(u"ibm_zos_fetch stdout: {0}".format(stdout), host=self._play_context.remote_addr)
+            display.vvv(u"ibm_zos_fetch stderr: {0}".format(stderr), host=self._play_context.remote_addr)
+            display.vvv(u"play context verbosity: {0}".format(self._play_context.verbosity), host=self._play_context.remote_addr)
+
+            err = _detect_sftp_errors(stderr)
+
+            # ************************************************************************* #
+            # When plugin shh connection member _build_command(..) detects verbosity    #
+            # greater than 3, it constructs a command that includes verbosity like      #
+            # 'EXEC sftp -b - -vvv ...' where this then is returned in the connections  #
+            # stream as 'stderr' and if a user has not set ignore_stderr it will fail   #
+            # the modules execution. So in cases where verbosity                        #
+            # (ansible.cfg verbosity = n || CLI -vvv) are collectively summed and       #
+            # amount to greater than 3, ignore_stderr will be set to 'True' so that     #
+            # 'err' which will not be None won't fail the module. 'stderr' does not     #
+            # in our z/OS case actually mean an error happened, it just so happens      #
+            # the verbosity is returned as 'stderr'.                                    #
+            # ************************************************************************* #
+
+            if self._play_context.verbosity > 3:
+                ignore_stderr = True
+
+            if re.findall(r"Permission denied", err):
+                result["msg"] = "Insufficient write permission for destination {0}".format(
+                    dest
+                )
+            elif returncode != 0 or (err and not ignore_stderr):
+                result["msg"] = "Error transferring remote data from z/OS system"
+                result["rc"] = returncode
+            if result.get("msg"):
+                result["stderr"] = err
+                result["failed"] = True
+
+        finally:
+            # Restore the users defined option `ssh_transfer_method` if it was overridden
+
+            if is_ssh_transfer_method_updated:
+                if version_major == 2 and version_minor >= 11:
+                    self._connection.set_option('ssh_transfer_method', user_ssh_transfer_method)
+
+                elif version_major == 2 and version_minor <= 10:
+                    self._play_context.ssh_transfer_method = user_ssh_transfer_method
+
+                display.vvv(u"ibm_zos_fetch SSH transfer method restored to {0}".format(user_ssh_transfer_method), host=self._play_context.remote_addr)
+                is_ssh_transfer_method_updated = False
+
         return result
 
     def _remote_cleanup(self, remote_path, src_type, encoding):

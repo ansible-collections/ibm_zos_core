@@ -34,12 +34,9 @@ def job_output(job_id=None, owner=None, job_name=None, dd_name=None):
         job_name {str} -- The job name search for (default: {None})
         dd_name {str} -- The data definition to retrieve (default: {None})
 
-    Raises:
-        RuntimeError: When job output cannot be retrieved successfully but job exists.
-        RuntimeError: When no job output is found
-
     Returns:
         list[dict] -- The output information for a list of jobs matching specified criteria.
+        If no job status is found, this will return an empty job code with msg=JOB NOT FOUND
     """
     arg_defs = dict(
         job_id=dict(arg_type="qualifier_pattern"),
@@ -76,9 +73,52 @@ def _get_job_output(job_id="*", owner="*", job_name="*", dd_name=""):
                 str(rc), str(err)
             )
         )
-    if not out:
-        raise RuntimeError("Failed to retrieve job output. No job output found.")
-    jobs = _parse_jobs(out)
+    jobs = []
+    if out:
+        jobs = _parse_jobs(out)
+    if not jobs:
+        jobs = _job_not_found(job_id, owner, job_name, dd_name)
+
+    return jobs
+
+
+def _job_not_found(job_id, owner, job_name, dd_name, ovrr=None):
+    jobs = []
+
+    job = {}
+
+    job["job_id"] = job_id
+    job["job_name"] = job_name
+    job["subsystem"] = None
+    job["system"] = None
+    job["owner"] = None
+
+    job["ret_code"] = {}
+    job["ret_code"]["msg"] = "JOB NOT FOUND"
+    job["ret_code"]["code"] = None
+    job["ret_code"]["msg_code"] = "NOT FOUND"
+    job["ret_code"]["msg_txt"] = "The job could not be found"
+
+    job["class"] = ""
+    job["content_type"] = ""
+
+    job["ddnames"] = []
+    dd = {}
+    dd["ddname"] = dd_name
+    dd["record_count"] = "0"
+    dd["id"] = ""
+    dd["stepname"] = None
+    dd["procstep"] = ""
+    dd["byte_count"] = "0"
+    job["ddnames"].append(dd)
+
+    if ovrr is not None:
+        job["ret_code"]["msg"] = "NO JOBS FOUND"
+        job["ret_code"]["msg_code"] = "NOT FOUND"
+        job["ret_code"]["msg_txt"] = "No jobs returned from query"
+
+    jobs.append(job)
+
     return jobs
 
 
@@ -90,6 +130,10 @@ def _parse_jobs(output_str):
 
     Returns:
         list[dict]: A list of jobs and their attributes.
+        If no job status is found, this will return an empty job code with msg=JOB NOT FOUND
+
+    Raises:
+        Runtime error if output wasn't parseable
     """
     jobs = []
     if "-----NO JOBS FOUND-----" not in output_str:
@@ -99,35 +143,45 @@ def _parse_jobs(output_str):
             re.MULTILINE | re.DOTALL,
         )
         for job_str in job_strs:
-            job = {}
             job_info_match = re.search(
                 (
-                    r"job_id:([^\n]*)\njob_name:([^\n]*)\nsubsystem:([^\n]*)\nsystem:([^\n]*)\n"
-                    r"owner:([^\n]*)\nret_code_msg:([^\n]*)\nclass:([^\n]*)\ncontent_type:([^\n]*)"
+                    r"\s*job_id:([^\n]*)\n\s*job_name:([^\n]*)\n\s*subsystem:([^\n]*)\n\s*system:([^\n]*)\n"
+                    r"\s*owner:([^\n]*)\n\s*ret_code_msg:([^\n]*)\n\s*class:([^\n]*)\n\s*content_type:([^\n]*)"
                 ),
                 job_str,
             )
-            job["job_id"] = job_info_match.group(1).strip()
-            job["job_name"] = job_info_match.group(2).strip()
-            job["subsystem"] = job_info_match.group(3).strip()
-            job["system"] = job_info_match.group(4).strip()
-            job["owner"] = job_info_match.group(5).strip()
+            if job_info_match is not None:
+                job = {}
 
-            job["ret_code"] = {}
-            ret_code_msg = job_info_match.group(6).strip()
-            if ret_code_msg:
-                job["ret_code"]["msg"] = ret_code_msg
-            job["ret_code"]["code"] = _get_return_code_num(ret_code_msg)
-            job["ret_code"]["msg_code"] = _get_return_code_str(ret_code_msg)
-            job["ret_code"]["msg_txt"] = ""
-            if ret_code_msg == "":
-                job["ret_code"]["msg"] = "AC"
+                job["job_id"] = job_info_match.group(1).strip()
+                job["job_name"] = job_info_match.group(2).strip()
+                job["subsystem"] = job_info_match.group(3).strip()
+                job["system"] = job_info_match.group(4).strip()
+                job["owner"] = job_info_match.group(5).strip()
 
-            job["class"] = job_info_match.group(7).strip()
-            job["content_type"] = job_info_match.group(8).strip()
+                job["ret_code"] = {}
+                ret_code_msg = job_info_match.group(6).strip()
+                if ret_code_msg:
+                    job["ret_code"]["msg"] = ret_code_msg
+                job["ret_code"]["code"] = _get_return_code_num(ret_code_msg)
+                job["ret_code"]["msg_code"] = _get_return_code_str(ret_code_msg)
+                job["ret_code"]["msg_txt"] = ""
+                if "JCL ERROR" in ret_code_msg:
+                    job["ret_code"][
+                        "msg_txt"
+                    ] = "JCL Error detected.  Check the data dumps for more information."
 
-            job["ddnames"] = _parse_dds(job_str)
-            jobs.append(job)
+                if ret_code_msg == "":
+                    job["ret_code"]["msg"] = "AC"
+                job["ret_code"]["steps"] = _parse_steps(job_str)
+                job["class"] = job_info_match.group(7).strip()
+                job["content_type"] = job_info_match.group(8).strip()
+
+                job["ddnames"] = _parse_dds(job_str)
+                jobs.append(job)
+    else:
+        jobs = _job_not_found("", "", "", "notused")
+
     return jobs
 
 
@@ -167,9 +221,38 @@ def _parse_dds(job_str):
                 dd_str,
                 re.MULTILINE | re.DOTALL,
             )
-            dd["content"] = content_str.group(1).split("\n")
+            if content_str is not None:
+                dd["content"] = content_str.group(1).split("\n")
             dds.append(dd)
     return dds
+
+
+def _parse_steps(job_str):
+    """Parse the dd section of output of the job retrieved by rexx script, pulling step-wise CC's
+
+    Args:
+        job_str (str): The output string for a particular job returned from job retrieved by the rexx script.
+
+    Returns:
+        list[dict]: A list of step names listed as "step executed" the related CC.
+    """
+    stp = []
+    dd_strs = re.findall(
+        r"^-----START\sOF\sDD-----\n(.*?)-----END\sOF\sDD-----",
+        job_str,
+        re.MULTILINE | re.DOTALL,
+    )
+    for dd_str in dd_strs:
+        if "STEP WAS EXECUTED" in dd_str:
+            pile = re.findall(r"(.*?)\s-\sSTEP\sWAS\sEXECUTED\s-\s(.*?)\n", dd_str)
+            for match in pile:
+                st = {
+                    "step_name": match[0].split()[-1],
+                    "step_cc": match[1].split()[-1],
+                }
+                stp.append(st)
+
+    return stp
 
 
 def _get_job_output_str(job_id="*", owner="*", job_name="*", dd_name=""):
@@ -221,7 +304,6 @@ Say '-----NO JOBS FOUND-----'
 end
 else do
 do ix=1 to isfrows
-    linecount = 0
 
     Say '-----START OF JOB-----'
     Say 'job_id'||':'||value('JOBID'||"."||ix)
@@ -251,17 +333,11 @@ do ix=1 to isfrows
         Say 'byte_count'||':'||value('JDS_BYTECNT'||"."||jx)
         Say '-----START OF CONTENT-----'
         Address SDSF "ISFBROWSE ST TOKEN('"token.ix"')"
-        untilline = linecount + JDS_RECCNT.jx
-        startingcount = linecount + 1
-        do kx=linecount+1 to  untilline
-            linecount = linecount + 1
+        do kx=1 to isfline.0
             Say isfline.kx
         end
         Say '-----END OF CONTENT-----'
         Say '-----END OF DD-----'
-        end
-        else do
-            linecount = linecount + JDS_RECCNT.jx
         end
     end
     Say '-----END OF DD NAMES-----'
@@ -304,12 +380,10 @@ def job_status(job_id=None, owner=None, job_name=None):
         owner {str} -- The owner of the job (default: {None})
         job_name {str} -- The job name search for (default: {None})
 
-    Raises:
-        RuntimeError: When job status cannot be retrieved successfully but job exists.
-        RuntimeError: When no job status is found.
-
     Returns:
         list[dict] -- The status information for a list of jobs matching search criteria.
+        If no job status is found, this will return an empty job code with msg=JOB NOT FOUND
+
     """
     arg_defs = dict(
         job_id=dict(arg_type="qualifier_pattern"),
@@ -344,9 +418,12 @@ def _get_job_status(job_id="*", owner="*", job_name="*"):
                 str(rc), str(err)
             )
         )
-    if not out:
-        raise RuntimeError("Failed to retrieve job status. No job status found.")
-    jobs = _parse_jobs(out)
+
+    if out:
+        jobs = _parse_jobs(out)
+    if not jobs:
+        jobs = _job_not_found(job_id, owner, job_name, "notused")
+
     for job in jobs:
         job.pop("ddnames", None)
     return jobs
@@ -396,7 +473,6 @@ Say '-----NO JOBS FOUND-----'
 end
 else do
 do ix=1 to isfrows
-    linecount = 0
     if ix<>1 then do
     end
     Say '-----START OF JOB-----'
@@ -445,6 +521,7 @@ def _get_return_code_num(rc_str):
     Returns:
         Union[int, NoneType] -- Returns integer RC if possible, if not returns NoneType
     """
+
     rc = None
     match = re.search(r"\s*CC\s*([0-9]+)", rc_str)
     if match:
@@ -463,7 +540,9 @@ def _get_return_code_str(rc_str):
         Union[str, NoneType] -- Returns string RC or ABEND code if possible, if not returns NoneType
     """
     rc = None
-    match = re.search(r"(?:\s*CC\s*([0-9]+))|(?:ABEND\s*((?:S|U)[0-9]+))", rc_str)
+    match = re.search(
+        r"(?:\s*CC\s*([0-9]+))|(?:ABEND\s*((?:S|U)[0-9]+)|(?:JCL ERROR))", rc_str
+    )
     if match:
         rc = match.group(1) or match.group(2)
     return rc
@@ -480,6 +559,7 @@ def _ddname_pattern(contents, resolve_dependencies):
 
     Raises:
         ValueError: When contents is invalid argument type
+
     Returns:
         str -- The arguments contents after any necessary operations.
     """

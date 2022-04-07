@@ -70,7 +70,7 @@ def ansible_zos_module(request, z_python_interpreter):
     hosts = adhoc["options"]["inventory_manager"]._inventory.hosts
     for host in hosts.values():
         host.vars["ansible_python_interpreter"] = interpreter
-        host.vars["ansible_connection"] = "zos_ssh"
+        # host.vars["ansible_connection"] = "zos_ssh"
     yield adhoc
     try:
         clean_logs(adhoc)

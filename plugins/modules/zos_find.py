@@ -28,7 +28,9 @@ description:
   - The C(zos_find) module can only find MVS data sets. Use the
     L(find,https://docs.ansible.com/ansible/latest/modules/find_module.html)
     module to find USS files.
-author: "Asif Mahmud (@asifmahmud)"
+author:
+  - "Asif Mahmud (@asifmahmud)"
+  - "Demetrios Dimatos (@ddimatos)"
 options:
   age:
     description:

@@ -26,12 +26,10 @@ Parameters
 ----------
 
 
-     
 commands
   One or more TSO commands to execute on the target z/OS system.
 
   Accepts a single string or list of strings as input.
-
 
   | **required**: True
   | **type**: raw
@@ -65,56 +63,53 @@ Examples
 
 
 
+
 Return Values
 -------------
 
 
-   
-                              
-       output
-        | List of each TSO command output.
-      
-        | **returned**: always
-        | **type**: list
-              
-   
-                              
-        command
-          | The executed TSO command.
-      
-          | **returned**: always
-          | **type**: str
-      
-      
-                              
-        rc
-          | The return code from the executed TSO command.
-      
-          | **returned**: always
-          | **type**: int
-      
-      
-                              
-        content
-          | The response resulting from the execution of the TSO command.
-      
-          | **returned**: always
-          | **type**: list      
-          | **sample**:
+output
+  List of each TSO command output.
 
-              .. code-block::
+  | **returned**: always
+  | **type**: list
+  | **elements**: dict
 
-                       ["NO MODEL DATA SET                                                OMVSADM", "TERMUACC                                                                ", "SUBGROUP(S)= VSAMDSET SYSCTLG  BATCH    SASS     MASS     IMSGRP1       ", "             IMSGRP2  IMSGRP3  DSNCAT   DSN120   J42      M63           ", "             J91      J09      J97      J93      M82      D67           ", "             D52      M12      CCG      D17      M32      IMSVS         ", "             DSN210   DSN130   RAD      CATLG4   VCAT     CSP           "]
-            
-      
-      
-                              
-        lines
-          | The line number of the content.
-      
-          | **returned**: always
-          | **type**: int
-      
-        
-      
-        
+  command
+    The executed TSO command.
+
+    | **returned**: always
+    | **type**: str
+
+  rc
+    The return code from the executed TSO command.
+
+    | **returned**: always
+    | **type**: int
+
+  content
+    The response resulting from the execution of the TSO command.
+
+    | **returned**: always
+    | **type**: list
+    | **sample**:
+
+      .. code-block:: json
+
+          [
+              "NO MODEL DATA SET                                                OMVSADM",
+              "TERMUACC                                                                ",
+              "SUBGROUP(S)= VSAMDSET SYSCTLG  BATCH    SASS     MASS     IMSGRP1       ",
+              "             IMSGRP2  IMSGRP3  DSNCAT   DSN120   J42      M63           ",
+              "             J91      J09      J97      J93      M82      D67           ",
+              "             D52      M12      CCG      D17      M32      IMSVS         ",
+              "             DSN210   DSN130   RAD      CATLG4   VCAT     CSP           "
+          ]
+
+  lines
+    The line number of the content.
+
+    | **returned**: always
+    | **type**: int
+
+

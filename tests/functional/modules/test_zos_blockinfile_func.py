@@ -161,10 +161,16 @@ TEST_INFO = dict(
         insertbefore="ZOAU_ROOT=", block="unset ZOAU_ROOT\nunset ZOAU_HOME\nunset ZOAU_DIR", state="present"),
     test_uss_block_insertafter_eof=dict(
         insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present"),
+    test_uss_block_insert_with_force_option_as_true=dict(
+        insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present", force=True),
+    test_uss_block_insert_with_force_option_as_false=dict(
+        insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present", force=False),
     test_uss_block_insertbefore_bof=dict(
         insertbefore="BOF", block="# this is file is for setting env vars",
         state="present"),
     test_uss_block_absent=dict(block="", state="absent"),
+    test_uss_block_absent_with_force_option_as_true=dict(block="", state="absent", force = True),
+    test_uss_block_absent_with_force_option_as_false=dict(block="", state="absent", force = True),
     test_uss_block_replace_insertafter_regex=dict(
         insertafter="PYTHON_HOME=", block="ZOAU_ROOT=/mvsutil-develop_dsed\nZOAU_HOME=\\$ZOAU_ROOT\nZOAU_DIR=\\$ZOAU_ROOT",
         state="present"),
@@ -180,6 +186,10 @@ TEST_INFO = dict(
     test_ds_block_insertafter_eof=dict(test_name="T3"),
     test_ds_block_insertbefore_bof=dict(test_name="T4"),
     test_ds_block_absent=dict(test_name="T5"),
+    test_ds_block_insert_with_force_option_as_true=dict(block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present", force=True),
+    test_ds_block_absent_with_force_option_as_true=dict(block="", state="absent", force=True),
+    test_ds_block_insert_with_force_option_as_false=dict(block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present", force=False),
+    test_ds_block_absent_with_force_option_as_false=dict(block="", state="absent", force=False),
     expected=dict(test_uss_block_insertafter_regex_defaultmarker="""if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -1045,6 +1055,38 @@ def test_uss_block_replace_insertbefore_bof_custommarker(ansible_zos_module):
     del _TEST_INFO["marker_end"]
     TEST_ENV["TEST_CONT"] = TEST_CONTENT
 
+@pytest.mark.uss
+def test_uss_block_insert_with_force_option_as_true(ansible_zos_module):
+    UssGeneral(
+        "test_uss_block_insertafter_eof_defaultmarker", ansible_zos_module,
+        TEST_ENV, TEST_INFO["test_uss_block_insert_with_force_option_as_true"],
+        TEST_INFO["expected"]["test_uss_block_insertafter_eof_defaultmarker"])
+
+@pytest.mark.uss
+def test_uss_block_insert_with_force_option_as_false(ansible_zos_module):
+    UssGeneral(
+        "test_uss_block_insertafter_eof_defaultmarker", ansible_zos_module,
+        TEST_ENV, TEST_INFO["test_uss_block_insert_with_force_option_as_false"],
+        TEST_INFO["expected"]["test_uss_block_insertafter_eof_defaultmarker"])
+
+@pytest.mark.uss
+def test_uss_block_absent_with_force_option_as_true(ansible_zos_module):
+    TEST_ENV["TEST_CONT"] = TEST_CONTENT_DEFAULTMARKER
+    UssGeneral(
+        "test_uss_block_absent_defaultmarker", ansible_zos_module, TEST_ENV,
+        TEST_INFO["test_uss_block_absent_with_force_option_as_true"],
+        TEST_INFO["expected"]["test_uss_block_absent"])
+    TEST_ENV["TEST_CONT"] = TEST_CONTENT
+
+@pytest.mark.uss
+def test_uss_block_absent_with_force_option_as_false(ansible_zos_module):
+    TEST_ENV["TEST_CONT"] = TEST_CONTENT_DEFAULTMARKER
+    UssGeneral(
+        "test_uss_block_absent_defaultmarker", ansible_zos_module, TEST_ENV,
+        TEST_INFO["test_uss_block_absent_with_force_option_as_false"],
+        TEST_INFO["expected"]["test_uss_block_absent"])
+    TEST_ENV["TEST_CONT"] = TEST_CONTENT
+
 
 #########################
 # Dataset test cases
@@ -1181,6 +1223,59 @@ def test_ds_block_absent(ansible_zos_module, dstype, encoding):
     DsGeneral(
         TEST_INFO["test_ds_block_absent"]["test_name"], ansible_zos_module,
         TEST_ENV, TEST_INFO["test_uss_block_absent"],
+        TEST_INFO["expected"]["test_uss_block_absent"]
+    )
+    TEST_ENV["TEST_CONT"] = TEST_CONTENT
+
+@pytest.mark.ds
+@pytest.mark.parametrize("dstype", DS_TYPE)
+@pytest.mark.parametrize("encoding", ENCODING)
+def test_ds_block_insert_with_force_option_as_true(ansible_zos_module, dstype, encoding):
+    TEST_ENV["DS_TYPE"] = dstype
+    TEST_ENV["ENCODING"] = encoding
+    DsGeneral(
+        "T6", 
+        ansible_zos_module, TEST_ENV, 
+        TEST_INFO["test_ds_block_insert_with_force_option_as_true"],
+        TEST_INFO["expected"]["test_uss_block_insertafter_eof_defaultmarker"]
+    )
+
+@pytest.mark.ds
+@pytest.mark.parametrize("dstype", DS_TYPE)
+@pytest.mark.parametrize("encoding", ENCODING)
+def test_ds_block_absent_with_force_option_as_true(ansible_zos_module, dstype, encoding):
+    TEST_ENV["DS_TYPE"] = dstype
+    TEST_ENV["ENCODING"] = encoding
+    TEST_ENV["TEST_CONT"] = TEST_CONTENT_DEFAULTMARKER
+    DsGeneral(
+        "T7", ansible_zos_module,
+        TEST_ENV, TEST_INFO["test_ds_block_absent_with_force_option_as_true"],
+        TEST_INFO["expected"]["test_uss_block_absent"]
+    )
+    TEST_ENV["TEST_CONT"] = TEST_CONTENT
+
+@pytest.mark.ds
+@pytest.mark.parametrize("dstype", DS_TYPE)
+@pytest.mark.parametrize("encoding", ENCODING)
+def test_ds_block_insert_with_force_option_as_false(ansible_zos_module, dstype, encoding):
+    TEST_ENV["DS_TYPE"] = dstype
+    TEST_ENV["ENCODING"] = encoding
+    DsGeneral(
+        "T8", ansible_zos_module,
+        TEST_ENV, TEST_INFO["test_ds_block_insert_with_force_option_as_false"],
+        TEST_INFO["expected"]["test_uss_block_insertafter_eof_defaultmarker"]
+    )
+
+@pytest.mark.ds
+@pytest.mark.parametrize("dstype", DS_TYPE)
+@pytest.mark.parametrize("encoding", ENCODING)
+def test_ds_block_absent_with_force_option_as_false(ansible_zos_module, dstype, encoding):
+    TEST_ENV["DS_TYPE"] = dstype
+    TEST_ENV["ENCODING"] = encoding
+    TEST_ENV["TEST_CONT"] = TEST_CONTENT_DEFAULTMARKER
+    DsGeneral(
+        "T9", ansible_zos_module,
+        TEST_ENV, TEST_INFO["test_ds_block_absent_with_force_option_as_false"],
         TEST_INFO["expected"]["test_uss_block_absent"]
     )
     TEST_ENV["TEST_CONT"] = TEST_CONTENT

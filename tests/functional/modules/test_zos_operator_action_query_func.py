@@ -216,6 +216,7 @@ def test_zos_operator_action_query_invalid_option_job_name(ansible_zos_module):
     "message_filter",
     [
         {"filter": "DUMP"},
+        {"filter": "DUMP", "use_regex": False},
         {"filter": "^.*DUMP.*$", "use_regex": True},
         {"filter": "^.*OPERAND\\(S\\).*$", "use_regex": True}
     ]
@@ -240,6 +241,7 @@ def test_zos_operator_action_query_option_message_filter_one_match(
     "message_filter",
     [
         {"filter": "DUMP"},
+        {"filter": "DUMP", "use_regex": False},
         {"filter": "^.*DUMP.*$", "use_regex": True},
         {"filter": "^.*OPERAND\\(S\\).*$", "use_regex": True}
     ]
@@ -266,12 +268,20 @@ def test_zos_operator_action_query_option_message_filter_multiple_matches(
         assert len(result.get("actions")) > 1
 
 
+@pytest.mark.parametrize(
+    "message_filter",
+    [
+        {"filter": "IMS"},
+        {"filter": "IMS", "use_regex": False},
+        {"filter": "^.*IMS.*$", "use_regex": True},
+    ]
+)
 def test_zos_operator_action_query_option_message_filter_no_match(
-    ansible_zos_module,
+    ansible_zos_module, message_filter
 ):
     hosts = ansible_zos_module
     hosts.all.zos_operator(cmd="DUMP COMM=('test dump')")
-    results = hosts.all.zos_operator_action_query(message_filter={"filter": "IMS"})
+    results = hosts.all.zos_operator_action_query(message_filter=message_filter)
     try:
         for action in results.get("actions"):
             if "SPECIFY OPERAND(S) FOR DUMP" in action.get("message_text", ""):

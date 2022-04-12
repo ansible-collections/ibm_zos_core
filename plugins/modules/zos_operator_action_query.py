@@ -106,7 +106,7 @@ EXAMPLES = r"""
       message_filter:
           filter: IMS READY
 
-- name: Display all outstanding messages given job_name, message_id, system, message_filter
+- name: Display all outstanding messages where the job name begins with 'mq', message ID begins with 'dsi', on system 'mv29' and which contain the pattern 'IMS'
   zos_operator_action_query:
       job_name: mq*
       message_id: dsi*
@@ -419,6 +419,7 @@ def parse_result_a(result, message_filter):
         re.MULTILINE,
     )
     for match in match_iter:
+        # If there was a filter specified, we skip messages that do not match it.
         if message_filter is not None and not match_raw_message(match.string, message_filter):
             continue
 
@@ -451,6 +452,7 @@ def parse_result_b(result, message_filter):
     )
 
     for match in match_iter:
+        # If there was a filter specified, we skip messages that do not match it.
         if message_filter is not None and not match_raw_message(match.string, message_filter):
             continue
 

@@ -92,6 +92,12 @@ def zinfo_cmd_string_builder():
 
     return zinfo_arg_string
 
+def flatten_zinfo_json(zinfo_dict):
+    d = dict()
+    for subset in list(zinfo_dict):
+        d.update(zinfo_dict[subset])
+    return d
+
 def run_module():
     # define available arguments/parameters a user can pass to the module
     module_args = dict(
@@ -147,8 +153,10 @@ def run_module():
     # TODO - check for zinfo error messages
     # add error handling - json decode error - check string for zinfo error message
 
-    # TODO - flatten subsets to have single level of info in ansible_facts
     result['ansible_facts']['zinfo'] = json.loads(decode_str)
+
+    d = flatten_zinfo_json(json.loads(decode_str))
+    result['ansible_facts'].update(d)
 
     # in the event of a successful module execution, you will want to
     # simple AnsibleModule.exit_json(), passing the key/value results

@@ -12,152 +12,153 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import absolute_import, division, print_function
 
+from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
-
-DOCUMENTATION = r"""
+DOCUMENTATION = r'''
 ---
 module: zos_gather_facts
-# version_added: #TODO
-short_description: Gathers facts about remote z/OS hosts.
-description:
-  - Gathers facts from remote z/OS hosts. Gather scripts are a combination of ported Ansible engine scripts, unique z/OS scripts which interface with USS, and any scripts provided by other zos collections.
-  - This module emulates ansible's gather_facts module but specificallly for hosts running z/OS.
-  # - TODO - actually the setup module is the default one, gather_facts needs to be specified
-author: "Ketan Kelkar (@ketankelkar)"
-options:
-#   # TODO - determine if z/OS will support this feature
-#   fact_path:
-#     description:
-#     required: false
-#     default:
 
-  filter:
-    description:
-      - if supplied, only return facts that match this shell-style (fnmatch) wildcard.
-    required: false
-    default: "*"
-    type: str
+short_description: z/OS gather facts module
 
-  gather_subset:
-    description:
-      - If supplied, restrict the additional facts collected to the given subset.
-      - Possbile values: C(all), C(min), C(harware), C(network), C(virtual), C(ohai), C(facter).
-      # TODO - determine whether z/OS have compatibility with ohai and/or facter and determine whether the above set of possible values is accurate for z/OS.
-      - Can specify a list of values to specify a larger subset.
-      - Values can also be used with an initial C(!) to specify that specific subset should not be collected.
-      - EG: C(!hardware, !network, !virtual, !ohai, !facter).
-      - If C(!all) is specified then only the min susbet is collected. To avoid collecting even the min subset specify C(!all, !min).
-      - To collect only specific facts, use C(!all, !min) and specify the particular fact subsets.
-      - Use the filter parameter if you do not want to display some collected facts.
-    required: false
-    default: "all"
-    type: str
+version_added: "1.0.0"
 
-  gather_timeout:
-    description:
-      - Set the default timeout in seconds for indivual fact gathering.
-    required: false
-    default: 10
-    type: str
+description: Retrieve facts from z/OS targets.
 
-notes: This module is modeled off of Ansible's default setup module for gathering facts.
-https://docs.ansible.com/ansible/latest/collections/ansible/builtin/setup_module.html#setup-module
+author:
+    - Ketan Kelkar (@ketankelkar)
+'''
 
-"""
+EXAMPLES = r'''
+- name: Return all available z/OS facts
+  ibm.ibm_zos_core.zos_gather_facts:
 
+- name: Return z/OS facts in the systems subset ('sys')
+  ibm.ibm_zos_core.zos_gather_facts:
+    gather_subset: sys
 
-EXAMPLES = r"""
-- name: Gather all (default) available facts from a z/OS host.
-  zos_gather_facts:
-
-- name: Gather only the min subset of facts from a z/OS host.
-  zos_gather_facts:
-    gather_subset: min
-
-- name: Gather all facts except those in the virtual subset from a z/OS host.
-  zos_gather_facts:
+- name: Return z/OS facts in the systems subset ('ipl') and filter out all facts not related to 'parmlib'
+    ibm.ibm_zos_core.zos_gather_facts:
     gather_subset:
-      - '!virtual'
+      - ipl
+    filter:
+      - "parmlib*"
+'''
 
-- name: Gather facts ONLY from the network subset from a z/OS host.
-  zos_gather_facts:
-    gather_subset:
-      - '!all'
-      - '!min'
-      - network
-
-- name: Spend a maximum of 2 seconds gathering facts only in the network subset from a z/OS host..
-  zos_gather_facts:
-    gather_subset: network
-    gather_timeout: 2
-
-- name: Gather all facts from the min subset that match the wildcard from a z/OS host.
-  zos_gather_facts:
-    filter: 'zos*' # TODO - pick an actualy viable wildcad string for this filter
-    gather_subset: min
-
-"""
-
+RETURN = r'''
+# These are examples of possible return values, and in general should use other names for return values.
+ansible_facts:
+  description: Facts to add to ansible_facts.
+  returned: always
+  type: dict
+  contains:
+    foo:
+      description: Foo facts about operating system.
+      type: str
+      returned: when operating system foo fact is present
+      sample: 'bar'
+    answer:
+      description:
+      - Answer facts about operating system.
+      - This description can be a list as well.
+      type: str
+      returned: when operating system answer fact is present
+      sample: '42'
+'''
 
 # will be built out as gather scripts are integrated into the module.
 # following the example of nxos_facts module: https://github.com/ansible/ansible/blob/98f804ecb44278628070829bd1841ca51476f7b9/lib/ansible/modules/network/nxos/nxos_facts.py
 
-RETURN = r"""
-file:
-
-
-"""
+import sys
+import json
 
 from ansible.module_utils.basic import AnsibleModule
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import BetterArgParser
 
+def zinfo_cmd_string_builder():
+    ipl_opt = " -t ipl"
+    # sys_opt = " -t sys"
+    # cpu_opt = " -t cpu"
+    # iodf_opt = " -t iodf"
 
-# TODO remove following imports if unused
-from ansible.module_utils.facts.namespace import PrefixFactNamespace
-from ansible.module_utils.facts import ansible_collector
+    # base value
+    zinfo_arg_string = "zinfo -j"
 
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.facts import zos_default_collectors
+    # build full string
+    # contrived for now, develop this as the module takes shape
+    zinfo_arg_string += ipl_opt
+    # zinfo_arg_string += sys_opt
+
+    return zinfo_arg_string
+
+def run_module():
+    # define available arguments/parameters a user can pass to the module
+    module_args = dict(
+        gather_subset=dict(default=["all"], required=False, type='list', elements='str'),
+        # the filter parameter was updated to type list in Ansible 2.11
+        filter=dict(default=[], required=False, type='list', elements='str'),
+        # gather_timeout=dict(default=10, required=False, type='int'),
+        # fact_path=dict(default='/etc/ansible/facts.d', required=False, type='path'),
+    )
+
+    # seed the result dict in the object
+    # we primarily care about changed and state
+    # changed is if this module effectively modified the target
+    # state will include any data that you want your module to pass back
+    # for consumption, for example, in a subsequent task
+    result = dict(
+        changed=False,
+        ansible_facts=dict(),
+    )
+
+    # the AnsibleModule object will be our abstraction working with Ansible
+    # this includes instantiation, a couple of common attr would be the
+    # args/params passed to the execution, as well as if the module
+    # supports check mode
+    module = AnsibleModule(
+        argument_spec=module_args,
+        supports_check_mode=True
+    )
+
+    # if the user is working with this module in only check mode we do not
+    # want to make any changes to the environment, just return the current
+    # state with no modifications
+
+    if module.check_mode:
+        module.exit_json(**result)
+
+    # manipulate or modify the state as needed (this is going to be the
+    # part where your module will do what it needs to do)
+
+    # TODO - check for zoau version >=1.2.1 else error out
+
+    cmd = zinfo_cmd_string_builder()
+
+    # ansible_facts['zzz_REMOVE_ME_cmd_str'] = cmd
+    result['ansible_facts'] = {
+        'zzz_REMOVE_ME_cmd_str' : cmd
+    }
+
+    rc, fcinfo_out, err = module.run_command(cmd, encoding=None) # there's a way to force a path var into this.
+
+    decode_str = fcinfo_out.decode('utf-8')
+
+    # TODO - check for zinfo error messages
+    # add error handling - json decode error - check string for zinfo error message
+
+    # TODO - flatten subsets to have single level of info in ansible_facts
+    result['ansible_facts']['zinfo'] = json.loads(decode_str)
+
+    # in the event of a successful module execution, you will want to
+    # simple AnsibleModule.exit_json(), passing the key/value results
+    module.exit_json(**result)
+    # module.exit_json(ansible_facts=ansible_facts)
+
 
 
 def main():
-    module = AnsibleModule(
-        argument_spec=dict(
-            gather_subset=dict(default=["all"], required=False, type='list', elements='str'),
-            gather_timeout=dict(default=10, required=False, type='int'),
-
-            # the filter parameter was updated to type list in Ansible 2.11
-            # filter=dict(default=[], required=False, type='list', elements='str'),
-            filter=dict(default='', required=False, type='str'),
-            fact_path=dict(default='/etc/ansible/facts.d', required=False, type='path'),
-        ),
-        supports_check_mode=True,
-    )
-
-
-    gather_subset = module.params['gather_subset']
-    gather_timeout = module.params['gather_timeout']
-    filter_spec = module.params['filter']
-
-
-    all_collector_classes = zos_default_collectors.collectors
-
-    # TODO - change from ansible to IBMZ for z scripts?
-    namespace = PrefixFactNamespace(namespace_name='ansible', prefix='ansible_')
-
-    fact_collector = \
-        ansible_collector.get_ansible_collector(
-            all_collector_classes=all_collector_classes,
-            namespace=namespace,
-            filter_spec=filter_spec,
-            gather_subset=gather_subset,
-            gather_timeout=gather_timeout,
-            minimal_gather_subset=None)
-
-    facts_dict = fact_collector.collect(module=module)
-
-    module.exit_json(zos_ansible_facts=facts_dict)
+    run_module()
 
 if __name__ == '__main__':
     main()

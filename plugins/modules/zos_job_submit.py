@@ -555,19 +555,6 @@ JOB_COMPLETION_MESSAGES = ["CC", "ABEND", "SEC ERROR", "JCL ERROR", "JCLERR"]
 
 def submit_pds_jcl(src, module, timeout=0):
     """ A wrapper around zoautil_py Jobs submit to raise exceptions on failure. """
-    # rc, stdout, stderr = module.run_command(
-    #     'submit -j "//{0}"'.format(quote(src)), use_unsafe_shell=True
-    # )
-    # if rc != 0:
-    #     raise SubmitJCLError("Submit job failed:  Stderr :" + stderr)
-    # if "Error" in stderr or "Not accepted by JES" in stderr:
-    #     raise SubmitJCLError("Submit job failed: " + stderr)
-    # if stdout != "":
-    #     jobId = stdout.replace("\n", "").strip()
-    # else:
-    #     raise SubmitJCLError(
-    #         "Submit job failed: no job ID was returned.  Please check the JCL."
-    #     )
     kwargs = {}
 
     wait=False
@@ -583,18 +570,6 @@ def submit_pds_jcl(src, module, timeout=0):
 
 def submit_uss_jcl(src, module, timeout=0):
     """ Submit uss jcl. Use uss command submit -j jclfile. """
-    # rc, stdout, stderr = module.run_command(["submit", "-j", src])
-    # if rc != 0:
-    #     raise SubmitJCLError("Submit job failed:  Stderr :" + stderr)
-    # if "Error" in stderr or "Not accepted by JES" in stderr:
-    #     raise SubmitJCLError("Submit job failed: " + stderr)
-    # if stdout != "":
-    #     jobId = stdout.replace("\n", "").strip()
-    # else:
-    #     raise SubmitJCLError(
-    #         "Submit job failed: no job ID was returned.  Please check the JCL."
-    #     )
-    ## kwargs[timeout]
     kwargs = {}
 
     wait=False

@@ -557,10 +557,10 @@ def submit_pds_jcl(src, module, timeout=0):
     """ A wrapper around zoautil_py Jobs submit to raise exceptions on failure. """
     kwargs = {}
 
-    wait=False
+    wait = False
     if timeout > 0:
-      wait=True
-      kwargs.update({"timeout": "{0}".format(timeout)})
+        wait = True
+        kwargs.update({"timeout": "{0}".format(timeout)})
 
     job_listing = submit(src, wait, None, **kwargs)
 
@@ -572,10 +572,10 @@ def submit_uss_jcl(src, module, timeout=0):
     """ Submit uss jcl. Use uss command submit -j jclfile. """
     kwargs = {}
 
-    wait=False
+    wait = False
     if timeout > 0:
-      wait=True
-      kwargs.update({"timeout": "{0}".format(timeout)})
+        wait = True
+        kwargs.update({"timeout": "{0}".format(timeout)})
 
     job_listing = submit(src, wait, None, **kwargs)
 
@@ -735,7 +735,7 @@ def run_module():
             **result
         )
     if not wait:
-      wait_time_s = 0
+        wait_time_s = 0
 
     DSN_REGEX = r"^(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}(?:\([A-Z$#@]{1}[A-Z0-9$#@]{0,7}\)){0,1}$"
     try:

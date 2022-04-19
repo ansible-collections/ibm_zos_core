@@ -26,6 +26,7 @@ from ansible.module_utils.six import string_types
 from ansible.module_utils.parsing.convert_bool import boolean
 from ansible.plugins.action import ActionBase
 from ansible.utils.display import Display
+from ansible import cli
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
     is_member,
@@ -229,40 +230,82 @@ class ActionModule(ActionBase):
             self._connection.exec_command("mkdir -p {0}/{1}".format(temp_path, base))
             _sftp_action += ' -r'    # add '-r` to clone the source trees
 
-        display.vvv(u"ibm_zos_copy: {0} {1} TO {2}".format(_sftp_action, _src, temp_path), host=self._play_context.remote_addr)
-        (returncode, stdout, stderr) = self._connection._file_transport_command(_src, temp_path, _sftp_action)
+        # To support multiple Ansible versions we must do some version detection and act accordingly
+        version_inf = cli.CLI.version_info(False)
+        version_major = version_inf['major']
+        version_minor = version_inf['minor']
 
-        display.vvv(u"ibm_zos_copy return code: {0}".format(returncode), host=self._play_context.remote_addr)
-        display.vvv(u"ibm_zos_copy stdout: {0}".format(stdout), host=self._play_context.remote_addr)
-        display.vvv(u"ibm_zos_copy stderr: {0}".format(stderr), host=self._play_context.remote_addr)
-        display.vvv(u"play context verbosity: {0}".format(self._play_context.verbosity), host=self._play_context.remote_addr)
+        # Override the Ansible Connection behavior for this module and track users configuration
+        sftp_transfer_method = "sftp"
+        user_ssh_transfer_method = None
+        is_ssh_transfer_method_updated = False
 
-        err = _detect_sftp_errors(stderr)
+        try:
+            if version_major == 2 and version_minor >= 11:
+                user_ssh_transfer_method = self._connection.get_option('ssh_transfer_method')
 
-        # ************************************************************************* #
-        # When plugin shh connection member _build_command(..) detects verbosity    #
-        # greater than 3, it constructs a command that includes verbosity like      #
-        # 'EXEC sftp -b - -vvv ...' where this then is returned in the connections  #
-        # stream as 'stderr' and if a user has not set ignore_stderr it will fail   #
-        # the modules execution. So in cases where verbosity                        #
-        # (ansible.cfg verbosity = n || CLI -vvv) are collectively summed and       #
-        # amount to greater than 3, ignore_stderr will be set to 'True' so that     #
-        # 'err' which will not be None won't fail the module. 'stderr' does not     #
-        # in our z/OS case actually mean an error happened, it just so happens      #
-        # the verbosity is returned as 'stderr'.                                    #
-        # ************************************************************************* #
+                if user_ssh_transfer_method != sftp_transfer_method:
+                    self._connection.set_option('ssh_transfer_method', sftp_transfer_method)
+                    is_ssh_transfer_method_updated = True
 
-        if self._play_context.verbosity > 3:
-            ignore_stderr = True
+            elif version_major == 2 and version_minor <= 10:
+                user_ssh_transfer_method = self._play_context.ssh_transfer_method
 
-        if returncode != 0 or (err and not ignore_stderr):
-            return dict(
-                msg="Error transfering source '{0}' to remote z/OS system".format(src),
-                rc=returncode,
-                stderr=err,
-                stderr_lines=err.splitlines(),
-                failed=True,
-            )
+                if user_ssh_transfer_method != sftp_transfer_method:
+                    self._play_context.ssh_transfer_method = sftp_transfer_method
+                    is_ssh_transfer_method_updated = True
+
+            if is_ssh_transfer_method_updated:
+                display.vvv(u"ibm_zos_copy SSH transfer method updated from {0} to {1}.".format(user_ssh_transfer_method,
+                            sftp_transfer_method), host=self._play_context.remote_addr)
+
+            display.vvv(u"ibm_zos_copy: {0} {1} TO {2}".format(_sftp_action, _src, temp_path), host=self._play_context.remote_addr)
+            (returncode, stdout, stderr) = self._connection._file_transport_command(_src, temp_path, _sftp_action)
+
+            display.vvv(u"ibm_zos_copy return code: {0}".format(returncode), host=self._play_context.remote_addr)
+            display.vvv(u"ibm_zos_copy stdout: {0}".format(stdout), host=self._play_context.remote_addr)
+            display.vvv(u"ibm_zos_copy stderr: {0}".format(stderr), host=self._play_context.remote_addr)
+            display.vvv(u"play context verbosity: {0}".format(self._play_context.verbosity), host=self._play_context.remote_addr)
+
+            err = _detect_sftp_errors(stderr)
+
+            # ************************************************************************* #
+            # When plugin shh connection member _build_command(..) detects verbosity    #
+            # greater than 3, it constructs a command that includes verbosity like      #
+            # 'EXEC sftp -b - -vvv ...' where this then is returned in the connections  #
+            # stream as 'stderr' and if a user has not set ignore_stderr it will fail   #
+            # the modules execution. So in cases where verbosity                        #
+            # (ansible.cfg verbosity = n || CLI -vvv) are collectively summed and       #
+            # amount to greater than 3, ignore_stderr will be set to 'True' so that     #
+            # 'err' which will not be None won't fail the module. 'stderr' does not     #
+            # in our z/OS case actually mean an error happened, it just so happens      #
+            # the verbosity is returned as 'stderr'.                                    #
+            # ************************************************************************* #
+
+            if self._play_context.verbosity > 3:
+                ignore_stderr = True
+
+            if returncode != 0 or (err and not ignore_stderr):
+                return dict(
+                    msg="Error transfering source '{0}' to remote z/OS system".format(src),
+                    rc=returncode,
+                    stderr=err,
+                    stderr_lines=err.splitlines(),
+                    failed=True,
+                )
+
+        finally:
+            # Restore the users defined option `ssh_transfer_method` if it was overridden
+
+            if is_ssh_transfer_method_updated:
+                if version_major == 2 and version_minor >= 11:
+                    self._connection.set_option('ssh_transfer_method', user_ssh_transfer_method)
+
+                elif version_major == 2 and version_minor <= 10:
+                    self._play_context.ssh_transfer_method = user_ssh_transfer_method
+
+                display.vvv(u"ibm_zos_copy SSH transfer method restored to {0}".format(user_ssh_transfer_method), host=self._play_context.remote_addr)
+                is_ssh_transfer_method_updated = False
 
         return dict(temp_path=temp_path)
 

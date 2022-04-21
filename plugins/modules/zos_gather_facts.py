@@ -79,6 +79,14 @@ import json
 from ansible.module_utils.basic import AnsibleModule
 
 def zinfo_cmd_string_builder(gather_subset):
+    """Builds command string for 'zinfo' based off gather_subset list.
+    Arguments:
+        gather_subset {list} -- list of subsets to pass in.
+    Raises:
+        SomeError: maybe?? -- TODO
+    Returns:
+        [str] -- A string containing a command line argument calling zinfo with the appropriate options.
+    """
     if gather_subset == None or 'all' in gather_subset:
         return "zinfo -j -a"
 
@@ -97,13 +105,20 @@ def zinfo_cmd_string_builder(gather_subset):
     return zinfo_arg_string
 
 def flatten_zinfo_json(zinfo_dict):
+    """Removes one layer of mapping in the dict. Top-level keys correspond to zinfo subsets and are removed
+    Arguments:
+        zinfo_dict {dict} -- dict containing parsed result from zinfo json str.
+    Raises:
+        SomeError: maybe?? -- TODO
+    Returns:
+        [dict] -- A flattened dict.
+    """
     d = dict()
     for subset in list(zinfo_dict):
         d.update(zinfo_dict[subset])
     return d
 
 
-# DO NOT RETURN A PARTIAL LIST! FAIL FAST (we are targeting automation, so well-intended  messages may easily be skipped)
 
 # PERMISSIVE MODEL IS BETTER than tracking zinfo vs core versions and calculating compatibilities
 
@@ -155,28 +170,32 @@ def run_module():
 
     gather_subset = module.params['gather_subset']
 
+    # build out zinfo command with correct options
     cmd = zinfo_cmd_string_builder(gather_subset)
 
-    # ansible_facts['zzz_REMOVE_ME_cmd_str'] = cmd
+    # TODO - REMOVE THIS BLOCK
     result['ansible_facts'] = {
         'zzz_params' : module.params,
         # 'zzzz_gather_subset' : module.params['gather_subset'],
         'zzz_REMOVE_ME_cmd_str' : cmd,
     }
 
-    rc, fcinfo_out, err = module.run_command(cmd, encoding=None) # there's a way to force a path var into this.
+    rc, fcinfo_out, err = module.run_command(cmd, encoding=None)
 
     decode_str = fcinfo_out.decode('utf-8')
 
+    # TODO - REMOVE THIS BLOCK
     result['ansible_facts']['zzzzz'] ={
         'rc' : rc,
         # 'fcinfo' : fcinfo_out,
         'err' : err,
     }
 
+    # Error handling:
+    # We DO NOT return a partial list. Instead we FAIL FAST since we are targeting automation -- so quiet but well-intended error messages may easily be skipped
     if rc != 0:
     # if err is not None:
-        # TODO determine if more information should be divulged here...maybe print zinfo help
+        # TODO determine if more information should be divulged here...maybe print zinfo help msg
         err_msg = 'There was an issue with zinfo output...'
         if 'BGYSC5201E' in err.decode('utf-8'):
             err_msg = 'Invalid susbset detected.'
@@ -185,7 +204,6 @@ def run_module():
 
         module.fail_json(msg=err_msg, debug_cmd_str=cmd, debug_cmd_err=err, debug_rc=rc)
 
-
     try:
         result['ansible_facts']['zinfo_output_str'] = json.loads(decode_str)
     except json.JSONDecodeError:
@@ -193,13 +211,7 @@ def run_module():
         module.fail_json(msg="There was a JSON error.")
 
 
-
-
-
-    # TODO - check for zinfo error messages
-    # add error handling - json decode error - check string for zinfo error message
-
-
+    # remove zinfo subsets from parsed zinfo result, flatten by one level
     d = flatten_zinfo_json(json.loads(decode_str))
 
     # apply filter
@@ -209,7 +221,6 @@ def run_module():
     # in the event of a successful module execution, you will want to
     # simple AnsibleModule.exit_json(), passing the key/value results
     module.exit_json(**result)
-    # module.exit_json(ansible_facts=ansible_facts)
 
 
 

@@ -14,6 +14,9 @@
 
 
 from __future__ import absolute_import, division, print_function
+from asyncio import gather
+from email.utils import decode_params
+from xml.dom.minidom import Element
 __metaclass__ = type
 
 DOCUMENTATION = r'''
@@ -74,21 +77,22 @@ import sys
 import json
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import BetterArgParser
 
-def zinfo_cmd_string_builder():
-    ipl_opt = " -t ipl"
+def zinfo_cmd_string_builder(gather_subset):
+    if gather_subset == None or 'all' in gather_subset:
+        return "zinfo -j -a"
+
+    # base value
+    zinfo_arg_string = "zinfo -j"
+    # ipl_opt = " -t ipl"
     # sys_opt = " -t sys"
     # cpu_opt = " -t cpu"
     # iodf_opt = " -t iodf"
 
-    # base value
-    zinfo_arg_string = "zinfo -j"
-
     # build full string
-    # contrived for now, develop this as the module takes shape
-    zinfo_arg_string += ipl_opt
-    # zinfo_arg_string += sys_opt
+    for subset in gather_subset:
+        # TODO - sanitize subset against malicious (probably alphanumeric only?)
+        zinfo_arg_string += " -t " + subset
 
     return zinfo_arg_string
 
@@ -97,6 +101,16 @@ def flatten_zinfo_json(zinfo_dict):
     for subset in list(zinfo_dict):
         d.update(zinfo_dict[subset])
     return d
+
+
+# DO NOT RETURN A PARTIAL LIST! FAIL FAST (we are targeting automation, so well-intended  messages may easily be skipped)
+
+# PERMISSIVE MODEL IS BETTER than tracking zinfo vs core versions and calculating compatibilities
+
+# How does the user know what subsets are available. maybe investigate what Ansible does and copy them. Alternative idea is to document 'current' available subsets but not enforce additional or maybe link out to zoau zinfo doc (linking out is frowned upon.)
+
+# Thinking about creating a mapping (maybe CSV) in module_utils which can allow for more legal subset options (eg 'iplinfo', 'ipl', 'ipl_info' -> ipl, etc). The mapping can be updated as zinfo changes but there will also be a provision for subsets not in the mapping. We cannot tie ansible error reporting to zinfo error reporting because that could change in the future and result in mismatched compatibility, instead we can simply pass on zinfo output as is and leave it to the user to figure out which subsets are illegal,
+
 
 def run_module():
     # define available arguments/parameters a user can pass to the module
@@ -139,23 +153,57 @@ def run_module():
 
     # TODO - check for zoau version >=1.2.1 else error out
 
-    cmd = zinfo_cmd_string_builder()
+    gather_subset = module.params['gather_subset']
+
+    cmd = zinfo_cmd_string_builder(gather_subset)
 
     # ansible_facts['zzz_REMOVE_ME_cmd_str'] = cmd
     result['ansible_facts'] = {
-        'zzz_REMOVE_ME_cmd_str' : cmd
+        'zzz_params' : module.params,
+        # 'zzzz_gather_subset' : module.params['gather_subset'],
+        'zzz_REMOVE_ME_cmd_str' : cmd,
     }
 
     rc, fcinfo_out, err = module.run_command(cmd, encoding=None) # there's a way to force a path var into this.
 
     decode_str = fcinfo_out.decode('utf-8')
 
+    result['ansible_facts']['zzzzz'] ={
+        'rc' : rc,
+        # 'fcinfo' : fcinfo_out,
+        'err' : err,
+    }
+
+    if rc != 0:
+    # if err is not None:
+        # TODO determine if more information should be divulged here...maybe print zinfo help
+        err_msg = 'There was an issue with zinfo output...'
+        if 'BGYSC5201E' in err.decode('utf-8'):
+            err_msg = 'Invalid susbset detected.'
+        elif 'BGYSC5202E' in err.decode('utf-8'):
+            err_msg = 'Invalid option passed to zinfo.'
+
+        module.fail_json(msg=err_msg, debug_cmd_str=cmd, debug_cmd_err=err, debug_rc=rc)
+
+
+    try:
+        result['ansible_facts']['zinfo_output_str'] = json.loads(decode_str)
+    except json.JSONDecodeError:
+        # TODO -figure out this error message...what do i tell user?
+        module.fail_json(msg="There was a JSON error.")
+
+
+
+
+
     # TODO - check for zinfo error messages
     # add error handling - json decode error - check string for zinfo error message
 
-    result['ansible_facts']['zinfo'] = json.loads(decode_str)
 
     d = flatten_zinfo_json(json.loads(decode_str))
+
+    # apply filter
+    # filter = module.params.filter
     result['ansible_facts'].update(d)
 
     # in the event of a successful module execution, you will want to

@@ -533,6 +533,10 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import (
     job_output,
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
+    MissingZOAUImport,
+)
+
 from timeit import default_timer as timer
 import re
 from tempfile import NamedTemporaryFile

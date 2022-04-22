@@ -23,6 +23,10 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
     AnsibleModuleHelper,
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
+    MissingZOAUImport,
+)
+
 # from zoautil_py.jobs import listing, read_output, list_dds
 try:
     from zoautil_py.jobs import listing, read_output, list_dds

@@ -27,7 +27,10 @@ description:
     remote machine to a location on the remote machine.
   - Use the M(zos_fetch) module to copy files or data sets from remote
     locations to the local machine.
-author: "Asif Mahmud (@asifmahmud)"
+author:
+  - "Asif Mahmud (@asifmahmud)"
+  - "Ivan Moreno (@rexemin)"
+  - "Demetrios Dimatos (@ddimatos)"
 options:
   backup:
     description:
@@ -119,6 +122,9 @@ options:
   force:
     description:
       - If set to C(true), the remote file or data set will be overwritten.
+      - If set to C(true), when copying files or a directory to a USS
+        destination, the copying operation will continue if it encounters
+        existing files or directories and overwrite any corresponding files.
       - If set to C(true) and the user is copying a directory to a destination in USS
         that already has content in it, the files will be appended to the destination.
       - If set to C(false), the file or data set will only be copied if the destination

@@ -530,7 +530,9 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.encode import (
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,
 )
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import job_output
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import (
+    job_output,
+)
 from timeit import default_timer as timer
 import re
 from tempfile import NamedTemporaryFile
@@ -538,8 +540,16 @@ from os import chmod, path, remove, stat
 from time import sleep
 from ansible.module_utils.basic import AnsibleModule
 
-from zoautil_py.jobs import submit
-from zoautil_py.types import ZOAUResponse, Job
+try:
+    from zoautil_py.jobs import submit
+except Exception:
+    submit = MissingZOAUImport()
+
+try:
+    from zoautil_py.types import ZOAUResponse, Job
+except Exception:
+    ZOAUResponse = MissingZOAUImport()
+    Job = MissingZOAUImport()
 
 if PY3:
     from shlex import quote

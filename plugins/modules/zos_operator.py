@@ -156,7 +156,6 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,
 )
-from zoautil_py.types import ZOAUResponse
 
 if PY3:
     from shlex import quote
@@ -167,6 +166,11 @@ try:
     from zoautil_py import opercmd
 except Exception:
     opercmd = MissingZOAUImport()
+
+try:
+    from zoautil_py.types import ZOAUResponse
+except Exception:
+    ZOAUResponse = MissingZOAUImport()
 
 
 def execute_command(operator_cmd, *args, **kwargs):

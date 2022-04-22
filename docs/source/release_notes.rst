@@ -6,6 +6,47 @@
 Releases
 ========
 
+Version 1.3.2
+=============
+
+What's New
+----------
+
+* Bug Fixes
+
+  * Modules
+
+    * ``zos_copy`` was updated to correct deletion of all temporary files and
+      unwarranted deletes.
+
+        * When the module would complete, a cleanup routine did not take into
+          account that other processes had open temporary files and thus would
+          error when trying to remove them.
+        * When the module would copy a directory (source) from USS to another
+          USS directory (destination), any files currently in the destination
+          would be deleted.
+          The modules behavior has changed such that files are no longer deleted
+          unless the ``force`` option is set to ``true``. When ``force=true``,
+          copying files or a directory to a USS destination will continue if it
+          encounters existing files or directories and overwrite any
+          corresponding files.
+
+Availability
+------------
+
+* `Automation Hub`_
+* `Galaxy`_
+* `GitHub`_
+
+Reference
+---------
+
+* Supported by `z/OS V2R3`_ or later
+* Supported by the `z/OS® shell`_
+* Supported by `IBM Open Enterprise SDK for Python`_ 3.8.2 or later
+* Supported by IBM `Z Open Automation Utilities 1.1.0`_ and
+  `Z Open Automation Utilities 1.1.1`_
+
 Version 1.3.1
 =============
 

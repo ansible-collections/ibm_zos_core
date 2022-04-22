@@ -6,25 +6,17 @@ namespace: ibm
 name: ibm_zos_core
 
 # The collection version
-version: 1.3.1
+version: 1.3.2
 
 # Collection README file
 readme: README.md
 
 # Contributors
 authors:
-  - Asif Mahmud <asif.mahmud@ibm.com>
-  - Blake Becker <blake.becker@ibm.com>
-  - Xiao Yuan Ma <bjmaxy@cn.ibm.com>
   - Demetrios Dimatos <ddimatos@us.ibm.com>
-  - Jack Ho <jack.ho@ibm.com>
-  - Lu Zhao <zlbjlu@cn.ibm.com>
-  - Ping Xiao <xiaoping@cn.ibm.com>
-  - Behnam Al Kajbaf <behnam@ibm.com>
-  - Andrew Nguyen <andy.nguyen@ibm.com>
-  - Radha Varadachari <radha.varadachari@ibm.com>
   - Rich Parker <richp@ibm.com>
   - Ketan Kelkar <ketan.kelkar@ibm.com>
+  - Ivan Moreno <ivan.moreno.soto@ibm.com
 
 # Description
 description: The IBM z/OS core collection includes connection plugins, action plugins, modules, filters, sample playbooks and ansible-doc to automate tasks on z/OS.

@@ -27,7 +27,7 @@ description:
   - Run a z/OS program.
   - This is analogous to a job step in JCL.
   - Defaults will be determined by underlying API if value not provided.
-version_added: "2.9"
+version_added: "1.1.0"
 options:
   program_name:
     description:

@@ -20,7 +20,7 @@ __metaclass__ = type
 DOCUMENTATION = r"""
 ---
 module: zos_copy
-version_added: '2.9'
+version_added: '1.0.0'
 short_description: Copy data to z/OS
 description:
   - The M(zos_copy) module copies a file or data set from a local or a

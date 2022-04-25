@@ -30,6 +30,11 @@ What's New
           copying files or a directory to a USS destination will continue if it
           encounters existing files or directories and overwrite any
           corresponding files.
+    * ``zos_job_query`` was updated to correct a boolean condition that always
+      evaluated to "CANCELLED".
+
+        * When querying jobs that are either **CANCELLED** or have **FAILED**,
+        they were always treated as **CANCELLED**.
 
 Availability
 ------------

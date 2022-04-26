@@ -34,7 +34,7 @@ What's New
       evaluated to "CANCELLED".
 
         * When querying jobs that are either **CANCELLED** or have **FAILED**,
-        they were always treated as **CANCELLED**.
+          they were always treated as **CANCELLED**.
 
 Availability
 ------------

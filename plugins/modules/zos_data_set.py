@@ -23,7 +23,7 @@ short_description: Manage data sets
 description:
   - Create, delete and set attributes of data sets.
   - When forcing data set replacement, contents will not be preserved.
-version_added: "2.9"
+version_added: "1.3.0"
 author: "Blake Becker (@blakeinate)"
 options:
   name:
@@ -34,7 +34,7 @@ options:
       - Required if I(type=MEMBER) or I(state!=present) and not using I(batch).
     type: str
     required: false
-    version_added: "2.9"
+    version_added: "1.3.0"
   state:
     description:
       - The final state desired for specified data set.
@@ -89,7 +89,7 @@ options:
       - absent
       - cataloged
       - uncataloged
-    version_added: "2.9"
+    version_added: "1.3.0"
   type:
     description:
       - The data set type to be used when creating a data set. (e.g C(pdse))
@@ -112,7 +112,7 @@ options:
       - HFS
       - ZFS
     default: PDS
-    version_added: "2.9"
+    version_added: "1.3.0"
   space_primary:
     description:
       - The amount of primary space to allocate for the dataset.
@@ -120,7 +120,7 @@ options:
     type: int
     required: false
     default: 5
-    version_added: "2.9"
+    version_added: "1.3.0"
   space_secondary:
     description:
       - The amount of secondary space to allocate for the dataset.
@@ -128,7 +128,7 @@ options:
     type: int
     required: false
     default: 3
-    version_added: "2.9"
+    version_added: "1.3.0"
   space_type:
     description:
       - The unit of measurement to use when defining primary and secondary space.
@@ -142,7 +142,7 @@ options:
       - TRK
     required: false
     default: M
-    version_added: "2.9"
+    version_added: "1.3.0"
   record_format:
     description:
       - The format of the data set. (e.g C(FB))
@@ -156,7 +156,7 @@ options:
       - U
     default: FB
     type: str
-    version_added: "2.9"
+    version_added: "1.3.0"
   sms_storage_class:
     description:
       - The storage class for an SMS-managed dataset.
@@ -165,7 +165,7 @@ options:
       - Note that all non-linear VSAM datasets are SMS-managed.
     type: str
     required: false
-    version_added: "2.9"
+    version_added: "1.3.0"
   sms_data_class:
     description:
       - The data class for an SMS-managed dataset.
@@ -174,7 +174,7 @@ options:
       - Note that all non-linear VSAM datasets are SMS-managed.
     type: str
     required: false
-    version_added: "2.9"
+    version_added: "1.3.0"
   sms_management_class:
     description:
       - The management class for an SMS-managed dataset.
@@ -183,7 +183,7 @@ options:
       - Note that all non-linear VSAM datasets are SMS-managed.
     type: str
     required: false
-    version_added: "2.9"
+    version_added: "1.3.0"
   record_length:
     description:
       - The length, in bytes, of each record in the data set.
@@ -191,19 +191,19 @@ options:
       - "Defaults vary depending on format: If FB/FBA 80, if VB/VBA 137, if U 0."
     type: int
     required: false
-    version_added: "2.9"
+    version_added: "1.3.0"
   block_size:
     description:
       - The block size to use for the data set.
     type: int
     required: false
-    version_added: "2.9"
+    version_added: "1.3.0"
   directory_blocks:
     description:
       - The number of directory blocks to allocate to the data set.
     type: int
     required: false
-    version_added: "2.9"
+    version_added: "1.3.0"
   key_offset:
     description:
       - The key offset to use when creating a KSDS data set.
@@ -211,7 +211,7 @@ options:
       - I(key_offset) should only be provided when I(type=KSDS)
     type: int
     required: false
-    version_added: "2.9"
+    version_added: "1.3.0"
   key_length:
     description:
       - The key length to use when creating a KSDS data set.
@@ -219,7 +219,7 @@ options:
       - I(key_length) should only be provided when I(type=KSDS)
     type: int
     required: false
-    version_added: "2.9"
+    version_added: "1.3.0"
   volumes:
     description:
       - >
@@ -238,7 +238,7 @@ options:
       - Accepts a string when using a single volume and a list of strings when using multiple.
     type: raw
     required: false
-    version_added: "2.9"
+    version_added: "1.3.0"
     aliases:
       - volume
   replace:
@@ -252,14 +252,14 @@ options:
     type: bool
     required: false
     default: false
-    version_added: "2.9"
+    version_added: "1.3.0"
   batch:
     description:
       - Batch can be used to perform operations on multiple data sets in a single module call.
     type: list
     elements: dict
     required: false
-    version_added: "2.9"
+    version_added: "1.3.0"
     suboptions:
       name:
         description:
@@ -269,7 +269,7 @@ options:
           - Required if I(type=MEMBER) or I(state!=present)
         type: str
         required: false
-        version_added: "2.9"
+        version_added: "1.3.0"
       state:
         description:
           - The final state desired for specified data set.
@@ -324,7 +324,7 @@ options:
           - absent
           - cataloged
           - uncataloged
-        version_added: "2.9"
+        version_added: "1.3.0"
       type:
         description:
           - The data set type to be used when creating a data set. (e.g C(pdse))
@@ -347,7 +347,7 @@ options:
           - HFS
           - ZFS
         default: PDS
-        version_added: "2.9"
+        version_added: "1.3.0"
       space_primary:
         description:
           - The amount of primary space to allocate for the dataset.
@@ -355,7 +355,7 @@ options:
         type: int
         required: false
         default: 5
-        version_added: "2.9"
+        version_added: "1.3.0"
       space_secondary:
         description:
           - The amount of secondary space to allocate for the dataset.
@@ -363,7 +363,7 @@ options:
         type: int
         required: false
         default: 3
-        version_added: "2.9"
+        version_added: "1.3.0"
       space_type:
         description:
           - The unit of measurement to use when defining primary and secondary space.
@@ -377,7 +377,7 @@ options:
           - TRK
         required: false
         default: M
-        version_added: "2.9"
+        version_added: "1.3.0"
       record_format:
         description:
           - The format of the data set. (e.g C(FB))
@@ -391,7 +391,7 @@ options:
           - U
         default: FB
         type: str
-        version_added: "2.9"
+        version_added: "1.3.0"
       sms_storage_class:
         description:
           - The storage class for an SMS-managed dataset.
@@ -400,7 +400,7 @@ options:
           - Note that all non-linear VSAM datasets are SMS-managed.
         type: str
         required: false
-        version_added: "2.9"
+        version_added: "1.3.0"
       sms_data_class:
         description:
           - The data class for an SMS-managed dataset.
@@ -409,7 +409,7 @@ options:
           - Note that all non-linear VSAM datasets are SMS-managed.
         type: str
         required: false
-        version_added: "2.9"
+        version_added: "1.3.0"
       sms_management_class:
         description:
           - The management class for an SMS-managed dataset.
@@ -418,7 +418,7 @@ options:
           - Note that all non-linear VSAM datasets are SMS-managed.
         type: str
         required: false
-        version_added: "2.9"
+        version_added: "1.3.0"
       record_length:
         description:
           - The length, in bytes, of each record in the data set.
@@ -426,19 +426,19 @@ options:
           - "Defaults vary depending on format: If FB/FBA 80, if VB/VBA 137, if U 0."
         type: int
         required: false
-        version_added: "2.9"
+        version_added: "1.3.0"
       block_size:
         description:
           - The block size to use for the data set.
         type: int
         required: false
-        version_added: "2.9"
+        version_added: "1.3.0"
       directory_blocks:
         description:
           - The number of directory blocks to allocate to the data set.
         type: int
         required: false
-        version_added: "2.9"
+        version_added: "1.3.0"
       key_offset:
         description:
           - The key offset to use when creating a KSDS data set.
@@ -446,7 +446,7 @@ options:
           - I(key_offset) should only be provided when I(type=KSDS)
         type: int
         required: false
-        version_added: "2.9"
+        version_added: "1.3.0"
       key_length:
         description:
           - The key length to use when creating a KSDS data set.
@@ -454,7 +454,7 @@ options:
           - I(key_length) should only be provided when I(type=KSDS)
         type: int
         required: false
-        version_added: "2.9"
+        version_added: "1.3.0"
       volumes:
         description:
           - >
@@ -473,7 +473,7 @@ options:
           - Accepts a string when using a single volume and a list of strings when using multiple.
         type: raw
         required: false
-        version_added: "2.9"
+        version_added: "1.3.0"
         aliases:
           - volume
       replace:
@@ -487,7 +487,7 @@ options:
         type: bool
         required: false
         default: false
-        version_added: "2.9"
+        version_added: "1.3.0"
 
 """
 EXAMPLES = r"""

@@ -33,7 +33,7 @@ description:
     like "*".
   - If there is no ddname, or if ddname="?", output of all the ddnames under
     the given job will be displayed.
-version_added: "2.9"
+version_added: "1.0.0"
 author: "Jack Ho (@jacklotusho)"
 options:
   job_id:

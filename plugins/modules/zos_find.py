@@ -20,7 +20,7 @@ __metaclass__ = type
 DOCUMENTATION = r"""
 ---
 module: zos_find
-version_added: "2.9"
+version_added: "1.3.0"
 short_description: Find matching data sets
 description:
   - Return a list of data sets based on specific criteria.

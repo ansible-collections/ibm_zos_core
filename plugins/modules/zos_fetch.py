@@ -20,7 +20,7 @@ __metaclass__ = type
 DOCUMENTATION = r"""
 ---
 module: zos_fetch
-version_added: "2.9"
+version_added: "1.1.0"
 short_description: Fetch data from z/OS
 description:
   - This module fetches a UNIX System Services (USS) file,

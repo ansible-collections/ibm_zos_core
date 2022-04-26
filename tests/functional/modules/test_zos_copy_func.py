@@ -1481,6 +1481,69 @@ def test_copy_to_existing_dest_not_forced(ansible_zos_module):
         hosts.all.file(path=dest_path, state="absent")
 
 
+def test_copy_dir_to_existing_uss_dir_not_forced(ansible_zos_module):
+    hosts = ansible_zos_module
+    dest_new_dir = "/tmp/new_dir"
+    dest_path = "{0}/profile".format(dest_new_dir)
+    dest_parent_dir = "/tmp/test_dir"
+    dest_old_dir = "{0}/old_dir".format(dest_parent_dir)
+
+    try:
+        hosts.all.file(path=dest_new_dir, state="directory")
+        hosts.all.file(path=dest_path, state="touch")
+        hosts.all.file(path=dest_old_dir, state="directory")
+
+        copy_result = hosts.all.zos_copy(
+            src=dest_new_dir,
+            dest=dest_parent_dir,
+            remote_src=True,
+            force=False
+        )
+
+        for result in copy_result.contacted.values():
+            assert result.get("msg") is not None
+            assert "Error" in result.get("msg")
+            assert "EDC5117I" in result.get("stdout")
+    finally:
+        hosts.all.file(path=dest_parent_dir, state="absent")
+        hosts.all.file(path=dest_new_dir, state="absent")
+
+
+def test_copy_dir_to_existing_uss_dir_forced(ansible_zos_module):
+    hosts = ansible_zos_module
+    dest_new_dir = "/tmp/new_dir/"
+    dest_path = "{0}profile".format(dest_new_dir)
+    dest_parent_dir = "/tmp/test_dir"
+    dest_old_dir = "{0}/old_dir".format(dest_parent_dir)
+    dest_dir = "{0}/profile".format(dest_parent_dir)
+
+    try:
+        hosts.all.file(path=dest_new_dir, state="directory")
+        hosts.all.file(path=dest_path, state="touch")
+        hosts.all.file(path=dest_old_dir, state="directory")
+
+        copy_result = hosts.all.zos_copy(
+            src=dest_new_dir,
+            dest=dest_parent_dir,
+            remote_src=True,
+            force=True
+        )
+
+        stat_old_dir_res = hosts.all.stat(path=dest_old_dir)
+        stat_new_dir_res = hosts.all.stat(path=dest_dir)
+        for result in copy_result.contacted.values():
+            assert result.get("msg") is None
+        for result in stat_old_dir_res.contacted.values():
+            assert result.get("stat").get("exists") is True
+            assert result.get("stat").get("isdir") is True
+        for result in stat_new_dir_res.contacted.values():
+            assert result.get("stat").get("exists") is True
+
+    finally:
+        hosts.all.file(path=dest_parent_dir, state="absent")
+        hosts.all.file(path=dest_new_dir, state="absent")
+
+
 def test_copy_local_symlink_to_uss_file(ansible_zos_module):
     hosts = ansible_zos_module
     src_lnk = "/tmp/etclnk"
@@ -1597,7 +1660,7 @@ def test_ensure_tmp_cleanup(ansible_zos_module):
             cmd="ls -l", executable=SHELL_EXECUTABLE, chdir="/tmp"
         )
         file_count_post = len(list(stat_dir.contacted.values())[0].get("stdout_lines"))
-        assert file_count_post <= file_count_pre
+        assert file_count_post == file_count_pre + 1
 
     finally:
         hosts.all.file(path=dest_path, state="absent")
@@ -1909,7 +1972,6 @@ def test_backup_vsam_user_backup_path(ansible_zos_module):
         copy_res = hosts.all.zos_copy(
             src=src, dest=dest, backup=True, remote_src=True, backup_name=backup_name
         )
-        print(vars(copy_res))
 
         for result in copy_res.contacted.values():
             assert result.get("msg") is None

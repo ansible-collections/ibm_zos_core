@@ -59,3 +59,25 @@ def test_zos_gather_facts_flatten_zinfo_json(zos_import_mocker, args, expected):
         result = None
     assert result == expected
 
+    # actual dict, filter_list, expected dict
+test_data = [
+    # empty filter list
+    ({'a':1, 'b':2}, [], {'a':1, 'b':2}),
+    # filter with * at end
+    ({'dog_1':1, 'dog_2':2, 'cat_1':1, 'cat_2':2}, ['dog*'], {'dog_1':1, 'dog_2':2}),
+    # filter with * at front
+    ({'dog_1':1, 'dog_2':2, 'cat_1':1, 'cat_2':2}, ['*_2'], {'dog_2':2, 'cat_2':2}),
+    # filter wtih exact match
+    ({'dog_1':1, 'dog_2':2, 'cat_1':1, 'cat_2':2}, ['cat_2'], {'cat_2':2}),
+
+]
+@pytest.mark.parametrize("actual,filter_list,expected", test_data)
+def test_zos_gather_facts_apply_filter(zos_import_mocker, actual, filter_list, expected):
+    mocker, importer = zos_import_mocker
+    zos_gather_facts = importer(IMPORT_NAME)
+
+    try:
+        result = zos_gather_facts.apply_filter(actual, filter_list)
+    except Exception:
+        result = None
+    assert result == expected

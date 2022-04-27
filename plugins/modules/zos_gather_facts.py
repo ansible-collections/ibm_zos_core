@@ -25,9 +25,9 @@ module: zos_gather_facts
 
 short_description: z/OS gather facts module
 
-version_added: "1.0.0"
+version_added: "1.4.2"
 
-description: Retrieve facts from z/OS targets.
+description: Retrieve facts from z/OS targets. Note - module will fail fast if any illegal options are provided. This is done to raise awareness of a failure early in an automation setting.
 
 author:
     - Ketan Kelkar (@ketankelkar)
@@ -73,8 +73,9 @@ ansible_facts:
 # will be built out as gather scripts are integrated into the module.
 # following the example of nxos_facts module: https://github.com/ansible/ansible/blob/98f804ecb44278628070829bd1841ca51476f7b9/lib/ansible/modules/network/nxos/nxos_facts.py
 
-import sys
+from fnmatch import fnmatch
 import json
+import sys
 
 from ansible.module_utils.basic import AnsibleModule
 
@@ -118,9 +119,27 @@ def flatten_zinfo_json(zinfo_dict):
         d.update(zinfo_dict[subset])
     return d
 
+def apply_filter(zinfo_dict, filter_list):
+    """Returns dict containing only keys which fit the specified filter(s).
+    Arguments:
+        zinfo_dict {dict} -- flattened dict containing results from zinfo.
+        filters
+        filter_list {list} -- str list of shell wildcard patterns ie 'filters' to apply to zinfo_dict keys.
+    Raises:
+        SomeError: maybe?? -- TODO
+    Returns:
+        [dict] -- A dict with keys filtered out.
+    """
 
+    if filter_list is None or filter_list == []:
+        return zinfo_dict
 
-# PERMISSIVE MODEL IS BETTER than tracking zinfo vs core versions and calculating compatibilities
+    filtered_d = {}
+    for filter in filter_list:
+        for k, v in zinfo_dict.items():
+            if(fnmatch(k, filter)):
+                filtered_d.update({k : v})
+    return filtered_d
 
 # How does the user know what subsets are available. maybe investigate what Ansible does and copy them. Alternative idea is to document 'current' available subsets but not enforce additional or maybe link out to zoau zinfo doc (linking out is frowned upon.)
 
@@ -174,24 +193,24 @@ def run_module():
     cmd = zinfo_cmd_string_builder(gather_subset)
 
     # TODO - REMOVE THIS BLOCK
-    result['ansible_facts'] = {
-        'zzz_params' : module.params,
+    result['ansible_facts']['zzz'] = {}
+    result['ansible_facts']['zzz'].update({
+        'params' : module.params,
         # 'zzzz_gather_subset' : module.params['gather_subset'],
-        'zzz_REMOVE_ME_cmd_str' : cmd,
-    }
+        'cmd_str' : cmd,
+    })
 
     rc, fcinfo_out, err = module.run_command(cmd, encoding=None)
 
     decode_str = fcinfo_out.decode('utf-8')
 
     # TODO - REMOVE THIS BLOCK
-    result['ansible_facts']['zzzzz'] ={
+    result['ansible_facts']['zzz'].update({
         'rc' : rc,
         # 'fcinfo' : fcinfo_out,
         'err' : err,
-    }
+    })
 
-    # Error handling:
     # We DO NOT return a partial list. Instead we FAIL FAST since we are targeting automation -- so quiet but well-intended error messages may easily be skipped
     if rc != 0:
     # if err is not None:
@@ -205,18 +224,21 @@ def run_module():
         module.fail_json(msg=err_msg, debug_cmd_str=cmd, debug_cmd_err=err, debug_rc=rc)
 
     try:
-        result['ansible_facts']['zinfo_output_str'] = json.loads(decode_str)
+        result['ansible_facts']['zzz']['zinfo_output_str'] = json.loads(decode_str)
     except json.JSONDecodeError:
         # TODO -figure out this error message...what do i tell user?
         module.fail_json(msg="There was a JSON error.")
 
 
     # remove zinfo subsets from parsed zinfo result, flatten by one level
-    d = flatten_zinfo_json(json.loads(decode_str))
+    flattened_d = flatten_zinfo_json(json.loads(decode_str))
 
     # apply filter
-    # filter = module.params.filter
-    result['ansible_facts'].update(d)
+    filter = module.params['filter']
+
+    filtered_d = apply_filter(flattened_d, filter)
+    # add updated facts dict to ansible_facts dict
+    result['ansible_facts'].update(filtered_d)
 
     # in the event of a successful module execution, you will want to
     # simple AnsibleModule.exit_json(), passing the key/value results

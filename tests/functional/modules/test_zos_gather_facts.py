@@ -15,6 +15,7 @@ from __future__ import absolute_import, division, print_function
 
 import os
 import sys
+from unittest import result
 import pytest
 
 from pprint import pprint
@@ -47,3 +48,34 @@ def test_gather_facts_with_gather_subset(ansible_zos_module):
 
     for result in results.contacted.values():
         assert result is not None
+
+# test with filter=name and no gather_subset
+def test_gather_facts_with_filter(ansible_zos_module):
+    hosts = ansible_zos_module
+    filter_list=['*name*']
+    results = hosts.all.zos_gather_facts(filter=filter_list)
+    for result in results.contacted.values():
+        assert result is not None
+        assert result.get('ansible_facts') is not None
+
+        assert "iodf_name" in result.get('ansible_facts').keys()
+        assert "lpar_name" in result.get('ansible_facts').keys()
+        assert "product_name" in result.get('ansible_facts').keys()
+        assert "smf_name" in result.get('ansible_facts').keys()
+        assert "sys_name" in result.get('ansible_facts').keys()
+        assert "sysplex_name" in result.get('ansible_facts').keys()
+        assert "vm_name" in result.get('ansible_facts').keys()
+
+# test with filter=master* and gather_subset=ipl
+def test_gather_facts_with_subset_and_filter(ansible_zos_module):
+    hosts = ansible_zos_module
+    ipl_only_subset = ['ipl']
+    filter_list=['master*']
+    results = hosts.all.zos_gather_facts(gather_subset=ipl_only_subset, filter=filter_list)
+    for result in results.contacted.values():
+        assert result is not None
+        assert result.get('ansible_facts') is not None
+
+        assert "master_catalog_dsn" in result.get('ansible_facts').keys()
+        assert "master_catalog_volser" in result.get('ansible_facts').keys()
+

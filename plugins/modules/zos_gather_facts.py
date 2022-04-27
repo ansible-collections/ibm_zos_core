@@ -156,47 +156,31 @@ def run_module():
         # fact_path=dict(default='/etc/ansible/facts.d', required=False, type='path'),
     )
 
-    # seed the result dict in the object
-    # we primarily care about changed and state
-    # changed is if this module effectively modified the target
-    # state will include any data that you want your module to pass back
-    # for consumption, for example, in a subsequent task
+    # setup Ansible module basics
     result = dict(
-        changed=False,
+        changed=False, # fact gathering will never change state of system
         ansible_facts=dict(),
     )
-
-    # the AnsibleModule object will be our abstraction working with Ansible
-    # this includes instantiation, a couple of common attr would be the
-    # args/params passed to the execution, as well as if the module
-    # supports check mode
     module = AnsibleModule(
         argument_spec=module_args,
         supports_check_mode=True
     )
-
-    # if the user is working with this module in only check mode we do not
-    # want to make any changes to the environment, just return the current
-    # state with no modifications
-
     if module.check_mode:
         module.exit_json(**result)
-
-    # manipulate or modify the state as needed (this is going to be the
-    # part where your module will do what it needs to do)
 
     # TODO - check for zoau version >=1.2.1 else error out
 
     gather_subset = module.params['gather_subset']
 
     # build out zinfo command with correct options
+    # call this whether or not gather_subsets list is empty/valid/etc
+    # rely on the function to report back errors.
     cmd = zinfo_cmd_string_builder(gather_subset)
 
     # TODO - REMOVE THIS BLOCK
     result['ansible_facts']['zzz'] = {}
     result['ansible_facts']['zzz'].update({
         'params' : module.params,
-        # 'zzzz_gather_subset' : module.params['gather_subset'],
         'cmd_str' : cmd,
     })
 
@@ -207,7 +191,6 @@ def run_module():
     # TODO - REMOVE THIS BLOCK
     result['ansible_facts']['zzz'].update({
         'rc' : rc,
-        # 'fcinfo' : fcinfo_out,
         'err' : err,
     })
 
@@ -229,19 +212,17 @@ def run_module():
         # TODO -figure out this error message...what do i tell user?
         module.fail_json(msg="There was a JSON error.")
 
-
     # remove zinfo subsets from parsed zinfo result, flatten by one level
     flattened_d = flatten_zinfo_json(json.loads(decode_str))
 
     # apply filter
     filter = module.params['filter']
-
     filtered_d = apply_filter(flattened_d, filter)
+
     # add updated facts dict to ansible_facts dict
     result['ansible_facts'].update(filtered_d)
 
-    # in the event of a successful module execution, you will want to
-    # simple AnsibleModule.exit_json(), passing the key/value results
+    # successful module execution
     module.exit_json(**result)
 
 

@@ -19,16 +19,8 @@ from unittest import result
 import pytest
 
 from pprint import pprint
+
 __metaclass__ = type
-
-# To minimize the number of times the same facts are repeatedly gathered, the tests have been divided into a check against just the base collectors, just the python collector, and the remaining ansible core engine collectors are lumped into a single test. The facts defined in the base collectors should always be collected because they are dependencies for some of the subsequent collectors. The python collector is separated to double check that the gather_subset parameter works as expected.
-
-# The following values are defined in the module and could be changed later:
-
-
-# this one is defined as a param to PrefixFactNamespace, which gets passed into the get_ansible_collector method.
-# FACTS_PREFIX = 'ansible_'
-
 
 def test_gather_facts(ansible_zos_module):
 
@@ -38,8 +30,6 @@ def test_gather_facts(ansible_zos_module):
         print(result)
         assert result is not None
         # something was returned -- most basic test case.
-
-        # assert result.get(ansible_facts).get(FACTS_PREFIX+'architecture') is not None
 
 def test_gather_facts_with_gather_subset(ansible_zos_module):
     hosts = ansible_zos_module
@@ -58,6 +48,7 @@ def test_gather_facts_with_filter(ansible_zos_module):
         assert result is not None
         assert result.get('ansible_facts') is not None
 
+        # check certain known keys fitting the pattern are in dict
         assert "iodf_name" in result.get('ansible_facts').keys()
         assert "lpar_name" in result.get('ansible_facts').keys()
         assert "product_name" in result.get('ansible_facts').keys()
@@ -66,16 +57,46 @@ def test_gather_facts_with_filter(ansible_zos_module):
         assert "sysplex_name" in result.get('ansible_facts').keys()
         assert "vm_name" in result.get('ansible_facts').keys()
 
-# test with filter=master* and gather_subset=ipl
+        # check that other known keys not fitting the pattern are not in dict
+        assert "load_param_dsn" not in result.get('ansible_facts').keys()
+        assert "master_catalog_volser" not in result.get('ansible_facts').keys()
+        assert "arch_level" not in result.get('ansible_facts').keys()
+        assert "product_owner" not in result.get('ansible_facts').keys()
+        assert "iotime" not in result.get('ansible_facts').keys()
+        assert "cpc_nd_manufacturer" not in result.get('ansible_facts').keys()
+
+
+# test with filter=*name* and gather_subset=iodf
 def test_gather_facts_with_subset_and_filter(ansible_zos_module):
     hosts = ansible_zos_module
-    ipl_only_subset = ['ipl']
-    filter_list=['master*']
+    ipl_only_subset = ['iodf']
+    filter_list=['*name*']
     results = hosts.all.zos_gather_facts(gather_subset=ipl_only_subset, filter=filter_list)
     for result in results.contacted.values():
         assert result is not None
         assert result.get('ansible_facts') is not None
 
-        assert "master_catalog_dsn" in result.get('ansible_facts').keys()
-        assert "master_catalog_volser" in result.get('ansible_facts').keys()
+        assert "iodf_name" in result.get('ansible_facts').keys()
 
+        # sys_name is not in the iodf subset.
+        assert "sys_name" not in result.get('ansible_facts').keys()
+
+
+# erroneous output:
+# ansible handles wrong format so we can expect gather_subset and filter to always be lists of str.
+
+# # bad subsets -
+#     results = hosts.all.zos_gather_facts(gather_subset=['']) # empty string
+#     results = hosts.all.zos_gather_facts(gather_subset=['    ']) # space chars
+#     results = hosts.all.zos_gather_facts(gather_subset=['asdfasdf']) # nonsense
+#     # space and other good chars
+#     results = hosts.all.zos_gather_facts(gather_subset=['   ipl'])
+#     # space and other bad chars
+#     results = hosts.all.zos_gather_facts(gather_subset=['   asdf '])
+
+# # bad filters -
+#     # '*' should be same output as default
+#     results = hosts.all.zos_gather_facts(filter=['*'])
+#     results = hosts.all.zos_gather_facts(filter=['']) # empty
+#     results = hosts.all.zos_gather_facts(filter=[' ']) # space
+#     results = hosts.all.zos_gather_facts(filter=['asdfasdf']) # nonsense

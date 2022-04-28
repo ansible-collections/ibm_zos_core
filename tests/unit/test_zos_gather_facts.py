@@ -27,10 +27,16 @@ IMPORT_NAME = "ibm_zos_core.plugins.modules.zos_gather_facts"
 
 test_data = [
     (["ipl"], "zinfo -j -t ipl"),
+    (["ipl  "], "zinfo -j -t ipl"),
+    (["  ipl"], "zinfo -j -t ipl"),
     (["ipl", "sys"], "zinfo -j -t ipl -t sys"),
     (["all"], "zinfo -j -a"),
     (None, "zinfo -j -a"),
     (["ipl", "all", "sys"], "zinfo -j -a"),
+    # function does not validate legal vs illegal subsets
+    (["asdf"], "zinfo -j -t asdf"),
+    ([""], None), # attemtped injection
+    (["ipl; cat /.bashrc"], None), # attemtped injection
 ]
 
 @pytest.mark.parametrize("args,expected", test_data)
@@ -46,7 +52,8 @@ def test_zos_gather_facts_zinfo_cmd_string_builder(zos_import_mocker, args, expe
     assert result == expected
 
 test_data = [
-    ({'x': {'a' : 'aa', 'b' : 'bb', 'c' : 'cc'}, 'y' : {'d' : True}}, {'a' : 'aa', 'b' : 'bb', 'c' : 'cc', 'd' : True})
+    ({'x': {'a' : 'aa', 'b' : 'bb', 'c' : 'cc'}, 'y' : {'d' : True}}, {'a' : 'aa', 'b' : 'bb', 'c' : 'cc', 'd' : True}),
+    ({}, {})
 ]
 @pytest.mark.parametrize("args,expected", test_data)
 def test_zos_gather_facts_flatten_zinfo_json(zos_import_mocker, args, expected):
@@ -69,6 +76,10 @@ test_data = [
     ({'dog_1':1, 'dog_2':2, 'cat_1':1, 'cat_2':2}, ['*_2'], {'dog_2':2, 'cat_2':2}),
     # filter wtih exact match
     ({'dog_1':1, 'dog_2':2, 'cat_1':1, 'cat_2':2}, ['cat_2'], {'cat_2':2}),
+    # empty dict, empty filter
+    ({}, [], {}),
+    # empty dict, non-empty filter
+    ({}, ['a*'], {}),
 
 ]
 @pytest.mark.parametrize("actual,filter_list,expected", test_data)

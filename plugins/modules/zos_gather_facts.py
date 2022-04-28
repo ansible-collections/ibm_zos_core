@@ -87,20 +87,24 @@ def zinfo_cmd_string_builder(gather_subset):
         SomeError: maybe?? -- TODO
     Returns:
         [str] -- A string containing a command line argument calling zinfo with the appropriate options.
+        None -- Bad value for subset.
     """
     if gather_subset == None or 'all' in gather_subset:
         return "zinfo -j -a"
 
     # base value
     zinfo_arg_string = "zinfo -j"
-    # ipl_opt = " -t ipl"
-    # sys_opt = " -t sys"
-    # cpu_opt = " -t cpu"
-    # iodf_opt = " -t iodf"
 
     # build full string
     for subset in gather_subset:
-        # TODO - sanitize subset against malicious (probably alphanumeric only?)
+        # remove leading/trailing spaces
+        subset = subset.strip()
+        # empty string as subset is bad
+        if not subset:
+            return None
+        # sanitize subset against malicious (probably alphanumeric only?)
+        if not subset.isalnum():
+            return None
         zinfo_arg_string += " -t " + subset
 
     return zinfo_arg_string
@@ -176,6 +180,9 @@ def run_module():
     # call this whether or not gather_subsets list is empty/valid/etc
     # rely on the function to report back errors.
     cmd = zinfo_cmd_string_builder(gather_subset)
+    if not cmd:
+        module.fail_json(msg="Received an invalid subset.")
+
 
     # TODO - REMOVE THIS BLOCK
     result['ansible_facts']['zzz'] = {}
@@ -206,14 +213,16 @@ def run_module():
 
         module.fail_json(msg=err_msg, debug_cmd_str=cmd, debug_cmd_err=err, debug_rc=rc)
 
+    zinfo_dict = {}
     try:
+        zinfo_dict = json.loads(decode_str)
         result['ansible_facts']['zzz']['zinfo_output_str'] = json.loads(decode_str)
     except json.JSONDecodeError:
         # TODO -figure out this error message...what do i tell user?
         module.fail_json(msg="There was a JSON error.")
 
     # remove zinfo subsets from parsed zinfo result, flatten by one level
-    flattened_d = flatten_zinfo_json(json.loads(decode_str))
+    flattened_d = flatten_zinfo_json(zinfo_dict)
 
     # apply filter
     filter = module.params['filter']

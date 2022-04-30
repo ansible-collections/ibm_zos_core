@@ -13,6 +13,30 @@
 # limitations under the License.
 
 from __future__ import absolute_import, division, print_function
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
+    MissingZOAUImport,
+)
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.mvs_cmd import (
+    idcams, iebcopy, ikjeft01
+)
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
+    better_arg_parser, data_set, encode, vtoc, backup, copy
+)
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
+    AnsibleModuleHelper,
+)
+from ansible.module_utils._text import to_bytes
+from ansible.module_utils.basic import AnsibleModule
+from ansible.module_utils.six import PY3
+from re import IGNORECASE
+from hashlib import sha256
+import glob
+import shutil
+import stat
+import math
+import tempfile
+import os, sys
+import subprocess
 
 __metaclass__ = type
 
@@ -121,9 +145,16 @@ options:
         type: str
   force:
     description:
-      - If set to C(true), the remote file or data set will be overwritten.
-      - If set to C(false), the file or data set will only be copied if the destination
-        does not exist.
+      - If set to C(true) and the remote file or data set C(dest) is empty,
+        the C(dest) will be reused.
+      - If set to C(true) and the remote file or data set C(dest) is NOT empty,
+        the C(dest) will be deleted and recreated with the C(src) data set
+        attributes, otherwise it will be recreated with the C(dest) data set
+        attributes.
+      - To backup data before any deletion, see parameters C(backup) and
+        C(backup_name).
+      - If set to C(false), the file or data set will only be copied if the
+        destination does not exist.
       - If set to C(false) and destination exists, the module exits with a note to
         the user.
     type: bool
@@ -241,10 +272,11 @@ options:
     required: false
     type: dict
     suboptions:
-      dd_type:
+      type:
         description:
           - Organization of the destination
         type: str
+        required: true
         choices:
           - KSDS
           - ESDS
@@ -255,7 +287,6 @@ options:
           - PDSE
           - MEMBER
           - BASIC
-        default: BASIC
       space_primary:
         description:
           - If the destination I(dest) data set does not exist , this sets the
@@ -263,7 +294,6 @@ options:
           - The unit of space used is set using I(space_type).
         type: str
         required: false
-        default: "5"
       space_secondary:
         description:
           - If the destination I(dest) data set does not exist , this sets the
@@ -271,7 +301,6 @@ options:
           - The unit of space used is set using I(space_type).
         type: str
         required: false
-        default: "3"
       space_type:
         description:
           - If the destination data set does not exist, this sets the unit of
@@ -285,7 +314,6 @@ options:
           - CYL
           - TRK
         required: false
-        default: M
       record_format:
         description:
           - If the destination data set does not exist, this sets the format of the
@@ -298,7 +326,6 @@ options:
           - FBA
           - VBA
           - U
-        default: FB
         type: str
       record_length:
         description:
@@ -307,7 +334,6 @@ options:
           - "Defaults vary depending on format: If FB/FBA 80, if VB/VBA 137, if U 0."
         type: int
         required: false
-        default: 80
       block_size:
         description:
           - The block size to use for the data set.
@@ -584,35 +610,6 @@ cmd:
     sample: REPRO INDATASET(SAMPLE.DATA.SET) OUTDATASET(SAMPLE.DEST.DATA.SET)
 """
 
-import os
-import tempfile
-import math
-import stat
-import shutil
-import glob
-
-from hashlib import sha256
-from re import IGNORECASE
-from ansible.module_utils.six import PY3
-
-from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils._text import to_bytes
-
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
-    AnsibleModuleHelper,
-)
-
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
-    better_arg_parser, data_set, encode, vtoc, backup, copy
-)
-
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.mvs_cmd import (
-    idcams, iebcopy, ikjeft01
-)
-
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingZOAUImport,
-)
 
 if PY3:
     from re import fullmatch
@@ -627,6 +624,7 @@ except Exception:
 
 MVS_PARTITIONED = frozenset({"PE", "PO", "PDSE", "PDS"})
 # Underlying code will map both BASIC and SEQ to PS
+
 MVS_SEQ = frozenset({"PS", "SEQ", "BASIC"})
 
 
@@ -676,15 +674,7 @@ class CopyHandler(object):
         temp_path,
         conv_path,
         dest,
-        src_ds_type,
-        alloc_vol=None,
-        type=type,
-        space_primary=None,
-        space_secondary=None,
-        space_type=None,
-        record_format=None,
-        record_length=None,
-        block_size=None
+        src_ds_type
     ):
         """Copy source to a sequential data set.
 
@@ -695,54 +685,52 @@ class CopyHandler(object):
             conv_path {str} -- Path to the converted source file
             dest {str} -- Name of destination data set
             src_ds_type {str} -- The type of source
-            alloc_vol {str} -- The volume where destination should be allocated
-            type {str} -- Type of data set, if it needs created
-            space_primary {int} -- Primary allocation, if data set needs created
-            space_secondary {int} -- Secondary allocation, if data set needs created
-            space_type {str} - Units of measure (CYL/TRK/K/M) of allocation values
-            record_format {str} - Format (FB/VB) of data set if data set needs created
-            record_length {int} - Size of individual records in the record set
-            block_size {int} - Size of data block
         """
         new_src = temp_path or conv_path or src
 
-        # Pre-clear data set: get destination stats before deleting if incoming info is all default
-        if self.dest_exists:
-            if space_primary is None or space_primary == 5:
-                if record_length is None or record_length == 80:
-                    if block_size is None:
-                        res = datasets.listing(dest)
-                        type = res[0].dsorg
-                        record_format = res[0].recfm
-                        record_length = res[0].lrecl
-                        block_size = res[0].block_size
-                        space_primary = round(res[0].total_space / 1024)
-                        space_type = "K"
-                        space_secondary = 3
-            try:
-                data_set.DataSet.delete(dest)
-                self.dest_exists = False
-            except Exception as err:
-                self.fail_json(msg=repr(err))
+        # # Pre-clear data set: get destination stats before deleting if incoming info is all default
+        # if self.dest_exists:
+        #     if space_primary is None or space_primary == 5:
+        #         if record_length is None or record_length == 80:
+        #             if block_size is None:
+        #                 res = datasets.listing(dest)
+        #                 type = res[0].dsorg
+        #                 record_format = res[0].recfm
+        #                 record_length = res[0].lrecl
+        #                 block_size = res[0].block_size
+        #                 space_primary = round(res[0].total_space / 1024)
+        #                 space_type = "K"
+        #                 space_secondary = 3
+        #     try:
+        #         data_set.DataSet.delete(dest)
+        #         self.dest_exists = False
+        #     except Exception as err:
+        #         self.fail_json(msg=repr(err))
 
-        if not self.dest_exists:
-            parms = dict(
-                name=dest,
-                type=type,
-                space_primary=space_primary,
-                space_secondary=space_secondary,
-                space_type=space_type,
-                record_format=record_format,
-                record_length=record_length,
-                block_size=block_size
-            )
-            if alloc_vol:
-                parms['volumes'] = [alloc_vol]
+        # if not self.dest_exists:
+        #     parms = dict(
+        #         name=dest,
+        #         type=type,
+        #         space_primary=space_primary,
+        #         space_secondary=space_secondary,
+        #         space_type=space_type,
+        #         record_format=record_format,
+        #         record_length=record_length,
+        #         block_size=block_size
+        #     )
+        #     if alloc_vol:
+        #         parms['volumes'] = [alloc_vol]
 
-            try:
-                data_set.DataSet.create(**parms)
-            except Exception as err:
-                self.fail_json(msg=repr(err))
+# Demetri here 12/2/21
+        # try:
+        #     data_set.DataSet.create(**parms)
+        # except Exception as err:
+        #     self.fail_json(msg=repr(err))
+
+        # self.fail_json(
+        #         msg="src_ds_type {0} new_src {1} dest {2}".format(src_ds_type, new_src,dest)
+        # )
+        # msg": "src_ds_type USS new_src /SYSTEM/tmp/hi.txt dest SOME.GEN.SEQ",
 
         if src_ds_type == "USS":
             rc, out, err = self.run_command(
@@ -768,7 +756,8 @@ class CopyHandler(object):
             response = datasets._copy(new_src, dest)
             if response.rc != 0:
                 self.fail_json(
-                    msg="Unable to copy source {0} to {1}".format(new_src, dest),
+                    msg="Unable to copy source {0} to {1}".format(
+                        new_src, dest),
                     rc=response.rc,
                     stdout=response.stdout_response,
                     stderr=response.stderr_response
@@ -787,18 +776,14 @@ class CopyHandler(object):
             response = datasets._delete(dest)
             if response.rc != 0:
                 self.fail_json(
-                    msg="Unable to delete destination data set {0}".format(dest),
+                    msg="Unable to delete destination data set {0}".format(
+                        dest),
                     rc=response.rc,
                     stdout=response.stdout_response,
                     stderr=response.stderr_response
                 )
         self.allocate_model(dest, src, vol=alloc_vol)
 
-        # TODO:
-        # We should look to see if a user has passed in their own DS spec for VSAM
-        # in which case we should use that data to create a VSAM over this static
-        # REPRO command and also when do we use the allocate_model over user spec?
-        # In otherwords, which is the default behavior, model or spec?
         repro_cmd = """  REPRO -
         INDATASET({0}) -
         OUTDATASET({1})""".format(src, dest)
@@ -844,7 +829,8 @@ class CopyHandler(object):
                         temp_path, os.path.basename(os.path.dirname(src))
                     )
                 else:
-                    new_src = "{0}/{1}".format(temp_path, os.path.basename(src))
+                    new_src = "{0}/{1}".format(temp_path,
+                                               os.path.basename(src))
             try:
                 if not temp_path:
                     temp_dir = tempfile.mkdtemp()
@@ -959,7 +945,8 @@ class CopyHandler(object):
                              (Default {False})
 
         """
-        tag_cmd = "chtag -{0}c {1} {2}".format("R" if is_dir else "t", tag, file_path)
+        tag_cmd = "chtag -{0}c {1} {2}".format(
+            "R" if is_dir else "t", tag, file_path)
         rc, out, err = self.run_command(tag_cmd)
         if rc != 0:
             self.fail_json(
@@ -1101,7 +1088,8 @@ class USSCopyHandler(CopyHandler):
             {str} -- Destination where the file was copied to
         """
         if os.path.isdir(dest):
-            dest = os.path.join(dest, os.path.basename(src) if src else "inline_copy")
+            dest = os.path.join(dest, os.path.basename(src)
+                                if src else "inline_copy")
 
         new_src = temp_path or conv_path or src
         try:
@@ -1139,7 +1127,8 @@ class USSCopyHandler(CopyHandler):
                 shutil.rmtree(dest_dir)
             except Exception as err:
                 self.fail_json(
-                    msg="Unable to delete pre-existing directory {0}".format(dest_dir),
+                    msg="Unable to delete pre-existing directory {0}".format(
+                        dest_dir),
                     stdout=str(err),
                 )
         try:
@@ -1187,7 +1176,8 @@ class USSCopyHandler(CopyHandler):
                 response = datasets._copy(src, dest)
                 if response.rc != 0:
                     self.fail_json(
-                        msg="Error while copying source {0} to {1}".format(src, dest),
+                        msg="Error while copying source {0} to {1}".format(
+                            src, dest),
                         rc=response.rc,
                         stdout=response.stdout_response,
                         stderr=response.stderr_response
@@ -1246,6 +1236,8 @@ class PDSECopyHandler(CopyHandler):
             src_ds_type {str} -- The type of source
             alloc_vol {str} -- The volume where the PDSE should be allocated
         """
+        # TODO: review this action which deletes members of a PDS when the PDS is not empty
+        #       this seems destructive and unnecessary because a user might be adding members to a pds
         new_src = temp_path or conv_path or src
         if src_ds_type == "USS":
             if self.dest_exists and not data_set.is_empty(dest):
@@ -1302,7 +1294,7 @@ class PDSECopyHandler(CopyHandler):
                             ),
                             rc=rc,
                         )
-                    self.allocate_model(dest, new_src, vol=alloc_vol)
+                    self.allocate_model(dest, new_src, vol=alloc_vol) here
 
                 dds = dict(OUTPUT=dest, INPUT=new_src)
                 copy_cmd = "   COPY OUTDD=OUTPUT,INDD=INPUT"
@@ -1351,7 +1343,8 @@ class PDSECopyHandler(CopyHandler):
         is_uss_src = temp_path is not None or conv_path is not None or "/" in src
         # if constructing, remove periods from member name
         if src and is_uss_src and not copy_member:
-            dest = "{0}({1})".format(dest, os.path.basename(src).replace(".", "")[0:8])
+            dest = "{0}({1})".format(
+                dest, os.path.basename(src).replace(".", "")[0:8])
 
         new_src = (temp_path or conv_path or src).replace("$", "\\$")
 
@@ -1362,15 +1355,20 @@ class PDSECopyHandler(CopyHandler):
         if self.is_binary:
             opts["options"] = "-B"
 
+        # self.fail_json(
+        #             msg="Unable to delete destination data set {0} {1} {2}".format(new_src, dest, opts))
+
         response = datasets._copy(new_src, dest, None, **opts)
         rc, out, err = response.rc, response.stdout_response, response.stderr_response
 
         if rc != 0:
             msg = ""
             if is_uss_src:
-                msg = "Unable to copy file {0} to data set member {1}".format(src, dest)
+                msg = "Unable to copy file {0} to data set member {1}".format(
+                    src, dest)
             else:
-                msg = "Unable to copy data set member {0} to {1}".format(src, dest)
+                msg = "Unable to copy data set member {0} to {1}".format(
+                    src, dest)
 
             # *****************************************************************
             # An error occurs while attempting to write a data set member to a
@@ -1416,26 +1414,39 @@ class PDSECopyHandler(CopyHandler):
         """
         if remote_src:
             if src_ds_type in MVS_PARTITIONED:
+                self.fail_json(
+                    msg=repr("TESTING FAILURE FOR NON-EXISTANT DS TYPE 333"))
                 self.allocate_model(dest_name, src, vol=alloc_vol)
 
             elif src_ds_type in MVS_SEQ:
+                self.fail_json(
+                    msg=repr("TESTING FAILURE FOR NON-EXISTANT DS TYPE 444"))
                 self._allocate_pdse(
                     dest_name, src_vol=src_vol, src=src, alloc_vol=alloc_vol)
 
             elif os.path.isfile(src):
+                self.fail_json(
+                    msg=repr("TESTING FAILURE FOR NON-EXISTANT DS TYPE 555"))
                 size = os.stat(src).st_size
                 self._allocate_pdse(dest_name, size=size, alloc_vol=alloc_vol)
 
             elif os.path.isdir(src):
+                self.fail_json(
+                    msg=repr("TESTING FAILURE FOR NON-EXISTANT DS TYPE 666"))
                 path, dirs, files = next(os.walk(src))
                 if dirs:
                     self.fail_json(
-                        msg="Subdirectory found in source directory {0}".format(src)
+                        msg="Subdirectory found in source directory {0}".format(
+                            src)
                     )
                 size = sum(os.stat(path + "/" + f).st_size for f in files)
                 self._allocate_pdse(dest_name, size=size, alloc_vol=alloc_vol)
         else:
-            self._allocate_pdse(dest_name, src=src, size=size, alloc_vol=alloc_vol)
+            #self.fail_json(msg=repr("TESTING FAILURE FOR NON-EXISTANT DS TYPE 777"))
+            self.fail_json(
+                msg="TESTING FAILURE FOR NON-EXISTANT DS TYPE 777 {0} {1} {2}".format(dest_name, size, alloc_vol))
+            self._allocate_pdse(dest_name, src=src,
+                                size=size, alloc_vol=alloc_vol)
 
     def _allocate_pdse(
         self,
@@ -1493,6 +1504,565 @@ class PDSECopyHandler(CopyHandler):
             self.fail_json(msg=repr(err))
 
         return rc
+
+    # def create_pdse_2(
+    #     self,
+    #     src,
+    #     dest_name,
+    #     size,
+    #     src_ds_type,
+    #     remote_src=False,
+    #     src_vol=None,
+    #     alloc_vol=None,
+    #     space_primary=None,
+    #     space_secondary=None,
+    #     space_type=None,
+    #     record_format=None,
+    #     record_length=None,
+    #     block_size=None
+    # ):
+    #     """Create a partitioned data set specified by 'dest_name'
+
+    #     Arguments:
+    #         src {str} -- Name of the source data set
+    #         dest_name {str} -- Name of the data set to be created
+    #         size {int} -- The size, in bytes, of the source file
+    #         dest_ds_type {str} -- Type of the data set to be created
+    #         src_ds_type {str} -- Type of source data set
+    #         alloc_vol {str} -- The volume to allocate the PDSE to
+
+    #     Keyword Arguments:
+    #         remote_src {bool} -- Whether source is located on remote system.
+    #                              (Default {False})
+    #         src_vol {str} -- Volume where source data set is stored. (Default {None})
+    #     """
+    #     if remote_src:
+    #         if src_ds_type in MVS_PARTITIONED:
+    #             self.fail_json(
+    #                 msg=repr("TESTING FAILURE FOR NON-EXISTANT DS TYPE 333"))
+    #             self.allocate_model(dest_name, src, vol=alloc_vol)
+
+    #         elif src_ds_type in MVS_SEQ:
+    #             self.fail_json(
+    #                 msg=repr("TESTING FAILURE FOR NON-EXISTANT DS TYPE 444"))
+    #             self._allocate_pdse(
+    #                 dest_name, src_vol=src_vol, src=src, alloc_vol=alloc_vol)
+
+    #         elif os.path.isfile(src):
+    #             # self.fail_json(
+    #             #     msg=repr("TESTING FAILURE FOR NON-EXISTANT DS TYPE 555"))
+    #             size = os.stat(src).st_size
+    #             #self._allocate_pdse(dest_name, size=size, alloc_vol=alloc_vol)
+    #             self._allocate_pdse_2(dest_name, src=src, size=size, alloc_vol=alloc_vol, space_primary=space_primary,
+    #                                   space_secondary=space_secondary,
+    #                                   space_type=space_type,
+    #                                   record_format=record_format,
+    #                                   record_length=record_length,
+    #                                   block_size=block_size)
+
+    #         elif os.path.isdir(src):
+    #             self.fail_json(
+    #                 msg=repr("TESTING FAILURE FOR NON-EXISTANT DS TYPE 666"))
+    #             path, dirs, files = next(os.walk(src))
+    #             if dirs:
+    #                 self.fail_json(
+    #                     msg="Subdirectory found in source directory {0}".format(
+    #                         src)
+    #                 )
+    #             size = sum(os.stat(path + "/" + f).st_size for f in files)
+    #             self._allocate_pdse(dest_name, size=size, alloc_vol=alloc_vol)
+    #     else:
+    #         #self.fail_json(msg=repr("TESTING FAILURE FOR NON-EXISTANT DS TYPE 777"))
+    #         # self.fail_json(
+    #         #     msg="TESTING FAILURE FOR NON-EXISTANT DS TYPE 777 {0} {1} {2}".format(dest_name, size, alloc_vol))
+    #         self._allocate_pdse_2(dest_name, src=src, size=size, alloc_vol=alloc_vol, space_primary=space_primary,
+    #                               space_secondary=space_secondary,
+    #                               space_type=space_type,
+    #                               record_format=record_format,
+    #                               record_length=record_length,
+    #                               block_size=block_size)
+
+    # def _allocate_pdse_2(
+    #     self,
+    #     ds_name,
+    #     size=None,
+    #     src_vol=None,
+    #     src=None,
+    #     alloc_vol=None,
+    #     space_primary=None,
+    #     space_secondary=None,
+    #     space_type=None,
+    #     record_format=None,
+    #     record_length=None,
+    #     block_size=None
+    # ):
+    #     """Allocate a partitioned extended data set. If 'size'
+    #     is provided, allocate PDSE using this given size. If size is not
+    #     provided, obtain the 'src' data set size from vtoc and allocate using
+    #     that information.
+
+    #     Arguments:
+    #         ds_name {str} -- The name of the PDSE to allocate
+
+    #     Keyword Arguments:
+    #         size {int} -- The size, in bytes, of the allocated PDSE
+    #         src {str} -- The name of the source data set from which to get the size
+    #         src_vol {str} -- Volume of the source data set
+    #         allc_vol {str} -- The volume where PDSE should be allocated
+    #     """
+    #     rc = -1
+    #     recfm = "FB"
+    #     lrecl = 80
+    #     alloc_size = space_primary + space_secondary
+    #     if not alloc_size:
+    #         if src_vol:
+    #             vtoc_info = vtoc.get_data_set_entry(src, src_vol)
+    #             tracks = int(vtoc_info.get("last_block_pointer").get("track"))
+    #             blocks = int(vtoc_info.get("last_block_pointer").get("block"))
+    #             blksize = int(vtoc_info.get("block_size"))
+    #             bytes_per_trk = 56664
+    #             alloc_size = (tracks * bytes_per_trk) + (blocks * blksize)
+    #             recfm = vtoc_info.get("record_format") or recfm
+    #             lrecl = int(vtoc_info.get("record_length")) or lrecl
+    #         else:
+    #             alloc_size = 5242880  # Use the default 5 Megabytes
+
+    #     #alloc_size = "{0}K".format(str(int(math.ceil(alloc_size / 1024))))
+    #     # parms = dict(
+    #     #     name=ds_name,
+    #     #     type="PDSE",
+    #     #     space_primary=alloc_size,
+    #     #     record_format=recfm,
+    #     #     record_length=lrecl
+    #     # )
+    #     # if alloc_vol:
+    #     #     parms['volumes'] = [alloc_vol]
+
+    #     # try:
+    #     #     rc = data_set.DataSet.create(**parms)
+    #     # except Exception as err:
+    #     #     self.fail_json(msg=repr(err))
+
+    #     # return rc
+
+    #     if not self.dest_exists:
+    #         parms = dict(
+    #             name=ds_name,
+    #             type="PDSE",
+    #             space_primary=space_primary,
+    #             space_secondary=space_secondary,
+    #             space_type=space_type,
+    #             record_format=record_format,
+    #             record_length=record_length,
+    #             block_size=block_size
+    #         )
+    #         if alloc_vol:
+    #             parms['volumes'] = [alloc_vol]
+
+    #         try:
+    #             data_set.DataSet.create(**parms)
+    #         except Exception as err:
+    #             self.fail_json(msg=repr(err))
+
+    #     return rc
+
+
+def create_pdse_2(
+    self,
+    src,
+    dest_name,
+    size,
+    src_ds_type,
+    remote_src=False,
+    src_vol=None,
+    alloc_vol=None,
+    space_primary=None,
+    space_secondary=None,
+    space_type=None,
+    record_format=None,
+    record_length=None,
+    block_size=None
+):
+    """Create a partitioned data set specified by 'dest_name'
+
+        Arguments:
+            src {str} -- Name of the source data set
+            dest_name {str} -- Name of the data set to be created
+            size {int} -- The size, in bytes, of the source file
+            dest_ds_type {str} -- Type of the data set to be created
+            src_ds_type {str} -- Type of source data set
+            alloc_vol {str} -- The volume to allocate the PDSE to
+
+        Keyword Arguments:
+            remote_src {bool} -- Whether source is located on remote system.
+                                 (Default {False})
+            src_vol {str} -- Volume where source data set is stored. (Default {None})
+    """
+    module = AnsibleModuleHelper(argument_spec={})
+    if remote_src:
+        if src_ds_type in MVS_PARTITIONED:
+            module.fail_json(
+                    msg=repr("TESTING FAILURE FOR NON-EXISTANT DS TYPE 333"))
+            allocate_model_data_set(dest_name, src, vol=alloc_vol)
+
+            elif src_ds_type in     :
+                self.fail_json(
+                    msg=repr("TESTING FAILURE FOR NON-EXISTANT DS TYPE 444"))
+                self._allocate_pdse(
+                    dest_name, src_vol=src_vol, src=src, alloc_vol=alloc_vol)
+
+            elif os.path.isfile(src):
+                # self.fail_json(
+                #     msg=repr("TESTING FAILURE FOR NON-EXISTANT DS TYPE 555"))
+                size = os.stat(src).st_size
+                #self._allocate_pdse(dest_name, size=size, alloc_vol=alloc_vol)
+                self._allocate_pdse_2(dest_name, src=src, size=size, alloc_vol=alloc_vol, space_primary=space_primary,
+                                      space_secondary=space_secondary,
+                                      space_type=space_type,
+                                      record_format=record_format,
+                                      record_length=record_length,
+                                      block_size=block_size)
+
+            elif os.path.isdir(src):
+                self.fail_json(
+                    msg=repr("TESTING FAILURE FOR NON-EXISTANT DS TYPE 666"))
+                path, dirs, files = next(os.walk(src))
+                if dirs:
+                    self.fail_json(
+                        msg="Subdirectory found in source directory {0}".format(
+                            src)
+                    )
+                size = sum(os.stat(path + "/" + f).st_size for f in files)
+                self._allocate_pdse(dest_name, size=size, alloc_vol=alloc_vol)
+        else:
+            #self.fail_json(msg=repr("TESTING FAILURE FOR NON-EXISTANT DS TYPE 777"))
+            # self.fail_json(
+            #     msg="TESTING FAILURE FOR NON-EXISTANT DS TYPE 777 {0} {1} {2}".format(dest_name, size, alloc_vol))
+            self._allocate_pdse_2(dest_name, src=src, size=size, alloc_vol=alloc_vol, space_primary=space_primary,
+                                  space_secondary=space_secondary,
+                                  space_type=space_type,
+                                  record_format=record_format,
+                                  record_length=record_length,
+                                  block_size=block_size)
+
+
+
+#TODO: Do we really need this when we can use model_ds?
+def _allocate_pdse_3(
+        self,
+        name,
+        size=None,
+        src=None,
+        alloc_vol=None,
+
+    ):
+        """Allocate a partitioned extended data set. If 'size'
+        is provided, allocate PDSE using this given size. If size is not
+        provided, obtain the 'src' data set size from vtoc and allocate using
+        that information.
+
+        Arguments:
+            name {str} -- The name of the PDSE to allocate
+
+        Keyword Arguments:
+            src {str} -- The name of the source data set from which to get the size
+            alloc_vol {str} -- The volume where PDSE should be allocated
+        """
+        # Figure out the data set type and volume
+        ds_dataSetUtils = data_set.DataSetUtils(src)
+
+        if ds_dataSetUtils.exists():
+            src_vol = ds_dataSetUtils.volume()
+
+        rc = -1
+        recfm = "FB"
+        lrecl = 80
+        if src_vol:
+            vtoc_info = vtoc.get_data_set_entry(src, src_vol)
+            tracks = int(vtoc_info.get("last_block_pointer").get("track"))
+            blocks = int(vtoc_info.get("last_block_pointer").get("block"))
+            blksize = int(vtoc_info.get("block_size"))
+            bytes_per_trk = 56664
+            alloc_size = (tracks * bytes_per_trk) + (blocks * blksize)
+            recfm = vtoc_info.get("record_format") or recfm
+            lrecl = int(vtoc_info.get("record_length")) or lrecl
+
+        parms = dict(
+            name=ds_name,
+            type="PDSE",
+            space_primary=space_primary,
+            space_secondary=space_secondary,
+            space_type=space_type,
+            record_format=record_format,
+            record_length=record_length,
+            block_size=block_size
+        )
+
+        if alloc_vol:
+            parms['volumes'] = [alloc_vol]
+
+        try:
+            data_set.DataSet.create(**parms)
+        except Exception as err:
+            self.fail_json(msg=repr(err))
+
+        # TODO: Correct Return code
+        return rc
+
+def _allocate_pdse_2(
+        self,
+        ds_name,
+        size=None,
+        src_vol=None,
+        src=None,
+        alloc_vol=None,
+        space_primary=None,
+        space_secondary=None,
+        space_type=None,
+        record_format=None,
+        record_length=None,
+        block_size=None
+    ):
+        """Allocate a partitioned extended data set. If 'size'
+        is provided, allocate PDSE using this given size. If size is not
+        provided, obtain the 'src' data set size from vtoc and allocate using
+        that information.
+
+        Arguments:
+            ds_name {str} -- The name of the PDSE to allocate
+
+        Keyword Arguments:
+            size {int} -- The size, in bytes, of the allocated PDSE
+            src {str} -- The name of the source data set from which to get the size
+            src_vol {str} -- Volume of the source data set
+            allc_vol {str} -- The volume where PDSE should be allocated
+        """
+        rc = -1
+        recfm = "FB"
+        lrecl = 80
+        alloc_size = space_primary + space_secondary
+        if not alloc_size:
+            if src_vol:
+                vtoc_info = vtoc.get_data_set_entry(src, src_vol)
+                tracks = int(vtoc_info.get("last_block_pointer").get("track"))
+                blocks = int(vtoc_info.get("last_block_pointer").get("block"))
+                blksize = int(vtoc_info.get("block_size"))
+                bytes_per_trk = 56664
+                alloc_size = (tracks * bytes_per_trk) + (blocks * blksize)
+                recfm = vtoc_info.get("record_format") or recfm
+                lrecl = int(vtoc_info.get("record_length")) or lrecl
+            else:
+                alloc_size = 5242880  # Use the default 5 Megabytes
+
+        if not self.dest_exists:
+            parms = dict(
+                name=ds_name,
+                type="PDSE",
+                space_primary=space_primary,
+                space_secondary=space_secondary,
+                space_type=space_type,
+                record_format=record_format,
+                record_length=record_length,
+                block_size=block_size
+            )
+            if alloc_vol:
+                parms['volumes'] = [alloc_vol]
+
+            try:
+                data_set.DataSet.create(**parms)
+            except Exception as err:
+                self.fail_json(msg=repr(err))
+
+        return rc
+
+def allocate_model_data_set(ds_name, model, vol=None):
+    """Allocates a data set based on a 'model' data sets allocation paramters.
+       Useful when data set needs to be created identical to another. Supported
+       model(s) are Physical Sequential (PS) and Partitioned Data Sets PDS. If a
+       PDS should have a member PDS(member) set as the `ds_name`, the input will
+       be sanitized thus removing the member resulting in only the data set name.
+
+        Arguments:
+            ds_name {str} -- The name of the data set to allocate. If the ds_name
+            is a partitioned member e.g. hlq.llq.ds(mem), only the data set name
+            must be used. See extract_dsname(ds_name) in data_set.py
+            model {str} -- The name of the data set whose allocation parameters
+            should be used to allocate the new data set 'ds_name'
+            vol {str} -- The volume where data set should be allocated
+
+        Returns:
+            {int} -- The return code of executing the allocation command
+        """
+
+    #TODO: Add a check to ensure ony type PO and PS are provided.
+    #TODO: Raise error that incorrect type was passed, only PO/PS are supported
+    #TODO: Move this code to shared module utils data set functions
+    module = AnsibleModuleHelper(argument_spec={})
+    blksize = data_set.DataSetUtils(model).blksize()
+    ds_name = data_set.extract_dsname(ds_name)
+
+    alloc_cmd = """  ALLOC DS('{0}') -
+    LIKE('{1}') -
+    {2}{3}""".format(
+          ds_name,
+          model,
+          "BLKSIZE({0}) ".format(blksize) if blksize else "",
+          "VOLUME({0})".format(vol.upper()) if vol else ""
+          )
+
+    rc, out, err = ikjeft01(alloc_cmd, authorized=True)
+    if rc != 0:
+            module.fail_json(
+                msg="Unable to allocate destination {0}".format(ds_name),
+                stdout=out,
+                stderr=err,
+                rc=rc,
+                stdout_lines=out.splitlines(),
+                stderr_lines=err.splitlines(),
+                cmd=alloc_cmd,
+            )
+    return rc
+
+def get_data_set_record_length(name):
+    """
+    Return the record length of a given data set for PS and PDS/E
+    """
+    ds_dataSetUtils = data_set.DataSetUtils(name)
+    if ds_dataSetUtils.exists():
+        ds_vol = ds_dataSetUtils.volume()
+        vtoc_info = vtoc.get_data_set_entry(name, ds_vol)
+        record_length = int(vtoc_info.get("record_length"))
+        return record_length
+    return None
+
+def get_file_record_length(name):
+    """
+    WHAT abuot binary Files, if binary use VB length?
+    """
+
+def get_directory_record_length(dir):
+    """
+    """
+def get_data_set_attributes(
+    name
+):
+    # Figure out the data set type and volume
+    ds_dataSetUtils = data_set.DataSetUtils(name)
+    if ds_dataSetUtils.exists():
+        ds_type = ds_dataSetUtils.ds_type()
+        ds_vol = ds_dataSetUtils.volume()
+
+    # Handle the mapping of the real dsorg type to the one used by ZOAU
+    if ds_type == "PS":
+        ds_type = "SEQ"
+
+    # module = AnsibleModuleHelper(argument_spec={})
+    # module.fail_json(msg="Unable to allocate FFFFFFFFFFF {0}".format(ds_dataSetUtils.ds_info))
+    # msg": "Unable to allocate FFFFFFFFFFF {'exists': True, 'dsorg': 'PS', 'recfm': 'VB', 'lrecl': 1028, 'blksize': 6144, 'volser': 'DIMATO'}",
+            # Possible return values:
+            # 'PS'   -- Physical Sequential (SEQ)
+            # 'PO'   -- Partitioned (PDS or PDS(E))
+            # 'VSAM' -- Virtual Storage Access Method
+            # 'DA'   -- Direct Access
+            # 'IS'   -- Indexed Sequential
+            # 'USS'  -- USS file or directory
+
+    # Figure out the data set attributes
+    vtoc_info = vtoc.get_data_set_entry(name, ds_vol)
+    if vtoc_info:
+        tracks = int(vtoc_info.get("last_block_pointer").get("track"))
+        blocks = int(vtoc_info.get("last_block_pointer").get("block"))
+        block_size = int(vtoc_info.get("block_size"))
+        bytes_per_trk = 56664
+        alloc_size = (tracks * bytes_per_trk) + (blocks * block_size)
+        record_format = vtoc_info.get("record_format")
+        record_length = int(vtoc_info.get("record_length"))
+        space_primary = "{0}K".format(str(int(math.ceil(alloc_size / 1024))))
+        # TODO: Figure out secondary, default to 3 for now
+        space_secondary = "3K"
+
+        if ds_type in MVS_PARTITIONED and data_set.is_empty(name):
+            # TODO: Eval why we check is_empty?
+            # A general rule is to allow one directory block for every six members in a PDS.
+            # TODO: Calculate based on copy member or figure out how to read the director blocks
+            #       for now, default to 12.
+            directory_blocks = 12
+        else:
+            # A sequential data set must have a value of 0 in this field
+            directory_blocks = 0
+
+
+    parms = dict(
+        name=name,
+        type=ds_type,
+        space_primary=space_primary,
+        space_secondary=space_secondary,
+        record_format=record_format,
+        record_length=record_length,
+        block_size=block_size,
+        directory_blocks=directory_blocks
+    )
+
+    if ds_vol:
+        parms['volumes'] = [ds_vol]
+
+    module = AnsibleModuleHelper(argument_spec={})
+    if all(x is None for x in [name, type, space_primary, record_format, record_length, block_size]):
+        module.fail_json(msg=repr("Unable to determine data set attributes {0}, {1}, {2}, {3}, {4}, {5}, {6}".format(
+            name, type, space_primary, record_format, record_length, block_size, ds_vol)))
+
+    return parms
+
+
+def get_sequential_data_set_default_attributes(
+    name,
+    size,
+    vol
+):
+    """Provide a sequential data set defaults given size based on bytes
+        from a source such as a file.
+
+        TODO: Trying to mock what would be created by USS cp command.
+        General Data                           Current Allocation
+        Management class . . : **None**        Allocated blocks  . : 8
+        Storage class  . . . : **None**        Allocated extents . : 1
+            Volume serial . . . : 000000
+            Device type . . . . : 3390
+        Data class . . . . . : **None**
+            Organization  . . . : PS             Current Utilization
+            Record format . . . : VB              Used blocks . . . . : 1
+            Record length . . . : 1028            Used extents  . . . : 1
+            Block size  . . . . : 6144
+            1st extent blocks . : 8
+            Secondary blocks  . : 24             Dates
+            Data set name type  :                 Creation date . . . : 2021/12/04
+                                                Referenced date . . : 2021/12/04
+                                                Expiration date . . : ***None***
+    """
+    #2153232
+    #2128672
+    #2039904 -(36*56,664) https://ibmmainframes.com/references/disk.html
+    #space_primary = "{0}K".format(str(int(math.ceil(size / 1024))))
+    # Secondary is 10% of primary for defaulted attribute
+    #space_secondary = "{0}K".format(str(int(math.ceil((size/1024)*.10))))
+    space_primary = int(math.ceil((size/1024)))
+    space_primary = space_primary + int(math.ceil(space_primary*.05))
+    space_secondary = int(math.ceil(space_primary*.10))
+    parms = dict(
+        name=name,
+        type="SEQ",
+        space_primary=space_primary,
+        space_secondary=space_secondary,
+        record_format="VB",
+        record_length=1028,
+        block_size=6144,
+        space_type="K"
+    )
+
+    if vol:
+     parms['volumes'] = [vol]
+
+    return parms
 
 
 def backup_data(ds_name, ds_type, backup_name):
@@ -1648,6 +2218,38 @@ def is_member_wildcard(src):
     )
 
 
+def is_destination_dataset_user_provided(
+    type,
+    space_primary,
+    space_secondary,
+    space_type,
+    record_format,
+    record_length,
+    block_size
+    # volume
+):
+    """Helper method to return if the user has provided the destination data set args
+
+    Args:
+        type (str, required): The type of dataset.
+        space_primary (int, required): The amount of primary space to allocate for the dataset.
+        space_secondary (int, optional):  The amount of secondary space to allocate for the dataset.
+        space_type (str, required): The unit of measurement to use when defining primary and secondary space.
+        record_format (str, optional): The record format to use for the dataset.
+        record_length (int, optional) The length, in bytes, of each record in the data set.
+        block_size (int, optional): The block size to use for the data set.
+        volume (str, optional): A volume serial.
+        """
+    if type and space_primary and space_type:
+        return True
+    else:
+        module = AnsibleModuleHelper(argument_spec={})
+        # module.fail_json(msg="Error during clean up of file {0}".format(space_primary), stderr=destination_dataset)
+        module.fail_json(msg="Error during clean up of file {0}, {1}, {2}, {3}, {4}, {5}, {6}".format(
+            type, space_primary, space_secondary, space_type, record_format, record_length, block_size))
+    return False
+
+
 def run_module(module, arg_def):
     # ********************************************************************
     # Verify the validity of module args. BetterArgParser raises ValueError
@@ -1659,7 +2261,8 @@ def run_module(module, arg_def):
     except ValueError as err:
         # Bypass BetterArgParser when src is of the form 'SOME.DATA.SET(*)'
         if not is_member_wildcard(module.params["src"]):
-            module.fail_json(msg="Parameter verification failed", stderr=str(err))
+            module.fail_json(
+                msg="Parameter verification failed", stderr=str(err))
     # ********************************************************************
     # Initialize module variables
     # ********************************************************************
@@ -1682,15 +2285,20 @@ def run_module(module, arg_def):
     alloc_size = module.params.get('size')
     src_member = module.params.get('src_member')
     copy_member = module.params.get('copy_member')
-    destination_dataset = module.params.get('destination_dataset')
+    force = module.params.get('force')
 
-    dd_type = destination_dataset.get("dd_type") or "BASIC"
-    space_primary = destination_dataset.get("space_primary")
-    space_secondary = destination_dataset.get("space_secondary")
-    space_type = destination_dataset.get("space_type")
-    record_format = destination_dataset.get("record_format")
-    record_length = destination_dataset.get("record_length")
-    block_size = destination_dataset.get("block_size")
+    destination_dataset = module.params.get('destination_dataset')
+    if destination_dataset:
+        type = destination_dataset.get("type")
+        space_primary = destination_dataset.get("space_primary")
+        space_secondary = destination_dataset.get("space_secondary")
+        space_type = destination_dataset.get("space_type")
+        record_format = destination_dataset.get("record_format")
+        record_length = destination_dataset.get("record_length")
+        block_size = destination_dataset.get("block_size")
+
+        if volume:
+            (module.params.get('destination_dataset'))["volumes"] = [volume]
 
     # ********************************************************************
     # When copying to and from a data set member, 'dest' or 'src' will be
@@ -1730,11 +2338,22 @@ def run_module(module, arg_def):
             dest_ds_type = "USS"
             dest_exists = os.path.exists(dest)
         else:
+            # module.fail_json(
+            #     msg="Incompatible target type '{0}' for source '{1}'".format(
+            #         dest, dest_name
+            #     )
+            # )
             dest_du = data_set.DataSetUtils(dest_name)
             dest_exists = dest_du.exists()
             if copy_member:
-                dest_exists = dest_exists and dest_du.member_exists(dest_member)
+                dest_exists = dest_exists and dest_du.member_exists(
+                    dest_member)
             dest_ds_type = dest_du.ds_type()
+
+            # destination_dataset.type overrides `dest_ds_type` given precedence rules
+            if destination_dataset and type is not None:
+                dest_ds_type = type
+
         # If temp_path; the plugin has copied a file from controller to USS for localized operation
         if temp_path or "/" in src:
             src_ds_type = "USS"
@@ -1755,6 +2374,7 @@ def run_module(module, arg_def):
     # Some src and dest combinations are incompatible. For example, it is
     # not possible to copy a PDS member to a VSAM data set or a USS file
     # to a PDS. Perform these sanity checks.
+    # Note: dest_ds_type can also be passed from destination_dataset.type
     # ********************************************************************
     if not is_compatible(src_ds_type, dest_ds_type, copy_member, src_member):
         module.fail_json(
@@ -1777,7 +2397,6 @@ def run_module(module, arg_def):
                 res_args["note"] = "Destination is empty, backup request ignored"
             else:
                 backup_name = backup_data(dest, dest_ds_type, backup_name)
-
     # ********************************************************************
     # If destination does not exist, it must be created. To determine
     # what type of data set destination must be, a couple of simple checks
@@ -1811,6 +2430,115 @@ def run_module(module, arg_def):
         res_args["changed"] = True
 
     # ********************************************************************
+    # Data set `dest` entries will be created under these precedent rules:
+    #
+    # - IF `dest` is a data set (data set name):
+    #   1) If `destination_dataset` values, values will be used to create/replace `dest`
+    #   2) If `force` = `true` and `dest` is NOT a (PDS(member)/PDSE(Member), VSAM, USS target) and `src` is NOT VSAM:
+    #      2.0) If `dest` data set exists, is empty, `dest` data set will be used
+    #      2.1) If `src` data set exists, `src` attributes will be used to create/replace `dest`
+    #      2.2) If `src` is a file and `dest` data set exists, `dest` attributes will be used to create data set
+    #      2.3) if `src` is a file and `dest` data set does NOT exist, default values will be provided (that may not be suitably enough)
+    #   3) If `force` = `true` and `dest` IS a PDS/PDSE Member and NOT (VSAM, USS target) and `src` is NOT VSAM and `src` is a Partitioned Data Set(member)/PDS(member):
+    #      3.0) If `dest` data set exists, `dest` is Physical Sequencial (PS), is empty, `dest` data set will be used for the Member (space is not validated, future? )
+    #      3.1) If `dest` data set exists, `dest` is Physical Sequencial (PS), is NOT empty, `dest` attributes will be used to create/replace `dest`
+    #      3.2) If `dest` data set does NOT exist, `dest` data set name is NOT a PDS(member), `dest` is not a USS target, a default Physical Sequencial (PS) will be created
+    #      3.3) If `dest` data set does NOT exist, `dest` data set name IS a PDS(member), `src` is existing PDS(member), `src` attributes will be used to create `dest`
+    #      3.4) If `dest` data set does NOT exist, `dest` data set name IS a PDS(member), `src` is NOT existing PDS(member) AKA... FILE, a defaulted Partitioned Data Set(member) will be created
+    # - When `force` = `false`:
+    #   1) If `dest` exists, program will terminate with message else logic when `force` = `true` is honored
+    # Notes: if dest is a member, and dest does not exist,
+    # ********************************************************************
+
+    # if module.is_destination_dataset_provided:  #1 (is_destination_dataset_provided probably not needed if we remove defaults)
+
+    if destination_dataset:  # (1) THIS IS EXERCISED for DS new, DS to DS
+        if not dest_name:
+            module.fail_json(
+                msg="No qualifying destination data set name provided, correct the value for option 'dest'."
+            )
+
+        data_set.DataSet.ensure_present(
+            name=dest_name, replace=force, **module.params.get('destination_dataset'))
+
+    elif (not dest_member) and (src_ds_type != "VSAM" or dest_ds_type != "VSAM") and (dest_ds_type != "USS") and force:
+        if data_set.DataSet.data_set_exists(dest_name) and data_set.is_empty(dest_name): # (2.0) X
+            pass
+        elif data_set.DataSet.data_set_exists(src_name) and (dest_ds_type != "USS"):  #(2.1) X
+            if data_set.DataSet.data_set_exists(dest_name):
+                data_set.ensure_absent(dest_name, [volume])
+            allocate_model_data_set(ds_name=dest_name, model=src_name, vol=volume)
+        elif src_ds_type == "USS" and data_set.DataSet.data_set_exists(dest_name): #(2.2) X  -here binary won't matter we rely on what the user gave us
+            dest_parms = get_data_set_attributes(dest_name)
+            data_set.DataSet.ensure_present(replace=force, **dest_parms)
+        elif src_ds_type == "USS" and (not data_set.DataSet.data_set_exists(dest_name)): #(2.3) X - need to account for binary and also for recl
+            src_name_file_size_bytes = os.stat(src_name).st_size
+            dest_parms = get_sequential_data_set_default_attributes(
+                name=dest_name, size=src_name_file_size_bytes, vol=volume)
+            data_set.DataSet.ensure_present(replace=force, **dest_parms)
+    elif dest_member and (src_ds_type != "VSAM" or dest_ds_type != "VSAM") and (dest_ds_type != "USS") and force:
+        if data_set.DataSet.data_set_exists(dest_name, volume) and (dest_ds_type == "PS") and data_set.is_empty(dest_name): #3.0
+            pass
+        elif data_set.DataSet.data_set_exists(dest_name, volume) and (dest_ds_type == "PS") and (not data_set.is_empty(dest_name)): # 3.1
+            dest_parms = get_data_set_attributes(dest_name)
+            data_set.DataSet.ensure_present(replace=force, **dest_parms)
+        elif (not data_set.DataSet.data_set_exists(dest_name) and (not data_set.DataSet.is_member(dest_name) and (dest_ds_type != "USS"))):  #3.2
+
+            if data_set.DataSet.is_member(src):  # we don't know if the dest is a pds/pdse based on the 
+                src_name_cat = subprocess.run(["cat","//'" + src_name + "'"],check=True, capture_output=True, shell=False)
+                src_name_wc = subprocess.run(['wc','-c'],input=src_name_cat.stdout, capture_output=True)
+                src_name_bytes=src_name_wc.stdout.strip()
+                src_name_bytes_str=src_name_bytes.decode('utf-8')
+                dest_name_size_bytes=int(src_name_bytes_str)
+
+                dest_parms = get_sequential_data_set_default_attributes(
+                    name=dest_name, size=dest_name_size_bytes, vol=volume)
+                data_set.DataSet.ensure_present(replace=force, **dest_parms)
+
+
+            elif is_member_wildcard(src): #Src has many members create a copy of it as the dest
+                allocate_model_data_set(dest_name, src_name, vol=alloc_vol)
+            elif os.path.isfile(src):
+                size = os.stat(src).st_size
+                #self._allocate_pdse(dest_name, size=size, alloc_vol=alloc_vol)
+                self._allocate_pdse_2(dest_name, src=src, size=size, alloc_vol=alloc_vol, space_primary=space_primary,
+                                      space_secondary=space_secondary,
+                                      space_type=space_type,
+                                      record_format=record_format,
+                                      record_length=record_length,
+                                      block_size=block_size)
+
+                #TODO: What about using [awk '{ if ( length > L ) { L=length} }END{ print L}' ./*] to find max line length for recl
+                # awk '{ if ( length > L ) { L=length} }END{ print L}' "//'IMSTESTL.DIMATO.JCL(RACFCMD)'" 
+                # 80
+            elif os.path.isdir(src):
+                path, dirs, files = next(os.walk(src))
+                if dirs:
+                    self.fail_json(
+                        msg="Subdirectory found in source directory {0}".format(
+                            src)
+                    )
+                size = sum(os.stat(path + "/" + f).st_size for f in files)
+                self._allocate_pdse(dest_name, size=size, alloc_vol=alloc_vol)
+        elif (not data_set.DataSet.data_set_exists(dest_name) and data_set.DataSet.is_member(dest_name) and (src_ds_type == "PO"): #3.3
+            allocate_model_data_set(dest_name, src_name, vol=alloc_vol)
+            #TODO: Do we allocate the members?
+            #      What if they used a wild card PDS(*) do we let the handler create the members?
+        elif (not data_set.DataSet.data_set_exists(dest_name) and data_set.DataSet.is_member(dest_name) and (not data_set.DataSet.data_set_exists(src_name)): #3.4
+            # TODO: this is the case src is a file or a directory what do we do here? Create a PDSE based on size src and then create all the members or pass completely
+            ## data_set.DataSet.ensure_member_present(member_name ,replace=force)
+        elif os.path.isfile(src):
+            ### same as 3.4
+
+            ## //If src is a directory, destination must be a partitioned data set or a USS directory.
+            ## //Wildcards can be used to copy multiple PDS/PDSE members to another PDS/PDSE.
+
+ 
+    else:
+        module.fail_json(
+            msg="Failed precedence rules, something slipped through the crack"
+        )
+    # ********************************************************************
     # Encoding conversion is only valid if the source is a local file,
     # local directory or a USS file/directory.
     # ********************************************************************
@@ -1836,7 +2564,8 @@ def run_module(module, arg_def):
     # ---------------------------------------------------------------------
     if is_uss:
         if dest_exists and not os.access(dest, os.W_OK):
-            copy_handler.fail_json(msg="Destination {0} is not writable".format(dest))
+            copy_handler.fail_json(
+                msg="Destination {0} is not writable".format(dest))
 
         uss_copy_handler = USSCopyHandler(
             module,
@@ -1879,7 +2608,7 @@ def run_module(module, arg_def):
             )
 
     # ------------------------------- o -----------------------------------
-    # Copy to sequential data set
+    # Copy to sequential data set (PS / SEQ)
     # ---------------------------------------------------------------------
     elif dest_ds_type in MVS_SEQ:
         copy_handler.copy_to_seq(
@@ -1888,18 +2617,10 @@ def run_module(module, arg_def):
             conv_path,
             dest,
             src_ds_type,
-            alloc_vol=volume,
-            type=dd_type,
-            space_primary=space_primary,
-            space_secondary=space_secondary,
-            space_type=space_type,
-            record_format=record_format,
-            record_length=record_length,
-            block_size=block_size,
         )
         dest = dest.upper()
 
-    # ------------------------------- o -----------------------------------
+    # ---------------------------------------------------------------------
     # Copy to PDS/PDSE
     # ---------------------------------------------------------------------
     elif dest_ds_type in MVS_PARTITIONED:
@@ -1910,18 +2631,8 @@ def run_module(module, arg_def):
             module, dest_exists, is_binary=is_binary, backup_name=backup_name
         )
 
-        if not dest_ds_type:
-            pdse_copy_handler.create_pdse(
-                src,
-                dest_name,
-                alloc_size,
-                src_ds_type,
-                remote_src=remote_src,
-                src_vol=src_ds_vol,
-                alloc_vol=volume,
-            )
-
         if copy_member or os.path.isfile(temp_path or src) or src_member:
+            #module.fail_json(msg=repr("TESTING FAILURE FOR NON-EXISTANT DS TYPE 2222"))
             dest = pdse_copy_handler.copy_to_member(
                 src,
                 temp_path,
@@ -1974,27 +2685,27 @@ def main():
                 type='dict',
                 required=False,
                 options=dict(
-                    dd_type=dict(
+                    type=dict(
                         arg_type='str',
-                        default='BASIC',
-                        choices=['BASIC', 'KSDS', 'ESDS', 'RRDS', 'LDS', 'SEQ', 'PDS', 'PDSE', 'MEMBER'],
+                        choices=['BASIC', 'KSDS', 'ESDS', 'RRDS',
+                                 'LDS', 'SEQ', 'PDS', 'PDSE', 'MEMBER'],
                         required=False,
                     ),
-                    space_primary=dict(arg_type='int', default=5, required=False),
-                    space_secondary=dict(arg_type='int', default=3, required=False),
+                    space_primary=dict(
+                        arg_type='int', required=False),
+                    space_secondary=dict(
+                        arg_type='int', required=False),
                     space_type=dict(
                         arg_type='str',
-                        default='M',
                         choices=['K', 'M', 'G', 'CYL', 'TRK'],
                         required=False,
                     ),
                     record_format=dict(
                         arg_type='str',
-                        default='FB',
                         choices=["FB", "VB", "FBA", "VBA", "U"],
                         required=False
                     ),
-                    record_length=dict(type='int', default=80, required=False),
+                    record_length=dict(type='int', required=False),
                     block_size=dict(type='int', required=False),
                 )
             ),
@@ -2035,16 +2746,24 @@ def main():
             arg_type='dict',
             required=False,
             options=dict(
-                dd_type=dict(arg_type='str', default='BASIC', required=False),
-                space_primary=dict(arg_type='int', default=5, required=False),
-                space_secondary=dict(arg_type='int', default=3, required=False),
-                space_type=dict(arg_type='str', default='TRK', required=False),
-                record_format=dict(arg_type='str', default='FB', required=False),
-                record_length=dict(arg_type='int', default=80, required=False),
+                type=dict(arg_type='str', required=False),
+                space_primary=dict(arg_type='int', required=False),
+                space_secondary=dict(
+                    arg_type='int', required=False),
+                space_type=dict(arg_type='str', required=False),
+                record_format=dict(
+                    arg_type='str', required=False),
                 block_size=dict(arg_type='int', required=False),
             )
         ),
     )
+
+    # Get the users spec early before any defaults are applied (if even defaults will continue) but more so
+    # we want to know if a user has provided us `destination_dataset` values so order of precedence can be honored
+    if module.params.get('destination_dataset'):
+        # Temp work around
+        is_destination_dataset_provided = is_destination_dataset_user_provided(
+            **module.params.get('destination_dataset'))
 
     if (
         not module.params.get("encoding")
@@ -2070,16 +2789,16 @@ def main():
             )
         )
 
-    if not module.params.get("destination_dataset"):
-        module.params["destination_dataset"] = {
-            "dd_type": "BASIC",
-            "space_primary": 5,
-            "space_secondary": 3,
-            "space_type": 'TRK',
-            "record_format": 'FB',
-            "record_length": 80,
-            "block_size": 6147,
-        }
+    # if not module.params.get("destination_dataset"):
+    #     module.params["destination_dataset"] = {
+    #         "type": "BASIC",
+    #         "space_primary": 5,
+    #         "space_secondary": 3,
+    #         "space_type": 'TRK',
+    #         "record_format": 'FB',
+    #         "record_length": 80,
+    #         "block_size": 6147,
+    #     }
 
     res_args = temp_path = conv_path = None
     try:

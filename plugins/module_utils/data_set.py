@@ -1017,7 +1017,7 @@ class DataSetUtils(object):
             data_set {str} -- Name of the input data set
         """
         self.module = AnsibleModuleHelper(argument_spec={})
-        self.data_set = data_set
+        self.data_set = data_set.upper()
         self.is_uss_path = "/" in data_set
         self.ds_info = dict()
         if not self.is_uss_path:
@@ -1250,7 +1250,7 @@ def is_empty(data_set):
     if du.ds_type() == "PO":
         return _pds_empty(data_set)
     elif du.ds_type() == "PS":
-        return datasets.read(data_set, tail=10) is None
+        return len(datasets.read(data_set, tail=10)) == 0
     elif du.ds_type() == "VSAM":
         return _vsam_empty(data_set)
 

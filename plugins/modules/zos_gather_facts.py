@@ -15,10 +15,6 @@
 
 from __future__ import absolute_import, division, print_function
 
-from fnmatch import fnmatch
-import json
-
-from ansible.module_utils.basic import AnsibleModule
 
 __metaclass__ = type
 
@@ -41,28 +37,28 @@ description:
 
 options:
   gather_subset:
+    type: list
+    elements: str
+    default: ['all']
+    required: False
     description:
       - If specified, it will only collect facts which come under the specified
         subset (eg ipl will return only ipl facts). Specifying subsets is an
         excellent way to save on time taken to gather all facts in cases where
         facts needed can be constrained down to one or more subsets.
-    type: list
-    elements: str
-    required: False
-    default: ['all']
   filter:
+    type: list
+    elements" str
+    required: False
     description:
+    default: []
       - uses shell-style (fnmatch) pattern matching to filter out collected
         facts.
-      - Note: this is done after the facts are gathered, so this will not save
+      - Note - this is done after the facts are gathered, so this will not save
         time/compute, it will only reduce the number of variables added to
         ansible_facts. To restrict the actual facts collected, refer to the
         gather_subset parameter.
       - An empty list means 'no filter', same as providing '*'.
-    type: list
-    elements" str
-    required: False
-    default: []
 
 author:
     - Ketan Kelkar (@ketankelkar)
@@ -92,6 +88,11 @@ ansible_facts:
   returned: sometimes
   type: dict
 '''
+
+from fnmatch import fnmatch
+import json
+
+from ansible.module_utils.basic import AnsibleModule
 
 
 def zinfo_cmd_string_builder(gather_subset):

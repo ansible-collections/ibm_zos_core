@@ -47,7 +47,7 @@ options:
         excellent way to save on time taken to gather all facts in cases where
         facts needed can be constrained down to one or more subsets.
     type: list
-    elements" str
+    elements: str
     required: False
     default: ['all']
   filter:

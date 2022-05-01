@@ -48,7 +48,7 @@ options:
         facts needed can be constrained down to one or more subsets.
   filter:
     type: list
-    elements" str
+    elements: str
     required: False
     default: []
     description:
@@ -74,7 +74,7 @@ EXAMPLES = r'''
 
 - name: Return z/OS facts in the subsets ('ipl' and 'sys') and filter out all
         facts which do not match 'parmlib'
-    ibm.ibm_zos_core.zos_gather_facts:
+  ibm.ibm_zos_core.zos_gather_facts:
     gather_subset:
       - ipl
       - sys
@@ -244,14 +244,6 @@ def run_module():
     module.exit_json(**result)
 
 
-def main():
-    run_module()
-
-
-if __name__ == '__main__':
-    main()
-
-
 # NOTE
 
 # How does the user know what subsets are available. maybe investigate what
@@ -266,3 +258,11 @@ if __name__ == '__main__':
 # zinfo error reporting because that could change in the future and result in
 # mismatched compatibility, instead we can simply pass on zinfo output as is
 # and leave it to the user to figure out which subsets are illegal
+
+
+def main():
+    run_module()
+
+
+if __name__ == '__main__':
+    main()

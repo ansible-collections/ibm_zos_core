@@ -14,6 +14,12 @@
 
 
 from __future__ import absolute_import, division, print_function
+
+from fnmatch import fnmatch
+import json
+
+from ansible.module_utils.basic import AnsibleModule
+
 __metaclass__ = type
 
 DOCUMENTATION = r'''
@@ -26,22 +32,32 @@ version_added: "1.4.2"
 
 description:
   - Retrieve useful variables from z/OS target systems.
-  - Variables are added to ansible_facts dict which is available from all playbooks.
-  - Use gather_subset and filter to cut down on variables added to ansible_facts.
-  - Module will fail fast if any illegal options are provided. This is done to raise awareness of a failure early in an automation setting.
+  - Variables are added to ansible_facts dict which is available from all
+    playbooks.
+  - Use gather_subset and filter to cut down on variables added to
+    ansible_facts.
+  - Module will fail fast if any illegal options are provided. This is done to
+    raise awareness of a failure early in an automation setting.
 
 options:
   gather_subset:
     description:
-      - If specified, it will only collect facts which come under the specified subset (eg ipl will return only ipl facts). Specifying subsets is an excellent way to save on time taken to gather all facts in cases where facts needed can be constrained down to one or more subsets.
+      - If specified, it will only collect facts which come under the specified
+        subset (eg ipl will return only ipl facts). Specifying subsets is an
+        excellent way to save on time taken to gather all facts in cases where
+        facts needed can be constrained down to one or more subsets.
     type: list
     elements" str
     required: False
     default: ['all']
   filter:
     description:
-      - uses shell-style (fnmatch) pattern matching to filter out collected facts.
-      - Note: this is done after the facts are gathered, so this will not save time/compute, it will only reduce the number of variables added to ansible_facts. To restrict the actual facts collected, refer to the gather_subset parameter.
+      - uses shell-style (fnmatch) pattern matching to filter out collected
+        facts.
+      - Note: this is done after the facts are gathered, so this will not save
+        time/compute, it will only reduce the number of variables added to
+        ansible_facts. To restrict the actual facts collected, refer to the
+        gather_subset parameter.
       - An empty list means 'no filter', same as providing '*'.
     type: list
     elements" str
@@ -60,7 +76,8 @@ EXAMPLES = r'''
   ibm.ibm_zos_core.zos_gather_facts:
     gather_subset: sys
 
-- name: Return z/OS facts in the subsets ('ipl' and 'sys') and filter out all facts which do not match 'parmlib'
+- name: Return z/OS facts in the subsets ('ipl' and 'sys') and filter out all
+        facts which do not match 'parmlib'
     ibm.ibm_zos_core.zos_gather_facts:
     gather_subset:
       - ipl
@@ -77,21 +94,16 @@ ansible_facts:
 '''
 
 
-from fnmatch import fnmatch
-import json
-
-
-from ansible.module_utils.basic import AnsibleModule
-
 def zinfo_cmd_string_builder(gather_subset):
     """Builds command string for 'zinfo' based off gather_subset list.
     Arguments:
         gather_subset {list} -- list of subsets to pass in.
     Returns:
-        [str] -- A string containing a command line argument calling zinfo with the appropriate options.
+        [str] -- A string containing a command line argument calling zinfo with
+                the appropriate options.
         [None] -- Received bad value for subset.
     """
-    if gather_subset == None or 'all' in gather_subset:
+    if gather_subset is None or 'all' in gather_subset:
         return "zinfo -j -a"
 
     # base value
@@ -111,8 +123,10 @@ def zinfo_cmd_string_builder(gather_subset):
 
     return zinfo_arg_string
 
+
 def flatten_zinfo_json(zinfo_dict):
-    """Removes one layer of mapping in the dict. Top-level keys correspond to zinfo subsets and are removed.
+    """Removes one layer of mapping in the dict. Top-level keys correspond to
+        zinfo subsets and are removed.
     Arguments:
         zinfo_dict {dict} -- dict containing parsed result from zinfo json str.
     Returns:
@@ -123,11 +137,13 @@ def flatten_zinfo_json(zinfo_dict):
         d.update(zinfo_dict[subset])
     return d
 
+
 def apply_filter(zinfo_dict, filter_list):
     """Returns dict containing only keys which fit the specified filter(s).
     Arguments:
         zinfo_dict {dict} -- flattened dict containing results from zinfo.
-        filter_list {list} -- str list of shell wildcard patterns ie 'filters' to apply to zinfo_dict keys.
+        filter_list {list} -- str list of shell wildcard patterns ie 'filters'
+                              to apply to zinfo_dict keys.
     Returns:
         [dict] -- A dict with keys filtered out.
     """
@@ -139,26 +155,30 @@ def apply_filter(zinfo_dict, filter_list):
     for filter in filter_list:
         for k, v in zinfo_dict.items():
             if(fnmatch(k, filter)):
-                filtered_d.update({k : v})
+                filtered_d.update({k: v})
     return filtered_d
+
 
 def run_module():
     # define available arguments/parameters a user can pass to the module
     module_args = dict(
-        gather_subset=dict(default=["all"], required=False, type='list', elements='str'),
+        gather_subset=dict(
+            default=["all"], required=False, type='list', elements='str'
+        ),
         # the filter parameter was updated to type list in Ansible 2.11
         filter=dict(default=[], required=False, type='list', elements='str'),
 
 
-        ##################### saved for future development ####################
+        #                     saved for future development                    #
         # gather_timeout=dict(default=10, required=False, type='int'),        #
-        # fact_path=dict(default='/etc/ansible/facts.d', required=False, type='path'),
+        # fact_path=dict(
+        #       default='/etc/ansible/facts.d', required=False, type='path'),
         #######################################################################
     )
 
     # setup Ansible module basics
     result = dict(
-        changed=False, # fact gathering will never change state of system
+        changed=False,  # fact gathering will never change state of system
         ansible_facts=dict(),
     )
     module = AnsibleModule(
@@ -174,7 +194,9 @@ def run_module():
 
     # build out zinfo command with correct options
     # call this whether or not gather_subsets list is empty/valid/etc
-    # rely on the function to report back errors. Note the function only returns None if there's malicious or improperly formatted subsets. Invalid subsets are caught when the actual zinfo command is run.
+    # rely on the function to report back errors. Note the function only
+    # returns None if there's malicious or improperly formatted subsets.
+    # Invalid subsets are caught when the actual zinfo command is run.
     cmd = zinfo_cmd_string_builder(gather_subset)
     if not cmd:
         module.fail_json(msg="Bad subset given to Ansible.")
@@ -183,18 +205,23 @@ def run_module():
 
     decode_str = fcinfo_out.decode('utf-8')
 
-    # We DO NOT return a partial list. Instead we FAIL FAST since we are targeting automation -- quiet but well-intended error messages may easily be skipped
+    # We DO NOT return a partial list. Instead we FAIL FAST since we are
+    # targeting automation -- quiet but well-intended error messages may easily
+    # be skipped
     if rc != 0:
-        # there are only 2 known error messages in zinfo, if neither get triggered then we send out this generic zinfo error message.
+        # there are only 2 known error messages in zinfo, if neither gets
+        # triggered then we send out this generic zinfo error message.
         err_msg = 'There was an unknown issue zinfo.'
         if 'BGYSC5201E' in err.decode('utf-8'):
-            err_msg = 'Invalid susbset detected. See \'zinfo_err_msg\' for additional details.'
+            err_msg = ('Invalid susbset detected. See \'zinfo_err_msg\' for '
+                       'additional details.')
         elif 'BGYSC5202E' in err.decode('utf-8'):
-            err_msg = 'Invalid option passed to zinfo. See \'zinfo_err_msg\' for additional details.'
+            err_msg = ('Invalid option passed to zinfo. See \'zinfo_err_msg\' '
+                       'for additional details.')
 
         module.fail_json(msg=err_msg, zinfo_err_msg=err)
 
-    zinfo_dict = {} # to track parsed zinfo facts.
+    zinfo_dict = {}  # to track parsed zinfo facts.
 
     try:
         zinfo_dict = json.loads(decode_str)
@@ -219,15 +246,22 @@ def run_module():
 def main():
     run_module()
 
+
 if __name__ == '__main__':
     main()
 
 
-
-
-
 # NOTE
 
-# How does the user know what subsets are available. maybe investigate what Ansible does and copy them. Alternative idea is to document 'current' available subsets but not enforce additional or maybe link out to zoau zinfo doc (linking out is frowned upon.)
+# How does the user know what subsets are available. maybe investigate what
+# Ansible does and copy them. Alternative idea is to document 'current'
+# available subsets but not enforce additional or maybe link out to zoau zinfo
+# doc (linking out is frowned upon.)
 
-# Thinking about creating a mapping (maybe CSV) in module_utils which can allow for more legal subset options (eg 'iplinfo', 'ipl', 'ipl_info' -> ipl, etc). The mapping can be updated as zinfo changes but there will also be a provision for subsets not in the mapping. We cannot tie ansible error reporting to zinfo error reporting because that could change in the future and result in mismatched compatibility, instead we can simply pass on zinfo output as is and leave it to the user to figure out which subsets are illegal,
+# Thinking about creating a mapping (maybe CSV) in module_utils which can allow
+# for more legal subset options (eg 'iplinfo', 'ipl', 'ipl_info' -> ipl, etc).
+# The mapping can be updated with zinfo but there will also be a provision
+# for subsets not in the mapping. We cannot tie ansible error reporting to
+# zinfo error reporting because that could change in the future and result in
+# mismatched compatibility, instead we can simply pass on zinfo output as is
+# and leave it to the user to figure out which subsets are illegal

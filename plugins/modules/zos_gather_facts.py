@@ -50,8 +50,8 @@ options:
     type: list
     elements" str
     required: False
-    description:
     default: []
+    description:
       - uses shell-style (fnmatch) pattern matching to filter out collected
         facts.
       - Note - this is done after the facts are gathered, so this will not save

@@ -1654,7 +1654,7 @@ def test_ensure_tmp_cleanup(ansible_zos_module):
             cmd="ls -l", executable=SHELL_EXECUTABLE, chdir="/tmp"
         )
         file_count_post = len(list(stat_dir.contacted.values())[0].get("stdout_lines"))
-        assert file_count_post <= file_count_pre
+        assert file_count_post == file_count_pre + 1
 
     finally:
         hosts.all.file(path=dest_path, state="absent")

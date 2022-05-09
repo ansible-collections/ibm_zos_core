@@ -106,6 +106,8 @@ options:
         data and not binary data.
       - If C(encoding) is provided and C(src) is an MVS data set, task will fail.
       - Only valid if C(is_binary) is false.
+      - If C(encoding) is provided and C(src) is a directory, the encoding
+        conversion will be applied to all files.
     type: dict
     required: false
     suboptions:

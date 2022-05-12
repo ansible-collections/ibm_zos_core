@@ -206,6 +206,16 @@ class DataSet(object):
         Returns:
             bool -- Indicates if changes were made.
         """
+        if volumes:
+            is_cataloged, in_volume = DataSet.data_set_cataloged_with_specified_volume(name, volumes)
+            if is_cataloged and not in_volume:
+                #present = DataSet.delete_uncataloged_dataset(name, volumes)
+                if DataSet._is_in_vtoc(name, volumes[0]):
+                    present = DataSet.delete_uncataloged_dataset(name, volumes)
+                    return present == 0
+                else: 
+                    return False
+                #return present == 0
         present, changed = DataSet.attempt_catalog_if_necessary(name, volumes)
         if present:
             DataSet.delete(name)
@@ -299,6 +309,53 @@ class DataSet(object):
         if re.search(r"-\s" + name + r"\s*\n\s+IN-CAT", stdout):
             return True
         return False
+    
+    @staticmethod
+    def data_set_cataloged_with_specified_volume(name, volumes):
+        """Determine if a data set is in catalog with specified volume.
+
+        Arguments:
+            name (str) -- The data set name to check if cataloged.
+
+        Returns:
+            bool -- If data is is cataloged.
+            bool -- If it resides in the provided volume
+        """
+        name = name.upper()
+        module = AnsibleModuleHelper(argument_spec={})
+        stdin = " LISTCAT ENTRIES('{0}')".format(name)
+        rc, stdout, stderr = module.run_command(
+            "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=stdin
+        )
+        is_in_volume = False
+        is_cataloged = False
+        if re.search(r"-\s" + name + r"\s*\n\s+IN-CAT", stdout):
+            is_cataloged = True
+            if re.search(r"VOLSER" + r"-*" + r''.join(volumes), stdout):
+                is_in_volume = True 
+        return is_cataloged, is_in_volume
+
+    @staticmethod
+    def delete_uncataloged_dataset(name, volumes):
+        """Delete an uncataloged dataset by specifying volumes.
+
+        Arguments:
+            name (str) -- The data set name to check if cataloged.
+
+        Returns:
+            bool -- If data is is cataloged.
+            bool -- If it resides in the provided volume
+        """
+        #module = AnsibleModuleHelper(argument_spec={})
+        command = " DELETE {0} FILE(DD1) NVR".format(name)
+        dds = dict(DD1=''.join(volumes)+',vol')
+        rc, stdout, stderr = mvs_cmd.idcams(cmd=command, dds=dds, authorized=True)
+        # rc, stdout, stderr = module.run_command(
+        #     "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin --dd1={0},vol"".format(','.join(volumes)), data=command
+        # )
+        if rc > 0:
+            raise DatasetDeleteError(name, rc)
+        return rc
 
     @staticmethod
     def data_set_exists(name, volume=None):

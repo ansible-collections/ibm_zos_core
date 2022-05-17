@@ -313,11 +313,6 @@ def test_data_set_absent_when_uncataloged_and_same_name_cataloged_is_present(ans
     results = hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="uncataloged")
     for result in results.contacted.values():
         assert result.get("changed") is True
-    # Add DS name 
-    if jcl != PDS_CREATE_JCL :
-        DS_NAME = DEFAULT_DATA_SET_NAME + '.DATA'
-    else: 
-        DS_NAME = DEFAULT_DATA_SET_NAME
     # Create the same dataset name in different volume
     jcl = jcl.replace(DEFAULT_VOLUME, DEFAULT_VOLUME2)
     hosts.all.file(path=TEMP_PATH + "/SAMPLE", state="absent")
@@ -331,7 +326,7 @@ def test_data_set_absent_when_uncataloged_and_same_name_cataloged_is_present(ans
     hosts.all.file(path=TEMP_PATH, state="absent")
     # ensure data set absent
     results = hosts.all.zos_data_set(
-        name=DS_NAME, state="absent", volumes=DEFAULT_VOLUME
+        name=DEFAULT_DATA_SET_NAME, state="absent", volumes=DEFAULT_VOLUME
     )
     for result in results.contacted.values():
         assert result.get("changed") is True

@@ -202,20 +202,16 @@ class DataSet(object):
 
         Arguments:
             name (str) -- The name of the data set to ensure is absent.
+            volumes (list[str]) -- The volumes the data set may reside on.
 
         Returns:
             bool -- Indicates if changes were made.
         """
         if volumes:
-            is_cataloged, in_volume = DataSet.data_set_cataloged_with_specified_volume(name, volumes)
-            if is_cataloged and not in_volume:
-                #present = DataSet.delete_uncataloged_dataset(name, volumes)
-                if DataSet._is_in_vtoc(name, volumes[0]):
-                    present = DataSet.delete_uncataloged_dataset(name, volumes)
-                    return present == 0
-                else: 
-                    return False
-                #return present == 0
+            changed, present, pending_to_delete_cataloged_dataset = DataSet.attempt_to_delete_uncataloged_data_set_if_necessary(name, volumes)
+            if not pending_to_delete_cataloged_dataset: 
+                return changed
+
         present, changed = DataSet.attempt_catalog_if_necessary(name, volumes)
         if present:
             DataSet.delete(name)
@@ -311,29 +307,24 @@ class DataSet(object):
         return False
     
     @staticmethod
-    def data_set_cataloged_with_specified_volume(name, volumes):
-        """Determine if a data set is in catalog with specified volume.
+    def get_volume_list_for_cataloged_data_set(name):
+        """Get the volume list for a cataloged dataset name.
 
         Arguments:
             name (str) -- The data set name to check if cataloged.
-
         Returns:
-            bool -- If data is is cataloged.
-            bool -- If it resides in the provided volume
+            list{str} -- A list of volumes where the dataset is cataloged.
         """
         name = name.upper()
         module = AnsibleModuleHelper(argument_spec={})
-        stdin = " LISTCAT ENTRIES('{0}')".format(name)
+        stdin = " LISTCAT ENTRIES('{0}') ALL".format(name)
         rc, stdout, stderr = module.run_command(
             "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=stdin
         )
-        is_in_volume = False
-        is_cataloged = False
-        if re.search(r"-\s" + name + r"\s*\n\s+IN-CAT", stdout):
-            is_cataloged = True
-            if re.search(r"VOLSER" + r"-*" + r''.join(volumes), stdout):
-                is_in_volume = True 
-        return is_cataloged, is_in_volume
+        delimeter = 'VOLSER------------'
+        arr = stdout.split(delimeter)
+        volume_list = [x[:x.find(' ')] for x in arr[1:]] # If a volume serial is not always of lenght 6 we could use ":x.find(' ')" here instead of that index.
+        return volume_list
 
     @staticmethod
     def delete_uncataloged_dataset(name, volumes):
@@ -341,21 +332,50 @@ class DataSet(object):
 
         Arguments:
             name (str) -- The data set name to check if cataloged.
-
+            volumes (list[str]) -- The volumes the data set may reside on.
         Returns:
-            bool -- If data is is cataloged.
-            bool -- If it resides in the provided volume
+            bool -- Return code from the mvs_cmd, if 0 then it was successful.
         """
-        #module = AnsibleModuleHelper(argument_spec={})
-        command = " DELETE {0} FILE(DD1) NVR".format(name)
-        dds = dict(DD1=''.join(volumes)+',vol')
+        # if is VSAM is_vsam(name, volumes)
+        vsam_code = 'VVR' if DataSet.is_vsam(name, volumes) else 'NVR'
+        command = " DELETE {0} FILE(DD1) {1}".format(name, vsam_code)
+        dds = dict(DD1=',vol,'.join(volumes) + ',vol')
         rc, stdout, stderr = mvs_cmd.idcams(cmd=command, dds=dds, authorized=True)
-        # rc, stdout, stderr = module.run_command(
-        #     "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin --dd1={0},vol"".format(','.join(volumes)), data=command
-        # )
         if rc > 0:
             raise DatasetDeleteError(name, rc)
         return rc
+
+    @staticmethod
+    def attempt_to_delete_uncataloged_data_set_if_necessary(name, volumes):
+        """Attempt to delete any uncataloged dataset if exists on any volume.
+
+        Arguments:
+            name (str) -- The data set name to check if cataloged.
+            volumes (list[str]) -- The volumes the data set may reside on.
+        Returns:
+            bool -- If any action was performed on the data.
+            bool -- If the dataset is still present.
+            bool -- If after deleting the uncataloged dataset, given the volumes list it still resides on any cataloged volume.
+        """
+        changed = False
+        present = True
+        pending_to_delete_cataloged_dataset = False
+        # Get the list of volumes that the dataset is catalogued in.
+        volume_list = DataSet.get_volume_list_for_cataloged_data_set(name)
+        # If any volume provided is not in the list, means we need to delete it from uncataloged dataset.
+        volumes_for_uncataloged_dataset = list(filter(lambda vol : vol not in volume_list, volumes))
+        # If any volume provided is in the list we will delete from the catalog as normal.
+        pending_to_delete_cataloged_dataset = any(vol in volumes for vol in volume_list)
+
+        if len(volumes_for_uncataloged_dataset) > 0:
+            volumes = list(filter(lambda vol : DataSet._is_in_vtoc(name, vol), volumes))
+            if len(volumes) > 0:
+                present = DataSet.delete_uncataloged_dataset(name, volumes)
+                changed = present == 0
+            else:
+                changed = False
+        
+        return changed, present, pending_to_delete_cataloged_dataset
 
     @staticmethod
     def data_set_exists(name, volume=None):

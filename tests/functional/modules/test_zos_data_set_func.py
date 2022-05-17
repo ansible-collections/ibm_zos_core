@@ -290,6 +290,7 @@ def test_data_set_absent_when_uncataloged(ansible_zos_module, jcl):
         assert result.get("changed") is True
     hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
 
+
 @pytest.mark.parametrize(
     "jcl",
     [PDS_CREATE_JCL, KSDS_CREATE_JCL, RRDS_CREATE_JCL, ESDS_CREATE_JCL, LDS_CREATE_JCL],
@@ -312,7 +313,12 @@ def test_data_set_absent_when_uncataloged_and_same_name_cataloged_is_present(ans
     results = hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="uncataloged")
     for result in results.contacted.values():
         assert result.get("changed") is True
-    #Create the same dataset name in different volume
+    # Add DS name 
+    if jcl != PDS_CREATE_JCL :
+        DS_NAME = DEFAULT_DATA_SET_NAME + '.DATA'
+    else: 
+        DS_NAME = DEFAULT_DATA_SET_NAME
+    # Create the same dataset name in different volume
     jcl = jcl.replace(DEFAULT_VOLUME, DEFAULT_VOLUME2)
     hosts.all.file(path=TEMP_PATH + "/SAMPLE", state="absent")
     hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl), TEMP_PATH))
@@ -325,7 +331,7 @@ def test_data_set_absent_when_uncataloged_and_same_name_cataloged_is_present(ans
     hosts.all.file(path=TEMP_PATH, state="absent")
     # ensure data set absent
     results = hosts.all.zos_data_set(
-        name=DEFAULT_DATA_SET_NAME, state="absent", volumes=DEFAULT_VOLUME
+        name=DS_NAME, state="absent", volumes=DEFAULT_VOLUME
     )
     for result in results.contacted.values():
         assert result.get("changed") is True

@@ -93,6 +93,9 @@ from fnmatch import fnmatch
 import json
 
 from ansible.module_utils.basic import AnsibleModule
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
+    zoau_version_checker
+)
 
 
 def zinfo_cmd_string_builder(gather_subset):
@@ -189,7 +192,11 @@ def run_module():
     if module.check_mode:
         module.exit_json(**result)
 
-    # TODO - check for zoau version >=1.2.1 else error out
+    if not zoau_version_checker.is_zoau_version_higher_than("1.2.1"):
+        module.fail_json(
+            ("zos_gather_facts module requires ZOAU >= 1.2.1. Please update "
+             "ZOAU version on the target node.")
+        )
 
     gather_subset = module.params['gather_subset']
 
@@ -200,7 +207,7 @@ def run_module():
     # Invalid subsets are caught when the actual zinfo command is run.
     cmd = zinfo_cmd_string_builder(gather_subset)
     if not cmd:
-        module.fail_json(msg="Bad subset given to Ansible.")
+        module.fail_json(msg="Invalid subset given to Ansible.")
 
     rc, fcinfo_out, err = module.run_command(cmd, encoding=None)
 
@@ -212,7 +219,9 @@ def run_module():
     if rc != 0:
         # there are only 2 known error messages in zinfo, if neither gets
         # triggered then we send out this generic zinfo error message.
-        err_msg = 'There was an unknown issue zinfo.'
+        err_msg = ('An exception has occurred in Z Open Automation Utilities '
+                   '(ZOAU) utility \'zinfo\'. See \'zinfo_err_msg\' for '
+                   'additional details.')
         if 'BGYSC5201E' in err.decode('utf-8'):
             err_msg = ('Invalid susbset detected. See \'zinfo_err_msg\' for '
                        'additional details.')
@@ -228,7 +237,7 @@ def run_module():
         zinfo_dict = json.loads(decode_str)
     except json.JSONDecodeError:
         # TODO -figure out this error message...what do i tell user?
-        module.fail_json(msg="There was a JSON error.")
+        module.fail_json(msg="There was JSON error.")
 
     # remove zinfo subsets from parsed zinfo result, flatten by one level
     flattened_d = flatten_zinfo_json(zinfo_dict)

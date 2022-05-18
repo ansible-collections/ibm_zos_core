@@ -360,7 +360,7 @@ class DataSet(object):
         Returns:
             bool -- If any action was performed on the data.
             bool -- If the dataset is still present.
-            bool -- If given the volumes list and dataset name we need to continue with deleting the dataset as usual, 
+            bool -- If given the volumes list and dataset name we need to continue with deleting the dataset as usual,
             either by cataloging it and deleting or deleting a cataloged dataset.
         """
         changed = False

@@ -65,7 +65,7 @@ class ActionModule(ActionBase):
         )
 
         result['mvs_raw_output'] = mvs_result
-        
+
         rc = mvs_result.get('ret_code').get('code')
         if rc != 0:
             result['failed'] = True
@@ -79,10 +79,10 @@ class ActionModule(ActionBase):
             mvs_result["output_html"] = self.generate_html_file(mvs_result)
 
         return dict(result)
-    
+
     def generate_html_file(self, mvs_result):
         '''
-        Creates an HTML file with output from ICKDSF INIT command. 
+        Creates an HTML file with output from ICKDSF INIT command.
         '''
         task_args = self._task.args.copy()
 
@@ -98,13 +98,13 @@ class ActionModule(ActionBase):
             f = open(user_defined_path, 'a')
         else:
             f = open(user_defined_path, 'w')
-        
+
         # steps to maintain correct format for z/os output in the html file
         json_convert = json.dumps(mvs_result)
         json_output = json.loads(json_convert)
         json_prettified = json.dumps(json_output, indent=4, sort_keys=True)
         playbook_prettified = json.dumps(task_args, indent=4, sort_keys=True)
-        
+
         # obtain relavant html elements
         ickdsf_ref_link = "https://www-01.ibm.com/servers/resourcelink/svc00100.nsf/pages/zOSV2R4gc350033/$file/ickug00_v2r4.pdf"
         ickdsf_mod_link = "https://github.ibm.com/jumpstart-bayarea/tc2021-ch1-zOMAP/tree/ads-actionplugin/collections/ansible_collections/ibm/ibm_zos_core"
@@ -139,10 +139,10 @@ class ActionModule(ActionBase):
 
             <body>
                 <h2>Z/OS ICKDSF Command Output Generated on {time} </h2>
-                <div class="first"> 
+                <div class="first">
                     <h3> Command used: {command} </h3>
-                    <h3> Return code: 
-                        <span style="color: {rec_color}"> {rec} </span> 
+                    <h3> Return code:
+                        <span style="color: {rec_color}"> {rec} </span>
                     </h3>
                 </div>
                 <div class="first">
@@ -154,19 +154,20 @@ class ActionModule(ActionBase):
                     <pre> {output} </pre>
                 </div>
                 <div class="second">
-                    <p> For more information regarding ICKDSF commands: 
+                    <p> For more information regarding ICKDSF commands:
                         <a href={ickdsf_ref_link}> ICKDSF User's Guide and Reference </a> </p>
 
-                    <p> Documentation regarding ICKDSF module (requires IBM w3id): 
+                    <p> Documentation regarding ICKDSF module (requires IBM w3id):
                         <a href={ickdsf_mod_link}> ICKDSF Github Page </a> </p>
 
-                    <p> Ansible Galaxy page for z/OS core collection, on which this module is based: 
+                    <p> Ansible Galaxy page for z/OS core collection, on which this module is based:
                         <a href={zos_collection_link}>IBM z/OS Core Collection</a> </p>
                     </p>
                         <br>
-                </div>  
+                </div>
             </body>
-        </html>""".format(command="init", time=time_string, playbook=playbook_prettified, output=json_prettified, rec=rec, rec_color=rec_color, ickdsf_ref_link=ickdsf_ref_link, ickdsf_mod_link=ickdsf_mod_link, zos_collection_link=zos_collection_link )
+        </html>""".format(command="init", time=time_string, playbook=playbook_prettified, output=json_prettified, rec=rec, rec_color=rec_color,
+                          ickdsf_ref_link=ickdsf_ref_link, ickdsf_mod_link=ickdsf_mod_link, zos_collection_link=zos_collection_link)
 
         f.write(html_template)
         f.close()

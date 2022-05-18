@@ -209,7 +209,7 @@ class DataSet(object):
         """
         if volumes:
             changed, present, pending_to_catalog_and_delete = DataSet.attempt_to_delete_uncataloged_data_set_if_necessary(name, volumes)
-            if not pending_to_catalog_and_delete: 
+            if not pending_to_catalog_and_delete:
                 return changed
 
         present, changed = DataSet.attempt_catalog_if_necessary(name, volumes)
@@ -305,7 +305,7 @@ class DataSet(object):
         if re.search(r"-\s" + name + r"\s*\n\s+IN-CAT", stdout):
             return True
         return False
-    
+
     @staticmethod
     def get_volume_list_for_cataloged_data_set(name):
         """Get the volume list for a cataloged dataset name.
@@ -360,7 +360,8 @@ class DataSet(object):
         Returns:
             bool -- If any action was performed on the data.
             bool -- If the dataset is still present.
-            bool -- If given the volumes list and dataset name we need to continue with deleting the dataset as usual, either by cataloging it and deleting or deleting a cataloged dataset.
+            bool -- If given the volumes list and dataset name we need to continue with deleting the dataset as usual, 
+            either by cataloging it and deleting or deleting a cataloged dataset.
         """
         changed = False
         present = True
@@ -370,18 +371,18 @@ class DataSet(object):
         if len(cataloged_volume_list) == 0:
             return changed, present, True
         # If any volume provided is not in the list, means we need to delete it from uncataloged dataset.
-        volumes_for_uncataloged_dataset = list(filter(lambda vol : vol not in cataloged_volume_list, volumes))
+        volumes_for_uncataloged_dataset = list(filter(lambda vol: vol not in cataloged_volume_list, volumes))
         # If any volume provided is in the list we will delete from the catalog as normal.
         pending_to_delete_cataloged_dataset = any(vol in volumes for vol in cataloged_volume_list)
 
         if len(volumes_for_uncataloged_dataset) > 0:
-            volumes = list(filter(lambda vol : DataSet._is_in_vtoc(name, vol), volumes))
+            volumes = list(filter(lambda vol: DataSet._is_in_vtoc(name, vol), volumes))
             if len(volumes) > 0:
                 present = DataSet.delete_uncataloged_dataset(name, volumes)
                 changed = present == 0
             else:
                 changed = False
-        
+
         return changed, present, pending_to_delete_cataloged_dataset
 
     @staticmethod

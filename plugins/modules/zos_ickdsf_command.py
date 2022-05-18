@@ -30,7 +30,7 @@ description:
 options:
   init:
     description:
-      - Contains the supported ICKDSF INIT command parameters. 
+      - Contains the supported ICKDSF INIT command parameters.
     required: false
     type: dict
       suboptions:
@@ -43,37 +43,43 @@ options:
           description:
             - Used to indicate one of the following
             - Verification that an existing volume serial number does not exist for the volume by not including it.
-            - Verification that the volume contains an existing specific volume serial number. This would be indicated by 1 to 6 alphanumeric characters that would contain the serial number that you wish to verify currently exists on the volume.
+            - Verification that the volume contains an existing specific volume serial number. This would be indicated
+              by 1 to 6 alphanumeric characters that would contain the serial number that you wish to verify currently exists on the volume.
           required: false
           type: str
         verify_offline:
           description:
-            - Used to indicate if verification should be done to verify that the volume is offline to all host systems. If this parameter is not specified, the default set up on the system that you are running the command to will be used.
+            - Used to indicate if verification should be done to verify that the volume is offline to all host systems.
+              If this parameter is not specified, the default set up on the system that you are running the command to will be used.
           type: bool
           default: true
         volid:
           description:
-            - This is used to indicate the 1 to 6 alphanumeric character volume serial number that you want to initialize the volume with. 
+            - This is used to indicate the 1 to 6 alphanumeric character volume serial number that you want to initialize the volume with.
           required: false
           type: str
         vtoc_tracks:
           description:
-            - This is used to indicate the number of tracks to initialize the VTOC with. The VTOC will be placed at cylinder 0 head 1 for the number of tracks specified. 
+            - This is used to indicate the number of tracks to initialize the VTOC with. The VTOC will be placed at cylinder 0 head 1
+              for the number of tracks specified.
           required: false
           type: int
         index:
           description:
-            - This is used to indicate if a VTOC index should be created when initializing the volume. The index size will be created based on the size of the volume and the size of the VTOC that was created. The Index will be placed on the volume after the VTOC. If this parameter is not specified an index will be created on the volume.
+            - This is used to indicate if a VTOC index should be created when initializing the volume.
+              The index size will be created based on the size of the volume and the size of the VTOC that was created.
+              The Index will be placed on the volume after the VTOC. If this parameter is not specified an index will be created on the volume.
           type: bool
           default: true
         sms_managed:
           description:
-            -
+            - Assigned to be managed by Storage Management System (SMS).
           type: bool
           default: true
         verify_no_data_sets_exist:
           description:
-            - This is used to verify if data sets other than the VTOC index data set and/or VVDS exist on the volume to be initialized. If this parameter is not specified, the default set up on the system you are running the command to will be used.
+            - This is used to verify if data sets other than the VTOC index data set and/or VVDS exist on the volume to be initialized.
+              If this parameter is not specified, the default set up on the system you are running the command to will be used.
           type: bool
           default: true
         addr_range:
@@ -134,7 +140,7 @@ EXAMPLES = r"""
         ansible.builtin.debug:
           var: response
 
-          
+
 ---
   - hosts: all
     collections:
@@ -170,6 +176,7 @@ from ansible.module_utils.basic import AnsibleModule
 from locale import Error
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import better_arg_parser
 
+
 class IckdsfError(Error):
     '''
     Error class for errors specific to ICKDSF commands
@@ -194,8 +201,8 @@ class CommandInit(IckdsfCommand):
 
     @staticmethod
     def convert(args):
-      if args.get('init'):
-        args = args.get('init')
+        if args.get('init'):
+            args = args.get('init')
 
         # Get parameters from playbooks
         volume_address = args.get('volume_address')
@@ -257,80 +264,74 @@ class CommandInit(IckdsfCommand):
         # Format into JCL strings for zos_mvs_raw
         cmd = [
             ' init {} {} {} {} - '.format(
-                cmd_args['volume_address'], 
-                cmd_args['verify_existing_volid'], 
-                cmd_args['verify_offline'], 
-                cmd_args['volid']), 
+                cmd_args['volume_address'],
+                cmd_args['verify_existing_volid'],
+                cmd_args['verify_offline'],
+                cmd_args['volid']),
             ' {} storagegroup {} {}'.format(
-                cmd_args['vtoc_tracks'], 
-                cmd_args['verify_no_data_sets_exist'], 
+                cmd_args['vtoc_tracks'],
+                cmd_args['verify_no_data_sets_exist'],
                 cmd_args['index'])]
 
-         # Check if Playbook wants to INIT a range of volumes
+        # Check if Playbook wants to INIT a range of volumes
         if addr_range and volid_prefix:
             if not verify_no_data_sets_exist:
                 msg = 'You are not allowed to initialize a range of volumes without checking for data sets.'
                 raise IckdsfError(msg)
             start = int(str(volume_address), 16)
             end = start + addr_range
-            for i in range(start+1, end+1):
+            for i in range(start + 1, end + 1):
                 next_addr = '{0:x}'.format(i)
                 next_vol_id = str(volid_prefix) + next_addr
                 formatted_next_addr = 'unit({})'.format(next_addr)
                 formatted_next_vol_id = 'volid({})'.format(next_vol_id)
-                cmd.append(
-                ' init {} {} {} {} - '.format(
-                    formatted_next_addr, 
-                    cmd_args['verify_existing_volid'], 
-                    cmd_args['verify_offline'], 
-                    formatted_next_vol_id)) 
+                cmd.append(' init {} {} {} {} - '.format(
+                    formatted_next_addr,
+                    cmd_args['verify_existing_volid'],
+                    cmd_args['verify_offline'],
+                    formatted_next_vol_id))
                 cmd.append(' {} {} {} {}'.format(
-                    cmd_args['vtoc_tracks'], 
+                    cmd_args['vtoc_tracks'],
                     cmd_args['sms_managed'],
-                    cmd_args['verify_no_data_sets_exist'], 
+                    cmd_args['verify_no_data_sets_exist'],
                     cmd_args['index']))
 
         return cmd
 
+
 def run_module():
-    
+
     module_args = dict(
-        buildix=dict(type="dict",
-            options=dict(
-                volume_address=dict(type="str", required=True),
-                verify_existing_volid=dict(type="str", required=False),
-                verify_offline=dict(type="bool", default=True),
-                volid=dict(type="str", required=False),
-                vtoc_tracks=dict(type="int", required=False),
-                index=dict(type="bool", default=True),
-                sms_managed=dict(type="bool", default=True),
-                verify_no_data_sets_exist=dict(type="bool", default=True),
-                addr_range=dict(type="int"),
-                volid_prefix=dict(type="str")
-            ),
+        buildix=dict(type="dict", options=dict(
+            volume_address=dict(type="str", required=True),
+            verify_existing_volid=dict(type="str", required=False),
+            verify_offline=dict(type="bool", default=True),
+            volid=dict(type="str", required=False),
+            vtoc_tracks=dict(type="int", required=False),
+            index=dict(type="bool", default=True),
+            sms_managed=dict(type="bool", default=True),
+            verify_no_data_sets_exist=dict(type="bool", default=True),
+            addr_range=dict(type="int"),
+            volid_prefix=dict(type="str")),
         ),
-        init=dict(type="dict",
-            options=dict(
-                volume_address=dict(type="str", required=True),
-                verify_existing_volid=dict(type="str", required=False),
-                verify_offline=dict(type="bool", default=True),
-                volid=dict(type="str", required=False),
-                vtoc_tracks=dict(type="int", required=False),
-                index=dict(type="bool", default=True),
-                sms_managed=dict(type="bool", default=True),
-                verify_no_data_sets_exist=dict(type="bool", default=True),
-                addr_range=dict(type="int"),
-                volid_prefix=dict(type="str")
-            ),
+        init=dict(type="dict", options=dict(
+            volume_address=dict(type="str", required=True),
+            verify_existing_volid=dict(type="str", required=False),
+            verify_offline=dict(type="bool", default=True),
+            volid=dict(type="str", required=False),
+            vtoc_tracks=dict(type="int", required=False),
+            index=dict(type="bool", default=True),
+            sms_managed=dict(type="bool", default=True),
+            verify_no_data_sets_exist=dict(type="bool", default=True),
+            addr_range=dict(type="int"),
+            volid_prefix=dict(type="str")),
         ),
-        output_html=dict(type="dict",
-            options=dict(
-                full_file_path=dict(type="str", required=True),
-                append=dict(type="bool", default=True, required=False)
-            )
+        output_html=dict(type="dict", options=dict(
+            full_file_path=dict(type="str", required=True),
+            append=dict(type="bool", default=True, required=False))
         )
     )
-        
+
     result = dict(
         changed=False,
         original_message='',
@@ -372,4 +373,3 @@ def run_module():
 
 if __name__ == '__main__':
     run_module()
-

@@ -27,13 +27,13 @@ short_description: Gather facts about target z/OS systems.
 version_added: "1.4.2"
 
 description:
-  - Retrieve useful variables from z/OS target systems.
-  - Variables are added to ansible_facts dict which is available from all
+  - Retrieve useful variables from the target z/OS systems.
+  - Add variables to the ansible_facts dictionary, which is available from all
     playbooks.
-  - Use gather_subset and filter to cut down on variables added to
-    ansible_facts.
-  - Module will fail fast if any illegal options are provided. This is done to
-    raise awareness of a failure early in an automation setting.
+  - Apply filters on the gather_subset list to cut down on variables that are
+    added to the ansible_facts dictionary.
+  - Note: Module will fail fast if any illegal options are provided. This is
+    done to raise awareness of a failure early in an automation setting.
 
 options:
   gather_subset:
@@ -42,23 +42,23 @@ options:
     default: ['all']
     required: False
     description:
-      - If specified, it will only collect facts which come under the specified
-        subset (eg ipl will return only ipl facts). Specifying subsets is an
-        excellent way to save on time taken to gather all facts in cases where
-        facts needed can be constrained down to one or more subsets.
+      - If specified, it will only collect facts that come under the specified
+        subset (eg. ipl will only return ipl facts). Specifying subsets is
+        recommended to save time on gatherthing all facts when the facts needed
+        are constrained down to one or more subsets.
   filter:
     type: list
     elements: str
     required: False
     default: []
     description:
-      - uses shell-style (fnmatch) pattern matching to filter out collected
+      - Uses shell-style (fnmatch) pattern matching to filter out the collected
         facts.
-      - Note - this is done after the facts are gathered, so this will not save
-        time/compute, it will only reduce the number of variables added to
-        ansible_facts. To restrict the actual facts collected, refer to the
-        gather_subset parameter.
       - An empty list means 'no filter', same as providing '*'.
+      - Note - this is done after the facts are gathered, so this doesn't save
+        time/compute. It only reduces the number of variables that are added to
+        the ansible_facts dictionary. To restrict the actual facts that are
+        collected, refer to the gather_subset parameter above.
 
 author:
     - Ketan Kelkar (@ketankelkar)
@@ -73,7 +73,7 @@ EXAMPLES = r'''
     gather_subset: sys
 
 - name: Return z/OS facts in the subsets ('ipl' and 'sys') and filter out all
-        facts which do not match 'parmlib'
+        facts that do not match 'parmlib'
   ibm.ibm_zos_core.zos_gather_facts:
     gather_subset:
       - ipl
@@ -84,7 +84,7 @@ EXAMPLES = r'''
 
 RETURN = r'''
 ansible_facts:
-  description: Facts from z/OS are added to ansible_facts.
+  description: Store the facts that are gathered from z/OS systems.
   returned: sometimes
   type: dict
 '''
@@ -99,13 +99,13 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
 
 
 def zinfo_cmd_string_builder(gather_subset):
-    """Builds command string for 'zinfo' based off gather_subset list.
+    """Builds a command string for 'zinfo' based off the gather_subset list.
     Arguments:
-        gather_subset {list} -- list of subsets to pass in.
+        gather_subset {list} -- A list of subsets to pass in.
     Returns:
-        [str] -- A string containing a command line argument calling zinfo with
-                the appropriate options.
-        [None] -- Received bad value for subset.
+        [str] -- A string that contains a command line argument for calling
+                 zinfo with the appropriate options.
+        [None] -- An invalid value was received for the subsets.
     """
     if gather_subset is None or 'all' in gather_subset:
         return "zinfo -j -a"
@@ -129,12 +129,13 @@ def zinfo_cmd_string_builder(gather_subset):
 
 
 def flatten_zinfo_json(zinfo_dict):
-    """Removes one layer of mapping in the dict. Top-level keys correspond to
-        zinfo subsets and are removed.
+    """Removes one layer of mapping in the dictionary. Top-level keys correspond
+        to zinfo subsets and are removed.
     Arguments:
-        zinfo_dict {dict} -- dict containing parsed result from zinfo json str.
+        zinfo_dict {dict} -- A dictionary that contains the parsed result from
+                             the zinfo json string.
     Returns:
-        [dict] -- A flattened dict.
+        [dict] -- A flattened dictionary.
     """
     d = dict()
     for subset in list(zinfo_dict):
@@ -143,13 +144,15 @@ def flatten_zinfo_json(zinfo_dict):
 
 
 def apply_filter(zinfo_dict, filter_list):
-    """Returns dict containing only keys which fit the specified filter(s).
+    """Returns a dictionary that contains only the keys which fit the specified
+       filters.
     Arguments:
-        zinfo_dict {dict} -- flattened dict containing results from zinfo.
-        filter_list {list} -- str list of shell wildcard patterns ie 'filters'
-                              to apply to zinfo_dict keys.
+        zinfo_dict {dict} -- A flattened dictionary that contains results from
+                             zinfo.
+        filter_list {list} -- A string list of shell wildcard patterns (i.e.
+                              'filters') to apply to the zinfo_dict keys.
     Returns:
-        [dict] -- A dict with keys filtered out.
+        [dict] -- A dictionary with keys that are filtered out.
     """
 
     if filter_list is None or filter_list == [] or '*' in filter_list:
@@ -194,8 +197,8 @@ def run_module():
 
     if not zoau_version_checker.is_zoau_version_higher_than("1.2.1"):
         module.fail_json(
-            ("zos_gather_facts module requires ZOAU >= 1.2.1. Please update "
-             "ZOAU version on the target node.")
+            ("The zos_gather_facts module requires ZOAU >= 1.2.1. Please upgrade "
+             "the ZOAU version on the target node.")
         )
 
     gather_subset = module.params['gather_subset']
@@ -207,7 +210,7 @@ def run_module():
     # Invalid subsets are caught when the actual zinfo command is run.
     cmd = zinfo_cmd_string_builder(gather_subset)
     if not cmd:
-        module.fail_json(msg="Invalid subset given to Ansible.")
+        module.fail_json(msg="An invalid subset was passed to Ansible.")
 
     rc, fcinfo_out, err = module.run_command(cmd, encoding=None)
 
@@ -223,10 +226,10 @@ def run_module():
                    '(ZOAU) utility \'zinfo\'. See \'zinfo_err_msg\' for '
                    'additional details.')
         if 'BGYSC5201E' in err.decode('utf-8'):
-            err_msg = ('Invalid susbset detected. See \'zinfo_err_msg\' for '
+            err_msg = ('An invalid susbset was detected. See \'zinfo_err_msg\' for '
                        'additional details.')
         elif 'BGYSC5202E' in err.decode('utf-8'):
-            err_msg = ('Invalid option passed to zinfo. See \'zinfo_err_msg\' '
+            err_msg = ('An invalid option was passed to zinfo. See \'zinfo_err_msg\' '
                        'for additional details.')
 
         module.fail_json(msg=err_msg, zinfo_err_msg=err)
@@ -237,6 +240,7 @@ def run_module():
         zinfo_dict = json.loads(decode_str)
     except json.JSONDecodeError:
         # TODO -figure out this error message...what do i tell user?
+        # (Jenny - why did this error happen and how could users fix the error?)
         module.fail_json(msg="There was JSON error.")
 
     # remove zinfo subsets from parsed zinfo result, flatten by one level

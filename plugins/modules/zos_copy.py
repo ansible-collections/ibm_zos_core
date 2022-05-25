@@ -1363,7 +1363,7 @@ class PDSECopyHandler(CopyHandler):
         if rc != 0:
             msg = ""
             if is_uss_src:
-                msg = "Unable to copy file {0} to data set member {1}".format(src, dest)
+                msg = "Unable to copy file {0} to data set member {1}, {2}, {3}".format(src, dest, temp_path, new_src)
             else:
                 msg = "Unable to copy data set member {0} to {1}".format(src, dest)
 
@@ -1740,10 +1740,13 @@ def run_module(module, arg_def):
             dest_exists = os.path.exists(dest)
         else:
             dest_du = data_set.DataSetUtils(dest_name)
-            dest_exists = dest_du.exists()
+            # dest_exists = dest_du.exists()
+            dest_exists = data_set.DataSet.data_set_exists(dest_name, volume)
             if copy_member:
-                dest_exists = dest_exists and dest_du.member_exists(dest_member)
+                # dest_exists = dest_exists and dest_du.member_exists(dest_member)
+                dest_exists = dest_exists and data_set.DataSet.data_set_member_exists(dest)
             dest_ds_type = dest_du.ds_type()
+
         if temp_path or "/" in src:
             src_ds_type = "USS"
         else:
@@ -1807,16 +1810,26 @@ def run_module(module, arg_def):
                 or (src and os.path.isdir(src) and is_mvs_dest)
             ):
                 dest_ds_type = "PDSE"
-                pch = PDSECopyHandler(module, dest_exists, backup_name=backup_name)
-                pch.create_pdse(
-                    src,
-                    dest_name,
-                    alloc_size,
-                    src_ds_type,
-                    remote_src=remote_src,
-                    src_vol=src_ds_vol,
-                    alloc_vol=volume,
-                )
+                # ds_args = dict(
+                #     replace=False,
+                #     type=dest_ds_type,
+                #     space_primary=alloc_size,
+                #     volumes=volume
+                # )
+                result = data_set.DataSet.ensure_present(dest_name, False, dest_ds_type)#, **ds_args)
+
+                if not result:
+                    module.fail_json(msg="Unable to allocate new PDSE")
+                # pch = PDSECopyHandler(module, dest_exists, backup_name=backup_name)
+                # pch.create_pdse(
+                #     src,
+                #     dest_name,
+                #     alloc_size,
+                #     src_ds_type,
+                #     remote_src=remote_src,
+                #     src_vol=src_ds_vol,
+                #     alloc_vol=volume,
+                # )
             elif src_ds_type == "VSAM":
                 dest_ds_type = "VSAM"
             elif not is_uss:

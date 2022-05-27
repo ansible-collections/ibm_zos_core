@@ -2439,7 +2439,7 @@ def run_module(module, arg_def):
     #      2.1) If `src` data set exists, `src` attributes will be used to create/replace `dest`
     #      2.2) If `src` is a file and `dest` data set exists, `dest` attributes will be used to create data set
     #      2.3) if `src` is a file and `dest` data set does NOT exist, default values will be provided (that may not be suitably enough)
-    #   3) If `force` = `true` and `dest` IS a PDS/PDSE Member and NOT (VSAM, USS target) and `src` is NOT VSAM and `src` is a Partitioned Data Set(member)/PDS(member):
+    #   3) If `force` = `true` and `dest` IS a PDS/  Member and NOT (VSAM, USS target) and `src` is NOT VSAM and `src` is a Partitioned Data Set(member)/PDS(member):
     #      3.0) If `dest` data set exists, `dest` is Physical Sequencial (PS), is empty, `dest` data set will be used for the Member (space is not validated, future? )
     #      3.1) If `dest` data set exists, `dest` is Physical Sequencial (PS), is NOT empty, `dest` attributes will be used to create/replace `dest`
     #      3.2) If `dest` data set does NOT exist, `dest` data set name is NOT a PDS(member), `dest` is not a USS target, a default Physical Sequencial (PS) will be created
@@ -2476,7 +2476,7 @@ def run_module(module, arg_def):
             dest_parms = get_sequential_data_set_default_attributes(
                 name=dest_name, size=src_name_file_size_bytes, vol=volume)
             data_set.DataSet.ensure_present(replace=force, **dest_parms)
-    elif dest_member and (src_ds_type != "VSAM" or dest_ds_type != "VSAM") and (dest_ds_type != "USS") and force:
+    elif dest_member and (src_ds_type != "VSAM" or dest_ds_type != "VSAM") and (dest_ds_type != "USS") and force:   
         if data_set.DataSet.data_set_exists(dest_name, volume) and (dest_ds_type == "PS") and data_set.is_empty(dest_name): #3.0
             pass
         elif data_set.DataSet.data_set_exists(dest_name, volume) and (dest_ds_type == "PS") and (not data_set.is_empty(dest_name)): # 3.1

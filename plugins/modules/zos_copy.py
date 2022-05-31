@@ -1408,40 +1408,47 @@ class PDSECopyHandler(CopyHandler):
             remote_src {bool} -- Whether source is located on remote system.
                                  (Default {False})
             src_vol {str} -- Volume where source data set is stored. (Default {None})
+
+        Returns:
+            {bool} -- True if the PDSE was created, False if it was already present
         """
-        rc = out = err = None
-        if remote_src:
-            if src_ds_type in MVS_PARTITIONED:
-                rc = self.allocate_model(dest_name, src, vol=alloc_vol)
+        changed = False
 
-            elif src_ds_type in MVS_SEQ:
-                rc = self._allocate_pdse(
-                    dest_name, src_vol=src_vol, src=src, alloc_vol=alloc_vol
-                )
+        try:
+            if remote_src:
+                if src_ds_type in MVS_PARTITIONED:
+                    # Failure of this function is already addressed inside of it.
+                    self.allocate_model(dest_name, src, vol=alloc_vol)
 
-            elif os.path.isfile(src):
-                size = os.stat(src).st_size
-                rc = self._allocate_pdse(dest_name, size=size)
-
-            elif os.path.isdir(src):
-                path, dirs, files = next(os.walk(src))
-                if dirs:
-                    self.fail_json(
-                        msg="Subdirectory found in source directory {0}".format(src)
+                elif src_ds_type in MVS_SEQ:
+                    changed = self._allocate_pdse(
+                        dest_name, src_vol=src_vol, src=src, alloc_vol=alloc_vol
                     )
-                size = sum(os.stat(path + "/" + f).st_size for f in files)
-                rc = self._allocate_pdse(dest_name, size=size)
-        else:
-            rc = self._allocate_pdse(dest_name, src=src, size=size, alloc_vol=alloc_vol)
 
-        if rc != 0:
+                elif os.path.isfile(src):
+                    size = os.stat(src).st_size
+                    changed = self._allocate_pdse(dest_name, size=size)
+
+                elif os.path.isdir(src):
+                    path, dirs, files = next(os.walk(src))
+                    if dirs:
+                        self.fail_json(
+                            msg="Subdirectory found in source directory {0}".format(src)
+                        )
+                    size = sum(os.stat(path + "/" + f).st_size for f in files)
+                    changed = self._allocate_pdse(dest_name, size=size)
+            else:
+                changed = self._allocate_pdse(dest_name, src=src, size=size, alloc_vol=alloc_vol)
+
+            return changed
+        except data_set.DatasetCreateError as e:
             self.fail_json(
                 msg="Unable to allocate destination data set {0} to receive {1}".format(dest_name, src),
-                stdout=out,
-                stderr=err,
-                rc=rc,
-                stdout_lines=out.splitlines() if out else None,
-                stderr_lines=err.splitlines() if err else None,
+                stdout=None,
+                stderr=e.msg,
+                rc=e.rc,
+                stdout_lines=None,
+                stderr_lines=e.msg.splitlines() if e.msg else None,
             )
 
     def _allocate_pdse(
@@ -1465,6 +1472,9 @@ class PDSECopyHandler(CopyHandler):
             src {str} -- The name of the source data set from which to get the size
             src_vol {str} -- Volume of the source data set
             allc_vol {str} -- The volume where PDSE should be allocated
+
+        Returns:
+            {bool} -- True if the PDSE was created, False if it was already present
         """
         rc = -1
         recfm = "FB"
@@ -1483,21 +1493,21 @@ class PDSECopyHandler(CopyHandler):
             else:
                 alloc_size = 5242880  # Use the default 5 Megabytes
 
-        alloc_size = "{0}K".format(str(int(math.ceil(alloc_size / 1024))))
+        alloc_size = int(math.ceil(alloc_size / 1024))
         parms = dict(
-            name=ds_name,
+            replace=False,
             type="PDSE",
-            primary_space=alloc_size,
+            space_primary=alloc_size,
+            space_type="K",
             record_format=recfm,
             record_length=lrecl
         )
         if alloc_vol:
-            parms['volume'] = alloc_vol
+            parms['volumes'] = alloc_vol
 
-        response = datasets._create(**parms)
-        rc = response.rc
+        changed = data_set.DataSet.ensure_present(ds_name, **parms)
 
-        return rc
+        return changed
 
 
 def backup_data(ds_name, ds_type, backup_name):
@@ -1740,10 +1750,8 @@ def run_module(module, arg_def):
             dest_exists = os.path.exists(dest)
         else:
             dest_du = data_set.DataSetUtils(dest_name)
-            # dest_exists = dest_du.exists()
             dest_exists = data_set.DataSet.data_set_exists(dest_name, volume)
             if copy_member:
-                # dest_exists = dest_exists and dest_du.member_exists(dest_member)
                 dest_exists = dest_exists and data_set.DataSet.data_set_member_exists(dest)
             dest_ds_type = dest_du.ds_type()
 
@@ -1810,26 +1818,16 @@ def run_module(module, arg_def):
                 or (src and os.path.isdir(src) and is_mvs_dest)
             ):
                 dest_ds_type = "PDSE"
-                # ds_args = dict(
-                #     replace=False,
-                #     type=dest_ds_type,
-                #     space_primary=alloc_size,
-                #     volumes=volume
-                # )
-                result = data_set.DataSet.ensure_present(dest_name, False, dest_ds_type)#, **ds_args)
-
-                if not result:
-                    module.fail_json(msg="Unable to allocate new PDSE")
-                # pch = PDSECopyHandler(module, dest_exists, backup_name=backup_name)
-                # pch.create_pdse(
-                #     src,
-                #     dest_name,
-                #     alloc_size,
-                #     src_ds_type,
-                #     remote_src=remote_src,
-                #     src_vol=src_ds_vol,
-                #     alloc_vol=volume,
-                # )
+                pch = PDSECopyHandler(module, dest_exists, backup_name=backup_name)
+                pch.create_pdse(
+                    src,
+                    dest_name,
+                    alloc_size,
+                    src_ds_type,
+                    remote_src=remote_src,
+                    src_vol=src_ds_vol,
+                    alloc_vol=volume,
+                )
             elif src_ds_type == "VSAM":
                 dest_ds_type = "VSAM"
             elif not is_uss:

@@ -240,8 +240,7 @@ def run_module():
         zinfo_dict = json.loads(decode_str)
     except json.JSONDecodeError:
         # TODO -figure out this error message...what do i tell user?
-        # (Jenny - why did this error happen and how could users fix the error?)
-        module.fail_json(msg="There was JSON error.")
+        module.fail_json(msg="Unsupported JSON format for the output.")
 
     # remove zinfo subsets from parsed zinfo result, flatten by one level
     flattened_d = flatten_zinfo_json(zinfo_dict)

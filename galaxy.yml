@@ -69,3 +69,6 @@ build_ignore:
   - tests
   - docs
   - collections
+  - changelogs
+  - docs
+  - tests

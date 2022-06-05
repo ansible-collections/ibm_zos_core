@@ -19,6 +19,7 @@ __metaclass__ = type
 
 DOCUMENTATION = r"""
 module: zos_tso_command
+version_added: '1.0.0'
 author: "Xiao Yuan Ma (@bjmaxy)"
 short_description: Execute TSO commands
 description:

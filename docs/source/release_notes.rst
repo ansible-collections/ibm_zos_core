@@ -21,9 +21,8 @@ What's New
       ``retries``. This is resolved by renaming the ``zos_ssh`` option
       ``retries`` to ``reconnection_retries``. The update addresses users of
       ``ansible-core`` v2.9 which continues to use ``retries`` and users of
-      ``ansible-core`` v2.11 or later which uses ``reconnection_retries``.  
-
-      This also resolves a bug in the connection that referenced a deprecated
+      ``ansible-core`` v2.11 or later which uses ``reconnection_retries``. This
+      also resolves a bug in the connection that referenced a deprecated
       constant.  
 
 Availability

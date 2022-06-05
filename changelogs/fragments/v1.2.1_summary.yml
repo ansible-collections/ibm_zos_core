@@ -1,0 +1,9 @@
+release_summary: |
+  Release Date: '2020-10-09'
+  This changlelog describes all changes made to the modules and plugins included
+  in this collection.
+  For additional details such as required dependencies and availablity review
+  the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__.
+
+  Beginning this release, all playbooks previously included with the collection
+  will be made available on the `playbook repository <https://github.com/IBM/z_ansible_collections_samples>`__.

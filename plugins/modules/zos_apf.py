@@ -112,7 +112,7 @@ options:
           - C({mark}) length may not exceed 72 characters.
         required: False
         type: str
-        default: "/* {mark} ANSIBLE MANAGED BLOCK <timestamp> */"
+        default: "/* {mark} ANSIBLE MANAGED BLOCK <timestamp> \\*/"
       backup:
         description:
           - Creates a backup file or backup data set for I(data_set_name),

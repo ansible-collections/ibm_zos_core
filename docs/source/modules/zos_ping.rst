@@ -54,11 +54,14 @@ Return Values
 ping
   Should contain the value "pong" on success.
 
+  | **returned**: always
   | **type**: str
+  | **sample**: pong
 
 warnings
   List of warnings returned from stderr when performing resource checks.
 
+  | **returned**: failure
   | **type**: list
   | **elements**: str
 

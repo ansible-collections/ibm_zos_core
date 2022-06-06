@@ -1,4 +1,4 @@
-minor_changes:
+bugfixes:
   - >
     zos_ssh - connection plugin was updated to correct a bug in Ansible that
       would result in playbook task retries overriding the SSH connection

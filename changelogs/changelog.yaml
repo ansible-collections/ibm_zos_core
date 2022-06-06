@@ -234,13 +234,6 @@ releases:
   1.3.4:
     changes:
       bugfixes:
-      - zos_ssh connection plugin was updated to correct a bug in Ansible that would
-        result in playbook task retries overriding the SSH connection retries. This
-        is resolved by renaming the zos_ssh option retries to reconnection_retries.
-        The update addresses users of ansible-core v2.9 which continues to use retries
-        and users of ansible-core v2.11 or later which uses reconnection_retries.
-        This also resolves a bug in the connection that referenced a deprecated constant.
-      minor_changes:
       - "zos_ssh - connection plugin was updated to correct a bug in Ansible that\n
         \ would result in playbook task retries overriding the SSH connection\n  retries.
         This is resolved by renaming the zos_ssh option\n  retries to reconnection_retries.
@@ -256,5 +249,4 @@ releases:
     fragments:
     - 328-rename-retries-to-reconnection_retries.yml
     - v1.3.4_summary.yml
-    - v1.3.4_summary_bugs.yml
-    release_date: '2022-06-04'
+    release_date: '2022-06-06'

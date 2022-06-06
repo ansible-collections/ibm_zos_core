@@ -18,8 +18,8 @@ For additional details such as required dependencies and availablity review
 the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__ 
 
 
-Minor Changes
--------------
+Bugfixes
+--------
 
 - zos_ssh - connection plugin was updated to correct a bug in Ansible that
     would result in playbook task retries overriding the SSH connection
@@ -29,11 +29,6 @@ Minor Changes
     ansible-core v2.11 or later which uses reconnection_retries.
     This also resolves a bug in the connection that referenced a deprecated
     constant. (https://github.com/ansible-collections/ibm_zos_core/pull/328)
-
-Bugfixes
---------
-
-- zos_ssh connection plugin was updated to correct a bug in Ansible that would result in playbook task retries overriding the SSH connection retries. This is resolved by renaming the zos_ssh option retries to reconnection_retries. The update addresses users of ansible-core v2.9 which continues to use retries and users of ansible-core v2.11 or later which uses reconnection_retries. This also resolves a bug in the connection that referenced a deprecated constant.
 
 v1.3.3
 ======

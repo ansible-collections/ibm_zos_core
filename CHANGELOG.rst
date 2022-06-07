@@ -129,7 +129,6 @@ New Modules
 - ibm.ibm_zos_core.zos_blockinfile - Manage block of multi-line textual data on z/OS
 - ibm.ibm_zos_core.zos_data_set - Manage data sets
 - ibm.ibm_zos_core.zos_find - Find matching data sets
-- ibm.ibm_zos_core.zos_lineinfile - Manage textual data on z/OS
 
 v1.2.1
 ======
@@ -159,6 +158,11 @@ Bugfixes
 - zos_encode - removed TemporaryDirectory usage.
 - zos_fetch - fix quote import
 
+New Modules
+-----------
+
+- ibm.ibm_zos_core.zos_lineinfile - Manage textual data on z/OS
+
 v1.1.0
 ======
 
@@ -185,8 +189,10 @@ New Modules
 - ibm.ibm_zos_core.zos_encode - Perform encoding operations.
 - ibm.ibm_zos_core.zos_fetch - Fetch data from z/OS
 - ibm.ibm_zos_core.zos_mvs_raw - Run a z/OS program.
+- ibm.ibm_zos_core.zos_operator - Execute operator command
 - ibm.ibm_zos_core.zos_operator_action_query - Display messages requiring action
 - ibm.ibm_zos_core.zos_ping - Ping z/OS and check dependencies.
+- ibm.ibm_zos_core.zos_tso_command - Execute TSO commands
 
 v1.0.0
 ======
@@ -219,5 +225,3 @@ New Modules
 - ibm.ibm_zos_core.zos_job_output - Display job output
 - ibm.ibm_zos_core.zos_job_query - Query job status
 - ibm.ibm_zos_core.zos_job_submit - Submit JCL
-- ibm.ibm_zos_core.zos_operator - Execute operator command
-- ibm.ibm_zos_core.zos_tso_command - Execute TSO commands

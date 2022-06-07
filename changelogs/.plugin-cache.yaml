@@ -73,7 +73,7 @@ plugins:
       description: Manage textual data on z/OS
       name: zos_lineinfile
       namespace: ''
-      version_added: 1.3.0
+      version_added: 1.2.1
     zos_mvs_raw:
       description: Run a z/OS program.
       name: zos_mvs_raw
@@ -83,7 +83,7 @@ plugins:
       description: Execute operator command
       name: zos_operator
       namespace: ''
-      version_added: 1.0.0
+      version_added: 1.1.0
     zos_operator_action_query:
       description: Display messages requiring action
       name: zos_operator_action_query
@@ -98,7 +98,7 @@ plugins:
       description: Execute TSO commands
       name: zos_tso_command
       namespace: ''
-      version_added: 1.0.0
+      version_added: 1.1.0
   netconf: {}
   shell: {}
   strategy: {}

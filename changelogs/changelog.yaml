@@ -18,7 +18,7 @@ releases:
       - Improved test, security and injection coverage
       - Security vulnerabilities fixed
     fragments:
-    - v1.0.0_summary..yml
+    - v1.0.0_summary.yml
     - v1.0.0_summary_minor.yml
     - v1.0.0_summary_security.yml
     modules:
@@ -34,13 +34,7 @@ releases:
     - description: Submit JCL
       name: zos_job_submit
       namespace: ''
-    - description: Execute operator command
-      name: zos_operator
-      namespace: ''
-    - description: Execute TSO commands
-      name: zos_tso_command
-      namespace: ''
-    release_date: '2022-06-04'
+    release_date: '2022-06-07'
   1.1.0:
     changes:
       minor_changes:
@@ -71,13 +65,19 @@ releases:
     - description: Run a z/OS program.
       name: zos_mvs_raw
       namespace: ''
+    - description: Execute operator command
+      name: zos_operator
+      namespace: ''
     - description: Display messages requiring action
       name: zos_operator_action_query
       namespace: ''
     - description: Ping z/OS and check dependencies.
       name: zos_ping
       namespace: ''
-    release_date: '2022-06-04'
+    - description: Execute TSO commands
+      name: zos_tso_command
+      namespace: ''
+    release_date: '2022-06-07'
   1.2.1:
     changes:
       bugfixes:
@@ -106,7 +106,11 @@ releases:
     - v1.2.1_summary.yml
     - v1.2.1_summary_bugs.yml
     - v1.2.1_summary_minor.yml
-    release_date: '2022-06-04'
+    modules:
+    - description: Manage textual data on z/OS
+      name: zos_lineinfile
+      namespace: ''
+    release_date: '2022-06-07'
   1.3.0:
     changes:
       bugfixes:
@@ -178,10 +182,7 @@ releases:
     - description: Find matching data sets
       name: zos_find
       namespace: ''
-    - description: Manage textual data on z/OS
-      name: zos_lineinfile
-      namespace: ''
-    release_date: '2022-06-04'
+    release_date: '2022-06-07'
   1.3.1:
     changes:
       bugfixes:
@@ -205,7 +206,7 @@ releases:
     - v1.3.1_summary.yml
     - v1.3.1_summary_bugs.yml
     - v1.3.1_summary_known.yml
-    release_date: '2022-06-04'
+    release_date: '2022-06-07'
   1.3.3:
     changes:
       bugfixes:
@@ -230,7 +231,7 @@ releases:
     fragments:
     - v1.3.3_summary.yml
     - v1.3.3_summary_bugs.yml
-    release_date: '2022-06-04'
+    release_date: '2022-06-07'
   1.3.4:
     changes:
       bugfixes:
@@ -249,4 +250,4 @@ releases:
     fragments:
     - 328-rename-retries-to-reconnection_retries.yml
     - v1.3.4_summary.yml
-    release_date: '2022-06-06'
+    release_date: '2022-06-07'

@@ -102,6 +102,12 @@ options:
     type: bool
     required: false
     default: false
+  tmphlq:
+    description:
+      - Overrides the user's high level qualifier for temporary and backup datasets.
+      - Will override TMPHLQ environment variable as well.
+    required: false
+    type: str
 notes:
   - It is the playbook author or user's responsibility to avoid files that should
     not be encoded, such as binary files. A user is described as the remote user,
@@ -339,6 +345,7 @@ def run_module():
         backup=dict(type="bool", default=False),
         backup_name=dict(type="str", required=False, default=None),
         backup_compress=dict(type="bool", required=False, default=False),
+        tmphlq=dict(type='str', required=False, default=""),
     )
 
     module = AnsibleModule(argument_spec=module_args)
@@ -351,6 +358,7 @@ def run_module():
         backup=dict(arg_type="bool", default=False, required=False),
         backup_name=dict(arg_type="data_set_or_path", required=False, default=None),
         backup_compress=dict(arg_type="bool", required=False, default=False),
+        tmphlq=dict(type='qualifier_or_empty', required=False, default=""),
     )
 
     parser = better_arg_parser.BetterArgParser(arg_defs)
@@ -362,6 +370,7 @@ def run_module():
     backup_compress = parsed_args.get("backup_compress")
     from_encoding = parsed_args.get("from_encoding").upper()
     to_encoding = parsed_args.get("to_encoding").upper()
+    tmphlq = module.params.get('tmphlq')
 
     # is_uss_src(dest) to determine whether the src(dest) is a USS file/path or not
     # is_mvs_src(dest) to determine whether the src(dest) is a MVS data set or not
@@ -416,7 +425,7 @@ def run_module():
                     dest, backup_name, backup_compress
                 )
             if is_mvs_dest:
-                backup_name = zos_backup.mvs_file_backup(dest, backup_name)
+                backup_name = zos_backup.mvs_file_backup(dest, backup_name, tmphlq)
             result["backup_name"] = backup_name
 
         eu = encode.EncodeUtils()
@@ -424,6 +433,8 @@ def run_module():
         # If the value specified in from_encoding or to_encoding is not in the code_set, exit with an error message
         # If the values specified in from_encoding and to_encoding are the same, exit with an message
         code_set = eu.get_codeset()
+        #set the tmphlq in the encodeutils 
+        eu.tmphlq = tmphlq
         if from_encoding not in code_set:
             raise EncodeError(
                 "Invalid codeset: Please check the value of the from_encoding!"

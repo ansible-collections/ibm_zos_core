@@ -569,7 +569,7 @@ except Exception:
 mt_DS_TYPE = ["PS", "PO"]
 
 
-def mt_backupOper(module, src, backup):
+def mt_backupOper(module, src, backup, tmphlq=None):
     # analysis the file type
     ds_utils = data_set.DataSetUtils(src)
     file_type = ds_utils.ds_type()
@@ -588,7 +588,7 @@ def mt_backupOper(module, src, backup):
                 src, backup_name=backup, compress=False
             )
         else:
-            backup_name = Backup.mvs_file_backup(dsn=src, bk_dsn=backup)
+            backup_name = Backup.mvs_file_backup(dsn=src, bk_dsn=backup, tmphlq=tmphlq)
     except Exception:
         module.fail_json(msg="creating backup has failed")
 
@@ -694,6 +694,7 @@ def run_module(module, arg_def):
     sysname = parsed_args.get("sysname")
     automove = parsed_args.get("automove")
     automove_list = parsed_args.get("automove_list")
+    tmphlq = parsed_args.get("tmphlq")
 
     if persistent:
         data_store = persistent.get("data_store").upper()
@@ -706,7 +707,7 @@ def run_module(module, arg_def):
                 backup_code = None
             else:
                 backup_code = backup_name
-            backup_name = mt_backupOper(module, data_store, backup_code)
+            backup_name = mt_backupOper(module, data_store, backup_code, tmphlq)
             res_args["backup_name"] = backup_name
             del persistent["backup"]
         if "mounted" in state or "present" in state:
@@ -1108,6 +1109,7 @@ def main():
                 required=False,
             ),
             automove_list=dict(type="str", required=False),
+            tmphlq=dict(type='str', required=False, default=''),
         ),
         add_file_common_args=True,
         supports_check_mode=True,
@@ -1168,6 +1170,7 @@ def main():
             required=False,
         ),
         automove_list=dict(arg_type="str", default="", required=False),
+        tmphlq=dict(type='qualifier_or_empty', required=False, default=""),
     )
 
     res_args = None

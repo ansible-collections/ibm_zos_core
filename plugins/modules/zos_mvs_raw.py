@@ -1531,6 +1531,8 @@ ENCODING_ENVIRONMENT_VARS = {"_BPXK_AUTOCVT": "OFF"}
 # this global list is only used in case of exception
 backups = []
 
+#Use of global tmphlq to keep coherent classes definitions
+tmphlq = ""
 
 def run_module():
     """Executes all module-related functions.
@@ -1710,6 +1712,7 @@ def run_module():
         auth=dict(type="bool", default=False),
         verbose=dict(type="bool", default=False),
         parm=dict(type="str", required=False),
+        tmphlq=dict(type="str", required=False, default=""),
         dds=dict(
             type="list",
             elements="dict",
@@ -1741,6 +1744,8 @@ def run_module():
             program_parm = parms.get("parm")
             authorized = parms.get("auth")
             verbose = parms.get("verbose")
+            global tmphlq
+            tmphlq = parms.get("tmphlq")
             program_response = run_zos_program(
                 program=program,
                 parm=program_parm,
@@ -1933,6 +1938,7 @@ def parse_and_validate_args(params):
         auth=dict(type="bool", default=False),
         verbose=dict(type="bool", default=False),
         parm=dict(type="str", required=False),
+        tmphlq=dict(type="qualifier_or_empty", required=False, default=""),
         dds=dict(
             type="list",
             elements="dict",
@@ -2344,7 +2350,9 @@ def build_data_definition(dd):
               RawInputDefinition, DummyDefinition]: The DataDefinition object or a list of DataDefinition objects.
     """
     data_definition = None
+    global tmphlq
     if dd.get("dd_data_set"):
+        dd.get("dd_data_set")["tmphlq"] = tmphlq
         data_definition = RawDatasetDefinition(**(dd.get("dd_data_set")))
     elif dd.get("dd_unix"):
         data_definition = RawFileDefinition(**(dd.get("dd_unix")))
@@ -2353,7 +2361,7 @@ def build_data_definition(dd):
     elif dd.get("dd_output"):
         data_definition = RawOutputDefinition(**(dd.get("dd_output")))
     elif dd.get("dd_vio"):
-        data_definition = VIODefinition()
+        data_definition = VIODefinition(tmphlq=tmphlq)
     elif dd.get("dd_dummy"):
         data_definition = DummyDefinition()
     elif dd.get("dd_concat"):
@@ -2399,6 +2407,7 @@ class RawDatasetDefinition(DatasetDefinition):
         replace=None,
         backup=None,
         return_content=None,
+        tmphlq=None,
         **kwargs
     ):
         """Initialize RawDatasetDefinition
@@ -2431,6 +2440,7 @@ class RawDatasetDefinition(DatasetDefinition):
             backup (bool, optional): Determines if a backup should be made of existing data set when disposition=NEW, replace=true,
                 and a data set with the desired name is found.. Defaults to None.
             return_content (dict, optional): Determines how content should be returned to the user. Defaults to None.
+            tmphlq (str, optional): HLQ to be used for temporary datasets. Defaults to None.
         """
         self.backup = None
         self.return_content = ReturnContent(**(return_content or {}))
@@ -2457,7 +2467,7 @@ class RawDatasetDefinition(DatasetDefinition):
                 should_reuse = True
             elif replace:
                 if backup:
-                    self.backup = zos_backup.mvs_file_backup(data_set_name, None)
+                    self.backup = zos_backup.mvs_file_backup(data_set_name, None, tmphlq)
                     global backups
                     backups.append(
                         {"original_name": data_set_name, "backup_name": self.backup}

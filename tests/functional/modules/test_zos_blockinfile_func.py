@@ -16,6 +16,7 @@ from ibm_zos_core.tests.helpers.zos_blockinfile_helper import (
     UssGeneral,
     DsGeneral,
     DsNotSupportedHelper,
+    DsGeneralResultKeyMatchesRegex
 )
 import os
 import sys
@@ -180,6 +181,7 @@ TEST_INFO = dict(
     test_ds_block_insertafter_eof=dict(test_name="T3"),
     test_ds_block_insertbefore_bof=dict(test_name="T4"),
     test_ds_block_absent=dict(test_name="T5"),
+    test_ds_block_tmphlq_option=dict(insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present", backup=True, tmphlq="TMPHLQ"),
     expected=dict(test_uss_block_insertafter_regex_defaultmarker="""if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -1185,6 +1187,21 @@ def test_ds_block_absent(ansible_zos_module, dstype, encoding):
     )
     TEST_ENV["TEST_CONT"] = TEST_CONTENT
 
+@pytest.mark.ds
+@pytest.mark.parametrize("dstype", DS_TYPE)
+@pytest.mark.parametrize("encoding", ENCODING)
+def test_ds_tmphlq_option(ansible_zos_module, dstype, encoding):
+    TEST_ENV["DS_TYPE"] = dstype
+    TEST_ENV["ENCODING"] = encoding
+    TEST_ENV["TEST_CONT"] = TEST_CONTENT_DEFAULTMARKER
+    test_name="T6"
+    kwargs = dict(backup_name=r"TMPHLQ\..")
+    DsGeneralResultKeyMatchesRegex(
+        test_name, ansible_zos_module,
+        TEST_ENV, TEST_INFO["test_ds_block_tmphlq_option"],
+        **kwargs
+    )
+    TEST_ENV["TEST_CONT"] = TEST_CONTENT
 
 #########################
 # Negative tests

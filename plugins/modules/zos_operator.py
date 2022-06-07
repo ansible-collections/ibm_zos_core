@@ -20,7 +20,7 @@ __metaclass__ = type
 DOCUMENTATION = r"""
 ---
 module: zos_operator
-version_added: '1.0.0'
+version_added: '1.1.0'
 short_description: Execute operator command
 description:
     - Execute an operator command and receive the output.

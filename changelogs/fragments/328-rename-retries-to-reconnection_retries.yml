@@ -8,4 +8,3 @@ bugfixes:
       ansible-core v2.11 or later which uses reconnection_retries.
       This also resolves a bug in the connection that referenced a deprecated
       constant. (https://github.com/ansible-collections/ibm_zos_core/pull/328)
-

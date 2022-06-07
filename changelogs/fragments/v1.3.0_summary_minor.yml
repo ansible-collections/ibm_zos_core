@@ -4,5 +4,3 @@ minor_changes:
     that you can specify that zos_operator wait the full **wait_time_s** or
     return as soon as the first operator command executes.
   - All modules support relative paths and remove choice case sensitivity.
-
-

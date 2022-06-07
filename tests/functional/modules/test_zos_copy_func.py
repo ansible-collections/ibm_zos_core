@@ -2057,3 +2057,25 @@ def test_copy_pds_to_volume(ansible_zos_module):
     finally:
         hosts.all.zos_data_set(name=remote_pds, state='absent')
         hosts.all.zos_data_set(name=dest_pds, state='absent')
+
+
+def test_copy_uss_file_to_existing_sequential_data_set_twice_with_tmphlq_option(ansible_zos_module):
+    hosts = ansible_zos_module
+    dest = "USER.TEST.SEQ.FUNCTEST"
+    src_file = "/etc/profile"
+    tmphlq = "TMPHLQ"
+    try:
+        hosts.all.zos_data_set(name=dest, type="seq", state="present")
+        copy_result = hosts.all.zos_copy(src=src_file, dest=dest, remote_src=True)
+        copy_result = hosts.all.zos_copy(src=src_file, dest=dest, remote_src=True, backup=True, tmphlq=tmphlq)
+        verify_copy = hosts.all.shell(
+            cmd="cat \"//'{0}'\" > /dev/null 2>/dev/null".format(dest),
+            executable=SHELL_EXECUTABLE,
+        )
+        for cp_res in copy_result.contacted.values():
+            assert cp_res.get("msg") is None
+            assert cp_res.get("backup_name")[:6] == tmphlq
+        for v_cp in verify_copy.contacted.values():
+            assert v_cp.get("rc") == 0
+    finally:
+        hosts.all.zos_data_set(name=dest, state="absent")

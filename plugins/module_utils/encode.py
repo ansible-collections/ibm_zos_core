@@ -84,6 +84,7 @@ class EncodeUtils(object):
             module {AnsibleModule} -- The AnsibleModule object from currently running module
         """
         self.module = AnsibleModuleHelper(argument_spec={})
+        self.tmphlq = ""
 
     def _validate_data_set_name(self, ds):
         arg_defs = dict(
@@ -189,7 +190,10 @@ class EncodeUtils(object):
             OSError: When any exception is raised during the data set allocation
         """
         size = str(space_u * 2) + "K"
-        hlq = datasets.hlq()
+        if self.tmphlq:
+            hlq = self.tmphlq
+        else: 
+            hlq = datasets.hlq()
         temp_ps = datasets.tmp_name(hlq)
         response = datasets._create(
             name=temp_ps,

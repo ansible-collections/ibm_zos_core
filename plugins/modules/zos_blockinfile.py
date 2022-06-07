@@ -128,6 +128,12 @@ options:
         member name.
     required: false
     type: str
+  tmphlq:
+  description:
+    - Overrides the user's high level qualifier for temporary and backup datasets.
+    - Will override TMPHLQ environment variable as well.
+  required: false
+  type: str
   encoding:
     description:
       - The character set of the source I(src). M(zos_blockinfile)
@@ -380,6 +386,11 @@ def main():
                 type='str',
                 default='IBM-1047'
             ),
+            tmphlq=dict(
+                type='str',
+                required=False,
+                default=""
+            ),
         ),
         mutually_exclusive=[['insertbefore', 'insertafter']],
     )
@@ -398,6 +409,7 @@ def main():
         encoding=dict(arg_type='str', default='IBM-1047', required=False),
         backup=dict(arg_type='bool', default=False, required=False),
         backup_name=dict(arg_type='data_set_or_pat', required=False, default=None),
+        tmphlq=dict(type='qualifier_or_empty', required=False, default=""),
         mutually_exclusive=[['insertbefore', 'insertafter']],
     )
     result = dict(changed=False, cmd='', found=0)
@@ -418,6 +430,7 @@ def main():
     marker = parsed_args.get('marker')
     marker_begin = parsed_args.get('marker_begin')
     marker_end = parsed_args.get('marker_end')
+    tmphlq = parsed_args.get('tmphlq')
 
     if not block and parsed_args.get('state') == 'present':
         module.fail_json(msg='block is required with state=present')
@@ -463,7 +476,7 @@ def main():
             if file_type:
                 result['backup_name'] = Backup.uss_file_backup(src, backup_name=backup, compress=False)
             else:
-                result['backup_name'] = Backup.mvs_file_backup(dsn=src, bk_dsn=backup)
+                result['backup_name'] = Backup.mvs_file_backup(dsn=src, bk_dsn=backup, tmphlq=tmphlq)
         except Exception:
             module.fail_json(msg="creating backup has failed")
     # state=present, insert/replace a block with matching regex pattern

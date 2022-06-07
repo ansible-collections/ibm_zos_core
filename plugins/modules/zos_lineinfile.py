@@ -145,6 +145,12 @@ options:
         recovery can be done by renaming it.
     required: false
     type: str
+  tmphlq:
+  description:
+    - Overrides the user's high level qualifier for temporary and backup datasets.
+    - Will override TMPHLQ environment variable as well.
+  required: false
+  type: str
   firstmatch:
     description:
       - Used with C(insertafter) or C(insertbefore).
@@ -360,6 +366,7 @@ def main():
         backup_name=dict(type='str', required=False, default=None),
         firstmatch=dict(type='bool', default=False),
         encoding=dict(type='str', default="IBM-1047"),
+        tmphlq=dict(type='str', required=False, default="")
     )
     module = AnsibleModule(
         argument_spec=module_args,
@@ -379,6 +386,7 @@ def main():
         backup_name=dict(arg_type="data_set_or_path", required=False, default=None),
         firstmatch=dict(arg_type="bool", required=False, default=False),
         backrefs=dict(arg_type="bool", dependencies=['regexp'], required=False, default=False),
+        tmphlq=dict(type='qualifier_or_empty', required=False, default=""),
         mutually_exclusive=[["insertbefore", "insertafter"]],)
 
     try:
@@ -399,6 +407,7 @@ def main():
     ins_aft = parsed_args.get('insertafter')
     ins_bef = parsed_args.get('insertbefore')
     encoding = parsed_args.get('encoding')
+    tmphlq = parsed_args.get('tmphlq').upper()
 
     if parsed_args.get('state') == 'present':
         if backrefs and regexp is None:
@@ -435,7 +444,7 @@ def main():
             if file_type:
                 result['backup_name'] = Backup.uss_file_backup(src, backup_name=backup, compress=False)
             else:
-                result['backup_name'] = Backup.mvs_file_backup(dsn=src, bk_dsn=backup)
+                result['backup_name'] = Backup.mvs_file_backup(dsn=src, bk_dsn=backup, tmphlq=tmphlq)
         except Exception:
             module.fail_json(msg="creating backup has failed")
     # state=present, insert/replace a line with matching regex pattern

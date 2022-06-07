@@ -16,7 +16,7 @@ from ibm_zos_core.tests.helpers.zos_blockinfile_helper import (
     UssGeneral,
     DsGeneral,
     DsNotSupportedHelper,
-    DsGeneralResultKeyMatchesRegex
+    DsGeneralResultKeyMatchesRegex,
 )
 import os
 import sys

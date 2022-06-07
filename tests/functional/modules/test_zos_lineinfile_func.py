@@ -16,6 +16,7 @@ from ibm_zos_core.tests.helpers.zos_lineinfile_helper import (
     UssGeneral,
     DsGeneral,
     DsNotSupportedHelper,
+    DsGeneralResultKeyMatchesRegex,
 )
 import os
 import sys
@@ -118,6 +119,7 @@ TEST_INFO = dict(
     test_ds_line_replace_nomatch_insertafter_nomatch=dict(test_name="T10"),
     test_ds_line_replace_nomatch_insertbefore_nomatch=dict(test_name="T11"),
     test_ds_line_absent=dict(test_name="T12"),
+    test_ds_line_tmphlq_option=dict(insertafter="EOF", line="export ZOAU_ROOT", state="present", backup=True, tmphlq="TMPHLQ"),
     expected=dict(test_uss_line_replace="""if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -881,6 +883,21 @@ def test_ds_line_absent(ansible_zos_module, dstype, encoding):
         TEST_INFO["test_ds_line_absent"]["test_name"], ansible_zos_module,
         TEST_ENV, TEST_INFO["test_uss_line_absent"],
         TEST_INFO["expected"]["test_uss_line_absent"]
+    )
+
+
+@pytest.mark.ds
+@pytest.mark.parametrize("encoding", ENCODING)
+def test_ds_tmphlq_option(ansible_zos_module, encoding):
+    #This TMPHLQ only works with sequential datasets
+    TEST_ENV["DS_TYPE"] = 'SEQ'
+    TEST_ENV["ENCODING"] = encoding
+    test_name="T12"
+    kwargs = dict(backup_name=r"TMPHLQ\..")
+    DsGeneralResultKeyMatchesRegex(
+        test_name, ansible_zos_module,
+        TEST_ENV, TEST_INFO["test_ds_line_tmphlq_option"],
+        **kwargs
     )
 
 

@@ -104,4 +104,3 @@ def test_zos_job_output_job_exists_with_filtered_ddname(ansible_zos_module):
         for job in result.get("jobs"):
             assert len(job.get("ddnames")) == 1
             assert job.get("ddnames")[0].get("ddname") == dd_name
-            

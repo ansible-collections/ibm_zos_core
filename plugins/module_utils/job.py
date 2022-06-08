@@ -56,7 +56,7 @@ def job_output(job_id=None, owner=None, job_name=None, dd_name=None):
     job_id = parsed_args.get("job_id") or "*"
     job_name = parsed_args.get("job_name") or "*"
     owner = parsed_args.get("owner") or "*"
-    dd_name = parsed_args.get("ddname") or ""
+    dd_name = parsed_args.get("dd_name") or ""
 
     job_detail = _get_job_output(job_id, owner, job_name, dd_name)
     if len(job_detail) == 0:

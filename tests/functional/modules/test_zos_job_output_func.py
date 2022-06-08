@@ -96,7 +96,7 @@ def test_zos_job_output_job_exists_with_filtered_ddname(ansible_zos_module):
         src="{0}/SAMPLE".format(TEMP_PATH), location="USS", wait=True, volume=None
     )
     hosts.all.file(path=TEMP_PATH, state="absent")
-    dd_name="JESMSGLG"
+    dd_name = "JESMSGLG"
     results = hosts.all.zos_job_output(job_name="SAMPLE", ddname=dd_name)
     for result in results.contacted.values():
         assert result.get("changed") is False
@@ -104,3 +104,4 @@ def test_zos_job_output_job_exists_with_filtered_ddname(ansible_zos_module):
         for job in result.get("jobs"):
             assert len(job.get("ddnames")) == 1
             assert job.get("ddnames")[0].get("ddname") == dd_name
+            

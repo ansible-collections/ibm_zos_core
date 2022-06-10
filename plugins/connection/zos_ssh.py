@@ -141,7 +141,7 @@ DOCUMENTATION = """
             - key: ssh_extra_args
               section: ssh_connection
               version_added: '2.7'
-      retries:
+      reconnection_retries:
           # constant: ANSIBLE_SSH_RETRIES
           description: Number of attempts to connect.
           default: 3
@@ -384,7 +384,10 @@ def _ssh_retry(func):
 
     @wraps(func)
     def wrapped(self, *args, **kwargs):
-        remaining_tries = int(C.ANSIBLE_SSH_RETRIES) + 1
+        try:
+            remaining_tries = int(self.get_option('retries')) + 1
+        except KeyError:
+            remaining_tries = int(self.get_option('reconnection_retries')) + 1
         cmd_summary = u"%s..." % to_text(args[0])
         for attempt in range(remaining_tries):
             cmd = args[0]

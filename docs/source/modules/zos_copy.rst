@@ -122,6 +122,10 @@ encoding
 force
   If set to ``true``, the remote file or data set will be overwritten.
 
+  If set to ``true``, when copying files or a directory to a USS destination, the copying operation will continue if it encounters existing files or directories and overwrite any corresponding files.
+
+  If set to ``true`` and the user is copying a directory to a destination in USS that already has content in it, the files will be appended to the destination.
+
   If set to ``false``, the file or data set will only be copied if the destination does not exist.
 
   If set to ``false`` and destination exists, the module exits with a note to the user.

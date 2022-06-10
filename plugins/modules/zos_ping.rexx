@@ -19,7 +19,7 @@
 DOCUMENTATION = '''
 ---
 module: zos_ping
-version_added: 2.9
+version_added: 1.1.0
 short_description: Ping z/OS and check dependencies.
 description:
   - M(zos_ping) verifies the presence of z/OS Web Client Enablement Toolkit,

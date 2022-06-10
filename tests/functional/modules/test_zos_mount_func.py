@@ -346,3 +346,36 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
             record_format="fba",
             record_length=80,
         )
+
+
+def test_basic_mount_with_tmphlq_option(ansible_zos_module):
+    hosts = ansible_zos_module
+    srcfn = create_sourcefile(hosts)
+    try:
+        mount_result = hosts.all.zos_mount(
+            src=srcfn, path="/pythonx", fs_type="ZFS", state="mounted"
+        )
+        for result in mount_result.values():
+            assert result.get("rc") == 0
+            assert result.get("stdout") != ""
+            assert result.get("changed") is True
+    finally:
+        tmphlq = "TMPHLQ"
+        persist_data_set = "MTEST.TEST.PERSIST"
+        hosts.all.zos_data_set(name=persist_data_set, state="present", type="SEQ")
+        unmount_result = hosts.all.zos_mount(
+            src=srcfn,
+            path="/pythonx",
+            fs_type="ZFS",
+            state="absent",
+            tmphlq=tmphlq,
+            persistent=dict(data_store=persist_data_set, backup=True)
+        )
+        hosts.all.zos_data_set(name=persist_data_set, state="absent")
+        for result in unmount_result.values():
+            assert result.get("rc") == 0
+            assert result.get("stdout") != ""
+            assert result.get("changed") is True
+            assert result.get("backup_name")[:6] == tmphlq
+        
+        hosts.all.file(path="/pythonx/", state="absent")

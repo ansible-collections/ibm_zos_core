@@ -5,4 +5,3 @@ trivial:
     - include documentation for all action plugins.
     - update hyperlinks embedded in documentation.
     - zos_operator to explain how to use single quotes in operator commands.
-

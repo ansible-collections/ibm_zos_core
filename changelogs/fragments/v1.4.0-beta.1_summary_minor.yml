@@ -26,4 +26,3 @@ major_changes:
     and result in a proper module response.
   - zos_operator_action_query response messages were improved with more
     diagnostic information in the event an error is encountered.
-

@@ -24,6 +24,9 @@ What's New
       ``ansible-core`` v2.11 or later which uses ``reconnection_retries``. This
       also resolves a bug in the connection that referenced a deprecated
       constant.  
+    * ``zos_job_output`` fixes a bug that returned all ddname's when a specific
+      ddname was provided. Now a specific ddname can be returned and all others
+      ignored.
 
 Availability
 ------------

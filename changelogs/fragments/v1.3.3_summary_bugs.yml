@@ -1,0 +1,18 @@
+bugfixes:
+    - zos_copy was updated to correct deletion of all temporary files and
+      unwarranted deletes.
+        - When the module would complete, a cleanup routine did not take into
+          account that other processes had open temporary files and thus would
+          error when trying to remove them.
+        - When the module would copy a directory (source) from USS to another
+          USS directory (destination), any files currently in the destination
+          would be deleted.
+          The modules behavior has changed such that files are no longer deleted
+          unless the force option is set to true. When **force=true**,
+          copying files or a directory to a USS destination will continue if it
+          encounters existing files or directories and overwrite any
+          corresponding files.
+    - zos_job_query was updated to correct a boolean condition that always
+      evaluated to "CANCELLED".
+        - When querying jobs that are either **CANCELLED** or have **FAILED**,
+          they were always treated as **CANCELLED**.

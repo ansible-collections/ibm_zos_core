@@ -1,0 +1,22 @@
+bugfixes:
+  - Action plugin zos_copy was updated to support Python 2.7.
+  - Module zos_copy was updated to fail gracefully when a it
+    encounters a non-zero return code.
+  - Module zos_copy was updated to support copying data set members that
+    are program objects to a PDSE. Prior to this update, copying data set
+    members would yield an error;
+      - FSUM8976 Error writing <src_data_set_member> to PDSE member
+        <dest_data_set_member>
+  - Job utility is an internal library used by several modules. It has been
+    updated to use a custom written parsing routine capable of handling
+    special characters to prevent job related reading operations from failing
+    when a special character is encountered.
+  - Module zos_job_submit was updated to remove all trailing **\r** from
+    jobs that are submitted from the controller.
+  - Module zos_job_submit referenced a non-existent option and was
+    corrected to **wait_time_s**.
+  - Module zos_tso_command support was added for when the command output
+    contained special characters.
+  - Playbook zos_operator_basics.yaml has been updated to use end in the
+    WTO reply over the previous use of cancel. Using cancel is not a
+    valid reply and results in an execution error.

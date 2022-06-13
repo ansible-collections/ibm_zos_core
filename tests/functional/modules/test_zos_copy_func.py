@@ -1588,7 +1588,8 @@ def test_ensure_tmp_cleanup(ansible_zos_module):
             cmd="ls -l", executable=SHELL_EXECUTABLE, chdir="/tmp"
         )
         file_count_pre = len(list(stat_dir.contacted.values())[0].get("stdout_lines"))
-
+        print("file_count_pre")
+        print(' '.join(file_count_pre))
         copy_res = hosts.all.zos_copy(src=src, dest=dest)
         for result in copy_res.contacted.values():
             assert result.get("msg") is None
@@ -1597,6 +1598,8 @@ def test_ensure_tmp_cleanup(ansible_zos_module):
             cmd="ls -l", executable=SHELL_EXECUTABLE, chdir="/tmp"
         )
         file_count_post = len(list(stat_dir.contacted.values())[0].get("stdout_lines"))
+        print("file_count_post")
+        print(' '.join(file_count_post))
         assert file_count_post <= file_count_pre
 
     finally:

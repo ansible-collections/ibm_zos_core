@@ -1588,8 +1588,7 @@ def test_ensure_tmp_cleanup(ansible_zos_module):
             cmd="ls -l", executable=SHELL_EXECUTABLE, chdir="/tmp"
         )
         file_count_pre = len(list(stat_dir.contacted.values())[0].get("stdout_lines"))
-        print("file_count_pre")
-        print(' '.join(list(stat_dir.contacted.values())[0].get("stdout_lines")))
+
         copy_res = hosts.all.zos_copy(src=src, dest=dest)
         for result in copy_res.contacted.values():
             assert result.get("msg") is None
@@ -1598,9 +1597,11 @@ def test_ensure_tmp_cleanup(ansible_zos_module):
             cmd="ls -l", executable=SHELL_EXECUTABLE, chdir="/tmp"
         )
         file_count_post = len(list(stat_dir.contacted.values())[0].get("stdout_lines"))
-        print("file_count_post")
-        print(' '.join(list(stat_dir.contacted.values())[0].get("stdout_lines")))
-        assert file_count_post <= file_count_pre
+
+        # Must add 1 as the dest for profile is /tmp leaving behind profile
+        # Optionally, change the stat to ls -1 | grep -v '^README$' |wc -l
+        assert file_count_post <= file_count_pre+1
+        assert os.path.exists(dest_path) == 1
 
     finally:
         hosts.all.file(path=dest_path, state="absent")

@@ -25,6 +25,11 @@ TEST_INFO = dict(
     test_add_del=dict(
         library="", state="present", force_dynamic=True
     ),
+    test_add_del_with_tmphlq_option=dict(
+        library="", state="present", force_dynamic=True, tmphlq="", persistent=dict(
+            data_set_name="",backup=True
+        )
+    ),
     test_add_del_volume=dict(
         library="", volume=" ", state="present", force_dynamic=True
     ),
@@ -123,6 +128,25 @@ def test_add_del(ansible_zos_module):
     pprint(vars(results))
     for result in results.contacted.values():
         assert result.get("rc") == 0
+    test_info['state'] = 'absent'
+    results = hosts.all.zos_apf(**test_info)
+    pprint(vars(results))
+    for result in results.contacted.values():
+        assert result.get("rc") == 0
+    clean_test_env(hosts, test_info)
+
+
+def test_add_del_with_tmphlq_option(ansible_zos_module):
+    hosts = ansible_zos_module
+    tmphlq = "TMPHLQ"
+    test_info = TEST_INFO['test_add_del_with_tmphlq_option']
+    test_info['tmphlq'] = tmphlq
+    set_test_env(hosts, test_info)
+    results = hosts.all.zos_apf(**test_info)
+    pprint(vars(results))
+    for result in results.contacted.values():
+        assert result.get("rc") == 0
+        assert result.get("backup_name")[:6] == tmphlq
     test_info['state'] = 'absent'
     results = hosts.all.zos_apf(**test_info)
     pprint(vars(results))

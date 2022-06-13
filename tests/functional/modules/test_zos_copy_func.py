@@ -1600,7 +1600,7 @@ def test_ensure_tmp_cleanup(ansible_zos_module):
 
         # Must add 1 as the dest for profile is /tmp leaving behind profile
         # Optionally, change the stat to ls -1 | grep -v '^README$' |wc -l
-        assert file_count_post <= file_count_pre+1
+        assert file_count_post <= file_count_pre + 1
         assert os.path.exists(dest_path) == 1
 
     finally:

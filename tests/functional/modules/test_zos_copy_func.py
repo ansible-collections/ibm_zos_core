@@ -1580,14 +1580,15 @@ def test_copy_uss_file_to_pds_member_convert_encoding(ansible_zos_module):
 
 def test_ensure_tmp_cleanup(ansible_zos_module):
     hosts = ansible_zos_module
-    src = "/etc/magic"
+    src = "/etc/profile"
     dest = "/tmp"
-    dest_path = "/tmp/magic"
+    dest_path = "/tmp/profile"
     try:
         stat_dir = hosts.all.shell(
             cmd="ls -l", executable=SHELL_EXECUTABLE, chdir="/tmp"
         )
         file_count_pre = len(list(stat_dir.contacted.values())[0].get("stdout_lines"))
+        print(list(stat_dir.contacted.values())[0].get("stdout_lines"))
 
         copy_res = hosts.all.zos_copy(src=src, dest=dest)
         for result in copy_res.contacted.values():
@@ -1597,9 +1598,9 @@ def test_ensure_tmp_cleanup(ansible_zos_module):
             cmd="ls -l", executable=SHELL_EXECUTABLE, chdir="/tmp"
         )
         file_count_post = len(list(stat_dir.contacted.values())[0].get("stdout_lines"))
-
+        print(list(stat_dir.contacted.values())[0].get("stdout_lines"))
         # Must add 1 as the dest for profile is /tmp leaving behind profile
-        # Optionally, change the stat to ls -1 | grep -v '^README$' |wc -l
+        # Optionally, change the stat to ls -1 | grep -v '^profile$' |wc -l
         assert file_count_post <= file_count_pre + 1
         assert os.path.exists(dest_path) == 1
 

@@ -1739,13 +1739,13 @@ def run_module():
     if not module.check_mode:
         try:
             parms = parse_and_validate_args(module.params)
+            global tmphlq
+            tmphlq = parms.get("tmphlq")
             dd_statements = build_dd_statements(parms)
             program = parms.get("program_name")
             program_parm = parms.get("parm")
             authorized = parms.get("auth")
             verbose = parms.get("verbose")
-            global tmphlq
-            tmphlq = parms.get("tmphlq")
             program_response = run_zos_program(
                 program=program,
                 parm=program_parm,

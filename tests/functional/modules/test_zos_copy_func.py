@@ -1588,7 +1588,8 @@ def test_ensure_tmp_cleanup(ansible_zos_module):
             cmd="ls -l", executable=SHELL_EXECUTABLE, chdir="/tmp"
         )
         file_count_pre = len(list(stat_dir.contacted.values())[0].get("stdout_lines"))
-        print(list(stat_dir.contacted.values())[0].get("stdout_lines"))
+        print("file_count_pre")
+        print(' '.join(list(stat_dir.contacted.values())[0].get("stdout_lines")))
 
         copy_res = hosts.all.zos_copy(src=src, dest=dest)
         for result in copy_res.contacted.values():
@@ -1598,7 +1599,9 @@ def test_ensure_tmp_cleanup(ansible_zos_module):
             cmd="ls -l", executable=SHELL_EXECUTABLE, chdir="/tmp"
         )
         file_count_post = len(list(stat_dir.contacted.values())[0].get("stdout_lines"))
-        print(list(stat_dir.contacted.values())[0].get("stdout_lines"))
+        print("file_count_post")
+        print(' '.join(list(stat_dir.contacted.values())[0].get("stdout_lines")))
+
         # Must add 1 as the dest for profile is /tmp leaving behind profile
         # Optionally, change the stat to ls -1 | grep -v '^profile$' |wc -l
         assert file_count_post <= file_count_pre + 1

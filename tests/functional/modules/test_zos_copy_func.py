@@ -1580,9 +1580,9 @@ def test_copy_uss_file_to_pds_member_convert_encoding(ansible_zos_module):
 
 def test_ensure_tmp_cleanup(ansible_zos_module):
     hosts = ansible_zos_module
-    src = "/etc/legal"
+    src = "/etc/magic"
     dest = "/tmp"
-    dest_path = "/tmp/legal"
+    dest_path = "/tmp/magic"
     try:
         stat_dir = hosts.all.shell(
             cmd="ls -l", executable=SHELL_EXECUTABLE, chdir="/tmp"

@@ -111,6 +111,48 @@ def test_dispositions_for_existing_data_set(ansible_zos_module, disposition):
         assert result.get("changed", False) is True
 
 
+def test_list_cat_for_existing_data_set_with_tmphlq_option(ansible_zos_module):
+    hosts = ansible_zos_module
+    tmphlq = "TMPHLQ"
+    hosts.all.zos_data_set(
+        name=DEFAULT_DATA_SET, type="seq", state="present", replace=True
+    )
+    results = hosts.all.zos_mvs_raw(
+        program_name="idcams",
+        auth=True,
+        tmphlq=tmphlq,
+        dds=[
+            dict(
+                dd_data_set=dict(
+                    dd_name=SYSPRINT_DD,
+                    data_set_name=DEFAULT_DATA_SET,
+                    disposition="new",
+                    return_content=dict(type="text"),
+                    replace=True,
+                    backup=True,
+                    type="seq",
+                    space_primary=5,
+                    space_secondary=1,
+                    space_type="m",
+                    volumes=DEFAULT_VOLUME,
+                    record_format="fb"
+                ),
+            ),
+            dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
+        ],
+    )
+    for result in results.contacted.values():
+        pprint(result)
+        assert result.get("ret_code", {}).get("code", -1) == 0
+        assert len(result.get("dd_names", [])) > 0
+        for backup in result.get("backups"):
+            backup.get("backup_name")[:6] == tmphlq
+    results = hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
+    for result in results.contacted.values():
+        pprint(result)
+        assert result.get("changed", False) is True
+
+
 # * new data set and append to member in one step not currently supported
 def test_new_disposition_for_data_set_members(ansible_zos_module):
     hosts = ansible_zos_module

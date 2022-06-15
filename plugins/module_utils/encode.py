@@ -192,7 +192,7 @@ class EncodeUtils(object):
         size = str(space_u * 2) + "K"
         if self.tmphlq:
             hlq = self.tmphlq
-        else: 
+        else:
             hlq = datasets.hlq()
         temp_ps = datasets.tmp_name(hlq)
         response = datasets._create(

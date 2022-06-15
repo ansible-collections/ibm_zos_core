@@ -87,7 +87,7 @@ def mvs_file_backup(dsn, bk_dsn=None, tmphlq=None):
             )
     else:
         if not bk_dsn:
-            if tmphlq : 
+            if tmphlq:
                 hlq = tmphlq
             else:
                 hlq = datasets.hlq()

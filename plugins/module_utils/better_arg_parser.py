@@ -142,7 +142,7 @@ class BetterArgHandler(object):
             "data_set_base": self._data_set_base_type,
             "data_set_member": self._data_set_member_type,
             "qualifier": self._qualifier_type,
-            "qualifier_or_empty" : self._qualifier_or_empty_type,
+            "qualifier_or_empty": self._qualifier_or_empty_type,
             "qualifier_pattern": self._qualifier_pattern_type,
             "volume": self._volume_type,
             "data_set_or_path": self._data_set_or_path_type,
@@ -408,7 +408,7 @@ class BetterArgHandler(object):
                 'Invalid argument "{0}" for type "qualifier".'.format(contents)
             )
         return str(contents)
-    
+
     def _qualifier_or_empty_type(self, contents, resolve_dependencies):
         """Resolver for qualifier type arguments
 
@@ -432,7 +432,7 @@ class BetterArgHandler(object):
                 'Invalid argument "{0}" for type "qualifier".'.format(contents)
             )
         return str(contents)
-    
+
     def _qualifier_pattern_type(self, contents, resolve_dependencies):
         """Resolver for qualifier_pattern type arguments
 

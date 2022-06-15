@@ -1186,6 +1186,12 @@ options:
                           - The encoding to use when returning the contents of the data set.
                         type: str
                         default: iso8859-1
+  tmphlq:
+    description:
+      - Overrides the user's high level qualifier for temporary and backup datasets.
+      - Will override TMPHLQ environment variable as well.
+    required: false
+    type: str
 notes:
     - When executing programs using M(zos_mvs_raw), you may encounter errors
       that originate in the programs implementation. Two such known issues are

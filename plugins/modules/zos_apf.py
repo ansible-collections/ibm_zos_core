@@ -90,11 +90,11 @@ options:
       - check_format
       - list
   tmphlq:
-  description:
-    - Overrides the user's high level qualifier for temporary and backup datasets.
-    - Will override TMPHLQ environment variable as well.
-  required: false
-  type: str
+    description:
+      - Overrides the user's high level qualifier for temporary and backup datasets.
+      - Will override TMPHLQ environment variable as well.
+    required: false
+    type: str
   persistent:
     description:
       - Add/remove persistent entries to or from I(data_set_name)

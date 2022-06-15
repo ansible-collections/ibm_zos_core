@@ -120,6 +120,12 @@ options:
             (iconv) version; the most common character sets are supported.
         required: true
         type: str
+  tmphlq:
+    description:
+      - Overrides the user's high level qualifier for temporary and backup datasets.
+      - Will override TMPHLQ environment variable as well.
+    required: false
+    type: str
   ignore_sftp_stderr:
     description:
       - During data transfer through sftp, the module fails if the sftp command

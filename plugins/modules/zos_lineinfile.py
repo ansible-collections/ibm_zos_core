@@ -146,11 +146,11 @@ options:
     required: false
     type: str
   tmphlq:
-  description:
-    - Overrides the user's high level qualifier for temporary and backup datasets.
-    - Will override TMPHLQ environment variable as well.
-  required: false
-  type: str
+    description:
+      - Overrides the user's high level qualifier for temporary and backup datasets.
+      - Will override TMPHLQ environment variable as well.
+    required: false
+    type: str
   firstmatch:
     description:
       - Used with C(insertafter) or C(insertbefore).

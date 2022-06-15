@@ -119,6 +119,12 @@ options:
           - The encoding to be converted to
         required: true
         type: str
+  tmphlq:
+    description:
+      - Overrides the user's high level qualifier for temporary and backup datasets.
+      - Will override TMPHLQ environment variable as well.
+    required: false
+    type: str
   force:
     description:
       - If set to C(true), the remote file or data set will be overwritten.

@@ -293,6 +293,12 @@ options:
               Indicator is either INCLUDE or EXCLUDE, which can also be abbreviated as I or E.
         type: str
         required: False
+    tmphlq:
+        description:
+            - Overrides the user's high level qualifier for temporary and backup datasets.
+            - Will override TMPHLQ environment variable as well.
+        required: false
+        type: str
 notes:
     - All data sets are always assumed to be cataloged.
     - If an uncataloged data set needs to be fetched, it should be cataloged first.

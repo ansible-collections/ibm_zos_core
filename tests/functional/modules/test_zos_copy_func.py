@@ -1604,8 +1604,12 @@ def test_ensure_tmp_cleanup(ansible_zos_module):
 
         # Must add 1 as the dest for profile is /tmp leaving behind profile
         # Optionally, change the stat to ls -1 | grep -v '^profile$' |wc -l
+        print("file_count_post")
+        print(file_count_post)
+        print("file_count_pre")
+        print(file_count_pre)
         assert file_count_post <= file_count_pre + 1
-        assert os.path.exists(dest_path) == 1
+        assert os.path.exists(dest_path)
 
     finally:
         hosts.all.file(path=dest_path, state="absent")

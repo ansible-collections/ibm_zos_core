@@ -377,5 +377,5 @@ def test_basic_mount_with_tmphlq_option(ansible_zos_module):
             assert result.get("stdout") != ""
             assert result.get("changed") is True
             assert result.get("backup_name")[:6] == tmphlq
-        
+
         hosts.all.file(path="/pythonx/", state="absent")

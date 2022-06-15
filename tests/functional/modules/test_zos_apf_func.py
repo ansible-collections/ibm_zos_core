@@ -27,7 +27,7 @@ TEST_INFO = dict(
     ),
     test_add_del_with_tmphlq_option=dict(
         library="", state="present", force_dynamic=True, tmphlq="", persistent=dict(
-            data_set_name="",backup=True
+            data_set_name="", backup=True
         )
     ),
     test_add_del_volume=dict(

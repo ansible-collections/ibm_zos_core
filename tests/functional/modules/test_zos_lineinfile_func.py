@@ -889,10 +889,10 @@ def test_ds_line_absent(ansible_zos_module, dstype, encoding):
 @pytest.mark.ds
 @pytest.mark.parametrize("encoding", ENCODING)
 def test_ds_tmphlq_option(ansible_zos_module, encoding):
-    #This TMPHLQ only works with sequential datasets
+    # This TMPHLQ only works with sequential datasets
     TEST_ENV["DS_TYPE"] = 'SEQ'
     TEST_ENV["ENCODING"] = encoding
-    test_name="T12"
+    test_name = "T12"
     kwargs = dict(backup_name=r"TMPHLQ\..")
     DsGeneralResultKeyMatchesRegex(
         test_name, ansible_zos_module,

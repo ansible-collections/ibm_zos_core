@@ -1531,8 +1531,10 @@ ENCODING_ENVIRONMENT_VARS = {"_BPXK_AUTOCVT": "OFF"}
 # this global list is only used in case of exception
 backups = []
 
-#Use of global tmphlq to keep coherent classes definitions
+
+# Use of global tmphlq to keep coherent classes definitions
 tmphlq = ""
+
 
 def run_module():
     """Executes all module-related functions.

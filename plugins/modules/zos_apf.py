@@ -416,9 +416,9 @@ def main():
                 )
             ),
             tmphlq=dict(
-              type='str', 
-              required=False, 
-              default=''),
+                type='str',
+                required=False,
+                default=''),
         ),
         mutually_exclusive=[
             # batch

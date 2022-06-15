@@ -433,7 +433,7 @@ def run_module():
         # If the value specified in from_encoding or to_encoding is not in the code_set, exit with an error message
         # If the values specified in from_encoding and to_encoding are the same, exit with an message
         code_set = eu.get_codeset()
-        #set the tmphlq in the encodeutils 
+        # set the tmphlq in the encodeutils
         eu.tmphlq = tmphlq
         if from_encoding not in code_set:
             raise EncodeError(

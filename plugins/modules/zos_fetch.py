@@ -356,7 +356,7 @@ class FetchHandler:
         vsam_size = self._get_vsam_size(ds_name)
         sysprint = sysin = out_ds_name = None
         tmp_hlq = self.module.params.get("tmphlq")
-        if tmp_hlq is None: 
+        if tmp_hlq is None:
             tmp_hlq = "MVSTMP"
         try:
             sysin = data_set.DataSet.create_temp(tmp_hlq)

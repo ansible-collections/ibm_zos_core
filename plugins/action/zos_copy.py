@@ -151,7 +151,9 @@ class ActionModule(ActionBase):
             else:
                 if is_src_dir:
                     path, dirs, files = next(os.walk(src))
-                    if dirs:
+                    # It should only fail preemptively when the src has subdirectories if
+                    # the module is trying to copy into a dataset.
+                    if dirs and not is_uss:
                         result["msg"] = "Subdirectory found inside source directory"
                         result.update(
                             dict(src=src, dest=dest, changed=False, failed=True)

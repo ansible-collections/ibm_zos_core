@@ -1,0 +1,4 @@
+bugfixes:
+  - zos_encode - removed TemporaryDirectory usage.
+  - zos_copy - fixed regex support, dictionary merge operation fix
+  - zos_fetch - fix quote import

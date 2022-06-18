@@ -62,6 +62,7 @@ options:
     description:
     - The text to insert inside the marker lines.
     - Multi-line can be separated by '\n'.
+    - Any double-quotation marks will be removed.
     required: false
     type: str
     default: ''
@@ -330,7 +331,7 @@ def quotedString(string):
     # add escape if string was quoted
     if not isinstance(string, str):
         return string
-    return string.replace('"', '\\\"')
+    return string.replace('"', "")
 
 
 def main():

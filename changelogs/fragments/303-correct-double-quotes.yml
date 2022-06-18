@@ -1,4 +1,4 @@
-bugfixes:
+minor_changes:
   - >
     zos_blockinfile - fixes a bug when using double quotes in the block text
     of the module. When double quotes appeared in block text, the module would

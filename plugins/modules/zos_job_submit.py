@@ -28,7 +28,7 @@ description:
     - Submit a job and optionally monitor for its execution.
     - Optionally wait for the job output until the job finishes.
     - For the uncataloged dataset, specify the volume serial number.
-version_added: "2.9"
+version_added: "1.0.0"
 options:
   src:
     required: true

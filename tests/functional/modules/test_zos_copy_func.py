@@ -1554,7 +1554,6 @@ def test_copy_local_nested_dir_to_uss(ansible_zos_module):
     subdir_b_path = "{0}/subdir_b".format(source_path)
 
     try:
-        # Creating a nested temp directory to copy.
         os.mkdir(subdir_a_path)
         os.mkdir(subdir_b_path)
         populate_dir(subdir_a_path)
@@ -1589,7 +1588,6 @@ def test_copy_local_nested_dir_to_existing_uss_dir_forced(ansible_zos_module):
     subdir_b_path = "{0}/subdir_b".format(source_path)
 
     try:
-        # Creating a nested temp directory to copy.
         os.mkdir(subdir_a_path)
         os.mkdir(subdir_b_path)
         populate_dir(subdir_a_path)
@@ -1628,7 +1626,6 @@ def test_copy_local_nested_dir_to_pdse(ansible_zos_module):
     subdir_b_path = "{0}/subdir_b".format(source_path)
 
     try:
-        # Creating a nested temp directory to copy.
         os.mkdir(subdir_a_path)
         os.mkdir(subdir_b_path)
 
@@ -1639,6 +1636,102 @@ def test_copy_local_nested_dir_to_pdse(ansible_zos_module):
     finally:
         hosts.all.zos_data_set(name=dest_path, state="absent")
         shutil.rmtree(source_path)
+
+
+def test_copy_uss_nested_dir_to_uss(ansible_zos_module):
+    hosts = ansible_zos_module
+    source_path = "/tmp/old_dir"
+    dest_path = "/tmp/new_dir"
+
+    subdir_a_path = "{0}/subdir_a".format(source_path)
+    subdir_b_path = "{0}/subdir_b".format(source_path)
+
+    try:
+        hosts.all.file(path=subdir_a_path, state="directory")
+        hosts.all.file(path=subdir_b_path, state="directory")
+
+        copy_result = hosts.all.zos_copy(
+            src=source_path,
+            dest=dest_path,
+            remote_src=True
+        )
+        stat_subdir_a_res = hosts.all.stat(path="{0}/subdir_a".format(dest_path))
+        stat_subdir_b_res = hosts.all.stat(path="{0}/subdir_b".format(dest_path))
+
+        for result in copy_result.contacted.values():
+            assert result.get("msg") is None
+        for result in stat_subdir_a_res.contacted.values():
+            assert result.get("stat").get("exists") is True
+            assert result.get("stat").get("isdir") is True
+        for result in stat_subdir_b_res.contacted.values():
+            assert result.get("stat").get("exists") is True
+            assert result.get("stat").get("isdir") is True
+
+    finally:
+        hosts.all.file(path=source_path, state="absent")
+        hosts.all.file(path=dest_path, state="absent")
+
+
+def test_copy_uss_nested_dir_to_existing_uss_dir_forced(ansible_zos_module):
+    hosts = ansible_zos_module
+    source_path = "/tmp/old_dir"
+    dest_path = "/tmp/new_dir"
+
+    subdir_a_path = "{0}/subdir_a".format(source_path)
+    subdir_b_path = "{0}/subdir_b".format(source_path)
+
+    try:
+        hosts.all.file(path=subdir_a_path, state="directory")
+        hosts.all.file(path=subdir_b_path, state="directory")
+        hosts.all.file(path=dest_path, state="directory")
+
+        copy_result = hosts.all.zos_copy(
+            src=source_path, 
+            dest=dest_path,
+            remote_src=True,
+            force=True
+        )
+
+        stat_subdir_a_res = hosts.all.stat(path="{0}/subdir_a".format(dest_path, source_path))
+        stat_subdir_b_res = hosts.all.stat(path="{0}/subdir_b".format(dest_path, source_path))
+
+        for result in copy_result.contacted.values():
+            assert result.get("msg") is None
+        for result in stat_subdir_a_res.contacted.values():
+            assert result.get("stat").get("exists") is True
+            assert result.get("stat").get("isdir") is True
+        for result in stat_subdir_b_res.contacted.values():
+            assert result.get("stat").get("exists") is True
+            assert result.get("stat").get("isdir") is True
+
+    finally:
+        hosts.all.file(path=source_path, state="absent")
+        hosts.all.file(path=dest_path, state="absent")
+
+
+def test_copy_uss_nested_dir_to_pdse(ansible_zos_module):
+    hosts = ansible_zos_module
+    dest_path = "USER.TEST.DIR"
+
+    source_path = "/tmp/old_dir"
+    subdir_a_path = "{0}/subdir_a".format(source_path)
+    subdir_b_path = "{0}/subdir_b".format(source_path)
+
+    try:
+        hosts.all.file(path=subdir_a_path, state="directory")
+        hosts.all.file(path=subdir_b_path, state="directory")
+
+        copy_result = hosts.all.zos_copy(
+            src=source_path, 
+            dest=dest_path,
+            remote_src=True
+        )
+
+        for result in copy_result.contacted.values():
+            assert result.get("msg") is not None
+    finally:
+        hosts.all.file(name=source_path, state="absent")
+        hosts.all.zos_data_set(name=dest_path, state="absent")
 
 
 def test_copy_local_symlink_to_uss_file(ansible_zos_module):

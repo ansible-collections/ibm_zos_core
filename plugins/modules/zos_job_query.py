@@ -30,6 +30,7 @@ description:
 author:
   - "Ping Xiao (@xiaopingBJ)"
   - "Demetrios Dimatos (@ddimatos)"
+  - "Rich Parker (@richp405)"
 options:
   job_name:
     description:
@@ -243,6 +244,7 @@ def query_jobs(params):
     job_name_in = params.get("job_name")
     job_id = params.get("job_id")
     owner = params.get("owner")
+
     jobs = []
     if job_id:
         jobs = job_status(job_id=job_id)
@@ -284,6 +286,7 @@ def parsing_jobs(jobs_raw):
         else:
             # status = 'Unknown'
             ret_code = {"msg": status_raw, "code": job.get("ret_code").get("code")}
+
         job_dict = {
             "job_name": job.get("job_name"),
             "owner": job.get("owner"),

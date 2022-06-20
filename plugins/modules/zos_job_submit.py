@@ -19,7 +19,9 @@ __metaclass__ = type
 
 DOCUMENTATION = r"""
 module: zos_job_submit
-author: "Xiao Yuan Ma (@bjmaxy)"
+author:
+    - "Xiao Yuan Ma (@bjmaxy)"
+    - "Rich Parker (@richp405)"
 short_description: Submit JCL
 description:
     - Submit JCL from DATA_SET , USS, or LOCAL location.
@@ -546,7 +548,7 @@ else:
 POLLING_INTERVAL = 1
 POLLING_COUNT = 60
 
-JOB_COMPLETION_MESSAGES = ["CC", "ABEND", "SEC ERROR", "JCL ERROR"]
+JOB_COMPLETION_MESSAGES = ["CC", "ABEND", "SEC ERROR", "JCL ERROR", "JCLERR"]
 
 
 def submit_pds_jcl(src, module):
@@ -801,9 +803,7 @@ def run_module():
         except IndexError:
             pass
         except Exception as e:
-            result["err_detail"] = "{1} {2}.\n".format(
-                "Error during job submission.  The output is:", job_output_txt or " "
-            )
+            result["err_detail"] = "An error has occurred while submitting the requested job."
             module.fail_json(msg=repr(e), **result)
 
         if bool(job_output_txt):

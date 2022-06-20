@@ -126,7 +126,6 @@ def job_status(job_id=None, owner=None, job_name=None, dd_name=None):
     Returns:
         list[dict] -- The status information for a list of jobs matching search criteria.
         If no job status is found, this will return an empty job code with msg=JOB NOT FOUND
-        new format: Job(owner=job[0], name=job[1], id=job[2], status=job[3], rc=job[4]))
     """
     arg_defs = dict(
         job_id=dict(arg_type="qualifier_pattern"),
@@ -166,8 +165,8 @@ def _parse_steps(job_str):
     """
     stp = []
     if "STEP WAS EXECUTED" in job_str:
-        pile = re.findall(r"(.*?)\s-\sSTEP\sWAS\sEXECUTED\s-\s(.*?)\n", job_str)
-        for match in pile:
+        steps = re.findall(r"(.*?)\s-\sSTEP\sWAS\sEXECUTED\s-\s(.*?)\n", job_str)
+        for match in steps:
             st = {
                 "step_name": match[0].split()[-1],
                 "step_cc": match[1].split()[-1],
@@ -235,7 +234,7 @@ def _zget_job_status(job_id="*", owner="*", job_name="*", dd_name=None):
                 if "recnum" in single_dd:
                     dd["record_count"] = single_dd["recnum"]
                 else:
-                    dd["record_count"] = "n/a"
+                    dd["record_count"] = None
 
                 if "dsid" in single_dd:
                     dd["id"] = single_dd["dsid"]
@@ -245,7 +244,7 @@ def _zget_job_status(job_id="*", owner="*", job_name="*", dd_name=None):
                 if "stepname" in single_dd:
                     dd["stepname"] = single_dd["stepname"]
                 else:
-                    dd["stepname"] = "UNAVAIL"
+                    dd["stepname"] = None
 
                 if "procstep" in single_dd:
                     dd["procstep"] = single_dd["procstep"]
@@ -257,10 +256,10 @@ def _zget_job_status(job_id="*", owner="*", job_name="*", dd_name=None):
                 else:
                     dd["byte_count"] = 0
 
-                if ("stepname" in single_dd) and ("dataset" in single_dd):
-                    tmpcont = read_output(entry.id, single_dd["stepname"], single_dd["dataset"])
-                else:
-                    tmpcont = "no content available"
+                tmpcont = None
+                if "stepname" in single_dd:
+                    if "dataset" in single_dd:
+                        tmpcont = read_output(entry.id, single_dd["stepname"], single_dd["dataset"])
 
                 dd["content"] = tmpcont.split("\n")
                 job["ret_code"]["steps"].extend(_parse_steps(tmpcont))

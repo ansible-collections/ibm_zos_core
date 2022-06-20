@@ -1745,6 +1745,8 @@ def run_module(module, arg_def):
             res_args["changed"] = (
                 res_args.get("changed") or remote_checksum != dest_checksum
             )
+        elif dest_exists and force:
+            res_args["changed"] = True
 
     # ------------------------------- o -----------------------------------
     # Copy to sequential data set

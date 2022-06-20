@@ -1605,6 +1605,7 @@ def test_copy_local_nested_dir_to_existing_uss_dir_forced(ansible_zos_module):
 
         for result in copy_result.contacted.values():
             assert result.get("msg") is None
+            assert result.get("changed") is True
         for result in stat_subdir_a_res.contacted.values():
             assert result.get("stat").get("exists") is True
             assert result.get("stat").get("isdir") is True
@@ -1697,6 +1698,7 @@ def test_copy_uss_nested_dir_to_existing_uss_dir_forced(ansible_zos_module):
 
         for result in copy_result.contacted.values():
             assert result.get("msg") is None
+            assert result.get("changed") is True
         for result in stat_subdir_a_res.contacted.values():
             assert result.get("stat").get("exists") is True
             assert result.get("stat").get("isdir") is True

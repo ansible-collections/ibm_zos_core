@@ -1,0 +1,6 @@
+bugfixes:
+  - >
+    zos_copy - fixes a bug that would not copy subdirectories. If the source
+    is a directory with sub directories, all sub directories will now be copied.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/339)
+

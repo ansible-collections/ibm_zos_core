@@ -1595,7 +1595,7 @@ def test_copy_local_nested_dir_to_existing_uss_dir_forced(ansible_zos_module):
 
         hosts.all.file(path=dest_path, state="directory")
         copy_result = hosts.all.zos_copy(
-            src=source_path, 
+            src=source_path,
             dest=dest_path,
             force=True
         )
@@ -1687,7 +1687,7 @@ def test_copy_uss_nested_dir_to_existing_uss_dir_forced(ansible_zos_module):
         hosts.all.file(path=dest_path, state="directory")
 
         copy_result = hosts.all.zos_copy(
-            src=source_path, 
+            src=source_path,
             dest=dest_path,
             remote_src=True,
             force=True
@@ -1724,7 +1724,7 @@ def test_copy_uss_nested_dir_to_pdse(ansible_zos_module):
         hosts.all.file(path=subdir_b_path, state="directory")
 
         copy_result = hosts.all.zos_copy(
-            src=source_path, 
+            src=source_path,
             dest=dest_path,
             remote_src=True
         )

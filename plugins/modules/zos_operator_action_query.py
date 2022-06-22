@@ -28,6 +28,7 @@ description:
 author:
   - "Ping Xiao (@xiaoping8385)"
   - "Demetrios Dimatos (@ddimatos)"
+  - "Ivan Moreno (@rexemin)"
 options:
   system:
     description:
@@ -56,6 +57,37 @@ options:
       - A trailing asterisk, (*) wildcard is supported.
     type: str
     required: false
+  message_filter:
+    description:
+      - Return outstanding messages requiring operator action awaiting a
+        reply that match a regular expression (regex) filter.
+      - If the message filter is not specified, all outstanding messages
+        are returned regardless of their content.
+    type: dict
+    required: false
+    suboptions:
+      filter:
+        description:
+          - Specifies the substring or regex to match to the outstanding messages,
+            see I(use_regex).
+          - All special characters in a filter string that are not a regex are escaped.
+          - Valid Python regular expressions are supported. See L(the official
+            documentation,https://docs.python.org/library/re.html) for more information.
+          - Regular expressions are compiled with the flag B(re.DOTALL) which
+            makes the B('.') special character match any character including a
+            newline."
+        required: True
+        type: str
+      use_regex:
+        description:
+          - Indicates that the value for I(filter) is a regex or a string to match.
+          - If False, the module assumes that I(filter) is not a regex and
+            matches the I(filter) substring on the outstanding messages.
+          - If True, the module creates a regex from the I(filter) string and
+            matches it to the outstanding messages.
+        required: False
+        type: bool
+        default: False
 seealso:
 - module: zos_operator
 """
@@ -73,11 +105,21 @@ EXAMPLES = r"""
   zos_operator_action_query:
       message_id: dsi*
 
-- name: Display all outstanding messages given job_name, message_id, system
+- name: Display all outstanding messages that have the text IMS READY in them
+  zos_operator_action_query:
+      message_filter:
+          filter: IMS READY
+
+- name: Display all outstanding messages where the job name begins with 'mq',
+        message ID begins with 'dsi', on system 'mv29' and which contain the
+        pattern 'IMS'
   zos_operator_action_query:
       job_name: mq*
       message_id: dsi*
       system: mv29
+      message_filter:
+          filter: ^.*IMS.*$
+          use_regex: yes
 """
 
 RETURN = r"""
@@ -130,8 +172,9 @@ actions:
             sample: STC01537
         message_text:
             description:
-                Job identifier for outstanding message requiring operator
-                action awaiting a reply.
+                Content of the outstanding message requiring operator
+                action awaiting a reply. If I(message_filter) is set,
+                I(message_text) will be filtered accordingly.
             returned: success
             type: str
             sample: "*399 HWSC0000I *IMS CONNECT READY* IM5HCONN"
@@ -192,6 +235,14 @@ def run_module():
         system=dict(type="str", required=False),
         message_id=dict(type="str", required=False),
         job_name=dict(type="str", required=False),
+        message_filter=dict(
+            type="dict",
+            required=False,
+            options=dict(
+                filter=dict(type="str", required=True),
+                use_regex=dict(default=False, type="bool", required=False)
+            )
+        )
     )
 
     result = dict(changed=False)
@@ -224,7 +275,7 @@ def run_module():
                 cmd="d r,a,jn",
             )
 
-        merged_list = create_merge_list(cmd_result_a.message, cmd_result_b.message)
+        merged_list = create_merge_list(cmd_result_a.message, cmd_result_b.message, new_params['message_filter'])
         requests = find_required_request(merged_list, new_params)
         if requests:
             result["count"] = len(requests)
@@ -244,6 +295,7 @@ def parse_params(params):
         system=dict(arg_type=system_type, required=False),
         message_id=dict(arg_type=message_id_type, required=False),
         job_name=dict(arg_type=job_name_type, required=False),
+        message_filter=dict(arg_type=message_filter_type, required=False)
     )
     parser = BetterArgParser(arg_defs)
     new_params = parser.parse_args(params)
@@ -268,6 +320,23 @@ def job_name_type(arg_val, params):
     return arg_val.upper()
 
 
+def message_filter_type(arg_val, params):
+    try:
+        filter_text = arg_val.get("filter")
+        use_regex = arg_val.get("use_regex")
+
+        if use_regex:
+            raw_arg_val = r'{0}'.format(filter_text)
+        else:
+            raw_arg_val = r'^.*{0}.*$'.format(re.escape(filter_text))
+
+        re.compile(raw_arg_val)
+    except re.error:
+        raise ValidationError(str(arg_val))
+
+    return raw_arg_val
+
+
 def validate_parameters_based_on_regex(value, regex):
     pattern = re.compile(regex)
     if pattern.fullmatch(value):
@@ -283,14 +352,14 @@ def find_required_request(merged_list, params):
     return requests
 
 
-def create_merge_list(message_a, message_b):
+def create_merge_list(message_a, message_b, message_filter):
     """Merge the return lists that execute both 'd r,a,s' and 'd r,a,jn'.
     For example, if we have:
     'd r,a,s' response like: "742 R MV28     JOB57578 &742 ARC0055A REPLY 'GO'OR 'CANCEL'"
     'd r,a,jn' response like:"742 R FVFNT29H &742 ARC0055A REPLY 'GO' OR 'CANCEL'"
     the results will be merged so that a full list of information returned on condition"""
-    list_a = parse_result_a(message_a)
-    list_b = parse_result_b(message_b)
+    list_a = parse_result_a(message_a, message_filter)
+    list_b = parse_result_b(message_b, message_filter)
     merged_list = merge_list(list_a, list_b)
     return merged_list
 
@@ -301,12 +370,14 @@ def filter_requests(merged_list, params):
     message_id = params.get("message_id")
     job_name = params.get("job_name")
     newlist = merged_list
+
     if system:
         newlist = handle_conditions(newlist, "system", system)
     if job_name:
         newlist = handle_conditions(newlist, "job_name", job_name)
     if message_id:
         newlist = handle_conditions(newlist, "message_id", message_id)
+
     return newlist
 
 
@@ -318,6 +389,7 @@ def handle_conditions(list, condition_type, value):
             exist = dict.get(condition_type).startswith(value.rstrip("*"))
         else:
             exist = dict.get(condition_type) == value
+
         if exist:
             newlist.append(dict)
     return newlist
@@ -332,7 +404,12 @@ def execute_command(operator_cmd):
     return OperatorQueryResult(rc, stdout, stderr)
 
 
-def parse_result_a(result):
+def match_raw_message(msg, message_filter):
+    pattern = re.compile(message_filter, re.DOTALL)
+    return pattern.match(msg)
+
+
+def parse_result_a(result, message_filter):
     """parsing the result that coming from command 'd r,a,s',
     there are usually two formats:
      - line with job_id: 810 R MV2D     JOB58389 &810 ARC0055A REPLY 'GO' OR 'CANCEL'
@@ -348,6 +425,10 @@ def parse_result_a(result):
         re.MULTILINE,
     )
     for match in match_iter:
+        # If there was a filter specified, we skip messages that do not match it.
+        if message_filter is not None and not match_raw_message(match.string, message_filter):
+            continue
+
         dict_temp = {
             "number": match.group(1),
             "type": match.group(2),
@@ -362,7 +443,7 @@ def parse_result_a(result):
     return list
 
 
-def parse_result_b(result):
+def parse_result_b(result, message_filter):
     """Parse the result that comes from command 'd r,a,jn', the main purpose
     to use this command is to get the job_name and message id, which is not
     included in 'd r,a,s'"""
@@ -377,6 +458,10 @@ def parse_result_b(result):
     )
 
     for match in match_iter:
+        # If there was a filter specified, we skip messages that do not match it.
+        if message_filter is not None and not match_raw_message(match.string, message_filter):
+            continue
+
         dict_temp = {
             "number": match.group(1),
             "job_name": match.group(2),

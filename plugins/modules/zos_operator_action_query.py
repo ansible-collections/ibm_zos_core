@@ -60,7 +60,7 @@ options:
   message_filter:
     description:
       - Return outstanding messages requiring operator action awaiting a
-        reply that match a regex filter.
+        reply that match a regular expression (regex) filter.
       - If the message filter is not specified, all outstanding messages
         are returned regardless of their content.
     type: dict
@@ -70,18 +70,21 @@ options:
         description:
           - Specifies the substring or regex to match to the outstanding messages,
             see I(use_regex).
-          - All special characters from a filter string that is not a regex are escaped.
+          - All special characters in a filter string that are not a regex are escaped.
           - Valid Python regular expressions are supported. See L(the official
-            documentation,https://docs.python.org/3/library/re.html) for more information.
-          - Regular expressions are compiled with the flag re.DOTALL.
+            documentation,https://docs.python.org/library/re.html) for more information.
+          - Regular expressions are compiled with the flag B(re.DOTALL) which
+            makes the B('.') special character match any character including a
+            newline."
         required: True
         type: str
       use_regex:
         description:
-          - If False, the module assumes that I(filter) is not a regex string and
-            matches anywhere the I(filter) substring on the outstanding messages.
-          - If True, the module creates a regex from the I(filter) string and matches
-            it to the outstanding messages.
+          - Indicates that the value for I(filter) is a regex or a string to match.
+          - If False, the module assumes that I(filter) is not a regex and
+            matches the I(filter) substring on the outstanding messages.
+          - If True, the module creates a regex from the I(filter) string and
+            matches it to the outstanding messages.
         required: False
         type: bool
         default: False
@@ -107,7 +110,9 @@ EXAMPLES = r"""
       message_filter:
           filter: IMS READY
 
-- name: Display all outstanding messages where the job name begins with 'mq', message ID begins with 'dsi', on system 'mv29' and which contain the pattern 'IMS'
+- name: Display all outstanding messages where the job name begins with 'mq',
+        message ID begins with 'dsi', on system 'mv29' and which contain the
+        pattern 'IMS'
   zos_operator_action_query:
       job_name: mq*
       message_id: dsi*
@@ -181,7 +186,7 @@ actions:
             type: str
             sample: IM5HCONN
         message_id:
-            description :
+            description:
                 Message identifier for outstanding message requiring operator
                 action awaiting a reply.
             returned: success

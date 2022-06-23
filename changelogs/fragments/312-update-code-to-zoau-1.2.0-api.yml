@@ -1,0 +1,21 @@
+minor_changes:
+  - >
+    module utility jobs - was updated to remove the useage of REXX and
+    replaced with ZOAU python APIs. This reduces code replication and it
+    removes the need for REXX intepretretion which increases performance.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/312).
+    ibm_zos_job_output - was updated to leverage the latest changes that
+    removes the REXX code by calling the module utility jobs.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/312).
+    ibm_zos_job_query - was updated to use the jobs module utility.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/312).
+    ibm_zos_job_query - was updated to leverage the latest changes that
+    removes the REXX code by calling the module utility jobs.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/312).
+    zos_job_submit - was updated to include an additional error code condition
+    JCLERR.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/312)
+    zos_operater - was updated to remove the useage of REXX and
+    replaced with ZOAU python APIs. This reduces code replication and it
+    removes the need for REXX intepretretion which increases performance.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/312).

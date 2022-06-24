@@ -141,6 +141,12 @@ options:
     required: false
     type: str
     default: IBM-1047
+  indentation:
+    description:
+      - Defines the number of spaces needed to prepend in every line of the block.
+    required: false
+    type: int
+    default: 0
 notes:
   - It is the playbook author or user's responsibility to avoid files
     that should not be encoded, such as binary files. A user is described
@@ -210,6 +216,15 @@ EXAMPLES = r'''
     - { name: host1, ip: 10.10.1.10 }
     - { name: host2, ip: 10.10.1.11 }
     - { name: host3, ip: 10.10.1.12 }
+
+- name: Add a code block to a member using a predefined indentation.
+  zos_blockinfile:
+    path: SYS1.PARMLIB(BPXPRM00)
+    block: |
+          DSN SYSTEM({{ DB2SSID }})
+          RUN  PROGRAM(DSNTEP2) PLAN(DSNTEP12) -
+          LIB('{{ DB2RUN }}.RUNLIB.LOAD')
+    indentation: 16
 '''
 
 RETURN = r"""
@@ -280,6 +295,28 @@ else:
 
 # supported data set types
 DS_TYPE = ['PS', 'PO']
+
+
+def transformBlock(block, indentation_char, indentation_spaces):
+    """Prepends the specified number of spaces to the block in all lines
+
+    Arguments:
+        block: {str} -- The block text to be transformed.
+        indentation_char: {str} -- The indentation char to be used.
+        indentation_spaces: {int} -- Number of times the indentation char to prepend.
+
+    Returns:
+        block: {str} -- The text block after applying the necessary transformations.
+    """
+    blocklines = block.splitlines()
+    # Prepend spaces transformation
+    line_break_char = '\\n'
+    prepend_spaces = indentation_char * indentation_spaces
+    prepend_text = line_break_char + prepend_spaces
+    block = prepend_text.join(blocklines)
+    block = prepend_spaces + block
+
+    return block
 
 
 def present(src, block, marker, ins_aft, ins_bef, encoding):
@@ -383,11 +420,14 @@ def main():
                 type='str',
                 default='IBM-1047'
             ),
+            indentation=dict(
+                type='int',
+                required=False,
+                default=0
+            )
         ),
         mutually_exclusive=[['insertbefore', 'insertafter']],
     )
-
-    params = module.params
 
     arg_defs = dict(
         src=dict(arg_type='data_set_or_path', aliases=['path', 'destfile', 'name'], required=True),
@@ -402,6 +442,7 @@ def main():
         backup=dict(arg_type='bool', default=False, required=False),
         backup_name=dict(arg_type='data_set_or_pat', required=False, default=None),
         mutually_exclusive=[['insertbefore', 'insertafter']],
+        indentation=dict(arg_type='int', default=0, required=False)
     )
     result = dict(changed=False, cmd='', found=0)
     try:
@@ -421,8 +462,10 @@ def main():
     marker = parsed_args.get('marker')
     marker_begin = parsed_args.get('marker_begin')
     marker_end = parsed_args.get('marker_end')
+    state = parsed_args.get('state')
+    indentation = parsed_args.get('indentation')
 
-    if not block and parsed_args.get('state') == 'present':
+    if not block and state == 'present':
         module.fail_json(msg='block is required with state=present')
     if not marker:
         marker = '# {mark} ANSIBLE MANAGED BLOCK'
@@ -431,7 +474,7 @@ def main():
     # make sure the default encoding is set if empty string was passed
     if not encoding:
         encoding = "IBM-1047"
-    if not ins_aft and not ins_bef and parsed_args.get('state') == 'present':
+    if not ins_aft and not ins_bef and state == 'present':
         ins_aft = "EOF"
     if not marker_begin:
         marker_begin = 'BEGIN'
@@ -439,9 +482,7 @@ def main():
         marker_end = 'END'
 
     marker = "{0}\\n{1}\\n{2}".format(marker_begin, marker_end, marker)
-    blocklines = block.splitlines()
-    block = '\\n'.join(blocklines)
-
+    block = transformBlock(block, ' ', indentation)
     # analysis the file type
     ds_utils = data_set.DataSetUtils(src)
     if not ds_utils.exists():
@@ -471,7 +512,7 @@ def main():
             module.fail_json(msg="creating backup has failed")
     # state=present, insert/replace a block with matching regex pattern
     # state=absent, delete blocks with matching regex pattern
-    if parsed_args.get('state') == 'present':
+    if state == 'present':
         return_content = present(src, quotedString(block), quotedString(marker), quotedString(ins_aft), quotedString(ins_bef), encoding)
     else:
         return_content = absent(src, quotedString(marker), encoding)

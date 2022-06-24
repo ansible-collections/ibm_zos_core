@@ -119,11 +119,11 @@ html_theme_options = {
 scv_overflow = ("-D", "html_show_sphinx=False")
 
 # Choosing to not generate documentation on any branch and rely solely on
-# Github tags. Branches are whitelisted with option 'scv_whitelist_branches'.
+# Github tags. Branches are a_listed with option 'scv_a_list_branches'.
 # In other words, filter out any branches that don't match the pattern.
-scv_whitelist_branches = (' ',)
+scv_a_list_branches = (' ',)
 
-# Since all branches are whitelisted, a 'root_ref' must be specified to avoid
+# Since all branches are a_listed, a 'root_ref' must be specified to avoid
 # the error: "Root ref master not found in: v1.0.0 v1.1.0-beta1". The simplest
 # solution is to provide a known tagged branch to serve as the root_ref such
 # as 'v1.0.0'.
@@ -132,7 +132,7 @@ scv_whitelist_branches = (' ',)
 # scv_root_ref = 'v1.0.0'
 
 # Override root-ref to be the most recent committed tag. If no tags have docs
-# then this option is ignored and --root-ref is used. Since we whitelist the
+# then this option is ignored and --root-ref is used. Since we a_list the
 # master branch, we need to set a "root_ref" to avoid error
 # "Root ref master not found in: v1.0.0 v1.1.0-beta1", See also 'scv_root_ref'.
 # UPDATE: Able to avoid 'root_ref' by setting property 'scv_greatest_tag= True'
@@ -141,14 +141,14 @@ scv_whitelist_branches = (' ',)
 
 # Override root-ref to be the tag with the highest version number. If no tags
 # have docs then this option is ignored and --root-ref is used. Since we
-# whitelist the master branch, we need to set a root_ref.
+# a_list the master branch, we need to set a root_ref.
 # See also 'scv_root_ref
 scv_greatest_tag = True
 
 # White list which Git tags documentation will be generated and linked into the
 # version selection box. This is currently a manual selection, until more
 # versions are released, there are no regular expressions used.
-scv_whitelist_tags = ('v1.0.0', 'v1.1.0$', 'v1.2.1$', 'v1.3.0-beta.1$')
+scv_a_list_tags = ('v1.0.0', 'v1.1.0$', 'v1.2.1$', 'v1.3.0-beta.1$')
 
 # Sort versions by one or more values. Valid values are semver, alpha, and time.
 # Semantic is referred to as 'semver', this would ensure our latest VRM is

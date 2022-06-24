@@ -145,7 +145,7 @@ scv_a_list_branches = (' ',)
 # See also 'scv_root_ref
 scv_greatest_tag = True
 
-# White list which Git tags documentation will be generated and linked into the
+# List which Git tags documentation will be generated and linked into the
 # version selection box. This is currently a manual selection, until more
 # versions are released, there are no regular expressions used.
 scv_a_list_tags = ('v1.0.0', 'v1.1.0$', 'v1.2.1$', 'v1.3.0-beta.1$')

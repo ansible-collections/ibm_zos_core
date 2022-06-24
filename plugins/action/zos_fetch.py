@@ -121,7 +121,7 @@ class ActionModule(ActionBase):
         )
 
         # ********************************************************** #
-        #                 Parameter sanity checks                    #
+        #                 Parameter checks                           #
         # ********************************************************** #
 
         msg = None

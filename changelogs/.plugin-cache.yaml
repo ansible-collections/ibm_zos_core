@@ -1,5 +1,4 @@
-objects:
-  role: {}
+objects: {}
 plugins:
   become: {}
   cache: {}
@@ -73,7 +72,7 @@ plugins:
       description: Manage textual data on z/OS
       name: zos_lineinfile
       namespace: ''
-      version_added: 1.2.1
+      version_added: 1.2.0
     zos_mvs_raw:
       description: Run a z/OS program.
       name: zos_mvs_raw

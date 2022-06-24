@@ -21,9 +21,10 @@ the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/
 Bugfixes
 --------
 
-- zos_job_output - fixes a bug that returned all ddname's when a specific ddname
-    was provided. Now a specific ddname can be returned and all others ignored.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/334)
+- zos_copy - fixes a bug that would not copy subdirectories. If the source is a directory with sub directories, all sub directories will now be copied. (https://github.com/ansible-collections/ibm_zos_core/pull/339)
+- zos_job_output - fixes a bug that returned all ddname's when a specific
+    ddname was provided. Now a specific ddname can be returned and all others
+    ignored. (https://github.com/ansible-collections/ibm_zos_core/pull/334)
 - zos_ssh - connection plugin was updated to correct a bug in Ansible that
     would result in playbook task retries overriding the SSH connection
     retries. This is resolved by renaming the zos_ssh option
@@ -40,7 +41,7 @@ Release Summary
 ---------------
 
 Release Date: '2022-26-04'
-This changelog describes all changes made to the modules and plugins included
+This changlelog describes all changes made to the modules and plugins included
 in this collection.
 For additional details such as required dependencies and availablity review
 the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__ 
@@ -59,7 +60,7 @@ Release Summary
 ---------------
 
 Release Date: '2022-27-04'
-This changelog describes all changes made to the modules and plugins included
+This changlelog describes all changes made to the modules and plugins included
 in this collection.
 For additional details such as required dependencies and availablity review
 the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__ 
@@ -83,7 +84,7 @@ Release Summary
 ---------------
 
 Release Date: '2021-19-04'
-This changelog describes all changes made to the modules and plugins included
+This changlelog describes all changes made to the modules and plugins included
 in this collection.
 For additional details such as required dependencies and availablity review
 the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__ 
@@ -140,7 +141,7 @@ Release Summary
 ---------------
 
 Release Date: '2020-10-09'
-This changelog describes all changes made to the modules and plugins included
+This changlelog describes all changes made to the modules and plugins included
 in this collection.
 For additional details such as required dependencies and availablity review
 the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__.
@@ -173,7 +174,7 @@ Release Summary
 ---------------
 
 Release Date: '2020-26-01'
-This changelog describes all changes made to the modules and plugins included
+This changlelog describes all changes made to the modules and plugins included
 in this collection.
 For additional details such as required dependencies and availablity review
 the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__
@@ -204,7 +205,7 @@ Release Summary
 ---------------
 
 Release Date: '2020-18-03'
-This changelog describes all changes made to the modules and plugins included
+This changlelog describes all changes made to the modules and plugins included
 in this collection.
 For additional details such as required dependencies and availablity review
 the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__ 

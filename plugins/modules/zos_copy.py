@@ -1761,7 +1761,7 @@ def run_module(module, arg_def):
     # ********************************************************************
     # Some src and dest combinations are incompatible. For example, it is
     # not possible to copy a PDS member to a VSAM data set or a USS file
-    # to a PDS. Perform these sanity checks.
+    # to a PDS. Perform these checks.
     # ********************************************************************
     if not is_compatible(src_ds_type, dest_ds_type, copy_member, src_member):
         module.fail_json(

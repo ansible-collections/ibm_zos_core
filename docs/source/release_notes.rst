@@ -27,6 +27,8 @@ What's New
     * ``zos_job_output`` fixes a bug that returned all ddname's when a specific
       ddname was provided. Now a specific ddname can be returned and all others
       ignored.
+    * ``zos_copy`` fixes a bug that would not copy subdirectories. If the source
+      is a directory with sub directories, all sub directories will now be copied.
 
 Availability
 ------------

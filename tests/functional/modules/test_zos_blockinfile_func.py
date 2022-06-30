@@ -1132,6 +1132,9 @@ def test_uss_block_absent_with_force_option_as_false(ansible_zos_module):
         TEST_INFO["test_uss_block_absent_with_force_option_as_false"],
         TEST_INFO["expected"]["test_uss_block_absent"])
     TEST_ENV["TEST_CONT"] = TEST_CONTENT
+
+
+@pytest.mark.uss
 def test_uss_block_insert_with_indentation_level_specified(ansible_zos_module):
     UssGeneral(
         "test_uss_block_insert_with_indentation_level_specified", ansible_zos_module,

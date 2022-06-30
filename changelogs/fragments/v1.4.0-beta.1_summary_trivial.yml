@@ -1,0 +1,7 @@
+trivial:
+  - Documentation updates were made to
+    - zos_copy and zos_fetch about Co:Z SFTP support.
+    - zos_mvs_raw to remove a duplicate example.
+    - include documentation for all action plugins.
+    - update hyperlinks embedded in documentation.
+    - zos_operator to explain how to use single quotes in operator commands.

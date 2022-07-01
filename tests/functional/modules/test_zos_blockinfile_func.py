@@ -1338,7 +1338,9 @@ def test_ds_block_absent_with_force_option_as_false(ansible_zos_module, dstype, 
     )
     TEST_ENV["TEST_CONT"] = TEST_CONTENT
 
-
+@pytest.mark.ds
+@pytest.mark.parametrize("dstype", DS_TYPE)
+@pytest.mark.parametrize("encoding", ENCODING)
 def test_ds_block_insert_with_indentation_level_specified(ansible_zos_module, dstype, encoding):
     TEST_ENV["DS_TYPE"] = dstype
     TEST_ENV["ENCODING"] = encoding

@@ -325,6 +325,7 @@ class FetchHandler:
         """
         space_pri = 0
         total_size = 0
+        max_recl = 80 # default record length
         # Bytes per cylinder for a 3390 DASD
         bytes_per_cyl = 849960
 
@@ -336,6 +337,11 @@ class FetchHandler:
             if find_space_pri:
                 space_pri = int("".join(re.findall(r"\d+", find_space_pri[0])))
             total_size = ceil((bytes_per_cyl * space_pri) / 1024)
+            find_max_recl = re.findall(r"MAXLRECL-*\d+", out)
+            if find_max_recl:
+                max_recl = int("".join(re.findall(r"\d+", find_max_recl[0])))
+                if max_recl == 0: 
+                    max_recl = 80
         else:
             self._fail_json(
                 msg="Unable to obtain data set information for {0}: {1}".format(
@@ -347,18 +353,18 @@ class FetchHandler:
                 stderr_lines=err.splitlines(),
                 rc=rc,
             )
-        return total_size
+        return total_size, max_recl
 
     def _copy_vsam_to_temp_data_set(self, ds_name):
         """ Copy VSAM data set to a temporary sequential data set """
         mvs_rc = 0
-        vsam_size = self._get_vsam_size(ds_name)
+        vsam_size, max_recl = self._get_vsam_size(ds_name)
         sysprint = sysin = out_ds_name = None
         try:
             sysin = data_set.DataSet.create_temp("MVSTMP")
             sysprint = data_set.DataSet.create_temp("MVSTMP")
             out_ds_name = data_set.DataSet.create_temp(
-                "MSVTMP", space_primary=vsam_size, space_type="K"
+                "MSVTMP", space_primary=vsam_size, space_type="K", record_format="VB", record_length=max_recl
             )
             repro_sysin = " REPRO INFILE(INPUT)  OUTFILE(OUTPUT) "
             datasets.write(sysin, repro_sysin)

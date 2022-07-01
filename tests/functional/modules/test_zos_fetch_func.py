@@ -45,6 +45,7 @@ def test_fetch_uss_file_not_present_on_local_machine(ansible_zos_module):
 
     try:
         results = hosts.all.zos_fetch(**params)
+        print(results.contacted.values())
 
         for result in results.contacted.values():
 

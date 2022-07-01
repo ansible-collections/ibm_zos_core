@@ -19,6 +19,7 @@ __metaclass__ = type
 DOCUMENTATION = r'''
 ---
 module: zos_blockinfile
+version_added: '1.3.0'
 author:
   - "Behnam (@balkajbaf)"
 short_description: Manage block of multi-line textual data on z/OS
@@ -61,6 +62,7 @@ options:
     description:
     - The text to insert inside the marker lines.
     - Multi-line can be separated by '\n'.
+    - Any double-quotation marks will be removed.
     required: false
     type: str
     default: ''
@@ -130,7 +132,7 @@ options:
     type: str
   encoding:
     description:
-      - The character set of the source I(src). M(zos_blockinfile)
+      - The character set of the source I(src). M(ibm.ibm_zos_core.zos_blockinfile)
         requires to be provided with correct encoding to read the content
         of USS file or data set. If this parameter is not provided, this
         module assumes that USS file or data set is encoded in IBM-1047.
@@ -146,6 +148,12 @@ options:
     required: false
     type: bool
     default: false
+  indentation:
+    description:
+      - Defines the number of spaces needed to prepend in every line of the block.
+    required: false
+    type: int
+    default: 0
 notes:
   - It is the playbook author or user's responsibility to avoid files
     that should not be encoded, such as binary files. A user is described
@@ -153,8 +161,9 @@ notes:
     tasks, who can also obtain escalated privileges to execute as root
     or another user.
   - All data sets are always assumed to be cataloged. If an uncataloged data set
-    needs to be encoded, it should be cataloged first. The M(zos_data_set) module
-    can be used to catalog uncataloged data sets.
+    needs to be encoded, it should be cataloged first. The
+    M(ibm.ibm_zos_core.zos_data_set) module can be used to catalog uncataloged
+    data sets.
   - For supported character sets used to encode data, refer to the
     L(documentation,https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html).
   - When using 'with_*' loops be aware that if you do not set a unique mark
@@ -214,6 +223,15 @@ EXAMPLES = r'''
     - { name: host1, ip: 10.10.1.10 }
     - { name: host2, ip: 10.10.1.11 }
     - { name: host3, ip: 10.10.1.12 }
+
+- name: Add a code block to a member using a predefined indentation.
+  zos_blockinfile:
+    path: SYS1.PARMLIB(BPXPRM00)
+    block: |
+          DSN SYSTEM({{ DB2SSID }})
+          RUN  PROGRAM(DSNTEP2) PLAN(DSNTEP12) -
+          LIB('{{ DB2RUN }}.RUNLIB.LOAD')
+    indentation: 16
 '''
 
 RETURN = r"""
@@ -286,6 +304,28 @@ else:
 DS_TYPE = ['PS', 'PO']
 
 
+def transformBlock(block, indentation_char, indentation_spaces):
+    """Prepends the specified number of spaces to the block in all lines
+
+    Arguments:
+        block: {str} -- The block text to be transformed.
+        indentation_char: {str} -- The indentation char to be used.
+        indentation_spaces: {int} -- Number of times the indentation char to prepend.
+
+    Returns:
+        block: {str} -- The text block after applying the necessary transformations.
+    """
+    blocklines = block.splitlines()
+    # Prepend spaces transformation
+    line_break_char = '\\n'
+    prepend_spaces = indentation_char * indentation_spaces
+    prepend_text = line_break_char + prepend_spaces
+    block = prepend_text.join(blocklines)
+    block = prepend_spaces + block
+
+    return block
+
+
 def present(src, block, marker, ins_aft, ins_bef, encoding, force):
     """Replace a block with the matching regex pattern
     Insert a block before/after the matching pattern
@@ -337,7 +377,7 @@ def quotedString(string):
     # add escape if string was quoted
     if not isinstance(string, str):
         return string
-    return string.replace('"', '\\\"')
+    return string.replace('"', "")
 
 
 def main():
@@ -393,11 +433,14 @@ def main():
                 type='bool',
                 default=False
             ),
+            indentation=dict(
+                type='int',
+                required=False,
+                default=0
+            )
         ),
         mutually_exclusive=[['insertbefore', 'insertafter']],
     )
-
-    params = module.params
 
     arg_defs = dict(
         src=dict(arg_type='data_set_or_path', aliases=['path', 'destfile', 'name'], required=True),
@@ -413,6 +456,7 @@ def main():
         backup=dict(arg_type='bool', default=False, required=False),
         backup_name=dict(arg_type='data_set_or_pat', required=False, default=None),
         mutually_exclusive=[['insertbefore', 'insertafter']],
+        indentation=dict(arg_type='int', default=0, required=False)
     )
     result = dict(changed=False, cmd='', found=0)
     try:
@@ -433,8 +477,10 @@ def main():
     marker_begin = parsed_args.get('marker_begin')
     marker_end = parsed_args.get('marker_end')
     force = parsed_args.get('force')
+    state = parsed_args.get('state')
+    indentation = parsed_args.get('indentation')
 
-    if not block and parsed_args.get('state') == 'present':
+    if not block and state == 'present':
         module.fail_json(msg='block is required with state=present')
     if not marker:
         marker = '# {mark} ANSIBLE MANAGED BLOCK'
@@ -443,7 +489,7 @@ def main():
     # make sure the default encoding is set if empty string was passed
     if not encoding:
         encoding = "IBM-1047"
-    if not ins_aft and not ins_bef and parsed_args.get('state') == 'present':
+    if not ins_aft and not ins_bef and state == 'present':
         ins_aft = "EOF"
     if not marker_begin:
         marker_begin = 'BEGIN'
@@ -452,9 +498,7 @@ def main():
     force = '-f' if force else ''
 
     marker = "{0}\\n{1}\\n{2}".format(marker_begin, marker_end, marker)
-    blocklines = block.splitlines()
-    block = '\\n'.join(blocklines)
-
+    block = transformBlock(block, ' ', indentation)
     # analysis the file type
     ds_utils = data_set.DataSetUtils(src)
     if not ds_utils.exists():

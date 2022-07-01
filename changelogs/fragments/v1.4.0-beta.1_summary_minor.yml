@@ -1,0 +1,28 @@
+major_changes:
+  - zos_ping was updated to remove the need for the zos_ssh
+    connection plugin dependency.
+  - zos_copy was updated to support the ansible.builtin.ssh connection options;
+    for further reference refer to the SSH plugin documentation.
+  - zos_copy was updated to take into account the record length when the
+    source is a USS file and the destination is a data set with a record
+    length. This is done by inspecting the destination data set attributes
+    and using these attributes to create a new data set.
+  - zos_copy was updated with the capabilities to define destination data sets
+    from within the zos_copy module. In the case where you are copying to a
+    data set destination that does not exist, you can now do so using the
+    new zos_copy module option destination.
+  - zos_fetch was updated to support the ansible.builtin.ssh
+    connection options; for further reference refer to the
+    SSH plugin documentation.
+  - zos_job_output was updated to to include the completion code (CC) for each
+    individual job step as part of the ret_code response.
+  - zos_job_query was updated to support a 7 digit job number ID for when there
+    are greater than 99,999 jobs in the history.
+  - zos_job_query was updated to handle when an invalid job ID or job name is
+    used with the module and returns a proper response.
+  - zos_job_submit was updated to fail fast when a submitted job fails instead
+    of waiting a predetermined time.
+  - zos_job_submit was enhanced to check for 'JCL ERROR' when jobs are submitted
+    and result in a proper module response.
+  - zos_operator_action_query response messages were improved with more
+    diagnostic information in the event an error is encountered.

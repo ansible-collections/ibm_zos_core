@@ -181,6 +181,8 @@ TEST_INFO = dict(
     test_uss_block_replace_insertbefore_bof=dict(
         insertbefore="BOF", block="# this is file is for setting env vars",
         state="present"),
+    test_uss_block_insert_with_indentation_level_specified=dict(
+        insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present", indentation=16),
     test_ds_block_insertafter_regex=dict(test_name="T1"),
     test_ds_block_insertbefore_regex=dict(test_name="T2"),
     test_ds_block_insertafter_eof=dict(test_name="T3"),
@@ -190,6 +192,7 @@ TEST_INFO = dict(
     test_ds_block_absent_with_force_option_as_true=dict(block="", state="absent", force=True),
     test_ds_block_insert_with_force_option_as_false=dict(block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present", force=False),
     test_ds_block_absent_with_force_option_as_false=dict(block="", state="absent", force=False),
+    test_ds_block_insert_with_indentation_level_specified=dict(test_name="T7"),
     expected=dict(test_uss_block_insertafter_regex_defaultmarker="""if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -821,7 +824,46 @@ export ZOAUTIL_DIR
 export PYTHONPATH
 export PKG_CONFIG_PATH
 export PYTHON_HOME
-export _BPXK_AUTOCVT"""),
+export _BPXK_AUTOCVT""",
+                  test_uss_block_insert_with_indentation_level_specified="""if [ -z STEPLIB ] && tty -s;
+then
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+TZ=PST8PDT
+export TZ
+LANG=C
+export LANG
+readonly LOGNAME
+PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
+export PATH
+LIBPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+export LIBPATH
+NLSPATH=/usr/lib/nls/msg/%L/%N
+export NLSPATH
+MANPATH=/usr/man/%L
+export MANPATH
+MAIL=/usr/mail/LOGNAME
+export MAIL
+umask 022
+ZOAU_ROOT=/usr/lpp/zoautil/v100
+ZOAUTIL_DIR=/usr/lpp/zoautil/v100
+PYTHONPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
+PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
+_BPXK_AUTOCVT=ON
+export ZOAU_ROOT
+export ZOAUTIL_DIR
+export ZOAUTIL_DIR
+export PYTHONPATH
+export PKG_CONFIG_PATH
+export PYTHON_HOME
+export _BPXK_AUTOCVT
+# BEGIN ANSIBLE MANAGED BLOCK
+                export ZOAU_ROOT
+                export ZOAU_HOME
+                export ZOAU_DIR
+# END ANSIBLE MANAGED BLOCK""",),
 )
 
 #########################
@@ -1092,6 +1134,14 @@ def test_uss_block_absent_with_force_option_as_false(ansible_zos_module):
     TEST_ENV["TEST_CONT"] = TEST_CONTENT
 
 
+@pytest.mark.uss
+def test_uss_block_insert_with_indentation_level_specified(ansible_zos_module):
+    UssGeneral(
+        "test_uss_block_insert_with_indentation_level_specified", ansible_zos_module,
+        TEST_ENV, TEST_INFO["test_uss_block_insert_with_indentation_level_specified"],
+        TEST_INFO["expected"]["test_uss_block_insert_with_indentation_level_specified"])
+
+
 #########################
 # Dataset test cases
 #########################
@@ -1287,6 +1337,20 @@ def test_ds_block_absent_with_force_option_as_false(ansible_zos_module, dstype, 
         TEST_INFO["expected"]["test_uss_block_absent"]
     )
     TEST_ENV["TEST_CONT"] = TEST_CONTENT
+
+
+@pytest.mark.ds
+@pytest.mark.parametrize("dstype", DS_TYPE)
+@pytest.mark.parametrize("encoding", ENCODING)
+def test_ds_block_insert_with_indentation_level_specified(ansible_zos_module, dstype, encoding):
+    TEST_ENV["DS_TYPE"] = dstype
+    TEST_ENV["ENCODING"] = encoding
+    DsGeneral(
+        TEST_INFO["test_ds_block_insert_with_indentation_level_specified"]["test_name"],
+        ansible_zos_module, TEST_ENV,
+        TEST_INFO["test_uss_block_insert_with_indentation_level_specified"],
+        TEST_INFO["expected"]["test_uss_block_insert_with_indentation_level_specified"]
+    )
 
 
 #########################

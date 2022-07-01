@@ -1,0 +1,320 @@
+ancestor: null
+releases:
+  1.0.0:
+    changes:
+      minor_changes:
+      - Documentation updates
+      - Module zos_data_set catalog support added
+      release_summary: 'Release Date: ''2020-18-03''
+
+        This changlelog describes all changes made to the modules and plugins included
+
+        in this collection.
+
+        For additional details such as required dependencies and availablity review
+
+        the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__ '
+      security_fixes:
+      - Improved test, security and injection coverage
+      - Security vulnerabilities fixed
+    fragments:
+    - v1.0.0_summary.yml
+    - v1.0.0_summary_minor.yml
+    - v1.0.0_summary_security.yml
+    modules:
+    - description: Copy data to z/OS
+      name: zos_copy
+      namespace: ''
+    - description: Display job output
+      name: zos_job_output
+      namespace: ''
+    - description: Query job status
+      name: zos_job_query
+      namespace: ''
+    - description: Submit JCL
+      name: zos_job_submit
+      namespace: ''
+    release_date: '2022-06-07'
+  1.1.0:
+    changes:
+      minor_changes:
+      - Documentation updates
+      - Improved error handling and messages
+      - New Filter that will filter a list of WTOR messages based on message text.
+      release_summary: 'Release Date: ''2020-26-01''
+
+        This changlelog describes all changes made to the modules and plugins included
+
+        in this collection.
+
+        For additional details such as required dependencies and availablity review
+
+        the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__
+
+        '
+    fragments:
+    - v1.1.0_summary.yml
+    - v1.1.0_summary_minor.yml
+    modules:
+    - description: Perform encoding operations.
+      name: zos_encode
+      namespace: ''
+    - description: Fetch data from z/OS
+      name: zos_fetch
+      namespace: ''
+    - description: Run a z/OS program.
+      name: zos_mvs_raw
+      namespace: ''
+    - description: Execute operator command
+      name: zos_operator
+      namespace: ''
+    - description: Display messages requiring action
+      name: zos_operator_action_query
+      namespace: ''
+    - description: Ping z/OS and check dependencies.
+      name: zos_ping
+      namespace: ''
+    - description: Execute TSO commands
+      name: zos_tso_command
+      namespace: ''
+    release_date: '2022-06-07'
+  1.2.1:
+    changes:
+      bugfixes:
+      - zos_copy - fixed regex support, dictionary merge operation fix
+      - zos_encode - removed TemporaryDirectory usage.
+      - zos_fetch - fix quote import
+      minor_changes:
+      - Documentation related to configuration has been migrated to the `playbook
+        repository <https://github.com/IBM/z_ansible_collections_samples>`__
+      - Python 2.x support
+      release_summary: 'Release Date: ''2020-10-09''
+
+        This changlelog describes all changes made to the modules and plugins included
+
+        in this collection.
+
+        For additional details such as required dependencies and availablity review
+
+        the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__.
+
+
+        Beginning this release, all playbooks previously included with the collection
+
+        will be made available on the `playbook repository <https://github.com/IBM/z_ansible_collections_samples>`__.'
+    fragments:
+    - v1.2.1_summary.yml
+    - v1.2.1_summary_bugs.yml
+    - v1.2.1_summary_minor.yml
+    modules:
+    - description: Manage textual data on z/OS
+      name: zos_lineinfile
+      namespace: ''
+    release_date: '2022-06-07'
+  1.3.0:
+    changes:
+      bugfixes:
+      - Action plugin zos_copy was updated to support Python 2.7.
+      - Job utility is an internal library used by several modules. It has been updated
+        to use a custom written parsing routine capable of handling special characters
+        to prevent job related reading operations from failing when a special character
+        is encountered.
+      - Module zos_copy was updated to fail gracefully when a it encounters a non-zero
+        return code.
+      - Module zos_copy was updated to support copying data set members that are program
+        objects to a PDSE. Prior to this update, copying data set members would yield
+        an error; - FSUM8976 Error writing <src_data_set_member> to PDSE member <dest_data_set_member>
+      - Module zos_job_submit referenced a non-existent option and was corrected to
+        **wait_time_s**.
+      - Module zos_job_submit was updated to remove all trailing **\r** from jobs
+        that are submitted from the controller.
+      - Module zos_tso_command support was added for when the command output contained
+        special characters.
+      - Playbook zos_operator_basics.yaml has been updated to use end in the WTO reply
+        over the previous use of cancel. Using cancel is not a valid reply and results
+        in an execution error.
+      known_issues:
+      - When executing programs using zos_mvs_raw, you may encounter errors that originate
+        in the implementation of the programs. Two such known issues are noted below
+        of which one has been addressed with an APAR. - zos_mvs_raw module execution
+        fails when invoking Database Image Copy 2 Utility or Database Recovery Utility
+        in conjunction with FlashCopy or Fast Replication. - zos_mvs_raw module execution
+        fails when invoking DFSRRC00 with parm "UPB,PRECOMP", "UPB, POSTCOMP" or "UPB,PRECOMP,POSTCOMP".
+        This issue is addressed by APAR PH28089.
+      minor_changes:
+      - All modules support relative paths and remove choice case sensitivity.
+      - zos_data_set added support to allocate and format zFS data sets.
+      - zos_operator supports new options **wait** and **wait_time_s** such that you
+        can specify that zos_operator wait the full **wait_time_s** or return as soon
+        as the first operator command executes.
+      release_summary: "Release Date: '2021-19-04'\nThis changlelog describes all
+        changes made to the modules and plugins included\nin this collection.\nFor
+        additional details such as required dependencies and availablity review\nthe
+        collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__
+        \n\n`New Playbooks <https://github.com/IBM/z_ansible_collections_samples>`__\n
+        \ - Authorize and synchronize APF authorized libraries on z/OS from a configuration
+        file cloned from GitHub\n  - Automate program execution with copy, sort and
+        fetch data sets on z/OS playbook.\n  - Automate user management with add,
+        remove, grant permission, generate\n    passwords, create zFS, mount zFS and
+        send email notifications when deployed\n    to Ansible Tower or AWX with the
+        manage z/OS Users Using Ansible playbook.\n  - Use the configure Python and
+        ZOAU Installation playbook to scan the\n    **z/OS** target to find the latest
+        supported configuration and generate\n    inventory and a variables configuration.\n
+        \ - Automate software management with SMP/E Playbooks\n"
+    fragments:
+    - v1.3.0_summary.yml
+    - v1.3.0_summary_bugs.yml
+    - v1.3.0_summary_known.yml
+    - v1.3.0_summary_minor.yml
+    modules:
+    - description: Add or remove libraries to Authorized Program Facility (APF)
+      name: zos_apf
+      namespace: ''
+    - description: Backup and restore data sets and volumes
+      name: zos_backup_restore
+      namespace: ''
+    - description: Manage block of multi-line textual data on z/OS
+      name: zos_blockinfile
+      namespace: ''
+    - description: Manage data sets
+      name: zos_data_set
+      namespace: ''
+    - description: Find matching data sets
+      name: zos_find
+      namespace: ''
+    release_date: '2022-06-07'
+  1.3.1:
+    changes:
+      bugfixes:
+      - zos_ping was updated to support Automation Hub documentation generation.
+      - zos_ssh connection plugin was updated to prioritize the execution of modules
+        written in REXX over other implementations such is the case for zos_ping.
+      known_issues:
+      - When executing programs using zos_mvs_raw, you may encounter errors that originate
+        in the implementation of the programs. Two such known issues are noted below
+        of which one has been addressed with an APAR. - zos_mvs_raw module execution
+        fails when invoking Database Image Copy 2 Utility or Database Recovery Utility
+        in conjunction with FlashCopy or Fast Replication. - zos_mvs_raw module execution
+        fails when invoking DFSRRC00 with parm "UPB,PRECOMP", "UPB, POSTCOMP" or "UPB,PRECOMP,POSTCOMP".
+        This issue is addressed by APAR PH28089.
+      release_summary: "Release Date: '2022-27-04'\nThis changlelog describes all
+        changes made to the modules and plugins included\nin this collection.\nFor
+        additional details such as required dependencies and availablity review\nthe
+        collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__
+        \n"
+    fragments:
+    - v1.3.1_summary.yml
+    - v1.3.1_summary_bugs.yml
+    - v1.3.1_summary_known.yml
+    release_date: '2022-06-07'
+  1.3.3:
+    changes:
+      bugfixes:
+      - zos_copy was updated to correct deletion of all temporary files and unwarranted
+        deletes. - When the module would complete, a cleanup routine did not take
+        into account that other processes had open temporary files and thus would
+        error when trying to remove them. - When the module would copy a directory
+        (source) from USS to another USS directory (destination), any files currently
+        in the destination would be deleted. The modules behavior has changed such
+        that files are no longer deleted unless the force option is set to true. When
+        **force=true**, copying files or a directory to a USS destination will continue
+        if it encounters existing files or directories and overwrite any corresponding
+        files.
+      - zos_job_query was updated to correct a boolean condition that always evaluated
+        to "CANCELLED". - When querying jobs that are either **CANCELLED** or have
+        **FAILED**, they were always treated as **CANCELLED**.
+      release_summary: "Release Date: '2022-26-04'\nThis changlelog describes all
+        changes made to the modules and plugins included\nin this collection.\nFor
+        additional details such as required dependencies and availablity review\nthe
+        collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__
+        \n"
+    fragments:
+    - v1.3.3_summary.yml
+    - v1.3.3_summary_bugs.yml
+    release_date: '2022-06-07'
+  1.3.4:
+    changes:
+      bugfixes:
+      - "zos_ssh - connection plugin was updated to correct a bug in Ansible that\n
+        \ would result in playbook task retries overriding the SSH connection\n  retries.
+        This is resolved by renaming the zos_ssh option\n  retries to reconnection_retries.
+        The update addresses users of\n  ansible-core v2.9 which continues to use
+        retries and users of\n  ansible-core v2.11 or later which uses reconnection_retries.\n
+        \ This also resolves a bug in the connection that referenced a deprecated\n
+        \ constant. (https://github.com/ansible-collections/ibm_zos_core/pull/328)\n"
+      release_summary: "Release Date: '2022-03-06'\nThis changlelog describes all
+        changes made to the modules and plugins included\nin this collection.\nFor
+        additional details such as required dependencies and availablity review\nthe
+        collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__
+        \n"
+    fragments:
+    - 328-rename-retries-to-reconnection_retries.yml
+    - v1.3.4_summary.yml
+    release_date: '2022-06-07'
+  1.4.0-beta.1:
+    changes:
+      bugfixes:
+      - zos_job_output was updated to correct possible truncated responses for the
+        ddname content. This would occur for jobs with very large amounts of content
+        from a ddname.
+      - "zos_ssh - connection plugin was updated to correct a bug in Ansible that\n
+        \ would result in playbook task retries overriding the SSH connection\n  retries.
+        This is resolved by renaming the zos_ssh option\n  retries to reconnection_retries.
+        The update addresses users of\n  ansible-core v2.9 which continues to use
+        retries and users of\n  ansible-core v2.11 or later which uses reconnection_retries.\n
+        \ This also resolves a bug in the connection that referenced a deprecated\n
+        \ constant. (https://github.com/ansible-collections/ibm_zos_core/pull/328)\n"
+      deprecated_features:
+      - zos_copy and zos_fetch option sftp_port has been deprecated. To set the SFTP
+        port, use the supported options in the ansible.builtin.ssh plugin. Refer to
+        the `SSH port <https://docs.ansible.com/ansible/latest/collections/ansible/builtin/ssh_connection.html#parameter-port>`__
+        option to configure the port used during the modules SFTP transport.
+      - zos_copy module option model_ds has been removed. The model_ds logic is now
+        automatically managed and data sets are either created based on the src data
+        set or overridden by the new option destination_dataset.
+      - zos_ssh connection plugin has been removed, it is no longer required. You
+        must remove all playbook references to connection ibm.ibm_zos_core.zos_ssh.
+      major_changes:
+      - zos_copy was updated to support the ansible.builtin.ssh connection options;
+        for further reference refer to the SSH plugin documentation.
+      - zos_copy was updated to take into account the record length when the source
+        is a USS file and the destination is a data set with a record length. This
+        is done by inspecting the destination data set attributes and using these
+        attributes to create a new data set.
+      - zos_copy was updated with the capabilities to define destination data sets
+        from within the zos_copy module. In the case where you are copying to a data
+        set destination that does not exist, you can now do so using the new zos_copy
+        module option destination.
+      - zos_fetch was updated to support the ansible.builtin.ssh connection options;
+        for further reference refer to the SSH plugin documentation.
+      - zos_job_output was updated to to include the completion code (CC) for each
+        individual job step as part of the ret_code response.
+      - zos_job_query was updated to handle when an invalid job ID or job name is
+        used with the module and returns a proper response.
+      - zos_job_query was updated to support a 7 digit job number ID for when there
+        are greater than 99,999 jobs in the history.
+      - zos_job_submit was enhanced to check for 'JCL ERROR' when jobs are submitted
+        and result in a proper module response.
+      - zos_job_submit was updated to fail fast when a submitted job fails instead
+        of waiting a predetermined time.
+      - zos_operator_action_query response messages were improved with more diagnostic
+        information in the event an error is encountered.
+      - zos_ping was updated to remove the need for the zos_ssh connection plugin
+        dependency.
+      release_summary: "Release Date: '2021-06-23'\nThis changlelog describes all
+        changes made to the modules and plugins included\nin this collection.\nFor
+        additional details such as required dependencies and availablity review\nthe
+        collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__
+        \n"
+    fragments:
+    - 32-rename-retries-to-reconnection_retries.yml
+    - v1.4.0-beta.1_summary.yml
+    - v1.4.0-beta.1_summary_bugs.yml
+    - v1.4.0-beta.1_summary_deprecated.yml
+    - v1.4.0-beta.1_summary_minor.yml
+    - v1.4.0-beta.1_summary_trivial.yml
+    modules:
+    - description: Mount a z/OS file system.
+      name: zos_mount
+      namespace: ''
+    release_date: '2022-06-10'

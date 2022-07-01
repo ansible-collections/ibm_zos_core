@@ -143,8 +143,13 @@ options:
     default: IBM-1047
   force:
     description:
-      - Specifies whether the dmod command should be used with force option or not.
-      - When set to true it adds the -f option to the command call.
+      - Specifies that the data set can be shared with others during an update
+        which results in the data set you are updating to be simultaneously
+        updated by others.
+      - This is helpful when a data set is being used in a long running process
+        such as a started task and you are wanting to update or read.
+      - The C(-f) option enables sharing of data sets through the disposition
+        I(DISP=SHR).
     required: false
     type: bool
     default: false
@@ -249,7 +254,7 @@ cmd:
   description: Constructed ZOAU dmod shell command based on the parameters
   returned: success
   type: str
-  sample: dmodhelper -d -b -c IBM-1047 -m "BEGIN\nEND\n# {mark} ANSIBLE MANAGED BLOCK" -e "$ a\\PATH=/dir/bin:$PATH" /etc/profile
+  sample: dmod -d -b -c IBM-1047 -m "BEGIN\nEND\n# {mark} ANSIBLE MANAGED BLOCK" -e "$ a\\PATH=/dir/bin:$PATH" /etc/profile
 msg:
   description: The module messages
   returned: failure

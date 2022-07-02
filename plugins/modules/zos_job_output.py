@@ -33,7 +33,7 @@ description:
     like "*".
   - If there is no ddname, or if ddname="?", output of all the ddnames under
     the given job will be displayed.
-version_added: "2.9"
+version_added: "1.0.0"
 author:
   - "Jack Ho (@jacklotusho)"
   - "Demetrios Dimatos (@ddimatos)"
@@ -57,7 +57,8 @@ options:
     required: false
   ddname:
     description:
-      - Data definition name. (e.g "JESJCL", "?")
+      - Data definition name (show only this DD on a found job).
+        (e.g "JESJCL", "?")
     type: str
     required: false
 """
@@ -388,13 +389,10 @@ def run_module():
 
     try:
         results = {}
-        results["jobs"] = job_output(job_id, owner, job_name, ddname)
+        results["jobs"] = job_output(job_id=job_id, owner=owner, job_name=job_name, dd_name=ddname)
         results["changed"] = False
     except Exception as e:
         module.fail_json(msg=repr(e))
-
-# need to mod/expand job output here
-# ret code needs steps subsection
 
     module.exit_json(**results)
 

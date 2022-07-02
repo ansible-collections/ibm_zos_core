@@ -1,0 +1,4 @@
+bugfixes:
+  - zos_job_output was updated to correct possible truncated responses for
+    the ddname content. This would occur for jobs with very large amounts
+    of content from a ddname.

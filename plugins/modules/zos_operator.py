@@ -20,6 +20,7 @@ __metaclass__ = type
 DOCUMENTATION = r"""
 ---
 module: zos_operator
+version_added: '1.1.0'
 short_description: Execute operator command
 description:
     - Execute an operator command and receive the output.
@@ -156,6 +157,9 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
+    MissingZOAUImport,
+)
 
 if PY3:
     from shlex import quote
@@ -291,12 +295,11 @@ def run_operator_command(params):
         kwargs.update({"debug": "debug"})
 
     if params.get("wait"):
-        wait = params.get("wait_time")
+        wait = params.get("wait_time_s")
         if wait:
+            kwargs.update({"timeout": "{0}".format(wait)})
             kwargs.update({"parameters": "ISFDELAY={0}".format(wait)})
-
-    # it *appears* IFSdelay is passing through correctly... did 1x-4x tests 0 to 20 seconds
-
+            # it *appears* IFSdelay is passing through correctly... did 1x-4x tests 0 to 20 seconds
     cmdtxt = params.get("cmd")
 
     args = []

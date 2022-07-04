@@ -325,7 +325,8 @@ class FetchHandler:
         """
         space_pri = 0
         total_size = 0
-        max_recl = 80 # default record length
+        # Default record length
+        max_recl = 80
         # Bytes per cylinder for a 3390 DASD
         bytes_per_cyl = 849960
 
@@ -333,7 +334,7 @@ class FetchHandler:
         cmd = "mvscmdauth --pgm=idcams --sysprint=stdout --sysin=stdin"
         rc, out, err = self._run_command(cmd, data=listcat_cmd)
 
-        # Pending to check with the team about the correct usage of listcat mvs command, 
+        # Pending to check with the team about the correct usage of listcat mvs command,
         # I see is used across different modules using mvscmd from zoau, mvs_cmd from module_utils
         # and selft._run_command, thinking we need some consistency here.
         # dd_statements = []
@@ -360,7 +361,7 @@ class FetchHandler:
             find_max_recl = re.findall(r"MAXLRECL-*\d+", out)
             if find_max_recl:
                 max_recl = int("".join(re.findall(r"\d+", find_max_recl[0])))
-                if max_recl == 0: 
+                if max_recl == 0:
                     max_recl = 80
         else:
             self._fail_json(

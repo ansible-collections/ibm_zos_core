@@ -332,6 +332,26 @@ class FetchHandler:
         listcat_cmd = " LISTCAT ENT('{0}') ALL".format(vsam)
         cmd = "mvscmdauth --pgm=idcams --sysprint=stdout --sysin=stdin"
         rc, out, err = self._run_command(cmd, data=listcat_cmd)
+
+        # Pending to check with the team about the correct usage of listcat mvs command, 
+        # I see is used across different modules using mvscmd from zoau, mvs_cmd from module_utils
+        # and selft._run_command, thinking we need some consistency here.
+        # dd_statements = []
+        # dd_statements.append(
+        #     types.DDStatement(
+        #         name="sysin", definition=types.DatasetDefinition("stdin")
+        #     )
+        # )
+        # dd_statements.append(
+        #     types.DDStatement(
+        #         name="sysprint", definition=types.DatasetDefinition("stdout")
+        #     )
+        # )
+
+        # response = mvscmd.execute_authorized(pgm="idcams", dds=dd_statements)
+        # rc = response.rc
+        # out = response.stdout_response
+
         if not rc:
             find_space_pri = re.findall(r"SPACE-PRI-*\d+", out)
             if find_space_pri:
@@ -391,7 +411,17 @@ class FetchHandler:
                 )
             )
 
-            mvs_rc = mvscmd.execute_authorized(pgm="idcams", dds=dd_statements)
+            response = mvscmd.execute_authorized(pgm="idcams", dds=dd_statements)
+            mvs_rc = response.rc
+
+            if mvs_rc != 0:
+                self._fail_json(
+                    msg=(
+                        "Non-zero return code received while executing MVSCmd "
+                        "to copy VSAM data set {0}".format(ds_name)
+                    ),
+                    rc=mvs_rc,
+                )
 
         except OSError as err:
             self._fail_json(msg=str(err))

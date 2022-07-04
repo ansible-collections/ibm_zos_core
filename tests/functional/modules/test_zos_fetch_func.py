@@ -21,6 +21,7 @@ import stat
 
 from hashlib import sha256
 from ansible.utils.hashing import checksum
+from shellescape import quote
 
 __metaclass__ = type
 
@@ -34,8 +35,47 @@ TEST_PS = "IMSTESTL.IMS01.DDCHKPT"
 TEST_PS_VB = "IMSTESTL.IMS01.SPOOL1"
 TEST_PDS = "IMSTESTL.COMNUC"
 TEST_PDS_MEMBER = "IMSTESTL.COMNUC(ATRQUERY)"
-TEST_VSAM = "IMSTESTL.LDS01.WADS0"
-
+TEST_VSAM = "FETCH.TEST.VS"
+FROM_ENCODING = "IBM-1047"
+TO_ENCODING = "ISO8859-1"
+USS_FILE = "/tmp/fetch.data"
+TEST_DATA = """00000001This is for encode conversion testsing
+00000002This is for encode conversion testsing
+00000003This is for encode conversion testsing
+00000004This is for encode conversion testsing
+"""
+KSDS_CREATE_JCL = """//CREKSDS    JOB (T043JM,JM00,1,0,0,0),'CREATE KSDS',CLASS=R,
+//             MSGCLASS=X,MSGLEVEL=1,NOTIFY=OMVSADM
+//STEP1  EXEC PGM=IDCAMS
+//SYSPRINT DD  SYSOUT=A
+//SYSIN    DD  *
+   DELETE FETCH.TEST.VS
+   SET MAXCC=0
+   DEFINE CLUSTER                          -
+    (NAME(FETCH.TEST.VS)                  -
+    INDEXED                                -
+    KEYS(12 20)                            -
+    RECSZ(200 200)                         -
+    RECORDS(100)                           -
+    SHAREOPTIONS(2 3)                      -
+    VOLUMES(000000) )                      -
+    DATA (NAME(FETCH.TEST.VS.DATA))       -
+    INDEX (NAME(FETCH.TEST.VS.INDEX))
+/*
+"""
+KSDS_REPRO_JCL = """//DOREPRO    JOB (T043JM,JM00,1,0,0,0),'CREATE KSDS',CLASS=R,
+//             MSGCLASS=E,MSGLEVEL=1,NOTIFY=OMVSADM
+//REPROJOB   EXEC PGM=IDCAMS
+//SYSPRINT DD  SYSOUT=A
+//SYSIN    DD   *
+ REPRO -
+  INFILE(SYS01) -
+  OUTDATASET({0})
+//SYS01    DD *
+ DDUMMY   RECORD                      !! DO NOT ALTER !!
+ EEXAMPLE RECORD   REMOVE THIS LINE IF EXAMPLES NOT REQUIRED
+/*
+"""
 
 def test_fetch_uss_file_not_present_on_local_machine(ansible_zos_module):
     hosts = ansible_zos_module
@@ -147,10 +187,27 @@ def test_fetch_partitioned_data_set(ansible_zos_module):
 
 def test_fetch_vsam_data_set(ansible_zos_module):
     hosts = ansible_zos_module
-    params = dict(src=TEST_VSAM, dest="/tmp/", flat=True)
+    TEMP_JCL_PATH = "/tmp/ansible/jcl"
+    params = dict(src=TEST_VSAM, dest="/tmp/", flat=True, is_binary=True)
     dest_path = "/tmp/" + TEST_VSAM
     try:
+        # start by creating the vsam dataset (could use a helper instead? )
+        hosts.all.copy(content=TEST_DATA, dest=USS_FILE)
+        hosts.all.file(path=TEMP_JCL_PATH, state="directory")
+        hosts.all.shell(
+        cmd="echo {0} > {1}/SAMPLE".format(quote(KSDS_CREATE_JCL), TEMP_JCL_PATH)
+        )
+        results = hosts.all.zos_job_submit(
+            src="{0}/SAMPLE".format(TEMP_JCL_PATH), location="USS", wait=True
+        )
+        print(results.contacted.values())
+        results = hosts.all.zos_encode(
+        src=USS_FILE, dest=TEST_VSAM, from_encoding=TO_ENCODING, to_encoding=FROM_ENCODING
+        )
+        print(results.contacted.values())
         results = hosts.all.zos_fetch(**params)
+        print('fetch results')
+        print(results.contacted.values())
         for result in results.contacted.values():
             assert result.get("changed") is True
             assert result.get("data_set_type") == "VSAM"
@@ -160,6 +217,8 @@ def test_fetch_vsam_data_set(ansible_zos_module):
     finally:
         if os.path.exists(dest_path):
             os.remove(dest_path)
+        hosts.all.file(path=USS_FILE, state="absent")
+        hosts.all.file(path=TEMP_JCL_PATH, state="absent")
 
 
 def test_fetch_partitioned_data_set_member_in_binary_mode(ansible_zos_module):

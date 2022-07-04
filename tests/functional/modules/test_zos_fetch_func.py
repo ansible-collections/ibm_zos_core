@@ -203,7 +203,7 @@ def test_fetch_vsam_data_set(ansible_zos_module):
         )
         print(results.contacted.values())
         results = hosts.all.zos_encode(
-            src=USS_FILE, dest=TEST_VSAM, from_encoding=TO_ENCODING, to_encoding=FROM_ENCODING
+            src=USS_FILE, dest=TEST_VSAM, from_encoding=FROM_ENCODING, to_encoding=TO_ENCODING
         )
         print(results.contacted.values())
         results = hosts.all.zos_fetch(**params)
@@ -215,6 +215,9 @@ def test_fetch_vsam_data_set(ansible_zos_module):
             assert result.get("module_stderr") is None
             assert result.get("dest") == dest_path
             assert os.path.exists(dest_path)
+            file = open(dest_path, 'r')
+            assert file.read() == TEST_DATA
+
     finally:
         if os.path.exists(dest_path):
             os.remove(dest_path)

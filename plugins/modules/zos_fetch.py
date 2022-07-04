@@ -412,7 +412,7 @@ class FetchHandler:
             )
 
             response = mvscmd.execute_authorized(pgm="idcams", dds=dd_statements)
-            mvs_rc = response.rc
+            mvs_rc, mvs_stdout, mvs_stderr = response.rc, response.stdout_response, response.stderr_response
 
             if mvs_rc != 0:
                 self._fail_json(
@@ -421,6 +421,8 @@ class FetchHandler:
                         "to copy VSAM data set {0}".format(ds_name)
                     ),
                     rc=mvs_rc,
+                    stderr=mvs_stderr,
+                    stdout=mvs_stdout
                 )
 
         except OSError as err:

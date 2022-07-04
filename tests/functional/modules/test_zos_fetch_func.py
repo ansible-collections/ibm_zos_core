@@ -77,6 +77,7 @@ KSDS_REPRO_JCL = """//DOREPRO    JOB (T043JM,JM00,1,0,0,0),'CREATE KSDS',CLASS=R
 /*
 """
 
+
 def test_fetch_uss_file_not_present_on_local_machine(ansible_zos_module):
     hosts = ansible_zos_module
     params = dict(src="/etc/profile", dest="/tmp/", flat=True)
@@ -195,14 +196,14 @@ def test_fetch_vsam_data_set(ansible_zos_module):
         hosts.all.copy(content=TEST_DATA, dest=USS_FILE)
         hosts.all.file(path=TEMP_JCL_PATH, state="directory")
         hosts.all.shell(
-        cmd="echo {0} > {1}/SAMPLE".format(quote(KSDS_CREATE_JCL), TEMP_JCL_PATH)
+            cmd="echo {0} > {1}/SAMPLE".format(quote(KSDS_CREATE_JCL), TEMP_JCL_PATH)
         )
         results = hosts.all.zos_job_submit(
             src="{0}/SAMPLE".format(TEMP_JCL_PATH), location="USS", wait=True
         )
         print(results.contacted.values())
         results = hosts.all.zos_encode(
-        src=USS_FILE, dest=TEST_VSAM, from_encoding=TO_ENCODING, to_encoding=FROM_ENCODING
+            src=USS_FILE, dest=TEST_VSAM, from_encoding=TO_ENCODING, to_encoding=FROM_ENCODING
         )
         print(results.contacted.values())
         results = hosts.all.zos_fetch(**params)

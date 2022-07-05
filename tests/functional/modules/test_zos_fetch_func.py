@@ -220,11 +220,11 @@ def test_fetch_vsam_data_set(ansible_zos_module):
             file = open(dest_path, 'r')
             assert file.read() == TEST_DATA
 
-    finally:
-        if os.path.exists(dest_path):
-            os.remove(dest_path)
-        hosts.all.file(path=USS_FILE, state="absent")
-        hosts.all.file(path=TEMP_JCL_PATH, state="absent")
+    # finally:
+    #     if os.path.exists(dest_path):
+    #         os.remove(dest_path)
+    #     hosts.all.file(path=USS_FILE, state="absent")
+    #     hosts.all.file(path=TEMP_JCL_PATH, state="absent")
 
 
 def test_fetch_partitioned_data_set_member_in_binary_mode(ansible_zos_module):

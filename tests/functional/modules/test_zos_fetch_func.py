@@ -217,7 +217,7 @@ def test_fetch_vsam_data_set(ansible_zos_module):
             assert result.get("module_stderr") is None
             assert result.get("dest") == dest_path
             assert os.path.exists(dest_path)
-            file = open(dest_path, 'rb')
+            file = open(dest_path, 'r')
             assert file.read() == TEST_DATA
 
     finally:

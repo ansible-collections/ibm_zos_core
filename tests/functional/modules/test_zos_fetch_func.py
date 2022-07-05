@@ -189,7 +189,6 @@ def test_fetch_partitioned_data_set(ansible_zos_module):
 def test_fetch_vsam_data_set(ansible_zos_module):
     hosts = ansible_zos_module
     TEMP_JCL_PATH = "/tmp/ansible/jcl"
-    params = dict(src=TEST_VSAM, dest="/tmp/", flat=True)
     dest_path = "/tmp/" + TEST_VSAM
     try:
         # start by creating the vsam dataset (could use a helper instead? )
@@ -208,6 +207,9 @@ def test_fetch_vsam_data_set(ansible_zos_module):
         )
         print("encode results")
         print(results.contacted.values())
+        encoding = dict(to="us-ascii")
+        encoding['from'] = "ISO8859-1"
+        params = dict(src=TEST_VSAM, dest="/tmp/", flat=True, is_binary=True)
         results = hosts.all.zos_fetch(**params)
         print("fetch results")
         print(results.contacted.values())

@@ -49,9 +49,9 @@ KSDS_CREATE_JCL = """//CREKSDS    JOB (T043JM,JM00,1,0,0,0),'CREATE KSDS',CLASS=
 //STEP1  EXEC PGM=IDCAMS
 //SYSPRINT DD  SYSOUT=A
 //SYSIN    DD  *
-   DELETE FETCH.TEST.VS
-   SET MAXCC=0
-   DEFINE CLUSTER                          -
+    DELETE FETCH.TEST.VS
+    SET MAXCC=0
+    DEFINE CLUSTER                          -
     (NAME(FETCH.TEST.VS)                  -
     INDEXED                                -
     KEYS(12 20)                            -
@@ -189,11 +189,10 @@ def test_fetch_partitioned_data_set(ansible_zos_module):
 def test_fetch_vsam_data_set(ansible_zos_module):
     hosts = ansible_zos_module
     TEMP_JCL_PATH = "/tmp/ansible/jcl"
-    params = dict(src=TEST_VSAM, dest="/tmp/", flat=True, is_binary=True)
+    params = dict(src=TEST_VSAM, dest="/tmp/", flat=True)
     dest_path = "/tmp/" + TEST_VSAM
     try:
         # start by creating the vsam dataset (could use a helper instead? )
-        hosts.all.copy(content=TEST_DATA, dest=USS_FILE)
         hosts.all.file(path=TEMP_JCL_PATH, state="directory")
         hosts.all.shell(
             cmd="echo {0} > {1}/SAMPLE".format(quote(KSDS_CREATE_JCL), TEMP_JCL_PATH)
@@ -201,10 +200,17 @@ def test_fetch_vsam_data_set(ansible_zos_module):
         results = hosts.all.zos_job_submit(
             src="{0}/SAMPLE".format(TEMP_JCL_PATH), location="USS", wait=True
         )
+        results = hosts.all.zos_copy(content=TEST_DATA, dest=USS_FILE)
+        print("copy results")
+        print(results.contacted.values())
         results = hosts.all.zos_encode(
-            src=USS_FILE, dest=TEST_VSAM, from_encoding=FROM_ENCODING, to_encoding=TO_ENCODING
+            src=USS_FILE, dest=TEST_VSAM, from_encoding="IBM-1047", to_encoding="ISO8859-1"
         )
+        print("encode results")
+        print(results.contacted.values())
         results = hosts.all.zos_fetch(**params)
+        print("fetch results")
+        print(results.contacted.values())
         for result in results.contacted.values():
             assert result.get("changed") is True
             assert result.get("data_set_type") == "VSAM"

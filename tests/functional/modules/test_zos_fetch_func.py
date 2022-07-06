@@ -36,6 +36,7 @@ TEST_PS_VB = "IMSTESTL.IMS01.SPOOL1"
 TEST_PDS = "IMSTESTL.COMNUC"
 TEST_PDS_MEMBER = "IMSTESTL.COMNUC(ATRQUERY)"
 TEST_VSAM = "FETCH.TEST.VS"
+TEST_EMPTY_VSAM = "IMSTESTL.LDS01.WADS0"
 FROM_ENCODING = "IBM-1047"
 TO_ENCODING = "ISO8859-1"
 USS_FILE = "/tmp/fetch.data"
@@ -196,23 +197,15 @@ def test_fetch_vsam_data_set(ansible_zos_module):
         hosts.all.shell(
             cmd="echo {0} > {1}/SAMPLE".format(quote(KSDS_CREATE_JCL), TEMP_JCL_PATH)
         )
-        results = hosts.all.zos_job_submit(
+        hosts.all.zos_job_submit(
             src="{0}/SAMPLE".format(TEMP_JCL_PATH), location="USS", wait=True
         )
-        results = hosts.all.zos_copy(content=TEST_DATA, dest=USS_FILE)
-        print("copy results")
-        print(results.contacted.values())
-        results = hosts.all.zos_encode(
-            src=USS_FILE, dest=TEST_VSAM, from_encoding="IBM-1047", to_encoding="ISO8859-1"
+        hosts.all.zos_copy(content=TEST_DATA, dest=USS_FILE)
+        hosts.all.zos_encode(
+            src=USS_FILE, dest=TEST_VSAM, from_encoding=FROM_ENCODING, to_encoding=TO_ENCODING
         )
-        print("encode results")
-        print(results.contacted.values())
-        encoding = dict(to="us-ascii")
-        encoding['from'] = "ISO8859-1"
         params = dict(src=TEST_VSAM, dest="/tmp/", flat=True, is_binary=True)
         results = hosts.all.zos_fetch(**params)
-        print("fetch results")
-        print(results.contacted.values())
         for result in results.contacted.values():
             assert result.get("changed") is True
             assert result.get("data_set_type") == "VSAM"
@@ -225,9 +218,26 @@ def test_fetch_vsam_data_set(ansible_zos_module):
     finally:
         if os.path.exists(dest_path):
             None
-    #         os.remove(dest_path)
-    #     hosts.all.file(path=USS_FILE, state="absent")
-    #     hosts.all.file(path=TEMP_JCL_PATH, state="absent")
+            os.remove(dest_path)
+        hosts.all.file(path=USS_FILE, state="absent")
+        hosts.all.file(path=TEMP_JCL_PATH, state="absent")
+
+
+def test_fetch_vsam_empty_data_set(ansible_zos_module):
+    hosts = ansible_zos_module
+    params = dict(src=TEST_EMPTY_VSAM, dest="/tmp/", flat=True)
+    dest_path = "/tmp/" + TEST_EMPTY_VSAM
+    try:
+        results = hosts.all.zos_fetch(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("data_set_type") == "VSAM"
+            assert result.get("module_stderr") is None
+            assert result.get("dest") == dest_path
+            assert os.path.exists(dest_path)
+    finally:
+        if os.path.exists(dest_path):
+            os.remove(dest_path)
 
 
 def test_fetch_partitioned_data_set_member_in_binary_mode(ansible_zos_module):

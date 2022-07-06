@@ -415,7 +415,8 @@ class FetchHandler:
             response = mvscmd.execute_authorized(pgm="idcams", dds=dd_statements)
             mvs_rc, mvs_stdout, mvs_stderr = response.rc, response.stdout_response, response.stderr_response
 
-            if mvs_rc != 0:
+            # When vsam is empty mvs return code is 12, is not failed rather get and empty file
+            if mvs_rc != 0 and mvs_rc != 12:
                 self._fail_json(
                     msg=(
                         "Non-zero return code received while executing MVSCmd "

@@ -189,7 +189,7 @@ def test_fetch_partitioned_data_set(ansible_zos_module):
 
 def test_fetch_vsam_data_set(ansible_zos_module):
     hosts = ansible_zos_module
-    TEMP_JCL_PATH = "/tmp/ansible/jcl"
+    TEMP_JCL_PATH = "/tmp/ansible"
     dest_path = "/tmp/" + TEST_VSAM
     try:
         # start by creating the vsam dataset (could use a helper instead? )

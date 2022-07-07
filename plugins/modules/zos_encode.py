@@ -19,6 +19,7 @@ __metaclass__ = type
 
 DOCUMENTATION = r"""
 module: zos_encode
+version_added: '1.1.0'
 author:
   - "Zhao Lu (@yourfuwa2015)"
   - "Blake Becker (@blakeinate)"

@@ -88,12 +88,12 @@ options:
     type: bool
   sftp_port:
     description:
-      - Configuring the SFTP port used by the M(zos_fetch) module has been
+      - Configuring the SFTP port used by the M(ibm.ibm_zos_core.zos_fetch) module has been
         deprecated and will be removed in ibm.ibm_zos_core collection version
         1.5.0.
       - Configuring the SFTP port with I(sftp_port) will no longer have any
         effect on which port is used by this module.
-      - To configure the SFTP port used for module M(zos_copy), refer to topic
+      - To configure the SFTP port used for module M(ibm.ibm_zos_core.zos_copy), refer to topic
         L(using connection plugins,https://docs.ansible.com/ansible/latest/plugins/connection.html#using-connection-plugins)
       - If C(ansible_port) is not specified, port 22 will be used.
     type: int
@@ -140,7 +140,6 @@ options:
     type: bool
     required: false
     default: false
-    version_added: "1.4.0"
 notes:
     - When fetching PDSE and VSAM data sets, temporary storage will be used
       on the remote z/OS system. After the PDSE or VSAM data set is
@@ -157,7 +156,7 @@ notes:
     - Fetching HFS or ZFS type data sets is currently not supported.
     - For supported character sets used to encode data, refer to the
       L(documentation,https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html).
-    - M(zos_fetch) uses SFTP (Secure File Transfer Protocol) for the underlying
+    - M(ibm.ibm_zos_core.zos_fetch) uses SFTP (Secure File Transfer Protocol) for the underlying
       transfer protocol; Co:Z SFTP is not supported. In the case of Co:z SFTP,
       you can exempt the Ansible userid on z/OS from using Co:Z thus falling back
       to using standard SFTP.

@@ -141,6 +141,18 @@ options:
     required: false
     type: str
     default: IBM-1047
+  force:
+    description:
+      - Specifies that the data set can be shared with others during an update
+        which results in the data set you are updating to be simultaneously
+        updated by others.
+      - This is helpful when a data set is being used in a long running process
+        such as a started task and you are wanting to update or read.
+      - The C(-f) option enables sharing of data sets through the disposition
+        I(DISP=SHR).
+    required: false
+    type: bool
+    default: false
   indentation:
     description:
       - Defines the number of spaces needed to prepend in every line of the block.
@@ -242,7 +254,7 @@ cmd:
   description: Constructed ZOAU dmod shell command based on the parameters
   returned: success
   type: str
-  sample: dmodhelper -d -b -c IBM-1047 -m "BEGIN\nEND\n# {mark} ANSIBLE MANAGED BLOCK" -e "$ a\\PATH=/dir/bin:$PATH" /etc/profile
+  sample: dmod -d -b -c IBM-1047 -m "BEGIN\nEND\n# {mark} ANSIBLE MANAGED BLOCK" -e "$ a\\PATH=/dir/bin:$PATH" /etc/profile
 msg:
   description: The module messages
   returned: failure
@@ -319,7 +331,7 @@ def transformBlock(block, indentation_char, indentation_spaces):
     return block
 
 
-def present(src, block, marker, ins_aft, ins_bef, encoding):
+def present(src, block, marker, ins_aft, ins_bef, encoding, force):
     """Replace a block with the matching regex pattern
     Insert a block before/after the matching pattern
     Insert a block at BOF/EOF
@@ -337,6 +349,7 @@ def present(src, block, marker, ins_aft, ins_bef, encoding):
                 - BOF
                 - '*regex*'
         encoding: {str} -- Encoding of the src.
+        force: {str} -- If not empty passes the -f option to dmod cmd.
 
     Returns:
         str -- Information in JSON format. keys:
@@ -344,16 +357,17 @@ def present(src, block, marker, ins_aft, ins_bef, encoding):
             found: {int} -- Number of matching regex pattern
             changed: {bool} -- Indicates if the destination was modified.
     """
-    return datasets.blockinfile(src, block=block, marker=marker, ins_aft=ins_aft, ins_bef=ins_bef, encoding=encoding, state=True, debug=True)
+    return datasets.blockinfile(src, block=block, marker=marker, ins_aft=ins_aft, ins_bef=ins_bef, encoding=encoding, state=True, debug=True, options=force)
 
 
-def absent(src, marker, encoding):
+def absent(src, marker, encoding, force):
     """Delete blocks with matching regex pattern
 
     Arguments:
         src: {str} -- The z/OS USS file or data set to modify.
         marker: {str} -- Identifies the block to be removed.
         encoding: {str} -- Encoding of the src.
+        force: {str} -- If not empty passes the -f option to dmod cmd.
 
     Returns:
         str -- Information in JSON format. keys:
@@ -361,7 +375,7 @@ def absent(src, marker, encoding):
             found: {int} -- Number of matching regex pattern
             changed: {bool} -- Indicates if the destination was modified.
     """
-    return datasets.blockinfile(src, marker=marker, encoding=encoding, state=False, debug=True)
+    return datasets.blockinfile(src, marker=marker, encoding=encoding, state=False, debug=True, options=force)
 
 
 def quotedString(string):
@@ -420,6 +434,10 @@ def main():
                 type='str',
                 default='IBM-1047'
             ),
+            force=dict(
+                type='bool',
+                default=False
+            ),
             indentation=dict(
                 type='int',
                 required=False,
@@ -439,6 +457,7 @@ def main():
         marker_begin=dict(arg_type='str', default='BEGIN', required=False),
         marker_end=dict(arg_type='str', default='END', required=False),
         encoding=dict(arg_type='str', default='IBM-1047', required=False),
+        force=dict(arg_type='bool', default=False, required=False),
         backup=dict(arg_type='bool', default=False, required=False),
         backup_name=dict(arg_type='data_set_or_pat', required=False, default=None),
         mutually_exclusive=[['insertbefore', 'insertafter']],
@@ -462,6 +481,7 @@ def main():
     marker = parsed_args.get('marker')
     marker_begin = parsed_args.get('marker_begin')
     marker_end = parsed_args.get('marker_end')
+    force = parsed_args.get('force')
     state = parsed_args.get('state')
     indentation = parsed_args.get('indentation')
 
@@ -480,6 +500,7 @@ def main():
         marker_begin = 'BEGIN'
     if not marker_end:
         marker_end = 'END'
+    force = '-f' if force else ''
 
     marker = "{0}\\n{1}\\n{2}".format(marker_begin, marker_end, marker)
     block = transformBlock(block, ' ', indentation)
@@ -512,10 +533,10 @@ def main():
             module.fail_json(msg="creating backup has failed")
     # state=present, insert/replace a block with matching regex pattern
     # state=absent, delete blocks with matching regex pattern
-    if state == 'present':
-        return_content = present(src, quotedString(block), quotedString(marker), quotedString(ins_aft), quotedString(ins_bef), encoding)
+    if parsed_args.get('state') == 'present':
+        return_content = present(src, quotedString(block), quotedString(marker), quotedString(ins_aft), quotedString(ins_bef), encoding, force)
     else:
-        return_content = absent(src, quotedString(marker), encoding)
+        return_content = absent(src, quotedString(marker), encoding, force)
     stdout = return_content.stdout_response
     stderr = return_content.stderr_response
     rc = return_content.rc

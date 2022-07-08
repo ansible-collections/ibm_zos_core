@@ -1746,7 +1746,6 @@ def create_pdse_2(
                                   block_size=block_size)
 
 
-
 #TODO: Do we really need this when we can use model_ds?
 def _allocate_pdse_3(
         self,
@@ -1808,6 +1807,7 @@ def _allocate_pdse_3(
 
         # TODO: Correct Return code
         return rc
+
 
 def _allocate_pdse_2(
         self,
@@ -1875,6 +1875,7 @@ def _allocate_pdse_2(
 
         return rc
 
+
 def allocate_model_data_set(ds_name, model, vol=None):
     """Allocates a data set based on a 'model' data sets allocation paramters.
        Useful when data set needs to be created identical to another. Supported
@@ -1923,6 +1924,7 @@ def allocate_model_data_set(ds_name, model, vol=None):
             )
     return rc
 
+
 def get_data_set_record_length(name):
     """
     Return the record length of a given data set for PS and PDS/E
@@ -1935,17 +1937,22 @@ def get_data_set_record_length(name):
         return record_length
     return None
 
+
 def get_file_record_length(name):
     """
     WHAT abuot binary Files, if binary use VB length?
     """
 
+
 def get_directory_record_length(dir):
     """
     """
-def get_data_set_attributes(
-    name
-):
+    pass
+
+
+def get_data_set_attributes(name):
+    """
+    """
     # Figure out the data set type and volume
     ds_dataSetUtils = data_set.DataSetUtils(name)
     if ds_dataSetUtils.exists():
@@ -2014,11 +2021,7 @@ def get_data_set_attributes(
     return parms
 
 
-def get_sequential_data_set_default_attributes(
-    name,
-    size,
-    vol
-):
+def get_sequential_data_set_default_attributes(name, size, vol):
     """Provide a sequential data set defaults given size based on bytes
         from a source such as a file.
 
@@ -2445,30 +2448,36 @@ def run_module(module, arg_def):
     # Notes: if dest is a member, and dest does not exist,
     # ********************************************************************
 
-    if not is_uss:
-        if destination_dataset:  # (1) THIS IS EXERCISED for DS new, DS to DS
-            if not dest_name:
-                module.fail_json(
-                    msg="No qualifying destination data set name provided, correct the value for option 'dest'."
-                )
+    # Creating the destination when is dataset that is not a VSAM.
+    if not is_uss and src_ds_type != "VSAM" and (not dest_exists or force):
+        # For now, treating SEQ and PDS datasets completely differently.
+        # Replacing an existing dataset only when it's not empty. We don't know whether that
+        # empty dataset was created for the user by an admin/operator, and they don't have permissions
+        # to create new datasets.
+        if not dest_member and not (dest_exists and data_set.is_empty(dest_name)):
+            dest_params = dict()
 
-            data_set.DataSet.ensure_present(
-                name=dest_name, replace=force, **module.params.get('destination_dataset'))
+            if destination_dataset: # (1) THIS IS EXERCISED for DS new, DS to DS
+                if not dest_name:
+                    module.fail_json(
+                        msg="No qualifying destination data set name provided, correct the value for option 'dest'."
+                    )
 
-        elif (not dest_member) and (src_ds_type != "VSAM" or dest_ds_type != "VSAM") and (dest_ds_type != "USS"):# and force:
-            if data_set.DataSet.data_set_exists(dest_name) and data_set.is_empty(dest_name): # (2.0) X
-                pass
-            elif data_set.DataSet.data_set_exists(src_name):  #(2.1) X
-                data_set.ensure_absent(dest_name, [volume])
-                allocate_model_data_set(ds_name=dest_name, model=src_name, vol=volume)
-            elif src_ds_type == "USS" and data_set.DataSet.data_set_exists(dest_name): #(2.2) X  -here binary won't matter we rely on what the user gave us
-                dest_parms = get_data_set_attributes(dest_name)
-                data_set.DataSet.ensure_present(replace=force, **dest_parms)
-            elif src_ds_type == "USS" and not data_set.DataSet.data_set_exists(dest_name): #(2.3) X - need to account for binary and also for recl
-                src_name_file_size_bytes = os.stat(temp_path).st_size
-                dest_parms = get_sequential_data_set_default_attributes(
+                dest_params = module.params.get("destination_dataset")
+                dest_params["name"] = dest_name
+            elif src_ds_type == "USS" and dest_exists: #(2.2) X  -here binary won't matter we rely on what the user gave us
+                dest_params = get_data_set_attributes(dest_name)
+            elif src_ds_type == "USS" and not dest_exists: #(2.3) X - need to account for binary and also for recl
+                new_src = temp_path or src # Taking the temp file when a local file was copied with sftp.
+                src_name_file_size_bytes = os.stat(new_src).st_size
+                dest_params = get_sequential_data_set_default_attributes(
                     name=dest_name, size=src_name_file_size_bytes, vol=volume)
-                data_set.DataSet.ensure_present(replace=force, **dest_parms)
+
+            if data_set.DataSet.data_set_exists(src_name):  #(2.1) X
+                allocate_model_data_set(ds_name=dest_name, model=src_name, vol=volume)
+            else:
+                data_set.DataSet.ensure_present(replace=force, **dest_params)
+        # TODO: see if I can refactor the PDS creation into the above block and then follow up with member creation.
         # elif dest_member and (src_ds_type != "VSAM" or dest_ds_type != "VSAM") and (dest_ds_type != "USS") and force:
         #     if data_set.DataSet.data_set_exists(dest_name, volume) and (dest_ds_type == "PS") and data_set.is_empty(dest_name): #3.0
         #         pass
@@ -2523,10 +2532,10 @@ def run_module(module, arg_def):
         #         pass
         #     elif os.path.isfile(src):
         #         pass
-                ### same as 3.4
+        #         ## same as 3.4
 
-                ## //If src is a directory, destination must be a partitioned data set or a USS directory.
-                ## //Wildcards can be used to copy multiple PDS/PDSE members to another PDS/PDSE.
+        #         # //If src is a directory, destination must be a partitioned data set or a USS directory.
+        #         # //Wildcards can be used to copy multiple PDS/PDSE members to another PDS/PDSE.
         else:
             module.fail_json(
                 msg="Failed precedence rules, something slipped through the crack"

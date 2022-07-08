@@ -27,7 +27,7 @@ description:
   - Run a z/OS program.
   - This is analogous to a job step in JCL.
   - Defaults will be determined by underlying API if value not provided.
-version_added: "2.9"
+version_added: "1.1.0"
 options:
   program_name:
     description:
@@ -684,8 +684,8 @@ options:
                   - Specify a data set.
                   - I(dd_data_set) can reference an existing data set. The
                     data set referenced with C(data_set_name) must be allocated
-                    before the module M(zos_mvs_raw) is run, you can
-                    use M(zos_data_set) to allocate a data set.
+                    before the module M(ibm.ibm_zos_core.zos_mvs_raw) is run, you can
+                    use M(ibm.ibm_zos_core.zos_data_set) to allocate a data set.
                 required: false
                 type: dict
                 suboptions:
@@ -1187,13 +1187,13 @@ options:
                         type: str
                         default: iso8859-1
 notes:
-    - When executing programs using M(zos_mvs_raw), you may encounter errors
+    - When executing programs using M(ibm.ibm_zos_core.zos_mvs_raw), you may encounter errors
       that originate in the programs implementation. Two such known issues are
       noted below of which one has been addressed with an APAR.
-    - 1. M(zos_mvs_raw) module execution fails when invoking
+    - 1. M(ibm.ibm_zos_core.zos_mvs_raw) module execution fails when invoking
       Database Image Copy 2 Utility or Database Recovery Utility in conjunction
       with FlashCopy or Fast Replication.
-    - 2. M(zos_mvs_raw) module execution fails when invoking DFSRRC00 with parm
+    - 2. M(ibm.ibm_zos_core.zos_mvs_raw) module execution fails when invoking DFSRRC00 with parm
       "UPB,PRECOMP", "UPB, POSTCOMP" or "UPB,PRECOMP,POSTCOMP". This issue is
       addressed by APAR PH28089.
 seealso:
@@ -1445,7 +1445,7 @@ EXAMPLES = r"""
     dds:
       - dd_data_set:
           dd_name: sortin01
-          data_set_name: myhlq.dfsort.master
+          data_set_name: myhlq.dfsort.main
           disposition: shr
       - dd_data_set:
           dd_name: sortin02

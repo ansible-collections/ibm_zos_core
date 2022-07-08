@@ -1116,7 +1116,7 @@ def main():
                 required=False,
             ),
             automove_list=dict(type="str", required=False),
-            tmphlq=dict(type='str', required=False, default=''),
+            tmphlq=dict(type='str', required=False, default=None),
         ),
         add_file_common_args=True,
         supports_check_mode=True,
@@ -1177,7 +1177,7 @@ def main():
             required=False,
         ),
         automove_list=dict(arg_type="str", default="", required=False),
-        tmphlq=dict(type='qualifier_or_empty', required=False, default=""),
+        tmphlq=dict(type='qualifier_or_empty', required=False, default=None),
     )
 
     res_args = None

@@ -2015,7 +2015,7 @@ def main():
             src_member=dict(type='bool'),
             local_charset=dict(type='str'),
             force=dict(type='bool', default=False),
-            tmphlq=dict(type='str', required=False, default="")
+            tmphlq=dict(type='str', required=False, default=None)
         ),
         add_file_common_args=True,
     )
@@ -2039,7 +2039,7 @@ def main():
         validate=dict(arg_type='bool', required=False),
         sftp_port=dict(arg_type='int', required=False),
         volume=dict(arg_type='str', required=False),
-        tmphlq=dict(arg_type='qualifier_or_empty', required=False, default=""),
+        tmphlq=dict(arg_type='qualifier_or_empty', required=False, default=None),
         destination_dataset=dict(
             arg_type='dict',
             required=False,

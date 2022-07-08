@@ -443,7 +443,7 @@ def main():
             tmphlq=dict(
                 type='str',
                 required=False,
-                default=""
+                default=None
             ),
             force=dict(
                 type='bool',
@@ -471,7 +471,7 @@ def main():
         force=dict(arg_type='bool', default=False, required=False),
         backup=dict(arg_type='bool', default=False, required=False),
         backup_name=dict(arg_type='data_set_or_pat', required=False, default=None),
-        tmphlq=dict(type='qualifier_or_empty', required=False, default=""),
+        tmphlq=dict(type='qualifier_or_empty', required=False, default=None),
         mutually_exclusive=[['insertbefore', 'insertafter']],
         indentation=dict(arg_type='int', default=0, required=False)
     )

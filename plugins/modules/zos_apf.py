@@ -419,7 +419,7 @@ def main():
             tmphlq=dict(
                 type='str',
                 required=False,
-                default=''),
+                default=None),
         ),
         mutually_exclusive=[
             # batch
@@ -461,7 +461,7 @@ def main():
                 sms=dict(arg_type='bool', required=False, default=False),
             )
         ),
-        tmphlq=dict(type='qualifier_or_empty', required=False, default=""),
+        tmphlq=dict(type='qualifier_or_empty', required=False, default=None),
         mutually_exclusive=[
             # batch
             ['batch', 'library'],

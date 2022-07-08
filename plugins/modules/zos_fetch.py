@@ -574,7 +574,7 @@ def run_module():
             sftp_port=dict(type="int", required=False),
             ignore_sftp_stderr=dict(type="bool", default=False, required=False),
             local_charset=dict(type="str"),
-            tmphlq=dict(required=False, type="str", default=""),
+            tmphlq=dict(required=False, type="str", default=None),
         )
     )
 
@@ -599,7 +599,7 @@ def run_module():
         fail_on_missing=dict(arg_type="bool", required=False, default=True),
         is_binary=dict(arg_type="bool", required=False, default=False),
         use_qualifier=dict(arg_type="bool", required=False, default=False),
-        tmphlq=dict(type='qualifier_or_empty', required=False, default=""),
+        tmphlq=dict(type='qualifier_or_empty', required=False, default=None),
     )
 
     if not module.params.get("encoding") and not module.params.get("is_binary"):

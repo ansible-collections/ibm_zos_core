@@ -1539,7 +1539,7 @@ backups = []
 
 
 # Use of global tmphlq to keep coherent classes definitions
-tmphlq = ""
+g_tmphlq = ""
 
 
 def run_module():
@@ -1720,7 +1720,7 @@ def run_module():
         auth=dict(type="bool", default=False),
         verbose=dict(type="bool", default=False),
         parm=dict(type="str", required=False),
-        tmphlq=dict(type="str", required=False, default=""),
+        tmphlq=dict(type="str", required=False, default=None),
         dds=dict(
             type="list",
             elements="dict",
@@ -1747,8 +1747,8 @@ def run_module():
     if not module.check_mode:
         try:
             parms = parse_and_validate_args(module.params)
-            global tmphlq
-            tmphlq = parms.get("tmphlq")
+            global g_tmphlq
+            g_tmphlq = parms.get("tmphlq")
             dd_statements = build_dd_statements(parms)
             program = parms.get("program_name")
             program_parm = parms.get("parm")
@@ -1946,7 +1946,7 @@ def parse_and_validate_args(params):
         auth=dict(type="bool", default=False),
         verbose=dict(type="bool", default=False),
         parm=dict(type="str", required=False),
-        tmphlq=dict(type="qualifier_or_empty", required=False, default=""),
+        tmphlq=dict(type="qualifier_or_empty", required=False, default=None),
         dds=dict(
             type="list",
             elements="dict",
@@ -2358,9 +2358,9 @@ def build_data_definition(dd):
               RawInputDefinition, DummyDefinition]: The DataDefinition object or a list of DataDefinition objects.
     """
     data_definition = None
-    global tmphlq
+    global g_tmphlq
     if dd.get("dd_data_set"):
-        dd.get("dd_data_set")["tmphlq"] = tmphlq
+        dd.get("dd_data_set")["tmphlq"] = g_tmphlq
         data_definition = RawDatasetDefinition(**(dd.get("dd_data_set")))
     elif dd.get("dd_unix"):
         data_definition = RawFileDefinition(**(dd.get("dd_unix")))
@@ -2369,7 +2369,7 @@ def build_data_definition(dd):
     elif dd.get("dd_output"):
         data_definition = RawOutputDefinition(**(dd.get("dd_output")))
     elif dd.get("dd_vio"):
-        data_definition = VIODefinition(tmphlq=tmphlq)
+        data_definition = VIODefinition(tmphlq=g_tmphlq)
     elif dd.get("dd_dummy"):
         data_definition = DummyDefinition()
     elif dd.get("dd_concat"):

@@ -84,7 +84,7 @@ class EncodeUtils(object):
             module {AnsibleModule} -- The AnsibleModule object from currently running module
         """
         self.module = AnsibleModuleHelper(argument_spec={})
-        self.tmphlq = ""
+        self.tmphlq = None
 
     def _validate_data_set_name(self, ds):
         arg_defs = dict(

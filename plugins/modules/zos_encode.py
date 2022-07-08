@@ -346,7 +346,7 @@ def run_module():
         backup=dict(type="bool", default=False),
         backup_name=dict(type="str", required=False, default=None),
         backup_compress=dict(type="bool", required=False, default=False),
-        tmphlq=dict(type='str', required=False, default=""),
+        tmphlq=dict(type='str', required=False, default=None),
     )
 
     module = AnsibleModule(argument_spec=module_args)
@@ -359,7 +359,7 @@ def run_module():
         backup=dict(arg_type="bool", default=False, required=False),
         backup_name=dict(arg_type="data_set_or_path", required=False, default=None),
         backup_compress=dict(arg_type="bool", required=False, default=False),
-        tmphlq=dict(type='qualifier_or_empty', required=False, default=""),
+        tmphlq=dict(type='qualifier_or_empty', required=False, default=None),
     )
 
     parser = better_arg_parser.BetterArgParser(arg_defs)

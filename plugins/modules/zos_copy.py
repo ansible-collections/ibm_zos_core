@@ -1294,7 +1294,7 @@ class PDSECopyHandler(CopyHandler):
                             ),
                             rc=rc,
                         )
-                    self.allocate_model(dest, new_src, vol=alloc_vol) here
+                    self.allocate_model(dest, new_src, vol=alloc_vol)
 
                 dds = dict(OUTPUT=dest, INPUT=new_src)
                 copy_cmd = "   COPY OUTDD=OUTPUT,INDD=INPUT"
@@ -1705,35 +1705,35 @@ def create_pdse_2(
                     msg=repr("TESTING FAILURE FOR NON-EXISTANT DS TYPE 333"))
             allocate_model_data_set(dest_name, src, vol=alloc_vol)
 
-            elif src_ds_type in     :
-                self.fail_json(
-                    msg=repr("TESTING FAILURE FOR NON-EXISTANT DS TYPE 444"))
-                self._allocate_pdse(
-                    dest_name, src_vol=src_vol, src=src, alloc_vol=alloc_vol)
+        elif src_ds_type in MVS_SEQ:
+            self.fail_json(
+                msg=repr("TESTING FAILURE FOR NON-EXISTANT DS TYPE 444"))
+            self._allocate_pdse(
+                dest_name, src_vol=src_vol, src=src, alloc_vol=alloc_vol)
 
-            elif os.path.isfile(src):
-                # self.fail_json(
-                #     msg=repr("TESTING FAILURE FOR NON-EXISTANT DS TYPE 555"))
-                size = os.stat(src).st_size
-                #self._allocate_pdse(dest_name, size=size, alloc_vol=alloc_vol)
-                self._allocate_pdse_2(dest_name, src=src, size=size, alloc_vol=alloc_vol, space_primary=space_primary,
-                                      space_secondary=space_secondary,
-                                      space_type=space_type,
-                                      record_format=record_format,
-                                      record_length=record_length,
-                                      block_size=block_size)
+        elif os.path.isfile(src):
+            # self.fail_json(
+            #     msg=repr("TESTING FAILURE FOR NON-EXISTANT DS TYPE 555"))
+            size = os.stat(src).st_size
+            #self._allocate_pdse(dest_name, size=size, alloc_vol=alloc_vol)
+            self._allocate_pdse_2(dest_name, src=src, size=size, alloc_vol=alloc_vol, space_primary=space_primary,
+                                    space_secondary=space_secondary,
+                                    space_type=space_type,
+                                    record_format=record_format,
+                                    record_length=record_length,
+                                    block_size=block_size)
 
-            elif os.path.isdir(src):
+        elif os.path.isdir(src):
+            self.fail_json(
+                msg=repr("TESTING FAILURE FOR NON-EXISTANT DS TYPE 666"))
+            path, dirs, files = next(os.walk(src))
+            if dirs:
                 self.fail_json(
-                    msg=repr("TESTING FAILURE FOR NON-EXISTANT DS TYPE 666"))
-                path, dirs, files = next(os.walk(src))
-                if dirs:
-                    self.fail_json(
-                        msg="Subdirectory found in source directory {0}".format(
-                            src)
-                    )
-                size = sum(os.stat(path + "/" + f).st_size for f in files)
-                self._allocate_pdse(dest_name, size=size, alloc_vol=alloc_vol)
+                    msg="Subdirectory found in source directory {0}".format(
+                        src)
+                )
+            size = sum(os.stat(path + "/" + f).st_size for f in files)
+            self._allocate_pdse(dest_name, size=size, alloc_vol=alloc_vol)
         else:
             #self.fail_json(msg=repr("TESTING FAILURE FOR NON-EXISTANT DS TYPE 777"))
             # self.fail_json(
@@ -2338,11 +2338,6 @@ def run_module(module, arg_def):
             dest_ds_type = "USS"
             dest_exists = os.path.exists(dest)
         else:
-            # module.fail_json(
-            #     msg="Incompatible target type '{0}' for source '{1}'".format(
-            #         dest, dest_name
-            #     )
-            # )
             dest_du = data_set.DataSetUtils(dest_name)
             dest_exists = dest_du.exists()
             if copy_member:
@@ -2450,94 +2445,93 @@ def run_module(module, arg_def):
     # Notes: if dest is a member, and dest does not exist,
     # ********************************************************************
 
-    # if module.is_destination_dataset_provided:  #1 (is_destination_dataset_provided probably not needed if we remove defaults)
+    if not is_uss:
+        if destination_dataset:  # (1) THIS IS EXERCISED for DS new, DS to DS
+            if not dest_name:
+                module.fail_json(
+                    msg="No qualifying destination data set name provided, correct the value for option 'dest'."
+                )
 
-    if destination_dataset:  # (1) THIS IS EXERCISED for DS new, DS to DS
-        if not dest_name:
+            data_set.DataSet.ensure_present(
+                name=dest_name, replace=force, **module.params.get('destination_dataset'))
+
+        elif (not dest_member) and (src_ds_type != "VSAM" or dest_ds_type != "VSAM") and (dest_ds_type != "USS"):# and force:
+            if data_set.DataSet.data_set_exists(dest_name) and data_set.is_empty(dest_name): # (2.0) X
+                pass
+            elif data_set.DataSet.data_set_exists(src_name):  #(2.1) X
+                data_set.ensure_absent(dest_name, [volume])
+                allocate_model_data_set(ds_name=dest_name, model=src_name, vol=volume)
+            elif src_ds_type == "USS" and data_set.DataSet.data_set_exists(dest_name): #(2.2) X  -here binary won't matter we rely on what the user gave us
+                dest_parms = get_data_set_attributes(dest_name)
+                data_set.DataSet.ensure_present(replace=force, **dest_parms)
+            elif src_ds_type == "USS" and not data_set.DataSet.data_set_exists(dest_name): #(2.3) X - need to account for binary and also for recl
+                src_name_file_size_bytes = os.stat(temp_path).st_size
+                dest_parms = get_sequential_data_set_default_attributes(
+                    name=dest_name, size=src_name_file_size_bytes, vol=volume)
+                data_set.DataSet.ensure_present(replace=force, **dest_parms)
+        # elif dest_member and (src_ds_type != "VSAM" or dest_ds_type != "VSAM") and (dest_ds_type != "USS") and force:
+        #     if data_set.DataSet.data_set_exists(dest_name, volume) and (dest_ds_type == "PS") and data_set.is_empty(dest_name): #3.0
+        #         pass
+        #     elif data_set.DataSet.data_set_exists(dest_name, volume) and (dest_ds_type == "PS") and (not data_set.is_empty(dest_name)): # 3.1
+        #         dest_parms = get_data_set_attributes(dest_name)
+        #         data_set.DataSet.ensure_present(replace=force, **dest_parms)
+        #     elif (not data_set.DataSet.data_set_exists(dest_name) and (not data_set.DataSet.is_member(dest_name) and (dest_ds_type != "USS"))):  #3.2
+
+        #         if data_set.DataSet.is_member(src):  # we don't know if the dest is a pds/pdse based on the
+        #             src_name_cat = subprocess.run(["cat","//'" + src_name + "'"],check=True, capture_output=True, shell=False)
+        #             src_name_wc = subprocess.run(['wc','-c'],input=src_name_cat.stdout, capture_output=True)
+        #             src_name_bytes=src_name_wc.stdout.strip()
+        #             src_name_bytes_str=src_name_bytes.decode('utf-8')
+        #             dest_name_size_bytes=int(src_name_bytes_str)
+
+        #             dest_parms = get_sequential_data_set_default_attributes(
+        #                 name=dest_name, size=dest_name_size_bytes, vol=volume)
+        #             data_set.DataSet.ensure_present(replace=force, **dest_parms)
+
+
+        #         elif is_member_wildcard(src): #Src has many members create a copy of it as the dest
+        #             allocate_model_data_set(dest_name, src_name, vol=alloc_vol)
+        #         elif os.path.isfile(src):
+        #             size = os.stat(src).st_size
+        #             #self._allocate_pdse(dest_name, size=size, alloc_vol=alloc_vol)
+        #             _allocate_pdse_2(dest_name, src=src, size=size, alloc_vol=alloc_vol, space_primary=space_primary,
+        #                                   space_secondary=space_secondary,
+        #                                   space_type=space_type,
+        #                                   record_format=record_format,
+        #                                   record_length=record_length,
+        #                                   block_size=block_size)
+
+        #             #TODO: What about using [awk '{ if ( length > L ) { L=length} }END{ print L}' ./*] to find max line length for recl
+        #             # awk '{ if ( length > L ) { L=length} }END{ print L}' "//'IMSTESTL.DIMATO.JCL(RACFCMD)'"
+        #             # 80
+        #         elif os.path.isdir(src):
+        #             path, dirs, files = next(os.walk(src))
+        #             if dirs:
+        #                 module.fail_json(
+        #                     msg="Subdirectory found in source directory {0}".format(
+        #                         src)
+        #                 )
+        #             size = sum(os.stat(path + "/" + f).st_size for f in files)
+        #             _allocate_pdse(dest_name, size=size, alloc_vol=alloc_vol)
+        #     elif not data_set.DataSet.data_set_exists(dest_name) and data_set.DataSet.is_member(dest_name) and (src_ds_type == "PO"): #3.3
+        #         allocate_model_data_set(dest_name, src_name, vol=alloc_vol)
+        #         #TODO: Do we allocate the members?
+        #         #      What if they used a wild card PDS(*) do we let the handler create the members?
+        #     elif not data_set.DataSet.data_set_exists(dest_name) and data_set.DataSet.is_member(dest_name) and (not data_set.DataSet.data_set_exists(src_name)): #3.4
+        #         # TODO: this is the case src is a file or a directory what do we do here? Create a PDSE based on size src and then create all the members or pass completely
+        #         ## data_set.DataSet.ensure_member_present(member_name ,replace=force)
+        #         pass
+        #     elif os.path.isfile(src):
+        #         pass
+                ### same as 3.4
+
+                ## //If src is a directory, destination must be a partitioned data set or a USS directory.
+                ## //Wildcards can be used to copy multiple PDS/PDSE members to another PDS/PDSE.
+        else:
             module.fail_json(
-                msg="No qualifying destination data set name provided, correct the value for option 'dest'."
+                msg="Failed precedence rules, something slipped through the crack"
             )
 
-        data_set.DataSet.ensure_present(
-            name=dest_name, replace=force, **module.params.get('destination_dataset'))
-
-    elif (not dest_member) and (src_ds_type != "VSAM" or dest_ds_type != "VSAM") and (dest_ds_type != "USS") and force:
-        if data_set.DataSet.data_set_exists(dest_name) and data_set.is_empty(dest_name): # (2.0) X
-            pass
-        elif data_set.DataSet.data_set_exists(src_name) and (dest_ds_type != "USS"):  #(2.1) X
-            if data_set.DataSet.data_set_exists(dest_name):
-                data_set.ensure_absent(dest_name, [volume])
-            allocate_model_data_set(ds_name=dest_name, model=src_name, vol=volume)
-        elif src_ds_type == "USS" and data_set.DataSet.data_set_exists(dest_name): #(2.2) X  -here binary won't matter we rely on what the user gave us
-            dest_parms = get_data_set_attributes(dest_name)
-            data_set.DataSet.ensure_present(replace=force, **dest_parms)
-        elif src_ds_type == "USS" and (not data_set.DataSet.data_set_exists(dest_name)): #(2.3) X - need to account for binary and also for recl
-            src_name_file_size_bytes = os.stat(src_name).st_size
-            dest_parms = get_sequential_data_set_default_attributes(
-                name=dest_name, size=src_name_file_size_bytes, vol=volume)
-            data_set.DataSet.ensure_present(replace=force, **dest_parms)
-    elif dest_member and (src_ds_type != "VSAM" or dest_ds_type != "VSAM") and (dest_ds_type != "USS") and force:   
-        if data_set.DataSet.data_set_exists(dest_name, volume) and (dest_ds_type == "PS") and data_set.is_empty(dest_name): #3.0
-            pass
-        elif data_set.DataSet.data_set_exists(dest_name, volume) and (dest_ds_type == "PS") and (not data_set.is_empty(dest_name)): # 3.1
-            dest_parms = get_data_set_attributes(dest_name)
-            data_set.DataSet.ensure_present(replace=force, **dest_parms)
-        elif (not data_set.DataSet.data_set_exists(dest_name) and (not data_set.DataSet.is_member(dest_name) and (dest_ds_type != "USS"))):  #3.2
-
-            if data_set.DataSet.is_member(src):  # we don't know if the dest is a pds/pdse based on the 
-                src_name_cat = subprocess.run(["cat","//'" + src_name + "'"],check=True, capture_output=True, shell=False)
-                src_name_wc = subprocess.run(['wc','-c'],input=src_name_cat.stdout, capture_output=True)
-                src_name_bytes=src_name_wc.stdout.strip()
-                src_name_bytes_str=src_name_bytes.decode('utf-8')
-                dest_name_size_bytes=int(src_name_bytes_str)
-
-                dest_parms = get_sequential_data_set_default_attributes(
-                    name=dest_name, size=dest_name_size_bytes, vol=volume)
-                data_set.DataSet.ensure_present(replace=force, **dest_parms)
-
-
-            elif is_member_wildcard(src): #Src has many members create a copy of it as the dest
-                allocate_model_data_set(dest_name, src_name, vol=alloc_vol)
-            elif os.path.isfile(src):
-                size = os.stat(src).st_size
-                #self._allocate_pdse(dest_name, size=size, alloc_vol=alloc_vol)
-                self._allocate_pdse_2(dest_name, src=src, size=size, alloc_vol=alloc_vol, space_primary=space_primary,
-                                      space_secondary=space_secondary,
-                                      space_type=space_type,
-                                      record_format=record_format,
-                                      record_length=record_length,
-                                      block_size=block_size)
-
-                #TODO: What about using [awk '{ if ( length > L ) { L=length} }END{ print L}' ./*] to find max line length for recl
-                # awk '{ if ( length > L ) { L=length} }END{ print L}' "//'IMSTESTL.DIMATO.JCL(RACFCMD)'" 
-                # 80
-            elif os.path.isdir(src):
-                path, dirs, files = next(os.walk(src))
-                if dirs:
-                    self.fail_json(
-                        msg="Subdirectory found in source directory {0}".format(
-                            src)
-                    )
-                size = sum(os.stat(path + "/" + f).st_size for f in files)
-                self._allocate_pdse(dest_name, size=size, alloc_vol=alloc_vol)
-        elif (not data_set.DataSet.data_set_exists(dest_name) and data_set.DataSet.is_member(dest_name) and (src_ds_type == "PO"): #3.3
-            allocate_model_data_set(dest_name, src_name, vol=alloc_vol)
-            #TODO: Do we allocate the members?
-            #      What if they used a wild card PDS(*) do we let the handler create the members?
-        elif (not data_set.DataSet.data_set_exists(dest_name) and data_set.DataSet.is_member(dest_name) and (not data_set.DataSet.data_set_exists(src_name)): #3.4
-            # TODO: this is the case src is a file or a directory what do we do here? Create a PDSE based on size src and then create all the members or pass completely
-            ## data_set.DataSet.ensure_member_present(member_name ,replace=force)
-        elif os.path.isfile(src):
-            ### same as 3.4
-
-            ## //If src is a directory, destination must be a partitioned data set or a USS directory.
-            ## //Wildcards can be used to copy multiple PDS/PDSE members to another PDS/PDSE.
-
- 
-    else:
-        module.fail_json(
-            msg="Failed precedence rules, something slipped through the crack"
-        )
     # ********************************************************************
     # Encoding conversion is only valid if the source is a local file,
     # local directory or a USS file/directory.
@@ -2788,17 +2782,6 @@ def main():
                 to_encoding=dict(arg_type="encoding"),
             )
         )
-
-    # if not module.params.get("destination_dataset"):
-    #     module.params["destination_dataset"] = {
-    #         "type": "BASIC",
-    #         "space_primary": 5,
-    #         "space_secondary": 3,
-    #         "space_type": 'TRK',
-    #         "record_format": 'FB',
-    #         "record_length": 80,
-    #         "block_size": 6147,
-    #     }
 
     res_args = temp_path = conv_path = None
     try:

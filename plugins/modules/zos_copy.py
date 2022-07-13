@@ -626,7 +626,7 @@ MVS_PARTITIONED = frozenset({"PE", "PO", "PDSE", "PDS"})
 # Underlying code will map both BASIC and SEQ to PS
 
 MVS_SEQ = frozenset({"PS", "SEQ", "BASIC"})
-
+MVS_VSAM = frozenset({"KSDS", "ESDS", "RRDS", "LDS", "VSAM"})
 
 class CopyHandler(object):
     def __init__(
@@ -1240,7 +1240,7 @@ class PDSECopyHandler(CopyHandler):
         #       this seems destructive and unnecessary because a user might be adding members to a pds
         new_src = temp_path or conv_path or src
         if src_ds_type == "USS":
-            if self.dest_exists and not data_set.is_empty(dest):
+            if self.dest_exists and not data_set.DataSet.is_empty(dest):
                 rc = datasets.delete_members(dest + "(*)")
                 if rc != 0:
                     self.fail_json(
@@ -1988,7 +1988,7 @@ def get_data_set_attributes(name):
         # TODO: Figure out secondary, default to 3 for now
         space_secondary = "3K"
 
-        if ds_type in MVS_PARTITIONED and data_set.is_empty(name):
+        if ds_type in MVS_PARTITIONED and data_set.DataSet.is_empty(name):
             # TODO: Eval why we check is_empty?
             # A general rule is to allow one directory block for every six members in a PDS.
             # TODO: Calculate based on copy member or figure out how to read the director blocks
@@ -2283,6 +2283,7 @@ def run_module(module, arg_def):
     volume = module.params.get('volume')
     is_uss = module.params.get('is_uss')
     is_pds = module.params.get('is_pds')
+    is_src_dir = module.params.get('is_src_dir')
     is_mvs_dest = module.params.get('is_mvs_dest')
     temp_path = module.params.get('temp_path')
     alloc_size = module.params.get('size')
@@ -2313,8 +2314,7 @@ def run_module(module, arg_def):
     src_name = data_set.extract_dsname(src) if src else None
     member_name = data_set.extract_member_name(src) if src_member else None
 
-    conv_path = None
-    src_ds_vol = src_ds_type = dest_ds_type = dest_exists = None
+    conv_path = src_ds_vol = src_ds_type = dest_ds_type = dest_exists = None
     res_args = dict()
 
     # ********************************************************************
@@ -2333,35 +2333,37 @@ def run_module(module, arg_def):
             mode = "0{0:o}".format(stat.S_IMODE(os.stat(src).st_mode))
 
     # ********************************************************************
-    # 1. Use DataSetUtils to determine the src and dest data set type.
-    # 2. For source data sets, find its volume, which will be used later.
+    # Use the DataSet class to gather the type and volume of the source
+    # and destination datasets, if needed.
     # ********************************************************************
+    # TODO: check for the existence of any members affected by a wildcard.
     try:
         if is_uss:
             dest_ds_type = "USS"
             dest_exists = os.path.exists(dest)
         else:
-            dest_du = data_set.DataSetUtils(dest_name)
-            dest_exists = dest_du.exists()
+            dest_exists = data_set.DataSet.data_set_exists(dest_name, volume)
+            # copy_member comes from the action plugin, and is only True when
+            # the user wants to copy into a single member of a PDS/PDSE, and so
+            # the module checks whether it already exists or not.
             if copy_member:
-                dest_exists = dest_exists and dest_du.member_exists(
-                    dest_member)
-            dest_ds_type = dest_du.ds_type()
+                dest_member_exists = dest_exists and data_set.DataSet.data_set_member_exists(dest)
 
+            dest_ds_type = data_set.DataSet.data_set_type(dest_name, volume)
             # destination_dataset.type overrides `dest_ds_type` given precedence rules
             if destination_dataset and type is not None:
                 dest_ds_type = type
 
-        # If temp_path; the plugin has copied a file from controller to USS for localized operation
+        # If temp_path, the plugin has copied a file from the controller to USS.
         if temp_path or "/" in src:
             src_ds_type = "USS"
         else:
-            src_du = data_set.DataSetUtils(src_name)
-            if src_du.exists():
-                if src_member and not src_du.member_exists(member_name):
+            if data_set.DataSet.data_set_exists(src_name):
+                if src_member and not data_set.DataSet.data_set_member_exists(src):
                     raise NonExistentSourceError(src)
-                src_ds_type = src_du.ds_type()
-                src_ds_vol = src_du.volume()
+                src_ds_type = data_set.DataSet.data_set_type(src_name)
+                # TODO: function to get volume for a dataset (even when it's a VSAM)
+                # src_ds_vol = src_du.volume()
             else:
                 raise NonExistentSourceError(src)
 
@@ -2384,13 +2386,10 @@ def run_module(module, arg_def):
     # ********************************************************************
     # Backup should only be performed if dest is an existing file or
     # data set. Otherwise ignored.
-    #
-    # If destination exists and the 'force' parameter is set to false,
-    # the module exits with a note to the user.
     # ********************************************************************
     if dest_exists:
         if backup or backup_name:
-            if dest_ds_type in MVS_PARTITIONED and data_set.is_empty(dest_name):
+            if dest_ds_type in MVS_PARTITIONED and data_set.DataSet.is_empty(dest_name):
                 # The partitioned data set is empty
                 res_args["note"] = "Destination is empty, backup request ignored"
             else:
@@ -2408,8 +2407,8 @@ def run_module(module, arg_def):
     # USS files and sequential data sets are not required to be explicitly
     # created; they are automatically created by the Python/ZOAU API.
     #
-    # is_pds is determined in the plugin when src is a directory and destination
-    # is data set (is_src_dir and is_mvs_dest)
+    # is_pds is determined in the action plugin when src is a directory and destination
+    # is a data set (is_src_dir and is_mvs_dest are true)
     # ********************************************************************
     else:
         if not dest_ds_type:
@@ -2428,118 +2427,82 @@ def run_module(module, arg_def):
         res_args["changed"] = True
 
     # ********************************************************************
-    # Data set `dest` entries will be created under these precedent rules:
-    #
-    # - IF `dest` is a data set (data set name):
-    #   1) If `destination_dataset` values, values will be used to create/replace `dest`
-    #   2) If `force` = `true` and `dest` is NOT a (PDS(member)/PDSE(Member), VSAM, USS target) and `src` is NOT VSAM:
-    #      2.0) If `dest` data set exists, is empty, `dest` data set will be used
-    #      2.1) If `src` data set exists, `src` attributes will be used to create/replace `dest`
-    #      2.2) If `src` is a file and `dest` data set exists, `dest` attributes will be used to create data set
-    #      2.3) if `src` is a file and `dest` data set does NOT exist, default values will be provided (that may not be suitably enough)
-    #   3) If `force` = `true` and `dest` IS a PDS/  Member and NOT (VSAM, USS target) and `src` is NOT VSAM and `src` is a Partitioned Data Set(member)/PDS(member):
-    #      3.0) If `dest` data set exists, `dest` is Physical Sequencial (PS), is empty, `dest` data set will be used for the Member (space is not validated, future? )
-    #      3.1) If `dest` data set exists, `dest` is Physical Sequencial (PS), is NOT empty, `dest` attributes will be used to create/replace `dest`
-    #      3.2) If `dest` data set does NOT exist, `dest` data set name is NOT a PDS(member), `dest` is not a USS target, a default Physical Sequencial (PS) will be created
-    #      3.3) If `dest` data set does NOT exist, `dest` data set name IS a PDS(member), `src` is existing PDS(member), `src` attributes will be used to create `dest`
-    #      3.4) If `dest` data set does NOT exist, `dest` data set name IS a PDS(member), `src` is NOT existing PDS(member) AKA... FILE, a defaulted Partitioned Data Set(member) will be created
-    # - When `force` = `false`:
-    #   1) If `dest` exists, program will terminate with message else logic when `force` = `true` is honored
-    # Notes: if dest is a member, and dest does not exist,
+    # Before trying to allocate new datasets or directories, check that
+    # the module has clearance to do so:
+    # a) either the destination doesn't exist or is empty (SEQ and VSAM datasets)
+    # b) or force is true
+    # If the user wants to copy into an existing member, the module needs
+    # force=True to continue and replace it.
     # ********************************************************************
+    is_dest_empty = data_set.DataSet.is_empty(dest_name, volume)
 
-    # Creating the destination when is dataset that is not a VSAM.
-    if not is_uss and src_ds_type != "VSAM" and (not dest_exists or force):
-        # For now, treating SEQ and PDS datasets completely differently.
+    if (is_uss and dest_exists and not force) \
+        or ((dest_ds_type in MVS_SEQ or dest_ds_type in MVS_VSAM) and dest_exists and not (is_dest_empty or force)) \
+        or (dest_ds_type == MVS_PARTITIONED and dest_exists and not force):
+        module.fail_json(msg="{0} already exists on the system, unable to overwrite unless force=True is specified.".format(dest))
+
+    # Creating the destination when it's a non-VSAM dataset.
+    # TODO: handle allocation of new VSAMs.
+    if not is_uss and src_ds_type not in MVS_VSAM and dest_ds_type not in MVS_VSAM:
         # Replacing an existing dataset only when it's not empty. We don't know whether that
         # empty dataset was created for the user by an admin/operator, and they don't have permissions
         # to create new datasets.
-        if not dest_member and not (dest_exists and data_set.is_empty(dest_name)):
+        # These rules assume that source and destination types are compatible.
+        # TODO: should we do something when the destination is empty but the record length
+        # is incompatible with the source?
+        if not (dest_exists and data_set.DataSet.is_empty(dest_name)):
             dest_params = dict()
 
-            if destination_dataset: # (1) THIS IS EXERCISED for DS new, DS to DS
-                if not dest_name:
-                    module.fail_json(
-                        msg="No qualifying destination data set name provided, correct the value for option 'dest'."
-                    )
-
+            # Giving more priority to the parameters given by the user.
+            if destination_dataset:
                 dest_params = module.params.get("destination_dataset")
                 dest_params["name"] = dest_name
-            elif src_ds_type == "USS" and dest_exists: #(2.2) X  -here binary won't matter we rely on what the user gave us
-                dest_params = get_data_set_attributes(dest_name)
-            elif src_ds_type == "USS" and not dest_exists: #(2.3) X - need to account for binary and also for recl
-                new_src = temp_path or src # Taking the temp file when a local file was copied with sftp.
-                src_name_file_size_bytes = os.stat(new_src).st_size
-                dest_params = get_sequential_data_set_default_attributes(
-                    name=dest_name, size=src_name_file_size_bytes, vol=volume)
-
-            if data_set.DataSet.data_set_exists(src_name):  #(2.1) X
-                allocate_model_data_set(ds_name=dest_name, model=src_name, vol=volume)
-            else:
                 data_set.DataSet.ensure_present(replace=force, **dest_params)
-        # TODO: see if I can refactor the PDS creation into the above block and then follow up with member creation.
-        # elif dest_member and (src_ds_type != "VSAM" or dest_ds_type != "VSAM") and (dest_ds_type != "USS") and force:
-        #     if data_set.DataSet.data_set_exists(dest_name, volume) and (dest_ds_type == "PS") and data_set.is_empty(dest_name): #3.0
-        #         pass
-        #     elif data_set.DataSet.data_set_exists(dest_name, volume) and (dest_ds_type == "PS") and (not data_set.is_empty(dest_name)): # 3.1
-        #         dest_parms = get_data_set_attributes(dest_name)
-        #         data_set.DataSet.ensure_present(replace=force, **dest_parms)
-        #     elif (not data_set.DataSet.data_set_exists(dest_name) and (not data_set.DataSet.is_member(dest_name) and (dest_ds_type != "USS"))):  #3.2
+            elif dest_ds_type in MVS_SEQ:
+                data_set.DataSet.ensure_absent(dest_name, volumes=[volume])
 
-        #         if data_set.DataSet.is_member(src):  # we don't know if the dest is a pds/pdse based on the
-        #             src_name_cat = subprocess.run(["cat","//'" + src_name + "'"],check=True, capture_output=True, shell=False)
-        #             src_name_wc = subprocess.run(['wc','-c'],input=src_name_cat.stdout, capture_output=True)
-        #             src_name_bytes=src_name_wc.stdout.strip()
-        #             src_name_bytes_str=src_name_bytes.decode('utf-8')
-        #             dest_name_size_bytes=int(src_name_bytes_str)
+                if src_ds_type == "USS":
+                    # TODO: need to account for binary and also for recl.
+                    # TODO: What about using [awk '{ if ( length > L ) { L=length} }END{ print L}' ./*] to find max line length for recl
+                    # awk '{ if ( length > L ) { L=length} }END{ print L}' "//'IMSTESTL.DIMATO.JCL(RACFCMD)'"
+                    # 80
+                    new_src = temp_path or src # Taking the temp file when a local file was copied with sftp.
+                    src_name_file_size_bytes = os.stat(new_src).st_size
+                    dest_params = get_sequential_data_set_default_attributes(
+                        name=dest_name, size=src_name_file_size_bytes, vol=volume)
+                    data_set.DataSet.ensure_present(replace=force, **dest_params)
+                elif src_ds_type == "SEQ" and data_set.DataSet.data_set_exists(src_name):
+                    allocate_model_data_set(ds_name=dest_name, model=src_name, vol=volume)
+                else:
+                    # TODO: get info from member to create the sequential dataset.
+                    pass
+            elif dest_ds_type in MVS_PARTITIONED:
+                # TODO: erase preexisting members that conflict with what the user wants to
+                # copy, especially when using a wildcard.
+                # Taking the src as model if it's also a PDSE.
+                if not dest_exists and src_ds_type in MVS_PARTITIONED:
+                    allocate_model_data_set(ds_name=dest_name, model=src_name, vol=volume)
+                # TODO: Creating a new PDSE by getting the info from a sequential src.
+                elif not dest_exists and src_ds_type in MVS_SEQ:
+                    pass
+                # TODO: Handling when copying from a USS dir to a PDSE and when copying a USS file
+                # to a member in a partitioned dataset.
+                elif not dest_exists and src_ds_type == "USS":
+                    if os.path.isfile(src):
+                        size = os.stat(src).st_size
+                        #self._allocate_pdse(dest_name, size=size, alloc_vol=alloc_vol)
+                        _allocate_pdse_2(dest_name, src=src, size=size, alloc_vol=volume, space_primary=space_primary,
+                                            space_secondary=space_secondary,
+                                            space_type=space_type,
+                                            record_format=record_format,
+                                            record_length=record_length,
+                                            block_size=block_size)
 
-        #             dest_parms = get_sequential_data_set_default_attributes(
-        #                 name=dest_name, size=dest_name_size_bytes, vol=volume)
-        #             data_set.DataSet.ensure_present(replace=force, **dest_parms)
-
-
-        #         elif is_member_wildcard(src): #Src has many members create a copy of it as the dest
-        #             allocate_model_data_set(dest_name, src_name, vol=alloc_vol)
-        #         elif os.path.isfile(src):
-        #             size = os.stat(src).st_size
-        #             #self._allocate_pdse(dest_name, size=size, alloc_vol=alloc_vol)
-        #             _allocate_pdse_2(dest_name, src=src, size=size, alloc_vol=alloc_vol, space_primary=space_primary,
-        #                                   space_secondary=space_secondary,
-        #                                   space_type=space_type,
-        #                                   record_format=record_format,
-        #                                   record_length=record_length,
-        #                                   block_size=block_size)
-
-        #             #TODO: What about using [awk '{ if ( length > L ) { L=length} }END{ print L}' ./*] to find max line length for recl
-        #             # awk '{ if ( length > L ) { L=length} }END{ print L}' "//'IMSTESTL.DIMATO.JCL(RACFCMD)'"
-        #             # 80
-        #         elif os.path.isdir(src):
-        #             path, dirs, files = next(os.walk(src))
-        #             if dirs:
-        #                 module.fail_json(
-        #                     msg="Subdirectory found in source directory {0}".format(
-        #                         src)
-        #                 )
-        #             size = sum(os.stat(path + "/" + f).st_size for f in files)
-        #             _allocate_pdse(dest_name, size=size, alloc_vol=alloc_vol)
-        #     elif not data_set.DataSet.data_set_exists(dest_name) and data_set.DataSet.is_member(dest_name) and (src_ds_type == "PO"): #3.3
-        #         allocate_model_data_set(dest_name, src_name, vol=alloc_vol)
-        #         #TODO: Do we allocate the members?
-        #         #      What if they used a wild card PDS(*) do we let the handler create the members?
-        #     elif not data_set.DataSet.data_set_exists(dest_name) and data_set.DataSet.is_member(dest_name) and (not data_set.DataSet.data_set_exists(src_name)): #3.4
-        #         # TODO: this is the case src is a file or a directory what do we do here? Create a PDSE based on size src and then create all the members or pass completely
-        #         ## data_set.DataSet.ensure_member_present(member_name ,replace=force)
-        #         pass
-        #     elif os.path.isfile(src):
-        #         pass
-        #         ## same as 3.4
-
-        #         # //If src is a directory, destination must be a partitioned data set or a USS directory.
-        #         # //Wildcards can be used to copy multiple PDS/PDSE members to another PDS/PDSE.
+                    elif os.path.isdir(src):
+                        size = sum(os.stat(path + "/" + f).st_size for f in files)
+                        _allocate_pdse(dest_name, size=size, alloc_vol=volume)
         else:
-            module.fail_json(
-                msg="Failed precedence rules, something slipped through the crack"
-            )
+            module.fail_json(msg="Failed precedence rules, something slipped through the cracks")
 
     # ********************************************************************
     # Encoding conversion is only valid if the source is a local file,
@@ -2714,6 +2677,7 @@ def main():
             ),
             is_uss=dict(type='bool'),
             is_pds=dict(type='bool'),
+            is_src_dir=dict(type='bool'),
             is_mvs_dest=dict(type='bool'),
             size=dict(type='int'),
             temp_path=dict(type='str'),

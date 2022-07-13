@@ -154,7 +154,7 @@ class ActionModule(ActionBase):
             else:
                 if is_src_dir:
                     path, dirs, files = next(os.walk(src))
-                    if dirs:
+                    if not is_uss and dirs:
                         result["msg"] = "Subdirectory found inside source directory"
                         result.update(
                             dict(src=src, dest=dest, changed=False, failed=True)
@@ -183,6 +183,7 @@ class ActionModule(ActionBase):
             dict(
                 is_uss=is_uss,
                 is_pds=is_pds,
+                is_src_dir=is_src_dir,
                 copy_member=copy_member,
                 src_member=src_member,
                 temp_path=temp_path,

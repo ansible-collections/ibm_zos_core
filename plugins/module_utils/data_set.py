@@ -336,6 +336,99 @@ class DataSet(object):
         return True
 
     @staticmethod
+    def data_set_type(name, volume=None):
+        """Checks the type of a data set.
+
+        Arguments:
+            name (str) -- The name of the data set.
+            volume (str) -- The volume the data set may reside on.
+
+        Returns:
+            str -- The type of the data set (one of "PS", "PO", "DA" or "VSAM").
+            None -- If the data set does not exist or ZOAU is not able to determine
+                    the type.
+        """
+        ds_type = None
+
+        if DataSet.data_set_exists(name, volume):
+            data_sets_found = datasets.listing(name)
+            volumes = [volume] if volume else None
+
+            # Using the DSORG property when it's a sequential or partitioned
+            # dataset. VSAMs are not found by datasets.listing.
+            if len(data_sets_found) > 0:
+                ds_type = data_sets_found[0].dsorg
+            elif DataSet.is_vsam(name, volumes):
+                ds_type = "VSAM"
+
+        return ds_type
+
+    @staticmethod
+    def is_empty(name, volume=None):
+        """Determines whether a data set is empty.
+
+        Arguments:
+            name (str) -- The name of the data set.
+            volume (str) -- The volume where the data set resides.
+
+        Returns:
+            bool -- Whether the data set is empty or not.
+        """
+        if not DataSet.data_set_exists(name, volume):
+            raise DatasetNotFoundError(name)
+
+        ds_type = DataSet.data_set_type(name, volume)
+
+        if ds_type == "PO":
+            return DataSet._pds_empty(name)
+        elif ds_type == "PS":
+            return len(datasets.read(name, tail=10)) == 0
+        elif ds_type == "VSAM":
+            return DataSet._vsam_empty(name)
+
+    @staticmethod
+    def _pds_empty(name):
+        """Determines if a partitioned data set is empty.
+
+        Arguments:
+            name (str) -- The name of the PDS/PDSE.
+
+        Returns:
+            bool - If PDS/PDSE is empty.
+            Returns True if it is empty. False otherwise.
+        """
+        module = AnsibleModuleHelper(argument_spec={})
+        ls_cmd = "mls {0}".format(name)
+        rc, out, err = module.run_command(ls_cmd)
+        # RC 2 for mls means that there aren't any members.
+        return rc == 2
+
+    @staticmethod
+    def _vsam_empty(name):
+        """Determines if a VSAM data set is empty.
+
+        Arguments:
+            name (str) -- The name of the VSAM data set.
+
+        Returns:
+            bool - If VSAM data set is empty.
+            Returns True if VSAM data set exists and is empty.
+            False otherwise.
+        """
+        module = AnsibleModuleHelper(argument_spec={})
+        empty_cmd = """  PRINT -
+        INFILE(MYDSET) -
+        COUNT(1)"""
+        rc, out, err = module.run_command(
+            "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin --mydset={0}".format(name),
+            data=empty_cmd,
+        )
+        if rc == 4 or "VSAM OPEN RETURN CODE IS 160" in out:
+            return True
+        elif rc != 0:
+            return False
+
+    @staticmethod
     def attempt_catalog_if_necessary(name, volumes):
         """Attempts to catalog a data set if not already cataloged.
 
@@ -1237,24 +1330,6 @@ def is_data_set(data_set):
     return True
 
 
-def is_empty(data_set):
-    """Determine whether a given data set is empty
-
-    Arguments:
-        data_set {str} -- Input source name
-
-    Returns:
-        {bool} -- Whether the data set is empty
-    """
-    du = DataSetUtils(data_set)
-    if du.ds_type() == "PO":
-        return _pds_empty(data_set)
-    elif du.ds_type() == "PS":
-        return len(datasets.read(data_set, tail=10)) == 0
-    elif du.ds_type() == "VSAM":
-        return _vsam_empty(data_set)
-
-
 def extract_dsname(data_set):
     """Extract the actual name of the data set from a given input source
 
@@ -1298,47 +1373,6 @@ def temp_member_name():
     for i in range(7):
         temp_name += rest_char_set[randint(0, len(rest_char_set) - 1)]
     return temp_name
-
-
-def _vsam_empty(ds):
-    """Determine if a VSAM data set is empty.
-
-    Arguments:
-        ds {str} -- The name of the VSAM data set.
-
-    Returns:
-        bool - If VSAM data set is empty.
-        Returns True if VSAM data set exists and is empty.
-        False otherwise.
-    """
-    module = AnsibleModuleHelper(argument_spec={})
-    empty_cmd = """  PRINT -
-    INFILE(MYDSET) -
-    COUNT(1)"""
-    rc, out, err = module.run_command(
-        "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin --mydset={0}".format(ds),
-        data=empty_cmd,
-    )
-    if rc == 4 or "VSAM OPEN RETURN CODE IS 160" in out:
-        return True
-    elif rc != 0:
-        return False
-
-
-def _pds_empty(data_set):
-    """Determine if a partitioned data set is empty
-
-    Arguments:
-        data_set {str} -- The name of the PDS/PDSE
-
-    Returns:
-        bool - If PDS/PDSE is empty.
-        Returns True if it is empty. False otherwise.
-    """
-    module = AnsibleModuleHelper(argument_spec={})
-    ls_cmd = "mls {0}".format(data_set)
-    rc, out, err = module.run_command(ls_cmd)
-    return rc == 2
 
 
 class DatasetDeleteError(Exception):

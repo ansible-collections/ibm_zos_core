@@ -77,7 +77,6 @@ class ActionModule(ActionBase):
             else:
                 is_uss = "/" in dest
                 is_mvs_dest = is_data_set(dest)
-                copy_member = is_member(dest)
         else:
             msg = "Destination is required"
             return self._exit_action(result, msg, failed=True)
@@ -102,6 +101,11 @@ class ActionModule(ActionBase):
                     src = os.path.realpath(src)
                     is_src_dir = os.path.isdir(src)
                     is_pds = is_src_dir and is_mvs_dest
+
+        # copy_member should be True either because the module needs to copy
+        # into a specified member or because the user specified a wildcard in
+        # the source.
+        copy_member = is_member(dest) or (not is_uss and src_member and '*' in src)
 
         if not src and not content:
             msg = "'src' or 'content' is required"

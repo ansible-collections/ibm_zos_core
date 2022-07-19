@@ -35,8 +35,9 @@ import shutil
 import stat
 import math
 import tempfile
-import os, sys
-import subprocess
+import os#, sys
+# import subprocess
+import time
 
 __metaclass__ = type
 
@@ -54,6 +55,7 @@ description:
 author:
   - "Asif Mahmud (@asifmahmud)"
   - "Demetrios Dimatos (@ddimatos)"
+  - "Ivan Moreno (@rexemin)"
 options:
   backup:
     description:
@@ -688,50 +690,6 @@ class CopyHandler(object):
         """
         new_src = temp_path or conv_path or src
 
-        # # Pre-clear data set: get destination stats before deleting if incoming info is all default
-        # if self.dest_exists:
-        #     if space_primary is None or space_primary == 5:
-        #         if record_length is None or record_length == 80:
-        #             if block_size is None:
-        #                 res = datasets.listing(dest)
-        #                 type = res[0].dsorg
-        #                 record_format = res[0].recfm
-        #                 record_length = res[0].lrecl
-        #                 block_size = res[0].block_size
-        #                 space_primary = round(res[0].total_space / 1024)
-        #                 space_type = "K"
-        #                 space_secondary = 3
-        #     try:
-        #         data_set.DataSet.delete(dest)
-        #         self.dest_exists = False
-        #     except Exception as err:
-        #         self.fail_json(msg=repr(err))
-
-        # if not self.dest_exists:
-        #     parms = dict(
-        #         name=dest,
-        #         type=type,
-        #         space_primary=space_primary,
-        #         space_secondary=space_secondary,
-        #         space_type=space_type,
-        #         record_format=record_format,
-        #         record_length=record_length,
-        #         block_size=block_size
-        #     )
-        #     if alloc_vol:
-        #         parms['volumes'] = [alloc_vol]
-
-# Demetri here 12/2/21
-        # try:
-        #     data_set.DataSet.create(**parms)
-        # except Exception as err:
-        #     self.fail_json(msg=repr(err))
-
-        # self.fail_json(
-        #         msg="src_ds_type {0} new_src {1} dest {2}".format(src_ds_type, new_src,dest)
-        # )
-        # msg": "src_ds_type USS new_src /SYSTEM/tmp/hi.txt dest SOME.GEN.SEQ",
-
         if src_ds_type == "USS":
             rc, out, err = self.run_command(
                 "cp {0} {1} \"//'{2}'\"".format(
@@ -740,24 +698,16 @@ class CopyHandler(object):
             )
             if rc != 0:
                 self.fail_json(
-                    msg="Unable to copy source {0} to {1}".format(src, dest),
+                    msg="Unable to copy source {0} to {1}".format(new_src, dest),
                     rc=rc,
                     stderr=err,
                     stdout=out,
                 )
         else:
-            # *****************************************************************
-            # When Copying a PDSE member to a non-existent sequential data set
-            # using cp "//'SOME.PDSE.DATA.SET(MEMBER)'" "//'SOME.DEST.SEQ'",
-            # An I/O abend could be trapped and can be resolved by allocating
-            # the destination data set before copying.
-            # *****************************************************************
-
             response = datasets._copy(new_src, dest)
             if response.rc != 0:
                 self.fail_json(
-                    msg="Unable to copy source {0} to {1}".format(
-                        new_src, dest),
+                    msg="Unable to copy source {0} to {1}".format(new_src, dest),
                     rc=response.rc,
                     stdout=response.stdout_response,
                     stderr=response.stderr_response
@@ -1926,8 +1876,7 @@ def allocate_model_data_set(ds_name, model, vol=None):
 
 
 def get_data_set_record_length(name):
-    """
-    Return the record length of a given data set for PS and PDS/E
+    """Returns the record length of a given data set for PS and PDS/E
     """
     ds_dataSetUtils = data_set.DataSetUtils(name)
     if ds_dataSetUtils.exists():
@@ -1938,10 +1887,24 @@ def get_data_set_record_length(name):
     return None
 
 
-def get_file_record_length(name):
+def get_file_record_length(file):
+    """Gets the longest line length from a file.
+
+    Arguments:
+        file (str) -- Path of the file.
+
+    Returns:
+        int -- Length of the longest line in the file.
+        None -- If awk fails at processing the file.
     """
-    WHAT abuot binary Files, if binary use VB length?
-    """
+    module = AnsibleModuleHelper(argument_spec={})
+    command = "awk '{{ if ( length > L ) {{ L=length }} }}END{{ print L }}' {0}".format(file)
+    rc, stdout, stderr = module.run_command(command)
+
+    if rc != 0 or stderr:
+        return None
+
+    return int(stdout)
 
 
 def get_directory_record_length(dir):
@@ -2021,51 +1984,118 @@ def get_data_set_attributes(name):
     return parms
 
 
-def get_sequential_data_set_default_attributes(name, size, vol):
-    """Provide a sequential data set defaults given size based on bytes
-        from a source such as a file.
+def _create_temp_path_name():
+    """Create a temporary path name."""
+    current_date = time.strftime("D%y%m%d", time.localtime())
+    current_time = time.strftime("T%H%M%S", time.localtime())
+    return "ansible-zos-copy-data-set-dump-{0}-{1}".format(current_date, current_time)
 
-        TODO: Trying to mock what would be created by USS cp command.
-        General Data                           Current Allocation
-        Management class . . : **None**        Allocated blocks  . : 8
-        Storage class  . . . : **None**        Allocated extents . : 1
-            Volume serial . . . : 000000
-            Device type . . . . : 3390
-        Data class . . . . . : **None**
-            Organization  . . . : PS             Current Utilization
-            Record format . . . : VB              Used blocks . . . . : 1
-            Record length . . . : 1028            Used extents  . . . : 1
-            Block size  . . . . : 6144
-            1st extent blocks . : 8
-            Secondary blocks  . : 24             Dates
-            Data set name type  :                 Creation date . . . : 2021/12/04
-                                                Referenced date . . : 2021/12/04
-                                                Expiration date . . : ***None***
+
+def dump_data_set_member_to_file(data_set_member):
+    """Dumps a data set member into a file in USS.
+
+    Arguments:
+        data_set_member (str) -- Name of the data set member to dump.
+
+    Returns:
+        str -- Path of the file in USS that contains the dump of the member.
+        None -- If the dump fails.
     """
-    #2153232
-    #2128672
-    #2039904 -(36*56,664) https://ibmmainframes.com/references/disk.html
-    #space_primary = "{0}K".format(str(int(math.ceil(size / 1024))))
-    # Secondary is 10% of primary for defaulted attribute
-    #space_secondary = "{0}K".format(str(int(math.ceil((size/1024)*.10))))
+    temp_path = "/tmp/{0}".format(_create_temp_path_name())
+    module = AnsibleModuleHelper(argument_spec={})
+    command = "dcp '{0}' {1}".format(data_set_member, temp_path)
+    rc, _, stderr = module.run_command(command)
+
+    if rc != 0 or stderr:
+        raise DataSetMemberAttributeError(data_set_member)
+
+    return temp_path
+
+
+def get_sequential_data_set_attributes(name, size, is_binary, record_format="VB", record_length=1028, volume=None):
+    """Returns the parameters needed to allocate a new sequential data set by
+    using a mixture of default values and user provided ones.
+
+    Binary data sets will always have "VB" and 1028 as their record format and
+    record length, respectively. Values provided when calling the function will
+    be overwritten in this case.
+
+    The default values for record format and record length are taken from the
+    default values that the cp command uses. Primary space is computed based on
+    the size provided, and secondary space is 10% of the primary one.
+
+    Block sizes are computed following the recomendations on this documentation
+    page: https://www.ibm.com/docs/en/zos/2.4.0?topic=options-block-size-blksize
+
+    Arguments:
+        name (str) -- Name of the new sequential data set.
+        size (int) -- Number of bytes needed for the new data set.
+        is_binary (bool) -- Whether or not the data set will have binary data.
+        record_format (str, optional) -- Type of record format.
+        record_length (int, optional) -- Record length for the data set.
+        volume (str, optional) -- Volume where the data set should be allocated.
+
+    Returns:
+        dict -- Parameters that can be passed into data_set.DataSet.ensure_present
+    """
+    # Calculating the size needed to allocate.
     space_primary = int(math.ceil((size/1024)))
     space_primary = space_primary + int(math.ceil(space_primary*.05))
     space_secondary = int(math.ceil(space_primary*.10))
+
+    # Overwriting record_format and record_length when the data set has binary data.
+    # These are the defaults that cp uses when copying binary data.
+    if is_binary:
+        record_format = "VB"
+    if is_binary:
+        record_length = 1028
+
+    max_block_size = 32760
+    if record_format == "FB":
+        # Computing the biggest possible block size that doesn't exceed
+        # the maximum size allowed.
+        block_size = math.floor(max_block_size / record_length) * record_length
+    else:
+        block_size = max_block_size
+
     parms = dict(
         name=name,
         type="SEQ",
         space_primary=space_primary,
         space_secondary=space_secondary,
-        record_format="VB",
-        record_length=1028,
-        block_size=6144,
+        record_format=record_format,
+        record_length=record_length,
+        block_size=block_size,
         space_type="K"
     )
 
-    if vol:
-     parms['volumes'] = [vol]
+    if volume:
+        parms['volumes'] = [volume]
 
     return parms
+
+
+def create_seq_dataset_from_file(file, dest, force, is_binary, volume=None):
+    """Creates a new sequential dataset with attributes suitable to copy the contents of a file into it.
+
+    Arguments:
+        file (str) -- Path of the source file.
+        dest (str) -- Name of the data set.
+        force (bool) -- Whether to replace an existing data set.
+        is_binary (bool) -- Whether the file has binary data.
+        volume (str, optional) -- Volume where the data set should be.
+    """
+    src_size = os.stat(file).st_size
+    record_format = record_length = None
+
+    # When src is a binary file, the module will use default attributes
+    # for the data set, such as a record format of "VB".
+    if not is_binary:
+        record_format = "FB"
+        record_length = get_file_record_length(file)
+
+    dest_params = get_sequential_data_set_attributes(name=dest, size=src_size, is_binary=is_binary, record_format=record_format, record_length=record_length, volume=volume)
+    data_set.DataSet.ensure_present(replace=force, **dest_params)
 
 
 def backup_data(ds_name, ds_type, backup_name):
@@ -2148,6 +2178,43 @@ def is_compatible(src_type, dest_type, copy_member, src_member):
         return dest_type == "VSAM"
 
 
+def does_destination_allow_copy(dest, dest_exists, member_exists, dest_type, is_uss, force, volume=None):
+    """Checks whether or not the module can copy into the destination
+    specified.
+
+    Arguments:
+        dest {str} -- Name of the destination.
+        dest_exists {bool} -- Whether or not the destination exists.
+        member_exists {bool} -- Whether or not a member in a partitioned destination exists.
+        dest_type {str} -- Type of the destination (SEQ/PARTITIONED/VSAM/USS).
+        is_uss {bool} -- Whether or not the destination is inside USS.
+        force {bool} -- Whether or not the module can replace existing destinations.
+        volume {str, optional} -- Volume where the destination should be.
+
+    Returns:
+        bool -- If the module has the permissions needed to create, use or replace
+                the destination.
+    """
+    # If the destination is inside USS and the module doesn't have permission to replace it,
+    # it fails.
+    if is_uss and dest_exists and not force:
+        return False
+
+    # If the destination is a sequential or VSAM data set and is empty, the module will try to use it,
+    # otherwise, force needs to be True to continue and replace it.
+    if (dest_type in MVS_SEQ or dest_type in MVS_VSAM) and dest_exists:
+        is_dest_empty = data_set.DataSet.is_empty(dest, volume)
+        if not (is_dest_empty or force):
+            return False
+
+    # When the destination is a partitioned data set, the module will have to be able to replace
+    # existing members inside of it, if needed.
+    if dest_type == MVS_PARTITIONED and dest_exists and member_exists and not force:
+        return False
+
+    return True
+
+
 def get_file_checksum(src):
     """Calculate SHA256 hash for a given file
 
@@ -2186,9 +2253,9 @@ def cleanup(src_list):
     dir_list = glob.glob(tmp_dir + "/ansible-zos-copy-payload*")
     conv_list = glob.glob(tmp_dir + "/converted*")
     tmp_list = glob.glob(tmp_dir + "/{0}*".format(tmp_prefix))
-    tmp_ds = glob.glob(tmp_dir + "/*.*.*.*")
+    tmp_ds_members = glob.glob(tmp_dir + "/ansible-zos-copy-data-set-dump*")
 
-    for file in (dir_list + conv_list + tmp_list + tmp_ds + src_list):
+    for file in (dir_list + conv_list + tmp_list + src_list + tmp_ds_members):
         try:
             if file and os.path.exists(file):
                 if os.path.isfile(file):
@@ -2336,18 +2403,22 @@ def run_module(module, arg_def):
     # Use the DataSet class to gather the type and volume of the source
     # and destination datasets, if needed.
     # ********************************************************************
-    # TODO: check for the existence of any members affected by a wildcard.
+    dest_member_exists = False
     try:
         if is_uss:
             dest_ds_type = "USS"
             dest_exists = os.path.exists(dest)
         else:
             dest_exists = data_set.DataSet.data_set_exists(dest_name, volume)
-            # copy_member comes from the action plugin, and is only True when
-            # the user wants to copy into a single member of a PDS/PDSE, and so
-            # the module checks whether it already exists or not.
+            # copy_member comes from the action plugin, and is True when
+            # the user wants to copy into a single member of a PDS/PDSE, or when
+            # the user wants to copy multiple members from a source dataset into, and so
+            # the module checks whether they already exist or not.
             if copy_member:
-                dest_member_exists = dest_exists and data_set.DataSet.data_set_member_exists(dest)
+                if not "/" in src and is_member_wildcard(src):
+                    dest_member_exists = dest_exists and data_set.DataSet.data_set_shared_members(src, dest)
+                else:
+                    dest_member_exists = dest_exists and data_set.DataSet.data_set_member_exists(dest)
 
             dest_ds_type = data_set.DataSet.data_set_type(dest_name, volume)
             # destination_dataset.type overrides `dest_ds_type` given precedence rules
@@ -2426,23 +2497,10 @@ def run_module(module, arg_def):
 
         res_args["changed"] = True
 
-    # ********************************************************************
-    # Before trying to allocate new datasets or directories, check that
-    # the module has clearance to do so:
-    # a) either the destination doesn't exist or is empty (SEQ and VSAM datasets)
-    # b) or force is true
-    # If the user wants to copy into an existing member, the module needs
-    # force=True to continue and replace it.
-    # ********************************************************************
-    is_dest_empty = data_set.DataSet.is_empty(dest_name, volume)
-
-    if (is_uss and dest_exists and not force) \
-        or ((dest_ds_type in MVS_SEQ or dest_ds_type in MVS_VSAM) and dest_exists and not (is_dest_empty or force)) \
-        or (dest_ds_type == MVS_PARTITIONED and dest_exists and not force):
+    if not does_destination_allow_copy(dest_name, dest_exists, dest_member_exists, dest_ds_type, is_uss, force, volume):
         module.fail_json(msg="{0} already exists on the system, unable to overwrite unless force=True is specified.".format(dest))
 
     # Creating the destination when it's a non-VSAM dataset.
-    # TODO: handle allocation of new VSAMs.
     if not is_uss and src_ds_type not in MVS_VSAM and dest_ds_type not in MVS_VSAM:
         # Replacing an existing dataset only when it's not empty. We don't know whether that
         # empty dataset was created for the user by an admin/operator, and they don't have permissions
@@ -2451,6 +2509,7 @@ def run_module(module, arg_def):
         # TODO: should we do something when the destination is empty but the record length
         # is incompatible with the source?
         if not (dest_exists and data_set.DataSet.is_empty(dest_name)):
+            res_args["changed"] = True
             dest_params = dict()
 
             # Giving more priority to the parameters given by the user.
@@ -2459,26 +2518,25 @@ def run_module(module, arg_def):
                 dest_params["name"] = dest_name
                 data_set.DataSet.ensure_present(replace=force, **dest_params)
             elif dest_ds_type in MVS_SEQ:
-                data_set.DataSet.ensure_absent(dest_name, volumes=[volume])
+                volumes = [volume] if volume else None
+                data_set.DataSet.ensure_absent(dest_name, volumes=volumes)
 
                 if src_ds_type == "USS":
-                    # TODO: need to account for binary and also for recl.
-                    # TODO: What about using [awk '{ if ( length > L ) { L=length} }END{ print L}' ./*] to find max line length for recl
-                    # awk '{ if ( length > L ) { L=length} }END{ print L}' "//'IMSTESTL.DIMATO.JCL(RACFCMD)'"
-                    # 80
-                    new_src = temp_path or src # Taking the temp file when a local file was copied with sftp.
-                    src_name_file_size_bytes = os.stat(new_src).st_size
-                    dest_params = get_sequential_data_set_default_attributes(
-                        name=dest_name, size=src_name_file_size_bytes, vol=volume)
-                    data_set.DataSet.ensure_present(replace=force, **dest_params)
-                elif src_ds_type == "SEQ" and data_set.DataSet.data_set_exists(src_name):
+                    # Taking the temp file when a local file was copied with sftp.
+                    new_src = temp_path or src
+                    create_seq_dataset_from_file(new_src, dest_name, force, is_binary, volume=volume)
+                elif src_ds_type in MVS_SEQ and data_set.DataSet.data_set_exists(src_name):
                     allocate_model_data_set(ds_name=dest_name, model=src_name, vol=volume)
                 else:
-                    # TODO: get info from member to create the sequential dataset.
-                    pass
+                    # Dumping the member into a file in USS to compute the record length and
+                    # size for the new data set.
+                    temp_dump = dump_data_set_member_to_file(src)
+                    create_seq_dataset_from_file(temp_dump, dest_name, force, is_binary, volume=volume)
             elif dest_ds_type in MVS_PARTITIONED:
                 # TODO: erase preexisting members that conflict with what the user wants to
                 # copy, especially when using a wildcard.
+                # TODO: what will we do when the src is a PDS/PDSE that doesn't specify members?
+                # copy members into the destination or replace it entirely?
                 # Taking the src as model if it's also a PDSE.
                 if not dest_exists and src_ds_type in MVS_PARTITIONED:
                     allocate_model_data_set(ds_name=dest_name, model=src_name, vol=volume)
@@ -2503,6 +2561,9 @@ def run_module(module, arg_def):
                         _allocate_pdse(dest_name, size=size, alloc_vol=volume)
         else:
             module.fail_json(msg="Failed precedence rules, something slipped through the cracks")
+    # TODO: handle allocation of new VSAMs.
+    elif not is_uss and dest_ds_type in MVS_VSAM:
+        pass
 
     # ********************************************************************
     # Encoding conversion is only valid if the source is a local file,
@@ -2777,6 +2838,11 @@ class NonExistentSourceError(Exception):
         self.msg = "Source {0} does not exist".format(src)
         super().__init__(self.msg)
 
+
+class DataSetMemberAttributeError(Exception):
+    def __init__(self, src):
+        self.msg = "Unable to get size and record length of member {0}".format(src)
+        super().__init__(self.msg)
 
 if __name__ == "__main__":
     main()

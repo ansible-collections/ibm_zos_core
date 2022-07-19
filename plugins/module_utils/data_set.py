@@ -336,6 +336,26 @@ class DataSet(object):
         return True
 
     @staticmethod
+    def data_set_shared_members(src, dest):
+        """Checks for the existence of members from a source data set in
+        a destination data set.
+
+        Arguments:
+            src (str) -- The source data set name. The name can contain a wildcard pattern.
+            dest (str) -- The destination data set name.
+
+        Returns:
+            bool -- If at least one of the members in src exists in dest.
+        """
+        src_members = datasets.list_members(src)
+
+        for member in src_members:
+            if DataSet.data_set_member_exists("{0}({1})".format(dest, member)):
+                return True
+
+        return False
+
+    @staticmethod
     def data_set_type(name, volume=None):
         """Checks the type of a data set.
 

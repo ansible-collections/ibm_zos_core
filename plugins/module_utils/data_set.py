@@ -356,6 +356,24 @@ class DataSet(object):
         return False
 
     @staticmethod
+    def data_set_volume(name):
+        """Checks the volume where a data set is located.
+
+        Arguments:
+            name (str) -- The name of the data set.
+
+        Returns:
+            str -- Name of the volume where the data set is.
+        """
+        data_set_information = datasets.listing(name)
+
+        if len(data_set_information) > 0:
+            return data_set_information[0].volume
+        else:
+            # TODO: check for VSAM datasets before raising the exception.
+            raise DatasetNotFoundError(name)
+
+    @staticmethod
     def data_set_type(name, volume=None):
         """Checks the type of a data set.
 

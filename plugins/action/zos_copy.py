@@ -128,9 +128,6 @@ class ActionModule(ActionBase):
         #     msg = "Invalid port provided for SFTP. Expected an integer between 0 to 65535."
         #     return self._exit_action(result, msg, failed=True)
 
-        if (not force) and self._dest_exists(src, dest, task_vars):
-            return self._exit_action(result, "Destination exists. No data was copied.")
-
         if not remote_src:
             if local_follow and not src:
                 msg = "No path given for local symlink"
@@ -336,34 +333,6 @@ class ActionModule(ActionBase):
                     task_vars=task_vars,
                 )
 
-    def _dest_exists(self, src, dest, task_vars):
-        """Determine if destination exists on remote z/OS system"""
-        if "/" in dest:
-            rc, out, err = self._connection.exec_command("ls -l {0}".format(dest))
-            if rc != 0:
-                return False
-            if len(to_text(out).split("\n")) == 2:
-                return True
-            if "/" in src:
-                src = src.rstrip("/") if src.endswith("/") else src
-                dest += "/" + os.path.basename(src)
-            else:
-                dest += "/" + extract_member_name(src) if is_member(src) else src
-            rc, out, err = self._connection.exec_command("ls -l {0}".format(dest))
-            if rc != 0:
-                return False
-        else:
-            cmd = "LISTDS '{0}'".format(dest)
-            tso_cmd = self._execute_module(
-                module_name="ibm.ibm_zos_core.zos_tso_command",
-                module_args=dict(commands=[cmd]),
-                task_vars=task_vars,
-            ).get("output")[0]
-            if tso_cmd.get("rc") != 0:
-                for line in tso_cmd.get("content"):
-                    if "NOT IN CATALOG" in line:
-                        return False
-        return True
 
     def _exit_action(self, result, msg, failed=False):
         """Exit action plugin with a message"""

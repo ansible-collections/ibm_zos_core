@@ -558,15 +558,15 @@ except Exception:
 # Imports datasets, ZOAUException, JobSubmitException are only needed for the
 # ZOAU submit(hfs=True) bug
 try:
-  from zoautil_py import datasets
+    from zoautil_py import datasets
 except Exception:
-  datasets = MissingZOAUImport()
+    datasets = MissingZOAUImport()
 
 try:
-  from zoautil_py import ZOAUException, JobSubmitException
+    from zoautil_py import ZOAUException, JobSubmitException
 except Exception:
-  ZOAUException = MissingZOAUImport()
-  JobSubmitException = MissingZOAUImport()
+    ZOAUException = MissingZOAUImport()
+    JobSubmitException = MissingZOAUImport()
 
 if PY3:
     from shlex import quote
@@ -626,22 +626,23 @@ def submit_uss_jcl(src, module, timeout=0):
 
     uss_copy_ds = datasets.copy(src, tmp_data_set_for_submit)
     if uss_copy_ds != 0:
-      module.fail_json(
-        msg="Error occurred while during job execution while copying jcl source source {0} to {1}.".format(src, tmp_data_set_for_submit),
-        rc=uss_copy_ds,
-        stdout=None,
-        stderr="Non-zero return code received"
+        module.fail_json(
+          msg = "Error occurred while during job execution while copying jcl \
+              source {0} to {1}.".format(src, tmp_data_set_for_submit),
+          rc = uss_copy_ds,
+          stdout = None,
+          stderr = "Non-zero return code received"
         )
 
     try:
-      job_listing=submit(tmp_data_set_for_submit, wait, None, **kwargs)
+        job_listing = submit(tmp_data_set_for_submit, wait, None, **kwargs)
     except (ZOAUException, JobSubmitException) as err:
-      module.fail_json(
-        msg="Unable to submit job {0} as a result of {1}.".format(src, err),
-        rc=99,
-        stdout=None,
-        stderr="Non-zero return code received."
-      )
+        module.fail_json(
+          msg = "Unable to submit job {0} as a result of {1}.".format(src, err),
+          rc = 99,
+          stdout = None,
+          stderr = "Non-zero return code received."
+        )
 
     jobId = job_listing["id"]
     return jobId

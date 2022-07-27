@@ -13,6 +13,7 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
+import time
 from tempfile import NamedTemporaryFile
 from os import chmod
 from stat import S_IEXEC, S_IREAD, S_IWRITE
@@ -196,7 +197,16 @@ def _zget_job_status(job_id="*", owner="*", job_name="*", dd_name=None):
     # jls output: owner=job[0], name=job[1], id=job[2], status=job[3], rc=job[4]
     # e.g.: OMVSADM  HELLO    JOB00126 JCLERR   ?
     # entries = listing(job_query, owner)   1.2.0 has owner paramn, 1.1 does not
-    entries = listing(job_query)
+    entries = None
+
+    # This is a work around for now to the ZOAU index exception that occurs in
+    # listing, this needs to be removed on any release of zoau 1.2.0.1 or later
+    try:
+        entries = listing(job_query)
+    except:
+        time.sleep(1)
+        entries = listing(job_query)
+
 
     final_entries = []
     if entries:

@@ -777,7 +777,7 @@ def run_module():
         ),
         volume=dict(arg_type="volume", required=False),
         return_output=dict(arg_type="bool", default=True),
-        wait_time_s=dict(arg_type="int", required=False, default=60),
+        wait_time_s=dict(arg_type="int", required=False, default=10),
         max_rc=dict(arg_type="int", required=False),
         temp_file=dict(arg_type="path", required=False),
     )
@@ -813,8 +813,6 @@ def run_module():
             msg="The option wait_time_s is not valid.  It must be greater than 0.",
             **result
         )
-    if not wait:
-        wait_time_s = 0
 
     DSN_REGEX = r"^(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}(?:\([A-Z$#@]{1}[A-Z0-9$#@]{0,7}\)){0,1}$"
     try:
@@ -869,8 +867,6 @@ def run_module():
 
     result["job_id"] = jobId
     duration = 0
-    if not wait:
-        wait_time_s = 10
 
     # real time loop - will be used regardless of 'wait' to capture data
     starttime = timer()

@@ -593,7 +593,7 @@ def submit_pds_jcl(src, module, timeout=0):
             job_listing = jobs.submit(src, wait, None, **kwargs)
             jobId = job_listing.id
         else:
-            job_listing = jobs._submit._submit(src, None, **kwargs)
+            job_listing = jobs._submit(src, None, **kwargs)
             jobId = job_listing.stdout_response
     except (ZOAUException, JobSubmitException) as err:
         module.fail_json(

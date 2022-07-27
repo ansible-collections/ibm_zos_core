@@ -591,7 +591,7 @@ def submit_pds_jcl(src, module, timeout=0):
 
     job_listing = submit(src, wait, None, **kwargs)
 
-    jobId = job_listing["id"]
+    jobId = job_listing.id
     return jobId
 
 
@@ -607,7 +607,7 @@ def submit_pds_jcl(src, module, timeout=0):
 
 #     job_listing = submit(src, wait, None, **kwargs)
 
-#     jobId = job_listing["id"]
+#     jobId = job_listing.id
 #     return jobId
 
 
@@ -624,12 +624,12 @@ def submit_uss_jcl(src, module, timeout=0):
     # Work around to hfs=True ZOAU issue
     tmp_data_set_for_submit = datasets.tmp_name(datasets.hlq())
 
-    uss_copy_ds = datasets.copy(src, tmp_data_set_for_submit)
-    if uss_copy_ds != 0:
+    uss_copy_ds_rc = datasets.copy(src, tmp_data_set_for_submit)
+    if uss_copy_ds_rc != 0:
         module.fail_json(
             msg="Error occurred while during job execution while copying jcl \
                   source {0} to {1}.".format(src, tmp_data_set_for_submit),
-            rc=uss_copy_ds,
+            rc=uss_copy_ds_rc,
             stdout=None,
             stderr="Non-zero return code received"
         )
@@ -644,7 +644,7 @@ def submit_uss_jcl(src, module, timeout=0):
             stderr="Non-zero return code received."
         )
 
-    jobId = job_listing["id"]
+    jobId = job_listing.id
     return jobId
 
 

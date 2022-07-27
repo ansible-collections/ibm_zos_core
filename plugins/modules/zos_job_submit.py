@@ -545,9 +545,9 @@ from time import sleep
 from ansible.module_utils.basic import AnsibleModule
 
 try:
-    from zoautil_py.jobs import submit
+    from zoautil_py import jobs
 except Exception:
-    submit = MissingZOAUImport()
+    jobs = MissingZOAUImport()
 
 try:
     from zoautil_py.types import ZOAUResponse, Job
@@ -583,15 +583,26 @@ JOB_COMPLETION_MESSAGES = ["CC", "ABEND", "SEC ERROR", "JCL ERROR", "JCLERR"]
 def submit_pds_jcl(src, module, timeout=0):
     """ A wrapper around zoautil_py Jobs submit to raise exceptions on failure. """
     kwargs = {}
-
+    jobId = None
     wait = False
-    if timeout > 0:
-        wait = True
-        kwargs.update({"timeout": "{0}".format(timeout)})
 
-    job_listing = submit(src, wait, None, **kwargs)
+    try:
+        if timeout > 0:
+            wait = True
+            kwargs.update({"timeout": "{0}".format(timeout)})
+            job_listing = jobs.submit(src, wait, None, **kwargs)
+            jobId = job_listing.id
+        else:
+            job_listing = jobs._submit._submit(src, None, **kwargs)
+            jobId = job_listing.stdout_response
+    except (ZOAUException, JobSubmitException) as err:
+        module.fail_json(
+            msg="Unable to submit job {0} as a result of {1}.".format(src, err),
+            rc=None,
+            stdout=None,
+            stderr="Non-zero return code received."
+        )
 
-    jobId = job_listing.id
     return jobId
 
 
@@ -615,11 +626,8 @@ def submit_uss_jcl(src, module, timeout=0):
     """ Submit uss jcl. Use ZOAU jsub with option hfs=True """
 
     kwargs = {}
-
+    jobId = None
     wait = False
-    if timeout > 0:
-        wait = True
-        kwargs.update({"timeout": "{0}".format(timeout)})
 
     # Work around to hfs=True ZOAU issue
     tmp_data_set_for_submit = datasets.tmp_name(datasets.hlq())
@@ -635,16 +643,22 @@ def submit_uss_jcl(src, module, timeout=0):
         )
 
     try:
-        job_listing = submit(tmp_data_set_for_submit, wait, None, **kwargs)
+        if timeout > 0:
+            wait = True
+            kwargs.update({"timeout": "{0}".format(timeout)})
+            job_listing = jobs.submit(tmp_data_set_for_submit, wait, None, **kwargs)
+            jobId = job_listing.id
+        else:
+            job_listing = jobs._submit._submit(tmp_data_set_for_submit, None, **kwargs)
+            jobId = job_listing.stdout_response
     except (ZOAUException, JobSubmitException) as err:
         module.fail_json(
             msg="Unable to submit job {0} as a result of {1}.".format(src, err),
-            rc=99,
+            rc=None,
             stdout=None,
             stderr="Non-zero return code received."
         )
 
-    jobId = job_listing.id
     return jobId
 
 

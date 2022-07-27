@@ -203,10 +203,10 @@ def _zget_job_status(job_id="*", owner="*", job_name="*", dd_name=None):
     # listing, this needs to be removed on any release of zoau 1.2.0.1 or later
     try:
         entries = listing(job_query)
-    except:
-        time.sleep(1)
+    except Exception as e:
+        # We will not do anything with the exception e
+        time.sleep(2)
         entries = listing(job_query)
-
 
     final_entries = []
     if entries:

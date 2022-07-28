@@ -594,7 +594,7 @@ def submit_pds_jcl(src, module, timeout=0):
             jobId = job_listing.id
         else:
             job_listing = jobs._submit(src, None, **kwargs)
-            jobId = job_listing.stdout_response
+            jobId = job_listing.stdout_response.rstrip("\n")
     except (ZOAUException, JobSubmitException) as err:
         module.fail_json(
             msg="Unable to submit job {0} as a result of {1}.".format(src, err),

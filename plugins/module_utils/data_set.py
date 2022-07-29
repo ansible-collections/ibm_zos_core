@@ -92,6 +92,10 @@ class DataSet(object):
 
     _VSAM_UNCATALOG_COMMAND = " DELETE '{0}' NOSCRATCH"
 
+    _MVS_PARTITIONED = frozenset({"PE", "PO", "PDSE", "PDS"})
+    _MVS_SEQ = frozenset({"PS", "SEQ", "BASIC"})
+    _MVS_VSAM = frozenset({"KSDS", "ESDS", "RRDS", "LDS", "VSAM"})
+
     @staticmethod
     def ensure_present(
         name,
@@ -281,6 +285,54 @@ class DataSet(object):
         return False
 
     @staticmethod
+    def allocate_model_data_set(ds_name, model, vol=None):
+        """Allocates a data set based on the attributes of a 'model' data set.
+        Useful when a data set needs to be created identical to another. Supported
+        model(s) are Physical Sequential (PS), Partitioned Data Sets (PDS/PDSE),
+        and VSAM data sets. If `ds_name` has a member (i.e., "DATASET(member)"),
+        it will be shortened to just the partitioned data set name.
+
+        Arguments:
+            ds_name {str} -- The name of the data set to allocate. If the ds_name
+            is a partitioned member e.g. hlq.llq.ds(mem), only the data set name
+            must be used. See extract_dsname(ds_name) in data_set.py
+            model {str} -- The name of the data set whose allocation parameters
+            should be used to allocate the new data set 'ds_name'
+            vol {str} -- The volume where data set should be allocated
+
+        Raise:
+            NonExistentSourceError: When the model data set does not exist.
+            MVSCmdExecError: When the call to IKJEFT01 to allocate the
+                            data set fails.
+        """
+        if not DataSet.data_set_exists(model):
+            raise DatasetNotFoundError(model)
+
+        ds_name = extract_dsname(ds_name)
+        model_type = DataSet.data_set_type(model)
+
+        # The break lines are absolutely necessary, a JCL code line can't
+        # be longer than 72 characters. The following JCL is compatible with
+        # all data set types.
+        alloc_cmd = """ ALLOC DS('{0}') -
+        LIKE ('{1}')""".format(ds_name, model)
+
+        # Now adding special parameters for sequential and partitioned
+        # data sets.
+        if not model_type in DataSet._MVS_VSAM:
+            block_size = datasets.listing(model)[0].block_size
+            alloc_cmd = """{0} -
+            BLKSIZE({1})""".format(alloc_cmd, block_size)
+
+        if vol:
+            alloc_cmd = """{0} -
+            VOLUME({1})""".format(alloc_cmd, vol.upper())
+
+        rc, out, err = mvs_cmd.ikjeft01(alloc_cmd, authorized=True)
+        if rc != 0:
+            raise MVSCmdExecError(rc, out, err)
+
+    @staticmethod
     def data_set_cataloged(name):
         """Determine if a data set is in catalog.
 
@@ -364,14 +416,30 @@ class DataSet(object):
 
         Returns:
             str -- Name of the volume where the data set is.
+
+        Raises:
+            DatasetNotFoundError: When data set cannot be found on the system.
+            DatasetVolumeError: When the function is unable to parse the value
+                                of VOLSER.
         """
         data_set_information = datasets.listing(name)
 
         if len(data_set_information) > 0:
             return data_set_information[0].volume
-        else:
-            # TODO: check for VSAM datasets before raising the exception.
+
+        # If listing failed to return a data set, then it's probably a VSAM.
+        output = DataSet._get_listcat_data(name)
+
+        if re.findall(r"NOT FOUND|NOT LISTED", output):
             raise DatasetNotFoundError(name)
+
+        volser_output = re.findall(r"VOLSER-*[A-Z|0-9]+", output)
+
+        if volser_output:
+            return volser_output[0].replace("VOLSER", "").replace("-", "")
+        else:
+            raise DatasetVolumeError(name)
+
 
     @staticmethod
     def data_set_type(name, volume=None):
@@ -382,24 +450,63 @@ class DataSet(object):
             volume (str) -- The volume the data set may reside on.
 
         Returns:
-            str -- The type of the data set (one of "PS", "PO", "DA" or "VSAM").
+            str -- The type of the data set (one of "PS", "PO", "DA", "KSDS",
+                    "ESDS", "LDS" or "RRDS").
             None -- If the data set does not exist or ZOAU is not able to determine
                     the type.
         """
-        ds_type = None
+        if not DataSet.data_set_exists(name, volume):
+            return None
 
-        if DataSet.data_set_exists(name, volume):
-            data_sets_found = datasets.listing(name)
-            volumes = [volume] if volume else None
+        data_sets_found = datasets.listing(name)
 
-            # Using the DSORG property when it's a sequential or partitioned
-            # dataset. VSAMs are not found by datasets.listing.
-            if len(data_sets_found) > 0:
-                ds_type = data_sets_found[0].dsorg
-            elif DataSet.is_vsam(name, volumes):
-                ds_type = "VSAM"
+        # Using the DSORG property when it's a sequential or partitioned
+        # dataset. VSAMs are not found by datasets.listing.
+        if len(data_sets_found) > 0:
+            return data_sets_found[0].dsorg
 
-        return ds_type
+        # Next, trying to get the DATA information of a VSAM through
+        # LISTCAT.
+        output = DataSet._get_listcat_data(name)
+
+        # Filtering all the DATA information to only get the ATTRIBUTES block.
+        data_set_attributes = re.findall(r"ATTRIBUTES.*STATISTICS", output, re.DOTALL)
+        if len(data_set_attributes) == 0:
+            return None
+
+        if re.search(r"\bINDEXED\b", data_set_attributes[0]):
+            return "KSDS"
+        elif re.search(r"\bNONINDEXED\b", data_set_attributes[0]):
+            return "ESDS"
+        elif re.search(r"\bLINEAR\b", data_set_attributes[0]):
+            return "LDS"
+        elif re.search(r"\bNUMBERED\b", data_set_attributes[0]):
+            return "RRDS"
+        else:
+            return None
+
+
+    @staticmethod
+    def _get_listcat_data(name):
+        """Runs IDCAMS to get the DATA information associated with a data set.
+
+        Arguments:
+            name (str) -- Name of the data set.
+
+        Returns:
+            str -- Standard output from IDCAMS.
+        """
+        name = name.upper()
+        module = AnsibleModuleHelper(argument_spec={})
+        stdin = " LISTCAT ENT('{0}') DATA ALL".format(name)
+        rc, stdout, stderr = module.run_command(
+            "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=stdin
+        )
+
+        if rc != 0:
+            raise MVSCmdExecError(rc, stdout, stderr)
+
+        return stdout
 
     @staticmethod
     def is_empty(name, volume=None):
@@ -417,11 +524,11 @@ class DataSet(object):
 
         ds_type = DataSet.data_set_type(name, volume)
 
-        if ds_type == "PO":
+        if ds_type in DataSet._MVS_PARTITIONED:
             return DataSet._pds_empty(name)
-        elif ds_type == "PS":
+        elif ds_type in DataSet._MVS_SEQ:
             return len(datasets.read(name, tail=10)) == 0
-        elif ds_type == "VSAM":
+        elif ds_type in DataSet._MVS_VSAM:
             return DataSet._vsam_empty(name)
 
     @staticmethod
@@ -1500,6 +1607,14 @@ class MVSCmdExecError(Exception):
         self.msg = (
             "Failure during execution of mvscmd; Return code: {0}; "
             "stdout: {1}; stderr: {2}".format(rc, out, err)
+        )
+        super().__init__(self.msg)
+
+
+class DatasetVolumeError(Exception):
+    def __init__(self, data_set):
+        self.msg = (
+            "The data set {0} could not be found on a volume in the system.".format(data_set)
         )
         super().__init__(self.msg)
 

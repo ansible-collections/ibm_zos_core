@@ -713,30 +713,16 @@ class CopyHandler(object):
                     stderr=response.stderr_response
                 )
 
-    def copy_to_vsam(self, src, dest, alloc_vol):
-        """ Copy source VSAM to destination VSAM. If source VSAM exists, then
-        it will be deleted and a new VSAM cluster will be allocated.
+    def copy_to_vsam(self, src, dest):
+        """Copy source VSAM to destination VSAM.
 
         Arguments:
             src {str} -- The name of the source VSAM
             dest {str} -- The name of the destination VSAM
-            alloc_vol {str} -- The volume where the destination should be allocated
         """
-        if self.dest_exists:
-            response = datasets._delete(dest)
-            if response.rc != 0:
-                self.fail_json(
-                    msg="Unable to delete destination data set {0}".format(
-                        dest),
-                    rc=response.rc,
-                    stdout=response.stdout_response,
-                    stderr=response.stderr_response
-                )
-        self.allocate_model(dest, src, vol=alloc_vol)
-
         repro_cmd = """  REPRO -
-        INDATASET({0}) -
-        OUTDATASET({1})""".format(src, dest)
+        INDATASET('{0}') -
+        OUTDATASET('{1}')""".format(src.upper(), dest.upper())
         rc, out, err = idcams(repro_cmd, authorized=True)
         if rc != 0:
             self.fail_json(
@@ -819,43 +805,6 @@ class CopyHandler(object):
                 self.fail_json(msg=str(err))
         return new_src
 
-    def allocate_model(self, ds_name, model, vol=None):
-        """Use 'model' data sets allocation paramters to allocate the given
-        data set.
-
-        Arguments:
-            ds_name {str} -- The name of the data set to allocate
-            model {str} -- The name of the data set whose allocation parameters
-            should be used to allocate 'ds_name'
-            dsntype {str} -- The type of data set to be allocated
-            vol {str} -- The volume where data set should be allocated
-
-        Returns:
-            {int} -- The return code of executing the allocation command
-        """
-        blksize = data_set.DataSetUtils(model).blksize()
-
-        alloc_cmd = """  ALLOC DS('{0}') -
-    LIKE('{1}') -
-    {2}{3}""".format(
-            ds_name,
-            model,
-            "BLKSIZE({0}) ".format(blksize) if blksize else "",
-            "VOLUME({0})".format(vol.upper()) if vol else ""
-        )
-
-        rc, out, err = ikjeft01(alloc_cmd, authorized=True)
-        if rc != 0:
-            self.fail_json(
-                msg="Unable to allocate destination {0}".format(ds_name),
-                stdout=out,
-                stderr=err,
-                rc=rc,
-                stdout_lines=out.splitlines(),
-                stderr_lines=err.splitlines(),
-                cmd=alloc_cmd,
-            )
-        return rc
 
     def _convert_encoding_dir(self, dir_path, from_code_set, to_code_set):
         """Convert encoding for all files inside a given directory
@@ -1142,7 +1091,6 @@ class PDSECopyHandler(CopyHandler):
         dest,
         src_ds_type,
         src_member=None,
-        alloc_vol=None
     ):
         """Copy source to a PDS/PDSE or PDS/PDSE member.
 
@@ -1154,7 +1102,6 @@ class PDSECopyHandler(CopyHandler):
             dest {str} -- Name of destination data set
             src_ds_type {str} -- The type of source
             src_member {bool, optional} -- Member of the source data set to copy.
-            alloc_vol {str} -- The volume where the PDSE should be allocated
         """
         new_src = temp_path or conv_path or src
         if src_ds_type == "USS":
@@ -1291,122 +1238,6 @@ class PDSECopyHandler(CopyHandler):
         return dest.replace("\\", "").upper()
 
 
-def allocate_pdse(
-        self,
-        ds_name,
-        size=None,
-        src_vol=None,
-        src=None,
-        alloc_vol=None,
-        space_primary=None,
-        space_secondary=None,
-        space_type=None,
-        record_format=None,
-        record_length=None,
-        block_size=None
-    ):
-        """Allocate a partitioned extended data set. If 'size'
-        is provided, allocate PDSE using this given size. If size is not
-        provided, obtain the 'src' data set size from vtoc and allocate using
-        that information.
-
-        Arguments:
-            ds_name {str} -- The name of the PDSE to allocate
-
-        Keyword Arguments:
-            size {int} -- The size, in bytes, of the allocated PDSE
-            src {str} -- The name of the source data set from which to get the size
-            src_vol {str} -- Volume of the source data set
-            allc_vol {str} -- The volume where PDSE should be allocated
-        """
-        rc = -1
-        recfm = "FB"
-        lrecl = 80
-        alloc_size = space_primary + space_secondary
-        if not alloc_size:
-            if src_vol:
-                vtoc_info = vtoc.get_data_set_entry(src, src_vol)
-                tracks = int(vtoc_info.get("last_block_pointer").get("track"))
-                blocks = int(vtoc_info.get("last_block_pointer").get("block"))
-                blksize = int(vtoc_info.get("block_size"))
-                bytes_per_trk = 56664
-                alloc_size = (tracks * bytes_per_trk) + (blocks * blksize)
-                recfm = vtoc_info.get("record_format") or recfm
-                lrecl = int(vtoc_info.get("record_length")) or lrecl
-            else:
-                alloc_size = 5242880  # Use the default 5 Megabytes
-
-        if not self.dest_exists:
-            parms = dict(
-                name=ds_name,
-                type="PDSE",
-                space_primary=space_primary,
-                space_secondary=space_secondary,
-                space_type=space_type,
-                record_format=record_format,
-                record_length=record_length,
-                block_size=block_size
-            )
-            if alloc_vol:
-                parms['volumes'] = [alloc_vol]
-
-            try:
-                data_set.DataSet.create(**parms)
-            except Exception as err:
-                self.fail_json(msg=repr(err))
-
-        return rc
-
-
-def allocate_model_data_set(ds_name, model, vol=None):
-    """Allocates a data set based on a 'model' data sets allocation paramters.
-       Useful when data set needs to be created identical to another. Supported
-       model(s) are Physical Sequential (PS) and Partitioned Data Sets PDS. If a
-       PDS should have a member PDS(member) set as the `ds_name`, the input will
-       be sanitized thus removing the member resulting in only the data set name.
-
-        Arguments:
-            ds_name {str} -- The name of the data set to allocate. If the ds_name
-            is a partitioned member e.g. hlq.llq.ds(mem), only the data set name
-            must be used. See extract_dsname(ds_name) in data_set.py
-            model {str} -- The name of the data set whose allocation parameters
-            should be used to allocate the new data set 'ds_name'
-            vol {str} -- The volume where data set should be allocated
-
-        Returns:
-            {int} -- The return code of executing the allocation command
-        """
-
-    #TODO: Add a check to ensure ony type PO and PS are provided.
-    #TODO: Raise error that incorrect type was passed, only PO/PS are supported
-    #TODO: Move this code to shared module utils data set functions
-    module = AnsibleModuleHelper(argument_spec={})
-    blksize = data_set.DataSetUtils(model).blksize()
-    ds_name = data_set.extract_dsname(ds_name)
-
-    alloc_cmd = """  ALLOC DS('{0}') -
-    LIKE('{1}') -
-    {2}{3}""".format(
-          ds_name,
-          model,
-          "BLKSIZE({0}) ".format(blksize) if blksize else "",
-          "VOLUME({0})".format(vol.upper()) if vol else ""
-          )
-
-    rc, out, err = ikjeft01(alloc_cmd, authorized=True)
-    if rc != 0:
-            module.fail_json(
-                msg="Unable to allocate destination {0}".format(ds_name),
-                stdout=out,
-                stderr=err,
-                rc=rc,
-                stdout_lines=out.splitlines(),
-                stderr_lines=err.splitlines(),
-                cmd=alloc_cmd,
-            )
-    return rc
-
-
 def get_file_record_length(file):
     """Gets the longest line length from a file.
 
@@ -1442,12 +1273,14 @@ def dump_data_set_member_to_file(data_set_member):
 
     Returns:
         str -- Path of the file in USS that contains the dump of the member.
-        None -- If the dump fails.
+
+    Raise:
+        DataSetMemberAttributeError: When the call to dcp fails.
     """
     temp_path = "/tmp/{0}".format(_create_temp_path_name())
     module = AnsibleModuleHelper(argument_spec={})
     command = "dcp '{0}' {1}".format(data_set_member, temp_path)
-    rc, _, stderr = module.run_command(command)
+    rc, stdout, stderr = module.run_command(command)
 
     if rc != 0 or stderr:
         raise DataSetMemberAttributeError(data_set_member)
@@ -1548,7 +1381,6 @@ def create_seq_dataset_from_file(file, dest, force, is_binary, volume=None):
 
     dest_params = get_data_set_attributes(name=dest, size=src_size, is_binary=is_binary, record_format=record_format, record_length=record_length, volume=volume)
     data_set.DataSet.ensure_present(replace=force, **dest_params)
-    return dest_params
 
 
 def backup_data(ds_name, ds_type, backup_name):
@@ -1627,8 +1459,20 @@ def is_compatible(src_type, dest_type, copy_member, src_member):
     elif src_type == "USS":
         return dest_type != "VSAM"
 
+    # ********************************************************************
+    # If source is a VSAM data set, we need to check compatibility between
+    # all the different types of VSAMs, following the documentation for the
+    # dest parameter.
+    # ********************************************************************
     else:
-        return dest_type == "VSAM"
+        if (dest_type == "KSDS" or dest_type == "ESDS"):
+            return src_type == "ESDS" or src_type == "KSDS" or src_type == "RRDS"
+        elif dest_type == "RRDS":
+            return src_type == "RRDS"
+        elif dest_type == "LDS":
+            return src_type == "LDS"
+        else:
+            return dest_type == "VSAM"
 
 
 def does_destination_allow_copy(dest, dest_exists, member_exists, dest_type, is_uss, force, volume=None):
@@ -1887,8 +1731,18 @@ def run_module(module, arg_def):
                     raise NonExistentSourceError(src)
                 src_ds_type = data_set.DataSet.data_set_type(src_name)
                 src_ds_vol = data_set.DataSet.data_set_volume(src_name)
+
             else:
                 raise NonExistentSourceError(src)
+
+            # An empty VSAM will throw an error when IDCAMS tries to open it to copy
+            # the contents.
+            if src_ds_type in MVS_VSAM and data_set.DataSet.is_empty(src):
+                module.exit_json(
+                    note="The source VSAM {0} is likely empty. No data was copied.".format(src_name),
+                    changed=False,
+                    dest=dest
+                )
 
     except Exception as err:
         module.fail_json(msg=str(err))
@@ -1942,8 +1796,8 @@ def run_module(module, arg_def):
                 or (src and os.path.isdir(src) and is_mvs_dest)
             ):
                 dest_ds_type = "PDSE"
-            elif src_ds_type == "VSAM":
-                dest_ds_type = "VSAM"
+            elif src_ds_type in MVS_VSAM:
+                dest_ds_type = src_ds_type
             elif not is_uss:
                 dest_ds_type = "SEQ"
 
@@ -1952,74 +1806,87 @@ def run_module(module, arg_def):
     if not does_destination_allow_copy(dest_name, dest_exists, dest_member_exists, dest_ds_type, is_uss, force, volume):
         module.fail_json(msg="{0} already exists on the system, unable to overwrite unless force=True is specified.".format(dest))
 
-    # Creating the destination when it's a non-VSAM dataset.
-    if not is_uss and src_ds_type not in MVS_VSAM and dest_ds_type not in MVS_VSAM:
-        # Replacing an existing dataset only when it's not empty. We don't know whether that
-        # empty dataset was created for the user by an admin/operator, and they don't have permissions
-        # to create new datasets.
-        # These rules assume that source and destination types are compatible.
-        if not (dest_exists and data_set.DataSet.is_empty(dest_name)):
-            res_args["changed"] = True
-            dest_params = dict()
+    try:
+        # Creating the destination when it's a non-VSAM dataset.
+        if not is_uss and dest_ds_type not in MVS_VSAM:
+            # Replacing an existing dataset only when it's not empty. We don't know whether that
+            # empty dataset was created for the user by an admin/operator, and they don't have permissions
+            # to create new datasets.
+            # These rules assume that source and destination types are compatible.
+            if not (dest_exists and data_set.DataSet.is_empty(dest_name)):
+                res_args["changed"] = True
+                dest_params = dict()
 
-            # Giving more priority to the parameters given by the user.
-            if destination_dataset:
-                dest_params = module.params.get("destination_dataset")
-                dest_params["name"] = dest_name
-                data_set.DataSet.ensure_present(replace=force, **dest_params)
-            elif dest_ds_type in MVS_SEQ:
-                volumes = [volume] if volume else None
-                data_set.DataSet.ensure_absent(dest_name, volumes=volumes)
-
-                if src_ds_type == "USS":
-                    # Taking the temp file when a local file was copied with sftp.
-                    new_src = temp_path or src
-                    a = create_seq_dataset_from_file(new_src, dest_name, force, is_binary, volume=volume)
-                elif src_ds_type in MVS_SEQ and data_set.DataSet.data_set_exists(src_name):
-                    allocate_model_data_set(ds_name=dest_name, model=src_name, vol=volume)
-                else:
-                    # Dumping the member into a file in USS to compute the record length and
-                    # size for the new data set.
-                    temp_dump = dump_data_set_member_to_file(src)
-                    create_seq_dataset_from_file(temp_dump, dest_name, force, is_binary, volume=volume)
-            elif dest_ds_type in MVS_PARTITIONED:
-                # Taking the src as model if it's also a PDSE.
-                if not dest_exists and src_ds_type in MVS_PARTITIONED:
-                    allocate_model_data_set(ds_name=dest_name, model=src_name, vol=volume)
-                elif not dest_exists and src_ds_type in MVS_SEQ:
-                    src_attributes = datasets.listing(src_name)[0]
-                    # The size returned by listing is in bytes.
-                    size = src_attributes.total_space
-                    record_format = src_attributes.recfm
-                    record_length = src_attributes.lrecl
-
-                    dest_params = get_data_set_attributes(dest_name, size, is_binary, record_format=record_format, record_length=record_length, type="PDSE", volume=volume)
+                # Giving more priority to the parameters given by the user.
+                if destination_dataset:
+                    dest_params = module.params.get("destination_dataset")
+                    dest_params["name"] = dest_name
                     data_set.DataSet.ensure_present(replace=force, **dest_params)
-                elif not dest_exists and src_ds_type == "USS":
-                    new_src = temp_path or src
+                elif dest_ds_type in MVS_SEQ:
+                    volumes = [volume] if volume else None
+                    data_set.DataSet.ensure_absent(dest_name, volumes=volumes)
 
-                    if os.path.isfile(new_src):
-                        # This is almost the same as allocating a sequential dataset.
-                        size = os.stat(new_src).st_size
-                        record_format = record_length = None
-
-                        if not is_binary:
-                            record_format = "FB"
-                            record_length = get_file_record_length(new_src)
+                    if src_ds_type == "USS":
+                        # Taking the temp file when a local file was copied with sftp.
+                        new_src = temp_path or src
+                        create_seq_dataset_from_file(new_src, dest_name, force, is_binary, volume=volume)
+                    elif src_ds_type in MVS_SEQ and data_set.DataSet.data_set_exists(src_name):
+                        data_set.DataSet.allocate_model_data_set(ds_name=dest_name, model=src_name, vol=volume)
+                    else:
+                        # Dumping the member into a file in USS to compute the record length and
+                        # size for the new data set.
+                        temp_dump = dump_data_set_member_to_file(src)
+                        create_seq_dataset_from_file(temp_dump, dest_name, force, is_binary, volume=volume)
+                elif dest_ds_type in MVS_PARTITIONED:
+                    # Taking the src as model if it's also a PDSE.
+                    if not dest_exists and src_ds_type in MVS_PARTITIONED:
+                        data_set.DataSet.allocate_model_data_set(ds_name=dest_name, model=src_name, vol=volume)
+                    elif not dest_exists and src_ds_type in MVS_SEQ:
+                        src_attributes = datasets.listing(src_name)[0]
+                        # The size returned by listing is in bytes.
+                        size = src_attributes.total_space
+                        record_format = src_attributes.recfm
+                        record_length = src_attributes.lrecl
 
                         dest_params = get_data_set_attributes(dest_name, size, is_binary, record_format=record_format, record_length=record_length, type="PDSE", volume=volume)
-                    else:
-                        # TODO: decide on whether to compute the longest file record length and use that for the whole PDSE.
-                        size = sum([os.stat("{0}/{1}".format(new_src, member)).st_size for member in os.listdir(new_src)])
-                        # This PDSE will be created with record format VB and a record length of 1028.
-                        dest_params = get_data_set_attributes(dest_name, size, is_binary, type="PDSE", volume=volume)
+                        data_set.DataSet.ensure_present(replace=force, **dest_params)
+                    elif not dest_exists and src_ds_type == "USS":
+                        new_src = temp_path or src
 
+                        if os.path.isfile(new_src):
+                            # This is almost the same as allocating a sequential dataset.
+                            size = os.stat(new_src).st_size
+                            record_format = record_length = None
+
+                            if not is_binary:
+                                record_format = "FB"
+                                record_length = get_file_record_length(new_src)
+
+                            dest_params = get_data_set_attributes(dest_name, size, is_binary, record_format=record_format, record_length=record_length, type="PDSE", volume=volume)
+                        else:
+                            # TODO: decide on whether to compute the longest file record length and use that for the whole PDSE.
+                            size = sum([os.stat("{0}/{1}".format(new_src, member)).st_size for member in os.listdir(new_src)])
+                            # This PDSE will be created with record format VB and a record length of 1028.
+                            dest_params = get_data_set_attributes(dest_name, size, is_binary, type="PDSE", volume=volume)
+
+                        data_set.DataSet.ensure_present(replace=force, **dest_params)
+        elif dest_ds_type in MVS_VSAM:
+            if not dest_exists or not data_set.DataSet.is_empty(dest_name):
+                res_args["changed"] = True
+
+                # Giving more priority to the parameters given by the user.
+                if destination_dataset:
+                    dest_params = module.params.get("destination_dataset")
+                    dest_params["name"] = dest_name
                     data_set.DataSet.ensure_present(replace=force, **dest_params)
-        else:
-            module.fail_json(msg="Failed precedence rules, something slipped through the cracks")
-    # TODO: handle allocation of new VSAMs.
-    elif not is_uss and dest_ds_type in MVS_VSAM:
-        pass
+                # If destination_dataset is not available, always create the destination using the src VSAM
+                # as a model.
+                else:
+                    volumes = [volume] if volume else None
+                    data_set.DataSet.ensure_absent(dest_name, volumes=volumes)
+                    data_set.DataSet.allocate_model_data_set(ds_name=dest_name, model=src_name, vol=volume)
+    except Exception as err:
+        module.fail_json(msg="Unable to allocate destination data set: {0}".format(str(err)))
 
     # ********************************************************************
     # Encoding conversion is only valid if the source is a local file,
@@ -2123,7 +1990,7 @@ def run_module(module, arg_def):
     # Copy to VSAM data set
     # ---------------------------------------------------------------------
     else:
-        copy_handler.copy_to_vsam(src, dest, alloc_vol=volume)
+        copy_handler.copy_to_vsam(src, dest)
 
     res_args.update(
         dict(
@@ -2281,7 +2148,7 @@ class EncodingConversionError(Exception):
 
 class NonExistentSourceError(Exception):
     def __init__(self, src):
-        self.msg = "Source {0} does not exist".format(src)
+        self.msg = "Source data set {0} does not exist".format(src)
         super().__init__(self.msg)
 
 
@@ -2289,6 +2156,7 @@ class DataSetMemberAttributeError(Exception):
     def __init__(self, src):
         self.msg = "Unable to get size and record length of member {0}".format(src)
         super().__init__(self.msg)
+
 
 if __name__ == "__main__":
     main()

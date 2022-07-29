@@ -244,7 +244,9 @@ def _zget_job_status(job_id="*", owner="*", job_name="*", dd_name=None):
 
             job = {}
 
-            job["job_id"] = entry.id
+            # rstrip is a solution because we call zoau raw functions like _submit
+            # which return values with a backslash
+            job["job_id"] = entry.id.rstrip("\n")
             job["job_name"] = entry.name
             job["subsystem"] = ""
             job["system"] = ""

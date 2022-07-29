@@ -171,7 +171,7 @@ def test_job_submit_LOCAL_BADJCL(ansible_zos_module):
 
 
 
-@unittest.skip('Skip test temporarily')
+@unittest.skip('Skip tests see comment below')
 def test_job_submit_PDS_volume(ansible_zos_module):
     """
     Currently don't have volume support from ZOAU python API, so this will not be
@@ -184,7 +184,7 @@ def test_job_submit_PDS_volume(ansible_zos_module):
         assert result.get('changed') is True
 
 
-@unittest.skip('Skip security tests ')
+@unittest.skip('Skip tests see comment below ')
 def test_job_submit_PDS_long(ansible_zos_module):
     """
     Short run in some other environments would fail, so "normal" run currently

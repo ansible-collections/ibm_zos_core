@@ -82,13 +82,13 @@ def job_output(job_id=None, owner=None, job_name=None, dd_name=None):
     owner = parsed_args.get("owner") or "*"
     dd_name = parsed_args.get("dd_name") or ""
 
-    job_detail = _zget_job_status(job_id=job_id, owner=owner, job_name=job_name)
+    job_detail = _zget_job_status(job_id=job_id, owner=owner, job_name=job_name, dd_name=dd_name)
     if len(job_detail) == 0:
         # some systems have issues with "*" while some require it to see results
         job_id = "" if job_id == "*" else job_id
         owner = "" if owner == "*" else owner
         job_name = "" if job_name == "*" else job_name
-        job_detail = _zget_job_status(job_id=job_id, owner=owner, job_name=job_name)
+        job_detail = _zget_job_status(job_id=job_id, owner=owner, job_name=job_name, dd_name=dd_name)
     return job_detail
 
 
@@ -203,17 +203,10 @@ def _zget_job_status(job_id="*", owner="*", job_name="*", dd_name=None):
     # jls output: owner=job[0], name=job[1], id=job[2], status=job[3], rc=job[4]
     # e.g.: OMVSADM  HELLO    JOB00126 JCLERR   ?
     # entries = listing(job_query, owner)   1.2.0 has owner paramn, 1.1 does not
-    # entries = None
 
-    # This is a work around for now to the ZOAU index exception that occurs in
-    # listing, this needs to be removed on any release of zoau 1.2.0.1 or later
-    # try:
+    # Disabled for now to use work around below resulting from an index bound
+    # excpetion using zoau  dataset.listing()
     #     entries = listing(job_query)
-    # except Exception as e:
-    #     # We will not do anything with the exception e
-    #     time.sleep(2)
-    #     entries = listing(job_query)
-    # instead loop on _listing()
 
     entries = []
     response = _listing(job_query)
@@ -275,11 +268,13 @@ def _zget_job_status(job_id="*", owner="*", job_name="*", dd_name=None):
                 if dd_name is not None:
                     if dd_name not in single_dd["dataset"]:
                         continue
+                    else:
+                        dd["ddname"] = single_dd["dataset"]
 
                 if "dataset" not in single_dd:
                     continue
 
-                dd["ddname"] = single_dd["dataset"]
+
                 if "recnum" in single_dd:
                     dd["record_count"] = single_dd["recnum"]
                 else:

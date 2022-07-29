@@ -17,7 +17,7 @@ __metaclass__ = type
 
 from shellescape import quote
 import tempfile
-
+import unittest
 
 JCL_FILE_CONTENTS = """//HELLO    JOB (T043JM,JM00,1,0,0,0),'HELLO WORLD - JRM',CLASS=R,
 //             MSGCLASS=X,MSGLEVEL=1,NOTIFY=S0JM
@@ -34,31 +34,58 @@ HELLO, WORLD
 TEMP_PATH = "/tmp/ansible/jcl"
 
 
-# def test_zos_job_output_no_job_id(ansible_zos_module):
-#     hosts = ansible_zos_module
-#     results = hosts.all.zos_job_output(job_id="NO_JOBID")
-#     for result in results.contacted.values():
-#         print(result)
-#         assert result.get("changed") is False
-#         assert result.get("jobs") is not None
+def test_zos_job_output_no_job_id(ansible_zos_module):
+    hosts = ansible_zos_module
+    results = hosts.all.zos_job_output(job_id="")
+    for result in results.contacted.values():
+        print(result)
+        assert result.get("changed") is False
+        assert result.get("jobs") is None
 
 
-# def test_zos_job_output_no_job_name(ansible_zos_module):
-#     hosts = ansible_zos_module
-#     results = hosts.all.zos_job_output(job_name="NO_JOBNAME")
-#     for result in results.contacted.values():
-#         print(result)
-#         assert result.get("changed") is False
-#         assert result.get("jobs") is not None
+def test_zos_job_output_invalid_job_id(ansible_zos_module):
+    hosts = ansible_zos_module
+    results = hosts.all.zos_job_output(job_id="INVALID")
+    for result in results.contacted.values():
+        print(result)
+        assert result.get("changed") is False
+        assert result.get("jobs") is not None
 
 
-# def test_zos_job_output_no_owner(ansible_zos_module):
-#     hosts = ansible_zos_module
-#     results = hosts.all.zos_job_output(owner="NO_OWNER")
-#     for result in results.contacted.values():
-#         print(result)
-#         assert result.get("changed") is False
-#         assert result.get("jobs") is not None
+def test_zos_job_output_no_job_name(ansible_zos_module):
+    hosts = ansible_zos_module
+    results = hosts.all.zos_job_output(job_name="")
+    for result in results.contacted.values():
+        print(result)
+        assert result.get("changed") is False
+        assert result.get("jobs") is None
+
+
+def test_zos_job_output_invalid_job_name(ansible_zos_module):
+    hosts = ansible_zos_module
+    results = hosts.all.zos_job_output(job_name="INVALID")
+    for result in results.contacted.values():
+        print(result)
+        assert result.get("changed") is False
+        assert result.get("jobs") is not None
+
+
+def test_zos_job_output_no_owner(ansible_zos_module):
+    hosts = ansible_zos_module
+    results = hosts.all.zos_job_output(owner="")
+    for result in results.contacted.values():
+        print(result)
+        assert result.get("changed") is False
+        assert result.get("jobs") is None
+
+
+def test_zos_job_output_no_owner(ansible_zos_module):
+    hosts = ansible_zos_module
+    results = hosts.all.zos_job_output(owner="INVALID")
+    for result in results.contacted.values():
+        print(result)
+        assert result.get("changed") is False
+        assert result.get("jobs") is not None
 
 
 def test_zos_job_output_reject(ansible_zos_module):

@@ -648,7 +648,7 @@ def submit_uss_jcl(src, module, timeout=0):
         else:
             # Wait was false, rely on our 10 second default and use the _submit to do so
             job_listing = jobs._submit(tmp_data_set_for_submit, None, **kwargs)
-            jobId = job_listing.stdout_response
+            jobId = job_listing.stdout_response.rstrip("\n")
     except (ZOAUException, JobSubmitException) as err:
         module.fail_json(
             msg="Unable to submit job {0} as a result of {1}.".format(src, err),

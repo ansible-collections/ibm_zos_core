@@ -342,8 +342,9 @@ class FetchHandler:
             find_max_recl = re.findall(r"MAXLRECL-*\d+", out)
             if find_max_recl:
                 max_recl = int("".join(re.findall(r"\d+", find_max_recl[0])))
-                if max_recl == 0:
-                    max_recl = 80
+            find_rec_total = re.findall(r"REC-TOTAL-*\d+", out)
+            if find_rec_total:
+                rec_total = int("".join(re.findall(r"\d+", find_rec_total[0])))
         else:
             self._fail_json(
                 msg="Unable to obtain data set information for {0}: {1}".format(
@@ -355,18 +356,19 @@ class FetchHandler:
                 stderr_lines=err.splitlines(),
                 rc=rc,
             )
-        return total_size, max_recl
+        return total_size, max_recl, rec_total
 
     def _copy_vsam_to_temp_data_set(self, ds_name):
         """ Copy VSAM data set to a temporary sequential data set """
         mvs_rc = 0
-        vsam_size, max_recl = self._get_vsam_size(ds_name)
-        sysprint = sysin = out_ds_name = None
+        vsam_size, max_recl, rec_total = self._get_vsam_size(ds_name)
+        # RDW takes the first 4 bytes or records in the VB format, hence we need to add an extra buffer to the vsam max recl.
+        max_recl += 4
+        sysin = out_ds_name = None
         try:
             sysin = data_set.DataSet.create_temp("MVSTMP")
-            sysprint = data_set.DataSet.create_temp("MVSTMP")
             out_ds_name = data_set.DataSet.create_temp(
-                "MSVTMP", space_primary=vsam_size, space_type="K", record_format="VB", record_length=max_recl
+                "MVSTMP", space_primary=vsam_size, space_type="K", record_format="VB", record_length=max_recl
             )
             repro_sysin = " REPRO INFILE(INPUT)  OUTFILE(OUTPUT) "
             datasets.write(sysin, repro_sysin)
@@ -387,20 +389,21 @@ class FetchHandler:
                     name="output", definition=types.DatasetDefinition(out_ds_name)
                 )
             )
+            # Used * to keep standard output instead of writing in a dataset.
             dd_statements.append(
                 types.DDStatement(
-                    name="sysprint", definition=types.DatasetDefinition(sysprint)
+                    name="sysprint", definition=types.FileDefinition("*")
                 )
             )
 
             response = mvscmd.execute_authorized(pgm="idcams", dds=dd_statements)
             mvs_rc, mvs_stdout, mvs_stderr = response.rc, response.stdout_response, response.stderr_response
 
-            # When vsam is empty mvs return code is 12, is not failed rather get and empty file
-            if mvs_rc != 0 and mvs_rc != 12:
+            # When vsam is empty mvs return code is 12, is not failed rather get an empty file.
+            if mvs_rc != 0 and rec_total > 0:
                 self._fail_json(
                     msg=(
-                        "Non-zero return code received while executing MVSCmd "
+                        "Non-zero return code received while executing mvscmd "
                         "to copy VSAM data set {0}".format(ds_name)
                     ),
                     rc=mvs_rc,
@@ -433,7 +436,6 @@ class FetchHandler:
             )
 
         finally:
-            datasets.delete(sysprint)
             datasets.delete(sysin)
 
         return out_ds_name

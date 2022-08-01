@@ -40,10 +40,10 @@ TEST_EMPTY_VSAM = "IMSTESTL.LDS01.WADS0"
 FROM_ENCODING = "IBM-1047"
 TO_ENCODING = "ISO8859-1"
 USS_FILE = "/tmp/fetch.data"
-TEST_DATA = """00000001This is for encode conversion testsing
-00000002This is for encode conversion testsing
-00000003This is for encode conversion testsing
-00000004This is for encode conversion testsing
+TEST_DATA = """0001This is for encode conversion testsing----
+0002This is for encode conversion testsing----
+0003This is for encode conversion testsing----
+0004This is for encode conversion testsing----
 """
 KSDS_CREATE_JCL = """//CREKSDS    JOB (T043JM,JM00,1,0,0,0),'CREATE KSDS',CLASS=R,
 //             MSGCLASS=X,MSGLEVEL=1,NOTIFY=OMVSADM
@@ -55,8 +55,8 @@ KSDS_CREATE_JCL = """//CREKSDS    JOB (T043JM,JM00,1,0,0,0),'CREATE KSDS',CLASS=
     DEFINE CLUSTER                          -
     (NAME(FETCH.TEST.VS)                  -
     INDEXED                                -
-    KEYS(12 20)                            -
-    RECSZ(200 200)                         -
+    KEYS(4 0)                            -
+    RECSZ(50 50)                         -
     RECORDS(100)                           -
     SHAREOPTIONS(2 3)                      -
     VOLUMES(000000) )                      -

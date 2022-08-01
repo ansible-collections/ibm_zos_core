@@ -56,7 +56,7 @@ KSDS_CREATE_JCL = """//CREKSDS    JOB (T043JM,JM00,1,0,0,0),'CREATE KSDS',CLASS=
     (NAME(FETCH.TEST.VS)                  -
     INDEXED                                -
     KEYS(4 0)                            -
-    RECSZ(50 50)                         -
+    RECSZ(200 200)                         -
     RECORDS(100)                           -
     SHAREOPTIONS(2 3)                      -
     VOLUMES(000000) )                      -

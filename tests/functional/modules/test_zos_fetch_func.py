@@ -204,7 +204,7 @@ def test_fetch_vsam_data_set(ansible_zos_module):
         hosts.all.zos_encode(
             src=USS_FILE, dest=TEST_VSAM, from_encoding=FROM_ENCODING, to_encoding=TO_ENCODING
         )
-        params = dict(src=TEST_VSAM, dest="/tmp/", flat=True, is_binary=True)
+        params = dict(src=TEST_VSAM, dest="/tmp/", flat=True, is_binary=False)
         results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():
             assert result.get("changed") is True

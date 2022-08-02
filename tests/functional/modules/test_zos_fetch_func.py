@@ -56,7 +56,7 @@ KSDS_CREATE_JCL = """//CREKSDS    JOB (T043JM,JM00,1,0,0,0),'CREATE KSDS',CLASS=
     (NAME(FETCH.TEST.VS)                  -
     INDEXED                                -
     KEYS(4 0)                            -
-    RECSZ(200 200)                         -
+    RECSZ(50 50)                         -
     RECORDS(100)                           -
     SHAREOPTIONS(2 3)                      -
     VOLUMES(000000) )                      -
@@ -216,9 +216,9 @@ def test_fetch_vsam_data_set(ansible_zos_module):
             assert file.read() == TEST_DATA.replace('\n','')
 
     finally:
-        if os.path.exists(dest_path):
-            None
-            os.remove(dest_path)
+        # if os.path.exists(dest_path):
+        #     None
+        #     os.remove(dest_path)
         hosts.all.file(path=USS_FILE, state="absent")
         hosts.all.file(path=TEMP_JCL_PATH, state="absent")
 

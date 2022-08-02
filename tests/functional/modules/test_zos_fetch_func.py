@@ -213,12 +213,12 @@ def test_fetch_vsam_data_set(ansible_zos_module):
             assert result.get("dest") == dest_path
             assert os.path.exists(dest_path)
             file = open(dest_path, 'r')
-            assert file.read() == TEST_DATA.replace('\n','')
+            assert file.read() == TEST_DATA
 
     finally:
-        # if os.path.exists(dest_path):
-        #     None
-        #     os.remove(dest_path)
+        if os.path.exists(dest_path):
+            None
+            os.remove(dest_path)
         hosts.all.file(path=USS_FILE, state="absent")
         hosts.all.file(path=TEMP_JCL_PATH, state="absent")
 

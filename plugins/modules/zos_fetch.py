@@ -362,6 +362,7 @@ class FetchHandler:
         """ Copy VSAM data set to a temporary sequential data set """
         mvs_rc = 0
         vsam_size, max_recl, rec_total = self._get_vsam_size(ds_name)
+        # Default in case of max recl being 80 to avoid failures when fetching and empty vsam.
         if max_recl == 0:
             max_recl = 80
         # RDW takes the first 4 bytes or records in the VB format, hence we need to add an extra buffer to the vsam max recl.
@@ -401,7 +402,7 @@ class FetchHandler:
             response = mvscmd.execute_authorized(pgm="idcams", dds=dd_statements)
             mvs_rc, mvs_stdout, mvs_stderr = response.rc, response.stdout_response, response.stderr_response
 
-            # When vsam is empty mvs return code is 12, is not failed rather get an empty file.
+            # When vsam is empty mvs return code is 12 hence checking for rec total as well, is not failed rather get an empty file.
             if mvs_rc != 0 and rec_total > 0:
                 self._fail_json(
                     msg=(

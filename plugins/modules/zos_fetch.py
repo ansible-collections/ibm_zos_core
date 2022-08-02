@@ -362,6 +362,8 @@ class FetchHandler:
         """ Copy VSAM data set to a temporary sequential data set """
         mvs_rc = 0
         vsam_size, max_recl, rec_total = self._get_vsam_size(ds_name)
+        if max_recl == 0:
+            max_recl = 80
         # RDW takes the first 4 bytes or records in the VB format, hence we need to add an extra buffer to the vsam max recl.
         max_recl += 4
         sysin = out_ds_name = None

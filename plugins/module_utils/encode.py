@@ -418,6 +418,8 @@ class EncodeUtils(object):
                 else:
                     if dest_type == "VSAM":
                         reclen, space_u = self.listdsi_data_set(dest.upper())
+                        # RDW takes the first 4 bytes or records in the VB format, hence we need to add an extra buffer to the vsam max recl.
+                        reclen += 4
                         temp_ps = self.temp_data_set(reclen, space_u)
                         rc, out, err = copy.copy_uss2mvs(temp_dest, temp_ps, "PS")
                         rc, out, err = copy.copy_vsam_ps(temp_ps, dest.upper())
@@ -434,8 +436,8 @@ class EncodeUtils(object):
         except Exception:
             raise
         finally:
-            if temp_ps:
-                datasets.delete(temp_ps)
+            # if temp_ps:
+            #     datasets.delete(temp_ps)
             if temp_src and temp_src != src:
                 if os.path.isdir(temp_src):
                     shutil.rmtree(temp_src)

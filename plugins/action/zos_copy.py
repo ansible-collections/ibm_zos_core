@@ -102,10 +102,7 @@ class ActionModule(ActionBase):
                     is_src_dir = os.path.isdir(src)
                     is_pds = is_src_dir and is_mvs_dest
 
-        # copy_member should be True either because the module needs to copy
-        # into a specified member or because the user specified a wildcard in
-        # the source.
-        copy_member = is_member(dest) or (not is_uss and src_member and '*' in src)
+        copy_member = is_member(dest)
 
         if not src and not content:
             msg = "'src' or 'content' is required"

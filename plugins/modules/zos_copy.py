@@ -1091,6 +1091,7 @@ class PDSECopyHandler(CopyHandler):
         dest,
         src_ds_type,
         src_member=None,
+        dest_member=None,
     ):
         """Copy source to a PDS/PDSE or PDS/PDSE member.
 
@@ -1102,105 +1103,79 @@ class PDSECopyHandler(CopyHandler):
             dest {str} -- Name of destination data set
             src_ds_type {str} -- The type of source
             src_member {bool, optional} -- Member of the source data set to copy.
+            dest_member {str, optional} -- Name of destination member in data set
         """
-        new_src = temp_path or conv_path or src
-        if src_ds_type == "USS":
-            if os.path.isfile(temp_path or src):
-                self.copy_to_member(
-                    src,
-                    temp_path,
-                    conv_path,
-                    dest,
-                    copy_member=True
-                )
-            else:
-                if src.endswith("/"):
-                    new_src = "{0}/{1}".format(
-                        temp_path, os.path.basename(os.path.dirname(src))
-                    )
+        new_src = conv_path or temp_path or src
 
+        if src_ds_type == "USS":
+            if os.path.isfile(new_src):
+                path = ""
+                files = [new_src]
+            else:
                 path, _, files = next(os.walk(new_src))
-                for file in files:
-                    member_name = file[: file.rfind(".")] if "." in file else file
-                    full_file_path = path + "/" + file
-                    self.copy_to_member(
-                        full_file_path,
-                        None,
-                        None,
-                        "{0}({1})".format(dest, member_name),
-                        copy_member=True
-                    )
+
+            for file in files:
+                full_file_path = os.path.normpath(path + "/" + file)
+
+                if dest_member:
+                    dest_copy_name = "{0}({1})".format(dest, dest_member)
+                else:
+                    dest_copy_name = "{0}({1})".format(dest, data_set.DataSet.get_member_name_from_file(file))
+
+                result = self.copy_to_member(full_file_path, dest_copy_name)
+
+                if result["rc"] != 0:
+                    msg = "Unable to copy file {0} to data set member {1}".format(file, dest_copy_name)
+                    self.fail_json(msg=msg, rc=result["rc"], stdout=result["out"], stderr=result["err"])
         elif src_ds_type in MVS_SEQ:
-            self.copy_to_member(
-                src,
-                None,
-                None,
-                dest,
-                data_set.is_member(dest)
-            )
+            dest_copy_name = "{0}({1})".format(dest, dest_member)
+            result = self.copy_to_member(new_src, dest_copy_name)
+
+            if result["rc"] != 0:
+                msg = "Unable to copy data set {0} to data set member {1}".format(new_src, dest_copy_name)
+                self.fail_json(msg=msg, rc=result["rc"], stdout=result["out"], stderr=result["err"])
         else:
-            data_set_base = data_set.extract_dsname(src)
             members = []
+            src_data_set_name = data_set.extract_dsname(new_src)
 
             if src_member:
-                members.append(data_set.extract_member_name(src))
-            elif is_member_wildcard(src):
-                try:
-                    members = list(map(str.strip, datasets.list_members(src)))
-                except AttributeError:
-                    self.exit_json(
-                        note="The src {0} is likely empty. No data was copied".format(
-                            data_set_base
-                        )
-                    )
+                members.append(data_set.extract_member_name(new_src))
             else:
-                members = datasets.list_members(data_set_base)
+                members = datasets.list_members(new_src)
 
             for member in members:
-                self.copy_to_member(
-                    "{0}({1})".format(data_set_base, member),
-                    None,
-                    None,
-                    "{0}({1})".format(dest, member),
-                )
+                copy_src = "{0}({1})".format(src_data_set_name, member)
+                if dest_member:
+                    dest_copy_name = "{0}({1})".format(dest, dest_member)
+                else:
+                    dest_copy_name = "{0}({1})".format(dest, member)
+
+                result = self.copy_to_member(copy_src, dest_copy_name)
+
+                if result["rc"] != 0:
+                    msg = "Unable to copy data set member {0} to data set member {1}".format(new_src, dest_copy_name)
+                    self.fail_json(msg=msg, rc=result["rc"], stdout=result["out"], stderr=result["err"])
 
 
     def copy_to_member(
         self,
         src,
-        temp_path,
-        conv_path,
-        dest,
-        copy_member=False
+        dest
     ):
         """Copy source to a PDS/PDSE member. The only valid sources are:
             - USS files
             - Sequential data sets
             - PDS/PDSE members
-            - local files
 
         Arguments:
             src {str} -- Path to USS file or data set name.
-            temp_path {str} -- Path to the location where the control node
-                               transferred data to
-            conv_path {str} -- Path to the converted source file/directory
             dest {str} -- Name of destination data set
 
-        Keyword Arguments:
-            copy_member {bool} -- Whether destination specifies a member name.
-                                  (default {False})
-
         Returns:
-            {str} -- Destination where the member was copied to
+            dict -- Dictionary containing the return code, stdout, and stderr from
+                    the copy command.
         """
-        is_uss_src = temp_path is not None or conv_path is not None or "/" in src
-        # if constructing, remove periods from member name
-        if src and is_uss_src and not copy_member:
-            dest = "{0}({1})".format(
-                dest, os.path.basename(src).replace(".", "")[0:8])
-
-        new_src = (temp_path or conv_path or src).replace("$", "\\$")
-
+        src = src.replace("$", "\\$")
         dest = dest.replace("$", "\\$").upper()
         opts = dict()
 
@@ -1208,18 +1183,10 @@ class PDSECopyHandler(CopyHandler):
         if self.is_binary:
             opts["options"] = "-B"
 
-        response = datasets._copy(new_src, dest, None, **opts)
+        response = datasets._copy(src, dest, None, **opts)
         rc, out, err = response.rc, response.stdout_response, response.stderr_response
 
         if rc != 0:
-            msg = ""
-            if is_uss_src:
-                msg = "Unable to copy file {0} to data set member {1}".format(
-                    src, dest)
-            else:
-                msg = "Unable to copy data set member {0} to {1}".format(
-                    src, dest)
-
             # *****************************************************************
             # An error occurs while attempting to write a data set member to a
             # PDSE containing program object members, a PDSE cannot contain
@@ -1228,14 +1195,14 @@ class PDSECopyHandler(CopyHandler):
             # *****************************************************************
             if "FSUM8976" in err and "EDC5091I" in err:
                 rc, out, err = self.run_command(
-                    "cp -X \"//'{0}'\" \"//'{1}'\"".format(new_src, dest)
+                    "cp -X \"//'{0}'\" \"//'{1}'\"".format(src, dest)
                 )
-                if rc != 0:
-                    self.fail_json(msg=msg, rc=rc, stdout=out, stderr=err)
-            else:
-                self.fail_json(msg=msg, rc=rc, stdout=out, stderr=err)
 
-        return dest.replace("\\", "").upper()
+        return dict(
+            rc= rc,
+            out= out,
+            err= err
+        )
 
 
 def get_file_record_length(file):
@@ -1407,18 +1374,20 @@ def backup_data(ds_name, ds_type, backup_name):
         module.fail_json(msg=repr(err))
 
 
-def is_compatible(src_type, dest_type, copy_member, src_member):
+def is_compatible(src_type, dest_type, copy_member, src_member, is_src_dir, src_has_subdirs):
     """Determine whether the src and dest are compatible and src can be
     copied to dest.
 
     Arguments:
-        src_type {str} -- Type of the source (e.g. PDSE, USS)
-        dest_type {str} -- Type of destination
-        src_member {bool} -- Whether src is a data set member
-        copy_member {bool} -- Whether dest is a data set member
+        src_type {str} -- Type of the source (e.g. PDSE, USS).
+        dest_type {str} -- Type of destination.
+        copy_member {bool} -- Whether dest is a data set member.
+        src_member {bool} -- Whether src is a data set member.
+        is_src_dir {bool} -- Whether the src is a USS directory.
+        src_has_subdirs {bool} -- Whether a USS src has subdirectories inside.
 
     Returns:
-        {bool} -- Whether src can be copied to dest
+        {bool} -- Whether src can be copied to dest.
     """
     # ********************************************************************
     # If the destination does not exist, then obviously it will need
@@ -1457,7 +1426,12 @@ def is_compatible(src_type, dest_type, copy_member, src_member):
         return True
 
     elif src_type == "USS":
-        return dest_type != "VSAM"
+        if dest_type in MVS_SEQ:
+            return not is_src_dir
+        elif dest_type in MVS_PARTITIONED:
+            return not src_has_subdirs
+        else:
+            return dest_type != "VSAM"
 
     # ********************************************************************
     # If source is a VSAM data set, we need to check compatibility between
@@ -1631,9 +1605,7 @@ def allocate_destination_data_set(
     """
     """
     src_name = data_set.extract_dsname(src)
-
-    if dest_ds_type != "USS":
-        is_dest_empty = data_set.DataSet.is_empty(dest)
+    is_dest_empty = data_set.DataSet.is_empty(dest) if dest_exists else True
 
     # Replacing an existing dataset only when it's not empty. We don't know whether that
     # empty dataset was created for the user by an admin/operator, and they don't have permissions
@@ -1780,10 +1752,13 @@ def run_module(module, arg_def):
     # and destination datasets, if needed.
     # ********************************************************************
     dest_member_exists = False
+    src_has_subdirs = False
     try:
         # If temp_path, the plugin has copied a file from the controller to USS.
         if temp_path or "/" in src:
             src_ds_type = "USS"
+            _, subdirs, _ = next(os.walk(temp_path or src))
+            src_has_subdirs = True if subdirs else False
         else:
             if data_set.DataSet.data_set_exists(src_name):
                 if src_member and not data_set.DataSet.data_set_member_exists(src):
@@ -1808,20 +1783,18 @@ def run_module(module, arg_def):
             dest_exists = os.path.exists(dest)
         else:
             dest_exists = data_set.DataSet.data_set_exists(dest_name, volume)
-            # copy_member comes from the action plugin, and is True when
-            # the user wants to copy into a single member of a PDS/PDSE, or when
-            # the user wants to copy multiple members from a source dataset into, and so
-            # the module checks whether they already exist or not.
-            if copy_member:
-                if not "/" in src and is_member_wildcard(src):
-                    dest_member_exists = dest_exists and data_set.DataSet.data_set_shared_members(src, dest)
-                else:
-                    dest_member_exists = dest_exists and data_set.DataSet.data_set_member_exists(dest)
-
             dest_ds_type = data_set.DataSet.data_set_type(dest_name, volume)
             # destination_dataset.type overrides `dest_ds_type` given precedence rules
             if destination_dataset and type is not None:
                 dest_ds_type = type
+
+            if dest_ds_type in MVS_PARTITIONED:
+                # Checking if the members that would be created from the directory files
+                # are already present on the system.
+                if src_ds_type == "USS":
+                    dest_member_exists = dest_exists and data_set.DataSet.files_in_data_set_members(src, dest)
+                elif src_ds_type in MVS_PARTITIONED:
+                    dest_member_exists = dest_exists and data_set.DataSet.data_set_shared_members(src, dest)
 
     except Exception as err:
         module.fail_json(msg=str(err))
@@ -1832,7 +1805,7 @@ def run_module(module, arg_def):
     # to a PDS. Perform these sanity checks.
     # Note: dest_ds_type can also be passed from destination_dataset.type
     # ********************************************************************
-    if not is_compatible(src_ds_type, dest_ds_type, copy_member, src_member):
+    if not is_compatible(src_ds_type, dest_ds_type, copy_member, src_member, is_src_dir, src_has_subdirs):
         module.fail_json(
             msg="Incompatible target type '{0}' for source '{1}'".format(
                 dest_ds_type, src_ds_type
@@ -1985,8 +1958,9 @@ def run_module(module, arg_def):
         )
 
         pdse_copy_handler.copy_to_pdse(
-            src, temp_path, conv_path, dest, src_ds_type, src_member=src_member, alloc_vol=volume
+            src, temp_path, conv_path, dest_name, src_ds_type, src_member=src_member, dest_member=dest_member
         )
+        res_args["changed"] = True
         dest = dest.upper()
 
     # ------------------------------- o -----------------------------------

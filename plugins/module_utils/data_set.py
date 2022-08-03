@@ -15,7 +15,7 @@ __metaclass__ = type
 
 import re
 import tempfile
-from os import path
+from os import path, walk
 from string import ascii_uppercase, digits
 from random import randint
 from ansible.module_utils._text import to_bytes
@@ -403,6 +403,50 @@ class DataSet(object):
 
         for member in src_members:
             if DataSet.data_set_member_exists("{0}({1})".format(dest, member)):
+                return True
+
+        return False
+
+    @staticmethod
+    def get_member_name_from_file(file_name):
+        """Creates a member name for a partitioned data set by taking the first
+        8 characters from a filename without its file extension.
+
+        Arguments:
+            file_name (str) -- A file name that can include a file extension.
+
+        Returns:
+            str -- Member name constructed from the file name.
+        """
+        # Removing the file extension.
+        member_name = path.splitext(file_name)[0]
+        # Taking the first 8 characters from the file name.
+        member_name = member_name.replace(".", "")[0:8]
+
+        return member_name
+
+    @staticmethod
+    def files_in_data_set_members(src, dest):
+        """Checks for the existence of members corresponding to USS files in a
+        destination data set. The file names get converted to the form they
+        would take when copied into a partitioned data set.
+
+        Arguments:
+            src (str) -- USS path to a file or a directory.
+            dest (str) -- Name of the destination data set.
+
+        Returns:
+            bool -- If at least one of the members in src exists in dest.
+        """
+        if path.isfile(src):
+            files = [path.basename(src)]
+        else:
+            _, _, files = next(walk(src))
+
+        files = [DataSet.get_member_name_from_file(file) for file in files]
+
+        for file in files:
+            if DataSet.data_set_member_exists("{0}({1})".format(dest, file)):
                 return True
 
         return False

@@ -31,10 +31,13 @@ FROM_ENCODING = "IBM-1047"
 INVALID_ENCODING = "EBCDIC"
 TO_ENCODING = "ISO8859-1"
 TEMP_JCL_PATH = "/tmp/ansible/jcl"
-TEST_DATA = """00000001This is for encode conversion testsing
-00000002This is for encode conversion testsing
-00000003This is for encode conversion testsing
-00000004This is for encode conversion testsing
+TEST_DATA = """0001 This is for encode conversion testing0000000
+0002 This is for encode conversion testing0000000
+0003 This is for encode conversion testing0000000
+0004 This is for encode conversion testing0000000
+0005 This is for encode conversion testing0000000
+0006 This is for encode conversion testing0000000
+
 """
 TEST_FILE_TEXT = "HELLO world"
 BACKUP_DATA_SET = "USER.PRIVATE.BACK"
@@ -49,10 +52,9 @@ KSDS_CREATE_JCL = """//CREKSDS    JOB (T043JM,JM00,1,0,0,0),'CREATE KSDS',CLASS=
    DEFINE CLUSTER                          -
     (NAME(ENCODE.TEST.VS)                  -
     INDEXED                                -
-    KEYS(12 20)                            -
-    RECSZ(200 200)                         -
+    KEYS(4 0)                            -
+    RECSZ(50 50)                         -
     RECORDS(100)                           -
-    SHAREOPTIONS(2 3)                      -
     VOLUMES(000000) )                      -
     DATA (NAME(ENCODE.TEST.VS.DATA))       -
     INDEX (NAME(ENCODE.TEST.VS.INDEX))
@@ -403,6 +405,8 @@ def test_uss_encoding_conversion_mvs_vsam_to_uss_file(ansible_zos_module):
         assert result.get("dest") == USS_DEST_FILE
         assert result.get("backup_name") is not None
         assert result.get("changed") is True
+        uss_file_content = hosts.all.shell(cmd="cat {0}".format(USS_DEST_FILE))
+        assert TEST_DATA == uss_file_content
 
 
 def test_uss_encoding_conversion_mvs_vsam_to_mvs_ps(ansible_zos_module):

@@ -401,6 +401,8 @@ class EncodeUtils(object):
                 rc, out, err = copy.copy_pds2uss(src, temp_src)
             if src_type == "VSAM":
                 reclen, space_u = self.listdsi_data_set(src.upper())
+                # RDW takes the first 4 bytes or records in the VB format, hence we need to add an extra buffer to the vsam max recl.
+                reclen += 4
                 temp_ps = self.temp_data_set(reclen, space_u)
                 rc, out, err = copy.copy_vsam_ps(src.upper(), temp_ps)
                 temp_src_fo = NamedTemporaryFile()

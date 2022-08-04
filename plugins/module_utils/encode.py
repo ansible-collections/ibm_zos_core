@@ -436,8 +436,8 @@ class EncodeUtils(object):
         except Exception:
             raise
         finally:
-            # if temp_ps:
-            #     datasets.delete(temp_ps)
+            if temp_ps:
+                datasets.delete(temp_ps)
             if temp_src and temp_src != src:
                 if os.path.isdir(temp_src):
                     shutil.rmtree(temp_src)

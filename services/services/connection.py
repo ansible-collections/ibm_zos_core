@@ -59,13 +59,25 @@ class Connection:
             print(e)
 
     def execute(self, client, request):
+        """
+        Parms
+        -----
+
+        client (str) - client connect
+        req...
+
+        Returns:
+
+        raises:
+        
+        """
         #cmd = request.get('command')
         cmd = request.to_dic().get("command")
         try:
             env={'LANG': 'en_GB',
                 'LC_COLLATE': 'C'
             }
-            
+
             # We may need to create a channel and make this synchronous
             # but get_pty should help avoid having to do that
             (stdin, stdout, stderr) = client.exec_command(cmd, get_pty=True, environment = env)

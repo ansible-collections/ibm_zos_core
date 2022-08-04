@@ -48,7 +48,7 @@ class TestConnectionUnitTests(unittest.TestCase):
         "hostname": "EC33018A.vmec.svl.ibm.com",
         "port": 22,
         "username": "omvsadm",
-        "password": "xxxxxxx",
+        "password": "all1sdun",
         "key_filename": os.path.expanduser('~') + "/.ssh/id_dsa",
         "passphrase": "changeme"
     }

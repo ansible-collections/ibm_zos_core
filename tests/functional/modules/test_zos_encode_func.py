@@ -422,6 +422,8 @@ def test_uss_encoding_conversion_mvs_vsam_to_mvs_ps(ansible_zos_module):
         assert result.get("dest") == MVS_PS
         assert result.get("backup_name") is None
         assert result.get("changed") is True
+        ds_content = hosts.all.shell(cmd="cat \"//'{0}'\"".format(MVS_PS))
+        assert TEST_DATA == ds_content
 
 
 def test_uss_encoding_conversion_mvs_vsam_to_mvs_pds_member(ansible_zos_module):
@@ -439,6 +441,7 @@ def test_uss_encoding_conversion_mvs_vsam_to_mvs_pds_member(ansible_zos_module):
         assert result.get("dest") == MVS_PDS_MEMBER
         assert result.get("backup_name") is None
         assert result.get("changed") is True
+        ds_content = hosts.all.shell(cmd="cat \"//'{0}'\"".format(MVS_PDS_MEMBER))
 
 
 def test_uss_encoding_conversion_mvs_ps_to_mvs_vsam(ansible_zos_module):

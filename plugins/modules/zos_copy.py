@@ -1449,11 +1449,13 @@ def is_compatible(src_type, dest_type, copy_member, src_member, is_src_dir, src_
             return dest_type == "VSAM"
 
 
-def does_destination_allow_copy(dest, dest_exists, member_exists, dest_type, is_uss, force, volume=None):
+def does_destination_allow_copy(src, src_type, dest, dest_exists, member_exists, dest_type, is_uss, force, volume=None):
     """Checks whether or not the module can copy into the destination
     specified.
 
     Arguments:
+        src {str} -- Name of the source.
+        src_type {bool} -- Type of the source (SEQ/PARTITIONED/VSAM/USS).
         dest {str} -- Name of the destination.
         dest_exists {bool} -- Whether or not the destination exists.
         member_exists {bool} -- Whether or not a member in a partitioned destination exists.
@@ -1468,8 +1470,11 @@ def does_destination_allow_copy(dest, dest_exists, member_exists, dest_type, is_
     """
     # If the destination is inside USS and the module doesn't have permission to replace it,
     # it fails.
-    if is_uss and dest_exists and not force:
-        return False
+    if is_uss and dest_exists:
+        if src_type == "USS" and os.path.isdir(dest) and os.path.isdir(src) and not force:
+            return False
+        elif os.path.isfile(dest) and not force:
+            return False
 
     # If the destination is a sequential or VSAM data set and is empty, the module will try to use it,
     # otherwise, force needs to be True to continue and replace it.
@@ -1638,6 +1643,7 @@ def allocate_destination_data_set(
         if src_ds_type in MVS_PARTITIONED:
             data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, vol=volume)
         elif src_ds_type in MVS_SEQ:
+            # TODO: check for the types returned here.
             src_attributes = datasets.listing(src_name)[0]
             # The size returned by listing is in bytes.
             size = src_attributes.total_space
@@ -1757,7 +1763,10 @@ def run_module(module, arg_def):
         # If temp_path, the plugin has copied a file from the controller to USS.
         if temp_path or "/" in src:
             src_ds_type = "USS"
-            _, subdirs, _ = next(os.walk(temp_path or src))
+            subdirs = None
+
+            if is_src_dir:
+                _, subdirs, _ = next(os.walk(temp_path or src))
             src_has_subdirs = True if subdirs else False
         else:
             if data_set.DataSet.data_set_exists(src_name):
@@ -1855,7 +1864,7 @@ def run_module(module, arg_def):
 
         res_args["changed"] = True
 
-    if not does_destination_allow_copy(dest_name, dest_exists, dest_member_exists, dest_ds_type, is_uss, force, volume):
+    if not does_destination_allow_copy(src, is_src_dir, dest_name, dest_exists, dest_member_exists, dest_ds_type, is_uss, force, volume):
         module.fail_json(msg="{0} already exists on the system, unable to overwrite unless force=True is specified.".format(dest))
 
     try:
@@ -1900,6 +1909,11 @@ def run_module(module, arg_def):
             common_file_args=dict(mode=mode, group=group, owner=owner),
             backup_name=backup_name,
         )
+
+        original_checksum = None
+        if dest_exists:
+            original_checksum = get_file_checksum(dest)
+
         dest = uss_copy_handler.copy_to_uss(
             src,
             dest,
@@ -1911,27 +1925,25 @@ def run_module(module, arg_def):
         )
         res_args['size'] = os.stat(dest).st_size
         remote_checksum = dest_checksum = None
-        if validate:
-            try:
-                remote_checksum = get_file_checksum(temp_path or src)
-                dest_checksum = get_file_checksum(dest)
-            except Exception as err:
+
+        try:
+            remote_checksum = get_file_checksum(temp_path or src)
+            dest_checksum = get_file_checksum(dest)
+
+            if validate:
+                res_args["checksum"] = dest_checksum
+
+                if remote_checksum != dest_checksum:
+                    copy_handler.fail_json(msg="Validation failed for copied files")
+
+            res_args["changed"] = (
+                res_args.get("changed") or dest_checksum != original_checksum
+            )
+        except Exception as err:
+            if validate:
                 copy_handler.fail_json(
                     msg="Unable to calculate checksum", stderr=str(err)
                 )
-            res_args["checksum"] = remote_checksum
-            res_args["changed"] = (
-                res_args.get("changed") or remote_checksum != dest_checksum
-            )
-        else:
-            try:
-                remote_checksum = get_file_checksum(temp_path or src)
-                dest_checksum = get_file_checksum(dest)
-            except Exception as err:
-                pass
-            res_args["changed"] = (
-                res_args.get("changed") or remote_checksum != dest_checksum
-            )
 
     # ------------------------------- o -----------------------------------
     # Copy to sequential data set (PS / SEQ)

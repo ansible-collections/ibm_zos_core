@@ -16,6 +16,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
     extract_member_name
 )
 
+import pytest
 import os
 import shutil
 import tempfile
@@ -72,52 +73,225 @@ def create_vsam_ksds(ds_name, ansible_zos_module):
     )
 
 
-def test_copy_local_file_to_non_existing_uss_file(ansible_zos_module):
+@pytest.mark.uss
+@pytest.mark.parametrize("src", [
+    dict(src="/etc/profile", is_file=True, is_binary=False, is_remote=False),
+    dict(src="/etc/profile", is_file=True, is_binary=True, is_remote=False),
+    dict(src="Example inline content", is_file=False, is_binary=False, is_remote=False),
+    dict(src="Example inline content", is_file=False, is_binary=True, is_remote=False),
+    dict(src="/etc/profile", is_file=True, is_binary=False, is_remote=True),
+    dict(src="/etc/profile", is_file=True, is_binary=True, is_remote=True),
+])
+def test_copy_file_to_non_existing_uss_file(ansible_zos_module, src):
     hosts = ansible_zos_module
-    dest_path = "/tmp/profile"
+    dest_path = "/tmp/zos_copy_test_profile"
+
     try:
         hosts.all.file(path=dest_path, state="absent")
-        copy_res = hosts.all.zos_copy(src="/etc/profile", dest=dest_path)
+
+        if src["is_file"]:
+            copy_res = hosts.all.zos_copy(src=src["src"], dest=dest_path, is_binary=src["is_binary"], remote_src=src["is_remote"])
+        else:
+            copy_res = hosts.all.zos_copy(content=src["src"], dest=dest_path, is_binary=src["is_binary"])
+
         stat_res = hosts.all.stat(path=dest_path)
         for result in copy_res.contacted.values():
             assert result.get("msg") is None
+            assert result.get("changed") == True
+            assert result.get("dest") == dest_path
+            assert result.get("state") == "file"
         for result in stat_res.contacted.values():
             assert result.get("stat").get("exists") is True
     finally:
         hosts.all.file(path=dest_path, state="absent")
 
 
-def test_copy_local_file_to_existing_uss_file(ansible_zos_module):
+@pytest.mark.uss
+@pytest.mark.parametrize("src", [
+    dict(src="/etc/profile", is_file=True, force=False, is_remote=False),
+    dict(src="/etc/profile", is_file=True, force=True, is_remote=False),
+    dict(src="Example inline content", is_file=False, force=False, is_remote=False),
+    dict(src="Example inline content", is_file=False, force=True, is_remote=False),
+    dict(src="/etc/profile", is_file=True, force=False, is_remote=True),
+    dict(src="/etc/profile", is_file=True, force=True, is_remote=True),
+])
+def test_copy_file_to_existing_uss_file(ansible_zos_module, src):
     hosts = ansible_zos_module
-    dest_path = "/tmp/profile"
+    dest_path = "/tmp/test_profile"
+
     try:
+        hosts.all.file(path=dest_path, state="absent")
         hosts.all.file(path=dest_path, state="touch")
         stat_res = list(hosts.all.stat(path=dest_path).contacted.values())
         timestamp = stat_res[0].get("stat").get("atime")
         assert timestamp is not None
-        copy_res = hosts.all.zos_copy(src="/etc/profile", dest=dest_path)
+
+        if src["is_file"]:
+            copy_res = hosts.all.zos_copy(src=src["src"], dest=dest_path, force=src["force"], remote_src=src["is_remote"])
+        else:
+            copy_res = hosts.all.zos_copy(content=src["src"], dest=dest_path, force=src["force"])
+
+        stat_res = hosts.all.stat(path=dest_path)
+
+        for result in copy_res.contacted.values():
+            if src["force"]:
+                assert result.get("msg") is None
+                assert result.get("changed") == True
+                assert result.get("dest") == dest_path
+                assert result.get("state") == "file"
+            else:
+                assert result.get("msg") is not None
+                assert result.get("changed") == False
+        for result in stat_res.contacted.values():
+            assert result.get("stat").get("exists") is True
+    finally:
+        hosts.all.file(path=dest_path, state="absent")
+
+
+@pytest.mark.uss
+@pytest.mark.parametrize("src", [
+    dict(src="/etc/profile", is_binary=False, is_remote=False),
+    dict(src="/etc/profile", is_binary=True, is_remote=False),
+    dict(src="/etc/profile", is_binary=False, is_remote=True),
+    dict(src="/etc/profile", is_binary=True, is_remote=True),
+])
+def test_copy_file_to_uss_dir(ansible_zos_module, src):
+    hosts = ansible_zos_module
+    dest = "/tmp"
+    dest_path = "/tmp/profile"
+
+    try:
+        hosts.all.file(path=dest_path, state="absent")
+
+        copy_res = hosts.all.zos_copy(src=src["src"], dest=dest, is_binary=src["is_binary"], remote_src=src["is_remote"])
+
+        stat_res = hosts.all.stat(path=dest_path)
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+            assert result.get("changed") == True
+            assert result.get("dest") == dest_path
+            assert result.get("state") == "file"
+        for st in stat_res.contacted.values():
+            assert st.get("stat").get("exists") is True
+    finally:
+        hosts.all.file(path=dest_path, state="absent")
+
+
+@pytest.mark.uss
+def test_copy_local_symlink_to_uss_file(ansible_zos_module):
+    hosts = ansible_zos_module
+    src_lnk = "/tmp/etclnk"
+    dest_path = "/tmp/profile"
+    try:
+        try:
+            os.symlink("/etc/profile", src_lnk)
+        except FileExistsError:
+            pass
+        copy_res = hosts.all.zos_copy(src=src_lnk, dest=dest_path, local_follow=True)
+        verify_copy = hosts.all.shell(
+            cmd="head {0}".format(dest_path), executable=SHELL_EXECUTABLE
+        )
         stat_res = hosts.all.stat(path=dest_path)
         for result in copy_res.contacted.values():
             assert result.get("msg") is None
         for result in stat_res.contacted.values():
             assert result.get("stat").get("exists") is True
+        for result in verify_copy.contacted.values():
+            assert result.get("rc") == 0
+            assert result.get("stdout") != ""
     finally:
         hosts.all.file(path=dest_path, state="absent")
+        os.remove(src_lnk)
 
 
-def test_copy_local_file_to_uss_dir(ansible_zos_module):
+@pytest.mark.uss
+def test_copy_local_file_to_uss_file_convert_encoding(ansible_zos_module):
     hosts = ansible_zos_module
-    dest_path = "/tmp/testdir"
+    dest_path = "/tmp/profile"
     try:
-        hosts.all.file(path=dest_path, state="directory")
-        copy_res = hosts.all.zos_copy(src="/etc/profile", dest=dest_path)
-        stat_res = hosts.all.stat(path=dest_path + "/" + "profile")
+        hosts.all.file(path=dest_path, state="absent")
+        copy_res = hosts.all.zos_copy(
+            src="/etc/profile",
+            dest=dest_path,
+            encoding={"from": "ISO8859-1", "to": "IBM-1047"},
+        )
+        stat_res = hosts.all.stat(path=dest_path)
         for result in copy_res.contacted.values():
             assert result.get("msg") is None
+            assert result.get("changed") == True
+            assert result.get("dest") == dest_path
+            assert result.get("state") == "file"
         for result in stat_res.contacted.values():
             assert result.get("stat").get("exists") is True
     finally:
         hosts.all.file(path=dest_path, state="absent")
+
+
+@pytest.mark.uss
+@pytest.mark.parametrize("backup", [None, "/tmp/uss_backup"])
+def test_backup_uss_file(ansible_zos_module, backup):
+    hosts = ansible_zos_module
+    src = "/etc/profile"
+    dest = "/tmp/profile"
+    backup_name = None
+
+    try:
+        hosts.all.file(path=dest, state="touch")
+        if backup:
+            copy_res = hosts.all.zos_copy(src=src, dest=dest, force=True, backup=True, backup_name=backup)
+        else:
+            copy_res = hosts.all.zos_copy(src=src, dest=dest, force=True, backup=True)
+
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+            backup_name = result.get("backup_name")
+
+            if backup:
+                assert backup_name == backup
+            else:
+                assert backup_name is not None
+
+        stat_res = hosts.all.stat(path=backup_name)
+        for result in stat_res.contacted.values():
+            assert result.get("stat").get("exists") is True
+
+    finally:
+        hosts.all.file(path=dest, state="absent")
+        if backup_name:
+            hosts.all.file(path=backup_name, state="absent")
+
+
+@pytest.mark.uss
+def test_copy_file_insufficient_read_permission_fails(ansible_zos_module):
+    hosts = ansible_zos_module
+    src_path = "/tmp/testfile"
+    dest = "/tmp"
+    try:
+        open(src_path, "w").close()
+        os.chmod(src_path, 0)
+        copy_res = hosts.all.zos_copy(src=src_path, dest=dest)
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is not None
+            assert "read permission" in result.get("msg")
+    finally:
+        if os.path.exists(src_path):
+            os.remove(src_path)
+
+
+@pytest.mark.uss
+@pytest.mark.parametrize("is_remote", [False, True])
+def test_copy_non_existent_file_fails(ansible_zos_module, is_remote):
+    hosts = ansible_zos_module
+    src_path = "/tmp/non_existent_src"
+    dest = "/tmp"
+
+    copy_res = hosts.all.zos_copy(src=src_path, dest=dest, remote_src=is_remote)
+    for result in copy_res.contacted.values():
+        assert result.get("msg") is not None
+        assert "does not exist" in result.get("msg")
+
+
+# TODO: add big bad test for all incompatibilites between src and dest
 
 
 def test_copy_local_file_to_non_existing_sequential_data_set(ansible_zos_module):
@@ -280,23 +454,6 @@ def test_copy_local_dir_to_non_existing_pdse(ansible_zos_module):
         hosts.all.zos_data_set(name=dest, state="absent")
 
 
-def test_copy_local_file_to_uss_binary(ansible_zos_module):
-    hosts = ansible_zos_module
-    dest_path = "/tmp/profile"
-    try:
-        hosts.all.file(path=dest_path, state="absent")
-        copy_res = hosts.all.zos_copy(
-            src="/etc/profile", dest=dest_path, is_binary=True
-        )
-        stat_res = hosts.all.stat(path=dest_path)
-        for result in copy_res.contacted.values():
-            assert result.get("msg") is None
-        for result in stat_res.contacted.values():
-            assert result.get("stat").get("exists") is True
-    finally:
-        hosts.all.file(path=dest_path, state="absent")
-
-
 def test_copy_local_file_to_sequential_data_set_binary(ansible_zos_module):
     hosts = ansible_zos_module
     dest = "USER.TEST.SEQ.FUNCTEST"
@@ -377,39 +534,6 @@ def test_copy_local_file_to_pdse_member_binary(ansible_zos_module):
         hosts.all.zos_data_set(name=dest, state="absent")
         os.close(fd)
         os.remove(src_file)
-
-
-def test_copy_uss_file_to_uss_file(ansible_zos_module):
-    hosts = ansible_zos_module
-    remote_src = "/etc/profile"
-    dest = "/tmp/test_profile"
-    try:
-        hosts.all.file(path=dest, state="absent")
-        copy_result = hosts.all.zos_copy(src=remote_src, dest=dest, remote_src=True)
-        stat_res = hosts.all.stat(path=dest)
-        for cp_res in copy_result.contacted.values():
-            assert cp_res.get("msg") is None
-        for st in stat_res.contacted.values():
-            assert st.get("stat").get("exists") is True
-    finally:
-        hosts.all.file(path=dest, state="absent")
-
-
-def test_copy_uss_file_to_uss_dir(ansible_zos_module):
-    hosts = ansible_zos_module
-    remote_src = "/etc/profile"
-    dest = "/tmp"
-    dest_path = "/tmp/profile"
-    try:
-        hosts.all.file(path=dest_path, state="absent")
-        copy_result = hosts.all.zos_copy(src=remote_src, dest=dest, remote_src=True)
-        stat_res = hosts.all.stat(path=dest_path)
-        for cp_res in copy_result.contacted.values():
-            assert cp_res.get("msg") is None
-        for st in stat_res.contacted.values():
-            assert st.get("stat").get("exists") is True
-    finally:
-        hosts.all.file(path=dest_path, state="absent")
 
 
 def test_copy_uss_file_to_non_existing_sequential_data_set(ansible_zos_module):
@@ -1371,36 +1495,6 @@ def test_copy_empty_vsam_fails(ansible_zos_module):
         hosts.all.zos_data_set(name=dest_ds, state="absent")
 
 
-def test_copy_inline_content_to_existing_uss_file(ansible_zos_module):
-    hosts = ansible_zos_module
-    dest_path = "/tmp/inline"
-    try:
-        hosts.all.file(path=dest_path, state="touch")
-        copy_res = hosts.all.zos_copy(content="Inline content", dest=dest_path)
-        stat_res = hosts.all.stat(path=dest_path)
-        for result in copy_res.contacted.values():
-            assert result.get("msg") is None
-        for result in stat_res.contacted.values():
-            assert result.get("stat").get("exists") is True
-    finally:
-        hosts.all.file(path=dest_path, state="absent")
-
-
-def test_copy_inline_content_to_uss_dir(ansible_zos_module):
-    hosts = ansible_zos_module
-    dest = "/tmp/"
-    dest_path = "/tmp/inline_copy"
-    try:
-        copy_res = hosts.all.zos_copy(content="Inline content", dest=dest)
-        stat_res = hosts.all.stat(path=dest_path)
-        for result in copy_res.contacted.values():
-            assert result.get("msg") is None
-        for result in stat_res.contacted.values():
-            assert result.get("stat").get("exists") is True
-    finally:
-        hosts.all.file(path=dest_path, state="absent")
-
-
 def test_copy_inline_content_to_ps(ansible_zos_module):
     hosts = ansible_zos_module
     dest_path = "USER.TEST.SEQ.FUNCTEST"
@@ -1481,72 +1575,6 @@ def test_copy_to_existing_dest_not_forced(ansible_zos_module):
         hosts.all.file(path=dest_path, state="absent")
 
 
-def test_copy_local_symlink_to_uss_file(ansible_zos_module):
-    hosts = ansible_zos_module
-    src_lnk = "/tmp/etclnk"
-    dest_path = "/tmp/profile"
-    try:
-        try:
-            os.symlink("/etc/profile", src_lnk)
-        except FileExistsError:
-            pass
-        hosts.all.file(path=dest_path, state="touch")
-        copy_res = hosts.all.zos_copy(src=src_lnk, dest=dest_path, local_follow=True)
-        verify_copy = hosts.all.shell(
-            cmd="head {0}".format(dest_path), executable=SHELL_EXECUTABLE
-        )
-        stat_res = hosts.all.stat(path=dest_path)
-        for result in copy_res.contacted.values():
-            assert result.get("msg") is None
-        for result in stat_res.contacted.values():
-            assert result.get("stat").get("exists") is True
-        for result in verify_copy.contacted.values():
-            assert result.get("rc") == 0
-            assert result.get("stdout") != ""
-    finally:
-        hosts.all.file(path=dest_path, state="absent")
-        os.remove(src_lnk)
-
-
-def test_copy_local_file_to_uss_file_convert_encoding(ansible_zos_module):
-    hosts = ansible_zos_module
-    dest_path = "/tmp/profile"
-    try:
-        hosts.all.file(path=dest_path, state="absent")
-        copy_res = hosts.all.zos_copy(
-            src="/etc/profile",
-            dest=dest_path,
-            encoding={"from": "ISO8859-1", "to": "IBM-1047"},
-        )
-        stat_res = hosts.all.stat(path=dest_path)
-        for result in copy_res.contacted.values():
-            assert result.get("msg") is None
-        for result in stat_res.contacted.values():
-            assert result.get("stat").get("exists") is True
-    finally:
-        hosts.all.file(path=dest_path, state="absent")
-
-
-def test_copy_uss_file_to_uss_file_convert_encoding(ansible_zos_module):
-    hosts = ansible_zos_module
-    dest_path = "/tmp/profile"
-    try:
-        hosts.all.file(path=dest_path, state="absent")
-        copy_res = hosts.all.zos_copy(
-            src="/etc/profile",
-            dest=dest_path,
-            encoding={"from": "IBM-1047", "to": "IBM-1047"},
-            remote_src=True,
-        )
-        stat_res = hosts.all.stat(path=dest_path)
-        for result in copy_res.contacted.values():
-            assert result.get("msg") is None
-        for result in stat_res.contacted.values():
-            assert result.get("stat").get("exists") is True
-    finally:
-        hosts.all.file(path=dest_path, state="absent")
-
-
 def test_copy_uss_file_to_pds_member_convert_encoding(ansible_zos_module):
     hosts = ansible_zos_module
     src = "/etc/profile"
@@ -1601,30 +1629,6 @@ def test_ensure_tmp_cleanup(ansible_zos_module):
 
     finally:
         hosts.all.file(path=dest_path, state="absent")
-
-
-def test_backup_uss_file_default_backup_path(ansible_zos_module):
-    hosts = ansible_zos_module
-    src = "/etc/profile"
-    dest = "/tmp/profile"
-    backup_name = None
-    try:
-        hosts.all.file(path=dest, state="touch")
-        copy_res = hosts.all.zos_copy(src=src, dest=dest, backup=True)
-
-        for result in copy_res.contacted.values():
-            assert result.get("msg") is None
-            backup_name = result.get("backup_name")
-            assert backup_name is not None
-
-        stat_res = hosts.all.stat(path=backup_name)
-        for result in stat_res.contacted.values():
-            assert result.get("stat").get("exists") is True
-
-    finally:
-        hosts.all.file(path=dest, state="absent")
-        if backup_name:
-            hosts.all.file(path=backup_name, state="absent")
 
 
 def test_backup_sequential_data_set_default_backup_path(ansible_zos_module):
@@ -1761,31 +1765,6 @@ def test_backup_vsam_default_backup_path(ansible_zos_module):
         hosts.all.zos_data_set(name=dest, state="absent")
         if backup_name:
             hosts.all.zos_data_set(name=backup_name, state="absent")
-
-
-def test_backup_uss_file_user_backup_path(ansible_zos_module):
-    hosts = ansible_zos_module
-    src = "/etc/profile"
-    dest = "/tmp/profile"
-    backup_name = "/tmp/uss_backup"
-    try:
-        hosts.all.file(path=dest, state="touch")
-        copy_res = hosts.all.zos_copy(
-            src=src, dest=dest, backup=True, backup_name=backup_name
-        )
-
-        for result in copy_res.contacted.values():
-            assert result.get("msg") is None
-            result.get("backup_name") == backup_name
-
-        stat_res = hosts.all.stat(path=backup_name)
-        for result in stat_res.contacted.values():
-            assert result.get("stat").get("exists") is True
-
-    finally:
-        hosts.all.file(path=dest, state="absent")
-        if backup_name:
-            hosts.all.file(path=backup_name, state="absent")
 
 
 def test_backup_sequential_data_set_user_backup_path(ansible_zos_module):
@@ -1928,47 +1907,6 @@ def test_backup_vsam_user_backup_path(ansible_zos_module):
         hosts.all.zos_data_set(name=dest, state="absent")
         if backup_name:
             hosts.all.zos_data_set(name=backup_name, state="absent")
-
-
-def test_copy_local_file_insufficient_read_permission_fails(ansible_zos_module):
-    hosts = ansible_zos_module
-    src_path = "/tmp/testfile"
-    dest = "/tmp"
-    try:
-        open(src_path, "w").close()
-        os.chmod(src_path, 0)
-        copy_res = hosts.all.zos_copy(src=src_path, dest=dest)
-        for result in copy_res.contacted.values():
-            assert result.get("msg") is not None
-            assert "read permission" in result.get("msg")
-    finally:
-        if os.path.exists(src_path):
-            os.remove(src_path)
-
-
-def test_copy_non_existent_local_file_fails(ansible_zos_module):
-    hosts = ansible_zos_module
-    src_path = "/tmp/non_existent_src"
-    dest = "/tmp"
-
-    copy_res = hosts.all.zos_copy(src=src_path, dest=dest)
-    for result in copy_res.contacted.values():
-        assert result.get("msg") is not None
-        assert "does not exist" in result.get("msg")
-
-
-def test_copy_local_file_to_vsam_fails(ansible_zos_module):
-    hosts = ansible_zos_module
-    src = "/etc/profile"
-    dest = "USER.TEST.VSAM.KSDS"
-    try:
-        create_vsam_ksds(dest, ansible_zos_module)
-        copy_res = hosts.all.zos_copy(src=src, dest=dest)
-        for result in copy_res.contacted.values():
-            assert result.get("msg") is not None
-            assert "Incompatible" in result.get("msg")
-    finally:
-        hosts.all.zos_data_set(name=dest, state="absent")
 
 
 def test_copy_sequential_data_set_to_vsam_fails(ansible_zos_module):

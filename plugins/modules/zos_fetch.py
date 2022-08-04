@@ -134,6 +134,13 @@ options:
     type: bool
     required: false
     default: false
+  local_charset:
+    description:
+      - Used to explictly define the local charset for the controller, in case encoding
+        is not defined zos_fetch will default the encoding values as from = remote node
+        default charset and to = local_charset.
+    type: str
+    required: false
 notes:
     - When fetching PDSE and VSAM data sets, temporary storage will be used
       on the remote z/OS system. After the PDSE or VSAM data set is

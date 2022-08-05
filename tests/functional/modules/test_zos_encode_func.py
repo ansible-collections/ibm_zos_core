@@ -14,6 +14,7 @@
 from __future__ import absolute_import, division, print_function
 from shellescape import quote
 from pprint import pprint
+import pytest
 
 __metaclass__ = type
 
@@ -72,6 +73,11 @@ KSDS_REPRO_JCL = """//DOREPRO    JOB (T043JM,JM00,1,0,0,0),'CREATE KSDS',CLASS=R
  EEXAMPLE RECORD   REMOVE THIS LINE IF EXAMPLES NOT REQUIRED
 /*
 """
+
+@pytest.fixture
+def remove_tmp_files():
+
+    None
 
 
 def test_uss_encoding_conversion_with_invalid_encoding(ansible_zos_module):
@@ -173,46 +179,51 @@ def test_uss_encoding_conversion_uss_file_to_uss_file(ansible_zos_module):
 
 
 def test_uss_encoding_conversion_uss_file_to_uss_path(ansible_zos_module):
-    hosts = ansible_zos_module
-    hosts.all.file(path=USS_DEST_PATH, state="directory")
-    hosts.all.copy(content=TEST_DATA, dest=USS_FILE)
-    results = hosts.all.zos_encode(
-        src=USS_FILE,
-        dest=USS_DEST_PATH,
-        from_encoding=TO_ENCODING,
-        to_encoding=FROM_ENCODING,
-    )
-    hosts.all.file(path=USS_FILE, state="absent")
-    hosts.all.file(path=USS_DEST_PATH, state="absent")
-    pprint(vars(results))
-    for result in results.contacted.values():
-        assert result.get("src") == USS_FILE
-        assert result.get("dest") == USS_DEST_PATH
-        assert result.get("backup_name") is None
-        assert result.get("changed") is True
+    try:
+        hosts = ansible_zos_module
+        hosts.all.file(path=USS_DEST_PATH, state="directory")
+        hosts.all.copy(content=TEST_DATA, dest=USS_FILE)
+        results = hosts.all.zos_encode(
+            src=USS_FILE,
+            dest=USS_DEST_PATH,
+            from_encoding=TO_ENCODING,
+            to_encoding=FROM_ENCODING,
+        )
+        pprint(vars(results))
+        for result in results.contacted.values():
+            assert result.get("src") == USS_FILE
+            assert result.get("dest") == USS_DEST_PATH
+            assert result.get("backup_name") is None
+            assert result.get("changed") is True
+    finally: 
+        hosts.all.file(path=USS_FILE, state="absent")
+        hosts.all.file(path=USS_DEST_PATH, state="absent")
+
 
 
 def test_uss_encoding_conversion_uss_path_to_uss_path(ansible_zos_module):
-    hosts = ansible_zos_module
-    hosts.all.file(path=USS_PATH, state="directory")
-    hosts.all.copy(content=TEST_DATA, dest=USS_PATH + "/encode1")
-    hosts.all.copy(content=TEST_DATA, dest=USS_PATH + "/encode2")
-    hosts.all.file(path=USS_DEST_PATH, state="directory")
-    results = hosts.all.zos_encode(
-        src=USS_PATH,
-        dest=USS_DEST_PATH,
-        from_encoding=TO_ENCODING,
-        to_encoding=FROM_ENCODING,
-        backup=True,
-    )
-    hosts.all.file(path=USS_PATH, state="absent")
-    hosts.all.file(path=USS_DEST_PATH, state="absent")
-    pprint(vars(results))
-    for result in results.contacted.values():
-        assert result.get("src") == USS_PATH
-        assert result.get("dest") == USS_DEST_PATH
-        assert result.get("backup_name") is not None
-        assert result.get("changed") is True
+    try:
+        hosts = ansible_zos_module
+        hosts.all.file(path=USS_PATH, state="directory")
+        hosts.all.copy(content=TEST_DATA, dest=USS_PATH + "/encode1")
+        hosts.all.copy(content=TEST_DATA, dest=USS_PATH + "/encode2")
+        hosts.all.file(path=USS_DEST_PATH, state="directory")
+        results = hosts.all.zos_encode(
+            src=USS_PATH,
+            dest=USS_DEST_PATH,
+            from_encoding=TO_ENCODING,
+            to_encoding=FROM_ENCODING,
+            backup=True,
+        )
+        pprint(vars(results))
+        for result in results.contacted.values():
+            assert result.get("src") == USS_PATH
+            assert result.get("dest") == USS_DEST_PATH
+            assert result.get("backup_name") is not None
+            assert result.get("changed") is True
+    finally: 
+        hosts.all.file(path=USS_PATH, state="absent")
+        hosts.all.file(path=USS_DEST_PATH, state="absent")
 
 
 def test_uss_encoding_conversion_uss_file_to_mvs_ps(ansible_zos_module):
@@ -328,21 +339,23 @@ def test_uss_encoding_conversion_uss_path_to_mvs_pds(ansible_zos_module):
 
 
 def test_uss_encoding_conversion_mvs_pds_to_uss_path(ansible_zos_module):
-    hosts = ansible_zos_module
-    hosts.all.file(path=USS_DEST_PATH, state="directory")
-    results = hosts.all.zos_encode(
-        src=MVS_PDS,
-        dest=USS_DEST_PATH,
-        from_encoding=TO_ENCODING,
-        to_encoding=FROM_ENCODING,
-    )
-    pprint(vars(results))
-    for result in results.contacted.values():
-        assert result.get("src") == MVS_PDS
-        assert result.get("dest") == USS_DEST_PATH
-        assert result.get("backup_name") is None
-        assert result.get("changed") is True
-
+    try:
+        hosts = ansible_zos_module
+        hosts.all.file(path=USS_DEST_PATH, state="directory")
+        results = hosts.all.zos_encode(
+            src=MVS_PDS,
+            dest=USS_DEST_PATH,
+            from_encoding=TO_ENCODING,
+            to_encoding=FROM_ENCODING,
+        )
+        pprint(vars(results))
+        for result in results.contacted.values():
+            assert result.get("src") == MVS_PDS
+            assert result.get("dest") == USS_DEST_PATH
+            assert result.get("backup_name") is None
+            assert result.get("changed") is True
+    finally:
+        hosts.all.file(path=USS_DEST_PATH, state="absent")
 
 def test_uss_encoding_conversion_mvs_ps_to_mvs_pds_member(ansible_zos_module):
     hosts = ansible_zos_module

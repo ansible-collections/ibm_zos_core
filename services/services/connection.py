@@ -36,7 +36,7 @@ class Connection:
         self.key_filename = key_filename
         self.passphrase = passphrase
 
-    def to_dic(self):
+    def to_dict(self):
         return {
             "hostname": self.hostname,
             "port": self.port,
@@ -53,7 +53,7 @@ class Connection:
         try:
             client = paramiko.SSHClient();
             client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            client.connect(**self.to_dic(), disabled_algorithms={'pubkeys': ['rsa-sha2-256', 'rsa-sha2-512']})
+            client.connect(**self.to_dict(), disabled_algorithms={'pubkeys': ['rsa-sha2-256', 'rsa-sha2-512']})
             return client;
         except Exception as e:
             print(e)
@@ -69,10 +69,10 @@ class Connection:
         Returns:
 
         raises:
-        
+
         """
         #cmd = request.get('command')
-        cmd = request.to_dic().get("command")
+        cmd = request.to_dict().get("command")
         try:
             env={'LANG': 'en_GB',
                 'LC_COLLATE': 'C'

@@ -63,7 +63,7 @@ class TestServicesFunctionalTests(unittest.TestCase):
 
         result = create("test", "/tmp/", connection)
         assert result is not None, f"ASSERTION-FAILURE: file is None"
-        print(result.to_dic())
-        _encoding = result.to_dic().get('encoding')
+        print(result.to_dict())
+        _encoding = result.to_dict().get('encoding')
         assert _encoding == "IBM-1047", f"ASSERTION-FAILURE: Encoding {_encoding} does not match expected IBM-1047"
 

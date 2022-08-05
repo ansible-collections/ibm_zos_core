@@ -12,25 +12,48 @@
 # limitations under the License.
 
 from enum import Enum
+import datetime
+import secrets
 
 class Type(Enum):
-    FILE = "file"
-    DIRECTORY = "directory"
+    FILE = "FILE"
+    DIRECTORY = "DIRECTORY"
     DATA_SET = "DATA_SET"
 
 
 class Request:
+
     """
-    Class represents a request from a service, for example the function
-    service.create_file() will populate a request object to be executed
-    by the connection class. The service.create_file(...) will take attributes
-    such as name, size, path, etc, eventually create a request which really
-    maps to a command for connection.execute(request) to run. For now we are
-    keeping it simple to a command, but it might be usefull to merge in the
-    attributes so they can be passed along to a response, given the generic
-    nature of this request object its a bit too soon to figure our if a
-    dictionary should also be passed long. 
+    A request object is the contract used by the services to fulfill an
+    operation to the underlying connection class.
+
+    Services will make requests to the connection methods. The
+    connection methods will serve many different types of services and to avoid
+    a complex type or specific args, the request class represents everything
+    the connection class will need to do to fullfil the service request.
+
+    Imagine we have file creation service as well as other types such as
+    data set creation. If the service to create a file is called, it will
+    review what has been requested, eg; file name, size, location, permissions,
+    etc and generate a command and insert that into the request, there could be
+    other fields added that would be helpful to the connection in the future.
+
+    NOTE: I am considering to update the request to support multiple commands
+
+    Attributes
+    ----------
+    command : str
+        The command to run on the target.
+
+    Methods
+    -------
+    to_dict()
+        Converts the class attributes to a dictionary
+
+    print_args()
+        Prints the class attributes
     """
+
     def __init__(self, command):
         """
         Definition of an file artifact
@@ -42,7 +65,7 @@ class Request:
         """
         self.command = command
 
-    def to_dic(self):
+    def to_dict(self):
         return {
             "command": self.command,
         }
@@ -51,7 +74,28 @@ class Request:
         print(self.to_dict())
 
 class Response:
+    """
+    Response object is the contract returned by the services operations. It
+    describes everything that is needed by the caller about the artifact created.
 
+    The response object is a summary of everything it can provide such that the
+    caller will not need to perform any additional queries, for example if a file
+    is created, the response will contain every attribute known on the file, such
+    as permissions bits and more.
+
+    The response object is also used in the managing the objects lifecycle
+    meaning that it cached and later can be retrieved with everything it needs
+    to reestablish a connection and perform the resource allocation (destroy
+    the artifact). There is no point on persisting connections as it would
+    require a connetion pool and for a first iteration this model of recreating
+    connection based on the response properties should suffice.
+
+    Attributes
+    ----------
+    name : str
+    type : type
+    ...
+    """
     def __init__(self, name, type, rc, encoding, stdout, stderr, attributes):
         self.name = name
         self.type =type
@@ -60,8 +104,21 @@ class Response:
         self.stdout = stdout
         self.stderr = stderr
         self.attributes = attributes
+        # TODO:
+        # Will need to add support for encryption/keyring
+        # Will need to add these addeded keys to the constructor above
+        # Will be helpful if we create methods that do the encryption in this class
+        self.hostname = "ibm.com"
+        self.port = 22
+        self.username =  "ENCRYPTED_USER"
+        self.password = "ENCRYPTED_PASS"
+        self.key_filename = "ENCRYPTED_FILENAME"
+        self.passphrase ="ENCRYPTED_PHRASE"
+        self.time_created = datetime.datetime.now()
+        self.key = self.create_key()
 
-    def to_dic(self):
+
+    def to_dict(self):
         return {
             "name": self.name,
             "type": self.type,
@@ -69,11 +126,22 @@ class Response:
             "encoding": self.encoding,
             "stdout": self.stdout,
             "stderr": self.stderr,
-            "attributes": self.attributes
+            "attributes": self.attributes,
+            "hostname" : self.hostname,
+            "port" : self.port,
+            "username" : self.username,
+            "password" : self.password,
+            "key_filename" : self.key_filename,
+            "passphrase" : self.passphrase,
+            "time_created" : self.time_created,
+            "key" : self.key
         }
 
     def print_args(self):
         print(self.to_dict())
+
+    def create_key(self):
+        return secrets.token_urlsafe(10)
 
     # def from_dict(artifact_dictionary): #artifact_dictionary is a result of a atrifact such as File converted to a dictionary
     #     return Response(
@@ -104,8 +172,8 @@ class FileAttributes:
         mode = {"owner": None, "group": None, "other": None},
         status_group=None,
         status_owner=None,
-        record_length=None,
-        attributes=None
+        record_length=None
+        #attributes=None
      ):
         """
         FileAttributes
@@ -118,7 +186,7 @@ class FileAttributes:
         self.status_group = status_group
         self.status_owner = status_owner
         self.record_length = record_length
-        self.attributes = attributes
+        #self.attributes = attributes
 
     def to_dict(self):
         return {
@@ -131,7 +199,7 @@ class FileAttributes:
             "status_group": self.status_group,
             "status_owner": self.status_owner,
             "record_length": self.record_length,
-            "attributes": self.attributes,
+            #"attributes": self.attributes,
         }
 
     def get_status_group():

@@ -17,6 +17,7 @@ import unittest
 import os
 
 from services.connection import *
+from services.types import Request
 
 
 class TestConnectionUnitTests(unittest.TestCase):
@@ -48,7 +49,7 @@ class TestConnectionUnitTests(unittest.TestCase):
         "hostname": "EC33018A.vmec.svl.ibm.com",
         "port": 22,
         "username": "omvsadm",
-        "password": "all1sdun",
+        "password": "CHANGE",
         "key_filename": os.path.expanduser('~') + "/.ssh/id_dsa",
         "passphrase": "changeme"
     }
@@ -80,7 +81,7 @@ class TestConnectionUnitTests(unittest.TestCase):
                         self.password, self.key_filename, self.passphrase)
         assert connection is not None, f"ASSERTION-FAILURE: Connection is None"
 
-        arg_len = len(connection.to_dic())
+        arg_len = len(connection.to_dict())
         assert arg_len == 6, \
             f"ASSERTION-FAILURE: Connection args expected 6 not equal to = [{arg_len}]"
 
@@ -140,7 +141,7 @@ class TestConnectionFunctionalTests(unittest.TestCase):
         "hostname": "EC33018A.vmec.svl.ibm.com",
         "port": 22,
         "username": "omvsadm",
-        "password": "xxxxxx",
+        "password": "CHANGE",
         "key_filename": os.path.expanduser('~') + "/.ssh/id_dsa",
         "passphrase": "changeme"
     }
@@ -166,7 +167,8 @@ class TestConnectionFunctionalTests(unittest.TestCase):
         """
         Test the connection with a valid host, user and password
         """
-        request = {"command": "hostname"}
+        request = Request("hostname")
+        #request = {"command": "hostname"}
         connection = Connection(hostname=self.hostname, username=self.username, password=self.password)
         assert connection is not None, f"ASSERTION-FAILURE: Connection is None"
 
@@ -183,8 +185,8 @@ class TestConnectionFunctionalTests(unittest.TestCase):
         """
         # Mock request object, this will need to be updated when the request
         # objects are done
-        request = {"command": "hostname"}
-
+        #request = {"command": "hostname"}
+        request = Request("hostname")
         connection = Connection(hostname=self.hostname, username=self.username, key_filename=self.key_filename)
         assert connection is not None, f"ASSERTION-FAILURE: Connection is None"
 

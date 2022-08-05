@@ -32,10 +32,44 @@
 
 import datetime
 import secrets
+from services.types import Response
 
 class ArtifactCache:
+    """
+    A class used to manage the lifecycle of artifacts created by the services.
+    It is the responsibility of this framework to ensure that objects are
+    destroyed if they are not done so by the caller.
 
-    def __init__(self, cache_size = 10000):
+    This is a cache is not thread safe, it is meant to be instantiated once
+    in a init calls and accessed during the course of its time in use.
+
+    Attributes
+    ----------
+    cache_size : int, optional
+        The size the cache should be initialized. (default 10000)
+
+    Methods
+    -------
+    create_key() //Note: this will likely be moved to a response type 
+        Generate a random key of length 10
+    update(key, value)
+        ...
+    peek(self, key)
+        ...
+    get(self,key)
+        ...
+    size(self)
+        ...
+    """
+
+    def __init__(self, cache_size = 100):
+        """
+        Parameters
+        ----------
+        cache_size : int, optional
+            The size the cache should be initialized. (default 10000)
+        """
+
         self.cache = {}
         # Seems rather large default but lets be generous to start with
         self.cache_size = cache_size
@@ -46,6 +80,18 @@ class ArtifactCache:
         """
         return key in self.cache
 
+    # This currently does not change anything, leaving this code for now to 
+    # revisit and evaluate.
+    def __setitem__(self, key, val):
+        super(ArtifactCache, self).__setitem__(key, val)
+        if not isinstance(key, str):
+            raise ValueError("Key must of type str")
+        if not len(key) == 10:
+            raise ValueError("Key must be of length 10")
+        if not isinstance(val, Response):
+            raise ValueError("value must be type Response")
+        dict.__setitem__(self, key, val)
+
     def create_key(self):
         return secrets.token_urlsafe(10)
 
@@ -55,35 +101,54 @@ class ArtifactCache:
         the oldest cached entry will be removed silently and the artifacts
         destruction will occur assuming the artifact is no longer in use.
         """
+        # Because __setitem__ does not function as expected, isinstance() is used
+        if not isinstance(key, str):
+            raise ValueError(f"Incorrect `key` type used in update(key, value), type =[{type(key)}], must be type str")
+        if not isinstance(value, Response):
+            raise ValueError(f"Incorrect `value` type used in update(key, value), type =[{type(value)}], must be type services.types.Response")
+
         if key not in self.cache and len(self.cache) >= self.cache_size:
-            self._destroy_oldest_entry()
+            self.__destroy_oldest_entry()
 
-        self.cache[key] = {'date_accessed': datetime.datetime.now(),
-                           'value': value}
+        self.cache[key] = value
 
-    def _destroy_oldest_entry(self):
+    def __destroy_oldest_entry(self):
         """
-        Remove the oldest entry based on the date_accessed, before removing
+        Remove the oldest entry based on the time_created, before removing
         ensure the artifact destruction is executed then silently return.
         """
 
-        oldest_entry = None
+        oldest = None
         for key in self.cache:
-            if oldest_entry == None:
-                oldest_entry = key
-            elif self.cache[key]['date_accessed'] < self.cache[oldest_entry][
-                'date_accessed']:
-                oldest_entry = key
-        self.cache.pop(oldest_entry)
+            if oldest == None:
+                oldest = key
+            #elif self.cache.get(key).to_dict().get('time_created') < self.cache.get(oldest).to_dict().get('time_created'):
+            elif self.peek(key).get('time_created') < self.peek(oldest).get('time_created'):
+                oldest = key
+        self.cache.pop(oldest)
 
     def peek(self, key):
         """
         Return the item value corresponding to the key from the cache but don't
         remove it from the cache.
         """
-        return self.cache.get(key)
+        return self.cache.get(key).to_dict()
 
     def get(self,key):
+        """
+        Parameters
+        ----------
+        key : str
+            Key used to insert the entry into the cache.
+
+        Get the entries value corresponding to the key from the cache and remove
+        it from the cache.
+        """
+        value = self.cache.get(key)
+        self.cache.pop(key).to_dict()
+        return value
+
+    def get_object(self,key):
         """
         Get the item value corresponding to the key from the cache and remove
         it from the cache.

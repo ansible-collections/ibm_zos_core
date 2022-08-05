@@ -716,6 +716,7 @@ def test_uss_backup_entire_folder_to_default_backup_location_compressed(
             assert backup_name in result.get("stdout")
     finally:
         hosts.all.file(path=TEMP_JCL_PATH, state="absent")
+        hosts.all.file(path=TEMP_JCL_PATH + "2", state="absent")
 
 
 def test_return_backup_name_on_module_success_and_failure(ansible_zos_module):

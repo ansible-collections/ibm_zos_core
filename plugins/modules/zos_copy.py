@@ -1869,7 +1869,7 @@ def run_module(module, arg_def):
 
     try:
         if not is_uss:
-            allocate_destination_data_set(temp_path or src, dest_name, src_ds_type, dest_ds_type, dest_exists, force, is_binary, destination_dataset=destination_dataset, volume=volume)
+            res_args["changed"] = allocate_destination_data_set(temp_path or src, dest_name, src_ds_type, dest_ds_type, dest_exists, force, is_binary, destination_dataset=destination_dataset, volume=volume)
     except Exception as err:
         module.fail_json(msg="Unable to allocate destination data set: {0}".format(str(err)))
 
@@ -1937,7 +1937,7 @@ def run_module(module, arg_def):
                     copy_handler.fail_json(msg="Validation failed for copied files")
 
             res_args["changed"] = (
-                res_args.get("changed") or dest_checksum != original_checksum
+                res_args.get("changed") or dest_checksum != original_checksum or os.path.isdir(dest)
             )
         except Exception as err:
             if validate:
@@ -1956,6 +1956,7 @@ def run_module(module, arg_def):
             dest,
             src_ds_type,
         )
+        res_args["changed"] = True
         dest = dest.upper()
 
     # ---------------------------------------------------------------------

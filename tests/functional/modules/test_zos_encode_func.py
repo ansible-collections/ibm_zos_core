@@ -30,7 +30,7 @@ MVS_VS = "encode.test.vs"
 FROM_ENCODING = "IBM-1047"
 INVALID_ENCODING = "EBCDIC"
 TO_ENCODING = "ISO8859-1"
-TEMP_JCL_PATH = "/tmp/ansible/jcl"
+TEMP_JCL_PATH = "/tmp/jcl"
 TEST_DATA = """00000001This is for encode conversion testsing
 00000002This is for encode conversion testsing
 00000003This is for encode conversion testsing

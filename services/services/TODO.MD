@@ -8,3 +8,4 @@
 * Continue to add test cases in all test suites
 * Introduce a wrapper class for all services (eg services(file, data set, etc))
 * Run linter over all this code, adhere to PEP8
+* Add python doc to all methods, classes

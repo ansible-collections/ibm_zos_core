@@ -718,9 +718,6 @@ def test_uss_backup_entire_folder_to_default_backup_location_compressed(
         backup_name = None
         for result in results.contacted.values():
             backup_name = result.get("backup_name")
-        print("backup name")
-        pprint(backup_name)
-        assert 1 == 2
         
         results = hosts.all.shell(cmd="ls -la {0}".format(backup_name[:-4] + "*"))
         for result in results.contacted.values():
@@ -728,7 +725,7 @@ def test_uss_backup_entire_folder_to_default_backup_location_compressed(
     finally:
         hosts.all.file(path=TEMP_JCL_PATH, state="absent")
         hosts.all.file(path=TEMP_JCL_PATH + "2", state="absent")
-        hosts.all.file(path=result.get("backup_name"), state="absent")
+        hosts.all.file(path=backup_name, state="absent")
 
 
 def test_return_backup_name_on_module_success_and_failure(ansible_zos_module):

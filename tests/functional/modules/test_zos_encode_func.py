@@ -718,6 +718,7 @@ def test_uss_backup_entire_folder_to_default_backup_location_compressed(
         backup_name = None
         for result in results.contacted.values():
             backup_name = result.get("backup_name")
+        pprint(backup_name)
         results = hosts.all.shell(cmd="ls -la {0}".format(backup_name[:-4] + "*"))
         for result in results.contacted.values():
             assert backup_name in result.get("stdout")

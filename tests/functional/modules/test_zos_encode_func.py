@@ -222,8 +222,6 @@ def test_uss_encoding_conversion_uss_path_to_uss_path(ansible_zos_module):
             assert result.get("dest") == USS_DEST_PATH
             assert result.get("backup_name") is not None
             assert result.get("changed") is True
-        pprint(result.get("backup_name"))
-        assert 1 == 0
     finally: 
         hosts.all.file(path=USS_PATH, state="absent")
         hosts.all.file(path=USS_DEST_PATH, state="absent")
@@ -725,6 +723,7 @@ def test_uss_backup_entire_folder_to_default_backup_location_compressed(
     finally:
         hosts.all.file(path=TEMP_JCL_PATH, state="absent")
         hosts.all.file(path=TEMP_JCL_PATH + "2", state="absent")
+        hosts.all.file(path=result.get("backup_name"), state="absent")
 
 
 def test_return_backup_name_on_module_success_and_failure(ansible_zos_module):

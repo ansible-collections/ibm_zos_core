@@ -227,9 +227,7 @@ def test_uss_encoding_conversion_uss_path_to_uss_path(ansible_zos_module):
     finally: 
         hosts.all.file(path=USS_PATH, state="absent")
         hosts.all.file(path=USS_DEST_PATH, state="absent")
-        abs_path = os_path.abspath(USS_DEST_PATH)
-        if not os_path.exists(abs_path):
-            hosts.all.file(path="{0}/{1}".format(abs_path, result.get("backup_name")), state="absent")
+        hosts.all.file(path=result.get("backup_name"), state="absent")
 
 
 def test_uss_encoding_conversion_uss_file_to_mvs_ps(ansible_zos_module):
@@ -268,9 +266,7 @@ def test_uss_encoding_conversion_mvs_ps_to_uss_file(ansible_zos_module):
             assert result.get("changed") is True
     finally:
         hosts.all.file(path=USS_DEST_FILE, state="absent")
-        abs_path = os_path.abspath(USS_DEST_FILE)
-        if not os_path.exists(abs_path):
-            hosts.all.file(path="{0}/{1}".format(abs_path, result.get("backup_name")), state="absent")
+        hosts.all.file(path=result.get("backup_name"), state="absent")
 
 
 def test_uss_encoding_conversion_uss_file_to_mvs_pds(ansible_zos_module):
@@ -337,9 +333,7 @@ def test_uss_encoding_conversion_mvs_pds_member_to_uss_file(ansible_zos_module):
             assert result.get("changed") is True
     finally:
         hosts.all.file(path=USS_DEST_FILE, state="absent")
-        abs_path = os_path.abspath(USS_DEST_FILE)
-        if not os_path.exists(abs_path):
-            hosts.all.file(path="{0}/{1}".format(abs_path, result.get("backup_name")), state="absent")
+        hosts.all.file(path=result.get("backup_name"), state="absent")
 
 
 def test_uss_encoding_conversion_uss_path_to_mvs_pds(ansible_zos_module):
@@ -447,9 +441,7 @@ def test_uss_encoding_conversion_mvs_vsam_to_uss_file(ansible_zos_module):
             assert result.get("changed") is True
     finally:
         hosts.all.file(path=USS_DEST_FILE, state="absent")
-        abs_path = os_path.abspath(USS_DEST_FILE)
-        if not os_path.exists(abs_path):
-            hosts.all.file(path="{0}/{1}".format(abs_path, result.get("backup_name")), state="absent")
+        hosts.all.file(path=result.get("backup_name"), state="absent")
 
 
 def test_uss_encoding_conversion_mvs_vsam_to_mvs_ps(ansible_zos_module):

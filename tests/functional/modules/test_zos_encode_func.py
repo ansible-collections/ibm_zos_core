@@ -677,6 +677,7 @@ def test_uss_backup_entire_folder_to_default_backup_location(ansible_zos_module)
     finally:
         hosts.all.file(path=TEMP_JCL_PATH, state="absent")
         hosts.all.file(path=TEMP_JCL_PATH + "2", state="absent")
+        hosts.all.file(path=backup_name, state="absent")
         hosts.all.zos_data_set(name=MVS_PDS, state="absent")
         hosts.all.zos_data_set(name=BACKUP_DATA_SET, state="absent")
 

@@ -14,7 +14,6 @@
 from __future__ import absolute_import, division, print_function
 from shellescape import quote
 from pprint import pprint
-from os import path as os_path
 
 __metaclass__ = type
 

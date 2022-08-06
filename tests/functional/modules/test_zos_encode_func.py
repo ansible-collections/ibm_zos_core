@@ -222,6 +222,8 @@ def test_uss_encoding_conversion_uss_path_to_uss_path(ansible_zos_module):
             assert result.get("dest") == USS_DEST_PATH
             assert result.get("backup_name") is not None
             assert result.get("changed") is True
+        pprint(result.get("backup_name"))
+        assert 1 == 0
     finally: 
         hosts.all.file(path=USS_PATH, state="absent")
         hosts.all.file(path=USS_DEST_PATH, state="absent")

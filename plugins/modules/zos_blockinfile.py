@@ -459,7 +459,7 @@ def main():
         encoding=dict(arg_type='str', default='IBM-1047', required=False),
         force=dict(arg_type='bool', default=False, required=False),
         backup=dict(arg_type='bool', default=False, required=False),
-        backup_name=dict(arg_type='data_set_or_pat', required=False, default=None),
+        backup_name=dict(arg_type='data_set_or_path', required=False, default=None),
         mutually_exclusive=[['insertbefore', 'insertafter']],
         indentation=dict(arg_type='int', default=0, required=False)
     )

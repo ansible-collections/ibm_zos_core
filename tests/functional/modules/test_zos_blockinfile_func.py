@@ -145,6 +145,8 @@ Until the issue be addressed I disable related tests.
 # ENCODING = ['IBM-1047', 'ISO8859-1', 'UTF-8']
 ENCODING = ['IBM-1047']
 USS_BACKUP_FILE = "/tmp/backup.tmp"
+MVS_BACKUP_DS = "BLOCKIF.TEST.BACKUP"
+BACKUP_OPTIONS = [None, MVS_BACKUP_DS]
 TEST_ENV = dict(
     TEST_CONT=TEST_CONTENT,
     TEST_DIR="/tmp/zos_blockinfile/",
@@ -198,6 +200,8 @@ TEST_INFO = dict(
     test_ds_block_insert_with_force_option_as_false=dict(block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present", force=False),
     test_ds_block_absent_with_force_option_as_false=dict(block="", state="absent", force=False),
     test_ds_block_insert_with_indentation_level_specified=dict(test_name="T7"),
+    test_ds_block_insertafter_eof_with_backup=dict(block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present", backup=True),
+    test_ds_block_insertafter_eof_with_backup_name=dict(block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present", backup=True, backup_name=MVS_BACKUP_DS),
     expected=dict(test_uss_block_insertafter_regex_defaultmarker="""if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -1388,6 +1392,35 @@ def test_ds_block_insert_with_indentation_level_specified(ansible_zos_module, ds
         TEST_INFO["test_uss_block_insert_with_indentation_level_specified"],
         TEST_INFO["expected"]["test_uss_block_insert_with_indentation_level_specified"]
     )
+
+
+@pytest.mark.ds
+@pytest.mark.parametrize("dstype", DS_TYPE)
+@pytest.mark.parametrize("encoding", ENCODING)
+@pytest.mark.parametrize("backup_name", BACKUP_OPTIONS)
+def test_ds_block_insertafter_eof_with_backup(ansible_zos_module, dstype, encoding, backup_name):
+    try:
+        backup_ds_name = MVS_BACKUP_DS
+        TEST_ENV["DS_TYPE"] = dstype
+        TEST_ENV["ENCODING"] = encoding
+        TEST_INFO["test_ds_block_insertafter_eof_with_backup"]["backup_name"] = backup_name
+        ds_result = DsGeneral(
+            "T10",
+            ansible_zos_module, TEST_ENV,
+            TEST_INFO["test_ds_block_insertafter_eof_with_backup"],
+            TEST_INFO["expected"]["test_uss_block_insertafter_eof_defaultmarker"]
+        )
+        for result in ds_result.contacted.values():
+            backup_ds_name = result.get("backup_name")
+            assert backup_ds_name is not None
+        if encoding == 'IBM-1047':
+            cmdStr = "cat \"//'{0}'\" ".format(backup_ds_name)
+            results = ansible_zos_module.all.shell(cmd=cmdStr)
+            print(vars(results))
+            for result in results.contacted.values():
+                assert result.get("stdout") == TEST_ENV["TEST_CONT"]
+    finally:
+        ansible_zos_module.all.zos_data_set(name=backup_ds_name, state="absent")
 
 
 #########################

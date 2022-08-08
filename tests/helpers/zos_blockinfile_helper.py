@@ -103,9 +103,9 @@ def DsGeneral(test_name, ansible_zos_module, test_env, test_info, expected):
     test_info["path"] = test_env["DS_NAME"]
     if test_env["ENCODING"]:
         test_info["encoding"] = test_env["ENCODING"]
-    results = hosts.all.zos_blockinfile(**test_info)
-    pprint(vars(results))
-    for result in results.contacted.values():
+    blockinfile_results = hosts.all.zos_blockinfile(**test_info)
+    pprint(vars(blockinfile_results))
+    for result in blockinfile_results.contacted.values():
         assert result.get("changed") == 1
     if test_env["ENCODING"] == 'IBM-1047':
         cmdStr = "cat \"//'{0}'\" ".format(test_env["DS_NAME"])
@@ -115,6 +115,7 @@ def DsGeneral(test_name, ansible_zos_module, test_env, test_info, expected):
             assert result.get("stdout") == expected
             # assert result.get("stdout").replace('\n', '').replace(' ', '') == expected.replace('\n', '').replace(' ', '')
     clean_ds_test_env(test_env["DS_NAME"], hosts)
+    return blockinfile_results
 
 
 def DsNotSupportedHelper(test_name, ansible_zos_module, test_env, test_info):

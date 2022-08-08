@@ -1413,12 +1413,12 @@ def test_ds_block_insertafter_eof_with_backup(ansible_zos_module, dstype, encodi
         for result in ds_result.contacted.values():
             backup_ds_name = result.get("backup_name")
             assert backup_ds_name is not None
-        if encoding == 'IBM-1047':
-            cmdStr = "cat \"//'{0}'\" ".format(backup_ds_name)
-            results = ansible_zos_module.all.shell(cmd=cmdStr)
-            print(vars(results))
-            for result in results.contacted.values():
-                assert result.get("stdout") == TEST_ENV["TEST_CONT"]
+            if encoding == 'IBM-1047':
+                cmdStr = "cat \"//'{0}'\" ".format(backup_ds_name)
+                results = ansible_zos_module.all.shell(cmd=cmdStr)
+                print(vars(results))
+                for result in results.contacted.values():
+                    assert result.get("stdout") == TEST_ENV["TEST_CONT"]
     finally:
         ansible_zos_module.all.zos_data_set(name=backup_ds_name, state="absent")
 

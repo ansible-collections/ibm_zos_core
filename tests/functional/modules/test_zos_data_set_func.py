@@ -34,7 +34,7 @@ DEFAULT_VOLUME = "000000"
 DEFAULT_VOLUME2 = "222222"
 DEFAULT_DATA_SET_NAME = "USER.PRIVATE.TESTDS"
 DEFAULT_DATA_SET_NAME_WITH_MEMBER = "USER.PRIVATE.TESTDS(TESTME)"
-TEMP_PATH = "/tmp/ansible/jcl"
+TEMP_PATH = "/tmp/jcl"
 
 ECHO_COMMAND = "echo {0} > {1}/SAMPLE"
 
@@ -142,42 +142,44 @@ def retrieve_data_set_names(results):
     [PDS_CREATE_JCL, KSDS_CREATE_JCL, RRDS_CREATE_JCL, ESDS_CREATE_JCL, LDS_CREATE_JCL],
 )
 def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl):
-    hosts = ansible_zos_module
-    hosts.all.zos_data_set(
-        name=DEFAULT_DATA_SET_NAME, state="cataloged", volumes=DEFAULT_VOLUME
-    )
-    hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
-    hosts.all.file(path=TEMP_PATH, state="directory")
-    hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl), TEMP_PATH))
-    results = hosts.all.zos_job_submit(
-        src=TEMP_PATH + "/SAMPLE", location="USS", wait=True
-    )
-    hosts.all.file(path=TEMP_PATH, state="absent")
-    # verify data set creation was successful
-    for result in results.contacted.values():
-        assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
-    # verify first uncatalog was performed
-    results = hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="uncataloged")
-    for result in results.contacted.values():
-        assert result.get("changed") is True
-    # verify second uncatalog shows uncatalog already performed
-    results = hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="uncataloged")
-    for result in results.contacted.values():
-        assert result.get("changed") is False
-    # recatalog the data set
-    results = hosts.all.zos_data_set(
-        name=DEFAULT_DATA_SET_NAME, state="cataloged", volumes=DEFAULT_VOLUME
-    )
-    for result in results.contacted.values():
-        assert result.get("changed") is True
-    # verify second catalog shows catalog already performed
-    results = hosts.all.zos_data_set(
-        name=DEFAULT_DATA_SET_NAME, state="cataloged", volumes=DEFAULT_VOLUME
-    )
-    for result in results.contacted.values():
-        assert result.get("changed") is False
-    # clean up
-    hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
+    try:
+        hosts = ansible_zos_module
+        hosts.all.zos_data_set(
+            name=DEFAULT_DATA_SET_NAME, state="cataloged", volumes=DEFAULT_VOLUME
+        )
+        hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
+        hosts.all.file(path=TEMP_PATH, state="directory")
+        hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl), TEMP_PATH))
+        results = hosts.all.zos_job_submit(
+            src=TEMP_PATH + "/SAMPLE", location="USS", wait=True
+        )
+        # verify data set creation was successful
+        for result in results.contacted.values():
+            assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
+        # verify first uncatalog was performed
+        results = hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="uncataloged")
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+        # verify second uncatalog shows uncatalog already performed
+        results = hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="uncataloged")
+        for result in results.contacted.values():
+            assert result.get("changed") is False
+        # recatalog the data set
+        results = hosts.all.zos_data_set(
+            name=DEFAULT_DATA_SET_NAME, state="cataloged", volumes=DEFAULT_VOLUME
+        )
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+        # verify second catalog shows catalog already performed
+        results = hosts.all.zos_data_set(
+            name=DEFAULT_DATA_SET_NAME, state="cataloged", volumes=DEFAULT_VOLUME
+        )
+        for result in results.contacted.values():
+            assert result.get("changed") is False
+    finally:
+        # clean up
+        hosts.all.file(path=TEMP_PATH, state="absent")
+        hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
 
 
 @pytest.mark.parametrize(
@@ -185,37 +187,39 @@ def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl):
     [PDS_CREATE_JCL, KSDS_CREATE_JCL, RRDS_CREATE_JCL, ESDS_CREATE_JCL, LDS_CREATE_JCL],
 )
 def test_data_set_present_when_uncataloged(ansible_zos_module, jcl):
-    hosts = ansible_zos_module
-    hosts.all.zos_data_set(
-        name=DEFAULT_DATA_SET_NAME, state="cataloged", volumes=DEFAULT_VOLUME
-    )
-    hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
-    hosts.all.file(path=TEMP_PATH, state="directory")
-    hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl), TEMP_PATH))
-    results = hosts.all.zos_job_submit(
-        src=TEMP_PATH + "/SAMPLE", location="USS", wait=True
-    )
-    hosts.all.file(path=TEMP_PATH, state="absent")
-    # verify data set creation was successful
-    for result in results.contacted.values():
-        assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
-    # ensure data set present
-    results = hosts.all.zos_data_set(
-        name=DEFAULT_DATA_SET_NAME, state="present", volumes=DEFAULT_VOLUME
-    )
-    for result in results.contacted.values():
-        assert result.get("changed") is False
-    # uncatalog the data set
-    results = hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="uncataloged")
-    for result in results.contacted.values():
-        assert result.get("changed") is True
-    # ensure data set present
-    results = hosts.all.zos_data_set(
-        name=DEFAULT_DATA_SET_NAME, state="present", volumes=DEFAULT_VOLUME
-    )
-    for result in results.contacted.values():
-        assert result.get("changed") is True
-    hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
+    try:
+        hosts = ansible_zos_module
+        hosts.all.zos_data_set(
+            name=DEFAULT_DATA_SET_NAME, state="cataloged", volumes=DEFAULT_VOLUME
+        )
+        hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
+        hosts.all.file(path=TEMP_PATH, state="directory")
+        hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl), TEMP_PATH))
+        results = hosts.all.zos_job_submit(
+            src=TEMP_PATH + "/SAMPLE", location="USS", wait=True
+        )
+        # verify data set creation was successful
+        for result in results.contacted.values():
+            assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
+        # ensure data set present
+        results = hosts.all.zos_data_set(
+            name=DEFAULT_DATA_SET_NAME, state="present", volumes=DEFAULT_VOLUME
+        )
+        for result in results.contacted.values():
+            assert result.get("changed") is False
+        # uncatalog the data set
+        results = hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="uncataloged")
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+        # ensure data set present
+        results = hosts.all.zos_data_set(
+            name=DEFAULT_DATA_SET_NAME, state="present", volumes=DEFAULT_VOLUME
+        )
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+    finally:
+        hosts.all.file(path=TEMP_PATH, state="absent")
+        hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
 
 
 @pytest.mark.parametrize(
@@ -223,40 +227,42 @@ def test_data_set_present_when_uncataloged(ansible_zos_module, jcl):
     [PDS_CREATE_JCL, KSDS_CREATE_JCL, RRDS_CREATE_JCL, ESDS_CREATE_JCL, LDS_CREATE_JCL],
 )
 def test_data_set_replacement_when_uncataloged(ansible_zos_module, jcl):
-    hosts = ansible_zos_module
-    hosts.all.zos_data_set(
-        name=DEFAULT_DATA_SET_NAME, state="cataloged", volumes=DEFAULT_VOLUME
-    )
-    hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
-    hosts.all.file(path=TEMP_PATH, state="directory")
-    hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl), TEMP_PATH))
-    results = hosts.all.zos_job_submit(
-        src=TEMP_PATH + "/SAMPLE", location="USS", wait=True
-    )
-    hosts.all.file(path=TEMP_PATH, state="absent")
-    # verify data set creation was successful
-    for result in results.contacted.values():
-        assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
-    # ensure data set present
-    results = hosts.all.zos_data_set(
-        name=DEFAULT_DATA_SET_NAME, state="present", volumes=DEFAULT_VOLUME
-    )
-    for result in results.contacted.values():
-        assert result.get("changed") is False
-    # uncatalog the data set
-    results = hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="uncataloged")
-    for result in results.contacted.values():
-        assert result.get("changed") is True
-    # ensure data set present
-    results = hosts.all.zos_data_set(
-        name=DEFAULT_DATA_SET_NAME,
-        state="present",
-        volumes=DEFAULT_VOLUME,
-        replace=True,
-    )
-    for result in results.contacted.values():
-        assert result.get("changed") is True
-    hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
+    try:
+        hosts = ansible_zos_module
+        hosts.all.zos_data_set(
+            name=DEFAULT_DATA_SET_NAME, state="cataloged", volumes=DEFAULT_VOLUME
+        )
+        hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
+        hosts.all.file(path=TEMP_PATH, state="directory")
+        hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl), TEMP_PATH))
+        results = hosts.all.zos_job_submit(
+            src=TEMP_PATH + "/SAMPLE", location="USS", wait=True
+        )
+        # verify data set creation was successful
+        for result in results.contacted.values():
+            assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
+        # ensure data set present
+        results = hosts.all.zos_data_set(
+            name=DEFAULT_DATA_SET_NAME, state="present", volumes=DEFAULT_VOLUME
+        )
+        for result in results.contacted.values():
+            assert result.get("changed") is False
+        # uncatalog the data set
+        results = hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="uncataloged")
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+        # ensure data set present
+        results = hosts.all.zos_data_set(
+            name=DEFAULT_DATA_SET_NAME,
+            state="present",
+            volumes=DEFAULT_VOLUME,
+            replace=True,
+        )
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+    finally:
+        hosts.all.file(path=TEMP_PATH, state="absent")
+        hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
 
 
 @pytest.mark.parametrize(
@@ -264,31 +270,33 @@ def test_data_set_replacement_when_uncataloged(ansible_zos_module, jcl):
     [PDS_CREATE_JCL, KSDS_CREATE_JCL, RRDS_CREATE_JCL, ESDS_CREATE_JCL, LDS_CREATE_JCL],
 )
 def test_data_set_absent_when_uncataloged(ansible_zos_module, jcl):
-    hosts = ansible_zos_module
-    hosts.all.zos_data_set(
-        name=DEFAULT_DATA_SET_NAME, state="cataloged", volumes=DEFAULT_VOLUME
-    )
-    hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
-    hosts.all.file(path=TEMP_PATH, state="directory")
-    hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl), TEMP_PATH))
-    results = hosts.all.zos_job_submit(
-        src=TEMP_PATH + "/SAMPLE", location="USS", wait=True
-    )
-    hosts.all.file(path=TEMP_PATH, state="absent")
-    # verify data set creation was successful
-    for result in results.contacted.values():
-        assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
-    # uncatalog the data set
-    results = hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="uncataloged")
-    for result in results.contacted.values():
-        assert result.get("changed") is True
-    # ensure data set absent
-    results = hosts.all.zos_data_set(
-        name=DEFAULT_DATA_SET_NAME, state="absent", volumes=DEFAULT_VOLUME
-    )
-    for result in results.contacted.values():
-        assert result.get("changed") is True
-    hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
+    try:
+        hosts = ansible_zos_module
+        hosts.all.zos_data_set(
+            name=DEFAULT_DATA_SET_NAME, state="cataloged", volumes=DEFAULT_VOLUME
+        )
+        hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
+        hosts.all.file(path=TEMP_PATH, state="directory")
+        hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl), TEMP_PATH))
+        results = hosts.all.zos_job_submit(
+            src=TEMP_PATH + "/SAMPLE", location="USS", wait=True
+        )
+        # verify data set creation was successful
+        for result in results.contacted.values():
+            assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
+        # uncatalog the data set
+        results = hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="uncataloged")
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+        # ensure data set absent
+        results = hosts.all.zos_data_set(
+            name=DEFAULT_DATA_SET_NAME, state="absent", volumes=DEFAULT_VOLUME
+        )
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+    finally:
+        hosts.all.file(path=TEMP_PATH, state="absent")
+        hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
 
 
 @pytest.mark.parametrize("dstype", data_set_types)

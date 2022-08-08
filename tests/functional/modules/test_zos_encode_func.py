@@ -195,10 +195,9 @@ def test_uss_encoding_conversion_uss_file_to_uss_path(ansible_zos_module):
             assert result.get("dest") == USS_DEST_PATH
             assert result.get("backup_name") is None
             assert result.get("changed") is True
-    finally: 
+    finally:
         hosts.all.file(path=USS_FILE, state="absent")
         hosts.all.file(path=USS_DEST_PATH, state="absent")
-
 
 
 def test_uss_encoding_conversion_uss_path_to_uss_path(ansible_zos_module):
@@ -221,7 +220,7 @@ def test_uss_encoding_conversion_uss_path_to_uss_path(ansible_zos_module):
             assert result.get("dest") == USS_DEST_PATH
             assert result.get("backup_name") is not None
             assert result.get("changed") is True
-    finally: 
+    finally:
         hosts.all.file(path=USS_PATH, state="absent")
         hosts.all.file(path=USS_DEST_PATH, state="absent")
         hosts.all.file(path=result.get("backup_name"), state="absent")
@@ -243,6 +242,7 @@ def test_uss_encoding_conversion_uss_file_to_mvs_ps(ansible_zos_module):
             assert result.get("changed") is True
     finally:
         hosts.all.file(path=USS_FILE, state="absent")
+
 
 def test_uss_encoding_conversion_mvs_ps_to_uss_file(ansible_zos_module):
     try:
@@ -311,6 +311,7 @@ def test_uss_encoding_conversion_uss_file_to_mvs_pds_member(ansible_zos_module):
     finally:
         hosts.all.file(path=USS_FILE, state="absent")
 
+
 def test_uss_encoding_conversion_mvs_pds_member_to_uss_file(ansible_zos_module):
     try:
         hosts = ansible_zos_module
@@ -372,6 +373,7 @@ def test_uss_encoding_conversion_mvs_pds_to_uss_path(ansible_zos_module):
     finally:
         hosts.all.file(path=USS_DEST_PATH, state="absent")
 
+
 def test_uss_encoding_conversion_mvs_ps_to_mvs_pds_member(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_encode(
@@ -399,7 +401,7 @@ def test_uss_encoding_conversion_uss_file_to_mvs_vsam(ansible_zos_module):
         results = hosts.all.zos_job_submit(
             src="{0}/SAMPLE".format(TEMP_JCL_PATH), location="USS", wait=True
         )
-        
+
         for result in results.contacted.values():
             assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
             assert result.get("jobs")[0].get("ret_code").get("code") == 0
@@ -717,7 +719,7 @@ def test_uss_backup_entire_folder_to_default_backup_location_compressed(
         backup_name = None
         for result in results.contacted.values():
             backup_name = result.get("backup_name")
-        
+
         results = hosts.all.shell(cmd="ls -la {0}".format(backup_name[:-4] + "*"))
         for result in results.contacted.values():
             assert backup_name in result.get("stdout")

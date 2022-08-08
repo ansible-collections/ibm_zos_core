@@ -19,6 +19,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
 import pytest
 import os
 import shutil
+import re
 import tempfile
 from tempfile import mkstemp
 
@@ -32,6 +33,11 @@ DUMMY DATA ---- LINE 004 ------
 DUMMY DATA ---- LINE 005 ------
 DUMMY DATA ---- LINE 006 ------
 DUMMY DATA ---- LINE 007 ------
+"""
+
+VSAM_RECORDS = """00000001A record
+00000002A record
+00000003A record
 """
 
 # SHELL_EXECUTABLE = "/usr/lpp/rsusr/ported/bin/bash"
@@ -51,26 +57,57 @@ def populate_dir(dir_path):
             infile.write(DUMMY_DATA)
 
 
-def create_vsam_ksds(ds_name, ansible_zos_module):
-    hosts = ansible_zos_module
-    alloc_cmd = """     DEFINE CLUSTER (NAME({0})  -
-    INDEXED                 -
-    RECSZ(80,80)            -
-    TRACKS(1,1)             -
-    KEYS(5,0)               -
-    CISZ(4096)              -
-    VOLUMES(000000)         -
-    FREESPACE(3,3) )        -
-    DATA (NAME({0}.DATA))   -
-    INDEX (NAME({0}.INDEX))""".format(
-        ds_name
+def get_listcat_information(hosts, name):
+    """Runs IDCAMS to get information about a data set.
+
+    Arguments:
+        hosts (object) -- Ansible instance(s) that can call modules.
+        name (str) -- Name of the data set.
+    """
+    return hosts.all.zos_mvs_raw(
+        program_name="idcams",
+        auth=True,
+        dds=[
+            dict(dd_output=dict(
+                dd_name="sysprint",
+                return_content=dict(type="text")
+            )),
+            dict(dd_input=dict(
+                dd_name="sysin",
+                content=" LISTCAT ENT('{0}') DATA ALL".format(name)
+            ))
+        ]
     )
 
-    return hosts.all.shell(
-        cmd="mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin",
-        executable=SHELL_EXECUTABLE,
-        stdin=alloc_cmd,
+
+def create_vsam_data_set(hosts, name, ds_type, add_data=False, key_length=None, key_offset=None):
+    """Creates a new VSAM on the system.
+
+    Arguments:
+        hosts (object) -- Ansible instance(s) that can call modules.
+        name (str) -- Name of the VSAM data set.
+        type (str) -- Type of the VSAM (KSDS, ESDS, RRDS, LDS)
+        add_data (bool, optional) -- Whether to add records to the VSAM.
+        key_length (int, optional) -- Key length (only for KSDS data sets).
+        key_offset (int, optional) -- Key offset (only for KSDS data sets).
+    """
+    params = dict(
+        name=name,
+        type=ds_type,
+        state="present"
     )
+    if ds_type == "KSDS":
+        params["key_length"] = key_length
+        params["key_offset"] = key_offset
+
+    hosts.all.zos_data_set(**params)
+
+    if add_data:
+        record_src = "/tmp/zos_copy_vsam_record"
+
+        hosts.all.zos_copy(content=VSAM_RECORDS, dest=record_src)
+        hosts.all.zos_encode(src=record_src, dest=name, from_encoding="ISO8859-1", to_encoding="IBM-1047")
+        hosts.all.file(path=record_src, state="absent")
 
 
 @pytest.mark.uss
@@ -588,6 +625,148 @@ def test_backup_sequential_data_set(ansible_zos_module, backup):
             assert "NOT IN CATALOG" not in result.get("stderr")
 
     finally:
+        hosts.all.zos_data_set(name=dest, state="absent")
+        if backup_name:
+            hosts.all.zos_data_set(name=backup_name, state="absent")
+
+
+@pytest.mark.vsam
+def test_copy_ksds_to_non_existing_ksds(ansible_zos_module):
+    hosts = ansible_zos_module
+    src_ds = TEST_VSAM_KSDS
+    dest_ds = "USER.TEST.VSAM.KSDS"
+
+    try:
+        copy_res = hosts.all.zos_copy(src=src_ds, dest=dest_ds, remote_src=True)
+        verify_copy = get_listcat_information(hosts, dest_ds)
+
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+            assert result.get("changed") == True
+            assert result.get("dest") == dest_ds
+        for result in verify_copy.contacted.values():
+            assert result.get("dd_names") is not None
+            dd_names = result.get("dd_names")
+            assert len(dd_names) > 0
+            output = "\n".join(dd_names[0]["content"])
+            assert "IN-CAT" in output
+            assert re.search(r"\bINDEXED\b", output)
+    finally:
+        hosts.all.zos_data_set(name=dest_ds, state="absent")
+
+
+@pytest.mark.vsam
+@pytest.mark.parametrize("force", [False, True])
+def test_copy_ksds_to_empty_ksds(ansible_zos_module, force):
+    hosts = ansible_zos_module
+    src_ds = "USER.TEST.VSAM.SOURCE"
+    dest_ds = "USER.TEST.VSAM.KSDS"
+
+    try:
+        create_vsam_data_set(hosts, src_ds, "KSDS", add_data=True, key_length=12, key_offset=0)
+        create_vsam_data_set(hosts, dest_ds, "KSDS", key_length=12, key_offset=0)
+
+        copy_res = hosts.all.zos_copy(src=src_ds, dest=dest_ds, remote_src=True, force=force)
+        verify_copy = get_listcat_information(hosts, dest_ds)
+
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+            assert result.get("changed") == True
+            assert result.get("dest") == dest_ds
+
+        for result in verify_copy.contacted.values():
+            assert result.get("dd_names") is not None
+            dd_names = result.get("dd_names")
+            assert len(dd_names) > 0
+            output = "\n".join(dd_names[0]["content"])
+            assert "IN-CAT" in output
+            assert re.search(r"\bINDEXED\b", output)
+    finally:
+        hosts.all.zos_data_set(name=src_ds, state="absent")
+        hosts.all.zos_data_set(name=dest_ds, state="absent")
+
+
+@pytest.mark.vsam
+@pytest.mark.parametrize("force", [False, True])
+def test_copy_ksds_to_existing_ksds(ansible_zos_module, force):
+    hosts = ansible_zos_module
+    src_ds = "USER.TEST.VSAM.SOURCE"
+    dest_ds = "USER.TEST.VSAM.KSDS"
+
+    try:
+        create_vsam_data_set(hosts, src_ds, "KSDS", add_data=True, key_length=12, key_offset=0)
+        create_vsam_data_set(hosts, dest_ds, "KSDS", add_data=True, key_length=12, key_offset=0)
+
+        copy_res = hosts.all.zos_copy(src=src_ds, dest=dest_ds, remote_src=True, force=force)
+        verify_copy = get_listcat_information(hosts, dest_ds)
+
+        for result in copy_res.contacted.values():
+            if force:
+                assert result.get("msg") is None
+                assert result.get("changed") == True
+                assert result.get("dest") == dest_ds
+            else:
+                assert result.get("msg") is not None
+                assert result.get("changed") == False
+
+        for result in verify_copy.contacted.values():
+            assert result.get("dd_names") is not None
+            dd_names = result.get("dd_names")
+            assert len(dd_names) > 0
+            output = "\n".join(dd_names[0]["content"])
+            assert "IN-CAT" in output
+            assert re.search(r"\bINDEXED\b", output)
+    finally:
+        hosts.all.zos_data_set(name=src_ds, state="absent")
+        hosts.all.zos_data_set(name=dest_ds, state="absent")
+
+
+@pytest.mark.vsam
+@pytest.mark.parametrize("backup", [None, "USER.TEST.VSAM.KSDS.BACK"])
+def test_backup_ksds(ansible_zos_module, backup):
+    hosts = ansible_zos_module
+    src = "USER.TEST.VSAM.SOURCE"
+    dest = "USER.TEST.VSAM.KSDS"
+    backup_name = None
+
+    try:
+        create_vsam_data_set(hosts, src, "KSDS", add_data=True, key_length=12, key_offset=0)
+        create_vsam_data_set(hosts, dest, "KSDS", add_data=True, key_length=12, key_offset=0)
+
+        if backup:
+            copy_res = hosts.all.zos_copy(src=src, dest=dest, backup=True, backup_name=backup, remote_src=True, force=True)
+        else:
+            copy_res = hosts.all.zos_copy(src=src, dest=dest, backup=True, remote_src=True, force=True)
+
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+            assert result.get("changed") == True
+            backup_name = result.get("backup_name")
+            assert backup_name is not None
+
+            if backup:
+                assert backup_name == backup
+
+        verify_copy = get_listcat_information(hosts, dest)
+        verify_backup = get_listcat_information(hosts, backup_name)
+
+        for result in verify_copy.contacted.values():
+            assert result.get("dd_names") is not None
+            dd_names = result.get("dd_names")
+            assert len(dd_names) > 0
+            output = "\n".join(dd_names[0]["content"])
+            assert "IN-CAT" in output
+            assert re.search(r"\bINDEXED\b", output)
+        for result in verify_backup.contacted.values():
+            assert result.get("dd_names") is not None
+            dd_names = result.get("dd_names")
+            assert len(dd_names) > 0
+            output = "\n".join(dd_names[0]["content"])
+            assert "IN-CAT" in output
+            assert re.search(r"\bINDEXED\b", output)
+
+    finally:
+        hosts.all.zos_data_set(name=src, state="absent")
         hosts.all.zos_data_set(name=dest, state="absent")
         if backup_name:
             hosts.all.zos_data_set(name=backup_name, state="absent")
@@ -1544,61 +1723,6 @@ def test_copy_pdse_member_to_uss_dir(ansible_zos_module):
         hosts.all.file(path=dest_path, state="absent")
 
 
-def test_copy_vsam_ksds_to_existing_vsam_ksds(ansible_zos_module):
-    hosts = ansible_zos_module
-    src_ds = TEST_VSAM_KSDS
-    dest_ds = "USER.TEST.VSAM.KSDS"
-    try:
-        create_vsam_ksds(dest_ds, ansible_zos_module)
-        copy_res = hosts.all.zos_copy(src=src_ds, dest=dest_ds, remote_src=True)
-        verify_copy = hosts.all.shell(
-            cmd="tsocmd \"LISTDS '{0}'\"".format(dest_ds), executable=SHELL_EXECUTABLE
-        )
-        for result in copy_res.contacted.values():
-            assert result.get("msg") is None
-        for result in verify_copy.contacted.values():
-            assert result.get("rc") == 0
-            assert "NOT IN CATALOG" not in result.get("stderr")
-            assert "NOT IN CATALOG" not in result.get("stdout")
-            assert "VSAM" in result.get("stdout")
-    finally:
-        hosts.all.zos_data_set(name=dest_ds, state="absent")
-
-
-def test_copy_vsam_ksds_to_non_existing_vsam_ksds(ansible_zos_module):
-    hosts = ansible_zos_module
-    src_ds = TEST_VSAM_KSDS
-    dest_ds = "USER.TEST.VSAM.KSDS"
-    try:
-        copy_res = hosts.all.zos_copy(src=src_ds, dest=dest_ds, remote_src=True)
-        verify_copy = hosts.all.shell(
-            cmd="tsocmd \"LISTDS '{0}'\"".format(dest_ds), executable=SHELL_EXECUTABLE
-        )
-        for result in copy_res.contacted.values():
-            assert result.get("msg") is None
-        for result in verify_copy.contacted.values():
-            assert result.get("rc") == 0
-            assert "NOT IN CATALOG" not in result.get("stderr")
-            assert "NOT IN CATALOG" not in result.get("stdout")
-            assert "VSAM" in result.get("stdout")
-    finally:
-        hosts.all.zos_data_set(name=dest_ds, state="absent")
-
-
-def test_copy_empty_vsam_fails(ansible_zos_module):
-    hosts = ansible_zos_module
-    src_ds = TEST_VSAM
-    dest_ds = "USER.TEST.VSAM.LDS"
-    try:
-        copy_res = hosts.all.zos_copy(
-            src=src_ds, dest=dest_ds, is_vsam=True, remote_src=True
-        )
-        for result in copy_res.contacted.values():
-            assert result.get("msg") is not None
-    finally:
-        hosts.all.zos_data_set(name=dest_ds, state="absent")
-
-
 def test_copy_inline_content_to_pds_member(ansible_zos_module):
     hosts = ansible_zos_module
     dest_ds = "USER.TEST.PDS.FUNCTEST"
@@ -1783,35 +1907,6 @@ def test_backup_pdse_default_backup_path(ansible_zos_module):
             hosts.all.zos_data_set(name=backup_name, state="absent")
 
 
-def test_backup_vsam_default_backup_path(ansible_zos_module):
-    hosts = ansible_zos_module
-    src = TEST_VSAM_KSDS
-    dest = "USER.TEST.VSAM.KSDS"
-    backup_name = None
-    try:
-        create_vsam_ksds(dest, ansible_zos_module)
-        copy_res = hosts.all.zos_copy(src=src, dest=dest, backup=True, remote_src=True)
-
-        for result in copy_res.contacted.values():
-            assert result.get("msg") is None
-            backup_name = result.get("backup_name")
-            assert backup_name is not None
-
-        stat_res = hosts.all.shell(
-            cmd="tsocmd \"LISTDS '{0}'\"".format(backup_name),
-            executable=SHELL_EXECUTABLE,
-        )
-        for result in stat_res.contacted.values():
-            assert result.get("rc") == 0
-            assert "NOT IN CATALOG" not in result.get("stdout")
-            assert "NOT IN CATALOG" not in result.get("stderr")
-
-    finally:
-        hosts.all.zos_data_set(name=dest, state="absent")
-        if backup_name:
-            hosts.all.zos_data_set(name=backup_name, state="absent")
-
-
 def test_backup_pds_user_backup_path(ansible_zos_module):
     hosts = ansible_zos_module
     src = tempfile.mkdtemp()
@@ -1888,37 +1983,6 @@ def test_backup_pdse_user_backup_path(ansible_zos_module):
 
     finally:
         shutil.rmtree(src)
-        hosts.all.zos_data_set(name=dest, state="absent")
-        if backup_name:
-            hosts.all.zos_data_set(name=backup_name, state="absent")
-
-
-def test_backup_vsam_user_backup_path(ansible_zos_module):
-    hosts = ansible_zos_module
-    src = TEST_VSAM_KSDS
-    dest = "USER.TEST.VSAM.KSDS"
-    backup_name = "USER.TEST.VSAM.KSDS.BACK"
-    try:
-        create_vsam_ksds(dest, ansible_zos_module)
-        copy_res = hosts.all.zos_copy(
-            src=src, dest=dest, backup=True, remote_src=True, backup_name=backup_name
-        )
-        print(vars(copy_res))
-
-        for result in copy_res.contacted.values():
-            assert result.get("msg") is None
-            result.get("backup_name") == backup_name
-
-        stat_res = hosts.all.shell(
-            cmd="tsocmd \"LISTDS '{0}'\"".format(backup_name),
-            executable=SHELL_EXECUTABLE,
-        )
-        for result in stat_res.contacted.values():
-            assert result.get("rc") == 0
-            assert "NOT IN CATALOG" not in result.get("stdout")
-            assert "NOT IN CATALOG" not in result.get("stderr")
-
-    finally:
         hosts.all.zos_data_set(name=dest, state="absent")
         if backup_name:
             hosts.all.zos_data_set(name=backup_name, state="absent")

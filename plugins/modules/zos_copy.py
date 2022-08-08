@@ -1981,6 +1981,7 @@ def run_module(module, arg_def):
     # ---------------------------------------------------------------------
     else:
         copy_handler.copy_to_vsam(src, dest)
+        res_args["changed"] = True
 
     res_args.update(
         dict(

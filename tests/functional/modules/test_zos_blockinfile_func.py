@@ -144,6 +144,7 @@ Until the issue be addressed I disable related tests.
 """
 # ENCODING = ['IBM-1047', 'ISO8859-1', 'UTF-8']
 ENCODING = ['IBM-1047']
+USS_BACKUP_FILE = "/tmp/backup.tmp"
 TEST_ENV = dict(
     TEST_CONT=TEST_CONTENT,
     TEST_DIR="/tmp/zos_blockinfile/",
@@ -161,6 +162,10 @@ TEST_INFO = dict(
         insertbefore="ZOAU_ROOT=", block="unset ZOAU_ROOT\nunset ZOAU_HOME\nunset ZOAU_DIR", state="present"),
     test_uss_block_insertafter_eof=dict(
         insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present"),
+    test_uss_block_insertafter_eof_with_backup=dict(
+        insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present", backup=True),
+    test_uss_block_insertafter_eof_with_backup_name=dict(
+        insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present", backup=True, backup_name=USS_BACKUP_FILE),
     test_uss_block_insert_with_force_option_as_true=dict(
         insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present", force=True),
     test_uss_block_insert_with_force_option_as_false=dict(
@@ -1140,6 +1145,38 @@ def test_uss_block_insert_with_indentation_level_specified(ansible_zos_module):
         "test_uss_block_insert_with_indentation_level_specified", ansible_zos_module,
         TEST_ENV, TEST_INFO["test_uss_block_insert_with_indentation_level_specified"],
         TEST_INFO["expected"]["test_uss_block_insert_with_indentation_level_specified"])
+
+
+@pytest.mark.uss
+def test_uss_block_insertafter_eof_with_backup(ansible_zos_module):
+    try:
+        backup_name = USS_BACKUP_FILE
+        uss_result = UssGeneral(
+            "test_uss_block_insertafter_eof_with_backup", ansible_zos_module,
+            TEST_ENV, TEST_INFO["test_uss_block_insertafter_eof_with_backup"],
+            TEST_INFO["expected"]["test_uss_block_insertafter_eof_defaultmarker"])
+        for result in uss_result.contacted.values():
+            backup_name = result.get("backup_name")
+            assert backup_name is not None
+    finally:
+        ansible_zos_module.all.file(path=backup_name, state="absent")
+
+
+@pytest.mark.uss
+def test_uss_block_insertafter_eof_with_backup_name(ansible_zos_module):
+    try:
+        uss_result = UssGeneral(
+            "test_uss_block_insertafter_eof_with_backup_name", ansible_zos_module,
+            TEST_ENV, TEST_INFO["test_uss_block_insertafter_eof_with_backup_name"],
+            TEST_INFO["expected"]["test_uss_block_insertafter_eof_defaultmarker"])
+        for result in uss_result.contacted.values():
+            assert result.get("backup_name") == USS_BACKUP_FILE
+            cmdStr = "cat {0}".format(result.get("backup_name"))
+            results = ansible_zos_module.all.shell(cmd=cmdStr)
+            for result in results.contacted.values():
+                assert result.get("stdout") == TEST_ENV["TEST_CONT"]
+    finally:
+        ansible_zos_module.all.file(path=USS_BACKUP_FILE, state="absent")
 
 
 #########################

@@ -39,9 +39,9 @@ def UssGeneral(test_name, ansible_zos_module, test_env, test_info, expected):
     hosts = ansible_zos_module
     set_uss_test_env(test_name, hosts, test_env)
     test_info["path"] = test_env["TEST_FILE"]
-    results = hosts.all.zos_blockinfile(**test_info)
-    pprint(vars(results))
-    for result in results.contacted.values():
+    blockinfile_results = hosts.all.zos_blockinfile(**test_info)
+    pprint(vars(blockinfile_results))
+    for result in blockinfile_results.contacted.values():
         assert result.get("changed") == 1
     cmdStr = "cat {0}".format(test_info["path"])
     results = hosts.all.shell(cmd=cmdStr)
@@ -49,6 +49,7 @@ def UssGeneral(test_name, ansible_zos_module, test_env, test_info, expected):
     for result in results.contacted.values():
         assert result.get("stdout") == expected
     clean_uss_test_env(test_env["TEST_DIR"], hosts)
+    return blockinfile_results
 
 
 def set_ds_test_env(test_name, hosts, test_env):

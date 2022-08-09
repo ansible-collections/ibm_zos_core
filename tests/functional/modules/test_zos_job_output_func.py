@@ -16,7 +16,6 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 from shellescape import quote
-import tempfile
 
 
 JCL_FILE_CONTENTS = """//HELLO    JOB (T043JM,JM00,1,0,0,0),'HELLO WORLD - JRM',CLASS=R,

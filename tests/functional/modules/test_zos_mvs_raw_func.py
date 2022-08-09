@@ -22,7 +22,7 @@ EXISTING_DATA_SET = "user.private.proclib"
 DEFAULT_DATA_SET = "user.private.rawds"
 DEFAULT_DATA_SET_2 = "user.private.rawds2"
 DEFAULT_DATA_SET_WITH_MEMBER = "{0}(mem1)".format(DEFAULT_DATA_SET)
-DEFAULT_PATH = "/tmp/ansible/testdir"
+DEFAULT_PATH = "/tmp/testdir"
 DEFAULT_PATH_WITH_FILE = "{0}/testfile".format(DEFAULT_PATH)
 DEFAULT_DD = "MYDD"
 SYSIN_DD = "SYSIN"
@@ -49,32 +49,31 @@ def test_failing_name_format(ansible_zos_module):
 
 
 def test_disposition_new(ansible_zos_module):
-    hosts = ansible_zos_module
-    hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
-    results = hosts.all.zos_mvs_raw(
-        program_name="idcams",
-        auth=True,
-        dds=[
-            dict(
-                dd_data_set=dict(
-                    dd_name=SYSPRINT_DD,
-                    data_set_name=DEFAULT_DATA_SET,
-                    disposition="new",
-                    type="seq",
-                    return_content=dict(type="text"),
+    try:
+        hosts = ansible_zos_module
+        hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
+        results = hosts.all.zos_mvs_raw(
+            program_name="idcams",
+            auth=True,
+            dds=[
+                dict(
+                    dd_data_set=dict(
+                        dd_name=SYSPRINT_DD,
+                        data_set_name=DEFAULT_DATA_SET,
+                        disposition="new",
+                        type="seq",
+                        return_content=dict(type="text"),
+                    ),
                 ),
-            ),
-            dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
-        ],
-    )
-    for result in results.contacted.values():
-        pprint(result)
-        assert result.get("ret_code", {}).get("code", -1) == 0
-        assert len(result.get("dd_names", [])) > 0
-    results = hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
-    for result in results.contacted.values():
-        pprint(result)
-        assert result.get("changed", False) is True
+                dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
+            ],
+        )
+        for result in results.contacted.values():
+            pprint(result)
+            assert result.get("ret_code", {}).get("code", -1) == 0
+            assert len(result.get("dd_names", [])) > 0
+    finally:
+        results = hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
 
 
 @pytest.mark.parametrize(
@@ -82,63 +81,61 @@ def test_disposition_new(ansible_zos_module):
     ["shr", "mod", "old"],
 )
 def test_dispositions_for_existing_data_set(ansible_zos_module, disposition):
-    hosts = ansible_zos_module
-    hosts.all.zos_data_set(
-        name=DEFAULT_DATA_SET, type="seq", state="present", replace=True
-    )
-    results = hosts.all.zos_mvs_raw(
-        program_name="idcams",
-        auth=True,
-        dds=[
-            dict(
-                dd_data_set=dict(
-                    dd_name=SYSPRINT_DD,
-                    data_set_name=DEFAULT_DATA_SET,
-                    disposition=disposition,
-                    return_content=dict(type="text"),
+    try:
+        hosts = ansible_zos_module
+        hosts.all.zos_data_set(
+            name=DEFAULT_DATA_SET, type="seq", state="present", replace=True
+        )
+        results = hosts.all.zos_mvs_raw(
+            program_name="idcams",
+            auth=True,
+            dds=[
+                dict(
+                    dd_data_set=dict(
+                        dd_name=SYSPRINT_DD,
+                        data_set_name=DEFAULT_DATA_SET,
+                        disposition=disposition,
+                        return_content=dict(type="text"),
+                    ),
                 ),
-            ),
-            dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
-        ],
-    )
-    for result in results.contacted.values():
-        pprint(result)
-        assert result.get("ret_code", {}).get("code", -1) == 0
-        assert len(result.get("dd_names", [])) > 0
-    results = hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
-    for result in results.contacted.values():
-        pprint(result)
-        assert result.get("changed", False) is True
+                dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
+            ],
+        )
+        for result in results.contacted.values():
+            pprint(result)
+            assert result.get("ret_code", {}).get("code", -1) == 0
+            assert len(result.get("dd_names", [])) > 0
+    finally:
+        results = hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
 
 
 # * new data set and append to member in one step not currently supported
 def test_new_disposition_for_data_set_members(ansible_zos_module):
-    hosts = ansible_zos_module
-    hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
-    results = hosts.all.zos_mvs_raw(
-        program_name="idcams",
-        auth=True,
-        dds=[
-            dict(
-                dd_data_set=dict(
-                    dd_name=SYSPRINT_DD,
-                    data_set_name=DEFAULT_DATA_SET_WITH_MEMBER,
-                    disposition="new",
-                    type="pds",
-                    directory_blocks=15,
-                    return_content=dict(type="text"),
+    try:
+        hosts = ansible_zos_module
+        hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
+        results = hosts.all.zos_mvs_raw(
+            program_name="idcams",
+            auth=True,
+            dds=[
+                dict(
+                    dd_data_set=dict(
+                        dd_name=SYSPRINT_DD,
+                        data_set_name=DEFAULT_DATA_SET_WITH_MEMBER,
+                        disposition="new",
+                        type="pds",
+                        directory_blocks=15,
+                        return_content=dict(type="text"),
+                    ),
                 ),
-            ),
-            dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
-        ],
-    )
-    for result in results.contacted.values():
-        pprint(result)
-        assert result.get("ret_code", {}).get("code", -1) == 8
-    results = hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
-    for result in results.contacted.values():
-        pprint(result)
-        assert result.get("changed", True) is False
+                dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
+            ],
+        )
+        for result in results.contacted.values():
+            pprint(result)
+            assert result.get("ret_code", {}).get("code", -1) == 8
+    finally:
+        hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
 
 
 @pytest.mark.parametrize(
@@ -146,33 +143,32 @@ def test_new_disposition_for_data_set_members(ansible_zos_module):
     ["shr", "mod", "old"],
 )
 def test_dispositions_for_existing_data_set_members(ansible_zos_module, disposition):
-    hosts = ansible_zos_module
-    hosts.all.zos_data_set(
-        name=DEFAULT_DATA_SET, type="pds", state="present", replace=True
-    )
-    results = hosts.all.zos_mvs_raw(
-        program_name="idcams",
-        auth=True,
-        dds=[
-            dict(
-                dd_data_set=dict(
-                    dd_name=SYSPRINT_DD,
-                    data_set_name=DEFAULT_DATA_SET_WITH_MEMBER,
-                    disposition=disposition,
-                    return_content=dict(type="text"),
+    try:
+        hosts = ansible_zos_module
+        hosts.all.zos_data_set(
+            name=DEFAULT_DATA_SET, type="pds", state="present", replace=True
+        )
+        results = hosts.all.zos_mvs_raw(
+            program_name="idcams",
+            auth=True,
+            dds=[
+                dict(
+                    dd_data_set=dict(
+                        dd_name=SYSPRINT_DD,
+                        data_set_name=DEFAULT_DATA_SET_WITH_MEMBER,
+                        disposition=disposition,
+                        return_content=dict(type="text"),
+                    ),
                 ),
-            ),
-            dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
-        ],
-    )
-    for result in results.contacted.values():
-        pprint(result)
-        assert result.get("ret_code", {}).get("code", -1) == 0
-        assert len(result.get("dd_names", [])) > 0
-    results = hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
-    for result in results.contacted.values():
-        pprint(result)
-        assert result.get("changed", False) is True
+                dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
+            ],
+        )
+        for result in results.contacted.values():
+            pprint(result)
+            assert result.get("ret_code", {}).get("code", -1) == 0
+            assert len(result.get("dd_names", [])) > 0
+    finally:
+        hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
 
 
 @pytest.mark.parametrize(
@@ -180,41 +176,38 @@ def test_dispositions_for_existing_data_set_members(ansible_zos_module, disposit
     [("keep", True), ("delete", True), ("catalog", True), ("uncatalog", True)],
 )
 def test_normal_dispositions_data_set(ansible_zos_module, normal_disposition, changed):
-    hosts = ansible_zos_module
-    results = hosts.all.zos_data_set(
-        name=DEFAULT_DATA_SET,
-        type="seq",
-        state="present",
-        replace=True,
-        volumes=[DEFAULT_VOLUME],
-    )
-    results = hosts.all.zos_mvs_raw(
-        program_name="idcams",
-        auth=True,
-        dds=[
-            dict(
-                dd_data_set=dict(
-                    dd_name=SYSPRINT_DD,
-                    data_set_name=DEFAULT_DATA_SET,
-                    disposition="shr",
-                    disposition_normal=normal_disposition,
-                    volumes=[DEFAULT_VOLUME],
-                    return_content=dict(type="text"),
+    try:
+        hosts = ansible_zos_module
+        results = hosts.all.zos_data_set(
+            name=DEFAULT_DATA_SET,
+            type="seq",
+            state="present",
+            replace=True,
+            volumes=[DEFAULT_VOLUME],
+        )
+        results = hosts.all.zos_mvs_raw(
+            program_name="idcams",
+            auth=True,
+            dds=[
+                dict(
+                    dd_data_set=dict(
+                        dd_name=SYSPRINT_DD,
+                        data_set_name=DEFAULT_DATA_SET,
+                        disposition="shr",
+                        disposition_normal=normal_disposition,
+                        volumes=[DEFAULT_VOLUME],
+                        return_content=dict(type="text"),
+                    ),
                 ),
-            ),
-            dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
-        ],
-    )
-    for result in results.contacted.values():
-        pprint(result)
-        assert result.get("ret_code", {}).get("code", -1) == 0
-        assert len(result.get("dd_names", [])) > 0
-    results = hosts.all.zos_data_set(
-        name=DEFAULT_DATA_SET, state="absent", volumes=[DEFAULT_VOLUME]
-    )
-    for result in results.contacted.values():
-        pprint(result)
-        assert result.get("changed", not changed) is changed
+                dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
+            ],
+        )
+        for result in results.contacted.values():
+            pprint(result)
+            assert result.get("ret_code", {}).get("code", -1) == 0
+            assert len(result.get("dd_names", [])) > 0
+    finally:
+        results = hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
 
 
 @pytest.mark.parametrize(
@@ -228,43 +221,41 @@ def test_normal_dispositions_data_set(ansible_zos_module, normal_disposition, ch
     ],
 )
 def test_space_types(ansible_zos_module, space_type, primary, secondary, expected):
-    hosts = ansible_zos_module
-    hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
-    results = hosts.all.zos_mvs_raw(
-        program_name="idcams",
-        auth=True,
-        dds=[
-            dict(
-                dd_data_set=dict(
-                    dd_name=SYSPRINT_DD,
-                    data_set_name=DEFAULT_DATA_SET,
-                    disposition="new",
-                    type="seq",
-                    space_primary=primary,
-                    space_secondary=secondary,
-                    space_type=space_type,
-                    return_content=dict(type="text"),
+    try:
+        hosts = ansible_zos_module
+        hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
+        results = hosts.all.zos_mvs_raw(
+            program_name="idcams",
+            auth=True,
+            dds=[
+                dict(
+                    dd_data_set=dict(
+                        dd_name=SYSPRINT_DD,
+                        data_set_name=DEFAULT_DATA_SET,
+                        disposition="new",
+                        type="seq",
+                        space_primary=primary,
+                        space_secondary=secondary,
+                        space_type=space_type,
+                        return_content=dict(type="text"),
+                    ),
                 ),
-            ),
-            dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
-        ],
-    )
+                dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
+            ],
+        )
 
-    results2 = hosts.all.command(cmd="dls -l -s {0}".format(DEFAULT_DATA_SET))
+        results2 = hosts.all.command(cmd="dls -l -s {0}".format(DEFAULT_DATA_SET))
 
-    results3 = hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
-    for result in results3.contacted.values():
-        pprint(result)
-        assert result.get("changed", False) is True
+        for result in results.contacted.values():
+            pprint(result)
+            assert result.get("ret_code", {}).get("code", -1) == 0
+            assert len(result.get("dd_names", [])) > 0
 
-    for result in results.contacted.values():
-        pprint(result)
-        assert result.get("ret_code", {}).get("code", -1) == 0
-        assert len(result.get("dd_names", [])) > 0
-
-    for result in results2.contacted.values():
-        pprint(result)
-        assert str(expected) in result.get("stdout", "")
+        for result in results2.contacted.values():
+            pprint(result)
+            assert str(expected) in result.get("stdout", "")
+    finally:
+        hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
 
 
 @pytest.mark.parametrize(
@@ -272,34 +263,32 @@ def test_space_types(ansible_zos_module, space_type, primary, secondary, expecte
     ["pds", "pdse", "large", "basic", "seq"],
 )
 def test_data_set_types_non_vsam(ansible_zos_module, data_set_type):
-    hosts = ansible_zos_module
-    hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
-    results = hosts.all.zos_mvs_raw(
-        program_name="idcams",
-        auth=True,
-        dds=[
-            dict(
-                dd_data_set=dict(
-                    dd_name=SYSPRINT_DD,
-                    data_set_name=DEFAULT_DATA_SET,
-                    disposition="new",
-                    type=data_set_type,
-                    volumes=[DEFAULT_VOLUME],
+    try:
+        hosts = ansible_zos_module
+        hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
+        results = hosts.all.zos_mvs_raw(
+            program_name="idcams",
+            auth=True,
+            dds=[
+                dict(
+                    dd_data_set=dict(
+                        dd_name=SYSPRINT_DD,
+                        data_set_name=DEFAULT_DATA_SET,
+                        disposition="new",
+                        type=data_set_type,
+                        volumes=[DEFAULT_VOLUME],
+                    ),
                 ),
-            ),
-            dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
-        ],
-    )
-    results = hosts.all.command(cmd="dls {0}".format(DEFAULT_DATA_SET))
+                dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
+            ],
+        )
+        results = hosts.all.command(cmd="dls {0}".format(DEFAULT_DATA_SET))
 
-    results2 = hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
-    for result in results2.contacted.values():
-        pprint(result)
-        assert result.get("changed", False) is True
-
-    for result in results.contacted.values():
-        pprint(result)
-        assert "BGYSC1103E" not in result.get("stderr", "")
+        for result in results.contacted.values():
+            pprint(result)
+            assert "BGYSC1103E" not in result.get("stderr", "")
+    finally:
+        hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
 
 
 @pytest.mark.parametrize(
@@ -307,48 +296,46 @@ def test_data_set_types_non_vsam(ansible_zos_module, data_set_type):
     ["ksds", "rrds", "lds", "esds"],
 )
 def test_data_set_types_vsam(ansible_zos_module, data_set_type):
-    hosts = ansible_zos_module
-    hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
-    results = hosts.all.zos_mvs_raw(
-        program_name="idcams",
-        auth=True,
-        dds=[
-            # * ksds requires additional parameters
-            dict(
-                dd_data_set=dict(
-                    dd_name=SYSPRINT_DD,
-                    data_set_name=DEFAULT_DATA_SET,
-                    disposition="new",
-                    type=data_set_type,
-                    volumes=[DEFAULT_VOLUME],
+    try:
+        hosts = ansible_zos_module
+        hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
+        results = hosts.all.zos_mvs_raw(
+            program_name="idcams",
+            auth=True,
+            dds=[
+                # * ksds requires additional parameters
+                dict(
+                    dd_data_set=dict(
+                        dd_name=SYSPRINT_DD,
+                        data_set_name=DEFAULT_DATA_SET,
+                        disposition="new",
+                        type=data_set_type,
+                        volumes=[DEFAULT_VOLUME],
+                    ),
+                )
+                if data_set_type != "ksds"
+                else dict(
+                    dd_data_set=dict(
+                        dd_name=SYSPRINT_DD,
+                        data_set_name=DEFAULT_DATA_SET,
+                        disposition="new",
+                        type=data_set_type,
+                        key_length=5,
+                        key_offset=0,
+                        volumes=[DEFAULT_VOLUME],
+                    ),
                 ),
-            )
-            if data_set_type != "ksds"
-            else dict(
-                dd_data_set=dict(
-                    dd_name=SYSPRINT_DD,
-                    data_set_name=DEFAULT_DATA_SET,
-                    disposition="new",
-                    type=data_set_type,
-                    key_length=5,
-                    key_offset=0,
-                    volumes=[DEFAULT_VOLUME],
-                ),
-            ),
-            dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
-        ],
-    )
-    # * we hope to see EDC5041I An error was detected at the system level when opening a file.
-    # * because that means data set exists and is VSAM so we can't read it
-    results = hosts.all.command(cmd="head \"//'{0}'\"".format(DEFAULT_DATA_SET))
-    for result in results.contacted.values():
-        pprint(result)
-        assert "EDC5041I" in result.get("stderr", "")
-
-    results = hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
-    for result in results.contacted.values():
-        pprint(result)
-        assert result.get("changed", False) is True
+                dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
+            ],
+        )
+        # * we hope to see EDC5041I An error was detected at the system level when opening a file.
+        # * because that means data set exists and is VSAM so we can't read it
+        results = hosts.all.command(cmd="head \"//'{0}'\"".format(DEFAULT_DATA_SET))
+        for result in results.contacted.values():
+            pprint(result)
+            assert "EDC5041I" in result.get("stderr", "")
+    finally:
+        hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
 
 
 @pytest.mark.parametrize(
@@ -356,36 +343,33 @@ def test_data_set_types_vsam(ansible_zos_module, data_set_type):
     ["u", "vb", "vba", "fb", "fba"],
 )
 def test_record_formats(ansible_zos_module, record_format):
-    hosts = ansible_zos_module
-    hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
-    results = hosts.all.zos_mvs_raw(
-        program_name="idcams",
-        auth=True,
-        dds=[
-            dict(
-                dd_data_set=dict(
-                    dd_name=SYSPRINT_DD,
-                    data_set_name=DEFAULT_DATA_SET,
-                    disposition="new",
-                    record_format=record_format,
-                    volumes=[DEFAULT_VOLUME],
+    try:
+        hosts = ansible_zos_module
+        hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
+        results = hosts.all.zos_mvs_raw(
+            program_name="idcams",
+            auth=True,
+            dds=[
+                dict(
+                    dd_data_set=dict(
+                        dd_name=SYSPRINT_DD,
+                        data_set_name=DEFAULT_DATA_SET,
+                        disposition="new",
+                        record_format=record_format,
+                        volumes=[DEFAULT_VOLUME],
+                    ),
                 ),
-            ),
-            dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
-        ],
-    )
+                dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
+            ],
+        )
 
-    results = hosts.all.command(cmd="dls -l {0}".format(DEFAULT_DATA_SET))
+        results = hosts.all.command(cmd="dls -l {0}".format(DEFAULT_DATA_SET))
 
-    results2 = hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
-
-    for result in results.contacted.values():
-        pprint(result)
-        assert str(" {0} ".format(record_format.upper())) in result.get("stdout", "")
-
-    for result in results2.contacted.values():
-        pprint(result)
-        assert result.get("changed", False) is True
+        for result in results.contacted.values():
+            pprint(result)
+            assert str(" {0} ".format(record_format.upper())) in result.get("stdout", "")
+    finally:
+        hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
 
 
 @pytest.mark.parametrize(
@@ -399,38 +383,39 @@ def test_record_formats(ansible_zos_module, record_format):
     ],
 )
 def test_return_content_type(ansible_zos_module, return_content_type, expected):
-    hosts = ansible_zos_module
-    results = hosts.all.zos_data_set(
-        name=DEFAULT_DATA_SET,
-        type="seq",
-        state="present",
-        replace=True,
-        volumes=[DEFAULT_VOLUME],
-    )
-    results = hosts.all.zos_mvs_raw(
-        program_name="idcams",
-        auth=True,
-        dds=[
-            dict(
-                dd_data_set=dict(
-                    dd_name=SYSPRINT_DD,
-                    data_set_name=DEFAULT_DATA_SET,
-                    disposition="shr",
-                    volumes=[DEFAULT_VOLUME],
-                    return_content=dict(type=return_content_type),
+    try:
+        hosts = ansible_zos_module
+        results = hosts.all.zos_data_set(
+            name=DEFAULT_DATA_SET,
+            type="seq",
+            state="present",
+            replace=True,
+            volumes=[DEFAULT_VOLUME],
+        )
+        results = hosts.all.zos_mvs_raw(
+            program_name="idcams",
+            auth=True,
+            dds=[
+                dict(
+                    dd_data_set=dict(
+                        dd_name=SYSPRINT_DD,
+                        data_set_name=DEFAULT_DATA_SET,
+                        disposition="shr",
+                        volumes=[DEFAULT_VOLUME],
+                        return_content=dict(type=return_content_type),
+                    ),
                 ),
-            ),
-            dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
-        ],
-    )
-    hosts.all.zos_data_set(
-        name=DEFAULT_DATA_SET, state="absent", volumes=[DEFAULT_VOLUME]
-    )
-    for result in results.contacted.values():
-        pprint(result)
-        assert result.get("ret_code", {}).get("code", -1) == 0
-        assert len(result.get("dd_names", [])) > 0
-        assert expected in "\n".join(result.get("dd_names")[0].get("content", []))
+                dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
+            ],
+        )
+        
+        for result in results.contacted.values():
+            pprint(result)
+            assert result.get("ret_code", {}).get("code", -1) == 0
+            assert len(result.get("dd_names", [])) > 0
+            assert expected in "\n".join(result.get("dd_names")[0].get("content", []))
+    finally:
+        hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent", volumes=[DEFAULT_VOLUME])
 
 
 @pytest.mark.parametrize(
@@ -447,171 +432,168 @@ def test_return_content_type(ansible_zos_module, return_content_type, expected):
 def test_return_text_content_encodings(
     ansible_zos_module, src_encoding, response_encoding, expected
 ):
-    hosts = ansible_zos_module
-    results = hosts.all.zos_data_set(
-        name=DEFAULT_DATA_SET,
-        type="seq",
-        state="present",
-        replace=True,
-        volumes=[DEFAULT_VOLUME],
-    )
-    results = hosts.all.zos_mvs_raw(
-        program_name="idcams",
-        auth=True,
-        dds=[
-            dict(
-                dd_data_set=dict(
-                    dd_name=SYSPRINT_DD,
-                    data_set_name=DEFAULT_DATA_SET,
-                    disposition="shr",
-                    volumes=[DEFAULT_VOLUME],
-                    return_content=dict(
-                        type="text",
-                        src_encoding=src_encoding,
-                        response_encoding=response_encoding,
+    try:
+        hosts = ansible_zos_module
+        results = hosts.all.zos_data_set(
+            name=DEFAULT_DATA_SET,
+            type="seq",
+            state="present",
+            replace=True,
+            volumes=[DEFAULT_VOLUME],
+        )
+        results = hosts.all.zos_mvs_raw(
+            program_name="idcams",
+            auth=True,
+            dds=[
+                dict(
+                    dd_data_set=dict(
+                        dd_name=SYSPRINT_DD,
+                        data_set_name=DEFAULT_DATA_SET,
+                        disposition="shr",
+                        volumes=[DEFAULT_VOLUME],
+                        return_content=dict(
+                            type="text",
+                            src_encoding=src_encoding,
+                            response_encoding=response_encoding,
+                        ),
                     ),
                 ),
-            ),
-            dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
-        ],
-    )
-    hosts.all.zos_data_set(
-        name=DEFAULT_DATA_SET, state="absent", volumes=[DEFAULT_VOLUME]
-    )
-    for result in results.contacted.values():
-        pprint(result)
-        assert result.get("ret_code", {}).get("code", -1) == 0
-        assert len(result.get("dd_names", [])) > 0
-        assert expected in "\n".join(result.get("dd_names")[0].get("content", []))
+                dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
+            ],
+        )
+        for result in results.contacted.values():
+            pprint(result)
+            assert result.get("ret_code", {}).get("code", -1) == 0
+            assert len(result.get("dd_names", [])) > 0
+            assert expected in "\n".join(result.get("dd_names")[0].get("content", []))
+    finally:
+        hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent", volumes=[DEFAULT_VOLUME])
 
 
 def test_reuse_existing_data_set(ansible_zos_module):
-    hosts = ansible_zos_module
-    hosts.all.zos_data_set(
-        name=DEFAULT_DATA_SET, type="seq", state="present", replace=True
-    )
-    results = hosts.all.zos_mvs_raw(
-        program_name="IDCAMS",
-        auth=True,
-        dds=[
-            dict(
-                dd_data_set=dict(
-                    dd_name=SYSPRINT_DD,
-                    data_set_name=DEFAULT_DATA_SET,
-                    disposition="new",
-                    type="seq",
-                    reuse=True,
-                    return_content=dict(type="text"),
+    try:
+        hosts = ansible_zos_module
+        hosts.all.zos_data_set(
+            name=DEFAULT_DATA_SET, type="seq", state="present", replace=True
+        )
+        results = hosts.all.zos_mvs_raw(
+            program_name="IDCAMS",
+            auth=True,
+            dds=[
+                dict(
+                    dd_data_set=dict(
+                        dd_name=SYSPRINT_DD,
+                        data_set_name=DEFAULT_DATA_SET,
+                        disposition="new",
+                        type="seq",
+                        reuse=True,
+                        return_content=dict(type="text"),
+                    ),
                 ),
-            ),
-            dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
-        ],
-    )
-    results2 = hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
+                dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
+            ],
+        )
 
-    for result in results.contacted.values():
-        pprint(result)
-        assert result.get("ret_code", {}).get("code", 0) == 0
-        assert len(result.get("dd_names", [])) > 0
-    for result in results2.contacted.values():
-        pprint(result)
-        assert result.get("changed", False) is True
+        for result in results.contacted.values():
+            pprint(result)
+            assert result.get("ret_code", {}).get("code", 0) == 0
+            assert len(result.get("dd_names", [])) > 0
+    finally:
+        hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
 
 
 def test_replace_existing_data_set(ansible_zos_module):
-    hosts = ansible_zos_module
-    hosts.all.zos_data_set(
-        name=DEFAULT_DATA_SET, type="seq", state="present", replace=True
-    )
-    results = hosts.all.zos_mvs_raw(
-        program_name="IDCAMS",
-        auth=True,
-        dds=[
-            dict(
-                dd_data_set=dict(
-                    dd_name=SYSPRINT_DD,
-                    data_set_name=DEFAULT_DATA_SET,
-                    disposition="new",
-                    type="seq",
-                    replace=True,
-                    return_content=dict(type="text"),
+    try:
+        hosts = ansible_zos_module
+        hosts.all.zos_data_set(
+            name=DEFAULT_DATA_SET, type="seq", state="present", replace=True
+        )
+        results = hosts.all.zos_mvs_raw(
+            program_name="IDCAMS",
+            auth=True,
+            dds=[
+                dict(
+                    dd_data_set=dict(
+                        dd_name=SYSPRINT_DD,
+                        data_set_name=DEFAULT_DATA_SET,
+                        disposition="new",
+                        type="seq",
+                        replace=True,
+                        return_content=dict(type="text"),
+                    ),
                 ),
-            ),
-            dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
-        ],
-    )
-    results2 = hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
+                dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
+            ],
+        )
 
-    for result in results.contacted.values():
-        pprint(result)
-        assert result.get("ret_code", {}).get("code", 0) == 0
-        assert len(result.get("dd_names", [])) > 0
-    for result in results2.contacted.values():
-        pprint(result)
-        assert result.get("changed", False) is True
+        for result in results.contacted.values():
+            pprint(result)
+            assert result.get("ret_code", {}).get("code", 0) == 0
+            assert len(result.get("dd_names", [])) > 0
+    finally:
+        hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
 
 
 def test_replace_existing_data_set_make_backup(ansible_zos_module):
-    hosts = ansible_zos_module
-    hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
-    hosts.all.zos_mvs_raw(
-        program_name="IDCAMS",
-        auth=True,
-        dds=[
-            dict(
-                dd_data_set=dict(
-                    dd_name=SYSPRINT_DD,
-                    data_set_name=DEFAULT_DATA_SET,
-                    disposition="new",
-                    type="seq",
-                    replace=True,
-                    return_content=dict(type="text"),
+    try:
+        hosts = ansible_zos_module
+        hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
+        hosts.all.zos_mvs_raw(
+            program_name="IDCAMS",
+            auth=True,
+            dds=[
+                dict(
+                    dd_data_set=dict(
+                        dd_name=SYSPRINT_DD,
+                        data_set_name=DEFAULT_DATA_SET,
+                        disposition="new",
+                        type="seq",
+                        replace=True,
+                        return_content=dict(type="text"),
+                    ),
                 ),
-            ),
-            dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
-        ],
-    )
-    results = hosts.all.zos_mvs_raw(
-        program_name="IDCAMS",
-        auth=True,
-        dds=[
-            dict(
-                dd_data_set=dict(
-                    dd_name=SYSPRINT_DD,
-                    data_set_name=DEFAULT_DATA_SET,
-                    disposition="new",
-                    type="seq",
-                    replace=True,
-                    backup=True,
-                    return_content=dict(type="text"),
+                dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
+            ],
+        )
+        results = hosts.all.zos_mvs_raw(
+            program_name="IDCAMS",
+            auth=True,
+            dds=[
+                dict(
+                    dd_data_set=dict(
+                        dd_name=SYSPRINT_DD,
+                        data_set_name=DEFAULT_DATA_SET,
+                        disposition="new",
+                        type="seq",
+                        replace=True,
+                        backup=True,
+                        return_content=dict(type="text"),
+                    ),
                 ),
-            ),
-            dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
-        ],
-    )
-    for result in results.contacted.values():
-        pprint(result)
-        assert result.get("ret_code", {}).get("code", 0) == 0
-        assert len(result.get("dd_names", [])) > 0
-        assert len(result.get("backups", [])) > 0
-        assert result.get("backups")[0].get("backup_name") is not None
-        results2 = hosts.all.command(
-            cmd="head \"//'{0}'\"".format(result.get("backups")[0].get("backup_name"))
+                dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
+            ],
         )
-        hosts.all.zos_data_set(
-            name=result.get("backups")[0].get("backup_name"), state="absent"
-        )
-        assert (
-            result.get("backups")[0].get("original_name").lower()
-            == DEFAULT_DATA_SET.lower()
-        )
-    for result in results2.contacted.values():
-        pprint(result)
-        assert "IDCAMS" in result.get("stdout", "")
-    results = hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
-    for result in results.contacted.values():
-        pprint(result)
-        assert result.get("changed", False) is True
+        for result in results.contacted.values():
+            pprint(result)
+            assert result.get("ret_code", {}).get("code", 0) == 0
+            assert len(result.get("dd_names", [])) > 0
+            assert len(result.get("backups", [])) > 0
+            assert result.get("backups")[0].get("backup_name") is not None
+            results2 = hosts.all.command(
+                cmd="head \"//'{0}'\"".format(result.get("backups")[0].get("backup_name"))
+            )
+            hosts.all.zos_data_set(
+                name=result.get("backups")[0].get("backup_name"), state="absent"
+            )
+            assert (
+                result.get("backups")[0].get("original_name").lower()
+                == DEFAULT_DATA_SET.lower()
+            )
+        for result in results2.contacted.values():
+            pprint(result)
+            assert "IDCAMS" in result.get("stdout", "")
+    finally:
+        hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
 
 
 # ---------------------------------------------------------------------------- #

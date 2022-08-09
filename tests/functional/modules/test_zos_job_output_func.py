@@ -30,7 +30,7 @@ HELLO, WORLD
 //
 """
 
-TEMP_PATH = "/tmp/ansible"
+TEMP_PATH = "/tmp/jcl"
 
 
 # def test_zos_job_output_no_job_id(ansible_zos_module):

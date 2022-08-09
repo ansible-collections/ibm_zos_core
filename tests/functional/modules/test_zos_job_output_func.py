@@ -31,7 +31,7 @@ HELLO, WORLD
 //
 """
 
-TEMP_PATH = "/tmp/ansible/jcl"
+TEMP_PATH = "/tmp/ansible"
 
 
 # def test_zos_job_output_no_job_id(ansible_zos_module):
@@ -71,45 +71,49 @@ def test_zos_job_output_reject(ansible_zos_module):
 
 
 def test_zos_job_output_job_exists(ansible_zos_module):
-    # adding verification that at least 1 step was returned
-    hosts = ansible_zos_module
-    hosts.all.file(path=TEMP_PATH, state="directory")
-    hosts.all.shell(
-        cmd="echo {0} > {1}/SAMPLE".format(quote(JCL_FILE_CONTENTS), TEMP_PATH)
-    )
-    hosts.all.zos_job_submit(
-        src="{0}/SAMPLE".format(TEMP_PATH), location="USS", wait=True, volume=None
-    )
-    hosts.all.file(path=TEMP_PATH, state="absent")
-    results = hosts.all.zos_job_output(job_name="HELLO")  # was SAMPLE?!
-    for result in results.contacted.values():
-        print("\nZJOJE..............")
-        print(result)
-        assert result.get("changed") is False
-        assert result.get("jobs") is not None
-        assert result.get("jobs")[0].get("ret_code").get("steps") is not None
-        assert (
-            result.get("jobs")[0].get("ret_code").get("steps")[0].get("step_name")
-            == "STEP0001"
+    try:
+        # adding verification that at least 1 step was returned
+        hosts = ansible_zos_module
+        hosts.all.file(path=TEMP_PATH, state="directory")
+        hosts.all.shell(
+            cmd="echo {0} > {1}/SAMPLE".format(quote(JCL_FILE_CONTENTS), TEMP_PATH)
         )
+        hosts.all.zos_job_submit(
+            src="{0}/SAMPLE".format(TEMP_PATH), location="USS", wait=True, volume=None
+        )
+        results = hosts.all.zos_job_output(job_name="HELLO")  # was SAMPLE?!
+        for result in results.contacted.values():
+            print("\nZJOJE..............")
+            print(result)
+            assert result.get("changed") is False
+            assert result.get("jobs") is not None
+            assert result.get("jobs")[0].get("ret_code").get("steps") is not None
+            assert (
+                result.get("jobs")[0].get("ret_code").get("steps")[0].get("step_name")
+                == "STEP0001"
+            )
+    finally:
+        hosts.all.file(path=TEMP_PATH, state="absent")
 
 
 def test_zos_job_output_job_exists_with_filtered_ddname(ansible_zos_module):
-    hosts = ansible_zos_module
-    hosts.all.file(path=TEMP_PATH, state="directory")
-    hosts.all.shell(
-        cmd="echo {0} > {1}/SAMPLE".format(quote(JCL_FILE_CONTENTS), TEMP_PATH)
-    )
-    hosts.all.zos_job_submit(
-        src="{0}/SAMPLE".format(TEMP_PATH), location="USS", wait=True, volume=None
-    )
-    hosts.all.file(path=TEMP_PATH, state="absent")
-    dd_name = "JESMSGLG"
-    results = hosts.all.zos_job_output(job_name="HELLO", ddname=dd_name)
-    for result in results.contacted.values():
-        assert result.get("changed") is False
-        assert result.get("jobs") is not None
-        for job in result.get("jobs"):
-            assert len(job.get("ddnames")) == 1
-            print(job)
-            assert job.get("ddnames")[0].get("ddname") == dd_name
+    try:
+        hosts = ansible_zos_module
+        hosts.all.file(path=TEMP_PATH, state="directory")
+        hosts.all.shell(
+            cmd="echo {0} > {1}/SAMPLE".format(quote(JCL_FILE_CONTENTS), TEMP_PATH)
+        )
+        hosts.all.zos_job_submit(
+            src="{0}/SAMPLE".format(TEMP_PATH), location="USS", wait=True, volume=None
+        )
+        dd_name = "JESMSGLG"
+        results = hosts.all.zos_job_output(job_name="HELLO", ddname=dd_name)
+        for result in results.contacted.values():
+            assert result.get("changed") is False
+            assert result.get("jobs") is not None
+            for job in result.get("jobs"):
+                assert len(job.get("ddnames")) == 1
+                print(job)
+                assert job.get("ddnames")[0].get("ddname") == dd_name
+    finally:
+        hosts.all.file(path=TEMP_PATH, state="absent")

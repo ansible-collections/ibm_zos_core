@@ -12,7 +12,6 @@
 # limitations under the License.
 
 from __future__ import absolute_import, division, print_function
-from msilib import datasizemask
 
 __metaclass__ = type
 

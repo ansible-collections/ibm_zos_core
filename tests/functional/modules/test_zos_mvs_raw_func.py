@@ -1704,84 +1704,90 @@ def test_concatenation_all_dd_types(ansible_zos_module, dds, input_pos, input_co
 
 
 def test_authorized_program_run_unauthorized(ansible_zos_module):
-    hosts = ansible_zos_module
-    hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
-    results = hosts.all.zos_mvs_raw(
-        program_name="idcams",
-        auth=False,
-        dds=[],
-    )
-    hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
-    for result in results.contacted.values():
-        pprint(result)
-        assert result.get("ret_code", {}).get("code", -1) == 8
-        assert len(result.get("dd_names", [])) == 0
-        assert "BGYSC0236E" in result.get("msg", "")
+    try:
+        hosts = ansible_zos_module
+        hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
+        results = hosts.all.zos_mvs_raw(
+            program_name="idcams",
+            auth=False,
+            dds=[],
+        )
+        for result in results.contacted.values():
+            pprint(result)
+            assert result.get("ret_code", {}).get("code", -1) == 8
+            assert len(result.get("dd_names", [])) == 0
+            assert "BGYSC0236E" in result.get("msg", "")
+    finally:
+        hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
 
 
 def test_unauthorized_program_run_authorized(ansible_zos_module):
-    hosts = ansible_zos_module
-    hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
-    results = hosts.all.zos_mvs_raw(
-        program_name="DSPURX00",
-        auth=True,
-        dds=[],
-    )
-    hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
-    for result in results.contacted.values():
-        pprint(result)
-        assert result.get("ret_code", {}).get("code", -1) == 8
-        assert len(result.get("dd_names", [])) == 0
-        assert "BGYSC0215E" in result.get("msg", "")
+    try:
+        hosts = ansible_zos_module
+        hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
+        results = hosts.all.zos_mvs_raw(
+            program_name="DSPURX00",
+            auth=True,
+            dds=[],
+        )
+        for result in results.contacted.values():
+            pprint(result)
+            assert result.get("ret_code", {}).get("code", -1) == 8
+            assert len(result.get("dd_names", [])) == 0
+            assert "BGYSC0215E" in result.get("msg", "")
+    finally:
+        hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
 
 
 def test_authorized_program_run_authorized(ansible_zos_module):
-    hosts = ansible_zos_module
-    hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
-    results = hosts.all.zos_mvs_raw(
-        program_name="idcams",
-        auth=True,
-        dds=[
-            dict(
-                dd_output=dict(
-                    dd_name=SYSPRINT_DD,
-                    return_content=dict(type="text"),
+    try:
+        hosts = ansible_zos_module
+        hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
+        results = hosts.all.zos_mvs_raw(
+            program_name="idcams",
+            auth=True,
+            dds=[
+                dict(
+                    dd_output=dict(
+                        dd_name=SYSPRINT_DD,
+                        return_content=dict(type="text"),
+                    ),
                 ),
-            ),
-        ],
-    )
-    hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
-    for result in results.contacted.values():
-        pprint(result)
-        assert result.get("ret_code", {}).get("code", -1) == 16
-        assert len(result.get("dd_names", [])) == 1
-        assert "BGYSC0236E" not in result.get("msg", "")
+            ],
+        )
+        for result in results.contacted.values():
+            pprint(result)
+            assert result.get("ret_code", {}).get("code", -1) == 16
+            assert len(result.get("dd_names", [])) == 1
+            assert "BGYSC0236E" not in result.get("msg", "")
+    finally:
+        hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
 
 
 def test_unauthorized_program_run_unauthorized(ansible_zos_module):
-    hosts = ansible_zos_module
-    hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
-    results = hosts.all.zos_mvs_raw(
-        program_name="IEFBR14",
-        auth=False,
-        dds=[],
-    )
-    hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
-    for result in results.contacted.values():
-        pprint(result)
-        assert result.get("ret_code", {}).get("code", -1) == 0
-        assert len(result.get("dd_names", [])) == 0
-        assert "BGYSC0215E" not in result.get("msg", "")
+    try:
+        hosts = ansible_zos_module
+        hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
+        results = hosts.all.zos_mvs_raw(
+            program_name="IEFBR14",
+            auth=False,
+            dds=[],
+        )
+        for result in results.contacted.values():
+            pprint(result)
+            assert result.get("ret_code", {}).get("code", -1) == 0
+            assert len(result.get("dd_names", [])) == 0
+            assert "BGYSC0215E" not in result.get("msg", "")
+    finally:
+        hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
 
 
 def test_missing_program_name(ansible_zos_module):
     hosts = ansible_zos_module
-    hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
     results = hosts.all.zos_mvs_raw(
         auth=False,
         dds=[],
     )
-    hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
     for result in results.contacted.values():
         pprint(result)
         assert result.get("ret_code", {}).get("code", -1) == -1
@@ -1791,14 +1797,12 @@ def test_missing_program_name(ansible_zos_module):
 
 def test_with_parms(ansible_zos_module):
     hosts = ansible_zos_module
-    hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
     results = hosts.all.zos_mvs_raw(
         pgm="iefbr14",
         auth=False,
         parm="P1,123,P2=5",
         dds=[],
     )
-    hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
     for result in results.contacted.values():
         pprint(result)
         assert result.get("ret_code", {}).get("code", -1) == 0
@@ -1807,7 +1811,6 @@ def test_with_parms(ansible_zos_module):
 
 def test_with_multiple_of_same_dd_name(ansible_zos_module):
     hosts = ansible_zos_module
-    hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
     results = hosts.all.zos_mvs_raw(
         pgm="idcams",
         auth=True,
@@ -1816,7 +1819,6 @@ def test_with_multiple_of_same_dd_name(ansible_zos_module):
             dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
         ],
     )
-    hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
     for result in results.contacted.values():
         pprint(result)
         assert result.get("ret_code", {}).get("code", -1) == 8

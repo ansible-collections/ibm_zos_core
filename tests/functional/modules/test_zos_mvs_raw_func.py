@@ -1223,31 +1223,33 @@ def test_file_return_text_content_encodings(
 
 
 def test_dummy(ansible_zos_module):
-    hosts = ansible_zos_module
-    hosts.all.file(path=DEFAULT_PATH, state="directory")
-    hosts.all.file(path=DEFAULT_PATH_WITH_FILE, state="absent")
-    results = hosts.all.zos_mvs_raw(
-        program_name="idcams",
-        auth=True,
-        dds=[
-            dict(
-                dd_dummy=dict(
-                    dd_name=SYSPRINT_DD,
+    try:
+        hosts = ansible_zos_module
+        hosts.all.file(path=DEFAULT_PATH, state="directory")
+        hosts.all.file(path=DEFAULT_PATH_WITH_FILE, state="absent")
+        results = hosts.all.zos_mvs_raw(
+            program_name="idcams",
+            auth=True,
+            dds=[
+                dict(
+                    dd_dummy=dict(
+                        dd_name=SYSPRINT_DD,
+                    ),
                 ),
-            ),
-            dict(
-                dd_input=dict(
-                    dd_name=SYSIN_DD,
-                    content=IDCAMS_STDIN,
-                )
-            ),
-        ],
-    )
-    hosts.all.file(path=DEFAULT_PATH, state="absent")
-    for result in results.contacted.values():
-        pprint(result)
-        assert result.get("ret_code", {}).get("code", -1) == 0
-        assert len(result.get("dd_names", [])) == 0
+                dict(
+                    dd_input=dict(
+                        dd_name=SYSIN_DD,
+                        content=IDCAMS_STDIN,
+                    )
+                ),
+            ],
+        )
+        for result in results.contacted.values():
+            pprint(result)
+            assert result.get("ret_code", {}).get("code", -1) == 0
+            assert len(result.get("dd_names", [])) == 0
+    finally:
+        hosts.all.file(path=DEFAULT_PATH, state="absent")
 
 
 # ---------------------------------------------------------------------------- #

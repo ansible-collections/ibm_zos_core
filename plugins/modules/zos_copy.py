@@ -1109,8 +1109,8 @@ class PDSECopyHandler(CopyHandler):
 
         if src_ds_type == "USS":
             if os.path.isfile(new_src):
-                path = ""
-                files = [new_src]
+                path = os.path.dirname(new_src)
+                files = [os.path.basename(new_src)]
             else:
                 path, _, files = next(os.walk(new_src))
 
@@ -1374,7 +1374,7 @@ def backup_data(ds_name, ds_type, backup_name):
         module.fail_json(msg=repr(err))
 
 
-def is_compatible(src_type, dest_type, copy_member, src_member, is_src_dir, src_has_subdirs):
+def is_compatible(src_type, dest_type, copy_member, src_member, is_src_dir):
     """Determine whether the src and dest are compatible and src can be
     copied to dest.
 
@@ -1384,7 +1384,6 @@ def is_compatible(src_type, dest_type, copy_member, src_member, is_src_dir, src_
         copy_member {bool} -- Whether dest is a data set member.
         src_member {bool} -- Whether src is a data set member.
         is_src_dir {bool} -- Whether the src is a USS directory.
-        src_has_subdirs {bool} -- Whether a USS src has subdirectories inside.
 
     Returns:
         {bool} -- Whether src can be copied to dest.
@@ -1426,12 +1425,12 @@ def is_compatible(src_type, dest_type, copy_member, src_member, is_src_dir, src_
         return True
 
     elif src_type == "USS":
-        if dest_type in MVS_SEQ:
+        if dest_type in MVS_SEQ or copy_member:
             return not is_src_dir
-        elif dest_type in MVS_PARTITIONED:
-            return not src_has_subdirs
+        elif dest_type in MVS_VSAM:
+            return False
         else:
-            return dest_type != "VSAM"
+            return True
 
     # ********************************************************************
     # If source is a VSAM data set, we need to check compatibility between
@@ -1643,12 +1642,11 @@ def allocate_destination_data_set(
         if src_ds_type in MVS_PARTITIONED:
             data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, vol=volume)
         elif src_ds_type in MVS_SEQ:
-            # TODO: check for the types returned here.
             src_attributes = datasets.listing(src_name)[0]
             # The size returned by listing is in bytes.
-            size = src_attributes.total_space
+            size = int(src_attributes.total_space)
             record_format = src_attributes.recfm
-            record_length = src_attributes.lrecl
+            record_length = int(src_attributes.lrecl)
 
             dest_params = get_data_set_attributes(dest, size, is_binary, record_format=record_format, record_length=record_length, type="PDSE", volume=volume)
             data_set.DataSet.ensure_present(replace=force, **dest_params)
@@ -1763,11 +1761,6 @@ def run_module(module, arg_def):
         # If temp_path, the plugin has copied a file from the controller to USS.
         if temp_path or "/" in src:
             src_ds_type = "USS"
-            subdirs = None
-
-            if is_src_dir:
-                _, subdirs, _ = next(os.walk(temp_path or src))
-            src_has_subdirs = True if subdirs else False
         else:
             if data_set.DataSet.data_set_exists(src_name):
                 if src_member and not data_set.DataSet.data_set_member_exists(src):
@@ -1800,8 +1793,10 @@ def run_module(module, arg_def):
             if dest_ds_type in MVS_PARTITIONED:
                 # Checking if the members that would be created from the directory files
                 # are already present on the system.
-                if src_ds_type == "USS":
-                    dest_member_exists = dest_exists and data_set.DataSet.files_in_data_set_members(src, dest)
+                if copy_member:
+                    dest_member_exists = dest_exists and data_set.DataSet.data_set_member_exists(dest)
+                elif src_ds_type == "USS":
+                    dest_member_exists = dest_exists and data_set.DataSet.files_in_data_set_members(temp_path or src, dest)
                 elif src_ds_type in MVS_PARTITIONED:
                     dest_member_exists = dest_exists and data_set.DataSet.data_set_shared_members(src, dest)
 
@@ -1814,7 +1809,7 @@ def run_module(module, arg_def):
     # to a PDS. Perform these sanity checks.
     # Note: dest_ds_type can also be passed from destination_dataset.type
     # ********************************************************************
-    if not is_compatible(src_ds_type, dest_ds_type, copy_member, src_member, is_src_dir, src_has_subdirs):
+    if not is_compatible(src_ds_type, dest_ds_type, copy_member, src_member, is_src_dir):
         module.fail_json(
             msg="Incompatible target type '{0}' for source '{1}'".format(
                 dest_ds_type, src_ds_type

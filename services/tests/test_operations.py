@@ -21,12 +21,6 @@ from operations.connection import Connection
 from operations.file import _create
 
 
-
-
-
-
-
-
 class TestOperationsFunctionalTests(unittest.TestCase):
     """
     Test suite is used to drive operation functional tests. These tests directly

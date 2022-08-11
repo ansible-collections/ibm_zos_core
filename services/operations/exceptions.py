@@ -14,26 +14,26 @@
 
 class ServicesConnectionException(Exception):
     """
-    This is a example, I really don't know till we have more code if we really
-    need our own exceptions, if we can normalize on the errors then it would
-    be helpful
+    This is an example
     """
-    def __init__(self, *args):
-        if args:
-            self.message = args[0]
-        else:
-            self.message = None
-
-    def __str__(self):
-        if self.message:
-            return f"Connection to host , {self.message} failed"
-        else:
-            return 'Connection to host failed'
+    def __init__(self, message):
+        Exception.__init__(self, message)
+        self.message = message
 
 
 class ServicesException(Exception):
-    pass
+    """
+    This is an example
+    """
+    def __init__(self, message):
+        Exception.__init__(self, message)
+        self.message = message
 
 
 class ServicesArtifactException(Exception):
-    pass
+    """
+    This is an example
+    """
+    def __init__(self, message):
+        Exception.__init__(self, message)
+        self.message = message

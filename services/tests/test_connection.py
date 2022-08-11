@@ -11,20 +11,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pprint import pprint
-from pipes import quote
-import unittest
-import os
 
-from services.connection import *
-from services.types import Request
+import os
+import re
+import unittest
+import sys
+sys.path.append('..')
+
+from operations.connection import Connection
+from operations.types import Request
 
 
 class TestConnectionUnitTests(unittest.TestCase):
     """
-    Test suite is used to test both unit and functional tests. Note that
-    there seems to be a limitation of the type of key used if you are connecting
-    with a key_filename, they must be of type PEM.
+    Test suite is used to drive connection functional tests. Note that there
+    seems to be a limitation of the type of key used if you are connecting with
+    a key_filename, they must be of type PEM.
 
     Private keys in RFC4716 format are not supported by paramiko, while PEM
     formatted keys are. MacOS, ssh-keygen defaults to RFC4716 format which ends
@@ -32,9 +34,9 @@ class TestConnectionUnitTests(unittest.TestCase):
       `paramiko ValueError: q must be exactly 160, 224, or 256 bits long`
 
     To avoid this, at least on our infra, generate PEM formated keys (your
-    current RSA keys won't be lost):
-        $ ssh-keygen -t rsa -m PEM  # You will be promoted for a key file name
-                                    # use id_dsa
+    current RSA keys won't be lost), you will be promoted for a key file name,
+    use `id_dsa`
+        $ ssh-keygen -t rsa -m PEM
         $ Enter file in which to save the key (/Users/ddimatos/.ssh/id_rsa):
             /Users/<username>/.ssh/id_dsa
 
@@ -44,12 +46,26 @@ class TestConnectionUnitTests(unittest.TestCase):
         pytest test_connection.py    # No verbosity
     """
 
+    # Environment vars used to configure ZOAU
+    environment = {
+            "_BPXK_AUTOCVT":"ON",
+            "ZOAU_HOME":"/zoau/v1.2.0f",
+            "PATH":"/zoau/v1.2.0f/bin:/python/usr/lpp/IBM/cyp/v3r8/pyz/bin:/bin:.",
+            "LIBPATH":"/zoau/v1.2.0f/lib:/lib:/usr/lib:.",
+            "PYTHONPATH":"/zoau/v1.2.0f/lib",
+            "_CEE_RUNOPTS":"FILETAG(AUTOCVT,AUTOTAG) POSIX(ON)",
+            "_TAG_REDIR_ERR":"txt",
+            "_TAG_REDIR_IN":"txt",
+            "_TAG_REDIR_OUT":"txt",
+            "LANG":"C"
+    }
+
     # Default args used for a connection, ensure password not shared in Git
     kwargs = {
-        "hostname": "EC33018A.vmec.svl.ibm.com",
+        "hostname": "EC33017A.vmec.svl.ibm.com",
         "port": 22,
         "username": "omvsadm",
-        "password": "CHANGE",
+        "password": "changeme",
         "key_filename": os.path.expanduser('~') + "/.ssh/id_dsa",
         "passphrase": "changeme"
     }
@@ -72,18 +88,33 @@ class TestConnectionUnitTests(unittest.TestCase):
         print("Completed unit tets for connection class.")
 
 
-    def test_connection_args(self):
+    def test_connection_args_6(self):
         """
         Test that the args are correctly passing in this test suite from the
         initialized kwargs. Should result in what ever self.kwargs defined with.
         """
-        connection = Connection(self.hostname, self.port, self.username,
-                        self.password, self.key_filename, self.passphrase)
-        assert connection is not None, f"ASSERTION-FAILURE: Connection is None"
+        connection = Connection(hostname=self.hostname, username=self.username,
+                        password=self.password, key_filename=self.key_filename,
+                        passphrase=self.passphrase, port=66)
 
-        arg_len = len(connection.to_dict())
+        assert connection is not None, "ASSERTION-FAILURE: Connection is None"
+
+        arg_len = connection.args_length()
         assert arg_len == 6, \
             f"ASSERTION-FAILURE: Connection args expected 6 not equal to = [{arg_len}]"
+
+
+    def test_connection_args_4(self):
+        """
+        Test that the args count
+        """
+        connection = Connection(hostname=self.hostname, username=self.username,
+                        key_filename=self.key_filename, port=66)
+        assert connection is not None, "ASSERTION-FAILURE: Connection is None"
+
+        arg_len = connection.args_length()
+        assert arg_len == 4, \
+            f"ASSERTION-FAILURE: Connection args expected 4 not equal to = [{arg_len}]"
 
 
     @unittest.skip('TODO - IMPLEMENT')
@@ -135,13 +166,15 @@ class TestConnectionUnitTests(unittest.TestCase):
 
 
 class TestConnectionFunctionalTests(unittest.TestCase):
-
+    """
+    Functional tests for connection
+    """
     # Default args used for a connection, ensure password not shared in Git
     kwargs = {
-        "hostname": "EC33018A.vmec.svl.ibm.com",
+        "hostname": "EC33017A.vmec.svl.ibm.com",
         "port": 22,
         "username": "omvsadm",
-        "password": "CHANGE",
+        "password": "all1sdun",
         "key_filename": os.path.expanduser('~') + "/.ssh/id_dsa",
         "passphrase": "changeme"
     }
@@ -168,15 +201,15 @@ class TestConnectionFunctionalTests(unittest.TestCase):
         Test the connection with a valid host, user and password
         """
         request = Request("hostname")
-        #request = {"command": "hostname"}
-        connection = Connection(hostname=self.hostname, username=self.username, password=self.password)
-        assert connection is not None, f"ASSERTION-FAILURE: Connection is None"
+        connection = Connection(hostname=self.hostname, username=self.username,
+                        password=self.password)
+        assert connection is not None, "ASSERTION-FAILURE: Connection is None"
 
         client = connection.connect()
-        assert client is not None, f"ASSERTION-FAILURE: client is None"
+        assert client is not None, "ASSERTION-FAILURE: client is None"
 
         result = connection.execute(client, request)
-        assert result is not None, f"ASSERTION-FAILURE: Executing a command returned None"
+        assert result is not None, "ASSERTION-FAILURE: Executing a command returned None"
 
 
     def test_connection_host_user_key_filename(self):
@@ -187,18 +220,52 @@ class TestConnectionFunctionalTests(unittest.TestCase):
         # objects are done
         #request = {"command": "hostname"}
         request = Request("hostname")
-        connection = Connection(hostname=self.hostname, username=self.username, key_filename=self.key_filename)
-        assert connection is not None, f"ASSERTION-FAILURE: Connection is None"
+        connection = Connection(hostname=self.hostname, username=self.username,
+                        key_filename=self.key_filename)
+        assert connection is not None, "ASSERTION-FAILURE: Connection is None"
 
         client = connection.connect()
-        assert client is not None, f"ASSERTION-FAILURE: client is None"
+        assert client is not None, "ASSERTION-FAILURE: client is None"
 
         result = connection.execute(client, request)
-        assert result is not None, f"ASSERTION-FAILURE: Executing a command returned None"
+        assert result is not None, "ASSERTION-FAILURE: Executing a command returned None"
         _hostname = result.get('stdout')
-        assert _hostname == self.hostname, f"ASSERTION-FAILURE: Hostname {_hostname} does not match expected {self.hostname}"
+        assert _hostname == self.hostname, f"ASSERTION-FAILURE: Hostname {_hostname} \
+                                does not match expected {self.hostname}"
+
+
+    def test_connection_environment_vars(self):
+        """
+        Test the connection with a valid set of environment vars
+        """
+        env={"_BPXK_AUTOCVT":"ON",
+            "ZOAU_HOME":"/zoau/v1.2.0f",
+            "PATH":"/zoau/v1.2.0f/bin:/python/usr/lpp/IBM/cyp/v3r8/pyz/bin:/bin:.",
+            "LIBPATH":"/zoau/v1.2.0f/lib:/lib:/usr/lib:.",
+            "PYTHONPATH":"/zoau/v1.2.0f/lib",
+            "_CEE_RUNOPTS":"FILETAG(AUTOCVT,AUTOTAG) POSIX(ON)",
+            "_TAG_REDIR_ERR":"txt",
+            "_TAG_REDIR_IN":"txt",
+            "_TAG_REDIR_OUT":"txt",
+            "LANG":"C"
+        }
+        request = Request("zoaversion")
+        connection = Connection(hostname=self.hostname, username=self.username,
+                                    key_filename=self.key_filename, environment=env)
+        assert connection is not None, "ASSERTION-FAILURE: Connection is None"
+
+        client = connection.connect()
+        assert client is not None, "ASSERTION-FAILURE: client is None"
+
+        connection.set_environment_variable(**env)
+        result = connection.execute(client, request)
+        assert re.match(r'.*CUT.*', result.get('stdout'))
+
 
 
     @unittest.skip('TODO - IMPLEMENT')
     def test_connection_host_user_key_filename_passphrase(self):
+        """
+        Test the connection with a valid passphrase
+        """
         assert True

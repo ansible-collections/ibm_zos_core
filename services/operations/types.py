@@ -11,14 +11,50 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from enum import Enum
 import datetime
 import secrets
+from enum import Enum
+import sys
+sys.path.append('..')
+
 
 class Type(Enum):
+    """
+    TODO: finish doc
+    """
     FILE = "FILE"
     DIRECTORY = "DIRECTORY"
-    DATA_SET = "DATA_SET"
+    DATA_SET_KSDS = "DATA_SET_KSDS"
+    DATA_SET_ESDS = "DATA_SET_ESDS"
+    DATA_SET_RRDS = "DATA_SET_RRDS"
+    DATA_SET_LDS = "DATA_SET_LDS"
+    DATA_SET_SEQ = "DATA_SET_SEQ"
+    DATA_SET_PDS = "DATA_SET_PDS"
+    DATA_SET_PDSE = "DATA_SET_PDSE"
+    DATA_SET_LIBRARY = "DATA_SET_LIBRARY"
+    DATA_SET_BASIC = "DATA_SET_BASIC"
+    DATA_SET_LARGE = "DATA_SET_LARGE"
+    DATA_SET_MEMBER = "DATA_SET_MEMBER"
+    DATA_SET_HFS = "DATA_SET_HFS"
+
+class SizeType(Enum):
+    """
+    Bytes = B
+    Kilobye = KB
+    Megabyte = MB
+    Gigabyte = GB
+    Terabyte = TB
+    Cylenders = CYL
+    Tracks = TRK
+    """
+
+    B = "B"
+    KB = "KB"
+    MB = "MB"
+    GB = "GB"
+    TB = "TB"
+    CYL = "CYL"
+    TRK = "TRK"
 
 
 class Request:
@@ -54,23 +90,32 @@ class Request:
         Prints the class attributes
     """
 
-    def __init__(self, command):
+    def __init__(self, command, environment = None):
         """
         Definition of an file artifact
 
         Parameters
         ----------
-        `command` : str 
+        `command` : str
             Command used by the connection to fulfill the service request
+        `environment: dict
+            Environment variables (optional)
         """
         self.command = command
+        self.environment = environment
 
     def to_dict(self):
+        """
+        TODO: Doc this
+        """
         return {
             "command": self.command,
         }
 
     def print_args(self):
+        """
+        TODO: Doc this
+        """
         print(self.to_dict())
 
 class Response:
@@ -96,11 +141,10 @@ class Response:
     type : type
     ...
     """
-    def __init__(self, name, type, rc, encoding, stdout, stderr, attributes):
+    def __init__(self, name, type, rc, stdout, stderr, attributes):
         self.name = name
-        self.type =type
+        self.type = type
         self.rc = rc
-        self.encoding = encoding
         self.stdout = stdout
         self.stderr = stderr
         self.attributes = attributes
@@ -119,11 +163,13 @@ class Response:
 
 
     def to_dict(self):
+        """
+        TODO: Doc this
+        """
         return {
             "name": self.name,
             "type": self.type,
             "rc": self.rc,
-            "encoding": self.encoding,
             "stdout": self.stdout,
             "stderr": self.stderr,
             "attributes": self.attributes,
@@ -138,29 +184,28 @@ class Response:
         }
 
     def print_args(self):
+        """
+        TODO: Doc this
+        """
         print(self.to_dict())
 
     def create_key(self):
+        """
+        TODO: Doc this
+        """
         return secrets.token_urlsafe(10)
-
-    # def from_dict(artifact_dictionary): #artifact_dictionary is a result of a atrifact such as File converted to a dictionary
-    #     return Response(
-    #         rc=response['rc'],
-    #         stdout=response['stdout_response'],
-    #         stderr=response['stderr_response'],
-    #         etc...
-    #     )
 
 class FileAttributes:
     """
     Definition of an file artifact
+
     Parameters
     ==========
-    `name` : str 
-        Name of file 
+    `name` : str
+        Name of file
     `path` : str
         Absolute path to file.....
-      Provide  lots of doc 
+      Provide  lots of doc
     """
 
     def __init__(
@@ -172,8 +217,8 @@ class FileAttributes:
         mode = {"owner": None, "group": None, "other": None},
         status_group=None,
         status_owner=None,
-        record_length=None
-        #attributes=None
+        record_length=None,
+        encoding = "IBM-1047"
      ):
         """
         FileAttributes
@@ -186,42 +231,115 @@ class FileAttributes:
         self.status_group = status_group
         self.status_owner = status_owner
         self.record_length = record_length
-        #self.attributes = attributes
+        self.encoding = encoding
+
 
     def to_dict(self):
+        """
+        TODO: Doc this
+        """
         return {
             "name": self.name,
             "path": self.path,
-            "status_group": self.status_group,
             "size": self.size,
             "size_type": self.size_type,
             "mode": self.mode,
             "status_group": self.status_group,
             "status_owner": self.status_owner,
             "record_length": self.record_length,
-            #"attributes": self.attributes,
+            "encoding": self.encoding,
         }
 
-    def get_status_group():
-        return "FOO"
+    def get_status_group(self, results = None):
+        """
+        TODO: Doc this
+        """
+        # Place holder to satisfy pylint
+        if results is not None:
+            print(results)
+        return "SOME_GROUP"
 
-    def get_status_owner():
-        return "BAR"
-   
-    def get_mode_owner():
+    def get_status_owner(self, results = None):
+        """
+        TODO: Doc this
+        """
+        # Place holder to satisfy pylint
+        if results is not None:
+            print(results)
+        return "SOME_OWNER"
+
+    def get_mode_owner(self, results = None):
+        """
+        TODO: Doc this
+        """
+        # Place holder to satisfy pylint
+        if results is not None:
+            print(results)
         return "RWX"
 
-    def get_mode_group():
+    def get_mode_group(self, results = None):
+        """
+        TODO: Doc this
+        """
+        # Place holder to satisfy pylint
+        if results is not None:
+            print(results)
         return "R-X"
 
-    def get_mode_other():
+    def get_mode_other(self, results = None):
+        """
+        TODO: Doc this
+        """
+        # Place holder to satisfy pylint
+        if results is not None:
+            print(results)
         return "---"
 
-    def get_record_length():
-        return 111
+    def get_record_length(self, results = None):
+        """
+        TODO: Doc this
+        """
+        # Place holder to satisfy pylint
+        if results is not None:
+            print(results)
+        return 80
 
-    def get_size():
+    def get_size(self, results = None):
+        """
+        TODO: Doc this
+        """
+        # Place holder to satisfy pylint
+        if results is not None:
+            print(results)
         return 100
 
-    def get_size_type():
+    def get_size_type(self, results = None):
+        """
+        TODO: Doc this
+        """
+        # Place holder to satisfy pylint
+        if results is not None:
+            print(results)
         return "GB"
+
+class DirectoryAttributes:
+    """
+    Definition of an directory artifact
+    Parameters
+    ==========
+    `name` : str
+        Name of directory
+    `path` : str
+        Absolute path to ...
+      Provide  lots of doc
+    """
+
+class DataSetAttributes:
+    """
+    Definition of an dataset artifact
+    Parameters
+    ==========
+    `name` : str
+        Name ....
+      Provide  lots of doc
+    """

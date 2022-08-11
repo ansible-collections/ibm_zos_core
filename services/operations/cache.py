@@ -30,9 +30,12 @@
 # - homegrown as below
 
 
-import datetime
+import time
 import secrets
-from services.types import Response
+from threading import Thread
+from operations.types import Response
+
+
 
 class ArtifactCache:
     """
@@ -43,14 +46,14 @@ class ArtifactCache:
     This is a cache is not thread safe, it is meant to be instantiated once
     in a init calls and accessed during the course of its time in use.
 
-    Attributes
+    Parameters
     ----------
     cache_size : int, optional
         The size the cache should be initialized. (default 10000)
 
     Methods
     -------
-    create_key() //Note: this will likely be moved to a response type 
+    create_key() //Note: this will likely be moved to a response type
         Generate a random key of length 10
     update(key, value)
         ...
@@ -74,25 +77,20 @@ class ArtifactCache:
         # Seems rather large default but lets be generous to start with
         self.cache_size = cache_size
 
+        self.thread = Thread(name='non-daemon', target=self.monitor_cache, daemon=True)
+        self.thread_stop = False
+        self.thread_running = False
+
     def __contains__(self, key):
         """
         Return True if the key is in the cache otherwise False
         """
         return key in self.cache
 
-    # This currently does not change anything, leaving this code for now to 
-    # revisit and evaluate.
-    def __setitem__(self, key, val):
-        super(ArtifactCache, self).__setitem__(key, val)
-        if not isinstance(key, str):
-            raise ValueError("Key must of type str")
-        if not len(key) == 10:
-            raise ValueError("Key must be of length 10")
-        if not isinstance(val, Response):
-            raise ValueError("value must be type Response")
-        dict.__setitem__(self, key, val)
-
     def create_key(self):
+        """
+        TODO: document this
+        """
         return secrets.token_urlsafe(10)
 
     def update(self, key, value):
@@ -103,14 +101,19 @@ class ArtifactCache:
         """
         # Because __setitem__ does not function as expected, isinstance() is used
         if not isinstance(key, str):
-            raise ValueError(f"Incorrect `key` type used in update(key, value), type =[{type(key)}], must be type str")
+            raise ValueError(f"Incorrect `key` type used in update(key, value), \
+                    type =[{type(key)}], must be type str")
         if not isinstance(value, Response):
-            raise ValueError(f"Incorrect `value` type used in update(key, value), type =[{type(value)}], must be type services.types.Response")
+            raise ValueError(f"Incorrect `value` type used in update(key, value), \
+                    type =[{type(value)}], must be type services.types.Response")
 
         if key not in self.cache and len(self.cache) >= self.cache_size:
             self.__destroy_oldest_entry()
 
         self.cache[key] = value
+
+        if not self.thread_running:
+            self.thread.start()
 
     def __destroy_oldest_entry(self):
         """
@@ -120,9 +123,8 @@ class ArtifactCache:
 
         oldest = None
         for key in self.cache:
-            if oldest == None:
+            if oldest is None:
                 oldest = key
-            #elif self.cache.get(key).to_dict().get('time_created') < self.cache.get(oldest).to_dict().get('time_created'):
             elif self.peek(key).get('time_created') < self.peek(oldest).get('time_created'):
                 oldest = key
         self.cache.pop(oldest)
@@ -163,3 +165,25 @@ class ArtifactCache:
         Return the size of the cache
         """
         return self.cache_size
+
+    # Incomplete monitor, should be tied into update and stop when cache size is 0
+    def monitor_cache(self):
+        """
+        TODO: Doc this
+        """
+        self.thread_running = True
+        while len(self.cache) >0 and not self.thread_stop:
+            print("Thread running in background")
+            # TODO Implement eviction strategy based on time accessed
+            # because maybe some have not finished. Basically just call
+            # __destroy_oldest_entry
+            time.sleep(5)
+
+        self.thread_running = False
+        # self.thread.join()
+
+    def monitor_stop(self):
+        """
+        TODO: Doc this
+        """
+        self.thread_stop = True

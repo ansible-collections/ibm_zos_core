@@ -11,17 +11,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from types import *
-from services.connection import *
+from operations.types import  FileAttributes, Request, Response, Type
 
-from services.types import FileAttributes, Request, Response, Type
-
-def create(name,path,connection):
+def _create(connection, name, path):
     """
     Create a file in USS
     """
-    # The command we will generate for this create service, similar pattern for
-    # other services will be used
+
     command = "touch " + path + name
 
     # Prepare the Request to pass to the connection class
@@ -33,36 +29,35 @@ def create(name,path,connection):
     client = connection.connect()
 
     # Use the connections excute to run the command we want to fulfill the
-    # create operation.  
+    # create operation.
     result = connection.execute(client, request)
 
-    _mode={"owner": FileAttributes.get_mode_owner(), 
-                "group": FileAttributes.get_mode_group(),
-                "other": FileAttributes.get_mode_other()
+    _mode={"owner": FileAttributes.get_mode_owner(result),
+                "group": FileAttributes.get_mode_group(result),
+                "other": FileAttributes.get_mode_other(result)
     }
 
     file_attributes = FileAttributes(name=name, path=path, mode=_mode,
-                        size=FileAttributes.get_size(), 
-                        size_type=FileAttributes.get_size_type(),
-                        status_group=FileAttributes.get_status_group(),
-                        status_owner=FileAttributes.get_status_owner(),
-                        record_length=FileAttributes.get_record_length())
-    
-    # _mode={"owner": FileAttributes.get_mode_owner(), 
+                        size=FileAttributes.get_size(result),
+                        size_type=FileAttributes.get_size_type(result),
+                        status_group=FileAttributes.get_status_group(result),
+                        status_owner=FileAttributes.get_status_owner(result),
+                        record_length=FileAttributes.get_record_length(result))
+
+    # _mode={"owner": FileAttributes.get_mode_owner(),
     #             "group": FileAttributes.get_mode_group(),
     #             "other": FileAttributes.get_mode_other()
     # }
 
     # file_attributes = FileAttributes(name=name, path=path, mode=_mode,
-    #                     size=FileAttributes.get_size(), 
+    #                     size=FileAttributes.get_size(),
     #                     size_type=FileAttributes.get_size_type(),
     #                     status_group=FileAttributes.get_status_group(),
     #                     status_owner=FileAttributes.get_status_owner(),
     #                     record_length=FileAttributes.get_record_length())
 
-    response = Response(name=name, type=Type.FILE.name, rc=0, encoding="IBM-1047",
+    response = Response(name=name, type=Type.FILE.name, rc=0,
                     stdout=result.get('stdout'), stderr=result.get('stderr'),
                     attributes=file_attributes.to_dict())
 
     return response
-    

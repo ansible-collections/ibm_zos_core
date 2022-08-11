@@ -114,13 +114,19 @@ class Connection:
 
         cmd = request.to_dict().get("command")
         response = None
+        get_pty_bool = True
         try:
             # We may need to create a channel and make this synchronous
             # but get_pty should help avoid having to do that
-            (stdin, stdout, stderr) = client.exec_command(self.env_str+cmd, get_pty=True)
-            out = stdout.read().decode().strip()
-            error = stderr.read().decode().strip()
-            
+            (stdin, stdout, stderr) = client.exec_command(self.env_str+cmd, get_pty=get_pty_bool)
+
+            if get_pty_bool is True:
+                out = stdout.read().decode().strip('\r\n')
+                error = stderr.read().decode().strip('\r\n')
+            else:
+                out = stdout.read().decode().strip('\n')
+                error = stderr.read().decode().strip('\n')
+          
             # Don't shutdown stdin, we are reusing this connection in the services instance
             # client.get_transport().open_session().shutdown_write()
 

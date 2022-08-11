@@ -42,16 +42,16 @@ if __name__ == '__main__':
         "port": 22,
         "environment": {}
     }
-    pprint(connection_args)
 
     print("\n(1.2) Initialize the services with dictionary.")
     services = Services(**connection_args)
 
     print("\n(1.3) Run a command on the targeted host.")
-    # TODO: Complete this
+    result = services.Command.command("ls -la")
 
-    print("\n(1.3) Result dictionary returned.")
-    # TODO: Complete this
+    print("\n(1.4) Result dictionary returned.")
+    pprint(result.to_dict())
+
 
     # --------------------------------------------------------------------------
     # Example (2)
@@ -61,8 +61,66 @@ if __name__ == '__main__':
     services = Services(hostname="EC33017A.vmec.svl.ibm.com",username="omvsadm",
                 key_filename=os.path.expanduser('~') + "/.ssh/id_dsa")
 
-    print("\n(2.3) Run a command on the targeted host")
-    # TODO: Complete this
+    print("\n(2.2) Run a command on the targeted host.")
+    result = services.Command.command("echo \"command 1\";ls -la;echo \"command \
+                2\";ls /;echo \"command 3\";date")
 
-    print("\n(2.3) Result returned.")
-    # TODO: Complete this
+    print("\n(2.3) Result dictionary returned.")
+    pprint(result.to_dict())
+
+    # --------------------------------------------------------------------------
+    # Example (3)
+    # --------------------------------------------------------------------------
+    print("(3) EXAMPLE")
+
+    environment = {
+            "_BPXK_AUTOCVT":"ON",
+            "ZOAU_HOME":"/zoau/v1.2.0f",
+            "PATH":"/zoau/v1.2.0f/bin:/python/usr/lpp/IBM/cyp/v3r8/pyz/bin:/bin:.",
+            "LIBPATH":"/zoau/v1.2.0f/lib:/lib:/usr/lib:.",
+            "PYTHONPATH":"/zoau/v1.2.0f/lib",
+            "_CEE_RUNOPTS":"FILETAG(AUTOCVT,AUTOTAG) POSIX(ON)",
+            "_TAG_REDIR_ERR":"txt",
+            "_TAG_REDIR_IN":"txt",
+            "_TAG_REDIR_OUT":"txt",
+            "LANG":"C"
+    }
+
+    print("\n(3.1) Initialize the services with dictionary and environment variables.")
+    connection_args.update({"environment": environment})
+    services = Services(**connection_args)
+
+    print("\n(3.2) Run a command on the targeted host.")
+    result = services.Command.command("zoaversion")
+
+    print("\n(4.4) Result dictionary returned.")
+    pprint(result.to_dict())
+
+    # --------------------------------------------------------------------------
+    # Example (4)
+    # --------------------------------------------------------------------------
+    print("(3) EXAMPLE")
+
+    environment = {
+            "_BPXK_AUTOCVT":"ON",
+            "ZOAU_HOME":"/zoau/v1.2.0f",
+            "PATH":"/zoau/v1.2.0f/bin:/python/usr/lpp/IBM/cyp/v3r8/pyz/bin:/bin:.",
+            "LIBPATH":"/zoau/v1.2.0f/lib:/lib:/usr/lib:.",
+            "PYTHONPATH":"/zoau/v1.2.0f/lib",
+            "_CEE_RUNOPTS":"FILETAG(AUTOCVT,AUTOTAG) POSIX(ON)",
+            "_TAG_REDIR_ERR":"txt",
+            "_TAG_REDIR_IN":"txt",
+            "_TAG_REDIR_OUT":"txt",
+            "LANG":"C"
+    }
+
+    print("\n(3.1) Initialize the services with dictionary and environment variables.")
+    connection_args.update({"environment": environment})
+    services = Services(**connection_args)
+
+    print("\n(3.2) Run a command on the targeted host.")
+    result = services.Command.command("jls")
+
+    print("\n(3.4) Result dictionary returned.")
+    pprint(result.to_dict())
+    

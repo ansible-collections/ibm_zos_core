@@ -24,6 +24,7 @@ class Type(Enum):
     """
     FILE = "FILE"
     DIRECTORY = "DIRECTORY"
+    COMMAND = "COMMAND"
     DATA_SET_KSDS = "DATA_SET_KSDS"
     DATA_SET_ESDS = "DATA_SET_ESDS"
     DATA_SET_RRDS = "DATA_SET_RRDS"
@@ -170,8 +171,8 @@ class Response:
             "name": self.name,
             "type": self.type,
             "rc": self.rc,
-            "stdout": self.stdout,
-            "stderr": self.stderr,
+            "stdout": self.stdout.splitlines(),
+            "stderr": self.stderr.splitlines(),
             "attributes": self.attributes,
             "hostname" : self.hostname,
             "port" : self.port,

@@ -13,6 +13,7 @@
 
 from operations.connection import Connection
 from operations.file import _create
+from operations.command import _command
 
 class Services:
     """
@@ -91,10 +92,11 @@ class Services:
         self.port = port
         self.environment = environment
         self.File = self.File(self)
+        self.Command = self.Command(self)
 
     class File:
         """
-        File class..... add
+        File class.....
         """
         def __init__(self, Services):
             self.__connection = Connection(hostname=Services.hostname,
@@ -112,7 +114,25 @@ class Services:
             """
             return _create(self.__connection, name, path)
 
+    class Command:
+        """
+        File class.....
+        """
+        def __init__(self, Services):
+            self.__connection = Connection(hostname=Services.hostname,
+                                    username=Services.username,
+                                    password=Services.password,
+                                    key_filename=Services.key_filename,
+                                    passphrase = Services.passphrase,
+                                    port = Services.port,
+                                    environment=Services.environment
+                                )
 
+        def command(self, command):
+            """
+            Run a command
+            """
+            return _command(self.__connection, command)
 # ------------------------------------------------------------------------------
 # I'll leave this for now if it helps, but I prefer you test using unit tests
 # ------------------------------------------------------------------------------

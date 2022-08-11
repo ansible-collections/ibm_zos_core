@@ -93,7 +93,7 @@ if __name__ == '__main__':
     print("\n(3.2) Run a command on the targeted host.")
     result = services.Command.command("zoaversion")
 
-    print("\n(4.4) Result dictionary returned.")
+    print("\n(3.3) Result dictionary returned.")
     pprint(result.to_dict())
 
     # --------------------------------------------------------------------------
@@ -121,6 +121,5 @@ if __name__ == '__main__':
     print("\n(3.2) Run a command on the targeted host.")
     result = services.Command.command("jls")
 
-    print("\n(3.4) Result dictionary returned.")
+    print("\n(3.3) Result dictionary returned.")
     pprint(result.to_dict())
-    

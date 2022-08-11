@@ -26,4 +26,5 @@
 [] fix types.py:211:4: W0102: Dangerous default value {} as argument (dangerous-default-value), consider using None  
 [] consider renaming type types.py:144:29: W0622: Redefining built-in 'type' (redefined-builtin)  
 [] add an OS check in __init__.py so that we don't run a data set request on a non z/OS platform will require we update the code to use the os check.  
-[] remove the name attribute from the response, its in *attributes and does not make sense for command service
+[] remove the name attribute from the response, its in *attributes and does not make sense for command service  
+[] Create unit tests for command service  

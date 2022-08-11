@@ -99,7 +99,7 @@ if __name__ == '__main__':
     # --------------------------------------------------------------------------
     # Example (4)
     # --------------------------------------------------------------------------
-    print("(3) EXAMPLE")
+    print("(4) EXAMPLE")
 
     environment = {
             "_BPXK_AUTOCVT":"ON",
@@ -114,12 +114,12 @@ if __name__ == '__main__':
             "LANG":"C"
     }
 
-    print("\n(3.1) Initialize the services with dictionary and environment variables.")
+    print("\n(4.1) Initialize the services with dictionary and environment variables.")
     connection_args.update({"environment": environment})
     services = Services(**connection_args)
 
-    print("\n(3.2) Run a command on the targeted host.")
+    print("\n(4.2) Run a command on the targeted host.")
     result = services.Command.command("jls")
 
-    print("\n(3.3) Result dictionary returned.")
+    print("\n(4.3) Result dictionary returned.")
     pprint(result.to_dict())

@@ -233,10 +233,10 @@ Run the command service:
  'type': 'COMMAND',
  'username': 'ENCRYPTED_USER'}
 
-(3) EXAMPLE
-(3.1) Initialize the services with dictionary and environment variables.
-(3.2) Run a command on the targeted host.
-(3.3) Result dictionary returned.
+(4) EXAMPLE
+(4.1) Initialize the services with dictionary and environment variables.
+(4.2) Run a command on the targeted host.
+(4.3) Result dictionary returned.
 {'attributes': None,
  'hostname': 'ibm.com',
  'key': 'zB8YmroNamI6JQ',

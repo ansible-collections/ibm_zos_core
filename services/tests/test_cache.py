@@ -142,7 +142,7 @@ class TestCacheFunctionalTests(unittest.TestCase):
                         type=Type.FILE.name,
                         rc=0,
                         stdout="This is STDOUT",
-                        stderr="",
+                        stderr=None,
                         attributes=self.file_attributes.to_dict()
                     )
             self.artifact_cache.update(response.key,response)

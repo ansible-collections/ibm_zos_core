@@ -902,7 +902,8 @@ class USSCopyHandler(CopyHandler):
         temp_path,
         src_ds_type,
         src_member,
-        member_name
+        member_name,
+        force
     ):
         """Copy a file or data set to a USS location
 
@@ -915,6 +916,7 @@ class USSCopyHandler(CopyHandler):
             src_ds_type {str} -- Type of source
             src_member {bool} -- Whether src is a data set member
             member_name {str} -- The name of the source data set member
+            force {bool} -- Wheter to copy files to an already existing directory
 
         Returns:
             {str} -- Destination where the file was copied to
@@ -927,7 +929,7 @@ class USSCopyHandler(CopyHandler):
             if os.path.isfile(temp_path or conv_path or src):
                 dest = self._copy_to_file(src, dest, conv_path, temp_path)
             else:
-                dest = self._copy_to_dir(src, dest, conv_path, temp_path)
+                dest = self._copy_to_dir(src, dest, conv_path, temp_path, force)
 
         if self.common_file_args is not None:
             mode = self.common_file_args.get("mode")
@@ -975,7 +977,7 @@ class USSCopyHandler(CopyHandler):
             )
         return dest
 
-    def _copy_to_dir(self, src_dir, dest_dir, conv_path, temp_path):
+    def _copy_to_dir(self, src_dir, dest_dir, conv_path, temp_path, force):
         """Helper function to copy a USS directory to another USS directory
 
         Arguments:
@@ -984,22 +986,15 @@ class USSCopyHandler(CopyHandler):
             temp_path {str} -- Path to the location where the control node
                                transferred data to
             conv_path {str} -- Path to the converted source directory
+            force {bool} -- Whether to copy files to an already existing directory
 
         Returns:
             {str} -- Destination where the directory was copied to
         """
         new_src_dir = temp_path or conv_path or src_dir
-        if os.path.exists(dest_dir):
-            try:
-                shutil.rmtree(dest_dir)
-            except Exception as err:
-                self.fail_json(
-                    msg="Unable to delete pre-existing directory {0}".format(
-                        dest_dir),
-                    stdout=str(err),
-                )
+
         try:
-            shutil.copytree(new_src_dir, dest_dir)
+            shutil.copytree(new_src_dir, dest_dir, dirs_exist_ok=force)
         except Exception as err:
             self.fail_json(
                 msg="Error while copying data to destination directory {0}".format(
@@ -1916,7 +1911,8 @@ def run_module(module, arg_def):
             temp_path,
             src_ds_type,
             src_member,
-            member_name
+            member_name,
+            force
         )
         res_args['size'] = os.stat(dest).st_size
         remote_checksum = dest_checksum = None

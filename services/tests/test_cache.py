@@ -79,7 +79,7 @@ class TestCacheFunctionalTests(unittest.TestCase):
                         type=Type.FILE.name,
                         rc=0,
                         stdout="This is STDOUT",
-                        stderr=None,
+                        stderr='',
                         attributes=file_attributes.to_dict()
                         # There are more keys but they are auto populated with
                         # defaults for now, this constructor will change eventually
@@ -116,7 +116,7 @@ class TestCacheFunctionalTests(unittest.TestCase):
                         type=Type.FILE.name,
                         rc=0,
                         stdout="This is STDOUT",
-                        stderr=None,
+                        stderr='',
                         attributes=self.file_attributes.to_dict()
                     )
             self.artifact_cache.update(response.key,response)
@@ -142,7 +142,7 @@ class TestCacheFunctionalTests(unittest.TestCase):
                         type=Type.FILE.name,
                         rc=0,
                         stdout="This is STDOUT",
-                        stderr=None,
+                        stderr='',
                         attributes=self.file_attributes.to_dict()
                     )
             self.artifact_cache.update(response.key,response)
@@ -187,3 +187,13 @@ class TestCacheFunctionalTests(unittest.TestCase):
         except ValueError as e:
             print(repr(e))
             assert re.match(r'^ValueError', repr(e))
+            
+    def test_cache_is_singleton(self):
+            """
+            Test if the cache is a singleton
+            """
+            assert self.artifact_cache is ArtifactCache(), "ASSERTION-FAILURE: artifact_cache is not singleton"
+            temp = ArtifactCache()
+            temp.thread_stop=True
+            assert self.artifact_cache.thread_stop == temp.thread_stop, "ASSERTION-FAILURE: artifact_cache is not singleton"
+            assert self.artifact_cache is temp, "ASSERTION-FAILURE: artifact_cache is not singleton"

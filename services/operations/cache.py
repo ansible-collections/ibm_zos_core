@@ -65,6 +65,15 @@ class ArtifactCache:
         ...
     """
 
+    instance = None
+    initialized = False
+
+    def __new__(self):
+        if not ArtifactCache.instance:
+            ArtifactCache.instance = object.__new__(ArtifactCache)
+        return ArtifactCache.instance
+
+        
     def __init__(self, cache_size = 100):
         """
         Parameters
@@ -72,14 +81,15 @@ class ArtifactCache:
         cache_size : int, optional
             The size the cache should be initialized. (default 10000)
         """
+        if not ArtifactCache.initialized: 
+            self.cache = {}
+            # Seems rather large default but lets be generous to start with
+            self.cache_size = cache_size
 
-        self.cache = {}
-        # Seems rather large default but lets be generous to start with
-        self.cache_size = cache_size
-
-        self.thread = Thread(name='non-daemon', target=self.monitor_cache, daemon=True)
-        self.thread_stop = False
-        self.thread_running = False
+            self.thread = Thread(name='non-daemon', target=self.monitor_cache, daemon=True)
+            self.thread_stop = False
+            self.thread_running = False
+            ArtifactCache.initialized = True
 
     def __contains__(self, key):
         """

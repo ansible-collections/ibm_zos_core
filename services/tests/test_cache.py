@@ -46,6 +46,9 @@ class TestCacheFunctionalTests(unittest.TestCase):
         print("\nStarting FVT tests for services class.")
         self.artifact_cache = ArtifactCache()
 
+        # Reduce the cache size down to 100 over the default 10000
+        self.artifact_cache.cache_max_size = 100
+
     @classmethod
     def tearDownClass(cls):
         print("\nCompleted test suite TestServicesFunctionalTests")
@@ -104,7 +107,7 @@ class TestCacheFunctionalTests(unittest.TestCase):
         """
         Test adding values to the cache within the allowed cache size
         """
-        _size = self.artifact_cache.size
+        _size = self.artifact_cache.cache_max_size
 
         for i in range(_size):
             print(f"Number of iterations made are = [{i+1}], number of entries \
@@ -131,7 +134,7 @@ class TestCacheFunctionalTests(unittest.TestCase):
         Test inserting more values than the allowed cache size
         """
 
-        _size = self.artifact_cache.size
+        _size = self.artifact_cache.cache_max_size
         for i in range(_size+20):
             print(f"Number of iterations made are = [{i+1}], number of entries \
                         successfully cached are = [{len(self.artifact_cache.cache)}]")
@@ -187,13 +190,26 @@ class TestCacheFunctionalTests(unittest.TestCase):
         except ValueError as e:
             print(repr(e))
             assert re.match(r'^ValueError', repr(e))
-            
+
     def test_cache_is_singleton(self):
-            """
-            Test if the cache is a singleton
-            """
-            assert self.artifact_cache is ArtifactCache(), "ASSERTION-FAILURE: artifact_cache is not singleton"
-            temp = ArtifactCache()
-            temp.thread_stop=True
-            assert self.artifact_cache.thread_stop == temp.thread_stop, "ASSERTION-FAILURE: artifact_cache is not singleton"
-            assert self.artifact_cache is temp, "ASSERTION-FAILURE: artifact_cache is not singleton"
+        """
+        Test if the cache is a singleton by comparing instances, changing
+        cache sizes and comparing and looking at the object reference id's
+        """
+
+        cache_size = 101
+        cache_temp_1 = ArtifactCache()
+        cache_temp_2 = ArtifactCache()
+        cache_temp_1.cache_max_size = cache_size
+
+        assert cache_temp_1 is cache_temp_2, "ASSERTION-FAILURE: \
+            Singleton comparison failure, instances do not match."
+
+        assert cache_temp_1.get_max_cache_size == cache_temp_2.get_max_cache_size,\
+            f"ASSERTION-FAILURE: Singleton comparison failure, \
+                expected max_cache size of {cache_size}."
+
+        assert hex(id(cache_temp_1)) == hex(id(cache_temp_2)), \
+            f"ASSERTION-FAILURE:  Singleton comparison failure, instance \
+                id's do not match, {hex(id(cache_temp_1))} not equal to\
+                    {hex(id(cache_temp_2))}"

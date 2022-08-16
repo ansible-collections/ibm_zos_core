@@ -13,31 +13,6 @@
 # limitations under the License.
 
 from __future__ import absolute_import, division, print_function
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingZOAUImport,
-)
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.mvs_cmd import (
-    idcams, iebcopy, ikjeft01
-)
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
-    better_arg_parser, data_set, encode, vtoc, backup, copy
-)
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
-    AnsibleModuleHelper,
-)
-from ansible.module_utils._text import to_bytes
-from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils.six import PY3
-from re import IGNORECASE
-from hashlib import sha256
-import glob
-import shutil
-import stat
-import math
-import tempfile
-import os#, sys
-# import subprocess
-import time
 
 __metaclass__ = type
 
@@ -613,6 +588,32 @@ cmd:
 """
 
 
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
+    MissingZOAUImport,
+)
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.mvs_cmd import (
+    idcams, iebcopy, ikjeft01
+)
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
+    better_arg_parser, data_set, encode, vtoc, backup, copy
+)
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
+    AnsibleModuleHelper,
+)
+from ansible.module_utils._text import to_bytes
+from ansible.module_utils.basic import AnsibleModule
+from ansible.module_utils.six import PY3
+from re import IGNORECASE
+from hashlib import sha256
+import glob
+import shutil
+import stat
+import math
+import tempfile
+import os
+# import subprocess
+import time
+
 if PY3:
     from re import fullmatch
 else:
@@ -629,6 +630,7 @@ MVS_PARTITIONED = frozenset({"PE", "PO", "PDSE", "PDS"})
 
 MVS_SEQ = frozenset({"PS", "SEQ", "BASIC"})
 MVS_VSAM = frozenset({"KSDS", "ESDS", "RRDS", "LDS", "VSAM"})
+
 
 class CopyHandler(object):
     def __init__(
@@ -805,7 +807,6 @@ class CopyHandler(object):
                 self.fail_json(msg=str(err))
         return new_src
 
-
     def _convert_encoding_dir(self, dir_path, from_code_set, to_code_set):
         """Convert encoding for all files inside a given directory
 
@@ -856,7 +857,6 @@ class CopyHandler(object):
                 stdout_lines=out.splitlines(),
                 stderr_lines=err.splitlines(),
             )
-
 
     def _merge_hash(self, *args):
         """Combine multiple dictionaries"""
@@ -977,7 +977,14 @@ class USSCopyHandler(CopyHandler):
             )
         return dest
 
-    def _copy_to_dir(self, src_dir, dest_dir, conv_path, temp_path, force):
+    def _copy_to_dir(
+        self,
+        src_dir,
+        dest_dir,
+        conv_path,
+        temp_path,
+        force
+    ):
         """Helper function to copy a USS directory to another USS directory
 
         Arguments:
@@ -1107,7 +1114,7 @@ class PDSECopyHandler(CopyHandler):
                 path = os.path.dirname(new_src)
                 files = [os.path.basename(new_src)]
             else:
-                path, _, files = next(os.walk(new_src))
+                path, dirs, files = next(os.walk(new_src))
 
             for file in files:
                 full_file_path = os.path.normpath(path + "/" + file)
@@ -1151,7 +1158,6 @@ class PDSECopyHandler(CopyHandler):
                     msg = "Unable to copy data set member {0} to data set member {1}".format(new_src, dest_copy_name)
                     self.fail_json(msg=msg, rc=result["rc"], stdout=result["out"], stderr=result["err"])
 
-
     def copy_to_member(
         self,
         src,
@@ -1194,9 +1200,9 @@ class PDSECopyHandler(CopyHandler):
                 )
 
         return dict(
-            rc= rc,
-            out= out,
-            err= err
+            rc=rc,
+            out=out,
+            err=err
         )
 
 
@@ -1257,7 +1263,8 @@ def get_data_set_attributes(
     record_format="VB",
     record_length=1028,
     type="SEQ",
-    volume=None):
+    volume=None
+):
     """Returns the parameters needed to allocate a new data set by using a mixture
     of default values and user provided ones.
 
@@ -1285,9 +1292,9 @@ def get_data_set_attributes(
         dict -- Parameters that can be passed into data_set.DataSet.ensure_present
     """
     # Calculating the size needed to allocate.
-    space_primary = int(math.ceil((size/1024)))
-    space_primary = space_primary + int(math.ceil(space_primary*.05))
-    space_secondary = int(math.ceil(space_primary*.10))
+    space_primary = int(math.ceil((size / 1024)))
+    space_primary = space_primary + int(math.ceil(space_primary * 0.05))
+    space_secondary = int(math.ceil(space_primary * 0.10))
 
     # Overwriting record_format and record_length when the data set has binary data.
     # These are the defaults that cp uses when copying binary data.
@@ -1321,7 +1328,13 @@ def get_data_set_attributes(
     return parms
 
 
-def create_seq_dataset_from_file(file, dest, force, is_binary, volume=None):
+def create_seq_dataset_from_file(
+    file,
+    dest,
+    force,
+    is_binary,
+    volume=None
+):
     """Creates a new sequential dataset with attributes suitable to copy the
     contents of a file into it.
 
@@ -1341,7 +1354,15 @@ def create_seq_dataset_from_file(file, dest, force, is_binary, volume=None):
         record_format = "FB"
         record_length = get_file_record_length(file)
 
-    dest_params = get_data_set_attributes(name=dest, size=src_size, is_binary=is_binary, record_format=record_format, record_length=record_length, volume=volume)
+    dest_params = get_data_set_attributes(
+        name=dest,
+        size=src_size,
+        is_binary=is_binary,
+        record_format=record_format,
+        record_length=record_length,
+        volume=volume
+    )
+
     data_set.DataSet.ensure_present(replace=force, **dest_params)
 
 
@@ -1369,7 +1390,13 @@ def backup_data(ds_name, ds_type, backup_name):
         module.fail_json(msg=repr(err))
 
 
-def is_compatible(src_type, dest_type, copy_member, src_member, is_src_dir):
+def is_compatible(
+    src_type,
+    dest_type,
+    copy_member,
+    src_member,
+    is_src_dir
+):
     """Determine whether the src and dest are compatible and src can be
     copied to dest.
 
@@ -1443,7 +1470,17 @@ def is_compatible(src_type, dest_type, copy_member, src_member, is_src_dir):
             return dest_type == "VSAM"
 
 
-def does_destination_allow_copy(src, src_type, dest, dest_exists, member_exists, dest_type, is_uss, force, volume=None):
+def does_destination_allow_copy(
+    src,
+    src_type,
+    dest,
+    dest_exists,
+    member_exists,
+    dest_type,
+    is_uss,
+    force,
+    volume=None
+):
     """Checks whether or not the module can copy into the destination
     specified.
 
@@ -1600,8 +1637,25 @@ def allocate_destination_data_set(
     is_binary,
     destination_dataset=None,
     volume=None
-    ):
+):
     """
+    Allocates a new destination data set to copy into, erasing a preexistent one if
+    needed.
+
+    Arguments:
+        src (str) -- Name of the source data set, used as a model when appropiate.
+        dest (str) -- Name of the destination data set.
+        src_ds_type (str) -- Source of the destination data set.
+        dest_ds_type (str) -- Type of the destination data set.
+        dest_exists (bool) -- Whether the destination data set already exists.
+        force (bool) -- Whether to replace an existent data set.
+        is_binary (bool) -- Whether the data set will contain binary data.
+        destination_dataset (dict, optional) -- Parameters containing a full definition
+            of the new data set; they will take precedence over any other allocation logic.
+        volume (str, optional) -- Volume where the data set should be allocated into.
+
+    Returns:
+        bool -- True if the data set was created, False otherwise.
     """
     src_name = data_set.extract_dsname(src)
     is_dest_empty = data_set.DataSet.is_empty(dest) if dest_exists else True
@@ -1655,10 +1709,18 @@ def allocate_destination_data_set(
                     record_format = "FB"
                     record_length = get_file_record_length(src)
 
-                dest_params = get_data_set_attributes(dest, size, is_binary, record_format=record_format, record_length=record_length, type="PDSE", volume=volume)
+                dest_params = get_data_set_attributes(
+                    dest,
+                    size,
+                    is_binary,
+                    record_format=record_format,
+                    record_length=record_length,
+                    type="PDSE",
+                    volume=volume
+                )
             else:
                 # TODO: decide on whether to compute the longest file record length and use that for the whole PDSE.
-                size = sum([os.stat("{0}/{1}".format(src, member)).st_size for member in os.listdir(src)])
+                size = sum(os.stat("{0}/{1}".format(src, member)).st_size for member in os.listdir(src))
                 # This PDSE will be created with record format VB and a record length of 1028.
                 dest_params = get_data_set_attributes(dest, size, is_binary, type="PDSE", volume=volume)
 
@@ -1854,12 +1916,31 @@ def run_module(module, arg_def):
 
         res_args["changed"] = True
 
-    if not does_destination_allow_copy(src, is_src_dir, dest_name, dest_exists, dest_member_exists, dest_ds_type, is_uss, force, volume):
+    if not does_destination_allow_copy(
+        src,
+        is_src_dir,
+        dest_name,
+        dest_exists,
+        dest_member_exists,
+        dest_ds_type,
+        is_uss,
+        force,
+        volume
+    ):
         module.fail_json(msg="{0} already exists on the system, unable to overwrite unless force=True is specified.".format(dest))
 
     try:
         if not is_uss:
-            res_args["changed"] = allocate_destination_data_set(temp_path or src, dest_name, src_ds_type, dest_ds_type, dest_exists, force, is_binary, destination_dataset=destination_dataset, volume=volume)
+            res_args["changed"] = allocate_destination_data_set(
+                temp_path or src,
+                dest_name, src_ds_type,
+                dest_ds_type,
+                dest_exists,
+                force,
+                is_binary,
+                destination_dataset=destination_dataset,
+                volume=volume
+            )
     except Exception as err:
         module.fail_json(msg="Unable to allocate destination data set: {0}".format(str(err)))
 

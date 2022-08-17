@@ -117,7 +117,7 @@ options:
       - If the source I(src) is a USS file or path, the backup_name name must be a file
         or path name, and the USS file or path must be an absolute path name.
       - If the source is an MVS data set, the backup_name name must be an MVS
-        data set name.
+        data set name, and the dataset should not be allocated.
       - If the backup_name is not provided, the default backup_name name will
         be used. If the source is a USS file or path, the name of the backup
         file will be the source file or path name appended with a
@@ -529,8 +529,8 @@ def main():
                 result['backup_name'] = Backup.uss_file_backup(src, backup_name=backup, compress=False)
             else:
                 result['backup_name'] = Backup.mvs_file_backup(dsn=src, bk_dsn=backup)
-        except Exception:
-            module.fail_json(msg="creating backup has failed")
+        except Exception as e:
+            module.fail_json(msg="creating backup has failed : {0}".format(e))
     # state=present, insert/replace a block with matching regex pattern
     # state=absent, delete blocks with matching regex pattern
     if parsed_args.get('state') == 'present':

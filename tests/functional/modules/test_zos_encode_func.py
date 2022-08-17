@@ -495,7 +495,6 @@ def test_uss_encoding_conversion_mvs_ps_to_mvs_vsam(ansible_zos_module):
         results = hosts.all.zos_encode(
             src=MVS_PS, dest=MVS_VS, from_encoding=TO_ENCODING, to_encoding=FROM_ENCODING
         )
-        hosts.all.zos_data_set(name=MVS_PS, state="absent")
         pprint(vars(results))
         for result in results.contacted.values():
             assert result.get("src") == MVS_PS
@@ -504,6 +503,7 @@ def test_uss_encoding_conversion_mvs_ps_to_mvs_vsam(ansible_zos_module):
             assert result.get("changed") is True
     finally:
         hosts.all.file(path=TEMP_JCL_PATH, state="absent")
+        hosts.all.zos_data_set(name=MVS_PS, state="absent")
 
 
 def test_pds_backup(ansible_zos_module):
@@ -724,6 +724,7 @@ def test_uss_backup_entire_folder_to_default_backup_location_compressed(
         for result in results.contacted.values():
             assert backup_name in result.get("stdout")
     finally:
+        hosts.all.zos_data_set(name=MVS_PDS, state="absent")
         hosts.all.file(path=TEMP_JCL_PATH, state="absent")
         hosts.all.file(path=TEMP_JCL_PATH + "2", state="absent")
         hosts.all.file(path=backup_name, state="absent")

@@ -18,7 +18,7 @@
 [] Refactor code into more subpackages for clarity
 [] Create a static or config file that the tests cases can read to obtain global information such as the connection stats so we are not repeating this in all tests  
 [] Test test_operations_create_file needs an update, remove the hard coded 1047 expectation  
-[] Create a command service based on the existing model we have now, should cover zoau and other USS commands  
+[x] Create a command service based on the existing model we have now, should cover zoau and other USS commands  
 [] Study the various attributes for data sets , see if there is a common subset for all of them,unsure DataSetAttributes will work for all types  
 [] implement a dump cache method that could dump the contents of the cache less secure content so that it can be later reused in a batch mode  
 [] create  a bach mode that does not use the constructor in the connection module, idea here is there would be a way to iterate over the dump of the cache and recreate it in  batch mode.  

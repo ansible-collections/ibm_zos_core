@@ -167,6 +167,11 @@ class Response:
         """
         TODO: Doc this
         """
+        if self.stdout is None:
+            self.stdout = ""
+        if self.stderr is None:
+            self.stderr = ""
+
         return {
             "name": self.name,
             "type": self.type,

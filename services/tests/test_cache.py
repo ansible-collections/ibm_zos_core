@@ -10,6 +10,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from operations.cache import ArtifactCache
+from operations.types import Response, FileAttributes, Type
 
 import re
 import unittest
@@ -18,17 +20,12 @@ import datetime
 import sys
 sys.path.append('..')
 
-from operations.cache import ArtifactCache
-from operations.types import Response, FileAttributes, Type
-
-
-
 
 class TestCacheFunctionalTests(unittest.TestCase):
     """
     Test suite is used to drive cache unit tests. These tests simply exercise
-    the cache ensuring there are no lost entries, ivalid types and accountability
-    for all entries remain.
+    the cache ensuring there are no lost entries, ivalid types and
+    accountability for all entries remain.
 
     PyTest Usage:
         cd {project}/ibm_zos_core/services/tests
@@ -46,10 +43,12 @@ class TestCacheFunctionalTests(unittest.TestCase):
         print("\nStarting FVT tests for services class.")
         self.artifact_cache = ArtifactCache()
 
+        # Reduce the cache size down to 100 over the default 10000
+        self.artifact_cache.cache_max_size = 100
+
     @classmethod
     def tearDownClass(cls):
         print("\nCompleted test suite TestServicesFunctionalTests")
-
 
     def tearDown(self):
         print("Completed FVT tets for services class.")
@@ -58,10 +57,10 @@ class TestCacheFunctionalTests(unittest.TestCase):
     # Mock request to use for testing
     # --------------------------------------------------------------------------
 
-    _mode={"owner": "rwx",
-                "group": "r--",
-                "other": "---"
-    }
+    _mode = {"owner": "rwx",
+             "group": "r--",
+             "other": "---"
+             }
 
     file_attributes = FileAttributes(
                         name="test_file_name.txt",
@@ -79,7 +78,7 @@ class TestCacheFunctionalTests(unittest.TestCase):
                         type=Type.FILE.name,
                         rc=0,
                         stdout="This is STDOUT",
-                        stderr=None,
+                        stderr='',
                         attributes=file_attributes.to_dict()
                         # There are more keys but they are auto populated with
                         # defaults for now, this constructor will change eventually
@@ -99,12 +98,11 @@ class TestCacheFunctionalTests(unittest.TestCase):
         """
         assert self.artifact_cache is not None, "ASSERTION-FAILURE: artifact_cache is None"
 
-
     def test_cache_update(self):
         """
         Test adding values to the cache within the allowed cache size
         """
-        _size = self.artifact_cache.size
+        _size = self.artifact_cache.cache_max_size
 
         for i in range(_size):
             print(f"Number of iterations made are = [{i+1}], number of entries \
@@ -116,7 +114,7 @@ class TestCacheFunctionalTests(unittest.TestCase):
                         type=Type.FILE.name,
                         rc=0,
                         stdout="This is STDOUT",
-                        stderr=None,
+                        stderr='',
                         attributes=self.file_attributes.to_dict()
                     )
             self.artifact_cache.update(response.key,response)
@@ -125,13 +123,12 @@ class TestCacheFunctionalTests(unittest.TestCase):
             f"ASSERTION-FAILURE: cache did not insert the expected entries, \
                 inserted = [{len(self.artifact_cache.cache)}], expected = [{_size}]"
 
-
     def test_cache_create_update_over_max_cache_size(self):
         """
         Test inserting more values than the allowed cache size
         """
 
-        _size = self.artifact_cache.size
+        _size = self.artifact_cache.cache_max_size
         for i in range(_size+20):
             print(f"Number of iterations made are = [{i+1}], number of entries \
                         successfully cached are = [{len(self.artifact_cache.cache)}]")
@@ -142,7 +139,7 @@ class TestCacheFunctionalTests(unittest.TestCase):
                         type=Type.FILE.name,
                         rc=0,
                         stdout="This is STDOUT",
-                        stderr=None,
+                        stderr='',
                         attributes=self.file_attributes.to_dict()
                     )
             self.artifact_cache.update(response.key,response)
@@ -154,7 +151,6 @@ class TestCacheFunctionalTests(unittest.TestCase):
             f"ASSERTION-FAILURE: cache did not insert the expected entries, \
                 inserted = [{len(self.artifact_cache.cache)}], expected = [{_size}]"
 
-
     def test_cache_update_invalid_key_type(self):
         """
         Test inserting a key that is not a permitted type, only permitted types
@@ -165,7 +161,6 @@ class TestCacheFunctionalTests(unittest.TestCase):
 
         except ValueError as e:
             assert re.match(r'^ValueError', repr(e))
-
 
     def test_cache_update_invalid_value_type(self):
         """
@@ -187,3 +182,26 @@ class TestCacheFunctionalTests(unittest.TestCase):
         except ValueError as e:
             print(repr(e))
             assert re.match(r'^ValueError', repr(e))
+
+    def test_cache_is_singleton(self):
+        """
+        Test if the cache is a singleton by comparing instances, changing
+        cache sizes and comparing and looking at the object reference id's
+        """
+
+        cache_size = 101
+        cache_temp_1 = ArtifactCache()
+        cache_temp_2 = ArtifactCache()
+        cache_temp_1.cache_max_size = cache_size
+
+        assert cache_temp_1 is cache_temp_2, "ASSERTION-FAILURE: \
+            Singleton comparison failure, instances do not match."
+
+        assert cache_temp_1.get_max_cache_size == cache_temp_2.get_max_cache_size,\
+            f"ASSERTION-FAILURE: Singleton comparison failure, \
+                expected max_cache size of {cache_size}."
+
+        assert hex(id(cache_temp_1)) == hex(id(cache_temp_2)), \
+            f"ASSERTION-FAILURE:  Singleton comparison failure, instance \
+                id's do not match, {hex(id(cache_temp_1))} not equal to\
+                    {hex(id(cache_temp_2))}"

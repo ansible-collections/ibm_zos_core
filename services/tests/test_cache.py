@@ -10,6 +10,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from operations.cache import ArtifactCache
+from operations.types import Response, FileAttributes, Type
 
 import re
 import unittest
@@ -18,17 +20,12 @@ import datetime
 import sys
 sys.path.append('..')
 
-from operations.cache import ArtifactCache
-from operations.types import Response, FileAttributes, Type
-
-
-
 
 class TestCacheFunctionalTests(unittest.TestCase):
     """
     Test suite is used to drive cache unit tests. These tests simply exercise
-    the cache ensuring there are no lost entries, ivalid types and accountability
-    for all entries remain.
+    the cache ensuring there are no lost entries, ivalid types and
+    accountability for all entries remain.
 
     PyTest Usage:
         cd {project}/ibm_zos_core/services/tests
@@ -53,7 +50,6 @@ class TestCacheFunctionalTests(unittest.TestCase):
     def tearDownClass(cls):
         print("\nCompleted test suite TestServicesFunctionalTests")
 
-
     def tearDown(self):
         print("Completed FVT tets for services class.")
 
@@ -61,10 +57,10 @@ class TestCacheFunctionalTests(unittest.TestCase):
     # Mock request to use for testing
     # --------------------------------------------------------------------------
 
-    _mode={"owner": "rwx",
-                "group": "r--",
-                "other": "---"
-    }
+    _mode = {"owner": "rwx",
+             "group": "r--",
+             "other": "---"
+             }
 
     file_attributes = FileAttributes(
                         name="test_file_name.txt",
@@ -102,7 +98,6 @@ class TestCacheFunctionalTests(unittest.TestCase):
         """
         assert self.artifact_cache is not None, "ASSERTION-FAILURE: artifact_cache is None"
 
-
     def test_cache_update(self):
         """
         Test adding values to the cache within the allowed cache size
@@ -127,7 +122,6 @@ class TestCacheFunctionalTests(unittest.TestCase):
         assert _size == len(self.artifact_cache.cache) , \
             f"ASSERTION-FAILURE: cache did not insert the expected entries, \
                 inserted = [{len(self.artifact_cache.cache)}], expected = [{_size}]"
-
 
     def test_cache_create_update_over_max_cache_size(self):
         """
@@ -157,7 +151,6 @@ class TestCacheFunctionalTests(unittest.TestCase):
             f"ASSERTION-FAILURE: cache did not insert the expected entries, \
                 inserted = [{len(self.artifact_cache.cache)}], expected = [{_size}]"
 
-
     def test_cache_update_invalid_key_type(self):
         """
         Test inserting a key that is not a permitted type, only permitted types
@@ -168,7 +161,6 @@ class TestCacheFunctionalTests(unittest.TestCase):
 
         except ValueError as e:
             assert re.match(r'^ValueError', repr(e))
-
 
     def test_cache_update_invalid_value_type(self):
         """

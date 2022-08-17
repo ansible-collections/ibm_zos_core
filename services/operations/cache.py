@@ -112,21 +112,21 @@ class ArtifactCache(metaclass=SingletonCacheMeta):
         """
         return self.cache.get(key).to_dict()
 
-    def get(self,key):
+    def get(self, key):
         """
         Parameters
         ----------
         key : str
             Key used to insert the entry into the cache.
 
-        Get the entries value corresponding to the key from the cache and remove
-        it from the cache.
+        Get the entries value corresponding to the key from the cache and
+        remove it from the cache.
         """
         value = self.cache.get(key)
         self.cache.pop(key).to_dict()
         return value
 
-    def get_object(self,key):
+    def get_object(self, key):
         """
         Get the item value corresponding to the key from the cache and remove
         it from the cache.

@@ -46,7 +46,7 @@ class ModuleSecurityTests(unittest.TestCase):
 
     def get_exploits():
         exploits = []
-        with open("tests/helpers/shell_exploits.txt", "r") as f:
+        with open("../../helpers/shell_exploits.txt", "r") as f:
             exploits = f.read().splitlines()
         end_of_license_index = exploits.index("--end of license--") + 1
         return exploits[end_of_license_index:]

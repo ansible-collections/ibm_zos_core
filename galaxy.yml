@@ -67,6 +67,16 @@ build_ignore:
   - .gitignore
   - .github
   - '*.tar.gz'
-  - tests
   - docs
   - collections
+  - changelogs
+  - docs
+  - tests/__pycache__
+  - tests/.pytest_cache
+  - tests/functional
+  - tests/helpers
+  - tests/unit
+  - tests/*.py
+  - tests/*.ini
+  - tests/requirements.txt
+  - test_config.yml

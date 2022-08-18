@@ -33,72 +33,72 @@ HELLO, WORLD
 TEMP_PATH = "/tmp/ansible/jcl"
 
 
-# def test_zos_job_output_no_job_id(ansible_zos_module):
-#     hosts = ansible_zos_module
-#     results = hosts.all.zos_job_output(job_id="")
-#     for result in results.contacted.values():
-#         print(result)
-#         assert result.get("changed") is False
-#         assert result.get("jobs") is None,\
-#             "ASSERTION-FAILURE: jobs is not empty, jobs = [{0}]".format(result.get("jobs"))
+def test_zos_job_output_no_job_id(ansible_zos_module):
+    hosts = ansible_zos_module
+    results = hosts.all.zos_job_output(job_id="")
+    for result in results.contacted.values():
+        print(result)
+        assert result.get("changed") is False
+        assert result.get("jobs") is None,\
+            "ASSERTION-FAILURE: jobs is not empty, jobs = [{0}]".format(result.get("jobs"))
 
 
-# def test_zos_job_output_invalid_job_id(ansible_zos_module):
-#     hosts = ansible_zos_module
-#     results = hosts.all.zos_job_output(job_id="INVALID")
-#     for result in results.contacted.values():
-#         print(result)
-#         assert result.get("changed") is False
-#         assert result.get('jobs')[0].get('ret_code').get('msg') == "JOB NOT FOUND",\
-#             f"ASSERTION-FAILURE: Jobs return code msg = [{result.get('jobs')[0].get('ret_code').get('msg')}]"
+def test_zos_job_output_invalid_job_id(ansible_zos_module):
+    hosts = ansible_zos_module
+    results = hosts.all.zos_job_output(job_id="INVALID")
+    for result in results.contacted.values():
+        print(result)
+        assert result.get("changed") is False
+        assert result.get('jobs')[0].get('ret_code').get('msg') == "JOB NOT FOUND",\
+            f"ASSERTION-FAILURE: Jobs return code msg = [{result.get('jobs')[0].get('ret_code').get('msg')}]"
 
-# def test_zos_job_output_no_job_name(ansible_zos_module):
-#     hosts = ansible_zos_module
-#     results = hosts.all.zos_job_output(job_name="")
-#     for result in results.contacted.values():
-#         print(result)
-#         assert result.get("changed") is False
-#         assert result.get("jobs") is None,\
-#             "ASSERTION-FAILURE: jobs is not empty, jobs = [{0}]".format(result.get("jobs"))
-
-
-# def test_zos_job_output_invalid_job_name(ansible_zos_module):
-#     hosts = ansible_zos_module
-#     results = hosts.all.zos_job_output(job_name="INVALID")
-#     for result in results.contacted.values():
-#         print(result)
-#         assert result.get("changed") is False
-#         assert result.get("jobs")[0].get('job_name') == "INVALID",\
-#             "ASSERTION-FAILURE: job name does not match expected = [INVALID]"
+def test_zos_job_output_no_job_name(ansible_zos_module):
+    hosts = ansible_zos_module
+    results = hosts.all.zos_job_output(job_name="")
+    for result in results.contacted.values():
+        print(result)
+        assert result.get("changed") is False
+        assert result.get("jobs") is None,\
+            "ASSERTION-FAILURE: jobs is not empty, jobs = [{0}]".format(result.get("jobs"))
 
 
-# def test_zos_job_output_no_owner(ansible_zos_module):
-#     hosts = ansible_zos_module
-#     results = hosts.all.zos_job_output(owner="")
-#     for result in results.contacted.values():
-#         print(result)
-#         assert result.get("changed") is False
-#         assert result.get("jobs") is None, \
-#             "ASSERTION-FAILURE job expected to be None"
+def test_zos_job_output_invalid_job_name(ansible_zos_module):
+    hosts = ansible_zos_module
+    results = hosts.all.zos_job_output(job_name="INVALID")
+    for result in results.contacted.values():
+        print(result)
+        assert result.get("changed") is False
+        assert result.get("jobs")[0].get('job_name') == "INVALID",\
+            "ASSERTION-FAILURE: job name does not match expected = [INVALID]"
 
 
-# def test_zos_job_output_invalid_owner(ansible_zos_module):
-#     hosts = ansible_zos_module
-#     results = hosts.all.zos_job_output(owner="INVALID")
-#     for result in results.contacted.values():
-#         print(result)
-#         assert result.get("changed") is False
-#         assert result.get("jobs")[0].get("ret_code").get("msg") == "JOB NOT FOUND", \
-#             "ASSERTION-FAILURE: job with invalid owner expected msg = [JOB NOT FOUND]"
+def test_zos_job_output_no_owner(ansible_zos_module):
+    hosts = ansible_zos_module
+    results = hosts.all.zos_job_output(owner="")
+    for result in results.contacted.values():
+        print(result)
+        assert result.get("changed") is False
+        assert result.get("jobs") is None, \
+            "ASSERTION-FAILURE job expected to be None"
 
-# def test_zos_job_output_reject(ansible_zos_module):
-#     hosts = ansible_zos_module
-#     results = hosts.all.zos_job_output()
-#     for result in results.contacted.values():
-#         print(result)
-#         assert result.get("changed") is False
-#         assert result.get("msg") is not None,\
-#             "ASSERTION-FAILURE: jobs is empty, jobs = [{0}]".format(result.get("jobs"))
+
+def test_zos_job_output_invalid_owner(ansible_zos_module):
+    hosts = ansible_zos_module
+    results = hosts.all.zos_job_output(owner="INVALID")
+    for result in results.contacted.values():
+        print(result)
+        assert result.get("changed") is False
+        assert result.get("jobs")[0].get("ret_code").get("msg") == "JOB NOT FOUND", \
+            "ASSERTION-FAILURE: job with invalid owner expected msg = [JOB NOT FOUND]"
+
+def test_zos_job_output_reject(ansible_zos_module):
+    hosts = ansible_zos_module
+    results = hosts.all.zos_job_output()
+    for result in results.contacted.values():
+        print(result)
+        assert result.get("changed") is False
+        assert result.get("msg") is not None,\
+            "ASSERTION-FAILURE: jobs is empty, jobs = [{0}]".format(result.get("jobs"))
 
 
 def test_zos_job_output_job_exists(ansible_zos_module):
@@ -122,7 +122,7 @@ def test_zos_job_output_job_exists(ansible_zos_module):
         print(submitted_job_id)
         assert submitted_job_id is not None, "ASSERTION-FAILURE: jobs id is None"
 
-    hosts.all.file(path=TEMP_PATH, state="absent")
+    #hosts.all.file(path=TEMP_PATH, state="absent")
     results = hosts.all.zos_job_output(job_id=submitted_job_id)  # was SAMPLE?!
     for result in results.contacted.values():
         assert result.get("changed") is False
@@ -142,26 +142,26 @@ def test_zos_job_output_job_exists(ansible_zos_module):
         print(result.get('jobs')[0].get('ret_code').get('steps')[0].get('step_name'))
 
 
-# def test_zos_job_output_job_exists_with_filtered_ddname(ansible_zos_module):
-#     hosts = ansible_zos_module
-#     hosts.all.file(path=TEMP_PATH, state="directory")
-#     hosts.all.shell(
-#         cmd="echo {0} > {1}/SAMPLE".format(quote(JCL_FILE_CONTENTS), TEMP_PATH)
-#     )
-#     hosts.all.zos_job_submit(
-#         src="{0}/SAMPLE".format(TEMP_PATH), location="USS", wait=True, volume=None
-#     )
-#     hosts.all.file(path=TEMP_PATH, state="absent")
-#     dd_name = "JESMSGLG"
-#     results = hosts.all.zos_job_output(job_name="HELLO", ddname=dd_name)
-#     for result in results.contacted.values():
-#         assert result.get("changed") is False
-#         assert result.get("jobs") is not None
-#         for job in result.get("jobs"):
-#             assert len(job.get("ddnames")) == 1,\
-#                 "ASSERTION-FAILURE: ddname count = [{0}]"\
-#                     .format(job.get("ddnames"))
-#             print(job)
-#             assert job.get("ddnames")[0].get("ddname") == dd_name,\
-#                 "ASSERTION-FAILURE: ddname name = [{0}]".\
-#                     format(job.get("ddnames")[0].get("ddname"))
+def test_zos_job_output_job_exists_with_filtered_ddname(ansible_zos_module):
+    hosts = ansible_zos_module
+    hosts.all.file(path=TEMP_PATH, state="directory")
+    hosts.all.shell(
+        cmd="echo {0} > {1}/SAMPLE".format(quote(JCL_FILE_CONTENTS), TEMP_PATH)
+    )
+    hosts.all.zos_job_submit(
+        src="{0}/SAMPLE".format(TEMP_PATH), location="USS", wait=True, volume=None
+    )
+    hosts.all.file(path=TEMP_PATH, state="absent")
+    dd_name = "JESMSGLG"
+    results = hosts.all.zos_job_output(job_name="HELLO", ddname=dd_name)
+    for result in results.contacted.values():
+        assert result.get("changed") is False
+        assert result.get("jobs") is not None
+        for job in result.get("jobs"):
+            assert len(job.get("ddnames")) == 1,\
+                "ASSERTION-FAILURE: ddname count = [{0}]"\
+                    .format(job.get("ddnames"))
+            print(job)
+            assert job.get("ddnames")[0].get("ddname") == dd_name,\
+                "ASSERTION-FAILURE: ddname name = [{0}]".\
+                    format(job.get("ddnames")[0].get("ddname"))

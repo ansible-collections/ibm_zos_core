@@ -122,12 +122,18 @@ def test_zos_job_output_job_exists(ansible_zos_module):
         assert result.get("changed") is False
         assert result.get("jobs") is not None,\
             f"ASSERTION-FAILURE: jobs is empty, jobs = [{result.get('jobs')}]"
+        print("JOB-XXX Details")
+        print(result.get('jobs'))
         assert result.get("jobs")[0].get("ret_code").get("steps") is not None,\
             f"ASSERTION-FAILURE: job steps empty, steps =\
                 [{result.get('jobs')[0].get('ret_code').get('steps')[0]}]"
+        print("JOB-XXX STEPS")
+        print(result.get('jobs')[0].get('ret_code').get('steps')[0])
         assert result.get("jobs")[0].get("ret_code").get("steps")[0].get("step_name") == "STEP0001", \
             f"ASSERTION-FAILURE: job steps empty, steps = \
                 [{result.get('jobs')[0].get('ret_code').get('steps')[0].get('step_name')}]"
+        print("JOB-XXX STEP" )
+        print(result.get('jobs')[0].get('ret_code').get('steps')[0].get('step_name'))
 
 
 def test_zos_job_output_job_exists_with_filtered_ddname(ansible_zos_module):

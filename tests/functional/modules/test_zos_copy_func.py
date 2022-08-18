@@ -1802,21 +1802,28 @@ def test_ensure_tmp_cleanup(ansible_zos_module):
     dest = "/tmp"
     dest_path = "/tmp/profile"
 
-    try:
-        stat_dir = hosts.all.shell(
-            cmd="ls -l", executable=SHELL_EXECUTABLE, chdir="/tmp"
-        )
-        file_count_pre = len(list(stat_dir.contacted.values())[0].get("stdout_lines"))
+    temp_files_patterns = [
+        re.compile(r"\bansible-zos-copy-payload"),
+        re.compile(r"\bconverted"),
+        re.compile(r"\bansible-zos-copy-data-set-dump")
+    ]
 
+    try:
         copy_res = hosts.all.zos_copy(src=src, dest=dest)
         for result in copy_res.contacted.values():
             assert result.get("msg") is None
+            assert result.get("changed") is True
 
         stat_dir = hosts.all.shell(
-            cmd="ls -l", executable=SHELL_EXECUTABLE, chdir="/tmp"
+            cmd="ls",
+            executable=SHELL_EXECUTABLE,
+            chdir="/tmp/"
         )
-        file_count_post = len(list(stat_dir.contacted.values())[0].get("stdout_lines"))
-        assert file_count_post <= file_count_pre
+
+        for result in stat_dir.contacted.values():
+            tmp_files = result.get("stdout")
+            for pattern in temp_files_patterns:
+                assert not pattern.search(tmp_files)
 
     finally:
         hosts.all.file(path=dest_path, state="absent")

@@ -677,8 +677,7 @@ class CopyHandler(object):
         src,
         temp_path,
         conv_path,
-        dest,
-        src_ds_type
+        dest
     ):
         """Copy source to a sequential data set.
 
@@ -690,30 +689,20 @@ class CopyHandler(object):
             dest {str} -- Name of destination data set
             src_ds_type {str} -- The type of source
         """
-        new_src = temp_path or conv_path or src
+        new_src = conv_path or temp_path or src
+        copy_args = dict()
 
-        if src_ds_type == "USS":
-            rc, out, err = self.run_command(
-                "cp {0} {1} \"//'{2}'\"".format(
-                    "-B" if self.is_binary else "", new_src, dest
-                )
+        if self.is_binary:
+            copy_args["options"] = "-B"
+
+        response = datasets._copy(new_src, dest, None, **copy_args)
+        if response.rc != 0:
+            self.fail_json(
+                msg="Unable to copy source {0} to {1}".format(new_src, dest),
+                rc=response.rc,
+                stdout=response.stdout_response,
+                stderr=response.stderr_response
             )
-            if rc != 0:
-                self.fail_json(
-                    msg="Unable to copy source {0} to {1}".format(new_src, dest),
-                    rc=rc,
-                    stderr=err,
-                    stdout=out,
-                )
-        else:
-            response = datasets._copy(new_src, dest)
-            if response.rc != 0:
-                self.fail_json(
-                    msg="Unable to copy source {0} to {1}".format(new_src, dest),
-                    rc=response.rc,
-                    stdout=response.stdout_response,
-                    stderr=response.stderr_response
-                )
 
     def copy_to_vsam(self, src, dest):
         """Copy source VSAM to destination VSAM.
@@ -1180,7 +1169,6 @@ class PDSECopyHandler(CopyHandler):
         dest = dest.replace("$", "\\$").upper()
         opts = dict()
 
-        # added -B to remove the 'truncated' error when copying uss->fb/pdse style stuff
         if self.is_binary:
             opts["options"] = "-B"
 
@@ -1216,14 +1204,21 @@ def get_file_record_length(file):
         int -- Length of the longest line in the file.
         None -- If awk fails at processing the file.
     """
-    module = AnsibleModuleHelper(argument_spec={})
-    command = "awk '{{ if ( length > L ) {{ L=length }} }}END{{ print L }}' {0}".format(file)
-    rc, stdout, stderr = module.run_command(command)
+    max_line_length = 0
 
-    if rc != 0 or stderr:
-        return None
+    with open(file, "r") as src_file:
+        current_line = src_file.readline()
 
-    return int(stdout)
+        while current_line:
+            if len(current_line) > max_line_length:
+                max_line_length = len(current_line)
+
+            current_line = src_file.readline()
+
+    if max_line_length == 0:
+        max_line_length = 80
+
+    return max_line_length
 
 
 def _create_temp_path_name():
@@ -1233,11 +1228,12 @@ def _create_temp_path_name():
     return "ansible-zos-copy-data-set-dump-{0}-{1}".format(current_date, current_time)
 
 
-def dump_data_set_member_to_file(data_set_member):
+def dump_data_set_member_to_file(data_set_member, is_binary):
     """Dumps a data set member into a file in USS.
 
     Arguments:
         data_set_member (str) -- Name of the data set member to dump.
+        is_binary (bool) -- Whether the data set member contains binary data.
 
     Returns:
         str -- Path of the file in USS that contains the dump of the member.
@@ -1246,11 +1242,13 @@ def dump_data_set_member_to_file(data_set_member):
         DataSetMemberAttributeError: When the call to dcp fails.
     """
     temp_path = "/tmp/{0}".format(_create_temp_path_name())
-    module = AnsibleModuleHelper(argument_spec={})
-    command = "dcp '{0}' {1}".format(data_set_member, temp_path)
-    rc, stdout, stderr = module.run_command(command)
 
-    if rc != 0 or stderr:
+    copy_args = dict()
+    if is_binary:
+        copy_args["options"] = "-B"
+
+    response = datasets._copy(data_set_member, temp_path, None, **copy_args)
+    if response.rc != 0 or response.stderr_response:
         raise DataSetMemberAttributeError(data_set_member)
 
     return temp_path
@@ -1395,7 +1393,8 @@ def is_compatible(
     dest_type,
     copy_member,
     src_member,
-    is_src_dir
+    is_src_dir,
+    is_src_inline
 ):
     """Determine whether the src and dest are compatible and src can be
     copied to dest.
@@ -1406,6 +1405,7 @@ def is_compatible(
         copy_member {bool} -- Whether dest is a data set member.
         src_member {bool} -- Whether src is a data set member.
         is_src_dir {bool} -- Whether the src is a USS directory.
+        is_src_inline {bool} -- Whether the src comes from inline content.
 
     Returns:
         {bool} -- Whether src can be copied to dest.
@@ -1446,9 +1446,20 @@ def is_compatible(
             return not (copy_member or dest_type in MVS_SEQ)
         return True
 
+    # ********************************************************************
+    # If source is a USS file, then the destination can be another USS file,
+    # a directory, a sequential data set or a partitioned data set member.
+    # When using the content option, the destination should specify
+    # a member name if copying into a partitioned data set.
+    #
+    # If source is instead a directory, the destination has to be another
+    # directory or a partitioned data set.
+    # ********************************************************************
     elif src_type == "USS":
         if dest_type in MVS_SEQ or copy_member:
             return not is_src_dir
+        elif dest_type in MVS_PARTITIONED and not copy_member and is_src_inline:
+            return False
         elif dest_type in MVS_VSAM:
             return False
         else:
@@ -1866,7 +1877,14 @@ def run_module(module, arg_def):
     # to a PDS. Perform these sanity checks.
     # Note: dest_ds_type can also be passed from destination_dataset.type
     # ********************************************************************
-    if not is_compatible(src_ds_type, dest_ds_type, copy_member, src_member, is_src_dir):
+    if not is_compatible(
+        src_ds_type,
+        dest_ds_type,
+        copy_member,
+        src_member,
+        is_src_dir,
+        (src_ds_type == "USS" and src is None)
+    ):
         module.fail_json(
             msg="Incompatible target type '{0}' for source '{1}'".format(
                 dest_ds_type, src_ds_type
@@ -2026,7 +2044,6 @@ def run_module(module, arg_def):
             temp_path,
             conv_path,
             dest,
-            src_ds_type,
         )
         res_args["changed"] = True
         dest = dest.upper()

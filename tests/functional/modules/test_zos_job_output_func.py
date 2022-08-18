@@ -122,7 +122,7 @@ def test_zos_job_output_job_exists(ansible_zos_module):
         print(submitted_job_id)
         assert submitted_job_id is not None, "ASSERTION-FAILURE: jobs id is None"
 
-    #hosts.all.file(path=TEMP_PATH, state="absent")
+    hosts.all.file(path=TEMP_PATH, state="absent")
     results = hosts.all.zos_job_output(job_id=submitted_job_id)  # was SAMPLE?!
     for result in results.contacted.values():
         assert result.get("changed") is False

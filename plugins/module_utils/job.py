@@ -239,7 +239,8 @@ def _zget_job_status(job_id="*", owner="*", job_name="*", dd_name=None):
 
             # rstrip is a solution because we call zoau raw functions like _submit
             # which return values with a backslash
-            job["job_id"] = entry.id.rstrip("\n")
+            job_id_stripped = entry.id.rstrip("\n")
+            job["job_id"] = job_id_stripped
             job["job_name"] = entry.name
             job["subsystem"] = ""
             job["system"] = ""
@@ -261,10 +262,13 @@ def _zget_job_status(job_id="*", owner="*", job_name="*", dd_name=None):
 
             job["ret_code"]["steps"] = []
             job["ddnames"] = []
-            list_of_dds = list_dds(entry.id)
+            list_of_dds = list_dds(job_id_stripped)
 
+            # Traverse all the DD's
             for single_dd in list_of_dds:
                 dd = {}
+
+                # If there is a dd_name, it means only that one should be returned
                 if dd_name is not None:
                     if dd_name not in single_dd["dataset"]:
                         continue
@@ -273,7 +277,6 @@ def _zget_job_status(job_id="*", owner="*", job_name="*", dd_name=None):
 
                 if "dataset" not in single_dd:
                     continue
-
 
                 if "recnum" in single_dd:
                     dd["record_count"] = single_dd["recnum"]
@@ -303,7 +306,7 @@ def _zget_job_status(job_id="*", owner="*", job_name="*", dd_name=None):
                 tmpcont = None
                 if "stepname" in single_dd:
                     if "dataset" in single_dd:
-                        tmpcont = read_output(entry.id, single_dd["stepname"], single_dd["dataset"])
+                        tmpcont = read_output(job_id_stripped, single_dd["stepname"], single_dd["dataset"])
 
                 dd["content"] = tmpcont.split("\n")
                 job["ret_code"]["steps"].extend(_parse_steps(tmpcont))

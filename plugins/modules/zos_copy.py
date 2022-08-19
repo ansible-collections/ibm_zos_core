@@ -763,11 +763,13 @@ class CopyHandler(object):
                     temp_dir = tempfile.mkdtemp()
                     shutil.copytree(new_src, temp_dir, dirs_exist_ok=True)
                     new_src = temp_dir
+
                 self._convert_encoding_dir(new_src, from_code_set, to_code_set)
                 self._tag_file_encoding(new_src, to_code_set, is_dir=True)
 
             except Exception as err:
-                shutil.rmtree(new_src)
+                if new_src != src:
+                    shutil.rmtree(new_src)
                 self.fail_json(msg=str(err))
         else:
             try:
@@ -792,7 +794,8 @@ class CopyHandler(object):
                 self._tag_file_encoding(new_src, to_code_set)
 
             except Exception as err:
-                os.remove(new_src)
+                if new_src != src:
+                    os.remove(new_src)
                 self.fail_json(msg=str(err))
         return new_src
 
@@ -1606,38 +1609,6 @@ def is_member_wildcard(src):
     )
 
 
-def is_destination_dataset_user_provided(
-    type,
-    space_primary,
-    space_secondary,
-    space_type,
-    record_format,
-    record_length,
-    block_size
-    # volume
-):
-    """Helper method to return if the user has provided the destination data set args
-
-    Args:
-        type (str, required): The type of dataset.
-        space_primary (int, required): The amount of primary space to allocate for the dataset.
-        space_secondary (int, optional):  The amount of secondary space to allocate for the dataset.
-        space_type (str, required): The unit of measurement to use when defining primary and secondary space.
-        record_format (str, optional): The record format to use for the dataset.
-        record_length (int, optional) The length, in bytes, of each record in the data set.
-        block_size (int, optional): The block size to use for the data set.
-        volume (str, optional): A volume serial.
-        """
-    if type and space_primary and space_type:
-        return True
-    else:
-        module = AnsibleModuleHelper(argument_spec={})
-        # module.fail_json(msg="Error during clean up of file {0}".format(space_primary), stderr=destination_dataset)
-        module.fail_json(msg="Error during clean up of file {0}, {1}, {2}, {3}, {4}, {5}, {6}".format(
-            type, space_primary, space_secondary, space_type, record_format, record_length, block_size))
-    return False
-
-
 def allocate_destination_data_set(
     src,
     dest,
@@ -1786,10 +1757,8 @@ def run_module(module, arg_def):
 
     destination_dataset = module.params.get('destination_dataset')
     if destination_dataset:
-        type = destination_dataset.get("type")
-
         if volume:
-            (module.params.get('destination_dataset'))["volumes"] = [volume]
+            destination_dataset["volumes"] = [volume]
 
     # ********************************************************************
     # When copying to and from a data set member, 'dest' or 'src' will be
@@ -1854,9 +1823,10 @@ def run_module(module, arg_def):
         else:
             dest_exists = data_set.DataSet.data_set_exists(dest_name, volume)
             dest_ds_type = data_set.DataSet.data_set_type(dest_name, volume)
+
             # destination_dataset.type overrides `dest_ds_type` given precedence rules
-            if destination_dataset and type is not None:
-                dest_ds_type = type
+            if destination_dataset and destination_dataset.get("type"):
+                dest_ds_type = destination_dataset.get("type")
 
             if dest_ds_type in MVS_PARTITIONED:
                 # Checking if the members that would be created from the directory files
@@ -1931,6 +1901,11 @@ def run_module(module, arg_def):
                 dest_ds_type = src_ds_type
             elif not is_uss:
                 dest_ds_type = "SEQ"
+
+            # Filling in the type in destination_dataset in case the user didn't specify it in
+            # the playbook.
+            if destination_dataset:
+                destination_dataset["type"] = dest_ds_type
 
         res_args["changed"] = True
 
@@ -2178,13 +2153,6 @@ def main():
             )
         ),
     )
-
-    # Get the users spec early before any defaults are applied (if even defaults will continue) but more so
-    # we want to know if a user has provided us `destination_dataset` values so order of precedence can be honored
-    if module.params.get('destination_dataset'):
-        # Temp work around
-        is_destination_dataset_provided = is_destination_dataset_user_provided(
-            **module.params.get('destination_dataset'))
 
     if (
         not module.params.get("encoding")

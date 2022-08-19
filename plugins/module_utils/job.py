@@ -200,6 +200,7 @@ def _zget_job_status(job_id="*", owner="*", job_name="*", dd_name=None):
     else:
         job_query = job_id
 
+
     # jls output: owner=job[0], name=job[1], id=job[2], status=job[3], rc=job[4]
     # e.g.: OMVSADM  HELLO    JOB00126 JCLERR   ?
     # entries = listing(job_query, owner)   1.2.0 has owner paramn, 1.1 does not
@@ -224,6 +225,7 @@ def _zget_job_status(job_id="*", owner="*", job_name="*", dd_name=None):
             entries.append(Job(owner='?', name=job[1], id=job[2], status=job[3], rc=job[4]))
         else:
             entries.append(Job(owner=job[0], name=job[1], id=job[2], status=job[3], rc=job[4]))
+
 
     final_entries = []
     if entries:

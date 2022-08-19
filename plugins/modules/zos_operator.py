@@ -303,7 +303,6 @@ def run_operator_command(params):
     cmdtxt = params.get("cmd")
 
     args = []
-
     rc, stdout, stderr = execute_command(cmdtxt, *args, **kwargs)
 
     extrastdout = ""

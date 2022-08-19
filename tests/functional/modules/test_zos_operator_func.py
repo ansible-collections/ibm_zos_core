@@ -97,6 +97,7 @@ def test_zos_operator_positive_verbose_with_full_delay(ansible_zos_module):
     #    assert result.get("changed") is True
     #    assert result.get("content") is not None
 
+
 # Disable this test case until ZOAU releases the timeout support we had in REXX
 # def test_zos_operator_positive_verbose_with_full_delay(ansible_zos_module):
 #     hosts = ansible_zos_module
@@ -111,7 +112,6 @@ def test_zos_operator_positive_verbose_with_full_delay(ansible_zos_module):
 #         assert result["rc"] == 0
 #         assert result.get("changed") is True
 #         assert result.get("content") is not None
-
 
 
 def test_zos_operator_positive_verbose_with_quick_delay(ansible_zos_module):

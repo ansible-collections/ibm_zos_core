@@ -165,3 +165,4 @@ def test_zos_job_output_job_exists_with_filtered_ddname(ansible_zos_module):
             assert job.get("ddnames")[0].get("ddname") == dd_name,\
                 "ASSERTION-FAILURE: ddname name = [{0}]".\
                     format(job.get("ddnames")[0].get("ddname"))
+

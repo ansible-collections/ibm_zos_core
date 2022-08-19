@@ -51,6 +51,15 @@ try:
 except Exception:
     Job = MissingZOAUImport()
 
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
+    MissingZOAUImport,
+)
+
+try:
+    from zoautil_py.jobs import listing, read_output, list_dds
+except Exception:
+    pass
+
 
 def job_output(job_id=None, owner=None, job_name=None, dd_name=None):
     """Get the output from a z/OS job based on various search criteria.
@@ -200,7 +209,6 @@ def _zget_job_status(job_id="*", owner="*", job_name="*", dd_name=None):
     else:
         job_query = job_id
 
-
     # jls output: owner=job[0], name=job[1], id=job[2], status=job[3], rc=job[4]
     # e.g.: OMVSADM  HELLO    JOB00126 JCLERR   ?
     # entries = listing(job_query, owner)   1.2.0 has owner paramn, 1.1 does not
@@ -264,6 +272,7 @@ def _zget_job_status(job_id="*", owner="*", job_name="*", dd_name=None):
 
             job["ret_code"]["steps"] = []
             job["ddnames"] = []
+
             list_of_dds = list_dds(job_id_stripped)
 
             # Traverse all the DD's

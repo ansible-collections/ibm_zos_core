@@ -23,7 +23,7 @@ class ModuleOperatorQueryTests(unittest.TestCase):
     def setUp(self):
             self.skipTest('Module tests disabled and waiting on ZOAU')
 
-
+    # pylint: disable=R0201
     def test_zos_operator_action_query_no_options(ansible_zos_module):
         hosts = ansible_zos_module
         hosts.all.zos_operator(cmd="DUMP COMM=('test dump')")
@@ -282,6 +282,7 @@ class ModuleOperatorQueryTests(unittest.TestCase):
             {"filter": "^.*IMS.*$", "use_regex": True},
         ]
     )
+    
     def test_zos_operator_action_query_option_message_filter_no_match(
         ansible_zos_module, message_filter
     ):

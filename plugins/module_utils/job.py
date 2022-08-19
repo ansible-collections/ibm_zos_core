@@ -42,11 +42,6 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
 )
 
 try:
-    from zoautil_py.jobs import listing, read_output, list_dds
-except Exception:
-    pass
-
-try:
     from zoautil_py.types import Job
 except Exception:
     Job = MissingZOAUImport()
@@ -233,7 +228,6 @@ def _zget_job_status(job_id="*", owner="*", job_name="*", dd_name=None):
             entries.append(Job(owner='?', name=job[1], id=job[2], status=job[3], rc=job[4]))
         else:
             entries.append(Job(owner=job[0], name=job[1], id=job[2], status=job[3], rc=job[4]))
-
 
     final_entries = []
     if entries:

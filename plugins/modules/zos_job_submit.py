@@ -579,10 +579,11 @@ POLLING_COUNT = 60
 
 JOB_COMPLETION_MESSAGES = ["CC", "ABEND", "SEC ERROR", "JCL ERROR", "JCLERR"]
 
-# Note that zoau submit will return None when wait to false, this is not desired
-# so when wait = false, the raw version is called _submit.
+
 def submit_pds_jcl(src, module, timeout=0):
     """ A wrapper around zoautil_py Jobs submit to raise exceptions on failure. """
+    # Note that zoau submit will return None when wait to false, this is not desired
+    # so when wait = false, the raw version is called _submit.
     kwargs = {}
     jobId = None
     wait = False
@@ -617,7 +618,7 @@ def submit_pds_jcl(src, module, timeout=0):
 # in zoau jobs.submit is if wait is false, it immediately returns None which can
 # in some cases make sense but in our code, if wait is not configured or puposely
 # set to false, we wait up to 10 seconds so in this case the raw version _submit()
-# had to be used and will need updating eventually when a fix is out. 
+# had to be used and will need updating eventually when a fix is out.
 def submit_uss_jcl(src, module, timeout=0):
     """ Submit uss jcl. Use ZOAU jsub with option hfs=True """
 

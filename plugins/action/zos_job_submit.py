@@ -60,7 +60,7 @@ class ActionModule(ActionBase):
 
             if os.path.isdir(to_bytes(source, errors="surrogate_or_strict")):
                 result["failed"] = True
-                result["msg"] = to_text(u"NOT SUPPORTING THE DIRECTORY.")
+                result["msg"] = to_text("NOT SUPPORTING THE DIRECTORY.")
                 return result
 
             changed = False
@@ -74,7 +74,7 @@ class ActionModule(ActionBase):
                 source_rel = os.path.basename(source)
             except AnsibleFileNotFound as e:
                 result["failed"] = True
-                result["msg"] = "could not find src=%s, %s" % (source_full, e)
+                result["msg"] = f"could not find src={source}, {to_text(e)}"
                 self._remove_tmp_path(tmp)
                 return result
 

@@ -28,7 +28,7 @@ description:
     - Submit a job and optionally monitor for its execution.
     - Optionally wait for the job output until the job finishes.
     - For the uncataloged dataset, specify the volume serial number.
-version_added: "2.9"
+version_added: "1.0.0"
 options:
   src:
     required: true
@@ -545,15 +545,28 @@ from time import sleep
 from ansible.module_utils.basic import AnsibleModule
 
 try:
-    from zoautil_py.jobs import submit
+    from zoautil_py import jobs
 except Exception:
-    submit = MissingZOAUImport()
+    jobs = MissingZOAUImport()
 
 try:
     from zoautil_py.types import ZOAUResponse, Job
 except Exception:
     ZOAUResponse = MissingZOAUImport()
     Job = MissingZOAUImport()
+
+# Imports datasets, ZOAUException, JobSubmitException are only needed for the
+# ZOAU submit(hfs=True) bug
+try:
+    from zoautil_py import datasets
+except Exception:
+    datasets = MissingZOAUImport()
+
+try:
+    from zoautil_py import ZOAUException, JobSubmitException
+except Exception:
+    ZOAUException = MissingZOAUImport()
+    JobSubmitException = MissingZOAUImport()
 
 if PY3:
     from shlex import quote
@@ -566,34 +579,84 @@ POLLING_COUNT = 60
 
 JOB_COMPLETION_MESSAGES = ["CC", "ABEND", "SEC ERROR", "JCL ERROR", "JCLERR"]
 
-
+# Note that zoau submit will return None when wait to false, this is not desired
+# so when wait = false, the raw version is called _submit.
 def submit_pds_jcl(src, module, timeout=0):
     """ A wrapper around zoautil_py Jobs submit to raise exceptions on failure. """
     kwargs = {}
-
+    jobId = None
     wait = False
-    if timeout > 0:
-        wait = True
-        kwargs.update({"timeout": "{0}".format(timeout)})
 
-    job_listing = submit(src, wait, None, **kwargs)
+    try:
+        # timeout takes precedence over wait boolean, no need to check on wait
+        if timeout > 0:
+            wait = True
+            kwargs.update({"timeout": "{0}".format(timeout)})
+            job_listing = jobs.submit(src, wait, None, **kwargs)
+            jobId = job_listing.id
+        else:
+            # If wait is not set, fallback to our 10 second default using _submit()
+            job_listing = jobs._submit(src, None, **kwargs)
+            jobId = job_listing.stdout_response.rstrip("\n")
+            print("PRINT {0}".format(jobId))
+    except (ZOAUException, JobSubmitException) as err:
+        module.fail_json(
+            msg="Unable to submit job {0} as a result of {1}.".format(src, err),
+            rc=None,
+            stdout=None,
+            stderr="Non-zero return code received."
+        )
 
-    jobId = job_listing["id"]
     return jobId
 
 
+# Note: this method has a work around resulting from ZOAU bug when hfs = true.
+# For now, the JCL is put into a temporary data set and run from ZOAU which has
+# no issues doing. One limitation of this work around is that users can not
+# set the HLQ used in the temporary data set. The second issue is that is that
+# in zoau jobs.submit is if wait is false, it immediately returns None which can
+# in some cases make sense but in our code, if wait is not configured or puposely
+# set to false, we wait up to 10 seconds so in this case the raw version _submit()
+# had to be used and will need updating eventually when a fix is out. 
 def submit_uss_jcl(src, module, timeout=0):
-    """ Submit uss jcl. Use uss command submit -j jclfile. """
+    """ Submit uss jcl. Use ZOAU jsub with option hfs=True """
+
     kwargs = {}
-
+    jobId = None
     wait = False
-    if timeout > 0:
-        wait = True
-        kwargs.update({"timeout": "{0}".format(timeout)})
 
-    job_listing = submit(src, wait, None, **kwargs)
+    # Work around to hfs=True ZOAU issue
+    tmp_data_set_for_submit = datasets.tmp_name(datasets.hlq())
 
-    jobId = job_listing["id"]
+    uss_copy_ds_rc = datasets.copy(src, tmp_data_set_for_submit)
+    if uss_copy_ds_rc != 0:
+        module.fail_json(
+            msg="Error occurred while during job execution while copying jcl \
+                  source {0} to {1}.".format(src, tmp_data_set_for_submit),
+            rc=uss_copy_ds_rc,
+            stdout=None,
+            stderr="Non-zero return code received"
+        )
+
+    try:
+        # Rearldess of wait boolean, if the timeout is set it takes precedence
+        if timeout > 0:
+            wait = True
+            kwargs.update({"timeout": "{0}".format(timeout)})
+            job_listing = jobs.submit(tmp_data_set_for_submit, wait, None, **kwargs)
+            jobId = job_listing.id
+        else:
+            # Wait was false, rely on our 10 second default and use the _submit to do so
+            job_listing = jobs._submit(tmp_data_set_for_submit, None, **kwargs)
+            jobId = job_listing.stdout_response.rstrip("\n")
+    except (ZOAUException, JobSubmitException) as err:
+        module.fail_json(
+            msg="Unable to submit job {0} as a result of {1}.".format(src, err),
+            rc=None,
+            stdout=None,
+            stderr="Non-zero return code received."
+        )
+
     return jobId
 
 
@@ -712,7 +775,7 @@ def run_module():
         ),
         volume=dict(arg_type="volume", required=False),
         return_output=dict(arg_type="bool", default=True),
-        wait_time_s=dict(arg_type="int", required=False, default=60),
+        wait_time_s=dict(arg_type="int", required=False, default=10),
         max_rc=dict(arg_type="int", required=False),
         temp_file=dict(arg_type="path", required=False),
     )
@@ -748,8 +811,6 @@ def run_module():
             msg="The option wait_time_s is not valid.  It must be greater than 0.",
             **result
         )
-    if not wait:
-        wait_time_s = 0
 
     DSN_REGEX = r"^(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}(?:\([A-Z$#@]{1}[A-Z0-9$#@]{0,7}\)){0,1}$"
     try:
@@ -804,8 +865,6 @@ def run_module():
 
     result["job_id"] = jobId
     duration = 0
-    if not wait:
-        wait_time_s = 10
 
     # real time loop - will be used regardless of 'wait' to capture data
     starttime = timer()
@@ -817,7 +876,7 @@ def run_module():
         except IndexError:
             pass
         except Exception as e:
-            result["err_detail"] = "Error during job submission."
+            result["err_detail"] = "An error has occurred while submitting the requested job."
             module.fail_json(msg=repr(e), **result)
 
         if bool(job_output_txt):

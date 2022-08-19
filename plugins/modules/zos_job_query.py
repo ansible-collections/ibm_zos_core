@@ -20,6 +20,7 @@ __metaclass__ = type
 DOCUMENTATION = r"""
 ---
 module: zos_job_query
+version_added: '1.0.0'
 short_description: Query job status
 description:
   - List z/OS job(s) and the current status of the job(s).
@@ -245,6 +246,7 @@ def query_jobs(params):
     job_name_in = params.get("job_name")
     job_id = params.get("job_id")
     owner = params.get("owner")
+
     jobs = []
     if job_id:
         jobs = job_status(job_id=job_id)

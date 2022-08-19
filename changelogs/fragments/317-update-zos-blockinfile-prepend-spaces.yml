@@ -1,0 +1,6 @@
+minor_changes:
+  - >
+    zos_blockinfile - updates the module with a new option named indentation.
+    This allows for a user to specifiy a number of spaces to prepend to the
+    content before being inserted into the destiation.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/317).

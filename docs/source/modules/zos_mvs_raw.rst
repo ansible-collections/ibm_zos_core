@@ -1629,7 +1629,7 @@ Examples
        dds:
          - dd_data_set:
              dd_name: sortin01
-             data_set_name: myhlq.dfsort.master
+             data_set_name: myhlq.dfsort.main
              disposition: shr
          - dd_data_set:
              dd_name: sortin02

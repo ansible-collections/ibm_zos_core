@@ -697,7 +697,7 @@ class CopyHandler(object):
 
         response = datasets._copy(new_src, dest, None, **copy_args)
         if response.rc != 0:
-            self.fail_json(
+            raise CopyOperationError(
                 msg="Unable to copy source {0} to {1}".format(new_src, dest),
                 rc=response.rc,
                 stdout=response.stdout_response,
@@ -716,12 +716,12 @@ class CopyHandler(object):
         OUTDATASET('{1}')""".format(src.upper(), dest.upper())
         rc, out, err = idcams(repro_cmd, authorized=True)
         if rc != 0:
-            self.fail_json(
+            raise CopyOperationError(
                 msg=("IDCAMS REPRO encountered a problem while "
                      "copying {0} to {1}".format(src, dest)),
+                rc=rc,
                 stdout=out,
                 stderr=err,
-                rc=rc,
                 stdout_lines=out.splitlines(),
                 stderr_lines=err.splitlines(),
                 cmd=repro_cmd,
@@ -767,10 +767,14 @@ class CopyHandler(object):
                 self._convert_encoding_dir(new_src, from_code_set, to_code_set)
                 self._tag_file_encoding(new_src, to_code_set, is_dir=True)
 
+            except CopyOperationError as err:
+                if new_src != src:
+                    shutil.rmtree(new_src)
+                raise err
             except Exception as err:
                 if new_src != src:
                     shutil.rmtree(new_src)
-                self.fail_json(msg=str(err))
+                raise CopyOperationError(msg=str(err))
         else:
             try:
                 if not temp_path:
@@ -793,10 +797,14 @@ class CopyHandler(object):
                     )
                 self._tag_file_encoding(new_src, to_code_set)
 
+            except CopyOperationError as err:
+                if new_src != src:
+                    os.remove(new_src)
+                raise err
             except Exception as err:
                 if new_src != src:
                     os.remove(new_src)
-                self.fail_json(msg=str(err))
+                raise CopyOperationError(msg=str(err))
         return new_src
 
     def _convert_encoding_dir(self, dir_path, from_code_set, to_code_set):
@@ -841,11 +849,11 @@ class CopyHandler(object):
             "R" if is_dir else "t", tag, file_path)
         rc, out, err = self.run_command(tag_cmd)
         if rc != 0:
-            self.fail_json(
+            raise CopyOperationError(
                 msg="Unable to tag the file {0} to {1}".format(file_path, tag),
+                rc=rc,
                 stdout=out,
                 stderr=err,
-                rc=rc,
                 stdout_lines=out.splitlines(),
                 stderr_lines=err.splitlines(),
             )
@@ -959,11 +967,12 @@ class USSCopyHandler(CopyHandler):
             else:
                 shutil.copy(new_src, dest)
         except OSError as err:
-            self.fail_json(
-                msg="Destination {0} is not writable".format(dest), stderr=str(err)
+            raise CopyOperationError(
+                msg="Destination {0} is not writable".format(dest),
+                stderr=str(err)
             )
         except Exception as err:
-            self.fail_json(
+            raise CopyOperationError(
                 msg="Unable to copy file {0} to {1}".format(new_src, dest),
                 stderr=str(err),
             )
@@ -995,10 +1004,8 @@ class USSCopyHandler(CopyHandler):
         try:
             shutil.copytree(new_src_dir, dest_dir, dirs_exist_ok=force)
         except Exception as err:
-            self.fail_json(
-                msg="Error while copying data to destination directory {0}".format(
-                    dest_dir
-                ),
+            raise CopyOperationError(
+                msg="Error while copying data to destination directory {0}".format(dest_dir),
                 stdout=str(err),
             )
         return dest_dir
@@ -1036,9 +1043,8 @@ class USSCopyHandler(CopyHandler):
             if src_member or src_ds_type in MVS_SEQ:
                 response = datasets._copy(src, dest)
                 if response.rc != 0:
-                    self.fail_json(
-                        msg="Error while copying source {0} to {1}".format(
-                            src, dest),
+                    raise CopyOperationError(
+                        msg="Error while copying source {0} to {1}".format(src, dest),
                         rc=response.rc,
                         stdout=response.stdout_response,
                         stderr=response.stderr_response
@@ -1046,7 +1052,7 @@ class USSCopyHandler(CopyHandler):
             else:
                 copy.copy_pds2uss(src, dest, is_binary=self.is_binary)
         except Exception as err:
-            self.fail_json(msg=str(err))
+            raise CopyOperationError(msg=str(err))
 
 
 class PDSECopyHandler(CopyHandler):
@@ -1120,14 +1126,24 @@ class PDSECopyHandler(CopyHandler):
 
                 if result["rc"] != 0:
                     msg = "Unable to copy file {0} to data set member {1}".format(file, dest_copy_name)
-                    self.fail_json(msg=msg, rc=result["rc"], stdout=result["out"], stderr=result["err"])
+                    raise CopyOperationError(
+                        msg=msg,
+                        rc=result["rc"],
+                        stdout=result["out"],
+                        stderr=result["err"]
+                    )
         elif src_ds_type in MVS_SEQ:
             dest_copy_name = "{0}({1})".format(dest, dest_member)
             result = self.copy_to_member(new_src, dest_copy_name)
 
             if result["rc"] != 0:
                 msg = "Unable to copy data set {0} to data set member {1}".format(new_src, dest_copy_name)
-                self.fail_json(msg=msg, rc=result["rc"], stdout=result["out"], stderr=result["err"])
+                raise CopyOperationError(
+                    msg=msg,
+                    rc=result["rc"],
+                    stdout=result["out"],
+                    stderr=result["err"]
+                )
         else:
             members = []
             src_data_set_name = data_set.extract_dsname(new_src)
@@ -1148,7 +1164,12 @@ class PDSECopyHandler(CopyHandler):
 
                 if result["rc"] != 0:
                     msg = "Unable to copy data set member {0} to data set member {1}".format(new_src, dest_copy_name)
-                    self.fail_json(msg=msg, rc=result["rc"], stdout=result["out"], stderr=result["err"])
+                    raise CopyOperationError(
+                        msg=msg,
+                        rc=result["rc"],
+                        stdout=result["out"],
+                        stderr=result["err"]
+                    )
 
     def copy_to_member(
         self,
@@ -1389,6 +1410,54 @@ def backup_data(ds_name, ds_type, backup_name):
         return backup.mvs_file_backup(ds_name, backup_name)
     except Exception as err:
         module.fail_json(msg=repr(err))
+
+
+def restore_backup(dest, backup, dest_type, use_backup, volume=None):
+    """Restores a destination file/directory/data set by using a given backup.
+
+    Arguments:
+        dest (str) -- Name of the destination data set or path of the file/directory.
+        backup (str) -- Name or path of the backup.
+        dest_type (str) -- Type of the destination.
+        use_backup (bool) -- Whether the destination actually created a backup, sometimes the user
+            tries to use an empty data set, and in that case a new data set is allocated instead
+            of copied.
+    """
+    try:
+        volumes = [volume] if volume else None
+
+        if use_backup:
+            if dest_type == "USS":
+                if os.path.isfile(backup):
+                    os.remove(dest)
+                    shutil.copy(backup, dest)
+                else:
+                    shutil.rmtree(dest, ignore_errors=True)
+                    shutil.copytree(backup, dest)
+            else:
+                data_set.DataSet.ensure_absent(dest, volumes)
+
+                if dest_type in MVS_VSAM:
+                    repro_cmd = """  REPRO -
+                    INDATASET('{0}') -
+                    OUTDATASET('{1}')""".format(backup.upper(), dest.upper())
+                    idcams(repro_cmd, authorized=True)
+                else:
+                    datasets.copy(backup, dest)
+
+        else:
+            data_set.DataSet.ensure_absent(dest, volumes)
+            data_set.DataSet.allocate_model_data_set(dest, backup, volume)
+
+    finally:
+        if dest_type == "USS":
+            if os.path.isfile(backup):
+                os.remove(backup)
+            else:
+                shutil.rmtree(backup, ignore_errors=True)
+        else:
+            volumes = [volume] if volume else None
+            data_set.DataSet.ensure_absent(backup, volumes)
 
 
 def is_compatible(
@@ -1666,7 +1735,7 @@ def allocate_destination_data_set(
         else:
             # Dumping the member into a file in USS to compute the record length and
             # size for the new data set.
-            temp_dump = dump_data_set_member_to_file(src)
+            temp_dump = dump_data_set_member_to_file(src, is_binary)
             create_seq_dataset_from_file(temp_dump, dest, force, is_binary, volume=volume)
     elif dest_ds_type in MVS_PARTITIONED and not dest_exists:
         # Taking the src as model if it's also a PDSE.
@@ -1817,9 +1886,17 @@ def run_module(module, arg_def):
                     dest=dest
                 )
 
+            if encoding:
+                copy_handler.fail_json(
+                    msg="Encoding conversion is only valid for USS source"
+                )
+
         if is_uss:
             dest_ds_type = "USS"
             dest_exists = os.path.exists(dest)
+
+            if dest_exists and not os.access(dest, os.W_OK):
+                copy_handler.fail_json(msg="Destination {0} is not writable".format(dest))
         else:
             dest_exists = data_set.DataSet.data_set_exists(dest_name, volume)
             dest_ds_type = data_set.DataSet.data_set_type(dest_name, volume)
@@ -1922,6 +1999,19 @@ def run_module(module, arg_def):
     ):
         module.fail_json(msg="{0} already exists on the system, unable to overwrite unless force=True is specified.".format(dest))
 
+    # Creating an emergency backup or an empty data set to use as a model to
+    # be able to restore the destination in case the copy fails.
+    if dest_exists:
+        if is_uss or not data_set.DataSet.is_empty(dest_name):
+            use_backup = True
+            emergency_backup = backup_data(dest, dest_ds_type, None)
+        # If dest is an empty data set, instead create a data set to
+        # use as a model when restoring.
+        else:
+            use_backup = False
+            emergency_backup = data_set.DataSet.temp_name()
+            data_set.DataSet.allocate_model_data_set(emergency_backup, dest_name)
+
     try:
         if not is_uss:
             res_args["changed"] = allocate_destination_data_set(
@@ -1935,6 +2025,8 @@ def run_module(module, arg_def):
                 volume=volume
             )
     except Exception as err:
+        if dest_exists:
+            restore_backup(dest_name, emergency_backup, dest_ds_type, use_backup)
         module.fail_json(msg="Unable to allocate destination data set: {0}".format(str(err)))
 
     # ********************************************************************
@@ -1947,105 +2039,102 @@ def run_module(module, arg_def):
         is_binary=is_binary,
         backup_name=backup_name
     )
-    if encoding:
-        if remote_src and src_ds_type != "USS":
-            copy_handler.fail_json(
-                msg="Encoding conversion is only valid for USS source"
+
+    try:
+        if encoding:
+            # 'conv_path' points to the converted src file or directory
+            if is_mvs_dest:
+                encoding["to"] = encode.Defaults.DEFAULT_EBCDIC_MVS_CHARSET
+
+            conv_path = copy_handler.convert_encoding(src, temp_path, encoding)
+
+        # ------------------------------- o -----------------------------------
+        # Copy to USS file or directory
+        # ---------------------------------------------------------------------
+        if is_uss:
+            uss_copy_handler = USSCopyHandler(
+                module,
+                dest_exists,
+                is_binary=is_binary,
+                common_file_args=dict(mode=mode, group=group, owner=owner),
+                backup_name=backup_name,
             )
-        # 'conv_path' points to the converted src file or directory
-        if is_mvs_dest:
-            encoding["to"] = encode.Defaults.DEFAULT_EBCDIC_MVS_CHARSET
 
-        conv_path = copy_handler.convert_encoding(src, temp_path, encoding)
+            original_checksum = None
+            if dest_exists:
+                original_checksum = get_file_checksum(dest)
 
-    # ------------------------------- o -----------------------------------
-    # Copy to USS file or directory
-    # ---------------------------------------------------------------------
-    if is_uss:
-        if dest_exists and not os.access(dest, os.W_OK):
-            copy_handler.fail_json(
-                msg="Destination {0} is not writable".format(dest))
-
-        uss_copy_handler = USSCopyHandler(
-            module,
-            dest_exists,
-            is_binary=is_binary,
-            common_file_args=dict(mode=mode, group=group, owner=owner),
-            backup_name=backup_name,
-        )
-
-        original_checksum = None
-        if dest_exists:
-            original_checksum = get_file_checksum(dest)
-
-        dest = uss_copy_handler.copy_to_uss(
-            src,
-            dest,
-            conv_path,
-            temp_path,
-            src_ds_type,
-            src_member,
-            member_name,
-            force
-        )
-        res_args['size'] = os.stat(dest).st_size
-        remote_checksum = dest_checksum = None
-
-        try:
-            remote_checksum = get_file_checksum(temp_path or src)
-            dest_checksum = get_file_checksum(dest)
-
-            if validate:
-                res_args["checksum"] = dest_checksum
-
-                if remote_checksum != dest_checksum:
-                    copy_handler.fail_json(msg="Validation failed for copied files")
-
-            res_args["changed"] = (
-                res_args.get("changed") or dest_checksum != original_checksum or os.path.isdir(dest)
+            dest = uss_copy_handler.copy_to_uss(
+                src,
+                dest,
+                conv_path,
+                temp_path,
+                src_ds_type,
+                src_member,
+                member_name,
+                force
             )
-        except Exception as err:
-            if validate:
-                copy_handler.fail_json(
-                    msg="Unable to calculate checksum", stderr=str(err)
+            res_args['size'] = os.stat(dest).st_size
+            remote_checksum = dest_checksum = None
+
+            try:
+                remote_checksum = get_file_checksum(temp_path or src)
+                dest_checksum = get_file_checksum(dest)
+
+                if validate:
+                    res_args["checksum"] = dest_checksum
+
+                    if remote_checksum != dest_checksum:
+                        raise CopyOperationError(msg="Validation failed for copied files")
+
+                res_args["changed"] = (
+                    res_args.get("changed") or dest_checksum != original_checksum or os.path.isdir(dest)
                 )
+            except Exception as err:
+                if validate:
+                    raise CopyOperationError(msg="Unable to calculate checksum", stderr=str(err))
 
-    # ------------------------------- o -----------------------------------
-    # Copy to sequential data set (PS / SEQ)
-    # ---------------------------------------------------------------------
-    elif dest_ds_type in MVS_SEQ:
-        copy_handler.copy_to_seq(
-            src,
-            temp_path,
-            conv_path,
-            dest,
-        )
-        res_args["changed"] = True
-        dest = dest.upper()
+        # ------------------------------- o -----------------------------------
+        # Copy to sequential data set (PS / SEQ)
+        # ---------------------------------------------------------------------
+        elif dest_ds_type in MVS_SEQ:
+            copy_handler.copy_to_seq(
+                src,
+                temp_path,
+                conv_path,
+                dest,
+            )
+            res_args["changed"] = True
+            dest = dest.upper()
 
-    # ---------------------------------------------------------------------
-    # Copy to PDS/PDSE
-    # ---------------------------------------------------------------------
-    elif dest_ds_type in MVS_PARTITIONED:
-        if not remote_src and not copy_member and os.path.isdir(temp_path):
-            temp_path = os.path.join(temp_path, os.path.basename(src))
+        # ---------------------------------------------------------------------
+        # Copy to PDS/PDSE
+        # ---------------------------------------------------------------------
+        elif dest_ds_type in MVS_PARTITIONED:
+            if not remote_src and not copy_member and os.path.isdir(temp_path):
+                temp_path = os.path.join(temp_path, os.path.basename(src))
 
-        pdse_copy_handler = PDSECopyHandler(
-            module, dest_exists, is_binary=is_binary, backup_name=backup_name
-        )
+            pdse_copy_handler = PDSECopyHandler(
+                module, dest_exists, is_binary=is_binary, backup_name=backup_name
+            )
 
-        pdse_copy_handler.copy_to_pdse(
-            src, temp_path, conv_path, dest_name, src_ds_type, src_member=src_member, dest_member=dest_member
-        )
-        res_args["changed"] = True
-        dest = dest.upper()
+            pdse_copy_handler.copy_to_pdse(
+                src, temp_path, conv_path, dest_name, src_ds_type, src_member=src_member, dest_member=dest_member
+            )
+            res_args["changed"] = True
+            dest = dest.upper()
 
-    # ------------------------------- o -----------------------------------
-    # Copy to VSAM data set
-    # ---------------------------------------------------------------------
-    else:
-        copy_handler.copy_to_vsam(src, dest)
-        res_args["changed"] = True
+        # ------------------------------- o -----------------------------------
+        # Copy to VSAM data set
+        # ---------------------------------------------------------------------
+        else:
+            copy_handler.copy_to_vsam(src, dest)
+            res_args["changed"] = True
+
+    except CopyOperationError as err:
+        if dest_exists:
+            restore_backup(dest_name, emergency_backup, dest_ds_type, use_backup)
+        raise err
 
     res_args.update(
         dict(
@@ -2182,6 +2271,9 @@ def main():
     try:
         res_args, temp_path, conv_path = run_module(module, arg_def)
         module.exit_json(**res_args)
+    except CopyOperationError as err:
+        cleanup([])
+        module.fail_json(**(err.json_args))
     finally:
         cleanup([temp_path, conv_path])
 
@@ -2204,6 +2296,29 @@ class DataSetMemberAttributeError(Exception):
     def __init__(self, src):
         self.msg = "Unable to get size and record length of member {0}".format(src)
         super().__init__(self.msg)
+
+
+class CopyOperationError(Exception):
+    def __init__(
+        self,
+        msg,
+        rc=None,
+        stdout=None,
+        stderr=None,
+        stdout_lines=None,
+        stderr_lines=None,
+        cmd=None
+    ):
+        self.json_args = dict(
+            msg=msg,
+            rc=rc,
+            stdout=stdout,
+            stderr=stderr,
+            stdout_lines=stdout_lines,
+            stderr_lines=stderr_lines,
+            cmd=cmd,
+        )
+        super().__init__(msg)
 
 
 if __name__ == "__main__":

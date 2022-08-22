@@ -1,0 +1,8 @@
+minor_changes:
+  - >
+    zos_blockinfile - fixes a bug when using double quotes in the block text
+    of the module. When double quotes appeared in block text, the module would
+    error differently depending on the usage of option insertafter. Examples of
+    this error have return code 1 or 16 along with message
+    "ZOAU dmod return content is NOT in json format" and a varying stderr.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/303).

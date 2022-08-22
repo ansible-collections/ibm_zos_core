@@ -1,0 +1,10 @@
+deprecated_features:
+  - zos_ssh connection plugin has been removed, it is no longer required. You
+    must remove all playbook references to connection ibm.ibm_zos_core.zos_ssh.
+  - zos_copy module option model_ds has been removed. The model_ds logic
+    is now automatically managed and data sets are either created based on the
+    src data set or overridden by the new option destination_dataset.
+  - zos_copy and zos_fetch option sftp_port has been deprecated. To
+    set the SFTP port, use the supported options in the ansible.builtin.ssh
+    plugin. Refer to the `SSH port <https://docs.ansible.com/ansible/latest/collections/ansible/builtin/ssh_connection.html#parameter-port>`__
+    option to configure the port used during the modules SFTP transport.

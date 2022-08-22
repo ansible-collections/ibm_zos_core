@@ -33,10 +33,11 @@ description:
     like "*".
   - If there is no ddname, or if ddname="?", output of all the ddnames under
     the given job will be displayed.
-version_added: "2.9"
+version_added: "1.0.0"
 author:
   - "Jack Ho (@jacklotusho)"
   - "Demetrios Dimatos (@ddimatos)"
+  - "Rich Parker (@richp405)"
 options:
   job_id:
     description:
@@ -56,7 +57,8 @@ options:
     required: false
   ddname:
     description:
-      - Data definition name. (e.g "JESJCL", "?")
+      - Data definition name (show only this DD on a found job).
+        (e.g "JESJCL", "?")
     type: str
     required: false
 """
@@ -363,7 +365,9 @@ changed:
 
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import job_output
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import (
+    job_output,
+)
 from tempfile import NamedTemporaryFile
 
 
@@ -387,10 +391,11 @@ def run_module():
 
     try:
         results = {}
-        results["jobs"] = job_output(job_id, owner, job_name, ddname)
+        results["jobs"] = job_output(job_id=job_id, owner=owner, job_name=job_name, dd_name=ddname)
         results["changed"] = False
     except Exception as e:
         module.fail_json(msg=repr(e))
+
     module.exit_json(**results)
 
 

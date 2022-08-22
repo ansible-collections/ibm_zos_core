@@ -1887,7 +1887,7 @@ def run_module(module, arg_def):
                 )
 
             if encoding:
-                copy_handler.fail_json(
+                module.fail_json(
                     msg="Encoding conversion is only valid for USS source"
                 )
 
@@ -1896,7 +1896,7 @@ def run_module(module, arg_def):
             dest_exists = os.path.exists(dest)
 
             if dest_exists and not os.access(dest, os.W_OK):
-                copy_handler.fail_json(msg="Destination {0} is not writable".format(dest))
+                module.fail_json(msg="Destination {0} is not writable".format(dest))
         else:
             dest_exists = data_set.DataSet.data_set_exists(dest_name, volume)
             dest_ds_type = data_set.DataSet.data_set_type(dest_name, volume)
@@ -2170,22 +2170,22 @@ def main():
                 required=False,
                 options=dict(
                     type=dict(
-                        arg_type='str',
+                        type='str',
                         choices=['BASIC', 'KSDS', 'ESDS', 'RRDS',
                                  'LDS', 'SEQ', 'PDS', 'PDSE', 'MEMBER'],
-                        required=False,
+                        required=True,
                     ),
                     space_primary=dict(
-                        arg_type='int', required=False),
+                        type='int', required=False),
                     space_secondary=dict(
-                        arg_type='int', required=False),
+                        type='int', required=False),
                     space_type=dict(
-                        arg_type='str',
+                        type='str',
                         choices=['K', 'M', 'G', 'CYL', 'TRK'],
                         required=False,
                     ),
                     record_format=dict(
-                        arg_type='str',
+                        type='str',
                         choices=["FB", "VB", "FBA", "VBA", "U"],
                         required=False
                     ),
@@ -2231,7 +2231,7 @@ def main():
             arg_type='dict',
             required=False,
             options=dict(
-                type=dict(arg_type='str', required=False),
+                type=dict(arg_type='str', required=True),
                 space_primary=dict(arg_type='int', required=False),
                 space_secondary=dict(
                     arg_type='int', required=False),

@@ -106,6 +106,8 @@ options:
         data and not binary data.
       - If C(encoding) is provided and C(src) is an MVS data set, task will fail.
       - Only valid if C(is_binary) is false.
+      - If C(encoding) is provided and C(src) is a directory, the encoding
+        conversion will be applied to all files.
     type: dict
     required: false
     suboptions:
@@ -842,13 +844,15 @@ class CopyHandler(object):
             try:
                 if not temp_path:
                     temp_dir = tempfile.mkdtemp()
-                    shutil.copytree(new_src, temp_dir)
+                    shutil.copytree(new_src, temp_dir, dirs_exist_ok=True)
                     new_src = temp_dir
+
                 self._convert_encoding_dir(new_src, from_code_set, to_code_set)
                 self._tag_file_encoding(new_src, to_code_set, is_dir=True)
 
             except Exception as err:
-                shutil.rmtree(new_src)
+                if new_src != src:
+                    shutil.rmtree(new_src)
                 self.fail_json(msg=str(err))
         else:
             try:
@@ -873,7 +877,8 @@ class CopyHandler(object):
                 self._tag_file_encoding(new_src, to_code_set)
 
             except Exception as err:
-                os.remove(new_src)
+                if new_src != src:
+                    os.remove(new_src)
                 self.fail_json(msg=str(err))
         return new_src
 

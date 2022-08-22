@@ -3,5 +3,5 @@ major_changes:
     ibm_zos_core - Updates the entire collection in that the collection
     no longer depends on the managed node having
     installed System Display and Search Facility (SDSF).
-    "Remove SDSF dependency from ibm_zos_core collection.
+    Remove SDSF dependency from ibm_zos_core collection.
     (https://github.com/ansible-collections/ibm_zos_core/pull/303).

@@ -530,7 +530,13 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.encode import (
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,
 )
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import job_output
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import (
+    job_output,
+)
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
+    MissingZOAUImport,
+)
+
 from timeit import default_timer as timer
 import re
 from tempfile import NamedTemporaryFile
@@ -538,6 +544,29 @@ from os import chmod, path, remove, stat
 from time import sleep
 from ansible.module_utils.basic import AnsibleModule
 
+try:
+    from zoautil_py import jobs
+except Exception:
+    jobs = MissingZOAUImport()
+
+try:
+    from zoautil_py.types import ZOAUResponse, Job
+except Exception:
+    ZOAUResponse = MissingZOAUImport()
+    Job = MissingZOAUImport()
+
+# Imports datasets, ZOAUException, JobSubmitException are only needed for the
+# ZOAU submit(hfs=True) bug
+try:
+    from zoautil_py import datasets
+except Exception:
+    datasets = MissingZOAUImport()
+
+try:
+    from zoautil_py import ZOAUException, JobSubmitException
+except Exception:
+    ZOAUException = MissingZOAUImport()
+    JobSubmitException = MissingZOAUImport()
 
 if PY3:
     from shlex import quote
@@ -551,37 +580,84 @@ POLLING_COUNT = 60
 JOB_COMPLETION_MESSAGES = ["CC", "ABEND", "SEC ERROR", "JCL ERROR", "JCLERR"]
 
 
-def submit_pds_jcl(src, module):
+def submit_pds_jcl(src, module, timeout=0):
     """ A wrapper around zoautil_py Jobs submit to raise exceptions on failure. """
-    rc, stdout, stderr = module.run_command(
-        'submit -j "//{0}"'.format(quote(src)), use_unsafe_shell=True
-    )
-    if rc != 0:
-        raise SubmitJCLError("Submit job failed:  Stderr :" + stderr)
-    if "Error" in stderr or "Not accepted by JES" in stderr:
-        raise SubmitJCLError("Submit job failed: " + stderr)
-    if stdout != "":
-        jobId = stdout.replace("\n", "").strip()
-    else:
-        raise SubmitJCLError(
-            "Submit job failed: no job ID was returned.  Please check the JCL."
+    # Note that zoau submit will return None when wait to false, this is not desired
+    # so when wait = false, the raw version is called _submit.
+    kwargs = {}
+    jobId = None
+    wait = False
+
+    try:
+        # timeout takes precedence over wait boolean, no need to check on wait
+        if timeout > 0:
+            wait = True
+            kwargs.update({"timeout": "{0}".format(timeout)})
+            job_listing = jobs.submit(src, wait, None, **kwargs)
+            jobId = job_listing.id
+        else:
+            # If wait is not set, fallback to our 10 second default using _submit()
+            job_listing = jobs._submit(src, None, **kwargs)
+            jobId = job_listing.stdout_response.rstrip("\n")
+            print("PRINT {0}".format(jobId))
+    except (ZOAUException, JobSubmitException) as err:
+        module.fail_json(
+            msg="Unable to submit job {0} as a result of {1}.".format(src, err),
+            rc=None,
+            stdout=None,
+            stderr="Non-zero return code received."
         )
+
     return jobId
 
 
-def submit_uss_jcl(src, module):
-    """ Submit uss jcl. Use uss command submit -j jclfile. """
-    rc, stdout, stderr = module.run_command(["submit", "-j", src])
-    if rc != 0:
-        raise SubmitJCLError("Submit job failed:  Stderr :" + stderr)
-    if "Error" in stderr or "Not accepted by JES" in stderr:
-        raise SubmitJCLError("Submit job failed: " + stderr)
-    if stdout != "":
-        jobId = stdout.replace("\n", "").strip()
-    else:
-        raise SubmitJCLError(
-            "Submit job failed: no job ID was returned.  Please check the JCL."
+# Note: this method has a work around resulting from ZOAU bug when hfs = true.
+# For now, the JCL is put into a temporary data set and run from ZOAU which has
+# no issues doing. One limitation of this work around is that users can not
+# set the HLQ used in the temporary data set. The second issue is that is that
+# in zoau jobs.submit is if wait is false, it immediately returns None which can
+# in some cases make sense but in our code, if wait is not configured or puposely
+# set to false, we wait up to 10 seconds so in this case the raw version _submit()
+# had to be used and will need updating eventually when a fix is out.
+def submit_uss_jcl(src, module, timeout=0):
+    """ Submit uss jcl. Use ZOAU jsub with option hfs=True """
+
+    kwargs = {}
+    jobId = None
+    wait = False
+
+    # Work around to hfs=True ZOAU issue
+    tmp_data_set_for_submit = datasets.tmp_name(datasets.hlq())
+
+    uss_copy_ds_rc = datasets.copy(src, tmp_data_set_for_submit)
+    if uss_copy_ds_rc != 0:
+        module.fail_json(
+            msg="Error occurred while during job execution while copying jcl \
+                  source {0} to {1}.".format(src, tmp_data_set_for_submit),
+            rc=uss_copy_ds_rc,
+            stdout=None,
+            stderr="Non-zero return code received"
         )
+
+    try:
+        # Rearldess of wait boolean, if the timeout is set it takes precedence
+        if timeout > 0:
+            wait = True
+            kwargs.update({"timeout": "{0}".format(timeout)})
+            job_listing = jobs.submit(tmp_data_set_for_submit, wait, None, **kwargs)
+            jobId = job_listing.id
+        else:
+            # Wait was false, rely on our 10 second default and use the _submit to do so
+            job_listing = jobs._submit(tmp_data_set_for_submit, None, **kwargs)
+            jobId = job_listing.stdout_response.rstrip("\n")
+    except (ZOAUException, JobSubmitException) as err:
+        module.fail_json(
+            msg="Unable to submit job {0} as a result of {1}.".format(src, err),
+            rc=None,
+            stdout=None,
+            stderr="Non-zero return code received."
+        )
+
     return jobId
 
 
@@ -700,7 +776,7 @@ def run_module():
         ),
         volume=dict(arg_type="volume", required=False),
         return_output=dict(arg_type="bool", default=True),
-        wait_time_s=dict(arg_type="int", required=False, default=60),
+        wait_time_s=dict(arg_type="int", required=False, default=10),
         max_rc=dict(arg_type="int", required=False),
         temp_file=dict(arg_type="path", required=False),
     )
@@ -753,7 +829,7 @@ def run_module():
                     **result
                 )
         elif location == "USS":
-            jobId = submit_uss_jcl(src, module)
+            jobId = submit_uss_jcl(src, module, wait_time_s)
         else:
             # For local file, it has been copied to the temp directory in action plugin.
             from_encoding = encoding.get("from")
@@ -771,7 +847,7 @@ def run_module():
                 use_unsafe_shell=True,
             )
             if conv_rc == 0:
-                jobId = submit_uss_jcl(temp_file_2.name, module)
+                jobId = submit_uss_jcl(temp_file_2.name, module, wait_time_s)
             else:
                 module.fail_json(
                     msg="The Local file encoding conversion failed. Please check the source file."
@@ -790,8 +866,6 @@ def run_module():
 
     result["job_id"] = jobId
     duration = 0
-    if not wait:
-        wait_time_s = 10
 
     # real time loop - will be used regardless of 'wait' to capture data
     starttime = timer()

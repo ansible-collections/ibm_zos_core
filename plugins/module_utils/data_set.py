@@ -321,8 +321,8 @@ class DataSet(object):
         rc, stdout, stderr = module.run_command(
             "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=stdin
         )
-        delimeter = 'VOLSER------------'
-        arr = stdout.split(delimeter)
+        delimiter = 'VOLSER------------'
+        arr = stdout.split(delimiter)
         # If a volume serial is not always of lenght 6 we could use ":x.find(' ')" here instead of that index.
         volume_list = [x[:x.find(' ')] for x in arr[1:]]
         return volume_list

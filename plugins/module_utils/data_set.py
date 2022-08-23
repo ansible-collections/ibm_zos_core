@@ -319,7 +319,7 @@ class DataSet(object):
 
         # Now adding special parameters for sequential and partitioned
         # data sets.
-        if not model_type in DataSet._MVS_VSAM:
+        if model_type not in DataSet._MVS_VSAM:
             block_size = datasets.listing(model)[0].block_size
             alloc_cmd = """{0} -
             BLKSIZE({1})""".format(alloc_cmd, block_size)
@@ -441,7 +441,7 @@ class DataSet(object):
         if path.isfile(src):
             files = [path.basename(src)]
         else:
-            _, _, files = next(walk(src))
+            path, dirs, files = next(walk(src))
 
         files = [DataSet.get_member_name_from_file(file) for file in files]
 
@@ -483,7 +483,6 @@ class DataSet(object):
             return volser_output[0].replace("VOLSER", "").replace("-", "")
         else:
             raise DatasetVolumeError(name)
-
 
     @staticmethod
     def data_set_type(name, volume=None):
@@ -528,7 +527,6 @@ class DataSet(object):
             return "RRDS"
         else:
             return None
-
 
     @staticmethod
     def _get_listcat_data(name):

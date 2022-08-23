@@ -330,7 +330,6 @@ class ActionModule(ActionBase):
                     task_vars=task_vars,
                 )
 
-
     def _exit_action(self, result, msg, failed=False):
         """Exit action plugin with a message"""
         result.update(

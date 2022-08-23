@@ -18,7 +18,7 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: zos_gather_facts
 
@@ -40,7 +40,7 @@ options:
     type: list
     elements: str
     default: ['all']
-    required: False
+    required: false
     description:
       - If specified, it will only collect facts that come under the specified
         subset (eg. ipl will only return ipl facts). Specifying subsets is
@@ -49,7 +49,7 @@ options:
   filter:
     type: list
     elements: str
-    required: False
+    required: false
     default: []
     description:
       - Uses shell-style (fnmatch) pattern matching to filter out the collected
@@ -62,9 +62,9 @@ options:
 
 author:
     - Ketan Kelkar (@ketankelkar)
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 - name: Return all available z/OS facts
   ibm.ibm_zos_core.zos_gather_facts:
 
@@ -80,14 +80,14 @@ EXAMPLES = r'''
       - sys
     filter:
       - "*parmlib*"
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 ansible_facts:
   description: Store the facts that are gathered from z/OS systems.
   returned: sometimes
   type: dict
-'''
+"""
 
 from fnmatch import fnmatch
 import json
@@ -161,7 +161,7 @@ def apply_filter(zinfo_dict, filter_list):
     filtered_d = {}
     for filter in filter_list:
         for k, v in zinfo_dict.items():
-            if(fnmatch(k, filter)):
+            if fnmatch(k, filter):
                 filtered_d.update({k: v})
     return filtered_d
 

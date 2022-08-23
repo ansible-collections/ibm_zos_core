@@ -21,25 +21,23 @@ __metaclass__ = type
 DOCUMENTATION = r"""
 ---
 module: zos_gather_facts
-
 short_description: Gather facts about target z/OS systems.
-
-version_added: "1.4.2"
-
+version_added: '1.5.0'
+author:
+    - "Ketan Kelkar (@ketankelkar)"
 description:
   - Retrieve useful variables from the target z/OS systems.
   - Add variables to the ansible_facts dictionary, which is available from all
     playbooks.
   - Apply filters on the gather_subset list to cut down on variables that are
     added to the ansible_facts dictionary.
-  - Note: Module will fail fast if any illegal options are provided. This is
+  - Note, Module will fail fast if any illegal options are provided. This is
     done to raise awareness of a failure early in an automation setting.
-
 options:
   gather_subset:
     type: list
     elements: str
-    default: ['all']
+    default: ["all"]
     required: false
     description:
       - If specified, it will only collect facts that come under the specified
@@ -59,9 +57,6 @@ options:
         time/compute. It only reduces the number of variables that are added to
         the ansible_facts dictionary. To restrict the actual facts that are
         collected, refer to the gather_subset parameter above.
-
-author:
-    - Ketan Kelkar (@ketankelkar)
 """
 
 EXAMPLES = r"""
@@ -137,7 +132,7 @@ def flatten_zinfo_json(zinfo_dict):
     Returns:
         [dict] -- A flattened dictionary.
     """
-    d = dict()
+    d = {}
     for subset in list(zinfo_dict):
         d.update(zinfo_dict[subset])
     return d
@@ -186,7 +181,7 @@ def run_module():
     # setup Ansible module basics
     result = dict(
         changed=False,  # fact gathering will never change state of system
-        ansible_facts=dict(),
+        ansible_facts={},
     )
     module = AnsibleModule(
         argument_spec=module_args,

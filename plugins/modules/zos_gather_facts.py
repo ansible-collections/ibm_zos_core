@@ -53,9 +53,9 @@ options:
       - Uses shell-style (fnmatch) pattern matching to filter out the collected
         facts.
       - An empty list means 'no filter', same as providing '*'.
-      - Note - this is done after the facts are gathered, so this doesn't save
-        time/compute. It only reduces the number of variables that are added to
-        the ansible_facts dictionary. To restrict the actual facts that are
+      - Filtering is performed after the facts are gathered, so this doesn't save
+        any time or compute. It only reduces the number of variables that are
+        added to the ansible_facts dictionary. To restrict the facts that are
         collected, refer to the gather_subset parameter above.
 """
 
@@ -79,8 +79,8 @@ EXAMPLES = r"""
 
 RETURN = r"""
 ansible_facts:
-  description: Store the facts that are gathered from z/OS systems.
-  returned: sometimes
+  description: Collection of facts that are gathered from the z/OS systems."
+  returned: when collected
   type: dict
 """
 

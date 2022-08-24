@@ -119,7 +119,7 @@ options:
           - The encoding to be converted to
         required: true
         type: str
-  tmphlq:
+  tmp_hlq:
     description:
       - Overrides the user's high level qualifier for temporary and backup datasets.
       - Will override TMPHLQ environment variable as well.

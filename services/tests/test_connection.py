@@ -64,10 +64,10 @@ class TestConnectionUnitTests(unittest.TestCase):
 
     # Default args used for a connection, ensure password not shared in Git
     kwargs = {
-        "hostname": "EC33017A.vmec.svl.ibm.com",
+        "hostname": "EC01140A.vmec.svl.ibm.com",
         "port": 22,
         "username": "omvsadm",
-        "password": "all1sdun",
+        "password": "changeme",
         "key_filename": os.path.expanduser('~') + "/.ssh/id_dsa",
         "passphrase": "changeme"
     }
@@ -87,7 +87,7 @@ class TestConnectionUnitTests(unittest.TestCase):
 
 
     def tearDown(self):
-        print("Completed unit tets for connection class.")
+        print("Completed unit test for connection class.")
 
 
     def test_connection_args_6(self):
@@ -98,7 +98,6 @@ class TestConnectionUnitTests(unittest.TestCase):
         connection = Connection(hostname=self.hostname, username=self.username,
                         password=self.password, key_filename=self.key_filename,
                         passphrase=self.passphrase, port=66)
-
         assert connection is not None, "ASSERTION-FAILURE: Connection is None"
 
         arg_len = connection.args_length()
@@ -119,105 +118,155 @@ class TestConnectionUnitTests(unittest.TestCase):
             f"ASSERTION-FAILURE: Connection args expected 4 not equal to = [{arg_len}]"
 
 
-    #@unittest.skip('TODO - IMPLEMENT - FAILING') 
-    # Might be able to put the assert statement underneath the except and removed passed
     def test_connection_invalid_hostname(self):
         """
         Test the connection with an invalid hostname, negative test case.
         """
+        # Invalid hostname (int)
         passed = True
-        invalid_hostname = 1 # String doesn't cause it to raise exception
-
+        invalid_hostname = 1 
         try:
             connection = Connection(hostname=invalid_hostname, username=self.username, 
-                            key_filename=self.key_filename)
+                            password=self.password)
             connection.connect()
         except:
             passed = False
+        assert not passed, f"ASSERTION-FAILURE: Invalid hostname type does not raise exception."
 
-        assert not passed, f"ASSERTION-FAILURE: Invalid hostname does not raise exception."
+        # Invalid hostname (string)
+        passed = True
+        invalid_hostname = "invalid hostname"
+        try:
+            connection = Connection(hostname=invalid_hostname, username=self.username, 
+                            password=self.password)
+            connection.connect()
+        except:
+            passed = False
+        assert not passed, "ASSERTION-FAILURE: Invalid hostname (string) does not raise exception"
 
 
-    @unittest.skip('TODO - IMPLEMENT - CHECK')
     def test_connection_invalid_port(self):
         """
         Test the connection with an invalid port, negative test case.
         """
+        # Invalid port range
         passed = True
-        invalid_port = "-1o" # If negative not allowed, then try 65,536  or None, or string
-
+        invalid_port = -1 
         try:
             connection = Connection(hostname=self.hostname, username=self.username, 
-                                port=invalid_port) # Fails when valid and invalid
+                            password=self.password, port=invalid_port)
             connection.connect()
         except:
             passed = False
+        assert not passed, "ASSERTION-FAILURE: Invalid port does not raise exception"
 
+        # Incorrect port number
+        passed = True
+        invalid_port = 0 
+        try:
+            connection = Connection(hostname=self.hostname, username=self.username, 
+                            password=self.password, port=invalid_port)
+            connection.connect()
+        except:
+            passed = False
         assert not passed, "ASSERTION-FAILURE: Invalid port does not raise exception"
 
 
-    #@unittest.skip('TODO - IMPLEMENT - CHECK - FAILED NOT SURE WHY YET')
     def test_connection_invalid_user(self):
         """
         Test the connection with an invalid user, negative test case.
         """
+        # Invalid username (int)
         passed = True
-        invalid_username = 1 # Doesn't raise execption for string
-
+        invalid_username = 1 
         try:
-            connection = Connection(hostname=self.hostname, username=invalid_username)
+            connection = Connection(hostname=self.hostname, username=invalid_username,
+                            password=self.password)
             connection.connect()
         except:
             passed = False
+        assert not passed, "ASSERTION-FAILURE: Invalid username type does not raise exception"
 
-        assert not passed, "ASSERTION-FAILURE: Invalid username does not raise exception"
+        # Invalid username (string)
+        passed = True
+        invalid_username = "invalid username"
+        try:
+            connection = Connection(hostname=self.hostname, username=invalid_username, 
+                            password=self.password)
+            connection.connect()
+        except:
+            passed = False
+        assert not passed, "ASSERTION-FAILURE: Invalid username (string) does not raise exception"
 
 
-
-    #@unittest.skip('TODO - IMPLEMENT - FAILED')
     def test_connection_invalid_password(self):
         """
         Test the connection with an invalid password, negative test case.
         """
+        # Invalid password (int)
         passed = True
-        invalid_password = 1 # Doesn't raise exception for string
-
+        invalid_password = 1 
         try:
             connection = Connection(hostname=self.hostname, username=self.username,
-                            password=invalid_password) # DOESNT RAISE EXCEPTION??
+                            password=invalid_password)
             connection.connect()
-        except: # SSHException or connection is None
+        except: 
             passed = False
+        assert not passed, "ASSERTION-FAILURE: Invalid password type does not raise exception"
 
-        assert not passed, "ASSERTION-FAILURE: Invalid password does not raise exception"
+        # Invalid password (string)
+        passed = True
+        invalid_password = "invalid password"
+        try:
+            connection = Connection(hostname=self.hostname, username=self.username,
+                            password=invalid_password)
+            connection.connect()
+        except:
+                passed = False
+        assert not passed, "ASSERTION-FAILURE: Invalid password (string) does not raise exception"
 
 
-
-    #@unittest.skip('TODO - IMPLEMENT')
     def test_connection_invalid_key_filename(self):
         """
         Test the connection with an invalid key_filename, negative test case.
         """
+        # Invalid key filename (int)
         passed = True
-        invalid_key_filename = 1 # String doesn't raise exception
-
+        invalid_key_filename = 1 
         try:
             connection = Connection(hostname=self.hostname, username=self.username,
                             key_filename=invalid_key_filename)
             connection.connect()
-        except: # SSHException or connection is None
+        except: 
             passed = False
+        assert not passed, "ASSERTION-FAILURE: Invalid key filename type does not raise exception"
 
-        assert not passed, "ASSERTION-FAILURE: Invalid key filename does not raise exception"
+        # Invalid key filename (string)
+        passed = True
+        invalid_key_filename = "invalid key filename"
+        try:
+            connection = Connection(hostname=self.hostname, username=self.username, 
+                            key_filename=invalid_key_filename)
+            connection.connect()
+        except:
+            passed = False
+        assert not passed, "ASSERTION-FAILURE: Invalid key filename (string) does not raise exception"
 
 
-
-    @unittest.skip('TODO - IMPLEMENT')
+    @unittest.skip('TODO - TRY AGAIN') 
     def test_connection_invalid_passphrase(self):
         """
         Test the connection with an invalid passphrase, negative test case.
         """
-        assert True
+        passed = True
+        invalid_passphrase = "invalid passphrase"
+        try:
+            connection = Connection(hostname=self.hostname, username=self.username,
+                            key_filename=self.key_filename,passphrase=invalid_passphrase)
+            connection.connect()
+        except:
+            passed = False
+        assert not passed, "ASSERTION-FAILURE: Invalid passphrase (string) does not raise exception"
 
 
 class TestConnectionFunctionalTests(unittest.TestCase):
@@ -226,10 +275,10 @@ class TestConnectionFunctionalTests(unittest.TestCase):
     """
     # Default args used for a connection, ensure password not shared in Git
     kwargs = {
-        "hostname": "EC33017A.vmec.svl.ibm.com",
+        "hostname": "EC01140A.vmec.svl.ibm.com",
         "port": 22,
         "username": "omvsadm",
-        "password": "all1sdun",
+        "password": "changeme",
         "key_filename": os.path.expanduser('~') + "/.ssh/id_dsa",
         "passphrase": "changeme"
     }
@@ -239,7 +288,7 @@ class TestConnectionFunctionalTests(unittest.TestCase):
         self.hostname = self.kwargs.get('hostname')
         self.port = self.kwargs.get('port')
         self.username = self.kwargs.get('username') or 'username'
-        self.password = self.kwargs.get('password') or 'all1sdun'
+        self.password = self.kwargs.get('password') or 'changeme'
         self.key_filename = self.kwargs.get('key_filename')
         self.passphrase = self.kwargs.get('passphrase') or 'changeme'
 
@@ -268,7 +317,7 @@ class TestConnectionFunctionalTests(unittest.TestCase):
         assert result is not None, "ASSERTION-FAILURE: Executing a command returned None"
 
 
-    @unittest.skip('Time-out in testing') #Threading issue?
+    @unittest.skip('TODO - TRY AGAIN') 
     def test_connection_host_user_key_filename(self):
         """
         Test the connection with a valid host, user and key_filename
@@ -290,7 +339,7 @@ class TestConnectionFunctionalTests(unittest.TestCase):
         assert _hostname == self.hostname, f"ASSERTION-FAILURE: Hostname {_hostname} \
                                 does not match expected {self.hostname}"
 
-    @unittest.skip('Error') #Threading issue too
+    @unittest.skip('TODO - TRY AGAIN') 
     def test_connection_environment_vars(self):
         """
         Test the connection with a valid set of environment vars
@@ -320,9 +369,13 @@ class TestConnectionFunctionalTests(unittest.TestCase):
 
 
 
-    @unittest.skip('TODO - IMPLEMENT')
+    @unittest.skip('TODO - TRY AGAIN')
     def test_connection_host_user_key_filename_passphrase(self):
         """
         Test the connection with a valid passphrase
         """
-        assert True
+        connection = Connection(hostname=self.hostname, username=self.username,
+                            key_filename=self.key_filename,passphrase=self.passphrase)
+        client = connection.connect()
+        assert client is not None, "ASSERTION-FAILURE: client is None"
+        

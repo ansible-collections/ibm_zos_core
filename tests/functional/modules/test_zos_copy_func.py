@@ -2074,7 +2074,7 @@ def test_copy_uss_file_to_existing_sequential_data_set_twice_with_tmphlq_option(
     try:
         hosts.all.zos_data_set(name=dest, type="seq", state="present")
         copy_result = hosts.all.zos_copy(src=src_file, dest=dest, remote_src=True)
-        copy_result = hosts.all.zos_copy(src=src_file, dest=dest, remote_src=True, backup=True, tmphlq=tmphlq)
+        copy_result = hosts.all.zos_copy(src=src_file, dest=dest, remote_src=True, backup=True, tmp_hlq=tmphlq)
         verify_copy = hosts.all.shell(
             cmd="cat \"//'{0}'\" > /dev/null 2>/dev/null".format(dest),
             executable=SHELL_EXECUTABLE,

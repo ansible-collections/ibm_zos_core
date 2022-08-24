@@ -120,7 +120,7 @@ options:
             (iconv) version; the most common character sets are supported.
         required: true
         type: str
-  tmphlq:
+  tmp_hlq:
     description:
       - Overrides the user's high level qualifier for temporary and backup datasets.
       - Will override TMPHLQ environment variable as well.
@@ -360,12 +360,12 @@ class FetchHandler:
         mvs_rc = 0
         vsam_size = self._get_vsam_size(ds_name)
         sysprint = sysin = out_ds_name = None
-        tmp_hlq = self.module.params.get("tmphlq")
-        if tmp_hlq is None:
-            tmp_hlq = "MVSTMP"
+        tmphlq = self.module.params.get("tmp_hlq")
+        if tmphlq is None:
+            tmphlq = "MVSTMP"
         try:
-            sysin = data_set.DataSet.create_temp(tmp_hlq)
-            sysprint = data_set.DataSet.create_temp(tmp_hlq)
+            sysin = data_set.DataSet.create_temp(tmphlq)
+            sysprint = data_set.DataSet.create_temp(tmphlq)
             out_ds_name = data_set.DataSet.create_temp(
                 "MSVTMP", space_primary=vsam_size, space_type="K"
             )
@@ -574,7 +574,7 @@ def run_module():
             sftp_port=dict(type="int", required=False),
             ignore_sftp_stderr=dict(type="bool", default=False, required=False),
             local_charset=dict(type="str"),
-            tmphlq=dict(required=False, type="str", default=None),
+            tmp_hlq=dict(required=False, type="str", default=None),
         )
     )
 
@@ -599,7 +599,7 @@ def run_module():
         fail_on_missing=dict(arg_type="bool", required=False, default=True),
         is_binary=dict(arg_type="bool", required=False, default=False),
         use_qualifier=dict(arg_type="bool", required=False, default=False),
-        tmphlq=dict(type='qualifier_or_empty', required=False, default=None),
+        tmp_hlq=dict(type='qualifier_or_empty', required=False, default=None),
     )
 
     if not module.params.get("encoding") and not module.params.get("is_binary"):

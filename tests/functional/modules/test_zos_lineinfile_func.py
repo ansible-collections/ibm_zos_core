@@ -119,7 +119,7 @@ TEST_INFO = dict(
     test_ds_line_replace_nomatch_insertafter_nomatch=dict(test_name="T10"),
     test_ds_line_replace_nomatch_insertbefore_nomatch=dict(test_name="T11"),
     test_ds_line_absent=dict(test_name="T12"),
-    test_ds_line_tmphlq_option=dict(insertafter="EOF", line="export ZOAU_ROOT", state="present", backup=True, tmphlq="TMPHLQ"),
+    test_ds_line_tmp_hlq_option=dict(insertafter="EOF", line="export ZOAU_ROOT", state="present", backup=True, tmp_hlq="TMPHLQ"),
     expected=dict(test_uss_line_replace="""if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -888,7 +888,7 @@ def test_ds_line_absent(ansible_zos_module, dstype, encoding):
 
 @pytest.mark.ds
 @pytest.mark.parametrize("encoding", ENCODING)
-def test_ds_tmphlq_option(ansible_zos_module, encoding):
+def test_ds_tmp_hlq_option(ansible_zos_module, encoding):
     # This TMPHLQ only works with sequential datasets
     TEST_ENV["DS_TYPE"] = 'SEQ'
     TEST_ENV["ENCODING"] = encoding
@@ -896,7 +896,7 @@ def test_ds_tmphlq_option(ansible_zos_module, encoding):
     kwargs = dict(backup_name=r"TMPHLQ\..")
     DsGeneralResultKeyMatchesRegex(
         test_name, ansible_zos_module,
-        TEST_ENV, TEST_INFO["test_ds_line_tmphlq_option"],
+        TEST_ENV, TEST_INFO["test_ds_line_tmp_hlq_option"],
         **kwargs
     )
 

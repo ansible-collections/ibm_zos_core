@@ -103,7 +103,7 @@ options:
     type: bool
     required: false
     default: false
-  tmphlq:
+  tmp_hlq:
     description:
       - Overrides the user's high level qualifier for temporary and backup datasets.
       - Will override TMPHLQ environment variable as well.
@@ -346,7 +346,7 @@ def run_module():
         backup=dict(type="bool", default=False),
         backup_name=dict(type="str", required=False, default=None),
         backup_compress=dict(type="bool", required=False, default=False),
-        tmphlq=dict(type='str', required=False, default=None),
+        tmp_hlq=dict(type='str', required=False, default=None),
     )
 
     module = AnsibleModule(argument_spec=module_args)
@@ -359,7 +359,7 @@ def run_module():
         backup=dict(arg_type="bool", default=False, required=False),
         backup_name=dict(arg_type="data_set_or_path", required=False, default=None),
         backup_compress=dict(arg_type="bool", required=False, default=False),
-        tmphlq=dict(type='qualifier_or_empty', required=False, default=None),
+        tmp_hlq=dict(type='qualifier_or_empty', required=False, default=None),
     )
 
     parser = better_arg_parser.BetterArgParser(arg_defs)
@@ -371,7 +371,7 @@ def run_module():
     backup_compress = parsed_args.get("backup_compress")
     from_encoding = parsed_args.get("from_encoding").upper()
     to_encoding = parsed_args.get("to_encoding").upper()
-    tmphlq = module.params.get('tmphlq')
+    tmphlq = module.params.get('tmp_hlq')
 
     # is_uss_src(dest) to determine whether the src(dest) is a USS file/path or not
     # is_mvs_src(dest) to determine whether the src(dest) is a MVS data set or not

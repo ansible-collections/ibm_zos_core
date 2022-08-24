@@ -140,7 +140,7 @@ def test_add_del_with_tmphlq_option(ansible_zos_module):
     hosts = ansible_zos_module
     tmphlq = "TMPHLQ"
     test_info = TEST_INFO['test_add_del_with_tmphlq_option']
-    test_info['tmphlq'] = tmphlq
+    test_info['tmp_hlq'] = tmphlq
     set_test_env(hosts, test_info)
     results = hosts.all.zos_apf(**test_info)
     pprint(vars(results))

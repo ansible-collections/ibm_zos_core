@@ -1186,7 +1186,7 @@ options:
                           - The encoding to use when returning the contents of the data set.
                         type: str
                         default: iso8859-1
-  tmphlq:
+  tmp_hlq:
     description:
       - Overrides the user's high level qualifier for temporary and backup datasets.
       - Will override TMPHLQ environment variable as well.
@@ -1720,7 +1720,7 @@ def run_module():
         auth=dict(type="bool", default=False),
         verbose=dict(type="bool", default=False),
         parm=dict(type="str", required=False),
-        tmphlq=dict(type="str", required=False, default=None),
+        tmp_hlq=dict(type="str", required=False, default=None),
         dds=dict(
             type="list",
             elements="dict",
@@ -1748,7 +1748,7 @@ def run_module():
         try:
             parms = parse_and_validate_args(module.params)
             global g_tmphlq
-            g_tmphlq = parms.get("tmphlq")
+            g_tmphlq = parms.get("tmp_hlq")
             dd_statements = build_dd_statements(parms)
             program = parms.get("program_name")
             program_parm = parms.get("parm")
@@ -1946,7 +1946,7 @@ def parse_and_validate_args(params):
         auth=dict(type="bool", default=False),
         verbose=dict(type="bool", default=False),
         parm=dict(type="str", required=False),
-        tmphlq=dict(type="qualifier_or_empty", required=False, default=None),
+        tmp_hlq=dict(type="qualifier_or_empty", required=False, default=None),
         dds=dict(
             type="list",
             elements="dict",

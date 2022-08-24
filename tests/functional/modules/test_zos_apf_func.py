@@ -25,8 +25,8 @@ TEST_INFO = dict(
     test_add_del=dict(
         library="", state="present", force_dynamic=True
     ),
-    test_add_del_with_tmphlq_option=dict(
-        library="", state="present", force_dynamic=True, tmphlq="", persistent=dict(
+    test_add_del_with_tmp_hlq_option=dict(
+        library="", state="present", force_dynamic=True, tmp_hlq="", persistent=dict(
             data_set_name="", backup=True
         )
     ),
@@ -136,10 +136,10 @@ def test_add_del(ansible_zos_module):
     clean_test_env(hosts, test_info)
 
 
-def test_add_del_with_tmphlq_option(ansible_zos_module):
+def test_add_del_with_tmp_hlq_option(ansible_zos_module):
     hosts = ansible_zos_module
     tmphlq = "TMPHLQ"
-    test_info = TEST_INFO['test_add_del_with_tmphlq_option']
+    test_info = TEST_INFO['test_add_del_with_tmp_hlq_option']
     test_info['tmp_hlq'] = tmphlq
     set_test_env(hosts, test_info)
     results = hosts.all.zos_apf(**test_info)

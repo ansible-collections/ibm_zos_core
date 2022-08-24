@@ -130,7 +130,7 @@ options:
         member name.
     required: false
     type: str
-  tmphlq:
+  tmp_hlq:
     description:
       - Overrides the user's high level qualifier for temporary and backup datasets.
       - Will override TMPHLQ environment variable as well.
@@ -440,7 +440,7 @@ def main():
                 type='str',
                 default='IBM-1047'
             ),
-            tmphlq=dict(
+            tmp_hlq=dict(
                 type='str',
                 required=False,
                 default=None
@@ -471,7 +471,7 @@ def main():
         force=dict(arg_type='bool', default=False, required=False),
         backup=dict(arg_type='bool', default=False, required=False),
         backup_name=dict(arg_type='data_set_or_pat', required=False, default=None),
-        tmphlq=dict(type='qualifier_or_empty', required=False, default=None),
+        tmp_hlq=dict(type='qualifier_or_empty', required=False, default=None),
         mutually_exclusive=[['insertbefore', 'insertafter']],
         indentation=dict(arg_type='int', default=0, required=False)
     )
@@ -493,7 +493,7 @@ def main():
     marker = parsed_args.get('marker')
     marker_begin = parsed_args.get('marker_begin')
     marker_end = parsed_args.get('marker_end')
-    tmphlq = parsed_args.get('tmphlq')
+    tmphlq = parsed_args.get('tmp_hlq')
     force = parsed_args.get('force')
     state = parsed_args.get('state')
     indentation = parsed_args.get('indentation')

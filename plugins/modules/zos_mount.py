@@ -294,7 +294,7 @@ options:
               Indicator is either INCLUDE or EXCLUDE, which can also be abbreviated as I or E.
         type: str
         required: False
-    tmphlq:
+    tmp_hlq:
         description:
             - Overrides the user's high level qualifier for temporary and backup datasets.
             - Will override TMPHLQ environment variable as well.
@@ -701,7 +701,7 @@ def run_module(module, arg_def):
     sysname = parsed_args.get("sysname")
     automove = parsed_args.get("automove")
     automove_list = parsed_args.get("automove_list")
-    tmphlq = parsed_args.get("tmphlq")
+    tmphlq = parsed_args.get("tmp_hlq")
 
     if persistent:
         data_store = persistent.get("data_store").upper()
@@ -1116,7 +1116,7 @@ def main():
                 required=False,
             ),
             automove_list=dict(type="str", required=False),
-            tmphlq=dict(type='str', required=False, default=None),
+            tmp_hlq=dict(type='str', required=False, default=None),
         ),
         add_file_common_args=True,
         supports_check_mode=True,
@@ -1177,7 +1177,7 @@ def main():
             required=False,
         ),
         automove_list=dict(arg_type="str", default="", required=False),
-        tmphlq=dict(type='qualifier_or_empty', required=False, default=None),
+        tmp_hlq=dict(type='qualifier_or_empty', required=False, default=None),
     )
 
     res_args = None

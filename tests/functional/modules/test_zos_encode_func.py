@@ -489,7 +489,7 @@ def test_pds_backup(ansible_zos_module):
         assert TEST_FILE_TEXT in content.get("stdout")
 
 
-def test_pds_backup_with_tmphlq_option(ansible_zos_module):
+def test_pds_backup_with_tmp_hlq_option(ansible_zos_module):
     hosts = ansible_zos_module
     tmphlq = "TMPHLQ"
     hosts.all.zos_data_set(name=BACKUP_DATA_SET, state="absent")
@@ -502,7 +502,7 @@ def test_pds_backup_with_tmphlq_option(ansible_zos_module):
         from_encoding=TO_ENCODING,
         to_encoding=FROM_ENCODING,
         backup=True,
-        tmphlq=tmphlq,
+        tmp_hlq=tmphlq,
     )
     for enc_res in encode_res.contacted.values():
         assert enc_res.get("backup_name")[:6] == tmphlq

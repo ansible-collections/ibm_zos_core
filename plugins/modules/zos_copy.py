@@ -774,7 +774,7 @@ class CopyHandler(object):
             except Exception as err:
                 if new_src != src:
                     shutil.rmtree(new_src)
-                raise CopyOperationError(msg=str(err)) from err
+                raise CopyOperationError(msg=str(err))
         else:
             try:
                 if not temp_path:
@@ -804,7 +804,7 @@ class CopyHandler(object):
             except Exception as err:
                 if new_src != src:
                     os.remove(new_src)
-                raise CopyOperationError(msg=str(err)) from err
+                raise CopyOperationError(msg=str(err))
         return new_src
 
     def _convert_encoding_dir(self, dir_path, from_code_set, to_code_set):
@@ -970,12 +970,12 @@ class USSCopyHandler(CopyHandler):
             raise CopyOperationError(
                 msg="Destination {0} is not writable".format(dest),
                 stderr=str(err)
-            ) from err
+            )
         except Exception as err:
             raise CopyOperationError(
                 msg="Unable to copy file {0} to {1}".format(new_src, dest),
                 stderr=str(err),
-            ) from err
+            )
         return dest
 
     def _copy_to_dir(
@@ -1007,7 +1007,7 @@ class USSCopyHandler(CopyHandler):
             raise CopyOperationError(
                 msg="Error while copying data to destination directory {0}".format(dest_dir),
                 stdout=str(err),
-            ) from err
+            )
         return dest_dir
 
     def _mvs_copy_to_uss(
@@ -1052,7 +1052,7 @@ class USSCopyHandler(CopyHandler):
             else:
                 copy.copy_pds2uss(src, dest, is_binary=self.is_binary)
         except Exception as err:
-            raise CopyOperationError(msg=str(err)) from err
+            raise CopyOperationError(msg=str(err))
 
 
 class PDSECopyHandler(CopyHandler):
@@ -2092,7 +2092,7 @@ def run_module(module, arg_def):
                 )
             except Exception as err:
                 if validate:
-                    raise CopyOperationError(msg="Unable to calculate checksum", stderr=str(err)) from err
+                    raise CopyOperationError(msg="Unable to calculate checksum", stderr=str(err))
 
         # ------------------------------- o -----------------------------------
         # Copy to sequential data set (PS / SEQ)

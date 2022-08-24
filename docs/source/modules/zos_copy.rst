@@ -120,7 +120,11 @@ encoding
 
 
 force
-  If set to ``true``, the remote file or data set will be overwritten.
+  If set to ``true`` and the remote file or data set ``dest`` is empty, the ``dest`` will be reused.
+
+  If set to ``true`` and the remote file or data set ``dest`` is NOT empty, the ``dest`` will be deleted and recreated with the ``src`` data set attributes, otherwise it will be recreated with the ``dest`` data set attributes.
+
+  To backup data before any deletion, see parameters ``backup`` and ``backup_name``.
 
   If set to ``false``, the file or data set will only be copied if the destination does not exist.
 
@@ -243,12 +247,11 @@ destination_dataset
   | **type**: dict
 
 
-  dd_type
+  type
     Organization of the destination
 
-    | **required**: False
+    | **required**: True
     | **type**: str
-    | **default**: BASIC
     | **choices**: KSDS, ESDS, RRDS, LDS, SEQ, PDS, PDSE, MEMBER, BASIC
 
 
@@ -259,7 +262,6 @@ destination_dataset
 
     | **required**: False
     | **type**: str
-    | **default**: 5
 
 
   space_secondary
@@ -269,7 +271,6 @@ destination_dataset
 
     | **required**: False
     | **type**: str
-    | **default**: 3
 
 
   space_type
@@ -279,7 +280,6 @@ destination_dataset
 
     | **required**: False
     | **type**: str
-    | **default**: M
     | **choices**: K, M, G, CYL, TRK
 
 
@@ -290,7 +290,6 @@ destination_dataset
 
     | **required**: False
     | **type**: str
-    | **default**: FB
     | **choices**: FB, VB, FBA, VBA, U
 
 
@@ -303,7 +302,6 @@ destination_dataset
 
     | **required**: False
     | **type**: int
-    | **default**: 80
 
 
   block_size

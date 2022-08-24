@@ -348,7 +348,7 @@ def test_basic_mount_with_bpx_comment_backup(ansible_zos_module):
         )
 
 
-def test_basic_mount_with_tmphlq_option(ansible_zos_module):
+def test_basic_mount_with_tmp_hlq_option(ansible_zos_module):
     hosts = ansible_zos_module
     srcfn = create_sourcefile(hosts)
     try:
@@ -368,7 +368,7 @@ def test_basic_mount_with_tmphlq_option(ansible_zos_module):
             path="/pythonx",
             fs_type="ZFS",
             state="absent",
-            tmphlq=tmphlq,
+            tmp_hlq=tmphlq,
             persistent=dict(data_store=persist_data_set, backup=True)
         )
         hosts.all.zos_data_set(name=persist_data_set, state="absent")

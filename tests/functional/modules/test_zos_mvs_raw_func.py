@@ -111,7 +111,7 @@ def test_dispositions_for_existing_data_set(ansible_zos_module, disposition):
         assert result.get("changed", False) is True
 
 
-def test_list_cat_for_existing_data_set_with_tmphlq_option(ansible_zos_module):
+def test_list_cat_for_existing_data_set_with_tmp_hlq_option(ansible_zos_module):
     hosts = ansible_zos_module
     tmphlq = "TMPHLQ"
     hosts.all.zos_data_set(
@@ -120,7 +120,7 @@ def test_list_cat_for_existing_data_set_with_tmphlq_option(ansible_zos_module):
     results = hosts.all.zos_mvs_raw(
         program_name="idcams",
         auth=True,
-        tmphlq=tmphlq,
+        tmp_hlq=tmphlq,
         dds=[
             dict(
                 dd_data_set=dict(

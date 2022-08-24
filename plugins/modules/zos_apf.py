@@ -90,7 +90,7 @@ options:
       - set_static
       - check_format
       - list
-  tmphlq:
+  tmp_hlq:
     description:
       - Overrides the user's high level qualifier for temporary and backup datasets.
       - Will override TMPHLQ environment variable as well.
@@ -416,7 +416,7 @@ def main():
                     ),
                 )
             ),
-            tmphlq=dict(
+            tmp_hlq=dict(
                 type='str',
                 required=False,
                 default=None),
@@ -461,7 +461,7 @@ def main():
                 sms=dict(arg_type='bool', required=False, default=False),
             )
         ),
-        tmphlq=dict(type='qualifier_or_empty', required=False, default=None),
+        tmp_hlq=dict(type='qualifier_or_empty', required=False, default=None),
         mutually_exclusive=[
             # batch
             ['batch', 'library'],
@@ -486,7 +486,7 @@ def main():
     operation = parsed_args.get('operation')
     persistent = parsed_args.get('persistent')
     batch = parsed_args.get('batch')
-    tmphlq = module.params.get('tmphlq')
+    tmphlq = module.params.get('tmp_hlq')
 
     if persistent:
         data_set_name = persistent.get('data_set_name')

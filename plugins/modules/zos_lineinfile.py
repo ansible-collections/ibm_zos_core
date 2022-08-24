@@ -146,7 +146,7 @@ options:
         recovery can be done by renaming it.
     required: false
     type: str
-  tmphlq:
+  tmp_hlq:
     description:
       - Overrides the user's high level qualifier for temporary and backup datasets.
       - Will override TMPHLQ environment variable as well.
@@ -367,7 +367,7 @@ def main():
         backup_name=dict(type='str', required=False, default=None),
         firstmatch=dict(type='bool', default=False),
         encoding=dict(type='str', default="IBM-1047"),
-        tmphlq=dict(type='str', required=False, default=None)
+        tmp_hlq=dict(type='str', required=False, default=None)
     )
     module = AnsibleModule(
         argument_spec=module_args,
@@ -387,7 +387,7 @@ def main():
         backup_name=dict(arg_type="data_set_or_path", required=False, default=None),
         firstmatch=dict(arg_type="bool", required=False, default=False),
         backrefs=dict(arg_type="bool", dependencies=['regexp'], required=False, default=False),
-        tmphlq=dict(type='qualifier_or_empty', required=False, default=None),
+        tmp_hlq=dict(type='qualifier_or_empty', required=False, default=None),
         mutually_exclusive=[["insertbefore", "insertafter"]],)
 
     try:
@@ -408,7 +408,7 @@ def main():
     ins_aft = parsed_args.get('insertafter')
     ins_bef = parsed_args.get('insertbefore')
     encoding = parsed_args.get('encoding')
-    tmphlq = parsed_args.get('tmphlq')
+    tmphlq = parsed_args.get('tmp_hlq')
 
     if parsed_args.get('state') == 'present':
         if backrefs and regexp is None:

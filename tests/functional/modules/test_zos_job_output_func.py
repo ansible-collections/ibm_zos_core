@@ -40,7 +40,8 @@ def test_zos_job_output_no_job_id(ansible_zos_module):
         print(result)
         assert result.get("changed") is False
         assert result.get("jobs") is None,\
-            "ASSERTION-FAILURE: jobs is not empty, jobs = [{0}]".format(result.get("jobs"))
+            "ASSERTION-FAILURE: jobs is not empty, jobs = [{0}]".format(
+                result.get("jobs"))
 
 
 def test_zos_job_output_invalid_job_id(ansible_zos_module):
@@ -52,6 +53,7 @@ def test_zos_job_output_invalid_job_id(ansible_zos_module):
         assert result.get('jobs')[0].get('ret_code').get('msg') == "JOB NOT FOUND",\
             f"ASSERTION-FAILURE: Jobs return code msg = [{result.get('jobs')[0].get('ret_code').get('msg')}]"
 
+
 def test_zos_job_output_no_job_name(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_job_output(job_name="")
@@ -59,7 +61,8 @@ def test_zos_job_output_no_job_name(ansible_zos_module):
         print(result)
         assert result.get("changed") is False
         assert result.get("jobs") is None,\
-            "ASSERTION-FAILURE: jobs is not empty, jobs = [{0}]".format(result.get("jobs"))
+            "ASSERTION-FAILURE: jobs is not empty, jobs = [{0}]".format(
+                result.get("jobs"))
 
 
 def test_zos_job_output_invalid_job_name(ansible_zos_module):
@@ -91,6 +94,7 @@ def test_zos_job_output_invalid_owner(ansible_zos_module):
         assert result.get("jobs")[0].get("ret_code").get("msg") == "JOB NOT FOUND", \
             "ASSERTION-FAILURE: job with invalid owner expected msg = [JOB NOT FOUND]"
 
+
 def test_zos_job_output_reject(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_job_output()
@@ -98,7 +102,8 @@ def test_zos_job_output_reject(ansible_zos_module):
         print(result)
         assert result.get("changed") is False
         assert result.get("msg") is not None,\
-            "ASSERTION-FAILURE: jobs is empty, jobs = [{0}]".format(result.get("jobs"))
+            "ASSERTION-FAILURE: jobs is empty, jobs = [{0}]".format(
+                result.get("jobs"))
 
 
 def test_zos_job_output_job_exists(ansible_zos_module):
@@ -118,7 +123,6 @@ def test_zos_job_output_job_exists(ansible_zos_module):
 
     for job in jobs.contacted.values():
         submitted_job_id = job.get("jobs")[0].get("job_id")
-        print("XXX_JOB_ID")
         print(submitted_job_id)
         assert submitted_job_id is not None, "ASSERTION-FAILURE: jobs id is None"
 
@@ -128,18 +132,16 @@ def test_zos_job_output_job_exists(ansible_zos_module):
         assert result.get("changed") is False
         assert result.get("jobs") is not None,\
             f"ASSERTION-FAILURE: jobs is empty, jobs = [{result.get('jobs')}]"
-        print("JOB-XXX Details")
         print(result.get('jobs'))
         assert result.get("jobs")[0].get("ret_code").get("steps") is not None,\
             f"ASSERTION-FAILURE: job steps empty, steps =\
                 [{result.get('jobs')[0].get('ret_code').get('steps')[0]}]"
-        print("JOB-XXX STEPS")
         print(result.get('jobs')[0].get('ret_code').get('steps')[0])
         assert result.get("jobs")[0].get("ret_code").get("steps")[0].get("step_name") == "STEP0001", \
             f"ASSERTION-FAILURE: job steps empty, steps = \
                 [{result.get('jobs')[0].get('ret_code').get('steps')[0].get('step_name')}]"
-        print("JOB-XXX STEP" )
-        print(result.get('jobs')[0].get('ret_code').get('steps')[0].get('step_name'))
+        print(result.get('jobs')[0].get('ret_code').get(
+            'steps')[0].get('step_name'))
 
 
 def test_zos_job_output_job_exists_with_filtered_ddname(ansible_zos_module):
@@ -160,9 +162,8 @@ def test_zos_job_output_job_exists_with_filtered_ddname(ansible_zos_module):
         for job in result.get("jobs"):
             assert len(job.get("ddnames")) == 1,\
                 "ASSERTION-FAILURE: ddname count = [{0}]"\
-                    .format(job.get("ddnames"))
+                .format(job.get("ddnames"))
             print(job)
             assert job.get("ddnames")[0].get("ddname") == dd_name,\
                 "ASSERTION-FAILURE: ddname name = [{0}]".\
-                    format(job.get("ddnames")[0].get("ddname"))
-
+                format(job.get("ddnames")[0].get("ddname"))

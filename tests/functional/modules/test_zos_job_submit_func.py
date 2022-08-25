@@ -170,7 +170,6 @@ def test_job_submit_LOCAL_BADJCL(ansible_zos_module):
         assert result.get("changed") is False
 
 
-
 @unittest.skip('Skip tests see comment below')
 def test_job_submit_PDS_volume(ansible_zos_module):
     """
@@ -193,7 +192,7 @@ def test_job_submit_PDS_long(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_job_submit(src='BJMAXY.HILL3(LONGRUN)', location="DATA_SET", wait=True, volume=None)
     for result in results.contacted.values():
-        assert result.get('jobs')[0].get('ret_code').get('code')== '0000'
+        assert result.get('jobs')[0].get('ret_code').get('code') == '0000'
         assert result.get('changed') is True
 
 

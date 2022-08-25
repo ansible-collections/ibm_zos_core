@@ -1511,18 +1511,25 @@ def test_copy_local_symlink_to_uss_file(ansible_zos_module):
 
 def test_copy_local_file_to_uss_file_convert_encoding(ansible_zos_module):
     hosts = ansible_zos_module
+    src_path = "/etc/profile"
     dest_path = "/tmp/profile"
+
     try:
         hosts.all.file(path=dest_path, state="absent")
         copy_res = hosts.all.zos_copy(
-            src="/etc/profile",
+            src=src_path,
             dest=dest_path,
             encoding={"from": "ISO8859-1", "to": "IBM-1047"},
         )
-        stat_res = hosts.all.stat(path=dest_path)
+
+        dest_stat_res = hosts.all.stat(path=dest_path)
+        src_stat_res = hosts.all.stat(path=dest_path)
+
         for result in copy_res.contacted.values():
             assert result.get("msg") is None
-        for result in stat_res.contacted.values():
+        for result in dest_stat_res.contacted.values():
+            assert result.get("stat").get("exists") is True
+        for result in src_stat_res.contacted.values():
             assert result.get("stat").get("exists") is True
     finally:
         hosts.all.file(path=dest_path, state="absent")
@@ -1530,19 +1537,26 @@ def test_copy_local_file_to_uss_file_convert_encoding(ansible_zos_module):
 
 def test_copy_uss_file_to_uss_file_convert_encoding(ansible_zos_module):
     hosts = ansible_zos_module
+    src_path = "/etc/profile"
     dest_path = "/tmp/profile"
+
     try:
         hosts.all.file(path=dest_path, state="absent")
         copy_res = hosts.all.zos_copy(
-            src="/etc/profile",
+            src=src_path,
             dest=dest_path,
             encoding={"from": "IBM-1047", "to": "IBM-1047"},
             remote_src=True,
         )
-        stat_res = hosts.all.stat(path=dest_path)
+
+        dest_stat_res = hosts.all.stat(path=dest_path)
+        src_stat_res = hosts.all.stat(path=dest_path)
+
         for result in copy_res.contacted.values():
             assert result.get("msg") is None
-        for result in stat_res.contacted.values():
+        for result in dest_stat_res.contacted.values():
+            assert result.get("stat").get("exists") is True
+        for result in src_stat_res.contacted.values():
             assert result.get("stat").get("exists") is True
     finally:
         hosts.all.file(path=dest_path, state="absent")
@@ -1550,8 +1564,9 @@ def test_copy_uss_file_to_uss_file_convert_encoding(ansible_zos_module):
 
 def test_copy_uss_file_to_pds_member_convert_encoding(ansible_zos_module):
     hosts = ansible_zos_module
-    src = "/etc/profile"
+    src_path = "/etc/profile"
     dest_path = "USER.TEST.PDS.FUNCTEST"
+
     try:
         hosts.all.zos_data_set(
             type="pds",
@@ -1561,7 +1576,7 @@ def test_copy_uss_file_to_pds_member_convert_encoding(ansible_zos_module):
             record_length=25,
         )
         copy_res = hosts.all.zos_copy(
-            src=src,
+            src=src_path,
             dest=dest_path,
             remote_src=True,
             encoding={"from": "IBM-1047", "to": "IBM-1047"},
@@ -1570,12 +1585,54 @@ def test_copy_uss_file_to_pds_member_convert_encoding(ansible_zos_module):
             cmd="head \"//'{0}'\"".format(dest_path + "(PROFILE)"),
             executable=SHELL_EXECUTABLE,
         )
+        stat_res = hosts.all.stat(path=src_path)
+
         for result in copy_res.contacted.values():
             assert result.get("msg") is None
         for result in verify_copy.contacted.values():
             assert result.get("rc") == 0
             assert result.get("stdout") != ""
+        for result in stat_res.contacted.values():
+            assert result.get("stat").get("exists") is True
     finally:
+        hosts.all.zos_data_set(name=dest_path, state="absent")
+
+
+def test_copy_uss_dir_to_pds_convert_encoding(ansible_zos_module):
+    hosts = ansible_zos_module
+    profile_path = "/etc/profile"
+    src_path = "/tmp/zos_copy_test/"
+    dest_path = "USER.TEST.PDS.FUNCTEST"
+
+    try:
+        hosts.all.file(path=src_path, state="directory")
+        hosts.all.zos_copy(
+            src=profile_path,
+            dest=src_path,
+            remote_src=True
+        )
+
+        copy_res = hosts.all.zos_copy(
+            src=src_path,
+            dest=dest_path,
+            remote_src=True,
+            encoding={"from": "IBM-1047", "to": "IBM-1047"},
+        )
+        verify_copy = hosts.all.shell(
+            cmd="head \"//'{0}'\"".format(dest_path + "(PROFILE)"),
+            executable=SHELL_EXECUTABLE,
+        )
+        stat_res = hosts.all.stat(path=src_path)
+
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+        for result in verify_copy.contacted.values():
+            assert result.get("rc") == 0
+            assert result.get("stdout") != ""
+        for result in stat_res.contacted.values():
+            assert result.get("stat").get("exists") is True
+    finally:
+        hosts.all.file(path=src_path, state="absent")
         hosts.all.zos_data_set(name=dest_path, state="absent")
 
 

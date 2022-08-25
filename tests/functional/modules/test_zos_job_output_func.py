@@ -132,15 +132,16 @@ def test_zos_job_output_job_exists(ansible_zos_module):
     for result in results.contacted.values():
         assert result.get("changed") is False
         assert result.get("jobs") is not None,\
-            f"ASSERTION-FAILURE: jobs is empty, jobs = [{result.get('jobs')}]"
+            "ASSERTION-FAILURE: jobs is empty, jobs = [{0}]".format(
+                result.get('jobs'))
         print(result.get('jobs'))
         assert result.get("jobs")[0].get("ret_code").get("steps") is not None,\
-            f"ASSERTION-FAILURE: job steps empty, steps =\
-                [{result.get('jobs')[0].get('ret_code').get('steps')[0]}]"
+            "ASSERTION-FAILURE: job steps empty, steps = [{0}]".format(
+                result.get('jobs')[0].get('ret_code').get('steps')[0])
         print(result.get('jobs')[0].get('ret_code').get('steps')[0])
         assert result.get("jobs")[0].get("ret_code").get("steps")[0].get("step_name") == "STEP0001", \
-            f"ASSERTION-FAILURE: job steps empty, steps = \
-                [{result.get('jobs')[0].get('ret_code').get('steps')[0].get('step_name')}]"
+            "ASSERTION-FAILURE: job steps empty, steps = [{0}]".format(
+                result.get('jobs')[0].get('ret_code').get('steps')[0].get('step_name'))
         print(result.get('jobs')[0].get('ret_code').get(
             'steps')[0].get('step_name'))
 

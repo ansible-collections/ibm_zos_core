@@ -19,6 +19,8 @@ import re
 import unittest
 import sys
 import yaml
+from socket import error
+from paramiko import BadHostKeyException, AuthenticationException, ssh_exception 
 sys.path.append('..')
 
 from operations.connection import Connection
@@ -122,7 +124,8 @@ class TestConnectionUnitTests(unittest.TestCase):
             connection = Connection(hostname=invalid_hostname, username=self.username, 
                             password=self.password)
             connection.connect()
-        except:
+        except TypeError as e:
+            print(repr(e))
             passed = False
         assert not passed, f"ASSERTION-FAILURE: Invalid hostname type does not raise exception."
 
@@ -133,7 +136,8 @@ class TestConnectionUnitTests(unittest.TestCase):
             connection = Connection(hostname=invalid_hostname, username=self.username, 
                             password=self.password)
             connection.connect()
-        except:
+        except ssh_exception.NoValidConnectionsError as e:
+            print(repr(e))
             passed = False
         assert not passed, "ASSERTION-FAILURE: Invalid hostname (string) does not raise exception"
 
@@ -149,7 +153,8 @@ class TestConnectionUnitTests(unittest.TestCase):
             connection = Connection(hostname=self.hostname, username=self.username, 
                             password=self.password, port=invalid_port)
             connection.connect()
-        except:
+        except error as e:
+            print(repr(e))
             passed = False
         assert not passed, "ASSERTION-FAILURE: Invalid port does not raise exception"
 
@@ -160,7 +165,8 @@ class TestConnectionUnitTests(unittest.TestCase):
             connection = Connection(hostname=self.hostname, username=self.username, 
                             password=self.password, port=invalid_port)
             connection.connect()
-        except:
+        except error as e:
+            print(repr(e))
             passed = False
         assert not passed, "ASSERTION-FAILURE: Invalid port does not raise exception"
 
@@ -176,7 +182,8 @@ class TestConnectionUnitTests(unittest.TestCase):
             connection = Connection(hostname=self.hostname, username=invalid_username,
                             password=self.password)
             connection.connect()
-        except:
+        except TypeError as e:
+            print(repr(e))
             passed = False
         assert not passed, "ASSERTION-FAILURE: Invalid username type does not raise exception"
 
@@ -187,7 +194,8 @@ class TestConnectionUnitTests(unittest.TestCase):
             connection = Connection(hostname=self.hostname, username=invalid_username, 
                             password=self.password)
             connection.connect()
-        except:
+        except AuthenticationException as e:
+            print(repr(e))
             passed = False
         assert not passed, "ASSERTION-FAILURE: Invalid username (string) does not raise exception"
 
@@ -203,7 +211,8 @@ class TestConnectionUnitTests(unittest.TestCase):
             connection = Connection(hostname=self.hostname, username=self.username,
                             password=invalid_password)
             connection.connect()
-        except: 
+        except TypeError as e:
+            print(repr(e)) 
             passed = False
         assert not passed, "ASSERTION-FAILURE: Invalid password type does not raise exception"
 
@@ -214,8 +223,9 @@ class TestConnectionUnitTests(unittest.TestCase):
             connection = Connection(hostname=self.hostname, username=self.username,
                             password=invalid_password)
             connection.connect()
-        except:
-                passed = False
+        except AuthenticationException as e:
+            print(repr(e))
+            passed = False
         assert not passed, "ASSERTION-FAILURE: Invalid password (string) does not raise exception"
 
 
@@ -230,7 +240,8 @@ class TestConnectionUnitTests(unittest.TestCase):
             connection = Connection(hostname=self.hostname, username=self.username,
                             key_filename=invalid_key_filename)
             connection.connect()
-        except: 
+        except TypeError as e:
+            print(repr(e)) 
             passed = False
         assert not passed, "ASSERTION-FAILURE: Invalid key filename type does not raise exception"
 
@@ -241,7 +252,8 @@ class TestConnectionUnitTests(unittest.TestCase):
             connection = Connection(hostname=self.hostname, username=self.username, 
                             key_filename=invalid_key_filename)
             connection.connect()
-        except:
+        except FileNotFoundError as e:
+            print(repr(e))
             passed = False
         assert not passed, "ASSERTION-FAILURE: Invalid key filename (string) does not raise exception"
 
@@ -257,7 +269,8 @@ class TestConnectionUnitTests(unittest.TestCase):
             connection = Connection(hostname=self.hostname, username=self.username,
                             key_filename=self.key_filename,passphrase=invalid_passphrase)
             connection.connect()
-        except:
+        except BadHostKeyException as e:
+            print(repr(e))
             passed = False
         assert not passed, "ASSERTION-FAILURE: Invalid passphrase (string) does not raise exception"
 

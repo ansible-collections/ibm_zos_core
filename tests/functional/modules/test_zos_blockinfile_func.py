@@ -1300,6 +1300,7 @@ def test_ds_tmp_hlq_option(ansible_zos_module, dstype, encoding):
     )
     TEST_ENV["TEST_CONT"] = TEST_CONTENT
 
+
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
 @pytest.mark.parametrize("encoding", ENCODING)

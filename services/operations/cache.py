@@ -11,45 +11,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# The idea behind this cache is that since a callback into the target to destroy
-# the artifact created for the caller might be a bit unnecessary or even difficult
-# to maintain and author, so a simple cache that can keep track of artifacts that
-# need to be destroyed.
-
-# The most straight forward way is that when the service creates an artifact
-# that it also place an object/class containing the process of destoring it.
-# for example a cache of randome keys assigned by each creation artifact so
-# the value can later be found and run, where value might be:
-# {command = rm -rf /some/file, name: foo, id: same as key, client: ssh }
-# thus the above would mean we keep a client open the entire time or we pass the
-# clients credentials around which could also be tricky if we are managing passwords
-
+# Notes:
 # Some optional thirdparty and native solutions for a cache are:
 # - expiringdict: https://pypi.org/project/expiringdict/
 # - cachetools: https://cachetools.readthedocs.io/en/latest/
-# - homegrown as below
-
 
 import time
 import secrets
 from threading import Thread
 from operations.types import Response
+from operations.SingletonCacheMeta import SingletonCacheMeta
 
 
-
-class ArtifactCache:
+class ArtifactCache(metaclass=SingletonCacheMeta):
     """
-    A class used to manage the lifecycle of artifacts created by the services.
-    It is the responsibility of this framework to ensure that objects are
-    destroyed if they are not done so by the caller.
+    A thread safe class used to manage the lifecycle of artifacts created by
+    the services. It is the responsibility of this framework to ensure that
+    objects are destroyed if they are not done so by the caller.
 
-    This is a cache is not thread safe, it is meant to be instantiated once
-    in a init calls and accessed during the course of its time in use.
-
-    Parameters
-    ----------
-    cache_size : int, optional
-        The size the cache should be initialized. (default 10000)
+    Instantiation will initialize the cache with a limit of 10,000 objects,
+    anything more than that will be automatically pruned starting with the
+    oldest cache entry.
 
     Methods
     -------
@@ -65,21 +47,15 @@ class ArtifactCache:
         ...
     """
 
-    def __init__(self, cache_size = 100):
+    def __init__(self):
         """
-        Parameters
-        ----------
-        cache_size : int, optional
-            The size the cache should be initialized. (default 10000)
+        Initialize the cache
         """
-
+        # Dict to manage cache objects
         self.cache = {}
-        # Seems rather large default but lets be generous to start with
-        self.cache_size = cache_size
+        self.cache_max_size = 10000
 
-        self.thread = Thread(name='non-daemon', target=self.monitor_cache, daemon=True)
-        self.thread_stop = False
-        self.thread_running = False
+        self.thread = Thread(name='daemon', target=self.monitor_cache, daemon=True)
 
     def __contains__(self, key):
         """
@@ -107,12 +83,12 @@ class ArtifactCache:
             raise ValueError(f"Incorrect `value` type used in update(key, value), \
                     type =[{type(value)}], must be type services.types.Response")
 
-        if key not in self.cache and len(self.cache) >= self.cache_size:
+        if key not in self.cache and len(self.cache) >= self.cache_max_size:
             self.__destroy_oldest_entry()
 
         self.cache[key] = value
 
-        if not self.thread_running:
+        if self.thread.ident is None:
             self.thread.start()
 
     def __destroy_oldest_entry(self):
@@ -136,21 +112,21 @@ class ArtifactCache:
         """
         return self.cache.get(key).to_dict()
 
-    def get(self,key):
+    def get(self, key):
         """
         Parameters
         ----------
         key : str
             Key used to insert the entry into the cache.
 
-        Get the entries value corresponding to the key from the cache and remove
-        it from the cache.
+        Get the entries value corresponding to the key from the cache and
+        remove it from the cache.
         """
         value = self.cache.get(key)
         self.cache.pop(key).to_dict()
         return value
 
-    def get_object(self,key):
+    def get_object(self, key):
         """
         Get the item value corresponding to the key from the cache and remove
         it from the cache.
@@ -160,30 +136,23 @@ class ArtifactCache:
         return value
 
     @property
-    def size(self):
+    def get_max_cache_size(self):
         """
-        Return the size of the cache
+        Return the max size of the cache
         """
-        return self.cache_size
+        return self.cache_max_size
 
     # Incomplete monitor, should be tied into update and stop when cache size is 0
     def monitor_cache(self):
         """
         TODO: Doc this
         """
-        self.thread_running = True
-        while len(self.cache) >0 and not self.thread_stop:
+
+        while len(self.cache) > 0 and self.thread.ident is not None:
             print("Thread running in background")
             # TODO Implement eviction strategy based on time accessed
             # because maybe some have not finished. Basically just call
             # __destroy_oldest_entry
             time.sleep(5)
 
-        self.thread_running = False
         # self.thread.join()
-
-    def monitor_stop(self):
-        """
-        TODO: Doc this
-        """
-        self.thread_stop = True

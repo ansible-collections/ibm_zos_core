@@ -18,6 +18,7 @@ import os
 import re
 import unittest
 import sys
+import yaml
 sys.path.append('..')
 
 from operations.connection import Connection
@@ -62,24 +63,16 @@ class TestConnectionUnitTests(unittest.TestCase):
             "LANG":"C"
     }
 
-    # Default args used for a connection, ensure password not shared in Git
-    kwargs = {
-        "hostname": "EC01140A.vmec.svl.ibm.com",
-        "port": 22,
-        "username": "omvsadm",
-        "password": "changeme",
-        "key_filename": os.path.expanduser('~') + "/.ssh/id_dsa",
-        "passphrase": "changeme"
-    }
-
     def setUp(self):
-        print("\nStarting UNIT tests for connection class.")
-        self.hostname = self.kwargs.get('hostname')
-        self.port = self.kwargs.get('port')
-        self.username = self.kwargs.get('username') or 'username'
-        self.password = self.kwargs.get('password') or 'all1sdun'
-        self.key_filename = self.kwargs.get('key_filename')
-        self.passphrase = self.kwargs.get('passphrase') or 'changeme'
+        print("\nStarting FVT operations tests.", 'r')
+        with open("tests/connection_config.yaml") as stream:
+            cfg = yaml.safe_load(stream)
+        self.hostname = cfg["hostname"]
+        self.port = cfg["port"]
+        self.username = cfg["username"]
+        self.password = cfg["password"]
+        self.key_filename = os.path.expanduser('~') + "/.ssh/id_dsa",
+        self.passphrase = cfg["passphrase"]
 
     @classmethod
     def tearDownClass(cls):

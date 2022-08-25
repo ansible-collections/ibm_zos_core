@@ -1,0 +1,7 @@
+---
+hostname: "ec01140a.vmec.svl.ibm.com"
+port: 22
+username: "omvsadm"
+password: "changeme"
+passphrase: "changeme"
+

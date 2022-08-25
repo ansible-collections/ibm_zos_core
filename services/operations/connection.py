@@ -130,7 +130,7 @@ class Connection:
             else:
                 out = stdout.read().decode().strip('\n')
                 error = stderr.read().decode().strip('\n')
-          
+
             # Don't shutdown stdin, we are reusing this connection in the services instance
             # client.get_transport().open_session().shutdown_write()
 

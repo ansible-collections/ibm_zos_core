@@ -25,7 +25,7 @@ import ansible.utils
 import pytest
 from shellescape import quote
 import tempfile
-
+import unittest
 
 JCL_FILE_CONTENTS = """//HELLO    JOB (T043JM,JM00,1,0,0,0),'HELLO WORLD - JRM',CLASS=R,
 //             MSGCLASS=X,MSGLEVEL=1,NOTIFY=S0JM
@@ -84,6 +84,7 @@ def test_job_submit_PDS(ansible_zos_module):
     )
     hosts.all.file(path=TEMP_PATH, state="absent")
     for result in results.contacted.values():
+        print("\nTJSP.................\n")
         print(result)
         assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
         assert result.get("jobs")[0].get("ret_code").get("code") == 0
@@ -142,7 +143,6 @@ def test_job_submit_LOCAL(ansible_zos_module):
     for result in results.contacted.values():
         assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
         assert result.get("jobs")[0].get("ret_code").get("code") == 0
-
         assert result.get("changed") is True
 
 
@@ -156,7 +156,6 @@ def test_job_submit_LOCAL_extraR(ansible_zos_module):
     for result in results.contacted.values():
         assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
         assert result.get("jobs")[0].get("ret_code").get("code") == 0
-
         assert result.get("changed") is True
 
 
@@ -168,24 +167,38 @@ def test_job_submit_LOCAL_BADJCL(ansible_zos_module):
     results = hosts.all.zos_job_submit(src=tmp_file.name, location="LOCAL", wait=True)
 
     for result in results.contacted.values():
-
         assert result.get("changed") is False
 
 
-# * currently don't have volume support from ZOAU python API, so this will not be reproduceable
-# * in CI/CD testing environment (for now)
-# def test_job_submit_PDS_volume(ansible_zos_module):
-#     hosts = ansible_zos_module
-#     results = hosts.all.zos_job_submit(src='BJMAXY.UNCATLOG.JCL(SAMPLE)', location="DATA_SET", wait=False, volume='P2SS01')
-#     for result in results.contacted.values():
-#         assert result.get('jobs')[0].get('ret_code').get('code') == '0000'
-#         assert result.get('changed') is True
+
+@unittest.skip('Skip tests see comment below')
+def test_job_submit_PDS_volume(ansible_zos_module):
+    """
+    Currently don't have volume support from ZOAU python API, so this will not be
+    reproduceable in CI/CD testing environment (for now)
+    """
+    hosts = ansible_zos_module
+    results = hosts.all.zos_job_submit(src='BJMAXY.UNCATLOG.JCL(SAMPLE)', location="DATA_SET", wait=False, volume='P2SS01')
+    for result in results.contacted.values():
+        assert result.get('jobs')[0].get('ret_code').get('code') == '0000'
+        assert result.get('changed') is True
 
 
-# * short run in some other environments would fail, so "normal" run currently has wait=True specified
-# def test_job_submit_PDS_long(ansible_zos_module):
-#     hosts = ansible_zos_module
-#     results = hosts.all.zos_job_submit(src='BJMAXY.HILL3(LONGRUN)', location="DATA_SET", wait=True, volume=None)
-#     for result in results.contacted.values():
-#         assert result.get('jobs')[0].get('ret_code').get('code')== '0000'
-#         assert result.get('changed') is True
+@unittest.skip('Skip tests see comment below ')
+def test_job_submit_PDS_long(ansible_zos_module):
+    """
+    Short run in some other environments would fail, so "normal" run currently
+    has wait=True specified
+    """
+    hosts = ansible_zos_module
+    results = hosts.all.zos_job_submit(src='BJMAXY.HILL3(LONGRUN)', location="DATA_SET", wait=True, volume=None)
+    for result in results.contacted.values():
+        assert result.get('jobs')[0].get('ret_code').get('code')== '0000'
+        assert result.get('changed') is True
+
+
+# TODO
+# 1) Create a test case that will submit JCL in USS with `wait=false`, this
+#    drives a different path
+# 2) Update the PDS volume test cases by creating a temporary data set as
+#    uncataloged using zos_dataset and then copy the JCL into and submit it

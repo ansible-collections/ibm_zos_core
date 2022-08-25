@@ -1,0 +1,6 @@
+minor_changes:
+  - zos_data_set added support to allocate and format zFS data sets.
+  - zos_operator supports new options **wait** and **wait_time_s** such
+    that you can specify that zos_operator wait the full **wait_time_s** or
+    return as soon as the first operator command executes.
+  - All modules support relative paths and remove choice case sensitivity.

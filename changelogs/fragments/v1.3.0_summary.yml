@@ -1,0 +1,17 @@
+release_summary: |
+  Release Date: '2021-19-04'
+  This changlelog describes all changes made to the modules and plugins included
+  in this collection.
+  For additional details such as required dependencies and availablity review
+  the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__ 
+
+  `New Playbooks <https://github.com/IBM/z_ansible_collections_samples>`__
+    - Authorize and synchronize APF authorized libraries on z/OS from a configuration file cloned from GitHub
+    - Automate program execution with copy, sort and fetch data sets on z/OS playbook.
+    - Automate user management with add, remove, grant permission, generate
+      passwords, create zFS, mount zFS and send email notifications when deployed
+      to Ansible Tower or AWX with the manage z/OS Users Using Ansible playbook.
+    - Use the configure Python and ZOAU Installation playbook to scan the
+      **z/OS** target to find the latest supported configuration and generate
+      inventory and a variables configuration.
+    - Automate software management with SMP/E Playbooks

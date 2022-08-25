@@ -1,0 +1,6 @@
+bugfixes:
+  - zos_ssh connection plugin was updated to prioritize the execution of
+      modules written in REXX over other implementations such is the case for
+      zos_ping.
+  - zos_ping was updated to support Automation Hub documentation
+      generation.

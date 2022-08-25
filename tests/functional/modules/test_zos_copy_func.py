@@ -19,6 +19,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
 import os
 import shutil
 import tempfile
+import pytest
 from tempfile import mkstemp
 
 __metaclass__ = type

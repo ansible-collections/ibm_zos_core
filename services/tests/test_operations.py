@@ -11,14 +11,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from operations.connection import Connection
+from operations.file import _create
 
+import yaml
 import os
 import unittest
 import sys
 sys.path.append('..')
-
-from operations.connection import Connection
-from operations.file import _create
 
 
 class TestOperationsFunctionalTests(unittest.TestCase):
@@ -48,45 +48,34 @@ class TestOperationsFunctionalTests(unittest.TestCase):
         pytest test_operations.py    # No verbosity
     """
 
-    # Default args used for a connection, ensure password not shared in Git
-    kwargs = {
-        "hostname": "EC33017A.vmec.svl.ibm.com",
-        "port": 22,
-        "username": "omvsadm",
-        "password": "xxxxxxx",
-        "key_filename": os.path.expanduser('~') + "/.ssh/id_dsa",
-        "passphrase": "changeme",
-        "environment": {}
-    }
-
     def setUp(self):
-        print("\nStarting FVT operations tests.")
-        self.hostname = self.kwargs.get('hostname')
-        self.port = self.kwargs.get('port')
-        self.username = self.kwargs.get('username') or 'username'
-        self.password = self.kwargs.get('password') or 'changeme'
-        self.key_filename = self.kwargs.get('key_filename')
-        self.passphrase = self.kwargs.get('passphrase') or 'changeme'
+        print("\nStarting FVT operations tests.", 'r')
+        with open("tests/connection_config.yaml") as stream:
+            cfg = yaml.safe_load(stream)
+        self.hostname = cfg["hostname"]
+        self.port = cfg["port"]
+        self.username = cfg["username"]
+        self.password = cfg["password"]
+        self.key_filename = os.path.expanduser('~') + "/.ssh/id_dsa",
+        self.passphrase = cfg["passphrase"]
 
     @classmethod
     def tearDownClass(cls):
         print("\nCompleted test suite TestServicesFunctionalTests")
 
-
     def tearDown(self):
         print("Completed FVT tets for services class.")
-
 
     def test_operations_create_file(self):
         """
         Test the operation with a basic file creation, note that this test
         is going directly at protected operations which are normally accessed
-        from services parent class. Our preferred path is through services as it
-        provies an easier experience for users.
+        from services parent class. Our preferred path is through services as
+        it provies an easier experience for users.
         """
         # Create a connection to be passed to an operation
         connection = Connection(hostname=self.hostname, username=self.username,
-                        key_filename=self.key_filename)
+                                key_filename=self.key_filename)
         assert connection is not None, "ASSERTION-FAILURE: Connection is None"
 
         # Invoke an operation to create a file

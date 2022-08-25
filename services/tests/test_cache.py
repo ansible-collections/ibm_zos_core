@@ -71,7 +71,7 @@ class TestCacheFunctionalTests(unittest.TestCase):
                         status_group="staff",
                         status_owner="root",
                         record_length=125
-                        #attributes = _mode
+                        # attributes = _mode
                     )
 
     response = Response(name=file_attributes.name,
@@ -90,7 +90,7 @@ class TestCacheFunctionalTests(unittest.TestCase):
                         # passphrase = "ENCRYPTED_PHRASE"
                         # time_created = "date"
                         # key = "key"
-                    )
+                        )
 
     def test_cache_create(self):
         """
@@ -117,9 +117,9 @@ class TestCacheFunctionalTests(unittest.TestCase):
                         stderr='',
                         attributes=self.file_attributes.to_dict()
                     )
-            self.artifact_cache.update(response.key,response)
+            self.artifact_cache.update(response.key, response)
 
-        assert _size == len(self.artifact_cache.cache) , \
+        assert _size == len(self.artifact_cache.cache), \
             f"ASSERTION-FAILURE: cache did not insert the expected entries, \
                 inserted = [{len(self.artifact_cache.cache)}], expected = [{_size}]"
 
@@ -142,12 +142,12 @@ class TestCacheFunctionalTests(unittest.TestCase):
                         stderr='',
                         attributes=self.file_attributes.to_dict()
                     )
-            self.artifact_cache.update(response.key,response)
+            self.artifact_cache.update(response.key, response)
 
         assert i + 1 == _size+20, \
             f"ASSERTION-FAILURE: cache did not insert the expected entries, \
                     inserted = [{i}], expected = [{_size+20}]"
-        assert _size == len(self.artifact_cache.cache) , \
+        assert _size == len(self.artifact_cache.cache), \
             f"ASSERTION-FAILURE: cache did not insert the expected entries, \
                 inserted = [{len(self.artifact_cache.cache)}], expected = [{_size}]"
 
@@ -157,7 +157,7 @@ class TestCacheFunctionalTests(unittest.TestCase):
         are str (URL-safe text string, in Base64 encoding)
         """
         try:
-            self.artifact_cache.update(1234567890,self.response)
+            self.artifact_cache.update(1234567890, self.response)
 
         except ValueError as e:
             assert re.match(r'^ValueError', repr(e))
@@ -171,13 +171,13 @@ class TestCacheFunctionalTests(unittest.TestCase):
         try:
             # This file_attributes does not represent the correct implementation
             invalid_type = {
-                    "name":"test_file_name.txt",
+                    "name": "test_file_name.txt",
                     "time_created": datetime.datetime.now(),
                     "key": self.response.create_key()
             }
 
             key = invalid_type.get('key')
-            self.artifact_cache.update(key,invalid_type)
+            self.artifact_cache.update(key, invalid_type)
 
         except ValueError as e:
             print(repr(e))

@@ -85,7 +85,7 @@ class ModuleSecurityTests(unittest.TestCase):
                                                            DATA_SET_NAME)
         )
         all_results = []
-        for exploit in get_exploits():
+        for exploit in self.get_exploits():
             results = hosts.all.zos_job_submit(
                 src="{0}(SAMPLE)".format(DATA_SET_NAME),
                 location="DATA_SET",
@@ -114,7 +114,7 @@ class ModuleSecurityTests(unittest.TestCase):
                                                            DATA_SET_NAME)
         )
         all_results = []
-        for exploit in get_exploits():
+        for exploit in self.get_exploits():
             results = hosts.all.zos_job_submit(
                 src="{0}".format(exploit), location="DATA_SET", wait=True
             )
@@ -133,7 +133,7 @@ class ModuleSecurityTests(unittest.TestCase):
                 quote(JCL_FILE_CONTENTS), TEMP_PATH)
         )
         all_results = []
-        for exploit in get_exploits():
+        for exploit in self.get_exploits():
             results = hosts.all.zos_job_submit(
                 src="{0}".format(exploit), location="USS", wait=True
             )

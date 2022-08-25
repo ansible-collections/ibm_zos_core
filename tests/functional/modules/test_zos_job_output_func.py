@@ -51,7 +51,8 @@ def test_zos_job_output_invalid_job_id(ansible_zos_module):
         print(result)
         assert result.get("changed") is False
         assert result.get('jobs')[0].get('ret_code').get('msg') == "JOB NOT FOUND",\
-            f"ASSERTION-FAILURE: Jobs return code msg = [{result.get('jobs')[0].get('ret_code').get('msg')}]"
+            f"ASSERTION-FAILURE: Jobs return code msg = \
+                [{result.get('jobs')[0].get('ret_code').get('msg')}]"
 
 
 def test_zos_job_output_no_job_name(ansible_zos_module):

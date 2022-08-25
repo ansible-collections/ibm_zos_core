@@ -2090,7 +2090,7 @@ def test_copy_multiple_data_set_members(ansible_zos_module):
             assert v_cp.get("rc") == 0
             stdout = v_cp.get("stdout")
             assert stdout is not None
-            assert(len(stdout.splitlines())) == 2
+            assert len(stdout.splitlines()) == 2
 
     finally:
         hosts.all.zos_data_set(name=dest, state="absent")

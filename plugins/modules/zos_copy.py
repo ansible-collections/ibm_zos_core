@@ -1245,13 +1245,6 @@ def get_file_record_length(file):
     return max_line_length
 
 
-def _create_temp_path_name():
-    """Create a temporary path name."""
-    current_date = time.strftime("D%y%m%d", time.localtime())
-    current_time = time.strftime("T%H%M%S", time.localtime())
-    return "ansible-zos-copy-data-set-dump-{0}-{1}".format(current_date, current_time)
-
-
 def dump_data_set_member_to_file(data_set_member, is_binary):
     """Dumps a data set member into a file in USS.
 
@@ -1265,7 +1258,8 @@ def dump_data_set_member_to_file(data_set_member, is_binary):
     Raise:
         DataSetMemberAttributeError: When the call to dcp fails.
     """
-    temp_path = "/tmp/{0}".format(_create_temp_path_name())
+    fd, temp_path = tempfile.mkstemp()
+    os.close(fd)
 
     copy_args = dict()
     if is_binary:
@@ -1643,9 +1637,8 @@ def cleanup(src_list):
     dir_list = glob.glob(tmp_dir + "/ansible-zos-copy-payload*")
     conv_list = glob.glob(tmp_dir + "/converted*")
     tmp_list = glob.glob(tmp_dir + "/{0}*".format(tmp_prefix))
-    tmp_ds_members = glob.glob(tmp_dir + "/ansible-zos-copy-data-set-dump*")
 
-    for file in (dir_list + conv_list + tmp_list + src_list + tmp_ds_members):
+    for file in (dir_list + conv_list + tmp_list + src_list):
         try:
             if file and os.path.exists(file):
                 if os.path.isfile(file):
@@ -1733,10 +1726,15 @@ def allocate_destination_data_set(
         elif src_ds_type in MVS_SEQ:
             data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, vol=volume)
         else:
-            # Dumping the member into a file in USS to compute the record length and
-            # size for the new data set.
-            temp_dump = dump_data_set_member_to_file(src, is_binary)
-            create_seq_dataset_from_file(temp_dump, dest, force, is_binary, volume=volume)
+            temp_dump = None
+            try:
+                # Dumping the member into a file in USS to compute the record length and
+                # size for the new data set.
+                temp_dump = dump_data_set_member_to_file(src, is_binary)
+                create_seq_dataset_from_file(temp_dump, dest, force, is_binary, volume=volume)
+            finally:
+                if temp_dump:
+                    os.remove(temp_dump)
     elif dest_ds_type in MVS_PARTITIONED and not dest_exists:
         # Taking the src as model if it's also a PDSE.
         if src_ds_type in MVS_PARTITIONED:

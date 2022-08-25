@@ -441,7 +441,7 @@ class DataSet(object):
         if path.isfile(src):
             files = [path.basename(src)]
         else:
-            path, dirs, files = next(walk(src))
+            dummy_path, dummy_dirs, files = next(walk(src))
 
         files = [DataSet.get_member_name_from_file(file) for file in files]
 

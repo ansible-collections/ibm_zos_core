@@ -1,0 +1,5 @@
+bugfixes:
+  - >
+    zos_job_output - fixes a bug that returned all ddname's when a specific
+    ddnamae was provided. Now a specific ddname can be returned and all others
+    ignored. (https://github.com/ansible-collections/ibm_zos_core/pull/334)

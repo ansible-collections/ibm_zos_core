@@ -1,0 +1,5 @@
+bugfixes:
+  - >
+    zos_job_query - was updated to correct a boolean condition that always
+    evaluated to "CANCELLED".
+    (https://github.com/ansible-collections/ibm_zos_core/pull/312).

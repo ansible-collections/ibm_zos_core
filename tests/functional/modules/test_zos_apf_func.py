@@ -277,7 +277,7 @@ def test_add_already_present(ansible_zos_module):
     results = hosts.all.zos_apf(**test_info)
     pprint(vars(results))
     for result in results.contacted.values():
-        assert result.get("rc") == 16
+        assert result.get("rc") == 8
     test_info['state'] = 'absent'
     hosts.all.zos_apf(**test_info)
     clean_test_env(hosts, test_info)
@@ -291,7 +291,7 @@ def test_del_not_present(ansible_zos_module):
     results = hosts.all.zos_apf(**test_info)
     pprint(vars(results))
     for result in results.contacted.values():
-        assert result.get("rc") == 16
+        assert result.get("rc") == 8
     clean_test_env(hosts, test_info)
 
 
@@ -302,7 +302,7 @@ def test_add_not_found(ansible_zos_module):
     results = hosts.all.zos_apf(**test_info)
     pprint(vars(results))
     for result in results.contacted.values():
-        assert result.get("rc") == 16
+        assert result.get("rc") == 8
 
 
 def test_add_with_wrong_volume(ansible_zos_module):
@@ -314,7 +314,7 @@ def test_add_with_wrong_volume(ansible_zos_module):
     results = hosts.all.zos_apf(**test_info)
     pprint(vars(results))
     for result in results.contacted.values():
-        assert result.get("rc") == 16
+        assert result.get("rc") == 8
     clean_test_env(hosts, test_info)
 
 

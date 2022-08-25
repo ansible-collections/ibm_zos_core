@@ -20,12 +20,12 @@ __metaclass__ = type
 DOCUMENTATION = r"""
 ---
 module: zos_copy
-version_added: '1.2.0'
+version_added: '1.0.0'
 short_description: Copy data to z/OS
 description:
-  - The M(zos_copy) module copies a file or data set from a local or a
+  - The M(ibm.ibm_zos_core.zos_copy) module copies a file or data set from a local or a
     remote machine to a location on the remote machine.
-  - Use the M(zos_fetch) module to copy files or data sets from remote
+  - Use the M(ibm.ibm_zos_core.zos_fetch) module to copy files or data sets from remote
     locations to the local machine.
 author:
   - "Asif Mahmud (@asifmahmud)"
@@ -106,6 +106,8 @@ options:
         data and not binary data.
       - If C(encoding) is provided and C(src) is an MVS data set, task will fail.
       - Only valid if C(is_binary) is false.
+      - If C(encoding) is provided and C(src) is a directory, the encoding
+        conversion will be applied to all files.
     type: dict
     required: false
     suboptions:
@@ -143,7 +145,6 @@ options:
     type: bool
     required: false
     default: false
-    version_added: "1.4.0"
   is_binary:
     description:
       - If set to C(true), indicates that the file or data set to be copied is a
@@ -185,12 +186,12 @@ options:
     required: false
   sftp_port:
     description:
-      - Configuring the SFTP port used by the M(zos_copy) module has been
+      - Configuring the SFTP port used by the M(ibm.ibm_zos_core.zos_copy) module has been
         deprecated and will be removed in ibm.ibm_zos_core collection version
         1.5.0.
       - Configuring the SFTP port with I(sftp_port) will no longer have any
         effect on which port is used by this module.
-      - To configure the SFTP port used for module M(zos_copy), refer to topic
+      - To configure the SFTP port used for module M(ibm.ibm_zos_core.zos_copy), refer to topic
         L(using connection plugins,https://docs.ansible.com/ansible/latest/plugins/connection.html#using-connection-plugins)
       - If C(ansible_port) is not specified, port 22 will be used.
     type: int
@@ -329,7 +330,7 @@ notes:
     - VSAM data sets can only be copied to other VSAM data sets.
     - For supported character sets used to encode data, refer to the
       L(documentation,https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html).
-    - M(zos_copy) uses SFTP (Secure File Transfer Protocol) for the underlying
+    - M(ibm.ibm_zos_core.zos_copy) uses SFTP (Secure File Transfer Protocol) for the underlying
       transfer protocol; Co:Z SFTP is not supported. In the case of Co:z SFTP,
       you can exempt the Ansible userid on z/OS from using Co:Z thus falling back
       to using standard SFTP.
@@ -843,13 +844,15 @@ class CopyHandler(object):
             try:
                 if not temp_path:
                     temp_dir = tempfile.mkdtemp()
-                    shutil.copytree(new_src, temp_dir)
+                    shutil.copytree(new_src, temp_dir, dirs_exist_ok=True)
                     new_src = temp_dir
+
                 self._convert_encoding_dir(new_src, from_code_set, to_code_set)
                 self._tag_file_encoding(new_src, to_code_set, is_dir=True)
 
             except Exception as err:
-                shutil.rmtree(new_src)
+                if new_src != src:
+                    shutil.rmtree(new_src)
                 self.fail_json(msg=str(err))
         else:
             try:
@@ -874,7 +877,8 @@ class CopyHandler(object):
                 self._tag_file_encoding(new_src, to_code_set)
 
             except Exception as err:
-                os.remove(new_src)
+                if new_src != src:
+                    os.remove(new_src)
                 self.fail_json(msg=str(err))
         return new_src
 
@@ -1762,7 +1766,7 @@ def run_module(module, arg_def):
     # ********************************************************************
     # Some src and dest combinations are incompatible. For example, it is
     # not possible to copy a PDS member to a VSAM data set or a USS file
-    # to a PDS. Perform these sanity checks.
+    # to a PDS. Perform these checks.
     # ********************************************************************
     if not is_compatible(src_ds_type, dest_ds_type, copy_member, src_member):
         module.fail_json(

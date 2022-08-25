@@ -57,7 +57,7 @@ def set_ds_test_env(test_name, hosts, test_env):
     results = hosts.all.shell(cmd='hlq')
     for result in results.contacted.values():
         hlq = result.get("stdout")
-    if(len(hlq) > 8):
+    if len(hlq) > 8:
         hlq = hlq[:8]
     test_env["DS_NAME"] = hlq + "." + test_name.upper() + "." + test_env["DS_TYPE"]
 
@@ -111,7 +111,8 @@ def DsGeneral(test_name, ansible_zos_module, test_env, test_info, expected):
         results = hosts.all.shell(cmd=cmdStr)
         pprint(vars(results))
         for result in results.contacted.values():
-            assert result.get("stdout").replace('\n', '').replace(' ', '') == expected.replace('\n', '').replace(' ', '')
+            assert result.get("stdout") == expected
+            # assert result.get("stdout").replace('\n', '').replace(' ', '') == expected.replace('\n', '').replace(' ', '')
     clean_ds_test_env(test_env["DS_NAME"], hosts)
 
 

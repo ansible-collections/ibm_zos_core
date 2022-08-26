@@ -74,7 +74,7 @@ class ActionModule(ActionBase):
                 source_rel = os.path.basename(source)
             except AnsibleFileNotFound as e:
                 result["failed"] = True
-                result["msg"] = f"could not find src={source}, {to_text(e)}"
+                result["msg"] = "could not find src=%s, %s" % (source_full, e)
                 self._remove_tmp_path(tmp)
                 return result
 

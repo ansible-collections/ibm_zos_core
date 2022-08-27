@@ -23,6 +23,22 @@ import argparse
 
 
 class ArtifactManager(object):
+    """
+    Dependency analyzer will review modules and action plugin changes and then
+    discover which tests should be run. It addition to mapping a test suite,
+    whether it is functional or unit, it will also see if the module/plugin
+    is used in test cases. In the even a module is used in another test suite
+    unrelated to the modules test suite, it will also be returned. This ensures
+    that a module changes don't break test suites dependent on a module.
+
+    Usage (minimal) example:
+        python dependencyfinder.py -p .. -b origin/dev -m
+
+    Note: It is possible that only test cases are modified only, without a module
+    or modules, in that case without a module pairing no test cases will be
+    returned. Its best to run full regression in that case until this can be
+    updated to support detecting only test cases.
+    """
     artifacts = []
 
     def __init__(self, artifacts=None):
@@ -197,6 +213,17 @@ class Artifact(object):
         self.path = path
         if dependencies:
             self.dependencies = dependencies
+
+    def __str__(self):
+        """
+        Print the Artifact class instance variables in a pretty manor.
+        """
+
+        # dependencies is union that is more work than I have time for now to print
+        # if self.dependencies and len(self.dependencies ) > 0:
+        #     dep_str = [str(i) for i in self.dependencies]
+        #     return f"name: {self.name},\nsource: {self.source},\npath: {self.path},\ndependencies: {dep_str}"
+        return f"name: {self.name},\nsource: {self.source},\npath: {self.path}\n"
 
     @classmethod
     def from_path(cls, path):
@@ -473,6 +500,40 @@ def get_changed_files(path, branch="origin/dev"):
     return changed_files
 
 
+def get_changed_plugins(path, branch="origin/dev"):
+    """Get a list of modules or plugins in a specific branch.
+
+    Args:
+        branch (str, optional): The branch to compare to. Defaults to "dev".
+
+    Raises:
+        RuntimeError: When git request-pull fails.
+
+    Returns:
+        list[str]: A list of changed file paths.
+    """
+    changed_plugins_modules = []
+    get_diff_pr = subprocess.Popen(
+        ["git", "request-pull", branch, "./"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        cwd=path,
+    )
+
+    stdout, stderr = get_diff_pr.communicate()
+    stdout = stdout.decode("utf-8")
+
+    if get_diff_pr.returncode > 0:
+        raise RuntimeError("Could not acquire change list")
+    if stdout:
+        for line in stdout.split("\n"):
+            if "plugins/action/" in line or "plugins/modules/" in line:
+                changed_plugins_modules.append(line.split("|",1)[0].strip())
+
+    return changed_plugins_modules
+
+
+
 def parse_arguments():
     """Parse and return command line arguments.
 
@@ -511,6 +572,14 @@ def parse_arguments():
         action="store_true",
         help="Print one test per line to stdout. Default behavior prints all tests on same line.",
     )
+    parser.add_argument(
+        "-m",
+        "--minimum",
+        required=False,
+        action="store_true",
+        default=False,
+        help="Detect only the changes from the branch request-pull.",
+    )
     args = parser.parse_args()
     return args
 
@@ -525,7 +594,10 @@ if __name__ == "__main__":
     artifacts = build_artifacts_from_collection(args.path)
     all_artifact_manager = ArtifactManager(artifacts)
 
-    changed_files = get_changed_files(args.path, args.branch)
+    if args.minimum:
+        changed_files=  get_changed_plugins(args.path, args.branch)
+    else:
+        changed_files = get_changed_files(args.path, args.branch)
 
     changed_artifacts = []
     for file in changed_files:

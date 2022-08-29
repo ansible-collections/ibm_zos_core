@@ -528,10 +528,9 @@ def get_changed_plugins(path, branch="origin/dev"):
     if stdout:
         for line in stdout.split("\n"):
             if "plugins/action/" in line or "plugins/modules/" in line:
-                changed_plugins_modules.append(line.split("|",1)[0].strip())
+                changed_plugins_modules.append(line.split("|", 1)[0].strip())
 
     return changed_plugins_modules
-
 
 
 def parse_arguments():
@@ -595,7 +594,7 @@ if __name__ == "__main__":
     all_artifact_manager = ArtifactManager(artifacts)
 
     if args.minimum:
-        changed_files=  get_changed_plugins(args.path, args.branch)
+        changed_files =  get_changed_plugins(args.path, args.branch)
     else:
         changed_files = get_changed_files(args.path, args.branch)
 

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020
+# Copyright (c) IBM Corporation 2020, 2022
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -1188,8 +1188,10 @@ options:
                         default: iso8859-1
   tmp_hlq:
     description:
-      - Overrides the user's high level qualifier for temporary and backup datasets.
-      - Will override TMPHLQ environment variable as well.
+      - Override the default high level qualifier (HLQ) for temporary and backup
+        datasets.
+      - The default HLQ is the Ansible user used to execute the module and if
+        that is not available, then the value C(TMPHLQ) is used.
     required: false
     type: str
 notes:

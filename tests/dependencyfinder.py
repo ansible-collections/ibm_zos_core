@@ -594,7 +594,7 @@ if __name__ == "__main__":
     all_artifact_manager = ArtifactManager(artifacts)
 
     if args.minimum:
-        changed_files =  get_changed_plugins(args.path, args.branch)
+        changed_files = get_changed_plugins(args.path, args.branch)
     else:
         changed_files = get_changed_files(args.path, args.branch)
 

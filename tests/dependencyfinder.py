@@ -218,12 +218,11 @@ class Artifact(object):
         """
         Print the Artifact class instance variables in a pretty manor.
         """
+        return "name: {0},\nsource: {1},\npath: {2}\n".format(self.name,
+                                                            self.source,
+                                                            self.path)
 
-        # dependencies is union that is more work than I have time for now to print
-        # if self.dependencies and len(self.dependencies ) > 0:
-        #     dep_str = [str(i) for i in self.dependencies]
-        #     return f"name: {self.name},\nsource: {self.source},\npath: {self.path},\ndependencies: {dep_str}"
-        return f"name: {self.name},\nsource: {self.source},\npath: {self.path}\n"
+
 
     @classmethod
     def from_path(cls, path):

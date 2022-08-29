@@ -219,10 +219,8 @@ class Artifact(object):
         Print the Artifact class instance variables in a pretty manor.
         """
         return "name: {0},\nsource: {1},\npath: {2}\n".format(self.name,
-                                                            self.source,
-                                                            self.path)
-
-
+                                                              self.source,
+                                                              self.path)
 
     @classmethod
     def from_path(cls, path):

@@ -72,9 +72,14 @@ def set_ds_test_env(test_name, hosts, test_env):
             cmdStr = "cp {0} \"//'{1}'\" ".format(quote(TEMP_FILE), test_env["DS_NAME"])
 
         if test_env["ENCODING"] != "IBM-1047":
-            hosts.all.zos_encode(src=TEMP_FILE, dest=test_env["DS_NAME"], from_encoding="IBM-1047", to_encoding=test_env["ENCODING"])
-            # cmdStr = "/u/behnam/tools/cp_withencoding/bin/cp2 {0} {1} {2}".format(test_env["ENCODING"], quote(TEMP_FILE), quote(test_env["DS_NAME"]))
-            # hosts.all.shell(cmd=cmdStr)
+            hosts.all.zos_encode(
+                src=TEMP_FILE,
+                dest=test_env["DS_NAME"],
+                encoding={
+                    "from": "IBM-1047",
+                    "to": test_env["ENCODING"],
+                },
+            )
         else:
             hosts.all.shell(cmd=cmdStr)
         hosts.all.shell(cmd="rm -rf " + test_env["TEST_DIR"])

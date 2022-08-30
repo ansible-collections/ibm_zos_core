@@ -1952,6 +1952,7 @@ def parse_and_validate_args(params):
         dds=dict(
             type="list",
             elements="dict",
+            default=[],
             options=dict(
                 dd_data_set=dd_data_set,
                 dd_unix=dd_unix,

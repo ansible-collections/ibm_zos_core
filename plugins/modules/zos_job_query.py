@@ -183,7 +183,9 @@ message:
      msg: "List FAILED! no such job been found: IYK3Z0R9"
 """
 
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import job_status
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import (
+    job_status,
+)
 
 from ansible.module_utils.basic import AnsibleModule
 import re

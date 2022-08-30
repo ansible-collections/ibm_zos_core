@@ -199,3 +199,4 @@ hosts
 .ansible-test/
 .keep
 shell_exploits.txt
+test_config.yml

@@ -106,6 +106,8 @@ options:
         data and not binary data.
       - If C(encoding) is provided and C(src) is an MVS data set, task will fail.
       - Only valid if C(is_binary) is false.
+      - If C(encoding) is provided and C(src) is a directory, the encoding
+        conversion will be applied to all files.
     type: dict
     required: false
     suboptions:
@@ -850,13 +852,15 @@ class CopyHandler(object):
             try:
                 if not temp_path:
                     temp_dir = tempfile.mkdtemp()
-                    shutil.copytree(new_src, temp_dir)
+                    shutil.copytree(new_src, temp_dir, dirs_exist_ok=True)
                     new_src = temp_dir
+
                 self._convert_encoding_dir(new_src, from_code_set, to_code_set)
                 self._tag_file_encoding(new_src, to_code_set, is_dir=True)
 
             except Exception as err:
-                shutil.rmtree(new_src)
+                if new_src != src:
+                    shutil.rmtree(new_src)
                 self.fail_json(msg=str(err))
         else:
             try:
@@ -881,7 +885,8 @@ class CopyHandler(object):
                 self._tag_file_encoding(new_src, to_code_set)
 
             except Exception as err:
-                os.remove(new_src)
+                if new_src != src:
+                    os.remove(new_src)
                 self.fail_json(msg=str(err))
         return new_src
 
@@ -1370,7 +1375,7 @@ class PDSECopyHandler(CopyHandler):
         if rc != 0:
             msg = ""
             if is_uss_src:
-                msg = "Unable to copy file {0} to data set member {1}".format(src, dest)
+                msg = "Unable to copy file {0} to data set member {1}, {2}, {3}".format(src, dest, temp_path, new_src)
             else:
                 msg = "Unable to copy data set member {0} to {1}".format(src, dest)
 
@@ -1415,40 +1420,47 @@ class PDSECopyHandler(CopyHandler):
             remote_src {bool} -- Whether source is located on remote system.
                                  (Default {False})
             src_vol {str} -- Volume where source data set is stored. (Default {None})
+
+        Returns:
+            {bool} -- True if the PDSE was created, False if it was already present
         """
-        rc = out = err = None
-        if remote_src:
-            if src_ds_type in MVS_PARTITIONED:
-                rc = self.allocate_model(dest_name, src, vol=alloc_vol)
+        changed = False
 
-            elif src_ds_type in MVS_SEQ:
-                rc = self._allocate_pdse(
-                    dest_name, src_vol=src_vol, src=src, alloc_vol=alloc_vol
-                )
+        try:
+            if remote_src:
+                if src_ds_type in MVS_PARTITIONED:
+                    # Failure of this function is already addressed inside of it.
+                    self.allocate_model(dest_name, src, vol=alloc_vol)
 
-            elif os.path.isfile(src):
-                size = os.stat(src).st_size
-                rc = self._allocate_pdse(dest_name, size=size)
-
-            elif os.path.isdir(src):
-                path, dirs, files = next(os.walk(src))
-                if dirs:
-                    self.fail_json(
-                        msg="Subdirectory found in source directory {0}".format(src)
+                elif src_ds_type in MVS_SEQ:
+                    changed = self._allocate_pdse(
+                        dest_name, src_vol=src_vol, src=src, alloc_vol=alloc_vol
                     )
-                size = sum(os.stat(path + "/" + f).st_size for f in files)
-                rc = self._allocate_pdse(dest_name, size=size)
-        else:
-            rc = self._allocate_pdse(dest_name, src=src, size=size, alloc_vol=alloc_vol)
 
-        if rc != 0:
+                elif os.path.isfile(src):
+                    size = os.stat(src).st_size
+                    changed = self._allocate_pdse(dest_name, size=size)
+
+                elif os.path.isdir(src):
+                    path, dirs, files = next(os.walk(src))
+                    if dirs:
+                        self.fail_json(
+                            msg="Subdirectory found in source directory {0}".format(src)
+                        )
+                    size = sum(os.stat(path + "/" + f).st_size for f in files)
+                    changed = self._allocate_pdse(dest_name, size=size)
+            else:
+                changed = self._allocate_pdse(dest_name, src=src, size=size, alloc_vol=alloc_vol)
+
+            return changed
+        except data_set.DatasetCreateError as e:
             self.fail_json(
                 msg="Unable to allocate destination data set {0} to receive {1}".format(dest_name, src),
-                stdout=out,
-                stderr=err,
-                rc=rc,
-                stdout_lines=out.splitlines() if out else None,
-                stderr_lines=err.splitlines() if err else None,
+                stdout=None,
+                stderr=e.msg,
+                rc=e.rc,
+                stdout_lines=None,
+                stderr_lines=e.msg.splitlines() if e.msg else None,
             )
 
     def _allocate_pdse(
@@ -1472,6 +1484,9 @@ class PDSECopyHandler(CopyHandler):
             src {str} -- The name of the source data set from which to get the size
             src_vol {str} -- Volume of the source data set
             allc_vol {str} -- The volume where PDSE should be allocated
+
+        Returns:
+            {bool} -- True if the PDSE was created, False if it was already present
         """
         rc = -1
         recfm = "FB"
@@ -1490,21 +1505,21 @@ class PDSECopyHandler(CopyHandler):
             else:
                 alloc_size = 5242880  # Use the default 5 Megabytes
 
-        alloc_size = "{0}K".format(str(int(math.ceil(alloc_size / 1024))))
+        alloc_size = int(math.ceil(alloc_size / 1024))
         parms = dict(
-            name=ds_name,
+            replace=False,
             type="PDSE",
-            primary_space=alloc_size,
+            space_primary=alloc_size,
+            space_type="K",
             record_format=recfm,
             record_length=lrecl
         )
         if alloc_vol:
-            parms['volume'] = alloc_vol
+            parms['volumes'] = alloc_vol
 
-        response = datasets._create(**parms)
-        rc = response.rc
+        changed = data_set.DataSet.ensure_present(ds_name, **parms)
 
-        return rc
+        return changed
 
 
 def backup_data(ds_name, ds_type, backup_name, tmphlq=None):
@@ -1748,10 +1763,11 @@ def run_module(module, arg_def):
             dest_exists = os.path.exists(dest)
         else:
             dest_du = data_set.DataSetUtils(dest_name)
-            dest_exists = dest_du.exists()
+            dest_exists = data_set.DataSet.data_set_exists(dest_name, volume)
             if copy_member:
-                dest_exists = dest_exists and dest_du.member_exists(dest_member)
+                dest_exists = dest_exists and data_set.DataSet.data_set_member_exists(dest)
             dest_ds_type = dest_du.ds_type()
+
         if temp_path or "/" in src:
             src_ds_type = "USS"
         else:

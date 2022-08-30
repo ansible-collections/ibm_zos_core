@@ -1798,7 +1798,6 @@ def test_unauthorized_program_run_unauthorized(ansible_zos_module):
     results = hosts.all.zos_mvs_raw(
         program_name="IEFBR14",
         auth=False,
-        dds=[],
     )
     hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
     for result in results.contacted.values():

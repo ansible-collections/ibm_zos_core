@@ -1,0 +1,6 @@
+bugfixes:
+  - >
+    ibm_zos_operator - Fixes a bug such that when specifying 
+    wait_time_s and wait=True in zos_operator it throws an error
+    and does not execute the command.
+    (https://github.com/ansible-collections/ibm_zos_core/issues/389).

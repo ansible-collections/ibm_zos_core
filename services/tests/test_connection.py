@@ -12,7 +12,6 @@
 # limitations under the License.
 
 
-# Something wrong with the time the tests take #
 
 import os
 import re
@@ -20,7 +19,7 @@ import unittest
 import sys
 import yaml
 from socket import error
-from paramiko import BadHostKeyException, AuthenticationException, ssh_exception 
+from paramiko import AuthenticationException, ssh_exception 
 sys.path.append('..')
 
 from operations.connection import Connection
@@ -112,168 +111,146 @@ class TestConnectionUnitTests(unittest.TestCase):
         assert arg_len == 4, \
             f"ASSERTION-FAILURE: Connection args expected 4 not equal to = [{arg_len}]"
 
-
-    def test_connection_invalid_hostname(self):
+    def test_connection_invalid_hostname_type(self): 
         """
-        Test the connection with an invalid hostname, negative test case.
+        Test the connection with an invalid hostname type, negative test case.
         """
-        # Invalid hostname (int)
-        passed = True
         invalid_hostname = 1 
         try:
             connection = Connection(hostname=invalid_hostname, username=self.username, 
                             password=self.password)
             connection.connect()
         except TypeError as e:
-            print(repr(e))
-            passed = False
-        assert not passed, f"ASSERTION-FAILURE: Invalid hostname type does not raise exception."
+            assert re.match(r'^TypeError', repr(e))
+      
 
-        # Invalid hostname (string)
-        passed = True
+    def test_connection_invalid_hostname(self):
+        """
+        Test the connection with an invalid hostname, negative test case.
+        """
         invalid_hostname = "invalid hostname"
         try:
             connection = Connection(hostname=invalid_hostname, username=self.username, 
                             password=self.password)
             connection.connect()
         except ssh_exception.NoValidConnectionsError as e:
-            print(repr(e))
-            passed = False
-        assert not passed, "ASSERTION-FAILURE: Invalid hostname (string) does not raise exception"
+            assert re.match(r'^NoValidConnectionsError', repr(e))
+ 
 
-
-    def test_connection_invalid_port(self):
+    def test_connection_invalid_port_range(self):
         """
-        Test the connection with an invalid port, negative test case.
+        Test the connection with an invalid port range, negative test case.
         """
-        # Invalid port range
-        passed = True
         invalid_port = -1 
         try:
             connection = Connection(hostname=self.hostname, username=self.username, 
                             password=self.password, port=invalid_port)
             connection.connect()
         except error as e:
-            print(repr(e))
-            passed = False
-        assert not passed, "ASSERTION-FAILURE: Invalid port does not raise exception"
+            assert re.match(r'^gaierror', repr(e))
+ 
 
-        # Incorrect port number
-        passed = True
+    def test_connection_invalid_port(self):
+        """
+        Test the connection with an invalid port, negative test case.
+        """
         invalid_port = 0 
         try:
             connection = Connection(hostname=self.hostname, username=self.username, 
                             password=self.password, port=invalid_port)
             connection.connect()
         except error as e:
-            print(repr(e))
-            passed = False
-        assert not passed, "ASSERTION-FAILURE: Invalid port does not raise exception"
+            assert re.match(r'^OSError', repr(e))
+            
 
-
-    def test_connection_invalid_user(self):
+    def test_connection_invalid_user_type(self):
         """
-        Test the connection with an invalid user, negative test case.
+        Test the connection with an invalid user type, negative test case.
         """
-        # Invalid username (int)
-        passed = True
         invalid_username = 1 
         try:
             connection = Connection(hostname=self.hostname, username=invalid_username,
                             password=self.password)
             connection.connect()
         except TypeError as e:
-            print(repr(e))
-            passed = False
-        assert not passed, "ASSERTION-FAILURE: Invalid username type does not raise exception"
+            assert re.match(r'^TypeError', repr(e))
 
-        # Invalid username (string)
-        passed = True
+
+    def test_connection_invalid_user(self):
+        """
+        Test the connection with an invalid user, negative test case.
+        """
         invalid_username = "invalid username"
         try:
             connection = Connection(hostname=self.hostname, username=invalid_username, 
                             password=self.password)
             connection.connect()
         except AuthenticationException as e:
-            print(repr(e))
-            passed = False
-        assert not passed, "ASSERTION-FAILURE: Invalid username (string) does not raise exception"
+            assert re.match(r'^AuthenticationException', repr(e))
 
 
-    def test_connection_invalid_password(self):
-        """
-        Test the connection with an invalid password, negative test case.
-        """
-        # Invalid password (int)
-        passed = True
+    def test_connection_invalid_password_type(self):
         invalid_password = 1 
         try:
             connection = Connection(hostname=self.hostname, username=self.username,
                             password=invalid_password)
             connection.connect()
         except TypeError as e:
-            print(repr(e)) 
-            passed = False
-        assert not passed, "ASSERTION-FAILURE: Invalid password type does not raise exception"
+            assert re.match(r'^TypeError', repr(e))
 
-        # Invalid password (string)
-        passed = True
+
+    def test_connection_invalid_password(self):
+        """
+        Test the connection with an invalid password, negative test case.
+        """
         invalid_password = "invalid password"
         try:
             connection = Connection(hostname=self.hostname, username=self.username,
                             password=invalid_password)
             connection.connect()
         except AuthenticationException as e:
-            print(repr(e))
-            passed = False
-        assert not passed, "ASSERTION-FAILURE: Invalid password (string) does not raise exception"
+            assert re.match(r'^AuthenticationException', repr(e))
 
 
-    def test_connection_invalid_key_filename(self):
+    def test_connection_invalid_key_filename_type(self):
         """
-        Test the connection with an invalid key_filename, negative test case.
+        Test the connection with an invalid key_filename type, negative test case.
         """
-        # Invalid key filename (int)
-        passed = True
         invalid_key_filename = 1 
         try:
             connection = Connection(hostname=self.hostname, username=self.username,
                             key_filename=invalid_key_filename)
             connection.connect()
         except TypeError as e:
-            print(repr(e)) 
-            passed = False
-        assert not passed, "ASSERTION-FAILURE: Invalid key filename type does not raise exception"
+            assert re.match(r'^TypeError', repr(e))
+           
 
-        # Invalid key filename (string)
-        passed = True
+    def test_connection_invalid_key_filename(self):
+        """
+        Test the connection with an invalid key_filename, negative test case.
+        """
         invalid_key_filename = "invalid key filename"
         try:
             connection = Connection(hostname=self.hostname, username=self.username, 
                             key_filename=invalid_key_filename)
             connection.connect()
         except FileNotFoundError as e:
-            print(repr(e))
-            passed = False
-        assert not passed, "ASSERTION-FAILURE: Invalid key filename (string) does not raise exception"
-
+            assert re.match(r'^FileNotFoundError', repr(e))
+           
 
     @unittest.skip('TODO - TRY AGAIN') 
     def test_connection_invalid_passphrase(self):
         """
         Test the connection with an invalid passphrase, negative test case.
         """
-        passed = True
         invalid_passphrase = "invalid passphrase"
         try:
             connection = Connection(hostname=self.hostname, username=self.username,
                             key_filename=self.key_filename,passphrase=invalid_passphrase)
             connection.connect()
-        except BadHostKeyException as e:
-            print(repr(e))
-            passed = False
-        assert not passed, "ASSERTION-FAILURE: Invalid passphrase (string) does not raise exception"
-
+        except ssh_exception.BadHostKeyException as e:
+            assert re.match(r'^BadHostKeyException', repr(e))
+            
 
 class TestConnectionFunctionalTests(unittest.TestCase):
     """

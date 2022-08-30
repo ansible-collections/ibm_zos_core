@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020
+# Copyright (c) IBM Corporation 2019, 2020, 2022
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -103,6 +103,14 @@ options:
     type: bool
     required: false
     default: false
+  tmp_hlq:
+    description:
+      - Override the default high level qualifier (HLQ) for temporary and backup
+        datasets.
+      - The default HLQ is the Ansible user used to execute the module and if
+        that is not available, then the value C(TMPHLQ) is used.
+    required: false
+    type: str
 notes:
   - It is the playbook author or user's responsibility to avoid files that should
     not be encoded, such as binary files. A user is described as the remote user,
@@ -340,6 +348,7 @@ def run_module():
         backup=dict(type="bool", default=False),
         backup_name=dict(type="str", required=False, default=None),
         backup_compress=dict(type="bool", required=False, default=False),
+        tmp_hlq=dict(type='str', required=False, default=None),
     )
 
     module = AnsibleModule(argument_spec=module_args)
@@ -352,6 +361,7 @@ def run_module():
         backup=dict(arg_type="bool", default=False, required=False),
         backup_name=dict(arg_type="data_set_or_path", required=False, default=None),
         backup_compress=dict(arg_type="bool", required=False, default=False),
+        tmp_hlq=dict(type='qualifier_or_empty', required=False, default=None),
     )
 
     parser = better_arg_parser.BetterArgParser(arg_defs)
@@ -363,6 +373,7 @@ def run_module():
     backup_compress = parsed_args.get("backup_compress")
     from_encoding = parsed_args.get("from_encoding").upper()
     to_encoding = parsed_args.get("to_encoding").upper()
+    tmphlq = module.params.get('tmp_hlq')
 
     # is_uss_src(dest) to determine whether the src(dest) is a USS file/path or not
     # is_mvs_src(dest) to determine whether the src(dest) is a MVS data set or not
@@ -417,7 +428,7 @@ def run_module():
                     dest, backup_name, backup_compress
                 )
             if is_mvs_dest:
-                backup_name = zos_backup.mvs_file_backup(dest, backup_name)
+                backup_name = zos_backup.mvs_file_backup(dest, backup_name, tmphlq)
             result["backup_name"] = backup_name
 
         eu = encode.EncodeUtils()
@@ -425,6 +436,8 @@ def run_module():
         # If the value specified in from_encoding or to_encoding is not in the code_set, exit with an error message
         # If the values specified in from_encoding and to_encoding are the same, exit with an message
         code_set = eu.get_codeset()
+        # set the tmphlq in the encodeutils
+        eu.tmphlq = tmphlq
         if from_encoding not in code_set:
             raise EncodeError(
                 "Invalid codeset: Please check the value of the from_encoding!"

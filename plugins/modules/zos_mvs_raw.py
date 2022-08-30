@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020
+# Copyright (c) IBM Corporation 2020, 2022
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -1186,6 +1186,14 @@ options:
                           - The encoding to use when returning the contents of the data set.
                         type: str
                         default: iso8859-1
+  tmp_hlq:
+    description:
+      - Override the default high level qualifier (HLQ) for temporary and backup
+        datasets.
+      - The default HLQ is the Ansible user used to execute the module and if
+        that is not available, then the value C(TMPHLQ) is used.
+    required: false
+    type: str
 notes:
     - When executing programs using M(ibm.ibm_zos_core.zos_mvs_raw), you may encounter errors
       that originate in the programs implementation. Two such known issues are
@@ -1532,6 +1540,10 @@ ENCODING_ENVIRONMENT_VARS = {"_BPXK_AUTOCVT": "OFF"}
 backups = []
 
 
+# Use of global tmphlq to keep coherent classes definitions
+g_tmphlq = ""
+
+
 def run_module():
     """Executes all module-related functions.
 
@@ -1710,6 +1722,7 @@ def run_module():
         auth=dict(type="bool", default=False),
         verbose=dict(type="bool", default=False),
         parm=dict(type="str", required=False),
+        tmp_hlq=dict(type="str", required=False, default=None),
         dds=dict(
             type="list",
             elements="dict",
@@ -1736,6 +1749,8 @@ def run_module():
     if not module.check_mode:
         try:
             parms = parse_and_validate_args(module.params)
+            global g_tmphlq
+            g_tmphlq = parms.get("tmp_hlq")
             dd_statements = build_dd_statements(parms)
             program = parms.get("program_name")
             program_parm = parms.get("parm")
@@ -1933,6 +1948,7 @@ def parse_and_validate_args(params):
         auth=dict(type="bool", default=False),
         verbose=dict(type="bool", default=False),
         parm=dict(type="str", required=False),
+        tmp_hlq=dict(type="qualifier_or_empty", required=False, default=None),
         dds=dict(
             type="list",
             elements="dict",
@@ -2345,7 +2361,9 @@ def build_data_definition(dd):
               RawInputDefinition, DummyDefinition]: The DataDefinition object or a list of DataDefinition objects.
     """
     data_definition = None
+    global g_tmphlq
     if dd.get("dd_data_set"):
+        dd.get("dd_data_set")["tmphlq"] = g_tmphlq
         data_definition = RawDatasetDefinition(**(dd.get("dd_data_set")))
     elif dd.get("dd_unix"):
         data_definition = RawFileDefinition(**(dd.get("dd_unix")))
@@ -2354,7 +2372,7 @@ def build_data_definition(dd):
     elif dd.get("dd_output"):
         data_definition = RawOutputDefinition(**(dd.get("dd_output")))
     elif dd.get("dd_vio"):
-        data_definition = VIODefinition()
+        data_definition = VIODefinition(tmphlq=g_tmphlq)
     elif dd.get("dd_dummy"):
         data_definition = DummyDefinition()
     elif dd.get("dd_concat"):
@@ -2400,6 +2418,7 @@ class RawDatasetDefinition(DatasetDefinition):
         replace=None,
         backup=None,
         return_content=None,
+        tmphlq=None,
         **kwargs
     ):
         """Initialize RawDatasetDefinition
@@ -2432,6 +2451,7 @@ class RawDatasetDefinition(DatasetDefinition):
             backup (bool, optional): Determines if a backup should be made of existing data set when disposition=NEW, replace=true,
                 and a data set with the desired name is found.. Defaults to None.
             return_content (dict, optional): Determines how content should be returned to the user. Defaults to None.
+            tmphlq (str, optional): HLQ to be used for temporary datasets. Defaults to None.
         """
         self.backup = None
         self.return_content = ReturnContent(**(return_content or {}))
@@ -2458,7 +2478,7 @@ class RawDatasetDefinition(DatasetDefinition):
                 should_reuse = True
             elif replace:
                 if backup:
-                    self.backup = zos_backup.mvs_file_backup(data_set_name, None)
+                    self.backup = zos_backup.mvs_file_backup(data_set_name, None, tmphlq)
                     global backups
                     backups.append(
                         {"original_name": data_set_name, "backup_name": self.backup}

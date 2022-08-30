@@ -56,7 +56,7 @@ def _validate_data_set_name(ds):
     return parsed_args.get("ds")
 
 
-def mvs_file_backup(dsn, bk_dsn=None):
+def mvs_file_backup(dsn, bk_dsn=None, tmphlq=None):
     """Create a backup data set for an MVS data set
 
     Arguments:
@@ -87,7 +87,11 @@ def mvs_file_backup(dsn, bk_dsn=None):
             )
     else:
         if not bk_dsn:
-            bk_dsn = datasets.tmp_name(datasets.hlq())
+            if tmphlq:
+                hlq = tmphlq
+            else:
+                hlq = datasets.hlq()
+            bk_dsn = datasets.tmp_name(hlq)
         bk_dsn = _validate_data_set_name(bk_dsn).upper()
         cp_rc = _copy_ds(dsn, bk_dsn)
         if cp_rc == 12:  # The data set is probably a PDS or PDSE

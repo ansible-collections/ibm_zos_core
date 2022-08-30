@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020
+# Copyright (c) IBM Corporation 2020, 2022
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -16,6 +16,7 @@ from ibm_zos_core.tests.helpers.zos_blockinfile_helper import (
     UssGeneral,
     DsGeneral,
     DsNotSupportedHelper,
+    DsGeneralResultKeyMatchesRegex,
 )
 import os
 import sys
@@ -188,6 +189,7 @@ TEST_INFO = dict(
     test_ds_block_insertafter_eof=dict(test_name="T3"),
     test_ds_block_insertbefore_bof=dict(test_name="T4"),
     test_ds_block_absent=dict(test_name="T5"),
+    test_ds_block_tmp_hlq_option=dict(insertafter="EOF", block="export ZOAU_ROOT\n", state="present", backup=True, tmp_hlq="TMPHLQ"),
     test_ds_block_insert_with_force_option_as_true=dict(block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present", force=True),
     test_ds_block_absent_with_force_option_as_true=dict(block="", state="absent", force=True),
     test_ds_block_insert_with_force_option_as_false=dict(block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present", force=False),
@@ -1278,6 +1280,23 @@ def test_ds_block_absent(ansible_zos_module, dstype, encoding):
         TEST_INFO["test_ds_block_absent"]["test_name"], ansible_zos_module,
         TEST_ENV, TEST_INFO["test_uss_block_absent"],
         TEST_INFO["expected"]["test_uss_block_absent"]
+    )
+    TEST_ENV["TEST_CONT"] = TEST_CONTENT
+
+
+@pytest.mark.ds
+@pytest.mark.parametrize("dstype", DS_TYPE)
+@pytest.mark.parametrize("encoding", ENCODING)
+def test_ds_tmp_hlq_option(ansible_zos_module, dstype, encoding):
+    TEST_ENV["DS_TYPE"] = dstype
+    TEST_ENV["ENCODING"] = encoding
+    TEST_ENV["TEST_CONT"] = TEST_CONTENT_DEFAULTMARKER
+    test_name = "T6"
+    kwargs = dict(backup_name=r"TMPHLQ\..")
+    DsGeneralResultKeyMatchesRegex(
+        test_name, ansible_zos_module,
+        TEST_ENV, TEST_INFO["test_ds_block_tmp_hlq_option"],
+        **kwargs
     )
     TEST_ENV["TEST_CONT"] = TEST_CONTENT
 

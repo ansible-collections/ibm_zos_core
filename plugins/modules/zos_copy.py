@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020, 2021
+# Copyright (c) IBM Corporation 2019, 2020, 2021, 2022
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -121,6 +121,14 @@ options:
           - The encoding to be converted to
         required: true
         type: str
+  tmp_hlq:
+    description:
+      - Override the default high level qualifier (HLQ) for temporary and backup
+        datasets.
+      - The default HLQ is the Ansible user used to execute the module and if
+        that is not available, then the value C(TMPHLQ) is used.
+    required: false
+    type: str
   force:
     description:
       - If set to C(true), the remote file or data set will be overwritten.
@@ -1514,7 +1522,7 @@ class PDSECopyHandler(CopyHandler):
         return changed
 
 
-def backup_data(ds_name, ds_type, backup_name):
+def backup_data(ds_name, ds_type, backup_name, tmphlq=None):
     """Back up the given data set or file to the location specified by 'backup_name'.
     If 'backup_name' is not specified, then calculate a temporary location
     and copy the file or data set there.
@@ -1532,7 +1540,7 @@ def backup_data(ds_name, ds_type, backup_name):
     try:
         if ds_type == "USS":
             return backup.uss_file_backup(ds_name, backup_name=backup_name)
-        return backup.mvs_file_backup(ds_name, backup_name)
+        return backup.mvs_file_backup(ds_name, backup_name, tmphlq)
     except Exception as err:
         module.fail_json(
             msg=str(err.msg),
@@ -1705,6 +1713,7 @@ def run_module(module, arg_def):
     alloc_size = module.params.get('size')
     src_member = module.params.get('src_member')
     copy_member = module.params.get('copy_member')
+    tmphlq = module.params.get('tmp_hlq')
     destination_dataset = module.params.get('destination_dataset')
 
     dd_type = destination_dataset.get("dd_type") or "BASIC"
@@ -1799,7 +1808,7 @@ def run_module(module, arg_def):
                 # The partitioned data set is empty
                 res_args["note"] = "Destination is empty, backup request ignored"
             else:
-                backup_name = backup_data(dest, dest_ds_type, backup_name)
+                backup_name = backup_data(dest, dest_ds_type, backup_name, tmphlq)
     # ********************************************************************
     # If destination does not exist, it must be created. To determine
     # what type of data set destination must be, a couple of simple checks
@@ -2023,7 +2032,8 @@ def main():
             copy_member=dict(type='bool'),
             src_member=dict(type='bool'),
             local_charset=dict(type='str'),
-            force=dict(type='bool', default=False)
+            force=dict(type='bool', default=False),
+            tmp_hlq=dict(type='str', required=False, default=None)
         ),
         add_file_common_args=True,
     )
@@ -2047,7 +2057,7 @@ def main():
         validate=dict(arg_type='bool', required=False),
         sftp_port=dict(arg_type='int', required=False),
         volume=dict(arg_type='str', required=False),
-
+        tmp_hlq=dict(arg_type='qualifier_or_empty', required=False, default=None),
         destination_dataset=dict(
             arg_type='dict',
             required=False,

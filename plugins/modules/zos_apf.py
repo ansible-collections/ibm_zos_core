@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020
+# Copyright (c) IBM Corporation 2020, 2022
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -90,6 +90,14 @@ options:
       - set_static
       - check_format
       - list
+  tmp_hlq:
+    description:
+      - Override the default high level qualifier (HLQ) for temporary and backup
+        datasets.
+      - The default HLQ is the Ansible user used to execute the module and if
+        that is not available, then the value C(TMPHLQ) is used.
+    required: false
+    type: str
   persistent:
     description:
       - Add/remove persistent entries to or from I(data_set_name)
@@ -310,7 +318,7 @@ else:
 DS_TYPE = ['PS', 'PO']
 
 
-def backupOper(module, src, backup):
+def backupOper(module, src, backup, tmphlq=None):
     # analysis the file type
     ds_utils = data_set.DataSetUtils(src)
     file_type = ds_utils.ds_type()
@@ -327,7 +335,7 @@ def backupOper(module, src, backup):
         if file_type == 'USS':
             backup_name = Backup.uss_file_backup(src, backup_name=backup, compress=False)
         else:
-            backup_name = Backup.mvs_file_backup(dsn=src, bk_dsn=backup)
+            backup_name = Backup.mvs_file_backup(dsn=src, bk_dsn=backup, tmphlq=tmphlq)
     except Exception:
         module.fail_json(msg="creating backup has failed")
 
@@ -410,6 +418,10 @@ def main():
                     ),
                 )
             ),
+            tmp_hlq=dict(
+                type='str',
+                required=False,
+                default=None),
         ),
         mutually_exclusive=[
             # batch
@@ -451,6 +463,7 @@ def main():
                 sms=dict(arg_type='bool', required=False, default=False),
             )
         ),
+        tmp_hlq=dict(type='qualifier_or_empty', required=False, default=None),
         mutually_exclusive=[
             # batch
             ['batch', 'library'],
@@ -475,6 +488,7 @@ def main():
     operation = parsed_args.get('operation')
     persistent = parsed_args.get('persistent')
     batch = parsed_args.get('batch')
+    tmphlq = module.params.get('tmp_hlq')
 
     if persistent:
         data_set_name = persistent.get('data_set_name')
@@ -486,7 +500,7 @@ def main():
             if persistent.get('backup_name'):
                 backup = persistent.get('backup_name')
                 del persistent['backup_name']
-            result['backup_name'] = backupOper(module, data_set_name, backup)
+            result['backup_name'] = backupOper(module, data_set_name, backup, tmphlq)
             del persistent['backup']
         if state == "present":
             persistent['addDataset'] = data_set_name

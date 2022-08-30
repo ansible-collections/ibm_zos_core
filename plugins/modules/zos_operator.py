@@ -177,8 +177,8 @@ except Exception:
     ZOAUResponse = MissingZOAUImport()
 
 
-def execute_command(operator_cmd, *args, **kwargs):
-    response = opercmd.execute(operator_cmd, args, kwargs)
+def execute_command(operator_cmd, timeout=1, *args, **kwargs):
+    response = opercmd.execute(operator_cmd, timeout, args, kwargs)
     rc = response.rc
     stdout = response.stdout_response
     stderr = response.stderr_response
@@ -294,16 +294,17 @@ def run_operator_command(params):
     if params.get("debug"):
         kwargs.update({"debug": "debug"})
 
+    wait_s = 1
     if params.get("wait"):
-        wait = params.get("wait_time_s")
-        if wait:
-            kwargs.update({"timeout": "{0}".format(wait)})
-            kwargs.update({"parameters": "ISFDELAY={0}".format(wait)})
+        wait_s = params.get("wait_time_s")
+        if wait_s:
+            # kwargs.update({"timeout": "{0}".format(wait_s)})
+            kwargs.update({"parameters": "ISFDELAY={0}".format(wait_s)})
             # it *appears* IFSdelay is passing through correctly... did 1x-4x tests 0 to 20 seconds
     cmdtxt = params.get("cmd")
 
     args = []
-    rc, stdout, stderr = execute_command(cmdtxt, *args, **kwargs)
+    rc, stdout, stderr = execute_command(cmdtxt, wait_s, *args, **kwargs)
 
     extrastdout = ""
     if params.get("verbose"):

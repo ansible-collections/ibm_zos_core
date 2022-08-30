@@ -297,6 +297,9 @@ def run_operator_command(params):
     wait_s = 1
     if params.get("wait"):
         wait_s = params.get("wait_time_s")
+        # To comply with docs "When set to 0, the system default is used."
+        if wait_s == 0:
+            wait_s = 1
         if wait_s:
             # kwargs.update({"timeout": "{0}".format(wait_s)})
             kwargs.update({"parameters": "ISFDELAY={0}".format(wait_s)})

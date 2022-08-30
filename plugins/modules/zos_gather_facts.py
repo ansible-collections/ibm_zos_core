@@ -23,6 +23,8 @@ DOCUMENTATION = r"""
 module: zos_gather_facts
 short_description: Gather facts about target z/OS systems.
 version_added: '1.5.0'
+requirements:
+    - ZOAU 1.2.1 or greater.
 author:
     - "Ketan Kelkar (@ketankelkar)"
 description:
@@ -42,8 +44,11 @@ options:
     description:
       - If specified, it will only collect facts that come under the specified
         subset (eg. ipl will only return ipl facts). Specifying subsets is
-        recommended to save time on gatherthing all facts when the facts needed
+        recommended to save time on gathering all facts when the facts needed
         are constrained down to one or more subsets.
+      - The following subsets are available: C(ipl), C(cpu), C(sys), and
+        C(iodf). Additional subsets may be available depending on the version
+        of ZOAU deployed to remote hosts.
   filter:
     type: list
     elements: str
@@ -53,22 +58,22 @@ options:
       - Uses shell-style (fnmatch) pattern matching to filter out the collected
         facts.
       - An empty list means 'no filter', same as providing '*'.
-      - Filtering is performed after the facts are gathered, so this doesn't save
-        any time or compute. It only reduces the number of variables that are
-        added to the ansible_facts dictionary. To restrict the facts that are
-        collected, refer to the gather_subset parameter above.
+      - Filtering is performed after the facts are gathered, so this doesn't
+        save any time or compute. It only reduces the number of variables that
+        are added to the ansible_facts dictionary. To restrict the facts that
+        are collected, refer to the gather_subset parameter above.
 """
 
 EXAMPLES = r"""
-- name: Return all available z/OS facts
+- name: Return all available z/OS facts.
   ibm.ibm_zos_core.zos_gather_facts:
 
-- name: Return z/OS facts in the systems subset ('sys')
+- name: Return z/OS facts in the systems subset ('sys').
   ibm.ibm_zos_core.zos_gather_facts:
     gather_subset: sys
 
 - name: Return z/OS facts in the subsets ('ipl' and 'sys') and filter out all
-        facts that do not match 'parmlib'
+        facts that do not match 'parmlib'.
   ibm.ibm_zos_core.zos_gather_facts:
     gather_subset:
       - ipl
@@ -124,8 +129,8 @@ def zinfo_cmd_string_builder(gather_subset):
 
 
 def flatten_zinfo_json(zinfo_dict):
-    """Removes one layer of mapping in the dictionary. Top-level keys correspond
-        to zinfo subsets and are removed.
+    """Removes one layer of mapping in the dictionary. Top-level keys
+        correspond to zinfo subsets and are removed.
     Arguments:
         zinfo_dict {dict} -- A dictionary that contains the parsed result from
                              the zinfo json string.
@@ -171,6 +176,7 @@ def run_module():
         filter=dict(default=[], required=False, type='list', elements='str'),
 
 
+        #######################################################################
         #                     saved for future development                    #
         # gather_timeout=dict(default=10, required=False, type='int'),        #
         # fact_path=dict(
@@ -192,8 +198,8 @@ def run_module():
 
     if not zoau_version_checker.is_zoau_version_higher_than("1.2.1"):
         module.fail_json(
-            ("The zos_gather_facts module requires ZOAU >= 1.2.1. Please upgrade "
-             "the ZOAU version on the target node.")
+            ("The zos_gather_facts module requires ZOAU >= 1.2.1. Please "
+             "upgrade the ZOAU version on the target node.")
         )
 
     gather_subset = module.params['gather_subset']
@@ -234,7 +240,8 @@ def run_module():
     try:
         zinfo_dict = json.loads(decode_str)
     except json.JSONDecodeError:
-        # TODO -figure out this error message...what do i tell user?
+        # tell user something else for this error? This error is thrown when
+        # Python doesn't like the json string it parsed from zinfo.
         module.fail_json(msg="Unsupported JSON format for the output.")
 
     # remove zinfo subsets from parsed zinfo result, flatten by one level
@@ -249,22 +256,6 @@ def run_module():
 
     # successful module execution
     module.exit_json(**result)
-
-
-# NOTE
-
-# How does the user know what subsets are available. maybe investigate what
-# Ansible does and copy them. Alternative idea is to document 'current'
-# available subsets but not enforce additional or maybe link out to zoau zinfo
-# doc (linking out is frowned upon.)
-
-# Thinking about creating a mapping (maybe CSV) in module_utils which can allow
-# for more legal subset options (eg 'iplinfo', 'ipl', 'ipl_info' -> ipl, etc).
-# The mapping can be updated with zinfo but there will also be a provision
-# for subsets not in the mapping. We cannot tie ansible error reporting to
-# zinfo error reporting because that could change in the future and result in
-# mismatched compatibility, instead we can simply pass on zinfo output as is
-# and leave it to the user to figure out which subsets are illegal
 
 
 def main():

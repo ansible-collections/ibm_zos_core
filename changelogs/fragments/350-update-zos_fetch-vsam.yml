@@ -1,0 +1,6 @@
+bugfixes:
+  - >
+    zos_fetch - Updates the modules behavior when fetching VSAM data sets such
+    that the maximum record length is now determined when creating a temporary
+    data set to copy the VSAM data into and a variable-length (VB) data set is
+    used. (https://github.com/ansible-collections/ibm_zos_core/pull/350)

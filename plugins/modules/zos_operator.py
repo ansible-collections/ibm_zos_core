@@ -28,6 +28,7 @@ author:
   - "Ping Xiao (@xiaopingBJ)"
   - "Demetrios Dimatos (@ddimatos)"
   - "Rich Parker (@richp405)"
+  - "Oscar Fernando Flores (@fernandofloresg)"
 options:
   cmd:
     description:

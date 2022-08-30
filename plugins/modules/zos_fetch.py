@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020, 2021
+# Copyright (c) IBM Corporation 2019, 2020, 2021, 2022
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -120,6 +120,14 @@ options:
             (iconv) version; the most common character sets are supported.
         required: true
         type: str
+  tmp_hlq:
+    description:
+      - Override the default high level qualifier (HLQ) for temporary and backup
+        datasets.
+      - The default HLQ is the Ansible user used to execute the module and if
+        that is not available, then the value C(TMPHLQ) is used.
+    required: false
+    type: str
   ignore_sftp_stderr:
     description:
       - During data transfer through sftp, the module fails if the sftp command
@@ -367,11 +375,16 @@ class FetchHandler:
             max_recl = 80
         # RDW takes the first 4 bytes or records in the VB format, hence we need to add an extra buffer to the vsam max recl.
         max_recl += 4
-        sysin = out_ds_name = None
+
+        sysprint = sysin = out_ds_name = None
+        tmphlq = self.module.params.get("tmp_hlq")
+        if tmphlq is None:
+            tmphlq = "MVSTMP"
         try:
-            sysin = data_set.DataSet.create_temp("MVSTMP")
+            sysin = data_set.DataSet.create_temp(tmphlq)
+            sysprint = data_set.DataSet.create_temp(tmphlq)
             out_ds_name = data_set.DataSet.create_temp(
-                "MVSTMP", space_primary=vsam_size, space_type="K", record_format="VB", record_length=max_recl
+                tmphlq, space_primary=vsam_size, space_type="K", record_format="VB", record_length=max_recl
             )
             repro_sysin = " REPRO INFILE(INPUT)  OUTFILE(OUTPUT) "
             datasets.write(sysin, repro_sysin)
@@ -392,10 +405,9 @@ class FetchHandler:
                     name="output", definition=types.DatasetDefinition(out_ds_name)
                 )
             )
-            # Used * to keep standard output instead of writing in a dataset.
             dd_statements.append(
                 types.DDStatement(
-                    name="sysprint", definition=types.FileDefinition("*")
+                    name="sysprint", definition=types.FileDefinition(sysprint)
                 )
             )
 
@@ -439,6 +451,7 @@ class FetchHandler:
             )
 
         finally:
+            datasets.delete(sysprint)
             datasets.delete(sysin)
 
         return out_ds_name
@@ -591,6 +604,7 @@ def run_module():
             sftp_port=dict(type="int", required=False),
             ignore_sftp_stderr=dict(type="bool", default=False, required=False),
             local_charset=dict(type="str"),
+            tmp_hlq=dict(required=False, type="str", default=None),
         )
     )
 
@@ -615,6 +629,7 @@ def run_module():
         fail_on_missing=dict(arg_type="bool", required=False, default=True),
         is_binary=dict(arg_type="bool", required=False, default=False),
         use_qualifier=dict(arg_type="bool", required=False, default=False),
+        tmp_hlq=dict(type='qualifier_or_empty', required=False, default=None),
     )
 
     if not module.params.get("encoding") and not module.params.get("is_binary"):

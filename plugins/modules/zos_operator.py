@@ -149,6 +149,11 @@ from tempfile import NamedTemporaryFile
 from stat import S_IEXEC, S_IREAD, S_IWRITE
 from os import chmod
 
+
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
+    MissingZOAUImport,
+)
+
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,
 )
@@ -163,13 +168,17 @@ else:
 
 try:
     from zoautil_py import opercmd
-    from zoautil_py.types import ZOAUResponse
 except Exception:
     opercmd = MissingZOAUImport()
 
+try:
+    from zoautil_py.types import ZOAUResponse
+except Exception:
+    ZOAUResponse = MissingZOAUImport()
+
 
 def execute_command(operator_cmd, *args, **kwargs):
-    response = opercmd.execute(operator_cmd, *args, **kwargs)
+    response = opercmd.execute(operator_cmd, args, kwargs)
     rc = response.rc
     stdout = response.stdout_response
     stderr = response.stderr_response
@@ -290,11 +299,10 @@ def run_operator_command(params):
         if wait:
             kwargs.update({"timeout": "{0}".format(wait)})
             kwargs.update({"parameters": "ISFDELAY={0}".format(wait)})
-
+            # it *appears* IFSdelay is passing through correctly... did 1x-4x tests 0 to 20 seconds
     cmdtxt = params.get("cmd")
 
     args = []
-
     rc, stdout, stderr = execute_command(cmdtxt, *args, **kwargs)
 
     extrastdout = ""

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020
+# Copyright (c) IBM Corporation 2020, 2022
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -24,6 +24,11 @@ __metaclass__ = type
 TEST_INFO = dict(
     test_add_del=dict(
         library="", state="present", force_dynamic=True
+    ),
+    test_add_del_with_tmp_hlq_option=dict(
+        library="", state="present", force_dynamic=True, tmp_hlq="", persistent=dict(
+            data_set_name="", backup=True
+        )
     ),
     test_add_del_volume=dict(
         library="", volume=" ", state="present", force_dynamic=True
@@ -123,6 +128,25 @@ def test_add_del(ansible_zos_module):
     pprint(vars(results))
     for result in results.contacted.values():
         assert result.get("rc") == 0
+    test_info['state'] = 'absent'
+    results = hosts.all.zos_apf(**test_info)
+    pprint(vars(results))
+    for result in results.contacted.values():
+        assert result.get("rc") == 0
+    clean_test_env(hosts, test_info)
+
+
+def test_add_del_with_tmp_hlq_option(ansible_zos_module):
+    hosts = ansible_zos_module
+    tmphlq = "TMPHLQ"
+    test_info = TEST_INFO['test_add_del_with_tmp_hlq_option']
+    test_info['tmp_hlq'] = tmphlq
+    set_test_env(hosts, test_info)
+    results = hosts.all.zos_apf(**test_info)
+    pprint(vars(results))
+    for result in results.contacted.values():
+        assert result.get("rc") == 0
+        assert result.get("backup_name")[:6] == tmphlq
     test_info['state'] = 'absent'
     results = hosts.all.zos_apf(**test_info)
     pprint(vars(results))
@@ -277,7 +301,8 @@ def test_add_already_present(ansible_zos_module):
     results = hosts.all.zos_apf(**test_info)
     pprint(vars(results))
     for result in results.contacted.values():
-        assert result.get("rc") == 16
+        # Return code 16 if ZOAU < 1.2.0 and RC is 8 if ZOAU >= 1.2.0
+        assert result.get("rc") == 16 or result.get("rc") == 8
     test_info['state'] = 'absent'
     hosts.all.zos_apf(**test_info)
     clean_test_env(hosts, test_info)
@@ -291,7 +316,8 @@ def test_del_not_present(ansible_zos_module):
     results = hosts.all.zos_apf(**test_info)
     pprint(vars(results))
     for result in results.contacted.values():
-        assert result.get("rc") == 16
+        # Return code 16 if ZOAU < 1.2.0 and RC is 8 if ZOAU >= 1.2.0
+        assert result.get("rc") == 16 or result.get("rc") == 8
     clean_test_env(hosts, test_info)
 
 
@@ -302,7 +328,8 @@ def test_add_not_found(ansible_zos_module):
     results = hosts.all.zos_apf(**test_info)
     pprint(vars(results))
     for result in results.contacted.values():
-        assert result.get("rc") == 16
+        # Return code 16 if ZOAU < 1.2.0 and RC is 8 if ZOAU >= 1.2.0
+        assert result.get("rc") == 16 or result.get("rc") == 8
 
 
 def test_add_with_wrong_volume(ansible_zos_module):
@@ -314,7 +341,8 @@ def test_add_with_wrong_volume(ansible_zos_module):
     results = hosts.all.zos_apf(**test_info)
     pprint(vars(results))
     for result in results.contacted.values():
-        assert result.get("rc") == 16
+        # Return code 16 if ZOAU < 1.2.0 and RC is 8 if ZOAU >= 1.2.0
+        assert result.get("rc") == 16 or result.get("rc") == 8
     clean_test_env(hosts, test_info)
 
 

@@ -221,16 +221,22 @@ def run_module():
     # targeting automation -- quiet but well-intended error messages may easily
     # be skipped
     if rc != 0:
-        # there are only 2 known error messages in zinfo, if neither gets
+        # there are 3 known error messages in zinfo, if neither gets
         # triggered then we send out this generic zinfo error message.
         err_msg = ('An exception has occurred in Z Open Automation Utilities '
                    '(ZOAU) utility \'zinfo\'. See \'zinfo_err_msg\' for '
                    'additional details.')
+        # triggered by invalid optarg eg "zinfo -q"
         if 'BGYSC5201E' in err.decode('utf-8'):
-            err_msg = ('An invalid susbset was detected. See \'zinfo_err_msg\' for '
+            err_msg = ('Invalid call to zinfo. See \'zinfo_err_msg\' for '
                        'additional details.')
+        # triggered when optarg does not get expected arg eg "zinfo -t"
         elif 'BGYSC5202E' in err.decode('utf-8'):
-            err_msg = ('An invalid option was passed to zinfo. See \'zinfo_err_msg\' '
+            err_msg = ('Invalid call to zinfo. Possibly missing a valid subset'
+                       ' See \'zinfo_err_msg\' for additional details.')
+        # triggered by illegal subset eg "zinfo -t abc"
+        elif 'BGYSC5203E' in err.decode('utf-8'):
+            err_msg = ('An invalid subset was detected. See \'zinfo_err_msg\' '
                        'for additional details.')
 
         module.fail_json(msg=err_msg, zinfo_err_msg=err)

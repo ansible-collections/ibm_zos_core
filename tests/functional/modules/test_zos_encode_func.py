@@ -134,6 +134,7 @@ def test_uss_encoding_conversion_when_dest_not_exists_01(ansible_zos_module):
         hosts.all.file(path=USS_NONE_FILE, state="absent")
         results = hosts.all.zos_encode(
             src=USS_FILE,
+            dest=USS_NONE_FILE,
             encoding={
                 "from": FROM_ENCODING,
                 "to": TO_ENCODING,

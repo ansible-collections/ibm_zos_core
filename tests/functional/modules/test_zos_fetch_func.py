@@ -202,8 +202,14 @@ def test_fetch_vsam_data_set(ansible_zos_module):
         )
         hosts.all.zos_copy(content=TEST_DATA, dest=USS_FILE)
         hosts.all.zos_encode(
-            src=USS_FILE, dest=TEST_VSAM, from_encoding=FROM_ENCODING, to_encoding=TO_ENCODING
+            src=USS_FILE,
+            dest=TEST_VSAM,
+            encoding={
+                "from": FROM_ENCODING,
+                "to": TO_ENCODING,
+            },
         )
+
         params = dict(src=TEST_VSAM, dest="/tmp/", flat=True, is_binary=True)
         results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():

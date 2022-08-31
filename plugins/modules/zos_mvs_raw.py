@@ -2368,8 +2368,10 @@ def build_data_definition(dd):
     elif dd.get("dd_unix"):
         data_definition = RawFileDefinition(**(dd.get("dd_unix")))
     elif dd.get("dd_input"):
+        dd.get("dd_input")["tmphlq"] = g_tmphlq
         data_definition = RawInputDefinition(**(dd.get("dd_input")))
     elif dd.get("dd_output"):
+        dd.get("dd_output")["tmphlq"] = g_tmphlq
         data_definition = RawOutputDefinition(**(dd.get("dd_output")))
     elif dd.get("dd_vio"):
         data_definition = VIODefinition(tmphlq=g_tmphlq)

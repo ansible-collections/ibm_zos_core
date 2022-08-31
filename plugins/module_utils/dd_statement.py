@@ -512,6 +512,7 @@ class StdinDefinition(DataDefinition):
     def __init__(
         self,
         content,
+        tmphlq="",
         record_format="FB",
         space_primary=5,
         space_secondary=5,
@@ -539,6 +540,7 @@ class StdinDefinition(DataDefinition):
         """
         self.name = None
         name = DataSet.create_temp(
+            hlq=tmphlq,
             record_format=record_format,
             space_primary=space_primary,
             space_secondary=space_secondary,
@@ -588,11 +590,12 @@ class InputDefinition(StdinDefinition):
 class OutputDefinition(DataDefinition):
     def __init__(
         self,
+        tmphlq="",
         record_format="FBA",
         space_primary=100,
         space_secondary=50,
         space_type="trk",
-        record_length=121,
+        record_length=121
     ):
         """Output DD Data type to be used in a DDStatement.
         This should be used in cases where user wants to receive
@@ -614,6 +617,7 @@ class OutputDefinition(DataDefinition):
         """
         self.name = None
         name = DataSet.create_temp(
+            hlq=tmphlq,
             record_format=record_format,
             space_primary=space_primary,
             space_secondary=space_secondary,

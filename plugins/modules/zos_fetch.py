@@ -333,17 +333,26 @@ class FetchHandler:
         """
         space_pri = 0
         total_size = 0
+        # Default record length
+        max_recl = 80
         # Bytes per cylinder for a 3390 DASD
         bytes_per_cyl = 849960
 
         listcat_cmd = " LISTCAT ENT('{0}') ALL".format(vsam)
         cmd = "mvscmdauth --pgm=idcams --sysprint=stdout --sysin=stdin"
         rc, out, err = self._run_command(cmd, data=listcat_cmd)
+
         if not rc:
             find_space_pri = re.findall(r"SPACE-PRI-*\d+", out)
             if find_space_pri:
                 space_pri = int("".join(re.findall(r"\d+", find_space_pri[0])))
             total_size = ceil((bytes_per_cyl * space_pri) / 1024)
+            find_max_recl = re.findall(r"MAXLRECL-*\d+", out)
+            if find_max_recl:
+                max_recl = int("".join(re.findall(r"\d+", find_max_recl[0])))
+            find_rec_total = re.findall(r"REC-TOTAL-*\d+", out)
+            if find_rec_total:
+                rec_total = int("".join(re.findall(r"\d+", find_rec_total[0])))
         else:
             self._fail_json(
                 msg="Unable to obtain data set information for {0}: {1}".format(
@@ -355,12 +364,18 @@ class FetchHandler:
                 stderr_lines=err.splitlines(),
                 rc=rc,
             )
-        return total_size
+        return total_size, max_recl, rec_total
 
     def _copy_vsam_to_temp_data_set(self, ds_name):
         """ Copy VSAM data set to a temporary sequential data set """
         mvs_rc = 0
-        vsam_size = self._get_vsam_size(ds_name)
+        vsam_size, max_recl, rec_total = self._get_vsam_size(ds_name)
+        # Default in case of max recl being 80 to avoid failures when fetching and empty vsam.
+        if max_recl == 0:
+            max_recl = 80
+        # RDW takes the first 4 bytes or records in the VB format, hence we need to add an extra buffer to the vsam max recl.
+        max_recl += 4
+
         sysprint = sysin = out_ds_name = None
         tmphlq = self.module.params.get("tmp_hlq")
         if tmphlq is None:
@@ -369,7 +384,7 @@ class FetchHandler:
             sysin = data_set.DataSet.create_temp(tmphlq)
             sysprint = data_set.DataSet.create_temp(tmphlq)
             out_ds_name = data_set.DataSet.create_temp(
-                "MSVTMP", space_primary=vsam_size, space_type="K"
+                tmphlq, space_primary=vsam_size, space_type="K", record_format="VB", record_length=max_recl
             )
             repro_sysin = " REPRO INFILE(INPUT)  OUTFILE(OUTPUT) "
             datasets.write(sysin, repro_sysin)
@@ -392,11 +407,24 @@ class FetchHandler:
             )
             dd_statements.append(
                 types.DDStatement(
-                    name="sysprint", definition=types.DatasetDefinition(sysprint)
+                    name="sysprint", definition=types.FileDefinition(sysprint)
                 )
             )
 
-            mvs_rc = mvscmd.execute_authorized(pgm="idcams", dds=dd_statements)
+            response = mvscmd.execute_authorized(pgm="idcams", dds=dd_statements)
+            mvs_rc, mvs_stdout, mvs_stderr = response.rc, response.stdout_response, response.stderr_response
+
+            # When vsam is empty mvs return code is 12 hence checking for rec total as well, is not failed rather get an empty file.
+            if mvs_rc != 0 and rec_total > 0:
+                self._fail_json(
+                    msg=(
+                        "Non-zero return code received while executing mvscmd "
+                        "to copy VSAM data set {0}".format(ds_name)
+                    ),
+                    rc=mvs_rc,
+                    stderr=mvs_stderr,
+                    stdout=mvs_stdout
+                )
 
         except OSError as err:
             self._fail_json(msg=str(err))

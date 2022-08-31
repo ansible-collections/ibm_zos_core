@@ -77,7 +77,11 @@ KSDS_REPRO_JCL = """//DOREPRO    JOB (T043JM,JM00,1,0,0,0),'CREATE KSDS',CLASS=R
 def test_uss_encoding_conversion_with_invalid_encoding(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_encode(
-        src=USS_FILE, from_encoding=INVALID_ENCODING, to_encoding=TO_ENCODING
+        src=USS_FILE,
+        encoding={
+            "from": INVALID_ENCODING,
+            "to": TO_ENCODING,
+        },
     )
     pprint(vars(results))
     for result in results.contacted.values():
@@ -89,7 +93,11 @@ def test_uss_encoding_conversion_with_invalid_encoding(ansible_zos_module):
 def test_uss_encoding_conversion_with_the_same_encoding(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_encode(
-        src=USS_FILE, from_encoding=FROM_ENCODING, to_encoding=FROM_ENCODING
+        src=USS_FILE,
+        encoding={
+            "from": FROM_ENCODING,
+            "to": FROM_ENCODING,
+        },
     )
     pprint(vars(results))
     for result in results.contacted.values():
@@ -103,7 +111,11 @@ def test_uss_encoding_conversion_without_dest(ansible_zos_module):
         hosts = ansible_zos_module
         hosts.all.copy(content=TEST_DATA, dest=USS_FILE)
         results = hosts.all.zos_encode(
-            src=USS_FILE, from_encoding=FROM_ENCODING, to_encoding=TO_ENCODING
+            src=USS_FILE,
+            encoding={
+                "from": FROM_ENCODING,
+                "to": TO_ENCODING,
+            },
         )
         pprint(vars(results))
         for result in results.contacted.values():
@@ -122,10 +134,10 @@ def test_uss_encoding_conversion_when_dest_not_exists_01(ansible_zos_module):
         hosts.all.file(path=USS_NONE_FILE, state="absent")
         results = hosts.all.zos_encode(
             src=USS_FILE,
-            dest=USS_NONE_FILE,
-            from_encoding=FROM_ENCODING,
-            to_encoding=TO_ENCODING,
-            backup=True,
+            encoding={
+                "from": FROM_ENCODING,
+                "to": TO_ENCODING,
+            },
         )
         pprint(vars(results))
         for result in results.contacted.values():
@@ -145,8 +157,10 @@ def test_uss_encoding_conversion_when_dest_not_exists_02(ansible_zos_module):
     results = hosts.all.zos_encode(
         src=MVS_PS,
         dest=MVS_NONE_PS,
-        from_encoding=FROM_ENCODING,
-        to_encoding=TO_ENCODING,
+        encoding={
+            "from": FROM_ENCODING,
+            "to": TO_ENCODING,
+        }
     )
     pprint(vars(results))
     for result in results.contacted.values():
@@ -164,8 +178,10 @@ def test_uss_encoding_conversion_uss_file_to_uss_file(ansible_zos_module):
         results = hosts.all.zos_encode(
             src=USS_FILE,
             dest=USS_DEST_FILE,
-            from_encoding=TO_ENCODING,
-            to_encoding=FROM_ENCODING,
+            encoding={
+                "from": TO_ENCODING,
+                "to": FROM_ENCODING,
+            },
         )
         pprint(vars(results))
         for result in results.contacted.values():
@@ -186,8 +202,10 @@ def test_uss_encoding_conversion_uss_file_to_uss_path(ansible_zos_module):
         results = hosts.all.zos_encode(
             src=USS_FILE,
             dest=USS_DEST_PATH,
-            from_encoding=TO_ENCODING,
-            to_encoding=FROM_ENCODING,
+            encoding={
+                "from": TO_ENCODING,
+                "to": FROM_ENCODING,
+            },
         )
         pprint(vars(results))
         for result in results.contacted.values():
@@ -210,8 +228,10 @@ def test_uss_encoding_conversion_uss_path_to_uss_path(ansible_zos_module):
         results = hosts.all.zos_encode(
             src=USS_PATH,
             dest=USS_DEST_PATH,
-            from_encoding=TO_ENCODING,
-            to_encoding=FROM_ENCODING,
+            encoding={
+                "from": TO_ENCODING,
+                "to": FROM_ENCODING,
+            },
             backup=True,
         )
         pprint(vars(results))
@@ -232,7 +252,12 @@ def test_uss_encoding_conversion_uss_file_to_mvs_ps(ansible_zos_module):
         hosts.all.copy(content=TEST_DATA, dest=USS_FILE)
         hosts.all.zos_data_set(name=MVS_PS, state="present", type="seq")
         results = hosts.all.zos_encode(
-            src=USS_FILE, dest=MVS_PS, from_encoding=TO_ENCODING, to_encoding=FROM_ENCODING
+            src=USS_FILE,
+            dest=MVS_PS,
+            encoding={
+                "from": TO_ENCODING,
+                "to": FROM_ENCODING,
+            },
         )
         pprint(vars(results))
         for result in results.contacted.values():
@@ -251,8 +276,10 @@ def test_uss_encoding_conversion_mvs_ps_to_uss_file(ansible_zos_module):
         results = hosts.all.zos_encode(
             src=MVS_PS,
             dest=USS_DEST_FILE,
-            from_encoding=FROM_ENCODING,
-            to_encoding=TO_ENCODING,
+            encoding={
+                "from": FROM_ENCODING,
+                "to": TO_ENCODING,
+            },
             backup=True,
         )
         pprint(vars(results))
@@ -272,7 +299,12 @@ def test_uss_encoding_conversion_uss_file_to_mvs_pds(ansible_zos_module):
         hosts.all.copy(content=TEST_DATA, dest=USS_FILE)
         hosts.all.zos_data_set(name=MVS_PDS, state="present", type="pds", record_length=80)
         results = hosts.all.zos_encode(
-            src=USS_FILE, dest=MVS_PDS, from_encoding=TO_ENCODING, to_encoding=FROM_ENCODING
+            src=USS_FILE,
+            dest=MVS_PDS,
+            encoding={
+                "from": TO_ENCODING,
+                "to": FROM_ENCODING,
+            },
         )
         pprint(vars(results))
         for result in results.contacted.values():
@@ -299,8 +331,10 @@ def test_uss_encoding_conversion_uss_file_to_mvs_pds_member(ansible_zos_module):
         results = hosts.all.zos_encode(
             src=USS_FILE,
             dest=MVS_PDS_MEMBER,
-            from_encoding=TO_ENCODING,
-            to_encoding=FROM_ENCODING,
+            encoding={
+                "from": TO_ENCODING,
+                "to": FROM_ENCODING,
+            },
         )
         pprint(vars(results))
         for result in results.contacted.values():
@@ -319,8 +353,10 @@ def test_uss_encoding_conversion_mvs_pds_member_to_uss_file(ansible_zos_module):
         results = hosts.all.zos_encode(
             src=MVS_PDS_MEMBER,
             dest=USS_DEST_FILE,
-            from_encoding=FROM_ENCODING,
-            to_encoding=TO_ENCODING,
+            encoding={
+                "from": FROM_ENCODING,
+                "to": TO_ENCODING,
+            },
             backup=True,
         )
         pprint(vars(results))
@@ -342,7 +378,12 @@ def test_uss_encoding_conversion_uss_path_to_mvs_pds(ansible_zos_module):
         hosts.all.copy(content=TEST_DATA, dest=USS_PATH + "/encode2")
         hosts.all.zos_data_set(name=MVS_PDS, state="present", type="pds", record_length=80)
         results = hosts.all.zos_encode(
-            src=USS_PATH, dest=MVS_PDS, from_encoding=TO_ENCODING, to_encoding=FROM_ENCODING
+            src=USS_PATH,
+            dest=MVS_PDS,
+            encoding={
+                "from": TO_ENCODING,
+                "to": FROM_ENCODING,
+            },
         )
         pprint(vars(results))
         for result in results.contacted.values():
@@ -361,8 +402,10 @@ def test_uss_encoding_conversion_mvs_pds_to_uss_path(ansible_zos_module):
         results = hosts.all.zos_encode(
             src=MVS_PDS,
             dest=USS_DEST_PATH,
-            from_encoding=TO_ENCODING,
-            to_encoding=FROM_ENCODING,
+            encoding={
+                "from": TO_ENCODING,
+                "to": FROM_ENCODING,
+            },
         )
         pprint(vars(results))
         for result in results.contacted.values():
@@ -379,8 +422,10 @@ def test_uss_encoding_conversion_mvs_ps_to_mvs_pds_member(ansible_zos_module):
     results = hosts.all.zos_encode(
         src=MVS_PS,
         dest=MVS_PDS_MEMBER,
-        from_encoding=FROM_ENCODING,
-        to_encoding=TO_ENCODING,
+        encoding={
+            "from": FROM_ENCODING,
+            "to": TO_ENCODING,
+        },
     )
     pprint(vars(results))
     for result in results.contacted.values():
@@ -407,7 +452,12 @@ def test_uss_encoding_conversion_uss_file_to_mvs_vsam(ansible_zos_module):
             assert result.get("jobs")[0].get("ret_code").get("code") == 0
             assert result.get("changed") is True
         results = hosts.all.zos_encode(
-            src=USS_FILE, dest=MVS_VS, from_encoding=TO_ENCODING, to_encoding=FROM_ENCODING
+            src=USS_FILE,
+            dest=MVS_VS,
+            encoding={
+                "from": TO_ENCODING,
+                "to": FROM_ENCODING,
+            },
         )
         pprint(vars(results))
         for result in results.contacted.values():
@@ -427,8 +477,10 @@ def test_uss_encoding_conversion_mvs_vsam_to_uss_file(ansible_zos_module):
         results = hosts.all.zos_encode(
             src=MVS_VS,
             dest=USS_DEST_FILE,
-            from_encoding=FROM_ENCODING,
-            to_encoding=TO_ENCODING,
+            encoding={
+                "from": FROM_ENCODING,
+                "to": TO_ENCODING,
+            },
             backup=True,
         )
         hosts.all.file(path=USS_DEST_FILE, state="absent")
@@ -448,7 +500,12 @@ def test_uss_encoding_conversion_mvs_vsam_to_mvs_ps(ansible_zos_module):
     hosts.all.zos_data_set(name=MVS_PS, state="absent")
     hosts.all.zos_data_set(name=MVS_PS, state="present", type="seq", record_length=47)
     results = hosts.all.zos_encode(
-        src=MVS_VS, dest=MVS_PS, from_encoding=FROM_ENCODING, to_encoding=TO_ENCODING
+        src=MVS_VS,
+        dest=MVS_PS,
+        encoding={
+            "from": FROM_ENCODING,
+            "to": TO_ENCODING,
+        },
     )
     pprint(vars(results))
     for result in results.contacted.values():
@@ -463,8 +520,10 @@ def test_uss_encoding_conversion_mvs_vsam_to_mvs_pds_member(ansible_zos_module):
     results = hosts.all.zos_encode(
         src=MVS_VS,
         dest=MVS_PDS_MEMBER,
-        from_encoding=FROM_ENCODING,
-        to_encoding=TO_ENCODING,
+        encoding={
+            "from": FROM_ENCODING,
+            "to": TO_ENCODING,
+        },
     )
     hosts.all.zos_data_set(name=MVS_PDS, state="absent")
     pprint(vars(results))
@@ -493,7 +552,12 @@ def test_uss_encoding_conversion_mvs_ps_to_mvs_vsam(ansible_zos_module):
             assert result.get("jobs")[0].get("ret_code").get("code") == 0
             assert result.get("changed") is True
         results = hosts.all.zos_encode(
-            src=MVS_PS, dest=MVS_VS, from_encoding=TO_ENCODING, to_encoding=FROM_ENCODING
+            src=MVS_PS,
+            dest=MVS_VS,
+            encoding={
+                "from": TO_ENCODING,
+                "to": FROM_ENCODING,
+            },
         )
         pprint(vars(results))
         for result in results.contacted.values():
@@ -516,8 +580,10 @@ def test_pds_backup(ansible_zos_module):
         hosts.all.shell(cmd="cp {0} \"//'{1}(SAMPLE)'\"".format(TEMP_JCL_PATH, MVS_PDS))
         hosts.all.zos_encode(
             src=MVS_PDS,
-            from_encoding=TO_ENCODING,
-            to_encoding=FROM_ENCODING,
+            encoding={
+                "from": TO_ENCODING,
+                "to": FROM_ENCODING,
+            },
             backup=True,
             backup_name=BACKUP_DATA_SET,
         )
@@ -525,6 +591,39 @@ def test_pds_backup(ansible_zos_module):
         for content in contents.contacted.values():
             # pprint(content)
             assert TEST_FILE_TEXT in content.get("stdout")
+    finally:
+        hosts.all.file(path=TEMP_JCL_PATH, state="absent")
+        hosts.all.zos_data_set(name=MVS_PDS, state="absent")
+        hosts.all.zos_data_set(name=BACKUP_DATA_SET, state="absent")
+
+
+def test_pds_backup_with_tmp_hlq_option(ansible_zos_module):
+    try:
+        hosts = ansible_zos_module
+        tmphlq = "TMPHLQ"
+        hosts.all.zos_data_set(name=BACKUP_DATA_SET, state="absent")
+        hosts.all.zos_data_set(name=MVS_PDS, state="absent")
+        hosts.all.zos_data_set(name=MVS_PDS, state="present", type="pds")
+        hosts.all.shell(cmd="echo '{0}' > {1}".format(TEST_FILE_TEXT, TEMP_JCL_PATH))
+        hosts.all.shell(cmd="cp {0} \"//'{1}(SAMPLE)'\"".format(TEMP_JCL_PATH, MVS_PDS))
+        encode_res = hosts.all.zos_encode(
+            src=MVS_PDS,
+            encoding={
+                "from": TO_ENCODING,
+                "to": FROM_ENCODING,
+            },
+            backup=True,
+            tmp_hlq=tmphlq,
+        )
+        for enc_res in encode_res.contacted.values():
+            assert enc_res.get("backup_name")[:6] == tmphlq
+            contents = hosts.all.shell(cmd="cat \"//'{0}(SAMPLE)'\"".format(enc_res.get("backup_name")))
+            hosts.all.file(path=TEMP_JCL_PATH, state="absent")
+            hosts.all.zos_data_set(name=MVS_PDS, state="absent")
+            hosts.all.zos_data_set(name=BACKUP_DATA_SET, state="absent")
+            for content in contents.contacted.values():
+                # pprint(content)
+                assert TEST_FILE_TEXT in content.get("stdout")
     finally:
         hosts.all.file(path=TEMP_JCL_PATH, state="absent")
         hosts.all.zos_data_set(name=MVS_PDS, state="absent")
@@ -541,8 +640,10 @@ def test_ps_backup(ansible_zos_module):
         hosts.all.shell(cmd="cp {0} \"//'{1}'\"".format(TEMP_JCL_PATH, MVS_PS))
         hosts.all.zos_encode(
             src=MVS_PS,
-            from_encoding=TO_ENCODING,
-            to_encoding=FROM_ENCODING,
+            encoding={
+                "from": TO_ENCODING,
+                "to": FROM_ENCODING,
+            },
             backup=True,
             backup_name=BACKUP_DATA_SET,
         )
@@ -586,8 +687,10 @@ def test_vsam_backup(ansible_zos_module):
         hosts.all.zos_encode(
             src=MVS_VS,
             dest=MVS_PS,
-            from_encoding=FROM_ENCODING,
-            to_encoding=TO_ENCODING,
+            encoding={
+                "from": FROM_ENCODING,
+                "to": TO_ENCODING,
+            },
         )
         contents = hosts.all.shell(cmd="cat \"//'{0}'\"".format(MVS_PS))
         content1 = ""
@@ -596,8 +699,10 @@ def test_vsam_backup(ansible_zos_module):
             content1 = content.get("stdout")
         hosts.all.zos_encode(
             src=MVS_VS,
-            from_encoding=FROM_ENCODING,
-            to_encoding=TO_ENCODING,
+            encoding={
+                "from": FROM_ENCODING,
+                "to": TO_ENCODING,
+            },
             backup=True,
             backup_name=BACKUP_DATA_SET,
         )
@@ -607,8 +712,10 @@ def test_vsam_backup(ansible_zos_module):
         hosts.all.zos_encode(
             src=BACKUP_DATA_SET,
             dest=MVS_PS,
-            from_encoding=FROM_ENCODING,
-            to_encoding=TO_ENCODING,
+            encoding={
+                "from": FROM_ENCODING,
+                "to": TO_ENCODING,
+            },
         )
 
         contents = hosts.all.shell(cmd="cat \"//'{0}'\"".format(MVS_PS))
@@ -649,8 +756,10 @@ def test_uss_backup_entire_folder_to_default_backup_location(ansible_zos_module)
         results = hosts.all.zos_encode(
             src=MVS_PDS,
             dest=TEMP_JCL_PATH + "2",
-            from_encoding=TO_ENCODING,
-            to_encoding=FROM_ENCODING,
+            encoding={
+                "from": TO_ENCODING,
+                "to": FROM_ENCODING,
+            },
             backup=True,
         )
         backup_name = None
@@ -711,8 +820,10 @@ def test_uss_backup_entire_folder_to_default_backup_location_compressed(
         results = hosts.all.zos_encode(
             src=MVS_PDS,
             dest=TEMP_JCL_PATH + "2",
-            from_encoding=TO_ENCODING,
-            to_encoding=FROM_ENCODING,
+            encoding={
+                "from": TO_ENCODING,
+                "to": FROM_ENCODING,
+            },
             backup=True,
             backup_compress=True,
         )
@@ -740,8 +851,10 @@ def test_return_backup_name_on_module_success_and_failure(ansible_zos_module):
         hosts.all.zos_copy(src=TEMP_JCL_PATH, dest=MVS_PS, remote_src=True)
         enc_ds = hosts.all.zos_encode(
             src=MVS_PS,
-            from_encoding=FROM_ENCODING,
-            to_encoding=TO_ENCODING,
+            encoding={
+                "from": FROM_ENCODING,
+                "to": TO_ENCODING,
+            },
             backup=True,
             backup_name=BACKUP_DATA_SET,
         )
@@ -752,8 +865,10 @@ def test_return_backup_name_on_module_success_and_failure(ansible_zos_module):
         hosts.all.zos_data_set(name=BACKUP_DATA_SET, state="absent")
         enc_ds = hosts.all.zos_encode(
             src=MVS_PS,
-            from_encoding=INVALID_ENCODING,
-            to_encoding=TO_ENCODING,
+            encoding={
+                "from": INVALID_ENCODING,
+                "to": TO_ENCODING,
+            },
             backup=True,
             backup_name=BACKUP_DATA_SET,
         )

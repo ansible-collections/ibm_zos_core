@@ -159,20 +159,28 @@ TEST_ENV = dict(
 
 TEST_INFO = dict(
     test_uss_block_insertafter_regex=dict(
-        insertafter="ZOAU_ROOT=", block="ZOAU_ROOT=/mvsutil-develop_dsed\nZOAU_HOME=\\$ZOAU_ROOT\nZOAU_DIR=\\$ZOAU_ROOT",
+        insertafter="ZOAU_ROOT=",
+        block="ZOAU_ROOT=/mvsutil-develop_dsed\nZOAU_HOME=\\$ZOAU_ROOT\nZOAU_DIR=\\$ZOAU_ROOT",
         state="present"),
     test_uss_block_insertbefore_regex=dict(
-        insertbefore="ZOAU_ROOT=", block="unset ZOAU_ROOT\nunset ZOAU_HOME\nunset ZOAU_DIR", state="present"),
+        insertbefore="ZOAU_ROOT=", block="unset ZOAU_ROOT\nunset ZOAU_HOME\nunset ZOAU_DIR",
+        state="present"),
     test_uss_block_insertafter_eof=dict(
-        insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present"),
+        insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR",
+        state="present"),
     test_uss_block_insertafter_eof_with_backup=dict(
-        insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present", backup=True),
+        insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR",
+        state="present", backup=True),
     test_uss_block_insertafter_eof_with_backup_name=dict(
-        insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present", backup=True, backup_name=USS_BACKUP_FILE),
+        insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR",
+        state="present", backup=True,
+        backup_name=USS_BACKUP_FILE),
     test_uss_block_insert_with_force_option_as_true=dict(
-        insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present", force=True),
+        insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR",
+        state="present", force=True),
     test_uss_block_insert_with_force_option_as_false=dict(
-        insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present", force=False),
+        insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR",
+        state="present", force=False),
     test_uss_block_insertbefore_bof=dict(
         insertbefore="BOF", block="# this is file is for setting env vars",
         state="present"),
@@ -180,30 +188,42 @@ TEST_INFO = dict(
     test_uss_block_absent_with_force_option_as_true=dict(block="", state="absent", force=True),
     test_uss_block_absent_with_force_option_as_false=dict(block="", state="absent", force=True),
     test_uss_block_replace_insertafter_regex=dict(
-        insertafter="PYTHON_HOME=", block="ZOAU_ROOT=/mvsutil-develop_dsed\nZOAU_HOME=\\$ZOAU_ROOT\nZOAU_DIR=\\$ZOAU_ROOT",
+        insertafter="PYTHON_HOME=",
+        block="ZOAU_ROOT=/mvsutil-develop_dsed\nZOAU_HOME=\\$ZOAU_ROOT\nZOAU_DIR=\\$ZOAU_ROOT",
         state="present"),
     test_uss_block_replace_insertbefore_regex=dict(
-        insertbefore="PYTHON_HOME=", block="unset ZOAU_ROOT\nunset ZOAU_HOME\nunset ZOAU_DIR", state="present"),
+        insertbefore="PYTHON_HOME=", block="unset ZOAU_ROOT\nunset ZOAU_HOME\nunset ZOAU_DIR",
+        state="present"),
     test_uss_block_replace_insertafter_eof=dict(
-        insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present"),
+        insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR",
+        state="present"),
     test_uss_block_replace_insertbefore_bof=dict(
         insertbefore="BOF", block="# this is file is for setting env vars",
         state="present"),
     test_uss_block_insert_with_indentation_level_specified=dict(
-        insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present", indentation=16),
+        insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR",
+        state="present", indentation=16),
     test_ds_block_insertafter_regex=dict(test_name="T1"),
     test_ds_block_insertbefore_regex=dict(test_name="T2"),
     test_ds_block_insertafter_eof=dict(test_name="T3"),
     test_ds_block_insertbefore_bof=dict(test_name="T4"),
     test_ds_block_absent=dict(test_name="T5"),
-    test_ds_block_tmp_hlq_option=dict(insertafter="EOF", block="export ZOAU_ROOT\n", state="present", backup=True, tmp_hlq="TMPHLQ"),
-    test_ds_block_insert_with_force_option_as_true=dict(block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present", force=True),
-    test_ds_block_absent_with_force_option_as_true=dict(block="", state="absent", force=True),
-    test_ds_block_insert_with_force_option_as_false=dict(block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present", force=False),
+    test_ds_block_tmp_hlq_option=dict(
+        insertafter="EOF", block="export ZOAU_ROOT\n",state="present", backup=True,
+        tmp_hlq="TMPHLQ"),
+    test_ds_block_insert_with_force_option_as_true=dict(
+        block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present", force=True),
+    test_ds_block_absent_with_force_option_as_true=dict(
+        block="", state="absent", force=True),
+    test_ds_block_insert_with_force_option_as_false=dict(
+        block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present", force=False),
     test_ds_block_absent_with_force_option_as_false=dict(block="", state="absent", force=False),
     test_ds_block_insert_with_indentation_level_specified=dict(test_name="T7"),
-    test_ds_block_insertafter_eof_with_backup=dict(block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present", backup=True),
-    test_ds_block_insertafter_eof_with_backup_name=dict(block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present", backup=True, backup_name=MVS_BACKUP_DS),
+    test_ds_block_insertafter_eof_with_backup=dict(
+        block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present", backup=True),
+    test_ds_block_insertafter_eof_with_backup_name=dict(
+        block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR",
+        state="present", backup=True, backup_name=MVS_BACKUP_DS),
     expected=dict(test_uss_block_insertafter_regex_defaultmarker="""if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none

@@ -489,7 +489,7 @@ def get_changed_files(path, branch="origin/dev"):
     stdout, stderr = get_diff.communicate()
     stdout = stdout.decode("utf-8")
     if get_diff.returncode > 0:
-        raise RuntimeError(f"Could not acquire change list, error = [{stderr}]")
+        raise RuntimeError("Could not acquire change list, error = [{0}]".format(stderr))
     if stdout:
         changed_files = [
             x.split("\t")[-1] for x in stdout.split("\n") if "D" not in x.split("\t")[0]
@@ -521,7 +521,7 @@ def get_changed_plugins(path, branch="origin/dev"):
     stdout = stdout.decode("utf-8")
 
     if get_diff_pr.returncode > 0:
-        raise RuntimeError(f"Could not acquire change list, error = [{stderr}]")
+        raise RuntimeError("Could not acquire change list, error = [{0}]".format(stderr))
     if stdout:
         for line in stdout.split("\n"):
             path_corrected_line = None

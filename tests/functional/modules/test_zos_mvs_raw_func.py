@@ -450,7 +450,7 @@ def test_return_content_type(ansible_zos_module, return_content_type, expected):
                 dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
             ],
         )
-        
+
         for result in results.contacted.values():
             pprint(result)
             assert result.get("ret_code", {}).get("code", -1) == 0
@@ -1338,7 +1338,7 @@ def test_concatenation_with_data_set_dd_and_response(ansible_zos_module):
                 ),
             ],
         )
-        
+
         for result in results.contacted.values():
             pprint(result)
             assert result.get("ret_code", {}).get("code", -1) == 0
@@ -1457,7 +1457,7 @@ def test_concatenation_with_data_set_member(ansible_zos_module):
         results2 = hosts.all.shell(
             cmd="cat \"//'{0}'\"".format(DEFAULT_DATA_SET_WITH_MEMBER)
         )
-        
+
         for result in results.contacted.values():
             pprint(result)
             assert result.get("ret_code", {}).get("code", -1) == 0
@@ -1469,7 +1469,6 @@ def test_concatenation_with_data_set_member(ansible_zos_module):
     finally:
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET_2, state="absent")
-
 
 
 def test_concatenation_with_unix_dd_and_response(ansible_zos_module):
@@ -1510,7 +1509,7 @@ def test_concatenation_with_unix_dd_and_response(ansible_zos_module):
                 ),
             ],
         )
-        
+
         for result in results.contacted.values():
             pprint(result)
             assert result.get("ret_code", {}).get("code", -1) == 0
@@ -1916,7 +1915,7 @@ def test_output_dd(ansible_zos_module):
                 dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
             ],
         )
-        
+
         for result in results.contacted.values():
             pprint(result)
             assert result.get("ret_code", {}).get("code", -1) == 0

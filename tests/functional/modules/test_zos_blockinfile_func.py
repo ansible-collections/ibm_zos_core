@@ -145,6 +145,9 @@ Until the issue be addressed I disable related tests.
 """
 # ENCODING = ['IBM-1047', 'ISO8859-1', 'UTF-8']
 ENCODING = ['IBM-1047']
+USS_BACKUP_FILE = "/tmp/backup.tmp"
+MVS_BACKUP_DS = "BLOCKIF.TEST.BACKUP"
+BACKUP_OPTIONS = [None, MVS_BACKUP_DS]
 TEST_ENV = dict(
     TEST_CONT=TEST_CONTENT,
     TEST_DIR="/tmp/zos_blockinfile/",
@@ -156,16 +159,28 @@ TEST_ENV = dict(
 
 TEST_INFO = dict(
     test_uss_block_insertafter_regex=dict(
-        insertafter="ZOAU_ROOT=", block="ZOAU_ROOT=/mvsutil-develop_dsed\nZOAU_HOME=\\$ZOAU_ROOT\nZOAU_DIR=\\$ZOAU_ROOT",
+        insertafter="ZOAU_ROOT=",
+        block="ZOAU_ROOT=/mvsutil-develop_dsed\nZOAU_HOME=\\$ZOAU_ROOT\nZOAU_DIR=\\$ZOAU_ROOT",
         state="present"),
     test_uss_block_insertbefore_regex=dict(
-        insertbefore="ZOAU_ROOT=", block="unset ZOAU_ROOT\nunset ZOAU_HOME\nunset ZOAU_DIR", state="present"),
+        insertbefore="ZOAU_ROOT=", block="unset ZOAU_ROOT\nunset ZOAU_HOME\nunset ZOAU_DIR",
+        state="present"),
     test_uss_block_insertafter_eof=dict(
-        insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present"),
+        insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR",
+        state="present"),
+    test_uss_block_insertafter_eof_with_backup=dict(
+        insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR",
+        state="present", backup=True),
+    test_uss_block_insertafter_eof_with_backup_name=dict(
+        insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR",
+        state="present", backup=True,
+        backup_name=USS_BACKUP_FILE),
     test_uss_block_insert_with_force_option_as_true=dict(
-        insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present", force=True),
+        insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR",
+        state="present", force=True),
     test_uss_block_insert_with_force_option_as_false=dict(
-        insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present", force=False),
+        insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR",
+        state="present", force=False),
     test_uss_block_insertbefore_bof=dict(
         insertbefore="BOF", block="# this is file is for setting env vars",
         state="present"),
@@ -173,28 +188,42 @@ TEST_INFO = dict(
     test_uss_block_absent_with_force_option_as_true=dict(block="", state="absent", force=True),
     test_uss_block_absent_with_force_option_as_false=dict(block="", state="absent", force=True),
     test_uss_block_replace_insertafter_regex=dict(
-        insertafter="PYTHON_HOME=", block="ZOAU_ROOT=/mvsutil-develop_dsed\nZOAU_HOME=\\$ZOAU_ROOT\nZOAU_DIR=\\$ZOAU_ROOT",
+        insertafter="PYTHON_HOME=",
+        block="ZOAU_ROOT=/mvsutil-develop_dsed\nZOAU_HOME=\\$ZOAU_ROOT\nZOAU_DIR=\\$ZOAU_ROOT",
         state="present"),
     test_uss_block_replace_insertbefore_regex=dict(
-        insertbefore="PYTHON_HOME=", block="unset ZOAU_ROOT\nunset ZOAU_HOME\nunset ZOAU_DIR", state="present"),
+        insertbefore="PYTHON_HOME=", block="unset ZOAU_ROOT\nunset ZOAU_HOME\nunset ZOAU_DIR",
+        state="present"),
     test_uss_block_replace_insertafter_eof=dict(
-        insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present"),
+        insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR",
+        state="present"),
     test_uss_block_replace_insertbefore_bof=dict(
         insertbefore="BOF", block="# this is file is for setting env vars",
         state="present"),
     test_uss_block_insert_with_indentation_level_specified=dict(
-        insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present", indentation=16),
+        insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR",
+        state="present", indentation=16),
     test_ds_block_insertafter_regex=dict(test_name="T1"),
     test_ds_block_insertbefore_regex=dict(test_name="T2"),
     test_ds_block_insertafter_eof=dict(test_name="T3"),
     test_ds_block_insertbefore_bof=dict(test_name="T4"),
     test_ds_block_absent=dict(test_name="T5"),
-    test_ds_block_tmp_hlq_option=dict(insertafter="EOF", block="export ZOAU_ROOT\n", state="present", backup=True, tmp_hlq="TMPHLQ"),
-    test_ds_block_insert_with_force_option_as_true=dict(block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present", force=True),
-    test_ds_block_absent_with_force_option_as_true=dict(block="", state="absent", force=True),
-    test_ds_block_insert_with_force_option_as_false=dict(block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present", force=False),
+    test_ds_block_tmp_hlq_option=dict(
+        insertafter="EOF", block="export ZOAU_ROOT\n", state="present", backup=True,
+        tmp_hlq="TMPHLQ"),
+    test_ds_block_insert_with_force_option_as_true=dict(
+        block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present", force=True),
+    test_ds_block_absent_with_force_option_as_true=dict(
+        block="", state="absent", force=True),
+    test_ds_block_insert_with_force_option_as_false=dict(
+        block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present", force=False),
     test_ds_block_absent_with_force_option_as_false=dict(block="", state="absent", force=False),
     test_ds_block_insert_with_indentation_level_specified=dict(test_name="T7"),
+    test_ds_block_insertafter_eof_with_backup=dict(
+        block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present", backup=True),
+    test_ds_block_insertafter_eof_with_backup_name=dict(
+        block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR",
+        state="present", backup=True, backup_name=MVS_BACKUP_DS),
     expected=dict(test_uss_block_insertafter_regex_defaultmarker="""if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -1144,6 +1173,38 @@ def test_uss_block_insert_with_indentation_level_specified(ansible_zos_module):
         TEST_INFO["expected"]["test_uss_block_insert_with_indentation_level_specified"])
 
 
+@pytest.mark.uss
+def test_uss_block_insertafter_eof_with_backup(ansible_zos_module):
+    try:
+        backup_name = USS_BACKUP_FILE
+        uss_result = UssGeneral(
+            "test_uss_block_insertafter_eof_with_backup", ansible_zos_module,
+            TEST_ENV, TEST_INFO["test_uss_block_insertafter_eof_with_backup"],
+            TEST_INFO["expected"]["test_uss_block_insertafter_eof_defaultmarker"])
+        for result in uss_result.contacted.values():
+            backup_name = result.get("backup_name")
+            assert backup_name is not None
+    finally:
+        ansible_zos_module.all.file(path=backup_name, state="absent")
+
+
+@pytest.mark.uss
+def test_uss_block_insertafter_eof_with_backup_name(ansible_zos_module):
+    try:
+        uss_result = UssGeneral(
+            "test_uss_block_insertafter_eof_with_backup_name", ansible_zos_module,
+            TEST_ENV, TEST_INFO["test_uss_block_insertafter_eof_with_backup_name"],
+            TEST_INFO["expected"]["test_uss_block_insertafter_eof_defaultmarker"])
+        for result in uss_result.contacted.values():
+            assert result.get("backup_name") == USS_BACKUP_FILE
+            cmdStr = "cat {0}".format(result.get("backup_name"))
+            results = ansible_zos_module.all.shell(cmd=cmdStr)
+            for result in results.contacted.values():
+                assert result.get("stdout") == TEST_ENV["TEST_CONT"]
+    finally:
+        ansible_zos_module.all.file(path=USS_BACKUP_FILE, state="absent")
+
+
 #########################
 # Dataset test cases
 #########################
@@ -1370,6 +1431,35 @@ def test_ds_block_insert_with_indentation_level_specified(ansible_zos_module, ds
         TEST_INFO["test_uss_block_insert_with_indentation_level_specified"],
         TEST_INFO["expected"]["test_uss_block_insert_with_indentation_level_specified"]
     )
+
+
+@pytest.mark.ds
+@pytest.mark.parametrize("dstype", DS_TYPE)
+@pytest.mark.parametrize("encoding", ENCODING)
+@pytest.mark.parametrize("backup_name", BACKUP_OPTIONS)
+def test_ds_block_insertafter_eof_with_backup(ansible_zos_module, dstype, encoding, backup_name):
+    try:
+        backup_ds_name = MVS_BACKUP_DS
+        TEST_ENV["DS_TYPE"] = dstype
+        TEST_ENV["ENCODING"] = encoding
+        TEST_INFO["test_ds_block_insertafter_eof_with_backup"]["backup_name"] = backup_name
+        ds_result = DsGeneral(
+            "T10",
+            ansible_zos_module, TEST_ENV,
+            TEST_INFO["test_ds_block_insertafter_eof_with_backup"],
+            TEST_INFO["expected"]["test_uss_block_insertafter_eof_defaultmarker"]
+        )
+        for result in ds_result.contacted.values():
+            backup_ds_name = result.get("backup_name")
+            assert backup_ds_name is not None
+            if encoding == 'IBM-1047':
+                cmdStr = "cat \"//'{0}'\" ".format(backup_ds_name)
+                results = ansible_zos_module.all.shell(cmd=cmdStr)
+                print(vars(results))
+                for result in results.contacted.values():
+                    assert result.get("stdout") == TEST_ENV["TEST_CONT"]
+    finally:
+        ansible_zos_module.all.zos_data_set(name=backup_ds_name, state="absent")
 
 
 #########################

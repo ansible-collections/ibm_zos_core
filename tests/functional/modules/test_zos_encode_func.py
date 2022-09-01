@@ -37,7 +37,6 @@ TEST_DATA = """0001 This is for encode conversion testing0000000
 0004 This is for encode conversion testing0000000
 0005 This is for encode conversion testing0000000
 0006 This is for encode conversion testing0000000
-
 """
 TEST_FILE_TEXT = "HELLO world"
 BACKUP_DATA_SET = "USER.PRIVATE.BACK"

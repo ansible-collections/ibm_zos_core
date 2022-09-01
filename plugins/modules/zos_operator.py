@@ -51,22 +51,18 @@ options:
   wait_time_s:
     description:
       - Set maximum time in seconds to wait for the commands to execute.
-      - When set to 0, the system default is used.
       - This option is helpful on a busy system requiring more time to execute
         commands.
-      - Setting I(wait) can instruct if execution should wait the
-        full I(wait_time_s).
     type: int
     required: false
-    default: 0
+    default: 1
   wait:
     description:
+      - Configuring wait used by the M(ibm.ibm_zos_core.zos_operator) module has been
+        deprecated and will be removed in ibm.ibm_zos_core collection version
+        1.6.0.
       - Specify to wait the full I(wait_time_s) interval before retrieving
         responses.
-      - This option is recommended to ensure that the responses are accessible and
-        captured by logging facilities and the I(verbose) option.
-      - I(delay=True) waits the full I(wait_time_s) interval.
-      - I(delay=False) returns as soon as the first command executes.
     type: bool
     required: false
     default: true
@@ -90,44 +86,58 @@ EXAMPLES = r"""
   zos_operator:
     cmd: 'd u,all'
     wait_time_s: 5
-    wait: false
 
 - name: Execute operator command to show jobs, always waiting 7 seconds for response
   zos_operator:
     cmd: 'd u,all'
     wait_time_s: 7
-    wait: true
 """
 
 RETURN = r"""
 rc:
     description:
-      Return code of the operator command
+      Return code for the submitted operator command.
     returned: always
     type: int
     sample: 0
+cmd:
+    description:
+      Operator command submitted.
+    returned: always
+    type: str
+    sample: d u,all
+wait_time_s:
+    description:
+      The maximum time in seconds to wait for the commands to execute.
+    returned: always
+    type: int
+    sample: 5
 content:
     description:
-       The text from the command issued, plus verbose messages if I(verbose=True)
+       The resulting text from the command submitted.
     returned: on success
     type: list
     sample:
-        [ "MV2C      2020039  04:29:57.58             ISF031I CONSOLE XIAOPIN ACTIVATED ",
-          "MV2C      2020039  04:29:57.58            -D U,ALL                           ",
-          "MV2C      2020039  04:29:57.59             IEE457I 04.29.57 UNIT STATUS 948  ",
-          "         UNIT TYPE STATUS        VOLSER     VOLSTATE      SS                 ",
-          "          0100 3277 OFFLINE                                 0                ",
-          "          0101 3277 OFFLINE                                 0                ",
-          "ISF050I USER=OMVSADM GROUP= PROC=REXX TERMINAL=09A3233B",
-          "ISF051I SAF Access allowed SAFRC=0 ACCESS=READ CLASS=SDSF RESOURCE=GROUP.ISFSPROG.SDSF",
-          "ISF051I SAF Access allowed SAFRC=0 ACCESS=READ CLASS=SDSF RESOURCE=ISFCMD.FILTER.PREFIX",
-          "ISF055I ACTION=D Access allowed USERLEVEL=7 REQLEVEL=1",
-          "ISF051I SAF Access allowed SAFRC=0 ACCESS=READ CLASS=SDSF RESOURCE=ISFCMD.ODSP.ULOG.JES2",
-          "ISF147I REXX variable ISFTIMEOUT fetched, return code 00000001 value is ''.",
-          "ISF754I Command 'SET DELAY 5' generated from associated variable ISFDELAY.",
-          "ISF769I System command issued, command text: D U,ALL -S.",
-          "ISF146I REXX variable ISFDIAG set, return code 00000001 value is '00000000 00000000 00000000 00000000 00000000'.",
-          "ISF766I Request completed, status: COMMAND ISSUED."
+        [ "EC33017A   2022244  16:00:49.00             ISF031I CONSOLE OMVS0000 ACTIVATED",
+          "EC33017A   2022244  16:00:49.00            -D U,ALL ",
+          "EC33017A   2022244  16:00:49.00             IEE457I 16.00.49 UNIT STATUS 645",
+          "                                           UNIT TYPE STATUS        VOLSER     VOLSTATE      SS",
+          "                                           0000 3390 F-NRD                        /RSDNT     0",
+          "                                           0001 3211 OFFLINE                                 0",
+          "                                           0002 3211 OFFLINE                                 0",
+          "                                           0003 3211 OFFLINE                                 0",
+          "                                           0004 3211 OFFLINE                                 0",
+          "                                           0005 3211 OFFLINE                                 0",
+          "                                           0006 3211 OFFLINE                                 0",
+          "                                           0007 3211 OFFLINE                                 0",
+          "                                           0008 3211 OFFLINE                                 0",
+          "                                           0009 3277 OFFLINE                                 0",
+          "                                           000C 2540 A                                       0",
+          "                                           000D 2540 A                                       0",
+          "                                           000E 1403 A                                       0",
+          "                                           000F 1403 A                                       0",
+          "                                           0010 3211 A                                       0",
+          "                                           0011 3211 A                                       0"
         ]
 changed:
     description:
@@ -190,13 +200,18 @@ def run_module():
     module_args = dict(
         cmd=dict(type="str", required=True),
         verbose=dict(type="bool", required=False, default=False),
-        wait_time_s=dict(type="int", required=False, default=0),
+        wait_time_s=dict(type="int", required=False, default=1),
         wait=dict(type="bool", required=False, default=True),
     )
 
     result = dict(changed=False)
-
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=False)
+
+    if module.params.get('wait'):
+        module.deprecate(
+            msg='Support for configuring wait has been deprecated.'
+            'Configuring wait is now managed by setting \'wait_time_s\'',
+            date='2022-09-01', collection_name='ibm.ibm_zos_core')
 
     try:
         new_params = parse_params(module.params)
@@ -233,8 +248,9 @@ def run_module():
                     ssctr += 1
 
         # call is returned from run_operator_command, specifying what was run.
-        # Adding this to user return can help in tracing compound call errors.
-        result["content"].append("Ran" + rc_message.get("call"))
+        #result["cmd"] = new_params.get("cmd")
+        result["cmd"] = rc_message.get("call")
+        result["wait_time_s"] = new_params.get("wait_time_s")
         result["changed"] = False
 
         # rc=0, something succeeded (the calling script ran),
@@ -290,37 +306,22 @@ def run_operator_command(params):
     kwargs = {}
 
     if params.get("verbose"):
-        kwargs.update({"verbose": "verbose"})
+        kwargs.update({"verbose": True})
+        kwargs.update({"debug": True})
 
-    if params.get("debug"):
-        kwargs.update({"debug": "debug"})
-
-    wait_s = 1
-    if params.get("wait"):
-        wait_s = params.get("wait_time_s")
-        # To comply with docs "When set to 0, the system default is used."
-        if wait_s == 0:
-            wait_s = 1
-        if wait_s:
-            # kwargs.update({"timeout": "{0}".format(wait_s)})
-            kwargs.update({"parameters": "ISFDELAY={0}".format(wait_s)})
-            # it *appears* IFSdelay is passing through correctly... did 1x-4x tests 0 to 20 seconds
+    wait_s = params.get("wait_time_s")
     cmdtxt = params.get("cmd")
 
     args = []
     rc, stdout, stderr = execute_command(cmdtxt, wait_s, *args, **kwargs)
 
-    extrastdout = ""
-    if params.get("verbose"):
-        extrastdout = "\n====================\nresult code: {0}\n====================".format(rc)
-
     if rc > 0:
-        message = "\nOut: {0}\nErr: {1}\nRan: {2}".format(stdout + extrastdout, stderr, cmdtxt)
+        message = "\nOut: {0}\nErr: {1}\nRan: {2}".format(stdout, stderr, cmdtxt)
         raise OperatorCmdError(cmdtxt, rc, message.split("\n"))
 
     return {
         "rc": rc,
-        "stdout": stdout + extrastdout,
+        "stdout": stdout,
         "stderr": stderr,
         "call": cmdtxt,
     }

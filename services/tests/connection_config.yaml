@@ -4,4 +4,15 @@ port: 22
 username: "omvsadm"
 password: "changeme"
 passphrase: "changeme"
+environment: {_BPXK_AUTOCVT: "ON",
+            ZOAU_HOME: "/zoau/v1.2.0f",
+            PATH:
+            "/zoau/v1.2.0f/bin:/python/usr/lpp/IBM/cyp/v3r8/pyz/bin:/bin:.",
+            LIBPATH: "/zoau/v1.2.0f/lib:/lib:/usr/lib:.",
+            PYTHONPATH: "/zoau/v1.2.0f/lib",
+            _CEE_RUNOPTS: "FILETAG(AUTOCVT,AUTOTAG) POSIX(ON)",
+            _TAG_REDIR_ERR: "txt",
+            _TAG_REDIR_IN: "txt",
+            _TAG_REDIR_OUT: "txt",
+            LANG: "C"}
 

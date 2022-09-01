@@ -29,6 +29,7 @@ class TestCommandFunctionalTests(unittest.TestCase):
         self.password = cfg["password"]
         self.key_filename = os.path.expanduser('~') + "/.ssh/id_dsa",
         self.passphrase = cfg["passphrase"]
+        self.environment = cfg["environment"]
 
     @classmethod
     def tearDownClass(cls):
@@ -62,23 +63,10 @@ class TestCommandFunctionalTests(unittest.TestCase):
 
     def test_command_run_command_on_host_set_enviroment(self):
         'Test connecting to host with enviroment vars and run commands on host'
-        environment = {
-            "_BPXK_AUTOCVT": "ON",
-            "ZOAU_HOME": "/zoau/v1.2.0f",
-            "PATH":
-            "/zoau/v1.2.0f/bin:/python/usr/lpp/IBM/cyp/v3r8/pyz/bin:/bin:.",
-            "LIBPATH": "/zoau/v1.2.0f/lib:/lib:/usr/lib:.",
-            "PYTHONPATH": "/zoau/v1.2.0f/lib",
-            "_CEE_RUNOPTS": "FILETAG(AUTOCVT,AUTOTAG) POSIX(ON)",
-            "_TAG_REDIR_ERR": "txt",
-            "_TAG_REDIR_IN": "txt",
-            "_TAG_REDIR_OUT": "txt",
-            "LANG": "C"
-            }
         # Create a connection to be passed to an operation
         connection = Connection(hostname=self.hostname, username=self.username,
                                 key_filename=self.key_filename,
-                                environment=environment)
+                                environment=self.environment)
         assert connection is not None, "ASSERTION-FAILURE: Connection is None"
 
         # Run "zoaversion" on target host

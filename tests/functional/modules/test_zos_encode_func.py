@@ -145,7 +145,7 @@ def test_uss_encoding_conversion_when_dest_not_exists_01(ansible_zos_module):
             assert result.get("src") == USS_FILE
             assert result.get("dest") == USS_NONE_FILE
             assert result.get("backup_name") is None
-            assert result.get("changed") is False
+            assert result.get("changed") is True
     finally:
         hosts.all.file(path=USS_FILE, state="absent")
 

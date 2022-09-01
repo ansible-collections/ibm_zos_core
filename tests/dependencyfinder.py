@@ -564,7 +564,6 @@ if __name__ == "__main__":
         changed_files = get_changed_files(args.path, args.branch)
 
     changed_artifacts = []
-    print(changed_files)
     for file in changed_files:
         found_artifact = all_artifact_manager.get_from_path(file)
         if found_artifact:

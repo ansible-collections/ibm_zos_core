@@ -489,7 +489,7 @@ def get_changed_files(path, branch="origin/dev"):
     stdout, stderr = get_diff.communicate()
     stdout = stdout.decode("utf-8")
     if get_diff.returncode > 0:
-        raise RuntimeError("Could not acquire change list")
+        raise RuntimeError("Could not acquire change list, error = [{0}]".format(stderr))
     if stdout:
         changed_files = [
             x.split("\t")[-1] for x in stdout.split("\n") if "D" not in x.split("\t")[0]
@@ -521,14 +521,26 @@ def get_changed_plugins(path, branch="origin/dev"):
     stdout = stdout.decode("utf-8")
 
     if get_diff_pr.returncode > 0:
-        raise RuntimeError("Could not acquire change list")
+        raise RuntimeError("Could not acquire change list, error = [{0}]".format(stderr))
     if stdout:
         for line in stdout.split("\n"):
-            if "plugins/action/" in line or "plugins/modules/" in line\
-                    or "tests/functional/modules/" in line\
-                    or "plugins/module_utils/" in line\
-                    or "tests/unit/" in line:
-                changed_plugins_modules.append(line.split("|", 1)[0].strip())
+            path_corrected_line = None
+            if "plugins/action/" in line:
+                path_corrected_line = line.split("|", 1)[0].strip()
+            if "plugins/modules/" in line:
+                path_corrected_line = line.split("|", 1)[0].strip()
+            if "functional/modules/" in line:
+                if re.match('...', line):
+                    line = line.replace("...", "tests")
+                path_corrected_line = line.split("|", 1)[0].strip()
+            if "plugins/module_utils/" in line:
+                path_corrected_line = line.split("|", 1)[0].strip()
+            if "unit/" in line:
+                if re.match('...', line):
+                    line = line.replace("...", "tests")
+                path_corrected_line = line.split("|", 1)[0].strip()
+            if path_corrected_line is not None:
+                changed_plugins_modules.append(path_corrected_line)
 
         # # There can be the case where only test cases are updated, question is
         # # should this be default behavior only when no modules are edited

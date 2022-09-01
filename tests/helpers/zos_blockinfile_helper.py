@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020
+# Copyright (c) IBM Corporation 2020, 2022
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -14,6 +14,7 @@
 from __future__ import absolute_import, division, print_function
 from shellescape import quote
 from pprint import pprint
+import re
 
 __metaclass__ = type
 
@@ -58,7 +59,7 @@ def set_ds_test_env(test_name, hosts, test_env):
     results = hosts.all.shell(cmd='hlq')
     for result in results.contacted.values():
         hlq = result.get("stdout")
-    if(len(hlq) > 8):
+    if len(hlq) > 8:
         hlq = hlq[:8]
     test_env["DS_NAME"] = hlq + "." + test_name.upper() + "." + test_env["DS_TYPE"]
 
@@ -73,9 +74,14 @@ def set_ds_test_env(test_name, hosts, test_env):
             cmdStr = "cp {0} \"//'{1}'\" ".format(quote(TEMP_FILE), test_env["DS_NAME"])
 
         if test_env["ENCODING"] != "IBM-1047":
-            hosts.all.zos_encode(src=TEMP_FILE, dest=test_env["DS_NAME"], from_encoding="IBM-1047", to_encoding=test_env["ENCODING"])
-            # cmdStr = "/u/behnam/tools/cp_withencoding/bin/cp2 {0} {1} {2}".format(test_env["ENCODING"], quote(TEMP_FILE), quote(test_env["DS_NAME"]))
-            # hosts.all.shell(cmd=cmdStr)
+            hosts.all.zos_encode(
+                src=TEMP_FILE,
+                dest=test_env["DS_NAME"],
+                encoding={
+                    "from": "IBM-1047",
+                    "to": test_env["ENCODING"],
+                },
+            )
         else:
             hosts.all.shell(cmd=cmdStr)
         hosts.all.shell(cmd="rm -rf " + test_env["TEST_DIR"])
@@ -135,4 +141,18 @@ def DsNotSupportedHelper(test_name, ansible_zos_module, test_env, test_info):
     for result in results.contacted.values():
         assert result.get("changed") is False
         assert result.get("msg") == "VSAM data set type is NOT supported"
+    clean_ds_test_env(test_env["DS_NAME"], hosts)
+
+
+def DsGeneralResultKeyMatchesRegex(test_name, ansible_zos_module, test_env, test_info, **kwargs):
+    hosts = ansible_zos_module
+    set_ds_test_env(test_name, hosts, test_env)
+    test_info["path"] = test_env["DS_NAME"]
+    if test_env["ENCODING"]:
+        test_info["encoding"] = test_env["ENCODING"]
+    results = hosts.all.zos_blockinfile(**test_info)
+    pprint(vars(results))
+    for result in results.contacted.values():
+        for key in kwargs:
+            assert re.match(kwargs.get(key), result.get(key))
     clean_ds_test_env(test_env["DS_NAME"], hosts)

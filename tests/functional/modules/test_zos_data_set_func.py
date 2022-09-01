@@ -299,6 +299,48 @@ def test_data_set_absent_when_uncataloged(ansible_zos_module, jcl):
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
 
 
+@pytest.mark.parametrize(
+    "jcl",
+    [PDS_CREATE_JCL, KSDS_CREATE_JCL, RRDS_CREATE_JCL, ESDS_CREATE_JCL, LDS_CREATE_JCL],
+)
+def test_data_set_absent_when_uncataloged_and_same_name_cataloged_is_present(ansible_zos_module, jcl):
+    hosts = ansible_zos_module
+    hosts.all.zos_data_set(
+        name=DEFAULT_DATA_SET_NAME, state="cataloged", volumes=DEFAULT_VOLUME
+    )
+    hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
+    hosts.all.file(path=TEMP_PATH, state="directory")
+    hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl), TEMP_PATH))
+    results = hosts.all.zos_job_submit(
+        src=TEMP_PATH + "/SAMPLE", location="USS", wait=True
+    )
+    # verify data set creation was successful
+    for result in results.contacted.values():
+        assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
+    # uncatalog the data set
+    results = hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="uncataloged")
+    for result in results.contacted.values():
+        assert result.get("changed") is True
+    # Create the same dataset name in different volume
+    jcl = jcl.replace(DEFAULT_VOLUME, DEFAULT_VOLUME2)
+    hosts.all.file(path=TEMP_PATH + "/SAMPLE", state="absent")
+    hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl), TEMP_PATH))
+    results = hosts.all.zos_job_submit(
+        src=TEMP_PATH + "/SAMPLE", location="USS", wait=True
+    )
+    # verify data set creation was successful
+    for result in results.contacted.values():
+        assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
+    hosts.all.file(path=TEMP_PATH, state="absent")
+    # ensure data set absent
+    results = hosts.all.zos_data_set(
+        name=DEFAULT_DATA_SET_NAME, state="absent", volumes=DEFAULT_VOLUME
+    )
+    for result in results.contacted.values():
+        assert result.get("changed") is True
+    hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
+
+
 @pytest.mark.parametrize("dstype", data_set_types)
 def test_data_set_creation_when_present_no_replace(ansible_zos_module, dstype):
     try:

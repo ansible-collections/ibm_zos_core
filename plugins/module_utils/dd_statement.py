@@ -634,13 +634,20 @@ class OutputDefinition(DataDefinition):
 
 
 class VIODefinition(DataDefinition):
-    def __init__(self):
+    def __init__(self, tmphlq=None):
         """VIO DD type to be used in a DDStatement.
         VIO uses DASD space and system I/O more efficiently than other temporary data sets.
         A temporary data set will be created for use in cases where VIO is unavailable.
         Defaults for VIODefinition should be sufficient.
+
+        Args:
+            tmphlq (str, optional): HLQ to be used for temporary datasets. Defaults to None.
+
         """
-        hlq = datasets.hlq()
+        if tmphlq:
+            hlq = tmphlq
+        else:
+            hlq = datasets.hlq()
         name = datasets.tmp_name(hlq)
         super().__init__(name)
 

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020
+# Copyright (c) IBM Corporation 2020, 2022
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -105,6 +105,48 @@ def test_dispositions_for_existing_data_set(ansible_zos_module, disposition):
         pprint(result)
         assert result.get("ret_code", {}).get("code", -1) == 0
         assert len(result.get("dd_names", [])) > 0
+    results = hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
+    for result in results.contacted.values():
+        pprint(result)
+        assert result.get("changed", False) is True
+
+
+def test_list_cat_for_existing_data_set_with_tmp_hlq_option(ansible_zos_module):
+    hosts = ansible_zos_module
+    tmphlq = "TMPHLQ"
+    hosts.all.zos_data_set(
+        name=DEFAULT_DATA_SET, type="seq", state="present", replace=True
+    )
+    results = hosts.all.zos_mvs_raw(
+        program_name="idcams",
+        auth=True,
+        tmp_hlq=tmphlq,
+        dds=[
+            dict(
+                dd_data_set=dict(
+                    dd_name=SYSPRINT_DD,
+                    data_set_name=DEFAULT_DATA_SET,
+                    disposition="new",
+                    return_content=dict(type="text"),
+                    replace=True,
+                    backup=True,
+                    type="seq",
+                    space_primary=5,
+                    space_secondary=1,
+                    space_type="m",
+                    volumes=DEFAULT_VOLUME,
+                    record_format="fb"
+                ),
+            ),
+            dict(dd_input=dict(dd_name=SYSIN_DD, content=IDCAMS_STDIN)),
+        ],
+    )
+    for result in results.contacted.values():
+        pprint(result)
+        assert result.get("ret_code", {}).get("code", -1) == 0
+        assert len(result.get("dd_names", [])) > 0
+        for backup in result.get("backups"):
+            backup.get("backup_name")[:6] == tmphlq
     results = hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
     for result in results.contacted.values():
         pprint(result)
@@ -1756,7 +1798,6 @@ def test_unauthorized_program_run_unauthorized(ansible_zos_module):
     results = hosts.all.zos_mvs_raw(
         program_name="IEFBR14",
         auth=False,
-        dds=[],
     )
     hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")
     for result in results.contacted.values():

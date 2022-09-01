@@ -631,32 +631,6 @@ def test_pds_backup_with_tmp_hlq_option(ansible_zos_module):
         hosts.all.zos_data_set(name=BACKUP_DATA_SET, state="absent")
 
 
-def test_pds_backup_with_tmp_hlq_option(ansible_zos_module):
-    hosts = ansible_zos_module
-    tmphlq = "TMPHLQ"
-    hosts.all.zos_data_set(name=BACKUP_DATA_SET, state="absent")
-    hosts.all.zos_data_set(name=MVS_PDS, state="absent")
-    hosts.all.zos_data_set(name=MVS_PDS, state="present", type="pds")
-    hosts.all.shell(cmd="echo '{0}' > {1}".format(TEST_FILE_TEXT, TEMP_JCL_PATH))
-    hosts.all.shell(cmd="cp {0} \"//'{1}(SAMPLE)'\"".format(TEMP_JCL_PATH, MVS_PDS))
-    encode_res = hosts.all.zos_encode(
-        src=MVS_PDS,
-        from_encoding=TO_ENCODING,
-        to_encoding=FROM_ENCODING,
-        backup=True,
-        tmp_hlq=tmphlq,
-    )
-    for enc_res in encode_res.contacted.values():
-        assert enc_res.get("backup_name")[:6] == tmphlq
-        contents = hosts.all.shell(cmd="cat \"//'{0}(SAMPLE)'\"".format(enc_res.get("backup_name")))
-        hosts.all.file(path=TEMP_JCL_PATH, state="absent")
-        hosts.all.zos_data_set(name=MVS_PDS, state="absent")
-        hosts.all.zos_data_set(name=BACKUP_DATA_SET, state="absent")
-        for content in contents.contacted.values():
-            # pprint(content)
-            assert TEST_FILE_TEXT in content.get("stdout")
-
-
 def test_ps_backup(ansible_zos_module):
     try:
         hosts = ansible_zos_module

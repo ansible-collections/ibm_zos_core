@@ -524,8 +524,18 @@ def get_changed_plugins(path, branch="origin/dev"):
         raise RuntimeError("Could not acquire change list")
     if stdout:
         for line in stdout.split("\n"):
-            if "plugins/action/" in line or "plugins/modules/" in line:
+            if "plugins/action/" in line or "plugins/modules/" in line\
+                    or "tests/functional/modules/" in line\
+                    or "plugins/module_utils/" in line\
+                    or "tests/unit/" in line:
                 changed_plugins_modules.append(line.split("|", 1)[0].strip())
+
+        # # There can be the case where only test cases are updated, question is
+        # # should this be default behavior only when no modules are edited
+        # if not changed_plugins_modules:
+        #     for line in stdout.split("\n"):
+        #         if "tests/functional/modules/" in line:
+        #             changed_plugins_modules.append(line.split("|", 1)[0].strip())
 
     return changed_plugins_modules
 

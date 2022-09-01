@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020
+# Copyright (c) IBM Corporation 2020, 2022
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -117,7 +117,7 @@ options:
       - If the source I(src) is a USS file or path, the backup_name name must be a file
         or path name, and the USS file or path must be an absolute path name.
       - If the source is an MVS data set, the backup_name name must be an MVS
-        data set name.
+        data set name, and the dataset must not be preallocated.
       - If the backup_name is not provided, the default backup_name name will
         be used. If the source is a USS file or path, the name of the backup
         file will be the source file or path name appended with a
@@ -128,6 +128,14 @@ options:
       - If I(src) is a data set member and backup_name is not provided, the data set
         member will be backed up to the same partitioned data set with a randomly generated
         member name.
+    required: false
+    type: str
+  tmp_hlq:
+    description:
+      - Override the default high level qualifier (HLQ) for temporary and backup
+        datasets.
+      - The default HLQ is the Ansible user used to execute the module and if
+        that is not available, then the value C(TMPHLQ) is used.
     required: false
     type: str
   encoding:
@@ -434,6 +442,11 @@ def main():
                 type='str',
                 default='IBM-1047'
             ),
+            tmp_hlq=dict(
+                type='str',
+                required=False,
+                default=None
+            ),
             force=dict(
                 type='bool',
                 default=False
@@ -459,7 +472,8 @@ def main():
         encoding=dict(arg_type='str', default='IBM-1047', required=False),
         force=dict(arg_type='bool', default=False, required=False),
         backup=dict(arg_type='bool', default=False, required=False),
-        backup_name=dict(arg_type='data_set_or_pat', required=False, default=None),
+        backup_name=dict(arg_type='data_set_or_path', required=False, default=None),
+        tmp_hlq=dict(type='qualifier_or_empty', required=False, default=None),
         mutually_exclusive=[['insertbefore', 'insertafter']],
         indentation=dict(arg_type='int', default=0, required=False)
     )
@@ -481,6 +495,7 @@ def main():
     marker = parsed_args.get('marker')
     marker_begin = parsed_args.get('marker_begin')
     marker_end = parsed_args.get('marker_end')
+    tmphlq = parsed_args.get('tmp_hlq')
     force = parsed_args.get('force')
     state = parsed_args.get('state')
     indentation = parsed_args.get('indentation')
@@ -528,7 +543,7 @@ def main():
             if file_type:
                 result['backup_name'] = Backup.uss_file_backup(src, backup_name=backup, compress=False)
             else:
-                result['backup_name'] = Backup.mvs_file_backup(dsn=src, bk_dsn=backup)
+                result['backup_name'] = Backup.mvs_file_backup(dsn=src, bk_dsn=backup, tmphlq=tmphlq)
         except Exception:
             module.fail_json(msg="creating backup has failed")
     # state=present, insert/replace a block with matching regex pattern

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020, 2021
+# Copyright (c) IBM Corporation 2020, 2021, 2022
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -1511,18 +1511,25 @@ def test_copy_local_symlink_to_uss_file(ansible_zos_module):
 
 def test_copy_local_file_to_uss_file_convert_encoding(ansible_zos_module):
     hosts = ansible_zos_module
+    src_path = "/etc/profile"
     dest_path = "/tmp/profile"
+
     try:
         hosts.all.file(path=dest_path, state="absent")
         copy_res = hosts.all.zos_copy(
-            src="/etc/profile",
+            src=src_path,
             dest=dest_path,
             encoding={"from": "ISO8859-1", "to": "IBM-1047"},
         )
-        stat_res = hosts.all.stat(path=dest_path)
+
+        dest_stat_res = hosts.all.stat(path=dest_path)
+        src_stat_res = hosts.all.stat(path=dest_path)
+
         for result in copy_res.contacted.values():
             assert result.get("msg") is None
-        for result in stat_res.contacted.values():
+        for result in dest_stat_res.contacted.values():
+            assert result.get("stat").get("exists") is True
+        for result in src_stat_res.contacted.values():
             assert result.get("stat").get("exists") is True
     finally:
         hosts.all.file(path=dest_path, state="absent")
@@ -1530,19 +1537,26 @@ def test_copy_local_file_to_uss_file_convert_encoding(ansible_zos_module):
 
 def test_copy_uss_file_to_uss_file_convert_encoding(ansible_zos_module):
     hosts = ansible_zos_module
+    src_path = "/etc/profile"
     dest_path = "/tmp/profile"
+
     try:
         hosts.all.file(path=dest_path, state="absent")
         copy_res = hosts.all.zos_copy(
-            src="/etc/profile",
+            src=src_path,
             dest=dest_path,
             encoding={"from": "IBM-1047", "to": "IBM-1047"},
             remote_src=True,
         )
-        stat_res = hosts.all.stat(path=dest_path)
+
+        dest_stat_res = hosts.all.stat(path=dest_path)
+        src_stat_res = hosts.all.stat(path=dest_path)
+
         for result in copy_res.contacted.values():
             assert result.get("msg") is None
-        for result in stat_res.contacted.values():
+        for result in dest_stat_res.contacted.values():
+            assert result.get("stat").get("exists") is True
+        for result in src_stat_res.contacted.values():
             assert result.get("stat").get("exists") is True
     finally:
         hosts.all.file(path=dest_path, state="absent")
@@ -1550,8 +1564,9 @@ def test_copy_uss_file_to_uss_file_convert_encoding(ansible_zos_module):
 
 def test_copy_uss_file_to_pds_member_convert_encoding(ansible_zos_module):
     hosts = ansible_zos_module
-    src = "/etc/profile"
+    src_path = "/etc/profile"
     dest_path = "USER.TEST.PDS.FUNCTEST"
+
     try:
         hosts.all.zos_data_set(
             type="pds",
@@ -1561,7 +1576,7 @@ def test_copy_uss_file_to_pds_member_convert_encoding(ansible_zos_module):
             record_length=25,
         )
         copy_res = hosts.all.zos_copy(
-            src=src,
+            src=src_path,
             dest=dest_path,
             remote_src=True,
             encoding={"from": "IBM-1047", "to": "IBM-1047"},
@@ -1570,12 +1585,54 @@ def test_copy_uss_file_to_pds_member_convert_encoding(ansible_zos_module):
             cmd="head \"//'{0}'\"".format(dest_path + "(PROFILE)"),
             executable=SHELL_EXECUTABLE,
         )
+        stat_res = hosts.all.stat(path=src_path)
+
         for result in copy_res.contacted.values():
             assert result.get("msg") is None
         for result in verify_copy.contacted.values():
             assert result.get("rc") == 0
             assert result.get("stdout") != ""
+        for result in stat_res.contacted.values():
+            assert result.get("stat").get("exists") is True
     finally:
+        hosts.all.zos_data_set(name=dest_path, state="absent")
+
+
+def test_copy_uss_dir_to_pds_convert_encoding(ansible_zos_module):
+    hosts = ansible_zos_module
+    profile_path = "/etc/profile"
+    src_path = "/tmp/zos_copy_test/"
+    dest_path = "USER.TEST.PDS.FUNCTEST"
+
+    try:
+        hosts.all.file(path=src_path, state="directory")
+        hosts.all.zos_copy(
+            src=profile_path,
+            dest=src_path,
+            remote_src=True
+        )
+
+        copy_res = hosts.all.zos_copy(
+            src=src_path,
+            dest=dest_path,
+            remote_src=True,
+            encoding={"from": "IBM-1047", "to": "IBM-1047"},
+        )
+        verify_copy = hosts.all.shell(
+            cmd="head \"//'{0}'\"".format(dest_path + "(PROFILE)"),
+            executable=SHELL_EXECUTABLE,
+        )
+        stat_res = hosts.all.stat(path=src_path)
+
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+        for result in verify_copy.contacted.values():
+            assert result.get("rc") == 0
+            assert result.get("stdout") != ""
+        for result in stat_res.contacted.values():
+            assert result.get("stat").get("exists") is True
+    finally:
+        hosts.all.file(path=src_path, state="absent")
         hosts.all.zos_data_set(name=dest_path, state="absent")
 
 
@@ -1598,6 +1655,7 @@ def test_ensure_tmp_cleanup(ansible_zos_module):
         stat_dir = hosts.all.shell(
             cmd="ls", executable=SHELL_EXECUTABLE, chdir=dest
         )
+
         stat_dir_list = list(stat_dir.contacted.values())[0].get("stdout_lines")
         file_count_post = len(stat_dir_list)
 
@@ -2032,7 +2090,7 @@ def test_copy_multiple_data_set_members(ansible_zos_module):
             assert v_cp.get("rc") == 0
             stdout = v_cp.get("stdout")
             assert stdout is not None
-            assert(len(stdout.splitlines())) == 2
+            assert len(stdout.splitlines()) == 2
 
     finally:
         hosts.all.zos_data_set(name=dest, state="absent")
@@ -2064,3 +2122,25 @@ def test_copy_pds_to_volume(ansible_zos_module):
     finally:
         hosts.all.zos_data_set(name=remote_pds, state='absent')
         hosts.all.zos_data_set(name=dest_pds, state='absent')
+
+
+def test_copy_uss_file_to_existing_sequential_data_set_twice_with_tmphlq_option(ansible_zos_module):
+    hosts = ansible_zos_module
+    dest = "USER.TEST.SEQ.FUNCTEST"
+    src_file = "/etc/profile"
+    tmphlq = "TMPHLQ"
+    try:
+        hosts.all.zos_data_set(name=dest, type="seq", state="present")
+        copy_result = hosts.all.zos_copy(src=src_file, dest=dest, remote_src=True)
+        copy_result = hosts.all.zos_copy(src=src_file, dest=dest, remote_src=True, backup=True, tmp_hlq=tmphlq)
+        verify_copy = hosts.all.shell(
+            cmd="cat \"//'{0}'\" > /dev/null 2>/dev/null".format(dest),
+            executable=SHELL_EXECUTABLE,
+        )
+        for cp_res in copy_result.contacted.values():
+            assert cp_res.get("msg") is None
+            assert cp_res.get("backup_name")[:6] == tmphlq
+        for v_cp in verify_copy.contacted.values():
+            assert v_cp.get("rc") == 0
+    finally:
+        hosts.all.zos_data_set(name=dest, state="absent")

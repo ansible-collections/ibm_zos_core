@@ -63,6 +63,7 @@ class TestCommandFunctionalTests(unittest.TestCase):
 
     def test_command_run_command_on_host_set_enviroment(self):
         'Test connecting to host with enviroment vars and run commands on host'
+
         # Create a connection to be passed to an operation
         connection = Connection(hostname=self.hostname, username=self.username,
                                 key_filename=self.key_filename,

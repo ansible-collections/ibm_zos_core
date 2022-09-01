@@ -80,15 +80,19 @@ class Connection:
         except BadHostKeyException as e:
             #if the server’s host key could not be verified
             print(e)
+            raise e
         except AuthenticationException as e:
             # authentication failed
             print(e)
+            raise e
         except SSHException as e:
             # if there was any other error connecting or establishing an SSH session
             print(e)
+            raise e
         except error as e:
             # if a socket error occurred while connecting
             print(e)
+            raise e
 
         return client
 

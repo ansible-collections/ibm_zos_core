@@ -1807,7 +1807,6 @@ def test_authorized_program_run_authorized(ansible_zos_module):
 
 
 def test_unauthorized_program_run_unauthorized(ansible_zos_module):
-<<<<<<< HEAD
     try:
         hosts = ansible_zos_module
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET, state="absent")

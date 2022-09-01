@@ -209,7 +209,7 @@ TEST_INFO = dict(
     test_ds_block_insertbefore_bof=dict(test_name="T4"),
     test_ds_block_absent=dict(test_name="T5"),
     test_ds_block_tmp_hlq_option=dict(
-        insertafter="EOF", block="export ZOAU_ROOT\n",state="present", backup=True,
+        insertafter="EOF", block="export ZOAU_ROOT\n", state="present", backup=True,
         tmp_hlq="TMPHLQ"),
     test_ds_block_insert_with_force_option_as_true=dict(
         block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present", force=True),

@@ -114,6 +114,7 @@ test_data = [
     (['asdfasdf']),
 ]
 
+
 @pytest.mark.parametrize("gather_subset", test_data)
 def test_with_gather_subset_bad(ansible_zos_module, gather_subset):
     hosts = ansible_zos_module

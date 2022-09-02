@@ -70,18 +70,19 @@ def test_zos_operator_positive_path_verbose(ansible_zos_module):
         assert result.get("content") is not None
 
 
-# def test_zos_operator_positive_verbose_with_full_delay(ansible_zos_module):
-#     hosts = ansible_zos_module
-#     wait_time = 1
-#     results = hosts.all.zos_operator(
-#         cmd="ENTER A LONG RUNNING CMD", verbose=True, wait_time_s=wait_time
-#     )
+def test_zos_operator_positive_verbose_with_full_delay(ansible_zos_module):
+    "Long running command should take over 30 seconds"
+    hosts = ansible_zos_module
+    wait_time = 10
+    results = hosts.all.zos_operator(
+        cmd="RO *ALL,LOG 'dummy syslog message'", verbose=True, wait_time_s=wait_time
+    )
 
-#     for result in results.contacted.values():
-#         assert result["rc"] == 0
-#         assert result.get("changed") is False
-#         assert result.get("content") is not None
-#         assert result.get("elapsed") > wait_time
+    for result in results.contacted.values():
+        assert result["rc"] == 0
+        assert result.get("changed") is True
+        assert result.get("content") is not None
+        assert result.get("elapsed") > wait_time
 
 
 def test_zos_operator_positive_verbose_with_quick_delay(ansible_zos_module):

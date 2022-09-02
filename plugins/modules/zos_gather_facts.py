@@ -240,7 +240,7 @@ def run_module():
             err_msg = ('An invalid subset was detected. See \'zinfo_err_msg\' '
                        'for additional details.')
 
-        module.fail_json(msg=err_msg, zinfo_err_msg=err)
+        module.fail_json(msg=err_msg, **result)
 
     zinfo_dict = {}  # to track parsed zinfo facts.
 

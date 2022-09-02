@@ -13,6 +13,7 @@
 
 from __future__ import absolute_import, division, print_function
 
+import re
 from unittest import result
 import pytest
 
@@ -122,7 +123,8 @@ def test_with_gather_subset_bad(ansible_zos_module, gather_subset):
     results = hosts.all.zos_gather_facts(gather_subset=gather_subset)
     for result in results.contacted.values():
         assert result.get('failed') is True
-        assert result.get('zinfo_err_msg') is not None
+        # assert result.get('zinfo_err_msg') is not None
+        assert re.match(r'^zinfo_err_msg', result.get('msg'))
 
 
 # attempted injection through subset

@@ -21,18 +21,20 @@ __metaclass__ = type
 DOCUMENTATION = r"""
 ---
 module: zos_gather_facts
-short_description: Gather facts about target z/OS systems.
+short_description: Gather z/OS system facts.
 version_added: '1.5.0'
+requirements:
+    - ZOAU 1.2.1 or later.
 author:
     - "Ketan Kelkar (@ketankelkar)"
 description:
-  - Retrieve useful variables from the target z/OS systems.
-  - Add variables to the ansible_facts dictionary, which is available from all
+  - Retrieve variables from target z/OS systems.
+  - Variables are added to the I(ansible_facts) dictionary, available to
     playbooks.
-  - Apply filters on the gather_subset list to cut down on variables that are
-    added to the ansible_facts dictionary.
-  - Note, Module will fail fast if any illegal options are provided. This is
-    done to raise awareness of a failure early in an automation setting.
+  - Apply filters on the I(gather_subset) list to reduce the variables that are
+    added to the I(ansible_facts) dictionary.
+  - Note, the module will fail fast if any unsupported options are provided.
+    This is done to raise awareness of a failure in an automation setting.
 options:
   gather_subset:
     type: list
@@ -40,35 +42,39 @@ options:
     default: ["all"]
     required: false
     description:
-      - If specified, it will only collect facts that come under the specified
-        subset (eg. ipl will only return ipl facts). Specifying subsets is
-        recommended to save time on gatherthing all facts when the facts needed
-        are constrained down to one or more subsets.
+      - If specified, it will collect facts that come under the specified
+        subset (eg. ipl will return ipl facts). Specifying subsets is
+        recommended to reduce time in gathering facts when the facts needed
+        are in a specific subset.
+      - The following subsets are available C(ipl), C(cpu), C(sys), and
+        C(iodf). Depending on the version of ZOAU, additional subsets may be
+        available.
   filter:
     type: list
     elements: str
     required: false
     default: []
     description:
-      - Uses shell-style (fnmatch) pattern matching to filter out the collected
-        facts.
+      - Filter out facts from the I(ansible_facts) dictionary.
+      - Uses shell-style L(fnmatch, https://docs.python.org/3/library/fnmatch.html)
+        pattern matching to filter out the collected facts.
       - An empty list means 'no filter', same as providing '*'.
-      - Filtering is performed after the facts are gathered, so this doesn't save
-        any time or compute. It only reduces the number of variables that are
-        added to the ansible_facts dictionary. To restrict the facts that are
-        collected, refer to the gather_subset parameter above.
+      - Filtering is performed after the facts are gathered such that no compute
+        is saved when filtering. Filtering only reduces the number of variables
+        that are added to the I(ansible_facts) dictionary. To restrict the facts
+        that are collected, refer to the I(gather_subset) parameter.
 """
 
 EXAMPLES = r"""
-- name: Return all available z/OS facts
+- name: Return all available z/OS facts.
   ibm.ibm_zos_core.zos_gather_facts:
 
-- name: Return z/OS facts in the systems subset ('sys')
+- name: Return z/OS facts in the systems subset ('sys').
   ibm.ibm_zos_core.zos_gather_facts:
     gather_subset: sys
 
 - name: Return z/OS facts in the subsets ('ipl' and 'sys') and filter out all
-        facts that do not match 'parmlib'
+        facts that do not match 'parmlib'.
   ibm.ibm_zos_core.zos_gather_facts:
     gather_subset:
       - ipl
@@ -79,7 +85,7 @@ EXAMPLES = r"""
 
 RETURN = r"""
 ansible_facts:
-  description: Collection of facts that are gathered from the z/OS systems."
+  description: Collection of facts that are gathered from the z/OS systems.
   returned: when collected
   type: dict
 """
@@ -124,8 +130,8 @@ def zinfo_cmd_string_builder(gather_subset):
 
 
 def flatten_zinfo_json(zinfo_dict):
-    """Removes one layer of mapping in the dictionary. Top-level keys correspond
-        to zinfo subsets and are removed.
+    """Removes one layer of mapping in the dictionary. Top-level keys
+        correspond to zinfo subsets and are removed.
     Arguments:
         zinfo_dict {dict} -- A dictionary that contains the parsed result from
                              the zinfo json string.
@@ -171,6 +177,7 @@ def run_module():
         filter=dict(default=[], required=False, type='list', elements='str'),
 
 
+        #######################################################################
         #                     saved for future development                    #
         # gather_timeout=dict(default=10, required=False, type='int'),        #
         # fact_path=dict(
@@ -192,8 +199,8 @@ def run_module():
 
     if not zoau_version_checker.is_zoau_version_higher_than("1.2.1"):
         module.fail_json(
-            ("The zos_gather_facts module requires ZOAU >= 1.2.1. Please upgrade "
-             "the ZOAU version on the target node.")
+            ("The zos_gather_facts module requires ZOAU >= 1.2.1. Please "
+             "upgrade the ZOAU version on the target node.")
         )
 
     gather_subset = module.params['gather_subset']
@@ -215,16 +222,22 @@ def run_module():
     # targeting automation -- quiet but well-intended error messages may easily
     # be skipped
     if rc != 0:
-        # there are only 2 known error messages in zinfo, if neither gets
+        # there are 3 known error messages in zinfo, if neither gets
         # triggered then we send out this generic zinfo error message.
         err_msg = ('An exception has occurred in Z Open Automation Utilities '
                    '(ZOAU) utility \'zinfo\'. See \'zinfo_err_msg\' for '
                    'additional details.')
+        # triggered by invalid optarg eg "zinfo -q"
         if 'BGYSC5201E' in err.decode('utf-8'):
-            err_msg = ('An invalid susbset was detected. See \'zinfo_err_msg\' for '
+            err_msg = ('Invalid call to zinfo. See \'zinfo_err_msg\' for '
                        'additional details.')
+        # triggered when optarg does not get expected arg eg "zinfo -t"
         elif 'BGYSC5202E' in err.decode('utf-8'):
-            err_msg = ('An invalid option was passed to zinfo. See \'zinfo_err_msg\' '
+            err_msg = ('Invalid call to zinfo. Possibly missing a valid subset'
+                       ' See \'zinfo_err_msg\' for additional details.')
+        # triggered by illegal subset eg "zinfo -t abc"
+        elif 'BGYSC5203E' in err.decode('utf-8'):
+            err_msg = ('An invalid subset was detected. See \'zinfo_err_msg\' '
                        'for additional details.')
 
         module.fail_json(msg=err_msg, zinfo_err_msg=err)
@@ -234,7 +247,8 @@ def run_module():
     try:
         zinfo_dict = json.loads(decode_str)
     except json.JSONDecodeError:
-        # TODO -figure out this error message...what do i tell user?
+        # tell user something else for this error? This error is thrown when
+        # Python doesn't like the json string it parsed from zinfo.
         module.fail_json(msg="Unsupported JSON format for the output.")
 
     # remove zinfo subsets from parsed zinfo result, flatten by one level
@@ -249,22 +263,6 @@ def run_module():
 
     # successful module execution
     module.exit_json(**result)
-
-
-# NOTE
-
-# How does the user know what subsets are available. maybe investigate what
-# Ansible does and copy them. Alternative idea is to document 'current'
-# available subsets but not enforce additional or maybe link out to zoau zinfo
-# doc (linking out is frowned upon.)
-
-# Thinking about creating a mapping (maybe CSV) in module_utils which can allow
-# for more legal subset options (eg 'iplinfo', 'ipl', 'ipl_info' -> ipl, etc).
-# The mapping can be updated with zinfo but there will also be a provision
-# for subsets not in the mapping. We cannot tie ansible error reporting to
-# zinfo error reporting because that could change in the future and result in
-# mismatched compatibility, instead we can simply pass on zinfo output as is
-# and leave it to the user to figure out which subsets are illegal
 
 
 def main():

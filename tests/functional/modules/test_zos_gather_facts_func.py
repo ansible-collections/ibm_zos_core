@@ -13,19 +13,18 @@
 
 from __future__ import absolute_import, division, print_function
 
-from unittest import result
+import re
 import pytest
 
 __metaclass__ = type
 
 
 def test_gather_facts(ansible_zos_module):
-
+    """ Check that something is returned , basic test case"""
     hosts = ansible_zos_module
     results = hosts.all.zos_gather_facts()
     for result in results.contacted.values():
         assert result is not None
-        # something was returned -- most basic test case.
 
 
 def test_with_gather_subset(ansible_zos_module):
@@ -46,8 +45,8 @@ def test_with_gather_subset(ansible_zos_module):
         assert "cpc_nd_manufacturer" not in result.get('ansible_facts').keys()
 
 
-# test with filter=name and no gather_subset
 def test_with_filter(ansible_zos_module):
+    """ test with filter=name and no gather_subset """
     hosts = ansible_zos_module
     filter_list = ['*name*']
     results = hosts.all.zos_gather_facts(filter=filter_list)
@@ -73,8 +72,8 @@ def test_with_filter(ansible_zos_module):
         assert "cpc_nd_manufacturer" not in result.get('ansible_facts').keys()
 
 
-# test with filter=*name* and gather_subset=iodf
 def test_with_subset_and_filter(ansible_zos_module):
+    """ test with filter=*name* and gather_subset=iodf """
     hosts = ansible_zos_module
     ipl_only_subset = ['iodf']
     filter_list = ['*name*']
@@ -102,14 +101,12 @@ def test_with_filter_asterisk(ansible_zos_module):
         assert "ipaloadxx" in result.get('ansible_facts').keys()
         assert "master_catalog_dsn" in result.get('ansible_facts').keys()
 
+
 # erroneous output:
 # ansible handles input in wrong format so we can expect gather_subset
 # and filter to always be lists of str.
 
-# bad subsets -
-
-
-# nonsense subset
+# invalid subset
 test_data = [
     (['   asdf']),
     (['asdfasdf']),
@@ -120,17 +117,20 @@ test_data = [
 def test_with_gather_subset_bad(ansible_zos_module, gather_subset):
     hosts = ansible_zos_module
     results = hosts.all.zos_gather_facts(gather_subset=gather_subset)
+
     for result in results.contacted.values():
-        assert result.get('failed') is True
-        assert result.get('zinfo_err_msg') is not None
+        assert result is not None
+        assert re.match(r'^BGYSC5203E', result.get('zinfo_err_msg'))
+        assert re.match(r'^An invalid subset', result.get('msg'))
 
 
-# attempted injection through subset
 def test_with_gather_subset_injection(ansible_zos_module):
+    """ Attempted injection through a subset"""
     hosts = ansible_zos_module
     results = hosts.all.zos_gather_facts(gather_subset=['ipl; cat /.bashrc'])
     for result in results.contacted.values():
-        assert result.get('failed') is True
+        assert result is not None
+        assert re.match(r'^An invalid subset', result.get('msg'))
 
 
 # whitespace subsets
@@ -142,13 +142,13 @@ test_data = [
 
 
 @pytest.mark.parametrize("gather_subset", test_data)
-def test_with_gather_subset_empty_str(
-        ansible_zos_module, gather_subset):
+def test_with_gather_subset_empty_str(ansible_zos_module, gather_subset):
 
     hosts = ansible_zos_module
     results = hosts.all.zos_gather_facts(gather_subset=gather_subset)
     for result in results.contacted.values():
-        assert result.get('failed') is True
+        assert result is not None
+        assert re.match(r'^An invalid subset', result.get('msg'))
 
 
 test_data = [

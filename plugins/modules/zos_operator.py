@@ -165,8 +165,6 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module im
 )
 from ansible.module_utils.six import PY3
 
-
-
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     MissingZOAUImport,
 )
@@ -257,7 +255,7 @@ def run_module():
                     ssctr += 1
 
         # call is returned from run_operator_command, specifying what was run.
-        #result["cmd"] = new_params.get("cmd")
+        # result["cmd"] = new_params.get("cmd")
         result["cmd"] = rc_message.get("call")
         result["wait_time_s"] = new_params.get("wait_time_s")
         result["changed"] = False

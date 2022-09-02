@@ -4,6 +4,6 @@ bugfixes:
   - ibm_zos_operator - fixed the wait_time_s to default to 1 second (https://github.com/ansible-collections/ibm_zos_core/issues/389).
 minor_changes:
   - ibm_zos_operator - deprecated the wait option, not needed with wait_time_s minor_changes (https://github.com/ansible-collections/ibm_zos_core/issues/389).
-  - ibm_zos_operator - added in the reponse the cmd result (https://github.com/ansible-collections/ibm_zos_core/issues/389).
-  - ibm_zos_operator - added in the reponse the wait_time_s set (https://github.com/ansible-collections/ibm_zos_core/issues/389).
-  - ibm_zos_operator - added in the reponse the elapsed time (https://github.com/ansible-collections/ibm_zos_core/issues/389).
+  - ibm_zos_operator - added in the response the cmd result (https://github.com/ansible-collections/ibm_zos_core/issues/389).
+  - ibm_zos_operator - added in the response the wait_time_s set (https://github.com/ansible-collections/ibm_zos_core/issues/389).
+  - ibm_zos_operator - added in the response the elapsed time (https://github.com/ansible-collections/ibm_zos_core/issues/389).

@@ -30,8 +30,10 @@ class ArtifactManager(object):
     is used in test cases. In the even a module is used in another test suite
     unrelated to the modules test suite, it will also be returned. This ensures
     that a module changes don't break test suites dependent on a module.
+
     Usage (minimal) example:
         python dependencyfinder.py -p .. -b origin/dev -m
+
     Note: It is possible that only test cases are modified only, without a module
     or modules, in that case without a module pairing no test cases will be
     returned. Its best to run full regression in that case until this can be
@@ -461,10 +463,13 @@ def get_changed_files(path, branch="origin/dev"):
 
 def get_changed_plugins(path, branch="origin/dev"):
     """Get a list of modules or plugins in a specific branch.
+
     Args:
         branch (str, optional): The branch to compare to. Defaults to "dev".
+
     Raises:
         RuntimeError: When git request-pull fails.
+
     Returns:
         list[str]: A list of changed file paths.
     """
@@ -483,18 +488,8 @@ def get_changed_plugins(path, branch="origin/dev"):
         raise RuntimeError("Could not acquire change list")
     if stdout:
         for line in stdout.split("\n"):
-            if "plugins/action/" in line or "plugins/modules/" in line\
-                    or "tests/functional/modules/" in line\
-                    or "plugins/module_utils/" in line\
-                    or "tests/unit/" in line:
+            if "plugins/action/" in line or "plugins/modules/" in line:
                 changed_plugins_modules.append(line.split("|", 1)[0].strip())
-
-        # # There can be the case where only test cases are updated, question is
-        # # should this be default behavior only when no modules are edited
-        # if not changed_plugins_modules:
-        #     for line in stdout.split("\n"):
-        #         if "tests/functional/modules/" in line:
-        #             changed_plugins_modules.append(line.split("|", 1)[0].strip())
 
     return changed_plugins_modules
 

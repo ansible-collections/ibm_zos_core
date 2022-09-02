@@ -218,7 +218,7 @@ def run_module():
         module.deprecate(
             msg='Support for configuring wait has been deprecated.'
             'Configuring wait is now managed by setting \'wait_time_s\'',
-            date='2022-09-01', collection_name='ibm.ibm_zos_core')
+            date='2022-09-01', collection_name='ibm.ibm_zos_core', version='1.5.0')
 
     try:
         new_params = parse_params(module.params)

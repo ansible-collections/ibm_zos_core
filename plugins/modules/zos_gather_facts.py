@@ -21,20 +21,20 @@ __metaclass__ = type
 DOCUMENTATION = r"""
 ---
 module: zos_gather_facts
-short_description: Gather facts about target z/OS systems.
+short_description: Gather z/OS system facts.
 version_added: '1.5.0'
 requirements:
-    - ZOAU 1.2.1 or greater.
+    - ZOAU 1.2.1 or later.
 author:
     - "Ketan Kelkar (@ketankelkar)"
 description:
-  - Retrieve useful variables from the target z/OS systems.
-  - Add variables to the ansible_facts dictionary, which is available from all
+  - Retrieve variables from target z/OS systems.
+  - Variables are added to the I(ansible_facts) dictionary, available to
     playbooks.
-  - Apply filters on the gather_subset list to cut down on variables that are
-    added to the ansible_facts dictionary.
-  - Note, Module will fail fast if any illegal options are provided. This is
-    done to raise awareness of a failure early in an automation setting.
+  - Apply filters on the I(gather_subset) list to reduce the variables that are
+    added to the I(ansible_facts) dictionary.
+  - Note, the module will fail fast if any unsupported options are provided.
+    This is done to raise awareness of a failure in an automation setting.
 options:
   gather_subset:
     type: list
@@ -42,26 +42,27 @@ options:
     default: ["all"]
     required: false
     description:
-      - If specified, it will only collect facts that come under the specified
-        subset (eg. ipl will only return ipl facts). Specifying subsets is
-        recommended to save time on gathering all facts when the facts needed
-        are constrained down to one or more subsets.
+      - If specified, it will collect facts that come under the specified
+        subset (eg. ipl will return ipl facts). Specifying subsets is
+        recommended to reduce time in gathering facts when the facts needed
+        are in a specific subset.
       - The following subsets are available: C(ipl), C(cpu), C(sys), and
-        C(iodf). Additional subsets may be available depending on the version
-        of ZOAU deployed to remote hosts.
+        C(iodf). Depending on the version of ZOAU, additional subsets may be
+        available.
   filter:
     type: list
     elements: str
     required: false
     default: []
     description:
-      - Uses shell-style (fnmatch) pattern matching to filter out the collected
-        facts.
+      - Filter out facts from the I(ansible_facts) dictionary.
+      - Uses shell-style L(fnmatch, https://docs.python.org/3/library/fnmatch.html)
+        pattern matching to filter out the collected facts.
       - An empty list means 'no filter', same as providing '*'.
-      - Filtering is performed after the facts are gathered, so this doesn't
-        save any time or compute. It only reduces the number of variables that
-        are added to the ansible_facts dictionary. To restrict the facts that
-        are collected, refer to the gather_subset parameter above.
+      - Filtering is performed after the facts are gathered such that no compute
+        is saved when filtering. Filtering only reduces the number of variables
+        that are added to the I(ansible_facts) dictionary. To restrict the facts
+        that are collected, refer to the I(gather_subset) parameter.
 """
 
 EXAMPLES = r"""
@@ -84,7 +85,7 @@ EXAMPLES = r"""
 
 RETURN = r"""
 ansible_facts:
-  description: Collection of facts that are gathered from the z/OS systems."
+  description: Collection of facts that are gathered from the z/OS systems.
   returned: when collected
   type: dict
 """

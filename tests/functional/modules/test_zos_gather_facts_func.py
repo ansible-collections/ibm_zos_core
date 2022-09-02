@@ -80,8 +80,6 @@ def test_with_subset_and_filter(ansible_zos_module):
     results = hosts.all.zos_gather_facts(
         gather_subset=ipl_only_subset, filter=filter_list)
     for result in results.contacted.values():
-        print("test_with_subset_and_filter")
-        print(result)
         assert result is not None
         assert result.get('ansible_facts') is not None
 

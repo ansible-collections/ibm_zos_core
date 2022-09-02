@@ -15,9 +15,6 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-import os
-import sys
-import warnings
 import time
 
 import ansible.constants
@@ -73,51 +70,25 @@ def test_zos_operator_positive_path_verbose(ansible_zos_module):
         assert result.get("content") is not None
 
 
-def test_zos_operator_positive_verbose_with_full_delay(ansible_zos_module):
-    hosts = ansible_zos_module
-    startmod = time.time()
-    results = hosts.all.zos_operator(
-        cmd="d u,all", verbose=True, wait_time_s=5, wait=True
-    )
-    endmod = time.time()
-    timediff = endmod - startmod
-    if timediff < 4:
-        print("\n........testable delay failed (short): assertion commented for testing....\n")
-        print(results)
+# def test_zos_operator_positive_verbose_with_full_delay(ansible_zos_module):
+#     hosts = ansible_zos_module
+#     wait_time = 1
+#     results = hosts.all.zos_operator(
+#         cmd="ENTER A LONG RUNNING CMD", verbose=True, wait_time_s=wait_time
+#     )
 
-        for result in results.contacted.values():
-            print("\n......result.....\n")
-            print("\n.......rc={0}\nchg={1}\ncon={2}\n".format(result["rc"], result.get("changed"), result.get("content")))
-
-        print("\n\n\n")
-
-    assert timediff < 10
-    for result in results.contacted.values():
-        assert result["rc"] == 0
-        assert result.get("changed") is True
-        assert result.get("content") is not None
-
-
-def test_zos_operator_positive_verbose_with_full_delay(ansible_zos_module):
-    hosts = ansible_zos_module
-    startmod = time.time()
-    results = hosts.all.zos_operator(
-        cmd="d u,all", verbose=True, wait_time_s=5, wait=True
-    )
-    endmod = time.time()
-    timediff = endmod - startmod
-    assert timediff > 4
-    for result in results.contacted.values():
-        assert result["rc"] == 0
-        assert result.get("changed") is True
-        assert result.get("content") is not None
+#     for result in results.contacted.values():
+#         assert result["rc"] == 0
+#         assert result.get("changed") is False
+#         assert result.get("content") is not None
+#         assert result.get("elapsed") > wait_time
 
 
 def test_zos_operator_positive_verbose_with_quick_delay(ansible_zos_module):
     hosts = ansible_zos_module
     startmod = time.time()
     results = hosts.all.zos_operator(
-        cmd="d u,all", verbose=True, wait_time_s=10, wait=True
+        cmd="d u,all", verbose=True, wait_time_s=10
     )
     endmod = time.time()
     timediff = endmod - startmod

@@ -32,9 +32,9 @@ author:
 options:
   cmd:
     description:
-      - The command to execute.  This command will be wrapped in quotations to run.
+      - The command to execute.
       - If the command contains single-quotations, another set of single quotes must be added.
-      - For example, Change the command "...,P='DSN3EPX,-DBC1,S'" to "...,P=''DSN3EPX,-DBC1,S'' ".
+      - For example, change the command "...,P='DSN3EPX,-DBC1,S'" to "...,P=''DSN3EPX,-DBC1,S'' ".
     type: str
     required: true
   verbose:
@@ -50,7 +50,9 @@ options:
     default: false
   wait_time_s:
     description:
-      - Set maximum time in seconds to wait for the commands to execute.
+      - Set maximum time in seconds to wait for the commands to execute, commands
+        will return sooner than I(wait_time_s) if the complete.
+      - The I(wait_time_s) must be between 1 and 21474836.
       - This option is helpful on a busy system requiring more time to execute
         commands.
     type: int
@@ -106,6 +108,12 @@ cmd:
     returned: always
     type: str
     sample: d u,all
+elapsed:
+    description:
+      The number of seconds that elapsed waiting for the command to complete.
+    returned: always
+    type: float
+    sample: 51.53
 wait_time_s:
     description:
       The maximum time in seconds to wait for the commands to execute.
@@ -150,15 +158,13 @@ changed:
     sample: true
 """
 
-
+from timeit import default_timer as timer
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
     AnsibleModuleHelper,
 )
 from ansible.module_utils.six import PY3
-from tempfile import NamedTemporaryFile
-from stat import S_IEXEC, S_IREAD, S_IWRITE
-from os import chmod
+
 
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
@@ -189,11 +195,14 @@ except Exception:
 
 
 def execute_command(operator_cmd, timeout=1, *args, **kwargs):
+    start = timer()
     response = opercmd.execute(operator_cmd, timeout, args, kwargs)
+    end = timer()
     rc = response.rc
     stdout = response.stdout_response
     stderr = response.stderr_response
-    return rc, stdout, stderr
+    elapsed = round(end - start, 2)
+    return rc, stdout, stderr, elapsed
 
 
 def run_module():
@@ -217,7 +226,7 @@ def run_module():
         new_params = parse_params(module.params)
         rc_message = run_operator_command(new_params)
         result["rc"] = rc_message.get("rc")
-
+        result["elapsed"] = rc_message.get("elapsed")
         # This section will build 2 lists of strings: content=>user return, and
         # short_str, which is the first 5 lines of stdout and stderr.
         # 5: depending on the shell, there can be 1-2 leading blank lines +
@@ -260,23 +269,23 @@ def run_module():
             if len(short_str) > 2:
                 result["changed"] = True
                 for linetocheck in short_str:
-                    if "INVALID" in linetocheck:
+                    if "invalid" in linetocheck.lower():
                         result["exception"] = "Invalid detected: " + linetocheck
                         result["changed"] = False
                         module.fail_json(msg=result["exception"], **result)
-                    elif "ERROR" in linetocheck:
+                    elif "error" in linetocheck.lower():
                         result["exception"] = "Error detected: " + linetocheck
                         result["changed"] = False
                         module.fail_json(msg=result["exception"], **result)
-                    elif "UNIDENTIFIABLE" in linetocheck:
+                    elif "unidentifiable" in linetocheck.lower():
                         result["exception"] = "Unidentifiable detected: " + linetocheck
                         result["changed"] = False
                         module.fail_json(msg=result["exception"], **result)
             else:
-                module.fail_json(msg="Too little response text", **result)
+                module.fail_json(msg="Expected response to be more than 2 lines.", **result)
         else:
             module.fail_json(
-                msg="Non-0 response from launch script: " + str(result["rc"]), **result
+                msg="Non-zero response received: " + str(result["rc"]), **result
             )
     except Error as e:
         module.fail_json(msg=repr(e), **result)
@@ -313,7 +322,7 @@ def run_operator_command(params):
     cmdtxt = params.get("cmd")
 
     args = []
-    rc, stdout, stderr = execute_command(cmdtxt, wait_s, *args, **kwargs)
+    rc, stdout, stderr, elapsed = execute_command(cmdtxt, timeout=wait_s, *args, **kwargs)
 
     if rc > 0:
         message = "\nOut: {0}\nErr: {1}\nRan: {2}".format(stdout, stderr, cmdtxt)
@@ -324,6 +333,7 @@ def run_operator_command(params):
         "stdout": stdout,
         "stderr": stderr,
         "call": cmdtxt,
+        "elapsed": elapsed,
     }
 
 

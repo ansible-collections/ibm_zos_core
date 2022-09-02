@@ -46,7 +46,7 @@ options:
         subset (eg. ipl will return ipl facts). Specifying subsets is
         recommended to reduce time in gathering facts when the facts needed
         are in a specific subset.
-      - The following subsets are available: C(ipl), C(cpu), C(sys), and
+      - The following subsets are available C(ipl), C(cpu), C(sys), and
         C(iodf). Depending on the version of ZOAU, additional subsets may be
         available.
   filter:

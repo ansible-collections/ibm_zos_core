@@ -117,7 +117,7 @@ options:
       - If the source I(src) is a USS file or path, the backup_name name must be a file
         or path name, and the USS file or path must be an absolute path name.
       - If the source is an MVS data set, the backup_name name must be an MVS
-        data set name.
+        data set name, and the dataset must not be preallocated.
       - If the backup_name is not provided, the default backup_name name will
         be used. If the source is a USS file or path, the name of the backup
         file will be the source file or path name appended with a
@@ -472,7 +472,7 @@ def main():
         encoding=dict(arg_type='str', default='IBM-1047', required=False),
         force=dict(arg_type='bool', default=False, required=False),
         backup=dict(arg_type='bool', default=False, required=False),
-        backup_name=dict(arg_type='data_set_or_pat', required=False, default=None),
+        backup_name=dict(arg_type='data_set_or_path', required=False, default=None),
         tmp_hlq=dict(type='qualifier_or_empty', required=False, default=None),
         mutually_exclusive=[['insertbefore', 'insertafter']],
         indentation=dict(arg_type='int', default=0, required=False)

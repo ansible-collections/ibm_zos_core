@@ -39,12 +39,8 @@ options:
     required: true
   verbose:
     description:
-      - Return diagnostic messages that lists and describes the execution of the
-        operator commands.
-      - Return security trace messages that help you understand and diagnose the
-        execution of the operator commands
-      - Return trace instructions displaying how the the command's operation is
-        read, evaluated and executed.
+      - Return diagnostic messages that describes the commands execution,
+        options, buffer and response size.
     type: bool
     required: false
     default: false

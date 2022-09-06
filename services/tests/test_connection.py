@@ -261,7 +261,7 @@ class TestConnectionFunctionalTests(unittest.TestCase):
         "hostname": "EC01140A.vmec.svl.ibm.com",
         "port": 22,
         "username": "omvsadm",
-        "password": "all1sdun",
+        "password": "changeme",
         "key_filename": os.path.expanduser('~') + "/.ssh/id_dsa",
         "passphrase": "changeme"
     }

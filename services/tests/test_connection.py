@@ -22,7 +22,7 @@ from socket import error
 from paramiko import AuthenticationException, ssh_exception 
 sys.path.append('..')
 
-from operations.connection import Connection
+from operations.connection import Connection, ServicesConnectionException
 from operations.types import Request
 
 
@@ -133,8 +133,8 @@ class TestConnectionUnitTests(unittest.TestCase):
             connection = Connection(hostname=invalid_hostname, username=self.username, 
                             password=self.password)
             connection.connect()
-        except ssh_exception.NoValidConnectionsError as e:
-            assert re.match(r'^NoValidConnectionsError', repr(e))
+        except ServicesConnectionException as e:
+            assert re.match(r'^ServicesConnectionException', repr(e))
  
 
     def test_connection_invalid_port_range(self):
@@ -146,8 +146,8 @@ class TestConnectionUnitTests(unittest.TestCase):
             connection = Connection(hostname=self.hostname, username=self.username, 
                             password=self.password, port=invalid_port)
             connection.connect()
-        except error as e:
-            assert re.match(r'^gaierror', repr(e))
+        except ServicesConnectionException as e:
+            assert re.match(r'^ServicesConnectionException', repr(e))
  
 
     def test_connection_invalid_port(self):
@@ -159,8 +159,8 @@ class TestConnectionUnitTests(unittest.TestCase):
             connection = Connection(hostname=self.hostname, username=self.username, 
                             password=self.password, port=invalid_port)
             connection.connect()
-        except error as e:
-            assert re.match(r'^OSError', repr(e))
+        except ServicesConnectionException as e:
+            assert re.match(r'^ServicesConnectionException', repr(e))
             
 
     def test_connection_invalid_user_type(self):
@@ -185,8 +185,8 @@ class TestConnectionUnitTests(unittest.TestCase):
             connection = Connection(hostname=self.hostname, username=invalid_username, 
                             password=self.password)
             connection.connect()
-        except AuthenticationException as e:
-            assert re.match(r'^AuthenticationException', repr(e))
+        except ServicesConnectionException as e:
+            assert re.match(r'^ServicesConnectionException', repr(e))
 
 
     def test_connection_invalid_password_type(self):
@@ -208,8 +208,8 @@ class TestConnectionUnitTests(unittest.TestCase):
             connection = Connection(hostname=self.hostname, username=self.username,
                             password=invalid_password)
             connection.connect()
-        except AuthenticationException as e:
-            assert re.match(r'^AuthenticationException', repr(e))
+        except ServicesConnectionException as e:
+            assert re.match(r'^ServicesConnectionException', repr(e))
 
 
     def test_connection_invalid_key_filename_type(self):
@@ -234,8 +234,8 @@ class TestConnectionUnitTests(unittest.TestCase):
             connection = Connection(hostname=self.hostname, username=self.username, 
                             key_filename=invalid_key_filename)
             connection.connect()
-        except FileNotFoundError as e:
-            assert re.match(r'^FileNotFoundError', repr(e))
+        except ServicesConnectionException as e:
+            assert re.match(r'^ServicesConnectionException', repr(e))
            
 
     @unittest.skip('TODO - TRY AGAIN') 
@@ -248,8 +248,8 @@ class TestConnectionUnitTests(unittest.TestCase):
             connection = Connection(hostname=self.hostname, username=self.username,
                             key_filename=self.key_filename,passphrase=invalid_passphrase)
             connection.connect()
-        except ssh_exception.BadHostKeyException as e:
-            assert re.match(r'^BadHostKeyException', repr(e))
+        except ServicesConnectionException as e:
+            assert re.match(r'^ServicesConnectionException', repr(e))
             
 
 class TestConnectionFunctionalTests(unittest.TestCase):
@@ -261,7 +261,7 @@ class TestConnectionFunctionalTests(unittest.TestCase):
         "hostname": "EC01140A.vmec.svl.ibm.com",
         "port": 22,
         "username": "omvsadm",
-        "password": "changeme",
+        "password": "all1sdun",
         "key_filename": os.path.expanduser('~') + "/.ssh/id_dsa",
         "passphrase": "changeme"
     }

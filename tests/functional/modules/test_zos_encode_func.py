@@ -31,13 +31,14 @@ FROM_ENCODING = "IBM-1047"
 INVALID_ENCODING = "EBCDIC"
 TO_ENCODING = "ISO8859-1"
 TEMP_JCL_PATH = "/tmp/jcl"
-TEST_DATA = """0001 This is for encode conversion testing00000000000000000000000000000000000000
-0002 This is for encode conversion testing00000000000000000000000000000000000000
-0003 This is for encode conversion testing00000000000000000000000000000000000000
-0004 This is for encode conversion testing00000000000000000000000000000000000000
-0005 This is for encode conversion testing00000000000000000000000000000000000000
-0006 This is for encode conversion testing00000000000000000000000000000000000000
+TEST_DATA = """0001 This is for encode conversion testing_____________________________________
+0002 This is for encode conversion testing_____________________________________
+0003 This is for encode conversion testing_____________________________________
+0004 This is for encode conversion testing_____________________________________
+0005 This is for encode conversion testing_____________________________________
+0006 This is for encode conversion testing_____________________________________
 """
+TEST_DATA_RECORD_LENGTH = 80
 TEST_FILE_TEXT = "HELLO world"
 BACKUP_DATA_SET = "USER.PRIVATE.BACK"
 
@@ -300,7 +301,7 @@ def test_uss_encoding_conversion_uss_file_to_mvs_pds(ansible_zos_module):
     try:
         hosts = ansible_zos_module
         hosts.all.copy(content=TEST_DATA, dest=USS_FILE)
-        hosts.all.zos_data_set(name=MVS_PDS, state="present", type="pds", record_length=80)
+        hosts.all.zos_data_set(name=MVS_PDS, state="present", type="pds", record_length=TEST_DATA_RECORD_LENGTH)
         results = hosts.all.zos_encode(
             src=USS_FILE,
             dest=MVS_PDS,
@@ -379,7 +380,7 @@ def test_uss_encoding_conversion_uss_path_to_mvs_pds(ansible_zos_module):
         hosts.all.file(path=USS_PATH, state="directory")
         hosts.all.copy(content=TEST_DATA, dest=USS_PATH + "/encode1")
         hosts.all.copy(content=TEST_DATA, dest=USS_PATH + "/encode2")
-        hosts.all.zos_data_set(name=MVS_PDS, state="present", type="pds", record_length=80)
+        hosts.all.zos_data_set(name=MVS_PDS, state="present", type="pds", record_length=TEST_DATA_RECORD_LENGTH)
         results = hosts.all.zos_encode(
             src=USS_PATH,
             dest=MVS_PDS,
@@ -505,7 +506,7 @@ def test_uss_encoding_conversion_mvs_vsam_to_uss_file(ansible_zos_module):
 def test_uss_encoding_conversion_mvs_vsam_to_mvs_ps(ansible_zos_module):
     hosts = ansible_zos_module
     hosts.all.zos_data_set(name=MVS_PS, state="absent")
-    hosts.all.zos_data_set(name=MVS_PS, state="present", type="seq", record_length=50)
+    hosts.all.zos_data_set(name=MVS_PS, state="present", type="seq", record_length=TEST_DATA_RECORD_LENGTH)
     results = hosts.all.zos_encode(
         src=MVS_VS,
         dest=MVS_PS,
@@ -670,7 +671,7 @@ def test_vsam_backup(ansible_zos_module):
         hosts.all.zos_data_set(name=MVS_VS, state="absent")
         hosts.all.zos_data_set(name=MVS_PS, state="absent")
         hosts.all.zos_data_set(
-            name=MVS_PS, state="present", record_length=50, type="seq", record_format="VB"
+            name=MVS_PS, state="present", record_length=TEST_DATA_RECORD_LENGTH, type="seq"
         )
         hosts.all.file(path=TEMP_JCL_PATH, state="directory")
         hosts.all.shell(
@@ -715,7 +716,7 @@ def test_vsam_backup(ansible_zos_module):
             backup_name=BACKUP_DATA_SET,
         )
         hosts.all.zos_data_set(
-            name=MVS_PS, state="present", record_length=200, type="seq", record_format="VB"
+            name=MVS_PS, state="present", record_length=TEST_DATA_RECORD_LENGTH, type="seq"
         )
         hosts.all.zos_encode(
             src=BACKUP_DATA_SET,

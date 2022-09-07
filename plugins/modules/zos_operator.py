@@ -39,12 +39,8 @@ options:
     required: true
   verbose:
     description:
-      - Return diagnostic messages that lists and describes the execution of the
-        operator commands.
-      - Return security trace messages that help you understand and diagnose the
-        execution of the operator commands
-      - Return trace instructions displaying how the the command's operation is
-        read, evaluated and executed.
+      - Return diagnostic messages that describes the commands execution,
+        options, buffer and response size.
     type: bool
     required: false
     default: false
@@ -194,7 +190,7 @@ except Exception:
 
 def execute_command(operator_cmd, timeout=1, *args, **kwargs):
     start = timer()
-    response = opercmd.execute(operator_cmd, timeout, args, kwargs)
+    response = opercmd.execute(operator_cmd, timeout, *args, **kwargs)
     end = timer()
     rc = response.rc
     stdout = response.stdout_response
@@ -241,7 +237,8 @@ def run_module():
         tstr = rc_message.get("stdout")
         if tstr is not None:
             for s in tstr.split("\n"):
-                result["content"].append(s)
+                if s:
+                    result["content"].append(s)
                 if ssctr < 5:
                     short_str.append(s)
                     ssctr += 1
@@ -249,7 +246,8 @@ def run_module():
         tstr = rc_message.get("stderr")
         if tstr is not None:
             for s in tstr.split("\n"):
-                result["content"].append(s)
+                if s:
+                    result["content"].append(s)
                 if ssctr < 5:
                     short_str.append(s)
                     ssctr += 1

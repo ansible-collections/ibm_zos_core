@@ -1,0 +1,7 @@
+bugfixes:
+  - >
+    zos_operator - was updated to correct missing verbosity content
+    when the option verbose was set to True.
+    zos_operator - was updated to correct the trailing lines that would appear
+    in the result content.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/400).

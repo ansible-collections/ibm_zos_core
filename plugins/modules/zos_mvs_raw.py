@@ -2395,7 +2395,7 @@ def build_data_definition(dd):
     elif dd.get("dd_output"):
         data_definition = RawOutputDefinition(**(dd.get("dd_output")))
     elif dd.get("dd_vio"):
-        data_definition = VIODefinition(**(dd.get("dd_vio")))
+        data_definition = VIODefinition(dd.get("dd_vio").get("tmphlq"))
     elif dd.get("dd_dummy"):
         data_definition = DummyDefinition()
     elif dd.get("dd_concat"):

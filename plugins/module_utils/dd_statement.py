@@ -595,7 +595,7 @@ class OutputDefinition(DataDefinition):
         space_primary=100,
         space_secondary=50,
         space_type="trk",
-        record_length=121
+        record_length=121,
     ):
         """Output DD Data type to be used in a DDStatement.
         This should be used in cases where user wants to receive

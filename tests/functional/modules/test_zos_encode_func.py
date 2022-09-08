@@ -31,11 +31,14 @@ FROM_ENCODING = "IBM-1047"
 INVALID_ENCODING = "EBCDIC"
 TO_ENCODING = "ISO8859-1"
 TEMP_JCL_PATH = "/tmp/jcl"
-TEST_DATA = """00000001This is for encode conversion testsing
-00000002This is for encode conversion testsing
-00000003This is for encode conversion testsing
-00000004This is for encode conversion testsing
+TEST_DATA = """0001 This is for encode conversion testing_____________________________________
+0002 This is for encode conversion testing_____________________________________
+0003 This is for encode conversion testing_____________________________________
+0004 This is for encode conversion testing_____________________________________
+0005 This is for encode conversion testing_____________________________________
+0006 This is for encode conversion testing_____________________________________
 """
+TEST_DATA_RECORD_LENGTH = 80
 TEST_FILE_TEXT = "HELLO world"
 BACKUP_DATA_SET = "USER.PRIVATE.BACK"
 
@@ -49,8 +52,8 @@ KSDS_CREATE_JCL = """//CREKSDS    JOB (T043JM,JM00,1,0,0,0),'CREATE KSDS',CLASS=
    DEFINE CLUSTER                          -
     (NAME(ENCODE.TEST.VS)                  -
     INDEXED                                -
-    KEYS(12 20)                            -
-    RECSZ(200 200)                         -
+    KEYS(4 0)                            -
+    RECSZ(80 80)                         -
     RECORDS(100)                           -
     SHAREOPTIONS(2 3)                      -
     VOLUMES(000000) )                      -
@@ -68,8 +71,8 @@ KSDS_REPRO_JCL = """//DOREPRO    JOB (T043JM,JM00,1,0,0,0),'CREATE KSDS',CLASS=R
   INFILE(SYS01) -
   OUTDATASET({0})
 //SYS01    DD *
- DDUMMY   RECORD                      !! DO NOT ALTER !!
- EEXAMPLE RECORD   REMOVE THIS LINE IF EXAMPLES NOT REQUIRED
+0001  DUMMY RECORD
+0002  DUMMY RECORD ! ! DO NOT ALTER! !
 /*
 """
 
@@ -298,7 +301,7 @@ def test_uss_encoding_conversion_uss_file_to_mvs_pds(ansible_zos_module):
     try:
         hosts = ansible_zos_module
         hosts.all.copy(content=TEST_DATA, dest=USS_FILE)
-        hosts.all.zos_data_set(name=MVS_PDS, state="present", type="pds", record_length=80)
+        hosts.all.zos_data_set(name=MVS_PDS, state="present", type="pds", record_length=TEST_DATA_RECORD_LENGTH)
         results = hosts.all.zos_encode(
             src=USS_FILE,
             dest=MVS_PDS,
@@ -377,7 +380,7 @@ def test_uss_encoding_conversion_uss_path_to_mvs_pds(ansible_zos_module):
         hosts.all.file(path=USS_PATH, state="directory")
         hosts.all.copy(content=TEST_DATA, dest=USS_PATH + "/encode1")
         hosts.all.copy(content=TEST_DATA, dest=USS_PATH + "/encode2")
-        hosts.all.zos_data_set(name=MVS_PDS, state="present", type="pds", record_length=80)
+        hosts.all.zos_data_set(name=MVS_PDS, state="present", type="pds", record_length=TEST_DATA_RECORD_LENGTH)
         results = hosts.all.zos_encode(
             src=USS_PATH,
             dest=MVS_PDS,
@@ -484,13 +487,17 @@ def test_uss_encoding_conversion_mvs_vsam_to_uss_file(ansible_zos_module):
             },
             backup=True,
         )
-        hosts.all.file(path=USS_DEST_FILE, state="absent")
         pprint(vars(results))
         for result in results.contacted.values():
             assert result.get("src") == MVS_VS
             assert result.get("dest") == USS_DEST_FILE
             assert result.get("backup_name") is not None
             assert result.get("changed") is True
+            # How can we add a content validation without having to encode again ?
+            # cat_result = hosts.all.shell(cmd="iconv -f {0} -t {1} {2}".format(TO_ENCODING, FROM_ENCODING, USS_DEST_FILE))
+            # print(cat_result.contacted.values())
+            # for uss_file_result in cat_result.contacted.values():
+            #     assert TEST_DATA in uss_file_result.get("stdout")
     finally:
         hosts.all.file(path=USS_DEST_FILE, state="absent")
         hosts.all.file(path=result.get("backup_name"), state="absent")
@@ -499,7 +506,7 @@ def test_uss_encoding_conversion_mvs_vsam_to_uss_file(ansible_zos_module):
 def test_uss_encoding_conversion_mvs_vsam_to_mvs_ps(ansible_zos_module):
     hosts = ansible_zos_module
     hosts.all.zos_data_set(name=MVS_PS, state="absent")
-    hosts.all.zos_data_set(name=MVS_PS, state="present", type="seq", record_length=47)
+    hosts.all.zos_data_set(name=MVS_PS, state="present", type="seq", record_length=TEST_DATA_RECORD_LENGTH)
     results = hosts.all.zos_encode(
         src=MVS_VS,
         dest=MVS_PS,
@@ -664,7 +671,7 @@ def test_vsam_backup(ansible_zos_module):
         hosts.all.zos_data_set(name=MVS_VS, state="absent")
         hosts.all.zos_data_set(name=MVS_PS, state="absent")
         hosts.all.zos_data_set(
-            name=MVS_PS, state="present", record_length=200, type="seq", record_format="VB"
+            name=MVS_PS, state="present", record_length=TEST_DATA_RECORD_LENGTH, type="seq"
         )
         hosts.all.file(path=TEMP_JCL_PATH, state="directory")
         hosts.all.shell(
@@ -698,6 +705,7 @@ def test_vsam_backup(ansible_zos_module):
         hosts.all.zos_data_set(name=MVS_PS, state="absent")
         for content in contents.contacted.values():
             content1 = content.get("stdout")
+        print(contents.contacted.values())
         hosts.all.zos_encode(
             src=MVS_VS,
             encoding={
@@ -708,7 +716,7 @@ def test_vsam_backup(ansible_zos_module):
             backup_name=BACKUP_DATA_SET,
         )
         hosts.all.zos_data_set(
-            name=MVS_PS, state="present", record_length=200, type="seq", record_format="VB"
+            name=MVS_PS, state="present", record_length=TEST_DATA_RECORD_LENGTH, type="seq"
         )
         hosts.all.zos_encode(
             src=BACKUP_DATA_SET,
@@ -721,6 +729,7 @@ def test_vsam_backup(ansible_zos_module):
 
         contents = hosts.all.shell(cmd="cat \"//'{0}'\"".format(MVS_PS))
         content2 = ""
+        print(contents.contacted.values())
         for content in contents.contacted.values():
             content2 = content.get("stdout")
         assert content1 and (content1 == content2)

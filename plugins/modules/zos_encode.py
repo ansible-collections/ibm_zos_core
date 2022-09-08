@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020
+# Copyright (c) IBM Corporation 2019, 2020, 2022
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -31,22 +31,27 @@ description:
   - Writes the data to a UNIX System Services (USS) file or path,
     PS (sequential data set), PDS, PDSE, or KSDS (VSAM data set).
 options:
-  from_encoding:
+  encoding:
     description:
-      - The character set of the source I(src).
+      - Specifies which encodings the destination file or data set should be
+        converted from and to.
       - Supported character sets rely on the charset conversion utility (iconv)
         version; the most common character sets are supported.
+    type: dict
     required: false
-    type: str
-    default: IBM-1047
-  to_encoding:
-    description:
-      - The destination I(dest) character set for the output to be written as.
-      - Supported character sets rely on the charset conversion utility (iconv)
-        version; the most common character sets are supported.
-    required: false
-    type: str
-    default: ISO8859-1
+    suboptions:
+      from:
+        description:
+          - The character set of the source I(src).
+        required: false
+        type: str
+        default: IBM-1047
+      to:
+        description:
+          - The destination I(dest) character set for the output to be written as.
+        required: false
+        type: str
+        default: ISO8859-1
   src:
     description:
       - The location can be a UNIX System Services (USS) file or path,
@@ -103,6 +108,14 @@ options:
     type: bool
     required: false
     default: false
+  tmp_hlq:
+    description:
+      - Override the default high level qualifier (HLQ) for temporary and backup
+        datasets.
+      - The default HLQ is the Ansible user used to execute the module and if
+        that is not available, then the value C(TMPHLQ) is used.
+    required: false
+    type: str
 notes:
   - It is the playbook author or user's responsibility to avoid files that should
     not be encoded, such as binary files. A user is described as the remote user,
@@ -124,8 +137,9 @@ EXAMPLES = r"""
   zos_encode:
     src: /zos_encode/test.data
     dest: /zos_encode_out/test.out
-    from_encoding: IBM-1047
-    to_encoding: ISO8859-1
+    encoding:
+      from: IBM-1047
+      to: ISO8859-1
     backup: yes
     backup_compress: yes
 
@@ -139,90 +153,102 @@ EXAMPLES = r"""
   zos_encode:
     src: /zos_encode/
     dest: /zos_encode_out/
-    from_encoding: ISO8859-1
-    to_encoding: IBM-1047
+    encoding:
+      from: ISO8859-1
+      to: IBM-1047
 
 - name: Convert file encoding from a USS file to a sequential data set
   zos_encode:
     src: /zos_encode/test.data
     dest: USER.TEST.PS
-    from_encoding: IBM-1047
-    to_encoding: ISO8859-1
+    encoding:
+      from: IBM-1047
+      to: ISO8859-1
 
 - name: Convert file encoding from files in a directory to a partitioned
     data set
   zos_encode:
     src: /zos_encode/
     dest: USER.TEST.PDS
-    from_encoding: ISO8859-1
-    to_encoding: IBM-1047
+    encoding:
+      from: ISO8859-1
+      to: IBM-1047
 
 - name: Convert file encoding from a USS file to a partitioned data set
     member
   zos_encode:
     src: /zos_encode/test.data
     dest: USER.TEST.PDS(TESTDATA)
-    from_encoding: ISO8859-1
-    to_encoding: IBM-1047
+    encoding:
+      from: ISO8859-1
+      to: IBM-1047
 
 - name: Convert file encoding from a sequential data set to a USS file
   zos_encode:
     src: USER.TEST.PS
     dest: /zos_encode/test.data
-    from_encoding: IBM-1047
-    to_encoding: ISO8859-1
+    encoding:
+      from: IBM-1047
+      to: ISO8859-1
 
 - name: Convert file encoding from a PDS encoding to a USS directory
   zos_encode:
     src: USER.TEST.PDS
     dest: /zos_encode/
-    from_encoding: IBM-1047
-    to_encoding: ISO8859-1
+    encoding:
+      from: IBM-1047
+      to: ISO8859-1
 
 - name: Convert file encoding from a sequential data set to another
     sequential data set
   zos_encode:
     src: USER.TEST.PS
     dest: USER.TEST1.PS
-    from_encoding: IBM-1047
-    to_encoding: ISO8859-1
+    encoding:
+      from: IBM-1047
+      to: ISO8859-1
 
 - name: Convert file encoding from a sequential data set to a
     partitioned data set (extended) member
   zos_encode:
     src: USER.TEST.PS
     dest: USER.TEST1.PDS(TESTDATA)
-    from_encoding: IBM-1047
-    to_encoding: ISO8859-1
+    encoding:
+      from: IBM-1047
+      to: ISO8859-1
 
 - name: Convert file encoding from a USS file to a VSAM data set
   zos_encode:
     src: /zos_encode/test.data
     dest: USER.TEST.VS
-    from_encoding: ISO8859-1
-    to_encoding: IBM-1047
+    encoding:
+      from: ISO8859-1
+      to: IBM-1047
 
 - name: Convert file encoding from a VSAM data set to a USS file
   zos_encode:
     src: USER.TEST.VS
     dest: /zos_encode/test.data
-    from_encoding: IBM-1047
-    to_encoding: ISO8859-1
+    encoding:
+      from: IBM-1047
+      to: ISO8859-1
 
 - name: Convert file encoding from a VSAM data set to a sequential
     data set
   zos_encode:
     src: USER.TEST.VS
     dest: USER.TEST.PS
-    from_encoding: IBM-1047
-    to_encoding: ISO8859-1
+    encoding:
+      from: IBM-1047
+      to: ISO8859-1
 
 - name: Convert file encoding from a sequential data set a VSAM data set
   zos_encode:
     src: USER.TEST.PS
     dest: USER.TEST.VS
-    from_encoding: ISO8859-1
-    to_encoding: IBM-1047
+    encoding:
+      from: ISO8859-1
+      to: IBM-1047
 
 """
 
@@ -335,14 +361,36 @@ def run_module():
     module_args = dict(
         src=dict(type="str", required=True),
         dest=dict(type="str"),
-        from_encoding=dict(type="str", default="IBM-1047"),
-        to_encoding=dict(type="str", default="ISO8859-1"),
+        encoding=dict(
+            type="dict",
+            required=False,
+            options={
+                "from": dict(type="str", required=False, default="IBM-1047"),
+                "to": dict(type="str", required=False, default="ISO8859-1"),
+            }
+        ),
         backup=dict(type="bool", default=False),
         backup_name=dict(type="str", required=False, default=None),
         backup_compress=dict(type="bool", required=False, default=False),
+        tmp_hlq=dict(type='str', required=False, default=None),
     )
 
     module = AnsibleModule(argument_spec=module_args)
+
+    if module.params.get("encoding"):
+        module.params.update(
+            dict(
+                from_encoding=module.params.get("encoding").get("from"),
+                to_encoding=module.params.get("encoding").get("to"),
+            )
+        )
+    else:
+        module.params.update(
+            dict(
+                from_encoding="IBM-1047",
+                to_encoding="ISO8859-1",
+            )
+        )
 
     arg_defs = dict(
         src=dict(arg_type="data_set_or_path", required=True),
@@ -352,6 +400,7 @@ def run_module():
         backup=dict(arg_type="bool", default=False, required=False),
         backup_name=dict(arg_type="data_set_or_path", required=False, default=None),
         backup_compress=dict(arg_type="bool", required=False, default=False),
+        tmp_hlq=dict(type='qualifier_or_empty', required=False, default=None),
     )
 
     parser = better_arg_parser.BetterArgParser(arg_defs)
@@ -363,6 +412,7 @@ def run_module():
     backup_compress = parsed_args.get("backup_compress")
     from_encoding = parsed_args.get("from_encoding").upper()
     to_encoding = parsed_args.get("to_encoding").upper()
+    tmphlq = module.params.get('tmp_hlq')
 
     # is_uss_src(dest) to determine whether the src(dest) is a USS file/path or not
     # is_mvs_src(dest) to determine whether the src(dest) is a MVS data set or not
@@ -417,7 +467,7 @@ def run_module():
                     dest, backup_name, backup_compress
                 )
             if is_mvs_dest:
-                backup_name = zos_backup.mvs_file_backup(dest, backup_name)
+                backup_name = zos_backup.mvs_file_backup(dest, backup_name, tmphlq)
             result["backup_name"] = backup_name
 
         eu = encode.EncodeUtils()
@@ -425,6 +475,8 @@ def run_module():
         # If the value specified in from_encoding or to_encoding is not in the code_set, exit with an error message
         # If the values specified in from_encoding and to_encoding are the same, exit with an message
         code_set = eu.get_codeset()
+        # set the tmphlq in the encodeutils
+        eu.tmphlq = tmphlq
         if from_encoding not in code_set:
             raise EncodeError(
                 "Invalid codeset: Please check the value of the from_encoding!"

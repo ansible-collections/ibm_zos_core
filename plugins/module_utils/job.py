@@ -13,6 +13,7 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
+import time
 from tempfile import NamedTemporaryFile
 from os import chmod
 from stat import S_IEXEC, S_IREAD, S_IWRITE
@@ -23,6 +24,27 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
     AnsibleModuleHelper,
 )
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
+    MissingZOAUImport,
+)
+
+# from zoautil_py.jobs import listing, read_output, list_dds
+try:
+    from zoautil_py.jobs import listing, read_output, list_dds, _listing
+except Exception:
+    listing = MissingZOAUImport()
+    read_output = MissingZOAUImport()
+    list_dds = MissingZOAUImport()
+    _listing = MissingZOAUImport()
+
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
+    MissingZOAUImport,
+)
+
+try:
+    from zoautil_py.types import Job
+except Exception:
+    Job = MissingZOAUImport()
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     MissingZOAUImport,
@@ -64,13 +86,13 @@ def job_output(job_id=None, owner=None, job_name=None, dd_name=None):
     owner = parsed_args.get("owner") or "*"
     dd_name = parsed_args.get("dd_name") or ""
 
-    job_detail = _zget_job_status(job_id, owner, job_name, dd_name)
+    job_detail = _zget_job_status(job_id=job_id, owner=owner, job_name=job_name, dd_name=dd_name)
     if len(job_detail) == 0:
         # some systems have issues with "*" while some require it to see results
         job_id = "" if job_id == "*" else job_id
         owner = "" if owner == "*" else owner
         job_name = "" if job_name == "*" else job_name
-        job_detail = _zget_job_status(job_id, owner, job_name, dd_name)
+        job_detail = _zget_job_status(job_id=job_id, owner=owner, job_name=job_name, dd_name=dd_name)
     return job_detail
 
 
@@ -182,8 +204,30 @@ def _zget_job_status(job_id="*", owner="*", job_name="*", dd_name=None):
     else:
         job_query = job_id
 
+    # jls output: owner=job[0], name=job[1], id=job[2], status=job[3], rc=job[4]
+    # e.g.: OMVSADM  HELLO    JOB00126 JCLERR   ?
     # entries = listing(job_query, owner)   1.2.0 has owner paramn, 1.1 does not
-    entries = listing(job_query)
+
+    # Disabled for now to use work around below resulting from an index bound
+    # excpetion using zoau  dataset.listing()
+    #     entries = listing(job_query)
+
+    entries = []
+    response = _listing(job_query)
+
+    for unparsed_job in list(filter(None, response.stdout_response.split("\n"))):
+        job = list(filter(None, unparsed_job.rstrip("\n").split()))
+
+        count = 0
+        while len(job) != 5 and count < 9:
+            job = list(filter(None, _listing(job_query).stdout_response.rstrip("\n").split()))
+            time.sleep(1)
+            count += 1
+
+        if count >= 9:
+            entries.append(Job(owner='?', name=job[1], id=job[2], status=job[3], rc=job[4]))
+        else:
+            entries.append(Job(owner=job[0], name=job[1], id=job[2], status=job[3], rc=job[4]))
 
     final_entries = []
     if entries:
@@ -197,7 +241,10 @@ def _zget_job_status(job_id="*", owner="*", job_name="*", dd_name=None):
 
             job = {}
 
-            job["job_id"] = entry.id
+            # rstrip is a solution because we call zoau raw functions like _submit
+            # which return values with a backslash
+            job_id_stripped = entry.id.rstrip("\n")
+            job["job_id"] = job_id_stripped
             job["job_name"] = entry.name
             job["subsystem"] = ""
             job["system"] = ""
@@ -219,18 +266,23 @@ def _zget_job_status(job_id="*", owner="*", job_name="*", dd_name=None):
 
             job["ret_code"]["steps"] = []
             job["ddnames"] = []
-            list_of_dds = list_dds(entry.id)
 
+            list_of_dds = list_dds(job_id_stripped)
+
+            # Traverse all the DD's
             for single_dd in list_of_dds:
                 dd = {}
+
+                # If there is a dd_name, it means only that one should be returned
                 if dd_name is not None:
                     if dd_name not in single_dd["dataset"]:
                         continue
+                    else:
+                        dd["ddname"] = single_dd["dataset"]
 
                 if "dataset" not in single_dd:
                     continue
 
-                dd["ddname"] = single_dd["dataset"]
                 if "recnum" in single_dd:
                     dd["record_count"] = single_dd["recnum"]
                 else:
@@ -259,7 +311,7 @@ def _zget_job_status(job_id="*", owner="*", job_name="*", dd_name=None):
                 tmpcont = None
                 if "stepname" in single_dd:
                     if "dataset" in single_dd:
-                        tmpcont = read_output(entry.id, single_dd["stepname"], single_dd["dataset"])
+                        tmpcont = read_output(job_id_stripped, single_dd["stepname"], single_dd["dataset"])
 
                 dd["content"] = tmpcont.split("\n")
                 job["ret_code"]["steps"].extend(_parse_steps(tmpcont))

@@ -97,8 +97,6 @@ class Connection:
             # if a socket error occurred while connecting
             print(e)
             raise ServicesConnectionException('Socket error occurred.')
-        
-
 
         return client
 

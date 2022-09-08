@@ -153,7 +153,7 @@ class ActionModule(ActionBase):
                 if is_src_dir:
                     path, dirs, files = next(os.walk(src))
                     if not is_uss and dirs:
-                        result["msg"] = "Subdirectory found inside source directory"
+                        result["msg"] = "Cannot copy a source directory with subdirectories to a data set, the destination must be another directory"
                         result.update(
                             dict(src=src, dest=dest, changed=False, failed=True)
                         )

@@ -243,7 +243,7 @@ options:
         unit name has been specified.
     type: str
     required: false
-  destination_dataset:
+  dest_data_set:
     description:
       - These are settings to use when creating the destination data set
     required: false
@@ -315,6 +315,49 @@ options:
         description:
           - The block size to use for the data set.
         type: int
+        required: false
+      directory_blocks:
+        description:
+          - The number of directory blocks to allocate to the data set.
+        type: int
+        required: false
+      key_offset:
+        description:
+          - The key offset to use when creating a KSDS data set.
+          - I(key_offset) is required when I(type=KSDS).
+          - I(key_offset) should only be provided when I(type=KSDS)
+        type: int
+        required: false
+      key_length:
+        description:
+          - The key length to use when creating a KSDS data set.
+          - I(key_length) is required when I(type=KSDS).
+          - I(key_length) should only be provided when I(type=KSDS)
+        type: int
+        required: false
+      sms_storage_class:
+        description:
+          - The storage class for an SMS-managed dataset.
+          - Required for SMS-managed datasets that do not match an SMS-rule.
+          - Not valid for datasets that are not SMS-managed.
+          - Note that all non-linear VSAM datasets are SMS-managed.
+        type: str
+        required: false
+      sms_data_class:
+        description:
+          - The data class for an SMS-managed dataset.
+          - Optional for SMS-managed datasets that do not match an SMS-rule.
+          - Not valid for datasets that are not SMS-managed.
+          - Note that all non-linear VSAM datasets are SMS-managed.
+        type: str
+        required: false
+      sms_management_class:
+        description:
+          - The management class for an SMS-managed dataset.
+          - Optional for SMS-managed datasets that do not match an SMS-rule.
+          - Not valid for datasets that are not SMS-managed.
+          - Note that all non-linear VSAM datasets are SMS-managed.
+        type: str
         required: false
 
 notes:
@@ -438,14 +481,16 @@ EXAMPLES = r"""
     src: HLQ.SAMPLE.PDSE
     dest: HLQ.EXISTING.PDSE
     remote_src: true
+    force: true
 
-- name: Copy PDS member to a new PDS member. Replace if it already exists.
+- name: Copy PDS member to a new PDS member. Replace if it already exists
   zos_copy:
     src: HLQ.SAMPLE.PDSE(SRCMEM)
     dest: HLQ.NEW.PDSE(DESTMEM)
     remote_src: true
+    force: true
 
-- name: Copy a USS file to a PDSE member. If PDSE does not exist, allocate it.
+- name: Copy a USS file to a PDSE member. If PDSE does not exist, allocate it
   zos_copy:
     src: /path/to/uss/src
     dest: DEST.PDSE.DATA.SET(MEMBER)
@@ -463,7 +508,7 @@ EXAMPLES = r"""
     dest: /tmp/member
     remote_src: true
 
-- name: Copy a PDS to a USS directory (/tmp/SRC.PDS).
+- name: Copy a PDS to a USS directory (/tmp/SRC.PDS)
   zos_copy:
     src: SRC.PDS
     dest: /tmp
@@ -487,6 +532,20 @@ EXAMPLES = r"""
     dest: SOME.DEST.PDS
     volume: 'VOL033'
     remote_src: true
+
+- name: Copy a USS file to a fully customized sequential data set
+  zos_copy:
+    src: /path/to/uss/src
+    dest: SOME.SEQ.DEST
+    remote_src: true
+    volume: '222222'
+    dest_data_set:
+      type: SEQ
+      space_primary: 10
+      space_secondary: 3
+      space_type: K
+      record_format: VB
+      record_length: 150
 """
 
 RETURN = r"""
@@ -1679,7 +1738,7 @@ def allocate_destination_data_set(
     dest_exists,
     force,
     is_binary,
-    destination_dataset=None,
+    dest_data_set=None,
     volume=None
 ):
     """
@@ -1694,7 +1753,7 @@ def allocate_destination_data_set(
         dest_exists (bool) -- Whether the destination data set already exists.
         force (bool) -- Whether to replace an existent data set.
         is_binary (bool) -- Whether the data set will contain binary data.
-        destination_dataset (dict, optional) -- Parameters containing a full definition
+        dest_data_set (dict, optional) -- Parameters containing a full definition
             of the new data set; they will take precedence over any other allocation logic.
         volume (str, optional) -- Volume where the data set should be allocated into.
 
@@ -1712,8 +1771,8 @@ def allocate_destination_data_set(
         return False
 
     # Giving more priority to the parameters given by the user.
-    if destination_dataset:
-        dest_params = destination_dataset
+    if dest_data_set:
+        dest_params = dest_data_set
         dest_params["name"] = dest
         data_set.DataSet.ensure_present(replace=force, **dest_params)
     elif dest_ds_type in MVS_SEQ:
@@ -1775,7 +1834,7 @@ def allocate_destination_data_set(
 
             data_set.DataSet.ensure_present(replace=force, **dest_params)
     elif dest_ds_type in MVS_VSAM:
-        # If destination_dataset is not available, always create the destination using the src VSAM
+        # If dest_data_set is not available, always create the destination using the src VSAM
         # as a model.
         volumes = [volume] if volume else None
         data_set.DataSet.ensure_absent(dest, volumes=volumes)
@@ -1822,10 +1881,10 @@ def run_module(module, arg_def):
     copy_member = module.params.get('copy_member')
     force = module.params.get('force')
 
-    destination_dataset = module.params.get('destination_dataset')
-    if destination_dataset:
+    dest_data_set = module.params.get('dest_data_set')
+    if dest_data_set:
         if volume:
-            destination_dataset["volumes"] = [volume]
+            dest_data_set["volumes"] = [volume]
 
     # ********************************************************************
     # When copying to and from a data set member, 'dest' or 'src' will be
@@ -1899,9 +1958,9 @@ def run_module(module, arg_def):
             dest_exists = data_set.DataSet.data_set_exists(dest_name, volume)
             dest_ds_type = data_set.DataSet.data_set_type(dest_name, volume)
 
-            # destination_dataset.type overrides `dest_ds_type` given precedence rules
-            if destination_dataset and destination_dataset.get("type"):
-                dest_ds_type = destination_dataset.get("type")
+            # dest_data_set.type overrides `dest_ds_type` given precedence rules
+            if dest_data_set and dest_data_set.get("type"):
+                dest_ds_type = dest_data_set.get("type")
 
             if dest_ds_type in MVS_PARTITIONED:
                 # Checking if the members that would be created from the directory files
@@ -1920,7 +1979,7 @@ def run_module(module, arg_def):
     # Some src and dest combinations are incompatible. For example, it is
     # not possible to copy a PDS member to a VSAM data set or a USS file
     # to a PDS. Perform these sanity checks.
-    # Note: dest_ds_type can also be passed from destination_dataset.type
+    # Note: dest_ds_type can also be passed from dest_data_set.type
     # ********************************************************************
     if not is_compatible(
         src_ds_type,
@@ -1977,10 +2036,10 @@ def run_module(module, arg_def):
             elif not is_uss:
                 dest_ds_type = "SEQ"
 
-            # Filling in the type in destination_dataset in case the user didn't specify it in
+            # Filling in the type in dest_data_set in case the user didn't specify it in
             # the playbook.
-            if destination_dataset:
-                destination_dataset["type"] = dest_ds_type
+            if dest_data_set:
+                dest_data_set["type"] = dest_ds_type
 
         res_args["changed"] = True
 
@@ -2019,7 +2078,7 @@ def run_module(module, arg_def):
                 dest_exists,
                 force,
                 is_binary,
-                destination_dataset=destination_dataset,
+                dest_data_set=dest_data_set,
                 volume=volume
             )
     except Exception as err:
@@ -2163,7 +2222,7 @@ def main():
             ignore_sftp_stderr=dict(type='bool', default=False),
             validate=dict(type='bool', default=False),
             volume=dict(type='str', required=False),
-            destination_dataset=dict(
+            dest_data_set=dict(
                 type='dict',
                 required=False,
                 options=dict(
@@ -2189,6 +2248,12 @@ def main():
                     ),
                     record_length=dict(type='int', required=False),
                     block_size=dict(type='int', required=False),
+                    directory_blocks=dict(type="int", required=False),
+                    key_offset=dict(type="int", required=False),
+                    key_length=dict(type="int", required=False),
+                    sms_storage_class=dict(type="str", required=False),
+                    sms_data_class=dict(type="str", required=False),
+                    sms_management_class=dict(type="str", required=False),
                 )
             ),
             is_uss=dict(type='bool'),
@@ -2227,7 +2292,7 @@ def main():
         sftp_port=dict(arg_type='int', required=False),
         volume=dict(arg_type='str', required=False),
 
-        destination_dataset=dict(
+        dest_data_set=dict(
             arg_type='dict',
             required=False,
             options=dict(
@@ -2239,6 +2304,12 @@ def main():
                 record_format=dict(
                     arg_type='str', required=False),
                 block_size=dict(arg_type='int', required=False),
+                directory_blocks=dict(arg_type="int", required=False),
+                key_offset=dict(arg_type="int", required=False),
+                key_length=dict(arg_type="int", required=False),
+                sms_storage_class=dict(arg_type="str", required=False),
+                sms_data_class=dict(arg_type="str", required=False),
+                sms_management_class=dict(arg_type="str", required=False),
             )
         ),
     )

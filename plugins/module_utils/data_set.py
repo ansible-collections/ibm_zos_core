@@ -409,8 +409,8 @@ class DataSet(object):
 
     @staticmethod
     def get_member_name_from_file(file_name):
-        """Creates a member name for a partitioned data set by taking the first
-        8 characters from a filename without its file extension.
+        """Creates a member name for a partitioned data set by taking up to the
+        first 8 characters from a filename without its file extension
 
         Arguments:
             file_name (str) -- A file name that can include a file extension.

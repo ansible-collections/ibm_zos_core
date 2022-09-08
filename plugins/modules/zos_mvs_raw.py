@@ -2366,7 +2366,7 @@ def set_extra_attributes_in_dd(dd):
     elif dd.get("dd_output"):
         dd.get("dd_output")["tmphlq"] = g_tmphlq
     elif dd.get("dd_vio"):
-        dd.get("dd_output")["tmphlq"] = g_tmphlq
+        dd.get("dd_vio")["tmphlq"] = g_tmphlq
     elif dd.get("dd_concat"):
         for single_dd in dd.get("dd_concat").get("dds", []):
             set_extra_attributes_in_dd(single_dd)

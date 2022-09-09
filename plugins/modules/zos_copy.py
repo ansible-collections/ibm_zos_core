@@ -1262,9 +1262,9 @@ class PDSECopyHandler(CopyHandler):
             # resolved by copying the program object with a "-X" flag.
             # *****************************************************************
             if "FSUM8976" in err and "EDC5091I" in err:
-                rc, out, err = self.run_command(
-                    "cp -X \"//'{0}'\" \"//'{1}'\"".format(src, dest)
-                )
+                opts["options"] = "-X"
+                response = datasets._copy(src, dest, None, **opts)
+                rc, out, err = response.rc, response.stdout_response, response.stderr_response
 
         return dict(
             rc=rc,
@@ -1367,11 +1367,9 @@ def get_data_set_attributes(
     space_secondary = int(math.ceil(space_primary * 0.10))
 
     # Overwriting record_format and record_length when the data set has binary data.
-    # These are the defaults that cp uses when copying binary data.
     if is_binary:
-        record_format = "VB"
-    if is_binary:
-        record_length = 1028
+        record_format = "FB"
+        record_length = 80
 
     max_block_size = 32760
     if record_format == "FB":
@@ -1470,6 +1468,7 @@ def restore_backup(dest, backup, dest_type, use_backup, volume=None):
         use_backup (bool) -- Whether the destination actually created a backup, sometimes the user
             tries to use an empty data set, and in that case a new data set is allocated instead
             of copied.
+        volume (str, optional) -- Volume where the data set should be.
     """
     try:
         volumes = [volume] if volume else None

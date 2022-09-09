@@ -13,6 +13,7 @@
 
 from operations.types import Request, Response, Type
 
+
 def _command(connection, command):
     """
     Run commands on the target
@@ -27,7 +28,7 @@ def _command(connection, command):
     result = connection.execute(client, request)
 
     response = Response(name="raw", type=Type.COMMAND.name, rc=0,
-                    stdout=result.get('stdout'), stderr=result.get('stderr'),
-                    attributes=None)
+                        stdout=result.get('stdout'), stderr=result.get('stderr'),
+                        attributes=None)
 
     return response

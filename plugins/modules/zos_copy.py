@@ -684,18 +684,10 @@ except Exception:
     datasets = MissingZOAUImport()
 
 
-MVS_PARTITIONED = frozenset({"PE", "PO", "PDSE", "PDS"})
-# Underlying code will map both BASIC and SEQ to PS
-
-MVS_SEQ = frozenset({"PS", "SEQ", "BASIC"})
-MVS_VSAM = frozenset({"KSDS", "ESDS", "RRDS", "LDS", "VSAM"})
-
-
 class CopyHandler(object):
     def __init__(
         self,
         module,
-        dest_exists,
         is_binary=False,
         backup_name=None
     ):
@@ -704,7 +696,6 @@ class CopyHandler(object):
         Arguments:
             module {AnsibleModule} -- The AnsibleModule object from currently
                                       running module
-            dest_exists {boolean} -- Whether destination already exists
 
         Keyword Arguments:
             is_binary {bool} -- Whether the file or data set to be copied
@@ -713,23 +704,12 @@ class CopyHandler(object):
                                  backup
         """
         self.module = module
-        self.dest_exists = dest_exists
         self.is_binary = is_binary
         self.backup_name = backup_name
-
-    def fail_json(self, **kwargs):
-        """ Wrapper for AnsibleModule.fail_json """
-        d = dict(dest_exists=self.dest_exists, backup_name=self.backup_name)
-        self.module.fail_json(**self._merge_hash(kwargs, d))
 
     def run_command(self, cmd, **kwargs):
         """ Wrapper for AnsibleModule.run_command """
         return self.module.run_command(cmd, **kwargs)
-
-    def exit_json(self, **kwargs):
-        """ Wrapper for AnsibleModule.exit_json """
-        d = dict(dest_exists=self.dest_exists, backup_name=self.backup_name)
-        self.module.exit_json(**self._merge_hash(kwargs, d))
 
     def copy_to_seq(
         self,
@@ -739,6 +719,9 @@ class CopyHandler(object):
         dest
     ):
         """Copy source to a sequential data set.
+
+        Raises:
+            CopyOperationError -- When copying into the data set fails.
 
         Arguments:
             src {str} -- Path to USS file or data set name
@@ -765,6 +748,9 @@ class CopyHandler(object):
 
     def copy_to_vsam(self, src, dest):
         """Copy source VSAM to destination VSAM.
+
+        Raises:
+            CopyOperationError -- When REPRO fails to copy the data set.
 
         Arguments:
             src {str} -- The name of the source VSAM
@@ -797,7 +783,7 @@ class CopyHandler(object):
                                from and to
 
         Raises:
-            EncodingConversionError -- When the encoding of a USS file is not
+            CopyOperationError -- When the encoding of a USS file is not
                                        able to be converted
 
         Returns:
@@ -895,6 +881,9 @@ class CopyHandler(object):
         If `file_path` is a directory, all of the files and subdirectories will
         be tagged recursively.
 
+        Raises:
+            CopyOperationError -- When chtag fails.
+
         Arguments:
             file_path {str} -- Absolute file path
             tag {str} -- Specifies which code set to tag the file
@@ -929,7 +918,6 @@ class USSCopyHandler(CopyHandler):
     def __init__(
         self,
         module,
-        dest_exists,
         is_binary=False,
         common_file_args=None,
         backup_name=None,
@@ -939,7 +927,6 @@ class USSCopyHandler(CopyHandler):
         Arguments:
             module {AnsibleModule} -- The AnsibleModule object from currently
                                       running module
-            dest_exists {boolean} -- Whether destination already exists
 
         Keyword Arguments:
             common_file_args {dict} -- mode, group and owner information to be
@@ -949,7 +936,7 @@ class USSCopyHandler(CopyHandler):
             backup_name {str} -- The USS path or data set name of destination backup
         """
         super().__init__(
-            module, dest_exists, is_binary=is_binary, backup_name=backup_name
+            module, is_binary=is_binary, backup_name=backup_name
         )
         self.common_file_args = common_file_args
 
@@ -980,7 +967,7 @@ class USSCopyHandler(CopyHandler):
         Returns:
             {str} -- Destination where the file was copied to
         """
-        if src_ds_type in MVS_SEQ.union(MVS_PARTITIONED):
+        if src_ds_type in data_set.DataSet.MVS_SEQ.union(data_set.DataSet.MVS_PARTITIONED):
             self._mvs_copy_to_uss(
                 src, dest, src_ds_type, src_member, member_name=member_name
             )
@@ -1011,6 +998,9 @@ class USSCopyHandler(CopyHandler):
             temp_path {str} -- Path to the location where the control node
                                transferred data to
             conv_path {str} -- Path to the converted source file or directory
+
+        Raises:
+            CopyOperationError -- When copying into the file fails.
 
         Returns:
             {str} -- Destination where the file was copied to
@@ -1055,6 +1045,9 @@ class USSCopyHandler(CopyHandler):
             conv_path {str} -- Path to the converted source directory
             force {bool} -- Whether to copy files to an already existing directory
 
+        Raises:
+            CopyOperationError -- When copying into the directory fails.
+
         Returns:
             {str} -- Destination where the directory was copied to
         """
@@ -1085,6 +1078,9 @@ class USSCopyHandler(CopyHandler):
             src_ds_type -- Type of source
             src_member {bool} -- Whether src is a data set member
 
+        Raises:
+            CopyOperationError -- When copying the data set into USS fails.
+
         Keyword Arguments:
             member_name {str} -- The name of the source data set member
         """
@@ -1093,13 +1089,13 @@ class USSCopyHandler(CopyHandler):
             # the same name as the member.
             dest = "{0}/{1}".format(dest, member_name or src)
 
-            if src_ds_type in MVS_PARTITIONED and not src_member:
+            if src_ds_type in data_set.DataSet.MVS_PARTITIONED and not src_member:
                 try:
                     os.mkdir(dest)
                 except FileExistsError:
                     pass
         try:
-            if src_member or src_ds_type in MVS_SEQ:
+            if src_member or src_ds_type in data_set.DataSet.MVS_SEQ:
                 response = datasets._copy(src, dest)
                 if response.rc != 0:
                     raise CopyOperationError(
@@ -1118,7 +1114,6 @@ class PDSECopyHandler(CopyHandler):
     def __init__(
         self,
         module,
-        dest_exists,
         is_binary=False,
         backup_name=None
     ):
@@ -1128,7 +1123,6 @@ class PDSECopyHandler(CopyHandler):
         Arguments:
             module {AnsibleModule} -- The AnsibleModule object from currently
                                       running module
-            dest_exists {boolean} -- Whether destination already exists
 
         Keyword Arguments:
             is_binary {bool} -- Whether the data set to be copied contains
@@ -1137,7 +1131,6 @@ class PDSECopyHandler(CopyHandler):
         """
         super().__init__(
             module,
-            dest_exists,
             is_binary=is_binary,
             backup_name=backup_name
         )
@@ -1153,6 +1146,9 @@ class PDSECopyHandler(CopyHandler):
         dest_member=None,
     ):
         """Copy source to a PDS/PDSE or PDS/PDSE member.
+
+        Raises:
+            CopyOperationError -- When copying into a member fails.
 
         Arguments:
             src {str} -- Path to USS file/directory or data set name.
@@ -1191,7 +1187,7 @@ class PDSECopyHandler(CopyHandler):
                         stdout=result["out"],
                         stderr=result["err"]
                     )
-        elif src_ds_type in MVS_SEQ:
+        elif src_ds_type in data_set.DataSet.MVS_SEQ:
             dest_copy_name = "{0}({1})".format(dest, dest_member)
             result = self.copy_to_member(new_src, dest_copy_name)
 
@@ -1285,7 +1281,6 @@ def get_file_record_length(file):
 
     Returns:
         int -- Length of the longest line in the file.
-        None -- If awk fails at processing the file.
     """
     max_line_length = 0
 
@@ -1490,7 +1485,7 @@ def restore_backup(dest, backup, dest_type, use_backup, volume=None):
             else:
                 data_set.DataSet.ensure_absent(dest, volumes)
 
-                if dest_type in MVS_VSAM:
+                if dest_type in data_set.DataSet.MVS_VSAM:
                     repro_cmd = """  REPRO -
                     INDATASET('{0}') -
                     OUTDATASET('{1}')""".format(backup.upper(), dest.upper())
@@ -1547,9 +1542,9 @@ def is_compatible(
     # partitioned data set member, other sequential data sets or USS files.
     # Anything else is incompatible.
     # ********************************************************************
-    if src_type in MVS_SEQ:
+    if src_type in data_set.DataSet.MVS_SEQ:
         return not (
-            (dest_type in MVS_PARTITIONED and not copy_member) or dest_type == "VSAM"
+            (dest_type in data_set.DataSet.MVS_PARTITIONED and not copy_member) or dest_type == "VSAM"
         )
 
     # ********************************************************************
@@ -1564,11 +1559,11 @@ def is_compatible(
     # In the second case, the possible targets are USS directories and
     # other PDS/PDSE. Anything else is incompatible.
     # ********************************************************************
-    elif src_type in MVS_PARTITIONED:
+    elif src_type in data_set.DataSet.MVS_PARTITIONED:
         if dest_type == "VSAM":
             return False
         if not src_member:
-            return not (copy_member or dest_type in MVS_SEQ)
+            return not (copy_member or dest_type in data_set.DataSet.MVS_SEQ)
         return True
 
     # ********************************************************************
@@ -1581,11 +1576,11 @@ def is_compatible(
     # directory or a partitioned data set.
     # ********************************************************************
     elif src_type == "USS":
-        if dest_type in MVS_SEQ or copy_member:
+        if dest_type in data_set.DataSet.MVS_SEQ or copy_member:
             return not is_src_dir
-        elif dest_type in MVS_PARTITIONED and not copy_member and is_src_inline:
+        elif dest_type in data_set.DataSet.MVS_PARTITIONED and not copy_member and is_src_inline:
             return False
-        elif dest_type in MVS_VSAM:
+        elif dest_type in data_set.DataSet.MVS_VSAM:
             return False
         else:
             return True
@@ -1645,14 +1640,14 @@ def does_destination_allow_copy(
 
     # If the destination is a sequential or VSAM data set and is empty, the module will try to use it,
     # otherwise, force needs to be True to continue and replace it.
-    if (dest_type in MVS_SEQ or dest_type in MVS_VSAM) and dest_exists:
+    if (dest_type in data_set.DataSet.MVS_SEQ or dest_type in data_set.DataSet.MVS_VSAM) and dest_exists:
         is_dest_empty = data_set.DataSet.is_empty(dest, volume)
         if not (is_dest_empty or force):
             return False
 
     # When the destination is a partitioned data set, the module will have to be able to replace
     # existing members inside of it, if needed.
-    if dest_type in MVS_PARTITIONED and dest_exists and member_exists and not force:
+    if dest_type in data_set.DataSet.MVS_PARTITIONED and dest_exists and member_exists and not force:
         return False
 
     return True
@@ -1775,14 +1770,14 @@ def allocate_destination_data_set(
         dest_params = dest_data_set
         dest_params["name"] = dest
         data_set.DataSet.ensure_present(replace=force, **dest_params)
-    elif dest_ds_type in MVS_SEQ:
+    elif dest_ds_type in data_set.DataSet.MVS_SEQ:
         volumes = [volume] if volume else None
         data_set.DataSet.ensure_absent(dest, volumes=volumes)
 
         if src_ds_type == "USS":
             # Taking the temp file when a local file was copied with sftp.
             create_seq_dataset_from_file(src, dest, force, is_binary, volume=volume)
-        elif src_ds_type in MVS_SEQ:
+        elif src_ds_type in data_set.DataSet.MVS_SEQ:
             data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, vol=volume)
         else:
             temp_dump = None
@@ -1794,11 +1789,11 @@ def allocate_destination_data_set(
             finally:
                 if temp_dump:
                     os.remove(temp_dump)
-    elif dest_ds_type in MVS_PARTITIONED and not dest_exists:
+    elif dest_ds_type in data_set.DataSet.MVS_PARTITIONED and not dest_exists:
         # Taking the src as model if it's also a PDSE.
-        if src_ds_type in MVS_PARTITIONED:
+        if src_ds_type in data_set.DataSet.MVS_PARTITIONED:
             data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, vol=volume)
-        elif src_ds_type in MVS_SEQ:
+        elif src_ds_type in data_set.DataSet.MVS_SEQ:
             src_attributes = datasets.listing(src_name)[0]
             # The size returned by listing is in bytes.
             size = int(src_attributes.total_space)
@@ -1833,7 +1828,7 @@ def allocate_destination_data_set(
                 dest_params = get_data_set_attributes(dest, size, is_binary, type="PDSE", volume=volume)
 
             data_set.DataSet.ensure_present(replace=force, **dest_params)
-    elif dest_ds_type in MVS_VSAM:
+    elif dest_ds_type in data_set.DataSet.MVS_VSAM:
         # If dest_data_set is not available, always create the destination using the src VSAM
         # as a model.
         volumes = [volume] if volume else None
@@ -1936,7 +1931,7 @@ def run_module(module, arg_def):
 
             # An empty VSAM will throw an error when IDCAMS tries to open it to copy
             # the contents.
-            if src_ds_type in MVS_VSAM and data_set.DataSet.is_empty(src):
+            if src_ds_type in data_set.DataSet.MVS_VSAM and data_set.DataSet.is_empty(src_name):
                 module.exit_json(
                     note="The source VSAM {0} is likely empty. No data was copied.".format(src_name),
                     changed=False,
@@ -1962,14 +1957,14 @@ def run_module(module, arg_def):
             if dest_data_set and dest_data_set.get("type"):
                 dest_ds_type = dest_data_set.get("type")
 
-            if dest_ds_type in MVS_PARTITIONED:
+            if dest_ds_type in data_set.DataSet.MVS_PARTITIONED:
                 # Checking if the members that would be created from the directory files
                 # are already present on the system.
                 if copy_member:
                     dest_member_exists = dest_exists and data_set.DataSet.data_set_member_exists(dest)
                 elif src_ds_type == "USS":
                     dest_member_exists = dest_exists and data_set.DataSet.files_in_data_set_members(temp_path or src, dest)
-                elif src_ds_type in MVS_PARTITIONED:
+                elif src_ds_type in data_set.DataSet.MVS_PARTITIONED:
                     dest_member_exists = dest_exists and data_set.DataSet.data_set_shared_members(src, dest)
 
     except Exception as err:
@@ -2001,7 +1996,7 @@ def run_module(module, arg_def):
     # ********************************************************************
     if dest_exists:
         if backup or backup_name:
-            if dest_ds_type in MVS_PARTITIONED and data_set.DataSet.is_empty(dest_name):
+            if dest_ds_type in data_set.DataSet.MVS_PARTITIONED and data_set.DataSet.is_empty(dest_name):
                 # The partitioned data set is empty
                 res_args["note"] = "Destination is empty, backup request ignored"
             else:
@@ -2027,11 +2022,11 @@ def run_module(module, arg_def):
             if (
                 is_pds
                 or copy_member
-                or (src_ds_type in MVS_PARTITIONED and (not src_member) and is_mvs_dest)
+                or (src_ds_type in data_set.DataSet.MVS_PARTITIONED and (not src_member) and is_mvs_dest)
                 or (src and os.path.isdir(src) and is_mvs_dest)
             ):
                 dest_ds_type = "PDSE"
-            elif src_ds_type in MVS_VSAM:
+            elif src_ds_type in data_set.DataSet.MVS_VSAM:
                 dest_ds_type = src_ds_type
             elif not is_uss:
                 dest_ds_type = "SEQ"
@@ -2092,7 +2087,6 @@ def run_module(module, arg_def):
     # ********************************************************************
     copy_handler = CopyHandler(
         module,
-        dest_exists,
         is_binary=is_binary,
         backup_name=backup_name
     )
@@ -2111,7 +2105,6 @@ def run_module(module, arg_def):
         if is_uss:
             uss_copy_handler = USSCopyHandler(
                 module,
-                dest_exists,
                 is_binary=is_binary,
                 common_file_args=dict(mode=mode, group=group, owner=owner),
                 backup_name=backup_name,
@@ -2154,7 +2147,7 @@ def run_module(module, arg_def):
         # ------------------------------- o -----------------------------------
         # Copy to sequential data set (PS / SEQ)
         # ---------------------------------------------------------------------
-        elif dest_ds_type in MVS_SEQ:
+        elif dest_ds_type in data_set.DataSet.MVS_SEQ:
             copy_handler.copy_to_seq(
                 src,
                 temp_path,
@@ -2167,12 +2160,12 @@ def run_module(module, arg_def):
         # ---------------------------------------------------------------------
         # Copy to PDS/PDSE
         # ---------------------------------------------------------------------
-        elif dest_ds_type in MVS_PARTITIONED:
+        elif dest_ds_type in data_set.DataSet.MVS_PARTITIONED:
             if not remote_src and not copy_member and os.path.isdir(temp_path):
                 temp_path = os.path.join(temp_path, os.path.basename(src))
 
             pdse_copy_handler = PDSECopyHandler(
-                module, dest_exists, is_binary=is_binary, backup_name=backup_name
+                module, is_binary=is_binary, backup_name=backup_name
             )
 
             pdse_copy_handler.copy_to_pdse(

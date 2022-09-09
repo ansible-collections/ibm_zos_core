@@ -92,9 +92,9 @@ class DataSet(object):
 
     _VSAM_UNCATALOG_COMMAND = " DELETE '{0}' NOSCRATCH"
 
-    _MVS_PARTITIONED = frozenset({"PE", "PO", "PDSE", "PDS"})
-    _MVS_SEQ = frozenset({"PS", "SEQ", "BASIC"})
-    _MVS_VSAM = frozenset({"KSDS", "ESDS", "RRDS", "LDS", "VSAM"})
+    MVS_PARTITIONED = frozenset({"PE", "PO", "PDSE", "PDS"})
+    MVS_SEQ = frozenset({"PS", "SEQ", "BASIC"})
+    MVS_VSAM = frozenset({"KSDS", "ESDS", "RRDS", "LDS", "VSAM"})
 
     @staticmethod
     def ensure_present(
@@ -319,7 +319,7 @@ class DataSet(object):
 
         # Now adding special parameters for sequential and partitioned
         # data sets.
-        if model_type not in DataSet._MVS_VSAM:
+        if model_type not in DataSet.MVS_VSAM:
             block_size = datasets.listing(model)[0].block_size
             alloc_cmd = """{0} -
             BLKSIZE({1})""".format(alloc_cmd, block_size)
@@ -566,11 +566,11 @@ class DataSet(object):
 
         ds_type = DataSet.data_set_type(name, volume)
 
-        if ds_type in DataSet._MVS_PARTITIONED:
+        if ds_type in DataSet.MVS_PARTITIONED:
             return DataSet._pds_empty(name)
-        elif ds_type in DataSet._MVS_SEQ:
+        elif ds_type in DataSet.MVS_SEQ:
             return len(datasets.read(name, tail=10)) == 0
-        elif ds_type in DataSet._MVS_VSAM:
+        elif ds_type in DataSet.MVS_VSAM:
             return DataSet._vsam_empty(name)
 
     @staticmethod

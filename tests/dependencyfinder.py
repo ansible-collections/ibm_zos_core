@@ -30,10 +30,8 @@ class ArtifactManager(object):
     is used in test cases. In the even a module is used in another test suite
     unrelated to the modules test suite, it will also be returned. This ensures
     that a module changes don't break test suites dependent on a module.
-
     Usage (minimal) example:
         python dependencyfinder.py -p .. -b origin/dev -m
-
     Note: It is possible that only test cases are modified only, without a module
     or modules, in that case without a module pairing no test cases will be
     returned. Its best to run full regression in that case until this can be
@@ -47,7 +45,6 @@ class ArtifactManager(object):
 
     def add(self, artifact):
         """Add an artifact.
-
         Args:
             artifact (Artifact): The artifact to add.
         """
@@ -56,11 +53,9 @@ class ArtifactManager(object):
 
     def find(self, name, source):
         """Find the index of an artifact based on its name and source.
-
         Args:
             name (str): The name of the artifact.
             source (str): The source type of the artifact.
-
         Returns:
             int: The index of the artifact, or None if not found.
         """
@@ -71,10 +66,8 @@ class ArtifactManager(object):
 
     def get_from_path(self, path):
         """Get an artifact based on a path.
-
         Args:
             path (str): The path to use for search.
-
         Returns:
             Artifact: the artifact corresponding to the provided path, or None if not found.
         """
@@ -86,10 +79,8 @@ class ArtifactManager(object):
 
     def get_artifacts_with_matching_source(self, source):
         """Get all artifacts with a particular source type.
-
         Args:
             source (str): The source type of the artifacts to retrieve.
-
         Returns:
             list[Artifact]: A list of all artifacts with a matching source type.
         """
@@ -101,10 +92,8 @@ class ArtifactManager(object):
 
     def get_dependencies_from_paths(self, paths):
         """Get a combined list of dependencies for Artifacts matching provided paths.
-
         Args:
             paths (list[str]): A list of paths to retrieve dependencies from.
-
         Returns:
             list[Dependency]: A list of dependencies for Artifacts matching provided paths.
         """
@@ -113,11 +102,9 @@ class ArtifactManager(object):
 
     def _get_dependencies(self, paths, index=0):
         """Recursive helper method for get_dependencies_from_paths.
-
         Args:
             paths (list[str]): A list of paths to retrieve dependencies from.
             index (int, optional): The index of the current path in the list of paths. Defaults to 0.
-
         Returns:
             tuple(list[Dependency], defaultdict): The current list of identified dependencies.
         """
@@ -138,11 +125,9 @@ class ArtifactManager(object):
 
     def get_artifacts_with_dependency(self, artifacts_depended_on, source=None):
         """Get a list of artifacts that are dependent on one or more of the specified artifacts.
-
         Args:
             artifacts_depended_on (list[Artifact]): A list of artifacts that are depended on.
             source (str, optional): Limit artifacts to search for dependency to those with corresponding source. Defaults to None.
-
         Returns:
             list[Artifact]: A list of artifacts that have a dependency on one or more of the specified artifacts.
         """
@@ -160,12 +145,10 @@ class ArtifactManager(object):
         self, artifacts_depended_on, artifacts_with_potential_dependency, index=0
     ):
         """Recursive helper method for get_artifacts_with_dependency.
-
         Args:
             artifacts_depended_on (list[Artifact]): A list of artifacts that are depended on.
             artifacts_with_potential_dependency (list[Artifact]): A list of artifacts to search for dependencies.
             index (int, optional): The index of the current artifact in the list of artifacts. Defaults to 0.
-
         Returns:
             tuple(list[Artifact], defaultdict): A list of artifacts that have a dependency on one or more of the specified artifacts.
         """
@@ -201,7 +184,6 @@ class Artifact(object):
 
     def __init__(self, name, source, path, dependencies=None):
         """Instantiate an Artifact
-
         Args:
             name (str): The name of the artifact.
             source (str): The source type of the artifact.
@@ -225,10 +207,8 @@ class Artifact(object):
     @classmethod
     def from_path(cls, path):
         """Instantiate an Artifact based on provided path.
-
         Args:
             path (str): The path to an artifact in an Ansible collection.
-
         Returns:
             Artifact: an artifact object.
         """
@@ -259,10 +239,8 @@ class Artifact(object):
 
     def has_dependency(self, potential_dependency):
         """Determines if artifact has a dependency on another artifact.
-
         Args:
             potential_dependency (union[Artifact, Dependency]): The potential dependency to search for in artifact's dependencies.
-
         Returns:
             bool: If the artifact is dependent or not.
         """
@@ -280,7 +258,6 @@ class Dependency(object):
 
     def __init__(self, name, source):
         """Instantiate a Dependency.
-
         Args:
             name (str): The name of the artifact.
             source (str): The source type of the artifact.
@@ -299,10 +276,8 @@ class Dependency(object):
 
 def get_name_and_source_from_path(path):
     """Determine the artifact name and source type based on its path.
-
     Args:
         path (str): The path to an artifact in an Ansible collection.
-
     Returns:
         tuple(str, str): The name and source of an artifact based on its path.
     """
@@ -322,10 +297,8 @@ def get_name_and_source_from_path(path):
 
 def get_module_util_dependencies_in_file(path):
     """Scrape file for module_utils imports.
-
     Args:
         path (str): The path to scrape.
-
     Returns:
         list[str]: A list of module_utils imports found in the file.
     """
@@ -371,10 +344,8 @@ def get_module_util_dependencies_in_file(path):
 
 def get_module_dependencies_in_test_file(path):
     """Scrape test file for module dependencies.
-
     Args:
         path (str): The path to scrape.
-
     Returns:
         list[str]: A list of module dependencies found in the file.
     """
@@ -393,10 +364,8 @@ def get_module_dependencies_in_test_file(path):
 
 def get_helper_dependencies_in_test_file(path):
     """Scrape test file for helper dependencies.
-
     Args:
         path (str): The path to scrape.
-
     Returns:
         list[str]: A list of helper dependencies found in the file.
     """
@@ -430,10 +399,8 @@ def get_helper_dependencies_in_test_file(path):
 
 def build_artifacts_from_collection(collection_root):
     """Build a list of Artifact objects based on python scripts found in collection.
-
     Args:
         collection_root (str): The path to the root of the collection
-
     Returns:
         list[Artifact]: A list of artifacts.
     """
@@ -452,10 +419,8 @@ def build_artifacts_from_collection(collection_root):
 
 def get_all_files_in_dir_tree(base_path):
     """Recursively search subdirectories for files.
-
     Args:
         base_path (str): The directory to recursively search.
-
     Returns:
         list[str]: A list of file paths.
     """
@@ -469,13 +434,10 @@ def get_all_files_in_dir_tree(base_path):
 def get_changed_files(path, branch="origin/dev"):
     """Get a list of files changed compared to specified branch.
     Deleted files are not included.
-
     Args:
         branch (str, optional): The branch to compare to. Defaults to "dev".
-
     Raises:
         RuntimeError: When git diff fails.
-
     Returns:
         list[str]: A list of changed file paths.
     """
@@ -499,13 +461,10 @@ def get_changed_files(path, branch="origin/dev"):
 
 def get_changed_plugins(path, branch="origin/dev"):
     """Get a list of modules or plugins in a specific branch.
-
     Args:
         branch (str, optional): The branch to compare to. Defaults to "dev".
-
     Raises:
         RuntimeError: When git request-pull fails.
-
     Returns:
         list[str]: A list of changed file paths.
     """
@@ -524,6 +483,7 @@ def get_changed_plugins(path, branch="origin/dev"):
         raise RuntimeError("Could not acquire change list, error = [{0}]".format(stderr))
     if stdout:
         for line in stdout.split("\n"):
+<<<<<<< HEAD
             path_corrected_line = None
             if "plugins/action/" in line:
                 path_corrected_line = line.split("|", 1)[0].strip()
@@ -548,13 +508,26 @@ def get_changed_plugins(path, branch="origin/dev"):
         #     for line in stdout.split("\n"):
         #         if "tests/functional/modules/" in line:
         #             changed_plugins_modules.append(line.split("|", 1)[0].strip())
+=======
+            if "plugins/action/" in line or "plugins/modules/" in line\
+                    or "tests/functional/modules/" in line\
+                    or "plugins/module_utils/" in line\
+                    or "tests/unit/" in line:
+                changed_plugins_modules.append(line.split("|", 1)[0].strip())
+>>>>>>> 57089db (Updated dependency finder)
+
+        # # There can be the case where only test cases are updated, question is
+        # # should this be default behavior only when no modules are edited
+        # if not changed_plugins_modules:
+        #     for line in stdout.split("\n"):
+        #         if "tests/functional/modules/" in line:
+        #             changed_plugins_modules.append(line.split("|", 1)[0].strip())
 
     return changed_plugins_modules
 
 
 def parse_arguments():
     """Parse and return command line arguments.
-
     Returns:
         Args: The populated namespace.
     """

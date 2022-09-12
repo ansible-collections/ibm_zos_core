@@ -1039,7 +1039,7 @@ class USSCopyHandler(CopyHandler):
 
         Arguments:
             src_dir {str} -- USS source directory
-            dest {str} -- USS dest directory
+            dest_dir {str} -- USS dest directory
             temp_path {str} -- Path to the location where the control node
                                transferred data to
             conv_path {str} -- Path to the converted source directory
@@ -1051,16 +1051,22 @@ class USSCopyHandler(CopyHandler):
         Returns:
             {str} -- Destination where the directory was copied to
         """
+        if temp_path:
+            temp_path = "{0}/{1}".format(
+                temp_path,
+                os.path.basename(os.path.normpath(src_dir))
+            )
         new_src_dir = temp_path or conv_path or src_dir
+        new_src_dir = os.path.normpath(new_src_dir)
 
         try:
-            shutil.copytree(new_src_dir, dest_dir, dirs_exist_ok=force)
+            dest = shutil.copytree(new_src_dir, dest_dir, dirs_exist_ok=force)
         except Exception as err:
             raise CopyOperationError(
                 msg="Error while copying data to destination directory {0}".format(dest_dir),
                 stdout=str(err),
             )
-        return dest_dir
+        return dest
 
     def _mvs_copy_to_uss(
         self,

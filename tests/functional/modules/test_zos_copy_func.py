@@ -386,7 +386,6 @@ def test_copy_local_nested_dir_to_existing_uss_dir_forced(ansible_zos_module):
     dest_path = "/tmp/new_dir"
 
     source_path = tempfile.mkdtemp()
-    source_parent_dir = source_path.split("/")[-1]
     subdir_a_path = "{0}/subdir_a".format(source_path)
     subdir_b_path = "{0}/subdir_b".format(source_path)
 
@@ -403,8 +402,8 @@ def test_copy_local_nested_dir_to_existing_uss_dir_forced(ansible_zos_module):
             force=True
         )
 
-        stat_subdir_a_res = hosts.all.stat(path="{0}/{1}/subdir_a".format(dest_path, source_parent_dir))
-        stat_subdir_b_res = hosts.all.stat(path="{0}/{1}/subdir_b".format(dest_path, source_parent_dir))
+        stat_subdir_a_res = hosts.all.stat(path="{0}/subdir_a".format(dest_path))
+        stat_subdir_b_res = hosts.all.stat(path="{0}/subdir_b".format(dest_path))
 
         for result in copy_result.contacted.values():
             assert result.get("msg") is None

@@ -1736,7 +1736,7 @@ def test_copy_ksds_to_volume(ansible_zos_module):
         hosts.all.zos_data_set(name=dest_ds, state="absent")
 
 
-def test_destination_dataset_parameters(ansible_zos_module):
+def test_dest_data_set_parameters(ansible_zos_module):
     hosts = ansible_zos_module
     src = "/etc/profile"
     dest = "USER.TEST.DEST"
@@ -1754,7 +1754,7 @@ def test_destination_dataset_parameters(ansible_zos_module):
             dest=dest,
             remote_src=True,
             volume=volume,
-            destination_dataset=dict(
+            dest_data_set=dict(
                 type="SEQ",
                 space_primary=space_primary,
                 space_secondary=space_secondary,

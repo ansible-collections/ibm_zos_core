@@ -1298,6 +1298,7 @@ class DataSetUtils(object):
         """
         self.module = AnsibleModuleHelper(argument_spec={})
         self.data_set = data_set.upper()
+        self.path = data_set
         self.is_uss_path = "/" in data_set
         self.ds_info = dict()
         if not self.is_uss_path:
@@ -1311,7 +1312,7 @@ class DataSetUtils(object):
             bool -- If the data set exists
         """
         if self.is_uss_path:
-            return path.exists(to_bytes(self.data_set))
+            return path.exists(to_bytes(self.path))
         return self.ds_info.get("exists")
 
     def member_exists(self, member):

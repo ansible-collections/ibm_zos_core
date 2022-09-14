@@ -2313,6 +2313,7 @@ def build_dd_statements(parms):
     dd_statements = []
     for dd in parms.get("dds"):
         dd_name = get_dd_name(dd)
+        dd = set_extra_attributes_in_dd(dd)
         data_definition = build_data_definition(dd)
         if data_definition is None:
             raise ValueError("No valid data definition found.")
@@ -2348,6 +2349,30 @@ def get_dd_name(dd):
     return dd_name
 
 
+def set_extra_attributes_in_dd(dd):
+    """
+    Set any extra attributes in dds like global tmphlq.
+    Args:
+        dd (dict): A single DD parm as specified in module parms.
+
+    Returns:
+        dd (dict): A single DD parm as specified in module parms.
+    """
+    global g_tmphlq
+    if dd.get("dd_data_set"):
+        dd.get("dd_data_set")["tmphlq"] = g_tmphlq
+    elif dd.get("dd_input"):
+        dd.get("dd_input")["tmphlq"] = g_tmphlq
+    elif dd.get("dd_output"):
+        dd.get("dd_output")["tmphlq"] = g_tmphlq
+    elif dd.get("dd_vio"):
+        dd.get("dd_vio")["tmphlq"] = g_tmphlq
+    elif dd.get("dd_concat"):
+        for single_dd in dd.get("dd_concat").get("dds", []):
+            set_extra_attributes_in_dd(single_dd)
+    return dd
+
+
 def build_data_definition(dd):
     """Build a DataDefinition object for a particular DD parameter.
 
@@ -2361,9 +2386,7 @@ def build_data_definition(dd):
               RawInputDefinition, DummyDefinition]: The DataDefinition object or a list of DataDefinition objects.
     """
     data_definition = None
-    global g_tmphlq
     if dd.get("dd_data_set"):
-        dd.get("dd_data_set")["tmphlq"] = g_tmphlq
         data_definition = RawDatasetDefinition(**(dd.get("dd_data_set")))
     elif dd.get("dd_unix"):
         data_definition = RawFileDefinition(**(dd.get("dd_unix")))
@@ -2372,7 +2395,7 @@ def build_data_definition(dd):
     elif dd.get("dd_output"):
         data_definition = RawOutputDefinition(**(dd.get("dd_output")))
     elif dd.get("dd_vio"):
-        data_definition = VIODefinition(tmphlq=g_tmphlq)
+        data_definition = VIODefinition(dd.get("dd_vio").get("tmphlq"))
     elif dd.get("dd_dummy"):
         data_definition = DummyDefinition()
     elif dd.get("dd_concat"):

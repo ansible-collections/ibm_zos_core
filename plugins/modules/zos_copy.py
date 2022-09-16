@@ -979,8 +979,9 @@ class USSCopyHandler(CopyHandler):
         else:
             if os.path.isfile(temp_path or conv_path or src):
                 dest = self._copy_to_file(src, dest, conv_path, temp_path)
+                changed_files = None
             else:
-                dest = self._copy_to_dir(src, dest, conv_path, temp_path, force)
+                dest, changed_files = self._copy_to_dir(src, dest, conv_path, temp_path, force)
 
         if self.common_file_args is not None:
             mode = self.common_file_args.get("mode")
@@ -988,6 +989,10 @@ class USSCopyHandler(CopyHandler):
             owner = self.common_file_args.get("owner")
             if mode is not None:
                 self.module.set_mode_if_different(dest, mode, False)
+
+                if changed_files:
+                    for filepath in changed_files:
+                        self.module.set_mode_if_different(os.path.join(dest, filepath), mode, False)
             if group is not None:
                 self.module.set_group_if_different(dest, group, False)
             if owner is not None:
@@ -1064,6 +1069,8 @@ class USSCopyHandler(CopyHandler):
         new_src_dir = temp_path or conv_path or src_dir
         new_src_dir = os.path.normpath(new_src_dir)
 
+        changed_files = self._get_changed_files(new_src_dir)
+
         try:
             dest = shutil.copytree(new_src_dir, dest_dir, dirs_exist_ok=force)
         except Exception as err:
@@ -1071,7 +1078,39 @@ class USSCopyHandler(CopyHandler):
                 msg="Error while copying data to destination directory {0}".format(dest_dir),
                 stdout=str(err),
             )
-        return dest
+        return dest, changed_files
+
+    def _get_changed_files(self, dir):
+        """Traverses a source directory and gets all the paths to files and
+        subdirectories that got copied into a destination.
+
+        Arguments:
+            dir (str) -- Path to the directory where files are copied from.
+
+        Returns:
+            list -- A list of paths for all subdirectories and files that got copied.
+        """
+        original_working_dir = os.getcwd()
+        # The function gets relative paths, so it changes the current working
+        # directory to the root of dir.
+        os.chdir(dir)
+        changed_files = []
+
+        for dirpath, subdirs, files in os.walk(".", True):
+            changed_files += [
+                os.path.join(dirpath, subdir).replace("./", "")
+                for subdir in subdirs
+            ]
+            changed_files += [
+                os.path.join(dirpath, filepath).replace("./", "")
+                for filepath in files
+            ]
+
+        # Returning the current working directory to what it was before to not
+        # interfere with the rest of the module.
+        os.chdir(original_working_dir)
+
+        return changed_files
 
     def _mvs_copy_to_uss(
         self,
@@ -1481,41 +1520,48 @@ def restore_backup(dest, backup, dest_type, use_backup, volume=None):
             of copied.
         volume (str, optional) -- Volume where the data set should be.
     """
-    try:
-        volumes = [volume] if volume else None
+    volumes = [volume] if volume else None
 
-        if use_backup:
-            if dest_type == "USS":
-                if os.path.isfile(backup):
-                    os.remove(dest)
-                    shutil.copy(backup, dest)
-                else:
-                    shutil.rmtree(dest, ignore_errors=True)
-                    shutil.copytree(backup, dest)
-            else:
-                data_set.DataSet.ensure_absent(dest, volumes)
-
-                if dest_type in data_set.DataSet.MVS_VSAM:
-                    repro_cmd = """  REPRO -
-                    INDATASET('{0}') -
-                    OUTDATASET('{1}')""".format(backup.upper(), dest.upper())
-                    idcams(repro_cmd, authorized=True)
-                else:
-                    datasets.copy(backup, dest)
-
-        else:
-            data_set.DataSet.ensure_absent(dest, volumes)
-            data_set.DataSet.allocate_model_data_set(dest, backup, volume)
-
-    finally:
+    if use_backup:
         if dest_type == "USS":
             if os.path.isfile(backup):
-                os.remove(backup)
+                os.remove(dest)
+                shutil.copy(backup, dest)
             else:
-                shutil.rmtree(backup, ignore_errors=True)
+                shutil.rmtree(dest, ignore_errors=True)
+                shutil.copytree(backup, dest)
         else:
-            volumes = [volume] if volume else None
-            data_set.DataSet.ensure_absent(backup, volumes)
+            data_set.DataSet.ensure_absent(dest, volumes)
+
+            if dest_type in data_set.DataSet.MVS_VSAM:
+                repro_cmd = """  REPRO -
+                INDATASET('{0}') -
+                OUTDATASET('{1}')""".format(backup.upper(), dest.upper())
+                idcams(repro_cmd, authorized=True)
+            else:
+                datasets.copy(backup, dest)
+
+    else:
+        data_set.DataSet.ensure_absent(dest, volumes)
+        data_set.DataSet.allocate_model_data_set(dest, backup, volume)
+
+
+def erase_backup(backup, dest_type, volume=None):
+    """Erases a temporary backup from the system.
+
+    Arguments:
+        backup (str) -- Name or path of the backup.
+        dest_type (str) -- Type of the destination.
+        volume (str, optional) -- Volume where the data set should be.
+    """
+    if dest_type == "USS":
+        if os.path.isfile(backup):
+            os.remove(backup)
+        else:
+            shutil.rmtree(backup, ignore_errors=True)
+    else:
+        volumes = [volume] if volume else None
+        data_set.DataSet.ensure_absent(backup, volumes)
 
 
 def is_compatible(
@@ -2066,7 +2112,11 @@ def run_module(module, arg_def):
     if dest_exists:
         if is_uss or not data_set.DataSet.is_empty(dest_name):
             use_backup = True
-            emergency_backup = backup_data(dest, dest_ds_type, None)
+            if is_uss:
+                emergency_backup = tempfile.mkdtemp()
+                emergency_backup = backup_data(dest, dest_ds_type, emergency_backup)
+            else:
+                emergency_backup = backup_data(dest, dest_ds_type, None)
         # If dest is an empty data set, instead create a data set to
         # use as a model when restoring.
         else:
@@ -2089,6 +2139,7 @@ def run_module(module, arg_def):
     except Exception as err:
         if dest_exists:
             restore_backup(dest_name, emergency_backup, dest_ds_type, use_backup)
+            erase_backup(emergency_backup, dest_ds_type)
         module.fail_json(msg="Unable to allocate destination data set: {0}".format(str(err)))
 
     # ********************************************************************
@@ -2195,6 +2246,9 @@ def run_module(module, arg_def):
         if dest_exists:
             restore_backup(dest_name, emergency_backup, dest_ds_type, use_backup)
         raise err
+    finally:
+        if dest_exists:
+            erase_backup(emergency_backup, dest_ds_type)
 
     res_args.update(
         dict(

@@ -46,7 +46,7 @@ options:
       - If the destination C(dest) is a USS file or path, the C(backup_name) must
         be an absolute path name.
       - If the destination is an MVS data set name, the C(backup_name) provided
-        must meet data set naming conventions of of one or more qualifiers, each
+        must meet data set naming conventions of one or more qualifiers, each
         from one to eight characters long, that are delimited by periods.
       - If the C(backup_name) is not provided, the default C(backup_name) will
         be used. If the C(dest) is a USS file or USS path, the name of the backup
@@ -71,19 +71,25 @@ options:
     required: false
   dest:
     description:
-      - The remote absolute path or data set where the file should be copied to.
-      - C(dest) can be a USS path or an MVS data set name.
-      - If C(dest) is a nonexistent USS file, it will be created.
-      - If C(dest) is a nonexistent data set, it will be created following the process
-        outlined in the C(volume) option.
-      - If C(dest) is a nonexistent data set, its attributes will have default values
-        depending on the type of C(src). If C(src) is text, C(dest) will have record
-        format Fixed Block (FB) and the rest of its attributes will be computed.
-        If C(src) is binary, the record format for C(dest) will be Fixed Block (FB)
-        with a record length of 80, block size of 32760, and the rest of its
-        attributes will be computed.
+      - The remote absolute path or data set where the content should be copied to.
+      - C(dest) can be a USS file, directory or MVS data set name.
       - If C(src) and C(dest) are files and if the parent directory of C(dest)
-        does not exist, then the task will fail.
+        does not exist, then the task will fail
+      - If C(dest) is a nonexistent USS file, it will be created.
+      - If C(dest) is a nonexistent data set, it will be created following the
+        process outlined here and in the C(volume) option.
+      - If C(dest) is a nonexistent data set, the attributes assigned will depend
+        on the type of C(src). If C(src) is a USS file, C(dest) will have a
+        Fixed Block (FB) record format and the remaining attributes will be computed.
+        If C(src) is binary, C(dest) will have a Fixed Block (FB) record format
+        with a record length of 80, block size of 32760, and the remaining
+        attributes will be computed.
+      - When C(dest) is a data set, precedence rules apply. If C(dest_data_set)
+        is set, this will take precedence over an existing data set. If C(dest)
+        is an empty data set, the empty data set will be written with the
+        expectation its attributes satisfy the copy. Lastly, if no precendent
+        rule has been exercised, C(dest) will be created with the same attributes
+        of C(src).
       - When the C(dest) is an existing VSAM (KSDS) or VSAM (ESDS), then source
         can be an ESDS, a KSDS or an RRDS. The VSAM (KSDS) or VSAM (ESDS) C(dest) will
         be deleted and recreated following the process outlined in the C(volume) option.
@@ -97,11 +103,6 @@ options:
         by specifying C(volume) if the storage class being used has
         GUARANTEED_SPACE=YES specified, otherwise, the allocation will
         fail. See C(volume) for more volume related processes.
-      - When creating a new data set for C(dest), reusing an empty destination will
-        take precedence over other options used to customize C(dest). C(dest_data_set)
-        takes precedence over the default values used. When C(src) is a data set,
-        and there aren't other options with more precedence, C(dest) will be created
-        with the same attributes of C(src).
     type: str
     required: true
   encoding:

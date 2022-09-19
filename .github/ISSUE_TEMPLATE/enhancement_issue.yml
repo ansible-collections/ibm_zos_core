@@ -10,6 +10,14 @@ body:
       value: |
         Before requesting an enhancement, please review existing isssues to avoid duplication.
         ---
+  - type: textarea
+    id: issue-description
+    attributes:
+      label: Enhancement description
+      description: Describe the enhancement you are requesting.
+      placeholder: Verbosity is encouraged, the more you share the better for us to understand.
+    validations:
+      required: true
   - type: checkboxes
     id: modules
     attributes:
@@ -56,31 +64,3 @@ body:
           required: false
     validations:
       required: false
-  - type: textarea
-    id: issue-description
-    attributes:
-      label: Enhancement description
-      description: Describe the enhancement you are requesting.
-      placeholder: Verbosity is encouraged, the more you share the better for us to understand.
-    validations:
-      required: true
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

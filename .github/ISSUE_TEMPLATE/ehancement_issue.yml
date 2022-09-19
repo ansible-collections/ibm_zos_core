@@ -1,0 +1,85 @@
+name: Enhancement Issue
+description: Request that existing collection content be enhnanced.
+title: "[Enhancement]: <title> "
+labels: [Enhancement]
+assignees:
+  - IBMAnsibleHelper
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before requesting an enhancement, please review existing isssues to avoid duplication.
+        ---
+  - type: textarea
+    id: issue-description
+    attributes:
+      label: Enhancement description
+      description: Describe the enhancement you are requesting.
+      placeholder: Verbosity is encouraged, the more you share the better for us to understand.
+    validations:
+      required: true
+  - type: checkboxes
+    id: modules
+    attributes:
+      label: Ansible module
+      description: Select which ansible modules to enhance.
+      options:
+        - label: zos_apf
+          required: false
+        - label: zos_backup_restore
+          required: false
+        - label: zos_blockinfile
+          required: false
+        - label: zos_copy
+          required: false
+        - label: zos_data_set
+          required: false
+        - label: zos_encode
+          required: false
+        - label: zos_fetch
+          required: false
+        - label: zos_find
+          required: false
+        - label: zos_gather_facts
+          required: false
+        - label: zos_job_output
+          required: false
+        - label: zos_job_query
+          required: false
+        - label: zos_job_submit
+          required: false
+        - label: zos_lineinfile
+          required: false
+        - label: zos_mount
+          required: false
+        - label: zos_mvs_raw
+          required: false
+        - label: zos_operator
+          required: false
+        - label: zos_operator_action_query
+          required: false
+        - label: zos_ping
+          required: false
+        - label: zos_tso_command
+          required: false
+    validations:
+      required: false
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

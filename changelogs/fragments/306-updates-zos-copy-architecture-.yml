@@ -1,0 +1,8 @@
+bugfixes:
+  - ibm_zos_copy - fixed ...... (https://github.com/ansible-collections/ibm_zos_core/pull/306).
+  - ibm_zos_copy - fixed ...... (https://github.com/ansible-collections/ibm_zos_core/pull/306).
+minor_changes:
+  - ibm_zos_copy - deprecated `destination_dataset` for `dest_data_set` (https://github.com/ansible-collections/ibm_zos_core/pull/306).
+  - ibm_zos_copy - added ....... (https://github.com/ansible-collections/ibm_zos_core/pull/306).
+  - ibm_zos_copy - added ....... (https://github.com/ansible-collections/ibm_zos_core/pull/306).
+

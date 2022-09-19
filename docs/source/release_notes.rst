@@ -6,6 +6,57 @@
 Releases
 ========
 
+Version 1.4.0-beta.2
+====================
+
+* Bug fixes and enhancements
+
+  * Modules
+
+    * ``zos_copy``
+
+      * was enhanced to ...
+      * was enhanced to ...
+      * was updated with the capabilities to ....
+
+  * Documentation
+
+  * Review 1.4.0-beta.1 release notes for additional content. :ref:`.. _1.4.0-beta.1 overview:`
+
+* Deprecated or removed
+
+  * ``zos_copy`` module option **destination_dataset** has been renamed to
+    **dest_data_set**.
+
+  * Review 1.4.0-beta.1 release notes for additional content. :ref:`.. _1.4.0-beta.1 overview:`
+
+
+Availability
+------------
+
+* `Galaxy`_
+* `GitHub`_
+
+Reference
+---------
+
+* Supported by `z/OS V2R3`_ or later
+* Supported by the `z/OS® shell`_
+* Supported by `IBM Open Enterprise SDK for Python`_ 3.8.2 or later
+* Supported by IBM `Z Open Automation Utilities 1.1.0`_ and
+  `Z Open Automation Utilities 1.1.1`_
+
+Known Issues
+------------
+
+* Review 1.4.0-beta.1 release notes for additional content. :ref:`.. _1.4.0-beta.1 overview:`
+
+Deprecation Notices
+-------------------
+* Review 1.4.0-beta.1 release notes for additional content. :ref:`.. _1.4.0-beta.1 overview:`
+
+.. _1.4.0-beta.1 overview:
+
 Version 1.4.0-beta.1
 ====================
 
@@ -162,6 +213,46 @@ release.
 
 .. _SSH port:
    https://docs.ansible.com/ansible/latest/collections/ansible/builtin/ssh_connection.html#parameter-port
+
+Version 1.3.4
+=============
+
+What's New
+----------
+
+* Bug Fixes
+
+  * Modules
+
+    * ``zos_ssh`` connection plugin was updated to correct a bug in Ansible that
+      would result in playbook task ``retries`` overriding the SSH connection
+      ``retries``. This is resolved by renaming the ``zos_ssh`` option
+      ``retries`` to ``reconnection_retries``. The update addresses users of
+      ``ansible-core`` v2.9 which continues to use ``retries`` and users of
+      ``ansible-core`` v2.11 or later which uses ``reconnection_retries``. This
+      also resolves a bug in the connection that referenced a deprecated
+      constant.
+    * ``zos_job_output`` fixes a bug that returned all ddname's when a specific
+      ddname was provided. Now a specific ddname can be returned and all others
+      ignored.
+    * ``zos_copy`` fixes a bug that would not copy subdirectories. If the source
+      is a directory with sub directories, all sub directories will now be copied.
+
+Availability
+------------
+
+* `Automation Hub`_
+* `Galaxy`_
+* `GitHub`_
+
+Reference
+---------
+
+* Supported by `z/OS V2R3`_ or later
+* Supported by the `z/OS® shell`_
+* Supported by `IBM Open Enterprise SDK for Python`_ 3.8.2 or later
+* Supported by IBM `Z Open Automation Utilities 1.1.0`_ and
+  `Z Open Automation Utilities 1.1.1`_
 
 Version 1.3.1
 =============

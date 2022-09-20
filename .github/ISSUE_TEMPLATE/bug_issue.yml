@@ -67,8 +67,8 @@ body:
     attributes:
       label: IBM z/OS Ansible core Version
       description: |
-      Which version of the z/OS Ansible core collection are you using.
-        - `cat ~/.ansible/collections/ansible_collections/ibm/ibm_zos_core/MANIFEST.json | grep version`
+        Which version of the z/OS Ansible core collection are you using.
+          - `cat ~/.ansible/collections/ansible_collections/ibm/ibm_zos_core/MANIFEST.json | grep version`
       options:
         - v1.0.0
         - v1.1.0

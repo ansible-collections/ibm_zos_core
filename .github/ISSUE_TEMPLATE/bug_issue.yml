@@ -29,29 +29,29 @@ body:
       description: Provided the command line output with debug and verbosity enabled.
       placeholder: Insert the ouput here using this form of the playbook command.
                    `ANSIBLE_DEBUG=1 ansible-playbook -i inventory your-playbook.yml -vvvv`
-      validations:
-        required: false
+    validations:
+      required: false
   - type: textarea
     id: ansible-cfg
     attributes:
       label: Contents of `ansible.cfg`
       description: Provided the contents of `ansible.cfg`.
-      validations:
-        required: false
+    validations:
+      required: false
   - type: textarea
     id: ansible-inventory
     attributes:
       label: Contents of the playbook inventory
       description: Provided the contents of the playbook inventory
-      validations:
-        required: false
+    validations:
+      required: false
   - type: textarea
     id: ansible-vas
     attributes:
       label: Contents of the playbook `group_vars` or `host_vars` 
       description: Provided the contents of the playbook `group_vars` or `host_vars`
-      validations:
-        required: false
+    validations:
+      required: false
   - type: textarea
     id: ansible-version
     attributes:

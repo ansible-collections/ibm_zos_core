@@ -98,12 +98,11 @@ body:
         - v1.2.0
     validations:
       required: true
-  - type: textarea
+  - type: input
     id: zos-version
     attributes:
       label: z/OS version
       description: What is the version of z/OS on the managed node.
-      placeholder: Paste verbatim output from "ansible --version" between quotes.
     validations:
       required: false
   - type: checkboxes

@@ -50,7 +50,7 @@ body:
   - type: textarea
     id: ansible-vas
     attributes:
-      label: Contents of `group_vars` or `host_vars` 
+      label: Contents of `group_vars` or `host_vars`
       description: Provide the contents of `group_vars` or `host_vars`
     validations:
       required: false
@@ -99,12 +99,12 @@ body:
       description: What is the version of z/OS on the managed node.
       placeholder: Paste verbatim output from "ansible --version" between quotes.
     validations:
-      required: true
+      required: false
   - type: checkboxes
     id: modules
     attributes:
       label: Ansible module
-      description: Select which ansible module is being reported with a bug.
+      description: Select which modules are being reported in this bug.
       options:
         - label: zos_apf
           required: false

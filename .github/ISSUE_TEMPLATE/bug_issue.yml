@@ -15,11 +15,12 @@ body:
     attributes:
       label: Bug description
       description: Describe the bug you are experiencing.
-      placeholder: Verbosity is encouraged, the more you share the better for us to understand.  
-                   - include the steps to reproduce  
-                   - include playbook if applicable  
-                   - include screen captures of applicable  
-                   - include expected vs actual results if applicable  
+      placeholder: |
+      Verbosity is encouraged, the more you share the better for us to understand.
+        1. Include the steps to reproduce
+        2. Include playbook if applicable
+        3. Include screen captures of applicable
+        4. Include expected vs actual results if applicable
     validations:
       required: true
   - type: textarea
@@ -27,8 +28,9 @@ body:
     attributes:
       label: Playbook verbosity output
       description: Provide the command line output with debug and verbosity enabled.
-      placeholder: Insert the ouput here using this form of the playbook command.  
-                   - `ANSIBLE_DEBUG=1 ansible-playbook -i inventory your-playbook.yml -vvvv`  
+      placeholder: |
+      Insert the ouput using this form of the playbook command:
+        - `ANSIBLE_DEBUG=1 ansible-playbook -i inventory your-playbook.yml -vvvv`  
     validations:
       required: false
   - type: textarea
@@ -64,7 +66,9 @@ body:
     id: collection-version
     attributes:
       label: IBM z/OS Ansible core Version
-      description: Which version of the z/OS Ansible core collection are you using. (`cat ~/.ansible/collections/ansible_collections/ibm/ibm_zos_core/MANIFEST.json | grep version`)
+      description: |
+      Which version of the z/OS Ansible core collection are you using.
+        - `cat ~/.ansible/collections/ansible_collections/ibm/ibm_zos_core/MANIFEST.json | grep version`
       options:
         - v1.0.0
         - v1.1.0

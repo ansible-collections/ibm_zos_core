@@ -15,41 +15,41 @@ body:
     attributes:
       label: Bug description
       description: Describe the bug you are experiencing.
-      placeholder: Verbosity is encouraged, the more you share the better for us to understand.
-                  - include the steps to reproduce
-                  - include playbook if applicable
-                  - include screen captures of applicable
-                  - include expected vs actual results if applicable
+      placeholder: Verbosity is encouraged, the more you share the better for us to understand.  
+                   - include the steps to reproduce  
+                   - include playbook if applicable  
+                   - include screen captures of applicable  
+                   - include expected vs actual results if applicable  
     validations:
       required: true
   - type: textarea
     id: issue-output
     attributes:
-      label: Playbook verbosity log
-      description: Provided the command line output with debug and verbosity enabled.
-      placeholder: Insert the ouput here using this form of the playbook command.
-                   `ANSIBLE_DEBUG=1 ansible-playbook -i inventory your-playbook.yml -vvvv`
+      label: Playbook verbosity output
+      description: Provide the command line output with debug and verbosity enabled.
+      placeholder: Insert the ouput here using this form of the playbook command.  
+                   - `ANSIBLE_DEBUG=1 ansible-playbook -i inventory your-playbook.yml -vvvv`  
     validations:
       required: false
   - type: textarea
     id: ansible-cfg
     attributes:
       label: Contents of `ansible.cfg`
-      description: Provided the contents of `ansible.cfg`.
+      description: Provide the contents of `ansible.cfg`.
     validations:
       required: false
   - type: textarea
     id: ansible-inventory
     attributes:
-      label: Contents of the playbook inventory
-      description: Provided the contents of the playbook inventory
+      label: Contents of the inventory
+      description: Provide the contents of the inventory
     validations:
       required: false
   - type: textarea
     id: ansible-vas
     attributes:
-      label: Contents of the playbook `group_vars` or `host_vars` 
-      description: Provided the contents of the playbook `group_vars` or `host_vars`
+      label: Contents of `group_vars` or `host_vars` 
+      description: Provide the contents of `group_vars` or `host_vars`
     validations:
       required: false
   - type: textarea
@@ -101,7 +101,7 @@ body:
     id: modules
     attributes:
       label: Ansible module
-      description: Select which ansible modules to enhance.
+      description: Select which ansible module is being reported with a bug.
       options:
         - label: zos_apf
           required: false
@@ -142,4 +142,4 @@ body:
         - label: zos_tso_command
           required: false
     validations:
-      required: true
+      required: false

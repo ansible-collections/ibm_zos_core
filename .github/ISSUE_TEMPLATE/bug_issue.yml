@@ -29,8 +29,8 @@ body:
       label: Playbook verbosity output
       description: Provide the command line output with debug and verbosity enabled.
       placeholder: |
-      Insert the ouput using this form of the playbook command:
-        - `ANSIBLE_DEBUG=1 ansible-playbook -i inventory your-playbook.yml -vvvv`  
+      Insert the ouput using this form of the playbook command.
+        - `ANSIBLE_DEBUG=1 ansible-playbook -i inventory your-playbook.yml -vvvv`
     validations:
       required: false
   - type: textarea

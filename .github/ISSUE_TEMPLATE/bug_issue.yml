@@ -38,6 +38,7 @@ body:
     attributes:
       label: Contents of `ansible.cfg`
       description: Provide the contents of `ansible.cfg`.
+      render: YAML
     validations:
       required: false
   - type: textarea
@@ -45,6 +46,7 @@ body:
     attributes:
       label: Contents of the inventory
       description: Provide the contents of the inventory
+      render: YAML
     validations:
       required: false
   - type: textarea
@@ -52,6 +54,7 @@ body:
     attributes:
       label: Contents of `group_vars` or `host_vars`
       description: Provide the contents of `group_vars` or `host_vars`
+      render: YAML
     validations:
       required: false
   - type: textarea
@@ -60,6 +63,7 @@ body:
       label: Ansible version
       description: What is the verson of Ansible on the controller.
       placeholder: Paste verbatim output from `ansible --version`.
+      render: shell
     validations:
       required: true
   - type: dropdown

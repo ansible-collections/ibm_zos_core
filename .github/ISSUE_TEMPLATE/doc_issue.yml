@@ -30,6 +30,7 @@ body:
       label: Ansible version
       description: What is the verson of Ansible on the controller if applicable.
       placeholder: Paste verbatim output from `ansible --version`.
+      render: SHELL
     validations:
       required: false
   - type: dropdown

@@ -72,6 +72,7 @@ body:
       label: IBM z/OS Ansible core Version
       description: |
         Which version of the z/OS Ansible core collection are you using. If you are unsure, run the command: `cat ~/.ansible/collections/ansible_collections/ibm/ibm_zos_core/MANIFEST.json | grep version`
+      multiple: true
       options:
         - v1.0.0
         - v1.1.0
@@ -90,6 +91,7 @@ body:
     attributes:
       label: IBM ZOAU version
       description: Which version of ZOAU are you using. Ensure you are on the latest PTF.
+      multiple: true
       options:
         - v1.0.3
         - v1.1.1

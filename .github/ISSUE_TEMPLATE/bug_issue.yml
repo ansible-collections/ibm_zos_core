@@ -1,0 +1,145 @@
+name: Bug report Issue
+description: Request that a bug be reviewed.
+title: "[Bug]: <title> "
+labels: [Bug]
+assignees:
+  - IBMAnsibleHelper
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before reporting a bug, please review existing isssues to avoid duplication.
+        ---
+  - type: textarea
+    id: issue-description
+    attributes:
+      label: Bug description
+      description: Describe the bug you are experiencing.
+      placeholder: Verbosity is encouraged, the more you share the better for us to understand.
+                  - include the steps to reproduce
+                  - include playbook if applicable
+                  - include screen captures of applicable
+                  - include expected vs actual results if applicable
+    validations:
+      required: true
+  - type: textarea
+    id: issue-output
+    attributes:
+      label: Playbook verbosity log
+      description: Provided the command line output with debug and verbosity enabled.
+      placeholder: Insert the ouput here using this form of the playbook command.
+                   `ANSIBLE_DEBUG=1 ansible-playbook -i inventory your-playbook.yml -vvvv`
+      validations:
+        required: false
+  - type: textarea
+    id: ansible-cfg
+    attributes:
+      label: Contents of `ansible.cfg`
+      description: Provided the contents of `ansible.cfg`.
+      validations:
+        required: false
+  - type: textarea
+    id: ansible-inventory
+    attributes:
+      label: Contents of the playbook inventory
+      description: Provided the contents of the playbook inventory
+      validations:
+        required: false
+  - type: textarea
+    id: ansible-vas
+    attributes:
+      label: Contents of the playbook `group_vars` or `host_vars` 
+      description: Provided the contents of the playbook `group_vars` or `host_vars`
+      validations:
+        required: false
+  - type: textarea
+    id: ansible-version
+    attributes:
+      label: Ansible version
+      description: What is the verson of Ansible on the controller.
+      placeholder: Paste verbatim output from `ansible --version`.
+    validations:
+      required: true
+  - type: dropdown
+    id: collection-version
+    attributes:
+      label: IBM z/OS Ansible core Version
+      description: Which version of the z/OS Ansible core collection are you using. (`cat ~/.ansible/collections/ansible_collections/ibm/ibm_zos_core/MANIFEST.json | grep version`)
+      options:
+        - v1.0.0
+        - v1.1.0
+        - v1.2.1
+        - v1.3.0
+        - v1.3.1
+        - v1.3.3
+        - v1.3.5
+        - v1.3.6
+        - v1.4.0-beta.1
+        - v1.4.0-beta.2
+    validations:
+      required: true
+  - type: dropdown
+    id: zoau-version
+    attributes:
+      label: IBM ZOAU version
+      description: Which version of ZOAU are you using. Ensure you are on the latest PTF.
+      options:
+        - v1.0.3
+        - v1.1.1
+        - v1.2.0
+    validations:
+      required: true
+  - type: textarea
+    id: zos-version
+    attributes:
+      label: z/OS version
+      description: What is the version of z/OS on the managed node.
+      placeholder: Paste verbatim output from "ansible --version" between quotes.
+    validations:
+      required: true
+  - type: checkboxes
+    id: modules
+    attributes:
+      label: Ansible module
+      description: Select which ansible modules to enhance.
+      options:
+        - label: zos_apf
+          required: false
+        - label: zos_backup_restore
+          required: false
+        - label: zos_blockinfile
+          required: false
+        - label: zos_copy
+          required: false
+        - label: zos_data_set
+          required: false
+        - label: zos_encode
+          required: false
+        - label: zos_fetch
+          required: false
+        - label: zos_find
+          required: false
+        - label: zos_gather_facts
+          required: false
+        - label: zos_job_output
+          required: false
+        - label: zos_job_query
+          required: false
+        - label: zos_job_submit
+          required: false
+        - label: zos_lineinfile
+          required: false
+        - label: zos_mount
+          required: false
+        - label: zos_mvs_raw
+          required: false
+        - label: zos_operator
+          required: false
+        - label: zos_operator_action_query
+          required: false
+        - label: zos_ping
+          required: false
+        - label: zos_tso_command
+          required: false
+    validations:
+      required: true

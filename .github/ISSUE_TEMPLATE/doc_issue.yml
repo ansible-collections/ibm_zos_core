@@ -1,67 +1,37 @@
-name: Report a bug
-description: Request that a bug be reviewed.
-title: "[Bug]: <title> "
-labels: [Bug]
+name: Report a documentation issue
+description: Request that documentation be reviewed.
+title: "[Documentation]: <title> "
+labels: [Documentation]
 assignees:
   - IBMAnsibleHelper
 body:
   - type: markdown
     attributes:
       value: |
-        Before reporting a bug, please review existing isssues to avoid duplication.
+        Before reporting a documentation issue, please review existing isssues to avoid duplication.
         ---
   - type: textarea
     id: issue-description
     attributes:
-      label: Bug description
-      description: Describe the bug you are experiencing.
+      label: Documentation issue description
+      description: Describe the documentation issue.
       placeholder: |
         Verbosity is encouraged, the more you share the better for us to understand.
-          1. Include the steps to reproduce
-          2. Include playbook if applicable
-          3. Include screen captures of applicable
-          4. Include expected vs actual results if applicable
+          1. Include links to the page you are reffering to if applicable
+          2. Include reproduction steps if applicable
+          3. Include any additional information that will help us
+          4. Include screen captures of applicable
+          5. Include browser or shell if applicable
     validations:
       required: true
-  - type: textarea
-    id: issue-output
-    attributes:
-      label: Playbook verbosity output
-      description: Provide the command line output with debug and verbosity enabled.
-      placeholder: |
-        Insert the ouput using this form of the playbook command.
-          - `ANSIBLE_DEBUG=1 ansible-playbook -i inventory your-playbook.yml -vvvv`
-    validations:
-      required: false
-  - type: textarea
-    id: ansible-cfg
-    attributes:
-      label: Contents of `ansible.cfg`
-      description: Provide the contents of `ansible.cfg`.
-    validations:
-      required: false
-  - type: textarea
-    id: ansible-inventory
-    attributes:
-      label: Contents of the inventory
-      description: Provide the contents of the inventory
-    validations:
-      required: false
-  - type: textarea
-    id: ansible-vars
-    attributes:
-      label: Contents of `group_vars` or `host_vars`
-      description: Provide the contents of `group_vars` or `host_vars`
-    validations:
-      required: false
   - type: textarea
     id: ansible-version
     attributes:
       label: Ansible version
-      description: What is the verson of Ansible on the controller.
+      description: What is the verson of Ansible on the controller if applicable.
       placeholder: Paste verbatim output from `ansible --version`.
     validations:
-      required: true
+      required: false
   - type: dropdown
     id: collection-version
     attributes:
@@ -81,25 +51,6 @@ body:
         - v1.4.0-beta.2
     validations:
       required: true
-  - type: dropdown
-    id: zoau-version
-    attributes:
-      label: IBM ZOAU version
-      description: Which version of ZOAU are you using. Ensure you are on the latest PTF.
-      options:
-        - v1.0.3
-        - v1.1.1
-        - v1.2.0
-    validations:
-      required: true
-  - type: textarea
-    id: zos-version
-    attributes:
-      label: z/OS version
-      description: What is the version of z/OS on the managed node.
-      placeholder: Paste verbatim output from "ansible --version" between quotes.
-    validations:
-      required: false
   - type: checkboxes
     id: modules
     attributes:

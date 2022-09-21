@@ -1,6 +1,6 @@
 name: Report a bug
 description: Request that a bug be reviewed.
-title: "[Bug]: <title> "
+title: "[Bug] <title> "
 labels: [Bug]
 assignees:
   - IBMAnsibleHelper

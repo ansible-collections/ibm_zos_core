@@ -1,6 +1,6 @@
 name: Report a documentation issue
 description: Request that documentation be reviewed.
-title: "[Documentation]: <title> "
+title: "[Documentation] <title> "
 labels: [Documentation]
 assignees:
   - IBMAnsibleHelper

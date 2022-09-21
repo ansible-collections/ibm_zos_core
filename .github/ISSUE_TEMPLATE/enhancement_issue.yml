@@ -1,6 +1,6 @@
 name: Request an enhancement
 description: Request that existing collection content be ehnanced.
-title: "[Enhancement]: <title> "
+title: "[Enhancement] <title> "
 labels: [Enhancement]
 assignees:
   - IBMAnsibleHelper

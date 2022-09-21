@@ -18,49 +18,31 @@ body:
       placeholder: Verbosity is encouraged, the more you share the better for us to understand.
     validations:
       required: true
-  - type: checkboxes
+  - type: dropdown
     id: modules
     attributes:
       label: Ansible module
-      description: Select which ansible modules to enhance.
+      description: Select which modules are being reported in this bug. You can select more than one.
+      multiple: true
       options:
-        - label: zos_apf
-          required: false
-        - label: zos_backup_restore
-          required: false
-        - label: zos_blockinfile
-          required: false
-        - label: zos_copy
-          required: false
-        - label: zos_data_set
-          required: false
-        - label: zos_encode
-          required: false
-        - label: zos_fetch
-          required: false
-        - label: zos_find
-          required: false
-        - label: zos_gather_facts
-          required: false
-        - label: zos_job_output
-          required: false
-        - label: zos_job_query
-          required: false
-        - label: zos_job_submit
-          required: false
-        - label: zos_lineinfile
-          required: false
-        - label: zos_mount
-          required: false
-        - label: zos_mvs_raw
-          required: false
-        - label: zos_operator
-          required: false
-        - label: zos_operator_action_query
-          required: false
-        - label: zos_ping
-          required: false
-        - label: zos_tso_command
-          required: false
+        - zos_apf
+        - zos_backup_restore
+        - zos_blockinfile
+        - zos_copy
+        - zos_data_set
+        - zos_encode
+        - zos_fetch
+        - zos_find
+        - zos_gather_facts
+        - zos_job_output
+        - zos_job_query
+        - zos_job_submit
+        - zos_lineinfile
+        - zos_mount
+        - zos_mvs_raw
+        - zos_operator
+        - zos_operator_action_query
+        - zos_ping
+        - zos_tso_command
     validations:
       required: false

@@ -1,6 +1,6 @@
 name: Request a new feature
 description: Request new collection content be created.
-title: "[New Feature]: <title> "
+title: "[New Feature] <title> "
 labels: [New Feature]
 assignees:
   - IBMAnsibleHelper

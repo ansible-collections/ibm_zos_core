@@ -412,6 +412,52 @@ def test_copy_uss_file_to_uss_dir(ansible_zos_module):
         hosts.all.file(path=dest_path, state="absent")
 
 
+def test_copy_dir_and_change_mode(ansible_zos_module):
+    hosts = ansible_zos_module
+    dest_path = "/tmp/new_dir"
+
+    source_path = tempfile.mkdtemp()
+    subdir_path = "{0}/subdir".format(source_path)
+    mode = "0755"
+
+    try:
+        os.mkdir(subdir_path)
+        populate_dir(subdir_path)
+
+        hosts.all.file(path=dest_path, state="directory")
+        copy_result = hosts.all.zos_copy(
+            src=source_path,
+            dest=dest_path,
+            force=True,
+            mode=mode
+        )
+
+        stat_dir_res = hosts.all.stat(path=dest_path)
+        stat_subdir_res = hosts.all.stat(path="{0}/subdir".format(dest_path))
+        stat_file_res = hosts.all.stat(path="{0}/subdir/file3".format(dest_path))
+
+        for result in copy_result.contacted.values():
+            assert result.get("msg") is None
+            assert result.get("changed") is True
+            assert result.get("dest") == dest_path
+        for result in stat_dir_res.contacted.values():
+            assert result.get("stat").get("exists") is True
+            assert result.get("stat").get("isdir") is True
+            assert result.get("stat").get("mode") == mode
+        for result in stat_subdir_res.contacted.values():
+            assert result.get("stat").get("exists") is True
+            assert result.get("stat").get("isdir") is True
+            assert result.get("stat").get("mode") == mode
+        for result in stat_file_res.contacted.values():
+            assert result.get("stat").get("exists") is True
+            assert result.get("stat").get("isdir") is False
+            assert result.get("stat").get("mode") == mode
+
+    finally:
+        hosts.all.file(path=dest_path, state="absent")
+        shutil.rmtree(source_path)
+
+
 def test_copy_uss_file_to_non_existing_sequential_data_set(ansible_zos_module):
     hosts = ansible_zos_module
     dest = "USER.TEST.SEQ.FUNCTEST"
@@ -1549,7 +1595,6 @@ def test_copy_local_nested_dir_to_uss(ansible_zos_module):
     dest_path = "/tmp/new_dir"
 
     source_path = tempfile.mkdtemp()
-    source_parent_dir = source_path.split("/")[-1]
     subdir_a_path = "{0}/subdir_a".format(source_path)
     subdir_b_path = "{0}/subdir_b".format(source_path)
 
@@ -1561,8 +1606,8 @@ def test_copy_local_nested_dir_to_uss(ansible_zos_module):
 
         copy_result = hosts.all.zos_copy(src=source_path, dest=dest_path)
 
-        stat_subdir_a_res = hosts.all.stat(path="{0}/{1}/subdir_a".format(dest_path, source_parent_dir))
-        stat_subdir_b_res = hosts.all.stat(path="{0}/{1}/subdir_b".format(dest_path, source_parent_dir))
+        stat_subdir_a_res = hosts.all.stat(path="{0}/subdir_a".format(dest_path))
+        stat_subdir_b_res = hosts.all.stat(path="{0}/subdir_b".format(dest_path))
 
         for result in copy_result.contacted.values():
             assert result.get("msg") is None
@@ -1583,7 +1628,6 @@ def test_copy_local_nested_dir_to_existing_uss_dir_forced(ansible_zos_module):
     dest_path = "/tmp/new_dir"
 
     source_path = tempfile.mkdtemp()
-    source_parent_dir = source_path.split("/")[-1]
     subdir_a_path = "{0}/subdir_a".format(source_path)
     subdir_b_path = "{0}/subdir_b".format(source_path)
 
@@ -1600,8 +1644,8 @@ def test_copy_local_nested_dir_to_existing_uss_dir_forced(ansible_zos_module):
             force=True
         )
 
-        stat_subdir_a_res = hosts.all.stat(path="{0}/{1}/subdir_a".format(dest_path, source_parent_dir))
-        stat_subdir_b_res = hosts.all.stat(path="{0}/{1}/subdir_b".format(dest_path, source_parent_dir))
+        stat_subdir_a_res = hosts.all.stat(path="{0}/subdir_a".format(dest_path))
+        stat_subdir_b_res = hosts.all.stat(path="{0}/subdir_b".format(dest_path))
 
         for result in copy_result.contacted.values():
             assert result.get("msg") is None

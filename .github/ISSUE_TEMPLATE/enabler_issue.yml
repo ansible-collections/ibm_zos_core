@@ -1,7 +1,7 @@
-name: Development task
+name: Enabler task
 description: Identify a development task that does not correspond to other git issue types, eg this could be an enabler task.
-title: "[Task] <title> "
-labels: [Task]
+title: "[Enabler] <title> "
+labels: [Enabler]
 assignees:
   - IBMAnsibleHelper
 body:

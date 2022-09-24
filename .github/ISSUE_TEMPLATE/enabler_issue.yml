@@ -13,7 +13,7 @@ body:
   - type: textarea
     id: issue-description
     attributes:
-      label: Task description
+      label: Enabler description
       description: Describe the task, this is the equivilant of a agile story.
       placeholder: Verbosity is encouraged, the more you share the better for us to understand.
     validations:

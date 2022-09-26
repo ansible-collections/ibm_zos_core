@@ -110,6 +110,7 @@ class DataSet(object):
         sms_data_class=None,
         sms_management_class=None,
         volumes=None,
+        tmp_hlq=None,
     ):
         """Creates data set if it does not already exist.
 
@@ -164,6 +165,7 @@ class DataSet(object):
                     When using SMS, volumes can be provided when the storage class being used
                     has GUARANTEED_SPACE=YES specified. Otherwise, the allocation will fail.
                     Defaults to None.
+            tmp_hlq (str, optional): High level qualifier for temporary datasets.
 
         Returns:
             bool -- Indicates if changes were made.
@@ -595,6 +597,7 @@ class DataSet(object):
         sms_data_class=None,
         sms_management_class=None,
         volumes=None,
+        tmp_hlq=None,
     ):
         """A wrapper around zoautil_py
         Dataset.create() to raise exceptions on failure.
@@ -650,6 +653,7 @@ class DataSet(object):
                     When using SMS, volumes can be provided when the storage class being used
                     has GUARANTEED_SPACE=YES specified. Otherwise, the allocation will fail.
                     Defaults to None.
+            tmp_hlq (str, optional): High level qualifier for temporary datasets.
 
         Raises:
             DatasetCreateError: When data set creation fails.

@@ -678,7 +678,10 @@ def data_set_name(contents, dependencies):
         if dependencies.get("state") != "present":
             raise ValueError('Data set name must be provided when "state!=present"')
         if dependencies.get("type") != "MEMBER":
-            contents = DataSet.temp_name()
+            tmphlq = dependencies.get("tmp_hlq")
+            if tmphlq is None:
+                tmphlq = ""
+            contents = DataSet.temp_name(tmphlq)
         else:
             raise ValueError(
                 'Data set and member name must be provided when "type=MEMBER"'
@@ -1007,7 +1010,7 @@ def parse_and_validate_args(params):
             type=data_set_name,
             default=data_set_name,
             required=False,
-            dependencies=["type", "state", "batch"],
+            dependencies=["type", "state", "batch", "tmp_hlq"],
         ),
         state=dict(
             type="str",

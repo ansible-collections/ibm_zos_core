@@ -1192,6 +1192,11 @@ def run_module():
             required=False,
             aliases=["volume"],
         ),
+        tmp_hlq=dict(
+            type="str",
+            required=False,
+            default=None
+        ),
     )
     result = dict(changed=False, message="", names=[])
 

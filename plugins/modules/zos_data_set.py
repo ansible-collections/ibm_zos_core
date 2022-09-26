@@ -236,6 +236,14 @@ options:
     type: bool
     required: false
     default: false
+  tmp_hlq:
+    description:
+      - Override the default high level qualifier (HLQ) for temporary and backup
+        datasets.
+      - The default HLQ is the Ansible user used to execute the module and if
+        that is not available, then the value C(TMPHLQ) is used.
+    required: false
+    type: str
   batch:
     description:
       - Batch can be used to perform operations on multiple data sets in a single module call.

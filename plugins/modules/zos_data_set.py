@@ -1064,6 +1064,11 @@ def parse_and_validate_args(params):
             aliases=["volume"],
             dependencies=["state"],
         ),
+        tmp_hlq=dict(
+            type='qualifier_or_empty',
+            required=False,
+            default=None
+        ),
         mutually_exclusive=[
             ["batch", "name"],
             # ["batch", "state"],

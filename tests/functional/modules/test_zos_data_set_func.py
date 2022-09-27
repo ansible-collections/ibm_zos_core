@@ -720,7 +720,7 @@ def test_data_set_creation_zero_values(ansible_zos_module):
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
 
 
-def test_data_set_creation_with_tmp_hlq(ansible_zos_module, dstype):
+def test_data_set_creation_with_tmp_hlq(ansible_zos_module):
     try:
         tmphlq = "TMPHLQ"
         hosts = ansible_zos_module
@@ -729,8 +729,8 @@ def test_data_set_creation_with_tmp_hlq(ansible_zos_module, dstype):
         for result in results.contacted.values():
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
-            dsname = result.get("names")
-            assert result.get("names")[:6] == tmphlq
+            for dsname in result.get("names"):
+                assert dsname[:6] == tmphlq
     finally:
         if dsname:
             hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")

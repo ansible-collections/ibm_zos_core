@@ -4,4 +4,4 @@ minor_changes:
     This allows for a user to specify the data set high level qualifier (HLQ)
     used in any temporary data set created by the module. Often, the
     defaults are not permitted on systems, this provies a way to override
-    the defaults..
+    the defaults. (https://github.com/ansible-collections/ibm_zos_core/pull/491).

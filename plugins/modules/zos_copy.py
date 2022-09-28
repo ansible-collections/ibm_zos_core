@@ -2020,7 +2020,13 @@ def run_module(module, arg_def):
                 if copy_member:
                     dest_member_exists = dest_exists and data_set.DataSet.data_set_member_exists(dest)
                 elif src_ds_type == "USS":
-                    dest_member_exists = dest_exists and data_set.DataSet.files_in_data_set_members(temp_path or src, dest)
+                    if temp_path:
+                        root_dir = "{0}/{1}".format(temp_path, os.path.basename(os.path.normpath(src)))
+                        root_dir = os.path.normpath(root_dir)
+                    else:
+                        root_dir = src
+
+                    dest_member_exists = dest_exists and data_set.DataSet.files_in_data_set_members(root_dir, dest)
                 elif src_ds_type in data_set.DataSet.MVS_PARTITIONED:
                     dest_member_exists = dest_exists and data_set.DataSet.data_set_shared_members(src, dest)
 

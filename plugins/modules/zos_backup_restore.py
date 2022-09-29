@@ -336,8 +336,6 @@ def main():
                 exclude=dict(type="raw", required=False),
             ),
         ),
-        space=dict(type="int", required=False, aliases=["size"]),
-        space_type=dict(type="str", required=False, aliases=["unit"]),
         volume=dict(type="str", required=False),
         full_volume=dict(type="bool", default=False),
         temp_volume=dict(type="str", required=False, aliases=["dest_volume"]),
@@ -346,6 +344,8 @@ def main():
         overwrite=dict(type="bool", default=False),
         sms_storage_class=dict(type="str", required=False),
         sms_management_class=dict(type="str", required=False),
+        space=dict(type="int", required=False, aliases=["size"]),
+        space_type=dict(type="str", required=False, aliases=["unit"]),
         hlq=dict(type="str", required=False),
     )
 

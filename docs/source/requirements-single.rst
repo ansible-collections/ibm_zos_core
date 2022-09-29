@@ -12,7 +12,7 @@ Requirements
 The **IBM z/OS core collection** requires both a **control node** and
 **managed node** be configured with a minimum set of requirements. The
 control node is often referred to as the **controller** and the
-managed node as the **host**.
+managed node as the **host** or **target**.
 
 Control node
 ============
@@ -58,14 +58,14 @@ proceed to install the IBM z/OS core collection.
       files differently. Please review the README.ZOS guide included with the
       ported ``bash`` shell for further configurations.
 
-.. _Installing and Configuring ZOA Utilities:
-   https://www.ibm.com/support/knowledgecenter/en/SSKFYE_1.1.0/install.html
-
 .. _Ansible documentation:
    https://docs.ansible.com/ansible/2.7/user_guide/intro_inventory.html
 
 .. _Python on z/OS:
-   requirements-single.html#id1
+   requirements_managed.html#id1
+
+.. _Installing and Configuring ZOA Utilities:
+   https://www.ibm.com/support/knowledgecenter/en/SSKFYE_1.1.0/install.html
 
 .. _V2R3:
    https://www.ibm.com/support/knowledgecenter/SSLTBW_2.3.0/com.ibm.zos.v2r3/en/homepage.html
@@ -74,7 +74,7 @@ proceed to install the IBM z/OS core collection.
    https://www.ibm.com/support/knowledgecenter/SSLTBW
 
 .. _IBM Z Open Automation Utilities:
-   requirements-single.html#id1
+   requirements_managed.html#zoau
 
 .. _z/OS OpenSSH:
    https://www.ibm.com/support/knowledgecenter/SSLTBW_2.2.0/com.ibm.zos.v2r2.e0za100/ch1openssh.htm
@@ -84,9 +84,6 @@ proceed to install the IBM z/OS core collection.
 
 .. _playbook configuration:
    https://github.com/IBM/z_ansible_collections_samples/blob/master/docs/share/configuration_guide.md
-
-.. _FAQs:
-   https://ibm.github.io/z_ansible_collections_doc/faqs/faqs.html
 
 .. _z/OS® shell:
    https://www.ibm.com/support/knowledgecenter/en/SSLTBW_2.4.0/com.ibm.zos.v2r4.bpxa400/part1.htm
@@ -118,7 +115,6 @@ and required by **IBM z/OS core collection**.
 
 .. _IBM Open Enterprise Python for z/OS:
    http://www.ibm.com/products/open-enterprise-python-zos
-
 .. _IBM Open Enterprise SDK for Python:
    https://www.ibm.com/products/open-enterprise-python-zos
 

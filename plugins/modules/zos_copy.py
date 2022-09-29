@@ -1888,20 +1888,30 @@ def run_module(module, arg_def):
 def main():
     module = AnsibleModule(
         argument_spec=dict(
-            src=dict(type='path'),
-            dest=dict(required=True, type='str'),
-            is_binary=dict(type='bool', default=False),
-            encoding=dict(type='dict'),
-            content=dict(type='str', no_log=True),
             backup=dict(type='bool', default=False),
             backup_name=dict(type='str'),
-            model_ds=dict(type='str', required=False),
+            content=dict(type='str', no_log=True),
+            dest=dict(required=True, type='str'),
+            encoding=dict(
+                type='dict',
+                required=False,
+                options={
+                    'from': dict(type='str', required=True),
+                    'to': dict(type='str', required=True)
+                }
+            ),
+            force=dict(type='bool', default=False),
+            ignore_sftp_stderr=dict(type='bool', default=False),
+            is_binary=dict(type='bool', default=False),
             local_follow=dict(type='bool', default=True),
+            mode=dict(type='str', required=False),
+            model_ds=dict(type='str', required=False),
             remote_src=dict(type='bool', default=False),
             sftp_port=dict(type='int', required=False),
-            ignore_sftp_stderr=dict(type='bool', default=False),
+            src=dict(type='path'),
             validate=dict(type='bool'),
             volume=dict(type='str', required=False),
+            # These arguments come from the action plugin.
             is_uss=dict(type='bool'),
             is_pds=dict(type='bool'),
             is_mvs_dest=dict(type='bool'),
@@ -1910,7 +1920,6 @@ def main():
             copy_member=dict(type='bool'),
             src_member=dict(type='bool'),
             local_charset=dict(type='str'),
-            force=dict(type='bool', default=False)
         ),
         add_file_common_args=True,
     )

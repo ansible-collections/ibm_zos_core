@@ -1726,9 +1726,9 @@ def run_module():
 
     module_args = dict(
         program_name=dict(type="str", aliases=["program", "pgm"], required=True),
+        parm=dict(type="str", required=False),
         auth=dict(type="bool", default=False),
         verbose=dict(type="bool", default=False),
-        parm=dict(type="str", required=False),
         dds=dict(
             type="list",
             elements="dict",

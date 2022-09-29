@@ -343,20 +343,20 @@ def main():
             aliases=['path', 'destfile', 'name'],
             required=True
         ),
+        regexp=dict(type='str'),
         state=dict(
             type='str',
             default='present',
             choices=['absent', 'present']
         ),
-        regexp=dict(type='str'),
         line=dict(type='str'),
+        backrefs=dict(type='bool', default=False),
         insertafter=dict(
             type='str',
         ),
         insertbefore=dict(
             type='str',
         ),
-        backrefs=dict(type='bool', default=False),
         backup=dict(type='bool', default=False),
         backup_name=dict(type='str', required=False, default=None),
         firstmatch=dict(type='bool', default=False),

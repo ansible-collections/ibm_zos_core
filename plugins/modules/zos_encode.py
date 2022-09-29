@@ -326,10 +326,10 @@ def verify_uss_path_exists(file):
 
 def run_module():
     module_args = dict(
-        src=dict(type="str", required=True),
-        dest=dict(type="str"),
         from_encoding=dict(type="str", default="IBM-1047"),
         to_encoding=dict(type="str", default="ISO8859-1"),
+        src=dict(type="str", required=True),
+        dest=dict(type="str"),
         backup=dict(type="bool", default=False),
         backup_name=dict(type="str", required=False, default=None),
         backup_compress=dict(type="bool", required=False, default=False),

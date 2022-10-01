@@ -14,4 +14,6 @@ bugfixes:
     zos_job_submit - fixes a bug where an option was not defined in the module
     argument spec that will result in error when running `ansible-core` 2.11
     and using option `encoding`.
+    jobs.py - fixes a utility used by module `zos_job_output` would truncate
+    the DD content, issue #354 
     (https://github.com/ansible-collections/ibm_zos_core/pull/462)

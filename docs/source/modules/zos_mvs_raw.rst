@@ -635,6 +635,8 @@ dds
   dd_input
     *dd_input* is used to specify an in-stream data set.
 
+    *dd_input* supports single or multiple lines of input.
+
     Input will be saved to a temporary data set with a record length of 80.
 
     | **required**: False
@@ -650,8 +652,6 @@ dds
 
     content
       The input contents for the DD.
-
-      *dd_input* supports single or multiple lines of input.
 
       Multi-line input can be provided as a multi-line string or a list of strings with 1 line per list item.
 
@@ -687,7 +687,7 @@ dds
       src_encoding
         The encoding of the data set on the z/OS system.
 
-        for *dd_input*, *src_encoding* should generally not need to be changed.
+        *dd_input* and *src_encoding* generally do not need to be changed.
 
         | **required**: False
         | **type**: str
@@ -744,7 +744,7 @@ dds
       src_encoding
         The encoding of the data set on the z/OS system.
 
-        for *dd_input*, *src_encoding* should generally not need to be changed.
+        *dd_input* and *src_encoding* generally do not need to be changed.
 
         | **required**: False
         | **type**: str
@@ -1356,6 +1356,8 @@ dds
       dd_input
         *dd_input* is used to specify an in-stream data set.
 
+        *dd_input* supports single or multiple lines of input.
+
         Input will be saved to a temporary data set with a record length of 80.
 
         | **required**: False
@@ -1364,8 +1366,6 @@ dds
 
         content
           The input contents for the DD.
-
-          *dd_input* supports single or multiple lines of input.
 
           Multi-line input can be provided as a multi-line string or a list of strings with 1 line per list item.
 
@@ -1401,7 +1401,7 @@ dds
           src_encoding
             The encoding of the data set on the z/OS system.
 
-            for *dd_input*, *src_encoding* should generally not need to be changed.
+            *dd_input* and *src_encoding* generally do not need to be changed.
 
             | **required**: False
             | **type**: str

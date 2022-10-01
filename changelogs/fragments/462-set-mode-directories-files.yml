@@ -1,0 +1,17 @@
+bugfixes:
+  - >
+    zos_copy - fixes a bug that when a directory is copied from the controller
+    to the managed node and a mode is set, the mode is now applied to the
+    directory on the controller. If the directory being copied contains files
+    and mode is set, mode will only be applied to the files being copied not the
+    pre-existing files.
+    zos_copy - fixes a bug where options were not defined in the module
+    argument spec that will result in error when running `ansible-core` 2.11
+    and using options `force` or `mode`.
+    zos_fetch - fixes a bug where an option was not defined in the module
+    argument spec that will result in error when running `ansible-core` 2.11
+    and using option `encoding`.
+    zos_job_submit - fixes a bug where an option was not defined in the module
+    argument spec that will result in error when running `ansible-core` 2.11
+    and using option `encoding`.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/462)

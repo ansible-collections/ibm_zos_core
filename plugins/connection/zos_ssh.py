@@ -488,8 +488,8 @@ class Connection(ConnectionBase):
         self.host = self._play_context.remote_addr
         self.port = self._play_context.port
         self.user = self._play_context.remote_user
-        self.control_path = C.ANSIBLE_SSH_CONTROL_PATH
-        self.control_path_dir = C.ANSIBLE_SSH_CONTROL_PATH_DIR
+        self.control_path = None
+        self.control_path_dir = None
 
         # Windows operates differently from a POSIX connection/shell plugin,
         # we need to set various properties to ensure SSH on Windows continues
@@ -755,6 +755,7 @@ class Connection(ConnectionBase):
             self._persistent = True
 
             if not controlpath:
+                self.control_path_dir = self.get_option('control_path_dir')
                 cpdir = unfrackpath(self.control_path_dir)
                 b_cpdir = to_bytes(cpdir, errors="surrogate_or_strict")
 
@@ -765,6 +766,7 @@ class Connection(ConnectionBase):
                         "Cannot write to ControlPath %s" % to_native(cpdir)
                     )
 
+                self.control_path = self.get_option('control_path')
                 if not self.control_path:
                     self.control_path = self._create_control_path(
                         self.host, self.port, self.user

@@ -14,8 +14,8 @@ bugfixes:
     zos_job_submit - fixes a bug where an option was not defined in the module
     argument spec that will result in error when running `ansible-core` 2.11
     and using option `encoding`.
-    jobs.py - fixes a utility used by module `zos_job_output` would truncate
-    the DD content, issue #354
+    jobs.py - fixes a utility used by module `zos_job_output` that would
+    truncate the DD content, issue #354
     zos_ssh - fixes connection plugin which will error when using `ansible-core`
     2.11 with an `AttributeError: module 'ansible.constants' has no attribute
     'ANSIBLE_SSH_CONTROL_PATH_DIR'`, issue #495

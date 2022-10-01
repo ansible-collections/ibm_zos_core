@@ -641,12 +641,12 @@ def run_module():
             options={
                 'from': dict(
                     type='str',
-                    required=True,
+                    required=False,
                     default='ISO8859-1'
                 ),
                 'to': dict(
                     type='str',
-                    required=True,
+                    required=False,
                     default='IBM-1047'
                 )
             }

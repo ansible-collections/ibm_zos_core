@@ -2,7 +2,7 @@
 # Copyright 2015 Abhijit Menon-Sen <ams@2ndQuadrant.com>
 # Copyright 2017 Toshio Kuratomi <tkuratomi@ansible.com>
 # Copyright (c) 2017 Ansible Project
-# Copyright (c) IBM Corporation 2019, 2020
+# Copyright (c) IBM Corporation 2019, 2020, 2022
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import (absolute_import, division, print_function)

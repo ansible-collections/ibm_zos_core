@@ -541,6 +541,7 @@ options:
       dd_input:
         description:
           - I(dd_input) is used to specify an in-stream data set.
+          - I(dd_input) supports single or multiple lines of input.
           - Input will be saved to a temporary data set with a record length of 80.
         required: false
         type: dict
@@ -553,7 +554,6 @@ options:
           content:
             description:
               - The input contents for the DD.
-              - I(dd_input) supports single or multiple lines of input.
               - Multi-line input can be provided as a multi-line string
                 or a list of strings with 1 line per list item.
               - If a list of strings is provided, newlines will be
@@ -1143,6 +1143,7 @@ options:
               dd_input:
                 description:
                   - I(dd_input) is used to specify an in-stream data set.
+                  - I(dd_input) supports single or multiple lines of input.
                   - Input will be saved to a temporary data set with a record length of 80.
                 required: false
                 type: dict
@@ -1150,7 +1151,6 @@ options:
                   content:
                     description:
                       - The input contents for the DD.
-                      - I(dd_input) supports single or multiple lines of input.
                       - Multi-line input can be provided as a multi-line string
                         or a list of strings with 1 line per list item.
                       - If a list of strings is provided, newlines will be

@@ -581,7 +581,7 @@ options:
               src_encoding:
                 description:
                   - The encoding of the data set on the z/OS system.
-                  - for I(dd_input), I(src_encoding) should generally not need to be changed.
+                  - I(dd_input) and I(src_encoding) generally do not need to be changed.
                 type: str
                 default: ibm-1047
               response_encoding:
@@ -622,7 +622,7 @@ options:
               src_encoding:
                 description:
                   - The encoding of the data set on the z/OS system.
-                  - for I(dd_input), I(src_encoding) should generally not need to be changed.
+                  - I(dd_input) and I(src_encoding) generally do not need to be changed.
                 type: str
                 default: ibm-1047
               response_encoding:
@@ -1178,7 +1178,7 @@ options:
                       src_encoding:
                         description:
                           - The encoding of the data set on the z/OS system.
-                          - for I(dd_input), I(src_encoding) should generally not need to be changed.
+                          - I(dd_input) and I(src_encoding) generally do not need to be changed.
                         type: str
                         default: ibm-1047
                       response_encoding:

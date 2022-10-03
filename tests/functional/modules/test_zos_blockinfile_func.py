@@ -147,7 +147,8 @@ Until the issue be addressed I disable related tests.
 ENCODING = ['IBM-1047']
 USS_BACKUP_FILE = "/tmp/backup.tmp"
 MVS_BACKUP_DS = "BLOCKIF.TEST.BACKUP"
-BACKUP_OPTIONS = [None, MVS_BACKUP_DS]
+MVS_BACKUP_PDS = "BLOCKIF.TEST.BACKUP(BACKUP)"
+BACKUP_OPTIONS = [None, MVS_BACKUP_DS, MVS_BACKUP_PDS]
 TEST_ENV = dict(
     TEST_CONT=TEST_CONTENT,
     TEST_DIR="/tmp/zos_blockinfile/",

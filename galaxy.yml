@@ -1,8 +1,8 @@
 # IBM collection namespace
 namespace: ibm
 
-# IBM z/OS core collection as part of the
-# Red Hat Ansible Certified Content for IBM Z offering
+# IBM z/OS core collection as part of
+# Red Hat Ansible Certified Content for IBM Z
 name: ibm_zos_core
 
 # The collection version
@@ -14,10 +14,11 @@ readme: README.md
 # Contributors
 authors:
   - Demetrios Dimatos <ddimatos@us.ibm.com>
-  - Behnam Al Kajbaf <behnam@ibm.com>
-  - Andrew Nguyen <andy.nguyen@ibm.com>
   - Rich Parker <richp@ibm.com>
   - Ketan Kelkar <ketan.kelkar@ibm.com>
+  - Ivan Alejandro Moreno Soto <ivan.moreno.soto@ibm.com>
+  - Oscar Fernando Flores Garcia <fernando.flores@ibm.com>
+  - Jenny Huang <jennyhuang@ibm.com>
 
 # Description
 description: The IBM z/OS core collection includes connection plugins, action plugins, modules, filters and ansible-doc to automate tasks on z/OS.

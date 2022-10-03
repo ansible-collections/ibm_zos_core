@@ -530,6 +530,22 @@ def test_copy_dir_and_change_mode(ansible_zos_module):
         hosts.all.file(path=dest_path, state="absent")
         shutil.rmtree(source_path)
 
+        for result in copy_result.contacted.values():
+            assert result.get("msg") is None
+            assert result.get("changed") is True
+            assert result.get("dest") == dest_path
+        for result in stat_dir_res.contacted.values():
+            assert result.get("stat").get("exists") is True
+            assert result.get("stat").get("isdir") is True
+            assert result.get("stat").get("mode") == mode
+        for result in stat_subdir_res.contacted.values():
+            assert result.get("stat").get("exists") is True
+            assert result.get("stat").get("isdir") is True
+            assert result.get("stat").get("mode") == mode
+        for result in stat_file_res.contacted.values():
+            assert result.get("stat").get("exists") is True
+            assert result.get("stat").get("isdir") is False
+            assert result.get("stat").get("mode") == mode
 
 @pytest.mark.uss
 @pytest.mark.seq
@@ -568,6 +584,10 @@ def test_copy_file_to_non_existing_sequential_data_set(ansible_zos_module, src):
     finally:
         hosts.all.zos_data_set(name=dest, state="absent")
 
+        if src["is_file"]:
+            copy_result = hosts.all.zos_copy(src=src["src"], dest=dest, remote_src=src["is_remote"], is_binary=src["is_binary"])
+        else:
+            copy_result = hosts.all.zos_copy(content=src["src"], dest=dest, remote_src=src["is_remote"], is_binary=src["is_binary"])
 
 @pytest.mark.uss
 @pytest.mark.seq

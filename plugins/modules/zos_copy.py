@@ -158,6 +158,7 @@ options:
     required: false
     default: false
     version_added: "1.4.0"
+    version_added: "1.4.0"
   is_binary:
     description:
       - If set to C(true), indicates that the file or data set to be copied is a
@@ -434,7 +435,7 @@ EXAMPLES = r"""
       from: UTF-8
       to: IBM-037
 
-- name: Copy a VSAM (KSDS) to a VSAM (KSDS)
+- name: Copy a VSAM  (KSDS) to a VSAM  (KSDS)
   zos_copy:
     src: SAMPLE.SRC.VSAM
     dest: SAMPLE.DEST.VSAM
@@ -2317,7 +2318,7 @@ def main():
             remote_src=dict(type='bool', default=False),
             sftp_port=dict(type='int', required=False),
             ignore_sftp_stderr=dict(type='bool', default=False),
-            validate=dict(type='bool', default=False),
+            validate=dict(type='bool', default=False, default=False),
             volume=dict(type='str', required=False),
             dest_data_set=dict(
                 type='dict',
@@ -2362,6 +2363,7 @@ def main():
             copy_member=dict(type='bool'),
             src_member=dict(type='bool'),
             local_charset=dict(type='str'),
+            force=dict(type='bool', default=False),
             force=dict(type='bool', default=False)
         ),
         add_file_common_args=True,
@@ -2434,6 +2436,17 @@ def main():
                 to_encoding=dict(arg_type="encoding"),
             )
         )
+
+    if not module.params.get("destination_dataset"):
+        module.params["destination_dataset"] = {
+            "dd_type": "BASIC",
+            "space_primary": 5,
+            "space_secondary": 3,
+            "space_type": 'TRK',
+            "record_format": 'FB',
+            "record_length": 80,
+            "block_size": 6147,
+        }
 
     res_args = temp_path = conv_path = None
     try:

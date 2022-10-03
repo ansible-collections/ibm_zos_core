@@ -21,14 +21,14 @@ Version 1.4.0-beta.2
 
   * Documentation
 
-  * Review 1.4.0-beta.1 release notes for additional content. :ref:`.. _1.4.0-beta.1 overview:`
+  * Review :ref:`version 1.4.0-beta.1<my-reference-label>` release notes for additional content.
 
 * Deprecated or removed
 
   * ``zos_copy`` module option **destination_dataset** has been renamed to
     **dest_data_set**.
 
-  * Review 1.4.0-beta.1 release notes for additional content. :ref:`.. _1.4.0-beta.1 overview:`
+  * Review :ref:`version 1.4.0-beta.1<my-reference-label>` release notes for additional content.
 
 
 Availability
@@ -49,13 +49,13 @@ Reference
 Known Issues
 ------------
 
-* Review 1.4.0-beta.1 release notes for additional content. :ref:`.. _1.4.0-beta.1 overview:`
+* Review :ref:`version 1.4.0-beta.1<my-reference-label>` release notes for additional content.
 
 Deprecation Notices
 -------------------
-* Review 1.4.0-beta.1 release notes for additional content. :ref:`.. _1.4.0-beta.1 overview:`
+* Review :ref:`version 1.4.0-beta.1<my-reference-label>` release notes for additional content.
 
-.. _1.4.0-beta.1 overview:
+.. _my-reference-label:
 
 Version 1.4.0-beta.1
 ====================

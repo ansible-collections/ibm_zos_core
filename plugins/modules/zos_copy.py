@@ -1070,10 +1070,15 @@ class USSCopyHandler(CopyHandler):
         new_src_dir = temp_path or conv_path or src_dir
         new_src_dir = os.path.normpath(new_src_dir)
 
-        changed_files = self._get_changed_files(new_src_dir)
+        changed_files, original_permissions = self._get_changed_files(new_src_dir, dest_dir)
 
         try:
             dest = shutil.copytree(new_src_dir, dest_dir, dirs_exist_ok=force)
+
+            # Restoring permissions for preexisting files and subdirectories.
+            for filepath, permissions in original_permissions:
+                mode = "0{0:o}".format(stat.S_IMODE(permissions))
+                self.module.set_mode_if_different(os.path.join(dest, filepath), mode, False)
         except Exception as err:
             raise CopyOperationError(
                 msg="Error while copying data to destination directory {0}".format(dest_dir),
@@ -1081,28 +1086,56 @@ class USSCopyHandler(CopyHandler):
             )
         return dest, changed_files
 
-    def _get_changed_files(self, dir):
+    def _get_changed_files(self, src, dest):
         """Traverses a source directory and gets all the paths to files and
         subdirectories that got copied into a destination.
 
         Arguments:
-            dir (str) -- Path to the directory where files are copied from.
+            src (str) -- Path to the directory where files are copied from.
+            dest (str) -- Path to the directory where files are copied into.
 
         Returns:
-            list -- A list of paths for all subdirectories and files that got copied.
+            tuple -- A list of paths for all new subdirectories and files that
+                     got copied into dest, and a list of the permissions
+                     for the files and directories already present on the
+                     destination.
+        """
+        original_files = self._walk_uss_tree(dest) if os.path.exists(dest) else []
+        copied_files = self._walk_uss_tree(src)
+
+        changed_files = [
+            relative_path for relative_path in copied_files
+            if relative_path not in original_files
+        ]
+
+        # Creating tuples with (filename, permissions).
+        original_permissions = [
+            (filepath, os.stat(os.path.join(dest, filepath)).st_mode)
+            for filepath in original_files
+        ]
+
+        return changed_files, original_permissions
+
+    def _walk_uss_tree(self, dir):
+        """Walks the tree directory for dir and returns all relative paths
+        found.
+        Arguments:
+            dir (str) -- Path to the directory to traverse.
+        Returns:
+            list -- List of relative paths to all content inside dir.
         """
         original_working_dir = os.getcwd()
         # The function gets relative paths, so it changes the current working
-        # directory to the root of dir.
+        # directory to the root of src.
         os.chdir(dir)
-        changed_files = []
+        paths = []
 
         for dirpath, subdirs, files in os.walk(".", True):
-            changed_files += [
+            paths += [
                 os.path.join(dirpath, subdir).replace("./", "")
                 for subdir in subdirs
             ]
-            changed_files += [
+            paths += [
                 os.path.join(dirpath, filepath).replace("./", "")
                 for filepath in files
             ]
@@ -1111,7 +1144,7 @@ class USSCopyHandler(CopyHandler):
         # interfere with the rest of the module.
         os.chdir(original_working_dir)
 
-        return changed_files
+        return paths
 
     def _mvs_copy_to_uss(
         self,

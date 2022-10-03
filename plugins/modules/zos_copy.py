@@ -2318,7 +2318,7 @@ def main():
             remote_src=dict(type='bool', default=False),
             sftp_port=dict(type='int', required=False),
             ignore_sftp_stderr=dict(type='bool', default=False),
-            validate=dict(type='bool', default=False, default=False),
+            validate=dict(type='bool', default=False),
             volume=dict(type='str', required=False),
             dest_data_set=dict(
                 type='dict',
@@ -2363,7 +2363,6 @@ def main():
             copy_member=dict(type='bool'),
             src_member=dict(type='bool'),
             local_charset=dict(type='str'),
-            force=dict(type='bool', default=False),
             force=dict(type='bool', default=False)
         ),
         add_file_common_args=True,

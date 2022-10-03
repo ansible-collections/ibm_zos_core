@@ -428,7 +428,7 @@ Examples
          from: UTF-8
          to: IBM-037
 
-   - name: Copy a VSAM (KSDS) to a VSAM (KSDS)
+   - name: Copy a VSAM  (KSDS) to a VSAM  (KSDS)
      zos_copy:
        src: SAMPLE.SRC.VSAM
        dest: SAMPLE.DEST.VSAM

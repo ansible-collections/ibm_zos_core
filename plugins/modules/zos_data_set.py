@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020
+# Copyright (c) IBM Corporation 2019, 2020, 2022
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -913,6 +913,68 @@ def parse_and_validate_args(params):
     params = fix_old_size_arg(params)
 
     arg_defs = dict(
+        # For individual data set args
+        name=dict(
+            type=data_set_name,
+            default=data_set_name,
+            required=False,
+            dependencies=["type", "state", "batch"],
+        ),
+        state=dict(
+            type="str",
+            default="present",
+            choices=["present", "absent", "cataloged", "uncataloged"],
+        ),
+        type=dict(type=data_set_type, required=False, dependencies=["state"]),
+        space_type=dict(type=space_type, required=False, dependencies=["state"]),
+        space_primary=dict(type="int", required=False, dependencies=["state"]),
+        space_secondary=dict(type="int", required=False, dependencies=["state"]),
+        record_format=dict(
+            type=record_format,
+            required=False,
+            dependencies=["state"],
+            aliases=["format"],
+        ),
+        sms_management_class=dict(
+            type=sms_class, required=False, dependencies=["state"]
+        ),
+        # I know this alias is odd, ZOAU used to document they supported
+        # SMS data class when they were actually passing as storage class
+        # support for backwards compatability with previous module versions
+        sms_storage_class=dict(
+            type=sms_class,
+            required=False,
+            dependencies=["state"],
+            aliases=["data_class"],
+        ),
+        sms_data_class=dict(type=sms_class, required=False, dependencies=["state"]),
+        block_size=dict(
+            type=valid_when_state_present,
+            required=False,
+            dependencies=["state"],
+        ),
+        directory_blocks=dict(
+            type=valid_when_state_present,
+            required=False,
+            dependencies=["state"],
+        ),
+        record_length=dict(
+            type=record_length,
+            required=False,
+            dependencies=["state", "record_format"],
+        ),
+        key_offset=dict(type=valid_when_state_present, required=False),
+        key_length=dict(type=valid_when_state_present, required=False),
+        replace=dict(
+            type="bool",
+            default=False,
+        ),
+        volumes=dict(
+            type=volumes,
+            required=False,
+            aliases=["volume"],
+            dependencies=["state"],
+        ),
         # Used for batch data set args
         batch=dict(
             type="list",
@@ -993,68 +1055,6 @@ def parse_and_validate_args(params):
                     dependencies=["state"],
                 ),
             ),
-        ),
-        # For individual data set args
-        name=dict(
-            type=data_set_name,
-            default=data_set_name,
-            required=False,
-            dependencies=["type", "state", "batch"],
-        ),
-        state=dict(
-            type="str",
-            default="present",
-            choices=["present", "absent", "cataloged", "uncataloged"],
-        ),
-        type=dict(type=data_set_type, required=False, dependencies=["state"]),
-        space_type=dict(type=space_type, required=False, dependencies=["state"]),
-        space_primary=dict(type="int", required=False, dependencies=["state"]),
-        space_secondary=dict(type="int", required=False, dependencies=["state"]),
-        record_format=dict(
-            type=record_format,
-            required=False,
-            dependencies=["state"],
-            aliases=["format"],
-        ),
-        sms_management_class=dict(
-            type=sms_class, required=False, dependencies=["state"]
-        ),
-        # I know this alias is odd, ZOAU used to document they supported
-        # SMS data class when they were actually passing as storage class
-        # support for backwards compatability with previous module versions
-        sms_storage_class=dict(
-            type=sms_class,
-            required=False,
-            dependencies=["state"],
-            aliases=["data_class"],
-        ),
-        sms_data_class=dict(type=sms_class, required=False, dependencies=["state"]),
-        block_size=dict(
-            type=valid_when_state_present,
-            required=False,
-            dependencies=["state"],
-        ),
-        directory_blocks=dict(
-            type=valid_when_state_present,
-            required=False,
-            dependencies=["state"],
-        ),
-        record_length=dict(
-            type=record_length,
-            required=False,
-            dependencies=["state", "record_format"],
-        ),
-        key_offset=dict(type=valid_when_state_present, required=False),
-        key_length=dict(type=valid_when_state_present, required=False),
-        replace=dict(
-            type="bool",
-            default=False,
-        ),
-        volumes=dict(
-            type=volumes,
-            required=False,
-            aliases=["volume"],
-            dependencies=["state"],
         ),
         mutually_exclusive=[
             ["batch", "name"],
@@ -1146,16 +1146,20 @@ def run_module():
             dependencies=["batch"],
         ),
         type=dict(type="str", required=False, default="PDS"),
-        space_type=dict(type="str", required=False, default="M"),
         space_primary=dict(type="raw", required=False, aliases=["size"]),
         space_secondary=dict(type="int", required=False),
+        space_type=dict(type="str", required=False, default="M"),
         record_format=dict(type="str", required=False, aliases=["format"]),
-        sms_management_class=dict(type="str", required=False),
         # I know this alias is odd, ZOAU used to document they supported
         # SMS data class when they were actually passing as storage class
         # support for backwards compatability with previous module versions
         sms_storage_class=dict(type="str", required=False, aliases=["data_class"]),
         sms_data_class=dict(type="str", required=False),
+        sms_management_class=dict(type="str", required=False),
+        record_length=dict(
+            type="int",
+            required=False,
+        ),
         block_size=dict(
             type="int",
             required=False,
@@ -1164,20 +1168,16 @@ def run_module():
             type="int",
             required=False,
         ),
-        record_length=dict(
-            type="int",
-            required=False,
-        ),
         key_offset=dict(type="int", required=False),
         key_length=dict(type="int", required=False),
-        replace=dict(
-            type="bool",
-            default=False,
-        ),
         volumes=dict(
             type="raw",
             required=False,
             aliases=["volume"],
+        ),
+        replace=dict(
+            type="bool",
+            default=False,
         ),
     )
     result = dict(changed=False, message="", names=[])

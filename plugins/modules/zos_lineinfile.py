@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020
+# Copyright (c) IBM Corporation 2020, 2022
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -343,20 +343,20 @@ def main():
             aliases=['path', 'destfile', 'name'],
             required=True
         ),
+        regexp=dict(type='str'),
         state=dict(
             type='str',
             default='present',
             choices=['absent', 'present']
         ),
-        regexp=dict(type='str'),
         line=dict(type='str'),
+        backrefs=dict(type='bool', default=False),
         insertafter=dict(
             type='str',
         ),
         insertbefore=dict(
             type='str',
         ),
-        backrefs=dict(type='bool', default=False),
         backup=dict(type='bool', default=False),
         backup_name=dict(type='str', required=False, default=None),
         firstmatch=dict(type='bool', default=False),

@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2019, 2020
+# Copyright (c) IBM Corporation 2019, 2020, 2022
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -260,7 +260,7 @@ do ix=1 to isfrows
         Address SDSF "ISFBROWSE ST TOKEN('"token.ix"')"
         untilline = linecount + JDS_RECCNT.jx
         startingcount = linecount + 1
-        do kx=linecount+1 to  untilline
+        do kx=1 to isfline.0
             linecount = linecount + 1
             Say isfline.kx
         end

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020
+# Copyright (c) IBM Corporation 2019, 2020, 2022
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -946,8 +946,9 @@ class USSCopyHandler(CopyHandler):
         else:
             if os.path.isfile(temp_path or conv_path or src):
                 dest = self._copy_to_file(src, dest, conv_path, temp_path)
+                changed_files = None
             else:
-                dest = self._copy_to_dir(src, dest, conv_path, temp_path, force)
+                dest, changed_files = self._copy_to_dir(src, dest, conv_path, temp_path, force)
 
         if self.common_file_args is not None:
             mode = self.common_file_args.get("mode")
@@ -955,6 +956,10 @@ class USSCopyHandler(CopyHandler):
             owner = self.common_file_args.get("owner")
             if mode is not None:
                 self.module.set_mode_if_different(dest, mode, False)
+
+                if changed_files:
+                    for filepath in changed_files:
+                        self.module.set_mode_if_different(os.path.join(dest, filepath), mode, False)
             if group is not None:
                 self.module.set_group_if_different(dest, group, False)
             if owner is not None:
@@ -999,19 +1004,34 @@ class USSCopyHandler(CopyHandler):
 
         Arguments:
             src_dir {str} -- USS source directory
-            dest {str} -- USS dest directory
+            dest_dir {str} -- USS dest directory
             temp_path {str} -- Path to the location where the control node
                                transferred data to
             conv_path {str} -- Path to the converted source directory
             force {bool} -- Whether to copy files to an already existing directory
 
         Returns:
-            {str} -- Destination where the directory was copied to
+            {tuple} -- Destination where the directory was copied to, and
+                       a list of paths for all subdirectories and files
+                       that got copied.
         """
+        if temp_path:
+            temp_path = "{0}/{1}".format(
+                temp_path,
+                os.path.basename(os.path.normpath(src_dir))
+            )
+
         new_src_dir = temp_path or conv_path or src_dir
+        new_src_dir = os.path.normpath(new_src_dir)
+        changed_files, original_permissions = self._get_changed_files(new_src_dir, dest_dir)
 
         try:
-            shutil.copytree(new_src_dir, dest_dir, dirs_exist_ok=force)
+            dest = shutil.copytree(new_src_dir, dest_dir, dirs_exist_ok=force)
+
+            # Restoring permissions for preexisting files and subdirectories.
+            for filepath, permissions in original_permissions:
+                mode = "0{0:o}".format(stat.S_IMODE(permissions))
+                self.module.set_mode_if_different(os.path.join(dest, filepath), mode, False)
         except Exception as err:
             self.fail_json(
                 msg="Error while copying data to destination directory {0}".format(
@@ -1019,7 +1039,68 @@ class USSCopyHandler(CopyHandler):
                 ),
                 stdout=str(err),
             )
-        return dest_dir
+        return dest, changed_files
+
+    def _get_changed_files(self, src, dest):
+        """Traverses a source directory and gets all the paths to files and
+        subdirectories that got copied into a destination.
+        Arguments:
+            src (str) -- Path to the directory where files are copied from.
+            dest (str) -- Path to the directory where files are copied into.
+
+        Returns:
+            tuple -- A list of paths for all new subdirectories and files that
+                     got copied into dest, and a list of the permissions
+                     for the files and directories already present on the
+                     destination.
+        """
+        original_files = self._walk_uss_tree(dest) if os.path.exists(dest) else []
+        copied_files = self._walk_uss_tree(src)
+
+        changed_files = [
+            relative_path for relative_path in copied_files
+            if relative_path not in original_files
+        ]
+
+        # Creating tuples with (filename, permissions).
+        original_permissions = [
+            (filepath, os.stat(os.path.join(dest, filepath)).st_mode)
+            for filepath in original_files
+        ]
+
+        return changed_files, original_permissions
+
+    def _walk_uss_tree(self, dir):
+        """Walks the tree directory for dir and returns all relative paths
+        found.
+
+        Arguments:
+            dir (str) -- Path to the directory to traverse.
+
+        Returns:
+            list -- List of relative paths to all content inside dir.
+        """
+        original_working_dir = os.getcwd()
+        # The function gets relative paths, so it changes the current working
+        # directory to the root of src.
+        os.chdir(dir)
+        paths = []
+
+        for dirpath, subdirs, files in os.walk(".", True):
+            paths += [
+                os.path.join(dirpath, subdir).replace("./", "")
+                for subdir in subdirs
+            ]
+            paths += [
+                os.path.join(dirpath, filepath).replace("./", "")
+                for filepath in files
+            ]
+
+        # Returning the current working directory to what it was before to not
+        # interfere with the rest of the module.
+        os.chdir(original_working_dir)
+
+        return paths
 
     def _mvs_copy_to_uss(
         self,
@@ -1807,20 +1888,30 @@ def run_module(module, arg_def):
 def main():
     module = AnsibleModule(
         argument_spec=dict(
-            src=dict(type='path'),
-            dest=dict(required=True, type='str'),
-            is_binary=dict(type='bool', default=False),
-            encoding=dict(type='dict'),
-            content=dict(type='str', no_log=True),
             backup=dict(type='bool', default=False),
             backup_name=dict(type='str'),
-            model_ds=dict(type='str', required=False),
+            content=dict(type='str', no_log=True),
+            dest=dict(required=True, type='str'),
+            encoding=dict(
+                type='dict',
+                required=False,
+                options={
+                    'from': dict(type='str', required=True),
+                    'to': dict(type='str', required=True)
+                }
+            ),
+            force=dict(type='bool', default=False),
+            ignore_sftp_stderr=dict(type='bool', default=False),
+            is_binary=dict(type='bool', default=False),
             local_follow=dict(type='bool', default=True),
+            mode=dict(type='str', required=False),
+            model_ds=dict(type='str', required=False),
             remote_src=dict(type='bool', default=False),
             sftp_port=dict(type='int', required=False),
-            ignore_sftp_stderr=dict(type='bool', default=False),
+            src=dict(type='path'),
             validate=dict(type='bool'),
             volume=dict(type='str', required=False),
+            # These arguments come from the action plugin.
             is_uss=dict(type='bool'),
             is_pds=dict(type='bool'),
             is_mvs_dest=dict(type='bool'),
@@ -1828,7 +1919,7 @@ def main():
             temp_path=dict(type='str'),
             copy_member=dict(type='bool'),
             src_member=dict(type='bool'),
-            local_charset=dict(type='str')
+            local_charset=dict(type='str'),
         ),
         add_file_common_args=True,
     )

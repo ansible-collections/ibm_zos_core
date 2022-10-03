@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020
+# Copyright (c) IBM Corporation 2020, 2022
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -541,6 +541,7 @@ options:
       dd_input:
         description:
           - I(dd_input) is used to specify an in-stream data set.
+          - I(dd_input) supports single or multiple lines of input.
           - Input will be saved to a temporary data set with a record length of 80.
         required: false
         type: dict
@@ -553,7 +554,6 @@ options:
           content:
             description:
               - The input contents for the DD.
-              - I(dd_input) supports single or multiple lines of input.
               - Multi-line input can be provided as a multi-line string
                 or a list of strings with 1 line per list item.
               - If a list of strings is provided, newlines will be
@@ -581,7 +581,7 @@ options:
               src_encoding:
                 description:
                   - The encoding of the data set on the z/OS system.
-                  - for I(dd_input), I(src_encoding) should generally not need to be changed.
+                  - I(dd_input) and I(src_encoding) generally do not need to be changed.
                 type: str
                 default: ibm-1047
               response_encoding:
@@ -622,7 +622,7 @@ options:
               src_encoding:
                 description:
                   - The encoding of the data set on the z/OS system.
-                  - for I(dd_input), I(src_encoding) should generally not need to be changed.
+                  - I(dd_input) and I(src_encoding) generally do not need to be changed.
                 type: str
                 default: ibm-1047
               response_encoding:
@@ -1143,6 +1143,7 @@ options:
               dd_input:
                 description:
                   - I(dd_input) is used to specify an in-stream data set.
+                  - I(dd_input) supports single or multiple lines of input.
                   - Input will be saved to a temporary data set with a record length of 80.
                 required: false
                 type: dict
@@ -1150,7 +1151,6 @@ options:
                   content:
                     description:
                       - The input contents for the DD.
-                      - I(dd_input) supports single or multiple lines of input.
                       - Multi-line input can be provided as a multi-line string
                         or a list of strings with 1 line per list item.
                       - If a list of strings is provided, newlines will be
@@ -1178,7 +1178,7 @@ options:
                       src_encoding:
                         description:
                           - The encoding of the data set on the z/OS system.
-                          - for I(dd_input), I(src_encoding) should generally not need to be changed.
+                          - I(dd_input) and I(src_encoding) generally do not need to be changed.
                         type: str
                         default: ibm-1047
                       response_encoding:
@@ -1726,9 +1726,9 @@ def run_module():
 
     module_args = dict(
         program_name=dict(type="str", aliases=["program", "pgm"], required=True),
+        parm=dict(type="str", required=False),
         auth=dict(type="bool", default=False),
         verbose=dict(type="bool", default=False),
-        parm=dict(type="str", required=False),
         dds=dict(
             type="list",
             elements="dict",

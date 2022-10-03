@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020
+# Copyright (c) IBM Corporation 2019, 2020, 2022
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -625,17 +625,33 @@ def assert_valid_return_code(max_rc, found_rc):
 def run_module():
     module_args = dict(
         src=dict(type="str", required=True),
-        wait=dict(type="bool", required=False),
         location=dict(
             type="str",
             default="DATA_SET",
             choices=["DATA_SET", "USS", "LOCAL"],
         ),
-        encoding=dict(type="dict", required=False),
-        volume=dict(type="str", required=False),
-        return_output=dict(type="bool", required=False, default=True),
+        wait=dict(type="bool", required=False),
         wait_time_s=dict(type="int", default=60),
         max_rc=dict(type="int", required=False),
+        return_output=dict(type="bool", required=False, default=True),
+        volume=dict(type="str", required=False),
+        encoding=dict(
+            type='dict',
+            required=False,
+            options={
+                'from': dict(
+                    type='str',
+                    required=False,
+                    default='ISO8859-1'
+                ),
+                'to': dict(
+                    type='str',
+                    required=False,
+                    default='IBM-1047'
+                )
+            }
+        ),
+        # This argument comes from the action plugin.
         temp_file=dict(type="path", required=False),
     )
 

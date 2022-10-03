@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020
+# Copyright (c) IBM Corporation 2019, 2020, 2022
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -326,10 +326,10 @@ def verify_uss_path_exists(file):
 
 def run_module():
     module_args = dict(
-        src=dict(type="str", required=True),
-        dest=dict(type="str"),
         from_encoding=dict(type="str", default="IBM-1047"),
         to_encoding=dict(type="str", default="ISO8859-1"),
+        src=dict(type="str", required=True),
+        dest=dict(type="str"),
         backup=dict(type="bool", default=False),
         backup_name=dict(type="str", required=False, default=None),
         backup_compress=dict(type="bool", required=False, default=False),

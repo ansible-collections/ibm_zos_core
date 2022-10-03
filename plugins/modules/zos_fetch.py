@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020
+# Copyright (c) IBM Corporation 2019, 2020, 2022
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -542,13 +542,21 @@ def run_module():
             src=dict(required=True, type="str"),
             dest=dict(required=True, type="path"),
             fail_on_missing=dict(required=False, default=True, type="bool"),
+            validate_checksum=dict(required=False, default=True, type="bool"),
             flat=dict(required=False, default=True, type="bool"),
             is_binary=dict(required=False, default=False, type="bool"),
             use_qualifier=dict(required=False, default=False, type="bool"),
-            validate_checksum=dict(required=False, default=True, type="bool"),
-            encoding=dict(required=False, type="dict"),
             sftp_port=dict(type="int", required=False),
+            encoding=dict(
+                type='dict',
+                required=False,
+                options={
+                    'from': dict(type='str', required=True),
+                    'to': dict(type='str', required=True)
+                }
+            ),
             ignore_sftp_stderr=dict(type="bool", default=False, required=False),
+            # This argument comes from the action plugin.
             local_charset=dict(type="str"),
         )
     )

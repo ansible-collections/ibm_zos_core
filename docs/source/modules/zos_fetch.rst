@@ -16,7 +16,7 @@ zos_fetch -- Fetch data from z/OS
 
 Synopsis
 --------
-- This module fetches a UNIX System Services (USS) file, PS (sequential data set), PDS, PDSE, member of a PDS or PDSE, or KSDS (VSAM data set) from a remote z/OS system.
+- This module fetches a UNIX System Services (USS) file, PS  (sequential data set), PDS, PDSE, member of a PDS or PDSE, or KSDS  (VSAM data set) from a remote z/OS system.
 - When fetching a sequential data set, the destination file name will be the same as the data set name.
 - When fetching a PDS or PDSE, the destination will be a directory with the same name as the PDS or PDSE.
 - When fetching a PDS/PDSE member, destination will be a file.
@@ -31,7 +31,7 @@ Parameters
 
 
 src
-  Name of a UNIX System Services (USS) file, PS (sequential data set), PDS, PDSE, member of a PDS, PDSE or KSDS (VSAM data set).
+  Name of a UNIX System Services (USS) file, PS  (sequential data set), PDS, PDSE, member of a PDS, PDSE or KSDS  (VSAM data set).
 
   USS file paths should be absolute paths.
 

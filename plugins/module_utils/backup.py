@@ -35,7 +35,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
     is_member,
     extract_dsname,
     temp_member_name,
-    is_empty,
+    DataSet,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.mvs_cmd import iebcopy
 
@@ -197,7 +197,7 @@ def _copy_ds(ds, bk_ds):
                 ds, out, err
             )
         )
-    if rc != 0 and is_empty(ds):
+    if rc != 0 and DataSet.is_empty(ds):
         rc = 0
     return rc
 

@@ -1,10 +1,85 @@
 .. ...........................................................................
-.. © Copyright IBM Corporation 2020, 2021                                          .
+.. © Copyright IBM Corporation 2020, 2021, 2021                                          .
 .. ...........................................................................
 
 ========
 Releases
 ========
+
+Version 1.4.0-beta.2
+====================
+
+* Bug fixes and enhancements
+
+  * Modules
+
+    * ``zos_copy``
+
+      * introduced an updated creation policy referred to as precedence rules
+        that if `dest_data_set` is set, it will take precedence. If
+        `dest` is an empty data set, the empty data set will be written with the
+        expectation its attributes satisfy the copy. If no precedent rule
+        has been exercised, `dest` will be created with the same attributes of
+        `src`.
+      * introduced new computation capabilities that if `dest` is a nonexistent
+        data set, the attributes assigned will depend on the type of `src`. If
+        `src` is a USS file, `dest` will have a Fixed Block (FB) record format
+        and the remaining attributes will be computed. If `src` is binary,
+        `dest` will have a Fixed Block (FB) record format with a record length
+        of 80, block size of 32760, and the remaining attributes will be
+        computed.
+      * enhanced the force option when `force=true` and the remote file or
+        data set `dest`` is NOT empty, the `dest` will be deleted and recreated
+        with the `src` data set attributes, otherwise it will be recreated with
+        the `dest` data set attributes.
+      *  option `dest_dataset` has been deprecated and removed in favor
+         of the new option `dest_data_set`.
+      * fixes a bug that when a directory is copied from the controller to the
+        managed node and a mode is set, the mode is applied to the directory
+        on the managed node. If the directory being copied contains files and
+        mode is set, mode will only be applied to the files being copied not the
+        pre-existing files.
+      * fixes a bug that did not create a data set on the specified volume.
+      * fixes a bug where a number of attributes were not an option when using
+        `dest_data_set`.
+
+  * Documentation
+
+    * Review :ref:`version 1.4.0-beta.1<my-reference-label>` release notes for additional content.
+
+* Deprecated or removed
+
+  * ``zos_copy`` module option **destination_dataset** has been renamed to
+    **dest_data_set**.
+
+    * Review :ref:`version 1.4.0-beta.1<my-reference-label>` release notes for additional content.
+
+
+Availability
+------------
+
+* `Galaxy`_
+* `GitHub`_
+
+Reference
+---------
+
+* Supported by `z/OS V2R3`_ or later
+* Supported by the `z/OS® shell`_
+* Supported by `IBM Open Enterprise SDK for Python`_ 3.8.2 or later
+* Supported by IBM `Z Open Automation Utilities 1.1.0`_ and
+  `Z Open Automation Utilities 1.1.1`_
+
+Known Issues
+------------
+
+* Review :ref:`version 1.4.0-beta.1<my-reference-label>` release notes for additional content.
+
+Deprecation Notices
+-------------------
+* Review :ref:`version 1.4.0-beta.1<my-reference-label>` release notes for additional content.
+
+.. _my-reference-label:
 
 Version 1.4.0-beta.1
 ====================
@@ -162,6 +237,46 @@ release.
 
 .. _SSH port:
    https://docs.ansible.com/ansible/latest/collections/ansible/builtin/ssh_connection.html#parameter-port
+
+Version 1.3.4
+=============
+
+What's New
+----------
+
+* Bug Fixes
+
+  * Modules
+
+    * ``zos_ssh`` connection plugin was updated to correct a bug in Ansible that
+      would result in playbook task ``retries`` overriding the SSH connection
+      ``retries``. This is resolved by renaming the ``zos_ssh`` option
+      ``retries`` to ``reconnection_retries``. The update addresses users of
+      ``ansible-core`` v2.9 which continues to use ``retries`` and users of
+      ``ansible-core`` v2.11 or later which uses ``reconnection_retries``. This
+      also resolves a bug in the connection that referenced a deprecated
+      constant.
+    * ``zos_job_output`` fixes a bug that returned all ddname's when a specific
+      ddname was provided. Now a specific ddname can be returned and all others
+      ignored.
+    * ``zos_copy`` fixes a bug that would not copy subdirectories. If the source
+      is a directory with sub directories, all sub directories will now be copied.
+
+Availability
+------------
+
+* `Automation Hub`_
+* `Galaxy`_
+* `GitHub`_
+
+Reference
+---------
+
+* Supported by `z/OS V2R3`_ or later
+* Supported by the `z/OS® shell`_
+* Supported by `IBM Open Enterprise SDK for Python`_ 3.8.2 or later
+* Supported by IBM `Z Open Automation Utilities 1.1.0`_ and
+  `Z Open Automation Utilities 1.1.1`_
 
 Version 1.3.1
 =============

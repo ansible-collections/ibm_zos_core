@@ -547,6 +547,7 @@ def test_copy_dir_and_change_mode(ansible_zos_module):
             assert result.get("stat").get("isdir") is False
             assert result.get("stat").get("mode") == mode
 
+
 @pytest.mark.uss
 @pytest.mark.seq
 @pytest.mark.parametrize("src", [
@@ -588,6 +589,7 @@ def test_copy_file_to_non_existing_sequential_data_set(ansible_zos_module, src):
             copy_result = hosts.all.zos_copy(src=src["src"], dest=dest, remote_src=src["is_remote"], is_binary=src["is_binary"])
         else:
             copy_result = hosts.all.zos_copy(content=src["src"], dest=dest, remote_src=src["is_remote"], is_binary=src["is_binary"])
+
 
 @pytest.mark.uss
 @pytest.mark.seq

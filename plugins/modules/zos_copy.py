@@ -158,7 +158,6 @@ options:
     required: false
     default: false
     version_added: "1.4.0"
-    version_added: "1.4.0"
   is_binary:
     description:
       - If set to C(true), indicates that the file or data set to be copied is a

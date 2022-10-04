@@ -295,13 +295,13 @@ sdsfcmd = False
 fwd = WORD(command, 1)
 ffwd = translate(fwd)
 fch = SUBSTR( fwd, 1, 1)
-if( ffwd == 'QUERY' | ffwd == 'SET' | ffwd == 'WHO' | fch == '/' ) then
+if( ffwd == "QUERY" | ffwd == 'WHO' | fch == '/' ) then
   do
     sdsfcmd = True
   end
 if sdsfcmd == True then
   do
-    address SDSF "ISFEXEC " command verbose
+    address SDSF "ISFEXEC '" command"'" verbose
   end
 else
   do

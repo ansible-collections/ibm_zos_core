@@ -1000,14 +1000,16 @@ class USSCopyHandler(CopyHandler):
         return dest
 
     def _copy_to_dir(self, src_dir, dest_dir, conv_path, temp_path, force):
-        """Helper function to copy a USS directory to another USS directory
+        """Helper function to copy a USS directory to another USS directory.
+        If the path for dest_dir does not end with a trailing slash ("/"),
+        the src_dir itself will be copied into the destination.
 
         Arguments:
             src_dir {str} -- USS source directory
             dest_dir {str} -- USS dest directory
+            conv_path {str} -- Path to the converted source directory
             temp_path {str} -- Path to the location where the control node
                                transferred data to
-            conv_path {str} -- Path to the converted source directory
             force {bool} -- Whether to copy files to an already existing directory
 
         Returns:
@@ -1015,6 +1017,8 @@ class USSCopyHandler(CopyHandler):
                        a list of paths for all subdirectories and files
                        that got copied.
         """
+        copy_directory = True if not src_dir.endswith("/") else False
+
         if temp_path:
             temp_path = "{0}/{1}".format(
                 temp_path,
@@ -1023,15 +1027,20 @@ class USSCopyHandler(CopyHandler):
 
         new_src_dir = temp_path or conv_path or src_dir
         new_src_dir = os.path.normpath(new_src_dir)
-        changed_files, original_permissions = self._get_changed_files(new_src_dir, dest_dir)
+        dest = dest_dir
+        changed_files, original_permissions = self._get_changed_files(new_src_dir, dest_dir, copy_directory)
 
         try:
-            dest = shutil.copytree(new_src_dir, dest_dir, dirs_exist_ok=force)
+            if copy_directory:
+                dest = os.path.join(dest_dir, os.path.basename(os.path.normpath(src_dir)))
+            dest = shutil.copytree(new_src_dir, dest, dirs_exist_ok=force)
+
+            # self.fail_json(msg=f'{dest_dir}, {changed_files}, {original_permissions}')
 
             # Restoring permissions for preexisting files and subdirectories.
             for filepath, permissions in original_permissions:
                 mode = "0{0:o}".format(stat.S_IMODE(permissions))
-                self.module.set_mode_if_different(os.path.join(dest, filepath), mode, False)
+                self.module.set_mode_if_different(os.path.join(dest_dir, filepath), mode, False)
         except Exception as err:
             self.fail_json(
                 msg="Error while copying data to destination directory {0}".format(
@@ -1041,12 +1050,15 @@ class USSCopyHandler(CopyHandler):
             )
         return dest, changed_files
 
-    def _get_changed_files(self, src, dest):
+    def _get_changed_files(self, src, dest, copy_directory):
         """Traverses a source directory and gets all the paths to files and
         subdirectories that got copied into a destination.
         Arguments:
             src (str) -- Path to the directory where files are copied from.
             dest (str) -- Path to the directory where files are copied into.
+            copy_directory (bool) -- Whether the src directory itself will be copied
+                                     into dest. The src basename will get appended
+                                     to filepaths when comparing.
 
         Returns:
             tuple -- A list of paths for all new subdirectories and files that
@@ -1057,9 +1069,13 @@ class USSCopyHandler(CopyHandler):
         original_files = self._walk_uss_tree(dest) if os.path.exists(dest) else []
         copied_files = self._walk_uss_tree(src)
 
+        # It's not needed to normalize the path because it was already normalized
+        # on _copy_to_dir.
+        parent_dir = os.path.basename(src) if copy_directory else ''
+
         changed_files = [
             relative_path for relative_path in copied_files
-            if relative_path not in original_files
+            if os.path.join(parent_dir, relative_path) not in original_files
         ]
 
         # Creating tuples with (filename, permissions).
@@ -1663,7 +1679,13 @@ def run_module(module, arg_def):
     #    to 'preserve'
     # ********************************************************************
     if remote_src and "/" in src:
-        src = os.path.realpath(src)
+        # Keeping the trailing slash because the CopyHandler will do
+        # different things depending on its existence.
+        if src.endswith("/"):
+            src = "{0}/".format(os.path.realpath(src))
+        else:
+            src = os.path.realpath(src)
+
         if not os.path.exists(src):
             module.fail_json(msg="Source {0} does not exist".format(src))
         if not os.access(src, os.R_OK):

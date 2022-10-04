@@ -597,6 +597,9 @@ def test_copy_file_to_non_existing_sequential_data_set(ansible_zos_module, src):
     dict(src="/etc/profile", is_file=True, force=True, is_remote=False),
     dict(src="Example inline content", is_file=False, force=True, is_remote=False),
     dict(src="/etc/profile", is_file=True, force=True, is_remote=True),
+    dict(src="/etc/profile", is_file=True, force=False, is_remote=False),
+    dict(src="Example inline content", is_file=False, force=False, is_remote=False),
+    dict(src="/etc/profile", is_file=True, force=False, is_remote=True),
 ])
 def test_copy_file_to_empty_sequential_data_set(ansible_zos_module, src):
     hosts = ansible_zos_module
@@ -614,33 +617,6 @@ def test_copy_file_to_empty_sequential_data_set(ansible_zos_module, src):
             assert result.get("msg") is None
             assert result.get("changed") is True
             assert result.get("dest") == dest
-    finally:
-        hosts.all.zos_data_set(name=dest, state="absent")
-
-
-@pytest.mark.uss
-@pytest.mark.seq
-@pytest.mark.parametrize("src", [
-    dict(src="/etc/profile", is_file=True, force=False, is_remote=False),
-    dict(src="Example inline content", is_file=False, force=False, is_remote=False),
-    dict(src="/etc/profile", is_file=True, force=False, is_remote=True),
-])
-def test_copy_file_to_empty_sequential_data_set_force_false(ansible_zos_module, src):
-    hosts = ansible_zos_module
-    dest = "USER.TEST.SEQ.FUNCTEST"
-
-    try:
-        hosts.all.zos_data_set(name=dest, type="seq", state="present")
-
-        if src["is_file"]:
-            copy_result = hosts.all.zos_copy(src=src["src"], dest=dest, remote_src=src["is_remote"], force=src["force"])
-        else:
-            copy_result = hosts.all.zos_copy(content=src["src"], dest=dest, remote_src=src["is_remote"], force=src["force"])
-
-        for result in copy_result.contacted.values():
-            assert result.get("msg") is not None
-            assert "already exists on the system" in result.get("msg")
-            assert result.get("changed") is False
     finally:
         hosts.all.zos_data_set(name=dest, state="absent")
 

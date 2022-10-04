@@ -1169,7 +1169,7 @@ def main():
         tag_untagged=dict(
             arg_type="str", default="", choices=["", "TEXT", "NOTEXT"], required=False
         ),
-        tag_ccsid=dict(arg_type="str", required=False),
+        tag_ccsid=dict(arg_type="int", required=False),
         allow_uid=dict(arg_type="bool", default=True, required=False),
         sysname=dict(arg_type="str", default="", required=False),
         automove=dict(

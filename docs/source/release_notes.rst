@@ -48,6 +48,7 @@ Version 1.4.0-beta.2
         equivalent to the abbreviated `T` command.
 
     * ``zos_mount``
+
       * fixed option `tag_ccsid` to correctly allow for type int.
 
   * Documentation

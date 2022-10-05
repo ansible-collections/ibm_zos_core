@@ -515,10 +515,14 @@ def get_changed_plugins(path, branch="origin/dev"):
     # which results in a non-zero RC and fails the script. Follows the man page usage:
     # git request-pull [-p] <start> <URL> [<end>], also for the end it can no longer be './' else you will
     # see a error `refs/..... found at ./ but points to a different object' so its best to use the branch name
-    stream = os.popen('git branch --show-current')
+    #
+    # --show-current not supported on the git version in the container?
+    # stream = os.popen('git branch --show-current')
+    stream = os.popen("git branch |grep '*' |cut -d' ' -f2")
     current_branch_name = stream.read()
     current_branch_name = current_branch_name.rstrip()
 
+    branch = branch.rstrip()
     get_diff_pr = subprocess.Popen(
         ["git", "request-pull", branch, "git@github.com:ansible-collections/ibm_zos_core.git", current_branch_name],
         stdout=subprocess.PIPE,

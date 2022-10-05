@@ -104,7 +104,7 @@ def test_zos_job_output_job_exists_with_filtered_ddname(ansible_zos_module):
     )
     hosts.all.file(path=TEMP_PATH, state="absent")
     dd_name = "JESMSGLG"
-    results = hosts.all.zos_job_output(job_name="SAMPLE", ddname=dd_name)
+    results = hosts.all.zos_job_output(job_name="HELLO", ddname=dd_name)
     for result in results.contacted.values():
         assert result.get("changed") is False
         assert result.get("jobs") is not None

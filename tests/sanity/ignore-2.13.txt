@@ -30,5 +30,4 @@ plugins/modules/zos_backup_restore.py validate-modules:missing-gplv3-license # L
 plugins/modules/zos_backup_restore.py validate-modules:doc-choices-do-not-match-spec # We use our own argument parser for advanced conditional and dependent arguments.
 plugins/modules/zos_apf.py validate-modules:missing-gplv3-license # Licensed under Apache 2.0
 plugins/modules/zos_gather_facts.py validate-modules:missing-gplv3-license # Licensed under Apache 2.0
-tests/dependencyfinder.py pylint:global-at-module-level # Ignore for test helper
 tests/dependencyfinder.py shebang # This is not an ansible module but a test helper so this shebang limitation is not required.

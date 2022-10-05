@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020
+# Copyright (c) IBM Corporation 2019, 2020, 2022
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -41,6 +41,10 @@ dummy_dict4 = {"cmd": "d u,all", "verbose": True}
 
 dummy_dict5 = {"cmd": "d u,all", "verbose": "NotTrueOrFalse"}
 
+dummy_dict6 = {"cmd": "SET IKJTSO=M9", "verbose": True}
+
+dummy_dict7 = {"cmd": "QUERY AUTH", "verbose": False}
+
 dummy_return_dict1 = {"rc": 0, "message": "good result"}
 
 dummy_return_dict2 = {"rc": 1, "message": None}
@@ -51,6 +55,8 @@ test_data = [
     (dummy_dict3, True),
     (dummy_dict4, True),
     (dummy_dict5, False),
+    (dummy_dict6, True),
+    (dummy_dict7, True),
 ]
 
 

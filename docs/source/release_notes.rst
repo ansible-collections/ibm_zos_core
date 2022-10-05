@@ -43,6 +43,10 @@ Version 1.4.0-beta.2
       * fixes a bug where a number of attributes were not an option when using
         `dest_data_set`.
 
+    * ``zos_operator``
+      * enhanced to allow for MVS operator `SET` command, `SET` is
+        equivalent to the abbreviated `T` command.
+
   * Documentation
 
     * Review :ref:`version 1.4.0-beta.1<my-reference-label>` release notes for additional content.

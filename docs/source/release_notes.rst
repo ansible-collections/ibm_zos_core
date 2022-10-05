@@ -47,6 +47,9 @@ Version 1.4.0-beta.2
       * enhanced to allow for MVS operator `SET` command, `SET` is
         equivalent to the abbreviated `T` command.
 
+    * ``zos_mount``
+      * fixed option `tag_ccsid` to correctly allow for type int.
+
   * Documentation
 
     * Review :ref:`version 1.4.0-beta.1<my-reference-label>` release notes for additional content.

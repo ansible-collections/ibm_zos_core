@@ -532,9 +532,17 @@ def get_changed_plugins(path, branch="origin/dev"):
 
     stdout, stderr = get_diff_pr.communicate()
     stdout = stdout.decode("utf-8")
+    stderr = stderr.decode('utf-8')
 
-    if get_diff_pr.returncode > 0:
+    if get_diff_pr.returncode == 1:
+        if "Could not read from remote repository" in stderr:
+            pass
+        else:
+            raise RuntimeError("Could not acquire change list, error = [{0}]".format(stderr))
+
+    if get_diff_pr.returncode > 1:
         raise RuntimeError("Could not acquire change list, error = [{0}]".format(stderr))
+
     if stdout:
         for line in stdout.split("\n"):
             path_corrected_line = None

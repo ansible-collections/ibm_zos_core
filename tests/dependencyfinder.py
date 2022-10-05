@@ -510,8 +510,17 @@ def get_changed_plugins(path, branch="origin/dev"):
         list[str]: A list of changed file paths.
     """
     changed_plugins_modules = []
+
+    # Added the remote repository URL to avoid the warning "warn: Are you sure you pushed 'HEAD' there?"
+    # which results in a non-zero RC and fails the script. Follows the man page usage:
+    # git request-pull [-p] <start> <URL> [<end>], also for the end it can no longer be './' else you will
+    # see a error `refs/..... found at ./ but points to a different object' so its best to use the branch name
+    stream = os.popen('git branch --show-current')
+    current_branch_name = stream.read()
+    current_branch_name = current_branch_name.rstrip()
+
     get_diff_pr = subprocess.Popen(
-        ["git", "request-pull", branch, "./"],
+        ["git", "request-pull", branch, "git@github.com:ansible-collections/ibm_zos_core.git", current_branch_name],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         cwd=path,

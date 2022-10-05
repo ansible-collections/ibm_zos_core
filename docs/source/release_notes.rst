@@ -44,8 +44,13 @@ Version 1.4.0-beta.2
         `dest_data_set`.
 
     * ``zos_operator``
+
       * enhanced to allow for MVS operator `SET` command, `SET` is
         equivalent to the abbreviated `T` command.
+
+    * ``zos_mount``
+
+      * fixed option `tag_ccsid` to correctly allow for type int.
 
   * Documentation
 

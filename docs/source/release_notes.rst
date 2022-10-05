@@ -52,6 +52,11 @@ Version 1.4.0-beta.2
 
       * fixed option `tag_ccsid` to correctly allow for type int.
 
+    * ``module_utils``
+
+      * jobs.py - fixes a utility used by module zos_job_output that would
+        truncate the DD content.
+
   * Documentation
 
     * Review :ref:`version 1.4.0-beta.1<my-reference-label>` release notes for additional content.

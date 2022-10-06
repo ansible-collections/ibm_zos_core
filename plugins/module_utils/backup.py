@@ -93,7 +93,16 @@ def mvs_file_backup(dsn, bk_dsn=None, tmphlq=None):
                 hlq = datasets.hlq()
             bk_dsn = datasets.tmp_name(hlq)
         bk_dsn = _validate_data_set_name(bk_dsn).upper()
-        cp_rc = _copy_ds(dsn, bk_dsn)
+
+        # In case the backup ds is a member we trust that the PDS attributes are ok to fit the src content.
+        # This should not delete a PDS just to create a backup member.
+        # Otherwise, we allocate the appropiate space for the backup ds based on src.
+        if is_member(bk_dsn):
+            cp_response = datasets._copy(dsn, bk_dsn)
+            cp_rc = cp_response.rc
+        else:
+            cp_rc = _copy_ds(dsn, bk_dsn)
+
         if cp_rc == 12:  # The data set is probably a PDS or PDSE
             # Delete allocated backup that was created when attempting to use _copy_ds()
             # Safe to delete because _copy_ds() would have raised an exception if it did

@@ -1,0 +1,6 @@
+bugfixes:
+  - >
+    zos_ssh - fixes connection plugin which will error when using `ansible-core`
+    2.11 with an `AttributeError: module 'ansible.constants' has no attribute
+    'ANSIBLE_SSH_CONTROL_PATH_DIR'`.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/513)

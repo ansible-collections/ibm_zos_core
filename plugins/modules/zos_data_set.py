@@ -236,6 +236,14 @@ options:
     type: bool
     required: false
     default: false
+  tmp_hlq:
+    description:
+      - Override the default high level qualifier (HLQ) for temporary and backup
+        datasets.
+      - The default HLQ is the Ansible user used to execute the module and if
+        that is not available, then the value C(TMPHLQ) is used.
+    required: false
+    type: str
   batch:
     description:
       - Batch can be used to perform operations on multiple data sets in a single module call.
@@ -670,7 +678,10 @@ def data_set_name(contents, dependencies):
         if dependencies.get("state") != "present":
             raise ValueError('Data set name must be provided when "state!=present"')
         if dependencies.get("type") != "MEMBER":
-            contents = DataSet.temp_name()
+            tmphlq = dependencies.get("tmp_hlq")
+            if tmphlq is None:
+                tmphlq = ""
+            contents = DataSet.temp_name(tmphlq)
         else:
             raise ValueError(
                 'Data set and member name must be provided when "type=MEMBER"'
@@ -999,7 +1010,7 @@ def parse_and_validate_args(params):
             type=data_set_name,
             default=data_set_name,
             required=False,
-            dependencies=["type", "state", "batch"],
+            dependencies=["type", "state", "batch", "tmp_hlq"],
         ),
         state=dict(
             type="str",
@@ -1055,6 +1066,11 @@ def parse_and_validate_args(params):
             required=False,
             aliases=["volume"],
             dependencies=["state"],
+        ),
+        tmp_hlq=dict(
+            type='qualifier_or_empty',
+            required=False,
+            default=None
         ),
         mutually_exclusive=[
             ["batch", "name"],
@@ -1178,6 +1194,11 @@ def run_module():
             type="raw",
             required=False,
             aliases=["volume"],
+        ),
+        tmp_hlq=dict(
+            type="str",
+            required=False,
+            default=None
         ),
     )
     result = dict(changed=False, message="", names=[])

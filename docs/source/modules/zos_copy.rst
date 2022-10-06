@@ -213,6 +213,8 @@ src
 
   If ``src`` is a file and dest ends with "/" or destination is a directory, the file is copied to the directory with the same filename as src.
 
+  If ``src`` is a directory and ends with "/", the contents of it will be copied into the root of ``dest``. It it doesn't end with "/", the directory itself will be copied.
+
   If ``src`` is a VSAM data set, destination must also be a VSAM.
 
   Wildcards can be used to copy multiple PDS/PDSE members to another PDS/PDSE.

@@ -391,7 +391,8 @@ def _ssh_retry(func):
         cmd_summary = u"%s..." % to_text(args[0])
         for attempt in range(remaining_tries):
             cmd = args[0]
-            if attempt != 0 and self._play_context.password and isinstance(cmd, list):
+            conn_password = self.get_option('password') or self._play_context.password
+            if attempt != 0 and conn_password and isinstance(cmd, list):
                 # If this is a retry, the fd/pipe for sshpass is closed, and we need a new one
                 self.sshpass_pipe = os.pipe()
                 cmd[1] = b"-d" + to_bytes(
@@ -417,7 +418,7 @@ def _ssh_retry(func):
                 except (AnsibleControlPersistBrokenPipeError):
                     # Retry one more time because of the ControlPersist broken pipe (see #16731)
                     cmd = args[0]
-                    if self._play_context.password and isinstance(cmd, list):
+                    if conn_password and isinstance(cmd, list):
                         # This is a retry, so the fd/pipe for sshpass is closed, and we need a new one
                         self.sshpass_pipe = os.pipe()
                         cmd[1] = b"-d" + to_bytes(
@@ -590,7 +591,8 @@ class Connection(ConnectionBase):
         """
 
         b_command = []
-
+        conn_password = self.get_option('password') or self._play_context.password
+        ssh_executable = self.get_option('ssh_executable')
         #
         # First, the command to invoke
         #
@@ -598,7 +600,7 @@ class Connection(ConnectionBase):
         # If we want to use password authentication, we have to set up a pipe to
         # write the password to sshpass.
 
-        if self._play_context.password:
+        if conn_password:
             if not self._sshpass_available():
                 raise AnsibleError(
                     "to use the 'ssh' connection type with passwords, you must install the sshpass program"
@@ -618,7 +620,7 @@ class Connection(ConnectionBase):
         if binary == "ssh":
             b_command += [
                 to_bytes(
-                    self._play_context.ssh_executable, errors="surrogate_or_strict"
+                    ssh_executable, errors="surrogate_or_strict"
                 )
             ]
         else:
@@ -632,8 +634,8 @@ class Connection(ConnectionBase):
         # be disabled if the client side doesn't support the option. However,
         # sftp batch mode does not prompt for passwords so it must be disabled
         # if not using controlpersist and using sshpass
-        if binary == "sftp" and C.DEFAULT_SFTP_BATCH_MODE:
-            if self._play_context.password:
+        if binary == 'sftp' and self.get_option('sftp_batch_mode'):
+            if conn_password:
                 b_args = [b"-o", b"BatchMode=no"]
                 self._add_args(b_command, b_args, u"disable batch mode for sshpass")
             b_command += [b"-b", b"-"]
@@ -644,11 +646,11 @@ class Connection(ConnectionBase):
         #
         # Next, we add [ssh_connection]ssh_args from ansible.cfg.
         #
-
-        if self._play_context.ssh_args:
+        ssh_args = self.get_option('ssh_args')
+        if ssh_args:
             b_args = [
                 to_bytes(a, errors="surrogate_or_strict")
-                for a in self._split_ssh_args(self._play_context.ssh_args)
+                for a in self._split_ssh_args(ssh_args)
             ]
             self._add_args(b_command, b_args, u"ansible.cfg set ssh_args")
 
@@ -664,12 +666,13 @@ class Connection(ConnectionBase):
                 u"ANSIBLE_HOST_KEY_CHECKING/host_key_checking disabled",
             )
 
-        if self._play_context.port is not None:
+        self.port = self.get_option('port')
+        if self.port is not None:
             b_args = (
                 b"-o",
                 b"Port="
                 + to_bytes(
-                    self._play_context.port,
+                    self.port,
                     nonstring="simplerepr",
                     errors="surrogate_or_strict",
                 ),
@@ -678,7 +681,7 @@ class Connection(ConnectionBase):
                 b_command, b_args, u"ANSIBLE_REMOTE_PORT/remote_port/ansible_port set"
             )
 
-        key = self._play_context.private_key_file
+        key = self.get_option('private_key_file')
         if key:
             b_args = (
                 b"-o",
@@ -692,7 +695,7 @@ class Connection(ConnectionBase):
                 u"ANSIBLE_PRIVATE_KEY_FILE/private_key_file/ansible_ssh_private_key_file set",
             )
 
-        if not self._play_context.password:
+        if not conn_password:
             self._add_args(
                 b_command,
                 (
@@ -706,27 +709,28 @@ class Connection(ConnectionBase):
                 u"ansible_password/ansible_ssh_password not set",
             )
 
-        user = self._play_context.remote_user
-        if user:
+        self.user = self.get_option('remote_user')
+        if self.user:
             self._add_args(
                 b_command,
                 (
                     b"-o",
                     b'User="%s"'
                     % to_bytes(
-                        self._play_context.remote_user, errors="surrogate_or_strict"
+                        self.user, errors="surrogate_or_strict"
                     ),
                 ),
                 u"ANSIBLE_REMOTE_USER/remote_user/ansible_user/user/-u set",
             )
 
+        timeout = self._play_context.timeout
         self._add_args(
             b_command,
             (
                 b"-o",
                 b"ConnectTimeout="
                 + to_bytes(
-                    self._play_context.timeout,
+                    timeout,
                     errors="surrogate_or_strict",
                     nonstring="simplerepr",
                 ),
@@ -738,7 +742,7 @@ class Connection(ConnectionBase):
         # (i.e. inventory or task settings or overrides on the command line).
 
         for opt in (u"ssh_common_args", u"{0}_extra_args".format(binary)):
-            attr = getattr(self._play_context, opt, None)
+            attr = self.get_option(opt)
             if attr is not None:
                 b_args = [
                     to_bytes(a, errors="surrogate_or_strict")
@@ -907,11 +911,13 @@ class Connection(ConnectionBase):
         else:
             cmd = list(map(to_bytes, cmd))
 
+        conn_password = self.get_option('password') or self._play_context.password
+
         if not in_data:
             try:
                 # Make sure stdin is a proper pty to avoid tcgetattr errors
                 master, slave = pty.openpty()
-                if PY3 and self._play_context.password:
+                if PY3 and conn_password:
                     # pylint: disable=unexpected-keyword-arg
                     p = subprocess.Popen(
                         cmd,
@@ -930,7 +936,7 @@ class Connection(ConnectionBase):
                 p = None
 
         if not p:
-            if PY3 and self._play_context.password:
+            if PY3 and conn_password:
                 # pylint: disable=unexpected-keyword-arg
                 p = subprocess.Popen(
                     cmd,
@@ -951,11 +957,11 @@ class Connection(ConnectionBase):
         # If we are using SSH password authentication, write the password into
         # the pipe we opened in _build_command.
 
-        if self._play_context.password:
+        if conn_password:
             os.close(self.sshpass_pipe[0])
             try:
                 os.write(
-                    self.sshpass_pipe[1], to_bytes(self._play_context.password) + b"\n"
+                    self.sshpass_pipe[1], to_bytes(conn_password) + b"\n"
                 )
             except OSError as e:
                 # Ignore broken pipe errors if the sshpass process has exited.
@@ -992,7 +998,7 @@ class Connection(ConnectionBase):
                 display.debug(
                     u"Initial state: %s: %s" % (states[state], to_text(prompt))
                 )
-            elif self._play_context.become and self.become.success:
+            elif self.become and self.become.success:
                 # We're requesting escalation without a password, so we have to
                 # detect success/failure before sending any initial data.
                 state = states.index("awaiting_escalation")
@@ -1122,7 +1128,8 @@ class Connection(ConnectionBase):
                 if states[state] == "awaiting_prompt":
                     if self._flags["become_prompt"]:
                         display.debug(u"Sending become_password in response to prompt")
-                        stdin.write(to_bytes(self._play_context.become_pass) + b"\n")
+                        become_pass = self.become.get_option('become_pass', playcontext=self._play_context)
+                        stdin.write(to_bytes(become_pass) + b"\n")
                         # On python3 stdin is a BufferedWriter, and we don't have a guarantee
                         # that the write will happen without a flush
                         stdin.flush()
@@ -1144,14 +1151,14 @@ class Connection(ConnectionBase):
                         self._terminate_process(p)
                         self._flags["become_error"] = False
                         raise AnsibleError(
-                            "Incorrect %s password" % self._play_context.become_method
+                            "Incorrect %s password" % self.become.name
                         )
                     elif self._flags["become_nopasswd_error"]:
                         display.vvv(u"Escalation requires password")
                         self._terminate_process(p)
                         self._flags["become_nopasswd_error"] = False
                         raise AnsibleError(
-                            "Missing %s password" % self._play_context.become_method
+                            "Missing %s password" % self.become.name
                         )
                     elif self._flags["become_prompt"]:
                         # This shouldn't happen, because we should see the "Sorry,
@@ -1160,7 +1167,7 @@ class Connection(ConnectionBase):
                         self._terminate_process(p)
                         self._flags["become_prompt"] = False
                         raise AnsibleError(
-                            "Incorrect %s password" % self._play_context.become_method
+                            "Incorrect %s password" % self.become.name
                         )
 
                 # Once we're sure that the privilege escalation prompt, if any, has
@@ -1432,7 +1439,7 @@ class Connection(ConnectionBase):
         # python interactive-mode but the modules are not compatible with the
         # interactive-mode ("unexpected indent" mainly because of empty lines)
 
-        ssh_executable = self._play_context.ssh_executable
+        ssh_executable = self.get_option('ssh_executable')
 
         # -tt can cause various issues in some environments so allow the user
         # to disable it as a troubleshooting method.
@@ -1484,9 +1491,10 @@ class Connection(ConnectionBase):
         return self._file_transport_command(in_path, out_path, "get")
 
     def reset(self):
+        ssh_executable = self.get_option('ssh_executable')
         # If we have a persistent ssh connection (ControlPersist), we can ask it to stop listening.
         cmd = self._build_command(
-            self._play_context.ssh_executable, "-O", "stop", self.host
+            ssh_executable, "-O", "stop", self.host
         )
         controlpersist, controlpath = self._persistence_controls(cmd)
         cp_arg = [a for a in cmd if a.startswith(b"ControlPath=")]

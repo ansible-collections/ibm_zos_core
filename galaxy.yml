@@ -17,9 +17,10 @@ authors:
   - Rich Parker <richp@ibm.com>
   - Ketan Kelkar <ketan.kelkar@ibm.com>
   - Ivan Moreno <ivan.moreno.soto@ibm.com>
+  - Oscar Fernando Flores Garcia<fernando.flores@ibm.com>
 
 # Description
-description: The IBM z/OS core collection includes connection plugins, action plugins, modules, filters, sample playbooks and ansible-doc to automate tasks on z/OS.
+description: The IBM z/OS core collection includes connection plugins, action plugins, modules, filters and ansible-doc to automate tasks on z/OS.
 
 # Portions of this collection are licensed under GNU General Public License Version 3.0
 # and portions of this collection are licensed under Apache License, Version 2.0

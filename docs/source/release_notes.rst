@@ -21,20 +21,23 @@ What's New
       to the directory on the controller. If the directory being copied contains
       files and mode is set, mode will only be applied to the files being copied
       not the pre-existing files.
-    * zos_copy - fixes a bug where options were not defined in the module
+    * ``zos_copy`` - fixes a bug where options were not defined in the module
       argument spec that will result in error when running `ansible-core` v2.11
       and using options `force` or `mode`.
-    * zos_fetch - fixes a bug where an option was not defined in the module
+    * ``zos_copy`` - was enhanced for when `src` is a directory and ends with "/",
+      the contents of it will be copied into the root of `dest`. It it doesn't
+      end with "/", the directory itself will be copied.
+    * ``zos_fetch`` - fixes a bug where an option was not defined in the module
       argument spec that will result in error when running `ansible-core` v2.11
       and using option `encoding`.
-    * zos_job_submit - fixes a bug where an option was not defined in the module
-      argument spec that will result in error when running `ansible-core` v2.11
-      and using option `encoding`.
-    * jobs.py - fixes a utility used by module `zos_job_output` that would
+    * ``zos_job_submit`` - fixes a bug where an option was not defined in the
+      module argument spec that will result in error when running
+      `ansible-core` v2.11 and using option `encoding`.
+    * ``jobs.py`` - fixes a utility used by module `zos_job_output` that would
       truncate the DD content.
     * ``zos_ssh`` connection plugin was updated to correct a bug that causes
       an `ANSIBLE_SSH_CONTROL_PATH_DIR` attribute error only when using
-      ansible-core v2.11..
+      ansible-core v2.11.
 
 
 Version 1.3.4

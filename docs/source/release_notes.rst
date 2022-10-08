@@ -1,5 +1,5 @@
 .. ...........................................................................
-.. © Copyright IBM Corporation 2020                                          .
+.. © Copyright IBM Corporation 2020, 2022                                      .
 .. ...........................................................................
 
 ========
@@ -74,7 +74,7 @@ What's New
       ``ansible-core`` v2.9 which continues to use ``retries`` and users of
       ``ansible-core`` v2.11 or later which uses ``reconnection_retries``. This
       also resolves a bug in the connection that referenced a deprecated
-      constant.  
+      constant.
     * ``zos_job_output`` fixes a bug that returned all ddname's when a specific
       ddname was provided. Now a specific ddname can be returned and all others
       ignored.

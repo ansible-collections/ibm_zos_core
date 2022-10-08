@@ -139,7 +139,6 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
     AnsibleModuleHelper,
 )
-from ansible.module_utils.six import PY3
 from tempfile import NamedTemporaryFile
 from stat import S_IEXEC, S_IREAD, S_IWRITE
 from os import chmod

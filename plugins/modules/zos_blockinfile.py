@@ -253,7 +253,6 @@ backup_name:
 
 import json
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils.six import PY3
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser, data_set, backup as Backup)
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (

@@ -263,7 +263,6 @@ import os
 
 from math import ceil
 from shutil import rmtree
-from ansible.module_utils.six import PY3
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils._text import to_bytes
 from ansible.module_utils.parsing.convert_bool import boolean

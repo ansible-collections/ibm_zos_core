@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2019, 2020
+# Copyright (c) IBM Corporation 2019, 2020, 2022
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -62,9 +62,6 @@ class ActionModule(ActionBase):
                 result["failed"] = True
                 result["msg"] = to_text(u"NOT SUPPORTING THE DIRECTORY.")
                 return result
-
-            changed = False
-            module_return = dict(changed=False)
 
             if tmp is None or "-tmp-" not in tmp:
                 tmp = self._make_tmp_path()

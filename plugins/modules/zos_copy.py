@@ -1572,7 +1572,7 @@ def get_file_checksum(src):
             while block:
                 hash_digest.update(block)
                 block = infile.read(blksize)
-    except Exception as err:
+    except Exception:
         raise
     return hash_digest.hexdigest()
 

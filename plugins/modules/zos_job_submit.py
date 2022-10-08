@@ -491,7 +491,7 @@ EXAMPLES = r"""
 
 from ansible.module_utils.basic import AnsibleModule
 from time import sleep
-from os import chmod, path, remove, stat
+from os import chmod, path, remove
 from tempfile import NamedTemporaryFile
 import re
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import job_output

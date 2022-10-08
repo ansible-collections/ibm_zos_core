@@ -39,6 +39,23 @@ What's New
       an `ANSIBLE_SSH_CONTROL_PATH_DIR` attribute error only when using
       ansible-core v2.11.
 
+Availability
+------------
+
+* `Automation Hub`_
+* `Galaxy`_
+* `GitHub`_
+
+Reference
+---------
+
+* Supported by `z/OS V2R3`_ or later
+* Supported by the `z/OS® shell`_
+* Supported by `IBM Open Enterprise SDK for Python`_ v3.8.2 -
+  `IBM Open Enterprise SDK for Python`_ v3.9.5
+* Supported by IBM `Z Open Automation Utilities 1.1.0`_ and
+  `Z Open Automation Utilities 1.1.1`_
+
 
 Version 1.3.4
 =============

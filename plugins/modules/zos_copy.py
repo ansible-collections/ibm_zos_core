@@ -657,10 +657,10 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
     MissingZOAUImport,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.mvs_cmd import (
-    idcams, iebcopy, ikjeft01
+    idcams
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
-    better_arg_parser, data_set, encode, vtoc, backup, copy
+    better_arg_parser, data_set, encode, backup, copy
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
     AnsibleModuleHelper,
@@ -676,8 +676,6 @@ import stat
 import math
 import tempfile
 import os
-# import subprocess
-import time
 
 if PY3:
     from re import fullmatch

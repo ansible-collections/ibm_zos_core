@@ -16,7 +16,6 @@ __metaclass__ = type
 import os
 import stat
 import time
-import subprocess
 
 from tempfile import mkstemp, gettempprefix
 

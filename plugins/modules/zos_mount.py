@@ -532,11 +532,6 @@ import tempfile
 from datetime import datetime
 from ansible.module_utils.basic import AnsibleModule
 
-
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
-    AnsibleModuleHelper,
-)
-
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser,
     data_set,
@@ -550,7 +545,6 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.copy import (
     copy_ps2uss,
-    copy_mvs2mvs,
     copy_uss2mvs,
 )
 

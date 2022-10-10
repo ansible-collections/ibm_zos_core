@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020
+# Copyright (c) IBM Corporation 2020, 2022
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -243,17 +243,12 @@ backup_name:
     type: str
     sample: /path/to/file.txt.2015-02-03@04:15~
 """
-import re
 import json
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser, data_set, backup as Backup)
-from os import path
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     MissingZOAUImport,
-)
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
-    BetterArgParser,
 )
 
 

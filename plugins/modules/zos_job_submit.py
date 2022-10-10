@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020
+# Copyright (c) IBM Corporation 2019, 2020, 2022
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -532,7 +532,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import job_ou
 from timeit import default_timer as timer
 import re
 from tempfile import NamedTemporaryFile
-from os import chmod, path, remove, stat
+from os import chmod, path, remove
 from time import sleep
 from ansible.module_utils.basic import AnsibleModule
 
@@ -542,7 +542,7 @@ if PY3:
 else:
     from pipes import quote
 
-"""time between job query checks to see if a job has completed, default 1 second"""
+# time between job query checks to see if a job has completed, default 1 second
 POLLING_INTERVAL = 1
 POLLING_COUNT = 60
 

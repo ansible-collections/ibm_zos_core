@@ -1,34 +1,36 @@
 bugfixes:
   - >
-    zos_copy - fixes a bug that did not create a data set on the specified
-    volume, issue #301.
+    zos_copy - fixes a bug that did not create a data set on the specified volume.
     (https://github.com/ansible-collections/ibm_zos_core/pull/306)
-    zos_copy - fixes a bug where a number of attributes were not an option
-    when using `dest_data_set`.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/306)
+  - >
+    zos_copy - fixes a bug where a number of attributes were not an option when
+    using `dest_data_set`. (https://github.com/ansible-collections/ibm_zos_core/pull/306)
 minor_changes:
-  ->
+  - >
     zos_copy - introduced an updated creation policy referred to as precedence
     rules such that if `dest_data_set` is set, this will take precedence. If
     `dest` is an empty data set, the empty data set will be written with the
     expectation its attributes satisfy the copy. If no precedent rule has been
     exercised, `dest` will be created with the same attributes of `src`.
     (https://github.com/ansible-collections/ibm_zos_core/pull/306)
-    zos_copy - introduced new computation capabilities such that if `dest` is
-    a nonexistent data set, the attributes assigned will depend on the type of
+  - >
+    zos_copy - introduced new computation capabilities such that if `dest` is a
+    nonexistent data set, the attributes assigned will depend on the type of
     `src`. If `src` is a USS file, `dest` will have a Fixed Block (FB) record
     format and the remaining attributes will be computed. If `src` is binary,
-    `dest` will have a Fixed Block (FB) record format with a record length of
-    80, block size of 32760, and the remaining attributes will be computed.
+    `dest` will have a Fixed Block (FB) record format with a record length of 80,
+    block size of 32760, and the remaining attributes will be computed.
     (https://github.com/ansible-collections/ibm_zos_core/pull/306)
-    zos_copy - enhanced the force option when `force=true` and the
-    remote file or data set `dest` is NOT empty, the `dest` will be deleted
-    and recreated with the `src` data set attributes, otherwise it will be
-    recreated with the `dest` data set attributes.
+  - >
+    zos_copy - enhanced the force option when `force=true` and the remote file
+    or data set `dest` is NOT empty, the `dest` will be deleted and recreated
+    with the `src` data set attributes, otherwise it will be recreated with the
+    `dest` data set attributes.
     (https://github.com/ansible-collections/ibm_zos_core/pull/306)
     zos_copy - option `dest_dataset` has been deprecated and removed in favor
     of the new option `dest_data_set`.
     (https://github.com/ansible-collections/ibm_zos_core/pull/306)
+  - >
     zos_copy - fixes a bug that when a directory is copied from the controller
     to the managed node and a mode is set, the mode is applied to the
     directory on the managed node. If the directory being copied contains files

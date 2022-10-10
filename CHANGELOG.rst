@@ -58,6 +58,35 @@ New Modules
 
 - ibm.ibm_zos_core.zos_mount - Mount a z/OS file system.
 
+v1.3.6
+======
+
+Release Summary
+---------------
+
+Release Date: '2022-10-07'
+This changelog describes all changes made to the modules and plugins included
+in this collection. The release date is the date the changelog is created.
+For additional details such as required dependencies and availability review
+the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__ 
+
+
+Minor Changes
+-------------
+
+- zos_copy - was enhanced for when `src` is a directory and ends with "/", the contents of it will be copied into the root of `dest`. It it doesn't end with "/", the directory itself will be copied. (https://github.com/ansible-collections/ibm_zos_core/pull/515)
+
+Bugfixes
+--------
+
+- jobs.py - fixes a utility used by module `zos_job_output` that would truncate the DD content. (https://github.com/ansible-collections/ibm_zos_core/pull/462)
+- zos_copy - fixes a bug that when a directory is copied from the controller to the managed node and a mode is set, the mode is now applied to the directory on the controller. If the directory being copied contains files and mode is set, mode will only be applied to the files being copied not the pre-existing files.(https://github.com/ansible-collections/ibm_zos_core/pull/462)
+- zos_copy - fixes a bug where options were not defined in the module argument spec that will result in error when running `ansible-core` 2.11 and using options `force` or `mode`. (https://github.com/ansible-collections/ibm_zos_core/pull/462)
+- zos_fetch - fixes a bug where an option was not defined in the module argument spec that will result in error when running `ansible-core` 2.11 and using option `encoding`. (https://github.com/ansible-collections/ibm_zos_core/pull/462)
+- zos_job_submit - fixes a bug where an option was not defined in the module argument spec that will result in error when running `ansible-core` 2.11 and using option `encoding`. (https://github.com/ansible-collections/ibm_zos_core/pull/462)
+- zos_ssh - fixes connection plugin which will error when using `ansible-core` 2.11 with an `AttributeError module 'ansible.constants' has no attribute 'ANSIBLE_SSH_CONTROL_PATH_DIR'`. (https://github.com/ansible-collections/ibm_zos_core/pull/462)
+- zos_ssh - fixes connection plugin which will error when using `ansible-core` 2.11 with an `AttributeError module 'ansible.constants' has no attribute 'ANSIBLE_SSH_CONTROL_PATH_DIR'`. (https://github.com/ansible-collections/ibm_zos_core/pull/513)
+
 v1.3.4
 ======
 

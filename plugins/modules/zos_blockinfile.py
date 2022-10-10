@@ -19,6 +19,7 @@ __metaclass__ = type
 DOCUMENTATION = r'''
 ---
 module: zos_blockinfile
+version_added: '1.3.0'
 author:
   - "Behnam (@balkajbaf)"
 short_description: Manage block of multi-line textual data on z/OS

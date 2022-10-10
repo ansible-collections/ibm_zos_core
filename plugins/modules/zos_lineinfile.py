@@ -19,6 +19,7 @@ __metaclass__ = type
 DOCUMENTATION = r"""
 ---
 module: zos_lineinfile
+version_added: '1.2.0'
 author:
   - "Behnam (@balkajbaf)"
 short_description: Manage textual data on z/OS

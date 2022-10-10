@@ -21,6 +21,7 @@ __metaclass__ = type
 DOCUMENTATION = r"""
 ---
 module: zos_mount
+version_added: "1.4.0"
 author:
     - "Rich Parker (@richp405)"
 short_description: Mount a z/OS file system.

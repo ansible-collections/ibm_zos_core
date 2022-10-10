@@ -134,7 +134,6 @@ options:
     type: bool
     required: false
     default: false
-    version_added: "1.4.0"
 notes:
     - When fetching PDSE and VSAM data sets, temporary storage will be used
       on the remote z/OS system. After the PDSE or VSAM data set is

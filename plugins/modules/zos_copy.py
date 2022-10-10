@@ -2313,7 +2313,7 @@ def main():
             backup_name=dict(type='str'),
             local_follow=dict(type='bool', default=True),
             remote_src=dict(type='bool', default=False),
-            sftp_port=dict(type='int', required=False, removed_in_version='1.5.0'),
+            sftp_port=dict(type='int', required=False, removed_at_date='2022-01-31', removed_from_collection='ibm.ibm_zos_core'),
             ignore_sftp_stderr=dict(type='bool', default=False),
             validate=dict(type='bool', default=False),
             volume=dict(type='str', required=False),

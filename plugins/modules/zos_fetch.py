@@ -555,7 +555,7 @@ def run_module():
             use_qualifier=dict(required=False, default=False, type="bool"),
             validate_checksum=dict(required=False, default=True, type="bool"),
             encoding=dict(required=False, type="dict"),
-            sftp_port=dict(type="int", required=False, removed_in_version='1.5.0'),
+            sftp_port=dict(type="int", required=False, removed_at_date='2022-01-31', removed_from_collection='ibm.ibm_zos_core'),
             ignore_sftp_stderr=dict(type="bool", default=False, required=False),
             local_charset=dict(type="str"),
         )

@@ -258,7 +258,7 @@ dest_data_set
     The unit of space used is set using *space_type*.
 
     | **required**: False
-    | **type**: str
+    | **type**: int
 
 
   space_secondary
@@ -267,7 +267,7 @@ dest_data_set
     The unit of space used is set using *space_type*.
 
     | **required**: False
-    | **type**: str
+    | **type**: int
 
 
   space_type

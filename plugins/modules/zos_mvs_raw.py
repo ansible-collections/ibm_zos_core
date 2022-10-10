@@ -27,7 +27,7 @@ description:
   - Run a z/OS program.
   - This is analogous to a job step in JCL.
   - Defaults will be determined by underlying API if value not provided.
-version_added: "2.9"
+version_added: "1.2.0"
 options:
   program_name:
     description:
@@ -89,7 +89,7 @@ options:
             description:
               - The data set name.
             type: str
-            required: true
+            required: false
           type:
             description:
               - The data set type. Only required when I(disposition=new).
@@ -558,7 +558,7 @@ options:
                 or a list of strings with 1 line per list item.
               - If a list of strings is provided, newlines will be
                 added to each of the lines when used as input.
-            required: false
+            required: true
             type: raw
           return_content:
             description:
@@ -693,7 +693,7 @@ options:
                     description:
                       - The data set name.
                     type: str
-                    required: true
+                    required: false
                   type:
                     description:
                       - The data set type. Only required when I(disposition=new).
@@ -1155,7 +1155,7 @@ options:
                         or a list of strings with 1 line per list item.
                       - If a list of strings is provided, newlines will be
                         added to each of the lines when used as input.
-                    required: false
+                    required: true
                     type: raw
                   return_content:
                     description:
@@ -1560,7 +1560,7 @@ def run_module():
         sms_data_class=dict(type="str"),
         block_size=dict(type="int"),
         directory_blocks=dict(type="int"),
-        key_label=dict(type="str"),
+        key_label=dict(type="str", no_log=True),
         type=dict(
             type="str",
             choices=[
@@ -1578,6 +1578,7 @@ def run_module():
         ),
         encryption_key_1=dict(
             type="dict",
+            no_log=True,
             options=dict(
                 label=dict(type="str", required=True),
                 encoding=dict(type="str", required=True, choices=["l", "h"]),
@@ -1585,13 +1586,14 @@ def run_module():
         ),
         encryption_key_2=dict(
             type="dict",
+            no_log=True,
             options=dict(
                 label=dict(type="str", required=True),
                 encoding=dict(type="str", required=True, choices=["l", "h"]),
             ),
         ),
-        key_length=dict(type="int"),
-        key_offset=dict(type="int"),
+        key_length=dict(type="int", no_log=False),
+        key_offset=dict(type="int", no_log=False),
         record_length=dict(type="int"),
         record_format=dict(type="str", choices=["u", "vb", "vba", "fb", "fba"]),
         return_content=dict(

@@ -310,7 +310,8 @@ jobs
     content
       The ddname content.
 
-      | **type**: list[str]
+      | **type**: list
+      | **elements**: str
       | **sample**:
 
         .. code-block:: json

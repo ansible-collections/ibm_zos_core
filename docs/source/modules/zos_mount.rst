@@ -137,6 +137,7 @@ persistent
 
     | **required**: False
     | **type**: list
+    | **elements**: str
 
 
 

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020
+# Copyright (c) IBM Corporation 2020, 2022
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -44,7 +44,7 @@ options:
   data_sets:
     description:
       - Determines which data sets to include in the backup.
-    required: True
+    required: False
     type: dict
     suboptions:
       include:
@@ -63,7 +63,7 @@ options:
             If there are two asterisks in a qualifier, they must be the first and last characters.
           - A question mark C(?) or percent sign C(%) matches a single character.
         type: raw
-        required: True
+        required: False
       exclude:
         description:
           - When I(operation=backup), specifies a list of data sets or data set patterns

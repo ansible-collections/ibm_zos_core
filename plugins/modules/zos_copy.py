@@ -275,14 +275,14 @@ options:
           - If the destination I(dest) data set does not exist , this sets the
             primary space allocated for the data set.
           - The unit of space used is set using I(space_type).
-        type: str
+        type: int
         required: false
       space_secondary:
         description:
           - If the destination I(dest) data set does not exist , this sets the
             secondary space allocated for the data set.
           - The unit of space used is set using I(space_type).
-        type: str
+        type: int
         required: false
       space_type:
         description:
@@ -2307,7 +2307,20 @@ def main():
             src=dict(type='path'),
             dest=dict(required=True, type='str'),
             is_binary=dict(type='bool', default=False),
-            encoding=dict(type='dict'),
+            encoding=dict(
+                type='dict',
+                required=False,
+                options={
+                    'from': dict(
+                        type='str',
+                        required=True,
+                    ),
+                    "to": dict(
+                        type='str',
+                        required=True,
+                    )
+                }
+            ),
             content=dict(type='str', no_log=True),
             backup=dict(type='bool', default=False),
             backup_name=dict(type='str'),
@@ -2344,8 +2357,8 @@ def main():
                     record_length=dict(type='int', required=False),
                     block_size=dict(type='int', required=False),
                     directory_blocks=dict(type="int", required=False),
-                    key_offset=dict(type="int", required=False),
-                    key_length=dict(type="int", required=False),
+                    key_offset=dict(type="int", required=False, no_log=False),
+                    key_length=dict(type="int", required=False, no_log=False),
                     sms_storage_class=dict(type="str", required=False),
                     sms_data_class=dict(type="str", required=False),
                     sms_management_class=dict(type="str", required=False),
@@ -2360,7 +2373,8 @@ def main():
             copy_member=dict(type='bool'),
             src_member=dict(type='bool'),
             local_charset=dict(type='str'),
-            force=dict(type='bool', default=False)
+            force=dict(type='bool', default=False),
+            mode=dict(type='str', required=False),
         ),
         add_file_common_args=True,
     )
@@ -2424,17 +2438,6 @@ def main():
                 to_encoding=dict(arg_type="encoding"),
             )
         )
-
-    if not module.params.get("destination_dataset"):
-        module.params["destination_dataset"] = {
-            "dd_type": "BASIC",
-            "space_primary": 5,
-            "space_secondary": 3,
-            "space_type": 'TRK',
-            "record_format": 'FB',
-            "record_length": 80,
-            "block_size": 6147,
-        }
 
     res_args = temp_path = conv_path = None
     try:

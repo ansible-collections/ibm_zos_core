@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020
+# Copyright (c) IBM Corporation 2019, 2020, 2022
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -19,7 +19,7 @@ __metaclass__ = type
 
 DOCUMENTATION = r"""
 module: zos_data_set
-version_added: "1.3.0"
+version_added: "1.0.0"
 short_description: Manage data sets
 description:
   - Create, delete and set attributes of data sets.
@@ -1125,8 +1125,8 @@ def run_module():
                     type="int",
                     required=False,
                 ),
-                key_offset=dict(type="int", required=False),
-                key_length=dict(type="int", required=False),
+                key_offset=dict(type="int", required=False, no_log=False),
+                key_length=dict(type="int", required=False, no_log=False),
                 replace=dict(
                     type="bool",
                     default=False,
@@ -1168,8 +1168,8 @@ def run_module():
             type="int",
             required=False,
         ),
-        key_offset=dict(type="int", required=False),
-        key_length=dict(type="int", required=False),
+        key_offset=dict(type="int", required=False, no_log=False),
+        key_length=dict(type="int", required=False, no_log=False),
         replace=dict(
             type="bool",
             default=False,

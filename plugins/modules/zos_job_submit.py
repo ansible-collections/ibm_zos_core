@@ -39,7 +39,7 @@ options:
       - Or an LOCAL file in ansible control node.
         (e.g "/User/tester/ansible-playbook/sample.jcl")
   location:
-    required: true
+    required: false
     default: DATA_SET
     type: str
     choices:
@@ -186,7 +186,8 @@ jobs:
         content:
           description:
              The ddname content.
-          type: list[str]
+          type: list
+          elements: str
           sample:
              [ "         1 //HELLO    JOB (T043JM,JM00,1,0,0,0),'HELLO WORLD - JRM',CLASS=R,       JOB00134",
                "           //             MSGCLASS=X,MSGLEVEL=1,NOTIFY=S0JM                                ",
@@ -658,13 +659,28 @@ def assert_valid_return_code(max_rc, found_rc):
 def run_module():
     module_args = dict(
         src=dict(type="str", required=True),
-        wait=dict(type="bool", required=False),
+        wait=dict(type="bool", required=False, default=False),
         location=dict(
             type="str",
             default="DATA_SET",
             choices=["DATA_SET", "USS", "LOCAL"],
         ),
-        encoding=dict(type="dict", required=False),
+        encoding=dict(
+            type="dict",
+            required=False,
+            options={
+                "from": dict(
+                    type="str",
+                    required=False,
+                    default="ISO8859-1"
+                ),
+                "to": dict(
+                    type="str",
+                    required=False,
+                    default="IBM-1047"
+                )
+            }
+        ),
         volume=dict(type="str", required=False),
         return_output=dict(type="bool", required=False, default=True),
         wait_time_s=dict(type="int", default=60),

@@ -158,6 +158,7 @@ options:
                     - Comments are used to encapsulate the I(persistent/data_store) entry
                       such that they can easily be understood and located.
                 type: list
+                elements: str
                 required: False
     unmount_opts:
         description:
@@ -216,6 +217,7 @@ options:
             - TEXT
             - NOTEXT
         required: False
+        default: ''
     tag_ccsid:
         description:
             - Identifies the coded character set identifier (ccsid) to be
@@ -1073,7 +1075,7 @@ def main():
                     ),
                     backup=dict(type="bool", default=False),
                     backup_name=dict(type="str", required=False, default=None),
-                    comment=dict(type="list", required=False),
+                    comment=dict(type="list", elements="str", required=False),
                 ),
             ),
             unmount_opts=dict(

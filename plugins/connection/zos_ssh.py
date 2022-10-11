@@ -278,7 +278,6 @@ import fcntl
 import hashlib
 import os
 import pty
-import re
 import subprocess
 import time
 from functools import wraps
@@ -289,13 +288,11 @@ from ansible.errors import (
     AnsibleError,
     AnsibleFileNotFound,
 )
-from ansible.errors import AnsibleOptionsError
 from ansible.compat import selectors
 from ansible.module_utils.six import PY3, text_type, binary_type
 from ansible.module_utils.six.moves import shlex_quote
 from ansible.module_utils._text import to_bytes, to_native, to_text
-from ansible.module_utils.parsing.convert_bool import BOOLEANS, boolean
-from ansible.plugins.connection import ConnectionBase, BUFSIZE
+from ansible.plugins.connection import ConnectionBase
 from ansible.plugins.shell.powershell import _parse_clixml
 from ansible.utils.display import Display
 from ansible.utils.path import unfrackpath, makedirs_safe

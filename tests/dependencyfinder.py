@@ -606,7 +606,6 @@ if __name__ == "__main__":
     # TODO: add logic to only grab necessary tests that are impacted by changes
     args = parse_arguments()
 
-    global collection_to_use
     collection_to_use = args.collection
 
     artifacts = build_artifacts_from_collection(args.path)

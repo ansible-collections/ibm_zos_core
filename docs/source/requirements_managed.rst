@@ -13,8 +13,8 @@ proceed to install the IBM z/OS core collection.
 
 * z/OS `V2R3`_ or `later`_
 * `z/OS OpenSSH`_
-* Supported by `IBM Open Enterprise SDK for Python`_
-  (previously `IBM Open Enterprise Python for z/OS`_) 3.8.2 or later
+* Supported by `IBM Open Enterprise SDK for Python`_ v3.8.2 -
+  Supported by `IBM Open Enterprise SDK for Python`_ v3.9.5
 * `IBM Z Open Automation Utilities`_ (ZOAU)
 
    .. note::

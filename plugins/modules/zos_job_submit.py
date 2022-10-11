@@ -801,9 +801,6 @@ def run_module():
         except IndexError:
             pass
         except Exception as e:
-            result["err_detail"] = "{1} {2}.\n".format(
-                "Error during job submission.  The output is:", job_output_txt or " "
-            )
             module.fail_json(msg=repr(e), **result)
 
         if bool(job_output_txt):

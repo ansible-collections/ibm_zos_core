@@ -20,7 +20,7 @@ import time
 from tempfile import mkstemp, gettempprefix
 
 from ansible.errors import AnsibleError
-from ansible.module_utils._text import to_bytes, to_text
+from ansible.module_utils._text import to_text
 from ansible.module_utils.six import string_types
 from ansible.module_utils.parsing.convert_bool import boolean
 from ansible.plugins.action import ActionBase
@@ -52,7 +52,7 @@ class ActionModule(ActionBase):
         content = task_args.get('content', None)
 
         # Option sftp_port is deprecated in 1.4.0 to be removed in 1.5.0
-        sftp_port = task_args.get('sftp_port', self._play_context.port or 22)
+        task_args.get('sftp_port', self._play_context.port or 22)
         force = _process_boolean(task_args.get('force'), default=True)
         backup = _process_boolean(task_args.get('backup'), default=False)
         local_follow = _process_boolean(task_args.get('local_follow'), default=False)

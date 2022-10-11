@@ -74,7 +74,7 @@ the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/
 Minor Changes
 -------------
 
-- zos_copy - was enhanced for when `src` is a directory and ends with "/", the contents of it will be copied into the root of `dest`. It it doesn't end with "/", the directory itself will be copied. (https://github.com/ansible-collections/ibm_zos_core/pull/515)
+- zos_copy - was enhanced for when `src` is a directory and ends with "/", the contents of it will be copied into the root of `dest`. If it doesn't end with "/", the directory itself will be copied. (https://github.com/ansible-collections/ibm_zos_core/pull/515)
 
 Bugfixes
 --------

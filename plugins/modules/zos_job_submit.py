@@ -533,7 +533,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import job_ou
 from timeit import default_timer as timer
 import re
 from tempfile import NamedTemporaryFile
-from os import chmod, path, remove, stat
+from os import chmod, path, remove
 from time import sleep
 from ansible.module_utils.basic import AnsibleModule
 
@@ -543,7 +543,7 @@ if PY3:
 else:
     from pipes import quote
 
-"""time between job query checks to see if a job has completed, default 1 second"""
+# time between job query checks to see if a job has completed, default 1 second
 POLLING_INTERVAL = 1
 POLLING_COUNT = 60
 
@@ -817,9 +817,6 @@ def run_module():
         except IndexError:
             pass
         except Exception as e:
-            result["err_detail"] = "{1} {2}.\n".format(
-                "Error during job submission.  The output is:", job_output_txt or " "
-            )
             module.fail_json(msg=repr(e), **result)
 
         if bool(job_output_txt):

@@ -19,11 +19,11 @@ __metaclass__ = type
 
 DOCUMENTATION = r"""
 module: zos_data_set
+version_added: "1.0.0"
 short_description: Manage data sets
 description:
   - Create, delete and set attributes of data sets.
   - When forcing data set replacement, contents will not be preserved.
-version_added: "1.0.0"
 author: "Blake Becker (@blakeinate)"
 options:
   name:

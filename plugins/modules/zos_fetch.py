@@ -134,7 +134,6 @@ options:
     type: bool
     required: false
     default: false
-    version_added: "1.4.0"
 notes:
     - When fetching PDSE and VSAM data sets, temporary storage will be used
       on the remote z/OS system. After the PDSE or VSAM data set is
@@ -273,15 +272,12 @@ rc:
 """
 
 
-import base64
-import hashlib
 import tempfile
 import re
 import os
 
 from math import ceil
-from shutil import rmtree, move
-from ansible.module_utils.six import PY3
+from shutil import rmtree
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils._text import to_bytes
 from ansible.module_utils.parsing.convert_bool import boolean
@@ -294,11 +290,6 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
     MissingZOAUImport,
 )
 
-
-if PY3:
-    from shlex import quote
-else:
-    from pipes import quote
 
 try:
     from zoautil_py import datasets, mvscmd, types
@@ -562,6 +553,7 @@ def run_module():
             is_binary=dict(required=False, default=False, type="bool"),
             use_qualifier=dict(required=False, default=False, type="bool"),
             validate_checksum=dict(required=False, default=True, type="bool"),
+            sftp_port=dict(type="int", required=False, removed_at_date='2022-01-31', removed_from_collection='ibm.ibm_zos_core'),
             encoding=dict(
                 required=False,
                 type="dict",
@@ -570,7 +562,6 @@ def run_module():
                     "to": dict(type="str", required=True)
                 }
             ),
-            sftp_port=dict(type="int", required=False),
             ignore_sftp_stderr=dict(type="bool", default=False, required=False),
             local_charset=dict(type="str"),
         )
@@ -579,15 +570,6 @@ def run_module():
     src = module.params.get("src")
     if module.params.get("use_qualifier"):
         module.params["src"] = datasets.hlq() + "." + src
-
-    if module.params.get('sftp_port'):
-        module.deprecate(
-            msg='Support for configuring sftp_port has been deprecated.'
-            'Configuring the SFTP port is now managed through Ansible connection plugins option \'ansible_port\'',
-            version='1.5.0',
-            date='2021-08-01',
-            collection_name='ibm.ibm_zos_core')
-        # Date and collection are supported in Ansbile 2.9.10 or later
 
     # ********************************************************** #
     #                   Verify paramater validity                #

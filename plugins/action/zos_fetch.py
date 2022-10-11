@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2019, 2020, 2021
+# Copyright (c) IBM Corporation 2019, 2020, 2021, 2022
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -14,7 +14,6 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 import os
-import subprocess
 import re
 
 from hashlib import sha256
@@ -43,7 +42,6 @@ def _update_result(result, src, dest, ds_type="USS", is_binary=False):
         "VSAM": "VSAM",
         "USS": "USS",
     }
-    file_or_ds = "file" if ds_type == "USS" else "data set"
     updated_result = dict((k, v) for k, v in result.items())
     updated_result.update(
         {
@@ -110,7 +108,7 @@ class ActionModule(ActionBase):
         dest = self._task.args.get('dest')
         encoding = self._task.args.get('encoding')
         # Option sftp_port is deprecated in 1.4.0 to be removed in 1.5.0
-        sftp_port = self._task.args.get('sftp_port', self._play_context.port or 22)
+        self._task.args.get('sftp_port', self._play_context.port or 22)
         flat = _process_boolean(self._task.args.get('flat'), default=False)
         is_binary = _process_boolean(self._task.args.get('is_binary'))
         ignore_sftp_stderr = _process_boolean(

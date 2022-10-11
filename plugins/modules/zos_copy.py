@@ -657,10 +657,10 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
     MissingZOAUImport,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.mvs_cmd import (
-    idcams, iebcopy, ikjeft01
+    idcams
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
-    better_arg_parser, data_set, encode, vtoc, backup, copy
+    better_arg_parser, data_set, encode, backup, copy
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
     AnsibleModuleHelper,
@@ -676,8 +676,6 @@ import stat
 import math
 import tempfile
 import os
-# import subprocess
-import time
 
 if PY3:
     from re import fullmatch
@@ -2328,7 +2326,7 @@ def main():
             backup_name=dict(type='str'),
             local_follow=dict(type='bool', default=True),
             remote_src=dict(type='bool', default=False),
-            sftp_port=dict(type='int', required=False),
+            sftp_port=dict(type='int', required=False, removed_at_date='2022-01-31', removed_from_collection='ibm.ibm_zos_core'),
             ignore_sftp_stderr=dict(type='bool', default=False),
             validate=dict(type='bool', default=False),
             volume=dict(type='str', required=False),
@@ -2380,14 +2378,6 @@ def main():
         ),
         add_file_common_args=True,
     )
-    if module.params.get('sftp_port'):
-        module.deprecate(
-            msg='Support for configuring sftp_port has been deprecated.'
-            'Configuring the SFTP port is now managed through Ansible connection plugins option \'ansible_port\'',
-            version='1.5.0',
-            date='2021-08-01',
-            collection_name='ibm.ibm_zos_core')
-        # Date and collection are supported in Ansbile 2.9.10 or later
 
     arg_def = dict(
         src=dict(arg_type='data_set_or_path', required=False),

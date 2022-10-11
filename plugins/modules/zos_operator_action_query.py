@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020
+# Copyright (c) IBM Corporation 2019, 2020, 2022
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -20,6 +20,7 @@ __metaclass__ = type
 DOCUMENTATION = r"""
 ---
 module: zos_operator_action_query
+version_added: '1.1.0'
 short_description: Display messages requiring action
 description:
   - Get a list of outstanding messages requiring operator action given one or

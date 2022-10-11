@@ -63,9 +63,6 @@ class ActionModule(ActionBase):
                 result["msg"] = to_text(u"NOT SUPPORTING THE DIRECTORY.")
                 return result
 
-            changed = False
-            module_return = dict(changed=False)
-
             if tmp is None or "-tmp-" not in tmp:
                 tmp = self._make_tmp_path()
 

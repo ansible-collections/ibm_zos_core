@@ -1,5 +1,4 @@
 bugfixes:
-  - >
-    zos_operator - enhanced to allow for MVS operator `SET` command, `SET` is
-    equivalent to the abbreviated `T` command.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/501)
+- zos_operator - enhanced to allow for MVS operator `SET` command, `SET` is
+  equivalent to the abbreviated `T` command.
+  (https://github.com/ansible-collections/ibm_zos_core/pull/501)

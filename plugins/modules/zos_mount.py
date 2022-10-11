@@ -21,6 +21,7 @@ __metaclass__ = type
 DOCUMENTATION = r"""
 ---
 module: zos_mount
+version_added: "1.4.0"
 author:
     - "Rich Parker (@richp405)"
 short_description: Mount a z/OS file system.
@@ -534,16 +535,10 @@ import tempfile
 from datetime import datetime
 from ansible.module_utils.basic import AnsibleModule
 
-
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
-    AnsibleModuleHelper,
-)
-
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser,
     data_set,
     backup as Backup,
-    mvs_cmd,
 )
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
@@ -552,7 +547,6 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.copy import (
     copy_ps2uss,
-    copy_mvs2mvs,
     copy_uss2mvs,
 )
 

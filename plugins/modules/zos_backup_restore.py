@@ -19,6 +19,7 @@ __metaclass__ = type
 
 DOCUMENTATION = r"""
 module: zos_backup_restore
+version_added: '1.3.0'
 author: "Blake Becker (@blakeinate)"
 short_description: Backup and restore data sets and volumes
 description:

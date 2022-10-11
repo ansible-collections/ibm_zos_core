@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2019, 2020, 2021
+# Copyright (c) IBM Corporation 2019, 2020, 2021, 2022
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -16,12 +16,11 @@ __metaclass__ = type
 import os
 import stat
 import time
-import subprocess
 
 from tempfile import mkstemp, gettempprefix
 
 from ansible.errors import AnsibleError
-from ansible.module_utils._text import to_bytes, to_text
+from ansible.module_utils._text import to_text
 from ansible.module_utils.six import string_types
 from ansible.module_utils.parsing.convert_bool import boolean
 from ansible.plugins.action import ActionBase
@@ -30,8 +29,7 @@ from ansible import cli
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
     is_member,
-    is_data_set,
-    extract_member_name
+    is_data_set
 )
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import encode
@@ -54,7 +52,7 @@ class ActionModule(ActionBase):
         content = task_args.get('content', None)
 
         # Option sftp_port is deprecated in 1.4.0 to be removed in 1.5.0
-        sftp_port = task_args.get('sftp_port', self._play_context.port or 22)
+        task_args.get('sftp_port', self._play_context.port or 22)
         force = _process_boolean(task_args.get('force'), default=True)
         backup = _process_boolean(task_args.get('backup'), default=False)
         local_follow = _process_boolean(task_args.get('local_follow'), default=False)

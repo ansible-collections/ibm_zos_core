@@ -1143,7 +1143,6 @@ def run_module():
             type="str",
             default="present",
             choices=["present", "absent", "cataloged", "uncataloged"],
-            dependencies=["batch"],
         ),
         type=dict(type="str", required=False, default="PDS"),
         space_type=dict(type="str", required=False, default="M"),
@@ -1186,6 +1185,10 @@ def run_module():
 
     if not module.check_mode:
         try:
+            # Update the dictionary for use by better arg parser by adding the
+            # batch keyword after the arg spec is evaluated else you get a lint
+            # error 'invalid-ansiblemodule-schema'
+            module_args['state']['dependencies'] = ['batch']
             params = parse_and_validate_args(module.params)
             data_set_param_list = get_individual_data_set_parameters(params)
             result["names"] = [d.get("name", "") for d in data_set_param_list]

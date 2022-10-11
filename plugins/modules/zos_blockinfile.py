@@ -373,8 +373,6 @@ def main():
         mutually_exclusive=[['insertbefore', 'insertafter']],
     )
 
-    params = module.params
-
     arg_defs = dict(
         src=dict(arg_type='data_set_or_path', aliases=['path', 'destfile', 'name'], required=True),
         state=dict(arg_type='str', default='present', choices=['absent', 'present']),

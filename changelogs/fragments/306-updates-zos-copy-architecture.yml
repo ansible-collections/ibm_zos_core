@@ -25,7 +25,7 @@ minor_changes:
 - zos_copy - option `dest_dataset` has been deprecated and removed in favor
   of the new option `dest_data_set`.
   (https://github.com/ansible-collections/ibm_zos_core/pull/306)
--  zos_copy - fixes a bug that when a directory is copied from the controller
+- zos_copy - fixes a bug that when a directory is copied from the controller
   to the managed node and a mode is set, the mode is applied to the
   directory on the managed node. If the directory being copied contains files
   and mode is set, mode will only be applied to the files being copied not the

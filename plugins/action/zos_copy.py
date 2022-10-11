@@ -29,8 +29,7 @@ from ansible import cli
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
     is_member,
-    is_data_set,
-    extract_member_name
+    is_data_set
 )
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import encode

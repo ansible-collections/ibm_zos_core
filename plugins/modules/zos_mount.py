@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020, 2021
+# Copyright (c) IBM Corporation 2020, 2021, 2022
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -157,6 +157,7 @@ options:
                     - Comments are used to encapsulate the I(persistent/data_store) entry
                       such that they can easily be understood and located.
                 type: list
+                elements: str
                 required: False
     unmount_opts:
         description:
@@ -215,6 +216,7 @@ options:
             - TEXT
             - NOTEXT
         required: False
+        default: ''
     tag_ccsid:
         description:
             - Identifies the coded character set identifier (ccsid) to be
@@ -1079,7 +1081,7 @@ def main():
                     ),
                     backup=dict(type="bool", default=False),
                     backup_name=dict(type="str", required=False, default=None),
-                    comment=dict(type="list", required=False),
+                    comment=dict(type="list", elements="str", required=False),
                 ),
             ),
             unmount_opts=dict(

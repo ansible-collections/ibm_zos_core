@@ -51,7 +51,7 @@ location
 
   LOCAL means locally to the ansible control node.
 
-  | **required**: True
+  | **required**: False
   | **type**: str
   | **default**: DATA_SET
   | **choices**: DATA_SET, USS, LOCAL
@@ -489,7 +489,8 @@ jobs
     content
       The ddname content.
 
-      | **type**: list[str]
+      | **type**: list
+      | **elements**: str
       | **sample**:
 
         .. code-block:: json

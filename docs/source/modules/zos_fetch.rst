@@ -53,7 +53,7 @@ fail_on_missing
 
   | **required**: False
   | **type**: bool
-  | **default**: true
+  | **default**: True
 
 
 validate_checksum
@@ -61,7 +61,7 @@ validate_checksum
 
   | **required**: False
   | **type**: bool
-  | **default**: true
+  | **default**: True
 
 
 flat
@@ -69,7 +69,7 @@ flat
 
   | **required**: False
   | **type**: bool
-  | **default**: true
+  | **default**: True
 
 
 is_binary
@@ -77,7 +77,6 @@ is_binary
 
   | **required**: False
   | **type**: bool
-  | **default**: false
 
 
 use_qualifier
@@ -85,7 +84,6 @@ use_qualifier
 
   | **required**: False
   | **type**: bool
-  | **default**: false
 
 
 sftp_port

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020
+# Copyright (c) IBM Corporation 2019, 2020, 2022
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -33,7 +33,7 @@ description:
     like "*".
   - If there is no ddname, or if ddname="?", output of all the ddnames under
     the given job will be displayed.
-version_added: "2.9"
+version_added: "1.0.0"
 author:
   - "Jack Ho (@jacklotusho)"
   - "Demetrios Dimatos (@ddimatos)"
@@ -154,7 +154,8 @@ jobs:
         content:
           description:
              The ddname content.
-          type: list[str]
+          type: list
+          elements: str
           sample:
              [ "         1 //HELLO    JOB (T043JM,JM00,1,0,0,0),'HELLO WORLD - JRM',CLASS=R,       JOB00134",
                "           //             MSGCLASS=X,MSGLEVEL=1,NOTIFY=S0JM                                ",

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020, 2021, 2021
+# Copyright (c) IBM Corporation 2019, 2020, 2021, 2022
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -55,14 +55,14 @@ options:
     description:
       - When set to true, the task will fail if the source file is missing.
     required: false
-    default: "true"
+    default: true
     type: bool
   validate_checksum:
     description:
       - Verify that the source and destination checksums match after the files
         are fetched.
     required: false
-    default: "true"
+    default: true
     type: bool
   flat:
     description:
@@ -71,20 +71,20 @@ options:
         the destination directory without appending remote hostname to the
         destination.
     required: false
-    default: "true"
+    default: true
     type: bool
   is_binary:
     description:
       - Specifies if the file being fetched is a binary.
     required: false
-    default: "false"
+    default: false
     type: bool
   use_qualifier:
     description:
       - Indicates whether the data set high level qualifier should be used when
         fetching.
     required: false
-    default: "false"
+    default: false
     type: bool
   sftp_port:
     description:
@@ -562,7 +562,14 @@ def run_module():
             is_binary=dict(required=False, default=False, type="bool"),
             use_qualifier=dict(required=False, default=False, type="bool"),
             validate_checksum=dict(required=False, default=True, type="bool"),
-            encoding=dict(required=False, type="dict"),
+            encoding=dict(
+                required=False,
+                type="dict",
+                options={
+                    "from": dict(type="str", required=True),
+                    "to": dict(type="str", required=True)
+                }
+            ),
             sftp_port=dict(type="int", required=False),
             ignore_sftp_stderr=dict(type="bool", default=False, required=False),
             local_charset=dict(type="str"),

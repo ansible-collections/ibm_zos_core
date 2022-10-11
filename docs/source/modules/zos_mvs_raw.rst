@@ -103,7 +103,7 @@ dds
     data_set_name
       The data set name.
 
-      | **required**: True
+      | **required**: False
       | **type**: str
 
 
@@ -657,7 +657,7 @@ dds
 
       If a list of strings is provided, newlines will be added to each of the lines when used as input.
 
-      | **required**: False
+      | **required**: True
       | **type**: raw
 
 
@@ -831,7 +831,7 @@ dds
         data_set_name
           The data set name.
 
-          | **required**: True
+          | **required**: False
           | **type**: str
 
 
@@ -1371,7 +1371,7 @@ dds
 
           If a list of strings is provided, newlines will be added to each of the lines when used as input.
 
-          | **required**: False
+          | **required**: True
           | **type**: raw
 
 

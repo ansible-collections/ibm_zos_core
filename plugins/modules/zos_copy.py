@@ -278,14 +278,14 @@ options:
           - If the destination I(dest) data set does not exist , this sets the
             primary space allocated for the data set.
           - The unit of space used is set using I(space_type).
-        type: str
+        type: int
         required: false
       space_secondary:
         description:
           - If the destination I(dest) data set does not exist , this sets the
             secondary space allocated for the data set.
           - The unit of space used is set using I(space_type).
-        type: str
+        type: int
         required: false
       space_type:
         description:
@@ -660,10 +660,10 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
     MissingZOAUImport,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.mvs_cmd import (
-    idcams, iebcopy, ikjeft01
+    idcams
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
-    better_arg_parser, data_set, encode, vtoc, backup, copy
+    better_arg_parser, data_set, encode, backup, copy
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
     AnsibleModuleHelper,
@@ -679,8 +679,6 @@ import stat
 import math
 import tempfile
 import os
-# import subprocess
-import time
 
 if PY3:
     from re import fullmatch
@@ -2332,13 +2330,26 @@ def main():
             src=dict(type='path'),
             dest=dict(required=True, type='str'),
             is_binary=dict(type='bool', default=False),
-            encoding=dict(type='dict'),
+            encoding=dict(
+                type='dict',
+                required=False,
+                options={
+                    'from': dict(
+                        type='str',
+                        required=True,
+                    ),
+                    "to": dict(
+                        type='str',
+                        required=True,
+                    )
+                }
+            ),
             content=dict(type='str', no_log=True),
             backup=dict(type='bool', default=False),
             backup_name=dict(type='str'),
             local_follow=dict(type='bool', default=True),
             remote_src=dict(type='bool', default=False),
-            sftp_port=dict(type='int', required=False),
+            sftp_port=dict(type='int', required=False, removed_at_date='2022-01-31', removed_from_collection='ibm.ibm_zos_core'),
             ignore_sftp_stderr=dict(type='bool', default=False),
             validate=dict(type='bool', default=False),
             volume=dict(type='str', required=False),
@@ -2369,8 +2380,8 @@ def main():
                     record_length=dict(type='int', required=False),
                     block_size=dict(type='int', required=False),
                     directory_blocks=dict(type="int", required=False),
-                    key_offset=dict(type="int", required=False),
-                    key_length=dict(type="int", required=False),
+                    key_offset=dict(type="int", required=False, no_log=False),
+                    key_length=dict(type="int", required=False, no_log=False),
                     sms_storage_class=dict(type="str", required=False),
                     sms_data_class=dict(type="str", required=False),
                     sms_management_class=dict(type="str", required=False),
@@ -2386,18 +2397,10 @@ def main():
             src_member=dict(type='bool'),
             local_charset=dict(type='str'),
             force=dict(type='bool', default=False),
-            mode=dict(type='str', required=False)
+            mode=dict(type='str', required=False),
         ),
         add_file_common_args=True,
     )
-    if module.params.get('sftp_port'):
-        module.deprecate(
-            msg='Support for configuring sftp_port has been deprecated.'
-            'Configuring the SFTP port is now managed through Ansible connection plugins option \'ansible_port\'',
-            version='1.5.0',
-            date='2021-08-01',
-            collection_name='ibm.ibm_zos_core')
-        # Date and collection are supported in Ansbile 2.9.10 or later
 
     arg_def = dict(
         src=dict(arg_type='data_set_or_path', required=False),
@@ -2458,17 +2461,6 @@ def main():
                 to_encoding=dict(arg_type="encoding"),
             )
         )
-
-    if not module.params.get("destination_dataset"):
-        module.params["destination_dataset"] = {
-            "dd_type": "BASIC",
-            "space_primary": 5,
-            "space_secondary": 3,
-            "space_type": 'TRK',
-            "record_format": 'FB',
-            "record_length": 80,
-            "block_size": 6147,
-        }
 
     res_args = temp_path = conv_path = None
     try:

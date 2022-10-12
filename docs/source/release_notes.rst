@@ -80,7 +80,8 @@ Reference
 
 * Supported by `z/OS V2R3`_ or later
 * Supported by the `z/OS® shell`_
-* Supported by `IBM Open Enterprise SDK for Python`_ 3.8.2 or later
+* Supported by `IBM Open Enterprise SDK for Python`_ v3.8.2 -
+  `IBM Open Enterprise SDK for Python`_ v3.9.5
 * Supported by IBM `Z Open Automation Utilities 1.1.0`_ and
   `Z Open Automation Utilities 1.1.1`_
 
@@ -251,6 +252,56 @@ release.
 
 .. _SSH port:
    https://docs.ansible.com/ansible/latest/collections/ansible/builtin/ssh_connection.html#parameter-port
+
+Version 1.3.6
+=============
+
+What's New
+----------
+
+* Bug Fixes
+
+  * Modules
+
+    * ``zos_copy`` fixes a bug that when a directory is copied from the
+      controller to the managed node and a mode is set, the mode is now applied
+      to the directory on the controller. If the directory being copied contains
+      files and mode is set, mode will only be applied to the files being copied
+      not the pre-existing files.
+    * ``zos_copy`` - fixes a bug where options were not defined in the module
+      argument spec that will result in error when running `ansible-core` v2.11
+      and using options `force` or `mode`.
+    * ``zos_copy`` - was enhanced for when `src` is a directory and ends with "/",
+      the contents of it will be copied into the root of `dest`. It it doesn't
+      end with "/", the directory itself will be copied.
+    * ``zos_fetch`` - fixes a bug where an option was not defined in the module
+      argument spec that will result in error when running `ansible-core` v2.11
+      and using option `encoding`.
+    * ``zos_job_submit`` - fixes a bug where an option was not defined in the
+      module argument spec that will result in error when running
+      `ansible-core` v2.11 and using option `encoding`.
+    * ``jobs.py`` - fixes a utility used by module `zos_job_output` that would
+      truncate the DD content.
+    * ``zos_ssh`` connection plugin was updated to correct a bug that causes
+      an `ANSIBLE_SSH_CONTROL_PATH_DIR` attribute error only when using
+      ansible-core v2.11.
+
+Availability
+------------
+
+* `Automation Hub`_
+* `Galaxy`_
+* `GitHub`_
+
+Reference
+---------
+
+* Supported by `z/OS V2R3`_ or later
+* Supported by the `z/OS® shell`_
+* Supported by `IBM Open Enterprise SDK for Python`_ v3.8.2 -
+  `IBM Open Enterprise SDK for Python`_ v3.9.5
+* Supported by IBM `Z Open Automation Utilities 1.1.0`_ and
+  `Z Open Automation Utilities 1.1.1`_
 
 Version 1.3.4
 =============

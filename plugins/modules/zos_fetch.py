@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020, 2021, 2021
+# Copyright (c) IBM Corporation 2019, 2020, 2021, 2022
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -55,14 +55,14 @@ options:
     description:
       - When set to true, the task will fail if the source file is missing.
     required: false
-    default: "true"
+    default: true
     type: bool
   validate_checksum:
     description:
       - Verify that the source and destination checksums match after the files
         are fetched.
     required: false
-    default: "true"
+    default: true
     type: bool
   flat:
     description:
@@ -71,20 +71,20 @@ options:
         the destination directory without appending remote hostname to the
         destination.
     required: false
-    default: "true"
+    default: true
     type: bool
   is_binary:
     description:
       - Specifies if the file being fetched is a binary.
     required: false
-    default: "false"
+    default: false
     type: bool
   use_qualifier:
     description:
       - Indicates whether the data set high level qualifier should be used when
         fetching.
     required: false
-    default: "false"
+    default: false
     type: bool
   sftp_port:
     description:
@@ -134,7 +134,6 @@ options:
     type: bool
     required: false
     default: false
-    version_added: "1.4.0"
 notes:
     - When fetching PDSE and VSAM data sets, temporary storage will be used
       on the remote z/OS system. After the PDSE or VSAM data set is
@@ -273,15 +272,12 @@ rc:
 """
 
 
-import base64
-import hashlib
 import tempfile
 import re
 import os
 
 from math import ceil
-from shutil import rmtree, move
-from ansible.module_utils.six import PY3
+from shutil import rmtree
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils._text import to_bytes
 from ansible.module_utils.parsing.convert_bool import boolean
@@ -294,11 +290,6 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
     MissingZOAUImport,
 )
 
-
-if PY3:
-    from shlex import quote
-else:
-    from pipes import quote
 
 try:
     from zoautil_py import datasets, mvscmd, types
@@ -562,8 +553,15 @@ def run_module():
             is_binary=dict(required=False, default=False, type="bool"),
             use_qualifier=dict(required=False, default=False, type="bool"),
             validate_checksum=dict(required=False, default=True, type="bool"),
-            encoding=dict(required=False, type="dict"),
-            sftp_port=dict(type="int", required=False),
+            sftp_port=dict(type="int", required=False, removed_at_date='2022-01-31', removed_from_collection='ibm.ibm_zos_core'),
+            encoding=dict(
+                required=False,
+                type="dict",
+                options={
+                    "from": dict(type="str", required=True),
+                    "to": dict(type="str", required=True)
+                }
+            ),
             ignore_sftp_stderr=dict(type="bool", default=False, required=False),
             local_charset=dict(type="str"),
         )
@@ -572,15 +570,6 @@ def run_module():
     src = module.params.get("src")
     if module.params.get("use_qualifier"):
         module.params["src"] = datasets.hlq() + "." + src
-
-    if module.params.get('sftp_port'):
-        module.deprecate(
-            msg='Support for configuring sftp_port has been deprecated.'
-            'Configuring the SFTP port is now managed through Ansible connection plugins option \'ansible_port\'',
-            version='1.5.0',
-            date='2021-08-01',
-            collection_name='ibm.ibm_zos_core')
-        # Date and collection are supported in Ansbile 2.9.10 or later
 
     # ********************************************************** #
     #                   Verify paramater validity                #

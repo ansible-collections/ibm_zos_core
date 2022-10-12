@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020
+# Copyright (c) IBM Corporation 2019, 2020, 2022
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -15,7 +15,7 @@
 DOCUMENTATION = r"""
 ---
 module: zos_ping
-version_added: 2.9
+version_added: "1.1.0"
 short_description: Ping z/OS and check dependencies.
 description:
   - M(zos_ping) verifies the presence of z/OS Web Client Enablement Toolkit,

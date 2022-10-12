@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020
+# Copyright (c) IBM Corporation 2020, 2022
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -19,6 +19,7 @@ __metaclass__ = type
 DOCUMENTATION = r'''
 ---
 module: zos_blockinfile
+version_added: '1.3.0'
 author:
   - "Behnam (@balkajbaf)"
 short_description: Manage block of multi-line textual data on z/OS
@@ -251,29 +252,17 @@ backup_name:
 """
 
 import json
-from ansible.module_utils.six import b
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils._text import to_bytes
-from ansible.module_utils.six import PY3
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser, data_set, backup as Backup)
-from os import path
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     MissingZOAUImport,
-)
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
-    BetterArgParser,
 )
 
 try:
     from zoautil_py import datasets
 except Exception:
     Datasets = MissingZOAUImport()
-
-if PY3:
-    from shlex import quote
-else:
-    from pipes import quote
 
 # supported data set types
 DS_TYPE = ['PS', 'PO']
@@ -383,8 +372,6 @@ def main():
         ),
         mutually_exclusive=[['insertbefore', 'insertafter']],
     )
-
-    params = module.params
 
     arg_defs = dict(
         src=dict(arg_type='data_set_or_path', aliases=['path', 'destfile', 'name'], required=True),

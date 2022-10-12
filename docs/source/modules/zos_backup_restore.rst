@@ -42,7 +42,7 @@ operation
 data_sets
   Determines which data sets to include in the backup.
 
-  | **required**: True
+  | **required**: False
   | **type**: dict
 
 
@@ -59,7 +59,7 @@ data_sets
 
     A question mark ``?`` or percent sign ``%`` matches a single character.
 
-    | **required**: True
+    | **required**: False
     | **type**: raw
 
 

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020, 2021
+# Copyright (c) IBM Corporation 2020, 2021, 2022
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -21,6 +21,7 @@ __metaclass__ = type
 DOCUMENTATION = r"""
 ---
 module: zos_mount
+version_added: "1.4.0"
 author:
     - "Rich Parker (@richp405)"
 short_description: Mount a z/OS file system.
@@ -157,6 +158,7 @@ options:
                     - Comments are used to encapsulate the I(persistent/data_store) entry
                       such that they can easily be understood and located.
                 type: list
+                elements: str
                 required: False
     unmount_opts:
         description:
@@ -215,6 +217,7 @@ options:
             - TEXT
             - NOTEXT
         required: False
+        default: ''
     tag_ccsid:
         description:
             - Identifies the coded character set identifier (ccsid) to be
@@ -532,16 +535,10 @@ import tempfile
 from datetime import datetime
 from ansible.module_utils.basic import AnsibleModule
 
-
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
-    AnsibleModuleHelper,
-)
-
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser,
     data_set,
     backup as Backup,
-    mvs_cmd,
 )
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
@@ -550,7 +547,6 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.copy import (
     copy_ps2uss,
-    copy_mvs2mvs,
     copy_uss2mvs,
 )
 
@@ -1079,7 +1075,7 @@ def main():
                     ),
                     backup=dict(type="bool", default=False),
                     backup_name=dict(type="str", required=False, default=None),
-                    comment=dict(type="list", required=False),
+                    comment=dict(type="list", elements="str", required=False),
                 ),
             ),
             unmount_opts=dict(
@@ -1109,7 +1105,6 @@ def main():
             ),
             automove_list=dict(type="str", required=False),
         ),
-        add_file_common_args=True,
         supports_check_mode=True,
     )
 

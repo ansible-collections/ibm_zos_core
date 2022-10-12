@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020
+# Copyright (c) IBM Corporation 2019, 2020, 2022
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -26,7 +26,7 @@ description:
     - Submit a job and optionally monitor for its execution.
     - Optionally wait for the job output until the job finishes.
     - For the uncataloged dataset, specify the volume serial number.
-version_added: "2.9"
+version_added: "1.0.0"
 options:
   src:
     required: true
@@ -39,7 +39,7 @@ options:
       - Or an LOCAL file in ansible control node.
         (e.g "/User/tester/ansible-playbook/sample.jcl")
   location:
-    required: true
+    required: false
     default: DATA_SET
     type: str
     choices:
@@ -186,7 +186,8 @@ jobs:
         content:
           description:
              The ddname content.
-          type: list[str]
+          type: list
+          elements: str
           sample:
              [ "         1 //HELLO    JOB (T043JM,JM00,1,0,0,0),'HELLO WORLD - JRM',CLASS=R,       JOB00134",
                "           //             MSGCLASS=X,MSGLEVEL=1,NOTIFY=S0JM                                ",
@@ -532,7 +533,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import job_ou
 from timeit import default_timer as timer
 import re
 from tempfile import NamedTemporaryFile
-from os import chmod, path, remove, stat
+from os import chmod, path, remove
 from time import sleep
 from ansible.module_utils.basic import AnsibleModule
 
@@ -542,7 +543,7 @@ if PY3:
 else:
     from pipes import quote
 
-"""time between job query checks to see if a job has completed, default 1 second"""
+# time between job query checks to see if a job has completed, default 1 second
 POLLING_INTERVAL = 1
 POLLING_COUNT = 60
 
@@ -658,13 +659,28 @@ def assert_valid_return_code(max_rc, found_rc):
 def run_module():
     module_args = dict(
         src=dict(type="str", required=True),
-        wait=dict(type="bool", required=False),
+        wait=dict(type="bool", required=False, default=False),
         location=dict(
             type="str",
             default="DATA_SET",
             choices=["DATA_SET", "USS", "LOCAL"],
         ),
-        encoding=dict(type="dict", required=False),
+        encoding=dict(
+            type="dict",
+            required=False,
+            options={
+                "from": dict(
+                    type="str",
+                    required=False,
+                    default="ISO8859-1"
+                ),
+                "to": dict(
+                    type="str",
+                    required=False,
+                    default="IBM-1047"
+                )
+            }
+        ),
         volume=dict(type="str", required=False),
         return_output=dict(type="bool", required=False, default=True),
         wait_time_s=dict(type="int", default=60),
@@ -801,9 +817,6 @@ def run_module():
         except IndexError:
             pass
         except Exception as e:
-            result["err_detail"] = "{1} {2}.\n".format(
-                "Error during job submission.  The output is:", job_output_txt or " "
-            )
             module.fail_json(msg=repr(e), **result)
 
         if bool(job_output_txt):

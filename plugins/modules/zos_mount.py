@@ -1105,7 +1105,6 @@ def main():
             ),
             automove_list=dict(type="str", required=False),
         ),
-        add_file_common_args=True,
         supports_check_mode=True,
     )
 

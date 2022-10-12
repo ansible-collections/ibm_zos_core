@@ -1981,7 +1981,6 @@ def run_module(module, arg_def):
     is_src_dir = module.params.get('is_src_dir')
     is_mvs_dest = module.params.get('is_mvs_dest')
     temp_path = module.params.get('temp_path')
-    alloc_size = module.params.get('size')
     src_member = module.params.get('src_member')
     copy_member = module.params.get('copy_member')
     force = module.params.get('force')
@@ -2001,7 +2000,7 @@ def run_module(module, arg_def):
     src_name = data_set.extract_dsname(src) if src else None
     member_name = data_set.extract_member_name(src) if src_member else None
 
-    conv_path = src_ds_vol = src_ds_type = dest_ds_type = dest_exists = None
+    conv_path = src_ds_type = dest_ds_type = dest_exists = None
     res_args = dict()
 
     # ********************************************************************
@@ -2030,7 +2029,6 @@ def run_module(module, arg_def):
     # and destination datasets, if needed.
     # ********************************************************************
     dest_member_exists = False
-    src_has_subdirs = False
     try:
         # If temp_path, the plugin has copied a file from the controller to USS.
         if temp_path or "/" in src:
@@ -2040,7 +2038,6 @@ def run_module(module, arg_def):
                 if src_member and not data_set.DataSet.data_set_member_exists(src):
                     raise NonExistentSourceError(src)
                 src_ds_type = data_set.DataSet.data_set_type(src_name)
-                src_ds_vol = data_set.DataSet.data_set_volume(src_name)
 
             else:
                 raise NonExistentSourceError(src)
@@ -2388,7 +2385,8 @@ def main():
             copy_member=dict(type='bool'),
             src_member=dict(type='bool'),
             local_charset=dict(type='str'),
-            force=dict(type='bool', default=False)
+            force=dict(type='bool', default=False),
+            mode=dict(type='str', required=False)
         ),
         add_file_common_args=True,
     )

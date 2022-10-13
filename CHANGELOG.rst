@@ -5,6 +5,39 @@ bm.ibm_zos_core Release Notes
 .. contents:: Topics
 
 
+v1.4.0-beta.2
+=============
+
+Release Summary
+---------------
+
+Release Date: '2022-10-17'
+This changelog describes all changes made to the modules and plugins included
+in this collection. The release date is the date the changelog is created.
+For additional details such as required dependencies and availability review
+the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__
+
+
+Minor Changes
+-------------
+
+- zos_copy - enhanced the force option when `force=true` and the remote file or data set `dest` is NOT empty, the `dest` will be deleted and recreated with the `src` data set attributes, otherwise it will be recreated with the `dest` data set attributes. (https://github.com/ansible-collections/ibm_zos_core/pull/306)
+- zos_copy - fixes a bug that when a directory is copied from the controller to the managed node and a mode is set, the mode is applied to the directory on the managed node. If the directory being copied contains files and mode is set, mode will only be applied to the files being copied not the pre-existing files. (https://github.com/ansible-collections/ibm_zos_core/pull/306)
+- zos_copy - fixes a bug where options were not defined in the module argument spec that will result in error when running `ansible-core` v2.11 and using options `force` or `mode`. (https://github.com/ansible-collections/ibm_zos_core/pull/496)
+- zos_copy - introduced an updated creation policy referred to as precedence rules such that if `dest_data_set` is set, this will take precedence. If `dest` is an empty data set, the empty data set will be written with the expectation its attributes satisfy the copy. If no precedent rule has been exercised, `dest` will be created with the same attributes of `src`. (https://github.com/ansible-collections/ibm_zos_core/pull/306)
+- zos_copy - introduced new computation capabilities such that if `dest` is a nonexistent data set, the attributes assigned will depend on the type of `src`. If `src` is a USS file, `dest` will have a Fixed Block (FB) record format and the remaining attributes will be computed. If `src` is binary, `dest` will have a Fixed Block (FB) record format with a record length of 80, block size of 32760, and the remaining attributes will be computed. (https://github.com/ansible-collections/ibm_zos_core/pull/306)
+- zos_copy - option `dest_dataset` has been deprecated and removed in favor of the new option `dest_data_set`. (https://github.com/ansible-collections/ibm_zos_core/pull/306)
+- zos_copy - was enhanced for when `src` is a directory and ends with "/", the contents of it will be copied into the root of `dest`. It it doesn't end with "/", the directory itself will be copied. (https://github.com/ansible-collections/ibm_zos_core/pull/496)
+
+Bugfixes
+--------
+
+- zos_copy - fixes a bug that did not create a data set on the specified volume. (https://github.com/ansible-collections/ibm_zos_core/pull/306)
+- zos_copy - fixes a bug where a number of attributes were not an option when using `dest_data_set`. (https://github.com/ansible-collections/ibm_zos_core/pull/306)
+- zos_job_output - fixes a bug that returned all ddname's when a specific ddname was provided. Now a specific ddname can be returned and all others ignored. (https://github.com/ansible-collections/ibm_zos_core/pull/507)
+- zos_mount - fixed option `tag_ccsid` to correctly allow for type int. (https://github.com/ansible-collections/ibm_zos_core/pull/502)
+- zos_operator - enhanced to allow for MVS operator `SET` command, `SET` is equivalent to the abbreviated `T` command. (https://github.com/ansible-collections/ibm_zos_core/pull/501)
+
 v1.4.0-beta.1
 =============
 
@@ -12,7 +45,7 @@ Release Summary
 ---------------
 
 Release Date: '2021-06-23'
-This changelog describes all changes made to the modules and plugins included
+This changlelog describes all changes made to the modules and plugins included
 in this collection.
 For additional details such as required dependencies and availablity review
 the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__ 
@@ -87,14 +120,14 @@ Bugfixes
 - zos_ssh - fixes connection plugin which will error when using `ansible-core` 2.11 with an `AttributeError module 'ansible.constants' has no attribute 'ANSIBLE_SSH_CONTROL_PATH_DIR'`. (https://github.com/ansible-collections/ibm_zos_core/pull/462)
 - zos_ssh - fixes connection plugin which will error when using `ansible-core` 2.11 with an `AttributeError module 'ansible.constants' has no attribute 'ANSIBLE_SSH_CONTROL_PATH_DIR'`. (https://github.com/ansible-collections/ibm_zos_core/pull/513)
 
-v1.3.4
+v1.3.5
 ======
 
 Release Summary
 ---------------
 
 Release Date: '2022-03-06'
-This changelog describes all changes made to the modules and plugins included
+This changlelog describes all changes made to the modules and plugins included
 in this collection.
 For additional details such as required dependencies and availablity review
 the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__ 
@@ -119,7 +152,7 @@ Release Summary
 ---------------
 
 Release Date: '2022-26-04'
-This changelog describes all changes made to the modules and plugins included
+This changlelog describes all changes made to the modules and plugins included
 in this collection.
 For additional details such as required dependencies and availablity review
 the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__ 
@@ -138,7 +171,7 @@ Release Summary
 ---------------
 
 Release Date: '2022-27-04'
-This changelog describes all changes made to the modules and plugins included
+This changlelog describes all changes made to the modules and plugins included
 in this collection.
 For additional details such as required dependencies and availablity review
 the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__ 
@@ -162,7 +195,7 @@ Release Summary
 ---------------
 
 Release Date: '2021-19-04'
-This changelog describes all changes made to the modules and plugins included
+This changlelog describes all changes made to the modules and plugins included
 in this collection.
 For additional details such as required dependencies and availablity review
 the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__ 
@@ -219,7 +252,7 @@ Release Summary
 ---------------
 
 Release Date: '2020-10-09'
-This changelog describes all changes made to the modules and plugins included
+This changlelog describes all changes made to the modules and plugins included
 in this collection.
 For additional details such as required dependencies and availablity review
 the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__.
@@ -252,7 +285,7 @@ Release Summary
 ---------------
 
 Release Date: '2020-26-01'
-This changelog describes all changes made to the modules and plugins included
+This changlelog describes all changes made to the modules and plugins included
 in this collection.
 For additional details such as required dependencies and availablity review
 the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__
@@ -283,7 +316,7 @@ Release Summary
 ---------------
 
 Release Date: '2020-18-03'
-This changelog describes all changes made to the modules and plugins included
+This changlelog describes all changes made to the modules and plugins included
 in this collection.
 For additional details such as required dependencies and availablity review
 the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__ 

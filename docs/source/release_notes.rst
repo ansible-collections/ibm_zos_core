@@ -36,7 +36,7 @@ Version 1.4.0-beta.2
         the contents of it will be copied into the root of `dest`. It it doesn't
         end with "/", the directory itself will be copied.
       * option `dest_dataset` has been deprecated and removed in favor
-         of the new option `dest_data_set`.
+        of the new option `dest_data_set`.
       * fixes a bug that when a directory is copied from the controller to the
         managed node and a mode is set, the mode is applied to the directory
         on the managed node. If the directory being copied contains files and

@@ -27,7 +27,7 @@ Minor Changes
 - zos_copy - introduced an updated creation policy referred to as precedence rules such that if `dest_data_set` is set, this will take precedence. If `dest` is an empty data set, the empty data set will be written with the expectation its attributes satisfy the copy. If no precedent rule has been exercised, `dest` will be created with the same attributes of `src`. (https://github.com/ansible-collections/ibm_zos_core/pull/306)
 - zos_copy - introduced new computation capabilities such that if `dest` is a nonexistent data set, the attributes assigned will depend on the type of `src`. If `src` is a USS file, `dest` will have a Fixed Block (FB) record format and the remaining attributes will be computed. If `src` is binary, `dest` will have a Fixed Block (FB) record format with a record length of 80, block size of 32760, and the remaining attributes will be computed. (https://github.com/ansible-collections/ibm_zos_core/pull/306)
 - zos_copy - option `dest_dataset` has been deprecated and removed in favor of the new option `dest_data_set`. (https://github.com/ansible-collections/ibm_zos_core/pull/306)
-- zos_copy - was enhanced for when `src` is a directory and ends with "/", the contents of it will be copied into the root of `dest`. It it doesn't end with "/", the directory itself will be copied. (https://github.com/ansible-collections/ibm_zos_core/pull/496)
+- zos_copy - was enhanced for when `src` is a directory and ends with "/", the contents of it will be copied into the root of `dest`. If it doesn't end with "/", the directory itself will be copied. (https://github.com/ansible-collections/ibm_zos_core/pull/496)
 
 Bugfixes
 --------

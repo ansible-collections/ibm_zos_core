@@ -12,7 +12,7 @@ Release Summary
 ---------------
 
 Release Date: '2021-06-23'
-This changlelog describes all changes made to the modules and plugins included
+This changelog describes all changes made to the modules and plugins included
 in this collection.
 For additional details such as required dependencies and availablity review
 the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__ 
@@ -94,7 +94,7 @@ Release Summary
 ---------------
 
 Release Date: '2022-03-06'
-This changlelog describes all changes made to the modules and plugins included
+This changelog describes all changes made to the modules and plugins included
 in this collection.
 For additional details such as required dependencies and availablity review
 the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__ 
@@ -119,7 +119,7 @@ Release Summary
 ---------------
 
 Release Date: '2022-26-04'
-This changlelog describes all changes made to the modules and plugins included
+This changelog describes all changes made to the modules and plugins included
 in this collection.
 For additional details such as required dependencies and availablity review
 the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__ 
@@ -138,7 +138,7 @@ Release Summary
 ---------------
 
 Release Date: '2022-27-04'
-This changlelog describes all changes made to the modules and plugins included
+This changelog describes all changes made to the modules and plugins included
 in this collection.
 For additional details such as required dependencies and availablity review
 the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__ 
@@ -162,7 +162,7 @@ Release Summary
 ---------------
 
 Release Date: '2021-19-04'
-This changlelog describes all changes made to the modules and plugins included
+This changelog describes all changes made to the modules and plugins included
 in this collection.
 For additional details such as required dependencies and availablity review
 the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__ 
@@ -219,7 +219,7 @@ Release Summary
 ---------------
 
 Release Date: '2020-10-09'
-This changlelog describes all changes made to the modules and plugins included
+This changelog describes all changes made to the modules and plugins included
 in this collection.
 For additional details such as required dependencies and availablity review
 the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__.
@@ -252,7 +252,7 @@ Release Summary
 ---------------
 
 Release Date: '2020-26-01'
-This changlelog describes all changes made to the modules and plugins included
+This changelog describes all changes made to the modules and plugins included
 in this collection.
 For additional details such as required dependencies and availablity review
 the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__
@@ -283,7 +283,7 @@ Release Summary
 ---------------
 
 Release Date: '2020-18-03'
-This changlelog describes all changes made to the modules and plugins included
+This changelog describes all changes made to the modules and plugins included
 in this collection.
 For additional details such as required dependencies and availablity review
 the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__ 

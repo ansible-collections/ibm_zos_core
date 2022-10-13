@@ -1,0 +1,9 @@
+minor_changes:
+- zos_copy - was enhanced for when `src` is a directory and ends with "/", the
+  contents of it will be copied into the root of `dest`. It it doesn't end with
+  "/", the directory itself will be copied.
+  (https://github.com/ansible-collections/ibm_zos_core/pull/496)
+- zos_copy - fixes a bug where options were not defined in the module
+  argument spec that will result in error when running `ansible-core`
+  v2.11 and using options `force` or `mode`.
+  (https://github.com/ansible-collections/ibm_zos_core/pull/496)

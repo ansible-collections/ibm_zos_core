@@ -309,7 +309,7 @@ Reference
 * Supported by IBM `Z Open Automation Utilities 1.1.0`_ and
   `Z Open Automation Utilities 1.1.1`_
 
-Version 1.3.4
+Version 1.3.5
 =============
 
 What's New

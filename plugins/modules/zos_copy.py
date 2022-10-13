@@ -221,6 +221,9 @@ options:
       - If C(src) is a file and C(dest) ends with "/" or is a
         directory, the file is copied to the directory with the same filename as
         C(src).
+      - If C(src) is a directory and ends with "/", the contents of it will be copied
+        into the root of C(dest). If it doesn't end with "/", the directory itself
+        will be copied.
       - If C(src) is a VSAM data set, C(dest) must also be a VSAM.
       - Wildcards can be used to copy multiple PDS/PDSE members to another
         PDS/PDSE.
@@ -1044,39 +1047,48 @@ class USSCopyHandler(CopyHandler):
         temp_path,
         force
     ):
-        """Helper function to copy a USS directory to another USS directory
+        """Helper function to copy a USS directory to another USS directory.
+        If the path for dest_dir does not end with a trailing slash ("/"),
+        the src_dir itself will be copied into the destination.
 
         Arguments:
             src_dir {str} -- USS source directory
             dest_dir {str} -- USS dest directory
+            conv_path {str} -- Path to the converted source directory
             temp_path {str} -- Path to the location where the control node
                                transferred data to
-            conv_path {str} -- Path to the converted source directory
             force {bool} -- Whether to copy files to an already existing directory
 
         Raises:
             CopyOperationError -- When copying into the directory fails.
 
         Returns:
-            {str} -- Destination where the directory was copied to
+            {tuple} -- Destination where the directory was copied to, and
+                       a list of paths for all subdirectories and files
+                       that got copied.
         """
+        copy_directory = True if not src_dir.endswith("/") else False
+
         if temp_path:
             temp_path = "{0}/{1}".format(
                 temp_path,
                 os.path.basename(os.path.normpath(src_dir))
             )
+
         new_src_dir = temp_path or conv_path or src_dir
         new_src_dir = os.path.normpath(new_src_dir)
-
-        changed_files, original_permissions = self._get_changed_files(new_src_dir, dest_dir)
+        dest = dest_dir
+        changed_files, original_permissions = self._get_changed_files(new_src_dir, dest_dir, copy_directory)
 
         try:
-            dest = shutil.copytree(new_src_dir, dest_dir, dirs_exist_ok=force)
+            if copy_directory:
+                dest = os.path.join(dest_dir, os.path.basename(os.path.normpath(src_dir)))
+            dest = shutil.copytree(new_src_dir, dest, dirs_exist_ok=force)
 
             # Restoring permissions for preexisting files and subdirectories.
             for filepath, permissions in original_permissions:
                 mode = "0{0:o}".format(stat.S_IMODE(permissions))
-                self.module.set_mode_if_different(os.path.join(dest, filepath), mode, False)
+                self.module.set_mode_if_different(os.path.join(dest_dir, filepath), mode, False)
         except Exception as err:
             raise CopyOperationError(
                 msg="Error while copying data to destination directory {0}".format(dest_dir),
@@ -1084,13 +1096,17 @@ class USSCopyHandler(CopyHandler):
             )
         return dest, changed_files
 
-    def _get_changed_files(self, src, dest):
+    def _get_changed_files(self, src, dest, copy_directory):
         """Traverses a source directory and gets all the paths to files and
         subdirectories that got copied into a destination.
 
         Arguments:
             src (str) -- Path to the directory where files are copied from.
             dest (str) -- Path to the directory where files are copied into.
+            copy_directory (bool) -- Whether the src directory itself will be copied
+                                     into dest. The src basename will get appended
+                                     to filepaths when comparing.
+
 
         Returns:
             tuple -- A list of paths for all new subdirectories and files that
@@ -1101,9 +1117,13 @@ class USSCopyHandler(CopyHandler):
         original_files = self._walk_uss_tree(dest) if os.path.exists(dest) else []
         copied_files = self._walk_uss_tree(src)
 
+        # It's not needed to normalize the path because it was already normalized
+        # on _copy_to_dir.
+        parent_dir = os.path.basename(src) if copy_directory else ''
+
         changed_files = [
             relative_path for relative_path in copied_files
-            if relative_path not in original_files
+            if os.path.join(parent_dir, relative_path) not in original_files
         ]
 
         # Creating tuples with (filename, permissions).
@@ -1959,7 +1979,6 @@ def run_module(module, arg_def):
     is_src_dir = module.params.get('is_src_dir')
     is_mvs_dest = module.params.get('is_mvs_dest')
     temp_path = module.params.get('temp_path')
-    alloc_size = module.params.get('size')
     src_member = module.params.get('src_member')
     copy_member = module.params.get('copy_member')
     force = module.params.get('force')
@@ -1979,7 +1998,7 @@ def run_module(module, arg_def):
     src_name = data_set.extract_dsname(src) if src else None
     member_name = data_set.extract_member_name(src) if src_member else None
 
-    conv_path = src_ds_vol = src_ds_type = dest_ds_type = dest_exists = None
+    conv_path = src_ds_type = dest_ds_type = dest_exists = None
     res_args = dict()
 
     # ********************************************************************
@@ -1989,7 +2008,13 @@ def run_module(module, arg_def):
     #    to 'preserve'
     # ********************************************************************
     if remote_src and "/" in src:
-        src = os.path.realpath(src)
+        # Keeping the trailing slash because the CopyHandler will do
+        # different things depending on its existence.
+        if src.endswith("/"):
+            src = "{0}/".format(os.path.realpath(src))
+        else:
+            src = os.path.realpath(src)
+
         if not os.path.exists(src):
             module.fail_json(msg="Source {0} does not exist".format(src))
         if not os.access(src, os.R_OK):
@@ -2002,7 +2027,6 @@ def run_module(module, arg_def):
     # and destination datasets, if needed.
     # ********************************************************************
     dest_member_exists = False
-    src_has_subdirs = False
     try:
         # If temp_path, the plugin has copied a file from the controller to USS.
         if temp_path or "/" in src:
@@ -2012,7 +2036,6 @@ def run_module(module, arg_def):
                 if src_member and not data_set.DataSet.data_set_member_exists(src):
                     raise NonExistentSourceError(src)
                 src_ds_type = data_set.DataSet.data_set_type(src_name)
-                src_ds_vol = data_set.DataSet.data_set_volume(src_name)
 
             else:
                 raise NonExistentSourceError(src)

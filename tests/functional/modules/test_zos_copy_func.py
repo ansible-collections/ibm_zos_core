@@ -316,19 +316,19 @@ def test_copy_inline_content_to_uss_dir(ansible_zos_module):
 @pytest.mark.uss
 def test_copy_dir_to_existing_uss_dir_not_forced(ansible_zos_module):
     hosts = ansible_zos_module
-    dest_new_dir = "/tmp/new_dir"
-    dest_path = "{0}/profile".format(dest_new_dir)
-    dest_parent_dir = "/tmp/test_dir"
-    dest_old_dir = "{0}/old_dir".format(dest_parent_dir)
+    src_dir = "/tmp/new_dir/"
+    src_file = "{0}profile".format(src_dir)
+    dest_dir = "/tmp/test_dir"
+    dest_old_content = "{0}/old_dir".format(dest_dir)
 
     try:
-        hosts.all.file(path=dest_new_dir, state="directory")
-        hosts.all.file(path=dest_path, state="touch")
-        hosts.all.file(path=dest_old_dir, state="directory")
+        hosts.all.file(path=src_dir, state="directory")
+        hosts.all.file(path=src_file, state="touch")
+        hosts.all.file(path=dest_old_content, state="directory")
 
         copy_result = hosts.all.zos_copy(
-            src=dest_new_dir,
-            dest=dest_parent_dir,
+            src=src_dir,
+            dest=dest_dir,
             remote_src=True,
             force=False
         )
@@ -339,55 +339,238 @@ def test_copy_dir_to_existing_uss_dir_not_forced(ansible_zos_module):
             assert "Error" in result.get("msg")
             assert "EDC5117I" in result.get("stdout")
     finally:
-        hosts.all.file(path=dest_parent_dir, state="absent")
-        hosts.all.file(path=dest_new_dir, state="absent")
+        hosts.all.file(path=src_dir, state="absent")
+        hosts.all.file(path=dest_dir, state="absent")
 
 
 @pytest.mark.uss
-def test_copy_dir_to_existing_uss_dir_forced(ansible_zos_module):
+@pytest.mark.parametrize("copy_directory", [False, True])
+def test_copy_local_dir_to_non_existing_dir(ansible_zos_module, copy_directory):
     hosts = ansible_zos_module
-    dest_new_dir = "/tmp/new_dir/"
-    dest_path = "{0}profile".format(dest_new_dir)
-    dest_parent_dir = "/tmp/test_dir"
-    dest_old_dir = "{0}/old_dir".format(dest_parent_dir)
-    dest_dir = "{0}/profile".format(dest_parent_dir)
+    dest_path = "/tmp/new_dir"
+
+    temp_path = tempfile.mkdtemp()
+    src_basename = "source" if copy_directory else "source/"
+    source_path = "{0}/{1}".format(temp_path, src_basename)
 
     try:
-        hosts.all.file(path=dest_new_dir, state="directory")
-        hosts.all.file(path=dest_path, state="touch")
-        hosts.all.file(path=dest_old_dir, state="directory")
+        os.mkdir(source_path)
+        populate_dir(source_path)
+
+        copy_result = hosts.all.zos_copy(src=source_path, dest=dest_path)
+
+        stat_source_res = hosts.all.stat(path="{0}/{1}".format(dest_path, src_basename))
+        if copy_directory:
+            stat_file_res = hosts.all.stat(path="{0}/{1}/file3".format(dest_path, src_basename))
+        else:
+            stat_file_res = hosts.all.stat(path="{0}/file3".format(dest_path))
+
+        for result in copy_result.contacted.values():
+            assert result.get("msg") is None
+            assert result.get("changed") is True
+
+            if copy_directory:
+                assert result.get("dest") == "{0}/{1}".format(dest_path, src_basename)
+            else:
+                assert result.get("dest") == dest_path
+
+        for result in stat_source_res.contacted.values():
+            if copy_directory:
+                assert result.get("stat").get("exists") is True
+                assert result.get("stat").get("isdir") is True
+            else:
+                assert result.get("stat").get("exists") is False
+
+        for result in stat_file_res.contacted.values():
+            assert result.get("stat").get("exists") is True
+            assert result.get("stat").get("isdir") is False
+
+    finally:
+        hosts.all.file(path=dest_path, state="absent")
+        shutil.rmtree(temp_path)
+
+
+@pytest.mark.uss
+@pytest.mark.parametrize("copy_directory", [False, True])
+def test_copy_uss_dir_to_non_existing_dir(ansible_zos_module, copy_directory):
+    hosts = ansible_zos_module
+    src_basename = "source_dir" if copy_directory else "source_dir/"
+    src_dir = "/tmp/{0}".format(src_basename)
+    src_file = os.path.normpath("{0}/profile".format(src_dir))
+    dest_dir = "/tmp/dest_dir"
+
+    try:
+        hosts.all.file(path=src_dir, state="directory")
+        hosts.all.file(path=src_file, state="touch")
 
         copy_result = hosts.all.zos_copy(
-            src=dest_new_dir,
-            dest=dest_parent_dir,
+            src=src_dir,
+            dest=dest_dir,
+            remote_src=True
+        )
+
+        stat_dir_res = hosts.all.stat(path="{0}/{1}".format(dest_dir, src_basename))
+        if copy_directory:
+            stat_file_res = hosts.all.stat(path="{0}/{1}/profile".format(dest_dir, src_basename))
+        else:
+            stat_file_res = hosts.all.stat(path="{0}/profile".format(dest_dir))
+
+        for result in copy_result.contacted.values():
+            assert result.get("msg") is None
+            assert result.get("changed") is True
+
+            if copy_directory:
+                assert result.get("dest") == "{0}/{1}".format(dest_dir, src_basename)
+            else:
+                assert result.get("dest") == dest_dir
+
+        for result in stat_dir_res.contacted.values():
+            if copy_directory:
+                assert result.get("stat").get("exists") is True
+                assert result.get("stat").get("isdir") is True
+            else:
+                assert result.get("stat").get("exists") is False
+
+        for result in stat_file_res.contacted.values():
+            assert result.get("stat").get("exists") is True
+            assert result.get("stat").get("isdir") is False
+
+    finally:
+        hosts.all.file(path=src_dir, state="absent")
+        hosts.all.file(path=dest_dir, state="absent")
+
+
+@pytest.mark.uss
+@pytest.mark.parametrize("copy_directory", [False, True])
+def test_copy_local_dir_to_existing_dir_forced(ansible_zos_module, copy_directory):
+    hosts = ansible_zos_module
+    dest_path = "/tmp/new_dir"
+    dest_file = "{0}/profile".format(dest_path)
+
+    temp_path = tempfile.mkdtemp()
+    source_basename = "source" if copy_directory else "source/"
+    source_path = "{0}/{1}".format(temp_path, source_basename)
+
+    try:
+        os.mkdir(source_path)
+        populate_dir(source_path)
+
+        hosts.all.file(path=dest_path, state="directory")
+        hosts.all.file(path=dest_file, state="touch")
+
+        copy_result = hosts.all.zos_copy(
+            src=source_path,
+            dest=dest_path,
+            force=True
+        )
+
+        stat_source_res = hosts.all.stat(path="{0}/{1}".format(dest_path, source_basename))
+        stat_old_file_res = hosts.all.stat(path=dest_file)
+        if copy_directory:
+            stat_new_file_res = hosts.all.stat(path="{0}/{1}/file3".format(dest_path, source_basename))
+        else:
+            stat_new_file_res = hosts.all.stat(path="{0}/file3".format(dest_path))
+
+        for result in copy_result.contacted.values():
+            assert result.get("msg") is None
+            assert result.get("changed") is True
+
+            if copy_directory:
+                assert result.get("dest") == "{0}/{1}".format(dest_path, source_basename)
+            else:
+                assert result.get("dest") == dest_path
+
+        for result in stat_source_res.contacted.values():
+            if copy_directory:
+                assert result.get("stat").get("exists") is True
+                assert result.get("stat").get("isdir") is True
+            else:
+                assert result.get("stat").get("exists") is False
+
+        for result in stat_old_file_res.contacted.values():
+            assert result.get("stat").get("exists") is True
+            assert result.get("stat").get("isdir") is False
+
+        for result in stat_new_file_res.contacted.values():
+            assert result.get("stat").get("exists") is True
+            assert result.get("stat").get("isdir") is False
+
+    finally:
+        shutil.rmtree(temp_path)
+        hosts.all.file(path=dest_path, state="absent")
+
+
+@pytest.mark.uss
+@pytest.mark.parametrize("copy_directory", [False, True])
+def test_copy_uss_dir_to_existing_dir_forced(ansible_zos_module, copy_directory):
+    hosts = ansible_zos_module
+    src_basename = "source_dir" if copy_directory else "source_dir/"
+    src_dir = "/tmp/{0}".format(src_basename)
+    src_file = os.path.normpath("{0}/profile".format(src_dir))
+    dest_dir = "/tmp/dest_dir"
+    dest_file = "{0}/file".format(dest_dir)
+
+    try:
+        hosts.all.file(path=src_dir, state="directory")
+        hosts.all.file(path=src_file, state="touch")
+
+        hosts.all.file(path=dest_dir, state="directory")
+        hosts.all.file(path=dest_file, state="touch")
+
+        copy_result = hosts.all.zos_copy(
+            src=src_dir,
+            dest=dest_dir,
             remote_src=True,
             force=True
         )
 
-        stat_old_dir_res = hosts.all.stat(path=dest_old_dir)
-        stat_new_dir_res = hosts.all.stat(path=dest_dir)
+        stat_dir_res = hosts.all.stat(path="{0}/{1}".format(dest_dir, src_basename))
+        stat_old_file_res = hosts.all.stat(path=dest_file)
+        if copy_directory:
+            stat_new_file_res = hosts.all.stat(path="{0}/{1}/profile".format(dest_dir, src_basename))
+        else:
+            stat_new_file_res = hosts.all.stat(path="{0}/profile".format(dest_dir))
+
         for result in copy_result.contacted.values():
             assert result.get("msg") is None
             assert result.get("changed") is True
-        for result in stat_old_dir_res.contacted.values():
+
+            if copy_directory:
+                assert result.get("dest") == "{0}/{1}".format(dest_dir, src_basename)
+            else:
+                assert result.get("dest") == dest_dir
+
+        for result in stat_dir_res.contacted.values():
+            if copy_directory:
+                assert result.get("stat").get("exists") is True
+                assert result.get("stat").get("isdir") is True
+            else:
+                assert result.get("stat").get("exists") is False
+
+        for result in stat_new_file_res.contacted.values():
             assert result.get("stat").get("exists") is True
-            assert result.get("stat").get("isdir") is True
-        for result in stat_new_dir_res.contacted.values():
+            assert result.get("stat").get("isdir") is False
+
+        for result in stat_old_file_res.contacted.values():
             assert result.get("stat").get("exists") is True
+            assert result.get("stat").get("isdir") is False
 
     finally:
-        hosts.all.file(path=dest_parent_dir, state="absent")
-        hosts.all.file(path=dest_new_dir, state="absent")
+        hosts.all.file(path=src_dir, state="absent")
+        hosts.all.file(path=dest_dir, state="absent")
 
 
 @pytest.mark.uss
-def test_copy_local_nested_dir_to_existing_uss_dir_forced(ansible_zos_module):
+@pytest.mark.parametrize("create_dest", [False, True])
+def test_copy_local_nested_dir_to_uss(ansible_zos_module, create_dest):
     hosts = ansible_zos_module
     dest_path = "/tmp/new_dir"
 
     source_path = tempfile.mkdtemp()
-    subdir_a_path = "{0}/subdir_a".format(source_path)
-    subdir_b_path = "{0}/subdir_b".format(source_path)
+    if not source_path.endswith("/"):
+        source_path = "{0}/".format(source_path)
+    subdir_a_path = "{0}subdir_a".format(source_path)
+    subdir_b_path = "{0}subdir_b".format(source_path)
 
     try:
         os.mkdir(subdir_a_path)
@@ -395,11 +578,13 @@ def test_copy_local_nested_dir_to_existing_uss_dir_forced(ansible_zos_module):
         populate_dir(subdir_a_path)
         populate_dir(subdir_b_path)
 
-        hosts.all.file(path=dest_path, state="directory")
+        if create_dest:
+            hosts.all.file(path=dest_path, state="directory")
+
         copy_result = hosts.all.zos_copy(
             src=source_path,
             dest=dest_path,
-            force=True
+            force=create_dest
         )
 
         stat_subdir_a_res = hosts.all.stat(path="{0}/subdir_a".format(dest_path))
@@ -408,6 +593,7 @@ def test_copy_local_nested_dir_to_existing_uss_dir_forced(ansible_zos_module):
         for result in copy_result.contacted.values():
             assert result.get("msg") is None
             assert result.get("changed") is True
+            assert result.get("dest") == dest_path
         for result in stat_subdir_a_res.contacted.values():
             assert result.get("stat").get("exists") is True
             assert result.get("stat").get("isdir") is True
@@ -418,6 +604,234 @@ def test_copy_local_nested_dir_to_existing_uss_dir_forced(ansible_zos_module):
     finally:
         hosts.all.file(path=dest_path, state="absent")
         shutil.rmtree(source_path)
+
+
+@pytest.mark.uss
+@pytest.mark.parametrize("create_dest", [False, True])
+def test_copy_uss_nested_dir_to_uss(ansible_zos_module, create_dest):
+    hosts = ansible_zos_module
+    source_path = "/tmp/old_dir/"
+    dest_path = "/tmp/new_dir"
+
+    subdir_a_path = "{0}subdir_a".format(source_path)
+    subdir_b_path = "{0}subdir_b".format(source_path)
+
+    try:
+        hosts.all.file(path=subdir_a_path, state="directory")
+        hosts.all.file(path=subdir_b_path, state="directory")
+        if create_dest:
+            hosts.all.file(path=dest_path, state="directory")
+
+        copy_result = hosts.all.zos_copy(
+            src=source_path,
+            dest=dest_path,
+            remote_src=True,
+            force=create_dest
+        )
+
+        stat_subdir_a_res = hosts.all.stat(path="{0}/subdir_a".format(dest_path))
+        stat_subdir_b_res = hosts.all.stat(path="{0}/subdir_b".format(dest_path))
+
+        for result in copy_result.contacted.values():
+            assert result.get("msg") is None
+            assert result.get("changed") is True
+            assert result.get("dest") == dest_path
+        for result in stat_subdir_a_res.contacted.values():
+            assert result.get("stat").get("exists") is True
+            assert result.get("stat").get("isdir") is True
+        for result in stat_subdir_b_res.contacted.values():
+            assert result.get("stat").get("exists") is True
+            assert result.get("stat").get("isdir") is True
+
+    finally:
+        hosts.all.file(path=source_path, state="absent")
+        hosts.all.file(path=dest_path, state="absent")
+
+
+@pytest.mark.uss
+@pytest.mark.parametrize("copy_directory", [False, True])
+def test_copy_local_dir_and_change_mode(ansible_zos_module, copy_directory):
+    hosts = ansible_zos_module
+
+    source_parent_path = tempfile.mkdtemp()
+    source_basename = "source" if copy_directory else "source/"
+    source_path = "{0}/{1}".format(source_parent_path, source_basename)
+    mode = "0755"
+
+    dest_path = "/tmp/new_dir"
+    dest_profile = "{0}/profile".format(dest_path)
+    dest_subdir = "{0}/{1}".format(dest_path, source_basename)
+    if copy_directory:
+        dest_old_file = "{0}/file1".format(dest_subdir)
+    else:
+        dest_old_file = "{0}/file1".format(dest_path)
+    dest_mode = "0644"
+
+    try:
+        os.mkdir(source_path)
+        populate_dir(source_path)
+
+        if copy_directory:
+            hosts.all.file(path=dest_subdir, state="directory", mode=dest_mode)
+        else:
+            hosts.all.file(path=dest_path, state="directory", mode=dest_mode)
+        hosts.all.file(path=dest_profile, state="touch", mode=dest_mode)
+        hosts.all.file(path=dest_old_file, state="touch", mode=dest_mode)
+
+        copy_result = hosts.all.zos_copy(
+            src=source_path,
+            dest=dest_path,
+            force=True,
+            mode=mode
+        )
+
+        stat_dir_res = hosts.all.stat(path=dest_path)
+        stat_subdir_res = hosts.all.stat(path=dest_subdir)
+        stat_old_file_res = hosts.all.stat(path=dest_profile)
+        stat_overwritten_file_res = hosts.all.stat(path=dest_old_file)
+        if copy_directory:
+            stat_new_file_res = hosts.all.stat(path="{0}/file3".format(dest_subdir))
+        else:
+            stat_new_file_res = hosts.all.stat(path="{0}/file3".format(dest_path))
+
+        for result in copy_result.contacted.values():
+            assert result.get("msg") is None
+            assert result.get("changed") is True
+
+            if copy_directory:
+                assert result.get("dest") == dest_subdir
+            else:
+                assert result.get("dest") == dest_path
+
+        for result in stat_dir_res.contacted.values():
+            assert result.get("stat").get("exists") is True
+            assert result.get("stat").get("isdir") is True
+
+            if copy_directory:
+                assert result.get("stat").get("mode") == dest_mode
+            else:
+                assert result.get("stat").get("mode") == mode
+
+        for result in stat_subdir_res.contacted.values():
+            if copy_directory:
+                assert result.get("stat").get("exists") is True
+                assert result.get("stat").get("isdir") is True
+                assert result.get("stat").get("mode") == mode
+            else:
+                assert result.get("stat").get("exists") is False
+
+        for result in stat_old_file_res.contacted.values():
+            assert result.get("stat").get("exists") is True
+            assert result.get("stat").get("isdir") is False
+            assert result.get("stat").get("mode") == dest_mode
+
+        for result in stat_overwritten_file_res.contacted.values():
+            assert result.get("stat").get("exists") is True
+            assert result.get("stat").get("isdir") is False
+            assert result.get("stat").get("mode") == dest_mode
+
+        for result in stat_new_file_res.contacted.values():
+            assert result.get("stat").get("exists") is True
+            assert result.get("stat").get("isdir") is False
+            assert result.get("stat").get("mode") == mode
+
+    finally:
+        hosts.all.file(path=dest_path, state="absent")
+        shutil.rmtree(source_parent_path)
+
+
+@pytest.mark.uss
+@pytest.mark.parametrize("copy_directory", [False, True])
+def test_copy_uss_dir_and_change_mode(ansible_zos_module, copy_directory):
+    hosts = ansible_zos_module
+
+    source_basename = "source" if copy_directory else "source/"
+    source_path = "/tmp/{0}".format(source_basename)
+    mode = "0755"
+
+    dest_path = "/tmp/new_dir"
+    dest_subdir = "{0}/{1}".format(dest_path, source_basename)
+    dest_profile = "{0}/profile".format(dest_path)
+    if copy_directory:
+        dest_old_file = "{0}/file1".format(dest_subdir)
+    else:
+        dest_old_file = "{0}/file1".format(dest_path)
+    dest_mode = "0644"
+
+    try:
+        hosts.all.file(path=source_path, state="directory")
+        for i in range(1, 4):
+            current_file_path = os.path.normpath("{0}/file{1}".format(source_path, i))
+            hosts.all.file(path=current_file_path, state="touch")
+
+        if copy_directory:
+            hosts.all.file(path=dest_subdir, state="directory", mode=dest_mode)
+        else:
+            hosts.all.file(path=dest_path, state="directory", mode=dest_mode)
+        hosts.all.file(path=dest_profile, state="touch", mode=dest_mode)
+        hosts.all.file(path=dest_old_file, state="touch", mode=dest_mode)
+
+        copy_result = hosts.all.zos_copy(
+            src=source_path,
+            dest=dest_path,
+            force=True,
+            remote_src=True,
+            mode=mode
+        )
+
+        stat_dir_res = hosts.all.stat(path=dest_path)
+        stat_subdir_res = hosts.all.stat(path=dest_subdir)
+        stat_old_file_res = hosts.all.stat(path=dest_profile)
+        stat_overwritten_file_res = hosts.all.stat(path=dest_old_file)
+        if copy_directory:
+            stat_new_file_res = hosts.all.stat(path="{0}/file3".format(dest_subdir))
+        else:
+            stat_new_file_res = hosts.all.stat(path="{0}/file3".format(dest_path))
+
+        for result in copy_result.contacted.values():
+            assert result.get("msg") is None
+            assert result.get("changed") is True
+
+            if copy_directory:
+                assert result.get("dest") == dest_subdir
+            else:
+                assert result.get("dest") == dest_path
+
+        for result in stat_dir_res.contacted.values():
+            assert result.get("stat").get("exists") is True
+            assert result.get("stat").get("isdir") is True
+
+            if copy_directory:
+                assert result.get("stat").get("mode") == dest_mode
+            else:
+                assert result.get("stat").get("mode") == mode
+
+        for result in stat_subdir_res.contacted.values():
+            if copy_directory:
+                assert result.get("stat").get("exists") is True
+                assert result.get("stat").get("isdir") is True
+                assert result.get("stat").get("mode") == mode
+            else:
+                assert result.get("stat").get("exists") is False
+
+        for result in stat_old_file_res.contacted.values():
+            assert result.get("stat").get("exists") is True
+            assert result.get("stat").get("isdir") is False
+            assert result.get("stat").get("mode") == dest_mode
+
+        for result in stat_overwritten_file_res.contacted.values():
+            assert result.get("stat").get("exists") is True
+            assert result.get("stat").get("isdir") is False
+            assert result.get("stat").get("mode") == dest_mode
+
+        for result in stat_new_file_res.contacted.values():
+            assert result.get("stat").get("exists") is True
+            assert result.get("stat").get("isdir") is False
+            assert result.get("stat").get("mode") == mode
+
+    finally:
+        hosts.all.file(path=source_path, state="absent")
+        hosts.all.file(path=dest_path, state="absent")
 
 
 @pytest.mark.uss
@@ -482,70 +896,6 @@ def test_copy_non_existent_file_fails(ansible_zos_module, is_remote):
     for result in copy_res.contacted.values():
         assert result.get("msg") is not None
         assert "does not exist" in result.get("msg")
-
-
-@pytest.mark.uss
-def test_copy_dir_and_change_mode(ansible_zos_module):
-    hosts = ansible_zos_module
-    dest_path = "/tmp/new_dir"
-
-    source_path = tempfile.mkdtemp()
-    subdir_path = "{0}/subdir".format(source_path)
-    mode = "0755"
-
-    try:
-        os.mkdir(subdir_path)
-        populate_dir(subdir_path)
-
-        hosts.all.file(path=dest_path, state="directory")
-        copy_result = hosts.all.zos_copy(
-            src=source_path,
-            dest=dest_path,
-            force=True,
-            mode=mode
-        )
-
-        stat_dir_res = hosts.all.stat(path=dest_path)
-        stat_subdir_res = hosts.all.stat(path="{0}/subdir".format(dest_path))
-        stat_file_res = hosts.all.stat(path="{0}/subdir/file3".format(dest_path))
-
-        for result in copy_result.contacted.values():
-            assert result.get("msg") is None
-            assert result.get("changed") is True
-            assert result.get("dest") == dest_path
-        for result in stat_dir_res.contacted.values():
-            assert result.get("stat").get("exists") is True
-            assert result.get("stat").get("isdir") is True
-            assert result.get("stat").get("mode") == mode
-        for result in stat_subdir_res.contacted.values():
-            assert result.get("stat").get("exists") is True
-            assert result.get("stat").get("isdir") is True
-            assert result.get("stat").get("mode") == mode
-        for result in stat_file_res.contacted.values():
-            assert result.get("stat").get("exists") is True
-            assert result.get("stat").get("isdir") is False
-            assert result.get("stat").get("mode") == mode
-
-    finally:
-        hosts.all.file(path=dest_path, state="absent")
-        shutil.rmtree(source_path)
-
-        for result in copy_result.contacted.values():
-            assert result.get("msg") is None
-            assert result.get("changed") is True
-            assert result.get("dest") == dest_path
-        for result in stat_dir_res.contacted.values():
-            assert result.get("stat").get("exists") is True
-            assert result.get("stat").get("isdir") is True
-            assert result.get("stat").get("mode") == mode
-        for result in stat_subdir_res.contacted.values():
-            assert result.get("stat").get("exists") is True
-            assert result.get("stat").get("isdir") is True
-            assert result.get("stat").get("mode") == mode
-        for result in stat_file_res.contacted.values():
-            assert result.get("stat").get("exists") is True
-            assert result.get("stat").get("isdir") is False
-            assert result.get("stat").get("mode") == mode
 
 
 @pytest.mark.uss

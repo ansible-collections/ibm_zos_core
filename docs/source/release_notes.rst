@@ -32,8 +32,11 @@ Version 1.4.0-beta.2
         data set `dest`` is NOT empty, the `dest` will be deleted and recreated
         with the `src` data set attributes, otherwise it will be recreated with
         the `dest` data set attributes.
-      *  option `dest_dataset` has been deprecated and removed in favor
-         of the new option `dest_data_set`.
+      * was enhanced for when `src` is a directory and ends with "/",
+        the contents of it will be copied into the root of `dest`. It it doesn't
+        end with "/", the directory itself will be copied.
+      * option `dest_dataset` has been deprecated and removed in favor
+        of the new option `dest_data_set`.
       * fixes a bug that when a directory is copied from the controller to the
         managed node and a mode is set, the mode is applied to the directory
         on the managed node. If the directory being copied contains files and
@@ -42,6 +45,9 @@ Version 1.4.0-beta.2
       * fixes a bug that did not create a data set on the specified volume.
       * fixes a bug where a number of attributes were not an option when using
         `dest_data_set`.
+      * fixes a bug where options were not defined in the module
+        argument spec that will result in error when running `ansible-core`
+        v2.11 and using options `force` or `mode`.
 
     * ``zos_operator``
 
@@ -54,7 +60,7 @@ Version 1.4.0-beta.2
 
     * ``module_utils``
 
-      * jobs.py - fixes a utility used by module zos_job_output that would
+      * jobs.py - fixes a utility used by module `zos_job_output` that would
         truncate the DD content.
 
   * Documentation
@@ -303,7 +309,7 @@ Reference
 * Supported by IBM `Z Open Automation Utilities 1.1.0`_ and
   `Z Open Automation Utilities 1.1.1`_
 
-Version 1.3.4
+Version 1.3.5
 =============
 
 What's New

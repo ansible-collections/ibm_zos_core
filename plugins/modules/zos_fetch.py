@@ -563,6 +563,7 @@ def run_module():
                 }
             ),
             ignore_sftp_stderr=dict(type="bool", default=False, required=False),
+            # This argument comes from the action plugin.
             local_charset=dict(type="str"),
         )
     )

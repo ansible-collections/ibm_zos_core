@@ -103,7 +103,7 @@ dds
     data_set_name
       The data set name.
 
-      | **required**: True
+      | **required**: False
       | **type**: str
 
 
@@ -657,7 +657,7 @@ dds
 
       If a list of strings is provided, newlines will be added to each of the lines when used as input.
 
-      | **required**: False
+      | **required**: True
       | **type**: raw
 
 
@@ -831,7 +831,7 @@ dds
         data_set_name
           The data set name.
 
-          | **required**: True
+          | **required**: False
           | **type**: str
 
 
@@ -1371,7 +1371,7 @@ dds
 
           If a list of strings is provided, newlines will be added to each of the lines when used as input.
 
-          | **required**: False
+          | **required**: True
           | **type**: raw
 
 
@@ -1419,6 +1419,15 @@ dds
 
 
 
+
+
+tmp_hlq
+  Override the default high level qualifier (HLQ) for temporary and backup datasets.
+
+  The default HLQ is the Ansible user used to execute the module and if that is not available, then the value ``TMPHLQ`` is used.
+
+  | **required**: False
+  | **type**: str
 
 
 

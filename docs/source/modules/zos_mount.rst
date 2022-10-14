@@ -137,6 +137,7 @@ persistent
 
     | **required**: False
     | **type**: list
+    | **elements**: str
 
 
 
@@ -227,7 +228,7 @@ sysname
   For systems participating in shared file system, *sysname* specifies the particular system on which a mount should be performed. This system will then become the owner of the file system mounted. This system must be IPLed with SYSPLEX(YES).
 
 
-  *sysname* is a 1–8 alphanumeric name of a system participating in shared file system.
+  *sysname* is the name of a system participating in shared file system. The name must be 1-8 characters long; the valid characters are A-Z, 0-9, $, @, and #.
 
 
   | **required**: False
@@ -265,6 +266,15 @@ automove_list
 
   Indicator is either INCLUDE or EXCLUDE, which can also be abbreviated as I or E.
 
+
+  | **required**: False
+  | **type**: str
+
+
+tmp_hlq
+  Override the default high level qualifier (HLQ) for temporary and backup datasets.
+
+  The default HLQ is the Ansible user used to execute the module and if that is not available, then the value ``TMPHLQ`` is used.
 
   | **required**: False
   | **type**: str

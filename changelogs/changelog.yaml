@@ -307,7 +307,7 @@ releases:
         collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__
         \n"
     fragments:
-    - 32-rename-retries-to-reconnection_retries.yml
+    - 328-rename-retries-to-reconnection_retries.yml
     - v1.4.0-beta.1_summary.yml
     - v1.4.0-beta.1_summary_bugs.yml
     - v1.4.0-beta.1_summary_deprecated.yml

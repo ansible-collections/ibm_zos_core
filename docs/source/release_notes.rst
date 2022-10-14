@@ -6,6 +6,102 @@
 Releases
 ========
 
+Version 1.4.0-beta.2
+====================
+
+* Bug fixes and enhancements
+
+  * Modules
+
+    * ``zos_copy``
+
+      * introduced an updated creation policy referred to as precedence rules
+        that if `dest_data_set` is set, it will take precedence. If
+        `dest` is an empty data set, the empty data set will be written with the
+        expectation its attributes satisfy the copy. If no precedent rule
+        has been exercised, `dest` will be created with the same attributes of
+        `src`.
+      * introduced new computation capabilities that if `dest` is a nonexistent
+        data set, the attributes assigned will depend on the type of `src`. If
+        `src` is a USS file, `dest` will have a Fixed Block (FB) record format
+        and the remaining attributes will be computed. If `src` is binary,
+        `dest` will have a Fixed Block (FB) record format with a record length
+        of 80, block size of 32760, and the remaining attributes will be
+        computed.
+      * enhanced the force option when `force=true` and the remote file or
+        data set `dest`` is NOT empty, the `dest` will be deleted and recreated
+        with the `src` data set attributes, otherwise it will be recreated with
+        the `dest` data set attributes.
+      * was enhanced for when `src` is a directory and ends with "/",
+        the contents of it will be copied into the root of `dest`. It it doesn't
+        end with "/", the directory itself will be copied.
+      * option `dest_dataset` has been deprecated and removed in favor
+        of the new option `dest_data_set`.
+      * fixes a bug that when a directory is copied from the controller to the
+        managed node and a mode is set, the mode is applied to the directory
+        on the managed node. If the directory being copied contains files and
+        mode is set, mode will only be applied to the files being copied not the
+        pre-existing files.
+      * fixes a bug that did not create a data set on the specified volume.
+      * fixes a bug where a number of attributes were not an option when using
+        `dest_data_set`.
+      * fixes a bug where options were not defined in the module
+        argument spec that will result in error when running `ansible-core`
+        v2.11 and using options `force` or `mode`.
+
+    * ``zos_operator``
+
+      * enhanced to allow for MVS operator `SET` command, `SET` is
+        equivalent to the abbreviated `T` command.
+
+    * ``zos_mount``
+
+      * fixed option `tag_ccsid` to correctly allow for type int.
+
+    * ``module_utils``
+
+      * jobs.py - fixes a utility used by module `zos_job_output` that would
+        truncate the DD content.
+
+  * Documentation
+
+    * Review :ref:`version 1.4.0-beta.1<my-reference-label>` release notes for additional content.
+
+* Deprecated or removed
+
+  * ``zos_copy`` module option **destination_dataset** has been renamed to
+    **dest_data_set**.
+
+    * Review :ref:`version 1.4.0-beta.1<my-reference-label>` release notes for additional content.
+
+
+Availability
+------------
+
+* `Galaxy`_
+* `GitHub`_
+
+Reference
+---------
+
+* Supported by `z/OS V2R3`_ or later
+* Supported by the `z/OS® shell`_
+* Supported by `IBM Open Enterprise SDK for Python`_ v3.8.2 -
+  `IBM Open Enterprise SDK for Python`_ v3.9.5
+* Supported by IBM `Z Open Automation Utilities 1.1.0`_ and
+  `Z Open Automation Utilities 1.1.1`_
+
+Known Issues
+------------
+
+* Review :ref:`version 1.4.0-beta.1<my-reference-label>` release notes for additional content.
+
+Deprecation Notices
+-------------------
+* Review :ref:`version 1.4.0-beta.1<my-reference-label>` release notes for additional content.
+
+.. _my-reference-label:
+
 Version 1.4.0-beta.1
 ====================
 

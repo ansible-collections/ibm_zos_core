@@ -43,7 +43,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
 )
 
 try:
-    from zoautil_py.jobs import listing, read_output, list_dds
+    from zoautil_py.jobs import read_output, list_dds
 except Exception:
     pass
 

@@ -158,6 +158,7 @@ options:
                     - Comments are used to encapsulate the I(persistent/data_store) entry
                       such that they can easily be understood and located.
                 type: list
+                elements: str
                 required: False
     unmount_opts:
         description:
@@ -1089,7 +1090,7 @@ def main():
                     ),
                     backup=dict(type="bool", default=False),
                     backup_name=dict(type="str", required=False, default=None),
-                    comment=dict(type="list", required=False),
+                    comment=dict(type="list", elements="str", required=False),
                 ),
             ),
             unmount_opts=dict(
@@ -1120,7 +1121,6 @@ def main():
             automove_list=dict(type="str", required=False),
             tmp_hlq=dict(type='str', required=False, default=None),
         ),
-        add_file_common_args=True,
         supports_check_mode=True,
     )
 

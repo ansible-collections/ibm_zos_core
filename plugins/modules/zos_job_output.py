@@ -156,7 +156,8 @@ jobs:
         content:
           description:
              The ddname content.
-          type: list[str]
+          type: list
+          elements: str
           sample:
              [ "         1 //HELLO    JOB (T043JM,JM00,1,0,0,0),'HELLO WORLD - JRM',CLASS=R,       JOB00134",
                "           //             MSGCLASS=X,MSGLEVEL=1,NOTIFY=S0JM                                ",

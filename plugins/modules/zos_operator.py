@@ -46,21 +46,20 @@ options:
     default: false
   wait_time_s:
     description:
-      - Set maximum time in seconds to wait for the commands to execute, commands
-        will return sooner than I(wait_time_s) if the complete.
-      - The I(wait_time_s) must be between 1 and 21474836.
+      - Set maximum time in seconds to wait for the commands to execute.
+      - When set to 0, the system default is used.
       - This option is helpful on a busy system requiring more time to execute
         commands.
+      - Setting I(wait) can instruct if execution should wait the
+        full I(wait_time_s).
     type: int
     required: false
     default: 1
   wait:
     description:
       - Configuring wait used by the M(ibm.ibm_zos_core.zos_operator) module has been
-        deprecated and will be removed in ibm.ibm_zos_core collection version
-        1.6.0.
-      - Specify to wait the full I(wait_time_s) interval before retrieving
-        responses.
+        deprecated and will be removed in ibm.ibm_zos_core collection.
+      - Setting this option will yield no change, it is deprecated.
     type: bool
     required: false
     default: true
@@ -210,12 +209,6 @@ def run_module():
     result = dict(changed=False)
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=False)
 
-    if module.params.get('wait'):
-        module.deprecate(
-            msg='Support for configuring wait has been deprecated.'
-            'Configuring wait is now managed by setting \'wait_time_s\'',
-            collection_name='ibm.ibm_zos_core', version='1.5.0')
-
     try:
         new_params = parse_params(module.params)
         rc_message = run_operator_command(new_params)
@@ -298,7 +291,8 @@ def parse_params(params):
         cmd=dict(arg_type="str", required=True),
         verbose=dict(arg_type="bool", required=False),
         wait_time_s=dict(arg_type="int", required=False),
-        wait=dict(arg_type="bool", required=False),
+        wait=dict(arg_type="bool", required=False, removed_at_date='2022-11-30',
+                  removed_from_collection='ibm.ibm_zos_core'),
     )
     parser = BetterArgParser(arg_defs)
     new_params = parser.parse_args(params)

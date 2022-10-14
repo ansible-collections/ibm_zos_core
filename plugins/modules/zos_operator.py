@@ -158,7 +158,6 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
     AnsibleModuleHelper,
 )
-from ansible.module_utils.six import PY3
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     MissingZOAUImport,
@@ -167,24 +166,11 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,
 )
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingZOAUImport,
-)
-
-if PY3:
-    from shlex import quote
-else:
-    from pipes import quote
 
 try:
     from zoautil_py import opercmd
 except Exception:
     opercmd = MissingZOAUImport()
-
-try:
-    from zoautil_py.types import ZOAUResponse
-except Exception:
-    ZOAUResponse = MissingZOAUImport()
 
 
 def execute_command(operator_cmd, timeout=1, *args, **kwargs):

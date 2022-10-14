@@ -268,15 +268,12 @@ rc:
 """
 
 
-import base64
-import hashlib
 import tempfile
 import re
 import os
 
 from math import ceil
-from shutil import rmtree, move
-from ansible.module_utils.six import PY3
+from shutil import rmtree
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils._text import to_bytes
 from ansible.module_utils.parsing.convert_bool import boolean
@@ -289,11 +286,6 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
     MissingZOAUImport,
 )
 
-
-if PY3:
-    from shlex import quote
-else:
-    from pipes import quote
 
 try:
     from zoautil_py import datasets, mvscmd, types

@@ -257,7 +257,9 @@ options:
               system will then become the owner of the file system mounted. This
               system must be IPLed with SYSPLEX(YES).
             - >
-              I(sysname) is a 1–8 alphanumeric name of a system participating in shared file system.
+              I(sysname) is the name of a system participating in shared file
+              system. The name must be 1-8 characters long; the valid characters
+              are A-Z, 0-9, $, @, and #.
         type: str
         required: False
     automove:
@@ -542,34 +544,18 @@ import tempfile
 from datetime import datetime
 from ansible.module_utils.basic import AnsibleModule
 
-
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
-    AnsibleModuleHelper,
-)
-
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser,
     data_set,
     backup as Backup,
-    mvs_cmd,
-)
 
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingZOAUImport,
 )
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.copy import (
     copy_ps2uss,
-    copy_mvs2mvs,
     copy_uss2mvs,
 )
 
-try:
-    from zoautil_py import Datasets, MVSCmd, types
-except Exception:
-    Datasets = MissingZOAUImport()
-    MVSCmd = MissingZOAUImport()
-    types = MissingZOAUImport()
 
 
 # This is a duplicate of backupOper found in zos_apf.py of this collection

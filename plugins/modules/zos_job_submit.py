@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020
+# Copyright (c) IBM Corporation 2019, 2020, 2022
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -541,7 +541,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
 from timeit import default_timer as timer
 import re
 from tempfile import NamedTemporaryFile
-from os import chmod, path, remove, stat
+from os import chmod, path, remove
 from time import sleep
 from ansible.module_utils.basic import AnsibleModule
 
@@ -549,12 +549,6 @@ try:
     from zoautil_py import jobs
 except Exception:
     jobs = MissingZOAUImport()
-
-try:
-    from zoautil_py.types import ZOAUResponse, Job
-except Exception:
-    ZOAUResponse = MissingZOAUImport()
-    Job = MissingZOAUImport()
 
 # Imports datasets, ZOAUException, JobSubmitException are only needed for the
 # ZOAU submit(hfs=True) bug

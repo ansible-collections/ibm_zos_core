@@ -42,7 +42,6 @@ def _update_result(result, src, dest, ds_type="USS", is_binary=False):
         "VSAM": "VSAM",
         "USS": "USS",
     }
-    file_or_ds = "file" if ds_type == "USS" else "data set"
     updated_result = dict((k, v) for k, v in result.items())
     updated_result.update(
         {

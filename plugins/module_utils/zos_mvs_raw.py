@@ -13,14 +13,6 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dd_statement import (
-    DDStatement,
-    DatasetDefinition,
-    FileDefinition,
-    StdinDefinition,
-    DummyDefinition,
-)
-
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
     AnsibleModuleHelper,

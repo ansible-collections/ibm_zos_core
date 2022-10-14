@@ -422,8 +422,6 @@ def main():
         ],
     )
 
-    params = module.params
-
     arg_defs = dict(
         library=dict(arg_type='str', required=False, aliases=['lib', 'name']),
         state=dict(arg_type='str', default='present', choices=['absent', 'present']),

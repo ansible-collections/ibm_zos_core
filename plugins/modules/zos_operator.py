@@ -286,7 +286,7 @@ def parse_params(params):
 
 
 def run_operator_command(params):
-    module = AnsibleModuleHelper(argument_spec={})
+    AnsibleModuleHelper(argument_spec={})
 
     kwargs = {}
 

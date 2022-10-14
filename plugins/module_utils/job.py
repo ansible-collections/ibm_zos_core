@@ -14,25 +14,17 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 import time
-from tempfile import NamedTemporaryFile
-from os import chmod
-from stat import S_IEXEC, S_IREAD, S_IWRITE
 import re
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,
-)
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
-    AnsibleModuleHelper,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     MissingZOAUImport,
 )
 
-# from zoautil_py.jobs import listing, read_output, list_dds
 try:
-    from zoautil_py.jobs import listing, read_output, list_dds, _listing
+    from zoautil_py.jobs import read_output, list_dds, _listing
 except Exception:
-    listing = MissingZOAUImport()
     read_output = MissingZOAUImport()
     list_dds = MissingZOAUImport()
     _listing = MissingZOAUImport()

@@ -213,11 +213,11 @@ options:
         If creating a data set, I(volumes) specifies the volume(s) where the data set should be created.
       - >
         If I(volumes) is provided when I(state=present), and the data set is not found in the catalog,
-        M(ibm.ibm_zos_core.zos_data_set) will check the volume table of contents to see if the data set exists.
+        M(zos_data_set) will check the volume table of contents to see if the data set exists.
         If the data set does exist, it will be cataloged.
       - >
         If I(volumes) is provided when I(state=absent) and the data set is not found in the catalog,
-        M(ibm.ibm_zos_core.zos_data_set) will check the volume table of contents to see if the data set exists.
+        M(zos_data_set) will check the volume table of contents to see if the data set exists.
         If the data set does exist, it will be cataloged and promptly removed from the system.
       - I(volumes) is required when I(state=cataloged).
       - Accepts a string when using a single volume and a list of strings when using multiple.
@@ -438,11 +438,11 @@ options:
             If creating a data set, I(volumes) specifies the volume(s) where the data set should be created.
           - >
             If I(volumes) is provided when I(state=present), and the data set is not found in the catalog,
-            M(ibm.ibm_zos_core.zos_data_set) will check the volume table of contents to see if the data set exists.
+            M(zos_data_set) will check the volume table of contents to see if the data set exists.
             If the data set does exist, it will be cataloged.
           - >
             If I(volumes) is provided when I(state=absent) and the data set is not found in the catalog,
-            M(ibm.ibm_zos_core.zos_data_set) will check the volume table of contents to see if the data set exists.
+            M(zos_data_set) will check the volume table of contents to see if the data set exists.
             If the data set does exist, it will be cataloged and promptly removed from the system.
           - I(volumes) is required when I(state=cataloged).
           - Accepts a string when using a single volume and a list of strings when using multiple.

@@ -127,9 +127,9 @@ options:
       - volumes
 notes:
   - Only cataloged data sets will be searched. If an uncataloged data set needs to
-    be searched, it should be cataloged first. The M(ibm.ibm_zos_core.zos_data_set) module can be
+    be searched, it should be cataloged first. The M(zos_data_set) module can be
     used to catalog uncataloged data sets.
-  - The M(ibm.ibm_zos_core.zos_find) module currently does not support wildcards for high level qualifiers.
+  - The M(zos_find) module currently does not support wildcards for high level qualifiers.
     For example, C(SOME.*.DATA.SET) is a valid pattern, but C(*.DATA.SET) is not.
   - If a data set pattern is specified as C(USER.*), the matching data sets will have two
     name segments such as C(USER.ABC), C(USER.XYZ) etc. If a wildcard is specified

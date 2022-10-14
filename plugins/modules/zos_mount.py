@@ -26,7 +26,7 @@ author:
     - "Rich Parker (@richp405)"
 short_description: Mount a z/OS file system.
 description:
-  - The module M(ibm.ibm_zos_core.zos_mount) can manage mount operations for a
+  - The module M(zos_mount) can manage mount operations for a
     z/OS UNIX System Services (USS) file system data set.
   - The I(src) data set must be unique and a Fully Qualified Name (FQN).
   - The I(path) will be created if needed.
@@ -306,7 +306,7 @@ options:
 notes:
     - All data sets are always assumed to be cataloged.
     - If an uncataloged data set needs to be fetched, it should be cataloged first.
-    - Uncataloged data sets can be cataloged using the M(ibm.ibm_zos_core.zos_data_set) module.
+    - Uncataloged data sets can be cataloged using the M(zos_data_set) module.
 seealso:
     - module: zos_data_set
 """

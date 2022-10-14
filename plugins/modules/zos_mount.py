@@ -557,7 +557,6 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.copy import (
 )
 
 
-
 # This is a duplicate of backupOper found in zos_apf.py of this collection
 # Ansible doesn't want to import things not in the module_utils folder,
 # necessitating this

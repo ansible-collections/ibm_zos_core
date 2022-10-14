@@ -494,6 +494,7 @@ def run_module():
             convert_rc = eu.uss_convert_encoding_prev(
                 src, dest, from_encoding, to_encoding
             )
+            eu.uss_tag_encoding(dest, to_encoding)
         else:
             convert_rc = eu.mvs_convert_encoding(
                 src,

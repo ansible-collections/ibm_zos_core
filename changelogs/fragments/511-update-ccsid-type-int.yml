@@ -1,4 +1,3 @@
 bugfixes:
-  - >
-    zos_mount - fixed option `tag_ccsid` to correctly allow for type int.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/511)
+- zos_mount - fixed option `tag_ccsid` to correctly allow for type int.
+  (https://github.com/ansible-collections/ibm_zos_core/pull/511)

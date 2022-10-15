@@ -6,6 +6,107 @@
 Releases
 ========
 
+Version 1.4.0-beta.1
+====================
+
+What's New
+----------
+
+The collection no longer depends on the managed node having installed
+System Display and Search Facility (SDSF).
+
+* Modules
+
+  * ``zos_gather_fact`` can ......
+
+
+* Bug fixes and enhancements
+
+  * Modules
+
+    * ``zos_copy`` Fixes a bug such that the module fails when copying files
+      from a directory needing also to be encoded. The failure would also delete
+      the `src` which was not desirable behavior. Fixes deletion of src on
+      encoding error. (https://github.com/ansible-collections/ibm_zos_core/pull/321).
+      * zos_copy - updates the module with a new option named tmp_hlq. This allows
+        for a user to specify the data set high level qualifier (HLQ) used in any
+        temporary data set created by the module. Often, the defaults are not
+        permitted on systems, this provides a way to override the defaults.
+        (https://github.com/ansible-collections/ibm_zos_core/pull/341).
+      * zos_copy - module was updated to correct a bug in the case when the
+        destination (dest) is a PDSE and the source (src) is a Unix Systems
+        File (USS). The module would fail in determining if the PDSE actually
+        existed and try to create it when it already existed resulting in an
+        error that would prevent the module from correctly executing.
+        (https://github.com/ansible-collections/ibm_zos_core/pull/327)
+
+
+      * ibm_zos_job_output - was updated to leverage the latest changes that removes the REXX code by calling the module utility jobs. (https://github.com/ansible-collections/ibm_zos_core/pull/312).
+      * ibm_zos_job_query - was updated to leverage the latest changes that removes the REXX code by calling the module utility jobs. (https://github.com/ansible-collections/ibm_zos_core/pull/312).
+      * ibm_zos_job_query - was updated to use the jobs module utility. (https://github.com/ansible-collections/ibm_zos_core/pull/312).
+      * ibm_zos_operator - added in the response the cmd result (https://github.com/ansible-collections/ibm_zos_core/issues/389).
+      * ibm_zos_operator - added in the response the elapsed time (https://github.com/ansible-collections/ibm_zos_core/issues/389).
+      * ibm_zos_operator - added in the response the wait_time_s set (https://github.com/ansible-collections/ibm_zos_core/issues/389).
+      * ibm_zos_operator - deprecated the wait option, not needed with wait_time_s minor_changes (https://github.com/ansible-collections/ibm_zos_core/issues/389).
+      * module utility jobs - was updated to remove the useage of REXX and replaced with ZOAU python APIs. This reduces code replication and it removes the need for REXX intepretretion which increases performance. (https://github.com/ansible-collections/ibm_zos_core/pull/312).
+      * module utils backup - updates the module with a new option named tmp_hlq. This allows for a user to specify the data set high level qualifier (HLQ) used in any temporary data set created by the module. Often, the defaults are not permitted on systems, this provides a way to override the defaults. (https://github.com/ansible-collections/ibm_zos_core/pull/341).
+      * module utils dd_statement- updates the module with a new option named tmp_hlq. This allows for a user to specify the data set high level qualifier (HLQ) used in any temporary data set created by the module. Often, the defaults are not permitted on systems, this provides a way to override the defaults. (https://github.com/ansible-collections/ibm_zos_core/pull/341).
+      * module utils encode - updates the module with a new option named tmp_hlq. This allows for a user to specify the data set high level qualifier (HLQ) used in any temporary data set created by the module. Often, the defaults are not permitted on systems, this provides a way to override the defaults. (https://github.com/ansible-collections/ibm_zos_core/pull/341).
+      * zos_apf - updates the module with a new option named tmp_hlq. This allows for a user to specify the data set high level qualifier (HLQ) used in any temporary data set created by the module. Often, the defaults are not permitted on systems, this provides a way to override the defaults. (https://github.com/ansible-collections/ibm_zos_core/pull/341).
+      * zos_blockinfile - fixes a bug when using double quotes in the block text of the module. When double quotes appeared in block text, the module would error differently depending on the usage of option insertafter. Examples of this error have return code 1 or 16 along with message "ZOAU dmod return content is NOT in json format" and a varying stderr. (https://github.com/ansible-collections/ibm_zos_core/pull/303).
+      * zos_blockinfile - updates the module with a new option named force. This allows for a user to specifiy that the data set can be shared with others during an update which results in the data set you are updating to be simultaneously updated by others. (https://github.com/ansible-collections/ibm_zos_core/pull/316).
+      * zos_blockinfile - updates the module with a new option named indentation. This allows for a user to specifiy a number of spaces to prepend to the content before being inserted into the destiation. (https://github.com/ansible-collections/ibm_zos_core/pull/317).
+      * zos_blockinfile - updates the module with a new option named tmp_hlq. This allows for a user to specify the data set high level qualifier (HLQ) used in any temporary data set created by the module. Often, the defaults are not permitted on systems, this provides a way to override the defaults. (https://github.com/ansible-collections/ibm_zos_core/pull/341).
+      * zos_data_set - Ensures that temporary datasets created by zos_data_set use the tmp_hlq specified. This allows for a user to specify the data set high level qualifier (HLQ) used in any temporary data set created by the module. Often, the defaults are not permitted on systems, this provides a way to override the defaults. (https://github.com/ansible-collections/ibm_zos_core/pull/491).
+      * zos_encode - updates the module with a new option named tmp_hlq. This allows for a user to specify the data set high level qualifier (HLQ) used in any temporary data set created by the module. Often, the defaults are not permitted on systems, this provides a way to override the defaults. (https://github.com/ansible-collections/ibm_zos_core/pull/341).
+      * zos_fetch - updates the module with a new option named tmp_hlq. This allows for a user to specify the data set high level qualifier (HLQ) used in any temporary data set created by the module. Often, the defaults are not permitted on systems, this provides a way to override the defaults. (https://github.com/ansible-collections/ibm_zos_core/pull/341).
+      * zos_gather_facts - is a new module that can discover facts about the managed z/OS target. This module leverages the zinfo utility offered by ZOAU. (https://github.com/ansible-collections/ibm_zos_core/pull/322).
+      * zos_job_submit - was updated to include an additional error code condition JCLERR. (https://github.com/ansible-collections/ibm_zos_core/pull/312)
+      * zos_lineinfile- updates the module with a new option named tmp_hlq. This allows for a user to specify the data set high level qualifier (HLQ) used in any temporary data set created by the module. Often, the defaults are not permitted on systems, this provides a way to override the defaults. (https://github.com/ansible-collections/ibm_zos_core/pull/341).
+      * zos_mount - updates the module with a new option named tmp_hlq. This allows for a user to specify the data set high level qualifier (HLQ) used in any temporary data set created by the module. Often, the defaults are not permitted on systems, this provides a way to override the defaults. (https://github.com/ansible-collections/ibm_zos_core/pull/341).
+      * zos_mvs_raw - Ensures that temporary datasets created by DD Statements use the tmp_hlq specified. This allows for a user to specify the data set high level qualifier (HLQ) used in any temporary data set created by the module. Often, the defaults are not permitted on systems, this provides a way to override the defaults. (https://github.com/ansible-collections/ibm_zos_core/pull/414).
+      * zos_mvs_raw - updates the module with a new option named tmp_hlq. This allows for a user to specify the data set high level qualifier (HLQ) used in any temporary data set created by the module. Often, the defaults are not permitted on systems, this provides a way to override the defaults. (https://github.com/ansible-collections/ibm_zos_core/pull/341).
+      * zos_operater - was updated to remove the useage of REXX and replaced with ZOAU python APIs. This reduces code replication and it removes the need for REXX intepretretion which increases performance. (https://github.com/ansible-collections/ibm_zos_core/pull/312).
+
+      * ibm_zos_data_set - Fixes a bug such that the module will delete a catalogued data set over an uncatalogued data set even though the volume is provided for the uncataloged data set. This is unexpected behavior and does not align to documentaiton; correct behavior is that when a volume is provided that is the first place the module should look for the data set, whether or not it is cataloged. (https://github.com/ansible-collections/ibm_zos_core/pull/325).
+      * ibm_zos_operator - fixed case sensitive error checks, invalid, error & unidentifiable (https://github.com/ansible-collections/ibm_zos_core/issues/389).
+      * ibm_zos_operator - fixed such that specifying wait_time_s would throw an error (https://github.com/ansible-collections/ibm_zos_core/issues/389).
+      * ibm_zos_operator - fixed the wait_time_s to default to 1 second (https://github.com/ansible-collections/ibm_zos_core/issues/389).
+      * zos_fetch - Updates the modules behavior when fetching VSAM data sets such that the maximum record length is now determined when creating a temporary data set to copy the VSAM data into and a variable-length (VB) data set is used. (https://github.com/ansible-collections/ibm_zos_core/pull/350)
+      * zos_job_output - fixes a bug that returned all ddname's when a specific ddnamae was provided. Now a specific ddname can be returned and all others ignored. (https://github.com/ansible-collections/ibm_zos_core/pull/334)
+      * zos_job_query - was updated to correct a boolean condition that always evaluated to "CANCELLED". (https://github.com/ansible-collections/ibm_zos_core/pull/312).
+      * zos_mount - fixed option `tag_ccsid` to correctly allow for type int. (https://github.com/ansible-collections/ibm_zos_core/pull/511)
+      * zos_mvs_raw - module was updated to correct a bug when no DD statements were provided. The module when no option was provided for `dds` would error, a default was provided to correct this behavior. (https://github.com/ansible-collections/ibm_zos_core/pull/327)
+      * zos_operator - was updated to correct missing verbosity content when the option verbose was set to True. zos_operator - was updated to correct the trailing lines that would appear in the result content. (https://github.com/ansible-collections/ibm_zos_core/pull/400).
+
+
+* Deprecated or removed
+
+  * ``zos_operator`` option **wait** has been deprecated.
+  * ``zos_copy`` and ``zos_fetch`` option **sftp_port** has been removed. To
+    set the SFTP port, use the supported options in the ``ansible.builtin.ssh``
+    plugin. Refer to the `SSH port`_ option to configure the port used during
+    the modules SFTP transport.
+  * ``zos_encode`` deprecates the module options **from_encoding** and **to_encoding**
+    to use suboptions **from** and **to** in order to remain consistent with all
+    other modules.
+
+Availability
+------------
+
+* `Galaxy`_
+* `GitHub`_
+
+Reference
+---------
+
+* Supported by `z/OS V2R3`_ or later
+* Supported by the `z/OS® shell`_
+* Supported by `IBM Open Enterprise SDK for Python`_ 3.8.2 or later
+* Supported by IBM `Z Open Automation Utilities 1.1.0`_ and
+  `Z Open Automation Utilities 1.1.1`_
+
+
 Version 1.4.0-beta.2
 ====================
 

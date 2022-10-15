@@ -76,7 +76,7 @@ System Display and Search Facility (SDSF).
       * zos_job_output - fixes a bug that returned all ddname's when a specific ddnamae was provided. Now a specific ddname can be returned and all others ignored. (https://github.com/ansible-collections/ibm_zos_core/pull/334)
       * zos_job_query - was updated to correct a boolean condition that always evaluated to "CANCELLED". (https://github.com/ansible-collections/ibm_zos_core/pull/312).
       * zos_mount - fixed option `tag_ccsid` to correctly allow for type int. (https://github.com/ansible-collections/ibm_zos_core/pull/511)
-      * zos_mvs_raw - module was updated to correct a bug when no DD statements were provided. The module when no option was provided for `dds` would error, a default was provided to correct this behavior. (https://github.com/ansible-collections/ibm_zos_core/pull/327)
+      * zos_mvs_raw - module was upd.0ated to correct a bug when no DD statements were provided. The module when no option was provided for `dds` would error, a default was provided to correct this behavior. (https://github.com/ansible-collections/ibm_zos_core/pull/327)
       * zos_operator - was updated to correct missing verbosity content when the option verbose was set to True. zos_operator - was updated to correct the trailing lines that would appear in the result content. (https://github.com/ansible-collections/ibm_zos_core/pull/400).
 
 
@@ -106,6 +106,10 @@ Reference
 * Supported by IBM `Z Open Automation Utilities 1.1.0`_ and
   `Z Open Automation Utilities 1.1.1`_
 
+Version 1.4.0
+=============
+NOTE: There will be a 1.4.0 GA before 1.5.0.x so this must be updated and remove the beta entries.
+      Likely 1.4.0-beta.2 will be promoted to GA and we can reuse the release notes below.
 
 Version 1.4.0-beta.2
 ====================

@@ -3,4 +3,4 @@ bugfixes:
   files from a directory needing also to be encoded. The failure would also
   delete the `src` which was not desirable behavior.
   Fixes deletion of src on encoding error.
-  (https://github.com/ansible-collections/ibm_zos_core/pull/303).
+  (https://github.com/ansible-collections/ibm_zos_core/pull/321).

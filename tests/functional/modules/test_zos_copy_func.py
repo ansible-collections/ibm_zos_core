@@ -2006,37 +2006,6 @@ def test_copy_ksds_to_non_existing_ksds(ansible_zos_module):
 
 @pytest.mark.vsam
 @pytest.mark.parametrize("force", [False, True])
-def test_copy_ksds_to_empty_ksds(ansible_zos_module, force):
-    hosts = ansible_zos_module
-    src_ds = "USER.TEST.VSAM.SOURCE"
-    dest_ds = "USER.TEST.VSAM.KSDS"
-
-    try:
-        create_vsam_data_set(hosts, src_ds, "KSDS", add_data=True, key_length=12, key_offset=0)
-        create_vsam_data_set(hosts, dest_ds, "KSDS", key_length=12, key_offset=0)
-
-        copy_res = hosts.all.zos_copy(src=src_ds, dest=dest_ds, remote_src=True, force=force)
-        verify_copy = get_listcat_information(hosts, dest_ds, "ksds")
-
-        for result in copy_res.contacted.values():
-            assert result.get("msg") is None
-            assert result.get("changed") is True
-            assert result.get("dest") == dest_ds
-
-        for result in verify_copy.contacted.values():
-            assert result.get("dd_names") is not None
-            dd_names = result.get("dd_names")
-            assert len(dd_names) > 0
-            output = "\n".join(dd_names[0]["content"])
-            assert "IN-CAT" in output
-            assert re.search(r"\bINDEXED\b", output)
-    finally:
-        hosts.all.zos_data_set(name=src_ds, state="absent")
-        hosts.all.zos_data_set(name=dest_ds, state="absent")
-
-
-@pytest.mark.vsam
-@pytest.mark.parametrize("force", [False, True])
 def test_copy_ksds_to_existing_ksds(ansible_zos_module, force):
     hosts = ansible_zos_module
     src_ds = "USER.TEST.VSAM.SOURCE"

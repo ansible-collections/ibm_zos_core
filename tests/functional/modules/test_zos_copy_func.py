@@ -2213,23 +2213,34 @@ def test_ensure_tmp_cleanup(ansible_zos_module):
         hosts.all.file(path=dest_path, state="absent")
 
 
-def test_copy_uss_file_to_existing_sequential_data_set_twice_with_tmphlq_option(ansible_zos_module):
+@pytest.mark.vsam
+@pytest.mark.parametrize("force", [False, True])
+def test_copy_uss_file_to_existing_sequential_data_set_twice_with_tmphlq_option(ansible_zos_module, force):
     hosts = ansible_zos_module
     dest = "USER.TEST.SEQ.FUNCTEST"
     src_file = "/etc/profile"
     tmphlq = "TMPHLQ"
     try:
         hosts.all.zos_data_set(name=dest, type="seq", state="present")
-        copy_result = hosts.all.zos_copy(src=src_file, dest=dest, remote_src=True)
-        copy_result = hosts.all.zos_copy(src=src_file, dest=dest, remote_src=True, backup=True, tmp_hlq=tmphlq)
-        verify_copy = hosts.all.shell(
-            cmd="cat \"//'{0}'\" > /dev/null 2>/dev/null".format(dest),
-            executable=SHELL_EXECUTABLE,
-        )
+        copy_result = hosts.all.zos_copy(src=src_file, dest=dest, remote_src=True, force=force)
+        copy_result = hosts.all.zos_copy(src=src_file, dest=dest, remote_src=True, backup=True, tmp_hlq=tmphlq, force=force)
+
+        verify_copy = None
+        if force:
+            verify_copy = hosts.all.shell(
+                cmd="cat \"//'{0}'\" > /dev/null 2>/dev/null".format(dest),
+                executable=SHELL_EXECUTABLE,
+            )
+
         for cp_res in copy_result.contacted.values():
-            assert cp_res.get("msg") is None
-            assert cp_res.get("backup_name")[:6] == tmphlq
-        for v_cp in verify_copy.contacted.values():
-            assert v_cp.get("rc") == 0
+            if force:
+                assert cp_res.get("msg") is None
+                assert cp_res.get("backup_name")[:6] == tmphlq
+            else:
+                assert cp_res.get("msg") is not None
+                assert cp_res.get("changed") is False
+        if force:
+            for v_cp in verify_copy.contacted.values():
+                assert v_cp.get("rc") == 0
     finally:
         hosts.all.zos_data_set(name=dest, state="absent")

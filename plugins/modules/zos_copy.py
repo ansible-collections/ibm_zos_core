@@ -2165,7 +2165,11 @@ def run_module(module, arg_def):
         force,
         volume
     ):
-        module.fail_json(msg="{0} already exists on the system, unable to overwrite unless force=True is specified.".format(dest))
+        module.fail_json(
+            msg="{0} already exists on the system, unable to overwrite unless force=True is specified.".format(dest),
+            changed=False,
+            dest=dest
+        )
 
     # Creating an emergency backup or an empty data set to use as a model to
     # be able to restore the destination in case the copy fails.

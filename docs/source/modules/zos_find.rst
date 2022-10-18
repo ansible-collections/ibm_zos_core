@@ -70,6 +70,7 @@ excludes
 
   | **required**: False
   | **type**: list
+  | **elements**: str
 
 
 patterns
@@ -85,6 +86,7 @@ patterns
 
   | **required**: True
   | **type**: list
+  | **elements**: str
 
 
 size
@@ -109,6 +111,7 @@ pds_patterns
 
   | **required**: False
   | **type**: list
+  | **elements**: str
 
 
 resource_type
@@ -129,6 +132,7 @@ volume
 
   | **required**: False
   | **type**: list
+  | **elements**: str
 
 
 

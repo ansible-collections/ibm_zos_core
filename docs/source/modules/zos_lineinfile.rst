@@ -157,6 +157,15 @@ backup_name
   | **type**: str
 
 
+tmp_hlq
+  Override the default high level qualifier (HLQ) for temporary and backup datasets.
+
+  The default HLQ is the Ansible user used to execute the module and if that is not available, then the value ``TMPHLQ`` is used.
+
+  | **required**: False
+  | **type**: str
+
+
 firstmatch
   Used with ``insertafter`` or ``insertbefore``.
 

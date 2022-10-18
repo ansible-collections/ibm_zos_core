@@ -1,4 +1,3 @@
 trivial:
-  - >
-    Updates references in source where words matter.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/344)
+- Updates references in source where words matter.
+  (https://github.com/ansible-collections/ibm_zos_core/pull/344)

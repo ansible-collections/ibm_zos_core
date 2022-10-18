@@ -88,19 +88,6 @@ use_qualifier
   | **default**: false
 
 
-sftp_port
-  Configuring the SFTP port used by the :ref:`zos_fetch <zos_fetch_module>` module has been deprecated and will be removed in ibm.ibm_zos_core collection version 1.5.0.
-
-  Configuring the SFTP port with *sftp_port* will no longer have any effect on which port is used by this module.
-
-  To configure the SFTP port used for module :ref:`zos_copy <zos_copy_module>`, refer to topic `using connection plugins <https://docs.ansible.com/ansible/latest/plugins/connection.html#using-connection-plugins>`_
-
-  If ``ansible_port`` is not specified, port 22 will be used.
-
-  | **required**: False
-  | **type**: int
-
-
 encoding
   Specifies which encodings the fetched data set should be converted from and to. If this parameter is not provided, encoding conversions will not take place.
 
@@ -125,6 +112,15 @@ encoding
     | **required**: True
     | **type**: str
 
+
+
+tmp_hlq
+  Override the default high level qualifier (HLQ) for temporary and backup datasets.
+
+  The default HLQ is the Ansible user used to execute the module and if that is not available, then the value ``TMPHLQ`` is used.
+
+  | **required**: False
+  | **type**: str
 
 
 ignore_sftp_stderr

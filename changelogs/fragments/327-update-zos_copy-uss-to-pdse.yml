@@ -1,8 +1,7 @@
 bugfixes:
-  - >
-    zos_copy - module was updated to correct a bug in the case when the
-    destination (dest) is a PDSE and the source (src) is a Unix Systems File
-    (USS). The module would fail in determining if the PDSE actually existed and
-    try to create it when it already existed resulting in an error that would
-    prevent the module from correctly executing.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/327)
+- zos_copy - module was updated to correct a bug in the case when the
+  destination (dest) is a PDSE and the source (src) is a Unix Systems File
+  (USS). The module would fail in determining if the PDSE actually existed and
+  try to create it when it already existed resulting in an error that would
+  prevent the module from correctly executing.
+  (https://github.com/ansible-collections/ibm_zos_core/pull/327)

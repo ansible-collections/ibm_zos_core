@@ -140,7 +140,7 @@ options:
     type: str
   encoding:
     description:
-      - The character set of the source I(src). M(ibm.ibm_zos_core.zos_blockinfile)
+      - The character set of the source I(src). M(zos_blockinfile)
         requires to be provided with correct encoding to read the content
         of USS file or data set. If this parameter is not provided, this
         module assumes that USS file or data set is encoded in IBM-1047.
@@ -175,7 +175,7 @@ notes:
     or another user.
   - All data sets are always assumed to be cataloged. If an uncataloged data set
     needs to be encoded, it should be cataloged first. The
-    M(ibm.ibm_zos_core.zos_data_set) module can be used to catalog uncataloged
+    M(zos_data_set) module can be used to catalog uncataloged
     data sets.
   - For supported character sets used to encode data, refer to the
     L(documentation,https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html).
@@ -289,18 +289,11 @@ backup_name:
 """
 
 import json
-from ansible.module_utils.six import b
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils._text import to_bytes
-from ansible.module_utils.six import PY3
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser, data_set, backup as Backup)
-from os import path
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     MissingZOAUImport,
-)
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
-    BetterArgParser,
 )
 
 try:
@@ -308,10 +301,6 @@ try:
 except Exception:
     Datasets = MissingZOAUImport()
 
-if PY3:
-    from shlex import quote
-else:
-    from pipes import quote
 
 # supported data set types
 DS_TYPE = ['PS', 'PO']

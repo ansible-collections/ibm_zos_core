@@ -53,7 +53,7 @@ owner
 
 
 ddname
-  Data definition name. (e.g "JESJCL", "?")
+  Data definition name (show only this DD on a found job). (e.g "JESJCL", "?")
 
   | **required**: False
   | **type**: str
@@ -310,7 +310,8 @@ jobs
     content
       The ddname content.
 
-      | **type**: list[str]
+      | **type**: list
+      | **elements**: str
       | **sample**:
 
         .. code-block:: json

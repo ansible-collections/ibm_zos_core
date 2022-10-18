@@ -257,6 +257,15 @@ replace
   | **type**: bool
 
 
+tmp_hlq
+  Override the default high level qualifier (HLQ) for temporary and backup datasets.
+
+  The default HLQ is the Ansible user used to execute the module and if that is not available, then the value ``TMPHLQ`` is used.
+
+  | **required**: False
+  | **type**: str
+
+
 batch
   Batch can be used to perform operations on multiple data sets in a single module call.
 

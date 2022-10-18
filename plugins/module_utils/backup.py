@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2020
+# Copyright (c) IBM Corporation 2020, 2022
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -22,7 +22,6 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module im
 
 import time
 from shutil import copy2, copytree, rmtree
-from stat import S_IREAD, S_IWRITE, ST_MODE
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     MissingZOAUImport,
 )
@@ -35,7 +34,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
     is_member,
     extract_dsname,
     temp_member_name,
-    is_empty,
+    DataSet,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.mvs_cmd import iebcopy
 
@@ -210,7 +209,7 @@ def _copy_ds(ds, bk_ds):
                 ds, out, err
             )
         )
-    if rc != 0 and is_empty(ds):
+    if rc != 0 and DataSet.is_empty(ds):
         rc = 0
     return rc
 

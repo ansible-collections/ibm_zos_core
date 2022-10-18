@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2019, 2020, 2021
+# Copyright (c) IBM Corporation 2019, 2020, 2021, 2022
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -16,12 +16,11 @@ __metaclass__ = type
 import os
 import stat
 import time
-import subprocess
 
 from tempfile import mkstemp, gettempprefix
 
 from ansible.errors import AnsibleError
-from ansible.module_utils._text import to_bytes, to_text
+from ansible.module_utils._text import to_text
 from ansible.module_utils.six import string_types
 from ansible.module_utils.parsing.convert_bool import boolean
 from ansible.plugins.action import ActionBase
@@ -30,8 +29,7 @@ from ansible import cli
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
     is_member,
-    is_data_set,
-    extract_member_name
+    is_data_set
 )
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import encode
@@ -53,8 +51,6 @@ class ActionModule(ActionBase):
         dest = task_args.get('dest', None)
         content = task_args.get('content', None)
 
-        # Option sftp_port is deprecated in 1.4.0 to be removed in 1.5.0
-        sftp_port = task_args.get('sftp_port', self._play_context.port or 22)
         force = _process_boolean(task_args.get('force'), default=True)
         backup = _process_boolean(task_args.get('backup'), default=False)
         local_follow = _process_boolean(task_args.get('local_follow'), default=False)
@@ -77,7 +73,6 @@ class ActionModule(ActionBase):
             else:
                 is_uss = "/" in dest
                 is_mvs_dest = is_data_set(dest)
-                copy_member = is_member(dest)
         else:
             msg = "Destination is required"
             return self._exit_action(result, msg, failed=True)
@@ -103,6 +98,8 @@ class ActionModule(ActionBase):
                     is_src_dir = os.path.isdir(src)
                     is_pds = is_src_dir and is_mvs_dest
 
+        copy_member = is_member(dest)
+
         if not src and not content:
             msg = "'src' or 'content' is required"
             return self._exit_action(result, msg, failed=True)
@@ -119,13 +116,6 @@ class ActionModule(ActionBase):
             if mode or owner or group:
                 msg = "Cannot specify 'mode', 'owner' or 'group' for MVS destination"
                 return self._exit_action(result, msg, failed=True)
-
-        # if not isinstance(sftp_port, int) or not 0 < sftp_port <= 65535:
-        #     msg = "Invalid port provided for SFTP. Expected an integer between 0 to 65535."
-        #     return self._exit_action(result, msg, failed=True)
-
-        if (not force) and self._dest_exists(src, dest, task_vars):
-            return self._exit_action(result, "Destination exists. No data was copied.")
 
         if not remote_src:
             if local_follow and not src:
@@ -154,8 +144,8 @@ class ActionModule(ActionBase):
             else:
                 if is_src_dir:
                     path, dirs, files = next(os.walk(src))
-                    if dirs:
-                        result["msg"] = "Subdirectory found inside source directory"
+                    if not is_uss and dirs:
+                        result["msg"] = "Cannot copy a source directory with subdirectories to a data set, the destination must be another directory"
                         result.update(
                             dict(src=src, dest=dest, changed=False, failed=True)
                         )
@@ -169,6 +159,7 @@ class ActionModule(ActionBase):
                             stat.S_IMODE(os.stat(src).st_mode)
                         )
                     task_args["size"] = os.stat(src).st_size
+                display.vvv(u"ibm_zos_copy calculated size: {0}".format(os.stat(src).st_size), host=self._play_context.remote_addr)
                 transfer_res = self._copy_to_remote(
                     src, is_dir=is_src_dir, ignore_stderr=ignore_sftp_stderr
                 )
@@ -176,11 +167,13 @@ class ActionModule(ActionBase):
             temp_path = transfer_res.get("temp_path")
             if transfer_res.get("msg"):
                 return transfer_res
+            display.vvv(u"ibm_zos_copy temp path: {0}".format(transfer_res.get("temp_path")), host=self._play_context.remote_addr)
 
         task_args.update(
             dict(
                 is_uss=is_uss,
                 is_pds=is_pds,
+                is_src_dir=is_src_dir,
                 copy_member=copy_member,
                 src_member=src_member,
                 temp_path=temp_path,
@@ -328,35 +321,6 @@ class ActionModule(ActionBase):
                     module_args=module_args,
                     task_vars=task_vars,
                 )
-
-    def _dest_exists(self, src, dest, task_vars):
-        """Determine if destination exists on remote z/OS system"""
-        if "/" in dest:
-            rc, out, err = self._connection.exec_command("ls -l {0}".format(dest))
-            if rc != 0:
-                return False
-            if len(to_text(out).split("\n")) == 2:
-                return True
-            if "/" in src:
-                src = src.rstrip("/") if src.endswith("/") else src
-                dest += "/" + os.path.basename(src)
-            else:
-                dest += "/" + extract_member_name(src) if is_member(src) else src
-            rc, out, err = self._connection.exec_command("ls -l {0}".format(dest))
-            if rc != 0:
-                return False
-        else:
-            cmd = "LISTDS '{0}'".format(dest)
-            tso_cmd = self._execute_module(
-                module_name="ibm.ibm_zos_core.zos_tso_command",
-                module_args=dict(commands=[cmd]),
-                task_vars=task_vars,
-            ).get("output")[0]
-            if tso_cmd.get("rc") != 0:
-                for line in tso_cmd.get("content"):
-                    if "NOT IN CATALOG" in line:
-                        return False
-        return True
 
     def _exit_action(self, result, msg, failed=False):
         """Exit action plugin with a message"""

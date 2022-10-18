@@ -213,11 +213,11 @@ options:
         If creating a data set, I(volumes) specifies the volume(s) where the data set should be created.
       - >
         If I(volumes) is provided when I(state=present), and the data set is not found in the catalog,
-        M(ibm.ibm_zos_core.zos_data_set) will check the volume table of contents to see if the data set exists.
+        M(zos_data_set) will check the volume table of contents to see if the data set exists.
         If the data set does exist, it will be cataloged.
       - >
         If I(volumes) is provided when I(state=absent) and the data set is not found in the catalog,
-        M(ibm.ibm_zos_core.zos_data_set) will check the volume table of contents to see if the data set exists.
+        M(zos_data_set) will check the volume table of contents to see if the data set exists.
         If the data set does exist, it will be cataloged and promptly removed from the system.
       - I(volumes) is required when I(state=cataloged).
       - Accepts a string when using a single volume and a list of strings when using multiple.
@@ -438,11 +438,11 @@ options:
             If creating a data set, I(volumes) specifies the volume(s) where the data set should be created.
           - >
             If I(volumes) is provided when I(state=present), and the data set is not found in the catalog,
-            M(ibm.ibm_zos_core.zos_data_set) will check the volume table of contents to see if the data set exists.
+            M(zos_data_set) will check the volume table of contents to see if the data set exists.
             If the data set does exist, it will be cataloged.
           - >
             If I(volumes) is provided when I(state=absent) and the data set is not found in the catalog,
-            M(ibm.ibm_zos_core.zos_data_set) will check the volume table of contents to see if the data set exists.
+            M(zos_data_set) will check the volume table of contents to see if the data set exists.
             If the data set does exist, it will be cataloged and promptly removed from the system.
           - I(volumes) is required when I(state=cataloged).
           - Accepts a string when using a single volume and a list of strings when using multiple.
@@ -1141,8 +1141,8 @@ def run_module():
                     type="int",
                     required=False,
                 ),
-                key_offset=dict(type="int", required=False),
-                key_length=dict(type="int", required=False),
+                key_offset=dict(type="int", required=False, no_log=False),
+                key_length=dict(type="int", required=False, no_log=False),
                 replace=dict(
                     type="bool",
                     default=False,
@@ -1159,7 +1159,6 @@ def run_module():
             type="str",
             default="present",
             choices=["present", "absent", "cataloged", "uncataloged"],
-            dependencies=["batch"],
         ),
         type=dict(type="str", required=False, default="PDS"),
         space_type=dict(type="str", required=False, default="M"),
@@ -1184,8 +1183,8 @@ def run_module():
             type="int",
             required=False,
         ),
-        key_offset=dict(type="int", required=False),
-        key_length=dict(type="int", required=False),
+        key_offset=dict(type="int", required=False, no_log=False),
+        key_length=dict(type="int", required=False, no_log=False),
         replace=dict(
             type="bool",
             default=False,
@@ -1207,6 +1206,10 @@ def run_module():
 
     if not module.check_mode:
         try:
+            # Update the dictionary for use by better arg parser by adding the
+            # batch keyword after the arg spec is evaluated else you get a lint
+            # error 'invalid-ansiblemodule-schema'
+            module_args['state']['dependencies'] = ['batch']
             params = parse_and_validate_args(module.params)
             data_set_param_list = get_individual_data_set_parameters(params)
             result["names"] = [d.get("name", "") for d in data_set_param_list]

@@ -68,6 +68,7 @@ options:
     aliases:
       - exclude
     type: list
+    elements: str
     required: false
   patterns:
     description:
@@ -79,6 +80,7 @@ options:
       - If C(pds_patterns) is provided, C(patterns) must be member patterns.
       - When searching for members within a PDS/PDSE, pattern can be a regular expression.
     type: list
+    elements: str
     required: true
   size:
     description:
@@ -98,6 +100,7 @@ options:
       - pds_paths
       - pds_pattern
     type: list
+    elements: str
     required: false
   resource_type:
     description:
@@ -118,14 +121,15 @@ options:
       - If provided, only the data sets allocated in the specified list of
         volumes will be searched.
     type: list
+    elements: str
     required: false
     aliases:
       - volumes
 notes:
   - Only cataloged data sets will be searched. If an uncataloged data set needs to
-    be searched, it should be cataloged first. The M(ibm.ibm_zos_core.zos_data_set) module can be
+    be searched, it should be cataloged first. The M(zos_data_set) module can be
     used to catalog uncataloged data sets.
-  - The M(ibm.ibm_zos_core.zos_find) module currently does not support wildcards for high level qualifiers.
+  - The M(zos_find) module currently does not support wildcards for high level qualifiers.
     For example, C(SOME.*.DATA.SET) is a valid pattern, but C(*.DATA.SET) is not.
   - If a data set pattern is specified as C(USER.*), the matching data sets will have two
     name segments such as C(USER.ABC), C(USER.XYZ) etc. If a wildcard is specified
@@ -821,11 +825,21 @@ def main():
                 default="creation_date"
             ),
             contains=dict(type="str", required=False),
-            excludes=dict(type="list", required=False, aliases=["exclude"]),
-            patterns=dict(type="list", required=True),
+            excludes=dict(
+                type="list",
+                elements="str",
+                required=False,
+                aliases=["exclude"]
+            ),
+            patterns=dict(
+                type="list",
+                elements="str",
+                required=True
+            ),
             size=dict(type="str", required=False),
             pds_patterns=dict(
                 type="list",
+                elements="str",
                 required=False,
                 aliases=["pds_pattern", "pds_paths"]
             ),
@@ -833,7 +847,12 @@ def main():
                 type="str", required=False, default="nonvsam",
                 choices=["cluster", "data", "index", "nonvsam"]
             ),
-            volume=dict(type="list", required=False, aliases=["volumes"])
+            volume=dict(
+                type="list",
+                elements="str",
+                required=False,
+                aliases=["volumes"]
+            )
         )
     )
 

@@ -27,24 +27,30 @@ Parameters
 ----------
 
 
-from_encoding
-  The character set of the source *src*.
+encoding
+  Specifies which encodings the destination file or data set should be converted from and to.
 
   Supported character sets rely on the charset conversion utility (iconv) version; the most common character sets are supported.
 
   | **required**: False
-  | **type**: str
-  | **default**: IBM-1047
+  | **type**: dict
 
 
-to_encoding
-  The destination *dest* character set for the output to be written as.
+  from
+    The character set of the source *src*.
 
-  Supported character sets rely on the charset conversion utility (iconv) version; the most common character sets are supported.
+    | **required**: False
+    | **type**: str
+    | **default**: IBM-1047
 
-  | **required**: False
-  | **type**: str
-  | **default**: ISO8859-1
+
+  to
+    The destination *dest* character set for the output to be written as.
+
+    | **required**: False
+    | **type**: str
+    | **default**: ISO8859-1
+
 
 
 src
@@ -106,6 +112,15 @@ backup_compress
   | **type**: bool
 
 
+tmp_hlq
+  Override the default high level qualifier (HLQ) for temporary and backup datasets.
+
+  The default HLQ is the Ansible user used to execute the module and if that is not available, then the value ``TMPHLQ`` is used.
+
+  | **required**: False
+  | **type**: str
+
+
 
 
 Examples
@@ -123,8 +138,9 @@ Examples
      zos_encode:
        src: /zos_encode/test.data
        dest: /zos_encode_out/test.out
-       from_encoding: IBM-1047
-       to_encoding: ISO8859-1
+       encoding:
+         from: IBM-1047
+         to: ISO8859-1
        backup: yes
        backup_compress: yes
 
@@ -138,90 +154,102 @@ Examples
      zos_encode:
        src: /zos_encode/
        dest: /zos_encode_out/
-       from_encoding: ISO8859-1
-       to_encoding: IBM-1047
+       encoding:
+         from: ISO8859-1
+         to: IBM-1047
 
    - name: Convert file encoding from a USS file to a sequential data set
      zos_encode:
        src: /zos_encode/test.data
        dest: USER.TEST.PS
-       from_encoding: IBM-1047
-       to_encoding: ISO8859-1
+       encoding:
+         from: IBM-1047
+         to: ISO8859-1
 
    - name: Convert file encoding from files in a directory to a partitioned
        data set
      zos_encode:
        src: /zos_encode/
        dest: USER.TEST.PDS
-       from_encoding: ISO8859-1
-       to_encoding: IBM-1047
+       encoding:
+         from: ISO8859-1
+         to: IBM-1047
 
    - name: Convert file encoding from a USS file to a partitioned data set
        member
      zos_encode:
        src: /zos_encode/test.data
        dest: USER.TEST.PDS(TESTDATA)
-       from_encoding: ISO8859-1
-       to_encoding: IBM-1047
+       encoding:
+         from: ISO8859-1
+         to: IBM-1047
 
    - name: Convert file encoding from a sequential data set to a USS file
      zos_encode:
        src: USER.TEST.PS
        dest: /zos_encode/test.data
-       from_encoding: IBM-1047
-       to_encoding: ISO8859-1
+       encoding:
+         from: IBM-1047
+         to: ISO8859-1
 
    - name: Convert file encoding from a PDS encoding to a USS directory
      zos_encode:
        src: USER.TEST.PDS
        dest: /zos_encode/
-       from_encoding: IBM-1047
-       to_encoding: ISO8859-1
+       encoding:
+         from: IBM-1047
+         to: ISO8859-1
 
    - name: Convert file encoding from a sequential data set to another
        sequential data set
      zos_encode:
        src: USER.TEST.PS
        dest: USER.TEST1.PS
-       from_encoding: IBM-1047
-       to_encoding: ISO8859-1
+       encoding:
+         from: IBM-1047
+         to: ISO8859-1
 
    - name: Convert file encoding from a sequential data set to a
        partitioned data set (extended) member
      zos_encode:
        src: USER.TEST.PS
        dest: USER.TEST1.PDS(TESTDATA)
-       from_encoding: IBM-1047
-       to_encoding: ISO8859-1
+       encoding:
+         from: IBM-1047
+         to: ISO8859-1
 
    - name: Convert file encoding from a USS file to a VSAM data set
      zos_encode:
        src: /zos_encode/test.data
        dest: USER.TEST.VS
-       from_encoding: ISO8859-1
-       to_encoding: IBM-1047
+       encoding:
+         from: ISO8859-1
+         to: IBM-1047
 
    - name: Convert file encoding from a VSAM data set to a USS file
      zos_encode:
        src: USER.TEST.VS
        dest: /zos_encode/test.data
-       from_encoding: IBM-1047
-       to_encoding: ISO8859-1
+       encoding:
+         from: IBM-1047
+         to: ISO8859-1
 
    - name: Convert file encoding from a VSAM data set to a sequential
        data set
      zos_encode:
        src: USER.TEST.VS
        dest: USER.TEST.PS
-       from_encoding: IBM-1047
-       to_encoding: ISO8859-1
+       encoding:
+         from: IBM-1047
+         to: ISO8859-1
 
    - name: Convert file encoding from a sequential data set a VSAM data set
      zos_encode:
        src: USER.TEST.PS
        dest: USER.TEST.VS
-       from_encoding: ISO8859-1
-       to_encoding: IBM-1047
+       encoding:
+         from: ISO8859-1
+         to: IBM-1047
 
 
 

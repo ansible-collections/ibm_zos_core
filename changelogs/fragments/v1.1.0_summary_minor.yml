@@ -1,4 +1,0 @@
-minor_changes:
-  - New Filter that will filter a list of WTOR messages based on message text.
-  - Improved error handling and messages
-  - Documentation updates

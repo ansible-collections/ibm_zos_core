@@ -311,9 +311,6 @@ install:
 		@. $(VENV_BIN)/activate && ansible-galaxy collection install -fc ibm.ibm_zos_core
     endif
 
-cert:
-    # ssh-copy-id -i ~/.ssh/id_rsa.pub omvsadm@ec33017a.vmec.svl.ibm.com
-
 # ==============================================================================
 # Cleanup and teardown based on user selection
 # ==============================================================================

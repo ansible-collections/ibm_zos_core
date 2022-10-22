@@ -312,6 +312,17 @@ install:
     endif
 
 # ==============================================================================
+# Check the version of the ibm_zos_core collection installed
+# ==============================================================================
+## Get the version of the ibm_zos_core collection installed
+## Example:
+##     $ make version
+version:
+	@. $(VENV_BIN)/activate &&  \
+	cat ~/.ansible/collections/ansible_collections/ibm/ibm_zos_core/MANIFEST.json \
+	|grep version|cut -d ':' -f 2 | sed "s/,*$\//g" | tr -d '"';
+
+# ==============================================================================
 # Cleanup and teardown based on user selection
 # ==============================================================================
 ## Cleanup and teardown the environment based on the level selected.

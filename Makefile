@@ -318,8 +318,7 @@ install:
 ## Example:
 ##     $ make version
 version:
-	@. $(VENV_BIN)/activate &&  \
-	cat ~/.ansible/collections/ansible_collections/ibm/ibm_zos_core/MANIFEST.json \
+	@cat ~/.ansible/collections/ansible_collections/ibm/ibm_zos_core/MANIFEST.json \
 	|grep version|cut -d ':' -f 2 | sed "s/,*$\//g" | tr -d '"';
 
 # ==============================================================================

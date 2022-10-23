@@ -1,5 +1,14 @@
 # ==============================================================================
-# © Copyright IBM Corporation 2022
+# Copyright (c) IBM Corporation 2022
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#     http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 #
 # Makefile is used to assist with development tasks that can be a bit tedious to
 # create and often recreate. This provides a simple repeatable means to perform
@@ -44,11 +53,17 @@ divider="===================================================================="
 ## Note: This is not a common operation, unless you tend to edit the configuration, avoid using this feature.
 encrypt:
 	@# --------------------------------------------------------------------------
-	@# Check configuration exits
+	@# Check to see if there is a make.env if not exit before deleting the
+	@# encrypted make.env.encrypt
 	@# --------------------------------------------------------------------------
 	@if test ! -e make.env; then \
 	    echo "No configuration file 'make.env' found in $(CURR_DIR) "; \
 		exit 1; \
+	fi
+
+	@if test -e make.env.encrypt; then \
+	    echo "Remvoing file 'make.env.encrypt' found in $(CURR_DIR)."; \
+		rm -rf make.env.encrypt; \
 	fi
 
 	@openssl bf -a -in make.env > make.env.encrypt
@@ -68,7 +83,6 @@ decrypt:
 
 	@openssl bf -d -a -in make.env.encrypt > make.env
 	@chmod 700 make.env
-	@rm -f make.env.encrypt
 
 # ==============================================================================
 # Set up your venv, currently its hard coded to `venv` and designed to look first
@@ -76,12 +90,13 @@ decrypt:
 # @test -d $(VENV) || $(HOST_PYTHON) -m venv $(VENV)
 # ==============================================================================
 ## Create a python virtual environment (venv) based on the systems python3
-## $ make vsetup
+## Options:
+##     req - a user provided requirements.txt, if this is not set one will be
+##     created for you.
+## Example:
+##     $ make vsetup
+##     $ make vsetup req=tests/requirements.txt
 vsetup:
-
-	@if test ! -e $(VENV)/config.yml; then \
-	    echo "No configuration created in $(VENV)/config.yml "; \
-	fi
 
 	@if test ! -d $(VENV); then \
 		echo $(divider); \
@@ -102,15 +117,30 @@ vsetup:
 		echo "Configuration file $(VENV)/make.env already exists, no changes made."; \
 	fi
 
-	@if test ! -e $(VENV)/requirements.txt; then \
-		echo $(divider); \
-		echo "Installing python requirements into 'venv'."; \
-		echo $(divider); \
-		echo $$(${VENV}/./make.env --req)>${VENV}/requirements.txt; \
-		. $(VENV_BIN)/activate && pip install -r $(VENV)/requirements.txt; \
-	else \
+	@if test -e $(VENV)/requirements.txt; then \
 		echo "Requirements file $(VENV)/requirements.txt already exists, no new packages installed."; \
+		exit 1; \
 	fi
+
+    ifdef req
+		@if test -f ${req}; then \
+			echo $(divider); \
+			echo "Installing user provided python requirements into 'venv'."; \
+			echo $(divider); \
+			cp ${req} ${VENV}/requirements.txt; \
+			. $(VENV_BIN)/activate && pip install -r $(VENV)/requirements.txt; \
+		fi
+    else
+		@if test ! -e $(VENV)/requirements.txt; then \
+			echo $(divider); \
+			echo "Installing python requirements into 'venv'."; \
+			echo $(divider); \
+			echo $$(${VENV}/./make.env --req)>${VENV}/requirements.txt; \
+			. $(VENV_BIN)/activate && pip install -r $(VENV)/requirements.txt; \
+		else \
+			echo "Requirements file $(VENV)/requirements.txt already exists, no new packages installed."; \
+		fi
+    endif
 
 # ==============================================================================
 # Normally you don't need to activate your venv, but should you want to, you can
@@ -169,7 +199,7 @@ build:
 ## Example:
 ##     $ make test (runs all tests using default users system and dependencies)
 ##     $ make test name=tests/functional/modules/test_zos_copy_func.py debug=true (run specific test and debug)
-##     $ make test host=ec33012a python=3.9 zoau=1.1.1 name=tests/functional/modules/test_zos_copy_func.py debug=true (specify host, python, zoau, test name, and debug)
+##     $ make test host=ec33012a python=3.9 zoau=1.1.1 name=tests/functional/modules/test_zos_copy_func.py debug=true
 test:
 	@# --------------------------------------------------------------------------
 	@# Expecting the zOS host, python version and zoau version to use with
@@ -188,17 +218,16 @@ test:
 			@echo "No python version option was set, eg python=3.8"
 			exit 1
         endif
-    endif
+    else
+		@# --------------------------------------------------------------------------
+		@# When a quick test with no options and defaults are acceptable, a
+		@# lookup using the users usersname is mapped to a default of known
+		@# zos targets registered in make.env
+		@# --------------------------------------------------------------------------
 
-	@# --------------------------------------------------------------------------
-	@# When a quick test with no options and defaults are acceptable, the dummy
-	@# variable does nothing, its meant to not evaluate and instead evaluate the
-	@# usersname with whoami then use that to look up the users default configured
-	@# zos host to run tests on.
-	@# --------------------------------------------------------------------------
-    ifndef dummy
 		$(eval username := $(shell whoami))
 		echo $$(${VENV}/./make.env --config ${username} ${ZOS_PYTHON_DEFAULT} ${ZOAU_DEFAULT})>$(VENV)/config.yml
+
     endif
 
 	@# --------------------------------------------------------------------------
@@ -322,6 +351,38 @@ version:
 	|grep version|cut -d ':' -f 2 | sed "s/,*$\//g" | tr -d '"';
 
 # ==============================================================================
+# Check the version of the ibm_zos_core collection installed
+# ==============================================================================
+## Print the contents of the config file (venv/config.yml) which is used to
+## connect to the managed z/OS node to run functional tests on. This will only
+## be available if yo have set up a venv using `make vsetup` because a password
+## is required to generate the config and is considered sensitive content per
+## corporate policy.
+## Example:
+##     $ make printConfig
+printConfig:
+	@if test -e $(VENV)/config.yml; then \
+	    cat $(VENV)/config.yml; \
+	else \
+		echo "No configuration was found, consider creating a venv using `make vsetup` first."; \
+	fi
+
+# ==============================================================================
+# Check the version of the ibm_zos_core collection installed
+# ==============================================================================
+## Print the contents of the venv/make.env, this only works if
+## you have set up a venv using `make vsetup` because a password is required to
+## decrypt and a decrypted copy will be placed in the venv.
+## Example:
+##     $ make printMakeEnv
+printMakeEnv:
+	@if test -e $(VENV)/make.env; then \
+	    cat $(VENV)/make.env; \
+	else \
+		echo "No configuration was found, consider creating a venv using `make vsetup` first."; \
+	fi
+
+# ==============================================================================
 # Cleanup and teardown based on user selection
 # ==============================================================================
 ## Cleanup and teardown the environment based on the level selected.
@@ -424,3 +485,5 @@ help:
 # ==============================================================================
 # If you have formatting issues; try `cat -e -t -v Makefile`.
 # ^I represent tabs and $'s represent end of the line.
+#
+# If you need to debug your makefile command, use `-nd`, eg `make -nd vstop`

@@ -13,7 +13,6 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-import time
 import re
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,
@@ -23,29 +22,11 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
 )
 
 try:
-    from zoautil_py.jobs import read_output, list_dds, _listing
+    from zoautil_py.jobs import read_output, list_dds, listing
 except Exception:
     read_output = MissingZOAUImport()
     list_dds = MissingZOAUImport()
-    _listing = MissingZOAUImport()
-
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingZOAUImport,
-)
-
-try:
-    from zoautil_py.types import Job
-except Exception:
-    Job = MissingZOAUImport()
-
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingZOAUImport,
-)
-
-try:
-    from zoautil_py.jobs import read_output, list_dds
-except Exception:
-    pass
+    listing = MissingZOAUImport()
 
 
 def job_output(job_id=None, owner=None, job_name=None, dd_name=None):
@@ -198,28 +179,11 @@ def _zget_job_status(job_id="*", owner="*", job_name="*", dd_name=None):
 
     # jls output: owner=job[0], name=job[1], id=job[2], status=job[3], rc=job[4]
     # e.g.: OMVSADM  HELLO    JOB00126 JCLERR   ?
-    # entries = listing(job_query, owner)   1.2.0 has owner paramn, 1.1 does not
+    # entries = listing(job_query, owner)   1.2.0 has owner param, 1.1 does not
 
-    # Disabled for now to use work around below resulting from an index bound
-    # excpetion using zoau  dataset.listing()
-    #     entries = listing(job_query)
+    entries = listing(job_query)
 
     entries = []
-    response = _listing(job_query)
-
-    for unparsed_job in list(filter(None, response.stdout_response.split("\n"))):
-        job = list(filter(None, unparsed_job.rstrip("\n").split()))
-
-        count = 0
-        while len(job) != 5 and count < 9:
-            job = list(filter(None, _listing(job_query).stdout_response.rstrip("\n").split()))
-            time.sleep(1)
-            count += 1
-
-        if count >= 9:
-            entries.append(Job(owner='?', name=job[1], id=job[2], status=job[3], rc=job[4]))
-        else:
-            entries.append(Job(owner=job[0], name=job[1], id=job[2], status=job[3], rc=job[4]))
 
     final_entries = []
     if entries:

@@ -181,9 +181,9 @@ def _zget_job_status(job_id="*", owner="*", job_name="*", dd_name=None):
     # e.g.: OMVSADM  HELLO    JOB00126 JCLERR   ?
     # entries = listing(job_query, owner)   1.2.0 has owner param, 1.1 does not
 
-    entries = listing(job_query)
-
     entries = []
+
+    entries = listing(job_query)
 
     final_entries = []
     if entries:

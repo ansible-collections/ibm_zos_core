@@ -568,9 +568,6 @@ if PY3:
 else:
     from pipes import quote
 
-"""time between job query checks to see if a job has completed, default 1 second"""
-POLLING_INTERVAL = 1
-POLLING_COUNT = 60
 
 JOB_COMPLETION_MESSAGES = ["CC", "ABEND", "SEC ERROR", "JCL ERROR", "JCLERR"]
 
@@ -621,28 +618,34 @@ def submit_uss_jcl(src, module, timeout=0):
     wait = False
 
     # Work around to hfs=True ZOAU issue
-    tmp_data_set_for_submit = datasets.tmp_name(datasets.hlq())
+    # tmp_data_set_for_submit = datasets.tmp_name(datasets.hlq())
 
-    uss_copy_ds_rc = datasets.copy(src, tmp_data_set_for_submit)
-    if uss_copy_ds_rc != 0:
-        module.fail_json(
-            msg="Error occurred while during job execution while copying jcl \
-                  source {0} to {1}.".format(src, tmp_data_set_for_submit),
-            rc=uss_copy_ds_rc,
-            stdout=None,
-            stderr="Non-zero return code received"
-        )
+    # uss_copy_ds_rc = datasets.copy(src, tmp_data_set_for_submit)
+    # if uss_copy_ds_rc != 0:
+    #     module.fail_json(
+    #         msg="Error occurred while during job execution while copying jcl \
+    #               source {0} to {1}.".format(src, tmp_data_set_for_submit),
+    #         rc=uss_copy_ds_rc,
+    #         stdout=None,
+    #         stderr="Non-zero return code received"
+    #     )
 
     try:
         # Rearldess of wait boolean, if the timeout is set it takes precedence
         if timeout > 0:
             wait = True
-            kwargs.update({"timeout": "{0}".format(timeout)})
-            job_listing = jobs.submit(tmp_data_set_for_submit, wait, None, **kwargs)
+            kwargs.update({
+                "timeout": "{0}".format(timeout),
+                "hfs": True
+            })
+            job_listing = jobs.submit(src, wait, None, **kwargs)
             jobId = job_listing.id
         else:
+            kwargs.update({
+                "hfs": True
+            })
             # Wait was false, rely on our 10 second default and use the _submit to do so
-            job_listing = jobs._submit(tmp_data_set_for_submit, None, **kwargs)
+            job_listing = jobs._submit(src, None, **kwargs)
             jobId = job_listing.stdout_response.rstrip("\n")
     except (ZOAUException, JobSubmitException) as err:
         module.fail_json(

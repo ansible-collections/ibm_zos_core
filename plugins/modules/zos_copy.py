@@ -1608,8 +1608,6 @@ def restore_backup(
                         response.stderr_response
                     )
             else:
-                # TODO: check that new dest also gets erased when it's newly allocated.
-                # TODO: check other restore_backup path (when allocation fails)
                 if not members_to_restore:
                     members_to_restore = []
                 if not members_to_delete:
@@ -2253,11 +2251,15 @@ def run_module(module, arg_def):
                 dest_data_set=dest_data_set,
                 volume=volume
             )
+            raise Exception()
     except Exception as err:
         if dest_exists:
             restore_backup(dest_name, emergency_backup, dest_ds_type, use_backup)
             erase_backup(emergency_backup, dest_ds_type)
-        module.fail_json(msg="Unable to allocate destination data set: {0}".format(str(err)))
+        module.fail_json(
+            msg="Unable to allocate destination data set: {0}".format(str(err)),
+            dest_exists=dest_exists
+        )
 
     # ********************************************************************
     # Encoding conversion is only valid if the source is a local file,
@@ -2369,6 +2371,7 @@ def run_module(module, arg_def):
                 members_to_restore=err.overwritten_members,
                 members_to_delete=err.new_members
             )
+        err.json_args["dest_exists"] = dest_exists
         raise err
     finally:
         if dest_exists:
@@ -2565,6 +2568,7 @@ class CopyOperationError(Exception):
         stdout_lines=None,
         stderr_lines=None,
         cmd=None,
+        dest_exists=None,
         overwritten_members=None,
         new_members=None
     ):
@@ -2576,6 +2580,7 @@ class CopyOperationError(Exception):
             stdout_lines=stdout_lines,
             stderr_lines=stderr_lines,
             cmd=cmd,
+            dest_exists=dest_exists,
         )
         self.overwritten_members = overwritten_members
         self.new_members = new_members

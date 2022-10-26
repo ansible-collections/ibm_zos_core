@@ -1,0 +1,5 @@
+trivial:
+- zos_job_submit - updated to remove a temporary patch put in place to manage
+  when the src is USS JCL because prior versions of ZOAU did not correctly handle
+  JCL in USS when the option passed along was hfs=True.
+  (https://github.com/ansible-collections/ibm_zos_core/pull/549)

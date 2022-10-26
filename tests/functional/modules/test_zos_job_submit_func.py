@@ -147,6 +147,8 @@ def test_job_submit_LOCAL(ansible_zos_module):
     results = hosts.all.zos_job_submit(src=tmp_file.name, location="LOCAL", wait=True)
 
     for result in results.contacted.values():
+        print("\nTJSP.................\n")
+        print(result)
         assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
         assert result.get("jobs")[0].get("ret_code").get("code") == 0
         assert result.get("changed") is True
@@ -203,7 +205,5 @@ def test_job_submit_PDS_long(ansible_zos_module):
 
 
 # TODO
-# 1) Create a test case that will submit JCL in USS with `wait=false`, this
-#    drives a different path
-# 2) Update the PDS volume test cases by creating a temporary data set as
+# 1) Update the PDS volume test cases by creating a temporary data set as
 #    uncataloged using zos_dataset and then copy the JCL into and submit it

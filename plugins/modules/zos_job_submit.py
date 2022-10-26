@@ -22,6 +22,7 @@ module: zos_job_submit
 author:
     - "Xiao Yuan Ma (@bjmaxy)"
     - "Rich Parker (@richp405)"
+    - "Demetrios Dimatos (@ddimatos)"
 short_description: Submit JCL
 description:
     - Submit JCL from DATA_SET , USS, or LOCAL location.
@@ -76,8 +77,7 @@ options:
     required: false
     type: int
     description:
-      - Specifies the maximum return code for the submitted job that is allowed
-        without failing the M(zos_job_submit) module.
+      - Specifies the maximum return code allowed for any ddname for the submitted job.
   return_output:
     required: false
     default: true
@@ -89,8 +89,10 @@ options:
     required: false
     type: str
     description:
-      - The volume serial (VOLSER) where the data set resides. The option
+      - The volume serial (VOLSER)is where the data set resides. The option
         is required only when the data set is not cataloged on the system.
+      - When configured, the M(zos_job_submit) will try to catalog the data set
+        for the volume serial. If it is not able to, the module will fail.
         Ignored for USS and LOCAL.
   encoding:
     description:
@@ -479,7 +481,7 @@ jobs:
           }
      ]
 message:
-  description: The output message that the module generates.
+  description: This option is being deprecated
   returned: success
   type: str
   sample: Submit JCL operation succeeded.
@@ -490,21 +492,18 @@ EXAMPLES = r"""
   zos_job_submit:
     src: TEST.UTILs(SAMPLE)
     location: DATA_SET
-    wait: false
   register: response
 
 - name: Submit USS job
   zos_job_submit:
     src: /u/tester/demo/sample.jcl
     location: USS
-    wait: false
     return_output: false
 
 - name: Convert a local JCL file to IBM-037 and submit the job
   zos_job_submit:
     src: /Users/maxy/ansible-playbooks/provision/sample.jcl
     location: LOCAL
-    wait: false
     encoding:
       from: ISO8859-1
       to: IBM-037
@@ -513,14 +512,12 @@ EXAMPLES = r"""
   zos_job_submit:
     src: TEST.UNCATLOG.JCL(SAMPLE)
     location: DATA_SET
-    wait: false
     volume: P2SS01
 
 - name: Submit long running PDS job, and wait for the job to finish
   zos_job_submit:
     src: TEST.UTILs(LONGRUN)
     location: DATA_SET
-    wait: true
     wait_time_s: 30
 """
 
@@ -736,8 +733,8 @@ def run_module():
 
     if wait_time_s <= 0 or wait_time_s > MAX_WAIT_TIME_S:
         module.fail_json(
-            msg="The value for option wait_time_s is not valid, it must be \
-                    greater than 0 and less than " + MAX_WAIT_TIME_S,
+            msg=("The value for option wait_time_s is not valid, it must be "
+                 "greater than 0 and less than " + MAX_WAIT_TIME_S),
             **result
         )
 
@@ -766,8 +763,8 @@ def run_module():
             job_id_result, duration = submit_src_jcl(temp_file_encoded.name, module, wait_time_s, True)
         else:
             module.fail_json(
-                msg="Failed to convert the src {0} from encoding {1} to \
-                    encoding {2}, unable to submit job.".format(src, from_encoding, to_encoding),
+                msg=("Failed to convert the src {0} from encoding {1} to "
+                     "encoding {2}, unable to submit job.".format(src, from_encoding, to_encoding)),
                 stderr=str(stderr),
                 stdout=str(stdout),
                 **result
@@ -806,9 +803,10 @@ def run_module():
                     assert_valid_return_code(max_rc, job_rc, ret_code)
 
     except Exception as err:
-        result["msg"] = "The JCL submitted with job id {0} but \
-                        there was an error obtaining the job output. Review \
-                        the error for furhter details {1}.".format(str(job_id_result), str(err))
+        result["msg"] = ("The JCL submitted with job id {0} but "
+                         "there was an error obtaining the job output. Review "
+                         "the error for furhter details {1}.".format
+                         (str(job_id_result), str(err)))
         module.exit_json(**result)
     finally:
         if temp_file:
@@ -822,24 +820,16 @@ def assert_valid_return_code(max_rc, job_rc, ret_code):
         raise Exception("Unable to find a job return code (ret_code[code]) in the job output.")
 
     if max_rc < job_rc:
-        raise Exception("Maximum return code {0} for job steps must be less than \
-            job return code {1}.".format(str(max_rc), str(job_rc)))
+        raise Exception("Maximum return code {0} for job steps must be less than "
+                        "job return code {1}.".format(str(max_rc), str(job_rc)))
 
     for step in ret_code["steps"]:
         step_cc_rc = int(step["step_cc"])
         step_name_for_rc = step["step_name"]
         if max_rc > step_cc_rc:
-            raise Exception("Step name {0} exceeded maximum return code (max_rc) {1} \
-                with recturn code of {2}.".format(step_name_for_rc, str(max_rc), str(step_cc_rc)))
-
-
-class Error(Exception):
-    pass
-
-
-class SubmitJCLError(Error):
-    def __init__(self, jobs):
-        self.msg = 'An error occurred during submission of jobs "{0}"'.format(jobs)
+            raise Exception("Step name {0} exceeded maximum return code (max_rc) {1} "
+                            "with recturn code of {2}.".format(
+                                step_name_for_rc, str(max_rc), str(step_cc_rc)))
 
 
 def main():

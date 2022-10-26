@@ -2251,7 +2251,6 @@ def run_module(module, arg_def):
                 dest_data_set=dest_data_set,
                 volume=volume
             )
-            raise Exception()
     except Exception as err:
         if dest_exists:
             restore_backup(dest_name, emergency_backup, dest_ds_type, use_backup)

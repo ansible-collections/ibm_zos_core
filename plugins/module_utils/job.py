@@ -69,7 +69,7 @@ def job_output(job_id=None, owner=None, job_name=None, dd_name=None):
     return job_detail
 
 
-def _job_not_found(job_id, owner, job_name, dd_name, ovrr=None):
+def _job_not_found(job_id, owner, job_name, dd_name):
     jobs = []
 
     job = {}
@@ -81,10 +81,10 @@ def _job_not_found(job_id, owner, job_name, dd_name, ovrr=None):
     job["owner"] = owner
 
     job["ret_code"] = {}
-    job["ret_code"]["msg"] = "JOB NOT FOUND"
+    job["ret_code"]["msg"] = None
     job["ret_code"]["code"] = None
-    job["ret_code"]["msg_code"] = "NOT FOUND"
-    job["ret_code"]["msg_txt"] = "The job could not be found"
+    job["ret_code"]["msg_code"] = None
+    job["ret_code"]["msg_txt"] = "The job could not be found."
 
     job["class"] = ""
     job["content_type"] = ""
@@ -98,11 +98,6 @@ def _job_not_found(job_id, owner, job_name, dd_name, ovrr=None):
     dd["procstep"] = ""
     dd["byte_count"] = "0"
     job["ddnames"].append(dd)
-
-    if ovrr is not None:
-        job["ret_code"]["msg"] = "NO JOBS FOUND"
-        job["ret_code"]["msg_code"] = "NOT FOUND"
-        job["ret_code"]["msg_txt"] = "No jobs returned from query"
 
     jobs.append(job)
 
@@ -302,7 +297,7 @@ def _zget_job_status(job_id="*", owner="*", job_name="*", dd_name=None):
                 final_entries.append(job)
 
     if not final_entries:
-        final_entries = _job_not_found(job_id, owner, job_name, "notused")
+        final_entries = _job_not_found(job_id, owner, job_name, "unavailable")
 
     return final_entries
 

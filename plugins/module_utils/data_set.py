@@ -716,6 +716,7 @@ class DataSet(object):
         """
         changed = False
         present = False
+        name = extract_dsname(name)
         if DataSet.data_set_cataloged(name):
             present = True
         elif volumes is not None:

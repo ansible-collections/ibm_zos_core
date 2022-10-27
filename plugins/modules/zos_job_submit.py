@@ -518,31 +518,35 @@ EXAMPLES = r"""
     wait_time_s: 30
 """
 
-from ansible.module_utils.six import PY3
+import re
+from time import sleep
+from os import remove
+from tempfile import NamedTemporaryFile
+from timeit import default_timer as timer
 
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.encode import (
-    Defaults,
-)
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
-    BetterArgParser,
-)
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import (
-    job_output,
-)
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingZOAUImport,
-)
+from ansible.module_utils.basic import AnsibleModule
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
     DataSet,
 )
 
-from timeit import default_timer as timer
-import re
-from tempfile import NamedTemporaryFile
-from os import remove
-from time import sleep
-from ansible.module_utils.basic import AnsibleModule
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
+    MissingZOAUImport,
+)
+
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import (
+    job_output,
+)
+
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
+    BetterArgParser,
+)
+
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.encode import (
+    Defaults,
+)
+
+from ansible.module_utils.six import PY3
 
 try:
     from zoautil_py.exceptions import ZOAUException, JobSubmitException
@@ -583,7 +587,8 @@ def submit_src_jcl(src, module, timeout=0, hfs=True, volume=None):
     try:
         if volume is not None:
             volumes = [volume]
-            present, changed = DataSet.attempt_catalog_if_necessary(src, volumes)
+            present, changed = DataSet.attempt_catalog_if_necessary(
+                src, volumes)
 
             if not present:
                 result = dict(changed=changed)
@@ -597,7 +602,7 @@ def submit_src_jcl(src, module, timeout=0, hfs=True, volume=None):
         job_submitted = jobs.submit(src, wait, None, **kwargs)
 
         # Introducing a sleep to ensure we have the result of job sumbit carrying the job id
-        while(job_submitted is None and  duration < timeout):
+        while (job_submitted is None and duration < timeout):
             checktime = timer()
             duration = round(checktime - starttime)
             sleep(0.5)
@@ -610,7 +615,7 @@ def submit_src_jcl(src, module, timeout=0, hfs=True, volume=None):
             job_listing_rc = jobs.listing(job_submitted.id)[0].rc
             job_id_submitted = job_submitted.id
 
-            while(job_listing_rc == '?' and duration < timeout):
+            while (job_listing_rc == '?' and duration < timeout):
                 checktime = timer()
                 duration = round(checktime - starttime)
                 sleep(1)
@@ -620,10 +625,10 @@ def submit_src_jcl(src, module, timeout=0, hfs=True, volume=None):
     except ZOAUException as err:
         result = dict(changed=False)
         if job_submitted:
-          result["job_id"] = job_submitted.id
-        result["msg"] = ("Unable to submit job {0}, a non-zero return code has "
-                         "returned with error: {1}. Please review the job log for futher "
-                         "details.".format(src, str(err)))
+            result["job_id"] = job_submitted.id
+            result["msg"] = ("Unable to submit job {0}, a non-zero return code has "
+                             "returned with error: {1}. Please review the job log for futher "
+                             "details.".format(src, str(err)))
         module.fail_json(**result)
 
     # ZOAU throws a JobSubmitException when timeout is execeeded
@@ -701,7 +706,8 @@ def run_module():
             default="DATA_SET",
             choices=["DATA_SET", "USS", "LOCAL"],
         ),
-        from_encoding=dict(arg_type="encoding", default=Defaults.DEFAULT_ASCII_CHARSET, required=False),
+        from_encoding=dict(
+            arg_type="encoding", default=Defaults.DEFAULT_ASCII_CHARSET, required=False),
         to_encoding=dict(
             arg_type="encoding", default=Defaults.get_default_system_charset(), required=False
         ),
@@ -753,9 +759,11 @@ def run_module():
     duration = 0
 
     if location == "DATA_SET":
-        job_id_submitted, duration = submit_src_jcl(src, module, wait_time_s, False, volume)
+        job_id_submitted, duration = submit_src_jcl(
+            src, module, wait_time_s, False, volume)
     elif location == "USS":
-        job_id_submitted, duration = submit_src_jcl(src, module, wait_time_s, True)
+        job_id_submitted, duration = submit_src_jcl(
+            src, module, wait_time_s, True)
     else:
         # added -c to iconv to prevent \r from erroring as invalid chars to EBCDIC
         conv_str = "iconv -c -f {0} -t {1} {2} > {3}".format(
@@ -771,7 +779,8 @@ def run_module():
         )
 
         if conv_rc == 0:
-            job_id_submitted, duration = submit_src_jcl(temp_file_encoded.name, module, wait_time_s, True)
+            job_id_submitted, duration = submit_src_jcl(
+                temp_file_encoded.name, module, wait_time_s, True)
         else:
             module.fail_json(
                 msg=("Failed to convert the src {0} from encoding {1} to "
@@ -787,7 +796,8 @@ def run_module():
     try:
         # Explictly pass in None for the unused args else a default of '*' will be
         # used and return undersirable results
-        job_output_txt = job_output(job_id=job_id_submitted, owner=None, job_name=None, dd_name=None)
+        job_output_txt = job_output(
+            job_id=job_id_submitted, owner=None, job_name=None, dd_name=None)
 
         if job_output_txt:
             job_retcode = job_output_txt[0].get("ret_code")
@@ -796,16 +806,19 @@ def run_module():
                 job_msg = job_retcode.get("msg")
 
                 if job_msg is None:
-                  raise Exception("Unable to find a job completion code (CC) in 'ret_code' msg field.")
+                    raise Exception(
+                        "Unable to find a job completion code (CC) in 'ret_code' msg field.")
 
                 if re.search(
-                    "^(?:{0})".format("|".join(JOB_COMPLETION_MESSAGES)), job_msg
+                    "^(?:{0})".format(
+                        "|".join(JOB_COMPLETION_MESSAGES)), job_msg
                 ):
                     # If the job_msg doesn't have a CC, it is an improper completion (error/abend)
                     if re.search("^(?:CC)", job_msg) is None:
                         result["changed"] = False
                         result["ret_code"] = job_retcode
-                        raise Exception("Unable to find a job completion code (CC) in job output")
+                        raise Exception(
+                            "Unable to find a job completion code (CC) in job output")
 
                 result["jobs"] = job_output_txt
 
@@ -833,7 +846,8 @@ def run_module():
 
 def assert_valid_return_code(max_rc, job_rc, ret_code):
     if job_rc is None:
-        raise Exception("Unable to find a job return code (ret_code[code]) in the job output.")
+        raise Exception(
+            "Unable to find a job return code (ret_code[code]) in the job output.")
 
     if max_rc < job_rc:
         raise Exception("Maximum return code {0} for job steps must be less than "

@@ -1,5 +1,20 @@
+
+
+minor_changes:
+- zos_job_submit - deprecated the wait option, not needed with
+  wait_time_s minor_changes.
+  (https://github.com/ansible-collections/ibm_zos_core/issues/389).
+- zos_job_submit - behavior changed when a volume is defined in the module options
+  such that it will catalog the data set if it is not cataloged and submit the
+  job. In the past, the function did not catalog the data set and instead performed
+  I/O operations and then submitted the job. This behavior aligns to other module
+  behaviors and reduces the possibility to encounter a permissions issue.
 trivial:
 - zos_job_submit - updated to remove a temporary patch put in place to manage
   when the src is USS JCL because prior versions of ZOAU did not correctly handle
-  JCL in USS when the option passed along was hfs=True.
+  JCL in USS when the option passed along was hfs=True this now drives ZOAU 1.2.1
+  capabilities.
+  (https://github.com/ansible-collections/ibm_zos_core/pull/549)
+- zos_job_submit - added test cases to drive both `wait_time_s` and submitting
+  a job in an uncataloged data set
   (https://github.com/ansible-collections/ibm_zos_core/pull/549)

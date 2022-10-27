@@ -58,7 +58,7 @@ location
 
 
 wait
-  Configuring wait used by the :ref:`zos_operator <zos_operator_module>` module has been deprecated and will be removed in ibm.ibm_zos_core collection.
+  Configuring wait used by the :ref:`zos_job_submit <zos_job_submit_module>` module has been deprecated and will be removed in ibm.ibm_zos_core collection.
 
   Setting this option will yield no change, it is deprecated.
 

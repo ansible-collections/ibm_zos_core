@@ -107,7 +107,9 @@ volume
 encoding
   Specifies which encoding the local JCL file should be converted from and to, before submitting the job.
 
-  If this parameter is not provided, and the z/OS systems default encoding can not be identified, the JCL file will be converted from UTF-8 to IBM-1047 by default.
+  This option is only supported for when *location=LOCAL*.
+
+  If this parameter is not provided, and the z/OS systems default encoding can not be identified, the JCL file will be converted from UTF-8 to IBM-1047 by default, otherwise the module will detect the z/OS system encoding.
 
   | **required**: False
   | **type**: dict
@@ -116,7 +118,7 @@ encoding
   from
     The character set of the local JCL file; defaults to UTF-8.
 
-    Supported character sets rely on the target version; the most common character sets are supported.
+    Supported character sets rely on the target platform; the most common character sets are supported.
 
     | **required**: False
     | **type**: str

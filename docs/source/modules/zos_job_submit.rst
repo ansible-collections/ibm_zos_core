@@ -18,8 +18,8 @@ Synopsis
 --------
 - Submit JCL from DATA_SET , USS, or LOCAL location.
 - Submit a job and optionally monitor for its execution.
-- Optionally wait for the job output until the job finishes.
-- For the uncataloged dataset, specify the volume serial number.
+- Optionally wait a designated time until the job finishes.
+- For an uncataloged dataset, specify the volume serial number.
 
 
 
@@ -34,16 +34,16 @@ src
 
   It could be physical sequential data set or a partitioned data set qualified by a member or a path. (e.g "USER.TEST","USER.JCL(TEST)")
 
-  Or an USS file. (e.g "/u/tester/demo/sample.jcl")
+  Or a USS file. (e.g "/u/tester/demo/sample.jcl")
 
-  Or an LOCAL file in ansible control node. (e.g "/User/tester/ansible-playbook/sample.jcl")
+  Or a LOCAL file in ansible control node. (e.g "/User/tester/ansible-playbook/sample.jcl")
 
   | **required**: True
   | **type**: str
 
 
 location
-  The JCL location. Supported options are DATA_SET, USS or LOCAL.
+  The JCL location. Supported choices are ``DATA_SET``, ``USS`` or ``LOCAL``.
 
   DATA_SET can be a PDS, PDSE, or sequential data set.
 
@@ -62,11 +62,7 @@ wait
 
   Setting this option will yield no change, it is deprecated.
 
-  Wait for the Job to finish and capture the output. Default is false.
-
-  When *wait* is false or absent, the module will wait up to 10 seconds for the job to start, but will not wait for the job to complete.
-
-  If *wait* is true, User can specify the wait time, see option ``wait_time_s``.
+  See option ``wait_time_s``.
 
   | **required**: False
   | **type**: bool
@@ -83,7 +79,7 @@ wait_time_s
 
 
 max_rc
-  Specifies the maximum return code allowed for any ddname for the submitted job.
+  Specifies the maximum return code allowed for any job step for the submitted job.
 
   | **required**: False
   | **type**: int
@@ -200,7 +196,7 @@ Return Values
 
 
 jobs
-  List of jobs output. If no job status is found, this will return an empty job code with msg=JOB NOT FOUND.
+  List of jobs output. If no job status is found, this will return an empty ret_code with msg_txt explanation.
 
   | **returned**: success
   | **type**: list

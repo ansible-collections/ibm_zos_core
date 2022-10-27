@@ -27,8 +27,8 @@ short_description: Submit JCL
 description:
     - Submit JCL from DATA_SET , USS, or LOCAL location.
     - Submit a job and optionally monitor for its execution.
-    - Optionally wait for the job output until the job finishes.
-    - For the uncataloged dataset, specify the volume serial number.
+    - Optionally wait a designated time until the job finishes.
+    - For an uncataloged dataset, specify the volume serial number.
 version_added: "1.0.0"
 options:
   src:
@@ -38,8 +38,8 @@ options:
       - The source file or data set containing the JCL to submit.
       - It could be physical sequential data set or a partitioned data set
         qualified by a member or a path. (e.g "USER.TEST","USER.JCL(TEST)")
-      - Or an USS file. (e.g "/u/tester/demo/sample.jcl")
-      - Or an LOCAL file in ansible control node.
+      - Or a USS file. (e.g "/u/tester/demo/sample.jcl")
+      - Or a LOCAL file in ansible control node.
         (e.g "/User/tester/ansible-playbook/sample.jcl")
   location:
     required: false
@@ -50,7 +50,7 @@ options:
       - USS
       - LOCAL
     description:
-      - The JCL location. Supported options are DATA_SET, USS or LOCAL.
+      - The JCL location. Supported choices are ``DATA_SET``, ``USS`` or ``LOCAL``.
       - DATA_SET can be a PDS, PDSE, or sequential data set.
       - USS means the JCL location is located in UNIX System Services (USS).
       - LOCAL means locally to the ansible control node.
@@ -62,10 +62,7 @@ options:
       - Configuring wait used by the M(zos_operator) module has been
         deprecated and will be removed in ibm.ibm_zos_core collection.
       - Setting this option will yield no change, it is deprecated.
-      - Wait for the Job to finish and capture the output. Default is false.
-      - When I(wait) is false or absent, the module will wait up to 10 seconds for the job to start,
-        but will not wait for the job to complete.
-      - If I(wait) is true, User can specify the wait time, see option ``wait_time_s``.
+      - See option ``wait_time_s``.
   wait_time_s:
     required: false
     default: 10
@@ -77,7 +74,7 @@ options:
     required: false
     type: int
     description:
-      - Specifies the maximum return code allowed for any ddname for the submitted job.
+      - Specifies the maximum return code allowed for any job step for the submitted job.
   return_output:
     required: false
     default: true
@@ -131,7 +128,7 @@ RETURN = r"""
 jobs:
   description:
      List of jobs output.
-     If no job status is found, this will return an empty job code with msg=JOB NOT FOUND.
+     If no job status is found, this will return an empty ret_code with msg_txt explanation.
   returned: success
   type: list
   elements: dict
@@ -536,8 +533,8 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
     MissingZOAUImport,
 )
 
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
-    data_set,
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
+    DataSet,
 )
 
 from timeit import default_timer as timer
@@ -576,43 +573,54 @@ def submit_src_jcl(src, module, timeout=0, hfs=True, volume=None):
         "hfs": hfs,
     }
 
-    job_id_result = None
-    wait = True  # Wait is always true because we require wait_time_s > 0
+    wait = True  # Wait is always true because the module requires wait_time_s > 0
     changed = False
     present = False
+    duration = 0
+    job_submitted = None
+    job_id_submitted = None
 
     try:
         if volume is not None:
             volumes = [volume]
-            present, changed = data_set.attempt_catalog_if_necessary(src, volumes)
+            present, changed = DataSet.attempt_catalog_if_necessary(src, volumes)
 
             if not present:
                 result = dict(changed=changed)
-                result["job_id"] = ""
                 result["msg"] = ("Unable to submit job {0} because the data set could "
                                  "not be cataloged on the volume {1}.".format(src, volume))
                 module.fail_json(**result)
 
-        starttime = timer()
-        duration = 0
-
         # Calling ZOAU submit with a wait=true is non-blocking,we must insert
-        # a wait routine of our own after this call
-        job_listing = jobs.submit(src, wait, None, **kwargs)
+        # wait routines of our own after this call
+        starttime = timer()
+        job_submitted = jobs.submit(src, wait, None, **kwargs)
 
-        # Introducing a sleep to ensure we wait at most timeout
-        while(job_listing is None or duration < timeout):
+        # Introducing a sleep to ensure we have the result of job sumbit carrying the job id
+        while(job_submitted is None and  duration < timeout):
             checktime = timer()
             duration = round(checktime - starttime)
             sleep(0.5)
 
-        if job_listing:
-            job_id_result = job_listing.id
+        # Second sleep is to wait long enough for the job rc to not equal a `?`
+        # which is what ZOAU sends back, opitonally we can check the 'status' as
+        # that is sent back as `AC` when the job is not complete but the problem
+        # with monitoring 'AC' is that STARTED tasks never exit the AC status.
+        if job_submitted:
+            job_listing_rc = jobs.listing(job_submitted.id)[0].rc
+            job_id_submitted = job_submitted.id
+
+            while(job_listing_rc == '?' and duration < timeout):
+                checktime = timer()
+                duration = round(checktime - starttime)
+                sleep(1)
+                job_listing_rc = jobs.listing(job_submitted.id)[0].rc
 
     # ZOAU throws a ZOAUException when RC !=0
     except ZOAUException as err:
         result = dict(changed=False)
-        result["job_id"] = ""
+        if job_submitted:
+          result["job_id"] = job_submitted.id
         result["msg"] = ("Unable to submit job {0}, a non-zero return code has "
                          "returned with error: {1}. Please review the job log for futher "
                          "details.".format(src, str(err)))
@@ -621,16 +629,16 @@ def submit_src_jcl(src, module, timeout=0, hfs=True, volume=None):
     # ZOAU throws a JobSubmitException when timeout is execeeded
     except JobSubmitException as err:
         result = dict(changed=False)
-        result["job_id"] = job_id_result
+        result["job_id"] = job_id_submitted
         result["msg"] = ("The JCL submitted with job id {0} but "
                          "appears to be a long running job that exceeded its "
                          "maximum wait time of {1} second(s). Consider using module "
                          "zos_job_query to poll for long running "
                          "jobs and review {2} for futher details.".format(
-                             str(job_id_result), str(timeout), str(err)))
+                             str(job_id_submitted), str(timeout), str(err)))
         module.exit_json(**result)
 
-    return job_id_result, duration
+    return job_id_submitted, duration
 
 
 def run_module():
@@ -668,12 +676,21 @@ def run_module():
     )
 
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
-    encoding = module.params.get("encoding")
-    if encoding is None:
-        encoding = {
-            "from": Defaults.DEFAULT_ASCII_CHARSET,
-            "to": Defaults.get_default_system_charset(),
-        }
+
+    if module.params.get("encoding"):
+        module.params.update(
+            dict(
+                from_encoding=module.params.get("encoding").get("from"),
+                to_encoding=module.params.get("encoding").get("to"),
+            )
+        )
+    else:
+        module.params.update(
+            dict(
+                from_encoding=Defaults.DEFAULT_ASCII_CHARSET,
+                to_encoding=Defaults.get_default_system_charset(),
+            )
+        )
 
     arg_defs = dict(
         src=dict(arg_type="data_set_or_path", required=True),
@@ -684,9 +701,9 @@ def run_module():
             default="DATA_SET",
             choices=["DATA_SET", "USS", "LOCAL"],
         ),
-        from_encoding=dict(arg_type="encoding", default=Defaults.DEFAULT_ASCII_CHARSET),
+        from_encoding=dict(arg_type="encoding", default=Defaults.DEFAULT_ASCII_CHARSET, required=False),
         to_encoding=dict(
-            arg_type="encoding", default=Defaults.get_default_system_charset()
+            arg_type="encoding", default=Defaults.get_default_system_charset(), required=False
         ),
         volume=dict(arg_type="volume", required=False),
         return_output=dict(arg_type="bool", default=True),
@@ -695,14 +712,8 @@ def run_module():
         temp_file=dict(arg_type="path", required=False),
     )
 
-    # Default changed to False in case the module is not able to execute
+    # Default changed set to False in case the module is not able to execute
     result = dict(changed=False)
-    module.params.update(
-        dict(
-            from_encoding=encoding.get("from"),
-            to_encoding=encoding.get("to"),
-        )
-    )
 
     # ********************************************************************
     # Verify the validity of module args. BetterArgParser raises ValueError
@@ -738,13 +749,13 @@ def run_module():
             **result
         )
 
-    job_id_result = None
+    job_id_submitted = None
     duration = 0
 
     if location == "DATA_SET":
-        job_id_result, duration = submit_src_jcl(src, module, wait_time_s, False, volume)
+        job_id_submitted, duration = submit_src_jcl(src, module, wait_time_s, False, volume)
     elif location == "USS":
-        job_id_result, duration = submit_src_jcl(src, module, wait_time_s, True)
+        job_id_submitted, duration = submit_src_jcl(src, module, wait_time_s, True)
     else:
         # added -c to iconv to prevent \r from erroring as invalid chars to EBCDIC
         conv_str = "iconv -c -f {0} -t {1} {2} > {3}".format(
@@ -760,7 +771,7 @@ def run_module():
         )
 
         if conv_rc == 0:
-            job_id_result, duration = submit_src_jcl(temp_file_encoded.name, module, wait_time_s, True)
+            job_id_submitted, duration = submit_src_jcl(temp_file_encoded.name, module, wait_time_s, True)
         else:
             module.fail_json(
                 msg=("Failed to convert the src {0} from encoding {1} to "
@@ -770,17 +781,22 @@ def run_module():
                 **result
             )
 
-    result["job_id"] = job_id_result
+    result["job_id"] = job_id_submitted
     result["duration"] = duration
     result["changed"] = True
     try:
-        job_output_txt = job_output(job_id=job_id_result)
+        # Explictly pass in None for the unused args else a default of '*' will be
+        # used and return undersirable results
+        job_output_txt = job_output(job_id=job_id_submitted, owner=None, job_name=None, dd_name=None)
 
         if job_output_txt:
             job_retcode = job_output_txt[0].get("ret_code")
 
             if job_retcode:
                 job_msg = job_retcode.get("msg")
+
+                if job_msg is None:
+                  raise Exception("Unable to find a job completion code (CC) in 'ret_code' msg field.")
 
                 if re.search(
                     "^(?:{0})".format("|".join(JOB_COMPLETION_MESSAGES)), job_msg
@@ -805,8 +821,8 @@ def run_module():
     except Exception as err:
         result["msg"] = ("The JCL submitted with job id {0} but "
                          "there was an error obtaining the job output. Review "
-                         "the error for furhter details {1}.".format
-                         (str(job_id_result), str(err)))
+                         "the error for furhter details: {1}.".format
+                         (str(job_id_submitted), str(err)))
         module.exit_json(**result)
     finally:
         if temp_file:

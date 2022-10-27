@@ -556,6 +556,8 @@ options:
               - I(dd_input) supports single or multiple lines of input.
               - Multi-line input can be provided as a multi-line string
                 or a list of strings with 1 line per list item.
+              - If a multi-line string is provided make sure to use the
+                proper literal block style indicator "|".
               - If a list of strings is provided, newlines will be
                 added to each of the lines when used as input.
             required: true
@@ -1153,6 +1155,8 @@ options:
                       - I(dd_input) supports single or multiple lines of input.
                       - Multi-line input can be provided as a multi-line string
                         or a list of strings with 1 line per list item.
+                      - If a multi-line string is provided make sure to use the
+                        proper literal block style indicator "|".
                       - If a list of strings is provided, newlines will be
                         added to each of the lines when used as input.
                     required: true
@@ -1495,6 +1499,29 @@ EXAMPLES = r"""
       - dd_input:
           dd_name: sysin
           content: " LISTCAT ENTRIES('SYS1.*')"
+
+- name: Drop the contents of input dataset into output dataset
+      using REPRO command.
+  zos_mvs_raw:
+    pgm: idcams
+    auth: yes
+    dds:
+    - dd_data_set:
+        dd_name: INPUT
+        data_set_name: myhlq.ds1.input
+    - dd_data_set:
+        dd_name: OUTPUT
+        data_set_name: myhlq.ds1.output
+    - dd_input:
+        dd_name: sysin
+        content: |
+            " REPRO -
+              INFILE(INPUT) -
+              OUTFILE(OUTPUT)"
+    - dd_output:
+        dd_name: sysprint
+        return_content:
+          type: text
 """
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (

@@ -70,6 +70,7 @@ def job_output(job_id=None, owner=None, job_name=None, dd_name=None):
 
 
 def _job_not_found(job_id, owner, job_name, dd_name):
+    # Note that the text in the msg_txt is used in test cases thus sensitive to change
     jobs = []
 
     job = {}

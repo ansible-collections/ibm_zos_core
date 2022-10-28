@@ -31,7 +31,7 @@ HELLO, WORLD
 """
 
 TEMP_PATH = "/tmp/jcl"
-
+JOB_NOT_FOUND_MSG_TXT="The job could not be found."
 
 def test_zos_job_output_no_job_id(ansible_zos_module):
     hosts = ansible_zos_module
@@ -50,9 +50,8 @@ def test_zos_job_output_invalid_job_id(ansible_zos_module):
     for result in results.contacted.values():
         print(result)
         assert result.get("changed") is False
-        assert result.get('jobs')[0].get('ret_code').get('msg') == "JOB NOT FOUND",\
-            "ASSERTION-FAILURE: Jobs return code msg = [{0}]".format(
-                result.get('jobs')[0].get('ret_code').get('msg'))
+        assert result.get("jobs")[0].get("ret_code").get("msg_txt") == JOB_NOT_FOUND_MSG_TXT, \
+            "ASSERTION-FAILURE: job with invalid owner expected msg = " + JOB_NOT_FOUND_MSG_TXT
 
 
 def test_zos_job_output_no_job_name(ansible_zos_module):
@@ -92,8 +91,8 @@ def test_zos_job_output_invalid_owner(ansible_zos_module):
     for result in results.contacted.values():
         print(result)
         assert result.get("changed") is False
-        assert result.get("jobs")[0].get("ret_code").get("msg") == "JOB NOT FOUND", \
-            "ASSERTION-FAILURE: job with invalid owner expected msg = [JOB NOT FOUND]"
+        assert result.get("jobs")[0].get("ret_code").get("msg_txt") == JOB_NOT_FOUND_MSG_TXT, \
+            "ASSERTION-FAILURE: job with invalid owner expected msg = " + JOB_NOT_FOUND_MSG_TXT
 
 
 def test_zos_job_output_reject(ansible_zos_module):

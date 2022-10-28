@@ -802,9 +802,22 @@ def run_module():
     try:
         # Explictly pass in None for the unused args else a default of '*' will be
         # used and return undersirable results
+        foo = jobs.listing(job_id_submitted)[0]
+        result["_owner"]= foo.owner
+        result["_name"]= foo.name
+        result["_id"]= foo.id
+        result["_status"]= foo.status
+        result["_rc"]= foo.rc
+
         job_output_txt = job_output(
             job_id=job_id_submitted, owner=None, job_name=None, dd_name=None)
-
+        foo = jobs.listing(job_id_submitted)[0]
+        result["_owner_"]= foo.owner
+        result["_name_"]= foo.name
+        result["_id_"]= foo.id
+        result["_status_"]= foo.status
+        result["_rc_"]= foo.rc
+        
         if job_output_txt:
             job_retcode = job_output_txt[0].get("ret_code")
 

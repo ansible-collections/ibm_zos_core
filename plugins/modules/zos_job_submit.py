@@ -620,7 +620,7 @@ def submit_src_jcl(src, module, timeout=0, hfs=True, volume=None):
             job_listing_rc = jobs.listing(job_submitted.id)[0].rc
             job_id_submitted = job_submitted.id
 
-            while ((job_listing_rc == '?' or job_listing_rc is None) and duration < timeout ):
+            while ((job_listing_rc == '?' or job_listing_rc is None) and duration < timeout):
                 checktime = timer()
                 duration = round(checktime - starttime)
                 sleep(1)
@@ -632,8 +632,8 @@ def submit_src_jcl(src, module, timeout=0, hfs=True, volume=None):
         result["job_id"] = job_submitted.id if job_submitted else None
         result["failed"] = True
         result["msg"] = ("Unable to submit job {0}, a non-zero return code has "
-                             "returned with error: {1}. Please review the job log for futher "
-                             "details.".format(src, str(err)))
+                         "returned with error: {1}. Please review the job log for futher "
+                         "details.".format(src, str(err)))
         module.fail_json(**result)
 
     # ZOAU throws a JobSubmitException when timeout is execeeded

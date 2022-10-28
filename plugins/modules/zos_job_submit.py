@@ -596,6 +596,7 @@ def submit_src_jcl(src, module, timeout=0, hfs=True, volume=None):
 
             if not present:
                 result = dict(changed=changed)
+                result["failed"] = True
                 result["msg"] = ("Unable to submit job {0} because the data set could "
                                  "not be cataloged on the volume {1}.".format(src, volume))
                 module.fail_json(**result)
@@ -619,7 +620,7 @@ def submit_src_jcl(src, module, timeout=0, hfs=True, volume=None):
             job_listing_rc = jobs.listing(job_submitted.id)[0].rc
             job_id_submitted = job_submitted.id
 
-            while (job_listing_rc == '?' and duration < timeout):
+            while ((job_listing_rc == '?' or job_listing_rc is None) and duration < timeout ):
                 checktime = timer()
                 duration = round(checktime - starttime)
                 sleep(1)
@@ -628,23 +629,25 @@ def submit_src_jcl(src, module, timeout=0, hfs=True, volume=None):
     # ZOAU throws a ZOAUException when RC !=0
     except ZOAUException as err:
         result = dict(changed=False)
-        if job_submitted:
-            result["job_id"] = job_submitted.id
-            result["msg"] = ("Unable to submit job {0}, a non-zero return code has "
+        result["job_id"] = job_submitted.id if job_submitted else None
+        result["failed"] = True
+        result["msg"] = ("Unable to submit job {0}, a non-zero return code has "
                              "returned with error: {1}. Please review the job log for futher "
                              "details.".format(src, str(err)))
         module.fail_json(**result)
 
     # ZOAU throws a JobSubmitException when timeout is execeeded
     except JobSubmitException as err:
+        id_temp = job_submitted.id if job_submitted else None
         result = dict(changed=False)
-        result["job_id"] = job_id_submitted
+        result["job_id"] = id_temp
+        result["failed"] = False
         result["msg"] = ("The JCL submitted with job id {0} but "
                          "appears to be a long running job that exceeded its "
                          "maximum wait time of {1} second(s). Consider using module "
                          "zos_job_query to poll for long running "
                          "jobs and review {2} for futher details.".format(
-                             str(job_id_submitted), str(timeout), str(err)))
+                             str(id_temp), str(timeout), str(err)))
         module.exit_json(**result)
 
     return job_id_submitted, duration
@@ -753,11 +756,10 @@ def run_module():
         temp_file_encoded = NamedTemporaryFile(delete=True)
 
     if wait_time_s <= 0 or wait_time_s > MAX_WAIT_TIME_S:
-        module.fail_json(
-            msg=("The value for option wait_time_s is not valid, it must be "
-                 "greater than 0 and less than " + MAX_WAIT_TIME_S),
-            **result
-        )
+        result["failed"] = True
+        result["msg"] = ("The value for option wait_time_s is not valid, it must "
+                         "be greater than 0 and less than " + MAX_WAIT_TIME_S)
+        module.fail_json(**result)
 
     job_id_submitted = None
     duration = 0
@@ -786,17 +788,17 @@ def run_module():
             job_id_submitted, duration = submit_src_jcl(
                 temp_file_encoded.name, module, wait_time_s, True)
         else:
-            module.fail_json(
-                msg=("Failed to convert the src {0} from encoding {1} to "
-                     "encoding {2}, unable to submit job.".format(src, from_encoding, to_encoding)),
-                stderr=str(stderr),
-                stdout=str(stdout),
-                **result
-            )
+            result["failed"] = True
+            result["stdout"] = stdout
+            result["stderr"] = stderr
+            result["msg"] = ("Failed to convert the src {0} from encoding {1} to "
+                             "encoding {2}, unable to submit job."
+                             .format(src, from_encoding, to_encoding))
+            module.fail_json(**result)
 
     result["job_id"] = job_id_submitted
     result["duration"] = duration
-    result["changed"] = True
+
     try:
         # Explictly pass in None for the unused args else a default of '*' will be
         # used and return undersirable results
@@ -810,6 +812,8 @@ def run_module():
                 job_msg = job_retcode.get("msg")
 
                 if job_msg is None:
+                    result["ret_code"] = job_retcode
+                    result["failed"] = True
                     raise Exception(
                         "Unable to find a job completion code (CC) in 'ret_code' msg field.")
 
@@ -819,8 +823,8 @@ def run_module():
                 ):
                     # If the job_msg doesn't have a CC, it is an improper completion (error/abend)
                     if re.search("^(?:CC)", job_msg) is None:
-                        result["changed"] = False
                         result["ret_code"] = job_retcode
+                        result["failed"] = True
                         raise Exception(
                             "Unable to find a job completion code (CC) in job output")
 
@@ -840,11 +844,17 @@ def run_module():
                          "there was an error obtaining the job output. Review "
                          "the error for furhter details: {1}.".format
                          (str(job_id_submitted), str(err)))
-        module.exit_json(**result)
+
+        if result.get("failed"):
+            module.fail_json(**result)
+        else:
+            result["changed"] = True
+            module.exit_json(**result)
     finally:
         if temp_file:
             remove(temp_file)
 
+    result["changed"] = True
     module.exit_json(**result)
 
 

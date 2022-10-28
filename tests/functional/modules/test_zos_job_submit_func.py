@@ -110,6 +110,7 @@ def test_job_submit_PDS(ansible_zos_module):
             assert result.get("changed") is True
     finally:
         hosts.all.file(path=TEMP_PATH, state="absent")
+        hosts.all.zos_data_set(name=DATA_SET_NAME, state="absent")
 
 
 def test_job_submit_PDS_special_characters(ansible_zos_module):
@@ -138,6 +139,7 @@ def test_job_submit_PDS_special_characters(ansible_zos_module):
             assert result.get("changed") is True
     finally:
         hosts.all.file(path=TEMP_PATH, state="absent")
+        hosts.all.zos_data_set(name=DATA_SET_NAME_SPECIAL_CHARS, state="absent")
 
 
 def test_job_submit_USS(ansible_zos_module):

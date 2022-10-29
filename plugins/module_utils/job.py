@@ -178,7 +178,6 @@ def _zget_job_status(job_id="*", owner="*", job_name="*", dd_name=None):
     # entries = listing(job_query, owner)   1.2.0 has owner param, 1.1 does not
 
     entries = []
-  
     entries = listing(job_query)
     stuff = dict()
     stuff["entries_query"] = job_query

@@ -534,6 +534,10 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
     DataSet,
 )
 
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
+    data_set,
+)
+
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     MissingZOAUImport,
 )
@@ -591,8 +595,9 @@ def submit_src_jcl(src, module, timeout=0, hfs=True, volume=None):
     try:
         if volume is not None:
             volumes = [volume]
+            src_ds_name = data_set.extract_dsname(src)
             present, changed = DataSet.attempt_catalog_if_necessary(
-                src, volumes)
+                src_ds_name, volumes)
 
             if not present:
                 result = dict(changed=changed)

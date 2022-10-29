@@ -374,8 +374,8 @@ printConfig:
 ## you have set up a venv using `make vsetup` because a password is required to
 ## decrypt and a decrypted copy will be placed in the venv.
 ## Example:
-##     $ make printMakeEnv
-printMakeEnv:
+##     $ make printenv
+printenv:
 	@if test -e $(VENV)/make.env; then \
 	    cat $(VENV)/make.env; \
 	else \
@@ -433,7 +433,40 @@ clean:
 			make encrypt; \
 		fi
     else
-		@echo "No clean level has been set, please set a level."
+		@echo "No level has been set for this target, please set a level."
+    endif
+
+## Copy your ssh key to a `host` or the default which is your username. You must
+## have set up a venv `venv` as that is where the environment script and configurations
+## get written to manage this make file. It avoids continued decryption prompts to
+## force users to set up the venv via `vsetup`
+## Options:
+##     host - choose from a known host or don't set a value for the default operation
+##            which is to user your username to look up your default system
+## Example:
+##     $ make copyKey host=ec01132a
+##     $ make copyKey
+copyKey:
+    ifdef host
+		${VENV}/./make.env --cert ${host}
+    else
+		$(eval username := $(shell whoami))
+		${VENV}/./make.env --cert ${username}
+    endif
+
+## Copy your ssh key to a `host` or the default which is your username. You must
+## have set up a venv `venv` as that is where the environment script and configurations
+## get written to manage this make file. It avoids continued decryption prompts to
+## force users to set up the venv via `vsetup`
+## Options:
+##     host - choose from a known host or don't set a value for the default operation
+##            which is to user your username to look up your default system
+## Example:
+##     $ make copykey host=ec01132a
+##     $ make copykey
+printTargets:
+    ifdef
+		${VENV}/./make.env --targets
     endif
 
 # ==============================================================================

@@ -179,7 +179,7 @@ def _zget_job_status(job_id="*", owner="*", job_name="*", dd_name=None):
 
     entries = []
 
-    entries = listing(job_query)[0]
+    entries = listing(job_query)
 
     final_entries = []
     if entries:

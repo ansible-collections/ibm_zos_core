@@ -136,6 +136,7 @@ def job_status(job_id=None, owner=None, job_name=None, dd_name=None):
     dd_name = parsed_args.get("dd_name")
 
     job_status_result = _get_job_status(job_id, owner, job_name, dd_name)
+
     if len(job_status_result) == 0:
         job_id = "" if job_id == "*" else job_id
         job_name = "" if job_name == "*" else job_name
@@ -177,11 +178,28 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None):
     # jls output: owner=job[0], name=job[1], id=job[2], status=job[3], rc=job[4]
     # e.g.: OMVSADM  HELLO    JOB00126 JCLERR   ?
     # entries = listing(job_id, owner)   1.2.0 has owner param, 1.1 does not
+    stuff = dict()
 
     final_entries = []
     entries = []
+    stuf1 = listing(job_id_temp)
+    if stuf1:
+        stuff["1_job"] = stuf1[0].owner
+        stuff["1_name"] = stuf1[0].name
+        stuff["1_id"] = stuf1[0].id
+        stuff["1_status"] = stuf1[0].status
+        stuff["1_rc"] = stuf1[0].rc
+
+    # job_list.append(Job(owner=job[0], name=job[1], id=job[2], status=job[3], rc=job[4]))
     entries = listing(job_id_temp)
 
+    stuf2 = listing(job_id_temp)
+    if stuf2:
+        stuff["2_job"] = stuf2[0].owner
+        stuff["2_name"] = stuf2[0].name
+        stuff["2_id"] = stuf2[0].id
+        stuff["2_status"] = stuf2[0].status
+        stuff["2_rc"] = stuf2[0].rc
     if entries:
         for entry in entries:
             if owner != "*":
@@ -292,9 +310,9 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None):
                                 job["ret_code"]["code"] = int(job["ret_code"]["msg_code"])
             if len(list_of_dds) > 1:
                 final_entries.append(job)
-
     if not final_entries:
         final_entries = _job_not_found(job_id, owner, job_name, "unavailable")
+    final_entries.append(stuff)
     return final_entries
 
 

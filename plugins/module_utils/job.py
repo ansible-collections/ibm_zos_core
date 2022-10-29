@@ -59,13 +59,13 @@ def job_output(job_id=None, owner=None, job_name=None, dd_name=None):
     owner = parsed_args.get("owner") or "*"
     dd_name = parsed_args.get("dd_name") or ""
 
-    job_detail = _zget_job_status(job_id=job_id, owner=owner, job_name=job_name, dd_name=dd_name)
+    job_detail = _get_job_status(job_id=job_id, owner=owner, job_name=job_name, dd_name=dd_name)
     if len(job_detail) == 0:
         # some systems have issues with "*" while some require it to see results
         job_id = "" if job_id == "*" else job_id
         owner = "" if owner == "*" else owner
         job_name = "" if job_name == "*" else job_name
-        job_detail = _zget_job_status(job_id=job_id, owner=owner, job_name=job_name, dd_name=dd_name)
+        job_detail = _get_job_status(job_id=job_id, owner=owner, job_name=job_name, dd_name=dd_name)
     return job_detail
 
 
@@ -135,14 +135,14 @@ def job_status(job_id=None, owner=None, job_name=None, dd_name=None):
     owner = parsed_args.get("owner") or "*"
     dd_name = parsed_args.get("dd_name")
 
-    job_status = _zget_job_status(job_id, owner, job_name, dd_name)
-    if len(job_status) == 0:
+    job_status_result = _get_job_status(job_id, owner, job_name, dd_name)
+    if len(job_status_result) == 0:
         job_id = "" if job_id == "*" else job_id
         job_name = "" if job_name == "*" else job_name
         owner = "" if owner == "*" else owner
-        job_status = _zget_job_status(job_id, owner, job_name, dd_name)
+        job_status_result = _get_job_status(job_id, owner, job_name, dd_name)
 
-    return job_status
+    return job_status_result
 
 
 def _parse_steps(job_str):
@@ -167,28 +167,18 @@ def _parse_steps(job_str):
     return stp
 
 
-def _zget_job_status(job_id="*", owner="*", job_name="*", dd_name=None):
+def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None):
     if job_id == "*":
-        job_query = None
-    else:
-        job_query = job_id
+        job_id = None
 
     # jls output: owner=job[0], name=job[1], id=job[2], status=job[3], rc=job[4]
     # e.g.: OMVSADM  HELLO    JOB00126 JCLERR   ?
-    # entries = listing(job_query, owner)   1.2.0 has owner param, 1.1 does not
-
-    entries = []
-    entries = listing(job_query)
-    stuff = dict()
-    stuff["entries_query"] = job_query
-    if entries:
-        stuff["entries_owner"] = entries[0].owner
-        stuff["entries_name"] = entries[0].name
-        stuff["entries_id"] = entries[0].id
-        stuff["entries_status"] = entries[0].status
-        stuff["entries_rc"] = entries[0].rc
+    # entries = listing(job_id, owner)   1.2.0 has owner param, 1.1 does not
 
     final_entries = []
+    entries = []
+    entries = listing(job_id)
+
     if entries:
         for entry in entries:
             if owner != "*":
@@ -199,11 +189,7 @@ def _zget_job_status(job_id="*", owner="*", job_name="*", dd_name=None):
                     continue
 
             job = {}
-
-            # rstrip is a solution because we call zoau raw functions like _submit
-            # which return values with a backslash
-            job_id_stripped = entry.id.rstrip("\n")
-            job["job_id"] = job_id_stripped
+            job["job_id"] = entry.id
             job["job_name"] = entry.name
             job["subsystem"] = ""
             job["system"] = ""
@@ -226,7 +212,7 @@ def _zget_job_status(job_id="*", owner="*", job_name="*", dd_name=None):
             job["ret_code"]["steps"] = []
             job["ddnames"] = []
 
-            list_of_dds = list_dds(job_id_stripped)
+            list_of_dds = list_dds(entry.id)
 
             # Traverse all the DD's
             for single_dd in list_of_dds:
@@ -301,12 +287,11 @@ def _zget_job_status(job_id="*", owner="*", job_name="*", dd_name=None):
                         if len(job["ret_code"]["msg_code"]) > 0:
                             if job["ret_code"]["msg_code"].isdigit():
                                 job["ret_code"]["code"] = int(job["ret_code"]["msg_code"])
-            # if len(list_of_dds) > 1:
-            final_entries.append(job)
+            if len(list_of_dds) > 1:
+                final_entries.append(job)
 
     if not final_entries:
         final_entries = _job_not_found(job_id, owner, job_name, "unavailable")
-    final_entries.append(stuff)
     return final_entries
 
 

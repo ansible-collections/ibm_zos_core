@@ -301,8 +301,8 @@ def _zget_job_status(job_id="*", owner="*", job_name="*", dd_name=None):
                         if len(job["ret_code"]["msg_code"]) > 0:
                             if job["ret_code"]["msg_code"].isdigit():
                                 job["ret_code"]["code"] = int(job["ret_code"]["msg_code"])
-            if len(list_of_dds) > 1:
-                final_entries.append(job)
+            #if len(list_of_dds) > 1:
+            final_entries.append(job)
 
     if not final_entries:
         final_entries = _job_not_found(job_id, owner, job_name, "unavailable")

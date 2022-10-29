@@ -178,8 +178,15 @@ def _zget_job_status(job_id="*", owner="*", job_name="*", dd_name=None):
     # entries = listing(job_query, owner)   1.2.0 has owner param, 1.1 does not
 
     entries = []
-
+  
     entries = listing(job_query)
+    stuff = dict()
+    stuff["entries_query"] = job_query
+    stuff["entries_owner"] = entries[0].owner
+    stuff["entries_name"] = entries[0].name
+    stuff["entries_id"] = entries[0].id
+    stuff["entries_status"] = entries[0].status
+    stuff["entries_rc"] = entries[0].rc
 
     final_entries = []
     if entries:
@@ -299,7 +306,7 @@ def _zget_job_status(job_id="*", owner="*", job_name="*", dd_name=None):
 
     if not final_entries:
         final_entries = _job_not_found(job_id, owner, job_name, "unavailable")
-
+    final_entries.append(stuff)
     return final_entries
 
 

@@ -169,7 +169,10 @@ def _parse_steps(job_str):
 
 def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None):
     if job_id == "*":
-        job_id = None
+        job_id_temp = None
+    else:
+        # Preserve the original job_id for the failure path
+        job_id_temp = job_id
 
     # jls output: owner=job[0], name=job[1], id=job[2], status=job[3], rc=job[4]
     # e.g.: OMVSADM  HELLO    JOB00126 JCLERR   ?
@@ -177,7 +180,7 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None):
 
     final_entries = []
     entries = []
-    entries = listing(job_id)
+    entries = listing(job_id_temp)
 
     if entries:
         for entry in entries:
@@ -256,7 +259,7 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None):
                 tmpcont = None
                 if "stepname" in single_dd:
                     if "dataset" in single_dd:
-                        tmpcont = read_output(job_id_stripped, single_dd["stepname"], single_dd["dataset"])
+                        tmpcont = read_output(entry.id, single_dd["stepname"], single_dd["dataset"])
 
                 dd["content"] = tmpcont.split("\n")
                 job["ret_code"]["steps"].extend(_parse_steps(tmpcont))

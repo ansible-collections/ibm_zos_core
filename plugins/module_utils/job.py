@@ -181,11 +181,12 @@ def _zget_job_status(job_id="*", owner="*", job_name="*", dd_name=None):
     entries = listing(job_query)
     stuff = dict()
     stuff["entries_query"] = job_query
-    stuff["entries_owner"] = entries[0].owner
-    stuff["entries_name"] = entries[0].name
-    stuff["entries_id"] = entries[0].id
-    stuff["entries_status"] = entries[0].status
-    stuff["entries_rc"] = entries[0].rc
+    if entries:
+        stuff["entries_owner"] = entries[0].owner
+        stuff["entries_name"] = entries[0].name
+        stuff["entries_id"] = entries[0].id
+        stuff["entries_status"] = entries[0].status
+        stuff["entries_rc"] = entries[0].rc
 
     final_entries = []
     if entries:

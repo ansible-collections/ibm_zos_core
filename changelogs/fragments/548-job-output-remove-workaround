@@ -1,4 +1,0 @@
-trivial:
-- Updates module_utils job.py utility to leverage latest ZOAU 1.2.1 code and
-  removes temporary patch.
-  (https://github.com/ansible-collections/ibm_zos_core/pull/548)

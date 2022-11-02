@@ -1,6 +1,0 @@
-minor_changes:
-- zos_blockinfile - updates the module with a new option named force.
-  This allows for a user to specify that the data set can be shared with
-  others during an update which results in the data set you are updating to
-  be simultaneously updated by others.
-  (https://github.com/ansible-collections/ibm_zos_core/pull/316).

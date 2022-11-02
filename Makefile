@@ -209,14 +209,14 @@ test:
     ifdef host
         ifdef python
             ifdef zoau
-				echo $$(${VENV}/./make.env --config ${host} ${python} ${zoau})>$(VENV)/config.yml
+				@echo $$(${VENV}/./make.env --config ${host} ${python} ${zoau})>$(VENV)/config.yml
             else
 		    	@echo "Option 'zoau=<version>' was not set, eg zoau=1.1.1"
-				exit 1
+				@exit 1
             endif
         else
 			@echo "No python version option was set, eg python=3.8"
-			exit 1
+			@exit 1
         endif
     else
 		@# --------------------------------------------------------------------------
@@ -454,21 +454,37 @@ copyKey:
 		${VENV}/./make.env --cert ${username}
     endif
 
-## Copy your ssh key to a `host` or the default which is your username. You must
-## have set up a venv `venv` as that is where the environment script and configurations
-## get written to manage this make file. It avoids continued decryption prompts to
-## force users to set up the venv via `vsetup`
-## Options:
-##     host - choose from a known host or don't set a value for the default operation
-##            which is to user your username to look up your default system
+## Display the z/OS managed nodes available and configured. This will show which
+## systems you can use in the host argument for `make test host<....>`
 ## Example:
-##     $ make copykey host=ec01132a
-##     $ make copykey
+##     $ make printTargets
 printTargets:
-    ifdef
-		${VENV}/./make.env --targets
-    endif
+	${VENV}/./make.env --targets
 
+## Build the changelog, this should be a release activity otherwise the generated
+## files should not be checked in.
+## Example:
+##     $ make buildChangelog
+buildChangelog:
+	@. $(VENV_BIN)/activate && antsibull-changelog release
+
+## Update the documentation for the collection after module doc changes have been
+## made. This simply calls the make file in the docs directory, see the make file
+## there for additional options.
+## Example:
+##     $ make buildChangelog
+buildDoc:
+	@. $(VENV_BIN)/activate && make -C docs clean
+	@. $(VENV_BIN)/activate && make -C docs module-doc
+	@. $(VENV_BIN)/activate && make -C docs html
+	@. $(VENV_BIN)/activate && make -C docs view-html
+
+## Cleanup and remove geneated doc for the collection if its not going to be
+## checked in
+## Example:
+##     $ make buildChangelog
+cleanDoc:
+	@. $(VENV_BIN)/activate && make -C docs clean
 # ==============================================================================
 # Cleanup and teardown based on user selection
 # ==============================================================================

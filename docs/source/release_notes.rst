@@ -49,6 +49,7 @@ Minor Changes
 
       - Ensures that temporary datasets created by DD Statements use the tmp_hlq specified. This allows for a user to specify the data set high level qualifier (HLQ) used in any temporary data set created by the module. Often, the defaults are not permitted on systems, this provides a way to override the defaults.
       - updates the module with a new option named tmp_hlq. This allows for a user to specify the data set high level qualifier (HLQ) used in any temporary data set created by the module. Often, the defaults are not permitted on systems, this provides a way to override the defaults.
+      - updated module documentation on how to use a multi-line string when using the content field option as well as an example.
 - ``zos_operator``
 
       - added in the response the cmd result.

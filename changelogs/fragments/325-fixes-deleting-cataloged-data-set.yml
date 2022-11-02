@@ -1,8 +1,0 @@
-bugfixes:
-- zos_data_set - Fixes a bug such that the module will delete a catalogued
-  data set over an uncatalogued data set even though the volume is provided
-  for the uncataloged data set. This is unexpected behavior and does not align
-  to documentation; correct behavior is that when a volume is provided that is
-  the first place the module should look for the data set, whether or not it is
-  cataloged.
-  (https://github.com/ansible-collections/ibm_zos_core/pull/325).

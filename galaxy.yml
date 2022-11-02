@@ -84,3 +84,5 @@ build_ignore:
   - venv
   - make.env.encrypt
   - Makefile
+  - make.env
+  

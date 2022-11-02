@@ -200,3 +200,5 @@ hosts
 .keep
 shell_exploits.txt
 test_config.yml
+make.env.encrypt
+make.env

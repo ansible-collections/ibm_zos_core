@@ -1,12 +1,6 @@
 
 
 minor_changes:
-- zos_job_submit - The 'wait' option has been deprecated because using
-  option 'wait_time_s' implies the job is going to wait.
-  (https://github.com/ansible-collections/ibm_zos_core/issues/389).
-- zos_job_submit - Response 'message' property has been deprecated, all responses
-  are now in response property 'msg'.
-  (https://github.com/ansible-collections/ibm_zos_core/issues/389).
 - zos_job_submit - behavior changed when a volume is defined in the module options
   such that it will catalog the data set if it is not cataloged and submit the
   job. In the past, the function did not catalog the data set and instead performed

@@ -1,5 +1,5 @@
 bugfixes:
-- ibm_zos_copy - Fixes a bug such that the module fails when copying
+- zos_copy - Fixes a bug such that the module fails when copying
   files from a directory needing also to be encoded. The failure would also
   delete the `src` which was not desirable behavior.
   Fixes deletion of src on encoding error.

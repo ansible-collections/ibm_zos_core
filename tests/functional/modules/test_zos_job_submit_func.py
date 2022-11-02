@@ -15,17 +15,8 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-import os
-import sys
-import warnings
-
-import ansible.constants
-import ansible.errors
-import ansible.utils
-import pytest
 from shellescape import quote
 import tempfile
-import unittest
 
 JCL_FILE_CONTENTS = """//HELLO    JOB (T043JM,JM00,1,0,0,0),'HELLO WORLD - JRM',CLASS=R,
 //             MSGCLASS=X,MSGLEVEL=1,NOTIFY=S0JM

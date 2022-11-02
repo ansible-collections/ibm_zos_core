@@ -27,6 +27,6 @@ sections:
   - Bugfixes
 - - known_issues
   - Known Issues
-title: bm.ibm_zos_core
+title: ibm.ibm_zos_core
 trivial_section_name: trivial
 use_fqcn: true

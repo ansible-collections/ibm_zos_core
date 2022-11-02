@@ -300,6 +300,8 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, duration=
                         job["subsystem"] = (tmptext.split("\n")[
                                             0]).replace(" ", "")
 
+                # e.g "19.49.44 JOB06848 IEFC452I DOCEASYT - JOB NOT RUN - JCL ERROR 029 "
+                # we extract out 'JCL ERROR 029' after the split
                 if job["ret_code"]["msg_code"] == "?":
                     if "JOB NOT RUN -" in tmpcont:
                         tmptext = tmpcont.split(

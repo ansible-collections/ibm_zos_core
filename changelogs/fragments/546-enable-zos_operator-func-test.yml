@@ -1,3 +1,0 @@
-trivial:
-- Enables zos_operator functional tests after testing ZOAU fix in 1.2.1.
-  (https://github.com/ansible-collections/ibm_zos_core/pull/546)

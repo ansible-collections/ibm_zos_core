@@ -29,7 +29,7 @@ plugins:
       description: Copy data to z/OS
       name: zos_copy
       namespace: ''
-      version_added: 1.0.0
+      version_added: 1.2.0
     zos_data_set:
       description: Manage data sets
       name: zos_data_set
@@ -50,6 +50,11 @@ plugins:
       name: zos_find
       namespace: ''
       version_added: 1.3.0
+    zos_gather_facts:
+      description: Gather z/OS system facts.
+      name: zos_gather_facts
+      namespace: ''
+      version_added: 1.5.0
     zos_job_output:
       description: Display job output
       name: zos_job_output
@@ -69,7 +74,7 @@ plugins:
       description: Manage textual data on z/OS
       name: zos_lineinfile
       namespace: ''
-      version_added: 1.2.1
+      version_added: 1.2.0
     zos_mount:
       description: Mount a z/OS file system.
       name: zos_mount
@@ -104,4 +109,4 @@ plugins:
   shell: {}
   strategy: {}
   vars: {}
-version: 1.4.0-beta.1
+version: 1.5.0-beta.1

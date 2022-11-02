@@ -1,4 +1,0 @@
-trivial:
-- zos_mvs_raw - updated module documentation on how to use a multi-line string
-  when using the content field option as well as an example.
-  (https://github.com/ansible-collections/ibm_zos_core/pull/550)

@@ -95,7 +95,7 @@ Reference
 
 * Supported by `z/OS V2R3`_ or later
 * Supported by the `z/OS® shell`_
-* Supported by `IBM Open Enterprise SDK for Python`_ `3.10`_ - `3.11`_
+* Supported by `IBM Open Enterprise SDK for Python`_ `3.9`_ - `3.11`_
 * Supported by IBM `Z Open Automation Utilities 1.2.x`_
 
 Version 1.4.0

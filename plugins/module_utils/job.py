@@ -14,6 +14,8 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 import re
+from time import sleep
+from timeit import default_timer as timer
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,
 )
@@ -29,7 +31,7 @@ except Exception:
     listing = MissingZOAUImport()
 
 
-def job_output(job_id=None, owner=None, job_name=None, dd_name=None):
+def job_output(job_id=None, owner=None, job_name=None, dd_name=None, duration=0, timeout=0, start_time=timer()):
     """Get the output from a z/OS job based on various search criteria.
 
     Keyword Arguments:
@@ -53,19 +55,26 @@ def job_output(job_id=None, owner=None, job_name=None, dd_name=None):
     parsed_args = parser.parse_args(
         {"job_id": job_id, "owner": owner, "job_name": job_name, "dd_name": dd_name}
     )
-
     job_id = parsed_args.get("job_id") or "*"
     job_name = parsed_args.get("job_name") or "*"
     owner = parsed_args.get("owner") or "*"
     dd_name = parsed_args.get("dd_name") or ""
 
-    job_detail = _get_job_status(job_id=job_id, owner=owner, job_name=job_name, dd_name=dd_name)
+    job_detail = _get_job_status(job_id=job_id, owner=owner, job_name=job_name,
+                                 dd_name=dd_name, duration=duration, timeout=timeout, start_time=start_time)
+
+    while ((job_detail is None or len(job_detail) == 0) and duration <= timeout):
+        current_time = timer()
+        duration = round(current_time - start_time)
+        sleep(1)
+
     if len(job_detail) == 0:
         # some systems have issues with "*" while some require it to see results
         job_id = "" if job_id == "*" else job_id
         owner = "" if owner == "*" else owner
         job_name = "" if job_name == "*" else job_name
-        job_detail = _get_job_status(job_id=job_id, owner=owner, job_name=job_name, dd_name=dd_name)
+        job_detail = _get_job_status(job_id=job_id, owner=owner, job_name=job_name,
+                                     dd_name=dd_name, duration=duration, timeout=timeout, start_time=start_time)
     return job_detail
 
 
@@ -157,7 +166,8 @@ def _parse_steps(job_str):
     """
     stp = []
     if "STEP WAS EXECUTED" in job_str:
-        steps = re.findall(r"(.*?)\s-\sSTEP\sWAS\sEXECUTED\s-\s(.*?)\n", job_str)
+        steps = re.findall(
+            r"(.*?)\s-\sSTEP\sWAS\sEXECUTED\s-\s(.*?)\n", job_str)
         for match in steps:
             st = {
                 "step_name": match[0].split()[-1],
@@ -168,7 +178,7 @@ def _parse_steps(job_str):
     return stp
 
 
-def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None):
+def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, duration=0, timeout=0, start_time=timer()):
     if job_id == "*":
         job_id_temp = None
     else:
@@ -177,29 +187,17 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None):
 
     # jls output: owner=job[0], name=job[1], id=job[2], status=job[3], rc=job[4]
     # e.g.: OMVSADM  HELLO    JOB00126 JCLERR   ?
-    # entries = listing(job_id, owner)   1.2.0 has owner param, 1.1 does not
-    stuff = dict()
+    # listing(job_id, owner) in 1.2.0 has owner param, 1.1 does not
 
     final_entries = []
-    entries = []
-    stuf1 = listing(job_id_temp)
-    if stuf1:
-        stuff["1_job"] = stuf1[0].owner
-        stuff["1_name"] = stuf1[0].name
-        stuff["1_id"] = stuf1[0].id
-        stuff["1_status"] = stuf1[0].status
-        stuff["1_rc"] = stuf1[0].rc
+    entries = listing(job_id=job_id_temp)
 
-    # job_list.append(Job(owner=job[0], name=job[1], id=job[2], status=job[3], rc=job[4]))
-    entries = listing(job_id_temp)
+    while ((entries is None or len(entries) == 0) and duration <= timeout):
+        current_time = timer()
+        duration = round(current_time - start_time)
+        sleep(1)
+        entries = listing(job_id=job_id_temp)
 
-    stuf2 = listing(job_id_temp)
-    if stuf2:
-        stuff["2_job"] = stuf2[0].owner
-        stuff["2_name"] = stuf2[0].name
-        stuff["2_id"] = stuf2[0].id
-        stuff["2_status"] = stuf2[0].status
-        stuff["2_rc"] = stuf2[0].rc
     if entries:
         for entry in entries:
             if owner != "*":
@@ -219,27 +217,28 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None):
             job["ret_code"] = {}
             job["ret_code"]["msg"] = entry.status + " " + entry.rc
             job["ret_code"]["msg_code"] = entry.rc
-
             job["ret_code"]["code"] = ""
             if len(entry.rc) > 0:
                 if entry.rc.isdigit():
                     job["ret_code"]["code"] = int(entry.rc)
-
             job["ret_code"]["msg_text"] = entry.status
 
             job["class"] = ""
             job["content_type"] = ""
-
             job["ret_code"]["steps"] = []
             job["ddnames"] = []
 
             list_of_dds = list_dds(entry.id)
+            while ((list_of_dds is None or len(list_of_dds) == 0) and duration <= timeout):
+                current_time = timer()
+                duration = round(current_time - start_time)
+                sleep(1)
+                list_of_dds = list_dds(entry.id)
 
-            # Traverse all the DD's
             for single_dd in list_of_dds:
                 dd = {}
 
-                # If there is a dd_name, it means only that one should be returned
+                # If dd_name not None, only that specific dd_name should be returned
                 if dd_name is not None:
                     if dd_name not in single_dd["dataset"]:
                         continue
@@ -277,7 +276,8 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None):
                 tmpcont = None
                 if "stepname" in single_dd:
                     if "dataset" in single_dd:
-                        tmpcont = read_output(entry.id, single_dd["stepname"], single_dd["dataset"])
+                        tmpcont = read_output(
+                            entry.id, single_dd["stepname"], single_dd["dataset"])
 
                 dd["content"] = tmpcont.split("\n")
                 job["ret_code"]["steps"].extend(_parse_steps(tmpcont))
@@ -291,28 +291,32 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None):
                 if len(job["system"]) < 1:
                     if "--  S Y S T E M  " in tmpcont:
                         tmptext = tmpcont.split("--  S Y S T E M  ")[1]
-                        job["system"] = (tmptext.split("--", 1)[0]).replace(" ", "")
+                        job["system"] = (tmptext.split(
+                            "--", 1)[0]).replace(" ", "")
 
                 if len(job["subsystem"]) < 1:
                     if "--  N O D E " in tmpcont:
                         tmptext = tmpcont.split("--  N O D E ")[1]
-                        job["subsystem"] = (tmptext.split("\n")[0]).replace(" ", "")
+                        job["subsystem"] = (tmptext.split("\n")[
+                                            0]).replace(" ", "")
 
                 if job["ret_code"]["msg_code"] == "?":
                     if "JOB NOT RUN -" in tmpcont:
-                        tmptext = tmpcont.split("JOB NOT RUN -")[1].split("\n")[0]
+                        tmptext = tmpcont.split(
+                            "JOB NOT RUN -")[1].split("\n")[0]
                         job["ret_code"]["msg"] = tmptext.strip()
-                        job["ret_code"]["msg_code"] = tmptext.split(" ")[-1].strip()
+                        job["ret_code"]["msg_code"] = tmptext.split(
+                            " ")[-1].strip()
 
                         job["ret_code"]["code"] = ""
                         if len(job["ret_code"]["msg_code"]) > 0:
                             if job["ret_code"]["msg_code"].isdigit():
-                                job["ret_code"]["code"] = int(job["ret_code"]["msg_code"])
+                                job["ret_code"]["code"] = int(
+                                    job["ret_code"]["msg_code"])
             if len(list_of_dds) > 1:
                 final_entries.append(job)
     if not final_entries:
         final_entries = _job_not_found(job_id, owner, job_name, "unavailable")
-    final_entries.append(stuff)
     return final_entries
 
 

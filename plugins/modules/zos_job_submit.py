@@ -522,39 +522,31 @@ EXAMPLES = r"""
     wait_time_s: 30
 """
 
-import re
-from time import sleep
-from os import remove
-from tempfile import NamedTemporaryFile
-from timeit import default_timer as timer
-
-from ansible.module_utils.basic import AnsibleModule
-
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
-    DataSet,
-)
-
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
-    data_set,
-)
-
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingZOAUImport,
-)
-
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import (
-    job_output,
-)
-
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
-    BetterArgParser,
-)
-
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.encode import (
     Defaults,
 )
-
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
+    BetterArgParser,
+)
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import (
+    job_output,
+)
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
+    MissingZOAUImport,
+)
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
+    data_set,
+)
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
+    DataSet,
+)
+from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.six import PY3
+from timeit import default_timer as timer
+from tempfile import NamedTemporaryFile
+from os import remove
+from time import sleep
+import re
 
 try:
     from zoautil_py.exceptions import ZOAUException, JobSubmitException
@@ -577,8 +569,26 @@ JOB_COMPLETION_MESSAGES = ["CC", "ABEND", "SEC ERROR", "JCL ERROR", "JCLERR"]
 MAX_WAIT_TIME_S = 86400
 
 
-def submit_src_jcl(src, module, timeout=0, hfs=True, volume=None):
-    """ Submit the src JCL whether local, USS or in a data set """
+def submit_src_jcl(module, src, timeout=0, hfs=True, volume=None, start_time=timer()):
+    """ Submit src JCL whether JCL is local (Ansible Controller), USS or in a data set.
+
+        Arguments:
+            module - module instnace to access the module api
+            src (str) - JCL, can be relative or absolute paths either on controller or USS
+                      - Data set, can be PS, PDS, PDSE Member
+            timeout (int) - how long to wait in seconds for a job to complete
+            hfs (boolean) - True if JCL is a file in USS, otherwise False; Note that all
+                            JCL local to a controller is transfered to USS thus would be
+                            True
+            volume (str) - volume the data set JCL is located on that will be cataloged before
+                           being submitted
+            start_time - time the JCL started its submission
+
+        Returns:
+            job_submitted_id - the JCL job ID returned from submitting a job, else if no
+                               job submits, None will be returned
+            duration - how long the job ran for in this method
+    """
 
     kwargs = {
         "timeout": timeout,
@@ -586,35 +596,32 @@ def submit_src_jcl(src, module, timeout=0, hfs=True, volume=None):
     }
 
     wait = True  # Wait is always true because the module requires wait_time_s > 0
-    changed = False
     present = False
     duration = 0
     job_submitted = None
-    job_id_submitted = None
+    result = {}
 
     try:
         if volume is not None:
             volumes = [volume]
+            # Get the PDS name to catalog it
             src_ds_name = data_set.extract_dsname(src)
             present, changed = DataSet.attempt_catalog_if_necessary(
                 src_ds_name, volumes)
 
             if not present:
-                result = dict(changed=changed)
+                result["changed"] = False
                 result["failed"] = True
                 result["msg"] = ("Unable to submit job {0} because the data set could "
                                  "not be cataloged on the volume {1}.".format(src, volume))
                 module.fail_json(**result)
 
-        # Calling ZOAU submit with a wait=true is non-blocking,we must insert
-        # wait routines of our own after this call
-        starttime = timer()
         job_submitted = jobs.submit(src, wait, None, **kwargs)
 
         # Introducing a sleep to ensure we have the result of job sumbit carrying the job id
-        while (job_submitted is None and duration < timeout):
-            checktime = timer()
-            duration = round(checktime - starttime)
+        while (job_submitted is None and duration <= timeout):
+            current_time = timer()
+            duration = round(current_time - start_time)
             sleep(0.5)
 
         # Second sleep is to wait long enough for the job rc to not equal a `?`
@@ -623,39 +630,41 @@ def submit_src_jcl(src, module, timeout=0, hfs=True, volume=None):
         # with monitoring 'AC' is that STARTED tasks never exit the AC status.
         if job_submitted:
             job_listing_rc = jobs.listing(job_submitted.id)[0].rc
-            job_id_submitted = job_submitted.id
 
-            while ((job_listing_rc == '?' or job_listing_rc is None) and duration < timeout):
-                checktime = timer()
-                duration = round(checktime - starttime)
+            # Before moving forward lets ensure our job has completed
+            while ((job_listing_rc is None or len(job_listing_rc) == 0 or job_listing_rc == '?') and duration < timeout):
+                current_time = timer()
+                duration = round(current_time - start_time)
                 sleep(1)
                 job_listing_rc = jobs.listing(job_submitted.id)[0].rc
 
-    # ZOAU throws a ZOAUException when RC !=0
+    # ZOAU throws a ZOAUException when the job sumbission fails, not when the
+    # JCL is non-zero, for non-zero, the modules job_output code will eval non-zero rc's
     except ZOAUException as err:
-        result = dict(changed=False)
-        result["job_id"] = job_submitted.id if job_submitted else None
+        result["changed"] = False
         result["failed"] = True
-        result["msg"] = ("Unable to submit job {0}, a non-zero return code has "
-                         "returned with error: {1}. Please review the job log for futher "
-                         "details.".format(src, str(err)))
+        result["stderr"] = str(err)
+        result["msg"] = ("Unable to submit job {0}, a job sumission has returned "
+                         "a non-zero return code, please review the stand error "
+                         "and contact a system administrator.".format(src))
         module.fail_json(**result)
 
-    # ZOAU throws a JobSubmitException when timeout is execeeded
+    # ZOAU throws a JobSubmitException when timeout has execeeded in that no job_id
+    # has been returned within the allocated time.
     except JobSubmitException as err:
-        id_temp = job_submitted.id if job_submitted else None
-        result = dict(changed=False)
-        result["job_id"] = id_temp
+        result["changed"] = False
         result["failed"] = False
-        result["msg"] = ("The JCL submitted with job id {0} but "
-                         "appears to be a long running job that exceeded its "
-                         "maximum wait time of {1} second(s). Consider using module "
-                         "zos_job_query to poll for long running "
-                         "jobs and review {2} for futher details.".format(
-                             str(id_temp), str(timeout), str(err)))
-        module.exit_json(**result)
+        result["stderr"] = str(err)
+        result["duration"] = duration
+        result["job_id"] = job_submitted.id if job_submitted else None
+        result["msg"] = ("The JCL has been submitted {0} and no job id was returned "
+                         "within the allocated time of {1} seconds. Consider using "
+                         " module zos_job_query to poll for a long running "
+                         "jobs or increasing the value for "
+                         "'wait_times_s`.".format(src, str(timeout)))
+        module.fail_json(**result)
 
-    return job_id_submitted, duration
+    return job_submitted.id if job_submitted else None, duration
 
 
 def run_module():
@@ -730,9 +739,6 @@ def run_module():
         temp_file=dict(arg_type="path", required=False),
     )
 
-    # Default changed set to False in case the module is not able to execute
-    result = dict(changed=False)
-
     # ********************************************************************
     # Verify the validity of module args. BetterArgParser raises ValueError
     # when a parameter fails its validation check
@@ -760,23 +766,26 @@ def run_module():
     if temp_file:
         temp_file_encoded = NamedTemporaryFile(delete=True)
 
+    # Default changed set to False in case the module is not able to execute
+    result = dict(changed=False)
+
     if wait_time_s <= 0 or wait_time_s > MAX_WAIT_TIME_S:
         result["failed"] = True
         result["msg"] = ("The value for option wait_time_s is not valid, it must "
                          "be greater than 0 and less than " + MAX_WAIT_TIME_S)
         module.fail_json(**result)
 
-    job_id_submitted = None
+    job_submitted_id = None
     duration = 0
+    start_time = timer()
 
     if location == "DATA_SET":
-        job_id_submitted, duration = submit_src_jcl(
-            src, module, wait_time_s, False, volume)
+        job_submitted_id, duration = submit_src_jcl(
+            module, src, wait_time_s, False, volume, start_time=start_time)
     elif location == "USS":
-        job_id_submitted, duration = submit_src_jcl(
-            src, module, wait_time_s, True)
+        job_submitted_id, duration = submit_src_jcl(module, src, wait_time_s, True)
     else:
-        # added -c to iconv to prevent \r from erroring as invalid chars to EBCDIC
+        # added -c to iconv to prevent '\r' from erroring as invalid chars to EBCDIC
         conv_str = "iconv -c -f {0} -t {1} {2} > {3}".format(
             from_encoding,
             to_encoding,
@@ -790,8 +799,8 @@ def run_module():
         )
 
         if conv_rc == 0:
-            job_id_submitted, duration = submit_src_jcl(
-                temp_file_encoded.name, module, wait_time_s, True)
+            job_submitted_id, duration = submit_src_jcl(
+                module, temp_file_encoded.name, wait_time_s, True)
         else:
             result["failed"] = True
             result["stdout"] = stdout
@@ -801,14 +810,30 @@ def run_module():
                              .format(src, from_encoding, to_encoding))
             module.fail_json(**result)
 
-    result["job_id"] = job_id_submitted
-    result["duration"] = duration
+    result["job_id"] = job_submitted_id
 
     try:
         # Explictly pass in None for the unused args else a default of '*' will be
         # used and return undersirable results
+        job_output_txt = None
+
         job_output_txt = job_output(
-            job_id=job_id_submitted, owner=None, job_name=None, dd_name=None)
+            job_id=job_submitted_id, owner=None, job_name=None, dd_name=None,
+            duration=duration, timeout=wait_time_s, start_time=start_time)
+
+        result["duration"] = duration
+
+        if duration > wait_time_s:
+            result["failed"] = True
+            result["changed"] = False
+            result["msg"] = (
+                "The JCL submitted with job id {0} but appears to be a long "
+                "running job that exceeded its maximum wait time of {1} "
+                "second(s). Consider using module zos_job_query to poll for "
+                "long running jobs or increase option 'wait_times_s` to a value "
+                " greather than {2}.".format(
+                    str(job_submitted_id), str(wait_time_s), str(duration)))
+            module.fail_json(**result)
 
         if job_output_txt:
             job_retcode = job_output_txt[0].get("ret_code")
@@ -817,10 +842,11 @@ def run_module():
                 job_msg = job_retcode.get("msg")
 
                 if job_msg is None:
+                    _msg = ("Unable to find a 'msg' in the 'ret_code' dictionary, "
+                            "please review the job log.")
                     result["ret_code"] = job_retcode
-                    result["failed"] = True
-                    raise Exception(
-                        "Unable to find a job completion code (CC) in 'ret_code' msg field.")
+                    result["stderr"] = _msg
+                    raise Exception(_msg)
 
                 if re.search(
                     "^(?:{0})".format(
@@ -828,10 +854,11 @@ def run_module():
                 ):
                     # If the job_msg doesn't have a CC, it is an improper completion (error/abend)
                     if re.search("^(?:CC)", job_msg) is None:
+                        _msg = ("Unable to find a job completion code (CC) in job output,"
+                                "please review the job log.")
+                        result["stderr"] = _msg
                         result["ret_code"] = job_retcode
-                        result["failed"] = True
-                        raise Exception(
-                            "Unable to find a job completion code (CC) in job output")
+                        raise Exception(_msg)
 
                 result["jobs"] = job_output_txt
 
@@ -843,23 +870,32 @@ def run_module():
                     ret_code = job_output_txt[0].get("ret_code")
                     job_rc = result.get("jobs")[0].get("ret_code").get("code")
                     assert_valid_return_code(max_rc, job_rc, ret_code)
+            else:
+                _msg = "The 'ret_code' dictionary was unavailable in the job log."
+                result["ret_code"] = None
+                result["stderr"] = _msg
+                raise Exception(_msg)
+        else:
+            _msg = "The job output log is unavailable."
+            result["stderr"] = _msg
+            result["jobs"] = None
+            raise Exception(_msg)
 
     except Exception as err:
+        result["failed"] = True
+        result["changed"] = False
         result["msg"] = ("The JCL submitted with job id {0} but "
                          "there was an error obtaining the job output. Review "
                          "the error for furhter details: {1}.".format
-                         (str(job_id_submitted), str(err)))
+                         (str(job_submitted_id), str(err)))
+        module.fail_json(**result)
 
-        if result.get("failed"):
-            module.fail_json(**result)
-        else:
-            result["changed"] = True
-            module.exit_json(**result)
     finally:
         if temp_file:
             remove(temp_file)
 
     result["changed"] = True
+    result["failed"] = False
     module.exit_json(**result)
 
 

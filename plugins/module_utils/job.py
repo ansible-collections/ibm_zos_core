@@ -44,7 +44,8 @@ def job_output(job_id=None, owner=None, job_name=None, dd_name=None, duration=0,
 
     Returns:
         list[dict] -- The output information for a list of jobs matching specified criteria.
-        If no job status is found, this will return an empty job code with msg=JOB NOT FOUND
+        If no job status is found it will return a ret_code diction with
+        parameter 'msg_txt" = "The job could not be found.
     """
     arg_defs = dict(
         job_id=dict(arg_type="qualifier_pattern"),
@@ -127,7 +128,9 @@ def job_status(job_id=None, owner=None, job_name=None, dd_name=None):
 
     Returns:
         list[dict] -- The status information for a list of jobs matching search criteria.
-        If no job status is found, this will return an empty job code with msg=JOB NOT FOUND
+        If no job status is found it will return a ret_code diction with
+        parameter 'msg_txt" = "The job could not be found."
+
     """
     arg_defs = dict(
         job_id=dict(arg_type="qualifier_pattern"),
@@ -173,7 +176,7 @@ def _parse_steps(job_str):
         for match in steps:
             st = {
                 "step_name": match[0].split()[-1],
-                "step_cc": match[1].split()[-1],
+                "step_cc": int(match[1].split()[-1]) if match[1].split()[-1] is not None else None,
             }
             stp.append(st)
 

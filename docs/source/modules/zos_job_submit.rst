@@ -146,19 +146,19 @@ Examples
 .. code-block:: yaml+jinja
 
    
-   - name: Submit the JCL
+   - name: Submit JCL in a PDSE member
      zos_job_submit:
-       src: TEST.UTILs(SAMPLE)
+       src: HLQ.DATA.LLQ(SAMPLE)
        location: DATA_SET
      register: response
 
-   - name: Submit USS job
+   - name: Submit JCL in USS with no DDs in the output.
      zos_job_submit:
        src: /u/tester/demo/sample.jcl
        location: USS
        return_output: false
 
-   - name: Convert a local JCL file to IBM-037 and submit the job
+   - name: Convert local JCL to IBM-037 and submit the job.
      zos_job_submit:
        src: /Users/maxy/ansible-playbooks/provision/sample.jcl
        location: LOCAL
@@ -166,17 +166,29 @@ Examples
          from: ISO8859-1
          to: IBM-037
 
-   - name: Submit uncatalogued PDS job
+   - name: Submit JCL in an uncataloged PDSE on volume P2SS01.
      zos_job_submit:
-       src: TEST.UNCATLOG.JCL(SAMPLE)
+       src: HLQ.DATA.LLQ(SAMPLE)
        location: DATA_SET
        volume: P2SS01
 
-   - name: Submit long running PDS job, and wait for the job to finish
+   - name: Submit a long running PDS job and wait up to 30 seconds for completion.
      zos_job_submit:
-       src: TEST.UTILs(LONGRUN)
+       src: HLQ.DATA.LLQ(LONGRUN)
        location: DATA_SET
        wait_time_s: 30
+
+   - name: Submit a long running PDS job and wait up to 30 seconds for completion.
+     zos_job_submit:
+       src: HLQ.DATA.LLQ(LONGRUN)
+       location: DATA_SET
+       wait_time_s: 30
+
+   - name: Submit JCL and set the max return code the module should fail on to 16.
+     zos_job_submit:
+       src: HLQ.DATA.LLQ
+       location: DATA_SET
+       max_rc: 16
 
 
 
@@ -415,7 +427,7 @@ jobs
                     "msg_txt": "",
                     "steps": [
                         {
-                            "step_cc": "0000",
+                            "step_cc": 0,
                             "step_name": "DLORD6"
                         }
                     ]
@@ -511,7 +523,7 @@ jobs
 
 
   ret_code
-    Return code output collected from job log.
+    Return code output collected from the job log.
 
     | **type**: dict
     | **sample**:
@@ -526,7 +538,7 @@ jobs
                   "msg_txt": "",
                   "steps": [
                       {
-                          "step_cc": "0000",
+                          "step_cc": 0,
                           "step_name": "STEP0001"
                       }
                   ]
@@ -534,25 +546,24 @@ jobs
           }
 
     msg
-      Return code or abend resulting from the job submission.
+      Return code resulting from the job submission.
 
       | **type**: str
       | **sample**: CC 0000
 
     msg_code
-      Return code extracted from the `msg` so that it can be evaluated. For example, ABEND(S0C4) would yield "S0C4".
+      Return code extracted from the `msg` so that it can be evaluated as a string.
 
       | **type**: str
-      | **sample**: S0C4
 
     msg_txt
       Returns additional information related to the job.
 
       | **type**: str
-      | **sample**: JCL Error detected.  Check the data dumps for more information.
+      | **sample**: The job completion code (CC) was not available in the job output, please review the job log."
 
     code
-      Return code converted to integer value (when possible). For JCL ERRORs, this will be None.
+      Return code converted to an integer value (when possible). For JCL ERRORs, this will be None.
 
       | **type**: int
 
@@ -571,8 +582,7 @@ jobs
       step_cc
         The CC returned for this step in the DD section.
 
-        | **type**: str
-        | **sample**: 00
+        | **type**: int
 
 
 

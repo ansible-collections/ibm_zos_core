@@ -71,6 +71,8 @@ def job_output(job_id=None, owner=None, job_name=None, dd_name=None, duration=0,
         duration = round(current_time - start_time)
         sleep(1)
 
+    dir_test(duration, timeout, "LAST---")
+
     if len(job_detail) == 0:
         # some systems have issues with "*" while some require it to see results
         job_id = "" if job_id == "*" else job_id
@@ -183,6 +185,12 @@ def _parse_steps(job_str):
     return stp
 
 
+def dir_test(duration, wait_time_s, position):
+    if duration >= wait_time_s:
+        raise Exception(
+            "Duration is {0} and wait time is {1} and position is {2}".format(duration, wait_time_s, position))
+
+
 def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, duration=0, timeout=0, start_time=timer()):
     if job_id == "*":
         job_id_temp = None
@@ -202,6 +210,8 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, duration=
         duration = round(current_time - start_time)
         sleep(1)
         entries = listing(job_id=job_id_temp)
+
+    dir_test(duration, timeout, "THREE---")
 
     if entries:
         for entry in entries:
@@ -241,6 +251,7 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, duration=
                 duration = round(current_time - start_time)
                 sleep(1)
                 list_of_dds = list_dds(entry.id)
+            dir_test(duration, timeout, "FOUR---")
 
             for single_dd in list_of_dds:
                 dd = {}

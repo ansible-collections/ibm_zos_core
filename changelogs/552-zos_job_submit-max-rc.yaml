@@ -1,0 +1,7 @@
+minor_changes:
+- zos_job_submit - updates the module to correct the modules behavior such that
+  the max_rc can declare if the module should fail when a non-zero return code
+  is received.
+  (https://github.com/ansible-collections/ibm_zos_core/pull/552).
+trivial:
+- zos_job_submit - adds a number of test cases to cover max_rc and wait_time_s.

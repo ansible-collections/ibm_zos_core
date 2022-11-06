@@ -962,9 +962,9 @@ def assert_valid_return_code(max_rc, job_rc, ret_code):
 
 def dir_test(duration, wait_time_s, position):
     if wait_time_s != 0:
-      if duration >= wait_time_s:
-          raise Exception(
-              "Duration is {0} and wait time is {1} and position is {2}".format(duration, wait_time_s, position))
+        if duration >= wait_time_s:
+            raise Exception(
+                "Duration is {0} and wait time is {1} and position is {2}".format(duration, wait_time_s, position))
 
 
 def main():

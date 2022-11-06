@@ -186,9 +186,10 @@ def _parse_steps(job_str):
 
 
 def dir_test(duration, wait_time_s, position):
-    if duration >= wait_time_s:
-        raise Exception(
-            "Duration is {0} and wait time is {1} and position is {2}".format(duration, wait_time_s, position))
+    if wait_time_s != 0:
+        if duration >= wait_time_s:
+            raise Exception(
+                "Duration is {0} and wait time is {1} and position is {2}".format(duration, wait_time_s, position))
 
 
 def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, duration=0, timeout=0, start_time=timer()):

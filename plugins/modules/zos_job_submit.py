@@ -637,7 +637,6 @@ def submit_src_jcl(module, src, timeout=0, hfs=True, volume=None, start_time=tim
             duration = round(current_time - start_time)
             sleep(0.5)
 
-        dir_test(duration, timeout, "ONE---")
 
         # Second sleep is to wait long enough for the job rc to not equal a `?`
         # which is what ZOAU sends back, opitonally we can check the 'status' as
@@ -660,7 +659,6 @@ def submit_src_jcl(module, src, timeout=0, hfs=True, volume=None, start_time=tim
                 job_listing_rc = jobs.listing(job_submitted.id)[0].rc
                 job_listing_status = jobs.listing(job_submitted.id)[0].status
 
-            dir_test(duration, timeout, "TWO---")
     # ZOAU throws a ZOAUException when the job sumbission fails, not when the
     # JCL is non-zero, for non-zero, the modules job_output code will eval non-zero rc's
     except ZOAUException as err:
@@ -958,13 +956,6 @@ def assert_valid_return_code(max_rc, job_rc, ret_code):
         return False
 
     return True
-
-
-def dir_test(duration, wait_time_s, position):
-    if wait_time_s != 0:
-        if duration >= wait_time_s:
-            raise Exception(
-                "Duration is {0} and wait time is {1} and position is {2}".format(duration, wait_time_s, position))
 
 
 def main():

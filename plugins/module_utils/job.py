@@ -71,7 +71,6 @@ def job_output(job_id=None, owner=None, job_name=None, dd_name=None, duration=0,
         duration = round(current_time - start_time)
         sleep(1)
 
-
     if len(job_detail) == 0:
         # some systems have issues with "*" while some require it to see results
         job_id = "" if job_id == "*" else job_id
@@ -203,7 +202,6 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, duration=
         duration = round(current_time - start_time)
         sleep(1)
         entries = listing(job_id=job_id_temp)
-
 
     if entries:
         for entry in entries:

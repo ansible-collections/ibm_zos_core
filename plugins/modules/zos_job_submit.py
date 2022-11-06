@@ -637,7 +637,6 @@ def submit_src_jcl(module, src, timeout=0, hfs=True, volume=None, start_time=tim
             duration = round(current_time - start_time)
             sleep(0.5)
 
-
         # Second sleep is to wait long enough for the job rc to not equal a `?`
         # which is what ZOAU sends back, opitonally we can check the 'status' as
         # that is sent back as `AC` when the job is not complete but the problem

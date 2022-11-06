@@ -699,4 +699,5 @@ if __name__ == "__main__":
             ):
                 to_print += test.path + " "
         if to_print:
-            print(to_print.rstrip())
+            #print(to_print.rstrip())
+            print("../tests/functional/modules/test_zos_job_submit_func.py")

@@ -73,8 +73,7 @@ options:
     description:
       - The remote absolute path or data set where the content should be copied to.
       - C(dest) can be a USS file, directory or MVS data set name.
-      - If C(src) and C(dest) are files and if the parent directory of C(dest)
-        does not exist, then the task will fail
+      - If C(dest) has missing parent directories, they will be created.
       - If C(dest) is a nonexistent USS file, it will be created.
       - If C(dest) is a nonexistent data set, it will be created following the
         process outlined here and in the C(volume) option.
@@ -679,6 +678,7 @@ import stat
 import math
 import tempfile
 import os
+import pathlib
 
 if PY3:
     from re import fullmatch
@@ -979,6 +979,12 @@ class USSCopyHandler(CopyHandler):
                 src, dest, src_ds_type, src_member, member_name=member_name
             )
         else:
+            norm_dest = os.path.normpath(dest)
+            dest_parent_dir, tail = os.path.split(norm_dest)
+            path_helper = pathlib.Path(dest_parent_dir)
+            if dest_parent_dir != "/" and not path_helper.exists():
+                path_helper.mkdir(parents=True, exist_ok=True)
+
             if os.path.isfile(temp_path or conv_path or src):
                 dest = self._copy_to_file(src, dest, conv_path, temp_path)
                 changed_files = None
@@ -2056,6 +2062,12 @@ def run_module(module, arg_def):
 
         if is_uss:
             dest_ds_type = "USS"
+            if not is_src_dir and (dest.endswith("/") or os.path.isdir(dest)):
+                dest = os.path.normpath("{0}/{1}".format(dest, os.path.basename(src)))
+
+                if dest.startswith("//"):
+                    dest = dest.replace("//", "/")
+
             dest_exists = os.path.exists(dest)
 
             if dest_exists and not os.access(dest, os.W_OK):

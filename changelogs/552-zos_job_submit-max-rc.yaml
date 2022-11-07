@@ -3,5 +3,8 @@ minor_changes:
   the max_rc can declare if the module should fail when a non-zero return code
   is received.
   (https://github.com/ansible-collections/ibm_zos_core/pull/552).
+- zos_job_submit - updates the module to not return a JCL ERROR code as a
+  return code. JCL ERRORs are not return codes to be returned as part of the
+  ret_code dictionary.
 trivial:
 - zos_job_submit - adds a number of test cases to cover max_rc and wait_time_s.

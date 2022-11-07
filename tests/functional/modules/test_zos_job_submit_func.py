@@ -195,9 +195,9 @@ def test_job_submit_LOCAL_BADJCL(ansible_zos_module):
     results = hosts.all.zos_job_submit(src=tmp_file.name, location="LOCAL", wait=True)
 
     for result in results.contacted.values():
-        # Expecting: The job completion code (CC) was not available in the job output, please review the job log
+        # Expecting: The job completion code (CC) was not in the job log....."
         assert result.get("changed") is False
-        assert re.search(r'not available in the job output', repr(result.get("msg")))
+        assert re.search(r'completion code', repr(result.get("msg")))
 
 
 def test_job_submit_PDS_volume(ansible_zos_module):
@@ -294,8 +294,7 @@ def test_job_submit_PDS_30_SEC_JOB_WAIT_60(ansible_zos_module):
         hosts.all.zos_data_set(name=DATA_SET_NAME, state="absent")
 
 def test_job_submit_PDS_30_SEC_JOB_WAIT_10_negative(ansible_zos_module):
-    """This this submits a 30 second job and only waits 10 seconds, module
-    will not wait but should not fail and it should result in changed=True"""
+    """This submits a 30 second job and only waits 10 seconds"""
     try:
         hosts = ansible_zos_module
         hosts.all.file(path=TEMP_PATH, state="directory")
@@ -350,8 +349,15 @@ def test_job_submit_max_rc(ansible_zos_module, args):
             if args["max_rc"] is None:
                 assert result.get("msg") is not None
                 assert result.get('changed') is False
-                #Expecting a "The job return code 8 was non-zero in the job output, this job has failed"
-                assert re.search(r'non-zero', repr(result.get("msg")))
+                # On busy systems, it is possible that the duration even for a job with a non-zero return code
+                # will take considerable time to obtain the job log and thus you could see either error msg below
+                #Expecting: - "The job return code 8 was non-zero in the job output, this job has failed"
+                #           - Consider using module zos_job_query to poll for a long running job or
+                #             increase option \\'wait_times_s` to a value greater than 10.",
+                if result.get('duration') >= args["wait_time_s"]:
+                    re.search(r'long running job', repr(result.get("msg")))
+                else:
+                    assert re.search(r'non-zero', repr(result.get("msg")))
 
             # Should fail with normally as well, job fails with an RC 8 yet max is set to 4
             elif args["max_rc"] == 4:
@@ -362,13 +368,13 @@ def test_job_submit_max_rc(ansible_zos_module, args):
                 # this job submission has failed.
                 assert re.search(r'the submitted job is greater than the value set for option', repr(result.get("msg")))
 
-            elif args["max_rc"] == 300:
+            elif args["max_rc"] == 12:
                 # Will not fail but changed will be false for the non-zero RC, there
                 # are other possibilities like an ABEND or JCL ERROR will fail this even
                 # with a MAX RC
                 assert result.get("msg") is None
                 assert result.get('changed') is False
-                assert result.get("jobs")[0].get("ret_code").get("code") > 8
+                assert result.get("jobs")[0].get("ret_code").get("code") < 12
 
     finally:
         hosts.all.file(path=tmp_file.name, state="absent")

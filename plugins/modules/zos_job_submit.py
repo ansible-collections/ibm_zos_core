@@ -542,7 +542,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser
     BetterArgParser,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import (
-    job_output, JOB_ERROR_MESSAGES,
+    job_output,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     MissingZOAUImport,
@@ -578,7 +578,8 @@ else:
     from pipes import quote
 
 
-JOB_COMPLETION_MESSAGES = ["CC", "ABEND", "SEC ERROR", "JCL ERROR", "JCLERR"]
+JOB_COMPLETION_MESSAGES = frozenset(["CC", "ABEND", "SEC ERROR", "JCL ERROR", "JCLERR"])
+JOB_ERROR_MESSAGES = frozenset(["ABEND", "SEC ERROR", "JCL ERROR", "JCLERR"])
 MAX_WAIT_TIME_S = 86400
 
 
@@ -647,8 +648,8 @@ def submit_src_jcl(module, src, timeout=0, hfs=True, volume=None, start_time=tim
 
             # Before moving forward lets ensure our job has completed but if we see
             # status that matches one in JOB_ERROR_MESSAGES, don't wait, let the code
-            # drop through and get analyzed by the main as it will scan the job ouput
-            # Any match to JOB_ERROR_MESSAGES end our processing and wait times
+            # drop through and get analyzed in the main as it will scan the job ouput
+            # Any match to JOB_ERROR_MESSAGES ends our processing and wait times
             while (job_listing_status not in JOB_ERROR_MESSAGES and
                     ((job_listing_rc is None or len(job_listing_rc) == 0 or
                       job_listing_rc == '?') and duration < timeout)):
@@ -659,13 +660,14 @@ def submit_src_jcl(module, src, timeout=0, hfs=True, volume=None, start_time=tim
                 job_listing_status = jobs.listing(job_submitted.id)[0].status
 
     # ZOAU throws a ZOAUException when the job sumbission fails, not when the
-    # JCL is non-zero, for non-zero, the modules job_output code will eval non-zero rc's
+    # JCL is non-zero, for non-zero JCL RCs that is caught in the job_output
+    # processing
     except ZOAUException as err:
         result["changed"] = False
         result["failed"] = True
         result["stderr"] = str(err)
         result["msg"] = ("Unable to submit job {0}, a job sumission has returned "
-                         "a non-zero return code, please review the stand error "
+                         "a non-zero return code, please review the standard error "
                          "and contact a system administrator.".format(src))
         module.fail_json(**result)
 
@@ -786,7 +788,7 @@ def run_module():
     if temp_file:
         temp_file_encoded = NamedTemporaryFile(delete=True)
 
-    # Default changed set to False in case the module is not able to execute
+    # Default 'changed' is False in case the module is not able to execute
     result = dict(changed=False)
 
     if wait_time_s <= 0 or wait_time_s > MAX_WAIT_TIME_S:
@@ -831,7 +833,7 @@ def run_module():
             module.fail_json(**result)
 
     try:
-        # Explictly pass in None for the unused args else a default of '*' will be
+        # Explictly pass None for the unused args else a default of '*' will be
         # used and return undersirable results
         job_output_txt = None
 
@@ -848,12 +850,12 @@ def run_module():
                 "The JCL submitted with job id {0} but appears to be a long "
                 "running job that exceeded its maximum wait time of {1} "
                 "second(s). Consider using module zos_job_query to poll for "
-                "long running jobs or increase option 'wait_times_s` to a value "
-                " greather than {2}.".format(
+                "a long running job or increase option 'wait_times_s` to a value "
+                "greater than {2}.".format(
                     str(job_submitted_id), str(wait_time_s), str(duration)))
             module.exit_json(**result)
 
-        # Has the job changed the managed node
+        # Job has submitted, the module changed the managed node
         is_changed = True
 
         if job_output_txt:
@@ -877,16 +879,16 @@ def run_module():
                 if re.search("^(?:{0})".format("|".join(JOB_COMPLETION_MESSAGES)), job_msg):
                     # If the job_msg doesn't have a CC, it is an improper completion (error/abend)
                     if re.search("^(?:CC)", job_msg) is None:
-                        _msg = ("The job completion code (CC) was not available in the job output, "
-                                "please review the job log.")
+                        _msg = ("The job completion code (CC) was not in the job log. "
+                                "Please review the error {0} and the job log.".format(job_msg))
                         result["stderr"] = _msg
                         raise Exception(_msg)
 
                 if job_code is None:
-                    raise Exception("The job return code was not available in the job output, "
-                                    "please review the job log.")
+                    raise Exception("The job return code was not available in the job log, "
+                                    "please review the job log and error {0}.".format(job_msg))
 
-                if job_code != 0:
+                if job_code != 0 and max_rc is None:
                     raise Exception("The job return code {0} was non-zero in the "
                                     "job output, this job has failed.".format(str(job_code)))
 

@@ -212,31 +212,32 @@ jobs:
              ]
     ret_code:
       description:
-         Return code output collected from job log.
+         Return code output collected from the job log.
       type: dict
       contains:
         msg:
           description:
-            Return code or abend resulting from the job submission.
+            Return code resulting from the job submission.
           type: str
           sample: CC 0000
         msg_code:
           description:
-            Return code extracted from the `msg` so that it can be evaluated.
-            For example, ABEND(S0C4) would yield "S0C4".
+            Return code extracted from the `msg` so that it can be evaluated
+            as a string.
           type: str
-          sample: S0C4
+          sample: 0000
         msg_txt:
           description:
              Returns additional information related to the job.
           type: str
-          sample: "JCL Error detected.  Check the data dumps for more information."
+          sample: The job completion code (CC) was not available in the job
+                  output, please review the job log."
         code:
           description:
-             Return code converted to integer value (when possible).
+             Return code converted to an integer value (when possible).
              For JCL ERRORs, this will be None.
           type: int
-          sample: 00
+          sample: 0
         steps:
           description:
             Series of JCL steps that were executed and their return codes.
@@ -251,8 +252,8 @@ jobs:
             step_cc:
               description:
                 The CC returned for this step in the DD section.
-              type: str
-              sample: "00"
+              type: int
+              sample: 0
       sample:
         ret_code: {
           "code": 0,
@@ -261,7 +262,7 @@ jobs:
           "msg_txt": "",
           "steps": [
             { "step_name": "STEP0001",
-              "step_cc": "0000"
+              "step_cc": 0
             },
           ]
         }
@@ -474,7 +475,7 @@ jobs:
                   "msg_txt": "",
                   "steps": [
                     { "step_name": "DLORD6",
-                      "step_cc": "0000"
+                      "step_cc": 0
                     }
                   ]
               },
@@ -489,19 +490,19 @@ message:
 """
 
 EXAMPLES = r"""
-- name: Submit the JCL
+- name: Submit JCL in a PDSE member
   zos_job_submit:
-    src: TEST.UTILs(SAMPLE)
+    src: HLQ.DATA.LLQ(SAMPLE)
     location: DATA_SET
   register: response
 
-- name: Submit USS job
+- name: Submit JCL in USS with no DDs in the output.
   zos_job_submit:
     src: /u/tester/demo/sample.jcl
     location: USS
     return_output: false
 
-- name: Convert a local JCL file to IBM-037 and submit the job
+- name: Convert local JCL to IBM-037 and submit the job.
   zos_job_submit:
     src: /Users/maxy/ansible-playbooks/provision/sample.jcl
     location: LOCAL
@@ -509,17 +510,29 @@ EXAMPLES = r"""
       from: ISO8859-1
       to: IBM-037
 
-- name: Submit uncatalogued PDS job
+- name: Submit JCL in an uncataloged PDSE on volume P2SS01.
   zos_job_submit:
-    src: TEST.UNCATLOG.JCL(SAMPLE)
+    src: HLQ.DATA.LLQ(SAMPLE)
     location: DATA_SET
     volume: P2SS01
 
-- name: Submit long running PDS job, and wait for the job to finish
+- name: Submit a long running PDS job and wait up to 30 seconds for completion.
   zos_job_submit:
-    src: TEST.UTILs(LONGRUN)
+    src: HLQ.DATA.LLQ(LONGRUN)
     location: DATA_SET
     wait_time_s: 30
+
+- name: Submit a long running PDS job and wait up to 30 seconds for completion.
+  zos_job_submit:
+    src: HLQ.DATA.LLQ(LONGRUN)
+    location: DATA_SET
+    wait_time_s: 30
+
+- name: Submit JCL and set the max return code the module should fail on to 16.
+  zos_job_submit:
+    src: HLQ.DATA.LLQ
+    location: DATA_SET
+    max_rc: 16
 """
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.encode import (
@@ -565,7 +578,8 @@ else:
     from pipes import quote
 
 
-JOB_COMPLETION_MESSAGES = ["CC", "ABEND", "SEC ERROR", "JCL ERROR", "JCLERR"]
+JOB_COMPLETION_MESSAGES = frozenset(["CC", "ABEND", "SEC ERROR", "JCL ERROR", "JCLERR"])
+JOB_ERROR_MESSAGES = frozenset(["ABEND", "SEC ERROR", "JCL ERROR", "JCLERR"])
 MAX_WAIT_TIME_S = 86400
 
 
@@ -630,22 +644,30 @@ def submit_src_jcl(module, src, timeout=0, hfs=True, volume=None, start_time=tim
         # with monitoring 'AC' is that STARTED tasks never exit the AC status.
         if job_submitted:
             job_listing_rc = jobs.listing(job_submitted.id)[0].rc
+            job_listing_status = jobs.listing(job_submitted.id)[0].status
 
-            # Before moving forward lets ensure our job has completed
-            while ((job_listing_rc is None or len(job_listing_rc) == 0 or job_listing_rc == '?') and duration < timeout):
+            # Before moving forward lets ensure our job has completed but if we see
+            # status that matches one in JOB_ERROR_MESSAGES, don't wait, let the code
+            # drop through and get analyzed in the main as it will scan the job ouput
+            # Any match to JOB_ERROR_MESSAGES ends our processing and wait times
+            while (job_listing_status not in JOB_ERROR_MESSAGES and
+                    ((job_listing_rc is None or len(job_listing_rc) == 0 or
+                      job_listing_rc == '?') and duration < timeout)):
                 current_time = timer()
                 duration = round(current_time - start_time)
                 sleep(1)
                 job_listing_rc = jobs.listing(job_submitted.id)[0].rc
+                job_listing_status = jobs.listing(job_submitted.id)[0].status
 
     # ZOAU throws a ZOAUException when the job sumbission fails, not when the
-    # JCL is non-zero, for non-zero, the modules job_output code will eval non-zero rc's
+    # JCL is non-zero, for non-zero JCL RCs that is caught in the job_output
+    # processing
     except ZOAUException as err:
         result["changed"] = False
         result["failed"] = True
         result["stderr"] = str(err)
         result["msg"] = ("Unable to submit job {0}, a job sumission has returned "
-                         "a non-zero return code, please review the stand error "
+                         "a non-zero return code, please review the standard error "
                          "and contact a system administrator.".format(src))
         module.fail_json(**result)
 
@@ -766,7 +788,7 @@ def run_module():
     if temp_file:
         temp_file_encoded = NamedTemporaryFile(delete=True)
 
-    # Default changed set to False in case the module is not able to execute
+    # Default 'changed' is False in case the module is not able to execute
     result = dict(changed=False)
 
     if wait_time_s <= 0 or wait_time_s > MAX_WAIT_TIME_S:
@@ -810,10 +832,8 @@ def run_module():
                              .format(src, from_encoding, to_encoding))
             module.fail_json(**result)
 
-    result["job_id"] = job_submitted_id
-
     try:
-        # Explictly pass in None for the unused args else a default of '*' will be
+        # Explictly pass None for the unused args else a default of '*' will be
         # used and return undersirable results
         job_output_txt = None
 
@@ -823,53 +843,60 @@ def run_module():
 
         result["duration"] = duration
 
-        if duration > wait_time_s:
+        if duration >= wait_time_s:
             result["failed"] = True
             result["changed"] = False
             result["msg"] = (
                 "The JCL submitted with job id {0} but appears to be a long "
                 "running job that exceeded its maximum wait time of {1} "
                 "second(s). Consider using module zos_job_query to poll for "
-                "long running jobs or increase option 'wait_times_s` to a value "
-                " greather than {2}.".format(
+                "a long running job or increase option 'wait_times_s` to a value "
+                "greater than {2}.".format(
                     str(job_submitted_id), str(wait_time_s), str(duration)))
-            module.fail_json(**result)
+            module.exit_json(**result)
+
+        # Job has submitted, the module changed the managed node
+        is_changed = True
 
         if job_output_txt:
-            job_retcode = job_output_txt[0].get("ret_code")
+            job_ret_code = job_output_txt[0].get("ret_code")
 
-            if job_retcode:
-                job_msg = job_retcode.get("msg")
+            if job_ret_code:
+                job_msg = job_ret_code.get("msg")
+                job_code = job_ret_code.get("code")
 
+                # retcode["msg"] should never be empty where a retcode["code"] can be None,
+                # "msg" could  be an ABEND which has no corresponding "code"
                 if job_msg is None:
                     _msg = ("Unable to find a 'msg' in the 'ret_code' dictionary, "
                             "please review the job log.")
-                    result["ret_code"] = job_retcode
                     result["stderr"] = _msg
                     raise Exception(_msg)
 
-                if re.search(
-                    "^(?:{0})".format(
-                        "|".join(JOB_COMPLETION_MESSAGES)), job_msg
-                ):
+                if return_output is True and max_rc is not None:
+                    is_changed = assert_valid_return_code(max_rc, job_code, job_ret_code)
+
+                if re.search("^(?:{0})".format("|".join(JOB_COMPLETION_MESSAGES)), job_msg):
                     # If the job_msg doesn't have a CC, it is an improper completion (error/abend)
                     if re.search("^(?:CC)", job_msg) is None:
-                        _msg = ("Unable to find a job completion code (CC) in job output,"
-                                "please review the job log.")
+                        _msg = ("The job completion code (CC) was not in the job log. "
+                                "Please review the error {0} and the job log.".format(job_msg))
                         result["stderr"] = _msg
-                        result["ret_code"] = job_retcode
                         raise Exception(_msg)
+
+                if job_code is None:
+                    raise Exception("The job return code was not available in the job log, "
+                                    "please review the job log and error {0}.".format(job_msg))
+
+                if job_code != 0 and max_rc is None:
+                    raise Exception("The job return code {0} was non-zero in the "
+                                    "job output, this job has failed.".format(str(job_code)))
 
                 result["jobs"] = job_output_txt
 
                 if not return_output:
                     for job in result.get("jobs", []):
                         job["ddnames"] = []
-
-                if return_output is True and max_rc is not None:
-                    ret_code = job_output_txt[0].get("ret_code")
-                    job_rc = result.get("jobs")[0].get("ret_code").get("code")
-                    assert_valid_return_code(max_rc, job_rc, ret_code)
             else:
                 _msg = "The 'ret_code' dictionary was unavailable in the job log."
                 result["ret_code"] = None
@@ -885,16 +912,17 @@ def run_module():
         result["failed"] = True
         result["changed"] = False
         result["msg"] = ("The JCL submitted with job id {0} but "
-                         "there was an error obtaining the job output. Review "
-                         "the error for furhter details: {1}.".format
+                         "there was an error, please review "
+                         "the error for further details: {1}.".format
                          (str(job_submitted_id), str(err)))
-        module.fail_json(**result)
+        module.exit_json(**result)
 
     finally:
         if temp_file:
             remove(temp_file)
 
-    result["changed"] = True
+    # If max_rc is set, we don't want to default to changed=True, rely on 'is_changed'
+    result["changed"] = True if is_changed else False
     result["failed"] = False
     module.exit_json(**result)
 
@@ -902,19 +930,33 @@ def run_module():
 def assert_valid_return_code(max_rc, job_rc, ret_code):
     if job_rc is None:
         raise Exception(
-            "Unable to find a job return code (ret_code[code]) in the job output.")
+            "The job return code (ret_code[code]) was not available in the jobs output, "
+            "this job has failed.")
 
-    if max_rc < job_rc:
-        raise Exception("Maximum return code {0} for job steps must be less than "
-                        "job return code {1}.".format(str(max_rc), str(job_rc)))
+    if job_rc > max_rc:
+        raise Exception("The job return code, 'ret_code[code]' {0} for the submitted job is "
+                        "greater than the value set for option 'max_rc' {1}. "
+                        "Increase the value for 'max_rc' otherwise this job submission "
+                        "has failed.".format(str(job_rc), str(max_rc)))
 
     for step in ret_code["steps"]:
         step_cc_rc = int(step["step_cc"])
         step_name_for_rc = step["step_name"]
-        if max_rc > step_cc_rc:
-            raise Exception("Step name {0} exceeded maximum return code (max_rc) {1} "
-                            "with recturn code of {2}.".format(
-                                step_name_for_rc, str(max_rc), str(step_cc_rc)))
+        if step_cc_rc > max_rc:
+            raise Exception("The step name {0} with return code {1} for the submitted job is "
+                            "greater than the value set for option 'max_rc' {2}. "
+                            "Increase the value for 'max_rc' otherwise this job submission "
+                            "has failed.".format(step_name_for_rc, str(step_cc_rc), str(max_rc)))
+
+    # If there is NO exception rasied it means that max_rc is larger than the
+    # actual RC from the submitted job. In this case, the ansible changed status
+    # should NOT be 'changed=true' even though the user did override the return code,
+    # a non-zero return code means the job did not change anything, so set it as
+    # result["chagned"]=False,
+    if job_rc != 0:
+        return False
+
+    return True
 
 
 def main():

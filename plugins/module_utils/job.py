@@ -42,7 +42,8 @@ def job_output(job_id=None, owner=None, job_name=None, dd_name=None, duration=0,
 
     Returns:
         list[dict] -- The output information for a list of jobs matching specified criteria.
-        If no job status is found, this will return an empty job code with msg=JOB NOT FOUND
+        If no job status is found it will return a ret_code diction with
+        parameter 'msg_txt" = "The job could not be found.
     """
     arg_defs = dict(
         job_id=dict(arg_type="qualifier_pattern"),
@@ -63,10 +64,10 @@ def job_output(job_id=None, owner=None, job_name=None, dd_name=None, duration=0,
     job_detail = _get_job_status(job_id=job_id, owner=owner, job_name=job_name,
                                  dd_name=dd_name, duration=duration, timeout=timeout, start_time=start_time)
 
-    while ((job_detail is None or len(job_detail) == 0) and duration <= timeout):
-        current_time = timer()
-        duration = round(current_time - start_time)
-        sleep(1)
+    # while ((job_detail is None or len(job_detail) == 0) and duration <= timeout):
+    #     current_time = timer()
+    #     duration = round(current_time - start_time)
+    #     sleep(1)
 
     if len(job_detail) == 0:
         # some systems have issues with "*" while some require it to see results
@@ -125,7 +126,9 @@ def job_status(job_id=None, owner=None, job_name=None, dd_name=None):
 
     Returns:
         list[dict] -- The status information for a list of jobs matching search criteria.
-        If no job status is found, this will return an empty job code with msg=JOB NOT FOUND
+        If no job status is found it will return a ret_code diction with
+        parameter 'msg_txt" = "The job could not be found."
+
     """
     arg_defs = dict(
         job_id=dict(arg_type="qualifier_pattern"),
@@ -171,7 +174,7 @@ def _parse_steps(job_str):
         for match in steps:
             st = {
                 "step_name": match[0].split()[-1],
-                "step_cc": match[1].split()[-1],
+                "step_cc": int(match[1].split()[-1]) if match[1].split()[-1] is not None else None,
             }
             stp.append(st)
 
@@ -300,22 +303,20 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, duration=
                         job["subsystem"] = (tmptext.split("\n")[
                                             0]).replace(" ", "")
 
-                # e.g "19.49.44 JOB06848 IEFC452I DOCEASYT - JOB NOT RUN - JCL ERROR 029 "
-                # we extract out 'JCL ERROR 029' after the split
+                # Extract similar: "19.49.44 JOB06848 IEFC452I DOCEASYT - JOB NOT RUN - JCL ERROR 029 "
+                # then further reduce down to: 'JCL ERROR 029'
                 if job["ret_code"]["msg_code"] == "?":
                     if "JOB NOT RUN -" in tmpcont:
                         tmptext = tmpcont.split(
                             "JOB NOT RUN -")[1].split("\n")[0]
                         job["ret_code"]["msg"] = tmptext.strip()
-                        job["ret_code"]["msg_code"] = tmptext.split(
-                            " ")[-1].strip()
-
-                        job["ret_code"]["code"] = ""
-                        if len(job["ret_code"]["msg_code"]) > 0:
-                            if job["ret_code"]["msg_code"].isdigit():
-                                job["ret_code"]["code"] = int(
-                                    job["ret_code"]["msg_code"])
+                        job["ret_code"]["msg_code"] = None
+                        job["ret_code"]["code"] = None
             if len(list_of_dds) > 1:
+                # The duration should really only be returned for job submit but the code
+                # is used job_output as well, for now we can ignore this point unless
+                # we want to offer a wait_time_s for job output which might be reasonable.
+                job["duration"] = duration
                 final_entries.append(job)
     if not final_entries:
         final_entries = _job_not_found(job_id, owner, job_name, "unavailable")

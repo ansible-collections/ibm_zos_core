@@ -85,7 +85,8 @@ RETURN = r"""
 jobs:
   description:
     The output information for a list of jobs matching specified criteria.
-    If no job status is found, this will return an empty job code with msg=JOB NOT FOUND.
+    If no job status is found, this will return ret_code dictionary with
+    parameter msg_txt = The job could not be found.
   returned: success
   type: list
   elements: dict
@@ -214,8 +215,8 @@ jobs:
             step_cc:
               description:
                 The CC returned for this step in the DD section.
-              type: str
-              sample: "00"
+              type: int
+              sample: 0
       sample:
         ret_code: {
          "code": 0,
@@ -224,7 +225,7 @@ jobs:
          "msg_txt": "",
          "steps": [
            { "step_name": "STEP0001",
-             "step_cc": "0000"
+             "step_cc": 0
            }
          ]
         }
@@ -350,7 +351,7 @@ jobs:
           "msg_txt": "",
           "steps": [
             { "step_name": "STEP0001",
-              "step_cc": "0000"
+              "step_cc": 0
             }
           ]
         },

@@ -2037,6 +2037,9 @@ def run_module(module, arg_def):
         # If temp_path, the plugin has copied a file from the controller to USS.
         if temp_path or "/" in src:
             src_ds_type = "USS"
+
+            if remote_src and os.path.isdir(src):
+                is_src_dir = True
         else:
             if data_set.DataSet.data_set_exists(src_name):
                 if src_member and not data_set.DataSet.data_set_member_exists(src):
@@ -2062,8 +2065,9 @@ def run_module(module, arg_def):
 
         if is_uss:
             dest_ds_type = "USS"
-            if not is_src_dir and (dest.endswith("/") or os.path.isdir(dest)):
-                dest = os.path.normpath("{0}/{1}".format(dest, os.path.basename(src)))
+            if src_ds_type == "USS" and not is_src_dir and (dest.endswith("/") or os.path.isdir(dest)):
+                src_basename = os.path.basename(src) if src else "inline_copy"
+                dest = os.path.normpath("{0}/{1}".format(dest, src_basename))
 
                 if dest.startswith("//"):
                     dest = dest.replace("//", "/")

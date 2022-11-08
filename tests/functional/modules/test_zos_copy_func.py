@@ -244,6 +244,29 @@ def test_copy_file_to_uss_dir(ansible_zos_module, src):
 
 
 @pytest.mark.uss
+def test_copy_file_to_uss_dir_missing_parents(ansible_zos_module):
+    hosts = ansible_zos_module
+    src = "/etc/profile"
+    dest_dir = "/tmp/parent_dir"
+    dest = "{0}/subdir/profile".format(dest_dir)
+
+    try:
+        hosts.all.file(path=dest_dir, state="absent")
+        copy_res = hosts.all.zos_copy(src=src, dest=dest)
+        stat_res = hosts.all.stat(path=dest)
+
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+            assert result.get("changed") is True
+            assert result.get("dest") == dest
+            assert result.get("state") == "file"
+        for st in stat_res.contacted.values():
+            assert st.get("stat").get("exists") is True
+    finally:
+        hosts.all.file(path=dest_dir, state="absent")
+
+
+@pytest.mark.uss
 def test_copy_local_symlink_to_uss_file(ansible_zos_module):
     hosts = ansible_zos_module
     src_lnk = "/tmp/etclnk"

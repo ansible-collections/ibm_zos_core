@@ -268,8 +268,9 @@ class CommandInit(IckdsfCommand):
                 cmd_args['verify_existing_volid'],
                 cmd_args['verify_offline'],
                 cmd_args['volid']),
-            ' {} storagegroup {} {}'.format(
+            ' {} {} {} {}'.format(
                 cmd_args['vtoc_tracks'],
+                cmd_args['sms_managed'],
                 cmd_args['verify_no_data_sets_exist'],
                 cmd_args['index'])]
 

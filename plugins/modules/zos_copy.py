@@ -1094,7 +1094,7 @@ class USSCopyHandler(CopyHandler):
             # Restoring permissions for preexisting files and subdirectories.
             for filepath, permissions in original_permissions:
                 mode = "0{0:o}".format(stat.S_IMODE(permissions))
-                self.module.set_mode_if_different(os.path.join(dest_dir, filepath), mode, False)
+                self.module.set_mode_if_different(os.path.join(dest, filepath), mode, False)
         except Exception as err:
             raise CopyOperationError(
                 msg="Error while copying data to destination directory {0}".format(dest_dir),
@@ -1120,21 +1120,23 @@ class USSCopyHandler(CopyHandler):
                      for the files and directories already present on the
                      destination.
         """
-        original_files = self._walk_uss_tree(dest) if os.path.exists(dest) else []
         copied_files = self._walk_uss_tree(src)
 
         # It's not needed to normalize the path because it was already normalized
         # on _copy_to_dir.
         parent_dir = os.path.basename(src) if copy_directory else ''
 
-        changed_files = [
-            relative_path for relative_path in copied_files
-            if os.path.join(parent_dir, relative_path) not in original_files
-        ]
+        changed_files = []
+        original_files = []
+        for relative_path in copied_files:
+            if os.path.exists(os.path.join(dest, parent_dir, relative_path)):
+                original_files.append(relative_path)
+            else:
+                changed_files.append(relative_path)
 
         # Creating tuples with (filename, permissions).
         original_permissions = [
-            (filepath, os.stat(os.path.join(dest, filepath)).st_mode)
+            (filepath, os.stat(os.path.join(dest, parent_dir, filepath)).st_mode)
             for filepath in original_files
         ]
 

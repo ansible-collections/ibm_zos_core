@@ -595,14 +595,14 @@ mountProfile:
     ifdef host
 		@make copyKey host=${host}
 		@echo $(divider)
-		@echo "Copying mount script to managede node and executing."
+		@echo "Copying mount script to managed node and executing."
 		@echo "Copying profile-shr to managed node."
 		@echo $(divider)
 		@${VENV}/./make.env --files "${host}" "${VENV}/mount-shr.sh" "${VENV}/profile-shr"
     else
 		@make copyKey
 		@echo $(divider)
-		@echo "Copying mount script to managede node and executing."
+		@echo "Copying mount script to managed node and executing."
 		@echo "Copying profile-shr to managed node."
 		@echo $(divider)
 		@$(eval username := $(shell whoami))

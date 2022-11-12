@@ -505,10 +505,22 @@ def run_module():
             )
 
         if convert_rc:
+            if is_uss_dest:
+                eu.uss_tag_encoding(dest, to_encoding)
+
             changed = True
             result = dict(changed=changed, src=src, dest=dest, backup_name=backup_name)
         else:
             result = dict(src=src, dest=dest, changed=changed, backup_name=backup_name)
+    except encode.TaggingError as e:
+        module.fail_json(
+            msg=e.msg,
+            rc=e.rc,
+            stdout=e.stdout,
+            stderr=e.stderr,
+            stdout_lines=e.stdout.splitlines(),
+            stderr_lines=e.stderr.splitlines(),
+        )
     except Exception as e:
         module.fail_json(msg=repr(e), **result)
 

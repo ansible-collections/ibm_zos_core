@@ -1613,30 +1613,39 @@ def restore_backup(
                 if not members_to_delete:
                     members_to_delete = []
 
-                for member in members_to_restore:
+                for i, member in enumerate(members_to_restore):
                     response = datasets._copy(
                         "{0}({1})".format(backup, member),
                         "{0}({1})".format(dest, member)
                     )
 
                     if response.rc != 0:
+                        # In case of a failure, we'll assume that all past
+                        # members in the list (with index < i) were restored successfully.
                         raise CopyOperationError(
-                            "Error ocurred while restoring {0}({1}) from backup {2}".format(
+                            "Error ocurred while restoring {0}({1}) from backup {2}.".format(
                                 dest,
                                 member,
                                 backup
+                            ) + " Members restored: {0}. Members that didn't get restored: {1}".format(
+                                members_to_restore[:i],
+                                members_to_restore[i:]
                             ),
                             response.rc,
                             response.stdout_response,
                             response.stderr_response
                         )
 
-                for member in members_to_delete:
+                for i, member in enumerate(members_to_delete):
                     response = datasets._delete_members("{0}({1})".format(dest, member))
 
                     if response.rc != 0:
                         raise CopyOperationError(
-                            "Error while deleting {0}({1}) after copy failure".format(dest, member),
+                            "Error while deleting {0}({1}) after copy failure.".format(dest, member) +
+                            " Members deleted: {0}. Members not able to be deleted: {1}".format(
+                                members_to_delete[:i],
+                                members_to_delete[i:]
+                            ),
                             response.rc,
                             response.stdout_response,
                             response.stderr_response

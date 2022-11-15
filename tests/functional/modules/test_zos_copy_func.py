@@ -1625,7 +1625,6 @@ def test_copy_multiple_data_set_members_in_loop(ansible_zos_module):
     """
     hosts = ansible_zos_module
     src = "USER.FUNCTEST.SRC.PDS"
-    src_wildcard = "{0}(ABC*)".format(src)
 
     dest = "USER.FUNCTEST.DEST.PDS"
     member_list = ["MEMBER1", "ABCXYZ", "ABCASD"]
@@ -1658,7 +1657,7 @@ def test_copy_multiple_data_set_members_in_loop(ansible_zos_module):
             assert v_cp.get("rc") == 0
             stdout = v_cp.get("stdout")
             assert stdout is not None
-            assert len(stdout.splitlines()) == 2
+            assert len(stdout.splitlines()) == 3
 
     finally:
         hosts.all.zos_data_set(name=src, state="absent")

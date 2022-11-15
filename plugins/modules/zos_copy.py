@@ -73,8 +73,7 @@ options:
     description:
       - The remote absolute path or data set where the content should be copied to.
       - C(dest) can be a USS file, directory or MVS data set name.
-      - If C(src) and C(dest) are files and if the parent directory of C(dest)
-        does not exist, then the task will fail
+      - If C(dest) has missing parent directories, they will be created.
       - If C(dest) is a nonexistent USS file, it will be created.
       - If C(dest) is a nonexistent data set, it will be created following the
         process outlined here and in the C(volume) option.
@@ -679,6 +678,7 @@ import stat
 import math
 import tempfile
 import os
+import pathlib
 
 if PY3:
     from re import fullmatch
@@ -979,6 +979,12 @@ class USSCopyHandler(CopyHandler):
                 src, dest, src_ds_type, src_member, member_name=member_name
             )
         else:
+            norm_dest = os.path.normpath(dest)
+            dest_parent_dir, tail = os.path.split(norm_dest)
+            path_helper = pathlib.Path(dest_parent_dir)
+            if dest_parent_dir != "/" and not path_helper.exists():
+                path_helper.mkdir(parents=True, exist_ok=True)
+
             if os.path.isfile(temp_path or conv_path or src):
                 dest = self._copy_to_file(src, dest, conv_path, temp_path)
                 changed_files = None
@@ -1088,7 +1094,7 @@ class USSCopyHandler(CopyHandler):
             # Restoring permissions for preexisting files and subdirectories.
             for filepath, permissions in original_permissions:
                 mode = "0{0:o}".format(stat.S_IMODE(permissions))
-                self.module.set_mode_if_different(os.path.join(dest_dir, filepath), mode, False)
+                self.module.set_mode_if_different(os.path.join(dest, filepath), mode, False)
         except Exception as err:
             raise CopyOperationError(
                 msg="Error while copying data to destination directory {0}".format(dest_dir),
@@ -1114,21 +1120,23 @@ class USSCopyHandler(CopyHandler):
                      for the files and directories already present on the
                      destination.
         """
-        original_files = self._walk_uss_tree(dest) if os.path.exists(dest) else []
         copied_files = self._walk_uss_tree(src)
 
         # It's not needed to normalize the path because it was already normalized
         # on _copy_to_dir.
         parent_dir = os.path.basename(src) if copy_directory else ''
 
-        changed_files = [
-            relative_path for relative_path in copied_files
-            if os.path.join(parent_dir, relative_path) not in original_files
-        ]
+        changed_files = []
+        original_files = []
+        for relative_path in copied_files:
+            if os.path.exists(os.path.join(dest, parent_dir, relative_path)):
+                original_files.append(relative_path)
+            else:
+                changed_files.append(relative_path)
 
         # Creating tuples with (filename, permissions).
         original_permissions = [
-            (filepath, os.stat(os.path.join(dest, filepath)).st_mode)
+            (filepath, os.stat(os.path.join(dest, parent_dir, filepath)).st_mode)
             for filepath in original_files
         ]
 
@@ -2031,6 +2039,9 @@ def run_module(module, arg_def):
         # If temp_path, the plugin has copied a file from the controller to USS.
         if temp_path or "/" in src:
             src_ds_type = "USS"
+
+            if remote_src and os.path.isdir(src):
+                is_src_dir = True
         else:
             if data_set.DataSet.data_set_exists(src_name):
                 if src_member and not data_set.DataSet.data_set_member_exists(src):
@@ -2056,6 +2067,13 @@ def run_module(module, arg_def):
 
         if is_uss:
             dest_ds_type = "USS"
+            if src_ds_type == "USS" and not is_src_dir and (dest.endswith("/") or os.path.isdir(dest)):
+                src_basename = os.path.basename(src) if src else "inline_copy"
+                dest = os.path.normpath("{0}/{1}".format(dest, src_basename))
+
+                if dest.startswith("//"):
+                    dest = dest.replace("//", "/")
+
             dest_exists = os.path.exists(dest)
 
             if dest_exists and not os.access(dest, os.W_OK):

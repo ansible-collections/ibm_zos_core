@@ -326,18 +326,6 @@ class CommandInit(IckdsfCommand):
 def run_module():
 
     module_args = dict(
-        buildix=dict(type="dict", options=dict(
-            volume_address=dict(type="str", required=True),
-            verify_existing_volid=dict(type="str", required=False),
-            verify_offline=dict(type="bool", default=True),
-            volid=dict(type="str", required=False),
-            vtoc_tracks=dict(type="int", required=False),
-            index=dict(type="bool", default=True),
-            sms_managed=dict(type="bool", default=True),
-            verify_no_data_sets_exist=dict(type="bool", default=True),
-            addr_range=dict(type="int"),
-            volid_prefix=dict(type="str")),
-        ),
         init=dict(type="dict", options=dict(
             volume_address=dict(type="str", required=True),
             verify_existing_volid=dict(type="str", required=False),

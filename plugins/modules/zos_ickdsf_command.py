@@ -16,26 +16,28 @@ from __future__ import (absolute_import, division, print_function)
 
 __metaclass__ = type
 
-
+#######################################################
+## Not sure where the following information goes, perhaps add it to the list of authors.
+# Team: JumpStart Team 8
+#   - "Austen Stewart"
+#   - "Almigdad Suliman"
+#   - "Nicholas Teves"
+#   - "Nuoya Xie"
+#   - "Trevor Glassey"
+#   - "Tyler Edwards"
+# Date: 07/2021
+#######################################################
 DOCUMENTATION = r"""
-module: zos_icsdsf_command
+module: zos_ickdsf_command
+short_description: Initialize volumes or minidisks on z/OS through ICKDSF init command.
+description:
+  - ICKDSF INIT command to initialize volume or minidisk.
+  - Writes volume label and VTOC on volume or minidisk.
+version_added: 1.6.0
 author:
   - "Austen Stewart"
   - "Nuoya Xie"
   - "Trevor Glassey"
-Team: JumpStart Team 8
-  - "Austen Stewart"
-  - "Almigdad Suliman"
-  - "Nicholas Teves"
-  - "Nuoya Xie"
-  - "Trevor Glassey"
-  - "Tyler Edwards"
-Date: 07/2021
-short_description: ICKDSF Playbook data manipulation to utilize zos_mvs_raw.
-description:
-  - Issue init command using MVS.
-  - Transforms playbook to work with existing zos_mvs_raw module.
-  - Action plugin executes on host before zos_mvs_raw is executed.
 
 options:
   init:
@@ -46,39 +48,50 @@ options:
       suboptions:
         volume_address:
           description:
-            - 3 or 4 hexadecimal digits that contain the address of the volume to initialize.
+            - 3 or 4 hexadecimal digit address of the volume to initialize.
+            - Also referred to as unit address or device number.
           required: true
           type: str
         verify_existing_volid:
           description:
-            - Used to indicate one of the following
-            - Verification that an existing volume serial number does not exist for the volume by not including it.
-            - Verification that the volume contains an existing specific volume serial number. This would be indicated
+            - Verify that volume serial matches the one found on existing volume/minidisk.
+            - Module fails if volser does not match.
+            - <DEL>Used to indicate one of the following.
+            - <DEL>Verification that an existing volume serial number does not exist for the volume by not including it.
+            - note by ketan - The above is not currently implemented.
+            - <DEL>Verification that the volume contains an existing specific volume serial number. This would be indicated
               by 1 to 6 alphanumeric characters that would contain the serial number that you wish to verify currently exists on the volume.
           required: false
           type: str
         verify_offline:
           description:
-            - Used to indicate if verification should be done to verify that the volume is offline to all host systems.
-              If this parameter is not specified, the default set up on the system that you are running the command to will be used.
+            - Verify that the device is offline to all other systems.
+            - Default behavior will depend on the target z/OS system set up.
+              <DEL>If this parameter is not specified, the default set up on the system that you are running the command to will be used.
           type: bool
           default: true
         volid:
           description:
-            - This is used to indicate the 1 to 6 alphanumeric character volume serial number that you want to initialize the volume with.
+            - Also referred to as volser or volume serial number.
+            - Specify the volume serial number to initialize the volume with.
+            - Expects 1-6 alphanumeric, national ($, \\#, \\@) or special characters.
+            - volid's specified with less than 6 characters are left justified and padded with blank chars (X'40').
+            - Characters are not validated so check with operating system guide for valid alphanumeric characters.
+            - Default behavior in the case this parameter is not specified in the case of an existing device initialization is the reuse the existing volume serial.
           required: false
           type: str
         vtoc_tracks:
           description:
-            - This is used to indicate the number of tracks to initialize the VTOC with. The VTOC will be placed at cylinder 0 head 1
-              for the number of tracks specified.
+            - The number of tracks to initialize the VTOC with.
+            - The VTOC will be placed at cylinder 0 head 1 for the number of tracks specified.
           required: false
           type: int
         index:
           description:
-            - This is used to indicate if a VTOC index should be created when initializing the volume.
-              The index size will be created based on the size of the volume and the size of the VTOC that was created.
-              The Index will be placed on the volume after the VTOC. If this parameter is not specified an index will be created on the volume.
+            - Create a VTOC index during volume initialization.
+            - The index size will be based on the size of the volume and the size of the VTOC that was created.
+            - The index will be placed on the volume after the VTOC.
+            - Set to false to not generate an index.
           type: bool
           default: true
         sms_managed:
@@ -88,13 +101,13 @@ options:
           default: true
         verify_no_data_sets_exist:
           description:
-            - This is used to verify if data sets other than the VTOC index data set and/or VVDS exist on the volume to be initialized.
-              If this parameter is not specified, the default set up on the system you are running the command to will be used.
+            - Verify if data sets other than the VTOC index data set and/or VVDS exist on the volume to be initialized.
+            - If this parameter is not specified, the default set up on the system you are running the command to will be used.
           type: bool
           default: true
         addr_range:
           description:
-            - If initializing a range of volumes, how many additional addresses to initialize
+            - If initializing a range of volumes, how many additional addresses to initialize.
           required: false
           type: int
         volid_prefix:
@@ -104,18 +117,18 @@ options:
           type: str
   output_html:
     description:
-      - Options for creating HTML output of ICKDSF command
+      - Options for creating HTML output of ICKDSF command.
     required: false
     type: dict
     suboptions:
       full_file path:
         description:
-          - File path to place output HTML file
+          - File path to place output HTML file.
         required: true
         type: str
       append:
         description:
-          - Optionally append to file, instead of overwriting
+          - Optionally append to file, instead of overwriting.
         type: bool
         default: true
   """

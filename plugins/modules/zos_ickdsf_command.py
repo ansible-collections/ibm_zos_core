@@ -133,66 +133,36 @@ options:
         default: true
   """
 EXAMPLES = r"""
+- name: Initialize a new dasd volume for use on a z/OS system and save the output to a html file.
+  zos_ickdsf_command:
+    init:
+      volume_address: e8d8
+      verify_existing_volid: ine8d8
+      verify_offline: no
+      volid: ine8d8
+      vtoc_tracks: 30
+      index: yes
+      sms_managed: yes
+      verify_no_data_sets_exist: yes
+    output_html:
+      full_file_path: ./test.html
+      append: yes
 
----
-  - hosts: all
-    collections:
-    - ibm.ibm_zos_core
-    gather_facts: no
-    environment: "{{ environment_vars }}"
-    connection: ibm.ibm_zos_core.zos_ssh
-    become: false
-    tasks:
-      - name: Initialize a new dasd volume for use on a z/OS system and save the output to a html file.
-        zos_ickdsf_command:
-          init:
-            volume_address: e8d8
-            verify_existing_volid: ine8d8
-            verify_offline: no
-            volid: ine8d8
-            vtoc_tracks: 30
-            index: yes
-            sms_managed: yes
-            verify_no_data_sets_exist: yes
-          output_html:
-            full_file_path: ./test.html
-            append: yes
-        register: response
-
-      - name: Print return information from the previous task
-        ansible.builtin.debug:
-          var: response
-
-
----
-  - hosts: all
-    collections:
-    - ibm.ibm_zos_core
-    gather_facts: no
-    environment: "{{ environment_vars }}"
-    connection: ibm.ibm_zos_core.zos_ssh
-    become: false
-    tasks:
-      - name: Initialize 3 new dasd volume for use on a z/OS system and save the output to a html file. These additional will be set as ine8d9 and ine8da
-        zos_ickdsf_command:
-          init:
-            volume_address: e8d8
-            verify_offline: no
-            volid: ine8d8
-            vtoc_tracks: 30
-            index: yes
-            sms_managed: yes
-            verify_no_data_sets_exist: yes
-            addr_range: 2
-            volid_prefix: in
-          output_html:
-            full_file_path: ./test.html
-            append: yes
-        register: response
-
-      - name: Print return information from the previous task
-        ansible.builtin.debug:
-          var: response
+- name: Initialize 3 new dasd volume for use on a z/OS system and save the output to a html file. These additional will be set as ine8d9 and ine8da
+  zos_ickdsf_command:
+    init:
+      volume_address: e8d8
+      verify_offline: no
+      volid: ine8d8
+      vtoc_tracks: 30
+      index: yes
+      sms_managed: yes
+      verify_no_data_sets_exist: yes
+      addr_range: 2
+      volid_prefix: in
+    output_html:
+      full_file_path: ./test.html
+      append: yes
 """
 
 from ansible.module_utils.basic import AnsibleModule

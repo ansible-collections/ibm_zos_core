@@ -508,6 +508,24 @@ class DataSet(object):
         if len(data_sets_found) > 0:
             return data_sets_found[0].dsorg
 
+        # There's a bug in ZOAU versions 1.2.1 and older where dls is not able to
+        # handle system symbols in volumes and this sometimes results in not
+        # getting the details for sequential and partitioned datasets, so in case
+        # this happens, we'll use IKJEFT01 to list the data set information.
+        rc, stdout, stderr = mvs_cmd.ikjeft01(
+            " LISTDS '{0}'".format(name),
+            authorized=True
+        )
+
+        if rc == 0:
+            ds_search = re.search(r"(-|--)DSORG(-\s*|\s*)\n(.*)", stdout, re.MULTILINE)
+            if ds_search:
+                ds_params = ds_search.group(3).split()
+                # LISTDS works with VSAMs too, but we'll use LISTCAT instead
+                # to get the specific type of VSAM.
+                if ds_params[-1] != "VSAM":
+                    return ds_params[-1]
+
         # Next, trying to get the DATA information of a VSAM through
         # LISTCAT.
         output = DataSet._get_listcat_data(name)

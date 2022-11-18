@@ -131,7 +131,7 @@ options:
           - Optionally append to file, instead of overwriting.
         type: bool
         default: true
-  """
+"""
 EXAMPLES = r"""
 - name: Initialize a new dasd volume for use on a z/OS system and save the output to a html file.
   zos_ickdsf_command:
@@ -164,6 +164,29 @@ EXAMPLES = r"""
       full_file_path: ./test.html
       append: yes
 """
+RETURN = r'''
+command:
+  description: INIT command issued to ICKDSF tool.
+  returned: success
+  type: list
+  elements: str
+  sample:
+    - [ " init unit(0903) noverify noverifyoffline volid(KTN003) - ",
+      "   ds " ],
+message:
+  description: Failure message returned by module.
+  returned: failure
+  type: str
+  sample: 'Volume address must be a valid 64-bit hex value'
+
+mvs_raw_output:
+  description:
+    - Output of mvs_raw module call.
+    - This is a temporary return field.
+  returned: always
+  type: str
+  sample: not sure...
+'''
 
 from ansible.module_utils.basic import AnsibleModule
 from locale import Error

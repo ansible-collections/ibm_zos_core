@@ -49,7 +49,10 @@ divider="===================================================================="
 
 ## Encrypt the configuration files with a `.encrypt` suffix for files
 ## [make.env, mount-shr.sh, profile-shr] with user specified password.
+## If no password is provided, you will be prompted to enter a password for each
+## file being encrypted.
 ## Example:
+##     $ make encrypt password=
 ##     $ make encrypt
 ## Note: This is not a common operation, unless you tend to edit the configuration, avoid using this feature.
 encrypt:
@@ -111,11 +114,24 @@ encrypt:
 		# @openssl bf -a -in make.env > make.env.encrypt
 		@rm -f make.env
     else
-		echo "No password was provided, unable to encrypt files.";
+		@openssl bf -a -in scripts/mount-shr.sh -out scripts/mount-shr.sh.encrypt
+		# @openssl bf -a -in scripts/mount-shr.sh > scripts/mount-shr.sh.encrypt
+		@rm -f scripts/mount-shr.sh
+
+		@openssl bf -a -in scripts/profile-shr -out scripts/profile-shr.encrypt
+		# @openssl bf -a -in scripts/profile-shr > scripts/profile-shr.encrypt
+		@rm -f scripts/profile-shr
+
+		@openssl bf -a -in make.env -out make.env.encrypt
+		# @openssl bf -a -in make.env > make.env.encrypt
+		@rm -f make.env
     endif
 ## Decrypt all scripts used with this Makefile using the user specified password
 ## Files include: ["mount-shr.sh", "profile-shr", "make.env"]
+## If no password is provided, you will be prompted to enter a password for each
+## file being decrypted.
 ## Example:
+##     $ make encrypt password=
 ##     $ make decrypt
 decrypt:
 	@# --------------------------------------------------------------------------
@@ -149,7 +165,14 @@ decrypt:
 		@echo "${password}" | openssl bf -d -a -in make.env.encrypt  -out make.env -pass stdin
 		@chmod 700 make.env
     else
-		echo "No password was provided, unable to encrypt files.";
+		@openssl bf -d -a -in scripts/mount-shr.sh.encrypt  -out scripts/mount-shr.sh
+		@chmod 700 scripts/mount-shr.sh
+
+		@openssl bf -d -a -in scripts/profile-shr.encrypt  -out scripts/profile-shr
+		@chmod 700 scripts/profile-shr
+
+		@openssl bf -d -a -in make.env.encrypt  -out make.env
+		@chmod 700 make.env
     endif
 
 # ==============================================================================

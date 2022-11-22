@@ -26,65 +26,66 @@ IMPORT_NAME = "ibm_zos_core.plugins.modules.zos_ickdsf_command"
 
 # * Tests for zos_ickdsf_command
 
-dummy_dict1 = {
+no_volume_addr = {
     "init": { 'volume_address' : None },
 }
 
-dummy_dict2 = {
+invalid_vol_addr = {
     "init": { 'volume_address' : '$$$' },
 }
 
-dummy_dict3 = {
-    "init": {
-        'volume_address' : '0903',
-        'verify_offline' : False,
-        'volid': "KTN003",
-        'index': True,
-        'verify_no_data_sets_exist': False,
-        }
-}
-dummy_command_3 = [' init unit(0903) noverify noverifyoffline volid(KTN003) - ', '   ds ']
-
-dummy_dict4 = {
-    "init": {
-        'volume_address' : '0903',
-        'verify_offline' : False,
-        'volid': "KTN003",
-        'index': True,
-        'verify_no_data_sets_exist': True,
-        }
-}
-dummy_command_4 = [' init unit(0903) noverify noverifyoffline volid(KTN003) - ', '   nods ']
-
-bad_test_data = [
-    (dummy_dict1, 'Volume address must be defined'),
-    (dummy_dict2, 'Volume address must be a valid 64-bit hex value'),
-]
-
-dummy_dict5 = {
+default_opts = {
     "init": {
         'volume_address' : '0903',
         'verify_offline' : True,
-        'volid': "KTN003",
-        'index': True,
-        'verify_no_data_sets_exist': False,
+        'verify_existing_volid' : None,
+        'volid' : None,
+        'vtoc_tracks' : None,
+        'index' : True,
+        'verify_no_data_sets_exist' : True,
+        'sms_managed' : True,
+        'addr_range' : None,
+        'volid_prefix' : None,
         }
 }
-dummy_command_5 = [' init unit(0903) noverify verifyoffline volid(KTN003) - ', '   ds ']
+default_opts_cmd = [" init unit(0903) noverify verifyoffline  - ", "  storagegroup nods "]
 
+# dummy_dict4 = {
+#     "init": {
+#         'volume_address' : '0903',
+#         'verify_offline' : False,
+#         'volid': "KTN003",
+#         'index': True,
+#         'verify_no_data_sets_exist': True,
+#         }
+# }
+# dummy_command_4 = [' init unit(0903) noverify noverifyoffline volid(KTN003) - ', '   nods ']
 
-test_data = [
-    (dummy_dict1, 'Volume address must be defined'),
-    (dummy_dict2, 'Volume address must be a valid 64-bit hex value'),
-    (dummy_dict3, dummy_command_3),
-    (dummy_dict4, dummy_command_4),
-    (dummy_dict5, dummy_command_5),
+# dummy_dict5 = {
+#     "init": {
+#         'volume_address' : '0903',
+#         'verify_offline' : True,
+#         'volid': "KTN003",
+#         'index': True,
+#         'verify_no_data_sets_exist': False,
+#         }
+# }
+# dummy_command_5 = [' init unit(0903) noverify verifyoffline volid(KTN003) - ', '   ds ']
+
+bad_test_data = [
+    (no_volume_addr, 'Volume address must be defined'),
+    (invalid_vol_addr, 'Volume address must be a valid 64-bit hex value'),
 ]
 
+all_test_data = [
+    (no_volume_addr, 'Volume address must be defined'),
+    (invalid_vol_addr, 'Volume address must be a valid 64-bit hex value'),
+    (default_opts, default_opts_cmd),
+    # (dummy_dict4, dummy_command_4),
+    # (dummy_dict5, dummy_command_5),
+]
 
-from pprint import pprint
-
-@pytest.mark.parametrize("args,expected", test_data)
+@pytest.mark.parametrize("args,expected", all_test_data)
 def test_zos_ickdsf_command_init_convert_happy(zos_import_mocker, args, expected):
     mocker, importer = zos_import_mocker
     zos_ickdsf_command = importer(IMPORT_NAME)

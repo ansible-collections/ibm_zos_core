@@ -166,7 +166,7 @@ command:
   sample:
     - [ " init unit(0903) noverify noverifyoffline volid(KTN003) - ",
       "   ds " ],
-message:
+msg:
   description: Failure message returned by module.
   returned: failure
   type: str
@@ -175,7 +175,7 @@ mvs_raw_output:
   description:
     - Output of mvs_raw module call.
     - This is a temporary return field.
-  returned: always
+  returned: when mvs_raw is invoked
   type: str
   sample: not sure...
 ret_code:
@@ -330,10 +330,6 @@ def run_module():
 
     result = dict(
         changed=False,
-        original_message='',
-        message='',
-        command='',
-        output=''
     )
 
     module = AnsibleModule(

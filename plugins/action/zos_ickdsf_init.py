@@ -69,7 +69,7 @@ class ActionModule(ActionBase):
         rc = mvs_result.get('ret_code').get('code')
         if rc != 0:
             result['failed'] = True
-            result['output'] = "INIT Failed with return code {}".format(rc)
+            result['msg'] = "INIT Failed with return code {}".format(rc)
         else:
             result['changed'] = True
 

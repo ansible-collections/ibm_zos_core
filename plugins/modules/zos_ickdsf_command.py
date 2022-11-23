@@ -49,34 +49,29 @@ options:
         volume_address:
           description:
             - 3 or 4 hexadecimal digit address of the volume to initialize.
-            - Also referred to as unit address or device number.
+            - This could be a unit address or device number.
           required: true
           type: str
         verify_existing_volid:
           description:
-            - Verify that volume serial matches the one found on existing volume/minidisk.
+            - Verify that the provided volume serial matches the one found on existing volume/minidisk.
             - Module fails if volser does not match.
-            - <DEL>Used to indicate one of the following.
-            - <DEL>Verification that an existing volume serial number does not exist for the volume by not including it.
-            - note by ketan - The above is not currently implemented.
-            - <DEL>Verification that the volume contains an existing specific volume serial number. This would be indicated
-              by 1 to 6 alphanumeric characters that would contain the serial number that you wish to verify currently exists on the volume.
+            - Note - leave this option blank in order to skip the verification.
           required: false
           type: str
         verify_offline:
           description:
             - Verify that the device is offline to all other systems.
-            - Default behavior will depend on the target z/OS system set up.
-              <DEL>If this parameter is not specified, the default set up on the system that you are running the command to will be used.
+            - Beware, defaults set on target z/OS systems may override ICKDSF parameters.
           type: bool
           default: true
         volid:
           description:
-            - Also referred to as volser or volume serial number.
             - Specify the volume serial number to initialize the volume with.
             - Expects 1-6 alphanumeric, national ($, \\#, \\@) or special characters.
             - volid's specified with less than 6 characters are left justified and padded with blank chars (X'40').
             - Characters are not validated so check with operating system guide for valid alphanumeric characters.
+            - Also referred to as volser or volume serial number.
             - Default behavior in the case this parameter is not specified in the case of an existing device initialization is the reuse the existing volume serial.
           required: false
           type: str
@@ -84,6 +79,8 @@ options:
           description:
             - The number of tracks to initialize the VTOC with.
             - The VTOC will be placed at cylinder 0 head 1 for the number of tracks specified.
+            - Typically, ICKDSF will default the size to the number of tracks in a cylinder minus 1.
+            - For a 3390, the default is cylinder 0, track 1 for 14 tracks
           required: false
           type: int
         index:
@@ -102,7 +99,7 @@ options:
         verify_no_data_sets_exist:
           description:
             - Verify if data sets other than the VTOC index data set and/or VVDS exist on the volume to be initialized.
-            - If this parameter is not specified, the default set up on the system you are running the command to will be used.
+            - Beware that z/OS system defaults can override ICKDSF parameters.
           type: bool
           default: true
         addr_range:
@@ -178,7 +175,6 @@ message:
   returned: failure
   type: str
   sample: 'Volume address must be a valid 64-bit hex value'
-
 mvs_raw_output:
   description:
     - Output of mvs_raw module call.
@@ -186,6 +182,9 @@ mvs_raw_output:
   returned: always
   type: str
   sample: not sure...
+ret_code:
+  description:
+    - return code from mvs_raw
 '''
 
 from ansible.module_utils.basic import AnsibleModule

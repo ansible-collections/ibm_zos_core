@@ -40,78 +40,76 @@ author:
   - "Trevor Glassey"
 
 options:
-  init:
+  volume_address:
     description:
-      - Contains the supported ICKDSF INIT command parameters.
+      - 3 or 4 hexadecimal digit address of the volume to initialize.
+      - This could be a unit address or device number.
+    required: true
+    type: str
+  verify_existing_volid:
+    description:
+      - Verify that the provided volume serial matches the one found on existing volume/minidisk.
+      - Module fails if volser does not match.
+      - Note - leave this option blank in order to skip the verification.
     required: false
-    type: dict
-      suboptions:
-        volume_address:
-          description:
-            - 3 or 4 hexadecimal digit address of the volume to initialize.
-            - This could be a unit address or device number.
-          required: true
-          type: str
-        verify_existing_volid:
-          description:
-            - Verify that the provided volume serial matches the one found on existing volume/minidisk.
-            - Module fails if volser does not match.
-            - Note - leave this option blank in order to skip the verification.
-          required: false
-          type: str
-        verify_offline:
-          description:
-            - Verify that the device is offline to all other systems.
-            - Beware, defaults set on target z/OS systems may override ICKDSF parameters.
-          type: bool
-          default: true
-        volid:
-          description:
-            - Specify the volume serial number to initialize the volume with.
-            - Expects 1-6 alphanumeric, national ($, \\#, \\@) or special characters.
-            - volid's specified with less than 6 characters are left justified and padded with blank chars (X'40').
-            - Characters are not validated so check with operating system guide for valid alphanumeric characters.
-            - Also referred to as volser or volume serial number.
-            - Default behavior in the case this parameter is not specified in the case of an existing device initialization is the reuse the existing volume serial.
-          required: false
-          type: str
-        vtoc_tracks:
-          description:
-            - The number of tracks to initialize the VTOC with.
-            - The VTOC will be placed at cylinder 0 head 1 for the number of tracks specified.
-            - Typically, ICKDSF will default the size to the number of tracks in a cylinder minus 1.
-            - For a 3390, the default is cylinder 0, track 1 for 14 tracks
-          required: false
-          type: int
-        index:
-          description:
-            - Create a VTOC index during volume initialization.
-            - The index size will be based on the size of the volume and the size of the VTOC that was created.
-            - The index will be placed on the volume after the VTOC.
-            - Set to false to not generate an index.
-          type: bool
-          default: true
-        sms_managed:
-          description:
-            - Assigned to be managed by Storage Management System (SMS).
-          type: bool
-          default: true
-        verify_no_data_sets_exist:
-          description:
-            - Verify if data sets other than the VTOC index data set and/or VVDS exist on the volume to be initialized.
-            - Beware that z/OS system defaults can override ICKDSF parameters.
-          type: bool
-          default: true
-        addr_range:
-          description:
-            - If initializing a range of volumes, how many additional addresses to initialize.
-          required: false
-          type: int
-        volid_prefix:
-          description:
-            - If initializing a range of volumes, the prefix of volume IDs to initialize. This with have the address appended to it.
-          required: false
-          type: str
+    type: str
+  verify_offline:
+    description:
+      - Verify that the device is offline to all other systems.
+      - Beware, defaults set on target z/OS systems may override ICKDSF parameters.
+    type: bool
+    required: false
+    default: true
+  volid:
+    description:
+      - Specify the volume serial number to initialize the volume with.
+      - Expects 1-6 alphanumeric, national ($, \\#, \\@) or special characters.
+      - volid's specified with less than 6 characters are left justified and padded with blank chars (X'40').
+      - Characters are not validated so check with operating system guide for valid alphanumeric characters.
+      - Also referred to as volser or volume serial number.
+      - Default behavior in the case this parameter is not specified in the case of an existing device initialization is the reuse the existing volume serial.
+    required: false
+    type: str
+  vtoc_tracks:
+    description:
+      - The number of tracks to initialize the VTOC with.
+      - The VTOC will be placed at cylinder 0 head 1 for the number of tracks specified.
+      - Typically, ICKDSF will default the size to the number of tracks in a cylinder minus 1.
+      - For a 3390, the default is cylinder 0, track 1 for 14 tracks
+    required: false
+    type: int
+  index:
+    description:
+      - Create a VTOC index during volume initialization.
+      - The index size will be based on the size of the volume and the size of the VTOC that was created.
+      - The index will be placed on the volume after the VTOC.
+      - Set to false to not generate an index.
+    required: false
+    type: bool
+    default: true
+  sms_managed:
+    description:
+      - Assigned to be managed by Storage Management System (SMS).
+    type: bool
+    required: false
+    default: true
+  verify_no_data_sets_exist:
+    description:
+      - Verify if data sets other than the VTOC index data set and/or VVDS exist on the volume to be initialized.
+      - Beware that z/OS system defaults can override ICKDSF parameters.
+    required: false
+    type: bool
+    default: true
+  addr_range:
+    description:
+      - If initializing a range of volumes, how many additional addresses to initialize.
+    required: false
+    type: int
+  volid_prefix:
+    description:
+      - If initializing a range of volumes, the prefix of volume IDs to initialize. This with have the address appended to it.
+    required: false
+    type: str
   output_html:
     description:
       - Options for creating HTML output of ICKDSF command.
@@ -132,31 +130,29 @@ options:
 EXAMPLES = r"""
 - name: Initialize a new dasd volume for use on a z/OS system and save the output to a html file.
   zos_ickdsf_command:
-    init:
-      volume_address: e8d8
-      verify_existing_volid: ine8d8
-      verify_offline: no
-      volid: ine8d8
-      vtoc_tracks: 30
-      index: yes
-      sms_managed: yes
-      verify_no_data_sets_exist: yes
+    volume_address: e8d8
+    verify_existing_volid: ine8d8
+    verify_offline: no
+    volid: ine8d8
+    vtoc_tracks: 30
+    index: yes
+    sms_managed: yes
+    verify_no_data_sets_exist: yes
     output_html:
       full_file_path: ./test.html
       append: yes
 
 - name: Initialize 3 new dasd volume for use on a z/OS system and save the output to a html file. These additional will be set as ine8d9 and ine8da
   zos_ickdsf_command:
-    init:
-      volume_address: e8d8
-      verify_offline: no
-      volid: ine8d8
-      vtoc_tracks: 30
-      index: yes
-      sms_managed: yes
-      verify_no_data_sets_exist: yes
-      addr_range: 2
-      volid_prefix: in
+    volume_address: e8d8
+    verify_offline: no
+    volid: ine8d8
+    vtoc_tracks: 30
+    index: yes
+    sms_managed: yes
+    verify_no_data_sets_exist: yes
+    addr_range: 2
+    volid_prefix: in
     output_html:
       full_file_path: ./test.html
       append: yes
@@ -216,8 +212,6 @@ class CommandInit(IckdsfCommand):
 
     @staticmethod
     def convert(args):
-        if args.get('init'):
-            args = args.get('init')
 
         # Get parameters from playbooks
         volume_address = args.get('volume_address')
@@ -318,18 +312,16 @@ class CommandInit(IckdsfCommand):
 def run_module():
 
     module_args = dict(
-        init=dict(type="dict", options=dict(
-            volume_address=dict(type="str", required=True),
-            verify_existing_volid=dict(type="str", required=False),
-            verify_offline=dict(type="bool", default=True),
-            volid=dict(type="str", required=False),
-            vtoc_tracks=dict(type="int", required=False),
-            index=dict(type="bool", default=True),
-            sms_managed=dict(type="bool", default=True),
-            verify_no_data_sets_exist=dict(type="bool", default=True),
-            addr_range=dict(type="int"),
-            volid_prefix=dict(type="str")),
-        ),
+        volume_address=dict(type="str", required=True),
+        verify_existing_volid=dict(type="str", required=False),
+        verify_offline=dict(type="bool", required=False, default=True),
+        volid=dict(type="str", required=False),
+        vtoc_tracks=dict(type="int", required=False),
+        index=dict(type="bool", required=False, default=True),
+        sms_managed=dict(type="bool", required=False, default=True),
+        verify_no_data_sets_exist=dict(type="bool", required=False, default=True),
+        addr_range=dict(type="int"),
+        volid_prefix=dict(type="str"),
         output_html=dict(type="dict", options=dict(
             full_file_path=dict(type="str", required=True),
             append=dict(type="bool", default=True, required=False))
@@ -357,20 +349,8 @@ def run_module():
         parser.parse_args(module.params)
     except ValueError as err:
         module.fail_json(msg="Parameter verification failed", stderr=str(err))
-
-    # table of ICKDSF command classes
-    command_table = {
-        'init': CommandInit
-    }
-
-    # loop over commands in playbook and execute appropriate conversion
-    for cmd in module.params.keys():
-        try:
-            cmd_class = command_table.get(cmd)
-            if cmd_class is not None:
-                result['command'] = cmd_class.convert(module.params)
-        except IckdsfError as e:
-            module.fail_json(msg="Encountered error with Ickdsf", stderr=str(e))
+    
+    result['command'] = CommandInit.convert(module.params)
 
     module.exit_json(**result)
 

@@ -26,49 +26,39 @@ IMPORT_NAME = "ibm_zos_core.plugins.modules.zos_ickdsf_command"
 
 # * Tests for zos_ickdsf_command
 
-no_volume_addr = {
-    "init": { 'volume_address' : None },
-}
-
-invalid_vol_addr = {
-    "init": { 'volume_address' : '$$$' },
-}
+no_volume_addr = { 'volume_address' : None }
+invalid_vol_addr = {'volume_address' : '$$$' }
 
 default_opts = {
-    "init": {
-        'volume_address' : '0903',
-        'verify_offline' : True,
-        'verify_existing_volid' : None,
-        'volid' : None,
-        'vtoc_tracks' : None,
-        'index' : True,
-        'verify_no_data_sets_exist' : True,
-        'sms_managed' : True,
-        'addr_range' : None,
-        'volid_prefix' : None,
-        }
+    'volume_address' : '0903',
+    'verify_offline' : True,
+    'verify_existing_volid' : None,
+    'volid' : None,
+    'vtoc_tracks' : None,
+    'index' : True,
+    'verify_no_data_sets_exist' : True,
+    'sms_managed' : True,
+    'addr_range' : None,
+    'volid_prefix' : None,
+
 }
 default_opts_cmd = [" init unit(0903) noverify verifyoffline  - ", "  storagegroup nods "]
 
 # dummy_dict4 = {
-#     "init": {
-#         'volume_address' : '0903',
-#         'verify_offline' : False,
-#         'volid': "KTN003",
-#         'index': True,
-#         'verify_no_data_sets_exist': True,
-#         }
+    # 'volume_address' : '0903',
+    # 'verify_offline' : False,
+    # 'volid': "KTN003",
+    # 'index': True,
+    # 'verify_no_data_sets_exist': True,
 # }
 # dummy_command_4 = [' init unit(0903) noverify noverifyoffline volid(KTN003) - ', '   nods ']
 
 # dummy_dict5 = {
-#     "init": {
-#         'volume_address' : '0903',
-#         'verify_offline' : True,
-#         'volid': "KTN003",
-#         'index': True,
-#         'verify_no_data_sets_exist': False,
-#         }
+    # 'volume_address' : '0903',
+    # 'verify_offline' : True,
+    # 'volid': "KTN003",
+    # 'index': True,
+    # 'verify_no_data_sets_exist': False,
 # }
 # dummy_command_5 = [' init unit(0903) noverify verifyoffline volid(KTN003) - ', '   ds ']
 
@@ -104,3 +94,4 @@ def test_zos_ickdsf_command_init_convert_unhappy(zos_import_mocker, args, expect
     with pytest.raises(zos_ickdsf_command.IckdsfError) as ickdsf_error:
         zos_ickdsf_command.CommandInit.convert(args)
     assert str(ickdsf_error.value) == expected
+    

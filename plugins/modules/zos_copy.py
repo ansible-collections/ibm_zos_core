@@ -2074,7 +2074,10 @@ def run_module(module, arg_def):
                 if dest.startswith("//"):
                     dest = dest.replace("//", "/")
 
-            dest_exists = os.path.exists(dest)
+            if is_src_dir and not src.endswith("/"):
+                dest_exists = os.path.exists(os.path.normpath("{0}/{1}".format(dest, os.path.basename(src))))
+            else:
+                dest_exists = os.path.exists(dest)
 
             if dest_exists and not os.access(dest, os.W_OK):
                 module.fail_json(msg="Destination {0} is not writable".format(dest))
@@ -2193,8 +2196,17 @@ def run_module(module, arg_def):
         if is_uss or not data_set.DataSet.is_empty(dest_name):
             use_backup = True
             if is_uss:
+                # When copying a directory without a trailing slash,
+                # appending the source's base name to the backup path to
+                # avoid backing up the whole parent directory that won't
+                # be modified.
+                src_basename = os.path.basename(src) if src else ''
+                backup_dest = "{0}/{1}".format(dest, src_basename) if is_src_dir and not src.endswith("/") else dest
+                backup_dest = os.path.normpath(backup_dest)
+
                 emergency_backup = tempfile.mkdtemp()
-                emergency_backup = backup_data(dest, dest_ds_type, emergency_backup)
+                emergency_backup = backup_data(backup_dest, dest_ds_type, emergency_backup)
+
             else:
                 if not (dest_ds_type in data_set.DataSet.MVS_PARTITIONED and src_member and not dest_member_exists):
                     emergency_backup = backup_data(dest, dest_ds_type, None)

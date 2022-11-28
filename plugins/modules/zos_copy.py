@@ -1259,6 +1259,8 @@ class PDSECopyHandler(CopyHandler):
             dest_member {str, optional} -- Name of destination member in data set
         """
         new_src = conv_path or temp_path or src
+        src_members = []
+        dest_members = []
 
         if src_ds_type == "USS":
             if os.path.isfile(new_src):
@@ -1267,36 +1269,17 @@ class PDSECopyHandler(CopyHandler):
             else:
                 path, dirs, files = next(os.walk(new_src))
 
-            for file in files:
-                full_file_path = os.path.normpath(path + "/" + file)
+            src_members = [os.path.normpath("{0}/{1}".format(path, file)) for file in files]
+            dest_members = [
+                dest_member if dest_member
+                else data_set.DataSet.get_member_name_from_file(file)
+                for file in files
+            ]
 
-                if dest_member:
-                    dest_copy_name = "{0}({1})".format(dest, dest_member)
-                else:
-                    dest_copy_name = "{0}({1})".format(dest, data_set.DataSet.get_member_name_from_file(file))
-
-                result = self.copy_to_member(full_file_path, dest_copy_name)
-
-                if result["rc"] != 0:
-                    msg = "Unable to copy file {0} to data set member {1}".format(file, dest_copy_name)
-                    raise CopyOperationError(
-                        msg=msg,
-                        rc=result["rc"],
-                        stdout=result["out"],
-                        stderr=result["err"]
-                    )
         elif src_ds_type in data_set.DataSet.MVS_SEQ:
-            dest_copy_name = "{0}({1})".format(dest, dest_member)
-            result = self.copy_to_member(new_src, dest_copy_name)
+            src_members = [new_src]
+            dest_members = [dest_member]
 
-            if result["rc"] != 0:
-                msg = "Unable to copy data set {0} to data set member {1}".format(new_src, dest_copy_name)
-                raise CopyOperationError(
-                    msg=msg,
-                    rc=result["rc"],
-                    stdout=result["out"],
-                    stderr=result["err"]
-                )
         else:
             members = []
             src_data_set_name = data_set.extract_dsname(new_src)
@@ -1306,23 +1289,39 @@ class PDSECopyHandler(CopyHandler):
             else:
                 members = datasets.list_members(new_src)
 
-            for member in members:
-                copy_src = "{0}({1})".format(src_data_set_name, member)
-                if dest_member:
-                    dest_copy_name = "{0}({1})".format(dest, dest_member)
-                else:
-                    dest_copy_name = "{0}({1})".format(dest, member)
+            src_members = ["{0}({1})".format(src_data_set_name, member) for member in members]
+            dest_members = [
+                dest_member if dest_member
+                else member
+                for member in members
+            ]
 
-                result = self.copy_to_member(copy_src, dest_copy_name)
+        existing_members = datasets.list_members(dest)
+        overwritten_members = []
+        new_members = []
 
-                if result["rc"] != 0:
-                    msg = "Unable to copy data set member {0} to data set member {1}".format(new_src, dest_copy_name)
-                    raise CopyOperationError(
-                        msg=msg,
-                        rc=result["rc"],
-                        stdout=result["out"],
-                        stderr=result["err"]
-                    )
+        for src_member, destination_member in zip(src_members, dest_members):
+            if destination_member in existing_members:
+                overwritten_members.append(destination_member)
+            else:
+                new_members.append(destination_member)
+
+            result = self.copy_to_member(src_member, "{0}({1})".format(dest, destination_member))
+
+            if result["rc"] != 0:
+                msg = "Unable to copy source {0} to data set member {1}({2})".format(
+                    new_src,
+                    dest,
+                    destination_member
+                )
+                raise CopyOperationError(
+                    msg=msg,
+                    rc=result["rc"],
+                    stdout=result["out"],
+                    stderr=result["err"],
+                    overwritten_members=overwritten_members,
+                    new_members=new_members
+                )
 
     def copy_to_member(
         self,
@@ -1558,7 +1557,15 @@ def backup_data(ds_name, ds_type, backup_name, tmphlq=None):
         )
 
 
-def restore_backup(dest, backup, dest_type, use_backup, volume=None):
+def restore_backup(
+    dest,
+    backup,
+    dest_type,
+    use_backup,
+    volume=None,
+    members_to_restore=None,
+    members_to_delete=None
+):
     """Restores a destination file/directory/data set by using a given backup.
 
     Arguments:
@@ -1569,6 +1576,10 @@ def restore_backup(dest, backup, dest_type, use_backup, volume=None):
             tries to use an empty data set, and in that case a new data set is allocated instead
             of copied.
         volume (str, optional) -- Volume where the data set should be.
+        members_to_restore (list, optional) -- List of members of a PDS/PDSE that were overwritten
+            and need to be restored.
+        members_to_delete (list, optional) -- List of members of a PDS/PDSE that need to be erased
+            because they were newly added.
     """
     volumes = [volume] if volume else None
 
@@ -1581,15 +1592,64 @@ def restore_backup(dest, backup, dest_type, use_backup, volume=None):
                 shutil.rmtree(dest, ignore_errors=True)
                 shutil.copytree(backup, dest)
         else:
-            data_set.DataSet.ensure_absent(dest, volumes)
-
             if dest_type in data_set.DataSet.MVS_VSAM:
+                data_set.DataSet.ensure_absent(dest, volumes)
                 repro_cmd = """  REPRO -
                 INDATASET('{0}') -
                 OUTDATASET('{1}')""".format(backup.upper(), dest.upper())
                 idcams(repro_cmd, authorized=True)
+            elif dest_type in data_set.DataSet.MVS_SEQ:
+                response = datasets._copy(backup, dest)
+                if response.rc != 0:
+                    raise CopyOperationError(
+                        "An error ocurred while restoring {0} from {1}".format(dest, backup),
+                        response.rc,
+                        response.stdout_response,
+                        response.stderr_response
+                    )
             else:
-                datasets.copy(backup, dest)
+                if not members_to_restore:
+                    members_to_restore = []
+                if not members_to_delete:
+                    members_to_delete = []
+
+                for i, member in enumerate(members_to_restore):
+                    response = datasets._copy(
+                        "{0}({1})".format(backup, member),
+                        "{0}({1})".format(dest, member)
+                    )
+
+                    if response.rc != 0:
+                        # In case of a failure, we'll assume that all past
+                        # members in the list (with index < i) were restored successfully.
+                        raise CopyOperationError(
+                            "Error ocurred while restoring {0}({1}) from backup {2}.".format(
+                                dest,
+                                member,
+                                backup
+                            ) + " Members restored: {0}. Members that didn't get restored: {1}".format(
+                                members_to_restore[:i],
+                                members_to_restore[i:]
+                            ),
+                            response.rc,
+                            response.stdout_response,
+                            response.stderr_response
+                        )
+
+                for i, member in enumerate(members_to_delete):
+                    response = datasets._delete_members("{0}({1})".format(dest, member))
+
+                    if response.rc != 0:
+                        raise CopyOperationError(
+                            "Error while deleting {0}({1}) after copy failure.".format(dest, member) +
+                            " Members deleted: {0}. Members not able to be deleted: {1}".format(
+                                members_to_delete[:i],
+                                members_to_delete[i:]
+                            ),
+                            response.rc,
+                            response.stdout_response,
+                            response.stderr_response
+                        )
 
     else:
         data_set.DataSet.ensure_absent(dest, volumes)
@@ -2180,7 +2240,7 @@ def run_module(module, arg_def):
                 emergency_backup = tempfile.mkdtemp()
                 emergency_backup = backup_data(dest, dest_ds_type, emergency_backup, tmphlq)
             else:
-                emergency_backup = backup_data(dest, dest_ds_type, None, tmphlq)
+                emergency_backup = backup_data(dest_name, dest_ds_type, None, tmphlq)
         # If dest is an empty data set, instead create a data set to
         # use as a model when restoring.
         else:
@@ -2204,7 +2264,10 @@ def run_module(module, arg_def):
         if dest_exists:
             restore_backup(dest_name, emergency_backup, dest_ds_type, use_backup)
             erase_backup(emergency_backup, dest_ds_type)
-        module.fail_json(msg="Unable to allocate destination data set: {0}".format(str(err)))
+        module.fail_json(
+            msg="Unable to allocate destination data set: {0}".format(str(err)),
+            dest_exists=dest_exists
+        )
 
     # ********************************************************************
     # Encoding conversion is only valid if the source is a local file,
@@ -2308,7 +2371,15 @@ def run_module(module, arg_def):
 
     except CopyOperationError as err:
         if dest_exists:
-            restore_backup(dest_name, emergency_backup, dest_ds_type, use_backup)
+            restore_backup(
+                dest_name,
+                emergency_backup,
+                dest_ds_type,
+                use_backup,
+                members_to_restore=err.overwritten_members,
+                members_to_delete=err.new_members
+            )
+        err.json_args["dest_exists"] = dest_exists
         raise err
     finally:
         if dest_exists:
@@ -2504,7 +2575,10 @@ class CopyOperationError(Exception):
         stderr=None,
         stdout_lines=None,
         stderr_lines=None,
-        cmd=None
+        cmd=None,
+        dest_exists=None,
+        overwritten_members=None,
+        new_members=None
     ):
         self.json_args = dict(
             msg=msg,
@@ -2514,7 +2588,10 @@ class CopyOperationError(Exception):
             stdout_lines=stdout_lines,
             stderr_lines=stderr_lines,
             cmd=cmd,
+            dest_exists=dest_exists,
         )
+        self.overwritten_members = overwritten_members
+        self.new_members = new_members
         super().__init__(msg)
 
 

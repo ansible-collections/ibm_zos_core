@@ -47,42 +47,133 @@ divider="===================================================================="
 
 .PHONY: help Makefile
 
-## Encrypt the `make.env` configuration file as `make.env.encrypt` with user specified password
+## Encrypt the configuration files with a `.encrypt` suffix for files
+## [make.env, mount-shr.sh, profile-shr] with user specified password.
+## If no password is provided, you will be prompted to enter a password for each
+## file being encrypted.
 ## Example:
+##     $ make encrypt password=
 ##     $ make encrypt
 ## Note: This is not a common operation, unless you tend to edit the configuration, avoid using this feature.
 encrypt:
 	@# --------------------------------------------------------------------------
-	@# Check to see if there is a make.env if not exit before deleting the
-	@# encrypted make.env.encrypt
+	@# Check to see if there is an unencrypted file(s) to encrypt, you would not
+	@# want to delete the encrypted version if the original unecrypted is not
+	@# present as there would be no recovery process then.
 	@# --------------------------------------------------------------------------
 	@if test ! -e make.env; then \
-	    echo "No configuration file 'make.env' found in $(CURR_DIR) "; \
+	    echo "File 'make.env' could not be found in $(CURR_DIR)"; \
 		exit 1; \
 	fi
 
+	@if test ! -e scripts/mount-shr.sh; then \
+	    echo "File 'mount-shr.sh' could not be found in $(CURR_DIR)/scripts. "; \
+		exit 1; \
+	fi
+
+	@if test ! -e scripts/profile-shr; then \
+	    echo "File 'profile-shr' could not found in $(CURR_DIR)/scripts. "; \
+		exit 1; \
+	fi
+
+	@# --------------------------------------------------------------------------
+	@# Check to see if there an encrypted version of the file, if so delete it
+	@# so it can be encrypted.
+	@# --------------------------------------------------------------------------
+
 	@if test -e make.env.encrypt; then \
-	    echo "Remvoing file 'make.env.encrypt' found in $(CURR_DIR)."; \
+	    echo "Removing encrypted file 'make.env.encrypt' in $(CURR_DIR)."; \
 		rm -rf make.env.encrypt; \
 	fi
 
-	@openssl bf -a -in make.env > make.env.encrypt
-	@rm -f make.env
+	@if test -e scripts/mount-shr.sh.encrypt; then \
+	    echo "Remvoing encrypted file 'scripts/mount-shr.sh.encrypt' in $(CURR_DIR)/scripts."; \
+		rm -rf scripts/mount-shr.sh.encrypt; \
+	fi
 
-## Decrypt the `make.env.encrypt` configuration file as `make.env` with user specified password
+	@if test -e scripts/profile-shr.encrypt; then \
+	    echo "Remvoing encrypted file 'scripts/profile-shr.encrypt' in $(CURR_DIR)/scripts."; \
+		rm -rf scripts/profile-shr.encrypt; \
+	fi
+
+	@# --------------------------------------------------------------------------
+	@# Encrypt the files since we have verified the uncrypted versions exist
+	@# Note: we should move make.env to scripts as well
+	@# --------------------------------------------------------------------------
+
+    ifdef password
+		@echo "${password}" | openssl bf -a -in scripts/mount-shr.sh -out scripts/mount-shr.sh.encrypt -pass stdin
+		# @openssl bf -a -in scripts/mount-shr.sh > scripts/mount-shr.sh.encrypt
+		@rm -f scripts/mount-shr.sh
+
+		@echo "${password}" | openssl bf -a -in scripts/profile-shr -out scripts/profile-shr.encrypt -pass stdin
+		# @openssl bf -a -in scripts/profile-shr > scripts/profile-shr.encrypt
+		@rm -f scripts/profile-shr
+
+		@echo "${password}" | openssl bf -a -in make.env -out make.env.encrypt -pass stdin
+		# @openssl bf -a -in make.env > make.env.encrypt
+		@rm -f make.env
+    else
+		@openssl bf -a -in scripts/mount-shr.sh -out scripts/mount-shr.sh.encrypt
+		# @openssl bf -a -in scripts/mount-shr.sh > scripts/mount-shr.sh.encrypt
+		@rm -f scripts/mount-shr.sh
+
+		@openssl bf -a -in scripts/profile-shr -out scripts/profile-shr.encrypt
+		# @openssl bf -a -in scripts/profile-shr > scripts/profile-shr.encrypt
+		@rm -f scripts/profile-shr
+
+		@openssl bf -a -in make.env -out make.env.encrypt
+		# @openssl bf -a -in make.env > make.env.encrypt
+		@rm -f make.env
+    endif
+## Decrypt all scripts used with this Makefile using the user specified password
+## Files include: ["mount-shr.sh", "profile-shr", "make.env"]
+## If no password is provided, you will be prompted to enter a password for each
+## file being decrypted.
 ## Example:
+##     $ make encrypt password=
 ##     $ make decrypt
 decrypt:
 	@# --------------------------------------------------------------------------
-	@# Check configuration exits
+	@# Check configuration files exit
 	@# --------------------------------------------------------------------------
-	@if test ! -e make.env.encrypt; then \
-	    echo "No configuration file 'make.env.encrypt' found in $(CURR_DIR) "; \
+	@if test ! -e scripts/mount-shr.sh.encrypt; then \
+	    echo "File 'mount-shr.sh.encrypt' not found in  scripts/mount-shr.sh.encrypt"; \
 		exit 1; \
 	fi
 
-	@openssl bf -d -a -in make.env.encrypt > make.env
-	@chmod 700 make.env
+	@if test ! -e scripts/profile-shr.encrypt; then \
+	    echo "File 'scripts/profile-shr.encrypt' not found in scripts/profile-shr.encrypt"; \
+		exit 1; \
+	fi
+
+	@if test ! -e make.env.encrypt; then \
+	    echo "File 'make.env.encrypt' not found in $(CURR_DIR)"; \
+		exit 1; \
+	fi
+
+	@# -------------------------------------------------------------------------
+	@# Decrypt configuration files
+	@# -------------------------------------------------------------------------
+    ifdef password
+		@echo "${password}" | openssl bf -d -a -in scripts/mount-shr.sh.encrypt  -out scripts/mount-shr.sh -pass stdin
+		@chmod 700 scripts/mount-shr.sh
+
+		@echo "${password}" | openssl bf -d -a -in scripts/profile-shr.encrypt  -out scripts/profile-shr -pass stdin
+		@chmod 700 scripts/profile-shr
+
+		@echo "${password}" | openssl bf -d -a -in make.env.encrypt  -out make.env -pass stdin
+		@chmod 700 make.env
+    else
+		@openssl bf -d -a -in scripts/mount-shr.sh.encrypt  -out scripts/mount-shr.sh
+		@chmod 700 scripts/mount-shr.sh
+
+		@openssl bf -d -a -in scripts/profile-shr.encrypt  -out scripts/profile-shr
+		@chmod 700 scripts/profile-shr
+
+		@openssl bf -d -a -in make.env.encrypt  -out make.env
+		@chmod 700 make.env
+    endif
 
 # ==============================================================================
 # Set up your venv, currently its hard coded to `venv` and designed to look first
@@ -98,34 +189,41 @@ decrypt:
 ##     $ make vsetup req=tests/requirements.txt
 vsetup:
 
+	@# -------------------------------------------------------------------------
+	@# Create the virtual environment directory if it does not exist
+	@# -------------------------------------------------------------------------
 	@if test ! -d $(VENV); then \
 		echo $(divider); \
-		echo "Creating python virtual environment 'venv'."; \
+		echo "Creating python virtual environment directory $(VENV)."; \
 		echo $(divider); \
 		$(HOST_PYTHON) -m venv $(VENV); \
 	else \
 		echo "Virtual environment already exists, no changes made."; \
 	fi
 
-	@if test ! -e $(VENV)/make.env; then \
+	@# -------------------------------------------------------------------------
+	@# Check if files exist in venv, if they do we should not decrypt/replace
+	@# them as they could have edits and risk losing them.
+	@# -------------------------------------------------------------------------
+
+	@if test ! -e $(VENV)/make.env && \
+	    test ! -e $(VENV)/mount-shr.sh && \
+		test ! -e $(VENV)/profile-shr; then \
 		echo $(divider); \
-		echo "Decrypting configuration file into $(VENV)/make.env."; \
+		echo "Decrypting files into $(VENV)."; \
 		echo $(divider); \
 		make decrypt; \
 		mv make.env $(VENV)/; \
+		mv scripts/mount-shr.sh $(VENV)/; \
+		mv scripts/profile-shr $(VENV)/; \
 	else \
-		echo "Configuration file $(VENV)/make.env already exists, no changes made."; \
-	fi
-
-	@if test -e $(VENV)/requirements.txt; then \
-		echo "Requirements file $(VENV)/requirements.txt already exists, no new packages installed."; \
-		exit 1; \
+		echo "Files $(VENV)/[make.env, mount-shr.sh,profile-shr] already exist, no changes made."; \
 	fi
 
     ifdef req
 		@if test -f ${req}; then \
 			echo $(divider); \
-			echo "Installing user provided python requirements into 'venv'."; \
+			echo "Installing user provided python requirements into $(VENV)."; \
 			echo $(divider); \
 			cp ${req} ${VENV}/requirements.txt; \
 			. $(VENV_BIN)/activate && pip install -r $(VENV)/requirements.txt; \
@@ -133,7 +231,7 @@ vsetup:
     else
 		@if test ! -e $(VENV)/requirements.txt; then \
 			echo $(divider); \
-			echo "Installing python requirements into 'venv'."; \
+			echo "Installing default python requirements into $(VENV)."; \
 			echo $(divider); \
 			echo $$(${VENV}/./make.env --req)>${VENV}/requirements.txt; \
 			. $(VENV_BIN)/activate && pip install -r $(VENV)/requirements.txt; \
@@ -143,7 +241,8 @@ vsetup:
     endif
 
 # ==============================================================================
-# Normally you don't need to activate your venv, but should you want to, you can
+# You don't need to activate your venv with this Makefile, but should you want
+# to, you can with vstart.
 # ==============================================================================
 ## Start the venv if you plan to work in a python virtual environment
 ## Example:
@@ -177,6 +276,10 @@ vstop:
 ## Example:
 ##     $ make build
 build:
+	@echo $(divider)
+	@echo "Building Ansible collection based on local branch and installing."
+	@echo $(divider)
+
 	@. $(VENV_BIN)/activate && rm -rf ibm-ibm_zos_core-*.tar.gz && \
 		ansible-galaxy collection build && \
 			ansible-galaxy collection install -f ibm-ibm_zos_core-*
@@ -233,6 +336,7 @@ test:
 	@# --------------------------------------------------------------------------
 	@# Check configuration was created in venv/config.yml, else error and exit
 	@# --------------------------------------------------------------------------
+
 	@if test ! -e $(VENV)/config.yml; then \
 	    echo "No configuration created in $(VENV)/config.yml "; \
 		exit 1; \
@@ -347,11 +451,15 @@ install:
 ## Example:
 ##     $ make version
 version:
+	@echo $(divider)
+	@echo "Obtaining Ansible collection version installed on this controller."
+	@echo $(divider)
+
 	@cat ~/.ansible/collections/ansible_collections/ibm/ibm_zos_core/MANIFEST.json \
 	|grep version|cut -d ':' -f 2 | sed "s/,*$\//g" | tr -d '"';
 
 # ==============================================================================
-# Check the version of the ibm_zos_core collection installed
+# Print the configuration used to connect to the managed node for functional tests
 # ==============================================================================
 ## Print the contents of the config file (venv/config.yml) which is used to
 ## connect to the managed z/OS node to run functional tests on. This will only
@@ -368,16 +476,46 @@ printConfig:
 	fi
 
 # ==============================================================================
-# Check the version of the ibm_zos_core collection installed
+# Print the make.env contents
 # ==============================================================================
 ## Print the contents of the venv/make.env, this only works if
 ## you have set up a venv using `make vsetup` because a password is required to
 ## decrypt and a decrypted copy will be placed in the venv.
 ## Example:
-##     $ make printenv
-printenv:
+##     $ make printEnv
+printEnv:
 	@if test -e $(VENV)/make.env; then \
 	    cat $(VENV)/make.env; \
+	else \
+		echo "No configuration was found, consider creating a venv using `make vsetup` first."; \
+	fi
+
+# ==============================================================================
+# Print the make.env contents
+# ==============================================================================
+## Print the contents of the venv/mount-shr.sh, this only works if
+## you have set up a venv using `make vsetup` because a password is required to
+## decrypt and a decrypted copy will be placed in the venv.
+## Example:
+##     $ make printMount
+printMount:
+	@if test -e $(VENV)/mount-shr.sh; then \
+	    cat $(VENV)/mount-shr.sh; \
+	else \
+		echo "No configuration was found, consider creating a venv using `make vsetup` first."; \
+	fi
+
+# ==============================================================================
+# Print the make.env contents
+# ==============================================================================
+## Print the contents of the venv/profile-shr, this only works if
+## you have set up a venv using `make vsetup` because a password is required to
+## decrypt and a decrypted copy will be placed in the venv.
+## Example:
+##     $ make printEnv
+printProfile:
+	@if test -e $(VENV)/profile-shr; then \
+	    cat $(VENV)/profile-shr; \
 	else \
 		echo "No configuration was found, consider creating a venv using `make vsetup` first."; \
 	fi
@@ -396,11 +534,6 @@ printenv:
 ##     $ make clean level=all
 ##     $ make clean level=min
 clean:
-	@echo $(divider)
-	@echo "Deleting venv"
-	@echo $(divider)
-	@rm -rf $(VENV)
-
     ifdef level
         ifeq ($(level),all)
 			@echo $(divider)
@@ -416,7 +549,11 @@ clean:
         ifeq ($(level),min)
 			@echo $(divider);
 			@echo "Minimum teardown selected.";
+			@echo "Deleting files = [make.env, mount-shr.sh, profile-shr].";
 			@echo $(divider);
+			@rm -rf $(VENV)/make.env
+			@rm -rf $(VENV)/mount-shr.sh
+			@rm -rf $(VENV)/profile-shr
         endif
 
 		@if test -e tests/functional/modules/test_module_security.txt; then \
@@ -426,17 +563,23 @@ clean:
 			mv -f tests/functional/modules/test_module_security.txt tests/functional/modules/test_module_security.py; \
 		fi
 
-		@if test -e make.env; then \
-			echo $(divider); \
-			echo "Encrypting 'make.env' to 'make.env.encrypt'"; \
-			echo $(divider); \
-			make encrypt; \
-		fi
+		# Unsure really need or even want to do this as part of cleanup
+		# @if test -e make.env; then \
+		# 	echo $(divider); \
+		# 	echo "Found uncrypted files, encrypting them."; \
+		# 	echo $(divider); \
+		# 	make encrypt; \
+		# fi
     else
-		@echo "No level has been set for this target, please set a level."
+		@echo $(divider)
+		@echo "Default teardown, deleting $(VENV)"
+		@echo $(divider)
+		@rm -rf $(VENV)
     endif
 
-## Copy your ssh key to a `host` or the default which is your username. You must
+## Copy your ssh key to a `host` or the default which is your username. If you are
+## copying a key to a production server, a second key will be copied used by the
+# jenkins node, this minimizes the number of times you must copy a key. You must
 ## have set up a venv `venv` as that is where the environment script and configurations
 ## get written to manage this make file. It avoids continued decryption prompts to
 ## force users to set up the venv via `vsetup`
@@ -444,14 +587,49 @@ clean:
 ##     host - choose from a known host or don't set a value for the default operation
 ##            which is to user your username to look up your default system
 ## Example:
-##     $ make copyKey host=ec01132a
+##     $ make copyKey host=ec33012a
 ##     $ make copyKey
 copyKey:
+	@echo $(divider)
+	@echo "Copying SSH keys to the managed node authorized_keys."
+	@echo $(divider)
+
     ifdef host
-		${VENV}/./make.env --cert ${host}
+		@${VENV}/./make.env --cert ${host}
     else
-		$(eval username := $(shell whoami))
-		${VENV}/./make.env --cert ${username}
+		@$(eval username := $(shell whoami))
+		@${VENV}/./make.env --cert ${username}
+    endif
+
+## Copy your ssh key to a `host` or the default which is your username. Then
+## copy the super share mount script and profile for the mounts, execute the
+## mount script and exit, upon rmote ssh, `profile-shr` will be located
+## at `/u/${user} where user is defined in the make.env `host_list`. You must
+## have set up a venv `venv` as that is where the environment script and configurations
+## get written to manage this make file. It avoids continued decryption prompts to
+## force users to set up the venv via `vsetup`
+## Options:
+##     host - choose from a known host or don't set a value for the default operation
+##            which is to user your username to look up your default system
+## Example:
+##     $ make mountProfile host=ec33012a
+##     $ make mountProfile
+mountProfile:
+    ifdef host
+		@make copyKey host=${host}
+		@echo $(divider)
+		@echo "Copying mount script to managed node and executing."
+		@echo "Copying profile-shr to managed node."
+		@echo $(divider)
+		@${VENV}/./make.env --files "${host}" "${VENV}/mount-shr.sh" "${VENV}/profile-shr"
+    else
+		@make copyKey
+		@echo $(divider)
+		@echo "Copying mount script to managed node and executing."
+		@echo "Copying profile-shr to managed node."
+		@echo $(divider)
+		@$(eval username := $(shell whoami))
+		@${VENV}/./make.env --files ${username} $(VENV)/mount-shr.sh $(VENV)/profile-shr
     endif
 
 ## Display the z/OS managed nodes available and configured. This will show which
@@ -459,20 +637,20 @@ copyKey:
 ## Example:
 ##     $ make printTargets
 printTargets:
-	${VENV}/./make.env --targets
+	@${VENV}/./make.env --targets
 
 ## Build the changelog, this should be a release activity otherwise the generated
 ## files should not be checked in.
 ## Example:
-##     $ make buildChangelog
-buildChangelog:
+##     $ make buildChglog
+buildChglog:
 	@. $(VENV_BIN)/activate && antsibull-changelog release
 
 ## Update the documentation for the collection after module doc changes have been
 ## made. This simply calls the make file in the docs directory, see the make file
 ## there for additional options.
 ## Example:
-##     $ make buildChangelog
+##     $ make buildDoc
 buildDoc:
 	@. $(VENV_BIN)/activate && make -C docs clean
 	@. $(VENV_BIN)/activate && make -C docs module-doc
@@ -482,11 +660,14 @@ buildDoc:
 ## Cleanup and remove geneated doc for the collection if its not going to be
 ## checked in
 ## Example:
-##     $ make buildChangelog
+##     $ make cleanDoc
 cleanDoc:
 	@. $(VENV_BIN)/activate && make -C docs clean
+
 # ==============================================================================
-# Cleanup and teardown based on user selection
+# Self documenting code that when comments are created as expected, the help
+# is auto generated. Supports multiline comments when comments are prefixed with
+# 2 pound signs and a space, see examples in this makefile.
 # ==============================================================================
 ## Help on how how to use this Makefile, options and examples.
 help:

@@ -1,0 +1,9 @@
+minor_changes:
+- zos_copy - enhanced to support creating a parent directory when it does not
+  exist in the `dest` path. Prior to this change, if a parent directory anywhere
+  in the path did not exist the task would fail as it was stated in documentation.
+  (https://github.com/ansible-collections/ibm_zos_core/pull/561)
+- zos_copy - enhanced to optimize how it captures the permission bits state for
+  the `dest`. This change now reviews the source files instead of traversing the
+  entire `dest` path.
+  (https://github.com/ansible-collections/ibm_zos_core/pull/561)

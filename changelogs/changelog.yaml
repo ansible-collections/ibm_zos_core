@@ -292,6 +292,38 @@ releases:
     - 515-copy-support-directories.yml
     - v1.3.6_summary.yml
     release_date: '2022-10-07'
+  1.4.0:
+    changes:
+      minor_changes:
+      - zos_copy - enhanced to optimize how it captures the permission bits state
+        for the `dest`. This change now reviews the source files instead of traversing
+        the entire `dest` path. (https://github.com/ansible-collections/ibm_zos_core/pull/561)
+      - zos_copy - enhanced to support creating a parent directory when it does not
+        exist in the `dest` path. Prior to this change, if a parent directory anywhere
+        in the path did not exist the task would fail as it was stated in documentation.
+        (https://github.com/ansible-collections/ibm_zos_core/pull/561)
+      - "zos_copy - enhanced to support system symbols in PARMLIB. System symbols
+        are elements that allow different z/OS\xAE systems to share PARMLIB definitions
+        while retaining unique values in those definitions. This was fixed in a future
+        release through the use of one of the ZOAU dependency but this version of
+        `ibm_zos_core` does not support that dependency version so this support was
+        added. (https://github.com/ansible-collections/ibm_zos_core/pull/566)"
+      release_summary: 'Release Date: ''2022-12-07''
+
+        This changelog describes all changes made to the modules and plugins included
+
+        in this collection. The release date is the date the changelog is created.
+
+        For additional details such as required dependencies and availability review
+
+        the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__
+
+        '
+    fragments:
+    - 561-update-directory-create.yml
+    - 566-update-with-symbol-support.yml
+    - v1.4.0_summary.yml
+    release_date: '2022-11-29'
   1.4.0-beta.1:
     changes:
       bugfixes:

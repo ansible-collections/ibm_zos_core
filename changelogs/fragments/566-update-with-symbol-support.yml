@@ -1,0 +1,7 @@
+minor_changes:
+- zos_copy - enhanced to support system symbols in PARMLIB. System symbols are
+  elements that allow different z/OS® systems to share PARMLIB definitions while
+  retaining unique values in those definitions. This was fixed in a future release
+  through the use of one of the ZOAU dependency but this version of `ibm_zos_core`
+  does not support that dependency version so this support was added.
+  (https://github.com/ansible-collections/ibm_zos_core/pull/566)

@@ -17,7 +17,8 @@ from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
 #######################################################
-## Not sure where the following information goes, perhaps add it to the list of authors.
+# TODO - Not sure where the following information goes,
+# perhaps add it to the list of authors.
 # Team: JumpStart Team 8
 #   - "Austen Stewart"
 #   - "Almigdad Suliman"
@@ -27,6 +28,7 @@ __metaclass__ = type
 #   - "Tyler Edwards"
 # Date: 07/2021
 #######################################################
+
 DOCUMENTATION = r"""
 module: zos_ickdsf_init
 short_description: Initialize volumes or minidisks on z/OS through ICKDSF init command.
@@ -35,9 +37,9 @@ description:
   - Writes volume label and VTOC on volume or minidisk.
 version_added: 1.6.0
 author:
-  - "Austen Stewart"
-  - "Nuoya Xie"
-  - "Trevor Glassey"
+  - "Austen Stewart (@TODO)"
+  - "Nuoya Xie (@TODO)"
+  - "Trevor Glassey (@TODO)"
 
 options:
   volume_address:
@@ -116,7 +118,7 @@ options:
     required: false
     type: dict
     suboptions:
-      full_file path:
+      full_file_path:
         description:
           - File path to place output HTML file.
         required: true
@@ -164,8 +166,7 @@ command:
   type: list
   elements: str
   sample:
-    - [ " init unit(0903) noverify noverifyoffline volid(KTN003) - ",
-      "   ds " ],
+    - "[ \" init unit(0903) noverify noverifyoffline volid(KTN003) - \",\"   ds \" ]"
 msg:
   description: Failure message returned by module.
   returned: failure
@@ -181,6 +182,8 @@ mvs_raw_output:
 ret_code:
   description:
     - return code from mvs_raw
+  type: dict
+  returned: success
 '''
 
 from ansible.module_utils.basic import AnsibleModule
@@ -202,7 +205,7 @@ class IckdsfCommand(object):
         self.module = module
 
     @staticmethod
-    def convert(self):
+    def convert():
         '''Converts zos_ickdsf_init arguments to a JCL command for use with zos_mvs_raw'''
         return ''
 
@@ -238,21 +241,21 @@ class CommandInit(IckdsfCommand):
 
         # convert playbook args to JCL parameters
         cmd_args = {
-            'volume_address': 'unit({})'.format(volume_address)
+            'volume_address': 'unit({0})'.format(volume_address)
         }
 
         if vtoc_tracks:
-            cmd_args['vtoc_tracks'] = 'vtoc(0, 1, {})'.format(vtoc_tracks)
+            cmd_args['vtoc_tracks'] = 'vtoc(0, 1, {0})'.format(vtoc_tracks)
         else:
             cmd_args['vtoc_tracks'] = ''
         if volid:
-            cmd_args['volid'] = 'volid({})'.format(volid)
+            cmd_args['volid'] = 'volid({0})'.format(volid)
         else:
             cmd_args['volid'] = ''
         if not verify_existing_volid:
             cmd_args['verify_existing_volid'] = 'noverify'
         else:
-            cmd_args['verify_existing_volid'] = 'verify({})'.format(verify_existing_volid)
+            cmd_args['verify_existing_volid'] = 'verify({0})'.format(verify_existing_volid)
         if verify_offline:
             cmd_args['verify_offline'] = 'verifyoffline'
         else:
@@ -272,12 +275,12 @@ class CommandInit(IckdsfCommand):
 
         # Format into JCL strings for zos_mvs_raw
         cmd = [
-            ' init {} {} {} {} - '.format(
+            ' init {0} {1} {2} {3} - '.format(
                 cmd_args['volume_address'],
                 cmd_args['verify_existing_volid'],
                 cmd_args['verify_offline'],
                 cmd_args['volid']),
-            ' {} {} {} {}'.format(
+            ' {0} {1} {2} {3}'.format(
                 cmd_args['vtoc_tracks'],
                 cmd_args['sms_managed'],
                 cmd_args['verify_no_data_sets_exist'],
@@ -293,14 +296,14 @@ class CommandInit(IckdsfCommand):
             for i in range(start + 1, end + 1):
                 next_addr = '{0:x}'.format(i)
                 next_vol_id = str(volid_prefix) + next_addr
-                formatted_next_addr = 'unit({})'.format(next_addr)
-                formatted_next_vol_id = 'volid({})'.format(next_vol_id)
-                cmd.append(' init {} {} {} {} - '.format(
+                formatted_next_addr = 'unit({0})'.format(next_addr)
+                formatted_next_vol_id = 'volid({0})'.format(next_vol_id)
+                cmd.append(' init {0} {1} {2} {3} - '.format(
                     formatted_next_addr,
                     cmd_args['verify_existing_volid'],
                     cmd_args['verify_offline'],
                     formatted_next_vol_id))
-                cmd.append(' {} {} {} {}'.format(
+                cmd.append(' {0} {1} {2} {3}'.format(
                     cmd_args['vtoc_tracks'],
                     cmd_args['sms_managed'],
                     cmd_args['verify_no_data_sets_exist'],
@@ -322,7 +325,7 @@ def run_module():
         verify_no_data_sets_exist=dict(type="bool", required=False, default=True),
         addr_range=dict(type="int"),
         volid_prefix=dict(type="str"),
-        output_html=dict(type="dict", options=dict(
+        output_html=dict(type="dict", required=False, options=dict(
             full_file_path=dict(type="str", required=True),
             append=dict(type="bool", default=True, required=False))
         )
@@ -345,11 +348,15 @@ def run_module():
         parser.parse_args(module.params)
     except ValueError as err:
         module.fail_json(msg="Parameter verification failed", stderr=str(err))
-    
+
     result['command'] = CommandInit.convert(module.params)
 
     module.exit_json(**result)
 
 
-if __name__ == '__main__':
+def main():
     run_module()
+
+
+if __name__ == '__main__':
+    main()

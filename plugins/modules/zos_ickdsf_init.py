@@ -52,7 +52,7 @@ options:
     description:
       - Verify that the provided volume serial matches the one found on existing volume/minidisk.
       - Module fails if volser does not match.
-      - Note - leave this option blank in order to skip the verification.
+      - Note - This option is NOT a boolean, please leave it blank in order to skip the verification.
     required: false
     type: str
   verify_offline:
@@ -130,7 +130,9 @@ options:
         default: true
 """
 EXAMPLES = r"""
-- name: Initialize a new dasd volume for use on a z/OS system and save the output to a html file.
+- name: Initialize a new dasd volume for use on a z/OS system and save the output to a html file. This task sets
+        the new volume serial to 'e8d8', confirms that the existing volume serial is 'ine8d8', skips the check to see
+        if the volume is offline, creates a VTOC of size 30 and an index. This volume will be managed by SMS.
   zos_ickdsf_init:
     volume_address: e8d8
     verify_existing_volid: ine8d8

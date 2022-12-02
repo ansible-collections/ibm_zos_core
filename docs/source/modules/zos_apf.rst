@@ -130,7 +130,7 @@ persistent
 
     | **required**: False
     | **type**: str
-    | **default**: /* {mark} ANSIBLE MANAGED BLOCK <timestamp> */
+    | **default**: /* {mark} ANSIBLE MANAGED BLOCK */
 
 
   backup
@@ -211,7 +211,7 @@ Examples
 
 .. code-block:: yaml+jinja
 
-   
+
    - name: Add a library to the APF list
      zos_apf:
        library: SOME.SEQUENTIAL.DATASET

@@ -81,5 +81,4 @@ plugins/modules/zos_gather_facts.py validate-modules:missing-gplv3-license # Lic
 plugins/modules/zos_gather_facts.py compile-2.6!skip # Python 2.6 is unsupported
 plugins/modules/zos_gather_facts.py import-2.6!skip # Python 2.6 is unsupported
 docs/source/modules/zos_apf.rst rstcheck!skip #Inline emphasis start-string without end-string
-tests/dependencyfinder.py pylint:global-at-module-level # Ignore for test helper
 tests/dependencyfinder.py shebang # This is not an ansible module but a test helper so this shebang limitation is not required.

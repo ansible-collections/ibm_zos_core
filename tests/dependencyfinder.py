@@ -528,7 +528,7 @@ def get_changed_plugins(path, branch="origin/dev"):
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         cwd=path,
-        env={'COLUMNS':'500'},
+        env={'COLUMNS': '500'},
     )
 
     stdout, stderr = get_diff_pr.communicate()

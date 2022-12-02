@@ -31,7 +31,8 @@ HELLO, WORLD
 """
 
 TEMP_PATH = "/tmp/jcl"
-JOB_NOT_FOUND_MSG_TXT="The job could not be found."
+JOB_NOT_FOUND_MSG_TXT = "The job could not be found."
+
 
 def test_zos_job_output_no_job_id(ansible_zos_module):
     hosts = ansible_zos_module

@@ -89,6 +89,7 @@ DATA_SET_NAME = "imstestl.ims1.test05"
 DATA_SET_NAME_SPECIAL_CHARS = "imstestl.im@1.xxx05"
 DEFAULT_VOLUME = "000000"
 
+
 def test_job_submit_PDS(ansible_zos_module):
     try:
         hosts = ansible_zos_module
@@ -221,7 +222,7 @@ def test_job_submit_PDS_volume(ansible_zos_module):
             name=DATA_SET_NAME, state="uncataloged", type="pds"
         )
 
-        results = hosts.all.zos_job_submit(src=DATA_SET_NAME+"(SAMPLE)", location="DATA_SET", volume=DEFAULT_VOLUME)
+        results = hosts.all.zos_job_submit(src = DATA_SET_NAME+"(SAMPLE)", location = "DATA_SET", volume = DEFAULT_VOLUME)
         for result in results.contacted.values():
             assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
             assert result.get("jobs")[0].get("ret_code").get("code") == 0
@@ -250,8 +251,8 @@ def test_job_submit_PDS_5_SEC_JOB_WAIT_15(ansible_zos_module):
         )
 
         hosts = ansible_zos_module
-        results = hosts.all.zos_job_submit(src=DATA_SET_NAME+"(BPXSLEEP)",
-                    location="DATA_SET", wait_time_s=wait_time_s)
+        results = hosts.all.zos_job_submit(src = DATA_SET_NAME + "(BPXSLEEP)",
+                                           location = "DATA_SET", wait_time_s = wait_time_s)
 
         for result in results.contacted.values():
             assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
@@ -261,6 +262,7 @@ def test_job_submit_PDS_5_SEC_JOB_WAIT_15(ansible_zos_module):
     finally:
         hosts.all.file(path=TEMP_PATH, state="absent")
         hosts.all.zos_data_set(name=DATA_SET_NAME, state="absent")
+
 
 def test_job_submit_PDS_30_SEC_JOB_WAIT_60(ansible_zos_module):
     try:
@@ -281,8 +283,8 @@ def test_job_submit_PDS_30_SEC_JOB_WAIT_60(ansible_zos_module):
         )
 
         hosts = ansible_zos_module
-        results = hosts.all.zos_job_submit(src=DATA_SET_NAME+"(BPXSLEEP)",
-                    location="DATA_SET", wait_time_s=wait_time_s)
+        results = hosts.all.zos_job_submit(src = DATA_SET_NAME + "(BPXSLEEP)",
+                                           location = "DATA_SET", wait_time_s = wait_time_s)
 
         for result in results.contacted.values():
             assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
@@ -292,6 +294,7 @@ def test_job_submit_PDS_30_SEC_JOB_WAIT_60(ansible_zos_module):
     finally:
         hosts.all.file(path=TEMP_PATH, state="absent")
         hosts.all.zos_data_set(name=DATA_SET_NAME, state="absent")
+
 
 def test_job_submit_PDS_30_SEC_JOB_WAIT_10_negative(ansible_zos_module):
     """This submits a 30 second job and only waits 10 seconds"""
@@ -313,8 +316,8 @@ def test_job_submit_PDS_30_SEC_JOB_WAIT_10_negative(ansible_zos_module):
         )
 
         hosts = ansible_zos_module
-        results = hosts.all.zos_job_submit(src=DATA_SET_NAME+"(BPXSLEEP)",
-                    location="DATA_SET", wait_time_s=wait_time_s)
+        results = hosts.all.zos_job_submit(src = DATA_SET_NAME + "(BPXSLEEP)",
+                                           location = "DATA_SET", wait_time_s = wait_time_s)
 
         for result in results.contacted.values():
             assert result.get("msg") is not None
@@ -351,7 +354,7 @@ def test_job_submit_max_rc(ansible_zos_module, args):
                 assert result.get('changed') is False
                 # On busy systems, it is possible that the duration even for a job with a non-zero return code
                 # will take considerable time to obtain the job log and thus you could see either error msg below
-                #Expecting: - "The job return code 8 was non-zero in the job output, this job has failed"
+                # Expecting: - "The job return code 8 was non-zero in the job output, this job has failed"
                 #           - Consider using module zos_job_query to poll for a long running job or
                 #             increase option \\'wait_times_s` to a value greater than 10.",
                 if result.get('duration') >= args["wait_time_s"]:

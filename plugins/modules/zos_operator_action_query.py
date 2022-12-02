@@ -24,7 +24,7 @@ version_added: '1.1.0'
 short_description: Display messages requiring action
 description:
   - Get a list of outstanding messages requiring operator action given one or
-    more conditions.
+    more conditions.  Adding code to force testing.
 author:
   - "Ping Xiao (@xiaoping8385)"
   - "Demetrios Dimatos (@ddimatos)"

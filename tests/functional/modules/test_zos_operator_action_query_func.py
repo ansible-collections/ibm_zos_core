@@ -296,8 +296,6 @@ def test_zos_operator_action_query_option_message_filter_multiple_matches(
         {"filter": "^.*IMS.*$", "use_regex": True},
     ]
 )
-
-
 def test_zos_operator_action_query_option_message_filter_no_match(
     ansible_zos_module,
     message_filter

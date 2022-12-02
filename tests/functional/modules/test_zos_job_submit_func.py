@@ -222,7 +222,7 @@ def test_job_submit_PDS_volume(ansible_zos_module):
             name=DATA_SET_NAME, state="uncataloged", type="pds"
         )
 
-        results = hosts.all.zos_job_submit(src = DATA_SET_NAME+"(SAMPLE)", location = "DATA_SET", volume = DEFAULT_VOLUME)
+        results = hosts.all.zos_job_submit(src=DATA_SET_NAME + "(SAMPLE)", location="DATA_SET", volume=DEFAULT_VOLUME)
         for result in results.contacted.values():
             assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
             assert result.get("jobs")[0].get("ret_code").get("code") == 0
@@ -251,8 +251,8 @@ def test_job_submit_PDS_5_SEC_JOB_WAIT_15(ansible_zos_module):
         )
 
         hosts = ansible_zos_module
-        results = hosts.all.zos_job_submit(src = DATA_SET_NAME + "(BPXSLEEP)",
-                                           location = "DATA_SET", wait_time_s = wait_time_s)
+        results = hosts.all.zos_job_submit(src=DATA_SET_NAME + "(BPXSLEEP)",
+                                           location="DATA_SET", wait_time_s=wait_time_s)
 
         for result in results.contacted.values():
             assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
@@ -283,8 +283,8 @@ def test_job_submit_PDS_30_SEC_JOB_WAIT_60(ansible_zos_module):
         )
 
         hosts = ansible_zos_module
-        results = hosts.all.zos_job_submit(src = DATA_SET_NAME + "(BPXSLEEP)",
-                                           location = "DATA_SET", wait_time_s = wait_time_s)
+        results = hosts.all.zos_job_submit(src=DATA_SET_NAME + "(BPXSLEEP)",
+                                           location="DATA_SET", wait_time_s=wait_time_s)
 
         for result in results.contacted.values():
             assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
@@ -316,8 +316,8 @@ def test_job_submit_PDS_30_SEC_JOB_WAIT_10_negative(ansible_zos_module):
         )
 
         hosts = ansible_zos_module
-        results = hosts.all.zos_job_submit(src = DATA_SET_NAME + "(BPXSLEEP)",
-                                           location = "DATA_SET", wait_time_s = wait_time_s)
+        results = hosts.all.zos_job_submit(src=DATA_SET_NAME + "(BPXSLEEP)",
+                                           location="DATA_SET", wait_time_s=wait_time_s)
 
         for result in results.contacted.values():
             assert result.get("msg") is not None

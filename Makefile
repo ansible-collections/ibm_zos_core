@@ -58,43 +58,24 @@ divider="===================================================================="
 encrypt:
 	@# --------------------------------------------------------------------------
 	@# Check to see if there is an unencrypted file(s) to encrypt, you would not
-	@# want to delete the encrypted version if the original unecrypted is not
-	@# present as there would be no recovery process then.
+	@# want to delete the encrypted version if the unecrypted is not present as
+	@# there would be no recovery process. Then check to see if there an
+	@# encrypted version of the file, if so delete it.
 	@# --------------------------------------------------------------------------
-	@if test ! -e make.env; then \
-	    echo "File 'make.env' could not be found in $(CURR_DIR)"; \
-		exit 1; \
-	fi
-
-	@if test ! -e scripts/mount-shr.sh; then \
-	    echo "File 'mount-shr.sh' could not be found in $(CURR_DIR)/scripts. "; \
-		exit 1; \
-	fi
-
-	@if test ! -e scripts/profile-shr; then \
-	    echo "File 'profile-shr' could not found in $(CURR_DIR)/scripts. "; \
-		exit 1; \
-	fi
-
-	@# --------------------------------------------------------------------------
-	@# Check to see if there an encrypted version of the file, if so delete it
-	@# so it can be encrypted.
-	@# --------------------------------------------------------------------------
-
-	@if test -e make.env.encrypt; then \
+	@if [ -e make.env ] && [ -e make.env.encrypt ]; then \
 	    echo "Removing encrypted file 'make.env.encrypt' in $(CURR_DIR)."; \
 		rm -rf make.env.encrypt; \
 	fi
 
-	@if test -e scripts/mount-shr.sh.encrypt; then \
+	@if [ -e scripts/mount-shr.sh ] && [ -e scripts/mount-shr.sh.encrypt ]; then \
 	    echo "Remvoing encrypted file 'scripts/mount-shr.sh.encrypt' in $(CURR_DIR)/scripts."; \
 		rm -rf scripts/mount-shr.sh.encrypt; \
 	fi
 
-	@if test -e scripts/profile-shr.encrypt; then \
+	@if [ -e scripts/profile-shr ] && [ -e scripts/profile-shr.encrypt ]; then \
 	    echo "Remvoing encrypted file 'scripts/profile-shr.encrypt' in $(CURR_DIR)/scripts."; \
 		rm -rf scripts/profile-shr.encrypt; \
-	fi
+		fi
 
 	@# --------------------------------------------------------------------------
 	@# Encrypt the files since we have verified the uncrypted versions exist
@@ -102,30 +83,45 @@ encrypt:
 	@# --------------------------------------------------------------------------
 
     ifdef password
-		@echo "${password}" | openssl bf -a -in scripts/mount-shr.sh -out scripts/mount-shr.sh.encrypt -pass stdin
-		# @openssl bf -a -in scripts/mount-shr.sh > scripts/mount-shr.sh.encrypt
-		@rm -f scripts/mount-shr.sh
 
-		@echo "${password}" | openssl bf -a -in scripts/profile-shr -out scripts/profile-shr.encrypt -pass stdin
-		# @openssl bf -a -in scripts/profile-shr > scripts/profile-shr.encrypt
-		@rm -f scripts/profile-shr
+        ifneq ("$(wildcard scripts/mount-shr.sh)","")
+			@echo "${password}" | openssl bf -a -in scripts/mount-shr.sh -out scripts/mount-shr.sh.encrypt -pass stdin
+			# @openssl bf -a -in scripts/mount-shr.sh > scripts/mount-shr.sh.encrypt
+			@rm -f scripts/mount-shr.sh
+        endif
 
-		@echo "${password}" | openssl bf -a -in make.env -out make.env.encrypt -pass stdin
-		# @openssl bf -a -in make.env > make.env.encrypt
-		@rm -f make.env
+        ifneq ("$(wildcard scripts/profile-shr)","")
+			@echo "${password}" | openssl bf -a -in scripts/profile-shr -out scripts/profile-shr.encrypt -pass stdin
+			# @openssl bf -a -in scripts/profile-shr > scripts/profile-shr.encrypt
+			@rm -f scripts/profile-shr
+        endif
+
+        ifneq ("$(wildcard make.env)","")
+			@echo "${password}" | openssl bf -a -in make.env -out make.env.encrypt -pass stdin
+			# @openssl bf -a -in make.env > make.env.encrypt
+			@rm -f make.env
+        endif
+
     else
-		@openssl bf -a -in scripts/mount-shr.sh -out scripts/mount-shr.sh.encrypt
-		# @openssl bf -a -in scripts/mount-shr.sh > scripts/mount-shr.sh.encrypt
-		@rm -f scripts/mount-shr.sh
+        ifneq ("$(wildcard scripts/mount-shr.sh)","")
+			@openssl bf -a -in scripts/mount-shr.sh -out scripts/mount-shr.sh.encrypt
+			# @openssl bf -a -in scripts/mount-shr.sh > scripts/mount-shr.sh.encrypt
+			@rm -f scripts/mount-shr.sh
+        endif
 
-		@openssl bf -a -in scripts/profile-shr -out scripts/profile-shr.encrypt
-		# @openssl bf -a -in scripts/profile-shr > scripts/profile-shr.encrypt
-		@rm -f scripts/profile-shr
+        ifneq ("$(wildcard scripts/profile-shr)","")
+			@openssl bf -a -in scripts/profile-shr -out scripts/profile-shr.encrypt
+			# @openssl bf -a -in scripts/profile-shr > scripts/profile-shr.encrypt
+			@rm -f scripts/profile-shr
+        endif
 
-		@openssl bf -a -in make.env -out make.env.encrypt
-		# @openssl bf -a -in make.env > make.env.encrypt
-		@rm -f make.env
+        ifneq ("$(wildcard make.env)","")
+			@openssl bf -a -in make.env -out make.env.encrypt
+			# @openssl bf -a -in make.env > make.env.encrypt
+			@rm -f make.env
+        endif
     endif
+
 ## Decrypt all scripts used with this Makefile using the user specified password
 ## Files include: ["mount-shr.sh", "profile-shr", "make.env"]
 ## If no password is provided, you will be prompted to enter a password for each

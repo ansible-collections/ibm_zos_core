@@ -34,6 +34,8 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import encode
 
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.template import TemplateRenderer
+
 display = Display()
 
 
@@ -133,6 +135,9 @@ class ActionModule(ActionBase):
                 )
                 return self._exit_action(result, msg, failed=True)
 
+            use_template = _process_boolean(task_args.get("use_template"), default=False)
+            template_dir = None
+
             if content:
                 try:
                     local_content = _write_content_to_temp_file(content)
@@ -158,6 +163,21 @@ class ActionModule(ActionBase):
                         task_args["mode"] = "0{0:o}".format(
                             stat.S_IMODE(os.stat(src).st_mode)
                         )
+
+                    if use_template:
+                        template_parameters = task_args.get("template_parameters", dict())
+
+                        renderer = _create_template_environment(
+                            template_parameters,
+                            src,
+                            encoding
+                        )
+                        template_dir, rendered_file = renderer.render_file_template(
+                            os.path.basename(src),
+                            task_vars.get("vars", dict())
+                        )
+                        src = rendered_file
+
                     task_args["size"] = os.stat(src).st_size
                 display.vvv(u"ibm_zos_copy calculated size: {0}".format(os.stat(src).st_size), host=self._play_context.remote_addr)
                 transfer_res = self._copy_to_remote(
@@ -205,6 +225,9 @@ class ActionModule(ActionBase):
             )
             if backup or backup_name:
                 result["backup_name"] = copy_res.get("backup_name")
+            # Erasing all rendered Jinja2 templates from the controller.
+            if template_dir:
+                os.rmdir(template_dir)
             self._remote_cleanup(dest, copy_res.get("dest_exists"), task_vars)
             return result
 
@@ -416,3 +439,17 @@ def _write_content_to_temp_file(content):
             "Unable to write content to temporary file: {0}".format(repr(err))
         )
     return path
+
+def _create_template_environment(template_parameters, src, encoding):
+    """"""
+    template_parameters["lstrip_blocks"] = _process_boolean(template_parameters.get("lstrip_blocks"), default=False)
+    template_parameters["trim_blocks"] = _process_boolean(template_parameters.get("trim_blocks"), default=False)
+    template_parameters["keep_trailing_newline"] = _process_boolean(template_parameters.get("keep_trailing_newline"), default=False)
+    template_parameters["auto_reload"] = _process_boolean(template_parameters.get("auto_reload"), default=False)
+
+    if encoding: #and encoding.get("from"):
+        template_encoding = encoding.get("from")
+    else:
+        template_encoding = encode.Defaults.get_default_system_charset()
+
+    return TemplateRenderer(src, template_encoding, **template_parameters)

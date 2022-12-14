@@ -1,5 +1,5 @@
 minor_changes:
-- zos_copy - enhanced to only create destination backups when module option
-  `backup` is true, removing emergency backups meant to restore the system
+- zos_copy - fixed wrongful creation of destination backups when module option
+  `backup` is false, removing emergency backups meant to restore the system
   to its initial state in case of a module failure.
-  (https://github.com/ansible-collections/ibm_zos_core/pull/589)
+  (https://github.com/ansible-collections/ibm_zos_core/pull/590)

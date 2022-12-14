@@ -1568,62 +1568,6 @@ def backup_data(ds_name, ds_type, backup_name):
         module.fail_json(msg=repr(err))
 
 
-def restore_backup(dest, backup, dest_type, use_backup, volume=None):
-    """Restores a destination file/directory/data set by using a given backup.
-
-    Arguments:
-        dest (str) -- Name of the destination data set or path of the file/directory.
-        backup (str) -- Name or path of the backup.
-        dest_type (str) -- Type of the destination.
-        use_backup (bool) -- Whether the destination actually created a backup, sometimes the user
-            tries to use an empty data set, and in that case a new data set is allocated instead
-            of copied.
-        volume (str, optional) -- Volume where the data set should be.
-    """
-    volumes = [volume] if volume else None
-
-    if use_backup:
-        if dest_type == "USS":
-            if os.path.isfile(backup):
-                os.remove(dest)
-                shutil.copy(backup, dest)
-            else:
-                shutil.rmtree(dest, ignore_errors=True)
-                shutil.copytree(backup, dest)
-        else:
-            data_set.DataSet.ensure_absent(dest, volumes)
-
-            if dest_type in data_set.DataSet.MVS_VSAM:
-                repro_cmd = """  REPRO -
-                INDATASET('{0}') -
-                OUTDATASET('{1}')""".format(backup.upper(), dest.upper())
-                idcams(repro_cmd, authorized=True)
-            else:
-                datasets.copy(backup, dest)
-
-    else:
-        data_set.DataSet.ensure_absent(dest, volumes)
-        data_set.DataSet.allocate_model_data_set(dest, backup, volume)
-
-
-def erase_backup(backup, dest_type, volume=None):
-    """Erases a temporary backup from the system.
-
-    Arguments:
-        backup (str) -- Name or path of the backup.
-        dest_type (str) -- Type of the destination.
-        volume (str, optional) -- Volume where the data set should be.
-    """
-    if dest_type == "USS":
-        if os.path.isfile(backup):
-            os.remove(backup)
-        else:
-            shutil.rmtree(backup, ignore_errors=True)
-    else:
-        volumes = [volume] if volume else None
-        data_set.DataSet.ensure_absent(backup, volumes)
-
-
 def is_compatible(
     src_type,
     dest_type,
@@ -2189,34 +2133,6 @@ def run_module(module, arg_def):
     ):
         module.fail_json(msg="{0} already exists on the system, unable to overwrite unless force=True is specified.".format(dest))
 
-    # Creating an emergency backup or an empty data set to use as a model to
-    # be able to restore the destination in case the copy fails.
-    emergency_backup = ""
-    if dest_exists:
-        if is_uss or not data_set.DataSet.is_empty(dest_name):
-            use_backup = True
-            if is_uss:
-                # When copying a directory without a trailing slash,
-                # appending the source's base name to the backup path to
-                # avoid backing up the whole parent directory that won't
-                # be modified.
-                src_basename = os.path.basename(src) if src else ''
-                backup_dest = "{0}/{1}".format(dest, src_basename) if is_src_dir and not src.endswith("/") else dest
-                backup_dest = os.path.normpath(backup_dest)
-
-                emergency_backup = tempfile.mkdtemp()
-                emergency_backup = backup_data(backup_dest, dest_ds_type, emergency_backup)
-
-            else:
-                if not (dest_ds_type in data_set.DataSet.MVS_PARTITIONED and src_member and not dest_member_exists):
-                    emergency_backup = backup_data(dest, dest_ds_type, None)
-        # If dest is an empty data set, instead create a data set to
-        # use as a model when restoring.
-        else:
-            use_backup = False
-            emergency_backup = data_set.DataSet.temp_name()
-            data_set.DataSet.allocate_model_data_set(emergency_backup, dest_name)
-
     try:
         if not is_uss:
             res_args["changed"] = allocate_destination_data_set(
@@ -2230,9 +2146,6 @@ def run_module(module, arg_def):
                 volume=volume
             )
     except Exception as err:
-        if dest_exists:
-            restore_backup(dest_name, emergency_backup, dest_ds_type, use_backup)
-            erase_backup(emergency_backup, dest_ds_type)
         module.fail_json(msg="Unable to allocate destination data set: {0}".format(str(err)))
 
     # ********************************************************************
@@ -2336,12 +2249,7 @@ def run_module(module, arg_def):
             res_args["changed"] = True
 
     except CopyOperationError as err:
-        if dest_exists:
-            restore_backup(dest_name, emergency_backup, dest_ds_type, use_backup)
         raise err
-    finally:
-        if dest_exists:
-            erase_backup(emergency_backup, dest_ds_type)
 
     res_args.update(
         dict(

@@ -40,7 +40,7 @@ def test_minimal_params(ansible_zos_module):
 
     for result in results.contacted.values():
         assert result.get("changed") is True
-        assert result['mvs_raw_output']['ret_code']['code'] == 0
+        assert result['rc'] == 0
 
     # bring volume back online
     hosts.all.zos_operator(cmd=f"vary {TEST_VOL_ADDR},online")

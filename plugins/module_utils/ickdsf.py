@@ -146,7 +146,7 @@ def init(module, result, parsed_args):
 
     result['mvs-response-stdout'] = response.stdout
     result['mvs-response-stderr'] = response.stderr
-    result['mvs-response-rc'] = response.rc
+    result['rc'] = response.rc
     
     rc = response.rc
 

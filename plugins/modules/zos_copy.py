@@ -1806,7 +1806,8 @@ def cleanup(src_list):
     tmp_dir = os.path.realpath("/" + tmp_prefix)
     dir_list = glob.glob(tmp_dir + "/ansible-zos-copy-payload*")
     conv_list = glob.glob(tmp_dir + "/converted*")
-    tmp_list = glob.glob(tmp_dir + "/{0}*".format(tmp_prefix))
+    # tmp_list = glob.glob(tmp_dir + "/{0}*".format(tmp_prefix))
+    tmp_list = []
 
     for file in (dir_list + conv_list + tmp_list + src_list):
         try:
@@ -1850,7 +1851,8 @@ def allocate_destination_data_set(
     force,
     is_binary,
     dest_data_set=None,
-    volume=None
+    volume=None,
+    log_path=None
 ):
     """
     Allocates a new destination data set to copy into, erasing a preexistent one if
@@ -1871,6 +1873,10 @@ def allocate_destination_data_set(
     Returns:
         bool -- True if the data set was created, False otherwise.
     """
+    if log_path:
+        with open(log_path, "a") as log_file:
+            log_file.write("allocate_destination_data_set\n")
+
     src_name = data_set.extract_dsname(src)
     is_dest_empty = data_set.DataSet.is_empty(dest) if dest_exists else True
 
@@ -1894,7 +1900,7 @@ def allocate_destination_data_set(
             # Taking the temp file when a local file was copied with sftp.
             create_seq_dataset_from_file(src, dest, force, is_binary, volume=volume)
         elif src_ds_type in data_set.DataSet.MVS_SEQ:
-            data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, vol=volume)
+            data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, vol=volume, log_path=log_path)
         else:
             temp_dump = None
             try:
@@ -1908,7 +1914,7 @@ def allocate_destination_data_set(
     elif dest_ds_type in data_set.DataSet.MVS_PARTITIONED and not dest_exists:
         # Taking the src as model if it's also a PDSE.
         if src_ds_type in data_set.DataSet.MVS_PARTITIONED:
-            data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, vol=volume)
+            data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, vol=volume, log_path=log_path)
         elif src_ds_type in data_set.DataSet.MVS_SEQ:
             src_attributes = datasets.listing(src_name)[0]
             # The size returned by listing is in bytes.
@@ -1943,13 +1949,18 @@ def allocate_destination_data_set(
                 # This PDSE will be created with record format VB and a record length of 1028.
                 dest_params = get_data_set_attributes(dest, size, is_binary, type="PDSE", volume=volume)
 
-            data_set.DataSet.ensure_present(replace=force, **dest_params)
+            if log_path:
+                with open(log_path, "a") as log_file:
+                    log_file.write("creating PDS/PDSE from files\n")
+                    log_file.write(f"dest_params: {dest_params}\n")
+
+            data_set.DataSet.ensure_present(replace=force, log_path=log_path, **dest_params)
     elif dest_ds_type in data_set.DataSet.MVS_VSAM:
         # If dest_data_set is not available, always create the destination using the src VSAM
         # as a model.
         volumes = [volume] if volume else None
         data_set.DataSet.ensure_absent(dest, volumes=volumes)
-        data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, vol=volume)
+        data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, vol=volume, log_path=log_path)
 
     return True
 
@@ -2009,6 +2020,12 @@ def run_module(module, arg_def):
     conv_path = src_ds_type = dest_ds_type = dest_exists = None
     res_args = dict()
 
+    temp_fd, temp_log_path = tempfile.mkstemp()
+    res_args["log_file"] = temp_log_path
+    with os.fdopen(temp_fd, "w") as log_file:
+        log_file.write("Log file for zos_copy execution.\n\n")
+        log_file.write("source state discovery\n")
+
     # ********************************************************************
     # 1. When the source is a USS file or directory , verify that the file
     #    or directory exists and has proper read permissions.
@@ -2024,9 +2041,9 @@ def run_module(module, arg_def):
             src = os.path.realpath(src)
 
         if not os.path.exists(src):
-            module.fail_json(msg="Source {0} does not exist".format(src))
+            module.fail_json(msg="Source {0} does not exist".format(src), log_file=temp_log_path)
         if not os.access(src, os.R_OK):
-            module.fail_json(msg="Source {0} is not readable".format(src))
+            module.fail_json(msg="Source {0} is not readable".format(src), log_file=temp_log_path)
         if mode == "preserve":
             mode = "0{0:o}".format(stat.S_IMODE(os.stat(src).st_mode))
 
@@ -2043,10 +2060,10 @@ def run_module(module, arg_def):
             if remote_src and os.path.isdir(src):
                 is_src_dir = True
         else:
-            if data_set.DataSet.data_set_exists(src_name):
-                if src_member and not data_set.DataSet.data_set_member_exists(src):
+            if data_set.DataSet.data_set_exists(src_name, log_path=temp_log_path):
+                if src_member and not data_set.DataSet.data_set_member_exists(src, log_path=temp_log_path):
                     raise NonExistentSourceError(src)
-                src_ds_type = data_set.DataSet.data_set_type(src_name)
+                src_ds_type = data_set.DataSet.data_set_type(src_name, log_path=temp_log_path)
 
             else:
                 raise NonExistentSourceError(src)
@@ -2062,8 +2079,12 @@ def run_module(module, arg_def):
 
             if encoding:
                 module.fail_json(
-                    msg="Encoding conversion is only valid for USS source"
+                    msg="Encoding conversion is only valid for USS source",
+                    log_file=temp_log_path
                 )
+
+        with open(temp_log_path, "a") as log_file:
+            log_file.write("\ndest state discovery\n")
 
         if is_uss:
             dest_ds_type = "USS"
@@ -2080,10 +2101,10 @@ def run_module(module, arg_def):
                 dest_exists = os.path.exists(dest)
 
             if dest_exists and not os.access(dest, os.W_OK):
-                module.fail_json(msg="Destination {0} is not writable".format(dest))
+                module.fail_json(msg="Destination {0} is not writable".format(dest), log_file=temp_log_path)
         else:
-            dest_exists = data_set.DataSet.data_set_exists(dest_name, volume)
-            dest_ds_type = data_set.DataSet.data_set_type(dest_name, volume)
+            dest_exists = data_set.DataSet.data_set_exists(dest_name, volume, log_path=temp_log_path)
+            dest_ds_type = data_set.DataSet.data_set_type(dest_name, volume, log_path=temp_log_path)
 
             # dest_data_set.type overrides `dest_ds_type` given precedence rules
             if dest_data_set and dest_data_set.get("type"):
@@ -2093,7 +2114,7 @@ def run_module(module, arg_def):
                 # Checking if the members that would be created from the directory files
                 # are already present on the system.
                 if copy_member:
-                    dest_member_exists = dest_exists and data_set.DataSet.data_set_member_exists(dest)
+                    dest_member_exists = dest_exists and data_set.DataSet.data_set_member_exists(dest, log_path=temp_log_path)
                 elif src_ds_type == "USS":
                     if temp_path:
                         root_dir = "{0}/{1}".format(temp_path, os.path.basename(os.path.normpath(src)))
@@ -2101,12 +2122,22 @@ def run_module(module, arg_def):
                     else:
                         root_dir = src
 
-                    dest_member_exists = dest_exists and data_set.DataSet.files_in_data_set_members(root_dir, dest)
+                    dest_member_exists = dest_exists and data_set.DataSet.files_in_data_set_members(root_dir, dest, log_path=temp_log_path)
                 elif src_ds_type in data_set.DataSet.MVS_PARTITIONED:
-                    dest_member_exists = dest_exists and data_set.DataSet.data_set_shared_members(src, dest)
+                    dest_member_exists = dest_exists and data_set.DataSet.data_set_shared_members(src, dest, log_path=temp_log_path)
 
     except Exception as err:
-        module.fail_json(msg=str(err))
+        module.fail_json(msg=f"{str(err)}", log_file=temp_log_path)
+
+    with open(temp_log_path, "a") as log_file:
+        log_file.write("\nModule variables after initial state discovery.\n")
+        log_file.write(f"dest_name: {dest_name}\n")
+        log_file.write(f"dest_member: {dest_member}\n")
+        log_file.write(f"is_src_dir: {is_src_dir}\n")
+        log_file.write(f"src_ds_type: {src_ds_type}\n")
+        log_file.write(f"dest_ds_type: {dest_ds_type}\n")
+        log_file.write(f"dest_exists: {dest_exists}\n")
+        log_file.write(f"dest_member_exists: {dest_member_exists}\n")
 
     # ********************************************************************
     # Some src and dest combinations are incompatible. For example, it is
@@ -2125,7 +2156,8 @@ def run_module(module, arg_def):
         module.fail_json(
             msg="Incompatible target type '{0}' for source '{1}'".format(
                 dest_ds_type, src_ds_type
-            )
+            ),
+            log_file=temp_log_path
         )
 
     # ********************************************************************
@@ -2187,35 +2219,35 @@ def run_module(module, arg_def):
         force,
         volume
     ):
-        module.fail_json(msg="{0} already exists on the system, unable to overwrite unless force=True is specified.".format(dest))
+        module.fail_json(msg="{0} already exists on the system, unable to overwrite unless force=True is specified.".format(dest), log_file=temp_log_path)
 
     # Creating an emergency backup or an empty data set to use as a model to
     # be able to restore the destination in case the copy fails.
-    emergency_backup = ""
-    if dest_exists:
-        if is_uss or not data_set.DataSet.is_empty(dest_name):
-            use_backup = True
-            if is_uss:
-                # When copying a directory without a trailing slash,
-                # appending the source's base name to the backup path to
-                # avoid backing up the whole parent directory that won't
-                # be modified.
-                src_basename = os.path.basename(src) if src else ''
-                backup_dest = "{0}/{1}".format(dest, src_basename) if is_src_dir and not src.endswith("/") else dest
-                backup_dest = os.path.normpath(backup_dest)
+    # emergency_backup = ""
+    # if dest_exists:
+    #     if is_uss or not data_set.DataSet.is_empty(dest_name):
+    #         use_backup = True
+    #         if is_uss:
+    #             # When copying a directory without a trailing slash,
+    #             # appending the source's base name to the backup path to
+    #             # avoid backing up the whole parent directory that won't
+    #             # be modified.
+    #             src_basename = os.path.basename(src) if src else ''
+    #             backup_dest = "{0}/{1}".format(dest, src_basename) if is_src_dir and not src.endswith("/") else dest
+    #             backup_dest = os.path.normpath(backup_dest)
 
-                emergency_backup = tempfile.mkdtemp()
-                emergency_backup = backup_data(backup_dest, dest_ds_type, emergency_backup)
+    #             emergency_backup = tempfile.mkdtemp()
+    #             emergency_backup = backup_data(backup_dest, dest_ds_type, emergency_backup)
 
-            else:
-                if not (dest_ds_type in data_set.DataSet.MVS_PARTITIONED and src_member and not dest_member_exists):
-                    emergency_backup = backup_data(dest, dest_ds_type, None)
-        # If dest is an empty data set, instead create a data set to
-        # use as a model when restoring.
-        else:
-            use_backup = False
-            emergency_backup = data_set.DataSet.temp_name()
-            data_set.DataSet.allocate_model_data_set(emergency_backup, dest_name)
+    #         else:
+    #             if not (dest_ds_type in data_set.DataSet.MVS_PARTITIONED and src_member and not dest_member_exists):
+    #                 emergency_backup = backup_data(dest, dest_ds_type, None)
+    #     # If dest is an empty data set, instead create a data set to
+    #     # use as a model when restoring.
+    #     else:
+    #         use_backup = False
+    #         emergency_backup = data_set.DataSet.temp_name()
+    #         data_set.DataSet.allocate_model_data_set(emergency_backup, dest_name)
 
     try:
         if not is_uss:
@@ -2227,13 +2259,14 @@ def run_module(module, arg_def):
                 force,
                 is_binary,
                 dest_data_set=dest_data_set,
-                volume=volume
+                volume=volume,
+                log_path=temp_log_path
             )
     except Exception as err:
-        if dest_exists:
-            restore_backup(dest_name, emergency_backup, dest_ds_type, use_backup)
-            erase_backup(emergency_backup, dest_ds_type)
-        module.fail_json(msg="Unable to allocate destination data set: {0}".format(str(err)))
+        # if dest_exists:
+        #     restore_backup(dest_name, emergency_backup, dest_ds_type, use_backup)
+        #     erase_backup(emergency_backup, dest_ds_type)
+        module.fail_json(msg="Unable to allocate destination data set: {0}".format(str(err)), log_file=temp_log_path)
 
     # ********************************************************************
     # Encoding conversion is only valid if the source is a local file,
@@ -2336,12 +2369,13 @@ def run_module(module, arg_def):
             res_args["changed"] = True
 
     except CopyOperationError as err:
-        if dest_exists:
-            restore_backup(dest_name, emergency_backup, dest_ds_type, use_backup)
+        # if dest_exists:
+        #     restore_backup(dest_name, emergency_backup, dest_ds_type, use_backup)
+        err.json_args["log_file"] = temp_log_path
         raise err
-    finally:
-        if dest_exists:
-            erase_backup(emergency_backup, dest_ds_type)
+    # finally:
+    #     if dest_exists:
+    #         erase_backup(emergency_backup, dest_ds_type)
 
     res_args.update(
         dict(
@@ -2534,7 +2568,8 @@ class CopyOperationError(Exception):
         stderr=None,
         stdout_lines=None,
         stderr_lines=None,
-        cmd=None
+        cmd=None,
+        log_file=None,
     ):
         self.json_args = dict(
             msg=msg,
@@ -2544,6 +2579,7 @@ class CopyOperationError(Exception):
             stdout_lines=stdout_lines,
             stderr_lines=stderr_lines,
             cmd=cmd,
+            log_file=log_file,
         )
         super().__init__(msg)
 

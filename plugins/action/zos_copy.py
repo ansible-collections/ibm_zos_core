@@ -192,6 +192,7 @@ class ActionModule(ActionBase):
             module_args=task_args,
             task_vars=task_vars,
         )
+        result["log_file"] = copy_res.get("log_file", "no log file was created")
 
         if copy_res.get("note") and not force:
             result["note"] = copy_res.get("note")
@@ -350,6 +351,7 @@ def _update_result(is_binary, copy_res, original_args):
     src = copy_res.get("src")
     note = copy_res.get("note")
     backup_name = copy_res.get("backup_name")
+    log_file = copy_res.get("log_file")
     updated_result = dict(
         dest=copy_res.get("dest"),
         is_binary=is_binary,
@@ -362,6 +364,8 @@ def _update_result(is_binary, copy_res, original_args):
         updated_result["note"] = note
     if backup_name:
         updated_result["backup_name"] = backup_name
+    if log_file:
+        updated_result["log_file"] = log_file
 
     if ds_type == "USS":
         updated_result.update(

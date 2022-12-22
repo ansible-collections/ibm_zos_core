@@ -189,129 +189,9 @@ ret_code:
 '''
 
 from ansible.module_utils.basic import AnsibleModule
-from locale import Error
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import better_arg_parser
 
-
-class IckdsfError(Error):
-    '''
-    Error class for errors specific to ICKDSF commands
-    '''
-    def __init__(self, *args: object) -> None:
-        super().__init__(*args)
-
-
-class IckdsfCommand(object):
-    '''Superclass for ICKDSF commands'''
-    def __init__(self, module) -> None:
-        self.module = module
-
-    @staticmethod
-    def convert():
-        '''Converts zos_ickdsf_init arguments to a JCL command for use with zos_mvs_raw'''
-        return ''
-
-
-class CommandInit(IckdsfCommand):
-    '''Class implementing ICKDSF Init command'''
-
-    @staticmethod
-    def convert(args):
-
-        # Get parameters from playbooks
-        volume_address = args.get('volume_address')
-        verify_existing_volid = args.get('verify_existing_volid')
-        verify_offline = args.get('verify_offline')
-        volid = args.get('volid')
-        vtoc_tracks = args.get('vtoc_tracks')
-        index = args.get('index')
-        verify_no_data_sets_exist = args.get('verify_no_data_sets_exist')
-        sms_managed = args.get('sms_managed')
-        addr_range = args.get('addr_range')
-        volid_prefix = args.get('volid_prefix')
-
-        # validate parameters
-        if volume_address is None:
-            msg = 'Volume address must be defined'
-            raise IckdsfError(msg)
-
-        try:
-            int(volume_address, 16)
-        except ValueError:
-            msg = 'Volume address must be a valid 64-bit hex value'
-            raise IckdsfError(msg)
-
-        # convert playbook args to JCL parameters
-        cmd_args = {
-            'volume_address': 'unit({0})'.format(volume_address)
-        }
-
-        if vtoc_tracks:
-            cmd_args['vtoc_tracks'] = 'vtoc(0, 1, {0})'.format(vtoc_tracks)
-        else:
-            cmd_args['vtoc_tracks'] = ''
-        if volid:
-            cmd_args['volid'] = 'volid({0})'.format(volid)
-        else:
-            cmd_args['volid'] = ''
-        if not verify_existing_volid:
-            cmd_args['verify_existing_volid'] = 'noverify'
-        else:
-            cmd_args['verify_existing_volid'] = 'verify({0})'.format(verify_existing_volid)
-        if verify_offline:
-            cmd_args['verify_offline'] = 'verifyoffline'
-        else:
-            cmd_args['verify_offline'] = 'noverifyoffline'
-        if verify_no_data_sets_exist:
-            cmd_args['verify_no_data_sets_exist'] = 'nods'
-        else:
-            cmd_args['verify_no_data_sets_exist'] = 'ds'
-        if index:
-            cmd_args['index'] = ''
-        else:
-            cmd_args['index'] = 'noindex'
-        if sms_managed:
-            cmd_args['sms_managed'] = 'storagegroup'
-        else:
-            cmd_args['sms_managed'] = ''
-
-        # Format into JCL strings for zos_mvs_raw
-        cmd = [
-            ' init {0} {1} {2} {3} - '.format(
-                cmd_args['volume_address'],
-                cmd_args['verify_existing_volid'],
-                cmd_args['verify_offline'],
-                cmd_args['volid']),
-            ' {0} {1} {2} {3}'.format(
-                cmd_args['vtoc_tracks'],
-                cmd_args['sms_managed'],
-                cmd_args['verify_no_data_sets_exist'],
-                cmd_args['index'])]
-
-        # Check if Playbook wants to INIT a range of volumes
-        if addr_range and volid_prefix:
-            if not verify_no_data_sets_exist:
-                msg = 'You are not allowed to initialize a range of volumes without checking for data sets.'
-                raise IckdsfError(msg)
-            start = int(str(volume_address), 16)
-            end = start + addr_range
-            for i in range(start + 1, end + 1):
-                next_addr = '{0:x}'.format(i)
-                next_vol_id = str(volid_prefix) + next_addr
-                formatted_next_addr = 'unit({0})'.format(next_addr)
-                formatted_next_vol_id = 'volid({0})'.format(next_vol_id)
-                cmd.append(' init {0} {1} {2} {3} - '.format(
-                    formatted_next_addr,
-                    cmd_args['verify_existing_volid'],
-                    cmd_args['verify_offline'],
-                    formatted_next_vol_id))
-                cmd.append(' {0} {1} {2} {3}'.format(
-                    cmd_args['vtoc_tracks'],
-                    cmd_args['sms_managed'],
-                    cmd_args['verify_no_data_sets_exist'],
-                    cmd_args['index']))
-
-        return cmd
+# from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import better_arg_parser
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import ickdsf  # pylint: disable=import-error
 
 
 def run_module():
@@ -345,13 +225,13 @@ def run_module():
     if module.check_mode:
         module.exit_json(**result)
 
-    try:
-        parser = better_arg_parser.BetterArgParser(module_args)
-        parser.parse_args(module.params)
-    except ValueError as err:
-        module.fail_json(msg="Parameter verification failed", stderr=str(err))
+    # try:
+    #     parser = better_arg_parser.BetterArgParser(module_args)
+    #     parser.parse_args(module.params)
+    # except ValueError as err:
+    #     module.fail_json(msg="Parameter verification failed", stderr=str(err))
 
-    result['command'] = CommandInit.convert(module.params)
+    result.update(ickdsf.init(module, result, module.params))
 
     module.exit_json(**result)
 

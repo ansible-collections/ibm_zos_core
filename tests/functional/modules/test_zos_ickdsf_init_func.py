@@ -20,6 +20,50 @@ TEST_VOL_ADDR = '0903'
 TEST_VOL_SER = 'KET999'
 
 
+@pytest.mark.parametrize(
+    "params,expected_rc", [
+        # volume_address not hexadecimal
+        ({
+            'volume_address': 'XYZ',
+            'verify_offline': False,
+            'volid': TEST_VOL_SER
+        }, 12),
+        # volume_address length too short
+        ({
+            'volume_address': '01',
+            'verify_offline': False,
+            'volid': TEST_VOL_SER
+        }, 12),
+        # volume_address specified is not accesible to current user
+        ({
+            'volume_address': '0000',
+            'verify_offline': False,
+            'volid': TEST_VOL_SER
+        }, 12),
+        # ({}, 12)
+    ]
+)
+def test_invalid_volume_address(ansible_zos_module, params, expected_rc):
+    hosts = ansible_zos_module
+
+    # take volume offline
+    hosts.all.zos_operator(cmd=f"vary {TEST_VOL_ADDR},offline")
+
+    results = hosts.all.zos_ickdsf_init(
+        volume_address=params['volume_address'],
+        verify_offline=params['verify_offline'],
+        volid=params['volid']
+        )
+
+    for result in results.contacted.values():
+        assert result.get('changed') is False
+        assert result.get('failed') is True
+        assert result.get('rc') == expected_rc
+
+    # bring volume back online
+    hosts.all.zos_operator(cmd=f"vary {TEST_VOL_ADDR},online")
+
+
 # Note - technically verify_offline is not REQUIRED but it defaults to True
 #        and the volumes on the EC systems do not seem to go fully offline.
 #        Therefore, while testing against the EC machines, the verify_offline
@@ -35,7 +79,7 @@ def test_minimal_params(ansible_zos_module):
 
     # take volume offline
     hosts.all.zos_operator(cmd=f"vary {TEST_VOL_ADDR},offline")
-    
+
     results = hosts.all.zos_ickdsf_init(
         volume_address=params['volume_address'],
         verify_offline=params['verify_offline'],

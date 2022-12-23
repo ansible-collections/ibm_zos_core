@@ -20,6 +20,10 @@ TEST_VOL_ADDR = '0903'
 TEST_VOL_SER = 'KET999'
 
 
+# Note - technically verify_offline is not REQUIRED but it defaults to True
+#        and the volumes on the EC systems do not seem to go fully offline.
+#        Therefore, while testing against the EC machines, the verify_offline
+#        check needs to be skipped in order for ickdsf to be invoked.
 def test_minimal_params(ansible_zos_module):
     hosts = ansible_zos_module
 

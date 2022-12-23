@@ -24,7 +24,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dd_statement impo
 )
 
 
-def convert(module, args):
+def convert(module, result, args):
 
     # Get parameters from playbooks
     volume_address = args.get('volume_address')
@@ -38,18 +38,21 @@ def convert(module, args):
     addr_range = args.get('addr_range')
     volid_prefix = args.get('volid_prefix')
 
+    # Let AnsibleModule param parsing handle this check.
     # validate parameters
-    if volume_address is None:
-        msg = 'Volume address must be defined'
-        # raise Exception(msg)
-        module.fail_json(msg) # TODO - fail with result -- do i want an init class so i can self.fail_json?
+    # if volume_address is None:
+    #     msg = 'Volume address must be defined'
+    #     # raise Exception(msg)
+    #     module.fail_json(msg) # TODO - fail with result -- do i want an init class so i can self.fail_json?
 
-    try:
-        int(volume_address, 16)
-    except ValueError:
-        msg = 'Volume address must be a valid 64-bit hex value'
-        # raise Exception(msg)
-        module.fail_json(msg) # TODO - fail with result -- do i want an init class so i can self.fail_json?
+    # let ICKDSF handle this check. expect RC=12
+    # try:
+    #     int(volume_address, 16)
+    # except ValueError:
+    #     result['failed'] = True
+    #     msg = 'volume_address must be 3 or 4 64-bit hexadecimal digits'
+    #     # raise Exception(msg)
+    #     module.fail_json(msg, **result) # TODO - fail with result -- do i want an init class so i can self.fail_json?
 
     # convert playbook args to JCL parameters
     cmd_args = {
@@ -126,7 +129,7 @@ def convert(module, args):
 
 def init(module, result, parsed_args):
     # Convert args parsed from module to ickdsf INIT command
-    cmd = convert(module, parsed_args)
+    cmd = convert(module, result, parsed_args)
 
     # TODO - add error handling here and in convert() for "bad" cmd
     

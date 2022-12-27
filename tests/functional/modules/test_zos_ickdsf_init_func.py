@@ -19,6 +19,11 @@ __metaclass__ = type
 TEST_VOL_ADDR = '0903'
 TEST_VOL_SER = 'KET999'
 
+# TODO - positive tests:
+# volume_addr -- confirm?
+# volid - confirm value matches volid assigned
+# vtoc_tracks - confirm value matches value assigned
+
 
 @pytest.mark.parametrize(
     "params,expected_rc", [
@@ -34,29 +39,34 @@ TEST_VOL_SER = 'KET999'
             'verify_offline': False,
             'volid': TEST_VOL_SER
         }, 12),
-        # volume_address specified is not accesible to current user
+        # volume_address specified is not accesible to current
         ({
             'volume_address': '0000',
             'verify_offline': False,
             'volid': TEST_VOL_SER
         }, 12),
-        # ({}, 12)
+        # negative value for vtoc_tracks
+        ({
+            'volume_address': TEST_VOL_ADDR,
+            'verify_offline': False,
+            'volid': TEST_VOL_SER,
+            'vtoc_tracks': -10
+        }, 12),
+        # note - "'vtoc_tracks': 0" gets treated as vtoc_tracks wasn't defined and invokes default behavior.
+        # ({}, 0)
+
     ]
 )
-def test_invalid_volume_address(ansible_zos_module, params, expected_rc):
+def test_bad_param_values(ansible_zos_module, params, expected_rc):
     hosts = ansible_zos_module
 
     # take volume offline
     hosts.all.zos_operator(cmd=f"vary {TEST_VOL_ADDR},offline")
 
-    results = hosts.all.zos_ickdsf_init(
-        volume_address=params['volume_address'],
-        verify_offline=params['verify_offline'],
-        volid=params['volid']
-        )
+    results = hosts.all.zos_ickdsf_init(**params)
 
     for result in results.contacted.values():
-        assert result.get('changed') is False
+        assert result.get("changed") is False
         assert result.get('failed') is True
         assert result.get('rc') == expected_rc
 
@@ -87,7 +97,7 @@ def test_minimal_params(ansible_zos_module):
         )
 
     for result in results.contacted.values():
-        assert result.get("changed") is True
+        assert result.get('changed') is True
         assert result['rc'] == 0
 
     # bring volume back online

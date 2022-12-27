@@ -26,6 +26,46 @@ TEST_VOL_SER = 'KET999'
 
 
 @pytest.mark.parametrize(
+    "params", [
+        # min params test; also sets up with expected attrs (eg existing volid)
+        ({
+            'volume_address': TEST_VOL_ADDR,
+            'verify_offline': False,
+            'volid': TEST_VOL_SER,
+        }),
+        # verify_existing_volid check - volid is known b/c previous test set it up.
+        ({
+            'volume_address': TEST_VOL_ADDR,
+            'verify_offline': False,
+            'volid': TEST_VOL_SER,
+            'verify_existing_volid' : TEST_VOL_SER
+        }),
+        # verify_no_data_sets_exist check - no data sets on vol is known b/c previous test set it up.
+        ({
+            'volume_address': TEST_VOL_ADDR,
+            'verify_offline': False,
+            'volid': TEST_VOL_SER,
+            'verify_no_data_sets_exist' : True
+        }),
+    ]
+)
+def test_good_param_values(ansible_zos_module, params):
+    hosts = ansible_zos_module
+
+    # take volume offline
+    hosts.all.zos_operator(cmd=f"vary {TEST_VOL_ADDR},offline")
+
+    results = hosts.all.zos_ickdsf_init(**params)
+
+    for result in results.contacted.values():
+        assert result.get("changed") is True
+        assert result.get('rc') == 0
+
+    # bring volume back online
+    hosts.all.zos_operator(cmd=f"vary {TEST_VOL_ADDR},online")
+
+
+@pytest.mark.parametrize(
     "params,expected_rc", [
         # volume_address not hexadecimal
         ({
@@ -53,6 +93,13 @@ TEST_VOL_SER = 'KET999'
             'vtoc_tracks': -10
         }, 12),
         # note - "'vtoc_tracks': 0" gets treated as vtoc_tracks wasn't defined and invokes default behavior.
+        # volid check - incorrect volid produces error
+        ({
+            'volume_address': TEST_VOL_ADDR,
+            'verify_offline': False,
+            'volid': TEST_VOL_SER,
+            'verify_existing_volid': '000000'
+        }, 12),
         # ({}, 0)
 
     ]
@@ -72,6 +119,63 @@ def test_bad_param_values(ansible_zos_module, params, expected_rc):
 
     # bring volume back online
     hosts.all.zos_operator(cmd=f"vary {TEST_VOL_ADDR},online")
+
+
+# Note - volume needs to be sms managed for zos_data_set to work. Possible
+#        points of failure are:
+#        unable to init volume first time around
+#        unable to allocate data set
+#        unable to bring vol back online to delete data set
+#        If there is a data set remaining on the volume, that would interfere
+#        with other tests!
+def test_no_existing_data_sets_check(ansible_zos_module):
+    hosts = ansible_zos_module
+
+    setup_params = {
+        'volume_address': TEST_VOL_ADDR,
+        'verify_offline': False,
+        'volid': TEST_VOL_SER,
+        'sms_managed': False # need non-sms managed to add data set on ECs
+    }
+    test_params = {
+        'volume_address': TEST_VOL_ADDR,
+        'verify_offline': False,
+        'volid': TEST_VOL_SER,
+        'verify_no_data_sets_exist': True,
+    }
+
+    # take volume offline
+    hosts.all.zos_operator(cmd=f"vary {TEST_VOL_ADDR},offline")
+
+    try:
+        # set up/initialize volume properly so a data set can be added
+        hosts.all.zos_ickdsf_init(**setup_params)
+
+        # bring volume back online
+        hosts.all.zos_operator(cmd=f"vary {TEST_VOL_ADDR},online")
+
+        # allocate data set to volume
+        hosts.all.zos_data_set(name="USER.PRIVATE.TESTDS", type='pds', volumes=TEST_VOL_SER)
+
+        # take volume back offline
+        hosts.all.zos_operator(cmd=f"vary {TEST_VOL_ADDR},offline")
+
+        # run vol_init against vol with data set on it.
+        results = hosts.all.zos_ickdsf_init(**test_params)
+
+        for result in results.contacted.values():
+            assert result.get("changed") is False
+            assert result.get('failed') is True
+            assert result.get('rc') == 12
+
+    # clean up just in case of failures, volume needs to be reset for other
+    # tests. Neither of these tasks throw errors.
+    finally:
+        # bring volume back online
+        hosts.all.zos_operator(cmd=f"vary {TEST_VOL_ADDR},online")
+
+        # remove data set
+        hosts.all.zos_data_set(name="USER.PRIVATE.TESTDS", state='absent')
 
 
 # Note - technically verify_offline is not REQUIRED but it defaults to True

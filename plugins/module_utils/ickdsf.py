@@ -147,15 +147,18 @@ def init(module, result, parsed_args):
     # invoke MVS Command
     response = MVSCmd.execute_authorized("ICKDSF", dds, parm='NOREPLYU,FORCE')
 
-    result['mvs-response-stdout'] = response.stdout
-    result['mvs-response-stderr'] = response.stderr
-    result['rc'] = response.rc
-    
     rc = response.rc
+
+    result['rc'] = rc
+    result['content'] = response.stdout
+    if response.stderr:
+        result['stderr'] = response.stderr
 
     if rc != 0:
         result['failed'] = True
-        result['msg'] = "INIT Failed with return code {}".format(rc)
+        # result['msg'] = "INIT Failed with return code {}".format(rc)
+        msg = "Non-zero return code. See 'content' for details"
+        module.fail_json(msg=msg, **result)
     else:
         result['changed'] = True
 

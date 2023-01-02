@@ -2230,7 +2230,7 @@ def run_module(module, arg_def):
                 volume=volume
             )
     except Exception as err:
-        if dest_exists:
+        if dest_exists and not force:
             restore_backup(dest_name, emergency_backup, dest_ds_type, use_backup)
             erase_backup(emergency_backup, dest_ds_type)
         module.fail_json(msg="Unable to allocate destination data set: {0}".format(str(err)))
@@ -2336,11 +2336,11 @@ def run_module(module, arg_def):
             res_args["changed"] = True
 
     except CopyOperationError as err:
-        if dest_exists:
+        if dest_exists and not force:
             restore_backup(dest_name, emergency_backup, dest_ds_type, use_backup)
         raise err
     finally:
-        if dest_exists:
+        if dest_exists and not force:
             erase_backup(emergency_backup, dest_ds_type)
 
     res_args.update(

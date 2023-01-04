@@ -22,8 +22,8 @@ TEST_VOL_SER = 'KET999'
 # TODO - positive tests:
 # vtoc_tracks - confirm value matches value assigned
 
-
-def test_volid_voluime_address_assigned_correctly(ansible_zos_module):
+# check that correct volume_addr is assigned to correct volid
+def test_volid_volume_address_assigned_correctly(ansible_zos_module):
     hosts = ansible_zos_module
 
     params = {
@@ -47,14 +47,35 @@ def test_volid_voluime_address_assigned_correctly(ansible_zos_module):
         assert result.get("changed") is True
         assert result.get('rc') == 0
 
-        # The display command issued queries a volume called TEST_VOL_SER. The
+        # The display command issued queries a volume called $TEST_VOL_SER. The
         # expected return values are 'IEE455I UNIT STATUS NO DEVICES WITH
         # REQUESTED ATTRIBUTES' or a line with several attributes including unit
-        # address (expected value TEST_VOL_ADDR) and volume serial (expected
-        # value TEST_VOL_SER). If those two match, then the 'volid' parameter
+        # address (expected value $TEST_VOL_ADDR) and volume serial (expected
+        # value $TEST_VOL_SER). If those two match, then the 'volid' parameter
         # is correctly assigned to the 'volume_address' parameter.
         assert TEST_VOL_SER in display_cmd_output
 
+def test_no_index_sms_managed_mutually_exclusive(ansible_zos_module):
+    hosts = ansible_zos_module
+
+    params = {
+        'volume_address': TEST_VOL_ADDR,
+        'verify_offline': False,
+        'volid': TEST_VOL_SER,
+        'index' : False,
+        'sms_managed' : True
+    }
+    # take volume offline
+    hosts.all.zos_operator(cmd=f"vary {TEST_VOL_ADDR},offline")
+
+    results = hosts.all.zos_ickdsf_init(**params)
+
+    # bring volume back online
+    hosts.all.zos_operator(cmd=f"vary {TEST_VOL_ADDR},online")
+
+    for result in results.contacted.values():
+        assert result.get("changed") is False
+        assert "'Index' cannot be False" in result.get("msg")
 
 @pytest.mark.parametrize(
     "params", [

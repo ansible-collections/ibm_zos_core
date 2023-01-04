@@ -222,6 +222,10 @@ def run_module():
         supports_check_mode=True
     )
 
+    # sms managed and index are defined by ickdsf init as mutually exclusive.
+    if module.params['sms_managed'] and not module.params['index']:
+      module.fail_json(msg="'Index' cannot be False for SMS managed volumes.", **result)
+
     if module.check_mode:
         module.exit_json(**result)
 

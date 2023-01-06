@@ -18,7 +18,8 @@ import tempfile
 from os import path, walk
 from string import ascii_uppercase, digits
 from random import randint
-from ansible.module_utils._text import to_bytes
+import traceback
+from ansible.module_utils._text import to_bytes, to_native
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
     AnsibleModuleHelper,
 )
@@ -361,15 +362,25 @@ class DataSet(object):
         name = name.upper()
         module = AnsibleModuleHelper(argument_spec={})
         stdin = " LISTCAT ENTRIES('{0}')".format(name)
-        rc, stdout, stderr = module.run_command(
-            "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=stdin
-        )
 
         if log_path:
             with open(log_path, "a") as log_file:
                 log_file.write("data_set_cataloged\n")
                 log_file.write(f"Command run: mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin, with data {stdin}\n")
-                log_file.write(f"rc: {rc}, stdout: {stdout}, stderr: {stderr}\n")
+
+        try:
+            rc, stdout, stderr = module.run_command(
+                "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=stdin
+            )
+        except Exception as err:
+            if log_path:
+                with open(log_path, "a") as log_file:
+                    log_file.write(f"Command error: {to_native(err)}, traceback: {to_native(traceback.format_exc())}\n")
+            return False
+        else:
+            if log_path:
+                with open(log_path, "a") as log_file:
+                    log_file.write(f"rc: {rc}, stdout: {stdout}, stderr: {stderr}\n")
 
         if re.search(r"-\s" + name + r"\s*\n\s+IN-CAT", stdout):
             return True
@@ -392,10 +403,14 @@ class DataSet(object):
             with open(log_path, "a") as log_file:
                 log_file.write("data_set_exists\n")
 
-        if DataSet.data_set_cataloged(name, log_path=log_path):
-            return True
-        elif volume is not None:
-            return DataSet._is_in_vtoc(name, volume, log_path=log_path)
+        try:
+            if DataSet.data_set_cataloged(name, log_path=log_path):
+                return True
+            elif volume is not None:
+                return DataSet._is_in_vtoc(name, volume, log_path=log_path)
+        except Exception as err:
+            raise err
+
         return False
 
     @staticmethod
@@ -627,16 +642,27 @@ class DataSet(object):
         name = name.upper()
         module = AnsibleModuleHelper(argument_spec={})
         stdin = " LISTCAT ENT('{0}') DATA ALL".format(name)
-        rc, stdout, stderr = module.run_command(
-            "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=stdin
-        )
 
         if log_path:
             with open(log_path, "a") as log_file:
                 log_file.write("_get_listcat_data\n")
-                log_file.write(f"rc: {rc}\n")
-                log_file.write(f"stdout: {stdout}\n")
-                log_file.write(f"stdout: {stderr}\n")
+                log_file.write(f"command run: mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin with data {stdin}\n")
+
+        try:
+            rc, stdout, stderr = module.run_command(
+                "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=stdin
+            )
+        except Exception as err:
+            if log_path:
+                with open(log_path, "a") as log_file:
+                    log_file.write(f"Command error: {str(err)}\n")
+            rc = 1
+        else:
+            if log_path:
+                with open(log_path, "a") as log_file:
+                    log_file.write(f"rc: {rc}\n")
+                    log_file.write(f"stdout: {stdout}\n")
+                    log_file.write(f"stdout: {stderr}\n")
 
         if rc != 0:
             raise MVSCmdExecError(rc, stdout, stderr)
@@ -750,7 +776,13 @@ class DataSet(object):
             with open(log_path, "a") as log_file:
                 log_file.write("_is_in_vtoc\n")
 
-        data_sets = vtoc.get_volume_entry(volume, log_path=log_path)
+        try:
+            data_sets = vtoc.get_volume_entry(volume, log_path=log_path)
+        except Exception as err:
+            with open(log_path, "a") as log_file:
+                log_file.write(f"Error: {to_native(err)}, traceback: {traceback.format_exc()}\n")
+            raise err
+
         data_set = vtoc.find_data_set_in_volume_output(name, data_sets)
 
         if log_path:

@@ -36,19 +36,26 @@ def get_volume_entry(volume, log_path=None):
     try:
         stdin = "  LISTVTOC FORMAT,VOL=3390={0}".format(volume.upper())
         dd = "SYS1.VVDS.V{0}".format(volume.upper())
-        stdout = _iehlist(dd, stdin, log_path=None)
 
         if log_path:
             with open(log_path, "a") as log_file:
                 log_file.write("vtoc.get_volume_entry\n")
                 log_file.write(f"stdin: {stdin}\n")
                 log_file.write(f"dd: {dd}\n")
+
+        stdout = _iehlist(dd, stdin, log_path=None)
+
+        if log_path:
+            with open(log_path, "a") as log_file:
                 log_file.write(f"stdout: {stdout}\n")
 
         if stdout is None:
             return None
         data_sets = _process_output(stdout)
     except Exception as e:
+        if log_path:
+            with open(log_path, "a") as log_file:
+                log_file.write(f"Command error: {str(e)}")
         raise VolumeTableOfContentsError(repr(e))
     return data_sets
 

@@ -667,7 +667,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
     AnsibleModuleHelper,
 )
-from ansible.module_utils._text import to_bytes
+from ansible.module_utils._text import to_bytes, to_native
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.six import PY3
 from re import IGNORECASE
@@ -679,6 +679,7 @@ import math
 import tempfile
 import os
 import pathlib
+import traceback
 
 if PY3:
     from re import fullmatch
@@ -2127,7 +2128,7 @@ def run_module(module, arg_def):
                     dest_member_exists = dest_exists and data_set.DataSet.data_set_shared_members(src, dest, log_path=temp_log_path)
 
     except Exception as err:
-        module.fail_json(msg=f"{str(err)}", log_file=temp_log_path)
+        module.fail_json(msg=f"{to_native(err)}. Traceback: {traceback.format_exc()}", log_file=temp_log_path)
 
     with open(temp_log_path, "a") as log_file:
         log_file.write("\nModule variables after initial state discovery.\n")
@@ -2266,7 +2267,7 @@ def run_module(module, arg_def):
         # if dest_exists:
         #     restore_backup(dest_name, emergency_backup, dest_ds_type, use_backup)
         #     erase_backup(emergency_backup, dest_ds_type)
-        module.fail_json(msg="Unable to allocate destination data set: {0}".format(str(err)), log_file=temp_log_path)
+        module.fail_json(msg="Unable to allocate destination data set: {0}. Traceback: {1}".format(to_native(err), traceback.format_exc()), log_file=temp_log_path)
 
     # ********************************************************************
     # Encoding conversion is only valid if the source is a local file,

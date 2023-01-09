@@ -190,12 +190,19 @@ class DataSet(object):
             try:
                 DataSet.create(**arguments)
             except DatasetCreateError as e:
+                with open(log_path, "a") as log_file:
+                    log_file.write(f"an error ocurred with DataSet.create: {to_native(e)}\n")
+
                 raise_error = True
                 # data set exists on volume
                 if "Error Code: 0x4704" in e.msg:
                     present, changed = DataSet.attempt_catalog_if_necessary(
-                        name, volumes
+                        name, volumes, log_path=log_path
                     )
+
+                    with open(log_path, "a") as log_file:
+                        log_file.write(f"result from DataSet.attempt_catalog_if_necessary: present: {present}, changes: {changed}\n")
+
                     if present and changed:
                         raise_error = False
                 if raise_error:
@@ -568,6 +575,9 @@ class DataSet(object):
                 log_file.write("data_set_type\n")
 
         if not DataSet.data_set_exists(name, volume, log_path=log_path):
+            if log_path:
+                with open(log_path, "a") as log_file:
+                    log_file.write("Data set was suddenly not found or not available\n")
             return None
 
         data_sets_found = datasets.listing(name)
@@ -735,7 +745,7 @@ class DataSet(object):
             return False
 
     @staticmethod
-    def attempt_catalog_if_necessary(name, volumes):
+    def attempt_catalog_if_necessary(name, volumes, log_path=None):
         """Attempts to catalog a data set if not already cataloged.
 
         Arguments:
@@ -748,7 +758,7 @@ class DataSet(object):
         """
         changed = False
         present = False
-        if DataSet.data_set_cataloged(name):
+        if DataSet.data_set_cataloged(name, log_path=log_path):
             present = True
         elif volumes is not None:
             errors = False

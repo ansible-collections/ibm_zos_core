@@ -17,7 +17,8 @@ from os import name as OS_NAME
 from sys import platform as SYS_PLATFORM
 from subprocess import Popen, PIPE
 from ansible.module_utils.six import binary_type, text_type, PY2, PY3
-from ansible.module_utils._text import to_text, to_bytes
+# from ansible.module_utils._text import to_text, to_bytes
+from ansible.module_utils.common.text.converters import to_bytes, to_text
 from shlex import split
 
 

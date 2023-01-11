@@ -61,7 +61,7 @@ plugins/modules/zos_job_submit.py validate-modules:undocumented-parameter # Pass
 plugins/modules/zos_lineinfile.py validate-modules:missing-gplv3-license # Licensed under Apache 2.0
 plugins/modules/zos_lineinfile.py compile-2.6!skip # Python 2.6 is unsupported
 plugins/modules/zos_lineinfile.py import-2.6!skip # Python 2.6 is unsupported
-plugins/modules/zos_lineinfile.py import-2.7!skip # Python 2.7 f string is not supported
+plugins/modules/zos_lineinfile.py compile-2.7!skip # Python 2.7 f string is not supported
 plugins/modules/zos_mount.py validate-modules:missing-gplv3-license # Licensed under Apache 2.0
 plugins/modules/zos_mount.py compile-2.6!skip # Python 2.6 is unsupported
 plugins/modules/zos_mount.py import-2.6!skip # Python 2.6 is unsupported

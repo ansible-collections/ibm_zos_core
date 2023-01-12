@@ -20,6 +20,7 @@ TEST_VOL_ADDR = '0903'
 TEST_VOL_SER = 'KET999'
 
 INDEX_CREATION_SUCCESS_MSG = 'VTOC INDEX CREATION SUCCESSFUL'
+VTOC_LOC_MSG = "ICK01314I VTOC IS LOCATED AT CCHH=X'0000 0001' AND IS  {:4d} TRACKS."
 
 # TODO - positive tests:
 # vtoc_tracks - confirm value matches value assigned
@@ -118,6 +119,29 @@ def test_no_index_sms_managed_mutually_exclusive(ansible_zos_module):
     for result in results.contacted.values():
         assert result.get("changed") is False
         assert "'Index' cannot be False" in result.get("msg")
+
+def test_vtoc_tracks_parm(ansible_zos_module):
+    hosts = ansible_zos_module
+
+    params = {
+        'volume_address': TEST_VOL_ADDR,
+        'verify_offline': False,
+        'volid': TEST_VOL_SER,
+        # 'vtoc_tracks' : 8
+        'vtoc_tracks' : 11 # test 2 digit vtoc_index also works
+    }
+    # take volume offline
+    hosts.all.zos_operator(cmd=f"vary {TEST_VOL_ADDR},offline")
+
+    results = hosts.all.zos_ickdsf_init(**params)
+
+    # bring volume back online
+    hosts.all.zos_operator(cmd=f"vary {TEST_VOL_ADDR},online")
+
+    for result in results.contacted.values():
+        assert result.get("changed") is True
+        assert result.get('rc') == 0
+        assert VTOC_LOC_MSG.format(params.get('vtoc_tracks')) in result.get("content")
 
 @pytest.mark.parametrize(
     "params", [

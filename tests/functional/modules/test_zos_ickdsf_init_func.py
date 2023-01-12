@@ -19,8 +19,50 @@ __metaclass__ = type
 TEST_VOL_ADDR = '0903'
 TEST_VOL_SER = 'KET999'
 
+INDEX_CREATION_SUCCESS_MSG = 'VTOC INDEX CREATION SUCCESSFUL'
+
 # TODO - positive tests:
 # vtoc_tracks - confirm value matches value assigned
+
+
+@pytest.mark.parametrize(
+    "params", [
+        # min params test with index : true
+        ({
+            'volume_address': TEST_VOL_ADDR,
+            'verify_offline': False,
+            'volid': TEST_VOL_SER,
+            'index' : True
+        }),
+        # min params test with index : false
+        ({
+            'volume_address': TEST_VOL_ADDR,
+            'verify_offline': False,
+            'volid': TEST_VOL_SER,
+            'index' : False,
+            'sms_managed' : False # default is True, which cannot be with no index.
+        }),
+    ]
+)
+def test_index_param(ansible_zos_module, params):
+    hosts = ansible_zos_module
+
+    # take volume offline
+    hosts.all.zos_operator(cmd=f"vary {TEST_VOL_ADDR},offline")
+
+    results = hosts.all.zos_ickdsf_init(**params)
+
+    for result in results.contacted.values():
+        assert result.get("changed") is True
+        assert result.get('rc') == 0
+        if params['index']:
+            assert INDEX_CREATION_SUCCESS_MSG in result.get("content")
+        else:
+            assert INDEX_CREATION_SUCCESS_MSG not in result.get("content")
+
+    # bring volume back online
+    hosts.all.zos_operator(cmd=f"vary {TEST_VOL_ADDR},online")
+
 
 # check that correct volume_addr is assigned to correct volid
 def test_volid_volume_address_assigned_correctly(ansible_zos_module):

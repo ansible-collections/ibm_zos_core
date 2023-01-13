@@ -438,7 +438,6 @@ class DataSet(object):
                 log_file.write("data_set_member_exists\n")
                 log_file.write(f"Command run: head \"//'{name}'\"\n")
                 log_file.write(f"rc: {rc}\n")
-                log_file.write(f"stdout: {stdout}\n")
                 log_file.write(f"stderr: {stderr}\n")
 
         if rc != 0 or (stderr and "EDC5067I" in stderr):

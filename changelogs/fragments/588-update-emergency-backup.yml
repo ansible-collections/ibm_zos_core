@@ -1,4 +1,4 @@
-minor_changes:
+bugfixes:
 - zos_copy - fixed wrongful creation of destination backups when module option
   `force` is true, creating emergency backups meant to restore the system
   to its initial state in case of a module failure only when force is false.

@@ -2173,7 +2173,7 @@ def run_module(module, arg_def):
 
     # Creating an emergency backup or an empty data set to use as a model to
     # be able to restore the destination in case the copy fails.
-    if dest_exists:
+    if dest_exists and not force:
         if is_uss or not data_set.DataSet.is_empty(dest_name):
             use_backup = True
             if is_uss:
@@ -2201,7 +2201,7 @@ def run_module(module, arg_def):
                 volume=volume
             )
     except Exception as err:
-        if dest_exists:
+        if dest_exists and not force:
             restore_backup(dest_name, emergency_backup, dest_ds_type, use_backup)
             erase_backup(emergency_backup, dest_ds_type)
         module.fail_json(msg="Unable to allocate destination data set: {0}".format(str(err)))
@@ -2307,11 +2307,11 @@ def run_module(module, arg_def):
             res_args["changed"] = True
 
     except CopyOperationError as err:
-        if dest_exists:
+        if dest_exists and not force:
             restore_backup(dest_name, emergency_backup, dest_ds_type, use_backup)
         raise err
     finally:
-        if dest_exists:
+        if dest_exists and not force:
             erase_backup(emergency_backup, dest_ds_type)
 
     res_args.update(

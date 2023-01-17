@@ -680,6 +680,7 @@ import tempfile
 import os
 import pathlib
 import traceback
+import io
 
 if PY3:
     from re import fullmatch
@@ -2025,6 +2026,8 @@ def run_module(module, arg_def):
     res_args["log_file"] = temp_log_path
     with os.fdopen(temp_fd, "w") as log_file:
         log_file.write("Log file for zos_copy execution.\n\n")
+        log_file.write(f"Initial ulimit: {to_native(module.run_command('ulimit -a'))}\n")
+        log_file.write(f"Default buffer size: {to_native(io.DEFAULT_BUFFER_SIZE)}\n")
         log_file.write("source state discovery\n")
 
     # ********************************************************************
@@ -2105,7 +2108,11 @@ def run_module(module, arg_def):
                 module.fail_json(msg="Destination {0} is not writable".format(dest), log_file=temp_log_path)
         else:
             dest_exists = data_set.DataSet.data_set_exists(dest_name, volume, log_path=temp_log_path)
-            dest_ds_type = data_set.DataSet.data_set_type(dest_name, volume, log_path=temp_log_path)
+
+            if dest_exists:
+                dest_ds_type = data_set.DataSet.data_set_type(dest_name, volume, log_path=temp_log_path)
+            else:
+                dest_ds_type = None
 
             # dest_data_set.type overrides `dest_ds_type` given precedence rules
             if dest_data_set and dest_data_set.get("type"):

@@ -374,10 +374,11 @@ class DataSet(object):
             with open(log_path, "a") as log_file:
                 log_file.write("data_set_cataloged\n")
                 log_file.write(f"Command run: mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin, with data {stdin}\n")
+                log_file.write(f"Current ulimit: {module.run_command('ulimit -a', log_path=log_path)}\n")
 
         try:
             rc, stdout, stderr = module.run_command(
-                "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=stdin
+                "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=stdin, log_path=log_path
             )
         except Exception as err:
             if log_path:
@@ -431,7 +432,7 @@ class DataSet(object):
             bool -- If data set member exists.
         """
         module = AnsibleModuleHelper(argument_spec={})
-        rc, stdout, stderr = module.run_command("head \"//'{0}'\"".format(name))
+        rc, stdout, stderr = module.run_command("head \"//'{0}'\"".format(name), log_path=log_path)
 
         if log_path:
             with open(log_path, "a") as log_file:
@@ -573,11 +574,11 @@ class DataSet(object):
             with open(log_path, "a") as log_file:
                 log_file.write("data_set_type\n")
 
-        if not DataSet.data_set_exists(name, volume, log_path=log_path):
-            if log_path:
-                with open(log_path, "a") as log_file:
-                    log_file.write("Data set was suddenly not found or not available\n")
-            return None
+        # if not DataSet.data_set_exists(name, volume, log_path=log_path):
+        #     if log_path:
+        #         with open(log_path, "a") as log_file:
+        #             log_file.write("Data set was suddenly not found or not available\n")
+        #     return None
 
         data_sets_found = datasets.listing(name)
 
@@ -591,6 +592,10 @@ class DataSet(object):
         # dataset. VSAMs are not found by datasets.listing.
         if len(data_sets_found) > 0:
             return data_sets_found[0].dsorg
+        else:
+            data_sets_found = datasets.listing(name)
+            if len(data_sets_found) > 0:
+                return data_sets_found[0].dsorg
 
         # There's a bug in ZOAU versions 1.2.1 and older where dls is not able to
         # handle system symbols in volumes and this sometimes results in not
@@ -659,7 +664,7 @@ class DataSet(object):
 
         try:
             rc, stdout, stderr = module.run_command(
-                "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=stdin
+                "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=stdin, log_path=log_path
             )
         except Exception as err:
             if log_path:

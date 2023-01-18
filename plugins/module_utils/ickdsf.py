@@ -35,8 +35,6 @@ def convert(module, result, args):
     index = args.get('index')
     verify_no_data_sets_exist = args.get('verify_no_data_sets_exist')
     sms_managed = args.get('sms_managed')
-    addr_range = args.get('addr_range')
-    volid_prefix = args.get('volid_prefix')
 
     # Let AnsibleModule param parsing handle this check.
     # validate parameters
@@ -100,29 +98,6 @@ def convert(module, result, args):
             cmd_args['sms_managed'],
             cmd_args['verify_no_data_sets_exist'],
             cmd_args['index'])]
-
-    # Check if Playbook wants to INIT a range of volumes
-    if addr_range and volid_prefix:
-        if not verify_no_data_sets_exist:
-            msg = 'You are not allowed to initialize a range of volumes without checking for data sets.'
-            raise Exception(msg)
-        start = int(str(volume_address), 16)
-        end = start + addr_range
-        for i in range(start + 1, end + 1):
-            next_addr = '{0:x}'.format(i)
-            next_vol_id = str(volid_prefix) + next_addr
-            formatted_next_addr = 'unit({0})'.format(next_addr)
-            formatted_next_vol_id = 'volid({0})'.format(next_vol_id)
-            cmd.append(' init {0} {1} {2} {3} - '.format(
-                formatted_next_addr,
-                cmd_args['verify_existing_volid'],
-                cmd_args['verify_offline'],
-                formatted_next_vol_id))
-            cmd.append(' {0} {1} {2} {3}'.format(
-                cmd_args['vtoc_tracks'],
-                cmd_args['sms_managed'],
-                cmd_args['verify_no_data_sets_exist'],
-                cmd_args['index']))
 
     return cmd
 

@@ -102,32 +102,6 @@ options:
     required: false
     type: bool
     default: true
-  addr_range:
-    description:
-      - If initializing a range of volumes, how many additional addresses to initialize.
-    required: false
-    type: int
-  volid_prefix:
-    description:
-      - If initializing a range of volumes, the prefix of volume IDs to initialize. This with have the address appended to it.
-    required: false
-    type: str
-  output_html:
-    description:
-      - Options for creating HTML output of ICKDSF command.
-    required: false
-    type: dict
-    suboptions:
-      full_file_path:
-        description:
-          - File path to place output HTML file.
-        required: true
-        type: str
-      append:
-        description:
-          - Optionally append to file, instead of overwriting.
-        type: bool
-        default: true
 """
 EXAMPLES = r"""
 - name: Initialize a new dasd volume for use on a z/OS system and save the output to a html file. This task sets
@@ -142,24 +116,13 @@ EXAMPLES = r"""
     index: yes
     sms_managed: yes
     verify_no_data_sets_exist: yes
-    output_html:
-      full_file_path: ./test.html
-      append: yes
 
-- name: Initialize 3 new dasd volume for use on a z/OS system and save the output to a html file. These additional will be set as ine8d9 and ine8da
+- name: Initialize 3 new DASD volumes (0901, 0902, 0903) for use on a z/OS system as 'DEMO01', 'DEMO02', 'DEMO03' using Ansible loops.
   zos_ickdsf_init:
-    volume_address: e8d8
-    verify_offline: no
-    volid: ine8d8
-    vtoc_tracks: 30
-    index: yes
-    sms_managed: yes
-    verify_no_data_sets_exist: yes
-    addr_range: 2
-    volid_prefix: in
-    output_html:
-      full_file_path: ./test.html
-      append: yes
+    volume_address: "090{{ item }}"
+    volid: "DEMO0{{ item }}"
+  register: output
+  loop: "{{ range(1, 4, 1) }}"
 """
 RETURN = r'''
 command:
@@ -205,12 +168,6 @@ def run_module():
         index=dict(type="bool", required=False, default=True),
         sms_managed=dict(type="bool", required=False, default=True),
         verify_no_data_sets_exist=dict(type="bool", required=False, default=True),
-        addr_range=dict(type="int"),
-        volid_prefix=dict(type="str"),
-        output_html=dict(type="dict", required=False, options=dict(
-            full_file_path=dict(type="str", required=True),
-            append=dict(type="bool", default=True, required=False))
-        )
     )
 
     result = dict(

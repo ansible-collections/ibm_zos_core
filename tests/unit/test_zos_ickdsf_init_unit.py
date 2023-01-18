@@ -38,9 +38,6 @@ default_opts = {
     'index' : True,
     'verify_no_data_sets_exist' : True,
     'sms_managed' : True,
-    'addr_range' : None,
-    'volid_prefix' : None,
-
 }
 default_opts_cmd = [" init unit(0903) noverify verifyoffline  - ", "  storagegroup nods "]
 

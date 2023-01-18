@@ -131,24 +131,50 @@ command:
   type: list
   elements: str
   sample:
-    - "[ \" init unit(0903) noverify noverifyoffline volid(KTN003) - \",\"   ds \" ]"
+    [
+      " init unit(0903) noverify noverifyoffline volid(DEMO08) - ",
+      "   nods noindex"
+    ]
 msg:
   description: Failure message returned by module.
   returned: failure
   type: str
-  sample: 'Volume address must be a valid 64-bit hex value'
-mvs_raw_output:
+  sample: 'Index' cannot be False for SMS managed volumes.
+rc:
   description:
-    - Output of mvs_raw module call.
-    - This is a temporary return field.
-  returned: when mvs_raw is invoked
-  type: str
-  sample: not sure...
-ret_code:
-  description:
-    - return code from mvs_raw
+    - return code from ICKDSF init mvs command
   type: dict
-  returned: success
+  returned: when ICKDSF init command is issued.
+content:
+  description:
+    - Raw output from ICKDSF.
+  returned: when ICKDSF init command is issued.
+  type: list
+  elements: str
+  sample:
+    [
+      "1ICKDSF - MVS/ESA    DEVICE SUPPORT FACILITIES 17.0                TIME: 18:32:22        01/17/23     PAGE   1",
+      "0        ",
+      "0 INIT UNIT(0903) NOVERIFY NOVERIFYOFFLINE VOLID(KET678) -",
+      "0   NODS NOINDEX",
+      "-ICK00700I DEVICE INFORMATION FOR 0903 IS CURRENTLY AS FOLLOWS:",
+      "-          PHYSICAL DEVICE = 3390",
+      "-          STORAGE CONTROLLER = 2107",
+      "-          STORAGE CONTROL DESCRIPTOR = E8",
+      "-          DEVICE DESCRIPTOR = 0C",
+      "-          ADDITIONAL DEVICE INFORMATION = 4A00003C",
+      "-          TRKS/CYL = 15, # PRIMARY CYLS = 100",
+      "0ICK04000I DEVICE IS IN SIMPLEX STATE",
+      "0ICK00703I DEVICE IS OPERATED AS A MINIDISK",
+      " ICK00091I 0903 NED=002107.900.IBM.75.0000000BBA01",
+      "-ICK03091I EXISTING VOLUME SERIAL READ = KET987",
+      "-ICK03096I EXISTING VTOC IS LOCATED AT CCHH=X'0000 0001' AND IS    14 TRACKS.",
+      "0ICK01314I VTOC IS LOCATED AT CCHH=X'0000 0001' AND IS    14 TRACKS.",
+      "-ICK00001I FUNCTION COMPLETED, HIGHEST CONDITION CODE WAS 0",
+      "0          18:32:22    01/17/23",
+      "0        ",
+      "-ICK00002I ICKDSF PROCESSING COMPLETE. MAXIMUM CONDITION CODE WAS 0"
+    ]
 '''
 
 from ansible.module_utils.basic import AnsibleModule

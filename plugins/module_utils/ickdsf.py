@@ -125,7 +125,7 @@ def init(module, result, parsed_args):
     rc = response.rc
 
     result['rc'] = rc
-    result['content'] = response.stdout
+    result['content'] = response.stdout.strip().split("\n")
     if response.stderr:
         result['stderr'] = response.stderr
 

@@ -56,10 +56,11 @@ def test_index_param(ansible_zos_module, params):
     for result in results.contacted.values():
         assert result.get("changed") is True
         assert result.get('rc') == 0
+        content_str = ''.join(result.get("content"))
         if params['index']:
-            assert INDEX_CREATION_SUCCESS_MSG in result.get("content")
+            assert INDEX_CREATION_SUCCESS_MSG in content_str
         else:
-            assert INDEX_CREATION_SUCCESS_MSG not in result.get("content")
+            assert INDEX_CREATION_SUCCESS_MSG not in content_str
 
     # bring volume back online
     hosts.all.zos_operator(cmd=f"vary {TEST_VOL_ADDR},online")
@@ -127,8 +128,8 @@ def test_vtoc_tracks_parm(ansible_zos_module):
         'volume_address': TEST_VOL_ADDR,
         'verify_offline': False,
         'volid': TEST_VOL_SER,
-        # 'vtoc_tracks' : 8
-        'vtoc_tracks' : 11 # test 2 digit vtoc_index also works
+        'vtoc_tracks' : 8
+        # 'vtoc_tracks' : 11 # test to test that this test handles 2 digit vtoc_index
     }
     # take volume offline
     hosts.all.zos_operator(cmd=f"vary {TEST_VOL_ADDR},offline")
@@ -141,7 +142,8 @@ def test_vtoc_tracks_parm(ansible_zos_module):
     for result in results.contacted.values():
         assert result.get("changed") is True
         assert result.get('rc') == 0
-        assert VTOC_LOC_MSG.format(params.get('vtoc_tracks')) in result.get("content")
+        content_str = ''.join(result.get("content"))
+        assert VTOC_LOC_MSG.format(params.get('vtoc_tracks')) in content_str
 
 @pytest.mark.parametrize(
     "params", [

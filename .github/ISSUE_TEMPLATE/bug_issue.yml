@@ -1,0 +1,135 @@
+name: Report a bug
+description: Request that a bug be reviewed.
+title: "[Bug] <title> "
+labels: [Bug]
+assignees:
+  - IBMAnsibleHelper
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before reporting a bug, please review existing isssues to avoid duplication.
+        ---
+  - type: textarea
+    id: issue-description
+    attributes:
+      label: Bug description
+      description: Describe the bug you are experiencing.
+      placeholder: |
+        Verbosity is encouraged, the more you share the better for us to understand.
+          1. Include the steps to reproduce
+          2. Include playbook if applicable
+          3. Include screen captures of applicable
+          4. Include expected vs actual results if applicable
+    validations:
+      required: true
+  - type: textarea
+    id: issue-output
+    attributes:
+      label: Playbook verbosity output
+      description: Provide the command line output with debug and verbosity enabled.
+      placeholder: |
+        Insert the ouput using this form of the playbook command.
+          - `ANSIBLE_DEBUG=1 ansible-playbook -i inventory your-playbook.yml -vvvv`
+    validations:
+      required: false
+  - type: textarea
+    id: ansible-cfg
+    attributes:
+      label: Contents of `ansible.cfg`
+      description: Provide the contents of `ansible.cfg`.
+      render: YAML
+    validations:
+      required: false
+  - type: textarea
+    id: ansible-inventory
+    attributes:
+      label: Contents of the inventory
+      description: Provide the contents of the inventory
+      render: YAML
+    validations:
+      required: false
+  - type: textarea
+    id: ansible-vars
+    attributes:
+      label: Contents of `group_vars` or `host_vars`
+      description: Provide the contents of `group_vars` or `host_vars`
+      render: YAML
+    validations:
+      required: false
+  - type: textarea
+    id: ansible-version
+    attributes:
+      label: Ansible version
+      description: What is the verson of Ansible on the controller.
+      placeholder: Paste verbatim output from `ansible --version`.
+      render: shell
+    validations:
+      required: true
+  - type: dropdown
+    id: collection-version
+    attributes:
+      label: IBM z/OS Ansible core Version
+      description: |
+        Which version of the z/OS Ansible core collection are you using. If you are unsure, run the command: `cat ~/.ansible/collections/ansible_collections/ibm/ibm_zos_core/MANIFEST.json | grep version`
+      multiple: true
+      options:
+        - v1.0.0
+        - v1.1.0
+        - v1.2.1
+        - v1.3.0
+        - v1.3.1
+        - v1.3.3
+        - v1.3.5
+        - v1.3.6
+        - v1.4.0-beta.1
+        - v1.4.0-beta.2
+    validations:
+      required: true
+  - type: dropdown
+    id: zoau-version
+    attributes:
+      label: IBM ZOAU version
+      description: Which version of ZOAU are you using. Ensure you are on the latest PTF.
+      multiple: true
+      options:
+        - v1.0.3
+        - v1.1.1
+        - v1.2.0
+    validations:
+      required: true
+  - type: input
+    id: zos-version
+    attributes:
+      label: z/OS version
+      description: What is the version of z/OS on the managed node.
+    validations:
+      required: false
+  - type: dropdown
+    id: modules
+    attributes:
+      label: Ansible module
+      description: Select which modules are being reported in this bug. You can select more than one.
+      multiple: true
+      options:
+        - zos_apf
+        - zos_backup_restore
+        - zos_blockinfile
+        - zos_copy
+        - zos_data_set
+        - zos_encode
+        - zos_fetch
+        - zos_find
+        - zos_gather_facts
+        - zos_job_output
+        - zos_job_query
+        - zos_job_submit
+        - zos_lineinfile
+        - zos_mount
+        - zos_mvs_raw
+        - zos_operator
+        - zos_operator_action_query
+        - zos_ping
+        - zos_tso_command
+    validations:
+      required: false

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020
+# Copyright (c) IBM Corporation 2019, 2020, 2022
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -20,50 +20,47 @@ __metaclass__ = type
 DOCUMENTATION = r"""
 ---
 module: zos_operator
+version_added: '1.1.0'
 short_description: Execute operator command
 description:
     - Execute an operator command and receive the output.
 author:
   - "Ping Xiao (@xiaopingBJ)"
   - "Demetrios Dimatos (@ddimatos)"
+  - "Rich Parker (@richp405)"
+  - "Oscar Fernando Flores (@fernandofloresg)"
 options:
   cmd:
     description:
-      - The command to execute.  This command will be wrapped in quotations to run.
+      - The command to execute.
       - If the command contains single-quotations, another set of single quotes must be added.
-      - For example, Change the command "...,P='DSN3EPX,-DBC1,S'" to "...,P=''DSN3EPX,-DBC1,S'' ".
+      - For example, change the command "...,P='DSN3EPX,-DBC1,S'" to "...,P=''DSN3EPX,-DBC1,S'' ".
     type: str
     required: true
   verbose:
     description:
-      - Return diagnostic messages that lists and describes the execution of the
-        operator commands.
-      - Return security trace messages that help you understand and diagnose the
-        execution of the operator commands
-      - Return trace instructions displaying how the the command's operation is
-        read, evaluated and executed.
+      - Return diagnostic messages that describes the commands execution,
+        options, buffer and response size.
     type: bool
     required: false
     default: false
   wait_time_s:
     description:
-      - Set maximum time in seconds to wait for the commands to execute.
-      - When set to 0, the system default is used.
+      - Set maximum time in seconds to wait for the commands to execute, commands
+        will return sooner than I(wait_time_s) if the complete.
+      - The I(wait_time_s) must be between 1 and 21474836.
       - This option is helpful on a busy system requiring more time to execute
         commands.
-      - Setting I(wait) can instruct if execution should wait the
-        full I(wait_time_s).
     type: int
     required: false
-    default: 0
+    default: 1
   wait:
     description:
+      - Configuring wait used by the M(ibm.ibm_zos_core.zos_operator) module has been
+        deprecated and will be removed in ibm.ibm_zos_core collection version
+        1.6.0.
       - Specify to wait the full I(wait_time_s) interval before retrieving
         responses.
-      - This option is recommended to ensure that the responses are accessible and
-        captured by logging facilities and the I(verbose) option.
-      - I(delay=True) waits the full I(wait_time_s) interval.
-      - I(delay=False) returns as soon as the first command executes.
     type: bool
     required: false
     default: true
@@ -87,44 +84,64 @@ EXAMPLES = r"""
   zos_operator:
     cmd: 'd u,all'
     wait_time_s: 5
-    wait: false
 
 - name: Execute operator command to show jobs, always waiting 7 seconds for response
   zos_operator:
     cmd: 'd u,all'
     wait_time_s: 7
-    wait: true
 """
 
 RETURN = r"""
 rc:
     description:
-      Return code of the operator command
+      Return code for the submitted operator command.
     returned: always
     type: int
     sample: 0
+cmd:
+    description:
+      Operator command submitted.
+    returned: always
+    type: str
+    sample: d u,all
+elapsed:
+    description:
+      The number of seconds that elapsed waiting for the command to complete.
+    returned: always
+    type: float
+    sample: 51.53
+wait_time_s:
+    description:
+      The maximum time in seconds to wait for the commands to execute.
+    returned: always
+    type: int
+    sample: 5
 content:
     description:
-       The text from the command issued, plus verbose messages if I(verbose=True)
+       The resulting text from the command submitted.
     returned: on success
     type: list
     sample:
-        [ "MV2C      2020039  04:29:57.58             ISF031I CONSOLE XIAOPIN ACTIVATED ",
-          "MV2C      2020039  04:29:57.58            -D U,ALL                           ",
-          "MV2C      2020039  04:29:57.59             IEE457I 04.29.57 UNIT STATUS 948  ",
-          "         UNIT TYPE STATUS        VOLSER     VOLSTATE      SS                 ",
-          "          0100 3277 OFFLINE                                 0                ",
-          "          0101 3277 OFFLINE                                 0                ",
-          "ISF050I USER=OMVSADM GROUP= PROC=REXX TERMINAL=09A3233B",
-          "ISF051I SAF Access allowed SAFRC=0 ACCESS=READ CLASS=SDSF RESOURCE=GROUP.ISFSPROG.SDSF",
-          "ISF051I SAF Access allowed SAFRC=0 ACCESS=READ CLASS=SDSF RESOURCE=ISFCMD.FILTER.PREFIX",
-          "ISF055I ACTION=D Access allowed USERLEVEL=7 REQLEVEL=1",
-          "ISF051I SAF Access allowed SAFRC=0 ACCESS=READ CLASS=SDSF RESOURCE=ISFCMD.ODSP.ULOG.JES2",
-          "ISF147I REXX variable ISFTIMEOUT fetched, return code 00000001 value is ''.",
-          "ISF754I Command 'SET DELAY 5' generated from associated variable ISFDELAY.",
-          "ISF769I System command issued, command text: D U,ALL -S.",
-          "ISF146I REXX variable ISFDIAG set, return code 00000001 value is '00000000 00000000 00000000 00000000 00000000'.",
-          "ISF766I Request completed, status: COMMAND ISSUED."
+        [ "EC33017A   2022244  16:00:49.00             ISF031I CONSOLE OMVS0000 ACTIVATED",
+          "EC33017A   2022244  16:00:49.00            -D U,ALL ",
+          "EC33017A   2022244  16:00:49.00             IEE457I 16.00.49 UNIT STATUS 645",
+          "                                           UNIT TYPE STATUS        VOLSER     VOLSTATE      SS",
+          "                                           0000 3390 F-NRD                        /RSDNT     0",
+          "                                           0001 3211 OFFLINE                                 0",
+          "                                           0002 3211 OFFLINE                                 0",
+          "                                           0003 3211 OFFLINE                                 0",
+          "                                           0004 3211 OFFLINE                                 0",
+          "                                           0005 3211 OFFLINE                                 0",
+          "                                           0006 3211 OFFLINE                                 0",
+          "                                           0007 3211 OFFLINE                                 0",
+          "                                           0008 3211 OFFLINE                                 0",
+          "                                           0009 3277 OFFLINE                                 0",
+          "                                           000C 2540 A                                       0",
+          "                                           000D 2540 A                                       0",
+          "                                           000E 1403 A                                       0",
+          "                                           000F 1403 A                                       0",
+          "                                           0010 3211 A                                       0",
+          "                                           0011 3211 A                                       0"
         ]
 changed:
     description:
@@ -137,18 +154,22 @@ changed:
     sample: true
 """
 
-
+from timeit import default_timer as timer
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
     AnsibleModuleHelper,
 )
 from ansible.module_utils.six import PY3
-from tempfile import NamedTemporaryFile
-from stat import S_IEXEC, S_IREAD, S_IWRITE
-from os import chmod
+
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
+    MissingZOAUImport,
+)
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,
+)
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
+    MissingZOAUImport,
 )
 
 if PY3:
@@ -156,24 +177,50 @@ if PY3:
 else:
     from pipes import quote
 
+try:
+    from zoautil_py import opercmd
+except Exception:
+    opercmd = MissingZOAUImport()
+
+try:
+    from zoautil_py.types import ZOAUResponse
+except Exception:
+    ZOAUResponse = MissingZOAUImport()
+
+
+def execute_command(operator_cmd, timeout=1, *args, **kwargs):
+    start = timer()
+    response = opercmd.execute(operator_cmd, timeout, *args, **kwargs)
+    end = timer()
+    rc = response.rc
+    stdout = response.stdout_response
+    stderr = response.stderr_response
+    elapsed = round(end - start, 2)
+    return rc, stdout, stderr, elapsed
+
 
 def run_module():
     module_args = dict(
         cmd=dict(type="str", required=True),
         verbose=dict(type="bool", required=False, default=False),
-        wait_time_s=dict(type="int", required=False, default=0),
+        wait_time_s=dict(type="int", required=False, default=1),
         wait=dict(type="bool", required=False, default=True),
     )
 
     result = dict(changed=False)
-
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=False)
+
+    if module.params.get('wait'):
+        module.deprecate(
+            msg='Support for configuring wait has been deprecated.'
+            'Configuring wait is now managed by setting \'wait_time_s\'',
+            collection_name='ibm.ibm_zos_core', version='1.5.0')
 
     try:
         new_params = parse_params(module.params)
         rc_message = run_operator_command(new_params)
         result["rc"] = rc_message.get("rc")
-
+        result["elapsed"] = rc_message.get("elapsed")
         # This section will build 2 lists of strings: content=>user return, and
         # short_str, which is the first 5 lines of stdout and stderr.
         # 5: depending on the shell, there can be 1-2 leading blank lines +
@@ -190,7 +237,8 @@ def run_module():
         tstr = rc_message.get("stdout")
         if tstr is not None:
             for s in tstr.split("\n"):
-                result["content"].append(s)
+                if s:
+                    result["content"].append(s)
                 if ssctr < 5:
                     short_str.append(s)
                     ssctr += 1
@@ -198,14 +246,16 @@ def run_module():
         tstr = rc_message.get("stderr")
         if tstr is not None:
             for s in tstr.split("\n"):
-                result["content"].append(s)
+                if s:
+                    result["content"].append(s)
                 if ssctr < 5:
                     short_str.append(s)
                     ssctr += 1
 
         # call is returned from run_operator_command, specifying what was run.
-        # Adding this to user return can help in tracing compound call errors.
-        result["content"].append("Ran" + rc_message.get("call"))
+        # result["cmd"] = new_params.get("cmd")
+        result["cmd"] = rc_message.get("call")
+        result["wait_time_s"] = new_params.get("wait_time_s")
         result["changed"] = False
 
         # rc=0, something succeeded (the calling script ran),
@@ -215,23 +265,23 @@ def run_module():
             if len(short_str) > 2:
                 result["changed"] = True
                 for linetocheck in short_str:
-                    if "INVALID" in linetocheck:
+                    if "invalid" in linetocheck.lower():
                         result["exception"] = "Invalid detected: " + linetocheck
                         result["changed"] = False
                         module.fail_json(msg=result["exception"], **result)
-                    elif "ERROR" in linetocheck:
+                    elif "error" in linetocheck.lower():
                         result["exception"] = "Error detected: " + linetocheck
                         result["changed"] = False
                         module.fail_json(msg=result["exception"], **result)
-                    elif "UNIDENTIFIABLE" in linetocheck:
+                    elif "unidentifiable" in linetocheck.lower():
                         result["exception"] = "Unidentifiable detected: " + linetocheck
                         result["changed"] = False
                         module.fail_json(msg=result["exception"], **result)
             else:
-                module.fail_json(msg="Too little response text", **result)
+                module.fail_json(msg="Expected response to be more than 2 lines.", **result)
         else:
             module.fail_json(
-                msg="Non-0 response from launch script: " + str(result["rc"]), **result
+                msg="Non-zero response received: " + str(result["rc"]), **result
             )
     except Error as e:
         module.fail_json(msg=repr(e), **result)
@@ -256,123 +306,30 @@ def parse_params(params):
 
 
 def run_operator_command(params):
-    # Usage: (rexfile) wait_time_s command [-v] [-n]
-    #       -v: print out verbose security information
-    #       -n: nowait
-
-    script = """/*rexx*/
-wait_time = __argv.2
-command = __argv.3
-verbosemode = __argv.4
-nowait = __argv.5
-
-Address 'TSO'
-IsfRC = isfcalls( "ON" )
-showoutput = 0
-waitmsg = " WAIT"
-if nowait == "NOWAIT" then do
-  waitmsg = ""
-  end
-
-verbose = ""
-if verbosemode == "VERB" then do
-  showoutput = 1
-  ISFSECTRACE="ON"
-  verbose = "( VERBOSE" waitmsg ")"
-  end
-else do
-  if waitmsg == " WAIT" then do
-    verbose = "( WAIT )"
-    end
-  end
-
-if wait_time > 0 then do
-  ISFDELAY=wait_time
-  end
-
-sdsfcmd = False
-
-fwd = WORD(command, 1)
-ffwd = translate(fwd)
-fch = SUBSTR( fwd, 1, 1)
-if( ffwd == 'QUERY' | ffwd == 'SET' | ffwd == 'WHO' | fch == '/' ) then
-  do
-    sdsfcmd = True
-  end
-if sdsfcmd == True then
-  do
-    address SDSF "ISFEXEC " command verbose
-  end
-else
-  do
-    address SDSF "ISFEXEC '/"command"'" verbose
-  end
-saverc = rc
-
-IsfRC = isfcalls( "OFF" )
-trace Off
-if isfulog.0 > 0 then
-  do
-    do ix=1 to isfulog.0
-      say isfulog.ix
-    end
-  end
-if isfresp.0 > 0 then
-  do
-    do ix=1 to isfresp.0
-      say isfresp.ix
-    end
-  end
-if showoutput > 0 then
-  do
-    SAY "===================="
-    SAY "result code: " saverc
-    SAY "===================="
-
-    say ""
-    say "Action messages"
-    say isfmsg
-    say ""
-    do ix=1 to isfmsg2.0
-      say isfmsg2.ix
-    end
-    say ""
-  end
-EXIT saverc
-"""
     module = AnsibleModuleHelper(argument_spec={})
 
-    fulline = " " + str(params.get("wait_time_s")) + " "
-
-    fulline += '"' + params.get("cmd") + '"'
+    kwargs = {}
 
     if params.get("verbose"):
-        fulline += " VERB"
-    else:
-        fulline += " QUIET"
+        kwargs.update({"verbose": True})
+        kwargs.update({"debug": True})
 
-    if params.get("wait"):
-        fulline += " WAIT"
-    else:
-        fulline += " NOWAIT"
+    wait_s = params.get("wait_time_s")
+    cmdtxt = params.get("cmd")
 
-    delete_on_close = True
-    tmp_file = NamedTemporaryFile(delete=delete_on_close)
-    with open(tmp_file.name, "w") as f:
-        f.write(script)
-    chmod(tmp_file.name, S_IEXEC | S_IREAD | S_IWRITE)
-
-    rc, stdout, stderr = module.run_command(tmp_file.name + fulline)
+    args = []
+    rc, stdout, stderr, elapsed = execute_command(cmdtxt, timeout=wait_s, *args, **kwargs)
 
     if rc > 0:
-        message = stdout + stderr + "\nRan: " + fulline
-        raise OperatorCmdError(fulline, rc, message.split("\n") if message else message)
+        message = "\nOut: {0}\nErr: {1}\nRan: {2}".format(stdout, stderr, cmdtxt)
+        raise OperatorCmdError(cmdtxt, rc, message.split("\n"))
 
     return {
         "rc": rc,
         "stdout": stdout,
         "stderr": stderr,
-        "call": fulline,
+        "call": cmdtxt,
+        "elapsed": elapsed,
     }
 
 

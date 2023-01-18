@@ -21,6 +21,7 @@ import stat
 
 from hashlib import sha256
 from ansible.utils.hashing import checksum
+from shellescape import quote
 
 __metaclass__ = type
 
@@ -34,7 +35,48 @@ TEST_PS = "IMSTESTL.IMS01.DDCHKPT"
 TEST_PS_VB = "IMSTESTL.IMS01.SPOOL1"
 TEST_PDS = "IMSTESTL.COMNUC"
 TEST_PDS_MEMBER = "IMSTESTL.COMNUC(ATRQUERY)"
-TEST_VSAM = "IMSTESTL.LDS01.WADS0"
+TEST_VSAM = "FETCH.TEST.VS"
+TEST_EMPTY_VSAM = "IMSTESTL.LDS01.WADS0"
+FROM_ENCODING = "IBM-1047"
+TO_ENCODING = "ISO8859-1"
+USS_FILE = "/tmp/fetch.data"
+TEST_DATA = """0001This is for encode conversion testsing
+0002This is for encode conversion testsing
+0003This is for encode conversion testsing
+0004This is for encode conversion testsing
+"""
+KSDS_CREATE_JCL = """//CREKSDS    JOB (T043JM,JM00,1,0,0,0),'CREATE KSDS',CLASS=R,
+//             MSGCLASS=X,MSGLEVEL=1,NOTIFY=OMVSADM
+//STEP1  EXEC PGM=IDCAMS
+//SYSPRINT DD  SYSOUT=A
+//SYSIN    DD  *
+    DELETE FETCH.TEST.VS
+    SET MAXCC=0
+    DEFINE CLUSTER                          -
+    (NAME(FETCH.TEST.VS)                  -
+    INDEXED                                -
+    KEYS(4 0)                            -
+    RECSZ(200 200)                         -
+    RECORDS(100)                           -
+    SHAREOPTIONS(2 3)                      -
+    VOLUMES(000000) )                      -
+    DATA (NAME(FETCH.TEST.VS.DATA))       -
+    INDEX (NAME(FETCH.TEST.VS.INDEX))
+/*
+"""
+KSDS_REPRO_JCL = """//DOREPRO    JOB (T043JM,JM00,1,0,0,0),'CREATE KSDS',CLASS=R,
+//             MSGCLASS=E,MSGLEVEL=1,NOTIFY=OMVSADM
+//REPROJOB   EXEC PGM=IDCAMS
+//SYSPRINT DD  SYSOUT=A
+//SYSIN    DD   *
+ REPRO -
+  INFILE(SYS01) -
+  OUTDATASET({0})
+//SYS01    DD *
+ DDUMMY   RECORD                      !! DO NOT ALTER !!
+ EEXAMPLE RECORD   REMOVE THIS LINE IF EXAMPLES NOT REQUIRED
+/*
+"""
 
 
 def test_fetch_uss_file_not_present_on_local_machine(ansible_zos_module):
@@ -45,6 +87,7 @@ def test_fetch_uss_file_not_present_on_local_machine(ansible_zos_module):
 
     try:
         results = hosts.all.zos_fetch(**params)
+        print(results.contacted.values())
 
         for result in results.contacted.values():
 
@@ -146,8 +189,52 @@ def test_fetch_partitioned_data_set(ansible_zos_module):
 
 def test_fetch_vsam_data_set(ansible_zos_module):
     hosts = ansible_zos_module
-    params = dict(src=TEST_VSAM, dest="/tmp/", flat=True)
+    TEMP_JCL_PATH = "/tmp/ansible"
     dest_path = "/tmp/" + TEST_VSAM
+    try:
+        # start by creating the vsam dataset (could use a helper instead? )
+        hosts.all.file(path=TEMP_JCL_PATH, state="directory")
+        hosts.all.shell(
+            cmd="echo {0} > {1}/SAMPLE".format(quote(KSDS_CREATE_JCL), TEMP_JCL_PATH)
+        )
+        hosts.all.zos_job_submit(
+            src="{0}/SAMPLE".format(TEMP_JCL_PATH), location="USS", wait=True
+        )
+        hosts.all.zos_copy(content=TEST_DATA, dest=USS_FILE)
+        hosts.all.zos_encode(
+            src=USS_FILE,
+            dest=TEST_VSAM,
+            encoding={
+                "from": FROM_ENCODING,
+                "to": TO_ENCODING,
+            },
+        )
+
+        params = dict(src=TEST_VSAM, dest="/tmp/", flat=True, is_binary=True)
+        results = hosts.all.zos_fetch(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("data_set_type") == "VSAM"
+            assert result.get("module_stderr") is None
+            assert result.get("dest") == dest_path
+            assert os.path.exists(dest_path)
+            file = open(dest_path, 'r')
+            read_file = file.read()
+            print(read_file)
+            assert read_file == TEST_DATA
+
+    finally:
+        if os.path.exists(dest_path):
+            None
+            os.remove(dest_path)
+        hosts.all.file(path=USS_FILE, state="absent")
+        hosts.all.file(path=TEMP_JCL_PATH, state="absent")
+
+
+def test_fetch_vsam_empty_data_set(ansible_zos_module):
+    hosts = ansible_zos_module
+    params = dict(src=TEST_EMPTY_VSAM, dest="/tmp/", flat=True)
+    dest_path = "/tmp/" + TEST_EMPTY_VSAM
     try:
         results = hosts.all.zos_fetch(**params)
         for result in results.contacted.values():
@@ -480,15 +567,18 @@ def test_fetch_flat_create_dirs(ansible_zos_module, z_python_interpreter):
         if os.path.exists(dest_path):
             shutil.rmtree("/tmp/" + remote_host)
 
-
-def test_sftp_negative_port_specification_fails(ansible_zos_module):
-    hosts = ansible_zos_module
-    params = dict(src="/etc/profile", dest="/tmp/", flat=True, sftp_port=-1)
-    try:
-        results = hosts.all.zos_fetch(**params)
-        dest_path = "/tmp/profile"
-        for result in results.contacted.values():
-            assert result.get("msg") is not None
-    finally:
-        if os.path.exists(dest_path):
-            os.remove(dest_path)
+# Test is no longer valid because the option is deprecated, leaving this behind
+# as it might make sense we update the test to drive a port test via the ssh
+# connection but that begins to fall out of scope to test our own module options
+# but might be nice we do include that outlier test
+# def test_sftp_negative_port_specification_fails(ansible_zos_module):
+#     hosts = ansible_zos_module
+#     params = dict(src="/etc/profile", dest="/tmp/", flat=True, sftp_port=-1)
+#     try:
+#         results = hosts.all.zos_fetch(**params)
+#         dest_path = "/tmp/profile"
+#         for result in results.contacted.values():
+#             assert result.get("msg") is not None
+#     finally:
+#         if os.path.exists(dest_path):
+#             os.remove(dest_path)

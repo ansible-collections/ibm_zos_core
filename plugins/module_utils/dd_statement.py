@@ -512,6 +512,7 @@ class StdinDefinition(DataDefinition):
     def __init__(
         self,
         content,
+        tmphlq="",
         record_format="FB",
         space_primary=5,
         space_secondary=5,
@@ -539,6 +540,7 @@ class StdinDefinition(DataDefinition):
         """
         self.name = None
         name = DataSet.create_temp(
+            hlq=tmphlq,
             record_format=record_format,
             space_primary=space_primary,
             space_secondary=space_secondary,
@@ -588,6 +590,7 @@ class InputDefinition(StdinDefinition):
 class OutputDefinition(DataDefinition):
     def __init__(
         self,
+        tmphlq="",
         record_format="FBA",
         space_primary=100,
         space_secondary=50,
@@ -614,6 +617,7 @@ class OutputDefinition(DataDefinition):
         """
         self.name = None
         name = DataSet.create_temp(
+            hlq=tmphlq,
             record_format=record_format,
             space_primary=space_primary,
             space_secondary=space_secondary,
@@ -634,13 +638,20 @@ class OutputDefinition(DataDefinition):
 
 
 class VIODefinition(DataDefinition):
-    def __init__(self):
+    def __init__(self, tmphlq=None):
         """VIO DD type to be used in a DDStatement.
         VIO uses DASD space and system I/O more efficiently than other temporary data sets.
         A temporary data set will be created for use in cases where VIO is unavailable.
         Defaults for VIODefinition should be sufficient.
+
+        Args:
+            tmphlq (str, optional): HLQ to be used for temporary datasets. Defaults to None.
+
         """
-        hlq = datasets.hlq()
+        if tmphlq:
+            hlq = tmphlq
+        else:
+            hlq = datasets.hlq()
         name = datasets.tmp_name(hlq)
         super().__init__(name)
 

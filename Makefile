@@ -68,12 +68,12 @@ encrypt:
 	fi
 
 	@if [ -e scripts/mount-shr.sh ] && [ -e scripts/mount-shr.sh.encrypt ]; then \
-	    echo "Remvoing encrypted file 'scripts/mount-shr.sh.encrypt' in $(CURR_DIR)/scripts."; \
+	    echo "Removing encrypted file 'scripts/mount-shr.sh.encrypt' in $(CURR_DIR)/scripts."; \
 		rm -rf scripts/mount-shr.sh.encrypt; \
 	fi
 
 	@if [ -e scripts/profile-shr ] && [ -e scripts/profile-shr.encrypt ]; then \
-	    echo "Remvoing encrypted file 'scripts/profile-shr.encrypt' in $(CURR_DIR)/scripts."; \
+	    echo "Removing encrypted file 'scripts/profile-shr.encrypt' in $(CURR_DIR)/scripts."; \
 		rm -rf scripts/profile-shr.encrypt; \
 		fi
 

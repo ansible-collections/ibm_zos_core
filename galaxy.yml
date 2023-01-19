@@ -81,7 +81,7 @@ build_ignore:
   - tests/requirements.txt
   - test_config.yml
   - changelogs
-  - venv
+  - venv*
   - make.env.encrypt
   - Makefile
   - make.env

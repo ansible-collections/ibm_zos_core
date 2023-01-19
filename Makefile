@@ -37,8 +37,11 @@
 CURR_DIR := $(shell pwd)
 WHO := $(shell whoami)
 HOST_PYTHON = python3
-VENV = venv
+# VENV = venv
+# VENV := $(shell echo $$VENV)
+VENV := $(shell echo "$${VENV:-defaultValue}")
 VENV_BIN=$(VENV)/bin
+
 ZOS_PYTHON_DEFAULT=3.8
 ZOAU_DEFAULT=1.1.1
 # Test if docker is running

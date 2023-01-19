@@ -421,6 +421,11 @@ def main():
 
     # analysis the file type
     ds_utils = data_set.DataSetUtils(src)
+
+    # Check if dest/src exists
+    if not ds_utils.exists():
+        module.fail_json(msg=f"{src} does not exist")
+
     file_type = ds_utils.ds_type()
     if file_type == 'USS':
         file_type = 1

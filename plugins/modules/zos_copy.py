@@ -667,7 +667,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
     AnsibleModuleHelper,
 )
-from ansible.module_utils._text import to_bytes
+from ansible.module_utils._text import to_bytes, to_native
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.six import PY3
 from re import IGNORECASE
@@ -739,6 +739,9 @@ class CopyHandler(object):
             src_ds_type {str} -- The type of source
         """
         new_src = conv_path or temp_path or src
+        if self._file_has_crlf_endings(new_src):
+            new_src = self._create_temp_with_lf_endings(new_src)
+
         copy_args = dict()
 
         if self.is_binary:
@@ -919,6 +922,43 @@ class CopyHandler(object):
         for arg in args:
             result.update(arg)
         return result
+
+    def _file_has_crlf_endings(self, src):
+        """
+        """
+        with open(src, "r", newline="", encoding="ISO-8859-1") as src_file:
+            content = src_file.readline()
+
+        if content.endswith("\r\n") or content.endswith("\r"):
+            return True
+        else:
+            return False
+
+    def _create_temp_with_lf_endings(self, src):
+        """
+        """
+        try:
+            converted_src = tempfile.mkstemp()
+            tr_command = "tr -d '\r' < {0} > {1}".format(src, converted_src)
+            rc, stdout, stderr = self.module.run_command(tr_command)
+
+            if rc != 0:
+                raise CopyOperationError(
+                    msg="Error while trying to convert EOL sequence for source.",
+                    rc=rc,
+                    stdout=stdout,
+                    stderr=stderr,
+                    cmd=tr_command
+                )
+
+            return converted_src
+        except CopyOperationError as err:
+            raise err
+        except Exception as err:
+            raise CopyOperationError(
+                msg="Error while trying to convert EOL sequence for source.",
+                stderr=to_native(err)
+            )
 
 
 class USSCopyHandler(CopyHandler):
@@ -1395,13 +1435,13 @@ def get_file_record_length(file):
     max_line_length = 0
 
     with open(file, "r") as src_file:
-        current_line = src_file.readline()
+        current_line = src_file.readline().rstrip("\n\r")
 
         while current_line:
             if len(current_line) > max_line_length:
                 max_line_length = len(current_line)
 
-            current_line = src_file.readline()
+            current_line = src_file.readline().rstrip("\n\r")
 
     if max_line_length == 0:
         max_line_length = 80

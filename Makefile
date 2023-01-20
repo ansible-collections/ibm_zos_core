@@ -39,7 +39,7 @@ WHO := $(shell whoami)
 HOST_PYTHON = python3
 # VENV = venv
 # VENV := $(shell echo $$VENV)
-VENV := $(shell echo "$${VENV:-defaultValue}")
+VENV := $(shell echo "$${VENV:-venv}")
 VENV_BIN=$(VENV)/bin
 
 ZOS_PYTHON_DEFAULT=3.8

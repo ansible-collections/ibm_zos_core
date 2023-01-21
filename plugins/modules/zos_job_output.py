@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020
+# Copyright (c) IBM Corporation 2019, 2020, 2022
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -85,7 +85,8 @@ RETURN = r"""
 jobs:
   description:
     The output information for a list of jobs matching specified criteria.
-    If no job status is found, this will return an empty job code with msg=JOB NOT FOUND.
+    If no job status is found, this will return ret_code dictionary with
+    parameter msg_txt = The job could not be found.
   returned: success
   type: list
   elements: dict
@@ -156,7 +157,8 @@ jobs:
         content:
           description:
              The ddname content.
-          type: list[str]
+          type: list
+          elements: str
           sample:
              [ "         1 //HELLO    JOB (T043JM,JM00,1,0,0,0),'HELLO WORLD - JRM',CLASS=R,       JOB00134",
                "           //             MSGCLASS=X,MSGLEVEL=1,NOTIFY=S0JM                                ",
@@ -213,8 +215,8 @@ jobs:
             step_cc:
               description:
                 The CC returned for this step in the DD section.
-              type: str
-              sample: "00"
+              type: int
+              sample: 0
       sample:
         ret_code: {
          "code": 0,
@@ -223,7 +225,7 @@ jobs:
          "msg_txt": "",
          "steps": [
            { "step_name": "STEP0001",
-             "step_cc": "0000"
+             "step_cc": 0
            }
          ]
         }
@@ -349,7 +351,7 @@ jobs:
           "msg_txt": "",
           "steps": [
             { "step_name": "STEP0001",
-              "step_cc": "0000"
+              "step_cc": 0
             }
           ]
         },
@@ -368,7 +370,6 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import (
     job_output,
 )
-from tempfile import NamedTemporaryFile
 
 
 def run_module():

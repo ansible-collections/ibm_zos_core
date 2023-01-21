@@ -164,7 +164,7 @@ options:
     default: no
   encoding:
     description:
-      - The character set of the source I(src). M(ibm.ibm_zos_core.zos_lineinfile)
+      - The character set of the source I(src). M(zos_lineinfile)
         requires to be provided with correct encoding to read the content
         of USS file or data set. If this parameter is not provided, this
         module assumes that USS file or data set is encoded in IBM-1047.
@@ -252,17 +252,12 @@ backup_name:
     type: str
     sample: /path/to/file.txt.2015-02-03@04:15~
 """
-import re
 import json
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser, data_set, backup as Backup)
-from os import path
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     MissingZOAUImport,
-)
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
-    BetterArgParser,
 )
 
 
@@ -426,6 +421,11 @@ def main():
 
     # analysis the file type
     ds_utils = data_set.DataSetUtils(src)
+
+    # Check if dest/src exists
+    if not ds_utils.exists():
+        module.fail_json(msg=f"{src} does not exist")
+
     file_type = ds_utils.ds_type()
     if file_type == 'USS':
         file_type = 1

@@ -1,5 +1,0 @@
-minor_changes:
-  - >
-    zos_gather_facts - is a new module that can discover facts about the managed
-    z/OS target. This module leverages the zinfo utility offered by ZOAU.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/322).

@@ -89,7 +89,7 @@ options:
             description:
               - The data set name.
             type: str
-            required: true
+            required: false
           type:
             description:
               - The data set type. Only required when I(disposition=new).
@@ -556,9 +556,11 @@ options:
               - I(dd_input) supports single or multiple lines of input.
               - Multi-line input can be provided as a multi-line string
                 or a list of strings with 1 line per list item.
+              - If a multi-line string is provided make sure to use the
+                proper literal block style indicator "|".
               - If a list of strings is provided, newlines will be
                 added to each of the lines when used as input.
-            required: false
+            required: true
             type: raw
           return_content:
             description:
@@ -684,8 +686,8 @@ options:
                   - Specify a data set.
                   - I(dd_data_set) can reference an existing data set. The
                     data set referenced with C(data_set_name) must be allocated
-                    before the module M(ibm.ibm_zos_core.zos_mvs_raw) is run, you can
-                    use M(ibm.ibm_zos_core.zos_data_set) to allocate a data set.
+                    before the module M(zos_mvs_raw) is run, you can
+                    use M(zos_data_set) to allocate a data set.
                 required: false
                 type: dict
                 suboptions:
@@ -693,7 +695,7 @@ options:
                     description:
                       - The data set name.
                     type: str
-                    required: true
+                    required: false
                   type:
                     description:
                       - The data set type. Only required when I(disposition=new).
@@ -1153,9 +1155,11 @@ options:
                       - I(dd_input) supports single or multiple lines of input.
                       - Multi-line input can be provided as a multi-line string
                         or a list of strings with 1 line per list item.
+                      - If a multi-line string is provided make sure to use the
+                        proper literal block style indicator "|".
                       - If a list of strings is provided, newlines will be
                         added to each of the lines when used as input.
-                    required: false
+                    required: true
                     type: raw
                   return_content:
                     description:
@@ -1195,13 +1199,13 @@ options:
     required: false
     type: str
 notes:
-    - When executing programs using M(ibm.ibm_zos_core.zos_mvs_raw), you may encounter errors
+    - When executing programs using M(zos_mvs_raw), you may encounter errors
       that originate in the programs implementation. Two such known issues are
       noted below of which one has been addressed with an APAR.
-    - 1. M(ibm.ibm_zos_core.zos_mvs_raw) module execution fails when invoking
+    - 1. M(zos_mvs_raw) module execution fails when invoking
       Database Image Copy 2 Utility or Database Recovery Utility in conjunction
       with FlashCopy or Fast Replication.
-    - 2. M(ibm.ibm_zos_core.zos_mvs_raw) module execution fails when invoking DFSRRC00 with parm
+    - 2. M(zos_mvs_raw) module execution fails when invoking DFSRRC00 with parm
       "UPB,PRECOMP", "UPB, POSTCOMP" or "UPB,PRECOMP,POSTCOMP". This issue is
       addressed by APAR PH28089.
 seealso:
@@ -1495,6 +1499,29 @@ EXAMPLES = r"""
       - dd_input:
           dd_name: sysin
           content: " LISTCAT ENTRIES('SYS1.*')"
+
+- name: Drop the contents of input dataset into output dataset
+      using REPRO command.
+  zos_mvs_raw:
+    pgm: idcams
+    auth: yes
+    dds:
+    - dd_data_set:
+        dd_name: INPUT
+        data_set_name: myhlq.ds1.input
+    - dd_data_set:
+        dd_name: OUTPUT
+        data_set_name: myhlq.ds1.output
+    - dd_input:
+        dd_name: sysin
+        content: |
+            " REPRO -
+              INFILE(INPUT) -
+              OUTFILE(OUTPUT)"
+    - dd_output:
+        dd_name: sysprint
+        return_content:
+          type: text
 """
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
@@ -1572,7 +1599,7 @@ def run_module():
         sms_data_class=dict(type="str"),
         block_size=dict(type="int"),
         directory_blocks=dict(type="int"),
-        key_label=dict(type="str"),
+        key_label=dict(type="str", no_log=True),
         type=dict(
             type="str",
             choices=[
@@ -1590,6 +1617,7 @@ def run_module():
         ),
         encryption_key_1=dict(
             type="dict",
+            no_log=True,
             options=dict(
                 label=dict(type="str", required=True),
                 encoding=dict(type="str", required=True, choices=["l", "h"]),
@@ -1597,13 +1625,14 @@ def run_module():
         ),
         encryption_key_2=dict(
             type="dict",
+            no_log=True,
             options=dict(
                 label=dict(type="str", required=True),
                 encoding=dict(type="str", required=True, choices=["l", "h"]),
             ),
         ),
-        key_length=dict(type="int"),
-        key_offset=dict(type="int"),
+        key_length=dict(type="int", no_log=False),
+        key_offset=dict(type="int", no_log=False),
         record_length=dict(type="int"),
         record_format=dict(type="str", choices=["u", "vb", "vba", "fb", "fba"]),
         return_content=dict(

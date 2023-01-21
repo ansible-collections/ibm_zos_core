@@ -510,18 +510,40 @@ def get_changed_plugins(path, branch="origin/dev"):
         list[str]: A list of changed file paths.
     """
     changed_plugins_modules = []
+
+    # Added the remote repository URL to avoid the warning "warn: Are you sure you pushed 'HEAD' there?"
+    # which results in a non-zero RC and fails the script. Follows the man page usage:
+    # git request-pull [-p] <start> <URL> [<end>], also for the end it can no longer be './' else you will
+    # see a error `refs/..... found at ./ but points to a different object' so its best to use the branch name
+    #
+    # --show-current not supported on the git version in the container?
+    # stream = os.popen('git branch --show-current')
+    stream = os.popen("git branch |grep '*' |cut -d' ' -f2")
+    current_branch_name = stream.read()
+    current_branch_name = current_branch_name.rstrip()
+
+    branch = branch.rstrip()
     get_diff_pr = subprocess.Popen(
-        ["git", "request-pull", branch, "./"],
+        ["git", "request-pull", branch, "git@github.com:ansible-collections/ibm_zos_core.git", current_branch_name],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         cwd=path,
+        env={'COLUMNS':'500'},
     )
 
     stdout, stderr = get_diff_pr.communicate()
     stdout = stdout.decode("utf-8")
+    stderr = stderr.decode('utf-8')
 
-    if get_diff_pr.returncode > 0:
+    if get_diff_pr.returncode == 1:
+        if "Could not read from remote repository" in stderr:
+            pass
+        else:
+            raise RuntimeError("Could not acquire change list, error = [{0}]".format(stderr))
+
+    if get_diff_pr.returncode > 1:
         raise RuntimeError("Could not acquire change list, error = [{0}]".format(stderr))
+
     if stdout:
         for line in stdout.split("\n"):
             path_corrected_line = None
@@ -606,7 +628,6 @@ if __name__ == "__main__":
     # TODO: add logic to only grab necessary tests that are impacted by changes
     args = parse_arguments()
 
-    global collection_to_use
     collection_to_use = args.collection
 
     artifacts = build_artifacts_from_collection(args.path)

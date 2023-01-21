@@ -26,7 +26,7 @@ author:
     - "Rich Parker (@richp405)"
 short_description: Mount a z/OS file system.
 description:
-  - The module M(ibm.ibm_zos_core.zos_mount) can manage mount operations for a
+  - The module M(zos_mount) can manage mount operations for a
     z/OS UNIX System Services (USS) file system data set.
   - The I(src) data set must be unique and a Fully Qualified Name (FQN).
   - The I(path) will be created if needed.
@@ -158,6 +158,7 @@ options:
                     - Comments are used to encapsulate the I(persistent/data_store) entry
                       such that they can easily be understood and located.
                 type: list
+                elements: str
                 required: False
     unmount_opts:
         description:
@@ -256,7 +257,9 @@ options:
               system will then become the owner of the file system mounted. This
               system must be IPLed with SYSPLEX(YES).
             - >
-              I(sysname) is a 1–8 alphanumeric name of a system participating in shared file system.
+              I(sysname) is the name of a system participating in shared file
+              system. The name must be 1-8 characters long; the valid characters
+              are A-Z, 0-9, $, @, and #.
         type: str
         required: False
     automove:
@@ -305,7 +308,7 @@ options:
 notes:
     - All data sets are always assumed to be cataloged.
     - If an uncataloged data set needs to be fetched, it should be cataloged first.
-    - Uncataloged data sets can be cataloged using the M(ibm.ibm_zos_core.zos_data_set) module.
+    - Uncataloged data sets can be cataloged using the M(zos_data_set) module.
 seealso:
     - module: zos_data_set
 """
@@ -541,34 +544,17 @@ import tempfile
 from datetime import datetime
 from ansible.module_utils.basic import AnsibleModule
 
-
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
-    AnsibleModuleHelper,
-)
-
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser,
     data_set,
     backup as Backup,
-    mvs_cmd,
-)
 
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingZOAUImport,
 )
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.copy import (
     copy_ps2uss,
-    copy_mvs2mvs,
     copy_uss2mvs,
 )
-
-try:
-    from zoautil_py import Datasets, MVSCmd, types
-except Exception:
-    Datasets = MissingZOAUImport()
-    MVSCmd = MissingZOAUImport()
-    types = MissingZOAUImport()
 
 
 # This is a duplicate of backupOper found in zos_apf.py of this collection
@@ -1089,7 +1075,7 @@ def main():
                     ),
                     backup=dict(type="bool", default=False),
                     backup_name=dict(type="str", required=False, default=None),
-                    comment=dict(type="list", required=False),
+                    comment=dict(type="list", elements="str", required=False),
                 ),
             ),
             unmount_opts=dict(
@@ -1120,7 +1106,6 @@ def main():
             automove_list=dict(type="str", required=False),
             tmp_hlq=dict(type='str', required=False, default=None),
         ),
-        add_file_common_args=True,
         supports_check_mode=True,
     )
 
@@ -1169,7 +1154,7 @@ def main():
         tag_untagged=dict(
             arg_type="str", default="", choices=["", "TEXT", "NOTEXT"], required=False
         ),
-        tag_ccsid=dict(arg_type="str", required=False),
+        tag_ccsid=dict(arg_type="int", required=False),
         allow_uid=dict(arg_type="bool", default=True, required=False),
         sysname=dict(arg_type="str", default="", required=False),
         automove=dict(

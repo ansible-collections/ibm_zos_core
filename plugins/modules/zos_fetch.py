@@ -86,18 +86,6 @@ options:
     required: false
     default: "false"
     type: bool
-  sftp_port:
-    description:
-      - Configuring the SFTP port used by the M(ibm.ibm_zos_core.zos_fetch) module has been
-        deprecated and will be removed in ibm.ibm_zos_core collection version
-        1.5.0.
-      - Configuring the SFTP port with I(sftp_port) will no longer have any
-        effect on which port is used by this module.
-      - To configure the SFTP port used for module M(ibm.ibm_zos_core.zos_copy), refer to topic
-        L(using connection plugins,https://docs.ansible.com/ansible/latest/plugins/connection.html#using-connection-plugins)
-      - If C(ansible_port) is not specified, port 22 will be used.
-    type: int
-    required: false
   encoding:
     description:
       - Specifies which encodings the fetched data set should be converted from
@@ -158,7 +146,7 @@ notes:
     - Fetching HFS or ZFS type data sets is currently not supported.
     - For supported character sets used to encode data, refer to the
       L(documentation,https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html).
-    - M(ibm.ibm_zos_core.zos_fetch) uses SFTP (Secure File Transfer Protocol) for the underlying
+    - M(zos_fetch) uses SFTP (Secure File Transfer Protocol) for the underlying
       transfer protocol; Co:Z SFTP is not supported. In the case of Co:z SFTP,
       you can exempt the Ansible userid on z/OS from using Co:Z thus falling back
       to using standard SFTP.
@@ -280,15 +268,12 @@ rc:
 """
 
 
-import base64
-import hashlib
 import tempfile
 import re
 import os
 
 from math import ceil
-from shutil import rmtree, move
-from ansible.module_utils.six import PY3
+from shutil import rmtree
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils._text import to_bytes
 from ansible.module_utils.parsing.convert_bool import boolean
@@ -301,11 +286,6 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
     MissingZOAUImport,
 )
 
-
-if PY3:
-    from shlex import quote
-else:
-    from pipes import quote
 
 try:
     from zoautil_py import datasets, mvscmd, types
@@ -601,7 +581,6 @@ def run_module():
             use_qualifier=dict(required=False, default=False, type="bool"),
             validate_checksum=dict(required=False, default=True, type="bool"),
             encoding=dict(required=False, type="dict"),
-            sftp_port=dict(type="int", required=False),
             ignore_sftp_stderr=dict(type="bool", default=False, required=False),
             local_charset=dict(type="str"),
             tmp_hlq=dict(required=False, type="str", default=None),
@@ -611,13 +590,6 @@ def run_module():
     src = module.params.get("src")
     if module.params.get("use_qualifier"):
         module.params["src"] = datasets.hlq() + "." + src
-
-    if module.params.get('sftp_port'):
-        module.deprecate(
-            msg='Support for configuring sftp_port has been deprecated.'
-            'Configuring the SFTP port is now managed through Ansible connection plugins option \'ansible_port\'',
-            date='2021-08-01', collection_name='ibm.ibm_zos_core')
-        # Date and collection are supported in Ansbile 2.9.10 or later
 
     # ********************************************************** #
     #                   Verify paramater validity                #

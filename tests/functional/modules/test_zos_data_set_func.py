@@ -179,7 +179,8 @@ def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl):
     finally:
         # clean up
         hosts.all.file(path=TEMP_PATH, state="absent")
-        hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
+        # Added volumes to force a catalog in case they were somehow uncataloged to avoid an duplicate on volume error
+        hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent", volumes=[DEFAULT_VOLUME, DEFAULT_VOLUME2])
 
 
 @pytest.mark.parametrize(
@@ -219,7 +220,7 @@ def test_data_set_present_when_uncataloged(ansible_zos_module, jcl):
             assert result.get("changed") is True
     finally:
         hosts.all.file(path=TEMP_PATH, state="absent")
-        hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
+        hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent", volumes=DEFAULT_VOLUME)
 
 
 @pytest.mark.parametrize(
@@ -718,3 +719,19 @@ def test_data_set_creation_zero_values(ansible_zos_module):
             assert result.get("module_stderr") is None
     finally:
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
+
+
+def test_data_set_creation_with_tmp_hlq(ansible_zos_module):
+    try:
+        tmphlq = "TMPHLQ"
+        hosts = ansible_zos_module
+        results = hosts.all.zos_data_set(state="present", tmp_hlq=tmphlq)
+        dsname = None
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+            for dsname in result.get("names"):
+                assert dsname[:6] == tmphlq
+    finally:
+        if dsname:
+            hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")

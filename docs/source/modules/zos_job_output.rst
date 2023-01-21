@@ -53,7 +53,7 @@ owner
 
 
 ddname
-  Data definition name. (e.g "JESJCL", "?")
+  Data definition name (show only this DD on a found job). (e.g "JESJCL", "?")
 
   | **required**: False
   | **type**: str
@@ -97,7 +97,7 @@ Return Values
 
 
 jobs
-  The output information for a list of jobs matching specified criteria. If no job status is found, this will return an empty job code with msg=JOB NOT FOUND.
+  The output information for a list of jobs matching specified criteria. If no job status is found, this will return ret_code dictionary with parameter msg_txt = The job could not be found.
 
   | **returned**: success
   | **type**: list
@@ -227,7 +227,7 @@ jobs
                     "msg_txt": "",
                     "steps": [
                         {
-                            "step_cc": "0000",
+                            "step_cc": 0,
                             "step_name": "STEP0001"
                         }
                     ]
@@ -310,7 +310,8 @@ jobs
     content
       The ddname content.
 
-      | **type**: list[str]
+      | **type**: list
+      | **elements**: str
       | **sample**:
 
         .. code-block:: json
@@ -351,7 +352,7 @@ jobs
                   "msg_txt": "",
                   "steps": [
                       {
-                          "step_cc": "0000",
+                          "step_cc": 0,
                           "step_name": "STEP0001"
                       }
                   ]
@@ -396,8 +397,7 @@ jobs
       step_cc
         The CC returned for this step in the DD section.
 
-        | **type**: str
-        | **sample**: 00
+        | **type**: int
 
 
 

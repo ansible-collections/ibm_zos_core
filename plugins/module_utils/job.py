@@ -13,50 +13,25 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-import time
-from tempfile import NamedTemporaryFile
-from os import chmod
-from stat import S_IEXEC, S_IREAD, S_IWRITE
 import re
+from time import sleep
+from timeit import default_timer as timer
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,
 )
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
-    AnsibleModuleHelper,
-)
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     MissingZOAUImport,
 )
 
-# from zoautil_py.jobs import listing, read_output, list_dds
 try:
-    from zoautil_py.jobs import listing, read_output, list_dds, _listing
+    from zoautil_py.jobs import read_output, list_dds, listing
 except Exception:
-    listing = MissingZOAUImport()
     read_output = MissingZOAUImport()
     list_dds = MissingZOAUImport()
-    _listing = MissingZOAUImport()
-
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingZOAUImport,
-)
-
-try:
-    from zoautil_py.types import Job
-except Exception:
-    Job = MissingZOAUImport()
-
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingZOAUImport,
-)
-
-try:
-    from zoautil_py.jobs import listing, read_output, list_dds
-except Exception:
-    pass
+    listing = MissingZOAUImport()
 
 
-def job_output(job_id=None, owner=None, job_name=None, dd_name=None):
+def job_output(job_id=None, owner=None, job_name=None, dd_name=None, duration=0, timeout=0, start_time=timer()):
     """Get the output from a z/OS job based on various search criteria.
 
     Keyword Arguments:
@@ -67,7 +42,8 @@ def job_output(job_id=None, owner=None, job_name=None, dd_name=None):
 
     Returns:
         list[dict] -- The output information for a list of jobs matching specified criteria.
-        If no job status is found, this will return an empty job code with msg=JOB NOT FOUND
+        If no job status is found it will return a ret_code diction with
+        parameter 'msg_txt" = "The job could not be found.
     """
     arg_defs = dict(
         job_id=dict(arg_type="qualifier_pattern"),
@@ -80,23 +56,31 @@ def job_output(job_id=None, owner=None, job_name=None, dd_name=None):
     parsed_args = parser.parse_args(
         {"job_id": job_id, "owner": owner, "job_name": job_name, "dd_name": dd_name}
     )
-
     job_id = parsed_args.get("job_id") or "*"
     job_name = parsed_args.get("job_name") or "*"
     owner = parsed_args.get("owner") or "*"
     dd_name = parsed_args.get("dd_name") or ""
 
-    job_detail = _zget_job_status(job_id=job_id, owner=owner, job_name=job_name, dd_name=dd_name)
+    job_detail = _get_job_status(job_id=job_id, owner=owner, job_name=job_name,
+                                 dd_name=dd_name, duration=duration, timeout=timeout, start_time=start_time)
+
+    # while ((job_detail is None or len(job_detail) == 0) and duration <= timeout):
+    #     current_time = timer()
+    #     duration = round(current_time - start_time)
+    #     sleep(1)
+
     if len(job_detail) == 0:
         # some systems have issues with "*" while some require it to see results
         job_id = "" if job_id == "*" else job_id
         owner = "" if owner == "*" else owner
         job_name = "" if job_name == "*" else job_name
-        job_detail = _zget_job_status(job_id=job_id, owner=owner, job_name=job_name, dd_name=dd_name)
+        job_detail = _get_job_status(job_id=job_id, owner=owner, job_name=job_name,
+                                     dd_name=dd_name, duration=duration, timeout=timeout, start_time=start_time)
     return job_detail
 
 
-def _job_not_found(job_id, owner, job_name, dd_name, ovrr=None):
+def _job_not_found(job_id, owner, job_name, dd_name):
+    # Note that the text in the msg_txt is used in test cases thus sensitive to change
     jobs = []
 
     job = {}
@@ -108,10 +92,10 @@ def _job_not_found(job_id, owner, job_name, dd_name, ovrr=None):
     job["owner"] = owner
 
     job["ret_code"] = {}
-    job["ret_code"]["msg"] = "JOB NOT FOUND"
+    job["ret_code"]["msg"] = None
     job["ret_code"]["code"] = None
-    job["ret_code"]["msg_code"] = "NOT FOUND"
-    job["ret_code"]["msg_txt"] = "The job could not be found"
+    job["ret_code"]["msg_code"] = None
+    job["ret_code"]["msg_txt"] = "The job could not be found."
 
     job["class"] = ""
     job["content_type"] = ""
@@ -125,11 +109,6 @@ def _job_not_found(job_id, owner, job_name, dd_name, ovrr=None):
     dd["procstep"] = ""
     dd["byte_count"] = "0"
     job["ddnames"].append(dd)
-
-    if ovrr is not None:
-        job["ret_code"]["msg"] = "NO JOBS FOUND"
-        job["ret_code"]["msg_code"] = "NOT FOUND"
-        job["ret_code"]["msg_txt"] = "No jobs returned from query"
 
     jobs.append(job)
 
@@ -147,7 +126,9 @@ def job_status(job_id=None, owner=None, job_name=None, dd_name=None):
 
     Returns:
         list[dict] -- The status information for a list of jobs matching search criteria.
-        If no job status is found, this will return an empty job code with msg=JOB NOT FOUND
+        If no job status is found it will return a ret_code diction with
+        parameter 'msg_txt" = "The job could not be found."
+
     """
     arg_defs = dict(
         job_id=dict(arg_type="qualifier_pattern"),
@@ -166,14 +147,15 @@ def job_status(job_id=None, owner=None, job_name=None, dd_name=None):
     owner = parsed_args.get("owner") or "*"
     dd_name = parsed_args.get("dd_name")
 
-    job_status = _zget_job_status(job_id, owner, job_name, dd_name)
-    if len(job_status) == 0:
+    job_status_result = _get_job_status(job_id, owner, job_name, dd_name)
+
+    if len(job_status_result) == 0:
         job_id = "" if job_id == "*" else job_id
         job_name = "" if job_name == "*" else job_name
         owner = "" if owner == "*" else owner
-        job_status = _zget_job_status(job_id, owner, job_name, dd_name)
+        job_status_result = _get_job_status(job_id, owner, job_name, dd_name)
 
-    return job_status
+    return job_status_result
 
 
 def _parse_steps(job_str):
@@ -187,49 +169,38 @@ def _parse_steps(job_str):
     """
     stp = []
     if "STEP WAS EXECUTED" in job_str:
-        steps = re.findall(r"(.*?)\s-\sSTEP\sWAS\sEXECUTED\s-\s(.*?)\n", job_str)
+        steps = re.findall(
+            r"(.*?)\s-\sSTEP\sWAS\sEXECUTED\s-\s(.*?)\n", job_str)
         for match in steps:
             st = {
                 "step_name": match[0].split()[-1],
-                "step_cc": match[1].split()[-1],
+                "step_cc": int(match[1].split()[-1]) if match[1].split()[-1] is not None else None,
             }
             stp.append(st)
 
     return stp
 
 
-def _zget_job_status(job_id="*", owner="*", job_name="*", dd_name=None):
+def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, duration=0, timeout=0, start_time=timer()):
     if job_id == "*":
-        job_query = None
+        job_id_temp = None
     else:
-        job_query = job_id
+        # Preserve the original job_id for the failure path
+        job_id_temp = job_id
 
     # jls output: owner=job[0], name=job[1], id=job[2], status=job[3], rc=job[4]
     # e.g.: OMVSADM  HELLO    JOB00126 JCLERR   ?
-    # entries = listing(job_query, owner)   1.2.0 has owner paramn, 1.1 does not
-
-    # Disabled for now to use work around below resulting from an index bound
-    # excpetion using zoau  dataset.listing()
-    #     entries = listing(job_query)
-
-    entries = []
-    response = _listing(job_query)
-
-    for unparsed_job in list(filter(None, response.stdout_response.split("\n"))):
-        job = list(filter(None, unparsed_job.rstrip("\n").split()))
-
-        count = 0
-        while len(job) != 5 and count < 9:
-            job = list(filter(None, _listing(job_query).stdout_response.rstrip("\n").split()))
-            time.sleep(1)
-            count += 1
-
-        if count >= 9:
-            entries.append(Job(owner='?', name=job[1], id=job[2], status=job[3], rc=job[4]))
-        else:
-            entries.append(Job(owner=job[0], name=job[1], id=job[2], status=job[3], rc=job[4]))
+    # listing(job_id, owner) in 1.2.0 has owner param, 1.1 does not
 
     final_entries = []
+    entries = listing(job_id=job_id_temp)
+
+    while ((entries is None or len(entries) == 0) and duration <= timeout):
+        current_time = timer()
+        duration = round(current_time - start_time)
+        sleep(1)
+        entries = listing(job_id=job_id_temp)
+
     if entries:
         for entry in entries:
             if owner != "*":
@@ -240,11 +211,7 @@ def _zget_job_status(job_id="*", owner="*", job_name="*", dd_name=None):
                     continue
 
             job = {}
-
-            # rstrip is a solution because we call zoau raw functions like _submit
-            # which return values with a backslash
-            job_id_stripped = entry.id.rstrip("\n")
-            job["job_id"] = job_id_stripped
+            job["job_id"] = entry.id
             job["job_name"] = entry.name
             job["subsystem"] = ""
             job["system"] = ""
@@ -253,27 +220,28 @@ def _zget_job_status(job_id="*", owner="*", job_name="*", dd_name=None):
             job["ret_code"] = {}
             job["ret_code"]["msg"] = entry.status + " " + entry.rc
             job["ret_code"]["msg_code"] = entry.rc
-
             job["ret_code"]["code"] = ""
             if len(entry.rc) > 0:
                 if entry.rc.isdigit():
                     job["ret_code"]["code"] = int(entry.rc)
-
             job["ret_code"]["msg_text"] = entry.status
 
             job["class"] = ""
             job["content_type"] = ""
-
             job["ret_code"]["steps"] = []
             job["ddnames"] = []
 
-            list_of_dds = list_dds(job_id_stripped)
+            list_of_dds = list_dds(entry.id)
+            while ((list_of_dds is None or len(list_of_dds) == 0) and duration <= timeout):
+                current_time = timer()
+                duration = round(current_time - start_time)
+                sleep(1)
+                list_of_dds = list_dds(entry.id)
 
-            # Traverse all the DD's
             for single_dd in list_of_dds:
                 dd = {}
 
-                # If there is a dd_name, it means only that one should be returned
+                # If dd_name not None, only that specific dd_name should be returned
                 if dd_name is not None:
                     if dd_name not in single_dd["dataset"]:
                         continue
@@ -311,7 +279,8 @@ def _zget_job_status(job_id="*", owner="*", job_name="*", dd_name=None):
                 tmpcont = None
                 if "stepname" in single_dd:
                     if "dataset" in single_dd:
-                        tmpcont = read_output(job_id_stripped, single_dd["stepname"], single_dd["dataset"])
+                        tmpcont = read_output(
+                            entry.id, single_dd["stepname"], single_dd["dataset"])
 
                 dd["content"] = tmpcont.split("\n")
                 job["ret_code"]["steps"].extend(_parse_steps(tmpcont))
@@ -325,29 +294,32 @@ def _zget_job_status(job_id="*", owner="*", job_name="*", dd_name=None):
                 if len(job["system"]) < 1:
                     if "--  S Y S T E M  " in tmpcont:
                         tmptext = tmpcont.split("--  S Y S T E M  ")[1]
-                        job["system"] = (tmptext.split("--", 1)[0]).replace(" ", "")
+                        job["system"] = (tmptext.split(
+                            "--", 1)[0]).replace(" ", "")
 
                 if len(job["subsystem"]) < 1:
                     if "--  N O D E " in tmpcont:
                         tmptext = tmpcont.split("--  N O D E ")[1]
-                        job["subsystem"] = (tmptext.split("\n")[0]).replace(" ", "")
+                        job["subsystem"] = (tmptext.split("\n")[
+                                            0]).replace(" ", "")
 
+                # Extract similar: "19.49.44 JOB06848 IEFC452I DOCEASYT - JOB NOT RUN - JCL ERROR 029 "
+                # then further reduce down to: 'JCL ERROR 029'
                 if job["ret_code"]["msg_code"] == "?":
                     if "JOB NOT RUN -" in tmpcont:
-                        tmptext = tmpcont.split("JOB NOT RUN -")[1].split("\n")[0]
+                        tmptext = tmpcont.split(
+                            "JOB NOT RUN -")[1].split("\n")[0]
                         job["ret_code"]["msg"] = tmptext.strip()
-                        job["ret_code"]["msg_code"] = tmptext.split(" ")[-1].strip()
-
-                        job["ret_code"]["code"] = ""
-                        if len(job["ret_code"]["msg_code"]) > 0:
-                            if job["ret_code"]["msg_code"].isdigit():
-                                job["ret_code"]["code"] = int(job["ret_code"]["msg_code"])
+                        job["ret_code"]["msg_code"] = None
+                        job["ret_code"]["code"] = None
             if len(list_of_dds) > 1:
+                # The duration should really only be returned for job submit but the code
+                # is used job_output as well, for now we can ignore this point unless
+                # we want to offer a wait_time_s for job output which might be reasonable.
+                job["duration"] = duration
                 final_entries.append(job)
-
     if not final_entries:
-        final_entries = _job_not_found(job_id, owner, job_name, "notused")
-
+        final_entries = _job_not_found(job_id, owner, job_name, "unavailable")
     return final_entries
 
 

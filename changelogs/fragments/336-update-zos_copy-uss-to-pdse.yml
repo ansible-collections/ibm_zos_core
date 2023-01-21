@@ -1,6 +1,0 @@
-bugfixes:
-  - >
-    zos_mvs_raw - module was updated to correct a bug when no DD statements
-    were provided. The module when no option was provided for `dds` would
-    error, a default was provided to correct this behavior.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/327)

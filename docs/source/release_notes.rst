@@ -6,11 +6,99 @@
 Releases
 ========
 
-Version 1.4.0-beta.1
+Version 1.5.0-beta.1
 ====================
 
-What's New
-----------
+New Modules
+-----------
+
+- ``zos_gather_facts`` - can retrieve variables from target z/OS systems that are then available to playbooks through the ansible_facts dictionary and managed using filters.
+
+Major Changes
+-------------
+
+- ``ibm_zos_core`` - Updates the entire collection in that the collection no longer depends on the managed node having installed System Display and Search Facility (SDSF). Remove SDSF dependency from ibm_zos_core collection.
+
+Minor Changes
+-------------
+
+- ``zos_apf`` - updates the module with a new option named tmp_hlq. This allows for a user to specify the data set high level qualifier (HLQ) used in any temporary data set created by the module. Often, the defaults are not permitted on systems, this provides a way to override the defaults.
+- ``zos_blockinfile``
+
+      - fixes a bug when using double quotes in the block text of the module. When double quotes appeared in block text, the module would error differently depending on the usage of option insertafter. Examples of this error have return code 1 or 16 along with message "ZOAU dmod return content is NOT in json format" and a varying stderr.
+      - updates the module with a new option named force. This allows for a user to specify that the data set can be shared with others during an update which results in the data set you are updating to be simultaneously updated by others.
+      - updates the module with a new option named indentation. This allows for a user to specify a number of spaces to prepend to the content before being inserted into the destination.
+      - updates the module with a new option named tmp_hlq. This allows for a user to specify the data set high level qualifier (HLQ) used in any temporary data set created by the module. Often, the defaults are not permitted on systems, this provides a way to override the defaults.
+- ``zos_copy`` - updates the module with a new option named tmp_hlq. This allows for a user to specify the data set high level qualifier (HLQ) used in any temporary data set created by the module. Often, the defaults are not permitted on systems, this provides a way to override the defaults.
+- ``zos_data_set`` - Ensures that temporary datasets created by zos_data_set use the tmp_hlq specified. This allows for a user to specify the data set high level qualifier (HLQ) used in any temporary data set created by the module. Often, the defaults are not permitted on systems, this provides a way to override the defaults.
+- ``zos_encode`` - updates the module with a new option named tmp_hlq. This allows for a user to specify the data set high level qualifier (HLQ) used in any temporary data set created by the module. Often, the defaults are not permitted on systems, this provides a way to override the defaults.
+- ``zos_fetch`` - updates the module with a new option named tmp_hlq. This allows for a user to specify the data set high level qualifier (HLQ) used in any temporary data set created by the module. Often, the defaults are not permitted on systems, this provides a way to override the defaults.
+- ``zos_job_output`` - was updated to leverage the latest changes that removes the REXX code by calling the module utility jobs.
+- ``zos_job_query``
+
+      - was updated to leverage the latest changes that removes the REXX code by calling the module utility jobs.
+      - was updated to use the jobs module utility.
+- ``zos_job_submit``
+
+      - architecture changed such that the entire modules execution time now is captured in the duration time which includes job submission and log collection. If a job does not return by the default 10 sec 'wait_time_s' value, it can be increased up to 86400 seconds.
+      - behavior changed when a volume is defined in the module options such that it will catalog the data set if it is not cataloged and submit the job. In the past, the function did not catalog the data set and instead performed I/O operations and then submitted the job. This behavior aligns to other module behaviors and reduces the possibility to encounter a permissions issue.
+- ``zos_lineinfile`` - updates the module with a new option named tmp_hlq. This allows for a user to specify the data set high level qualifier (HLQ) used in any temporary data set created by the module. Often, the defaults are not permitted on systems, this provides a way to override the defaults.
+- ``zos_mount`` - updates the module with a new option named tmp_hlq. This allows for a user to specify the data set high level qualifier (HLQ) used in any temporary data set created by the module. Often, the defaults are not permitted on systems, this provides a way to override the defaults.
+- ``zos_mvs_raw``
+
+      - Ensures that temporary datasets created by DD Statements use the tmp_hlq specified. This allows for a user to specify the data set high level qualifier (HLQ) used in any temporary data set created by the module. Often, the defaults are not permitted on systems, this provides a way to override the defaults.
+      - updates the module with a new option named tmp_hlq. This allows for a user to specify the data set high level qualifier (HLQ) used in any temporary data set created by the module. Often, the defaults are not permitted on systems, this provides a way to override the defaults.
+      - updated module documentation on how to use a multi-line string when using the content field option as well as an example.
+- ``zos_operator``
+
+      - added in the response the cmd result.
+      - added in the response the elapsed time.
+      - added in the response the wait_time_s set.
+      - deprecated the wait option, not needed with wait_time_s minor_changes.
+      - was updated to remove the usage of REXX and replaced with ZOAU python APIs. This reduces code replication and it removes the need for REXX interpretation which increases performance.
+
+
+Bugfixes
+--------
+
+- ``ibm_zos_copy`` - Fixes a bug such that the module fails when copying files from a directory needing also to be encoded. The failure would also delete the `src` which was not desirable behavior. Fixes deletion of src on encoding error.
+- ``zos_data_set`` - Fixes a bug such that the module will delete a catalogued data set over an uncatalogued data set even though the volume is provided for the uncataloged data set. This is unexpected behavior and does not align to documentation; correct behavior is that when a volume is provided that is the first place the module should look for the data set, whether or not it is cataloged.
+- ``zos_copy`` - module was updated to correct a bug in the case when the destination (dest) is a PDSE and the source (src) is a Unix Systems File (USS). The module would fail in determining if the PDSE actually existed and try to create it when it already existed resulting in an error that would prevent the module from correctly executing.
+- ``zos_fetch`` - Updates the modules behavior when fetching VSAM data sets such that the maximum record length is now determined when creating a temporary data set to copy the VSAM data into and a variable-length (VB) data set is used.
+- ``zos_job_output`` - fixes a bug that returned all ddname's when a specific ddnamae was provided. Now a specific ddname can be returned and all others ignored.
+- ``zos_job_query`` - was updated to correct a boolean condition that always evaluated to "CANCELLED".
+- ``zos_mount`` - fixed option `tag_ccsid` to correctly allow for type int.
+- ``zos_mvs_raw`` - module was updated to correct a bug when no DD statements were provided. The module when no option was provided for `dds` would error, a default was provided to correct this behavior.
+- ``zos_operator``
+
+      - fixed case sensitive error checks, invalid, error & unidentifiable.
+      - fixed such that specifying wait_time_s would throw an error.
+      - fixed the wait_time_s to default to 1 second.
+      - was updated to correct missing verbosity content when the option verbose was set to True. zos_operator - was updated to correct the trailing lines that would appear in the result content.
+
+Deprecated Features
+-------------------
+
+- ``zos_encode`` - deprecates the module options `from_encoding` and `to_encoding` to use suboptions `from` and `to` in order to remain consistent with all other modules.
+- ``zos_job_submit`` - Response 'message' property has been deprecated, all responses are now in response property 'msg'.
+- ``zos_job_submit`` - The 'wait' option has been deprecated because using option 'wait_time_s' implies the job is going to wait.
+
+Availability
+------------
+
+* `Galaxy`_
+* `GitHub`_
+
+Reference
+---------
+
+* Supported by `z/OS V2R3`_ or later
+* Supported by the `z/OS® shell`_
+* Supported by `IBM Open Enterprise SDK for Python`_ `3.9`_ - `3.11`_
+* Supported by IBM `Z Open Automation Utilities 1.2.x`_
+
+Version 1.4.0
+=============
 
 * Modules
 
@@ -26,11 +114,41 @@ What's New
 
   * Modules
 
-    * ``zos_ping`` was enhanced to remove the need for the ``zos_ssh``
-      connection plugin dependency.
-
     * ``zos_copy``
 
+      * introduced an updated creation policy referred to as precedence rules
+        that if `dest_data_set` is set, it will take precedence. If
+        `dest` is an empty data set, the empty data set will be written with the
+        expectation its attributes satisfy the copy. If no precedent rule
+        has been exercised, `dest` will be created with the same attributes of
+        `src`.
+      * introduced new computation capabilities that if `dest` is a nonexistent
+        data set, the attributes assigned will depend on the type of `src`. If
+        `src` is a USS file, `dest` will have a Fixed Block (FB) record format
+        and the remaining attributes will be computed. If `src` is binary,
+        `dest` will have a Fixed Block (FB) record format with a record length
+        of 80, block size of 32760, and the remaining attributes will be
+        computed.
+      * enhanced the force option when `force=true` and the remote file or
+        data set `dest`` is NOT empty, the `dest` will be deleted and recreated
+        with the `src` data set attributes, otherwise it will be recreated with
+        the `dest` data set attributes.
+      * was enhanced for when `src` is a directory and ends with "/",
+        the contents of it will be copied into the root of `dest`. It it doesn't
+        end with "/", the directory itself will be copied.
+      * option `dest_dataset` has been deprecated and removed in favor
+        of the new option `dest_data_set`.
+      * fixes a bug that when a directory is copied from the controller to the
+        managed node and a mode is set, the mode is applied to the directory
+        on the managed node. If the directory being copied contains files and
+        mode is set, mode will only be applied to the files being copied not the
+        pre-existing files.
+      * fixes a bug that did not create a data set on the specified volume.
+      * fixes a bug where a number of attributes were not an option when using
+        `dest_data_set`.
+      * fixes a bug where options were not defined in the module
+        argument spec that will result in error when running `ansible-core`
+        v2.11 and using options `force` or `mode`.
       * was enhanced to support the ``ansible.builtin.ssh`` connection options;
         for further reference refer to the `SSH plugin`_ documentation.
       * was enhanced to take into account the record length when the
@@ -42,6 +160,21 @@ What's New
         data set destination that does not exist, you can now do so using the
         new ``zos_copy`` module option ``destination_dataset``.
 
+    * ``zos_operator``
+
+      * enhanced to allow for MVS operator `SET` command, `SET` is
+        equivalent to the abbreviated `T` command.
+
+    * ``zos_mount`` fixed option `tag_ccsid` to correctly allow for type int.
+
+    * ``module_utils``
+
+      * jobs.py - fixes a utility used by module `zos_job_output` that would
+        truncate the DD content.
+
+    * ``zos_ping`` was enhanced to remove the need for the ``zos_ssh``
+      connection plugin dependency.
+
     * ``zos_fetch`` was enhanced to support the ``ansible.builtin.ssh``
       connection options; for further reference refer to the
       `SSH plugin`_ documentation.
@@ -52,7 +185,7 @@ What's New
         the **ddname** content. This would occur for jobs with very large amounts
         of content from a **ddname**.
       * was enhanced to to include the completion code (CC) for each individual
-        job step as part of the ``ret_code`` response.
+        jop step as part of the ``ret_code`` response.
 
     * ``zos_job_query``
 
@@ -60,6 +193,7 @@ What's New
         greater than 99,999 jobs in the history.
       * was enhanced to handle when an invalid job ID or job name is used with
         the module and returns a proper response.
+
     * ``zos_job_submit``
 
       * was enhanced to fail fast when a submitted job fails instead of waiting
@@ -70,19 +204,10 @@ What's New
     * ``zos_operator_action_query`` response messages were improved with more
       diagnostic information in the event an error is encountered.
 
-  * Documentation
-
-    * Noteworthy documentation updates have been made to:
-
-      * ``zos_copy`` and ``zos_fetch`` about Co:Z SFTP support.
-      * ``zos_mvs_raw`` to remove a duplicate example.
-      * include documentation for all action plugins.
-      * update hyperlinks embedded in documentation.
-      * ``zos_operator`` to explain how to use single quotes in operator commands.
-
-
 * Deprecated or removed
 
+  * ``zos_copy`` module option **destination_dataset** has been renamed to
+    **dest_data_set**.
   * ``zos_ssh`` connection plugin has been removed, it is no longer required.
     Remove all playbook references, ie ``connection: ibm.ibm_zos_core.zos_ssh``.
   * ``zos_ssh`` connection plugin has been removed, it is no longer required.
@@ -96,9 +221,20 @@ What's New
     plugin. Refer to the `SSH port`_ option to configure the port used during
     the modules SFTP transport.
 
+* Documentation
+
+  * Noteworthy documentation updates have been made to:
+
+    * ``zos_copy`` and ``zos_fetch`` about Co:Z SFTP support.
+    * ``zos_mvs_raw`` removed a duplicate example.
+    * all action plugins are documented
+    * update hyperlinks embedded in documentation.
+    * ``zos_operator`` to explains how to use single quotes in operator commands.
+
 Availability
 ------------
 
+* `Automation Hub`_
 * `Galaxy`_
 * `GitHub`_
 
@@ -107,7 +243,7 @@ Reference
 
 * Supported by `z/OS V2R3`_ or later
 * Supported by the `z/OS® shell`_
-* Supported by `IBM Open Enterprise SDK for Python`_ 3.8.2 or later
+* Supported by `IBM Open Enterprise SDK for Python`_ `3.8`_` - `3.9`_
 * Supported by IBM `Z Open Automation Utilities 1.1.0`_ and
   `Z Open Automation Utilities 1.1.1`_
 
@@ -162,6 +298,96 @@ release.
 
 .. _SSH port:
    https://docs.ansible.com/ansible/latest/collections/ansible/builtin/ssh_connection.html#parameter-port
+
+Version 1.3.6
+=============
+
+What's New
+----------
+
+* Bug Fixes
+
+  * Modules
+
+    * ``zos_copy`` fixes a bug that when a directory is copied from the
+      controller to the managed node and a mode is set, the mode is now applied
+      to the directory on the controller. If the directory being copied contains
+      files and mode is set, mode will only be applied to the files being copied
+      not the pre-existing files.
+    * ``zos_copy`` - fixes a bug where options were not defined in the module
+      argument spec that will result in error when running `ansible-core` v2.11
+      and using options `force` or `mode`.
+    * ``zos_copy`` - was enhanced for when `src` is a directory and ends with "/",
+      the contents of it will be copied into the root of `dest`. It it doesn't
+      end with "/", the directory itself will be copied.
+    * ``zos_fetch`` - fixes a bug where an option was not defined in the module
+      argument spec that will result in error when running `ansible-core` v2.11
+      and using option `encoding`.
+    * ``zos_job_submit`` - fixes a bug where an option was not defined in the
+      module argument spec that will result in error when running
+      `ansible-core` v2.11 and using option `encoding`.
+    * ``jobs.py`` - fixes a utility used by module `zos_job_output` that would
+      truncate the DD content.
+    * ``zos_ssh`` connection plugin was updated to correct a bug that causes
+      an `ANSIBLE_SSH_CONTROL_PATH_DIR` attribute error only when using
+      ansible-core v2.11.
+
+Availability
+------------
+
+* `Automation Hub`_
+* `Galaxy`_
+* `GitHub`_
+
+Reference
+---------
+
+* Supported by `z/OS V2R3`_ or later
+* Supported by the `z/OS® shell`_
+* Supported by `IBM Open Enterprise SDK for Python`_ v3.8.2 -
+  `IBM Open Enterprise SDK for Python`_ v3.9.5
+* Supported by IBM `Z Open Automation Utilities 1.1.0`_ and
+  `Z Open Automation Utilities 1.1.1`_
+
+Version 1.3.5
+=============
+
+What's New
+----------
+
+* Bug Fixes
+
+  * Modules
+
+    * ``zos_ssh`` connection plugin was updated to correct a bug in Ansible that
+      would result in playbook task ``retries`` overriding the SSH connection
+      ``retries``. This is resolved by renaming the ``zos_ssh`` option
+      ``retries`` to ``reconnection_retries``. The update addresses users of
+      ``ansible-core`` v2.9 which continues to use ``retries`` and users of
+      ``ansible-core`` v2.11 or later which uses ``reconnection_retries``. This
+      also resolves a bug in the connection that referenced a deprecated
+      constant.
+    * ``zos_job_output`` fixes a bug that returned all ddname's when a specific
+      ddname was provided. Now a specific ddname can be returned and all others
+      ignored.
+    * ``zos_copy`` fixes a bug that would not copy subdirectories. If the source
+      is a directory with sub directories, all sub directories will now be copied.
+
+Availability
+------------
+
+* `Automation Hub`_
+* `Galaxy`_
+* `GitHub`_
+
+Reference
+---------
+
+* Supported by `z/OS V2R3`_ or later
+* Supported by the `z/OS® shell`_
+* Supported by `IBM Open Enterprise SDK for Python`_ 3.8.2 or later
+* Supported by IBM `Z Open Automation Utilities 1.1.0`_ and
+  `Z Open Automation Utilities 1.1.1`_
 
 Version 1.3.3
 =============
@@ -498,14 +724,22 @@ Reference
    https://galaxy.ansible.com/ibm/ibm_zos_core
 .. _Automation Hub:
    https://www.ansible.com/products/automation-hub
-.. _IBM Open Enterprise Python for z/OS:
-   https://www.ibm.com/products/open-enterprise-python-zos
 .. _IBM Open Enterprise SDK for Python:
    https://www.ibm.com/products/open-enterprise-python-zos
+.. _3.8:
+   https://www.ibm.com/docs/en/python-zos/3.8
+.. _3.9:
+   https://www.ibm.com/docs/en/python-zos/3.9
+.. _3.10:
+   https://www.ibm.com/docs/en/python-zos/3.10
+.. _3.11:
+   https://www.ibm.com/docs/en/python-zos/3.11
 .. _Z Open Automation Utilities 1.1.0:
-   https://www.ibm.com/docs/en/zoau/1.1.0?topic=installing-configuring-zoa-utilities
+   https://www.ibm.com/docs/en/zoau/1.1.0
 .. _Z Open Automation Utilities 1.1.1:
-   https://www.ibm.com/docs/en/zoau/1.1.1?topic=installing-configuring-zoa-utilities
+   https://www.ibm.com/docs/en/zoau/1.1.1
+.. _Z Open Automation Utilities 1.2.x:
+   https://www.ibm.com/docs/en/zoau/1.2.x
 .. _z/OS® shell:
    https://www.ibm.com/support/knowledgecenter/en/SSLTBW_2.4.0/com.ibm.zos.v2r4.bpxa400/part1.htm
 .. _z/OS V2R3:

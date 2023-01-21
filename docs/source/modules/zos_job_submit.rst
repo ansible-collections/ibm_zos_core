@@ -18,8 +18,8 @@ Synopsis
 --------
 - Submit JCL from DATA_SET , USS, or LOCAL location.
 - Submit a job and optionally monitor for its execution.
-- Optionally wait for the job output until the job finishes.
-- For the uncataloged dataset, specify the volume serial number.
+- Optionally wait a designated time until the job finishes.
+- For an uncataloged dataset, specify the volume serial number.
 
 
 
@@ -30,20 +30,20 @@ Parameters
 
 
 src
-  The source directory or data set containing the JCL to submit.
+  The source file or data set containing the JCL to submit.
 
   It could be physical sequential data set or a partitioned data set qualified by a member or a path. (e.g "USER.TEST","USER.JCL(TEST)")
 
-  Or an USS file. (e.g "/u/tester/demo/sample.jcl")
+  Or a USS file. (e.g "/u/tester/demo/sample.jcl")
 
-  Or an LOCAL file in ansible control node. (e.g "/User/tester/ansible-playbook/sample.jcl")
+  Or a LOCAL file in ansible control node. (e.g "/User/tester/ansible-playbook/sample.jcl")
 
   | **required**: True
   | **type**: str
 
 
 location
-  The JCL location. Supported options are DATA_SET, USS or LOCAL.
+  The JCL location. Supported choices are ``DATA_SET``, ``USS`` or ``LOCAL``.
 
   DATA_SET can be a PDS, PDSE, or sequential data set.
 
@@ -51,18 +51,18 @@ location
 
   LOCAL means locally to the ansible control node.
 
-  | **required**: True
+  | **required**: False
   | **type**: str
   | **default**: DATA_SET
   | **choices**: DATA_SET, USS, LOCAL
 
 
 wait
-  Wait for the Job to finish and capture the output. Default is false.
+  Configuring wait used by the :ref:`zos_job_submit <zos_job_submit_module>` module has been deprecated and will be removed in ibm.ibm_zos_core collection.
 
-  When *wait* is false or absent, the module will wait up to 10 seconds for the job to start, but will not wait for the job to complete.
+  Setting this option will yield no change, it is deprecated.
 
-  If *wait* is true, User can specify the wait time, see option ``wait_time_s``.
+  See option ``wait_time_s``.
 
   | **required**: False
   | **type**: bool
@@ -75,13 +75,11 @@ wait_time_s
 
   | **required**: False
   | **type**: int
-  | **default**: 60
+  | **default**: 10
 
 
 max_rc
-  Specifies the maximum return code for the submitted job that should be allowed without failing the module.
-
-  The ``max_rc`` is only checked when ``wait=true``, otherwise, it is ignored.
+  Specifies the maximum return code allowed for any job step for the submitted job.
 
   | **required**: False
   | **type**: int
@@ -90,7 +88,7 @@ max_rc
 return_output
   Whether to print the DD output.
 
-  If false, an empty list will be returned in ddnames field.
+  If false, an empty list will be returned in the ddnames field.
 
   | **required**: False
   | **type**: bool
@@ -98,7 +96,9 @@ return_output
 
 
 volume
-  The volume serial (VOLSER) where the data set resides. The option is required only when the data set is not cataloged on the system. Ignored for USS and LOCAL.
+  The volume serial (VOLSER)is where the data set resides. The option is required only when the data set is not cataloged on the system.
+
+  When configured, the :ref:`zos_job_submit <zos_job_submit_module>` will try to catalog the data set for the volume serial. If it is not able to, the module will fail. Ignored for USS and LOCAL.
 
   | **required**: False
   | **type**: str
@@ -107,20 +107,22 @@ volume
 encoding
   Specifies which encoding the local JCL file should be converted from and to, before submitting the job.
 
-  If this parameter is not provided, and the z/OS systems default encoding can not be identified, the JCL file will be converted from ISO8859-1 to IBM-1047 by default.
+  This option is only supported for when *location=LOCAL*.
+
+  If this parameter is not provided, and the z/OS systems default encoding can not be identified, the JCL file will be converted from UTF-8 to IBM-1047 by default, otherwise the module will detect the z/OS system encoding.
 
   | **required**: False
   | **type**: dict
 
 
   from
-    The character set of the local JCL file; defaults to ISO8859-1.
+    The character set of the local JCL file; defaults to UTF-8.
 
-    Supported character sets rely on the target version; the most common character sets are supported.
+    Supported character sets rely on the target platform; the most common character sets are supported.
 
     | **required**: False
     | **type**: str
-    | **default**: ISO8859-1
+    | **default**: UTF-8
 
 
   to
@@ -144,42 +146,49 @@ Examples
 .. code-block:: yaml+jinja
 
    
-   - name: Submit the JCL
+   - name: Submit JCL in a PDSE member
      zos_job_submit:
-       src: TEST.UTILs(SAMPLE)
+       src: HLQ.DATA.LLQ(SAMPLE)
        location: DATA_SET
-       wait: false
      register: response
 
-   - name: Submit USS job
+   - name: Submit JCL in USS with no DDs in the output.
      zos_job_submit:
        src: /u/tester/demo/sample.jcl
        location: USS
-       wait: false
        return_output: false
 
-   - name: Convert a local JCL file to IBM-037 and submit the job
+   - name: Convert local JCL to IBM-037 and submit the job.
      zos_job_submit:
        src: /Users/maxy/ansible-playbooks/provision/sample.jcl
        location: LOCAL
-       wait: false
        encoding:
          from: ISO8859-1
          to: IBM-037
 
-   - name: Submit uncatalogued PDS job
+   - name: Submit JCL in an uncataloged PDSE on volume P2SS01.
      zos_job_submit:
-       src: TEST.UNCATLOG.JCL(SAMPLE)
+       src: HLQ.DATA.LLQ(SAMPLE)
        location: DATA_SET
-       wait: false
        volume: P2SS01
 
-   - name: Submit long running PDS job, and wait for the job to finish
+   - name: Submit a long running PDS job and wait up to 30 seconds for completion.
      zos_job_submit:
-       src: TEST.UTILs(LONGRUN)
+       src: HLQ.DATA.LLQ(LONGRUN)
        location: DATA_SET
-       wait: true
        wait_time_s: 30
+
+   - name: Submit a long running PDS job and wait up to 30 seconds for completion.
+     zos_job_submit:
+       src: HLQ.DATA.LLQ(LONGRUN)
+       location: DATA_SET
+       wait_time_s: 30
+
+   - name: Submit JCL and set the max return code the module should fail on to 16.
+     zos_job_submit:
+       src: HLQ.DATA.LLQ
+       location: DATA_SET
+       max_rc: 16
 
 
 
@@ -201,7 +210,7 @@ Return Values
 
 
 jobs
-  List of jobs output. If no job status is found, this will return an empty job code with msg=JOB NOT FOUND.
+  List of jobs output. If no job status is found, this will return an empty ret_code with msg_txt explanation.
 
   | **returned**: success
   | **type**: list
@@ -418,7 +427,7 @@ jobs
                     "msg_txt": "",
                     "steps": [
                         {
-                            "step_cc": "0000",
+                            "step_cc": 0,
                             "step_name": "DLORD6"
                         }
                     ]
@@ -489,33 +498,32 @@ jobs
     content
       The ddname content.
 
-      | **type**: list[str]
+      | **type**: list
+      | **elements**: str
       | **sample**:
 
         .. code-block:: json
 
             [
-                "\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0 1 //HELLO\u00a0\u00a0\u00a0 JOB (T043JM,JM00,1,0,0,0),\u0027HELLO WORLD - JRM\u0027,CLASS=R,\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0 JOB00134",
-                "\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0    \"\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0 //\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0 MSGCLASS=X",
-                "MSGLEVEL=1",
-                "NOTIFY=S0JM\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0 \"",
-                "\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0    \"\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0 \u00a0\u00a0\u00a0 //*\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0 \"",
-                "\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0    \"\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0 //* PRINT \\\"HELLO WORLD\\\" ON JOB OUTPUT\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\"",
-                "\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0    \"\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0 //*\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0 \"",
-                "\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0    \"\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0 //* NOTE THAT THE EXCLAMATION POINT IS INVALID EBCDIC FOR JCL\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0 \"",
-                "\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0    \"\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0 //*\u00a0\u00a0 AND WILL CAUSE A JCL ERROR\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0 \"",
-                "\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0    \"\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0 //*\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0 \"",
-                "\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0    \"\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0 2 //STEP0001 EXEC PGM=IEBGENER\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0 \"",
-                "\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0    \"\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0 3 //SYSIN\u00a0\u00a0\u00a0 DD DUMMY\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0 \"",
-                "\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0    \"\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0 4 //SYSPRINT DD SYSOUT=*\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0 \"",
-                "\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0    \"\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0 5 //SYSUT1\u00a0\u00a0 DD *\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0 \"",
-                "\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0    \"\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0 6 //SYSUT2\u00a0\u00a0 DD SYSOUT=*\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0 \"",
-                "\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0    \"\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0 7 //\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0 \" \u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0"
+                "         1 //HELLO    JOB (T043JM,JM00,1,0,0,0),\u0027HELLO WORLD - JRM\u0027,CLASS=R,       JOB00134",
+                "           //             MSGCLASS=X,MSGLEVEL=1,NOTIFY=S0JM                                ",
+                "           //*                                                                             ",
+                "           //* PRINT \"HELLO WORLD\" ON JOB OUTPUT                                         ",
+                "           //*                                                                             ",
+                "           //* NOTE THAT THE EXCLAMATION POINT IS INVALID EBCDIC FOR JCL                   ",
+                "           //*   AND WILL CAUSE A JCL ERROR                                                ",
+                "           //*                                                                             ",
+                "         2 //STEP0001 EXEC PGM=IEBGENER                                                    ",
+                "         3 //SYSIN    DD DUMMY                                                             ",
+                "         4 //SYSPRINT DD SYSOUT=*                                                          ",
+                "         5 //SYSUT1   DD *                                                                 ",
+                "         6 //SYSUT2   DD SYSOUT=*                                                          ",
+                "         7 //                                                                              "
             ]
 
 
   ret_code
-    Return code output collected from job log.
+    Return code output collected from the job log.
 
     | **type**: dict
     | **sample**:
@@ -530,7 +538,7 @@ jobs
                   "msg_txt": "",
                   "steps": [
                       {
-                          "step_cc": "0000",
+                          "step_cc": 0,
                           "step_name": "STEP0001"
                       }
                   ]
@@ -538,25 +546,24 @@ jobs
           }
 
     msg
-      Return code or abend resulting from the job submission.
+      Return code resulting from the job submission.
 
       | **type**: str
       | **sample**: CC 0000
 
     msg_code
-      Return code extracted from the `msg` so that it can be evaluated. For example, ABEND(S0C4) would yield "S0C4".
+      Return code extracted from the `msg` so that it can be evaluated as a string.
 
       | **type**: str
-      | **sample**: S0C4
 
     msg_txt
       Returns additional information related to the job.
 
       | **type**: str
-      | **sample**: JCL Error detected.  Check the data dumps for more information.
+      | **sample**: The job completion code (CC) was not available in the job output, please review the job log."
 
     code
-      Return code converted to integer value (when possible). For JCL ERRORs, this will be None.
+      Return code converted to an integer value (when possible). For JCL ERRORs, this will be None.
 
       | **type**: int
 
@@ -575,14 +582,13 @@ jobs
       step_cc
         The CC returned for this step in the DD section.
 
-        | **type**: str
-        | **sample**: 00
+        | **type**: int
 
 
 
 
 message
-  The output message that the sample module generates.
+  This option is being deprecated
 
   | **returned**: success
   | **type**: str

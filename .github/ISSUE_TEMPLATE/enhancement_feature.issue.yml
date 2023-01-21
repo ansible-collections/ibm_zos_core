@@ -1,5 +1,5 @@
-name: Request an enhancement
-description: Request that existing collection content be ehnanced.
+name: Request an enhancement or new feature
+description: Request a new feature or that content be enhanced.
 title: "[Enhancement] <title> "
 labels: [Enhancement]
 assignees:
@@ -8,13 +8,13 @@ body:
   - type: markdown
     attributes:
       value: |
-        Before requesting an enhancement, please review existing isssues to avoid duplication.
+        Before requesting an enhancement or feature, please review existing isssues to avoid duplication.
         ---
   - type: textarea
     id: issue-description
     attributes:
-      label: Enhancement description
-      description: Describe the enhancement you are requesting.
+      label: Enhancement or featture description
+      description: Describe the enhancement or feature you are requesting.
       placeholder: Verbosity is encouraged, the more you share the better for us to understand.
     validations:
       required: true
@@ -22,7 +22,7 @@ body:
     id: modules
     attributes:
       label: Ansible module
-      description: Select which modules are being reported in this enhancement. You can select more than one.
+      description: Select which modules are being reported in this enhancement or feature. You can select more than one.
       multiple: true
       options:
         - zos_apf

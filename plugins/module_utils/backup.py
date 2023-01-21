@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2020
+# Copyright (c) IBM Corporation 2020, 2022
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -22,7 +22,6 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module im
 
 import time
 from shutil import copy2, copytree, rmtree
-from stat import S_IREAD, S_IWRITE, ST_MODE
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     MissingZOAUImport,
 )
@@ -35,7 +34,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
     is_member,
     extract_dsname,
     temp_member_name,
-    is_empty,
+    DataSet,
 )
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.mvs_cmd import iebcopy
 
@@ -93,7 +92,16 @@ def mvs_file_backup(dsn, bk_dsn=None, tmphlq=None):
                 hlq = datasets.hlq()
             bk_dsn = datasets.tmp_name(hlq)
         bk_dsn = _validate_data_set_name(bk_dsn).upper()
-        cp_rc = _copy_ds(dsn, bk_dsn)
+
+        # In case the backup ds is a member we trust that the PDS attributes are ok to fit the src content.
+        # This should not delete a PDS just to create a backup member.
+        # Otherwise, we allocate the appropiate space for the backup ds based on src.
+        if is_member(bk_dsn):
+            cp_response = datasets._copy(dsn, bk_dsn)
+            cp_rc = cp_response.rc
+        else:
+            cp_rc = _copy_ds(dsn, bk_dsn)
+
         if cp_rc == 12:  # The data set is probably a PDS or PDSE
             # Delete allocated backup that was created when attempting to use _copy_ds()
             # Safe to delete because _copy_ds() would have raised an exception if it did
@@ -201,7 +209,7 @@ def _copy_ds(ds, bk_ds):
                 ds, out, err
             )
         )
-    if rc != 0 and is_empty(ds):
+    if rc != 0 and DataSet.is_empty(ds):
         rc = 0
     return rc
 

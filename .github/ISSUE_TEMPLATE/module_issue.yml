@@ -1,20 +1,20 @@
-name: Request a new feature
-description: Request new collection content be created.
-title: "[New Feature] <title> "
-labels: [New Feature]
+name: Request a new module
+description: Request a new module be added to the collection.
+title: "[Module] <title> "
+labels: [Module]
 assignees:
   - IBMAnsibleHelper
 body:
   - type: markdown
     attributes:
       value: |
-        Before requesting a new feature, please review existing isssues to avoid duplication.
+        Before requesting a new module, please review existing isssues to avoid duplication.
         ---
   - type: textarea
     id: issue-description
     attributes:
-      label: New feature description
-      description: Describe the new feature you are requesting.
+      label: New module description
+      description: Describe the new module you are requesting.
       placeholder: Verbosity is encouraged, the more you share the better for us to understand.
     validations:
       required: true

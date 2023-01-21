@@ -15,7 +15,7 @@ __metaclass__ = type
 
 import re
 import tempfile
-from os import path
+from os import path, walk
 from string import ascii_uppercase, digits
 from random import randint
 from ansible.module_utils._text import to_bytes
@@ -92,6 +92,10 @@ class DataSet(object):
 
     _VSAM_UNCATALOG_COMMAND = " DELETE '{0}' NOSCRATCH"
 
+    MVS_PARTITIONED = frozenset({"PE", "PO", "PDSE", "PDS"})
+    MVS_SEQ = frozenset({"PS", "SEQ", "BASIC"})
+    MVS_VSAM = frozenset({"KSDS", "ESDS", "RRDS", "LDS", "VSAM"})
+
     @staticmethod
     def ensure_present(
         name,
@@ -110,6 +114,7 @@ class DataSet(object):
         sms_data_class=None,
         sms_management_class=None,
         volumes=None,
+        tmp_hlq=None,
     ):
         """Creates data set if it does not already exist.
 
@@ -164,6 +169,7 @@ class DataSet(object):
                     When using SMS, volumes can be provided when the storage class being used
                     has GUARANTEED_SPACE=YES specified. Otherwise, the allocation will fail.
                     Defaults to None.
+            tmp_hlq (str, optional): High level qualifier for temporary datasets.
 
         Returns:
             bool -- Indicates if changes were made.
@@ -203,12 +209,12 @@ class DataSet(object):
         Arguments:
             name (str) -- The name of the data set to ensure is absent.
             volumes (list[str]) -- The volumes the data set may reside on.
-
         Returns:
             bool -- Indicates if changes were made.
         """
         if volumes:
-            changed, present, pending_to_catalog_and_delete = DataSet.attempt_to_delete_uncataloged_data_set_if_necessary(name, volumes)
+            changed, present, pending_to_catalog_and_delete = DataSet.attempt_to_delete_uncataloged_data_set_if_necessary(
+                name, volumes)
             if not pending_to_catalog_and_delete:
                 return changed
 
@@ -287,6 +293,54 @@ class DataSet(object):
         return False
 
     @staticmethod
+    def allocate_model_data_set(ds_name, model, vol=None):
+        """Allocates a data set based on the attributes of a 'model' data set.
+        Useful when a data set needs to be created identical to another. Supported
+        model(s) are Physical Sequential (PS), Partitioned Data Sets (PDS/PDSE),
+        and VSAM data sets. If `ds_name` has a member (i.e., "DATASET(member)"),
+        it will be shortened to just the partitioned data set name.
+
+        Arguments:
+            ds_name {str} -- The name of the data set to allocate. If the ds_name
+            is a partitioned member e.g. hlq.llq.ds(mem), only the data set name
+            must be used. See extract_dsname(ds_name) in data_set.py
+            model {str} -- The name of the data set whose allocation parameters
+            should be used to allocate the new data set 'ds_name'
+            vol {str} -- The volume where data set should be allocated
+
+        Raise:
+            NonExistentSourceError: When the model data set does not exist.
+            MVSCmdExecError: When the call to IKJEFT01 to allocate the
+                            data set fails.
+        """
+        if not DataSet.data_set_exists(model):
+            raise DatasetNotFoundError(model)
+
+        ds_name = extract_dsname(ds_name)
+        model_type = DataSet.data_set_type(model)
+
+        # The break lines are absolutely necessary, a JCL code line can't
+        # be longer than 72 characters. The following JCL is compatible with
+        # all data set types.
+        alloc_cmd = """ ALLOC DS('{0}') -
+        LIKE ('{1}')""".format(ds_name, model)
+
+        # Now adding special parameters for sequential and partitioned
+        # data sets.
+        if model_type not in DataSet.MVS_VSAM:
+            block_size = datasets.listing(model)[0].block_size
+            alloc_cmd = """{0} -
+            BLKSIZE({1})""".format(alloc_cmd, block_size)
+
+        if vol:
+            alloc_cmd = """{0} -
+            VOLUME({1})""".format(alloc_cmd, vol.upper())
+
+        rc, out, err = mvs_cmd.ikjeft01(alloc_cmd, authorized=True)
+        if rc != 0:
+            raise MVSCmdExecError(rc, out, err)
+
+    @staticmethod
     def data_set_cataloged(name):
         """Determine if a data set is in catalog.
 
@@ -309,7 +363,6 @@ class DataSet(object):
     @staticmethod
     def get_volume_list_for_cataloged_data_set(name):
         """Get the volume list for a cataloged dataset name.
-
         Arguments:
             name (str) -- The data set name to check if cataloged.
         Returns:
@@ -328,9 +381,44 @@ class DataSet(object):
         return volume_list
 
     @staticmethod
+    def data_set_exists(name, volume=None):
+        """Determine if a data set exists.
+        This will check the catalog in addition to
+        the volume table of contents.
+
+        Arguments:
+            name (str) -- The data set name to check if exists.
+            volume (str) -- The volume the data set may reside on.
+
+        Returns:
+            bool -- If data is found.
+        """
+        if DataSet.data_set_cataloged(name):
+            return True
+        elif volume is not None:
+            return DataSet._is_in_vtoc(name, volume)
+        return False
+
+    @staticmethod
+    def data_set_member_exists(name):
+        """Checks for existence of data set member.
+
+        Arguments:
+            name (str) -- The data set name including member.
+
+        Returns:
+            bool -- If data set member exists.
+        """
+        module = AnsibleModuleHelper(argument_spec={})
+        rc, stdout, stderr = module.run_command(
+            "head \"//'{0}'\"".format(name))
+        if rc != 0 or (stderr and "EDC5067I" in stderr):
+            return False
+        return True
+
+    @staticmethod
     def delete_uncataloged_dataset(name, volumes):
         """Delete an uncataloged dataset by specifying volumes.
-
         Arguments:
             name (str) -- The data set name to check if cataloged.
             volumes (list[str]) -- The volumes the data set may reside on.
@@ -351,9 +439,28 @@ class DataSet(object):
         return rc
 
     @staticmethod
+    def data_set_shared_members(src, dest):
+        """Checks for the existence of members from a source data set in
+        a destination data set.
+
+        Arguments:
+            src (str) -- The source data set name. The name can contain a wildcard pattern.
+            dest (str) -- The destination data set name.
+
+        Returns:
+            bool -- If at least one of the members in src exists in dest.
+        """
+        src_members = datasets.list_members(src)
+
+        for member in src_members:
+            if DataSet.data_set_member_exists("{0}({1})".format(dest, member)):
+                return True
+
+        return False
+
+    @staticmethod
     def attempt_to_delete_uncataloged_data_set_if_necessary(name, volumes):
         """Attempt to delete any uncataloged dataset if exists on any volume and there is a cataloged dataset with the same name.
-
         Arguments:
             name (str) -- The data set name to check if cataloged.
             volumes (list[str]) -- The volumes the data set may reside on.
@@ -386,39 +493,214 @@ class DataSet(object):
         return changed, present, pending_to_delete_cataloged_dataset
 
     @staticmethod
-    def data_set_exists(name, volume=None):
-        """Determine if a data set exists.
-        This will check the catalog in addition to
-        the volume table of contents.
+    def get_member_name_from_file(file_name):
+        """Creates a member name for a partitioned data set by taking up to the
+        first 8 characters from a filename without its file extension
 
         Arguments:
-            name (str) -- The data set name to check if exists.
-            volume (str) -- The volume the data set may reside on.
+            file_name (str) -- A file name that can include a file extension.
 
         Returns:
-            bool -- If data is found.
+            str -- Member name constructed from the file name.
         """
-        if DataSet.data_set_cataloged(name):
-            return True
-        elif volume is not None:
-            return DataSet._is_in_vtoc(name, volume)
+        # Removing the file extension.
+        member_name = path.splitext(file_name)[0]
+        # Taking the first 8 characters from the file name.
+        member_name = member_name.replace(".", "")[0:8]
+
+        return member_name
+
+    @staticmethod
+    def files_in_data_set_members(src, dest):
+        """Checks for the existence of members corresponding to USS files in a
+        destination data set. The file names get converted to the form they
+        would take when copied into a partitioned data set.
+
+        Arguments:
+            src (str) -- USS path to a file or a directory.
+            dest (str) -- Name of the destination data set.
+
+        Returns:
+            bool -- If at least one of the members in src exists in dest.
+        """
+        if path.isfile(src):
+            files = [path.basename(src)]
+        else:
+            dummy_path, dummy_dirs, files = next(walk(src))
+
+        files = [DataSet.get_member_name_from_file(file) for file in files]
+
+        for file in files:
+            if DataSet.data_set_member_exists("{0}({1})".format(dest, file)):
+                return True
+
         return False
 
     @staticmethod
-    def data_set_member_exists(name):
-        """Checks for existence of data set member.
+    def data_set_volume(name):
+        """Checks the volume where a data set is located.
 
         Arguments:
-            name (str) -- The data set name including member.
+            name (str) -- The name of the data set.
 
         Returns:
-            bool -- If data set member exists.
+            str -- Name of the volume where the data set is.
+
+        Raises:
+            DatasetNotFoundError: When data set cannot be found on the system.
+            DatasetVolumeError: When the function is unable to parse the value
+                                of VOLSER.
+        """
+        data_set_information = datasets.listing(name)
+
+        if len(data_set_information) > 0:
+            return data_set_information[0].volume
+
+        # If listing failed to return a data set, then it's probably a VSAM.
+        output = DataSet._get_listcat_data(name)
+
+        if re.findall(r"NOT FOUND|NOT LISTED", output):
+            raise DatasetNotFoundError(name)
+
+        volser_output = re.findall(r"VOLSER-*[A-Z|0-9]+", output)
+
+        if volser_output:
+            return volser_output[0].replace("VOLSER", "").replace("-", "")
+        else:
+            raise DatasetVolumeError(name)
+
+    @staticmethod
+    def data_set_type(name, volume=None):
+        """Checks the type of a data set.
+
+        Arguments:
+            name (str) -- The name of the data set.
+            volume (str) -- The volume the data set may reside on.
+
+        Returns:
+            str -- The type of the data set (one of "PS", "PO", "DA", "KSDS",
+                    "ESDS", "LDS" or "RRDS").
+            None -- If the data set does not exist or ZOAU is not able to determine
+                    the type.
+        """
+        if not DataSet.data_set_exists(name, volume):
+            return None
+
+        data_sets_found = datasets.listing(name)
+
+        # Using the DSORG property when it's a sequential or partitioned
+        # dataset. VSAMs are not found by datasets.listing.
+        if len(data_sets_found) > 0:
+            return data_sets_found[0].dsorg
+
+        # Next, trying to get the DATA information of a VSAM through
+        # LISTCAT.
+        output = DataSet._get_listcat_data(name)
+
+        # Filtering all the DATA information to only get the ATTRIBUTES block.
+        data_set_attributes = re.findall(
+            r"ATTRIBUTES.*STATISTICS", output, re.DOTALL)
+        if len(data_set_attributes) == 0:
+            return None
+
+        if re.search(r"\bINDEXED\b", data_set_attributes[0]):
+            return "KSDS"
+        elif re.search(r"\bNONINDEXED\b", data_set_attributes[0]):
+            return "ESDS"
+        elif re.search(r"\bLINEAR\b", data_set_attributes[0]):
+            return "LDS"
+        elif re.search(r"\bNUMBERED\b", data_set_attributes[0]):
+            return "RRDS"
+        else:
+            return None
+
+    @staticmethod
+    def _get_listcat_data(name):
+        """Runs IDCAMS to get the DATA information associated with a data set.
+
+        Arguments:
+            name (str) -- Name of the data set.
+
+        Returns:
+            str -- Standard output from IDCAMS.
+        """
+        name = name.upper()
+        module = AnsibleModuleHelper(argument_spec={})
+        stdin = " LISTCAT ENT('{0}') DATA ALL".format(name)
+        rc, stdout, stderr = module.run_command(
+            "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=stdin
+        )
+
+        if rc != 0:
+            raise MVSCmdExecError(rc, stdout, stderr)
+
+        return stdout
+
+    @staticmethod
+    def is_empty(name, volume=None):
+        """Determines whether a data set is empty.
+
+        Arguments:
+            name (str) -- The name of the data set.
+            volume (str) -- The volume where the data set resides.
+
+        Returns:
+            bool -- Whether the data set is empty or not.
+        """
+        if not DataSet.data_set_exists(name, volume):
+            raise DatasetNotFoundError(name)
+
+        ds_type = DataSet.data_set_type(name, volume)
+
+        if ds_type in DataSet.MVS_PARTITIONED:
+            return DataSet._pds_empty(name)
+        elif ds_type in DataSet.MVS_SEQ:
+            return len(datasets.read(name, tail=10)) == 0
+        elif ds_type in DataSet.MVS_VSAM:
+            return DataSet._vsam_empty(name)
+
+    @staticmethod
+    def _pds_empty(name):
+        """Determines if a partitioned data set is empty.
+
+        Arguments:
+            name (str) -- The name of the PDS/PDSE.
+
+        Returns:
+            bool - If PDS/PDSE is empty.
+            Returns True if it is empty. False otherwise.
         """
         module = AnsibleModuleHelper(argument_spec={})
-        rc, stdout, stderr = module.run_command("head \"//'{0}'\"".format(name))
-        if rc != 0 or (stderr and "EDC5067I" in stderr):
+        ls_cmd = "mls {0}".format(name)
+        rc, out, err = module.run_command(ls_cmd)
+        # RC 2 for mls means that there aren't any members.
+        return rc == 2
+
+    @staticmethod
+    def _vsam_empty(name):
+        """Determines if a VSAM data set is empty.
+
+        Arguments:
+            name (str) -- The name of the VSAM data set.
+
+        Returns:
+            bool - If VSAM data set is empty.
+            Returns True if VSAM data set exists and is empty.
+            False otherwise.
+        """
+        module = AnsibleModuleHelper(argument_spec={})
+        empty_cmd = """  PRINT -
+        INFILE(MYDSET) -
+        COUNT(1)"""
+        rc, out, err = module.run_command(
+            "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin --mydset={0}".format(
+                name),
+            data=empty_cmd,
+        )
+        if rc == 4 or "VSAM OPEN RETURN CODE IS 160" in out:
+            return True
+        elif rc != 0:
             return False
-        return True
 
     @staticmethod
     def attempt_catalog_if_necessary(name, volumes):
@@ -463,7 +745,8 @@ class DataSet(object):
         if data_set is not None:
             return True
         vsam_name = name + ".data"
-        vsam_data_set = vtoc.find_data_set_in_volume_output(vsam_name, data_sets)
+        vsam_data_set = vtoc.find_data_set_in_volume_output(
+            vsam_name, data_sets)
         if vsam_data_set is not None:
             return True
         return False
@@ -485,6 +768,7 @@ class DataSet(object):
         sms_data_class=None,
         sms_management_class=None,
         volumes=None,
+        tmp_hlq=None,
     ):
         """Attempts to replace an existing data set.
 
@@ -538,6 +822,7 @@ class DataSet(object):
                     When using SMS, volumes can be provided when the storage class being used
                     has GUARANTEED_SPACE=YES specified. Otherwise, the allocation will fail.
                     Defaults to None.
+            tmp_hlq (str, optional): High level qualifier for temporary datasets.
         """
         arguments = locals()
         DataSet.delete(name)
@@ -595,6 +880,7 @@ class DataSet(object):
         sms_data_class=None,
         sms_management_class=None,
         volumes=None,
+        tmp_hlq=None,
     ):
         """A wrapper around zoautil_py
         Dataset.create() to raise exceptions on failure.
@@ -650,7 +936,7 @@ class DataSet(object):
                     When using SMS, volumes can be provided when the storage class being used
                     has GUARANTEED_SPACE=YES specified. Otherwise, the allocation will fail.
                     Defaults to None.
-
+            tmp_hlq (str, optional): High level qualifier for temporary datasets.
         Raises:
             DatasetCreateError: When data set creation fails.
         """
@@ -661,7 +947,7 @@ class DataSet(object):
             raise DatasetCreateError(
                 name, response.rc, response.stdout_response + response.stderr_response
             )
-        return
+        return response.rc
 
     @staticmethod
     def delete(name):
@@ -743,7 +1029,8 @@ class DataSet(object):
             DatasetCatalogError: When attempt at catalog fails.
         """
         module = AnsibleModuleHelper(argument_spec={})
-        iehprogm_input = DataSet._build_non_vsam_catalog_command(name.upper(), volumes)
+        iehprogm_input = DataSet._build_non_vsam_catalog_command(
+            name.upper(), volumes)
 
         rc, stdout, stderr = module.run_command(
             "mvscmdauth --pgm=iehprogm --sysprint=* --sysin=stdin", data=iehprogm_input
@@ -825,7 +1112,8 @@ class DataSet(object):
             temp_name = DataSet.create_temp(name.split(".")[0])
             DataSet.write(temp_name, iehprogm_input)
             rc, stdout, stderr = module.run_command(
-                "mvscmdauth --pgm=iehprogm --sysprint=* --sysin={0}".format(temp_name)
+                "mvscmdauth --pgm=iehprogm --sysprint=* --sysin={0}".format(
+                    temp_name)
             )
             if rc != 0 or "NORMAL END OF TASK RETURNED" not in stdout:
                 raise DatasetUncatalogError(name, rc)
@@ -989,7 +1277,8 @@ class DataSet(object):
             "zfsadm format -aggregate {0}".format(name)
         )
         if rc != 0:
-            raise DatasetFormatError(name, rc, "{0} {1}".format(stdout, stderr))
+            raise DatasetFormatError(
+                name, rc, "{0} {1}".format(stdout, stderr))
         return
 
     @staticmethod
@@ -1027,7 +1316,8 @@ class DataSet(object):
         Returns:
             str -- The command string formatted for use with IEHPROGM.
         """
-        command_part_1 = DataSet._format_jcl_line("    CATLG DSNAME={0},".format(name))
+        command_part_1 = DataSet._format_jcl_line(
+            "    CATLG DSNAME={0},".format(name))
         command_part_2 = DataSet._build_volume_string_iehprogm(volumes)
         return command_part_1 + command_part_2
 
@@ -1083,7 +1373,8 @@ class DataSet(object):
                     volume.upper()
                 )
             else:
-                single_volume_string = "               {0}".format(volume.upper())
+                single_volume_string = "               {0}".format(
+                    volume.upper())
             if index + 1 != len(volumes):
                 single_volume_string += ","
                 volume_string += DataSet._format_jcl_line(single_volume_string)
@@ -1102,7 +1393,8 @@ class DataSetUtils(object):
             data_set {str} -- Name of the input data set
         """
         self.module = AnsibleModuleHelper(argument_spec={})
-        self.data_set = data_set
+        self.data_set = data_set.upper()
+        self.path = data_set
         self.is_uss_path = "/" in data_set
         self.ds_info = dict()
         if not self.is_uss_path:
@@ -1116,7 +1408,7 @@ class DataSetUtils(object):
             bool -- If the data set exists
         """
         if self.is_uss_path:
-            return path.exists(to_bytes(self.data_set))
+            return path.exists(to_bytes(self.path))
         return self.ds_info.get("exists")
 
     def member_exists(self, member):
@@ -1166,7 +1458,8 @@ class DataSetUtils(object):
             AttributeError -- When input data set is a USS file or directory
         """
         if self.is_uss_path:
-            raise AttributeError("USS file or directory has no attribute 'Volume'")
+            raise AttributeError(
+                "USS file or directory has no attribute 'Volume'")
         return self.ds_info.get("volser")
 
     def lrecl(self):
@@ -1181,7 +1474,8 @@ class DataSetUtils(object):
             AttributeError -- When input data set is a USS file or directory
         """
         if self.is_uss_path:
-            raise AttributeError("USS file or directory has no attribute 'lrecl'")
+            raise AttributeError(
+                "USS file or directory has no attribute 'lrecl'")
         return self.ds_info.get("lrecl")
 
     def blksize(self):
@@ -1195,7 +1489,8 @@ class DataSetUtils(object):
             AttributeError -- When input data set is a USS file or directory
         """
         if self.is_uss_path:
-            raise AttributeError("USS file or directory has no attribute 'blksize'")
+            raise AttributeError(
+                "USS file or directory has no attribute 'blksize'")
         return self.ds_info.get("blksize")
 
     def recfm(self):
@@ -1218,7 +1513,8 @@ class DataSetUtils(object):
             'VS'  -- Variable Spanned
         """
         if self.is_uss_path:
-            raise AttributeError("USS file or directory has no attribute 'recfm'")
+            raise AttributeError(
+                "USS file or directory has no attribute 'recfm'")
         return self.ds_info.get("recfm")
 
     def _gather_data_set_info(self):
@@ -1269,7 +1565,8 @@ class DataSetUtils(object):
             result["exists"] = False
         else:
             result["exists"] = True
-            ds_search = re.search(r"(-|--)DSORG(-\s*|\s*)\n(.*)", output, re.MULTILINE)
+            ds_search = re.search(
+                r"(-|--)DSORG(-\s*|\s*)\n(.*)", output, re.MULTILINE)
             if ds_search:
                 ds_params = ds_search.group(3).split()
                 result["dsorg"] = ds_params[-1]
@@ -1322,24 +1619,6 @@ def is_data_set(data_set):
     return True
 
 
-def is_empty(data_set):
-    """Determine whether a given data set is empty
-
-    Arguments:
-        data_set {str} -- Input source name
-
-    Returns:
-        {bool} -- Whether the data set is empty
-    """
-    du = DataSetUtils(data_set)
-    if du.ds_type() == "PO":
-        return _pds_empty(data_set)
-    elif du.ds_type() == "PS":
-        return datasets.read(data_set, tail=10) is None
-    elif du.ds_type() == "VSAM":
-        return _vsam_empty(data_set)
-
-
 def extract_dsname(data_set):
     """Extract the actual name of the data set from a given input source
 
@@ -1383,47 +1662,6 @@ def temp_member_name():
     for i in range(7):
         temp_name += rest_char_set[randint(0, len(rest_char_set) - 1)]
     return temp_name
-
-
-def _vsam_empty(ds):
-    """Determine if a VSAM data set is empty.
-
-    Arguments:
-        ds {str} -- The name of the VSAM data set.
-
-    Returns:
-        bool - If VSAM data set is empty.
-        Returns True if VSAM data set exists and is empty.
-        False otherwise.
-    """
-    module = AnsibleModuleHelper(argument_spec={})
-    empty_cmd = """  PRINT -
-    INFILE(MYDSET) -
-    COUNT(1)"""
-    rc, out, err = module.run_command(
-        "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin --mydset={0}".format(ds),
-        data=empty_cmd,
-    )
-    if rc == 4 or "VSAM OPEN RETURN CODE IS 160" in out:
-        return True
-    elif rc != 0:
-        return False
-
-
-def _pds_empty(data_set):
-    """Determine if a partitioned data set is empty
-
-    Arguments:
-        data_set {str} -- The name of the PDS/PDSE
-
-    Returns:
-        bool - If PDS/PDSE is empty.
-        Returns True if it is empty. False otherwise.
-    """
-    module = AnsibleModuleHelper(argument_spec={})
-    ls_cmd = "mls {0}".format(data_set)
-    rc, out, err = module.run_command(ls_cmd)
-    return rc == 2
 
 
 class DatasetDeleteError(Exception):
@@ -1513,6 +1751,15 @@ class MVSCmdExecError(Exception):
         self.msg = (
             "Failure during execution of mvscmd; Return code: {0}; "
             "stdout: {1}; stderr: {2}".format(rc, out, err)
+        )
+        super().__init__(self.msg)
+
+
+class DatasetVolumeError(Exception):
+    def __init__(self, data_set):
+        self.msg = (
+            "The data set {0} could not be found on a volume in the system.".format(
+                data_set)
         )
         super().__init__(self.msg)
 

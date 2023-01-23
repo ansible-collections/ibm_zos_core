@@ -66,6 +66,7 @@ class ActionModule(ActionBase):
             if tmp is None or "-tmp-" not in tmp:
                 tmp = self._make_tmp_path()
 
+            source_full = None
             try:
                 source_full = self._loader.get_real_file(source)
                 source_rel = os.path.basename(source)

@@ -164,7 +164,7 @@ options:
     default: no
   encoding:
     description:
-      - The character set of the source I(src). M(zos_lineinfile)
+      - The character set of the source I(src). L(zos_lineinfile,./zos_lineinfile.html)
         requires to be provided with correct encoding to read the content
         of USS file or data set. If this parameter is not provided, this
         module assumes that USS file or data set is encoded in IBM-1047.

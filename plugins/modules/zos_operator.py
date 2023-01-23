@@ -57,7 +57,7 @@ options:
     default: 1
   wait:
     description:
-      - Configuring wait used by the M(zos_operator) module has been
+      - Configuring wait used by the L(zos_operator,./zos_operator.html) module has been
         deprecated and will be removed in ibm.ibm_zos_core collection.
       - Setting this option will yield no change, it is deprecated.
     type: bool

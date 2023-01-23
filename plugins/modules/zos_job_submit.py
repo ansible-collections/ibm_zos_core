@@ -59,7 +59,7 @@ options:
     default: false
     type: bool
     description:
-      - Configuring wait used by the M(zos_job_submit) module has been
+      - Configuring wait used by the L(zos_job_submit,./zos_job_submit.html) module has been
         deprecated and will be removed in ibm.ibm_zos_core collection.
       - Setting this option will yield no change, it is deprecated.
       - See option ``wait_time_s``.
@@ -88,9 +88,10 @@ options:
     description:
       - The volume serial (VOLSER)is where the data set resides. The option
         is required only when the data set is not cataloged on the system.
-      - When configured, the M(zos_job_submit) will try to catalog the data set
-        for the volume serial. If it is not able to, the module will fail.
-        Ignored for USS and LOCAL.
+      - When configured, the L(zos_job_submit,./zos_job_submit.html) will try to
+        catalog the data set for the volume serial. If it is not able to, the
+        module will fail.
+      - Ignored for USS and LOCAL.
   encoding:
     description:
       - Specifies which encoding the local JCL file should be converted from

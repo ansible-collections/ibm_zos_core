@@ -739,8 +739,11 @@ class CopyHandler(object):
             src_ds_type {str} -- The type of source
         """
         new_src = conv_path or temp_path or src
+
         if self._file_has_crlf_endings(new_src):
-            new_src = self._create_temp_with_lf_endings(new_src)
+            enc_utils = encode.EncodeUtils()
+            src_tag = enc_utils.uss_file_tag(new_src)
+            new_src = self._create_temp_with_lf_endings(new_src, src_tag)
 
         copy_args = dict()
 
@@ -924,36 +927,52 @@ class CopyHandler(object):
         return result
 
     def _file_has_crlf_endings(self, src):
+        """Reads src as a binary file and checks whether it uses CRLF or LF
+        line endings.
+
+        Arguments:
+            src {str} -- Path to a USS file
+
+        Returns:
+            {bool} -- True if the file uses CRLF endings, False if it uses LF
+                      ones.
         """
-        """
-        with open(src, "r", newline="", encoding="ISO-8859-1") as src_file:
+        with open(src, "rb") as src_file:
+            # readline() will read until it finds a \n.
             content = src_file.readline()
 
-        if content.endswith("\r\n") or content.endswith("\r"):
+        # In EBCDIC, \r\n are bytes 0d and 15, respectively.
+        if content.endswith(b'\x0d\x15'):
             return True
         else:
             return False
 
-    def _create_temp_with_lf_endings(self, src):
-        """
+    def _create_temp_with_lf_endings(self, src, encoding):
+        """Creates a temporary file with the same content as src but without
+        carriage returns.
+
+        Arguments:
+            src {str} -- Path to a USS source file.
+            encoding {str} -- Encoding of src.
+
+        Raises:
+            CopyOperationError: If the conversion fails.
+
+        Returns:
+            {str} -- Path to the temporary file created.
         """
         try:
-            converted_src = tempfile.mkstemp()
-            tr_command = "tr -d '\r' < {0} > {1}".format(src, converted_src)
-            rc, stdout, stderr = self.module.run_command(tr_command)
+            fd, converted_src = tempfile.mkstemp()
+            os.close(fd)
 
-            if rc != 0:
-                raise CopyOperationError(
-                    msg="Error while trying to convert EOL sequence for source.",
-                    rc=rc,
-                    stdout=stdout,
-                    stderr=stderr,
-                    cmd=tr_command
-                )
+            with open(converted_src, "wb") as converted_file:
+                with open(src, "rb") as src_file:
+                    current_line = src_file.readline()
+                    converted_file.write(current_line.replace(b'\x0d', b''))
+
+            self._tag_file_encoding(converted_src, encoding, is_dir=False)
 
             return converted_src
-        except CopyOperationError as err:
-            raise err
         except Exception as err:
             raise CopyOperationError(
                 msg="Error while trying to convert EOL sequence for source.",

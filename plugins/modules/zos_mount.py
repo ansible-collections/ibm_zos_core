@@ -213,7 +213,6 @@ options:
             - If this flag is used, use of tag_ccsid is encouraged.
         type: str
         choices:
-            - ''
             - TEXT
             - NOTEXT
         required: False
@@ -1092,7 +1091,7 @@ def main():
             ),
             src_params=dict(type="str", required=False),
             tag_untagged=dict(
-                type="str", default="", choices=["", "TEXT", "NOTEXT"], required=False
+                type="str", choices=["TEXT", "NOTEXT"], required=False
             ),
             tag_ccsid=dict(type="int", required=False),
             allow_uid=dict(type="bool", default=True, required=False),
@@ -1152,7 +1151,7 @@ def main():
         ),
         src_params=dict(arg_type="str", default="", required=False),
         tag_untagged=dict(
-            arg_type="str", default="", choices=["", "TEXT", "NOTEXT"], required=False
+            arg_type="str", choices=["TEXT", "NOTEXT"], required=False
         ),
         tag_ccsid=dict(arg_type="int", required=False),
         allow_uid=dict(arg_type="bool", default=True, required=False),

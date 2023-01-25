@@ -740,10 +740,28 @@ class CopyHandler(object):
         """
         new_src = conv_path or temp_path or src
 
+        # Before copying into the destination dataset, we'll make sure that
+        # the source file doesn't contain any carriage returns that would
+        # result in empty records in the destination.
+        # Due to the differences between encodings, we'll normalize to IBM-037
+        # before checking the EOL sequence.
+        enc_utils = encode.EncodeUtils()
+        src_tag = enc_utils.uss_file_tag(new_src)
+        if src_tag not in encode.Defaults.DEFAULT_EBCDIC_MVS_CHARSET:
+            fd, converted_src = tempfile.mkstemp()
+            os.close(fd)
+
+            enc_utils.uss_convert_encoding(
+                new_src,
+                converted_src,
+                src_tag,
+                encode.Defaults.DEFAULT_EBCDIC_MVS_CHARSET
+            )
+            self._tag_file_encoding(converted_src, encode.Defaults.DEFAULT_EBCDIC_MVS_CHARSET)
+            new_src = converted_src
+
         if self._file_has_crlf_endings(new_src):
-            enc_utils = encode.EncodeUtils()
-            src_tag = enc_utils.uss_file_tag(new_src)
-            new_src = self._create_temp_with_lf_endings(new_src, src_tag)
+            new_src = self._create_temp_with_lf_endings(new_src)
 
         copy_args = dict()
 
@@ -947,13 +965,12 @@ class CopyHandler(object):
         else:
             return False
 
-    def _create_temp_with_lf_endings(self, src, encoding):
+    def _create_temp_with_lf_endings(self, src):
         """Creates a temporary file with the same content as src but without
         carriage returns.
 
         Arguments:
             src {str} -- Path to a USS source file.
-            encoding {str} -- Encoding of src.
 
         Raises:
             CopyOperationError: If the conversion fails.
@@ -967,10 +984,10 @@ class CopyHandler(object):
 
             with open(converted_src, "wb") as converted_file:
                 with open(src, "rb") as src_file:
-                    current_line = src_file.readline()
+                    current_line = src_file.read()
                     converted_file.write(current_line.replace(b'\x0d', b''))
 
-            self._tag_file_encoding(converted_src, encoding, is_dir=False)
+            self._tag_file_encoding(converted_src, encode.Defaults.DEFAULT_EBCDIC_MVS_CHARSET)
 
             return converted_src
         except Exception as err:

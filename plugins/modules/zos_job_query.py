@@ -278,7 +278,7 @@ def parsing_jobs(jobs_raw):
         elif "ABENDU" in status_raw:
             # status = 'Ended abnormally'
             ret_code = {"msg": status_raw, "code": job.get("ret_code").get("code")}
-        elif "CANCELED" or "JCLERR" or "JCL ERROR" or "JOB NOT FOUND" in status_raw:
+        elif "CANCELED" in status_raw or "JCLERR" in status_raw or "JCL ERROR" in status_raw or "JOB NOT FOUND" in status_raw:
             # status = status_raw
             ret_code = {"msg": status_raw, "code": None}
         else:

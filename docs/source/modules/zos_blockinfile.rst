@@ -140,7 +140,7 @@ backup_name
 
 
 encoding
-  The character set of the source *src*. :ref:`zos_blockinfile <zos_blockinfile_module>` requires to be provided with correct encoding to read the content of USS file or data set. If this parameter is not provided, this module assumes that USS file or data set is encoded in IBM-1047.
+  The character set of the source *src*. `zos_blockinfile <./zos_blockinfile.html>`_ requires it to be provided with correct encoding to read the content of a USS file or data set. If this parameter is not provided, this module assumes that USS file or data set is encoded in IBM-1047.
 
   Supported character sets rely on the charset conversion utility (iconv) version; the most common character sets are supported.
 
@@ -215,7 +215,7 @@ Notes
 .. note::
    It is the playbook author or user's responsibility to avoid files that should not be encoded, such as binary files. A user is described as the remote user, configured either for the playbook or playbook tasks, who can also obtain escalated privileges to execute as root or another user.
 
-   All data sets are always assumed to be cataloged. If an uncataloged data set needs to be encoded, it should be cataloged first. The :ref:`zos_data_set <zos_data_set_module>` module can be used to catalog uncataloged data sets.
+   All data sets are always assumed to be cataloged. If an uncataloged data set needs to be encoded, it should be cataloged first. The `zos_data_set <./zos_data_set.html>`_ module can be used to catalog uncataloged data sets.
 
    For supported character sets used to encode data, refer to the `documentation <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html>`_.
 

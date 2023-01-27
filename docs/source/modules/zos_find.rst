@@ -192,9 +192,9 @@ Notes
 -----
 
 .. note::
-   Only cataloged data sets will be searched. If an uncataloged data set needs to be searched, it should be cataloged first. The :ref:`zos_data_set <zos_data_set_module>` module can be used to catalog uncataloged data sets.
+   Only cataloged data sets will be searched. If an uncataloged data set needs to be searched, it should be cataloged first. The `zos_data_set <./zos_data_set.html>`_ module can be used to catalog uncataloged data sets.
 
-   The :ref:`zos_find <zos_find_module>` module currently does not support wildcards for high level qualifiers. For example, ``SOME.*.DATA.SET`` is a valid pattern, but ``*.DATA.SET`` is not.
+   The `zos_find <./zos_find.html>`_ module currently does not support wildcards for high level qualifiers. For example, ``SOME.*.DATA.SET`` is a valid pattern, but ``*.DATA.SET`` is not.
 
    If a data set pattern is specified as ``USER.*``, the matching data sets will have two name segments such as ``USER.ABC``, ``USER.XYZ`` etc. If a wildcard is specified as ``USER.*.ABC``, the matching data sets will have three name segments such as ``USER.XYZ.ABC``, ``USER.TEST.ABC`` etc.
 

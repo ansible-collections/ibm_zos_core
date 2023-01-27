@@ -684,7 +684,6 @@ if PY3:
     import pathlib
 else:
     from re import match as fullmatch
-    import pathlib2 as pathlib
 
 try:
     from zoautil_py import datasets
@@ -1034,9 +1033,22 @@ class USSCopyHandler(CopyHandler):
         else:
             norm_dest = os.path.normpath(dest)
             dest_parent_dir, tail = os.path.split(norm_dest)
-            path_helper = pathlib.Path(dest_parent_dir)
-            if dest_parent_dir != "/" and not path_helper.exists():
-                path_helper.mkdir(parents=True, exist_ok=True)
+            if PY3:
+                path_helper = pathlib.Path(dest_parent_dir)
+                if dest_parent_dir != "/" and not path_helper.exists():
+                    path_helper.mkdir(parents=True, exist_ok=True)
+            else:
+                # When using Python 2, instead of using pathlib, we'll use os.makedirs.
+                # pathlib is not available in Python 2.
+                try:
+                    if dest_parent_dir != "/" and not os.path.exists(dest_parent_dir):
+                        os.makedirs(dest_parent_dir)
+                except os.error as err:
+                    # os.makedirs throws an error whether the directories were already
+                    # present or their creation failed. There's no exist_ok to tell it
+                    # to ignore the first case, so we ignore it manually.
+                    if "File exists" not in err:
+                        raise CopyOperationError(msg=to_native(err))
 
             if os.path.isfile(temp_path or conv_path or src):
                 dest = self._copy_to_file(src, dest, conv_path, temp_path)

@@ -23,7 +23,7 @@ module: zos_copy
 version_added: '1.2.0'
 short_description: Copy data to z/OS
 description:
-  - The M(zos_copy) module copies a file or data set from a local or a
+  - The L(zos_copy,./zos_copy.html) module copies a file or data set from a local or a
     remote machine to a location on the remote machine.
 author:
   - "Asif Mahmud (@asifmahmud)"
@@ -198,12 +198,12 @@ options:
     required: false
   sftp_port:
     description:
-      - Configuring the SFTP port used by the M(zos_copy) module has been
+      - Configuring the SFTP port used by the L(zos_copy,./zos_copy.html) module has been
         deprecated and will be removed in ibm.ibm_zos_core collection version
         1.5.0.
       - Configuring the SFTP port with I(sftp_port) will no longer have any
         effect on which port is used by this module.
-      - To configure the SFTP port used for module M(zos_copy), refer to topic
+      - To configure the SFTP port used for module L(zos_copy,./zos_copy.html), refer to topic
         L(using connection plugins,https://docs.ansible.com/ansible/latest/plugins/connection.html#using-connection-plugins)
       - If C(ansible_port) is not specified, port 22 will be used.
     type: int
@@ -383,7 +383,7 @@ notes:
     - VSAM data sets can only be copied to other VSAM data sets.
     - For supported character sets used to encode data, refer to the
       L(documentation,https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html).
-    - M(zos_copy) uses SFTP (Secure File Transfer Protocol) for the underlying
+    - L(zos_copy,./zos_copy.html) uses SFTP (Secure File Transfer Protocol) for the underlying
       transfer protocol; Co:Z SFTP is not supported. In the case of Co:z SFTP,
       you can exempt the Ansible userid on z/OS from using Co:Z thus falling back
       to using standard SFTP.
@@ -678,12 +678,13 @@ import stat
 import math
 import tempfile
 import os
-import pathlib
 
 if PY3:
     from re import fullmatch
+    import pathlib
 else:
     from re import match as fullmatch
+    import pathlib2 as pathlib
 
 try:
     from zoautil_py import datasets

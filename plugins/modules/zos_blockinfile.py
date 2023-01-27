@@ -131,9 +131,9 @@ options:
     type: str
   encoding:
     description:
-      - The character set of the source I(src). M(zos_blockinfile)
-        requires to be provided with correct encoding to read the content
-        of USS file or data set. If this parameter is not provided, this
+      - The character set of the source I(src). L(zos_blockinfile,./zos_blockinfile.html)
+        requires it to be provided with correct encoding to read the content
+        of a USS file or data set. If this parameter is not provided, this
         module assumes that USS file or data set is encoded in IBM-1047.
       - Supported character sets rely on the charset conversion utility (iconv)
         version; the most common character sets are supported.
@@ -147,7 +147,7 @@ notes:
     tasks, who can also obtain escalated privileges to execute as root
     or another user.
   - All data sets are always assumed to be cataloged. If an uncataloged data set
-    needs to be encoded, it should be cataloged first. The M(zos_data_set) module
+    needs to be encoded, it should be cataloged first. The L(zos_data_set,./zos_data_set.html) module
     can be used to catalog uncataloged data sets.
   - For supported character sets used to encode data, refer to the
     L(documentation,https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html).

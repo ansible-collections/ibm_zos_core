@@ -1102,9 +1102,9 @@ def run_module():
                 ),
                 type=dict(type="str", required=False, default="PDS"),
                 space_type=dict(type="str", required=False, default="M"),
-                space_primary=dict(type="int", required=False, aliases=["size"], default=5),
-                space_secondary=dict(type="int", required=False, default=3),
-                record_format=dict(type="str", required=False, aliases=["format"], default="FB"),
+                space_primary=dict(type="int", required=False, aliases=["size"]),
+                space_secondary=dict(type="int", required=False),
+                record_format=dict(type="str", required=False, aliases=["format"]),
                 sms_management_class=dict(type="str", required=False),
                 # I know this alias is odd, ZOAU used to document they supported
                 # SMS data class when they were actually passing as storage class
@@ -1146,9 +1146,9 @@ def run_module():
         ),
         type=dict(type="str", required=False, default="PDS"),
         space_type=dict(type="str", required=False, default="M"),
-        space_primary=dict(type="raw", required=False, aliases=["size"], default=5),
-        space_secondary=dict(type="int", required=False, default=3),
-        record_format=dict(type="str", required=False, aliases=["format"], default="FB"),
+        space_primary=dict(type="raw", required=False, aliases=["size"]),
+        space_secondary=dict(type="int", required=False),
+        record_format=dict(type="str", required=False, aliases=["format"]),
         sms_management_class=dict(type="str", required=False),
         # I know this alias is odd, ZOAU used to document they supported
         # SMS data class when they were actually passing as storage class

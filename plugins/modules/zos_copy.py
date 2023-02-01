@@ -2187,6 +2187,7 @@ def run_module(module, arg_def):
 
     # Creating an emergency backup or an empty data set to use as a model to
     # be able to restore the destination in case the copy fails.
+    emergency_backup = ""
     if dest_exists:
         if is_uss or not data_set.DataSet.is_empty(dest_name):
             use_backup = True
@@ -2194,7 +2195,8 @@ def run_module(module, arg_def):
                 emergency_backup = tempfile.mkdtemp()
                 emergency_backup = backup_data(dest, dest_ds_type, emergency_backup, tmphlq)
             else:
-                emergency_backup = backup_data(dest, dest_ds_type, None, tmphlq)
+                if not (dest_ds_type in data_set.DataSet.MVS_PARTITIONED and src_member and not dest_member_exists):
+                    emergency_backup = backup_data(dest, dest_ds_type, None)
         # If dest is an empty data set, instead create a data set to
         # use as a model when restoring.
         else:

@@ -897,6 +897,55 @@ def test_copy_non_existent_file_fails(ansible_zos_module, is_remote):
 
 @pytest.mark.uss
 @pytest.mark.seq
+def test_copy_file_record_length_to_sequential_data_set(ansible_zos_module):
+    hosts = ansible_zos_module
+    dest = "USER.TEST.SEQ.FUNCTEST"
+
+    fd, src = tempfile.mkstemp()
+    os.close(fd)
+    with open(src, "w") as infile:
+        infile.write(DUMMY_DATA)
+
+    try:
+        hosts.all.zos_data_set(name=dest, state="absent")
+
+        copy_result = hosts.all.zos_copy(
+            src=src,
+            dest=dest,
+            remote_src=False,
+            is_binary=False
+        )
+
+        verify_copy = hosts.all.shell(
+            cmd="cat \"//'{0}'\" > /dev/null 2>/dev/null".format(dest),
+            executable=SHELL_EXECUTABLE,
+        )
+
+        verify_recl = hosts.all.shell(
+            cmd="dls -l {0}".format(dest),
+            executable=SHELL_EXECUTABLE,
+        )
+
+        for cp_res in copy_result.contacted.values():
+            assert cp_res.get("msg") is None
+            assert cp_res.get("changed") is True
+            assert cp_res.get("dest") == dest
+        for v_cp in verify_copy.contacted.values():
+            assert v_cp.get("rc") == 0
+        for v_recl in verify_recl.contacted.values():
+            assert v_recl.get("rc") == 0
+            stdout = v_recl.get("stdout").split()
+            assert len(stdout) == 5
+            assert stdout[1] == "PS"
+            assert stdout[2] == "FB"
+            assert stdout[3] == "31"
+    finally:
+        hosts.all.zos_data_set(name=dest, state="absent")
+        os.remove(src)
+
+
+@pytest.mark.uss
+@pytest.mark.seq
 @pytest.mark.parametrize("src", [
     dict(src="/etc/profile", is_file=True, is_binary=False, is_remote=False),
     dict(src="/etc/profile", is_file=True, is_binary=True, is_remote=False),
@@ -931,11 +980,6 @@ def test_copy_file_to_non_existing_sequential_data_set(ansible_zos_module, src):
             assert v_cp.get("rc") == 0
     finally:
         hosts.all.zos_data_set(name=dest, state="absent")
-
-        if src["is_file"]:
-            copy_result = hosts.all.zos_copy(src=src["src"], dest=dest, remote_src=src["is_remote"], is_binary=src["is_binary"])
-        else:
-            copy_result = hosts.all.zos_copy(content=src["src"], dest=dest, remote_src=src["is_remote"], is_binary=src["is_binary"])
 
 
 @pytest.mark.uss

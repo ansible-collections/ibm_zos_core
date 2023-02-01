@@ -68,7 +68,7 @@ dest
 
   ``dest`` can be a USS file, directory or MVS data set name.
 
-  If ``src`` and ``dest`` are files and if the parent directory of ``dest`` does not exist, then the task will fail
+  If ``dest`` has missing parent directories, they will be created.
 
   If ``dest`` is a nonexistent USS file, it will be created.
 

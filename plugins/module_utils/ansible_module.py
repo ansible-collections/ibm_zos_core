@@ -49,7 +49,7 @@ class AnsibleModuleHelper(AnsibleModule):
 
     def run_command(self, args, check_rc=False, close_fds=True, executable=None, data=None, binary_data=False, path_prefix=None, cwd=None,
                     use_unsafe_shell=False, prompt_regex=None, environ_update=None, umask=None, encoding='utf-8', errors='surrogate_or_strict',
-                    expand_user_and_vars=True, pass_fds=None, before_communicate_callback=None, ignore_invalid_cwd=True, log_path=None):
+                    expand_user_and_vars=True, pass_fds=None, before_communicate_callback=None, ignore_invalid_cwd=True):
         '''
         Execute a command, returns rc, stdout, and stderr.
 
@@ -162,10 +162,6 @@ class AnsibleModuleHelper(AnsibleModule):
             except re.error:
                 self.fail_json(msg="invalid prompt regular expression given to run_command")
 
-        if log_path:
-            with open(log_path, "a") as log_file:
-                log_file.write(f"module.run_command args: {to_native(args)}\n")
-
         rc = 0
         msg = None
         st_in = None
@@ -203,10 +199,6 @@ class AnsibleModuleHelper(AnsibleModule):
             if not os.environ['PYTHONPATH']:
                 del os.environ['PYTHONPATH']
 
-        if log_path:
-            with open(log_path, "a") as log_file:
-                log_file.write(f"environment: {to_native(os.environ)}\n")
-
         if data:
             st_in = subprocess.PIPE
 
@@ -219,6 +211,7 @@ class AnsibleModuleHelper(AnsibleModule):
             stderr=subprocess.PIPE,
             preexec_fn=self._restore_signal_handlers,
             bufsize=self.PIPE_MAX_SIZE * 4
+            # bufsize=0
         )
         if PY3 and pass_fds:
             kwargs["pass_fds"] = pass_fds
@@ -244,10 +237,6 @@ class AnsibleModuleHelper(AnsibleModule):
         old_umask = None
         if umask:
             old_umask = os.umask(umask)
-
-        if log_path:
-            with open(log_path, "a") as log_file:
-                log_file.write(f"kwargs for the command: {to_native(kwargs)}\n")
 
         try:
             if self._debug:
@@ -282,10 +271,6 @@ class AnsibleModuleHelper(AnsibleModule):
                 cmd.stdin.write(data)
                 if not cmd.stdin.closed:
                     cmd.stdin.close()
-                else:
-                    if log_path:
-                        with open(log_path, "a") as log_file:
-                            log_file.write("stdin was already closed.\n")
 
             while True:
                 events = selector.select(1)
@@ -304,31 +289,15 @@ class AnsibleModuleHelper(AnsibleModule):
                             stdout = to_native(stdout, encoding=encoding, errors=errors)
                         return (257, stdout, "A prompt was encountered while running a command, but no input data was specified")
 
-                try:
-                    if log_path:
-                        with open(log_path, "a") as log_file:
-                            log_file.write(f"current stdout: {stdout}.\n")
-                            log_file.write(f"current stderr: {stderr}.\n")
-                except:
-                    if log_path:
-                        with open(log_path, "a") as log_file:
-                            log_file.write("error while printing stdout/stderr to log.\n")
-
                 # only break out if no pipes are left to read or
                 # the pipes are completely read and
                 # the process is terminated
                 if (not events or not selector.get_map()) and cmd.poll() is not None:
-                    if log_path:
-                        with open(log_path, "a") as log_file:
-                            log_file.write("breaking as there are no pipes left to read.\n")
                     break
                 # No pipes are left to read but process is not yet terminated
                 # Only then it is safe to wait for the process to be finished
                 # NOTE: Actually cmd.poll() is always None here if no selectors are left
                 elif not selector.get_map() and cmd.poll() is None:
-                    if log_path:
-                        with open(log_path, "a") as log_file:
-                            log_file.write("No more pipes but waiting for cmd to complete.\n")
                     cmd.wait()
                     # The process is terminated. Since no pipes to read from are
                     # left, there is no need to call select() again.

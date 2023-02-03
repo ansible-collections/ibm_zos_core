@@ -20,7 +20,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module im
 )
 
 
-def get_volume_entry(volume, log_path=None):
+def get_volume_entry(volume):
     """Retrieve VTOC information for all data sets with entries
     on the volume.
 
@@ -36,26 +36,11 @@ def get_volume_entry(volume, log_path=None):
     try:
         stdin = "  LISTVTOC FORMAT,VOL=3390={0}".format(volume.upper())
         dd = "SYS1.VVDS.V{0}".format(volume.upper())
-
-        if log_path:
-            with open(log_path, "a") as log_file:
-                log_file.write("vtoc.get_volume_entry\n")
-                log_file.write(f"stdin: {stdin}\n")
-                log_file.write(f"dd: {dd}\n")
-
-        stdout = _iehlist(dd, stdin, log_path=None)
-
-        if log_path:
-            with open(log_path, "a") as log_file:
-                log_file.write(f"stdout: {stdout}\n")
-
+        stdout = _iehlist(dd, stdin)
         if stdout is None:
             return None
         data_sets = _process_output(stdout)
     except Exception as e:
-        if log_path:
-            with open(log_path, "a") as log_file:
-                log_file.write(f"Command error: {str(e)}")
         raise VolumeTableOfContentsError(repr(e))
     return data_sets
 
@@ -100,7 +85,7 @@ def find_data_set_in_volume_output(data_set_name, data_sets):
     return None
 
 
-def _iehlist(dd, stdin, log_path=None):
+def _iehlist(dd, stdin):
     """Calls IEHLIST program.
 
     Arguments:
@@ -116,15 +101,6 @@ def _iehlist(dd, stdin, log_path=None):
         "mvscmd --pgm=iehlist --sysprint=* --dd={0} --sysin=stdin ".format(dd),
         data=stdin,
     )
-
-    if log_path:
-        with open(log_path, "a") as log_file:
-            log_file.write("vtoc._iehlist\n")
-            log_file.write(f"Command run: mvscmd --pgm=iehlist --sysprint=* --dd={dd} --sysin=stdin, with data {stdin}\n")
-            log_file.write(f"rc: {rc}\n")
-            log_file.write(f"stdout: {stdout}\n")
-            log_file.write(f"stderr: {stderr}\n")
-
     if rc == 0:
         response = stdout
     return response

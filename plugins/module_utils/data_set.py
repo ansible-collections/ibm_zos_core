@@ -102,7 +102,6 @@ class DataSet(object):
         name,
         replace,
         type,
-        log_path=None,
         space_primary=None,
         space_secondary=None,
         space_type=None,
@@ -176,32 +175,21 @@ class DataSet(object):
         """
         arguments = locals()
         arguments.pop("replace", None)
-        arguments.pop("log_path", None)
         present = False
         changed = False
 
-        if log_path:
-            with open(log_path, "a") as log_file:
-                log_file.write("ensure_present\n")
-
-        if DataSet.data_set_cataloged(name, log_path=log_path):
+        if DataSet.data_set_cataloged(name):
             present = True
         if not present:
             try:
                 DataSet.create(**arguments)
             except DatasetCreateError as e:
-                with open(log_path, "a") as log_file:
-                    log_file.write(f"an error ocurred with DataSet.create: {to_native(e)}\n")
-
                 raise_error = True
                 # data set exists on volume
                 if "Error Code: 0x4704" in e.msg:
                     present, changed = DataSet.attempt_catalog_if_necessary(
-                        name, volumes, log_path=log_path
+                        name, volumes
                     )
-
-                    with open(log_path, "a") as log_file:
-                        log_file.write(f"result from DataSet.attempt_catalog_if_necessary: present: {present}, changes: {changed}\n")
 
                     if present and changed:
                         raise_error = False
@@ -300,7 +288,7 @@ class DataSet(object):
         return False
 
     @staticmethod
-    def allocate_model_data_set(ds_name, model, vol=None, log_path=None):
+    def allocate_model_data_set(ds_name, model, vol=None):
         """Allocates a data set based on the attributes of a 'model' data set.
         Useful when a data set needs to be created identical to another. Supported
         model(s) are Physical Sequential (PS), Partitioned Data Sets (PDS/PDSE),
@@ -345,19 +333,11 @@ class DataSet(object):
 
         rc, out, err = mvs_cmd.ikjeft01(alloc_cmd, authorized=True)
 
-        if log_path:
-            with open(log_path, "a") as log_file:
-                log_file.write("allocate_model_data_set\n")
-                log_file.write(f"Command run: {alloc_cmd}\n")
-                log_file.write(f"rc: {rc}\n")
-                log_file.write(f"stdout: {out}\n")
-                log_file.write(f"stderr: {err}\n")
-
         if rc != 0:
             raise MVSCmdExecError(rc, out, err)
 
     @staticmethod
-    def data_set_cataloged(name, log_path=None):
+    def data_set_cataloged(name):
         """Determine if a data set is in catalog.
 
         Arguments:
@@ -370,32 +350,19 @@ class DataSet(object):
         module = AnsibleModuleHelper(argument_spec={})
         stdin = " LISTCAT ENTRIES('{0}')".format(name)
 
-        if log_path:
-            with open(log_path, "a") as log_file:
-                log_file.write("data_set_cataloged\n")
-                log_file.write(f"Command run: mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin, with data {stdin}\n")
-                log_file.write(f"Current ulimit: {module.run_command('ulimit -a', log_path=log_path)}\n")
-
         try:
             rc, stdout, stderr = module.run_command(
-                "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=stdin, log_path=log_path
+                "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=stdin
             )
         except Exception as err:
-            if log_path:
-                with open(log_path, "a") as log_file:
-                    log_file.write(f"Command error: {to_native(err)}, traceback: {to_native(traceback.format_exc())}\n")
             return False
-        else:
-            if log_path:
-                with open(log_path, "a") as log_file:
-                    log_file.write(f"rc: {rc}, stdout: {stdout}, stderr: {stderr}\n")
 
         if re.search(r"-\s" + name + r"\s*\n\s+IN-CAT", stdout):
             return True
         return False
 
     @staticmethod
-    def data_set_exists(name, volume=None, log_path=None):
+    def data_set_exists(name, volume=None):
         """Determine if a data set exists.
         This will check the catalog in addition to
         the volume table of contents.
@@ -407,22 +374,18 @@ class DataSet(object):
         Returns:
             bool -- If data is found.
         """
-        if log_path:
-            with open(log_path, "a") as log_file:
-                log_file.write("data_set_exists\n")
-
         try:
-            if DataSet.data_set_cataloged(name, log_path=log_path):
+            if DataSet.data_set_cataloged(name):
                 return True
             elif volume is not None:
-                return DataSet._is_in_vtoc(name, volume, log_path=log_path)
+                return DataSet._is_in_vtoc(name, volume)
         except Exception as err:
             raise err
 
         return False
 
     @staticmethod
-    def data_set_member_exists(name, log_path=None):
+    def data_set_member_exists(name):
         """Checks for existence of data set member.
 
         Arguments:
@@ -432,21 +395,14 @@ class DataSet(object):
             bool -- If data set member exists.
         """
         module = AnsibleModuleHelper(argument_spec={})
-        rc, stdout, stderr = module.run_command("head \"//'{0}'\"".format(name), log_path=log_path)
-
-        if log_path:
-            with open(log_path, "a") as log_file:
-                log_file.write("data_set_member_exists\n")
-                log_file.write(f"Command run: head \"//'{name}'\"\n")
-                log_file.write(f"rc: {rc}\n")
-                log_file.write(f"stderr: {stderr}\n")
+        rc, stdout, stderr = module.run_command("head \"//'{0}'\"".format(name))
 
         if rc != 0 or (stderr and "EDC5067I" in stderr):
             return False
         return True
 
     @staticmethod
-    def data_set_shared_members(src, dest, log_path=None):
+    def data_set_shared_members(src, dest):
         """Checks for the existence of members from a source data set in
         a destination data set.
 
@@ -459,13 +415,8 @@ class DataSet(object):
         """
         src_members = datasets.list_members(src)
 
-        if log_path:
-            with open(log_path, "a") as log_file:
-                log_file.write("data_set_shared_members\n")
-                log_file.write(f"src members: {src_members}\n")
-
         for member in src_members:
-            if DataSet.data_set_member_exists("{0}({1})".format(dest, member), log_path=log_path):
+            if DataSet.data_set_member_exists("{0}({1})".format(dest, member)):
                 return True
 
         return False
@@ -489,7 +440,7 @@ class DataSet(object):
         return member_name
 
     @staticmethod
-    def files_in_data_set_members(src, dest, log_path=None):
+    def files_in_data_set_members(src, dest):
         """Checks for the existence of members corresponding to USS files in a
         destination data set. The file names get converted to the form they
         would take when copied into a partitioned data set.
@@ -506,19 +457,10 @@ class DataSet(object):
         else:
             dummy_path, dummy_dirs, files = next(walk(src))
 
-        if log_path:
-            with open(log_path, "a") as log_file:
-                log_file.write("files_in_data_set_members\n")
-                log_file.write(f"files: {files}\n")
-
         files = [DataSet.get_member_name_from_file(file) for file in files]
 
-        if log_path:
-            with open(log_path, "a") as log_file:
-                log_file.write(f"files to member names: {files}\n")
-
         for file in files:
-            if DataSet.data_set_member_exists("{0}({1})".format(dest, file), log_path=log_path):
+            if DataSet.data_set_member_exists("{0}({1})".format(dest, file)):
                 return True
 
         return False
@@ -557,7 +499,7 @@ class DataSet(object):
             raise DatasetVolumeError(name)
 
     @staticmethod
-    def data_set_type(name, volume=None, log_path=None):
+    def data_set_type(name, volume=None):
         """Checks the type of a data set.
 
         Arguments:
@@ -570,23 +512,7 @@ class DataSet(object):
             None -- If the data set does not exist or ZOAU is not able to determine
                     the type.
         """
-        if log_path:
-            with open(log_path, "a") as log_file:
-                log_file.write("data_set_type\n")
-
-        # if not DataSet.data_set_exists(name, volume, log_path=log_path):
-        #     if log_path:
-        #         with open(log_path, "a") as log_file:
-        #             log_file.write("Data set was suddenly not found or not available\n")
-        #     return None
-
         data_sets_found = datasets.listing(name)
-
-        if log_path:
-            with open(log_path, "a") as log_file:
-                log_file.write("datasets.listing in data_set_type\n")
-                for ds in data_sets_found:
-                    log_file.write(f"{ds.to_dict()}\n")
 
         # Using the DSORG property when it's a sequential or partitioned
         # dataset. VSAMs are not found by datasets.listing.
@@ -606,14 +532,6 @@ class DataSet(object):
             authorized=True
         )
 
-        if log_path:
-            with open(log_path, "a") as log_file:
-                log_file.write("mvs_cmd.ikjeft01\n")
-                log_file.write(f"Command run: LISTDS '{name}'\n")
-                log_file.write(f"rc: {rc}\n")
-                log_file.write(f"stdout: {stdout}\n")
-                log_file.write(f"stderr: {stderr}\n")
-
         if rc == 0:
             ds_search = re.search(r"(-|--)DSORG(-\s*|\s*)\n(.*)", stdout, re.MULTILINE)
             if ds_search:
@@ -625,7 +543,7 @@ class DataSet(object):
 
         # Next, trying to get the DATA information of a VSAM through
         # LISTCAT.
-        output = DataSet._get_listcat_data(name, log_path=log_path)
+        output = DataSet._get_listcat_data(name)
 
         # Filtering all the DATA information to only get the ATTRIBUTES block.
         data_set_attributes = re.findall(r"ATTRIBUTES.*STATISTICS", output, re.DOTALL)
@@ -644,7 +562,7 @@ class DataSet(object):
             return None
 
     @staticmethod
-    def _get_listcat_data(name, log_path=None):
+    def _get_listcat_data(name):
         """Runs IDCAMS to get the DATA information associated with a data set.
 
         Arguments:
@@ -657,26 +575,12 @@ class DataSet(object):
         module = AnsibleModuleHelper(argument_spec={})
         stdin = " LISTCAT ENT('{0}') DATA ALL".format(name)
 
-        if log_path:
-            with open(log_path, "a") as log_file:
-                log_file.write("_get_listcat_data\n")
-                log_file.write(f"command run: mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin with data {stdin}\n")
-
         try:
             rc, stdout, stderr = module.run_command(
-                "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=stdin, log_path=log_path
+                "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=stdin
             )
         except Exception as err:
-            if log_path:
-                with open(log_path, "a") as log_file:
-                    log_file.write(f"Command error: {str(err)}\n")
             rc = 1
-        else:
-            if log_path:
-                with open(log_path, "a") as log_file:
-                    log_file.write(f"rc: {rc}\n")
-                    log_file.write(f"stdout: {stdout}\n")
-                    log_file.write(f"stdout: {stderr}\n")
 
         if rc != 0:
             raise MVSCmdExecError(rc, stdout, stderr)
@@ -749,7 +653,7 @@ class DataSet(object):
             return False
 
     @staticmethod
-    def attempt_catalog_if_necessary(name, volumes, log_path=None):
+    def attempt_catalog_if_necessary(name, volumes):
         """Attempts to catalog a data set if not already cataloged.
 
         Arguments:
@@ -762,7 +666,7 @@ class DataSet(object):
         """
         changed = False
         present = False
-        if DataSet.data_set_cataloged(name, log_path=log_path):
+        if DataSet.data_set_cataloged(name):
             present = True
         elif volumes is not None:
             errors = False
@@ -776,7 +680,7 @@ class DataSet(object):
         return present, changed
 
     @staticmethod
-    def _is_in_vtoc(name, volume, log_path=None):
+    def _is_in_vtoc(name, volume):
         """Determines if data set is in a volume's table of contents.
 
         Arguments:
@@ -786,31 +690,17 @@ class DataSet(object):
         Returns:
             bool -- If data set was found in table of contents for volume.
         """
-        if log_path:
-            with open(log_path, "a") as log_file:
-                log_file.write("_is_in_vtoc\n")
-
         try:
-            data_sets = vtoc.get_volume_entry(volume, log_path=log_path)
+            data_sets = vtoc.get_volume_entry(volume)
         except Exception as err:
-            with open(log_path, "a") as log_file:
-                log_file.write(f"Error: {to_native(err)}, traceback: {traceback.format_exc()}\n")
             raise err
 
         data_set = vtoc.find_data_set_in_volume_output(name, data_sets)
-
-        if log_path:
-            with open(log_path, "a") as log_file:
-                log_file.write(f"vtoc.find_data_set_in_volume_output: {data_set}\n")
 
         if data_set is not None:
             return True
         vsam_name = name + ".data"
         vsam_data_set = vtoc.find_data_set_in_volume_output(vsam_name, data_sets)
-
-        if log_path:
-            with open(log_path, "a") as log_file:
-                log_file.write(f"vtoc.find_data_set_in_volume_output (trying with VSAM): {vsam_data_set}\n")
 
         if vsam_data_set is not None:
             return True

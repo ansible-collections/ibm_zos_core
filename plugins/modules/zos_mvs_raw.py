@@ -684,8 +684,8 @@ options:
                   - Specify a data set.
                   - I(dd_data_set) can reference an existing data set. The
                     data set referenced with C(data_set_name) must be allocated
-                    before the module M(zos_mvs_raw) is run, you can
-                    use M(zos_data_set) to allocate a data set.
+                    before the module L(zos_mvs_raw,./zos_mvs_raw.html) is run, you can
+                    use L(zos_data_set,./zos_data_set.html) to allocate a data set.
                 required: false
                 type: dict
                 suboptions:
@@ -1187,13 +1187,13 @@ options:
                         type: str
                         default: iso8859-1
 notes:
-    - When executing programs using M(zos_mvs_raw), you may encounter errors
+    - When executing programs using L(zos_mvs_raw,./zos_mvs_raw.html), you may encounter errors
       that originate in the programs implementation. Two such known issues are
       noted below of which one has been addressed with an APAR.
-    - 1. M(zos_mvs_raw) module execution fails when invoking
+    - 1. L(zos_mvs_raw,./zos_mvs_raw.html) module execution fails when invoking
       Database Image Copy 2 Utility or Database Recovery Utility in conjunction
       with FlashCopy or Fast Replication.
-    - 2. M(zos_mvs_raw) module execution fails when invoking DFSRRC00 with parm
+    - 2. L(zos_mvs_raw,./zos_mvs_raw.html) module execution fails when invoking DFSRRC00 with parm
       "UPB,PRECOMP", "UPB, POSTCOMP" or "UPB,PRECOMP,POSTCOMP". This issue is
       addressed by APAR PH28089.
 seealso:
@@ -2460,7 +2460,6 @@ class RawDatasetDefinition(DatasetDefinition):
             elif replace:
                 if backup:
                     self.backup = zos_backup.mvs_file_backup(data_set_name, None)
-                    global backups
                     backups.append(
                         {"original_name": data_set_name, "backup_name": self.backup}
                     )

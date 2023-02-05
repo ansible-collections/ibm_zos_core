@@ -10,24 +10,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Makefile is used to assist with development tasks that can be a bit tedious to
-# create and often recreate. This provides a simple repeatable means to perform
-# regular development actions and encourages better practices by simplifying
-# tasks
-# This makefile relies heavily on a paired shell script `make.env` which should
-# not be renamed. The contents of the `make.env` are encrypted to adhere to
-# coporate operational requiements. The format will be published should you wish
-# to edit or create your own version of `make.env`. If you need to edit the
-# `make.env` be sure to use this makefile to manage it by:
+# Makefile is used to assist with development tasks such as running tests cases
+# or setting up a python virtual environment.
+# This makefile relies on shell script `make.env` which should not be renamed.
+# The contents of the `make.env` are encrypted to adhere to coporate operational
+# requiements. If you need to edit the `make.env` be sure to use this makefile
+# to access the script:
 #    (1) make decrypt <enter password at prompt>
-#    (2) vi/edit the contents as needed
-#    (3) make encrypt <enter same password used to decrypt
-# The first time general execution order is:
+#    (2) vi/edit script the contents as needed
+#    (3) make encrypt <enter same password used to decrypt>
+# While of some of the targets work without a venv, it's higly recommended you
+# instruct make to create you a venv where it will perform operations:
 #    (1) make vsetup
-#    (2) make build
-#    (3) make bandit sev=ll
-#    (4) make sanity version=3.8
-#    (5) make test host=<val> python=<val> zoau=<val> name=<val> debug=true
+# Optionally you can override the makefile's env var VENV to instruct it to
+# create a `venv` based on your requiements.txt, you can do this by:
+#    (1) export VENV=venv-2.11
+#    (2) make vsetup req=requirements-ac-2.11.12.txt
+# Now all make targets will use the venv you assigned to the exported variable
+# and also a directory `venv-2.11` will be created and populated with files used
+# by make. You may consider pyvenv so that you can change your python versions
+# to meet the needs of the various ansible-core versions.
 # ==============================================================================
 
 # ==============================================================================
@@ -46,6 +48,9 @@ ZOS_PYTHON_DEFAULT=3.8
 ZOAU_DEFAULT=1.1.1
 # Test if docker is running
 DOCKER_INFO := $(shell docker info> /dev/null 2>&1;echo $$?)
+
+# Unit test to skip
+SKIP = tests/functional/modules/test_module_security.py
 divider="===================================================================="
 
 .PHONY: help Makefile
@@ -345,27 +350,19 @@ test:
 	@# Check if name='a specific test' and if debug was set, else run all tests
 	@# --------------------------------------------------------------------------
 
-	@if test -e tests/functional/modules/test_module_security.py; then \
-		mv -f tests/functional/modules/test_module_security.py tests/functional/modules/test_module_security.txt; \
-	fi
-
     ifdef name
         ifdef debug
-			@. $(VENV_BIN)/activate && $(VENV_BIN)/pytest $(name) --host-pattern=all --zinventory=$(VENV)/config.yml -s
+			@. $(VENV_BIN)/activate && $(VENV_BIN)/pytest --ignore=${SKIP} $(name) --host-pattern=all --zinventory=$(VENV)/config.yml -s
         else
-			@. $(VENV_BIN)/activate && $(VENV_BIN)/pytest $(name) --host-pattern=all --zinventory=$(VENV)/config.yml
+			@. $(VENV_BIN)/activate && $(VENV_BIN)/pytest --ignore=${SKIP} $(name) --host-pattern=all --zinventory=$(VENV)/config.yml
         endif
     else
         ifdef debug
-			@. $(VENV_BIN)/activate && $(VENV_BIN)/pytest --host-pattern=all --zinventory=$(VENV)/config.yml -s
+			@. $(VENV_BIN)/activate && $(VENV_BIN)/pytest --ignore=${SKIP} --host-pattern=all --zinventory=$(VENV)/config.yml -s
         else
-			@. $(VENV_BIN)/activate && $(VENV_BIN)/pytest --host-pattern=all --zinventory=$(VENV)/config.yml
+			@. $(VENV_BIN)/activate && $(VENV_BIN)/pytest --ignore=${SKIP} --host-pattern=all --zinventory=$(VENV)/config.yml
         endif
     endif
-
-	@if test -e tests/functional/modules/test_module_security.txt; then \
-		mv -f tests/functional/modules/test_module_security.txt tests/functional/modules/test_module_security.py; \
-	fi
 
 # ==============================================================================
 # Run the sanity test using docker given python version else default to venv

@@ -223,15 +223,15 @@ decrypt:
 	@# --------------------------------------------------------------------------
 	@# Check configuration files exit
 	@# --------------------------------------------------------------------------
-	@if test ! -e scripts/mount-shr.sh.encrypt; then \
-	    echo "File 'mount-shr.sh.encrypt' not found in  scripts/mount-shr.sh.encrypt"; \
-		exit 1; \
-	fi
+	#@if test ! -e scripts/mount-shr.sh.encrypt; then \
+	#    echo "File 'mount-shr.sh.encrypt' not found in  scripts/mount-shr.sh.encrypt"; \
+	#	exit 1; \
+	#fi
 
-	@if test ! -e scripts/profile-shr.encrypt; then \
-	    echo "File 'scripts/profile-shr.encrypt' not found in scripts/profile-shr.encrypt"; \
-		exit 1; \
-	fi
+	#@if test ! -e scripts/profile-shr.encrypt; then \
+	#    echo "File 'scripts/profile-shr.encrypt' not found in scripts/profile-shr.encrypt"; \
+	#	exit 1; \
+	#fi
 
 	@if test ! -e make.env.encrypt; then \
 	    echo "File 'make.env.encrypt' not found in $(CURR_DIR)"; \
@@ -242,20 +242,20 @@ decrypt:
 	@# Decrypt configuration files
 	@# -------------------------------------------------------------------------
     ifdef password
-		@echo "${password}" | openssl bf -d -a -in scripts/mount-shr.sh.encrypt  -out scripts/mount-shr.sh -pass stdin
-		@chmod 700 scripts/mount-shr.sh
+		#@echo "${password}" | openssl bf -d -a -in scripts/mount-shr.sh.encrypt  -out scripts/mount-shr.sh -pass stdin
+		#@chmod 700 scripts/mount-shr.sh
 
-		@echo "${password}" | openssl bf -d -a -in scripts/profile-shr.encrypt  -out scripts/profile-shr -pass stdin
-		@chmod 700 scripts/profile-shr
+		#@echo "${password}" | openssl bf -d -a -in scripts/profile-shr.encrypt  -out scripts/profile-shr -pass stdin
+		#@chmod 700 scripts/profile-shr
 
 		@echo "${password}" | openssl bf -d -a -in make.env.encrypt  -out make.env -pass stdin
 		@chmod 700 make.env
     else
-		@openssl bf -d -a -in scripts/mount-shr.sh.encrypt  -out scripts/mount-shr.sh
-		@chmod 700 scripts/mount-shr.sh
+		#@openssl bf -d -a -in scripts/mount-shr.sh.encrypt  -out scripts/mount-shr.sh
+		#@chmod 700 scripts/mount-shr.sh
 
-		@openssl bf -d -a -in scripts/profile-shr.encrypt  -out scripts/profile-shr
-		@chmod 700 scripts/profile-shr
+		#@openssl bf -d -a -in scripts/profile-shr.encrypt  -out scripts/profile-shr
+		#@chmod 700 scripts/profile-shr
 
 		@openssl bf -d -a -in make.env.encrypt  -out make.env
 		@chmod 700 make.env
@@ -282,15 +282,15 @@ encrypt:
 		rm -rf make.env.encrypt; \
 	fi
 
-	@if [ -e scripts/mount-shr.sh ] && [ -e scripts/mount-shr.sh.encrypt ]; then \
-	    echo "Removing encrypted file 'scripts/mount-shr.sh.encrypt' in $(CURR_DIR)/scripts."; \
-		rm -rf scripts/mount-shr.sh.encrypt; \
-	fi
+	# @if [ -e scripts/mount-shr.sh ] && [ -e scripts/mount-shr.sh.encrypt ]; then \
+	#     echo "Removing encrypted file 'scripts/mount-shr.sh.encrypt' in $(CURR_DIR)/scripts."; \
+	# 	rm -rf scripts/mount-shr.sh.encrypt; \
+	# fi
 
-	@if [ -e scripts/profile-shr ] && [ -e scripts/profile-shr.encrypt ]; then \
-	    echo "Removing encrypted file 'scripts/profile-shr.encrypt' in $(CURR_DIR)/scripts."; \
-		rm -rf scripts/profile-shr.encrypt; \
-		fi
+	# @if [ -e scripts/profile-shr ] && [ -e scripts/profile-shr.encrypt ]; then \
+	#     echo "Removing encrypted file 'scripts/profile-shr.encrypt' in $(CURR_DIR)/scripts."; \
+	# 	rm -rf scripts/profile-shr.encrypt; \
+	# 	fi
 
 	@# --------------------------------------------------------------------------
 	@# Encrypt the files since we have verified the uncrypted versions exist
@@ -299,17 +299,17 @@ encrypt:
 
     ifdef password
 
-        ifneq ("$(wildcard scripts/mount-shr.sh)","")
-			@echo "${password}" | openssl bf -a -in scripts/mount-shr.sh -out scripts/mount-shr.sh.encrypt -pass stdin
-			# @openssl bf -a -in scripts/mount-shr.sh > scripts/mount-shr.sh.encrypt
-			@rm -f scripts/mount-shr.sh
-        endif
+        #ifneq ("$(wildcard scripts/mount-shr.sh)","")
+		#	@echo "${password}" | openssl bf -a -in scripts/mount-shr.sh -out scripts/mount-shr.sh.encrypt -pass stdin
+		#	# @openssl bf -a -in scripts/mount-shr.sh > scripts/mount-shr.sh.encrypt
+		#	@rm -f scripts/mount-shr.sh
+        #endif
 
-        ifneq ("$(wildcard scripts/profile-shr)","")
-			@echo "${password}" | openssl bf -a -in scripts/profile-shr -out scripts/profile-shr.encrypt -pass stdin
-			# @openssl bf -a -in scripts/profile-shr > scripts/profile-shr.encrypt
-			@rm -f scripts/profile-shr
-        endif
+        #ifneq ("$(wildcard scripts/profile-shr)","")
+		#	@echo "${password}" | openssl bf -a -in scripts/profile-shr -out scripts/profile-shr.encrypt -pass stdin
+		#	# @openssl bf -a -in scripts/profile-shr > scripts/profile-shr.encrypt
+		#	@rm -f scripts/profile-shr
+        #endif
 
         ifneq ("$(wildcard make.env)","")
 			@echo "${password}" | openssl bf -a -in make.env -out make.env.encrypt -pass stdin
@@ -318,17 +318,17 @@ encrypt:
         endif
 
     else
-        ifneq ("$(wildcard scripts/mount-shr.sh)","")
-			@openssl bf -a -in scripts/mount-shr.sh -out scripts/mount-shr.sh.encrypt
-			# @openssl bf -a -in scripts/mount-shr.sh > scripts/mount-shr.sh.encrypt
-			@rm -f scripts/mount-shr.sh
-        endif
+        #ifneq ("$(wildcard scripts/mount-shr.sh)","")
+		#	@openssl bf -a -in scripts/mount-shr.sh -out scripts/mount-shr.sh.encrypt
+		#	# @openssl bf -a -in scripts/mount-shr.sh > scripts/mount-shr.sh.encrypt
+		#	@rm -f scripts/mount-shr.sh
+        #endif
 
-        ifneq ("$(wildcard scripts/profile-shr)","")
-			@openssl bf -a -in scripts/profile-shr -out scripts/profile-shr.encrypt
-			# @openssl bf -a -in scripts/profile-shr > scripts/profile-shr.encrypt
-			@rm -f scripts/profile-shr
-        endif
+        #ifneq ("$(wildcard scripts/profile-shr)","")
+		#	@openssl bf -a -in scripts/profile-shr -out scripts/profile-shr.encrypt
+		#	# @openssl bf -a -in scripts/profile-shr > scripts/profile-shr.encrypt
+		#	@rm -f scripts/profile-shr
+        #endif
 
         ifneq ("$(wildcard make.env)","")
 			@openssl bf -a -in make.env -out make.env.encrypt

@@ -533,8 +533,8 @@ def main():
                 result['backup_name'] = Backup.uss_file_backup(src, backup_name=backup, compress=False)
             else:
                 result['backup_name'] = Backup.mvs_file_backup(dsn=src, bk_dsn=backup, tmphlq=tmphlq)
-        except Exception:
-            module.fail_json(msg="creating backup has failed")
+        except Exception as err:
+            module.fail_json(msg="Unable to allocate backup {0} destination: {1}".format(backup, str(err)))
     # state=present, insert/replace a block with matching regex pattern
     # state=absent, delete blocks with matching regex pattern
     if parsed_args.get('state') == 'present':

@@ -1394,8 +1394,9 @@ def get_file_record_length(file):
         int -- Length of the longest line in the file.
     """
     max_line_length = 0
+    encoding = encode.Defaults.get_default_system_charset()
 
-    with open(file, "r") as src_file:
+    with open(file, "r", encoding=encoding) as src_file:
         current_line = src_file.readline()
 
         while current_line:
@@ -1542,7 +1543,7 @@ def create_seq_dataset_from_file(
         volume=volume
     )
 
-    data_set.DataSet.ensure_present(replace=force, **dest_params)
+    data_set.DataSet.ensure_present(replace=force, present=False, **dest_params)
 
 
 def backup_data(ds_name, ds_type, backup_name):
@@ -1873,7 +1874,7 @@ def allocate_destination_data_set(
         bool -- True if the data set was created, False otherwise.
     """
     src_name = data_set.extract_dsname(src)
-    is_dest_empty = data_set.DataSet.is_empty(dest) if dest_exists else True
+    is_dest_empty = data_set.DataSet.is_empty(dest, dest_ds_type) if dest_exists else True
 
     # Replacing an existing dataset only when it's not empty. We don't know whether that
     # empty dataset was created for the user by an admin/operator, and they don't have permissions
@@ -1886,7 +1887,7 @@ def allocate_destination_data_set(
     if dest_data_set:
         dest_params = dest_data_set
         dest_params["name"] = dest
-        data_set.DataSet.ensure_present(replace=force, **dest_params)
+        data_set.DataSet.ensure_present(replace=force, present=dest_exists, **dest_params)
     elif dest_ds_type in data_set.DataSet.MVS_SEQ:
         volumes = [volume] if volume else None
         data_set.DataSet.ensure_absent(dest, volumes=volumes)
@@ -1895,7 +1896,7 @@ def allocate_destination_data_set(
             # Taking the temp file when a local file was copied with sftp.
             create_seq_dataset_from_file(src, dest, force, is_binary, volume=volume)
         elif src_ds_type in data_set.DataSet.MVS_SEQ:
-            data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, vol=volume)
+            data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, model_type=src_ds_type, vol=volume)
         else:
             temp_dump = None
             try:
@@ -1909,7 +1910,7 @@ def allocate_destination_data_set(
     elif dest_ds_type in data_set.DataSet.MVS_PARTITIONED and not dest_exists:
         # Taking the src as model if it's also a PDSE.
         if src_ds_type in data_set.DataSet.MVS_PARTITIONED:
-            data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, vol=volume)
+            data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, model_type=src_ds_type, vol=volume)
         elif src_ds_type in data_set.DataSet.MVS_SEQ:
             src_attributes = datasets.listing(src_name)[0]
             # The size returned by listing is in bytes.
@@ -1918,7 +1919,7 @@ def allocate_destination_data_set(
             record_length = int(src_attributes.lrecl)
 
             dest_params = get_data_set_attributes(dest, size, is_binary, record_format=record_format, record_length=record_length, type="PDSE", volume=volume)
-            data_set.DataSet.ensure_present(replace=force, **dest_params)
+            data_set.DataSet.ensure_present(replace=force, present=dest_exists, **dest_params)
         elif src_ds_type == "USS":
             if os.path.isfile(src):
                 # This is almost the same as allocating a sequential dataset.
@@ -1944,13 +1945,13 @@ def allocate_destination_data_set(
                 # This PDSE will be created with record format VB and a record length of 1028.
                 dest_params = get_data_set_attributes(dest, size, is_binary, type="PDSE", volume=volume)
 
-            data_set.DataSet.ensure_present(replace=force, **dest_params)
+            data_set.DataSet.ensure_present(replace=force, present=dest_exists, **dest_params)
     elif dest_ds_type in data_set.DataSet.MVS_VSAM:
         # If dest_data_set is not available, always create the destination using the src VSAM
         # as a model.
         volumes = [volume] if volume else None
         data_set.DataSet.ensure_absent(dest, volumes=volumes)
-        data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, vol=volume)
+        data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, model_type=src_ds_type, vol=volume)
 
     return True
 
@@ -2044,7 +2045,8 @@ def run_module(module, arg_def):
             if remote_src and os.path.isdir(src):
                 is_src_dir = True
         else:
-            if data_set.DataSet.data_set_exists(src_name):
+            src_exists = data_set.DataSet.data_set_exists(src_name)
+            if src_exists:
                 if src_member and not data_set.DataSet.data_set_member_exists(src):
                     raise NonExistentSourceError(src)
                 src_ds_type = data_set.DataSet.data_set_type(src_name)
@@ -2054,7 +2056,7 @@ def run_module(module, arg_def):
 
             # An empty VSAM will throw an error when IDCAMS tries to open it to copy
             # the contents.
-            if src_ds_type in data_set.DataSet.MVS_VSAM and data_set.DataSet.is_empty(src_name):
+            if src_ds_type in data_set.DataSet.MVS_VSAM and data_set.DataSet.is_empty(src_name, src_ds_type):
                 module.exit_json(
                     note="The source VSAM {0} is likely empty. No data was copied.".format(src_name),
                     changed=False,

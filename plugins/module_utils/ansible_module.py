@@ -33,6 +33,22 @@ import shlex
 import subprocess
 import traceback
 
+try:
+    import syslog
+    HAS_SYSLOG = True
+except ImportError:
+    HAS_SYSLOG = False
+
+try:
+    from systemd import journal, daemon as systemd_daemon
+    # Makes sure that systemd.journal has method sendv()
+    # Double check that journal has method sendv (some packages don't)
+    # check if the system is running under systemd
+    has_journal = hasattr(journal, 'sendv') and systemd_daemon.booted()
+except (ImportError, AttributeError):
+    # AttributeError would be caused from use of .booted() if wrong systemd
+    has_journal = False
+
 class AnsibleModuleHelper(AnsibleModule):
     """Wrapper for AnsibleModule object that
     allows us to use AnsibleModule methods like
@@ -49,7 +65,7 @@ class AnsibleModuleHelper(AnsibleModule):
 
     def run_command(self, args, check_rc=False, close_fds=True, executable=None, data=None, binary_data=False, path_prefix=None, cwd=None,
                     use_unsafe_shell=False, prompt_regex=None, environ_update=None, umask=None, encoding='utf-8', errors='surrogate_or_strict',
-                    expand_user_and_vars=True, pass_fds=None, before_communicate_callback=None, ignore_invalid_cwd=True):
+                    expand_user_and_vars=True, pass_fds=None, before_communicate_callback=None, ignore_invalid_cwd=True, handle_exceptions=True):
         '''
         Execute a command, returns rc, stdout, and stderr.
 
@@ -71,7 +87,7 @@ class AnsibleModuleHelper(AnsibleModule):
         :kw prompt_regex: Regex string (not a compiled regex) which can be
             used to detect prompts in the stdout which would otherwise cause
             the execution to hang (especially if no input data is specified)
-        :kw environ_update: dictionary to *update* os.environ with
+        :kw environ_update: dictionary to *update* environ variables with
         :kw umask: Umask to be used when running the command. Default None
         :kw encoding: Since we return native strings, on python3 we need to
             know the encoding to use to transform from bytes to text.  If you
@@ -103,6 +119,9 @@ class AnsibleModuleHelper(AnsibleModule):
         :kw ignore_invalid_cwd: This flag indicates whether an invalid ``cwd``
             (non-existent or not a directory) should be ignored or should raise
             an exception.
+        :kw handle_exceptions: This flag indicates whether an exception will
+            be handled inline and issue a failed_json or if the caller should
+            handle it.
         :returns: A 3-tuple of return code (integer), stdout (native string),
             and stderr (native string).  On python2, stdout and stderr are both
             byte strings.  On python3, stdout and stderr are text strings converted
@@ -166,23 +185,16 @@ class AnsibleModuleHelper(AnsibleModule):
         msg = None
         st_in = None
 
-        # Manipulate the environ we'll send to the new process
-        old_env_vals = {}
+        env = os.environ.copy()
         # We can set this from both an attribute and per call
-        for key, val in self.run_command_environ_update.items():
-            old_env_vals[key] = os.environ.get(key, None)
-            os.environ[key] = val
-        if environ_update:
-            for key, val in environ_update.items():
-                old_env_vals[key] = os.environ.get(key, None)
-                os.environ[key] = val
+        env.update(self.run_command_environ_update or {})
+        env.update(environ_update or {})
         if path_prefix:
-            path = os.environ.get('PATH', '')
-            old_env_vals['PATH'] = path
+            path = env.get('PATH', '')
             if path:
-                os.environ['PATH'] = "%s:%s" % (path_prefix, path)
+                env['PATH'] = "%s:%s" % (path_prefix, path)
             else:
-                os.environ['PATH'] = path_prefix
+                env['PATH'] = path_prefix
 
         # If using test-module.py and explode, the remote lib path will resemble:
         #   /tmp/test_module_scratch/debug_dir/ansible/module_utils/basic.py
@@ -190,17 +202,21 @@ class AnsibleModuleHelper(AnsibleModule):
         #   /tmp/ansible_vmweLQ/ansible_modlib.zip/ansible/module_utils/basic.py
 
         # Clean out python paths set by ansiballz
-        if 'PYTHONPATH' in os.environ:
-            pypaths = os.environ['PYTHONPATH'].split(':')
-            pypaths = [x for x in pypaths
-                       if not x.endswith('/ansible_modlib.zip') and
+        if 'PYTHONPATH' in env:
+            pypaths = [x for x in env['PYTHONPATH'].split(':')
+                       if x and
+                       not x.endswith('/ansible_modlib.zip') and
                        not x.endswith('/debug_dir')]
-            os.environ['PYTHONPATH'] = ':'.join(pypaths)
-            if not os.environ['PYTHONPATH']:
-                del os.environ['PYTHONPATH']
+            if pypaths and any(pypaths):
+                env['PYTHONPATH'] = ':'.join(pypaths)
 
         if data:
             st_in = subprocess.PIPE
+
+        def preexec():
+            self._restore_signal_handlers()
+            if umask:
+                os.umask(umask)
 
         kwargs = dict(
             executable=executable,
@@ -209,34 +225,22 @@ class AnsibleModuleHelper(AnsibleModule):
             stdin=st_in,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            preexec_fn=self._restore_signal_handlers,
+            preexec_fn=preexec,
+            env=env,
             bufsize=self.PIPE_MAX_SIZE * 4
-            # bufsize=0
         )
         if PY3 and pass_fds:
             kwargs["pass_fds"] = pass_fds
         elif PY2 and pass_fds:
             kwargs['close_fds'] = False
 
-        # store the pwd
-        prev_dir = os.getcwd()
-
         # make sure we're in the right working directory
         if cwd:
+            cwd = to_bytes(os.path.abspath(os.path.expanduser(cwd)), errors='surrogate_or_strict')
             if os.path.isdir(cwd):
-                cwd = to_bytes(os.path.abspath(os.path.expanduser(cwd)), errors='surrogate_or_strict')
                 kwargs['cwd'] = cwd
-                try:
-                    os.chdir(cwd)
-                except (OSError, IOError) as e:
-                    self.fail_json(rc=e.errno, msg="Could not chdir to %s, %s" % (cwd, to_native(e)),
-                                   exception=traceback.format_exc())
             elif not ignore_invalid_cwd:
                 self.fail_json(msg="Provided cwd is not a valid directory: %s" % cwd)
-
-        old_umask = None
-        if umask:
-            old_umask = os.umask(umask)
 
         try:
             if self._debug:
@@ -288,7 +292,6 @@ class AnsibleModuleHelper(AnsibleModule):
                         if encoding:
                             stdout = to_native(stdout, encoding=encoding, errors=errors)
                         return (257, stdout, "A prompt was encountered while running a command, but no input data was specified")
-
                 # only break out if no pipes are left to read or
                 # the pipes are completely read and
                 # the process is terminated
@@ -310,35 +313,87 @@ class AnsibleModuleHelper(AnsibleModule):
             rc = cmd.returncode
         except (OSError, IOError) as e:
             self.log("Error Executing CMD:%s Exception:%s" % (self._clean_args(args), to_native(e)))
-            # self.fail_json(rc=e.errno, stdout=b'', stderr=b'', msg=to_native(e), cmd=self._clean_args(args))
-            raise e
+            if handle_exceptions:
+                self.fail_json(rc=e.errno, stdout=b'', stderr=b'', msg=to_native(e), cmd=self._clean_args(args))
+            else:
+                raise e
         except Exception as e:
             self.log("Error Executing CMD:%s Exception:%s" % (self._clean_args(args), to_native(traceback.format_exc())))
-            # self.fail_json(rc=257, stdout=b'', stderr=b'', msg=to_native(e), exception=traceback.format_exc(), cmd=self._clean_args(args))
-            raise e
-
-        # Restore env settings
-        for key, val in old_env_vals.items():
-            if val is None:
-                del os.environ[key]
+            if handle_exceptions:
+                self.fail_json(rc=257, stdout=b'', stderr=b'', msg=to_native(e), exception=traceback.format_exc(), cmd=self._clean_args(args))
             else:
-                os.environ[key] = val
-
-        if old_umask:
-            os.umask(old_umask)
+                raise e
 
         if rc != 0 and check_rc:
             msg = heuristic_log_sanitize(stderr.rstrip(), self.no_log_values)
             self.fail_json(cmd=self._clean_args(args), rc=rc, stdout=stdout, stderr=stderr, msg=msg)
-
-        # reset the pwd
-        os.chdir(prev_dir)
 
         if encoding is not None:
             return (rc, to_native(stdout, encoding=encoding, errors=errors),
                     to_native(stderr, encoding=encoding, errors=errors))
 
         return (rc, stdout, stderr)
+
+    def log(self, msg, log_args=None):
+
+        if not self.no_log:
+
+            if log_args is None:
+                log_args = dict()
+
+            module = 'ansible-%s' % self._name
+            if isinstance(module, binary_type):
+                module = module.decode('utf-8', 'replace')
+
+            # 6655 - allow for accented characters
+            if not isinstance(msg, (binary_type, text_type)):
+                raise TypeError("msg should be a string (got %s)" % type(msg))
+
+            # We want journal to always take text type
+            # syslog takes bytes on py2, text type on py3
+            if isinstance(msg, binary_type):
+                journal_msg = remove_values(msg.decode('utf-8', 'replace'), self.no_log_values)
+            else:
+                # TODO: surrogateescape is a danger here on Py3
+                journal_msg = remove_values(msg, self.no_log_values)
+
+            if PY3:
+                syslog_msg = journal_msg
+            else:
+                syslog_msg = journal_msg.encode('utf-8', 'replace')
+
+            if has_journal:
+                journal_args = [("MODULE", os.path.basename(__file__))]
+                for arg in log_args:
+                    name, value = (arg.upper(), str(log_args[arg]))
+                    if name in (
+                        'PRIORITY', 'MESSAGE', 'MESSAGE_ID',
+                        'CODE_FILE', 'CODE_LINE', 'CODE_FUNC',
+                        'SYSLOG_FACILITY', 'SYSLOG_IDENTIFIER',
+                        'SYSLOG_PID',
+                    ):
+                        name = "_%s" % name
+                    journal_args.append((name, value))
+
+                try:
+                    if HAS_SYSLOG:
+                        # If syslog_facility specified, it needs to convert
+                        #  from the facility name to the facility code, and
+                        #  set it as SYSLOG_FACILITY argument of journal.send()
+                        facility = getattr(syslog,
+                                           self._syslog_facility,
+                                           syslog.LOG_USER) >> 3
+                        journal.send(MESSAGE=u"%s %s" % (module, journal_msg),
+                                     SYSLOG_FACILITY=facility,
+                                     **dict(journal_args))
+                    else:
+                        journal.send(MESSAGE=u"%s %s" % (module, journal_msg),
+                                     **dict(journal_args))
+                except IOError:
+                    # fall back to syslog since logging to journal failed
+                    self._log_to_syslog(syslog_msg)
+            else:
+                self._log_to_syslog(syslog_msg)
 
 def heuristic_log_sanitize(data, no_log_values=None):
     ''' Remove strings that look like passwords from log messages '''
@@ -387,7 +442,7 @@ def heuristic_log_sanitize(data, no_log_values=None):
                 if begin == 0:
                     # Searched the whole string so there's no password
                     # here.  Return the remaining data
-                    output.insert(0, data[0:begin])
+                    output.insert(0, data[0:prev_begin])
                     break
                 # Search for a different beginning of the password field.
                 sep_search_end = begin

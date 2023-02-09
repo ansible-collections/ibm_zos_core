@@ -102,6 +102,7 @@ class DataSet(object):
         name,
         replace,
         type,
+        present,
         space_primary=None,
         space_secondary=None,
         space_type=None,
@@ -175,11 +176,12 @@ class DataSet(object):
         """
         arguments = locals()
         arguments.pop("replace", None)
-        present = False
+        arguments.pop("present", None)
+        # present = False
         changed = False
 
-        if DataSet.data_set_cataloged(name):
-            present = True
+        # if DataSet.data_set_cataloged(name):
+        #     present = True
         if not present:
             try:
                 DataSet.create(**arguments)
@@ -288,7 +290,7 @@ class DataSet(object):
         return False
 
     @staticmethod
-    def allocate_model_data_set(ds_name, model, vol=None):
+    def allocate_model_data_set(ds_name, model, model_type, vol=None):
         """Allocates a data set based on the attributes of a 'model' data set.
         Useful when a data set needs to be created identical to another. Supported
         model(s) are Physical Sequential (PS), Partitioned Data Sets (PDS/PDSE),
@@ -308,11 +310,11 @@ class DataSet(object):
             MVSCmdExecError: When the call to IKJEFT01 to allocate the
                             data set fails.
         """
-        if not DataSet.data_set_exists(model):
-            raise DatasetNotFoundError(model)
+        # if not DataSet.data_set_exists(model):
+        #     raise DatasetNotFoundError(model)
 
         ds_name = extract_dsname(ds_name)
-        model_type = DataSet.data_set_type(model)
+        # model_type = DataSet.data_set_type(model)
 
         # The break lines are absolutely necessary, a JCL code line can't
         # be longer than 72 characters. The following JCL is compatible with
@@ -588,7 +590,7 @@ class DataSet(object):
         return stdout
 
     @staticmethod
-    def is_empty(name, volume=None):
+    def is_empty(name, ds_type, volume=None):
         """Determines whether a data set is empty.
 
         Arguments:
@@ -598,10 +600,10 @@ class DataSet(object):
         Returns:
             bool -- Whether the data set is empty or not.
         """
-        if not DataSet.data_set_exists(name, volume):
-            raise DatasetNotFoundError(name)
+        # if not DataSet.data_set_exists(name, volume):
+        #     raise DatasetNotFoundError(name)
 
-        ds_type = DataSet.data_set_type(name, volume)
+        # ds_type = DataSet.data_set_type(name, volume)
 
         if ds_type in DataSet.MVS_PARTITIONED:
             return DataSet._pds_empty(name)

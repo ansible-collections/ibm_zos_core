@@ -372,7 +372,6 @@ options:
           - FBA
           - VBA
           - U
-        default: FB
         type: str
       sms_storage_class:
         description:

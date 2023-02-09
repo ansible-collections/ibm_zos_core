@@ -43,12 +43,12 @@ def UssGeneral(test_name, ansible_zos_module, test_env, test_info, expected):
     test_info["path"] = test_env["TEST_FILE"]
     blockinfile_results = hosts.all.zos_blockinfile(**test_info)
     for result in blockinfile_results.contacted.values():
-        pprint(vars(result))
+        pprint(result)
         assert result.get("changed") == 1
     cmdStr = "cat {0}".format(test_info["path"])
     results = hosts.all.shell(cmd=cmdStr)
     for result in results.contacted.values():
-        pprint(vars(result))
+        pprint(result)
         assert result.get("stdout") == expected
     clean_uss_test_env(test_env["TEST_DIR"], hosts)
     return blockinfile_results
@@ -110,13 +110,13 @@ def DsGeneral(test_name, ansible_zos_module, test_env, test_info, expected):
         test_info["encoding"] = test_env["ENCODING"]
     blockinfile_results = hosts.all.zos_blockinfile(**test_info)
     for result in blockinfile_results.contacted.values():
-        pprint(vars(result))
+        pprint(result)
         assert result.get("changed") == 1
     if test_env["ENCODING"] == 'IBM-1047':
         cmdStr = "cat \"//'{0}'\" ".format(test_env["DS_NAME"])
         results = hosts.all.shell(cmd=cmdStr)
         for result in results.contacted.values():
-            pprint(vars(result))
+            pprint(result)
             assert result.get("stdout") == expected
             # assert result.get("stdout").replace('\n', '').replace(' ', '') == expected.replace('\n', '').replace(' ', '')
     clean_ds_test_env(test_env["DS_NAME"], hosts)
@@ -132,12 +132,12 @@ def DsNotSupportedHelper(test_name, ansible_zos_module, test_env, test_info):
     test_env["DS_NAME"] = hlq + "." + test_name.upper() + "." + test_env["DS_TYPE"]
     results = hosts.all.zos_data_set(name=test_env["DS_NAME"], type=test_env["DS_TYPE"], replace='yes')
     for result in results.contacted.values():
-        pprint(vars(result))
+        pprint(result)
         assert result.get("changed") is True
     test_info["path"] = test_env["DS_NAME"]
     results = hosts.all.zos_blockinfile(**test_info)
     for result in results.contacted.values():
-        pprint(vars(result))
+        pprint(result)
         assert result.get("changed") is False
         assert result.get("msg") == "VSAM data set type is NOT supported"
     clean_ds_test_env(test_env["DS_NAME"], hosts)
@@ -151,7 +151,7 @@ def DsGeneralResultKeyMatchesRegex(test_name, ansible_zos_module, test_env, test
         test_info["encoding"] = test_env["ENCODING"]
     results = hosts.all.zos_blockinfile(**test_info)
     for result in results.contacted.values():
-        pprint(vars(result))
+        pprint(result)
         for key in kwargs:
             assert re.match(kwargs.get(key), result.get(key))
     clean_ds_test_env(test_env["DS_NAME"], hosts)

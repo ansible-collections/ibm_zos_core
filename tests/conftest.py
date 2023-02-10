@@ -44,7 +44,7 @@ def z_python_interpreter(request):
 def clean_logs(adhoc):
     """Attempt to clean up logs and messages on the system."""
     # purge logs
-    adhoc.all.command(cmd="opercmd '$PJ(*)'")
+    # adhoc.all.command(cmd="opercmd '$PJ(*)'")
     # clean up wtor messages
     results = adhoc.all.command(cmd="uname -n")
     system_name = ""

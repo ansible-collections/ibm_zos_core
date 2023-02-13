@@ -58,7 +58,7 @@ location
 
 
 wait
-  Configuring wait used by the :ref:`zos_job_submit <zos_job_submit_module>` module has been deprecated and will be removed in ibm.ibm_zos_core collection.
+  Configuring wait used by the `zos_job_submit <./zos_job_submit.html>`_ module has been deprecated and will be removed in ibm.ibm_zos_core collection.
 
   Setting this option will yield no change, it is deprecated.
 
@@ -98,7 +98,9 @@ return_output
 volume
   The volume serial (VOLSER)is where the data set resides. The option is required only when the data set is not cataloged on the system.
 
-  When configured, the :ref:`zos_job_submit <zos_job_submit_module>` will try to catalog the data set for the volume serial. If it is not able to, the module will fail. Ignored for USS and LOCAL.
+  When configured, the `zos_job_submit <./zos_job_submit.html>`_ will try to catalog the data set for the volume serial. If it is not able to, the module will fail.
+
+  Ignored for USS and LOCAL.
 
   | **required**: False
   | **type**: str

@@ -16,7 +16,7 @@ zos_mount -- Mount a z/OS file system.
 
 Synopsis
 --------
-- The module :ref:`zos_mount <zos_mount_module>` can manage mount operations for a z/OS UNIX System Services (USS) file system data set.
+- The module `zos_mount <./zos_mount.html>`_ can manage mount operations for a z/OS UNIX System Services (USS) file system data set.
 - The *src* data set must be unique and a Fully Qualified Name (FQN).
 - The *path* will be created if needed.
 
@@ -191,7 +191,7 @@ tag_untagged
 
   | **required**: False
   | **type**: str
-  | **choices**: , TEXT, NOTEXT
+  | **choices**: TEXT, NOTEXT
 
 
 tag_ccsid
@@ -388,7 +388,7 @@ Notes
 
    If an uncataloged data set needs to be fetched, it should be cataloged first.
 
-   Uncataloged data sets can be cataloged using the :ref:`zos_data_set <zos_data_set_module>` module.
+   Uncataloged data sets can be cataloged using the `zos_data_set <./zos_data_set.html>`_ module.
 
 
 

@@ -49,7 +49,7 @@ and ansible-doc to automate tasks on z/OS.
 
 Ansible version compatibility
 =============================
-This collection has been tested against the following Ansible versions: >=2.9, 2.11.
+This collection has been tested against the following Ansible versions: >=2.9,<=2.14.1.
 
 Copyright
 =========

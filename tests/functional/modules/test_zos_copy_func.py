@@ -32,6 +32,15 @@ DUMMY DATA ---- LINE 006 ------
 DUMMY DATA ---- LINE 007 ------
 """
 
+DUMMY_DATA_SPECIAL_CHARS = """DUMMY DATA ---- LINE 001 ------
+DUMMY DATA ---- LINE ÁÁÁ------
+DUMMY DATA ---- LINE ÈÈÈ ------
+DUMMY DATA ---- LINE 004 ------
+DUMMY DATA ---- LINE 005 ------
+DUMMY DATA ---- LINE 006 ------
+DUMMY DATA ---- LINE 007 ------
+"""
+
 VSAM_RECORDS = """00000001A record
 00000002A record
 00000003A record
@@ -1146,6 +1155,37 @@ def test_copy_ps_to_non_empty_ps(ansible_zos_module, force):
     try:
         hosts.all.zos_data_set(name=dest, type="seq", state="absent")
         hosts.all.zos_copy(content="Inline content", dest=dest)
+
+        copy_res = hosts.all.zos_copy(src=src_ds, dest=dest, remote_src=True, force=force)
+        verify_copy = hosts.all.shell(
+            cmd="cat \"//'{0}'\"".format(dest), executable=SHELL_EXECUTABLE
+        )
+
+        for result in copy_res.contacted.values():
+            if force:
+                assert result.get("msg") is None
+                assert result.get("changed") is True
+                assert result.get("dest") == dest
+            else:
+                assert result.get("msg") is not None
+                assert result.get("changed") is False
+        for result in verify_copy.contacted.values():
+            assert result.get("rc") == 0
+            assert result.get("stdout") != ""
+    finally:
+        hosts.all.zos_data_set(name=dest, state="absent")
+
+
+@pytest.mark.seq
+@pytest.mark.parametrize("force", [False, True])
+def test_copy_ps_to_non_empty_ps_with_special_chars(ansible_zos_module, force):
+    hosts = ansible_zos_module
+    src_ds = TEST_PS
+    dest = "USER.TEST.SEQ.FUNCTEST"
+
+    try:
+        hosts.all.zos_data_set(name=dest, type="seq", state="absent")
+        hosts.all.zos_copy(content=DUMMY_DATA_SPECIAL_CHARS, dest=dest)
 
         copy_res = hosts.all.zos_copy(src=src_ds, dest=dest, remote_src=True, force=force)
         verify_copy = hosts.all.shell(

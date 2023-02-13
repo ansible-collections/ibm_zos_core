@@ -822,7 +822,7 @@ dds
       dd_data_set
         Specify a data set.
 
-        *dd_data_set* can reference an existing data set. The data set referenced with ``data_set_name`` must be allocated before the module :ref:`zos_mvs_raw <zos_mvs_raw_module>` is run, you can use :ref:`zos_data_set <zos_data_set_module>` to allocate a data set.
+        *dd_data_set* can reference an existing data set. The data set referenced with ``data_set_name`` must be allocated before the module `zos_mvs_raw <./zos_mvs_raw.html>`_ is run, you can use `zos_data_set <./zos_data_set.html>`_ to allocate a data set.
 
         | **required**: False
         | **type**: dict
@@ -1679,11 +1679,11 @@ Notes
 -----
 
 .. note::
-   When executing programs using :ref:`zos_mvs_raw <zos_mvs_raw_module>`, you may encounter errors that originate in the programs implementation. Two such known issues are noted below of which one has been addressed with an APAR.
+   When executing programs using `zos_mvs_raw <./zos_mvs_raw.html>`_, you may encounter errors that originate in the programs implementation. Two such known issues are noted below of which one has been addressed with an APAR.
 
-   1. :ref:`zos_mvs_raw <zos_mvs_raw_module>` module execution fails when invoking Database Image Copy 2 Utility or Database Recovery Utility in conjunction with FlashCopy or Fast Replication.
+   1. `zos_mvs_raw <./zos_mvs_raw.html>`_ module execution fails when invoking Database Image Copy 2 Utility or Database Recovery Utility in conjunction with FlashCopy or Fast Replication.
 
-   2. :ref:`zos_mvs_raw <zos_mvs_raw_module>` module execution fails when invoking DFSRRC00 with parm "UPB,PRECOMP", "UPB, POSTCOMP" or "UPB,PRECOMP,POSTCOMP". This issue is addressed by APAR PH28089.
+   2. `zos_mvs_raw <./zos_mvs_raw.html>`_ module execution fails when invoking DFSRRC00 with parm "UPB,PRECOMP", "UPB, POSTCOMP" or "UPB,PRECOMP,POSTCOMP". This issue is addressed by APAR PH28089.
 
 
 

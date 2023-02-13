@@ -16,7 +16,7 @@ zos_copy -- Copy data to z/OS
 
 Synopsis
 --------
-- The :ref:`zos_copy <zos_copy_module>` module copies a file or data set from a local or a remote machine to a location on the remote machine.
+- The `zos_copy <./zos_copy.html>`_ module copies a file or data set from a local or a remote machine to a location on the remote machine.
 
 
 
@@ -180,11 +180,11 @@ remote_src
 
 
 sftp_port
-  Configuring the SFTP port used by the :ref:`zos_copy <zos_copy_module>` module has been deprecated and will be removed in ibm.ibm_zos_core collection version 1.5.0.
+  Configuring the SFTP port used by the `zos_copy <./zos_copy.html>`_ module has been deprecated and will be removed in ibm.ibm_zos_core collection version 1.5.0.
 
   Configuring the SFTP port with *sftp_port* will no longer have any effect on which port is used by this module.
 
-  To configure the SFTP port used for module :ref:`zos_copy <zos_copy_module>`, refer to topic `using connection plugins <https://docs.ansible.com/ansible/latest/plugins/connection.html#using-connection-plugins>`_
+  To configure the SFTP port used for module `zos_copy <./zos_copy.html>`_, refer to topic `using connection plugins <https://docs.ansible.com/ansible/latest/plugins/connection.html#using-connection-plugins>`_
 
   If ``ansible_port`` is not specified, port 22 will be used.
 
@@ -566,7 +566,7 @@ Notes
 
    For supported character sets used to encode data, refer to the `documentation <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html>`_.
 
-   :ref:`zos_copy <zos_copy_module>` uses SFTP (Secure File Transfer Protocol) for the underlying transfer protocol; Co:Z SFTP is not supported. In the case of Co:z SFTP, you can exempt the Ansible userid on z/OS from using Co:Z thus falling back to using standard SFTP.
+   `zos_copy <./zos_copy.html>`_ uses SFTP (Secure File Transfer Protocol) for the underlying transfer protocol; Co:Z SFTP is not supported. In the case of Co:z SFTP, you can exempt the Ansible userid on z/OS from using Co:Z thus falling back to using standard SFTP.
 
 
 

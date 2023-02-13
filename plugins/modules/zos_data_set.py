@@ -213,11 +213,11 @@ options:
         If creating a data set, I(volumes) specifies the volume(s) where the data set should be created.
       - >
         If I(volumes) is provided when I(state=present), and the data set is not found in the catalog,
-        M(zos_data_set) will check the volume table of contents to see if the data set exists.
+        L(zos_data_set,./zos_data_set.html) will check the volume table of contents to see if the data set exists.
         If the data set does exist, it will be cataloged.
       - >
         If I(volumes) is provided when I(state=absent) and the data set is not found in the catalog,
-        M(zos_data_set) will check the volume table of contents to see if the data set exists.
+        L(zos_data_set,./zos_data_set.html) will check the volume table of contents to see if the data set exists.
         If the data set does exist, it will be cataloged and promptly removed from the system.
       - I(volumes) is required when I(state=cataloged).
       - Accepts a string when using a single volume and a list of strings when using multiple.
@@ -430,11 +430,11 @@ options:
             If creating a data set, I(volumes) specifies the volume(s) where the data set should be created.
           - >
             If I(volumes) is provided when I(state=present), and the data set is not found in the catalog,
-            M(zos_data_set) will check the volume table of contents to see if the data set exists.
+            L(zos_data_set,./zos_data_set.html) will check the volume table of contents to see if the data set exists.
             If the data set does exist, it will be cataloged.
           - >
             If I(volumes) is provided when I(state=absent) and the data set is not found in the catalog,
-            M(zos_data_set) will check the volume table of contents to see if the data set exists.
+            L(zos_data_set,./zos_data_set.html) will check the volume table of contents to see if the data set exists.
             If the data set does exist, it will be cataloged and promptly removed from the system.
           - I(volumes) is required when I(state=cataloged).
           - Accepts a string when using a single volume and a list of strings when using multiple.
@@ -1152,7 +1152,7 @@ def run_module():
         sms_management_class=dict(type="str", required=False),
         # I know this alias is odd, ZOAU used to document they supported
         # SMS data class when they were actually passing as storage class
-        # support for backwards compatability with previous module versions
+        # support for backwards compatibility with previous module versions
         sms_storage_class=dict(type="str", required=False, aliases=["data_class"]),
         sms_data_class=dict(type="str", required=False),
         block_size=dict(

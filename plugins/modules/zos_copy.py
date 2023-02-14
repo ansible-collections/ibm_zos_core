@@ -1394,16 +1394,26 @@ def get_file_record_length(file):
         int -- Length of the longest line in the file.
     """
     max_line_length = 0
-    encoding = encode.Defaults.get_default_system_charset()
 
-    with open(file, "r", encoding=encoding) as src_file:
-        current_line = src_file.readline()
-
-        while current_line:
-            if len(current_line) > max_line_length:
-                max_line_length = len(current_line)
-
+    try:
+        with open(file, "r", encoding="UTF-8") as src_file:
             current_line = src_file.readline()
+
+            while current_line:
+                if len(current_line) > max_line_length:
+                    max_line_length = len(current_line)
+
+                current_line = src_file.readline()
+    except Exception:
+        with open(file, "r", encoding="ISO-8859-1") as src_file:
+            current_line = src_file.readline()
+
+            while current_line:
+                if len(current_line) > max_line_length:
+                    max_line_length = len(current_line)
+
+                current_line = src_file.readline()
+
 
     if max_line_length == 0:
         max_line_length = 80

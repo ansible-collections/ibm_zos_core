@@ -227,7 +227,7 @@ class AnsibleModuleHelper(AnsibleModule):
             stderr=subprocess.PIPE,
             preexec_fn=preexec,
             env=env,
-            bufsize=self.PIPE_MAX_SIZE * 4
+            bufsize=self.PIPE_MAX_SIZE * 8
         )
         if PY3 and pass_fds:
             kwargs["pass_fds"] = pass_fds

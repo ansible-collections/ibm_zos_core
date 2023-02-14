@@ -73,8 +73,7 @@ options:
     description:
       - The remote absolute path or data set where the content should be copied to.
       - C(dest) can be a USS file, directory or MVS data set name.
-      - If C(src) and C(dest) are files and if the parent directory of C(dest)
-        does not exist, then the task will fail
+      - If C(dest) has missing parent directories, they will be created.
       - If C(dest) is a nonexistent USS file, it will be created.
       - If C(dest) is a nonexistent data set, it will be created following the
         process outlined here and in the C(volume) option.
@@ -664,7 +663,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
     AnsibleModuleHelper,
 )
-from ansible.module_utils._text import to_bytes
+from ansible.module_utils._text import to_bytes, to_native
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.six import PY3
 from re import IGNORECASE
@@ -678,6 +677,7 @@ import os
 
 if PY3:
     from re import fullmatch
+    import pathlib
 else:
     from re import match as fullmatch
 
@@ -975,6 +975,25 @@ class USSCopyHandler(CopyHandler):
                 src, dest, src_ds_type, src_member, member_name=member_name
             )
         else:
+            norm_dest = os.path.normpath(dest)
+            dest_parent_dir, tail = os.path.split(norm_dest)
+            if PY3:
+                path_helper = pathlib.Path(dest_parent_dir)
+                if dest_parent_dir != "/" and not path_helper.exists():
+                    path_helper.mkdir(parents=True, exist_ok=True)
+            else:
+                # When using Python 2, instead of using pathlib, we'll use os.makedirs.
+                # pathlib is not available in Python 2.
+                try:
+                    if dest_parent_dir != "/" and not os.path.exists(dest_parent_dir):
+                        os.makedirs(dest_parent_dir)
+                except os.error as err:
+                    # os.makedirs throws an error whether the directories were already
+                    # present or their creation failed. There's no exist_ok to tell it
+                    # to ignore the first case, so we ignore it manually.
+                    if "File exists" not in err:
+                        raise CopyOperationError(msg=to_native(err))
+
             if os.path.isfile(temp_path or conv_path or src):
                 dest = self._copy_to_file(src, dest, conv_path, temp_path)
                 changed_files = None
@@ -1084,7 +1103,7 @@ class USSCopyHandler(CopyHandler):
             # Restoring permissions for preexisting files and subdirectories.
             for filepath, permissions in original_permissions:
                 mode = "0{0:o}".format(stat.S_IMODE(permissions))
-                self.module.set_mode_if_different(os.path.join(dest_dir, filepath), mode, False)
+                self.module.set_mode_if_different(os.path.join(dest, filepath), mode, False)
         except Exception as err:
             raise CopyOperationError(
                 msg="Error while copying data to destination directory {0}".format(dest_dir),
@@ -1110,21 +1129,23 @@ class USSCopyHandler(CopyHandler):
                      for the files and directories already present on the
                      destination.
         """
-        original_files = self._walk_uss_tree(dest) if os.path.exists(dest) else []
         copied_files = self._walk_uss_tree(src)
 
         # It's not needed to normalize the path because it was already normalized
         # on _copy_to_dir.
         parent_dir = os.path.basename(src) if copy_directory else ''
 
-        changed_files = [
-            relative_path for relative_path in copied_files
-            if os.path.join(parent_dir, relative_path) not in original_files
-        ]
+        changed_files = []
+        original_files = []
+        for relative_path in copied_files:
+            if os.path.exists(os.path.join(dest, parent_dir, relative_path)):
+                original_files.append(relative_path)
+            else:
+                changed_files.append(relative_path)
 
         # Creating tuples with (filename, permissions).
         original_permissions = [
-            (filepath, os.stat(os.path.join(dest, filepath)).st_mode)
+            (filepath, os.stat(os.path.join(dest, parent_dir, filepath)).st_mode)
             for filepath in original_files
         ]
 
@@ -2030,6 +2051,9 @@ def run_module(module, arg_def):
         # If temp_path, the plugin has copied a file from the controller to USS.
         if temp_path or "/" in src:
             src_ds_type = "USS"
+
+            if remote_src and os.path.isdir(src):
+                is_src_dir = True
         else:
             if data_set.DataSet.data_set_exists(src_name):
                 if src_member and not data_set.DataSet.data_set_member_exists(src):
@@ -2055,7 +2079,17 @@ def run_module(module, arg_def):
 
         if is_uss:
             dest_ds_type = "USS"
-            dest_exists = os.path.exists(dest)
+            if src_ds_type == "USS" and not is_src_dir and (dest.endswith("/") or os.path.isdir(dest)):
+                src_basename = os.path.basename(src) if src else "inline_copy"
+                dest = os.path.normpath("{0}/{1}".format(dest, src_basename))
+
+                if dest.startswith("//"):
+                    dest = dest.replace("//", "/")
+
+            if is_src_dir and not src.endswith("/"):
+                dest_exists = os.path.exists(os.path.normpath("{0}/{1}".format(dest, os.path.basename(src))))
+            else:
+                dest_exists = os.path.exists(dest)
 
             if dest_exists and not os.access(dest, os.W_OK):
                 module.fail_json(msg="Destination {0} is not writable".format(dest))
@@ -2173,14 +2207,23 @@ def run_module(module, arg_def):
 
     # Creating an emergency backup or an empty data set to use as a model to
     # be able to restore the destination in case the copy fails.
+    emergency_backup = ""
     if dest_exists and not force:
         if is_uss or not data_set.DataSet.is_empty(dest_name):
             use_backup = True
             if is_uss:
+                # When copying a directory without a trailing slash,
+                # appending the source's base name to the backup path to
+                # avoid backing up the whole parent directory that won't
+                # be modified.
+                src_basename = os.path.basename(src) if src else ''
+                backup_dest = "{0}/{1}".format(dest, src_basename) if is_src_dir and not src.endswith("/") else dest
+                backup_dest = os.path.normpath(backup_dest)
                 emergency_backup = tempfile.mkdtemp()
-                emergency_backup = backup_data(dest, dest_ds_type, emergency_backup, tmphlq)
+                emergency_backup = backup_data(backup_dest, dest_ds_type, emergency_backup, tmphlq)
             else:
-                emergency_backup = backup_data(dest, dest_ds_type, None, tmphlq)
+                if not (dest_ds_type in data_set.DataSet.MVS_PARTITIONED and src_member and not dest_member_exists):
+                    emergency_backup = backup_data(dest, dest_ds_type, None, tmphlq)
         # If dest is an empty data set, instead create a data set to
         # use as a model when restoring.
         else:

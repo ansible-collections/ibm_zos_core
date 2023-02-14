@@ -250,6 +250,29 @@ def test_copy_file_to_uss_dir(ansible_zos_module, src):
 
 
 @pytest.mark.uss
+def test_copy_file_to_uss_dir_missing_parents(ansible_zos_module):
+    hosts = ansible_zos_module
+    src = "/etc/profile"
+    dest_dir = "/tmp/parent_dir"
+    dest = "{0}/subdir/profile".format(dest_dir)
+
+    try:
+        hosts.all.file(path=dest_dir, state="absent")
+        copy_res = hosts.all.zos_copy(src=src, dest=dest)
+        stat_res = hosts.all.stat(path=dest)
+
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+            assert result.get("changed") is True
+            assert result.get("dest") == dest
+            assert result.get("state") == "file"
+        for st in stat_res.contacted.values():
+            assert st.get("stat").get("exists") is True
+    finally:
+        hosts.all.file(path=dest_dir, state="absent")
+
+
+@pytest.mark.uss
 def test_copy_local_symlink_to_uss_file(ansible_zos_module):
     hosts = ansible_zos_module
     src_lnk = "/tmp/etclnk"
@@ -1648,6 +1671,53 @@ def test_copy_multiple_data_set_members(ansible_zos_module):
             stdout = v_cp.get("stdout")
             assert stdout is not None
             assert len(stdout.splitlines()) == 2
+
+    finally:
+        hosts.all.zos_data_set(name=src, state="absent")
+        hosts.all.zos_data_set(name=dest, state="absent")
+
+
+@pytest.mark.pdse
+def test_copy_multiple_data_set_members_in_loop(ansible_zos_module):
+    """
+    This test case was included in case the module is called inside a loop,
+    issue was discovered in https://github.com/ansible-collections/ibm_zos_core/issues/560.
+    """
+    hosts = ansible_zos_module
+    src = "USER.FUNCTEST.SRC.PDS"
+
+    dest = "USER.FUNCTEST.DEST.PDS"
+    member_list = ["MEMBER1", "ABCXYZ", "ABCASD"]
+    src_ds_list = ["{0}({1})".format(src, member) for member in member_list]
+    dest_ds_list = ["{0}({1})".format(dest, member) for member in member_list]
+
+    try:
+        hosts.all.zos_data_set(name=src, type="pds")
+        hosts.all.zos_data_set(name=dest, type="pds")
+
+        for src_member in src_ds_list:
+            hosts.all.shell(
+                cmd="decho '{0}' '{1}'".format(DUMMY_DATA, src_member),
+                executable=SHELL_EXECUTABLE
+            )
+
+        for src_member, dest_member in zip(src_ds_list, dest_ds_list):
+            copy_res = hosts.all.zos_copy(src=src_member, dest=dest_member, remote_src=True)
+            for result in copy_res.contacted.values():
+                assert result.get("msg") is None
+                assert result.get("changed") is True
+                assert result.get("dest") == dest_member
+
+        verify_copy = hosts.all.shell(
+            cmd="mls {0}".format(dest),
+            executable=SHELL_EXECUTABLE
+        )
+
+        for v_cp in verify_copy.contacted.values():
+            assert v_cp.get("rc") == 0
+            stdout = v_cp.get("stdout")
+            assert stdout is not None
+            assert len(stdout.splitlines()) == 3
 
     finally:
         hosts.all.zos_data_set(name=src, state="absent")

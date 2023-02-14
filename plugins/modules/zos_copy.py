@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020, 2021, 2022
+# Copyright (c) IBM Corporation 2019 - 2023
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -23,7 +23,7 @@ module: zos_copy
 version_added: '1.2.0'
 short_description: Copy data to z/OS
 description:
-  - The M(zos_copy) module copies a file or data set from a local or a
+  - The L(zos_copy,./zos_copy.html) module copies a file or data set from a local or a
     remote machine to a location on the remote machine.
 author:
   - "Asif Mahmud (@asifmahmud)"
@@ -379,7 +379,7 @@ notes:
     - VSAM data sets can only be copied to other VSAM data sets.
     - For supported character sets used to encode data, refer to the
       L(documentation,https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html).
-    - M(zos_copy) uses SFTP (Secure File Transfer Protocol) for the underlying
+    - L(zos_copy,./zos_copy.html) uses SFTP (Secure File Transfer Protocol) for the underlying
       transfer protocol; Co:Z SFTP is not supported. In the case of Co:z SFTP,
       you can exempt the Ansible userid on z/OS from using Co:Z thus falling back
       to using standard SFTP.
@@ -2194,8 +2194,7 @@ def run_module(module, arg_def):
 
     # Creating an emergency backup or an empty data set to use as a model to
     # be able to restore the destination in case the copy fails.
-    emergency_backup = ""
-    if dest_exists:
+    if dest_exists and not force:
         if is_uss or not data_set.DataSet.is_empty(dest_name):
             use_backup = True
             if is_uss:
@@ -2231,7 +2230,7 @@ def run_module(module, arg_def):
                 volume=volume
             )
     except Exception as err:
-        if dest_exists:
+        if dest_exists and not force:
             restore_backup(dest_name, emergency_backup, dest_ds_type, use_backup)
             erase_backup(emergency_backup, dest_ds_type)
         module.fail_json(msg="Unable to allocate destination data set: {0}".format(str(err)))
@@ -2337,11 +2336,11 @@ def run_module(module, arg_def):
             res_args["changed"] = True
 
     except CopyOperationError as err:
-        if dest_exists:
+        if dest_exists and not force:
             restore_backup(dest_name, emergency_backup, dest_ds_type, use_backup)
         raise err
     finally:
-        if dest_exists:
+        if dest_exists and not force:
             erase_backup(emergency_backup, dest_ds_type)
 
     res_args.update(

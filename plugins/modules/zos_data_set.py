@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020
+# Copyright (c) IBM Corporation 2019, 2020, 2023
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -148,7 +148,6 @@ options:
       - FBA
       - VBA
       - U
-    default: FB
     type: str
   sms_storage_class:
     description:
@@ -213,11 +212,11 @@ options:
         If creating a data set, I(volumes) specifies the volume(s) where the data set should be created.
       - >
         If I(volumes) is provided when I(state=present), and the data set is not found in the catalog,
-        M(zos_data_set) will check the volume table of contents to see if the data set exists.
+        L(zos_data_set,./zos_data_set.html) will check the volume table of contents to see if the data set exists.
         If the data set does exist, it will be cataloged.
       - >
         If I(volumes) is provided when I(state=absent) and the data set is not found in the catalog,
-        M(zos_data_set) will check the volume table of contents to see if the data set exists.
+        L(zos_data_set,./zos_data_set.html) will check the volume table of contents to see if the data set exists.
         If the data set does exist, it will be cataloged and promptly removed from the system.
       - I(volumes) is required when I(state=cataloged).
       - Accepts a string when using a single volume and a list of strings when using multiple.
@@ -373,7 +372,6 @@ options:
           - FBA
           - VBA
           - U
-        default: FB
         type: str
       sms_storage_class:
         description:
@@ -438,11 +436,11 @@ options:
             If creating a data set, I(volumes) specifies the volume(s) where the data set should be created.
           - >
             If I(volumes) is provided when I(state=present), and the data set is not found in the catalog,
-            M(zos_data_set) will check the volume table of contents to see if the data set exists.
+            L(zos_data_set,./zos_data_set.html) will check the volume table of contents to see if the data set exists.
             If the data set does exist, it will be cataloged.
           - >
             If I(volumes) is provided when I(state=absent) and the data set is not found in the catalog,
-            M(zos_data_set) will check the volume table of contents to see if the data set exists.
+            L(zos_data_set,./zos_data_set.html) will check the volume table of contents to see if the data set exists.
             If the data set does exist, it will be cataloged and promptly removed from the system.
           - I(volumes) is required when I(state=cataloged).
           - Accepts a string when using a single volume and a list of strings when using multiple.
@@ -1076,8 +1074,8 @@ def parse_and_validate_args(params):
             ["batch", "name"],
             # ["batch", "state"],
             # ["batch", "space_type"],
-            ["batch", "space_primary"],
-            ["batch", "space_secondary"],
+            # ["batch", "space_primary"],
+            # ["batch", "space_secondary"],
             ["batch", "record_format"],
             ["batch", "sms_management_class"],
             ["batch", "sms_storage_class"],
@@ -1118,13 +1116,13 @@ def run_module():
                 ),
                 type=dict(type="str", required=False, default="PDS"),
                 space_type=dict(type="str", required=False, default="M"),
-                space_primary=dict(type="int", required=False, aliases=["size"]),
-                space_secondary=dict(type="int", required=False),
+                space_primary=dict(type="int", required=False, aliases=["size"], default=5),
+                space_secondary=dict(type="int", required=False, default=3),
                 record_format=dict(type="str", required=False, aliases=["format"]),
                 sms_management_class=dict(type="str", required=False),
                 # I know this alias is odd, ZOAU used to document they supported
                 # SMS data class when they were actually passing as storage class
-                # support for backwards compatability with previous module versions
+                # support for backwards compatibility with previous module versions
                 sms_storage_class=dict(
                     type="str", required=False, aliases=["data_class"]
                 ),
@@ -1162,8 +1160,8 @@ def run_module():
         ),
         type=dict(type="str", required=False, default="PDS"),
         space_type=dict(type="str", required=False, default="M"),
-        space_primary=dict(type="raw", required=False, aliases=["size"]),
-        space_secondary=dict(type="int", required=False),
+        space_primary=dict(type="raw", required=False, aliases=["size"], default=5),
+        space_secondary=dict(type="int", required=False, default=3),
         record_format=dict(type="str", required=False, aliases=["format"]),
         sms_management_class=dict(type="str", required=False),
         # I know this alias is odd, ZOAU used to document they supported

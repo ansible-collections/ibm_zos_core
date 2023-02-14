@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020, 2021, 2022
+# Copyright (c) IBM Corporation 2020 - 2023
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -26,7 +26,7 @@ author:
     - "Rich Parker (@richp405)"
 short_description: Mount a z/OS file system.
 description:
-  - The module M(zos_mount) can manage mount operations for a
+  - The module L(zos_mount,./zos_mount.html) can manage mount operations for a
     z/OS UNIX System Services (USS) file system data set.
   - The I(src) data set must be unique and a Fully Qualified Name (FQN).
   - The I(path) will be created if needed.
@@ -213,7 +213,6 @@ options:
             - If this flag is used, use of tag_ccsid is encouraged.
         type: str
         choices:
-            - ''
             - TEXT
             - NOTEXT
         required: False
@@ -308,7 +307,7 @@ options:
 notes:
     - All data sets are always assumed to be cataloged.
     - If an uncataloged data set needs to be fetched, it should be cataloged first.
-    - Uncataloged data sets can be cataloged using the M(zos_data_set) module.
+    - Uncataloged data sets can be cataloged using the L(zos_data_set,./zos_data_set.html) module.
 seealso:
     - module: zos_data_set
 """
@@ -1092,7 +1091,7 @@ def main():
             ),
             src_params=dict(type="str", required=False),
             tag_untagged=dict(
-                type="str", default="", choices=["", "TEXT", "NOTEXT"], required=False
+                type="str", choices=["TEXT", "NOTEXT"], required=False
             ),
             tag_ccsid=dict(type="int", required=False),
             allow_uid=dict(type="bool", default=True, required=False),
@@ -1152,7 +1151,7 @@ def main():
         ),
         src_params=dict(arg_type="str", default="", required=False),
         tag_untagged=dict(
-            arg_type="str", default="", choices=["", "TEXT", "NOTEXT"], required=False
+            arg_type="str", choices=["TEXT", "NOTEXT"], required=False
         ),
         tag_ccsid=dict(arg_type="int", required=False),
         allow_uid=dict(arg_type="bool", default=True, required=False),

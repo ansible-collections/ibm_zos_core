@@ -59,7 +59,7 @@ wait_time_s
 
 
 wait
-  Configuring wait used by the :ref:`zos_operator <zos_operator_module>` module has been deprecated and will be removed in ibm.ibm_zos_core collection.
+  Configuring wait used by the `zos_operator <./zos_operator.html>`_ module has been deprecated and will be removed in ibm.ibm_zos_core collection.
 
   Setting this option will yield no change, it is deprecated.
 

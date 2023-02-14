@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020, 2021, 2022
+# Copyright (c) IBM Corporation 2019 - 2023
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -23,7 +23,7 @@ module: zos_copy
 version_added: '1.2.0'
 short_description: Copy data to z/OS
 description:
-  - The M(zos_copy) module copies a file or data set from a local or a
+  - The L(zos_copy,./zos_copy.html) module copies a file or data set from a local or a
     remote machine to a location on the remote machine.
 author:
   - "Asif Mahmud (@asifmahmud)"
@@ -73,8 +73,7 @@ options:
     description:
       - The remote absolute path or data set where the content should be copied to.
       - C(dest) can be a USS file, directory or MVS data set name.
-      - If C(src) and C(dest) are files and if the parent directory of C(dest)
-        does not exist, then the task will fail
+      - If C(dest) has missing parent directories, they will be created.
       - If C(dest) is a nonexistent USS file, it will be created.
       - If C(dest) is a nonexistent data set, it will be created following the
         process outlined here and in the C(volume) option.
@@ -380,7 +379,7 @@ notes:
     - VSAM data sets can only be copied to other VSAM data sets.
     - For supported character sets used to encode data, refer to the
       L(documentation,https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html).
-    - M(zos_copy) uses SFTP (Secure File Transfer Protocol) for the underlying
+    - L(zos_copy,./zos_copy.html) uses SFTP (Secure File Transfer Protocol) for the underlying
       transfer protocol; Co:Z SFTP is not supported. In the case of Co:z SFTP,
       you can exempt the Ansible userid on z/OS from using Co:Z thus falling back
       to using standard SFTP.
@@ -1155,7 +1154,7 @@ class USSCopyHandler(CopyHandler):
             # Restoring permissions for preexisting files and subdirectories.
             for filepath, permissions in original_permissions:
                 mode = "0{0:o}".format(stat.S_IMODE(permissions))
-                self.module.set_mode_if_different(os.path.join(dest_dir, filepath), mode, False)
+                self.module.set_mode_if_different(os.path.join(dest, filepath), mode, False)
         except Exception as err:
             raise CopyOperationError(
                 msg="Error while copying data to destination directory {0}".format(dest_dir),
@@ -1181,21 +1180,23 @@ class USSCopyHandler(CopyHandler):
                      for the files and directories already present on the
                      destination.
         """
-        original_files = self._walk_uss_tree(dest) if os.path.exists(dest) else []
         copied_files = self._walk_uss_tree(src)
 
         # It's not needed to normalize the path because it was already normalized
         # on _copy_to_dir.
         parent_dir = os.path.basename(src) if copy_directory else ''
 
-        changed_files = [
-            relative_path for relative_path in copied_files
-            if os.path.join(parent_dir, relative_path) not in original_files
-        ]
+        changed_files = []
+        original_files = []
+        for relative_path in copied_files:
+            if os.path.exists(os.path.join(dest, parent_dir, relative_path)):
+                original_files.append(relative_path)
+            else:
+                changed_files.append(relative_path)
 
         # Creating tuples with (filename, permissions).
         original_permissions = [
-            (filepath, os.stat(os.path.join(dest, filepath)).st_mode)
+            (filepath, os.stat(os.path.join(dest, parent_dir, filepath)).st_mode)
             for filepath in original_files
         ]
 
@@ -2103,6 +2104,9 @@ def run_module(module, arg_def):
         # If temp_path, the plugin has copied a file from the controller to USS.
         if temp_path or "/" in src:
             src_ds_type = "USS"
+
+            if remote_src and os.path.isdir(src):
+                is_src_dir = True
         else:
             if data_set.DataSet.data_set_exists(src_name):
                 if src_member and not data_set.DataSet.data_set_member_exists(src):
@@ -2128,7 +2132,17 @@ def run_module(module, arg_def):
 
         if is_uss:
             dest_ds_type = "USS"
-            dest_exists = os.path.exists(dest)
+            if src_ds_type == "USS" and not is_src_dir and (dest.endswith("/") or os.path.isdir(dest)):
+                src_basename = os.path.basename(src) if src else "inline_copy"
+                dest = os.path.normpath("{0}/{1}".format(dest, src_basename))
+
+                if dest.startswith("//"):
+                    dest = dest.replace("//", "/")
+
+            if is_src_dir and not src.endswith("/"):
+                dest_exists = os.path.exists(os.path.normpath("{0}/{1}".format(dest, os.path.basename(src))))
+            else:
+                dest_exists = os.path.exists(dest)
 
             if dest_exists and not os.access(dest, os.W_OK):
                 module.fail_json(msg="Destination {0} is not writable".format(dest))
@@ -2246,14 +2260,23 @@ def run_module(module, arg_def):
 
     # Creating an emergency backup or an empty data set to use as a model to
     # be able to restore the destination in case the copy fails.
-    if dest_exists:
+    emergency_backup = ""
+    if dest_exists and not force:
         if is_uss or not data_set.DataSet.is_empty(dest_name):
             use_backup = True
             if is_uss:
+                # When copying a directory without a trailing slash,
+                # appending the source's base name to the backup path to
+                # avoid backing up the whole parent directory that won't
+                # be modified.
+                src_basename = os.path.basename(src) if src else ''
+                backup_dest = "{0}/{1}".format(dest, src_basename) if is_src_dir and not src.endswith("/") else dest
+                backup_dest = os.path.normpath(backup_dest)
                 emergency_backup = tempfile.mkdtemp()
-                emergency_backup = backup_data(dest, dest_ds_type, emergency_backup, tmphlq)
+                emergency_backup = backup_data(backup_dest, dest_ds_type, emergency_backup, tmphlq)
             else:
-                emergency_backup = backup_data(dest, dest_ds_type, None, tmphlq)
+                if not (dest_ds_type in data_set.DataSet.MVS_PARTITIONED and src_member and not dest_member_exists):
+                    emergency_backup = backup_data(dest, dest_ds_type, None, tmphlq)
         # If dest is an empty data set, instead create a data set to
         # use as a model when restoring.
         else:
@@ -2274,7 +2297,7 @@ def run_module(module, arg_def):
                 volume=volume
             )
     except Exception as err:
-        if dest_exists:
+        if dest_exists and not force:
             restore_backup(dest_name, emergency_backup, dest_ds_type, use_backup)
             erase_backup(emergency_backup, dest_ds_type)
         module.fail_json(msg="Unable to allocate destination data set: {0}".format(str(err)))
@@ -2411,11 +2434,11 @@ def run_module(module, arg_def):
             res_args["changed"] = True
 
     except CopyOperationError as err:
-        if dest_exists:
+        if dest_exists and not force:
             restore_backup(dest_name, emergency_backup, dest_ds_type, use_backup)
         raise err
     finally:
-        if dest_exists:
+        if dest_exists and not force:
             erase_backup(emergency_backup, dest_ds_type)
 
     res_args.update(

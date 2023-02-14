@@ -453,7 +453,6 @@ class EncodeUtils(object):
 
         return convert_rc
 
-
     def uss_file_tag(self, file_path):
         """Returns the current tag set for a file.
         Arguments:

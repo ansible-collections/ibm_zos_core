@@ -732,7 +732,6 @@ class CopyHandler(object):
                                transferred data to
             conv_path {str} -- Path to the converted source file
             dest {str} -- Name of destination data set
-            src_ds_type {str} -- The type of source
         """
         new_src = conv_path or temp_path or src
         copy_args = dict()
@@ -915,6 +914,58 @@ class CopyHandler(object):
         for arg in args:
             result.update(arg)
         return result
+
+    def file_has_crlf_endings(self, src):
+        """Reads src as a binary file and checks whether it uses CRLF or LF
+        line endings.
+
+        Arguments:
+            src {str} -- Path to a USS file
+
+        Returns:
+            {bool} -- True if the file uses CRLF endings, False if it uses LF
+                      ones.
+        """
+        with open(src, "rb") as src_file:
+            # readline() will read until it finds a \n.
+            content = src_file.readline()
+
+        # In EBCDIC, \r\n are bytes 0d and 15, respectively.
+        if content.endswith(b'\x0d\x15'):
+            return True
+        else:
+            return False
+
+    def create_temp_with_lf_endings(self, src):
+        """Creates a temporary file with the same content as src but without
+        carriage returns.
+
+        Arguments:
+            src {str} -- Path to a USS source file.
+
+        Raises:
+            CopyOperationError: If the conversion fails.
+
+        Returns:
+            {str} -- Path to the temporary file created.
+        """
+        try:
+            fd, converted_src = tempfile.mkstemp()
+            os.close(fd)
+
+            with open(converted_src, "wb") as converted_file:
+                with open(src, "rb") as src_file:
+                    current_line = src_file.read()
+                    converted_file.write(current_line.replace(b'\x0d', b''))
+
+            self._tag_file_encoding(converted_src, encode.Defaults.DEFAULT_EBCDIC_MVS_CHARSET)
+
+            return converted_src
+        except Exception as err:
+            raise CopyOperationError(
+                msg="Error while trying to convert EOL sequence for source.",
+                stderr=to_native(err)
+            )
 
 
 class USSCopyHandler(CopyHandler):
@@ -1407,8 +1458,10 @@ def get_file_record_length(file):
         current_line = src_file.readline()
 
         while current_line:
-            if len(current_line) > max_line_length:
-                max_line_length = len(current_line)
+            line_length = len(current_line.rstrip("\n\r"))
+
+            if line_length > max_line_length:
+                max_line_length = line_length
 
             current_line = src_file.readline()
 
@@ -2316,6 +2369,37 @@ def run_module(module, arg_def):
         # Copy to sequential data set (PS / SEQ)
         # ---------------------------------------------------------------------
         elif dest_ds_type in data_set.DataSet.MVS_SEQ:
+            if src_ds_type == "USS" and not is_binary:
+                # Before copying into the destination dataset, we'll make sure that
+                # the source file doesn't contain any carriage returns that would
+                # result in empty records in the destination.
+                # Due to the differences between encodings, we'll normalize to IBM-037
+                # before checking the EOL sequence.
+                new_src = conv_path or temp_path or src
+                enc_utils = encode.EncodeUtils()
+                src_tag = enc_utils.uss_file_tag(new_src)
+
+                if src_tag == "untagged":
+                    src_tag = encode.Defaults.DEFAULT_EBCDIC_USS_CHARSET
+
+                if src_tag not in encode.Defaults.DEFAULT_EBCDIC_MVS_CHARSET:
+                    fd, converted_src = tempfile.mkstemp()
+                    os.close(fd)
+
+                    enc_utils.uss_convert_encoding(
+                        new_src,
+                        converted_src,
+                        src_tag,
+                        encode.Defaults.DEFAULT_EBCDIC_MVS_CHARSET
+                    )
+                    copy_handler._tag_file_encoding(converted_src, encode.Defaults.DEFAULT_EBCDIC_MVS_CHARSET)
+                    new_src = converted_src
+
+                if copy_handler.file_has_crlf_endings(new_src):
+                    new_src = copy_handler.create_temp_with_lf_endings(new_src)
+
+                conv_path = new_src
+
             copy_handler.copy_to_seq(
                 src,
                 temp_path,

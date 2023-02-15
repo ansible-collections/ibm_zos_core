@@ -73,8 +73,7 @@ options:
     description:
       - The remote absolute path or data set where the content should be copied to.
       - C(dest) can be a USS file, directory or MVS data set name.
-      - If C(src) and C(dest) are files and if the parent directory of C(dest)
-        does not exist, then the task will fail
+      - If C(dest) has missing parent directories, they will be created.
       - If C(dest) is a nonexistent USS file, it will be created.
       - If C(dest) is a nonexistent data set, it will be created following the
         process outlined here and in the C(volume) option.
@@ -664,7 +663,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
     AnsibleModuleHelper,
 )
-from ansible.module_utils._text import to_bytes
+from ansible.module_utils._text import to_bytes, to_native
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.six import PY3
 from re import IGNORECASE
@@ -678,6 +677,7 @@ import os
 
 if PY3:
     from re import fullmatch
+    import pathlib
 else:
     from re import match as fullmatch
 
@@ -732,7 +732,6 @@ class CopyHandler(object):
                                transferred data to
             conv_path {str} -- Path to the converted source file
             dest {str} -- Name of destination data set
-            src_ds_type {str} -- The type of source
         """
         new_src = conv_path or temp_path or src
         copy_args = dict()
@@ -916,6 +915,58 @@ class CopyHandler(object):
             result.update(arg)
         return result
 
+    def file_has_crlf_endings(self, src):
+        """Reads src as a binary file and checks whether it uses CRLF or LF
+        line endings.
+
+        Arguments:
+            src {str} -- Path to a USS file
+
+        Returns:
+            {bool} -- True if the file uses CRLF endings, False if it uses LF
+                      ones.
+        """
+        with open(src, "rb") as src_file:
+            # readline() will read until it finds a \n.
+            content = src_file.readline()
+
+        # In EBCDIC, \r\n are bytes 0d and 15, respectively.
+        if content.endswith(b'\x0d\x15'):
+            return True
+        else:
+            return False
+
+    def create_temp_with_lf_endings(self, src):
+        """Creates a temporary file with the same content as src but without
+        carriage returns.
+
+        Arguments:
+            src {str} -- Path to a USS source file.
+
+        Raises:
+            CopyOperationError: If the conversion fails.
+
+        Returns:
+            {str} -- Path to the temporary file created.
+        """
+        try:
+            fd, converted_src = tempfile.mkstemp()
+            os.close(fd)
+
+            with open(converted_src, "wb") as converted_file:
+                with open(src, "rb") as src_file:
+                    current_line = src_file.read()
+                    converted_file.write(current_line.replace(b'\x0d', b''))
+
+            self._tag_file_encoding(converted_src, encode.Defaults.DEFAULT_EBCDIC_MVS_CHARSET)
+
+            return converted_src
+        except Exception as err:
+            raise CopyOperationError(
+                msg="Error while trying to convert EOL sequence for source.",
+                stderr=to_native(err)
+            )
+
 
 class USSCopyHandler(CopyHandler):
     def __init__(
@@ -975,6 +1026,25 @@ class USSCopyHandler(CopyHandler):
                 src, dest, src_ds_type, src_member, member_name=member_name
             )
         else:
+            norm_dest = os.path.normpath(dest)
+            dest_parent_dir, tail = os.path.split(norm_dest)
+            if PY3:
+                path_helper = pathlib.Path(dest_parent_dir)
+                if dest_parent_dir != "/" and not path_helper.exists():
+                    path_helper.mkdir(parents=True, exist_ok=True)
+            else:
+                # When using Python 2, instead of using pathlib, we'll use os.makedirs.
+                # pathlib is not available in Python 2.
+                try:
+                    if dest_parent_dir != "/" and not os.path.exists(dest_parent_dir):
+                        os.makedirs(dest_parent_dir)
+                except os.error as err:
+                    # os.makedirs throws an error whether the directories were already
+                    # present or their creation failed. There's no exist_ok to tell it
+                    # to ignore the first case, so we ignore it manually.
+                    if "File exists" not in err:
+                        raise CopyOperationError(msg=to_native(err))
+
             if os.path.isfile(temp_path or conv_path or src):
                 dest = self._copy_to_file(src, dest, conv_path, temp_path)
                 changed_files = None
@@ -1084,7 +1154,7 @@ class USSCopyHandler(CopyHandler):
             # Restoring permissions for preexisting files and subdirectories.
             for filepath, permissions in original_permissions:
                 mode = "0{0:o}".format(stat.S_IMODE(permissions))
-                self.module.set_mode_if_different(os.path.join(dest_dir, filepath), mode, False)
+                self.module.set_mode_if_different(os.path.join(dest, filepath), mode, False)
         except Exception as err:
             raise CopyOperationError(
                 msg="Error while copying data to destination directory {0}".format(dest_dir),
@@ -1110,21 +1180,23 @@ class USSCopyHandler(CopyHandler):
                      for the files and directories already present on the
                      destination.
         """
-        original_files = self._walk_uss_tree(dest) if os.path.exists(dest) else []
         copied_files = self._walk_uss_tree(src)
 
         # It's not needed to normalize the path because it was already normalized
         # on _copy_to_dir.
         parent_dir = os.path.basename(src) if copy_directory else ''
 
-        changed_files = [
-            relative_path for relative_path in copied_files
-            if os.path.join(parent_dir, relative_path) not in original_files
-        ]
+        changed_files = []
+        original_files = []
+        for relative_path in copied_files:
+            if os.path.exists(os.path.join(dest, parent_dir, relative_path)):
+                original_files.append(relative_path)
+            else:
+                changed_files.append(relative_path)
 
         # Creating tuples with (filename, permissions).
         original_permissions = [
-            (filepath, os.stat(os.path.join(dest, filepath)).st_mode)
+            (filepath, os.stat(os.path.join(dest, parent_dir, filepath)).st_mode)
             for filepath in original_files
         ]
 
@@ -1386,8 +1458,10 @@ def get_file_record_length(file):
         current_line = src_file.readline()
 
         while current_line:
-            if len(current_line) > max_line_length:
-                max_line_length = len(current_line)
+            line_length = len(current_line.rstrip("\n\r"))
+
+            if line_length > max_line_length:
+                max_line_length = line_length
 
             current_line = src_file.readline()
 
@@ -2030,6 +2104,9 @@ def run_module(module, arg_def):
         # If temp_path, the plugin has copied a file from the controller to USS.
         if temp_path or "/" in src:
             src_ds_type = "USS"
+
+            if remote_src and os.path.isdir(src):
+                is_src_dir = True
         else:
             if data_set.DataSet.data_set_exists(src_name):
                 if src_member and not data_set.DataSet.data_set_member_exists(src):
@@ -2055,7 +2132,17 @@ def run_module(module, arg_def):
 
         if is_uss:
             dest_ds_type = "USS"
-            dest_exists = os.path.exists(dest)
+            if src_ds_type == "USS" and not is_src_dir and (dest.endswith("/") or os.path.isdir(dest)):
+                src_basename = os.path.basename(src) if src else "inline_copy"
+                dest = os.path.normpath("{0}/{1}".format(dest, src_basename))
+
+                if dest.startswith("//"):
+                    dest = dest.replace("//", "/")
+
+            if is_src_dir and not src.endswith("/"):
+                dest_exists = os.path.exists(os.path.normpath("{0}/{1}".format(dest, os.path.basename(src))))
+            else:
+                dest_exists = os.path.exists(dest)
 
             if dest_exists and not os.access(dest, os.W_OK):
                 module.fail_json(msg="Destination {0} is not writable".format(dest))
@@ -2173,14 +2260,23 @@ def run_module(module, arg_def):
 
     # Creating an emergency backup or an empty data set to use as a model to
     # be able to restore the destination in case the copy fails.
+    emergency_backup = ""
     if dest_exists and not force:
         if is_uss or not data_set.DataSet.is_empty(dest_name):
             use_backup = True
             if is_uss:
+                # When copying a directory without a trailing slash,
+                # appending the source's base name to the backup path to
+                # avoid backing up the whole parent directory that won't
+                # be modified.
+                src_basename = os.path.basename(src) if src else ''
+                backup_dest = "{0}/{1}".format(dest, src_basename) if is_src_dir and not src.endswith("/") else dest
+                backup_dest = os.path.normpath(backup_dest)
                 emergency_backup = tempfile.mkdtemp()
-                emergency_backup = backup_data(dest, dest_ds_type, emergency_backup, tmphlq)
+                emergency_backup = backup_data(backup_dest, dest_ds_type, emergency_backup, tmphlq)
             else:
-                emergency_backup = backup_data(dest, dest_ds_type, None, tmphlq)
+                if not (dest_ds_type in data_set.DataSet.MVS_PARTITIONED and src_member and not dest_member_exists):
+                    emergency_backup = backup_data(dest, dest_ds_type, None, tmphlq)
         # If dest is an empty data set, instead create a data set to
         # use as a model when restoring.
         else:
@@ -2273,6 +2369,37 @@ def run_module(module, arg_def):
         # Copy to sequential data set (PS / SEQ)
         # ---------------------------------------------------------------------
         elif dest_ds_type in data_set.DataSet.MVS_SEQ:
+            if src_ds_type == "USS" and not is_binary:
+                # Before copying into the destination dataset, we'll make sure that
+                # the source file doesn't contain any carriage returns that would
+                # result in empty records in the destination.
+                # Due to the differences between encodings, we'll normalize to IBM-037
+                # before checking the EOL sequence.
+                new_src = conv_path or temp_path or src
+                enc_utils = encode.EncodeUtils()
+                src_tag = enc_utils.uss_file_tag(new_src)
+
+                if src_tag == "untagged":
+                    src_tag = encode.Defaults.DEFAULT_EBCDIC_USS_CHARSET
+
+                if src_tag not in encode.Defaults.DEFAULT_EBCDIC_MVS_CHARSET:
+                    fd, converted_src = tempfile.mkstemp()
+                    os.close(fd)
+
+                    enc_utils.uss_convert_encoding(
+                        new_src,
+                        converted_src,
+                        src_tag,
+                        encode.Defaults.DEFAULT_EBCDIC_MVS_CHARSET
+                    )
+                    copy_handler._tag_file_encoding(converted_src, encode.Defaults.DEFAULT_EBCDIC_MVS_CHARSET)
+                    new_src = converted_src
+
+                if copy_handler.file_has_crlf_endings(new_src):
+                    new_src = copy_handler.create_temp_with_lf_endings(new_src)
+
+                conv_path = new_src
+
             copy_handler.copy_to_seq(
                 src,
                 temp_path,

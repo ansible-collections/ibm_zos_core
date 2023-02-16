@@ -102,7 +102,7 @@ class DataSet(object):
         name,
         replace,
         type,
-        present,
+        present=None,
         space_primary=None,
         space_secondary=None,
         space_type=None,
@@ -180,8 +180,11 @@ class DataSet(object):
         # present = False
         changed = False
 
-        # if DataSet.data_set_cataloged(name):
-        #     present = True
+        if present is None:
+            if DataSet.data_set_cataloged(name):
+                present = True
+            else:
+                present = False
         if not present:
             try:
                 DataSet.create(**arguments)

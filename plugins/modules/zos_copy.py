@@ -2065,11 +2065,9 @@ def run_module(module, arg_def):
                 src_tag = encode_utils.uss_file_tag(src)
                 # Normalizing to UTF-8.
                 if not is_src_dir and src_tag != "UTF-8":
-                    copy_handler = CopyHandler(module, is_binary=is_binary)
                     # If untagged, assuming the encoding/tag is the system's default.
                     if src_tag == "untagged" or src_tag is None:
                         src_tag = encode.Defaults.get_default_system_charset()
-                        copy_handler._tag_file_encoding(src, src_tag)
 
                     # Converting the original src to a temporary one in UTF-8.
                     fd, converted_src = tempfile.mkstemp()
@@ -2081,14 +2079,9 @@ def run_module(module, arg_def):
                         "UTF-8"
                     )
 
+                    # Creating the handler just for tagging, we're not copying yet!
+                    copy_handler = CopyHandler(module, is_binary=is_binary)
                     copy_handler._tag_file_encoding(converted_src, "UTF-8")
-                    # Preparing for another conversion just before copying into a dataset.
-                    # Found that using IBM-037 and UTF-8 give garbage or truncation errors,
-                    # so it's necessary to convert again.
-                    if encoding:
-                        encoding["from"] = "utf-8"
-                    else:
-                        encoding = {"from": "utf-8"}
         else:
             src_exists = data_set.DataSet.data_set_exists(src_name)
             if src_exists:
@@ -2296,6 +2289,9 @@ def run_module(module, arg_def):
             src = original_src
         module.fail_json(msg="Unable to allocate destination data set: {0}. Traceback: {1}".format(to_native(err), traceback.format_exc()))
 
+    if converted_src:
+        src = original_src
+
     # ********************************************************************
     # Encoding conversion is only valid if the source is a local file,
     # local directory or a USS file/directory.
@@ -2310,9 +2306,9 @@ def run_module(module, arg_def):
         if encoding:
             # 'conv_path' points to the converted src file or directory
             # Converting to a friendly format for a dataset.
-            if is_mvs_dest:
+            # if is_mvs_dest:
                 # encoding["to"] = encode.Defaults.DEFAULT_EBCDIC_MVS_CHARSET
-                encoding["to"] = "IBM-1047"
+                # encoding["to"] = "IBM-1047"
 
             conv_path = copy_handler.convert_encoding(src, temp_path, encoding)
 
@@ -2401,15 +2397,11 @@ def run_module(module, arg_def):
     except CopyOperationError as err:
         # if dest_exists:
         #     restore_backup(dest_name, emergency_backup, dest_ds_type, use_backup)
-        if converted_src:
-            src = original_src
         raise err
     # finally:
     #     if dest_exists:
     #         erase_backup(emergency_backup, dest_ds_type)
 
-    if converted_src:
-        src = original_src
     res_args.update(
         dict(
             src=src,

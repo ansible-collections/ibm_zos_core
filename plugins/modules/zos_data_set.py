@@ -149,6 +149,7 @@ options:
       - VBA
       - U
     type: str
+    default: FB
   sms_storage_class:
     description:
       - The storage class for an SMS-managed dataset.
@@ -373,6 +374,7 @@ options:
           - VBA
           - U
         type: str
+        default: FB
       sms_storage_class:
         description:
           - The storage class for an SMS-managed dataset.
@@ -1118,7 +1120,7 @@ def run_module():
                 space_type=dict(type="str", required=False, default="M"),
                 space_primary=dict(type="int", required=False, aliases=["size"], default=5),
                 space_secondary=dict(type="int", required=False, default=3),
-                record_format=dict(type="str", required=False, aliases=["format"]),
+                record_format=dict(type="str", required=False, aliases=["format"], default="FB"),
                 sms_management_class=dict(type="str", required=False),
                 # I know this alias is odd, ZOAU used to document they supported
                 # SMS data class when they were actually passing as storage class
@@ -1162,7 +1164,7 @@ def run_module():
         space_type=dict(type="str", required=False, default="M"),
         space_primary=dict(type="raw", required=False, aliases=["size"], default=5),
         space_secondary=dict(type="int", required=False, default=3),
-        record_format=dict(type="str", required=False, aliases=["format"]),
+        record_format=dict(type="str", required=False, aliases=["format"], default="FB"),
         sms_management_class=dict(type="str", required=False),
         # I know this alias is odd, ZOAU used to document they supported
         # SMS data class when they were actually passing as storage class

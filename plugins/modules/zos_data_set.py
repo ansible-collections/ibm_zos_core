@@ -631,6 +631,14 @@ DEFAULT_RECORD_LENGTHS = {
     "U": 0,
 }
 
+DATA_SET_TYPES_VSAM = [
+    "KSDS",
+    "ESDS",
+    "RRDS",
+    "LDS",
+    "ZFS",
+]
+
 # ------------- Functions to validate arguments ------------- #
 
 
@@ -1203,6 +1211,33 @@ def run_module():
     result = dict(changed=False, message="", names=[])
 
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
+
+    # This evaluation will always occur as a result of the limitation on the
+    # better arg parser, this will serve as a solution for now and ensure
+    # the non-batch and batch arguments are correctly set
+    if module.params.get("batch") is not None:
+        for entry in module.params.get("batch"):
+            if entry.get('type') is not None and entry.get("type").upper() in DATA_SET_TYPES_VSAM:
+                entry["record_format"] = None
+        if module.params.get("type") is not None:
+            module.params["type"] = None
+        if module.params.get("state") is not None:
+            module.params["state"] = None
+        if module.params.get("space_type") is not None:
+            module.params["space_type"] = None
+        if module.params.get("space_primary") is not None:
+            module.params["space_primary"] = None
+        if module.params.get("space_secondary") is not None:
+            module.params["space_secondary"] = None
+        if module.params.get("replace") is not None:
+            module.params["replace"] = None
+        if module.params.get("record_format") is not None:
+            module.params["record_format"] = None
+    elif module.params.get("type") is not None:
+        if module.params.get("type").upper() in DATA_SET_TYPES_VSAM:
+            # For VSAM types set the value to nothing and let the code manage it
+            module.params["record_format"] = None
+
 
     if not module.check_mode:
         try:

@@ -1238,7 +1238,6 @@ def run_module():
             # For VSAM types set the value to nothing and let the code manage it
             module.params["record_format"] = None
 
-
     if not module.check_mode:
         try:
             # Update the dictionary for use by better arg parser by adding the

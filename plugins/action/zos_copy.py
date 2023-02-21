@@ -16,6 +16,7 @@ __metaclass__ = type
 import os
 import stat
 import time
+import shutil
 
 from tempfile import mkstemp, gettempprefix
 
@@ -207,6 +208,10 @@ class ActionModule(ActionBase):
             task_vars=task_vars,
         )
 
+        # Erasing all rendered Jinja2 templates from the controller.
+        if template_dir:
+            shutil.rmtree(template_dir)
+
         if copy_res.get("note") and not force:
             result["note"] = copy_res.get("note")
             return result
@@ -225,9 +230,6 @@ class ActionModule(ActionBase):
             )
             if backup or backup_name:
                 result["backup_name"] = copy_res.get("backup_name")
-            # Erasing all rendered Jinja2 templates from the controller.
-            if template_dir:
-                os.rmdir(template_dir)
             self._remote_cleanup(dest, copy_res.get("dest_exists"), task_vars)
             return result
 
@@ -441,7 +443,8 @@ def _write_content_to_temp_file(content):
     return path
 
 def _create_template_environment(template_parameters, src, encoding):
-    """"""
+    """Parses boolean parameters for Jinja2 and creates a TemplateRenderer
+    instance."""
     template_parameters["lstrip_blocks"] = _process_boolean(template_parameters.get("lstrip_blocks"), default=False)
     template_parameters["trim_blocks"] = _process_boolean(template_parameters.get("trim_blocks"), default=False)
     template_parameters["keep_trailing_newline"] = _process_boolean(template_parameters.get("keep_trailing_newline"), default=False)

@@ -141,6 +141,9 @@ options:
     description:
       - The format of the data set. (e.g C(FB))
       - Choices are case-insensitive.
+      - When I(type=KSDS), I(type=ESDS), I(type=RRDS), I(type=LDS) or I(type=ZFS)
+        then I(record_format=None), these types do not have a default
+        I(record_format).
     required: false
     choices:
       - FB
@@ -366,6 +369,9 @@ options:
         description:
           - The format of the data set. (e.g C(FB))
           - Choices are case-insensitive.
+          - When I(type=KSDS), I(type=ESDS), I(type=RRDS), I(type=LDS) or
+            I(type=ZFS) then I(record_format=None), these types do not have a
+            default I(record_format).
         required: false
         choices:
           - FB

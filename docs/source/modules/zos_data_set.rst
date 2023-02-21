@@ -132,6 +132,8 @@ record_format
 
   Choices are case-insensitive.
 
+  When *type=KSDS*, *type=ESDS*, *type=RRDS*, *type=LDS* or *type=ZFS* then *record_format=None*, these types do not have a default *record_format*.
+
   | **required**: False
   | **type**: str
   | **default**: FB
@@ -378,6 +380,8 @@ batch
     The format of the data set. (e.g ``FB``)
 
     Choices are case-insensitive.
+
+    When *type=KSDS*, *type=ESDS*, *type=RRDS*, *type=LDS* or *type=ZFS* then *record_format=None*, these types do not have a default *record_format*.
 
     | **required**: False
     | **type**: str

@@ -141,6 +141,9 @@ options:
     description:
       - The format of the data set. (e.g C(FB))
       - Choices are case-insensitive.
+      - When I(type=KSDS), I(type=ESDS), I(type=RRDS), I(type=LDS) or I(type=ZFS)
+        then I(record_format=None), these types do not have a default
+        I(record_format).
     required: false
     choices:
       - FB
@@ -149,6 +152,7 @@ options:
       - VBA
       - U
     type: str
+    default: FB
   sms_storage_class:
     description:
       - The storage class for an SMS-managed dataset.
@@ -365,6 +369,9 @@ options:
         description:
           - The format of the data set. (e.g C(FB))
           - Choices are case-insensitive.
+          - When I(type=KSDS), I(type=ESDS), I(type=RRDS), I(type=LDS) or
+            I(type=ZFS) then I(record_format=None), these types do not have a
+            default I(record_format).
         required: false
         choices:
           - FB
@@ -373,6 +380,7 @@ options:
           - VBA
           - U
         type: str
+        default: FB
       sms_storage_class:
         description:
           - The storage class for an SMS-managed dataset.
@@ -628,6 +636,14 @@ DEFAULT_RECORD_LENGTHS = {
     "VBA": 137,
     "U": 0,
 }
+
+DATA_SET_TYPES_VSAM = [
+    "KSDS",
+    "ESDS",
+    "RRDS",
+    "LDS",
+    "ZFS",
+]
 
 # ------------- Functions to validate arguments ------------- #
 
@@ -1118,7 +1134,7 @@ def run_module():
                 space_type=dict(type="str", required=False, default="M"),
                 space_primary=dict(type="int", required=False, aliases=["size"], default=5),
                 space_secondary=dict(type="int", required=False, default=3),
-                record_format=dict(type="str", required=False, aliases=["format"]),
+                record_format=dict(type="str", required=False, aliases=["format"], default="FB"),
                 sms_management_class=dict(type="str", required=False),
                 # I know this alias is odd, ZOAU used to document they supported
                 # SMS data class when they were actually passing as storage class
@@ -1162,7 +1178,7 @@ def run_module():
         space_type=dict(type="str", required=False, default="M"),
         space_primary=dict(type="raw", required=False, aliases=["size"], default=5),
         space_secondary=dict(type="int", required=False, default=3),
-        record_format=dict(type="str", required=False, aliases=["format"]),
+        record_format=dict(type="str", required=False, aliases=["format"], default="FB"),
         sms_management_class=dict(type="str", required=False),
         # I know this alias is odd, ZOAU used to document they supported
         # SMS data class when they were actually passing as storage class
@@ -1201,6 +1217,32 @@ def run_module():
     result = dict(changed=False, message="", names=[])
 
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
+
+    # This evaluation will always occur as a result of the limitation on the
+    # better arg parser, this will serve as a solution for now and ensure
+    # the non-batch and batch arguments are correctly set
+    if module.params.get("batch") is not None:
+        for entry in module.params.get("batch"):
+            if entry.get('type') is not None and entry.get("type").upper() in DATA_SET_TYPES_VSAM:
+                entry["record_format"] = None
+        if module.params.get("type") is not None:
+            module.params["type"] = None
+        if module.params.get("state") is not None:
+            module.params["state"] = None
+        if module.params.get("space_type") is not None:
+            module.params["space_type"] = None
+        if module.params.get("space_primary") is not None:
+            module.params["space_primary"] = None
+        if module.params.get("space_secondary") is not None:
+            module.params["space_secondary"] = None
+        if module.params.get("replace") is not None:
+            module.params["replace"] = None
+        if module.params.get("record_format") is not None:
+            module.params["record_format"] = None
+    elif module.params.get("type") is not None:
+        if module.params.get("type").upper() in DATA_SET_TYPES_VSAM:
+            # For VSAM types set the value to nothing and let the code manage it
+            module.params["record_format"] = None
 
     if not module.check_mode:
         try:

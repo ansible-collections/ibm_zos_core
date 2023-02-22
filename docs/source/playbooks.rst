@@ -32,7 +32,7 @@ Before running an Ansible playbook, please review these resources:
    https://ibm.github.io/z_ansible_collections_doc/playbooks/playbooks.html
 
 .. _playbook configuration:
-   https://github.com/IBM/z_ansible_collections_samples/blob/master/docs/share/configuration_guide.md
+   https://github.com/IBM/z_ansible_collections_samples/blob/main/docs/share/configuration_guide.md
 
 .. _FAQs:
    https://ibm.github.io/z_ansible_collections_doc/faqs/faqs.html
@@ -41,10 +41,10 @@ Before running an Ansible playbook, please review these resources:
    https://docs.ansible.com/ansible/latest/user_guide/playbooks_intro.html#playbooks-intro
 
 .. _playbook repository:
-   https://github.com/IBM/z_ansible_collections_samples/blob/master/README.md
+   https://github.com/IBM/z_ansible_collections_samples/blob/main/README.md
 
 .. _playbook configuration:
-   https://github.com/IBM/z_ansible_collections_samples/blob/master/docs/share/configuration_guide.md
+   https://github.com/IBM/z_ansible_collections_samples/blob/main/docs/share/configuration_guide.md
 
 .. _support tickets:
    https://github.com/IBM/z_ansible_collections_samples/issues

@@ -12,7 +12,7 @@ executing operator commands, executing TSO commands, ping,
 querying operator actions, APF authorizing libraries,
 editing textual data in data sets or Unix System Services files,
 finding data sets, backing up and restoring data sets and
-volumes and running z/OS programs without JCL.
+volumes, mounting file systems and running z/OS programs without JCL.
 
 
 Red Hat Ansible Certified Content for IBM Z
@@ -28,7 +28,7 @@ one easy-to-use platform.
 The **IBM z/OS core collection** is following the
 **Red Hat® Ansible Certified Content for IBM Z®** method of distributing
 content. Collections will be developed in the open, and when content is ready
-for use it is released to
+for use, it is released to
 [Ansible Galaxy](https://galaxy.ansible.com/search?keywords=zos_&order_by=-relevance&deprecated=false&type=collection&page=1)
 for community adoption. Once contributors review community usage, feedback,
 and are satisfied with the content published, the collection will then be

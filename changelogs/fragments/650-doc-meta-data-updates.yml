@@ -1,0 +1,5 @@
+trivial:
+  - Update meta/* files to reflect release content and version.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/650)
+  - Update documentation to align to corporate wording.changelogs/fragments/650-doc-meta-data-updates.yml
+    (https://github.com/ansible-collections/ibm_zos_core/pull/650)

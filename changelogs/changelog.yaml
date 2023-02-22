@@ -385,14 +385,14 @@ releases:
         a directory needing also to be encoded. The failure would also delete the
         `src` which was not desirable behavior. Fixes deletion of src on encoding
         error. (https://github.com/ansible-collections/ibm_zos_core/pull/321).
-      - zos_copy - fixed wrongful creation of destination backups when module option
+      - zos_copy - Fixes wrongful creation of destination backups when module option
         `force` is true, creating emergency backups meant to restore the system to
         its initial state in case of a module failure only when force is false. (https://github.com/ansible-collections/ibm_zos_core/pull/590)
-      - zos_copy - fixes a bug where copying a member from a loadlib to another loadlib
+      - zos_copy - Fixes a bug where copying a member from a loadlib to another loadlib
         fails. (https://github.com/ansible-collections/ibm_zos_core/pull/640)
-      - zos_copy - fixes a bug where if a destination has accented characters in its
+      - zos_copy - Fixes a bug where if a destination has accented characters in its
         content, the module would fail when trying to determine if it is empty. (https://github.com/ansible-collections/ibm_zos_core/pull/634)
-      - zos_copy - fixes a bug where the computed record length for a new destination
+      - zos_copy - Fixes a bug where the computed record length for a new destination
         dataset would include newline characters. (https://github.com/ansible-collections/ibm_zos_core/pull/620)
       - zos_copy - module was updated to correct a bug in the case when the destination
         (dest) is a PDSE and the source (src) is a Unix Systems File (USS). The module
@@ -404,28 +404,28 @@ releases:
         uncataloged data set. This is unexpected behavior and does not align to documentation;
         correct behavior is that when a volume is provided that is the first place
         the module should look for the data set, whether or not it is cataloged. (https://github.com/ansible-collections/ibm_zos_core/pull/325).
-      - zos_data_set - fixes a bug where the default record format FB was actually
+      - zos_data_set - Fixes a bug where the default record format FB was actually
         never enforced and when enforced it would cause VSAM creation to fail with
-        a Dynalloc failure. This also cleans up some of the options that are set by
+        a Dynalloc failure. Also cleans up some of the options that are set by
         default when they have no bearing for batch. (https://github.com/ansible-collections/ibm_zos_core/pull/647)
       - zos_fetch - Updates the modules behavior when fetching VSAM data sets such
         that the maximum record length is now determined when creating a temporary
         data set to copy the VSAM data into and a variable-length (VB) data set is
         used. (https://github.com/ansible-collections/ibm_zos_core/pull/350)
-      - zos_job_output - fixes a bug that returned all ddname's when a specific ddnamae
+      - zos_job_output - Fixes a bug that returned all ddname's when a specific ddnamae
         was provided. Now a specific ddname can be returned and all others ignored.
         (https://github.com/ansible-collections/ibm_zos_core/pull/334)
       - zos_job_query - was updated to correct a boolean condition that always evaluated
         to "CANCELLED". (https://github.com/ansible-collections/ibm_zos_core/pull/312).
-      - zos_mount - fixed option `tag_ccsid` to correctly allow for type int. (https://github.com/ansible-collections/ibm_zos_core/pull/511)
+      - zos_mount - Fixes option `tag_ccsid` to correctly allow for type int. (https://github.com/ansible-collections/ibm_zos_core/pull/511)
       - zos_mvs_raw - module was updated to correct a bug when no DD statements were
         provided. The module when no option was provided for `dds` would error, a
         default was provided to correct this behavior. (https://github.com/ansible-collections/ibm_zos_core/pull/336)
-      - zos_operator - fixed case sensitive error checks, invalid, error & unidentifiable
+      - zos_operator - Fixes case sensitive error checks, invalid, error & unidentifiable
         (https://github.com/ansible-collections/ibm_zos_core/issues/389).
-      - zos_operator - fixed such that specifying wait_time_s would throw an error
+      - zos_operator - Fixes such that specifying wait_time_s would throw an error
         (https://github.com/ansible-collections/ibm_zos_core/issues/389).
-      - zos_operator - fixed the wait_time_s to default to 1 second (https://github.com/ansible-collections/ibm_zos_core/issues/389).
+      - zos_operator - Fixes the wait_time_s to default to 1 second (https://github.com/ansible-collections/ibm_zos_core/issues/389).
       - zos_operator - was updated to correct missing verbosity content when the option
         verbose was set to True. zos_operator - was updated to correct the trailing
         lines that would appear in the result content. (https://github.com/ansible-collections/ibm_zos_core/pull/400).

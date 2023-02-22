@@ -1,5 +1,11 @@
 trivial:
-  - Update meta/* files to reflect release content and version.
+  - Update meta/* files to reflect release content and version, issue 433.
     (https://github.com/ansible-collections/ibm_zos_core/pull/650)
-  - Update documentation to align to corporate wording.changelogs/fragments/650-doc-meta-data-updates.yml
+  - Update community docs with Ansible version support statement, issue 630.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/650)
+  - Update documentation to align to corporate wording, issue 649
+    (https://github.com/ansible-collections/ibm_zos_core/pull/650)
+  - zos_job_output - Update documentation to remove unicode text in doc, issue 651.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/650)
+  - zos_operator - update documentation and examples, issue 390.
     (https://github.com/ansible-collections/ibm_zos_core/pull/650)

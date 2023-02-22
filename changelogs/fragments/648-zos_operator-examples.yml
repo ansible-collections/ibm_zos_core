@@ -1,0 +1,4 @@
+bugfixes:
+ - zos_operator - fixed incorrect example descriptions and updated the doc to
+   highlight the deprecated option `wait`.
+   (https://github.com/ansible-collections/ibm_zos_core/pull/648)

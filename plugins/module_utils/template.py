@@ -170,3 +170,45 @@ class TemplateRenderer:
             raise e
 
         return temp_template_dir, template_file_path
+
+    def render_dir_template(self, variables):
+        """Loads all templates from a directory and renders
+        them using the Jinja2 environment configured in the object.
+
+        Arguments:
+            variables (dict): Dictionary containing the variables and
+                    their values that will be substituted in the template.
+
+        Returns:
+            tuple -- Filepath to a temporary directory that contains the
+                    rendered templates, and the complete filepath to the
+                    rendered templates' directory.
+
+        Raises:
+            Exception: When the rendering or creation of the temporary file
+                    fail.
+        """
+        try:
+            temp_parent_dir = tempfile.mkdtemp()
+            last_dir = os.path.basename(self.template_dir)
+            temp_template_dir = os.path.join(temp_parent_dir, last_dir)
+            os.makedirs(temp_template_dir, exist_ok=True)
+        except Exception as e:
+            raise e
+
+        for path, subdirs, files in os.walk(self.template_dir):
+            for template_file in files:
+                relative_dir = os.path.relpath(path, self.template_dir)
+                file_path = os.path.normpath(os.path.join(relative_dir, template_file))
+                template = self.templating_env.get_template(file_path)
+                rendered_contents = template.render(variables)
+
+                try:
+                    template_file_path = os.path.join(temp_template_dir, file_path)
+                    os.makedirs(os.path.dirname(template_file_path), exist_ok=True)
+                    with open(template_file_path, mode="w", encoding=self.encoding) as temp:
+                        temp.write(rendered_contents)
+                except Exception as e:
+                    raise e
+
+        return temp_parent_dir, temp_template_dir

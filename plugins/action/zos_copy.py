@@ -156,6 +156,21 @@ class ActionModule(ActionBase):
                             dict(src=src, dest=dest, changed=False, failed=True)
                         )
                         return result
+
+                    if use_template:
+                        template_parameters = task_args.get("template_parameters", dict())
+
+                        renderer = _create_template_environment(
+                            template_parameters,
+                            src,
+                            encoding
+                        )
+                        template_dir, rendered_dir = renderer.render_dir_template(
+                            task_vars.get("vars", dict())
+                        )
+                        src = rendered_dir
+
+                    # TODO: change this to account for rendered templates.
                     task_args["size"] = sum(
                         os.stat(path + "/" + f).st_size for f in files
                     )

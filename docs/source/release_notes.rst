@@ -636,7 +636,7 @@ Notes
     explains what configurations must be made to run the sample playbook.
 
 .. _samples repository:
-   https://github.com/IBM/z_ansible_collections_samples/blob/master/README.md
+   https://github.com/IBM/z_ansible_collections_samples/blob/main/README.md
 
 Availability
 ------------
@@ -751,29 +751,29 @@ Reference
 .. Playbook Links
 .. .............................................................................
 .. _playbook repository:
-   https://github.com/IBM/z_ansible_collections_samples/blob/master/README.md
+   https://github.com/IBM/z_ansible_collections_samples/blob/main/README.md
 .. _synchronize APF authorized libraries on z/OS from a configuration file cloned from GitHub:
-   https://github.com/IBM/z_ansible_collections_samples/tree/master/zos_concepts/program_authorization/git_apf
+   https://github.com/IBM/z_ansible_collections_samples/tree/main/zos_concepts/program_authorization/git_apf
 .. _copy, sort and fetch data sets on z/OS playbook:
-   https://github.com/IBM/z_ansible_collections_samples/tree/master/zos_concepts/data_transfer/copy_sort_fetch
+   https://github.com/IBM/z_ansible_collections_samples/tree/main/zos_concepts/data_transfer/copy_sort_fetch
 .. _manage z/OS Users Using Ansible:
-   https://github.com/IBM/z_ansible_collections_samples/tree/master/zos_concepts/user_management/add_remove_user
+   https://github.com/IBM/z_ansible_collections_samples/tree/main/zos_concepts/user_management/add_remove_user
 .. _zos_operator_basics.yaml:
-   https://github.com/IBM/z_ansible_collections_samples/blob/master/zos_concepts/zos_operator/zos_operator_basics/zos_operator_basics.yaml
+   https://github.com/IBM/z_ansible_collections_samples/blob/main/zos_concepts/zos_operator/zos_operator_basics/zos_operator_basics.yaml
 .. _SMP/E Playbooks:
-   https://github.com/IBM/z_ansible_collections_samples/tree/master/zos_concepts/software_management
+   https://github.com/IBM/z_ansible_collections_samples/tree/main/zos_concepts/software_management
 
 .. .............................................................................
 .. Configuration Links
 .. .............................................................................
 .. _playbook configuration:
-   https://github.com/IBM/z_ansible_collections_samples/blob/master/docs/share/configuration_guide.md
+   https://github.com/IBM/z_ansible_collections_samples/blob/main/docs/share/configuration_guide.md
 .. _configure Python and ZOAU Installation:
-   https://github.com/IBM/z_ansible_collections_samples/tree/master/zos_administration/host_setup
+   https://github.com/IBM/z_ansible_collections_samples/tree/main/zos_administration/host_setup
 .. _inventory:
-   https://github.com/IBM/z_ansible_collections_samples/blob/master/docs/share/configuration_guide.md#inventory
+   https://github.com/IBM/z_ansible_collections_samples/blob/main/docs/share/configuration_guide.md#inventory
 .. _variables:
-   https://github.com/IBM/z_ansible_collections_samples/blob/master/docs/share/configuration_guide.md#variables
+   https://github.com/IBM/z_ansible_collections_samples/blob/main/docs/share/configuration_guide.md#variables
 .. _support tickets:
    https://github.com/IBM/z_ansible_collections_samples/issues
 .. _configured IBM Open Enterprise Python on z/OS:

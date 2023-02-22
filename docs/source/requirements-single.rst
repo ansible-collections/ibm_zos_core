@@ -83,7 +83,7 @@ proceed to install the IBM z/OS core collection.
    release_notes.html
 
 .. _playbook configuration:
-   https://github.com/IBM/z_ansible_collections_samples/blob/master/docs/share/configuration_guide.md
+   https://github.com/IBM/z_ansible_collections_samples/blob/main/docs/share/configuration_guide.md
 
 .. _FAQs:
    https://ibm.github.io/z_ansible_collections_doc/faqs/faqs.html
@@ -133,7 +133,7 @@ and required by **IBM z/OS core collection**.
    `recommended environment variables`_ for Rocket Python.
 
 .. _recommended environment variables:
-   https://github.com/IBM/z_ansible_collections_samples/blob/master/docs/share/configuration_guide.md#variables
+   https://github.com/IBM/z_ansible_collections_samples/blob/main/docs/share/configuration_guide.md#variables
 
 ZOAU
 ----

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020, 2021
+# Copyright (c) IBM Corporation 2023
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -16,14 +16,46 @@ import pytest
 
 __metaclass__ = type
 
-TEST_VOL_ADDR = '0903'
-TEST_VOL_SER = 'KET999'
+# TEST_VOL_ADDR = '0903'
+TEST_VOL_ADDR = '01A2'
+TEST_VOL_SER = 'H0000I'
+# TEST_VOL_SER = 'KET999'
 
 INDEX_CREATION_SUCCESS_MSG = 'VTOC INDEX CREATION SUCCESSFUL'
 VTOC_LOC_MSG = "ICK01314I VTOC IS LOCATED AT CCHH=X'0000 0001' AND IS  {:4d} TRACKS."
 
-# TODO - positive tests:
-# vtoc_tracks - confirm value matches value assigned
+
+# Guard Rail to prevent unintentional initialization of targeted volume.
+# If this test fails, either reset target volume serial to match
+# verify_existing_volid below or change value to match current volume serial on
+# target.
+
+def test_guard_rail(ansible_zos_module):
+    hosts = ansible_zos_module
+
+    params = dict(
+        volume_address=TEST_VOL_ADDR,
+        verify_offline=False,
+        volid=TEST_VOL_SER,
+        verify_existing_volid='H0000I'
+    )
+
+    # take volume offline
+    hosts.all.zos_operator(cmd=f"vary {TEST_VOL_ADDR},offline")
+
+    results = hosts.all.zos_ickdsf_init(
+        volume_address=params['volume_address'],
+        verify_offline=params['verify_offline'],
+        volid=params['volid'],
+        verify_existing_volid=params['verify_existing_volid']
+        )
+
+    for result in results.contacted.values():
+        # assert result.get('changed') is True
+        assert result['rc'] == 0
+
+    # bring volume back online
+    hosts.all.zos_operator(cmd=f"vary {TEST_VOL_ADDR},online")
 
 
 @pytest.mark.parametrize(
@@ -169,6 +201,8 @@ def test_vtoc_tracks_parm(ansible_zos_module):
         }),
     ]
 )
+
+
 def test_good_param_values(ansible_zos_module, params):
     hosts = ansible_zos_module
 
@@ -230,6 +264,7 @@ def test_good_param_values(ansible_zos_module, params):
 
     ]
 )
+
 def test_bad_param_values(ansible_zos_module, params, expected_rc):
     hosts = ansible_zos_module
 
@@ -254,6 +289,7 @@ def test_bad_param_values(ansible_zos_module, params, expected_rc):
 #        unable to bring vol back online to delete data set
 #        If there is a data set remaining on the volume, that would interfere
 #        with other tests!
+
 def test_no_existing_data_sets_check(ansible_zos_module):
     hosts = ansible_zos_module
 
@@ -308,6 +344,7 @@ def test_no_existing_data_sets_check(ansible_zos_module):
 #        and the volumes on the EC systems do not seem to go fully offline.
 #        Therefore, while testing against the EC machines, the verify_offline
 #        check needs to be skipped in order for ickdsf to be invoked.
+
 def test_minimal_params(ansible_zos_module):
     hosts = ansible_zos_module
 

@@ -16,9 +16,9 @@ zos_ping -- Ping z/OS and check dependencies.
 
 Synopsis
 --------
-- :ref:`zos_ping <zos_ping_module>` verifies the presence of z/OS Web Client Enablement Toolkit, iconv, and Python.
-- :ref:`zos_ping <zos_ping_module>` returns ``pong`` when the target host is not missing any required dependencies.
-- If the target host is missing optional dependencies, the :ref:`zos_ping <zos_ping_module>` will return one or more warning messages.
+- `zos_ping <./zos_ping.html>`_ verifies the presence of z/OS Web Client Enablement Toolkit, iconv, and Python.
+- `zos_ping <./zos_ping.html>`_ returns ``pong`` when the target host is not missing any required dependencies.
+- If the target host is missing optional dependencies, the `zos_ping <./zos_ping.html>`_ will return one or more warning messages.
 - If a required dependency is missing from the target host, an explanatory message will be returned with the module failure.
 
 

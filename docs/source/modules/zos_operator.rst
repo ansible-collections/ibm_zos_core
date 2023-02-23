@@ -27,22 +27,18 @@ Parameters
 
 
 cmd
-  The command to execute.  This command will be wrapped in quotations to run.
+  The command to execute.
 
   If the command contains single-quotations, another set of single quotes must be added.
 
-  For example, Change the command "...,P='DSN3EPX,-DBC1,S'" to "...,P=''DSN3EPX,-DBC1,S'' ".
+  For example, change the command "...,P='DSN3EPX,-DBC1,S'" to "...,P=''DSN3EPX,-DBC1,S'' ".
 
   | **required**: True
   | **type**: str
 
 
 verbose
-  Return diagnostic messages that lists and describes the execution of the operator commands.
-
-  Return security trace messages that help you understand and diagnose the execution of the operator commands
-
-  Return trace instructions displaying how the the command's operation is read, evaluated and executed.
+  Return diagnostic messages that describes the commands execution, options, buffer and response size.
 
   | **required**: False
   | **type**: bool
@@ -59,16 +55,13 @@ wait_time_s
 
   | **required**: False
   | **type**: int
+  | **default**: 1
 
 
 wait
-  Specify to wait the full *wait_time_s* interval before retrieving responses.
+  Configuring wait used by the `zos_operator <./zos_operator.html>`_ module has been deprecated and will be removed in ibm.ibm_zos_core collection.
 
-  This option is recommended to ensure that the responses are accessible and captured by logging facilities and the *verbose* option.
-
-  *delay=True* waits the full *wait_time_s* interval.
-
-  *delay=False* returns as soon as the first command executes.
+  Setting this option will yield no change, it is deprecated.
 
   | **required**: False
   | **type**: bool
@@ -100,13 +93,11 @@ Examples
      zos_operator:
        cmd: 'd u,all'
        wait_time_s: 5
-       wait: false
 
    - name: Execute operator command to show jobs, always waiting 7 seconds for response
      zos_operator:
        cmd: 'd u,all'
        wait_time_s: 7
-       wait: true
 
 
 
@@ -122,13 +113,38 @@ Return Values
 
 
 rc
-  Return code of the operator command
+  Return code for the submitted operator command.
 
   | **returned**: always
   | **type**: int
 
+cmd
+  Operator command submitted.
+
+  | **returned**: always
+  | **type**: str
+  | **sample**: d u,all
+
+elapsed
+  The number of seconds that elapsed waiting for the command to complete.
+
+  | **returned**: always
+  | **type**: float
+  | **sample**:
+
+    .. code-block:: json
+
+        51.53
+
+wait_time_s
+  The maximum time in seconds to wait for the commands to execute.
+
+  | **returned**: always
+  | **type**: int
+  | **sample**: 5
+
 content
-  The text from the command issued, plus verbose messages if *verbose=True*
+  The resulting text from the command submitted.
 
   | **returned**: on success
   | **type**: list
@@ -137,22 +153,26 @@ content
     .. code-block:: json
 
         [
-            "MV2C      2020039  04:29:57.58             ISF031I CONSOLE XIAOPIN ACTIVATED ",
-            "MV2C      2020039  04:29:57.58            -D U,ALL                           ",
-            "MV2C      2020039  04:29:57.59             IEE457I 04.29.57 UNIT STATUS 948  ",
-            "         UNIT TYPE STATUS        VOLSER     VOLSTATE      SS                 ",
-            "          0100 3277 OFFLINE                                 0                ",
-            "          0101 3277 OFFLINE                                 0                ",
-            "ISF050I USER=OMVSADM GROUP= PROC=REXX TERMINAL=09A3233B",
-            "ISF051I SAF Access allowed SAFRC=0 ACCESS=READ CLASS=SDSF RESOURCE=GROUP.ISFSPROG.SDSF",
-            "ISF051I SAF Access allowed SAFRC=0 ACCESS=READ CLASS=SDSF RESOURCE=ISFCMD.FILTER.PREFIX",
-            "ISF055I ACTION=D Access allowed USERLEVEL=7 REQLEVEL=1",
-            "ISF051I SAF Access allowed SAFRC=0 ACCESS=READ CLASS=SDSF RESOURCE=ISFCMD.ODSP.ULOG.JES2",
-            "ISF147I REXX variable ISFTIMEOUT fetched, return code 00000001 value is \u0027\u0027.",
-            "ISF754I Command \u0027SET DELAY 5\u0027 generated from associated variable ISFDELAY.",
-            "ISF769I System command issued, command text: D U,ALL -S.",
-            "ISF146I REXX variable ISFDIAG set, return code 00000001 value is \u002700000000 00000000 00000000 00000000 00000000\u0027.",
-            "ISF766I Request completed, status: COMMAND ISSUED."
+            "EC33017A   2022244  16:00:49.00             ISF031I CONSOLE OMVS0000 ACTIVATED",
+            "EC33017A   2022244  16:00:49.00            -D U,ALL ",
+            "EC33017A   2022244  16:00:49.00             IEE457I 16.00.49 UNIT STATUS 645",
+            "                                           UNIT TYPE STATUS        VOLSER     VOLSTATE      SS",
+            "                                           0000 3390 F-NRD                        /RSDNT     0",
+            "                                           0001 3211 OFFLINE                                 0",
+            "                                           0002 3211 OFFLINE                                 0",
+            "                                           0003 3211 OFFLINE                                 0",
+            "                                           0004 3211 OFFLINE                                 0",
+            "                                           0005 3211 OFFLINE                                 0",
+            "                                           0006 3211 OFFLINE                                 0",
+            "                                           0007 3211 OFFLINE                                 0",
+            "                                           0008 3211 OFFLINE                                 0",
+            "                                           0009 3277 OFFLINE                                 0",
+            "                                           000C 2540 A                                       0",
+            "                                           000D 2540 A                                       0",
+            "                                           000E 1403 A                                       0",
+            "                                           000F 1403 A                                       0",
+            "                                           0010 3211 A                                       0",
+            "                                           0011 3211 A                                       0"
         ]
 
 changed

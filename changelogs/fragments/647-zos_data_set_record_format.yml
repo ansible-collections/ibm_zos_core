@@ -1,0 +1,6 @@
+bugfixes:
+- zos_data_set - fixes a bug where the default record format FB was actually
+  never enforced and when enforced it would cause VSAM creation to fail with a
+  Dynalloc failure. This also cleans up some of the options that are set by
+  default when they have no bearing for batch. 
+  (https://github.com/ansible-collections/ibm_zos_core/pull/647)

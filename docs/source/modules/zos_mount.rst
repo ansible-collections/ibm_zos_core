@@ -16,7 +16,7 @@ zos_mount -- Mount a z/OS file system.
 
 Synopsis
 --------
-- The module :ref:`zos_mount <zos_mount_module>` can manage mount operations for a z/OS UNIX System Services (USS) file system data set.
+- The module `zos_mount <./zos_mount.html>`_ can manage mount operations for a z/OS UNIX System Services (USS) file system data set.
 - The *src* data set must be unique and a Fully Qualified Name (FQN).
 - The *path* will be created if needed.
 
@@ -137,6 +137,7 @@ persistent
 
     | **required**: False
     | **type**: list
+    | **elements**: str
 
 
 
@@ -190,7 +191,7 @@ tag_untagged
 
   | **required**: False
   | **type**: str
-  | **choices**: , TEXT, NOTEXT
+  | **choices**: TEXT, NOTEXT
 
 
 tag_ccsid
@@ -227,7 +228,7 @@ sysname
   For systems participating in shared file system, *sysname* specifies the particular system on which a mount should be performed. This system will then become the owner of the file system mounted. This system must be IPLed with SYSPLEX(YES).
 
 
-  *sysname* is a 1–8 alphanumeric name of a system participating in shared file system.
+  *sysname* is the name of a system participating in shared file system. The name must be 1-8 characters long; the valid characters are A-Z, 0-9, $, @, and #.
 
 
   | **required**: False
@@ -265,6 +266,15 @@ automove_list
 
   Indicator is either INCLUDE or EXCLUDE, which can also be abbreviated as I or E.
 
+
+  | **required**: False
+  | **type**: str
+
+
+tmp_hlq
+  Override the default high level qualifier (HLQ) for temporary and backup datasets.
+
+  The default HLQ is the Ansible user used to execute the module and if that is not available, then the value ``TMPHLQ`` is used.
 
   | **required**: False
   | **type**: str
@@ -378,7 +388,7 @@ Notes
 
    If an uncataloged data set needs to be fetched, it should be cataloged first.
 
-   Uncataloged data sets can be cataloged using the :ref:`zos_data_set <zos_data_set_module>` module.
+   Uncataloged data sets can be cataloged using the `zos_data_set <./zos_data_set.html>`_ module.
 
 
 

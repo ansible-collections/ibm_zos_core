@@ -142,6 +142,7 @@ class BetterArgHandler(object):
             "data_set_base": self._data_set_base_type,
             "data_set_member": self._data_set_member_type,
             "qualifier": self._qualifier_type,
+            "qualifier_or_empty": self._qualifier_or_empty_type,
             "qualifier_pattern": self._qualifier_pattern_type,
             "volume": self._volume_type,
             "data_set_or_path": self._data_set_or_path_type,
@@ -403,6 +404,30 @@ class BetterArgHandler(object):
             str(contents),
             IGNORECASE,
         ):
+            raise ValueError(
+                'Invalid argument "{0}" for type "qualifier".'.format(contents)
+            )
+        return str(contents)
+
+    def _qualifier_or_empty_type(self, contents, resolve_dependencies):
+        """Resolver for qualifier type arguments
+
+        Arguments:
+            contents {bool} -- The contents of the argument.
+            resolved_dependencies {dict} -- Contains all of the dependencies and their contents,
+            which have already been handled,
+            for use during current arguments handling operations.
+
+        Raises:
+            ValueError: When contents is invalid argument type
+        Returns:
+            str -- The arguments contents after any necessary operations.
+        """
+        if not fullmatch(
+            r"^[A-Z]{1}[A-Z0-9]{0,7}$",
+            str(contents),
+            IGNORECASE,
+        ) and str(contents) != "":
             raise ValueError(
                 'Invalid argument "{0}" for type "qualifier".'.format(contents)
             )

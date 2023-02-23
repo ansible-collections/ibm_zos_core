@@ -35,7 +35,8 @@ def get_volume_entry(volume):
     """
     try:
         stdin = "  LISTVTOC FORMAT,VOL=3390={0}".format(volume.upper())
-        dd = "SYS1.VVDS.V{0}".format(volume.upper())
+        # dd = "SYS1.VVDS.V{0}".format(volume.upper())
+        dd = "{0},vol".format(volume.upper())
         stdout = _iehlist(dd, stdin)
         if stdout is None:
             return None

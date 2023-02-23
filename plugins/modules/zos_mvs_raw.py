@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020
+# Copyright (c) IBM Corporation 2020, 2022, 2023
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -27,7 +27,7 @@ description:
   - Run a z/OS program.
   - This is analogous to a job step in JCL.
   - Defaults will be determined by underlying API if value not provided.
-version_added: "2.9"
+version_added: "1.1.0"
 options:
   program_name:
     description:
@@ -89,7 +89,7 @@ options:
             description:
               - The data set name.
             type: str
-            required: true
+            required: false
           type:
             description:
               - The data set type. Only required when I(disposition=new).
@@ -556,9 +556,11 @@ options:
               - I(dd_input) supports single or multiple lines of input.
               - Multi-line input can be provided as a multi-line string
                 or a list of strings with 1 line per list item.
+              - If a multi-line string is provided make sure to use the
+                proper literal block style indicator "|".
               - If a list of strings is provided, newlines will be
                 added to each of the lines when used as input.
-            required: false
+            required: true
             type: raw
           return_content:
             description:
@@ -684,8 +686,8 @@ options:
                   - Specify a data set.
                   - I(dd_data_set) can reference an existing data set. The
                     data set referenced with C(data_set_name) must be allocated
-                    before the module M(zos_mvs_raw) is run, you can
-                    use M(zos_data_set) to allocate a data set.
+                    before the module L(zos_mvs_raw,./zos_mvs_raw.html) is run, you can
+                    use L(zos_data_set,./zos_data_set.html) to allocate a data set.
                 required: false
                 type: dict
                 suboptions:
@@ -693,7 +695,7 @@ options:
                     description:
                       - The data set name.
                     type: str
-                    required: true
+                    required: false
                   type:
                     description:
                       - The data set type. Only required when I(disposition=new).
@@ -1153,9 +1155,11 @@ options:
                       - I(dd_input) supports single or multiple lines of input.
                       - Multi-line input can be provided as a multi-line string
                         or a list of strings with 1 line per list item.
+                      - If a multi-line string is provided make sure to use the
+                        proper literal block style indicator "|".
                       - If a list of strings is provided, newlines will be
                         added to each of the lines when used as input.
-                    required: false
+                    required: true
                     type: raw
                   return_content:
                     description:
@@ -1186,14 +1190,22 @@ options:
                           - The encoding to use when returning the contents of the data set.
                         type: str
                         default: iso8859-1
+  tmp_hlq:
+    description:
+      - Override the default high level qualifier (HLQ) for temporary and backup
+        datasets.
+      - The default HLQ is the Ansible user used to execute the module and if
+        that is not available, then the value C(TMPHLQ) is used.
+    required: false
+    type: str
 notes:
-    - When executing programs using M(zos_mvs_raw), you may encounter errors
+    - When executing programs using L(zos_mvs_raw,./zos_mvs_raw.html), you may encounter errors
       that originate in the programs implementation. Two such known issues are
       noted below of which one has been addressed with an APAR.
-    - 1. M(zos_mvs_raw) module execution fails when invoking
+    - 1. L(zos_mvs_raw,./zos_mvs_raw.html) module execution fails when invoking
       Database Image Copy 2 Utility or Database Recovery Utility in conjunction
       with FlashCopy or Fast Replication.
-    - 2. M(zos_mvs_raw) module execution fails when invoking DFSRRC00 with parm
+    - 2. L(zos_mvs_raw,./zos_mvs_raw.html) module execution fails when invoking DFSRRC00 with parm
       "UPB,PRECOMP", "UPB, POSTCOMP" or "UPB,PRECOMP,POSTCOMP". This issue is
       addressed by APAR PH28089.
 seealso:
@@ -1445,7 +1457,7 @@ EXAMPLES = r"""
     dds:
       - dd_data_set:
           dd_name: sortin01
-          data_set_name: myhlq.dfsort.master
+          data_set_name: myhlq.dfsort.main
           disposition: shr
       - dd_data_set:
           dd_name: sortin02
@@ -1487,6 +1499,29 @@ EXAMPLES = r"""
       - dd_input:
           dd_name: sysin
           content: " LISTCAT ENTRIES('SYS1.*')"
+
+- name: Drop the contents of input dataset into output dataset
+      using REPRO command.
+  zos_mvs_raw:
+    pgm: idcams
+    auth: yes
+    dds:
+    - dd_data_set:
+        dd_name: INPUT
+        data_set_name: myhlq.ds1.input
+    - dd_data_set:
+        dd_name: OUTPUT
+        data_set_name: myhlq.ds1.output
+    - dd_input:
+        dd_name: sysin
+        content: |
+            " REPRO -
+              INFILE(INPUT) -
+              OUTFILE(OUTPUT)"
+    - dd_output:
+        dd_name: sysprint
+        return_content:
+          type: text
 """
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
@@ -1532,6 +1567,10 @@ ENCODING_ENVIRONMENT_VARS = {"_BPXK_AUTOCVT": "OFF"}
 backups = []
 
 
+# Use of global tmphlq to keep coherent classes definitions
+g_tmphlq = ""
+
+
 def run_module():
     """Executes all module-related functions.
 
@@ -1560,7 +1599,7 @@ def run_module():
         sms_data_class=dict(type="str"),
         block_size=dict(type="int"),
         directory_blocks=dict(type="int"),
-        key_label=dict(type="str"),
+        key_label=dict(type="str", no_log=True),
         type=dict(
             type="str",
             choices=[
@@ -1578,6 +1617,7 @@ def run_module():
         ),
         encryption_key_1=dict(
             type="dict",
+            no_log=True,
             options=dict(
                 label=dict(type="str", required=True),
                 encoding=dict(type="str", required=True, choices=["l", "h"]),
@@ -1585,13 +1625,14 @@ def run_module():
         ),
         encryption_key_2=dict(
             type="dict",
+            no_log=True,
             options=dict(
                 label=dict(type="str", required=True),
                 encoding=dict(type="str", required=True, choices=["l", "h"]),
             ),
         ),
-        key_length=dict(type="int"),
-        key_offset=dict(type="int"),
+        key_length=dict(type="int", no_log=False),
+        key_offset=dict(type="int", no_log=False),
         record_length=dict(type="int"),
         record_format=dict(type="str", choices=["u", "vb", "vba", "fb", "fba"]),
         return_content=dict(
@@ -1710,6 +1751,7 @@ def run_module():
         auth=dict(type="bool", default=False),
         verbose=dict(type="bool", default=False),
         parm=dict(type="str", required=False),
+        tmp_hlq=dict(type="str", required=False, default=None),
         dds=dict(
             type="list",
             elements="dict",
@@ -1736,6 +1778,8 @@ def run_module():
     if not module.check_mode:
         try:
             parms = parse_and_validate_args(module.params)
+            global g_tmphlq
+            g_tmphlq = parms.get("tmp_hlq")
             dd_statements = build_dd_statements(parms)
             program = parms.get("program_name")
             program_parm = parms.get("parm")
@@ -1933,9 +1977,11 @@ def parse_and_validate_args(params):
         auth=dict(type="bool", default=False),
         verbose=dict(type="bool", default=False),
         parm=dict(type="str", required=False),
+        tmp_hlq=dict(type="qualifier_or_empty", required=False, default=None),
         dds=dict(
             type="list",
             elements="dict",
+            default=[],
             options=dict(
                 dd_data_set=dd_data_set,
                 dd_unix=dd_unix,
@@ -2296,6 +2342,7 @@ def build_dd_statements(parms):
     dd_statements = []
     for dd in parms.get("dds"):
         dd_name = get_dd_name(dd)
+        dd = set_extra_attributes_in_dd(dd)
         data_definition = build_data_definition(dd)
         if data_definition is None:
             raise ValueError("No valid data definition found.")
@@ -2331,6 +2378,29 @@ def get_dd_name(dd):
     return dd_name
 
 
+def set_extra_attributes_in_dd(dd):
+    """
+    Set any extra attributes in dds like in global g_tmphlq.
+    Args:
+        dd (dict): A single DD parm as specified in module parms.
+
+    Returns:
+        dd (dict): A single DD parm as specified in module parms.
+    """
+    if dd.get("dd_data_set"):
+        dd.get("dd_data_set")["tmphlq"] = g_tmphlq
+    elif dd.get("dd_input"):
+        dd.get("dd_input")["tmphlq"] = g_tmphlq
+    elif dd.get("dd_output"):
+        dd.get("dd_output")["tmphlq"] = g_tmphlq
+    elif dd.get("dd_vio"):
+        dd.get("dd_vio")["tmphlq"] = g_tmphlq
+    elif dd.get("dd_concat"):
+        for single_dd in dd.get("dd_concat").get("dds", []):
+            set_extra_attributes_in_dd(single_dd)
+    return dd
+
+
 def build_data_definition(dd):
     """Build a DataDefinition object for a particular DD parameter.
 
@@ -2353,7 +2423,7 @@ def build_data_definition(dd):
     elif dd.get("dd_output"):
         data_definition = RawOutputDefinition(**(dd.get("dd_output")))
     elif dd.get("dd_vio"):
-        data_definition = VIODefinition()
+        data_definition = VIODefinition(dd.get("dd_vio").get("tmphlq"))
     elif dd.get("dd_dummy"):
         data_definition = DummyDefinition()
     elif dd.get("dd_concat"):
@@ -2399,6 +2469,7 @@ class RawDatasetDefinition(DatasetDefinition):
         replace=None,
         backup=None,
         return_content=None,
+        tmphlq=None,
         **kwargs
     ):
         """Initialize RawDatasetDefinition
@@ -2431,6 +2502,7 @@ class RawDatasetDefinition(DatasetDefinition):
             backup (bool, optional): Determines if a backup should be made of existing data set when disposition=NEW, replace=true,
                 and a data set with the desired name is found.. Defaults to None.
             return_content (dict, optional): Determines how content should be returned to the user. Defaults to None.
+            tmphlq (str, optional): HLQ to be used for temporary datasets. Defaults to None.
         """
         self.backup = None
         self.return_content = ReturnContent(**(return_content or {}))
@@ -2457,8 +2529,7 @@ class RawDatasetDefinition(DatasetDefinition):
                 should_reuse = True
             elif replace:
                 if backup:
-                    self.backup = zos_backup.mvs_file_backup(data_set_name, None)
-                    global backups
+                    self.backup = zos_backup.mvs_file_backup(data_set_name, None, tmphlq)
                     backups.append(
                         {"original_name": data_set_name, "backup_name": self.backup}
                     )

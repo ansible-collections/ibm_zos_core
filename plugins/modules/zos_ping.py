@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020
+# Copyright (c) IBM Corporation 2019, 2020, 2023
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -15,14 +15,14 @@
 DOCUMENTATION = r"""
 ---
 module: zos_ping
-version_added: 2.9
+version_added: "1.1.0"
 short_description: Ping z/OS and check dependencies.
 description:
-  - M(zos_ping) verifies the presence of z/OS Web Client Enablement Toolkit,
+  - L(zos_ping,./zos_ping.html) verifies the presence of z/OS Web Client Enablement Toolkit,
     iconv, and Python.
-  - M(zos_ping) returns C(pong) when the target host is not missing any required
+  - L(zos_ping,./zos_ping.html) returns C(pong) when the target host is not missing any required
     dependencies.
-  - If the target host is missing optional dependencies, the M(zos_ping) will
+  - If the target host is missing optional dependencies, the L(zos_ping,./zos_ping.html) will
     return one or more warning messages.
   - If a required dependency is missing from the target host, an explanatory
     message will be returned with the module failure.

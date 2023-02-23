@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020
+# Copyright (c) IBM Corporation 2020, 2023
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -20,7 +20,7 @@ __metaclass__ = type
 DOCUMENTATION = r"""
 ---
 module: zos_find
-version_added: "2.9"
+version_added: "1.3.0"
 short_description: Find matching data sets
 description:
   - Return a list of data sets based on specific criteria.
@@ -68,6 +68,7 @@ options:
     aliases:
       - exclude
     type: list
+    elements: str
     required: false
   patterns:
     description:
@@ -79,6 +80,7 @@ options:
       - If C(pds_patterns) is provided, C(patterns) must be member patterns.
       - When searching for members within a PDS/PDSE, pattern can be a regular expression.
     type: list
+    elements: str
     required: true
   size:
     description:
@@ -98,6 +100,7 @@ options:
       - pds_paths
       - pds_pattern
     type: list
+    elements: str
     required: false
   resource_type:
     description:
@@ -118,14 +121,15 @@ options:
       - If provided, only the data sets allocated in the specified list of
         volumes will be searched.
     type: list
+    elements: str
     required: false
     aliases:
       - volumes
 notes:
   - Only cataloged data sets will be searched. If an uncataloged data set needs to
-    be searched, it should be cataloged first. The M(zos_data_set) module can be
+    be searched, it should be cataloged first. The L(zos_data_set,./zos_data_set.html) module can be
     used to catalog uncataloged data sets.
-  - The M(zos_find) module currently does not support wildcards for high level qualifiers.
+  - The L(zos_find,./zos_find.html) module currently does not support wildcards for high level qualifiers.
     For example, C(SOME.*.DATA.SET) is a valid pattern, but C(*.DATA.SET) is not.
   - If a data set pattern is specified as C(USER.*), the matching data sets will have two
     name segments such as C(USER.ABC), C(USER.XYZ) etc. If a wildcard is specified
@@ -821,11 +825,21 @@ def main():
                 default="creation_date"
             ),
             contains=dict(type="str", required=False),
-            excludes=dict(type="list", required=False, aliases=["exclude"]),
-            patterns=dict(type="list", required=True),
+            excludes=dict(
+                type="list",
+                elements="str",
+                required=False,
+                aliases=["exclude"]
+            ),
+            patterns=dict(
+                type="list",
+                elements="str",
+                required=True
+            ),
             size=dict(type="str", required=False),
             pds_patterns=dict(
                 type="list",
+                elements="str",
                 required=False,
                 aliases=["pds_pattern", "pds_paths"]
             ),
@@ -833,7 +847,12 @@ def main():
                 type="str", required=False, default="nonvsam",
                 choices=["cluster", "data", "index", "nonvsam"]
             ),
-            volume=dict(type="list", required=False, aliases=["volumes"])
+            volume=dict(
+                type="list",
+                elements="str",
+                required=False,
+                aliases=["volumes"]
+            )
         )
     )
 

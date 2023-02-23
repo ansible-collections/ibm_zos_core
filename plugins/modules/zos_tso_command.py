@@ -19,6 +19,7 @@ __metaclass__ = type
 
 DOCUMENTATION = r"""
 module: zos_tso_command
+version_added: '1.1.0'
 author: "Xiao Yuan Ma (@bjmaxy)"
 short_description: Execute TSO commands
 description:
@@ -93,7 +94,6 @@ EXAMPLES = r"""
 from ansible.module_utils.basic import AnsibleModule
 from os import chmod
 from tempfile import NamedTemporaryFile
-import json
 from stat import S_IEXEC, S_IREAD, S_IWRITE
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,

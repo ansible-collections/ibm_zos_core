@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020, 2021
+# Copyright (c) IBM Corporation 2019 - 2023
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -86,18 +86,6 @@ options:
     required: false
     default: "false"
     type: bool
-  sftp_port:
-    description:
-      - Configuring the SFTP port used by the M(zos_fetch) module has been
-        deprecated and will be removed in ibm.ibm_zos_core collection version
-        1.5.0.
-      - Configuring the SFTP port with I(sftp_port) will no longer have any
-        effect on which port is used by this module.
-      - To configure the SFTP port used for module M(zos_copy), refer to topic
-        L(using connection plugins,https://docs.ansible.com/ansible/latest/plugins/connection.html#using-connection-plugins)
-      - If C(ansible_port) is not specified, port 22 will be used.
-    type: int
-    required: false
   encoding:
     description:
       - Specifies which encodings the fetched data set should be converted from
@@ -120,6 +108,14 @@ options:
             (iconv) version; the most common character sets are supported.
         required: true
         type: str
+  tmp_hlq:
+    description:
+      - Override the default high level qualifier (HLQ) for temporary and backup
+        datasets.
+      - The default HLQ is the Ansible user used to execute the module and if
+        that is not available, then the value C(TMPHLQ) is used.
+    required: false
+    type: str
   ignore_sftp_stderr:
     description:
       - During data transfer through sftp, the module fails if the sftp command
@@ -134,7 +130,6 @@ options:
     type: bool
     required: false
     default: false
-    version_added: "1.4.0"
 notes:
     - When fetching PDSE and VSAM data sets, temporary storage will be used
       on the remote z/OS system. After the PDSE or VSAM data set is
@@ -151,7 +146,7 @@ notes:
     - Fetching HFS or ZFS type data sets is currently not supported.
     - For supported character sets used to encode data, refer to the
       L(documentation,https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html).
-    - M(zos_fetch) uses SFTP (Secure File Transfer Protocol) for the underlying
+    - L(zos_fetch,./zos_fetch.html) uses SFTP (Secure File Transfer Protocol) for the underlying
       transfer protocol; Co:Z SFTP is not supported. In the case of Co:z SFTP,
       you can exempt the Ansible userid on z/OS from using Co:Z thus falling back
       to using standard SFTP.
@@ -273,15 +268,12 @@ rc:
 """
 
 
-import base64
-import hashlib
 import tempfile
 import re
 import os
 
 from math import ceil
-from shutil import rmtree, move
-from ansible.module_utils.six import PY3
+from shutil import rmtree
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils._text import to_bytes
 from ansible.module_utils.parsing.convert_bool import boolean
@@ -294,11 +286,6 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
     MissingZOAUImport,
 )
 
-
-if PY3:
-    from shlex import quote
-else:
-    from pipes import quote
 
 try:
     from zoautil_py import datasets, mvscmd, types
@@ -326,17 +313,26 @@ class FetchHandler:
         """
         space_pri = 0
         total_size = 0
+        # Default record length
+        max_recl = 80
         # Bytes per cylinder for a 3390 DASD
         bytes_per_cyl = 849960
 
         listcat_cmd = " LISTCAT ENT('{0}') ALL".format(vsam)
         cmd = "mvscmdauth --pgm=idcams --sysprint=stdout --sysin=stdin"
         rc, out, err = self._run_command(cmd, data=listcat_cmd)
+
         if not rc:
             find_space_pri = re.findall(r"SPACE-PRI-*\d+", out)
             if find_space_pri:
                 space_pri = int("".join(re.findall(r"\d+", find_space_pri[0])))
             total_size = ceil((bytes_per_cyl * space_pri) / 1024)
+            find_max_recl = re.findall(r"MAXLRECL-*\d+", out)
+            if find_max_recl:
+                max_recl = int("".join(re.findall(r"\d+", find_max_recl[0])))
+            find_rec_total = re.findall(r"REC-TOTAL-*\d+", out)
+            if find_rec_total:
+                rec_total = int("".join(re.findall(r"\d+", find_rec_total[0])))
         else:
             self._fail_json(
                 msg="Unable to obtain data set information for {0}: {1}".format(
@@ -348,18 +344,27 @@ class FetchHandler:
                 stderr_lines=err.splitlines(),
                 rc=rc,
             )
-        return total_size
+        return total_size, max_recl, rec_total
 
     def _copy_vsam_to_temp_data_set(self, ds_name):
         """ Copy VSAM data set to a temporary sequential data set """
         mvs_rc = 0
-        vsam_size = self._get_vsam_size(ds_name)
+        vsam_size, max_recl, rec_total = self._get_vsam_size(ds_name)
+        # Default in case of max recl being 80 to avoid failures when fetching and empty vsam.
+        if max_recl == 0:
+            max_recl = 80
+        # RDW takes the first 4 bytes or records in the VB format, hence we need to add an extra buffer to the vsam max recl.
+        max_recl += 4
+
         sysprint = sysin = out_ds_name = None
+        tmphlq = self.module.params.get("tmp_hlq")
+        if tmphlq is None:
+            tmphlq = "MVSTMP"
         try:
-            sysin = data_set.DataSet.create_temp("MVSTMP")
-            sysprint = data_set.DataSet.create_temp("MVSTMP")
+            sysin = data_set.DataSet.create_temp(tmphlq)
+            sysprint = data_set.DataSet.create_temp(tmphlq)
             out_ds_name = data_set.DataSet.create_temp(
-                "MSVTMP", space_primary=vsam_size, space_type="K"
+                tmphlq, space_primary=vsam_size, space_type="K", record_format="VB", record_length=max_recl
             )
             repro_sysin = " REPRO INFILE(INPUT)  OUTFILE(OUTPUT) "
             datasets.write(sysin, repro_sysin)
@@ -382,11 +387,24 @@ class FetchHandler:
             )
             dd_statements.append(
                 types.DDStatement(
-                    name="sysprint", definition=types.DatasetDefinition(sysprint)
+                    name="sysprint", definition=types.FileDefinition(sysprint)
                 )
             )
 
-            mvs_rc = mvscmd.execute_authorized(pgm="idcams", dds=dd_statements)
+            response = mvscmd.execute_authorized(pgm="idcams", dds=dd_statements)
+            mvs_rc, mvs_stdout, mvs_stderr = response.rc, response.stdout_response, response.stderr_response
+
+            # When vsam is empty mvs return code is 12 hence checking for rec total as well, is not failed rather get an empty file.
+            if mvs_rc != 0 and rec_total > 0:
+                self._fail_json(
+                    msg=(
+                        "Non-zero return code received while executing mvscmd "
+                        "to copy VSAM data set {0}".format(ds_name)
+                    ),
+                    rc=mvs_rc,
+                    stderr=mvs_stderr,
+                    stdout=mvs_stdout
+                )
 
         except OSError as err:
             self._fail_json(msg=str(err))
@@ -563,21 +581,15 @@ def run_module():
             use_qualifier=dict(required=False, default=False, type="bool"),
             validate_checksum=dict(required=False, default=True, type="bool"),
             encoding=dict(required=False, type="dict"),
-            sftp_port=dict(type="int", required=False),
             ignore_sftp_stderr=dict(type="bool", default=False, required=False),
             local_charset=dict(type="str"),
+            tmp_hlq=dict(required=False, type="str", default=None),
         )
     )
 
     src = module.params.get("src")
     if module.params.get("use_qualifier"):
         module.params["src"] = datasets.hlq() + "." + src
-
-    if module.params.get('sftp_port'):
-        module.deprecate(
-            msg='Support for configuring sftp_port has been deprecated.'
-            'Configuring the SFTP port is now managed through Ansible connection plugins option \'ansible_port\'',
-            date='2021-08-01', collection_name='ibm.ibm_zos_core')
 
     # ********************************************************** #
     #                   Verify paramater validity                #
@@ -589,6 +601,7 @@ def run_module():
         fail_on_missing=dict(arg_type="bool", required=False, default=True),
         is_binary=dict(arg_type="bool", required=False, default=False),
         use_qualifier=dict(arg_type="bool", required=False, default=False),
+        tmp_hlq=dict(type='qualifier_or_empty', required=False, default=None),
     )
 
     if not module.params.get("encoding") and not module.params.get("is_binary"):

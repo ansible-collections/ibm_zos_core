@@ -103,7 +103,7 @@ dds
     data_set_name
       The data set name.
 
-      | **required**: True
+      | **required**: False
       | **type**: str
 
 
@@ -655,9 +655,11 @@ dds
 
       Multi-line input can be provided as a multi-line string or a list of strings with 1 line per list item.
 
+      If a multi-line string is provided make sure to use the proper literal block style indicator "|".
+
       If a list of strings is provided, newlines will be added to each of the lines when used as input.
 
-      | **required**: False
+      | **required**: True
       | **type**: raw
 
 
@@ -822,7 +824,7 @@ dds
       dd_data_set
         Specify a data set.
 
-        *dd_data_set* can reference an existing data set. The data set referenced with ``data_set_name`` must be allocated before the module :ref:`zos_mvs_raw <zos_mvs_raw_module>` is run, you can use :ref:`zos_data_set <zos_data_set_module>` to allocate a data set.
+        *dd_data_set* can reference an existing data set. The data set referenced with ``data_set_name`` must be allocated before the module `zos_mvs_raw <./zos_mvs_raw.html>`_ is run, you can use `zos_data_set <./zos_data_set.html>`_ to allocate a data set.
 
         | **required**: False
         | **type**: dict
@@ -831,7 +833,7 @@ dds
         data_set_name
           The data set name.
 
-          | **required**: True
+          | **required**: False
           | **type**: str
 
 
@@ -1369,9 +1371,11 @@ dds
 
           Multi-line input can be provided as a multi-line string or a list of strings with 1 line per list item.
 
+          If a multi-line string is provided make sure to use the proper literal block style indicator "|".
+
           If a list of strings is provided, newlines will be added to each of the lines when used as input.
 
-          | **required**: False
+          | **required**: True
           | **type**: raw
 
 
@@ -1419,6 +1423,15 @@ dds
 
 
 
+
+
+tmp_hlq
+  Override the default high level qualifier (HLQ) for temporary and backup datasets.
+
+  The default HLQ is the Ansible user used to execute the module and if that is not available, then the value ``TMPHLQ`` is used.
+
+  | **required**: False
+  | **type**: str
 
 
 
@@ -1629,7 +1642,7 @@ Examples
        dds:
          - dd_data_set:
              dd_name: sortin01
-             data_set_name: myhlq.dfsort.master
+             data_set_name: myhlq.dfsort.main
              disposition: shr
          - dd_data_set:
              dd_name: sortin02
@@ -1672,6 +1685,29 @@ Examples
              dd_name: sysin
              content: " LISTCAT ENTRIES('SYS1.*')"
 
+   - name: Drop the contents of input dataset into output dataset
+         using REPRO command.
+     zos_mvs_raw:
+       pgm: idcams
+       auth: yes
+       dds:
+       - dd_data_set:
+           dd_name: INPUT
+           data_set_name: myhlq.ds1.input
+       - dd_data_set:
+           dd_name: OUTPUT
+           data_set_name: myhlq.ds1.output
+       - dd_input:
+           dd_name: sysin
+           content: |
+               " REPRO -
+                 INFILE(INPUT) -
+                 OUTFILE(OUTPUT)"
+       - dd_output:
+           dd_name: sysprint
+           return_content:
+             type: text
+
 
 
 
@@ -1679,11 +1715,11 @@ Notes
 -----
 
 .. note::
-   When executing programs using :ref:`zos_mvs_raw <zos_mvs_raw_module>`, you may encounter errors that originate in the programs implementation. Two such known issues are noted below of which one has been addressed with an APAR.
+   When executing programs using `zos_mvs_raw <./zos_mvs_raw.html>`_, you may encounter errors that originate in the programs implementation. Two such known issues are noted below of which one has been addressed with an APAR.
 
-   1. :ref:`zos_mvs_raw <zos_mvs_raw_module>` module execution fails when invoking Database Image Copy 2 Utility or Database Recovery Utility in conjunction with FlashCopy or Fast Replication.
+   1. `zos_mvs_raw <./zos_mvs_raw.html>`_ module execution fails when invoking Database Image Copy 2 Utility or Database Recovery Utility in conjunction with FlashCopy or Fast Replication.
 
-   2. :ref:`zos_mvs_raw <zos_mvs_raw_module>` module execution fails when invoking DFSRRC00 with parm "UPB,PRECOMP", "UPB, POSTCOMP" or "UPB,PRECOMP,POSTCOMP". This issue is addressed by APAR PH28089.
+   2. `zos_mvs_raw <./zos_mvs_raw.html>`_ module execution fails when invoking DFSRRC00 with parm "UPB,PRECOMP", "UPB, POSTCOMP" or "UPB,PRECOMP,POSTCOMP". This issue is addressed by APAR PH28089.
 
 
 

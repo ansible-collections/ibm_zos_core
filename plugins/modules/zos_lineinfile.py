@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020
+# Copyright (c) IBM Corporation 2020, 2022, 2023
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -19,6 +19,7 @@ __metaclass__ = type
 DOCUMENTATION = r"""
 ---
 module: zos_lineinfile
+version_added: '1.2.0'
 author:
   - "Behnam (@balkajbaf)"
 short_description: Manage textual data on z/OS
@@ -145,6 +146,14 @@ options:
         recovery can be done by renaming it.
     required: false
     type: str
+  tmp_hlq:
+    description:
+      - Override the default high level qualifier (HLQ) for temporary and backup
+        datasets.
+      - The default HLQ is the Ansible user used to execute the module and if
+        that is not available, then the value C(TMPHLQ) is used.
+    required: false
+    type: str
   firstmatch:
     description:
       - Used with C(insertafter) or C(insertbefore).
@@ -155,7 +164,7 @@ options:
     default: no
   encoding:
     description:
-      - The character set of the source I(src). M(zos_lineinfile)
+      - The character set of the source I(src). L(zos_lineinfile,./zos_lineinfile.html)
         requires to be provided with correct encoding to read the content
         of USS file or data set. If this parameter is not provided, this
         module assumes that USS file or data set is encoded in IBM-1047.
@@ -243,17 +252,12 @@ backup_name:
     type: str
     sample: /path/to/file.txt.2015-02-03@04:15~
 """
-import re
 import json
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser, data_set, backup as Backup)
-from os import path
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     MissingZOAUImport,
-)
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
-    BetterArgParser,
 )
 
 
@@ -360,6 +364,7 @@ def main():
         backup_name=dict(type='str', required=False, default=None),
         firstmatch=dict(type='bool', default=False),
         encoding=dict(type='str', default="IBM-1047"),
+        tmp_hlq=dict(type='str', required=False, default=None)
     )
     module = AnsibleModule(
         argument_spec=module_args,
@@ -379,6 +384,7 @@ def main():
         backup_name=dict(arg_type="data_set_or_path", required=False, default=None),
         firstmatch=dict(arg_type="bool", required=False, default=False),
         backrefs=dict(arg_type="bool", dependencies=['regexp'], required=False, default=False),
+        tmp_hlq=dict(type='qualifier_or_empty', required=False, default=None),
         mutually_exclusive=[["insertbefore", "insertafter"]],)
 
     try:
@@ -399,6 +405,7 @@ def main():
     ins_aft = parsed_args.get('insertafter')
     ins_bef = parsed_args.get('insertbefore')
     encoding = parsed_args.get('encoding')
+    tmphlq = parsed_args.get('tmp_hlq')
 
     if parsed_args.get('state') == 'present':
         if backrefs and regexp is None:
@@ -435,7 +442,7 @@ def main():
             if file_type:
                 result['backup_name'] = Backup.uss_file_backup(src, backup_name=backup, compress=False)
             else:
-                result['backup_name'] = Backup.mvs_file_backup(dsn=src, bk_dsn=backup)
+                result['backup_name'] = Backup.mvs_file_backup(dsn=src, bk_dsn=backup, tmphlq=tmphlq)
         except Exception:
             module.fail_json(msg="creating backup has failed")
     # state=present, insert/replace a line with matching regex pattern

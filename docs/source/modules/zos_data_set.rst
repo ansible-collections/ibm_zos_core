@@ -132,6 +132,8 @@ record_format
 
   Choices are case-insensitive.
 
+  When *type=KSDS*, *type=ESDS*, *type=RRDS*, *type=LDS* or *type=ZFS* then *record_format=None*, these types do not have a default *record_format*.
+
   | **required**: False
   | **type**: str
   | **default**: FB
@@ -231,10 +233,10 @@ volumes
   If creating a data set, *volumes* specifies the volume(s) where the data set should be created.
 
 
-  If *volumes* is provided when *state=present*, and the data set is not found in the catalog, :ref:`zos_data_set <zos_data_set_module>` will check the volume table of contents to see if the data set exists. If the data set does exist, it will be cataloged.
+  If *volumes* is provided when *state=present*, and the data set is not found in the catalog, `zos_data_set <./zos_data_set.html>`_ will check the volume table of contents to see if the data set exists. If the data set does exist, it will be cataloged.
 
 
-  If *volumes* is provided when *state=absent* and the data set is not found in the catalog, :ref:`zos_data_set <zos_data_set_module>` will check the volume table of contents to see if the data set exists. If the data set does exist, it will be cataloged and promptly removed from the system.
+  If *volumes* is provided when *state=absent* and the data set is not found in the catalog, `zos_data_set <./zos_data_set.html>`_ will check the volume table of contents to see if the data set exists. If the data set does exist, it will be cataloged and promptly removed from the system.
 
 
   *volumes* is required when *state=cataloged*.
@@ -255,6 +257,15 @@ replace
 
   | **required**: False
   | **type**: bool
+
+
+tmp_hlq
+  Override the default high level qualifier (HLQ) for temporary and backup datasets.
+
+  The default HLQ is the Ansible user used to execute the module and if that is not available, then the value ``TMPHLQ`` is used.
+
+  | **required**: False
+  | **type**: str
 
 
 batch
@@ -370,6 +381,8 @@ batch
 
     Choices are case-insensitive.
 
+    When *type=KSDS*, *type=ESDS*, *type=RRDS*, *type=LDS* or *type=ZFS* then *record_format=None*, these types do not have a default *record_format*.
+
     | **required**: False
     | **type**: str
     | **default**: FB
@@ -469,10 +482,10 @@ batch
     If creating a data set, *volumes* specifies the volume(s) where the data set should be created.
 
 
-    If *volumes* is provided when *state=present*, and the data set is not found in the catalog, :ref:`zos_data_set <zos_data_set_module>` will check the volume table of contents to see if the data set exists. If the data set does exist, it will be cataloged.
+    If *volumes* is provided when *state=present*, and the data set is not found in the catalog, `zos_data_set <./zos_data_set.html>`_ will check the volume table of contents to see if the data set exists. If the data set does exist, it will be cataloged.
 
 
-    If *volumes* is provided when *state=absent* and the data set is not found in the catalog, :ref:`zos_data_set <zos_data_set_module>` will check the volume table of contents to see if the data set exists. If the data set does exist, it will be cataloged and promptly removed from the system.
+    If *volumes* is provided when *state=absent* and the data set is not found in the catalog, `zos_data_set <./zos_data_set.html>`_ will check the volume table of contents to see if the data set exists. If the data set does exist, it will be cataloged and promptly removed from the system.
 
 
     *volumes* is required when *state=cataloged*.

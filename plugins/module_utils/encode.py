@@ -84,6 +84,7 @@ class EncodeUtils(object):
             module {AnsibleModule} -- The AnsibleModule object from currently running module
         """
         self.module = AnsibleModuleHelper(argument_spec={})
+        self.tmphlq = None
 
     def _validate_data_set_name(self, ds):
         arg_defs = dict(
@@ -189,7 +190,10 @@ class EncodeUtils(object):
             OSError: When any exception is raised during the data set allocation
         """
         size = str(space_u * 2) + "K"
-        hlq = datasets.hlq()
+        if self.tmphlq:
+            hlq = self.tmphlq
+        else:
+            hlq = datasets.hlq()
         temp_ps = datasets.tmp_name(hlq)
         response = datasets._create(
             name=temp_ps,
@@ -401,6 +405,8 @@ class EncodeUtils(object):
                 rc, out, err = copy.copy_pds2uss(src, temp_src)
             if src_type == "VSAM":
                 reclen, space_u = self.listdsi_data_set(src.upper())
+                # RDW takes the first 4 bytes or records in the VB format, hence we need to add an extra buffer to the vsam max recl.
+                reclen += 4
                 temp_ps = self.temp_data_set(reclen, space_u)
                 rc, out, err = copy.copy_vsam_ps(src.upper(), temp_ps)
                 temp_src_fo = NamedTemporaryFile()
@@ -418,6 +424,8 @@ class EncodeUtils(object):
                 else:
                     if dest_type == "VSAM":
                         reclen, space_u = self.listdsi_data_set(dest.upper())
+                        # RDW takes the first 4 bytes or records in the VB format, hence we need to add an extra buffer to the vsam max recl.
+                        reclen += 4
                         temp_ps = self.temp_data_set(reclen, space_u)
                         rc, out, err = copy.copy_uss2mvs(temp_dest, temp_ps, "PS")
                         rc, out, err = copy.copy_vsam_ps(temp_ps, dest.upper())
@@ -444,6 +452,32 @@ class EncodeUtils(object):
                     shutil.rmtree(temp_dest)
 
         return convert_rc
+
+    def uss_file_tag(self, file_path):
+        """Returns the current tag set for a file.
+        Arguments:
+            file_path {str} -- USS path to the file.
+        Returns:
+            str -- Current tag set for the file, as returned by 'ls -T'
+            None -- If the file does not exist or the command fails.
+        """
+        if not os.path.exists(file_path):
+            return None
+
+        try:
+            tag_cmd = "ls -T {0}".format(file_path)
+            rc, stdout, stderr = self.module.run_command(tag_cmd)
+
+            if rc != 0:
+                return None
+
+            # The output from 'ls -T' should be like this:
+            # t IBM-037     T=on  ansible-zos-copy-payload-D230123-T123818
+            # The second item from the split should be the tag.
+            ls_parts = stdout.split()
+            return ls_parts[1]
+        except Exception:
+            return None
 
 
 class EncodeError(Exception):

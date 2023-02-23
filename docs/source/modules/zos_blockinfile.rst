@@ -63,6 +63,8 @@ block
 
   Multi-line can be separated by '\n'.
 
+  Any double-quotation marks will be removed.
+
   | **required**: False
   | **type**: str
 
@@ -127,7 +129,7 @@ backup_name
 
   If the source *src* is a USS file or path, the backup_name name must be a file or path name, and the USS file or path must be an absolute path name.
 
-  If the source is an MVS data set, the backup_name name must be an MVS data set name.
+  If the source is an MVS data set, the backup_name name must be an MVS data set name, and the dataset must not be preallocated.
 
   If the backup_name is not provided, the default backup_name name will be used. If the source is a USS file or path, the name of the backup file will be the source file or path name appended with a timestamp, e.g. ``/path/file_name.2020-04-23-08-32-29-bak.tar``.
 
@@ -139,14 +141,41 @@ backup_name
   | **type**: str
 
 
+tmp_hlq
+  Override the default high level qualifier (HLQ) for temporary and backup datasets.
+
+  The default HLQ is the Ansible user used to execute the module and if that is not available, then the value ``TMPHLQ`` is used.
+
+  | **required**: False
+  | **type**: str
+
+
 encoding
-  The character set of the source *src*. :ref:`zos_blockinfile <zos_blockinfile_module>` requires to be provided with correct encoding to read the content of USS file or data set. If this parameter is not provided, this module assumes that USS file or data set is encoded in IBM-1047.
+  The character set of the source *src*. `zos_blockinfile <./zos_blockinfile.html>`_ requires it to be provided with correct encoding to read the content of a USS file or data set. If this parameter is not provided, this module assumes that USS file or data set is encoded in IBM-1047.
 
   Supported character sets rely on the charset conversion utility (iconv) version; the most common character sets are supported.
 
   | **required**: False
   | **type**: str
   | **default**: IBM-1047
+
+
+force
+  Specifies that the data set can be shared with others during an update which results in the data set you are updating to be simultaneously updated by others.
+
+  This is helpful when a data set is being used in a long running process such as a started task and you are wanting to update or read.
+
+  The ``-f`` option enables sharing of data sets through the disposition *DISP=SHR*.
+
+  | **required**: False
+  | **type**: bool
+
+
+indentation
+  Defines the number of spaces needed to prepend in every line of the block.
+
+  | **required**: False
+  | **type**: int
 
 
 
@@ -206,6 +235,15 @@ Examples
        - { name: host2, ip: 10.10.1.11 }
        - { name: host3, ip: 10.10.1.12 }
 
+   - name: Add a code block to a member using a predefined indentation.
+     zos_blockinfile:
+       path: SYS1.PARMLIB(BPXPRM00)
+       block: |
+             DSN SYSTEM({{ DB2SSID }})
+             RUN  PROGRAM(DSNTEP2) PLAN(DSNTEP12) -
+             LIB('{{ DB2RUN }}.RUNLIB.LOAD')
+       indentation: 16
+
 
 
 
@@ -215,7 +253,7 @@ Notes
 .. note::
    It is the playbook author or user's responsibility to avoid files that should not be encoded, such as binary files. A user is described as the remote user, configured either for the playbook or playbook tasks, who can also obtain escalated privileges to execute as root or another user.
 
-   All data sets are always assumed to be cataloged. If an uncataloged data set needs to be encoded, it should be cataloged first. The :ref:`zos_data_set <zos_data_set_module>` module can be used to catalog uncataloged data sets.
+   All data sets are always assumed to be cataloged. If an uncataloged data set needs to be encoded, it should be cataloged first. The `zos_data_set <./zos_data_set.html>`_ module can be used to catalog uncataloged data sets.
 
    For supported character sets used to encode data, refer to the `documentation <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html>`_.
 
@@ -262,7 +300,7 @@ cmd
 
   | **returned**: success
   | **type**: str
-  | **sample**: dmodhelper -d -b -c IBM-1047 -m "BEGIN\nEND\n# {mark} ANSIBLE MANAGED BLOCK" -e "$ a\\PATH=/dir/bin:$PATH" /etc/profile
+  | **sample**: dmod -d -b -c IBM-1047 -m "BEGIN\nEND\n# {mark} ANSIBLE MANAGED BLOCK" -e "$ a\\PATH=/dir/bin:$PATH" /etc/profile
 
 msg
   The module messages

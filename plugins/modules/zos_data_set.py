@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020
+# Copyright (c) IBM Corporation 2019, 2020, 2023
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -19,11 +19,11 @@ __metaclass__ = type
 
 DOCUMENTATION = r"""
 module: zos_data_set
+version_added: "1.3.0"
 short_description: Manage data sets
 description:
   - Create, delete and set attributes of data sets.
   - When forcing data set replacement, contents will not be preserved.
-version_added: "2.9"
 author: "Blake Becker (@blakeinate)"
 options:
   name:
@@ -34,7 +34,6 @@ options:
       - Required if I(type=MEMBER) or I(state!=present) and not using I(batch).
     type: str
     required: false
-    version_added: "2.9"
   state:
     description:
       - The final state desired for specified data set.
@@ -89,7 +88,6 @@ options:
       - absent
       - cataloged
       - uncataloged
-    version_added: "2.9"
   type:
     description:
       - The data set type to be used when creating a data set. (e.g C(pdse))
@@ -112,7 +110,6 @@ options:
       - HFS
       - ZFS
     default: PDS
-    version_added: "2.9"
   space_primary:
     description:
       - The amount of primary space to allocate for the dataset.
@@ -120,7 +117,6 @@ options:
     type: int
     required: false
     default: 5
-    version_added: "2.9"
   space_secondary:
     description:
       - The amount of secondary space to allocate for the dataset.
@@ -128,7 +124,6 @@ options:
     type: int
     required: false
     default: 3
-    version_added: "2.9"
   space_type:
     description:
       - The unit of measurement to use when defining primary and secondary space.
@@ -142,11 +137,13 @@ options:
       - TRK
     required: false
     default: M
-    version_added: "2.9"
   record_format:
     description:
       - The format of the data set. (e.g C(FB))
       - Choices are case-insensitive.
+      - When I(type=KSDS), I(type=ESDS), I(type=RRDS), I(type=LDS) or I(type=ZFS)
+        then I(record_format=None), these types do not have a default
+        I(record_format).
     required: false
     choices:
       - FB
@@ -154,9 +151,8 @@ options:
       - FBA
       - VBA
       - U
-    default: FB
     type: str
-    version_added: "2.9"
+    default: FB
   sms_storage_class:
     description:
       - The storage class for an SMS-managed dataset.
@@ -165,7 +161,6 @@ options:
       - Note that all non-linear VSAM datasets are SMS-managed.
     type: str
     required: false
-    version_added: "2.9"
   sms_data_class:
     description:
       - The data class for an SMS-managed dataset.
@@ -174,7 +169,6 @@ options:
       - Note that all non-linear VSAM datasets are SMS-managed.
     type: str
     required: false
-    version_added: "2.9"
   sms_management_class:
     description:
       - The management class for an SMS-managed dataset.
@@ -183,7 +177,6 @@ options:
       - Note that all non-linear VSAM datasets are SMS-managed.
     type: str
     required: false
-    version_added: "2.9"
   record_length:
     description:
       - The length, in bytes, of each record in the data set.
@@ -191,19 +184,16 @@ options:
       - "Defaults vary depending on format: If FB/FBA 80, if VB/VBA 137, if U 0."
     type: int
     required: false
-    version_added: "2.9"
   block_size:
     description:
       - The block size to use for the data set.
     type: int
     required: false
-    version_added: "2.9"
   directory_blocks:
     description:
       - The number of directory blocks to allocate to the data set.
     type: int
     required: false
-    version_added: "2.9"
   key_offset:
     description:
       - The key offset to use when creating a KSDS data set.
@@ -211,7 +201,6 @@ options:
       - I(key_offset) should only be provided when I(type=KSDS)
     type: int
     required: false
-    version_added: "2.9"
   key_length:
     description:
       - The key length to use when creating a KSDS data set.
@@ -219,7 +208,6 @@ options:
       - I(key_length) should only be provided when I(type=KSDS)
     type: int
     required: false
-    version_added: "2.9"
   volumes:
     description:
       - >
@@ -228,17 +216,16 @@ options:
         If creating a data set, I(volumes) specifies the volume(s) where the data set should be created.
       - >
         If I(volumes) is provided when I(state=present), and the data set is not found in the catalog,
-        M(zos_data_set) will check the volume table of contents to see if the data set exists.
+        L(zos_data_set,./zos_data_set.html) will check the volume table of contents to see if the data set exists.
         If the data set does exist, it will be cataloged.
       - >
         If I(volumes) is provided when I(state=absent) and the data set is not found in the catalog,
-        M(zos_data_set) will check the volume table of contents to see if the data set exists.
+        L(zos_data_set,./zos_data_set.html) will check the volume table of contents to see if the data set exists.
         If the data set does exist, it will be cataloged and promptly removed from the system.
       - I(volumes) is required when I(state=cataloged).
       - Accepts a string when using a single volume and a list of strings when using multiple.
     type: raw
     required: false
-    version_added: "2.9"
     aliases:
       - volume
   replace:
@@ -252,14 +239,20 @@ options:
     type: bool
     required: false
     default: false
-    version_added: "2.9"
+  tmp_hlq:
+    description:
+      - Override the default high level qualifier (HLQ) for temporary and backup
+        datasets.
+      - The default HLQ is the Ansible user used to execute the module and if
+        that is not available, then the value C(TMPHLQ) is used.
+    required: false
+    type: str
   batch:
     description:
       - Batch can be used to perform operations on multiple data sets in a single module call.
     type: list
     elements: dict
     required: false
-    version_added: "2.9"
     suboptions:
       name:
         description:
@@ -269,7 +262,6 @@ options:
           - Required if I(type=MEMBER) or I(state!=present)
         type: str
         required: false
-        version_added: "2.9"
       state:
         description:
           - The final state desired for specified data set.
@@ -324,7 +316,6 @@ options:
           - absent
           - cataloged
           - uncataloged
-        version_added: "2.9"
       type:
         description:
           - The data set type to be used when creating a data set. (e.g C(pdse))
@@ -347,7 +338,6 @@ options:
           - HFS
           - ZFS
         default: PDS
-        version_added: "2.9"
       space_primary:
         description:
           - The amount of primary space to allocate for the dataset.
@@ -355,7 +345,6 @@ options:
         type: int
         required: false
         default: 5
-        version_added: "2.9"
       space_secondary:
         description:
           - The amount of secondary space to allocate for the dataset.
@@ -363,7 +352,6 @@ options:
         type: int
         required: false
         default: 3
-        version_added: "2.9"
       space_type:
         description:
           - The unit of measurement to use when defining primary and secondary space.
@@ -377,11 +365,13 @@ options:
           - TRK
         required: false
         default: M
-        version_added: "2.9"
       record_format:
         description:
           - The format of the data set. (e.g C(FB))
           - Choices are case-insensitive.
+          - When I(type=KSDS), I(type=ESDS), I(type=RRDS), I(type=LDS) or
+            I(type=ZFS) then I(record_format=None), these types do not have a
+            default I(record_format).
         required: false
         choices:
           - FB
@@ -389,9 +379,8 @@ options:
           - FBA
           - VBA
           - U
-        default: FB
         type: str
-        version_added: "2.9"
+        default: FB
       sms_storage_class:
         description:
           - The storage class for an SMS-managed dataset.
@@ -400,7 +389,6 @@ options:
           - Note that all non-linear VSAM datasets are SMS-managed.
         type: str
         required: false
-        version_added: "2.9"
       sms_data_class:
         description:
           - The data class for an SMS-managed dataset.
@@ -409,7 +397,6 @@ options:
           - Note that all non-linear VSAM datasets are SMS-managed.
         type: str
         required: false
-        version_added: "2.9"
       sms_management_class:
         description:
           - The management class for an SMS-managed dataset.
@@ -418,7 +405,6 @@ options:
           - Note that all non-linear VSAM datasets are SMS-managed.
         type: str
         required: false
-        version_added: "2.9"
       record_length:
         description:
           - The length, in bytes, of each record in the data set.
@@ -426,19 +412,16 @@ options:
           - "Defaults vary depending on format: If FB/FBA 80, if VB/VBA 137, if U 0."
         type: int
         required: false
-        version_added: "2.9"
       block_size:
         description:
           - The block size to use for the data set.
         type: int
         required: false
-        version_added: "2.9"
       directory_blocks:
         description:
           - The number of directory blocks to allocate to the data set.
         type: int
         required: false
-        version_added: "2.9"
       key_offset:
         description:
           - The key offset to use when creating a KSDS data set.
@@ -446,7 +429,6 @@ options:
           - I(key_offset) should only be provided when I(type=KSDS)
         type: int
         required: false
-        version_added: "2.9"
       key_length:
         description:
           - The key length to use when creating a KSDS data set.
@@ -454,7 +436,6 @@ options:
           - I(key_length) should only be provided when I(type=KSDS)
         type: int
         required: false
-        version_added: "2.9"
       volumes:
         description:
           - >
@@ -463,17 +444,16 @@ options:
             If creating a data set, I(volumes) specifies the volume(s) where the data set should be created.
           - >
             If I(volumes) is provided when I(state=present), and the data set is not found in the catalog,
-            M(zos_data_set) will check the volume table of contents to see if the data set exists.
+            L(zos_data_set,./zos_data_set.html) will check the volume table of contents to see if the data set exists.
             If the data set does exist, it will be cataloged.
           - >
             If I(volumes) is provided when I(state=absent) and the data set is not found in the catalog,
-            M(zos_data_set) will check the volume table of contents to see if the data set exists.
+            L(zos_data_set,./zos_data_set.html) will check the volume table of contents to see if the data set exists.
             If the data set does exist, it will be cataloged and promptly removed from the system.
           - I(volumes) is required when I(state=cataloged).
           - Accepts a string when using a single volume and a list of strings when using multiple.
         type: raw
         required: false
-        version_added: "2.9"
         aliases:
           - volume
       replace:
@@ -487,7 +467,6 @@ options:
         type: bool
         required: false
         default: false
-        version_added: "2.9"
 
 """
 EXAMPLES = r"""
@@ -658,6 +637,14 @@ DEFAULT_RECORD_LENGTHS = {
     "U": 0,
 }
 
+DATA_SET_TYPES_VSAM = [
+    "KSDS",
+    "ESDS",
+    "RRDS",
+    "LDS",
+    "ZFS",
+]
+
 # ------------- Functions to validate arguments ------------- #
 
 
@@ -705,7 +692,10 @@ def data_set_name(contents, dependencies):
         if dependencies.get("state") != "present":
             raise ValueError('Data set name must be provided when "state!=present"')
         if dependencies.get("type") != "MEMBER":
-            contents = DataSet.temp_name()
+            tmphlq = dependencies.get("tmp_hlq")
+            if tmphlq is None:
+                tmphlq = ""
+            contents = DataSet.temp_name(tmphlq)
         else:
             raise ValueError(
                 'Data set and member name must be provided when "type=MEMBER"'
@@ -1034,7 +1024,7 @@ def parse_and_validate_args(params):
             type=data_set_name,
             default=data_set_name,
             required=False,
-            dependencies=["type", "state", "batch"],
+            dependencies=["type", "state", "batch", "tmp_hlq"],
         ),
         state=dict(
             type="str",
@@ -1091,12 +1081,17 @@ def parse_and_validate_args(params):
             aliases=["volume"],
             dependencies=["state"],
         ),
+        tmp_hlq=dict(
+            type='qualifier_or_empty',
+            required=False,
+            default=None
+        ),
         mutually_exclusive=[
             ["batch", "name"],
             # ["batch", "state"],
             # ["batch", "space_type"],
-            ["batch", "space_primary"],
-            ["batch", "space_secondary"],
+            # ["batch", "space_primary"],
+            # ["batch", "space_secondary"],
             ["batch", "record_format"],
             ["batch", "sms_management_class"],
             ["batch", "sms_storage_class"],
@@ -1137,13 +1132,13 @@ def run_module():
                 ),
                 type=dict(type="str", required=False, default="PDS"),
                 space_type=dict(type="str", required=False, default="M"),
-                space_primary=dict(type="int", required=False, aliases=["size"]),
-                space_secondary=dict(type="int", required=False),
-                record_format=dict(type="str", required=False, aliases=["format"]),
+                space_primary=dict(type="int", required=False, aliases=["size"], default=5),
+                space_secondary=dict(type="int", required=False, default=3),
+                record_format=dict(type="str", required=False, aliases=["format"], default="FB"),
                 sms_management_class=dict(type="str", required=False),
                 # I know this alias is odd, ZOAU used to document they supported
                 # SMS data class when they were actually passing as storage class
-                # support for backwards compatability with previous module versions
+                # support for backwards compatibility with previous module versions
                 sms_storage_class=dict(
                     type="str", required=False, aliases=["data_class"]
                 ),
@@ -1160,8 +1155,8 @@ def run_module():
                     type="int",
                     required=False,
                 ),
-                key_offset=dict(type="int", required=False),
-                key_length=dict(type="int", required=False),
+                key_offset=dict(type="int", required=False, no_log=False),
+                key_length=dict(type="int", required=False, no_log=False),
                 replace=dict(
                     type="bool",
                     default=False,
@@ -1178,13 +1173,12 @@ def run_module():
             type="str",
             default="present",
             choices=["present", "absent", "cataloged", "uncataloged"],
-            dependencies=["batch"],
         ),
         type=dict(type="str", required=False, default="PDS"),
         space_type=dict(type="str", required=False, default="M"),
-        space_primary=dict(type="raw", required=False, aliases=["size"]),
-        space_secondary=dict(type="int", required=False),
-        record_format=dict(type="str", required=False, aliases=["format"]),
+        space_primary=dict(type="raw", required=False, aliases=["size"], default=5),
+        space_secondary=dict(type="int", required=False, default=3),
+        record_format=dict(type="str", required=False, aliases=["format"], default="FB"),
         sms_management_class=dict(type="str", required=False),
         # I know this alias is odd, ZOAU used to document they supported
         # SMS data class when they were actually passing as storage class
@@ -1203,8 +1197,8 @@ def run_module():
             type="int",
             required=False,
         ),
-        key_offset=dict(type="int", required=False),
-        key_length=dict(type="int", required=False),
+        key_offset=dict(type="int", required=False, no_log=False),
+        key_length=dict(type="int", required=False, no_log=False),
         replace=dict(
             type="bool",
             default=False,
@@ -1214,13 +1208,48 @@ def run_module():
             required=False,
             aliases=["volume"],
         ),
+        tmp_hlq=dict(
+            type="str",
+            required=False,
+            default=None
+        ),
     )
     result = dict(changed=False, message="", names=[])
 
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
 
+    # This evaluation will always occur as a result of the limitation on the
+    # better arg parser, this will serve as a solution for now and ensure
+    # the non-batch and batch arguments are correctly set
+    if module.params.get("batch") is not None:
+        for entry in module.params.get("batch"):
+            if entry.get('type') is not None and entry.get("type").upper() in DATA_SET_TYPES_VSAM:
+                entry["record_format"] = None
+        if module.params.get("type") is not None:
+            module.params["type"] = None
+        if module.params.get("state") is not None:
+            module.params["state"] = None
+        if module.params.get("space_type") is not None:
+            module.params["space_type"] = None
+        if module.params.get("space_primary") is not None:
+            module.params["space_primary"] = None
+        if module.params.get("space_secondary") is not None:
+            module.params["space_secondary"] = None
+        if module.params.get("replace") is not None:
+            module.params["replace"] = None
+        if module.params.get("record_format") is not None:
+            module.params["record_format"] = None
+    elif module.params.get("type") is not None:
+        if module.params.get("type").upper() in DATA_SET_TYPES_VSAM:
+            # For VSAM types set the value to nothing and let the code manage it
+            module.params["record_format"] = None
+
     if not module.check_mode:
         try:
+            # Update the dictionary for use by better arg parser by adding the
+            # batch keyword after the arg spec is evaluated else you get a lint
+            # error 'invalid-ansiblemodule-schema'
+            module_args['state']['dependencies'] = ['batch']
             params = parse_and_validate_args(module.params)
             data_set_param_list = get_individual_data_set_parameters(params)
             result["names"] = [d.get("name", "") for d in data_set_param_list]

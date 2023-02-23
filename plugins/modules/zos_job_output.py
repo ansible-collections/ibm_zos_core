@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020
+# Copyright (c) IBM Corporation 2019, 2020, 2022
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -33,10 +33,11 @@ description:
     like "*".
   - If there is no ddname, or if ddname="?", output of all the ddnames under
     the given job will be displayed.
-version_added: "2.9"
+version_added: "1.0.0"
 author:
   - "Jack Ho (@jacklotusho)"
   - "Demetrios Dimatos (@ddimatos)"
+  - "Rich Parker (@richp405)"
 options:
   job_id:
     description:
@@ -56,7 +57,8 @@ options:
     required: false
   ddname:
     description:
-      - Data definition name. (e.g "JESJCL", "?")
+      - Data definition name (show only this DD on a found job).
+        (e.g "JESJCL", "?")
     type: str
     required: false
 """
@@ -83,7 +85,8 @@ RETURN = r"""
 jobs:
   description:
     The output information for a list of jobs matching specified criteria.
-    If no job status is found, this will return an empty job code with msg=JOB NOT FOUND.
+    If no job status is found, this will return ret_code dictionary with
+    parameter msg_txt = The job could not be found.
   returned: success
   type: list
   elements: dict
@@ -154,23 +157,24 @@ jobs:
         content:
           description:
              The ddname content.
-          type: list[str]
+          type: list
+          elements: str
           sample:
-             [ "         1 //HELLO    JOB (T043JM,JM00,1,0,0,0),'HELLO WORLD - JRM',CLASS=R,       JOB00134",
-               "           //             MSGCLASS=X,MSGLEVEL=1,NOTIFY=S0JM                                ",
-               "           //*                                                                             ",
-               "           //* PRINT \"HELLO WORLD\" ON JOB OUTPUT                                          ",
-               "           //*                                                                             ",
-               "           //* NOTE THAT THE EXCLAMATION POINT IS INVALID EBCDIC FOR JCL                   ",
-               "           //*   AND WILL CAUSE A JCL ERROR                                                ",
-               "           //*                                                                             ",
-               "         2 //STEP0001 EXEC PGM=IEBGENER                                                    ",
-               "         3 //SYSIN    DD DUMMY                                                             ",
-               "         4 //SYSPRINT DD SYSOUT=*                                                          ",
-               "         5 //SYSUT1   DD *                                                                 ",
-               "         6 //SYSUT2   DD SYSOUT=*                                                          ",
-               "         7 //                                                                              "
-             ]
+             [ "         1 //HELLO    JOB (T043JM,JM00,1,0,0,0),'HELLO WORLD - JRM',CLASS=R,       JOB00134",
+               "           //             MSGCLASS=X,MSGLEVEL=1,NOTIFY=S0JM                                ",
+               "           //*                                                                             ",
+               "           //* PRINT \"HELLO WORLD\" ON JOB OUTPUT                                         ",
+               "           //*                                                                             ",
+               "           //* NOTE THAT THE EXCLAMATION POINT IS INVALID EBCDIC FOR JCL                   ",
+               "           //*   AND WILL CAUSE A JCL ERROR                                                ",
+               "           //*                                                                             ",
+               "         2 //STEP0001 EXEC PGM=IEBGENER                                                    ",
+               "         3 //SYSIN    DD DUMMY                                                             ",
+               "         4 //SYSPRINT DD SYSOUT=*                                                          ",
+               "         5 //SYSUT1   DD *                                                                 ",
+               "         6 //SYSUT2   DD SYSOUT=*                                                          ",
+               "         7 //                                                                              "
+             ]
     ret_code:
       description:
          Return code output collected from job log.
@@ -211,8 +215,8 @@ jobs:
             step_cc:
               description:
                 The CC returned for this step in the DD section.
-              type: str
-              sample: "00"
+              type: int
+              sample: 0
       sample:
         ret_code: {
          "code": 0,
@@ -221,7 +225,7 @@ jobs:
          "msg_txt": "",
          "steps": [
            { "step_name": "STEP0001",
-             "step_cc": "0000"
+             "step_cc": 0
            }
          ]
         }
@@ -347,7 +351,7 @@ jobs:
           "msg_txt": "",
           "steps": [
             { "step_name": "STEP0001",
-              "step_cc": "0000"
+              "step_cc": 0
             }
           ]
         },
@@ -363,8 +367,9 @@ changed:
 
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import job_output
-from tempfile import NamedTemporaryFile
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import (
+    job_output,
+)
 
 
 def run_module():
@@ -387,10 +392,11 @@ def run_module():
 
     try:
         results = {}
-        results["jobs"] = job_output(job_id, owner, job_name, ddname)
+        results["jobs"] = job_output(job_id=job_id, owner=owner, job_name=job_name, dd_name=ddname)
         results["changed"] = False
     except Exception as e:
         module.fail_json(msg=repr(e))
+
     module.exit_json(**results)
 
 

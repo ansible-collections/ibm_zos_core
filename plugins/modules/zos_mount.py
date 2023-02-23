@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020, 2021
+# Copyright (c) IBM Corporation 2020 - 2023
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -21,11 +21,12 @@ __metaclass__ = type
 DOCUMENTATION = r"""
 ---
 module: zos_mount
+version_added: '1.4.0'
 author:
     - "Rich Parker (@richp405)"
 short_description: Mount a z/OS file system.
 description:
-  - The module M(zos_mount) can manage mount operations for a
+  - The module L(zos_mount,./zos_mount.html) can manage mount operations for a
     z/OS UNIX System Services (USS) file system data set.
   - The I(src) data set must be unique and a Fully Qualified Name (FQN).
   - The I(path) will be created if needed.
@@ -157,6 +158,7 @@ options:
                     - Comments are used to encapsulate the I(persistent/data_store) entry
                       such that they can easily be understood and located.
                 type: list
+                elements: str
                 required: False
     unmount_opts:
         description:
@@ -211,7 +213,6 @@ options:
             - If this flag is used, use of tag_ccsid is encouraged.
         type: str
         choices:
-            - ''
             - TEXT
             - NOTEXT
         required: False
@@ -255,7 +256,9 @@ options:
               system will then become the owner of the file system mounted. This
               system must be IPLed with SYSPLEX(YES).
             - >
-              I(sysname) is a 1–8 alphanumeric name of a system participating in shared file system.
+              I(sysname) is the name of a system participating in shared file
+              system. The name must be 1-8 characters long; the valid characters
+              are A-Z, 0-9, $, @, and #.
         type: str
         required: False
     automove:
@@ -293,10 +296,18 @@ options:
               Indicator is either INCLUDE or EXCLUDE, which can also be abbreviated as I or E.
         type: str
         required: False
+    tmp_hlq:
+        description:
+            - Override the default high level qualifier (HLQ) for temporary and backup
+              datasets.
+            - The default HLQ is the Ansible user used to execute the module and if
+              that is not available, then the value C(TMPHLQ) is used.
+        required: false
+        type: str
 notes:
     - All data sets are always assumed to be cataloged.
     - If an uncataloged data set needs to be fetched, it should be cataloged first.
-    - Uncataloged data sets can be cataloged using the M(zos_data_set) module.
+    - Uncataloged data sets can be cataloged using the L(zos_data_set,./zos_data_set.html) module.
 seealso:
     - module: zos_data_set
 """
@@ -532,34 +543,17 @@ import tempfile
 from datetime import datetime
 from ansible.module_utils.basic import AnsibleModule
 
-
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
-    AnsibleModuleHelper,
-)
-
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser,
     data_set,
     backup as Backup,
-    mvs_cmd,
-)
 
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingZOAUImport,
 )
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.copy import (
     copy_ps2uss,
-    copy_mvs2mvs,
     copy_uss2mvs,
 )
-
-try:
-    from zoautil_py import Datasets, MVSCmd, types
-except Exception:
-    Datasets = MissingZOAUImport()
-    MVSCmd = MissingZOAUImport()
-    types = MissingZOAUImport()
 
 
 # This is a duplicate of backupOper found in zos_apf.py of this collection
@@ -569,7 +563,7 @@ except Exception:
 mt_DS_TYPE = ["PS", "PO"]
 
 
-def mt_backupOper(module, src, backup):
+def mt_backupOper(module, src, backup, tmphlq=None):
     # analysis the file type
     ds_utils = data_set.DataSetUtils(src)
     file_type = ds_utils.ds_type()
@@ -588,7 +582,7 @@ def mt_backupOper(module, src, backup):
                 src, backup_name=backup, compress=False
             )
         else:
-            backup_name = Backup.mvs_file_backup(dsn=src, bk_dsn=backup)
+            backup_name = Backup.mvs_file_backup(dsn=src, bk_dsn=backup, tmphlq=tmphlq)
     except Exception:
         module.fail_json(msg="creating backup has failed")
 
@@ -694,6 +688,7 @@ def run_module(module, arg_def):
     sysname = parsed_args.get("sysname")
     automove = parsed_args.get("automove")
     automove_list = parsed_args.get("automove_list")
+    tmphlq = parsed_args.get("tmp_hlq")
 
     if persistent:
         data_store = persistent.get("data_store").upper()
@@ -706,7 +701,7 @@ def run_module(module, arg_def):
                 backup_code = None
             else:
                 backup_code = backup_name
-            backup_name = mt_backupOper(module, data_store, backup_code)
+            backup_name = mt_backupOper(module, data_store, backup_code, tmphlq)
             res_args["backup_name"] = backup_name
             del persistent["backup"]
         if "mounted" in state or "present" in state:
@@ -1079,7 +1074,7 @@ def main():
                     ),
                     backup=dict(type="bool", default=False),
                     backup_name=dict(type="str", required=False, default=None),
-                    comment=dict(type="list", required=False),
+                    comment=dict(type="list", elements="str", required=False),
                 ),
             ),
             unmount_opts=dict(
@@ -1096,7 +1091,7 @@ def main():
             ),
             src_params=dict(type="str", required=False),
             tag_untagged=dict(
-                type="str", default="", choices=["", "TEXT", "NOTEXT"], required=False
+                type="str", choices=["TEXT", "NOTEXT"], required=False
             ),
             tag_ccsid=dict(type="int", required=False),
             allow_uid=dict(type="bool", default=True, required=False),
@@ -1108,8 +1103,8 @@ def main():
                 required=False,
             ),
             automove_list=dict(type="str", required=False),
+            tmp_hlq=dict(type='str', required=False, default=None),
         ),
-        add_file_common_args=True,
         supports_check_mode=True,
     )
 
@@ -1156,9 +1151,9 @@ def main():
         ),
         src_params=dict(arg_type="str", default="", required=False),
         tag_untagged=dict(
-            arg_type="str", default="", choices=["", "TEXT", "NOTEXT"], required=False
+            arg_type="str", choices=["TEXT", "NOTEXT"], required=False
         ),
-        tag_ccsid=dict(arg_type="str", required=False),
+        tag_ccsid=dict(arg_type="int", required=False),
         allow_uid=dict(arg_type="bool", default=True, required=False),
         sysname=dict(arg_type="str", default="", required=False),
         automove=dict(
@@ -1168,6 +1163,7 @@ def main():
             required=False,
         ),
         automove_list=dict(arg_type="str", default="", required=False),
+        tmp_hlq=dict(type='qualifier_or_empty', required=False, default=None),
     )
 
     res_args = None

@@ -20,6 +20,7 @@ __metaclass__ = type
 DOCUMENTATION = r"""
 ---
 module: zos_job_query
+version_added: '1.0.0'
 short_description: Query job status
 description:
   - List z/OS job(s) and the current status of the job(s).
@@ -29,6 +30,7 @@ description:
 author:
   - "Ping Xiao (@xiaopingBJ)"
   - "Demetrios Dimatos (@ddimatos)"
+  - "Rich Parker (@richp405)"
 options:
   job_name:
     description:
@@ -82,7 +84,8 @@ changed:
 jobs:
   description:
     The output information for a list of jobs matching specified criteria.
-    If no job status is found, this will return an empty job code with msg=JOB NOT FOUND.
+    If no job status is found, this will return ret_code dictionary with
+    parameter msg_txt = The job could not be found.
   returned: success
   type: list
   elements: dict
@@ -142,8 +145,8 @@ jobs:
             step_cc:
               description:
                 The CC returned for this step in the DD section.
-              type: str
-              sample: "00"
+              type: int
+              sample: 0
 
       sample:
         ret_code: {
@@ -153,7 +156,7 @@ jobs:
          "code": 0,
          "steps": [
             { "step_name": "STEP0001",
-              "step_cc": "0000"
+              "step_cc": 0
             }
           ]
         }
@@ -181,7 +184,9 @@ message:
      msg: "List FAILED! no such job been found: IYK3Z0R9"
 """
 
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import job_status
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.job import (
+    job_status,
+)
 
 from ansible.module_utils.basic import AnsibleModule
 import re
@@ -242,6 +247,7 @@ def query_jobs(params):
     job_name_in = params.get("job_name")
     job_id = params.get("job_id")
     owner = params.get("owner")
+
     jobs = []
     if job_id:
         jobs = job_status(job_id=job_id)
@@ -258,7 +264,9 @@ def parsing_jobs(jobs_raw):
     jobs = []
     ret_code = {}
     for job in jobs_raw:
-        status_raw = job.get("ret_code").get("msg", "")
+        # Easier to see than checking for an empty string, JOB NOT FOUND was
+        # replaced with None in the jobs.py and msg_txt field describes the job query instead
+        status_raw = job.get("ret_code").get("msg", "JOB NOT FOUND")
         if "AC" in status_raw:
             # the job is active
             ret_code = None
@@ -277,12 +285,13 @@ def parsing_jobs(jobs_raw):
         elif "ABENDU" in status_raw:
             # status = 'Ended abnormally'
             ret_code = {"msg": status_raw, "code": job.get("ret_code").get("code")}
-        elif "CANCELED" or "JCLERR" or "JCL ERROR" or "JOB NOT FOUND" in status_raw:
+        elif "CANCELED" in status_raw or "JCLERR" in status_raw or "JCL ERROR" in status_raw or "JOB NOT FOUND" in status_raw:
             # status = status_raw
             ret_code = {"msg": status_raw, "code": None}
         else:
             # status = 'Unknown'
             ret_code = {"msg": status_raw, "code": job.get("ret_code").get("code")}
+
         job_dict = {
             "job_name": job.get("job_name"),
             "owner": job.get("owner"),

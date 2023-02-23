@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2019, 2020
+# Copyright (c) IBM Corporation 2019, 2020, 2023
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -23,7 +23,7 @@ class ActionModule(ActionBase):
     def run(self, tmp=None, task_vars=None):
         """ handler for file transfer operations """
         if task_vars is None:
-            task_vars = dict()
+            task_vars = {}
 
         result = super(ActionModule, self).run(tmp, task_vars)
 
@@ -60,15 +60,13 @@ class ActionModule(ActionBase):
 
             if os.path.isdir(to_bytes(source, errors="surrogate_or_strict")):
                 result["failed"] = True
-                result["msg"] = to_text(u"NOT SUPPORTING THE DIRECTORY.")
+                result["msg"] = to_text("NOT SUPPORTING THE DIRECTORY.")
                 return result
-
-            changed = False
-            module_return = dict(changed=False)
 
             if tmp is None or "-tmp-" not in tmp:
                 tmp = self._make_tmp_path()
 
+            source_full = None
             try:
                 source_full = self._loader.get_real_file(source)
                 source_rel = os.path.basename(source)

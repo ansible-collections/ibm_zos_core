@@ -16,19 +16,6 @@ from __future__ import (absolute_import, division, print_function)
 
 __metaclass__ = type
 
-#######################################################
-# TODO - Not sure where the following information goes,
-# perhaps add it to the list of authors.
-# Team: JumpStart Team 8
-#   - "Austen Stewart"
-#   - "Almigdad Suliman"
-#   - "Nicholas Teves"
-#   - "Nuoya Xie"
-#   - "Trevor Glassey"
-#   - "Tyler Edwards"
-# Date: 07/2021
-#######################################################
-
 DOCUMENTATION = r"""
 module: zos_ickdsf_init
 short_description: Initialize volumes or minidisks on z/OS through ICKDSF init command.
@@ -37,9 +24,13 @@ description:
   - Writes volume label and VTOC on volume or minidisk.
 version_added: 1.6.0
 author:
-  - "Austen Stewart (@TODO)"
+  - "Austen Stewart (@stewartad)"
+  - "Almigdad Suliman (@Almigdad-Suliman)"
+  - "Nicholas Teves (@TODO)"
   - "Nuoya Xie (@TODO)"
-  - "Trevor Glassey (@TODO)"
+  - "Trevor Glassey (@tkglassey)"
+  - "Tyler Edwards (@TLEdwards-Git)"
+  - "Ketan Kelkar (@ketankelkar)"
 
 options:
   volume_address:
@@ -144,22 +135,22 @@ EXAMPLES = r"""
     volid: "DEMO0{{ item }}"
   loop: "{{ range(1, 4, 1) }}"
 """
-RETURN = r'''
+RETURN = r"""
 command:
   description: INIT command issued to ICKDSF tool.
   returned: success
   type: list
   elements: str
   sample:
-    [
-      " init unit(0903) noverify noverifyoffline volid(DEMO08) - ",
-      "   nods noindex"
-    ]
+      [
+        " init unit(0903) noverify noverifyoffline volid(DEMO08) - ",
+        "   nods noindex",
+      ]
 msg:
   description: Failure message returned by module.
   returned: failure
   type: str
-  sample: 'Index' cannot be False for SMS managed volumes.
+  sample: \'Index\' cannot be False for SMS managed volumes.
 rc:
   description:
     - return code from ICKDSF init mvs command
@@ -172,30 +163,30 @@ content:
   type: list
   elements: str
   sample:
-    [
-      "1ICKDSF - MVS/ESA    DEVICE SUPPORT FACILITIES 17.0                TIME: 18:32:22        01/17/23     PAGE   1",
-      "0        ",
-      "0 INIT UNIT(0903) NOVERIFY NOVERIFYOFFLINE VOLID(KET678) -",
-      "0   NODS NOINDEX",
-      "-ICK00700I DEVICE INFORMATION FOR 0903 IS CURRENTLY AS FOLLOWS:",
-      "-          PHYSICAL DEVICE = 3390",
-      "-          STORAGE CONTROLLER = 2107",
-      "-          STORAGE CONTROL DESCRIPTOR = E8",
-      "-          DEVICE DESCRIPTOR = 0C",
-      "-          ADDITIONAL DEVICE INFORMATION = 4A00003C",
-      "-          TRKS/CYL = 15, # PRIMARY CYLS = 100",
-      "0ICK04000I DEVICE IS IN SIMPLEX STATE",
-      "0ICK00703I DEVICE IS OPERATED AS A MINIDISK",
-      " ICK00091I 0903 NED=002107.900.IBM.75.0000000BBA01",
-      "-ICK03091I EXISTING VOLUME SERIAL READ = KET987",
-      "-ICK03096I EXISTING VTOC IS LOCATED AT CCHH=X'0000 0001' AND IS    14 TRACKS.",
-      "0ICK01314I VTOC IS LOCATED AT CCHH=X'0000 0001' AND IS    14 TRACKS.",
-      "-ICK00001I FUNCTION COMPLETED, HIGHEST CONDITION CODE WAS 0",
-      "0          18:32:22    01/17/23",
-      "0        ",
-      "-ICK00002I ICKDSF PROCESSING COMPLETE. MAXIMUM CONDITION CODE WAS 0"
-    ]
-'''
+      [
+        "1ICKDSF - MVS/ESA    DEVICE SUPPORT FACILITIES 17.0                TIME: 18:32:22        01/17/23     PAGE   1",
+        "0        ",
+        "0 INIT UNIT(0903) NOVERIFY NOVERIFYOFFLINE VOLID(KET678) -",
+        "0   NODS NOINDEX",
+        "-ICK00700I DEVICE INFORMATION FOR 0903 IS CURRENTLY AS FOLLOWS:",
+        "-          PHYSICAL DEVICE = 3390",
+        "-          STORAGE CONTROLLER = 2107",
+        "-          STORAGE CONTROL DESCRIPTOR = E8",
+        "-          DEVICE DESCRIPTOR = 0C",
+        "-          ADDITIONAL DEVICE INFORMATION = 4A00003C",
+        "-          TRKS/CYL = 15, # PRIMARY CYLS = 100",
+        "0ICK04000I DEVICE IS IN SIMPLEX STATE",
+        "0ICK00703I DEVICE IS OPERATED AS A MINIDISK",
+        " ICK00091I 0903 NED=002107.900.IBM.75.0000000BBA01",
+        "-ICK03091I EXISTING VOLUME SERIAL READ = KET987",
+        "-ICK03096I EXISTING VTOC IS LOCATED AT CCHH=X'0000 0001' AND IS    14 TRACKS.",
+        "0ICK01314I VTOC IS LOCATED AT CCHH=X'0000 0001' AND IS    14 TRACKS.",
+        "-ICK00001I FUNCTION COMPLETED, HIGHEST CONDITION CODE WAS 0",
+        "0          18:32:22    01/17/23",
+        "0        ",
+        "-ICK00002I ICKDSF PROCESSING COMPLETE. MAXIMUM CONDITION CODE WAS 0",
+      ]
+"""
 
 from ansible.module_utils.basic import AnsibleModule
 
@@ -227,7 +218,7 @@ def run_module():
 
     # sms managed and index are defined by ickdsf init as mutually exclusive.
     if module.params['sms_managed'] and not module.params['index']:
-      module.fail_json(msg="'Index' cannot be False for SMS managed volumes.", **result)
+        module.fail_json(msg="'Index' cannot be False for SMS managed volumes.", **result)
 
     if module.check_mode:
         module.exit_json(**result)

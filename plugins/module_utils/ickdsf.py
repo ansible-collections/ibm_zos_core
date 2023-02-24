@@ -109,7 +109,7 @@ def init(module, result, parsed_args):
 
     # TODO - add error handling here and in convert() for "bad" cmd
 
-    result['command'] = cmd #  add raw command to result -- good for debugging
+    result['command'] = cmd  # add raw command to result -- good for debugging
 
     # format into MVS Command
     sysprintDDStatement = DDStatement("SYSPRINT", StdoutDefinition())

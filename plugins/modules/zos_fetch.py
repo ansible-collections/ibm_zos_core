@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020, 2021, 2022
+# Copyright (c) IBM Corporation 2019 - 2023
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -146,7 +146,7 @@ notes:
     - Fetching HFS or ZFS type data sets is currently not supported.
     - For supported character sets used to encode data, refer to the
       L(documentation,https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html).
-    - M(zos_fetch) uses SFTP (Secure File Transfer Protocol) for the underlying
+    - L(zos_fetch,./zos_fetch.html) uses SFTP (Secure File Transfer Protocol) for the underlying
       transfer protocol; Co:Z SFTP is not supported. In the case of Co:z SFTP,
       you can exempt the Ansible userid on z/OS from using Co:Z thus falling back
       to using standard SFTP.
@@ -275,8 +275,7 @@ import os
 from math import ceil
 from shutil import rmtree
 from ansible.module_utils.basic import AnsibleModule
-# from ansible.module_utils._text import to_bytes
-from ansible.module_utils.common.text.converters import to_bytes
+from ansible.module_utils._text import to_bytes
 from ansible.module_utils.parsing.convert_bool import boolean
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser,

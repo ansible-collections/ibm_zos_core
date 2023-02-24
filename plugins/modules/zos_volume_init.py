@@ -27,7 +27,7 @@ author:
   - "Austen Stewart (@stewartad)"
   - "Almigdad Suliman (@Almigdad-Suliman)"
   - "Nicholas Teves (@TODO)"
-  - "Nuoya Xie (@TODO)"
+  - "Nuoya Xie (@nxie13)"
   - "Trevor Glassey (@tkglassey)"
   - "Tyler Edwards (@TLEdwards-Git)"
   - "Ketan Kelkar (@ketankelkar)"

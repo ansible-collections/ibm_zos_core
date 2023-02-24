@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2020, 2022
+# Copyright (c) IBM Corporation 2020
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -453,42 +453,37 @@ class EncodeUtils(object):
 
         return convert_rc
 
-    def uss_tag_encoding(self, file_path, tag):
-        """Tag the file/directory specified with the given code set.
-        If `file_path` is a directory, all of the files and subdirectories will
-        be tagged recursively.
-
+    def uss_file_tag(self, file_path):
+        """Returns the current tag set for a file.
         Arguments:
-            file_path {str} -- Absolute file path to tag.
-            tag {str} -- Code set to tag the file/directory.
-
-        Raises:
-            TaggingError: When the chtag command fails.
+            file_path {str} -- USS path to the file.
+        Returns:
+            str -- Current tag set for the file, as returned by 'ls -T'
+            None -- If the file does not exist or the command fails.
         """
-        is_dir = os.path.isdir(file_path)
+        if not os.path.exists(file_path):
+            return None
 
-        tag_cmd = "chtag -{0}c {1} {2}".format("R" if is_dir else "t", tag, file_path)
-        rc, out, err = self.module.run_command(tag_cmd)
-        if rc != 0:
-            raise TaggingError(file_path, tag, rc, out, err)
+        try:
+            tag_cmd = "ls -T {0}".format(file_path)
+            rc, stdout, stderr = self.module.run_command(tag_cmd)
+
+            if rc != 0:
+                return None
+
+            # The output from 'ls -T' should be like this:
+            # t IBM-037     T=on  ansible-zos-copy-payload-D230123-T123818
+            # The second item from the split should be the tag.
+            ls_parts = stdout.split()
+            return ls_parts[1]
+        except Exception:
+            return None
 
 
 class EncodeError(Exception):
     def __init__(self, message):
         self.msg = 'An error occurred during encoding: "{0}"'.format(message)
         super(EncodeError, self).__init__(self.msg)
-
-
-class TaggingError(Exception):
-    def __init__(self, file_path, tag, rc, stdout, stderr):
-        self.msg = 'An error occurred during tagging of {0} to {1}'.format(
-            file_path,
-            tag
-        )
-        self.rc = rc
-        self.stdout = stdout
-        self.stderr = stderr
-        super(TaggingError, self).__init__(self.msg)
 
 
 class MoveFileError(Exception):

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020, 2022
+# Copyright (c) IBM Corporation 2020, 2022, 2023
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -140,9 +140,9 @@ options:
     type: str
   encoding:
     description:
-      - The character set of the source I(src). M(zos_blockinfile)
-        requires to be provided with correct encoding to read the content
-        of USS file or data set. If this parameter is not provided, this
+      - The character set of the source I(src). L(zos_blockinfile,./zos_blockinfile.html)
+        requires it to be provided with correct encoding to read the content
+        of a USS file or data set. If this parameter is not provided, this
         module assumes that USS file or data set is encoded in IBM-1047.
       - Supported character sets rely on the charset conversion utility (iconv)
         version; the most common character sets are supported.
@@ -175,7 +175,7 @@ notes:
     or another user.
   - All data sets are always assumed to be cataloged. If an uncataloged data set
     needs to be encoded, it should be cataloged first. The
-    M(zos_data_set) module can be used to catalog uncataloged
+    L(zos_data_set,./zos_data_set.html) module can be used to catalog uncataloged
     data sets.
   - For supported character sets used to encode data, refer to the
     L(documentation,https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html).
@@ -533,8 +533,8 @@ def main():
                 result['backup_name'] = Backup.uss_file_backup(src, backup_name=backup, compress=False)
             else:
                 result['backup_name'] = Backup.mvs_file_backup(dsn=src, bk_dsn=backup, tmphlq=tmphlq)
-        except Exception:
-            module.fail_json(msg="creating backup has failed")
+        except Exception as err:
+            module.fail_json(msg="Unable to allocate backup {0} destination: {1}".format(backup, str(err)))
     # state=present, insert/replace a block with matching regex pattern
     # state=absent, delete blocks with matching regex pattern
     if parsed_args.get('state') == 'present':

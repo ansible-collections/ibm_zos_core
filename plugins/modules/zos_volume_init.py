@@ -17,10 +17,10 @@ from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
 DOCUMENTATION = r"""
-module: zos_ickdsf_init
+module: zos_volume_init
 short_description: Initialize volumes or minidisks on z/OS through ICKDSF init command.
 description:
-  - ICKDSF INIT command to initialize volume or minidisk.
+  - Wraps the ICKDSF INIT command to initialize volume or minidisk.
   - Writes volume label and VTOC on volume or minidisk.
 version_added: 1.6.0
 author:
@@ -98,19 +98,19 @@ EXAMPLES = r"""
 - name: Initialize target volume with all default options. Target volume address is '1234', set volume name to 'DEMO01'.
         Target volume is checked to ensure it is offline and contains no data sets. Volume is SMS managed, has an index
         and VTOC size defined by the system.
-  zos_ickdsf_init:
+  zos_volume_init:
     volume_address: "1234"
     volid: "DEMO01"
 
 - name: Initialize target volume with all default options same as above and additionally check the existing volid
         matches the given value 'DEMO02' before re-initializing the volume and renaming it to 'DEMO01'
-  zos_ickdsf_init:
+  zos_volume_init:
     volume_address: "1234"
     volid: "DEMO01"
     verify_volid: "DEMO02"
 
 - name: Initialize non-SMS managed target volume with all the default options.
-  zos_ickdsf_init:
+  zos_volume_init:
     volume_address: "1234"
     volid: "DEMO01"
     sms_managed: no
@@ -118,7 +118,7 @@ EXAMPLES = r"""
 - name: Initialize a new SMS managed DASD volume with new volume serial 'e8d8' with 30 track VTOC, an index, as long as
         the existing volume serial is 'ine8d8' and there are no pre-existing data sets on the target. The check to see
         if volume is online before intialization is skipped.
-  zos_ickdsf_init:
+  zos_volume_init:
     volume_address: e8d8
     vtoc_tracks: 30
     index: yes
@@ -130,7 +130,7 @@ EXAMPLES = r"""
 
 - name: Initialize 3 new DASD volumes (0901, 0902, 0903) for use on a z/OS system as 'DEMO01', 'DEMO02', 'DEMO03'
         using Ansible loops.
-  zos_ickdsf_init:
+  zos_volume_init:
     volume_address: "090{{ item }}"
     volid: "DEMO0{{ item }}"
   loop: "{{ range(1, 4, 1) }}"

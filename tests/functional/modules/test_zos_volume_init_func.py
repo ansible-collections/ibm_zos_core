@@ -48,7 +48,7 @@ def test_guard_rail_and_setup(ansible_zos_module):
     # take volume offline
     hosts.all.zos_operator(cmd=f"vary {TEST_VOL_ADDR},offline")
 
-    results = hosts.all.zos_ickdsf_init(
+    results = hosts.all.zos_volume_init(
         volume_address=params['volume_address'],
         verify_offline=params['verify_offline'],
         volid=params['volid'],
@@ -88,7 +88,7 @@ def test_index_param(ansible_zos_module, params):
     # take volume offline
     hosts.all.zos_operator(cmd=f"vary {TEST_VOL_ADDR},offline")
 
-    results = hosts.all.zos_ickdsf_init(**params)
+    results = hosts.all.zos_volume_init(**params)
 
     for result in results.contacted.values():
         assert result.get("changed") is True
@@ -115,7 +115,7 @@ def test_volid_volume_address_assigned_correctly(ansible_zos_module):
     # take volume offline
     hosts.all.zos_operator(cmd=f"vary {TEST_VOL_ADDR},offline")
 
-    results = hosts.all.zos_ickdsf_init(**params)
+    results = hosts.all.zos_volume_init(**params)
 
     # bring volume back online
     hosts.all.zos_operator(cmd=f"vary {TEST_VOL_ADDR},online")
@@ -149,7 +149,7 @@ def test_no_index_sms_managed_mutually_exclusive(ansible_zos_module):
     # take volume offline
     hosts.all.zos_operator(cmd=f"vary {TEST_VOL_ADDR},offline")
 
-    results = hosts.all.zos_ickdsf_init(**params)
+    results = hosts.all.zos_volume_init(**params)
 
     # bring volume back online
     hosts.all.zos_operator(cmd=f"vary {TEST_VOL_ADDR},online")
@@ -171,7 +171,7 @@ def test_vtoc_tracks_parm(ansible_zos_module):
     # take volume offline
     hosts.all.zos_operator(cmd=f"vary {TEST_VOL_ADDR},offline")
 
-    results = hosts.all.zos_ickdsf_init(**params)
+    results = hosts.all.zos_volume_init(**params)
 
     # bring volume back online
     hosts.all.zos_operator(cmd=f"vary {TEST_VOL_ADDR},online")
@@ -214,7 +214,7 @@ def test_good_param_values(ansible_zos_module, params):
     # take volume offline
     hosts.all.zos_operator(cmd=f"vary {TEST_VOL_ADDR},offline")
 
-    results = hosts.all.zos_ickdsf_init(**params)
+    results = hosts.all.zos_volume_init(**params)
 
     for result in results.contacted.values():
         assert result.get("changed") is True
@@ -276,7 +276,7 @@ def test_bad_param_values(ansible_zos_module, params, expected_rc):
     # take volume offline
     hosts.all.zos_operator(cmd=f"vary {TEST_VOL_ADDR},offline")
 
-    results = hosts.all.zos_ickdsf_init(**params)
+    results = hosts.all.zos_volume_init(**params)
 
     for result in results.contacted.values():
         assert result.get("changed") is False
@@ -316,7 +316,7 @@ def test_no_existing_data_sets_check(ansible_zos_module):
 
     try:
         # set up/initialize volume properly so a data set can be added
-        hosts.all.zos_ickdsf_init(**setup_params)
+        hosts.all.zos_volume_init(**setup_params)
 
         # bring volume back online
         hosts.all.zos_operator(cmd=f"vary {TEST_VOL_ADDR},online")
@@ -328,7 +328,7 @@ def test_no_existing_data_sets_check(ansible_zos_module):
         hosts.all.zos_operator(cmd=f"vary {TEST_VOL_ADDR},offline")
 
         # run vol_init against vol with data set on it.
-        results = hosts.all.zos_ickdsf_init(**test_params)
+        results = hosts.all.zos_volume_init(**test_params)
 
         for result in results.contacted.values():
             assert result.get("changed") is False
@@ -362,7 +362,7 @@ def test_minimal_params(ansible_zos_module):
     # take volume offline
     hosts.all.zos_operator(cmd=f"vary {TEST_VOL_ADDR},offline")
 
-    results = hosts.all.zos_ickdsf_init(
+    results = hosts.all.zos_volume_init(
         volume_address=params['volume_address'],
         verify_offline=params['verify_offline'],
         volid=params['volid']

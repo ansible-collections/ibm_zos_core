@@ -17,9 +17,9 @@ import pytest
 __metaclass__ = type
 
 # TEST_VOL_ADDR = '0903'
-TEST_VOL_ADDR = '01A2'
-TEST_VOL_SER = 'H0000I'
 # TEST_VOL_SER = 'KET999'
+TEST_VOL_ADDR = '01A2'
+TEST_VOL_SER = 'USER02'
 
 INDEX_CREATION_SUCCESS_MSG = 'VTOC INDEX CREATION SUCCESSFUL'
 VTOC_LOC_MSG = "ICK01314I VTOC IS LOCATED AT CCHH=X'0000 0001' AND IS  {:4d} TRACKS."
@@ -30,14 +30,19 @@ VTOC_LOC_MSG = "ICK01314I VTOC IS LOCATED AT CCHH=X'0000 0001' AND IS  {:4d} TRA
 # verify_existing_volid below or change value to match current volume serial on
 # target.
 
-def test_guard_rail(ansible_zos_module):
+def test_guard_rail_and_setup(ansible_zos_module):
     hosts = ansible_zos_module
+
+    # remove all data sets from target volume. Expected to be the following 3
+    hosts.all.zos_data_set(name="IMSTESTL.IMS01.SPOOL1", state="absent")
+    hosts.all.zos_data_set(name="IMSTESTL.IMS01.SPOOL2", state="absent")
+    hosts.all.zos_data_set(name="IMSTESTL.IMS01.SPOOL3", state="absent")
 
     params = dict(
         volume_address=TEST_VOL_ADDR,
         verify_offline=False,
         volid=TEST_VOL_SER,
-        verify_existing_volid='H0000I'
+        verify_existing_volid='USER02'
     )
 
     # take volume offline

@@ -108,8 +108,8 @@ def init(module, result, parsed_args):
     cmd = convert(module, result, parsed_args)
 
     # TODO - add error handling here and in convert() for "bad" cmd
-    
-    result['command'] = cmd # add raw command to result -- good for debugging
+
+    result['command'] = cmd #  add raw command to result -- good for debugging
 
     # format into MVS Command
     sysprintDDStatement = DDStatement("SYSPRINT", StdoutDefinition())
@@ -119,7 +119,6 @@ def init(module, result, parsed_args):
     dds.append(sysprintDDStatement)
     dds.append(sysInDDStatement)
 
-    
     # invoke MVS Command
     response = MVSCmd.execute_authorized("ICKDSF", dds, parm='NOREPLYU,FORCE')
 

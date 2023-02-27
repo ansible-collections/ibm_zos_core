@@ -424,7 +424,7 @@ def main():
 
     # Check if dest/src exists
     if not ds_utils.exists():
-        module.fail_json(msg=f"{src} does not exist")
+        module.fail_json(msg="{0} does not exist".format(src))
 
     file_type = ds_utils.ds_type()
     if file_type == 'USS':

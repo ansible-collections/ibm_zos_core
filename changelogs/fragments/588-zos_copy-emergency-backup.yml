@@ -1,5 +1,0 @@
-bugfixes:
-  - zos_copy - fixed wrongful creation of destination backups when module option
-    `force` is true, creating emergency backups meant to restore the system
-    to its initial state in case of a module failure only when force is false.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/590)

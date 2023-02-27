@@ -656,7 +656,9 @@ class DataSet(object):
         if ds_type in DataSet.MVS_PARTITIONED:
             return DataSet._pds_empty(name)
         elif ds_type in DataSet.MVS_SEQ:
-            return len(datasets.read(name, tail=10)) == 0
+            module = AnsibleModuleHelper(argument_spec={})
+            rc, stdout, stderr = module.run_command("head \"//'{0}'\"".format(name))
+            return rc == 0 and len(stdout.strip()) == 0
         elif ds_type in DataSet.MVS_VSAM:
             return DataSet._vsam_empty(name)
 

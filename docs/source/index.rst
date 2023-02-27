@@ -44,15 +44,15 @@ The IBM z/OS core collection includes `connection plugins`_,
 ansible-doc to automate tasks on z/OS.
 
 .. _connection plugins:
-   https://github.com/ansible-collections/ibm_zos_core/tree/master/plugins/connection/
+   https://github.com/ansible-collections/ibm_zos_core/tree/main/plugins/connection/
 .. _action plugins:
-   https://github.com/ansible-collections/ibm_zos_core/tree/master/plugins/action/
+   https://github.com/ansible-collections/ibm_zos_core/tree/main/plugins/action/
 .. _modules:
-    https://github.com/ansible-collections/ibm_zos_core/tree/master/plugins/modules/
+    https://github.com/ansible-collections/ibm_zos_core/tree/main/plugins/modules/
 .. _sample playbooks:
-    https://github.com/ansible-collections/ibm_zos_core/tree/master/playbooks/
+    https://github.com/ansible-collections/ibm_zos_core/tree/main/playbooks/
 .. _filters:
-   https://github.com/ansible-collections/ibm_zos_core/tree/master/plugins/filter/
+   https://github.com/ansible-collections/ibm_zos_core/tree/main/plugins/filter/
 
 
 .. toctree::

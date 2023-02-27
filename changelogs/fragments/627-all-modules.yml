@@ -1,0 +1,19 @@
+trivial:
+  - Update documentation to use link L(...) over M(...) meta.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/627)
+  - Update modules such doc defaults match module defaults.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/627)
+  - Initialize variables to meet linting requirements.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/627)
+  - Remove unused global vars.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/627)
+  - Update Makefile tooling.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/627)
+  - Remove requirements.txt because it is maintained in the pipeline.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/627)
+  - Complete Ansible certification for versions 2.12, 2.13, 2.14 and 2.15.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/627)
+  - Update and add certification files ignore.txt.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/627)
+  - Update test cases with added checks.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/627)

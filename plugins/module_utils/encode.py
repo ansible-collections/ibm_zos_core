@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2020
+# Copyright (c) IBM Corporation 2020, 2022
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -484,6 +484,18 @@ class EncodeError(Exception):
     def __init__(self, message):
         self.msg = 'An error occurred during encoding: "{0}"'.format(message)
         super(EncodeError, self).__init__(self.msg)
+
+
+class TaggingError(Exception):
+    def __init__(self, file_path, tag, rc, stdout, stderr):
+        self.msg = 'An error occurred during tagging of {0} to {1}'.format(
+            file_path,
+            tag
+        )
+        self.rc = rc
+        self.stdout = stdout
+        self.stderr = stderr
+        super(TaggingError, self).__init__(self.msg)
 
 
 class MoveFileError(Exception):

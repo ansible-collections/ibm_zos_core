@@ -18,7 +18,8 @@ import tempfile
 from os import path, walk
 from string import ascii_uppercase, digits
 from random import randint
-from ansible.module_utils._text import to_bytes
+# from ansible.module_utils._text import to_bytes
+from ansible.module_utils.common.text.converters import to_bytes
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
     AnsibleModuleHelper,
 )

@@ -14,6 +14,7 @@
 from __future__ import absolute_import, division, print_function
 from shellescape import quote
 from pprint import pprint
+from os import path
 
 __metaclass__ = type
 
@@ -126,6 +127,10 @@ def test_uss_encoding_conversion_without_dest(ansible_zos_module):
             assert result.get("dest") == USS_FILE
             assert result.get("backup_name") is None
             assert result.get("changed") is True
+
+        tag_results = hosts.all.shell(cmd="ls -T {0}".format(USS_FILE))
+        for result in tag_results.contacted.values():
+            assert TO_ENCODING in result.get("stdout")
     finally:
         hosts.all.file(path=USS_FILE, state="absent")
 
@@ -149,8 +154,13 @@ def test_uss_encoding_conversion_when_dest_not_exists_01(ansible_zos_module):
             assert result.get("dest") == USS_NONE_FILE
             assert result.get("backup_name") is None
             assert result.get("changed") is True
+
+        tag_results = hosts.all.shell(cmd="ls -T {0}".format(USS_NONE_FILE))
+        for result in tag_results.contacted.values():
+            assert TO_ENCODING in result.get("stdout")
     finally:
         hosts.all.file(path=USS_FILE, state="absent")
+        hosts.all.file(path=USS_NONE_FILE, state="absent")
 
 
 def test_uss_encoding_conversion_when_dest_not_exists_02(ansible_zos_module):
@@ -193,6 +203,10 @@ def test_uss_encoding_conversion_uss_file_to_uss_file(ansible_zos_module):
             assert result.get("dest") == USS_DEST_FILE
             assert result.get("backup_name") is None
             assert result.get("changed") is True
+
+        tag_results = hosts.all.shell(cmd="ls -T {0}".format(USS_DEST_FILE))
+        for result in tag_results.contacted.values():
+            assert FROM_ENCODING in result.get("stdout")
     finally:
         hosts.all.file(path=USS_FILE, state="absent")
         hosts.all.file(path=USS_DEST_FILE, state="absent")
@@ -217,6 +231,10 @@ def test_uss_encoding_conversion_uss_file_to_uss_path(ansible_zos_module):
             assert result.get("dest") == USS_DEST_PATH
             assert result.get("backup_name") is None
             assert result.get("changed") is True
+
+        tag_results = hosts.all.shell(cmd="ls -T {0}/{1}".format(USS_DEST_PATH, path.basename(USS_FILE)))
+        for result in tag_results.contacted.values():
+            assert FROM_ENCODING in result.get("stdout")
     finally:
         hosts.all.file(path=USS_FILE, state="absent")
         hosts.all.file(path=USS_DEST_PATH, state="absent")
@@ -244,6 +262,12 @@ def test_uss_encoding_conversion_uss_path_to_uss_path(ansible_zos_module):
             assert result.get("dest") == USS_DEST_PATH
             assert result.get("backup_name") is not None
             assert result.get("changed") is True
+
+        tag_results = hosts.all.shell(cmd="ls -T {0}".format(USS_DEST_PATH))
+        for result in tag_results.contacted.values():
+            assert FROM_ENCODING in result.get("stdout")
+            assert TO_ENCODING not in result.get("stdout")
+            assert "untagged" not in result.get("stdout")
     finally:
         hosts.all.file(path=USS_PATH, state="absent")
         hosts.all.file(path=USS_DEST_PATH, state="absent")
@@ -292,6 +316,10 @@ def test_uss_encoding_conversion_mvs_ps_to_uss_file(ansible_zos_module):
             assert result.get("dest") == USS_DEST_FILE
             assert result.get("backup_name") is not None
             assert result.get("changed") is True
+
+        tag_results = hosts.all.shell(cmd="ls -T {0}".format(USS_DEST_FILE))
+        for result in tag_results.contacted.values():
+            assert TO_ENCODING in result.get("stdout")
     finally:
         hosts.all.file(path=USS_DEST_FILE, state="absent")
         hosts.all.file(path=result.get("backup_name"), state="absent")
@@ -369,6 +397,10 @@ def test_uss_encoding_conversion_mvs_pds_member_to_uss_file(ansible_zos_module):
             assert result.get("dest") == USS_DEST_FILE
             assert result.get("backup_name") is not None
             assert result.get("changed") is True
+
+        tag_results = hosts.all.shell(cmd="ls -T {0}".format(USS_DEST_FILE))
+        for result in tag_results.contacted.values():
+            assert TO_ENCODING in result.get("stdout")
     finally:
         hosts.all.file(path=USS_DEST_FILE, state="absent")
         hosts.all.file(path=result.get("backup_name"), state="absent")
@@ -417,6 +449,11 @@ def test_uss_encoding_conversion_mvs_pds_to_uss_path(ansible_zos_module):
             assert result.get("dest") == USS_DEST_PATH
             assert result.get("backup_name") is None
             assert result.get("changed") is True
+
+        tag_results = hosts.all.shell(cmd="ls -T {0}".format(USS_DEST_PATH))
+        for result in tag_results.contacted.values():
+            assert FROM_ENCODING in result.get("stdout")
+            assert "untagged" not in result.get("stdout")
     finally:
         hosts.all.file(path=USS_DEST_PATH, state="absent")
 
@@ -498,6 +535,10 @@ def test_uss_encoding_conversion_mvs_vsam_to_uss_file(ansible_zos_module):
             # print(cat_result.contacted.values())
             # for uss_file_result in cat_result.contacted.values():
             #     assert TEST_DATA in uss_file_result.get("stdout")
+
+        tag_results = hosts.all.shell(cmd="ls -T {0}".format(USS_DEST_FILE))
+        for result in tag_results.contacted.values():
+            assert TO_ENCODING in result.get("stdout")
     finally:
         hosts.all.file(path=USS_DEST_FILE, state="absent")
         hosts.all.file(path=result.get("backup_name"), state="absent")

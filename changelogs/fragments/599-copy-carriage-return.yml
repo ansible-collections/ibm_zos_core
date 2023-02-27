@@ -1,4 +1,0 @@
-bugfixes:
-- zos_copy - fixes a bug where the computed record length for a new destination
-  dataset would include newline characters.
-  (https://github.com/ansible-collections/ibm_zos_core/pull/620)

@@ -115,6 +115,11 @@ class ActionModule(ActionBase):
             msg = "Backup file provided but 'backup' parameter is False"
             return self._exit_action(result, msg, failed=True)
 
+        use_template = _process_boolean(task_args.get("use_template"), default=False)
+        if remote_src and use_template:
+            msg = "Use of Jinja2 templates is only valid for local files and directories"
+            return self._exit_action(result, msg, failed=True)
+
         if not is_uss:
             if mode or owner or group:
                 msg = "Cannot specify 'mode', 'owner' or 'group' for MVS destination"
@@ -136,7 +141,6 @@ class ActionModule(ActionBase):
                 )
                 return self._exit_action(result, msg, failed=True)
 
-            use_template = _process_boolean(task_args.get("use_template"), default=False)
             template_dir = None
 
             if content:
@@ -158,17 +162,20 @@ class ActionModule(ActionBase):
                         return result
 
                     if use_template:
-                        template_parameters = task_args.get("template_parameters", dict())
+                        try:
+                            template_parameters = task_args.get("template_parameters", dict())
 
-                        renderer = _create_template_environment(
-                            template_parameters,
-                            src,
-                            encoding
-                        )
-                        template_dir, rendered_dir = renderer.render_dir_template(
-                            task_vars.get("vars", dict())
-                        )
-                        src = rendered_dir
+                            renderer = _create_template_environment(
+                                template_parameters,
+                                src,
+                                encoding
+                            )
+                            template_dir, rendered_dir = renderer.render_dir_template(
+                                task_vars.get("vars", dict())
+                            )
+                            src = rendered_dir
+                        except Exception as err:
+                            return self._exit_action(result, str(err), failed=True)
 
                     # TODO: change this to account for rendered templates.
                     task_args["size"] = sum(
@@ -181,18 +188,22 @@ class ActionModule(ActionBase):
                         )
 
                     if use_template:
-                        template_parameters = task_args.get("template_parameters", dict())
+                        try:
+                            template_parameters = task_args.get("template_parameters", dict())
 
-                        renderer = _create_template_environment(
-                            template_parameters,
-                            src,
-                            encoding
-                        )
-                        template_dir, rendered_file = renderer.render_file_template(
-                            os.path.basename(src),
-                            task_vars.get("vars", dict())
-                        )
-                        src = rendered_file
+                            renderer = _create_template_environment(
+                                template_parameters,
+                                src,
+                                encoding
+                            )
+                            template_dir, rendered_file = renderer.render_file_template(
+                                # os.path.basename(src),
+                                "what.jcl",
+                                task_vars.get("vars", dict())
+                            )
+                            src = rendered_file
+                        except Exception as err:
+                            return self._exit_action(result, str(err), failed=True)
 
                     task_args["size"] = os.stat(src).st_size
                 display.vvv(u"ibm_zos_copy calculated size: {0}".format(os.stat(src).st_size), host=self._play_context.remote_addr)

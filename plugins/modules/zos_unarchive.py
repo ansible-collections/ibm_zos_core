@@ -36,7 +36,8 @@ RETURN = r'''
 import abc
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
-    better_arg_parser,)
+    better_arg_parser,
+    data_set)
 from ansible.module_utils.common.text.converters import to_bytes, to_native
 import glob
 import bz2
@@ -65,19 +66,21 @@ class Unarchive(abc.ABC):
     def __init__(self, module):
         # TODO params init
         None
-
+    
 # TODO Define MVSUnarchive class
 class MVSUnarchive(Unarchive):
     def __init__(self, module):
         # TODO MVSUnarchive params init
         super(MVSUnarchive, self).__init__(module)
         None
-
+    
+def destination_exists(self):
+        return data_set.DataSet.data_set_exists(self.destination)
 
 # TODO Define AMATerseUnarchive class
 class AMATerseUnarchive(MVSUnarchive):
     def __init__(self, module):
-        super(TerseUnarchive, self).__init__(module)
+        super(AMATerseUnarchive, self).__init__(module)
 
 # TODO Define XMITUnarchive class
 
@@ -177,7 +180,10 @@ def run_module():
     # 3. how about keep newest?
     unarchive = get_unarchive_handler(module)
 
+    if not unarchive.destination_exists():
+        module.fail_json(msg="{0} does not exists, please provide a valid path.".format(module.params.get("path")))
 
+    # unarchive.extract()
 
 def main():
     run_module()

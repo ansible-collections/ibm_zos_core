@@ -65,22 +65,95 @@ except Exception:
 class Unarchive(abc.ABC):
     def __init__(self, module):
         # TODO params init
-        None
+        self.path = module.params.get("path")
+        self.dest = module.params.get("dest")
+        self.format = module.params.get("format").get("name")
+        self.format_options = module.params.get("format").get("suboptions")
+        self.tmphlq = module.params.get("tmp_hlq")
+        self.force = module.params.get("force")
+
+    @abc.abstractmethod
+    def extract(self):
+        pass
     
+    @property
+    def result(self):
+        return {
+            'path': self.path,
+            'changed': self.changed,
+        }
 # TODO Define MVSUnarchive class
 class MVSUnarchive(Unarchive):
     def __init__(self, module):
         # TODO MVSUnarchive params init
         super(MVSUnarchive, self).__init__(module)
-        None
+        self.dest_volume = module.params.get("format").suboptions("dest_volume")
     
-def destination_exists(self):
-        return data_set.DataSet.data_set_exists(self.destination)
+    def create_temp_ds(self, tmphlq):
+        if tmphlq:
+            hlq = tmphlq
+        else:
+            rc, hlq, err = self.module.run_command("hlq")
+            hlq = hlq.replace('\n', '')
+        cmd = "mvstmphelper {0}.RESTORE".format(hlq)
+        rc, temp_ds, err = self.module.run_command(cmd)
+        temp_ds = temp_ds.replace('\n', '')
+        changed = data_set.DataSet.ensure_present(name=temp_ds, replace=True, type='SEQ', record_format='U')
+        return temp_ds
+
+    def restore(self, source):
+        """
+        Calls ADDRSU using RESTORE to unpack the dump datasets.
+        """
+        """
+        Dump src datasets identified as self.targets into a temporary dataset using ADRDSSU.
+        """
+        restore_cmd = """ RESTORE FULL INDDNAME(SOURCE) OUTDDNAME(TARGET) PURGE REPLACE"""
+        cmd = " mvscmdauth --pgm=ADRDSSU --SOURCE{0},old --TARGET={1},old --sysin=stdin --sysprint=*".format(source, self.target_volume)
+        rc, out, err = self.module.run_command(cmd, data=restore_cmd)
+
+        if rc != 0:
+            self.module.fail_json(
+                msg="Failed executing ADRDSSU to archive {0}".format(source),
+                stdout=out,
+                stderr=err,
+                stdout_lines=restore_cmd,
+                rc=rc,
+            )
+        return rc
+
+    def path_exists(self):
+        return data_set.DataSet.data_set_exists(self.path)
 
 # TODO Define AMATerseUnarchive class
 class AMATerseUnarchive(MVSUnarchive):
     def __init__(self, module):
         super(AMATerseUnarchive, self).__init__(module)
+    
+    def unpack(self, path, dest):
+        """
+        Unpacks using AMATerse, assumes the data set has only been packed once.
+        """
+        cmd = "mvscmdhelper --pgm=AMATERSE --args='UNPACK' --sysut1={0} --sysut2={2} --sysprint=*".format(path, dest)
+        rc, out, err = self.module.run_command(cmd)
+        if rc != 0:
+            self.module.fail_json(
+                msg="Failed executing AMATERSE to restore {0} into {1}".format(path, dest),
+                stdout=out,
+                stderr=err,
+                rc=rc,
+            )
+        return rc
+
+    def extract_path(self):
+        # 0. Create a tmp data set to dump the contens of untersing
+        # 1. Call Terse to unpack the dataset
+        # 2. Call super to RESTORE using ADDRSU
+        temp_ds = self.create_temp_ds(self.tmphlq)
+        self.unpack(self.path, temp_ds)
+        rc = super(AMATerseUnarchive, self).restore(temp_ds, self.dest_volume)
+        self.changed = True
+        return rc
 
 # TODO Define XMITUnarchive class
 
@@ -118,6 +191,10 @@ def run_module():
                                 type='str',
                                 required=False,
                             ),
+                            dest_volume=dict(
+                                type='str',
+                                required=False
+                            ),
                         ),
                         default=dict(xmit_log_dataset="")
                     ),
@@ -150,6 +227,10 @@ def run_module():
                                 type='str',
                                 required=False,
                             ),
+                            dest_volume=dict(
+                                type='str',
+                                required=False
+                            ),
                         ),
                         default=dict(xmit_log_dataset=""),
                     )
@@ -180,10 +261,10 @@ def run_module():
     # 3. how about keep newest?
     unarchive = get_unarchive_handler(module)
 
-    if not unarchive.destination_exists():
+    if not unarchive.path_exists():
         module.fail_json(msg="{0} does not exists, please provide a valid path.".format(module.params.get("path")))
 
-    # unarchive.extract()
+    unarchive.extract_path()
 
 def main():
     run_module()

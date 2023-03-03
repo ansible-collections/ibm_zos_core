@@ -74,12 +74,24 @@ class MVSUnarchive(Unarchive):
         None
 
 
-# TODO Define TerseUnarchive class
-class TerseUnarchive(MVSUnarchive):
+# TODO Define AMATerseUnarchive class
+class AMATerseUnarchive(MVSUnarchive):
     def __init__(self, module):
         super(TerseUnarchive, self).__init__(module)
 
 # TODO Define XMITUnarchive class
+
+def get_unarchive_handler(module):
+    format = module.params.get("format").get("name")
+    if format in ["tar", "gz", "bz2"]:
+        # return TarUnarchive(module)
+        None
+    elif format == "terse":
+        return AMATerseUnarchive(module)
+    elif format == "xmit":
+        # return XMITUnarchive(module)
+        None
+    # return ZipUnarchive(module)
 
 def run_module():
     # TODO Add module parameters
@@ -159,7 +171,12 @@ def run_module():
     except ValueError as err:
         module.fail_json(msg="Parameter verification failed", stderr=str(err))
     # TODO Add module logic steps
-    None
+    # 0. get the appropiate unarchive handler
+    # 1. step verify that the file or data set exists
+    # 2. Attempt extraction
+    # 3. how about keep newest?
+    unarchive = get_unarchive_handler(module)
+
 
 
 def main():

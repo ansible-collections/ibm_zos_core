@@ -74,7 +74,8 @@ options:
     description:
       - The number of tracks to initialize the volume table of contents (VTOC) with.
       - The VTOC will be placed in cylinder 0 head 1.
-      - If no tracks are specified it will default to the number of tracks in a cylinder minus 1. Tracks in a cylinder vary based on direct-access storage device (DASD) models, for 3390 a cylinder is 15 tracks.
+      - If no tracks are specified it will default to the number of tracks in a cylinder minus 1. Tracks in a cylinder vary based on direct-access storage
+        device (DASD) models, for 3390 a cylinder is 15 tracks.
     required: false
     type: int
   index:

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2022
+# Copyright (c) IBM Corporation 2023
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -18,10 +18,14 @@ __metaclass__ = type
 
 DOCUMENTATION = r"""
 module: zos_volume_init
-short_description: Initialize volumes or minidisks on z/OS through ICKDSF init command.
+short_description: Initialize volumes or minidisks.
 description:
-  - Wraps the ICKDSF INIT command to initialize volume or minidisk.
-  - Writes volume label and VTOC on volume or minidisk.
+  - Initialize a volume or minidisk on z/OS.
+  - I(zos_volume_init) will create the volume label and entry into the volume table of contents (VTOC).
+  - Volumes are used for storing data and executable programs.
+  - A minidisk is a portion of a disk that is linked to your virtual machine.
+  - A VTOC lists the data sets that reside on a volume, their location, size, and other attirbutes.
+  - I(zos_volume_init) uses the ICKDSF utility.
 version_added: 1.6.0
 author:
   - "Austen Stewart (@stewartad)"
@@ -33,62 +37,64 @@ author:
   - "Ketan Kelkar (@ketankelkar)"
 
 options:
-  volume_address:
+  address:
     description:
-      - 3 or 4 hexadecimal digit address of the volume to initialize.
-      - This could be a unit address or device number.
+      - I(address) is a 3 or 4 digit hexadecimal number that specifies the address of the volume or minidisk.
+      - I(address) can be the number assigned to the device (device number) when it is installed or the virtual address.
     required: true
     type: str
-  verify_existing_volid:
+  verify_volid:
     description:
-      - Verify that the provided volume serial matches the one found on existing volume/minidisk.
-      - Module fails if volser does not match.
-      - Note - This option is NOT a boolean, please leave it blank in order to skip the verification.
+      - Verify that the volume serial matches what is on the existing volume or minidisk.
+      - I(verify_volid) must be 1 to 6 alphanumeric characters or "*NONE*".
+      - To verify that a volume serial number does not exist, use I(verify_volid="*NONE*").
+      - If I(verify_volid) is specified and the volume serial number does not match that found on the volume or minidisk, initialization does not complete.
+      - If I(verify_volid="*NONE*") is specified and a volume serial is found on the volume or minidisk, initialization does not complete.
+      - Note - This option is NOT a boolean, please leave it blank in order to skip the verification. # TODO
     required: false
     type: str
   verify_offline:
     description:
-      - Verify that the device is offline to all other systems.
-      - Beware, defaults set on target z/OS systems may override ICKDSF parameters.
+      - Verify that the device is not online to any other systems, initialization does not complete.
+      - Beware, defaults set on target z/OS systems may override ICKDSF parameters. # TODO
     type: bool
     required: false
     default: true
   volid:
     description:
-      - Specify the volume serial number to initialize the volume with.
+      - The volume serial number used to initialize a volume or minidisk.
       - Expects 1-6 alphanumeric, national ($, \\#, \\@) or special characters.
-      - volid's specified with less than 6 characters are left justified and padded with blank chars (X'40').
+      - A I(volid) with less than 6 characters will be padded with spaces.
       - Characters are not validated so check with operating system guide for valid alphanumeric characters.
-      - Also referred to as volser or volume serial number.
-      - Default behavior in the case this parameter is not specified in the case of an existing device initialization is the reuse the existing volume serial.
+      - A I(volid) can also be referred to as volser or volume serial number.
+      - When I(volid) is not specified for a previously initialized volume or minidisk, the volume serial number will remain unchanged.
     required: false
     type: str
-  vtoc_tracks:
+  vtoc_size:
     description:
-      - The number of tracks to initialize the VTOC with.
-      - The VTOC will be placed at cylinder 0 head 1 for the number of tracks specified.
-      - Typically, ICKDSF will default the size to the number of tracks in a cylinder minus 1.
-      - For a 3390, the default is cylinder 0, track 1 for 14 tracks
+      - The number of tracks to initialize the volume table of contents (VTOC) with.
+      - The VTOC will be placed in cylinder 0 head 1.
+      - If no tracks are specified it will default to the number of tracks in a cylinder minus 1. Tracks in a cylinder vary based on direct-access storage device (DASD) models, for 3390 a cylinder is 15 tracks.
     required: false
     type: int
   index:
     description:
-      - Create a VTOC index during volume initialization.
-      - The index size will be based on the size of the volume and the size of the VTOC that was created.
-      - The index will be placed on the volume after the VTOC.
-      - Set to false to not generate an index.
+      - Create a volume table of contents (VTOC) index.
+      - The VTOC index enhances the performance of VTOC access.
+      - When set to I(false), no index will be created.
     required: false
     type: bool
     default: true
   sms_managed:
     description:
-      - Assigned to be managed by Storage Management System (SMS).
+      - Specifies that hte volume be managed by Storage Management System (SMS).
+      - If I(sms_managed) is I(true) then I(index) mist also be I(true).
     type: bool
     required: false
     default: true
-  verify_no_data_sets_exist:
+  verify_volume_empty:
     description:
-      - Verify if data sets other than the VTOC index data set and/or VVDS exist on the volume to be initialized.
+      - Verify that no data sets other than the volume table of contents (VTOC) index or the VSAM Volume Data Set(VVDS) exist on the target volume.
       - Beware that z/OS system defaults can override ICKDSF parameters.
     required: false
     type: bool
@@ -99,19 +105,19 @@ EXAMPLES = r"""
         Target volume is checked to ensure it is offline and contains no data sets. Volume is SMS managed, has an index
         and VTOC size defined by the system.
   zos_volume_init:
-    volume_address: "1234"
+    address: "1234"
     volid: "DEMO01"
 
-- name: Initialize target volume with all default options same as above and additionally check the existing volid
-        matches the given value 'DEMO02' before re-initializing the volume and renaming it to 'DEMO01'
+- name: Initialize target volume with all default options and additionally check the existing volid
+        matches the given value 'DEMO02' before re-initializing the volume and renaming it to 'DEMO01'.
   zos_volume_init:
-    volume_address: "1234"
+    address: "1234"
     volid: "DEMO01"
     verify_volid: "DEMO02"
 
 - name: Initialize non-SMS managed target volume with all the default options.
   zos_volume_init:
-    volume_address: "1234"
+    address: "1234"
     volid: "DEMO01"
     sms_managed: no
 
@@ -119,24 +125,24 @@ EXAMPLES = r"""
         the existing volume serial is 'ine8d8' and there are no pre-existing data sets on the target. The check to see
         if volume is online before intialization is skipped.
   zos_volume_init:
-    volume_address: e8d8
-    vtoc_tracks: 30
+    address: e8d8
+    vtoc_size: 30
     index: yes
     sms_managed: yes
     volid: ine8d8
-    verify_existing_volid: ine8d8
-    verify_no_data_sets_exist: yes
+    verify_volid: ine8d8
+    verify_volume_empty: yes
     verify_offline: no
 
 - name: Initialize 3 new DASD volumes (0901, 0902, 0903) for use on a z/OS system as 'DEMO01', 'DEMO02', 'DEMO03'
         using Ansible loops.
   zos_volume_init:
-    volume_address: "090{{ item }}"
+    address: "090{{ item }}"
     volid: "DEMO0{{ item }}"
   loop: "{{ range(1, 4, 1) }}"
 """
 RETURN = r"""
-command:
+cmd:
   description: INIT command issued to ICKDSF tool.
   returned: success
   type: list
@@ -153,7 +159,7 @@ msg:
   sample: \'Index\' cannot be False for SMS managed volumes.
 rc:
   description:
-    - return code from ICKDSF init mvs command
+    - Return code from ICKDSF init mvs command.
   type: dict
   returned: when ICKDSF init command is issued.
 content:
@@ -197,14 +203,14 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import ickdsf  # 
 def run_module():
 
     module_args = dict(
-        volume_address=dict(type="str", required=True),
-        verify_existing_volid=dict(type="str", required=False),
+        address=dict(type="str", required=True),
+        verify_volid=dict(type="str", required=False),
         verify_offline=dict(type="bool", required=False, default=True),
         volid=dict(type="str", required=False),
-        vtoc_tracks=dict(type="int", required=False),
+        vtoc_size=dict(type="int", required=False),
         index=dict(type="bool", required=False, default=True),
         sms_managed=dict(type="bool", required=False, default=True),
-        verify_no_data_sets_exist=dict(type="bool", required=False, default=True),
+        verify_volume_empty=dict(type="bool", required=False, default=True),
     )
 
     result = dict(
@@ -213,7 +219,7 @@ def run_module():
 
     module = AnsibleModule(
         argument_spec=module_args,
-        supports_check_mode=True
+        supports_check_mode=False
     )
 
     # sms managed and index are defined by ickdsf init as mutually exclusive.

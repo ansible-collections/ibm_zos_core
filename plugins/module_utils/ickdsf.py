@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2020
+# Copyright (c) IBM Corporation 2023
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -25,59 +25,59 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dd_statement impo
 )
 
 
-def convert(module, result, args):
+def get_init_command(module, result, args):
 
     # Get parameters from playbooks
-    volume_address = args.get('volume_address')
-    verify_existing_volid = args.get('verify_existing_volid')
+    address = args.get('address')
+    verify_volid = args.get('verify_volid')
     verify_offline = args.get('verify_offline')
     volid = args.get('volid')
-    vtoc_tracks = args.get('vtoc_tracks')
+    vtoc_size = args.get('vtoc_size')
     index = args.get('index')
-    verify_no_data_sets_exist = args.get('verify_no_data_sets_exist')
+    verify_volume_empty = args.get('verify_volume_empty')
     sms_managed = args.get('sms_managed')
 
     # Let AnsibleModule param parsing handle this check.
     # validate parameters
-    # if volume_address is None:
+    # if address is None:
     #     msg = 'Volume address must be defined'
     #     # raise Exception(msg)
     #     module.fail_json(msg) # TODO - fail with result -- do i want an init class so i can self.fail_json?
 
     # let ICKDSF handle this check. expect RC=12
     # try:
-    #     int(volume_address, 16)
+    #     int(address, 16)
     # except ValueError:
     #     result['failed'] = True
-    #     msg = 'volume_address must be 3 or 4 64-bit hexadecimal digits'
+    #     msg = 'address must be 3 or 4 64-bit hexadecimal digits'
     #     # raise Exception(msg)
     #     module.fail_json(msg, **result) # TODO - fail with result -- do i want an init class so i can self.fail_json?
 
     # convert playbook args to JCL parameters
     cmd_args = {
-        'volume_address': 'unit({0})'.format(volume_address)
+        'address': 'unit({0})'.format(address)
     }
 
-    if vtoc_tracks:
-        cmd_args['vtoc_tracks'] = 'vtoc(0, 1, {0})'.format(vtoc_tracks)
+    if vtoc_size:
+        cmd_args['vtoc_size'] = 'vtoc(0, 1, {0})'.format(vtoc_size)
     else:
-        cmd_args['vtoc_tracks'] = ''
+        cmd_args['vtoc_size'] = ''
     if volid:
         cmd_args['volid'] = 'volid({0})'.format(volid)
     else:
         cmd_args['volid'] = ''
-    if not verify_existing_volid:
-        cmd_args['verify_existing_volid'] = 'noverify'
+    if not verify_volid:
+        cmd_args['verify_volid'] = 'noverify'
     else:
-        cmd_args['verify_existing_volid'] = 'verify({0})'.format(verify_existing_volid)
+        cmd_args['verify_volid'] = 'verify({0})'.format(verify_volid)
     if verify_offline:
         cmd_args['verify_offline'] = 'verifyoffline'
     else:
         cmd_args['verify_offline'] = 'noverifyoffline'
-    if verify_no_data_sets_exist:
-        cmd_args['verify_no_data_sets_exist'] = 'nods'
+    if verify_volume_empty:
+        cmd_args['verify_volume_empty'] = 'nods'
     else:
-        cmd_args['verify_no_data_sets_exist'] = 'ds'
+        cmd_args['verify_volume_empty'] = 'ds'
     if index:
         cmd_args['index'] = ''
     else:
@@ -90,14 +90,14 @@ def convert(module, result, args):
     # Format into JCL strings for zos_mvs_raw
     cmd = [
         ' init {0} {1} {2} {3} - '.format(
-            cmd_args['volume_address'],
-            cmd_args['verify_existing_volid'],
+            cmd_args['address'],
+            cmd_args['verify_volid'],
             cmd_args['verify_offline'],
             cmd_args['volid']),
         ' {0} {1} {2} {3}'.format(
-            cmd_args['vtoc_tracks'],
+            cmd_args['vtoc_size'],
             cmd_args['sms_managed'],
-            cmd_args['verify_no_data_sets_exist'],
+            cmd_args['verify_volume_empty'],
             cmd_args['index'])]
 
     return cmd
@@ -105,11 +105,11 @@ def convert(module, result, args):
 
 def init(module, result, parsed_args):
     # Convert args parsed from module to ickdsf INIT command
-    cmd = convert(module, result, parsed_args)
+    cmd = get_init_command(module, result, parsed_args)
 
-    # TODO - add error handling here and in convert() for "bad" cmd
+    # TODO - add error handling here and in get_init_command() for "bad" cmd
 
-    result['command'] = cmd  # add raw command to result -- good for debugging
+    result['cmd'] = cmd  # add raw command to result -- good for debugging
 
     # format into MVS Command
     sysprintDDStatement = DDStatement("SYSPRINT", StdoutDefinition())

@@ -27,7 +27,7 @@ VTOC_LOC_MSG = "ICK01314I VTOC IS LOCATED AT CCHH=X'0000 0001' AND IS  {:4d} TRA
 
 # Guard Rail to prevent unintentional initialization of targeted volume.
 # If this test fails, either reset target volume serial to match
-# verify_existing_volid below or change value to match current volume serial on
+# verify_volid below or change value to match current volume serial on
 # target.
 
 def test_guard_rail_and_setup(ansible_zos_module):
@@ -39,20 +39,20 @@ def test_guard_rail_and_setup(ansible_zos_module):
     hosts.all.zos_data_set(name="IMSTESTL.IMS01.SPOOL3", state="absent")
 
     params = dict(
-        volume_address=TEST_VOL_ADDR,
+        address=TEST_VOL_ADDR,
         verify_offline=False,
         volid=TEST_VOL_SER,
-        verify_existing_volid='USER02'
+        verify_volid='USER02'
     )
 
     # take volume offline
     hosts.all.zos_operator(cmd=f"vary {TEST_VOL_ADDR},offline")
 
     results = hosts.all.zos_volume_init(
-        volume_address=params['volume_address'],
+        address=params['address'],
         verify_offline=params['verify_offline'],
         volid=params['volid'],
-        verify_existing_volid=params['verify_existing_volid']
+        verify_volid=params['verify_volid']
         )
 
     for result in results.contacted.values():
@@ -67,14 +67,14 @@ def test_guard_rail_and_setup(ansible_zos_module):
     "params", [
         # min params test with index : true
         ({
-            'volume_address': TEST_VOL_ADDR,
+            'address': TEST_VOL_ADDR,
             'verify_offline': False,
             'volid': TEST_VOL_SER,
             'index' : True
         }),
         # min params test with index : false
         ({
-            'volume_address': TEST_VOL_ADDR,
+            'address': TEST_VOL_ADDR,
             'verify_offline': False,
             'volid': TEST_VOL_SER,
             'index' : False,
@@ -104,11 +104,11 @@ def test_index_param(ansible_zos_module, params):
 
 
 # check that correct volume_addr is assigned to correct volid
-def test_volid_volume_address_assigned_correctly(ansible_zos_module):
+def test_volid_address_assigned_correctly(ansible_zos_module):
     hosts = ansible_zos_module
 
     params = {
-        'volume_address': TEST_VOL_ADDR,
+        'address': TEST_VOL_ADDR,
         'verify_offline': False,
         'volid': TEST_VOL_SER,
     }
@@ -133,14 +133,14 @@ def test_volid_volume_address_assigned_correctly(ansible_zos_module):
         # REQUESTED ATTRIBUTES' or a line with several attributes including unit
         # address (expected value $TEST_VOL_ADDR) and volume serial (expected
         # value $TEST_VOL_SER). If those two match, then the 'volid' parameter
-        # is correctly assigned to the 'volume_address' parameter.
+        # is correctly assigned to the 'address' parameter.
         assert TEST_VOL_SER in display_cmd_output
 
 def test_no_index_sms_managed_mutually_exclusive(ansible_zos_module):
     hosts = ansible_zos_module
 
     params = {
-        'volume_address': TEST_VOL_ADDR,
+        'address': TEST_VOL_ADDR,
         'verify_offline': False,
         'volid': TEST_VOL_SER,
         'index' : False,
@@ -158,15 +158,15 @@ def test_no_index_sms_managed_mutually_exclusive(ansible_zos_module):
         assert result.get("changed") is False
         assert "'Index' cannot be False" in result.get("msg")
 
-def test_vtoc_tracks_parm(ansible_zos_module):
+def test_vtoc_size_parm(ansible_zos_module):
     hosts = ansible_zos_module
 
     params = {
-        'volume_address': TEST_VOL_ADDR,
+        'address': TEST_VOL_ADDR,
         'verify_offline': False,
         'volid': TEST_VOL_SER,
-        'vtoc_tracks' : 8
-        # 'vtoc_tracks' : 11 # test to test that this test handles 2 digit vtoc_index
+        'vtoc_size' : 8
+        # 'vtoc_size' : 11 # test to test that this test handles 2 digit vtoc_index
     }
     # take volume offline
     hosts.all.zos_operator(cmd=f"vary {TEST_VOL_ADDR},offline")
@@ -180,29 +180,29 @@ def test_vtoc_tracks_parm(ansible_zos_module):
         assert result.get("changed") is True
         assert result.get('rc') == 0
         content_str = ''.join(result.get("content"))
-        assert VTOC_LOC_MSG.format(params.get('vtoc_tracks')) in content_str
+        assert VTOC_LOC_MSG.format(params.get('vtoc_size')) in content_str
 
 @pytest.mark.parametrize(
     "params", [
         # min params test; also sets up with expected attrs (eg existing volid)
         ({
-            'volume_address': TEST_VOL_ADDR,
+            'address': TEST_VOL_ADDR,
             'verify_offline': False,
             'volid': TEST_VOL_SER,
         }),
-        # verify_existing_volid check - volid is known b/c previous test set it up.
+        # verify_volid check - volid is known b/c previous test set it up.
         ({
-            'volume_address': TEST_VOL_ADDR,
+            'address': TEST_VOL_ADDR,
             'verify_offline': False,
             'volid': TEST_VOL_SER,
-            'verify_existing_volid' : TEST_VOL_SER
+            'verify_volid' : TEST_VOL_SER
         }),
-        # verify_no_data_sets_exist check - no data sets on vol is known b/c previous test set it up.
+        # verify_volume_empty check - no data sets on vol is known b/c previous test set it up.
         ({
-            'volume_address': TEST_VOL_ADDR,
+            'address': TEST_VOL_ADDR,
             'verify_offline': False,
             'volid': TEST_VOL_SER,
-            'verify_no_data_sets_exist' : True
+            'verify_volume_empty' : True
         }),
     ]
 )
@@ -226,42 +226,42 @@ def test_good_param_values(ansible_zos_module, params):
 
 @pytest.mark.parametrize(
     "params,expected_rc", [
-        # volume_address not hexadecimal
+        # address not hexadecimal
         ({
-            'volume_address': 'XYZ',
+            'address': 'XYZ',
             'verify_offline': False,
             'volid': TEST_VOL_SER
         }, 12),
-        # volume_address length too short
+        # address length too short
         ({
-            'volume_address': '01',
+            'address': '01',
             'verify_offline': False,
             'volid': TEST_VOL_SER
         }, 12),
-        # volume_address specified is not accesible to current
+        # address specified is not accesible to current
         ({
-            'volume_address': '0000',
+            'address': '0000',
             'verify_offline': False,
             'volid': TEST_VOL_SER
         }, 12),
-        # negative value for vtoc_tracks
+        # negative value for vtoc_size
         ({
-            'volume_address': TEST_VOL_ADDR,
+            'address': TEST_VOL_ADDR,
             'verify_offline': False,
             'volid': TEST_VOL_SER,
-            'vtoc_tracks': -10
+            'vtoc_size': -10
         }, 12),
-        # note - "'vtoc_tracks': 0" gets treated as vtoc_tracks wasn't defined and invokes default behavior.
+        # note - "'vtoc_size': 0" gets treated as vtoc_size wasn't defined and invokes default behavior.
         # volid check - incorrect existing volid
         ({
-            'volume_address': TEST_VOL_ADDR,
+            'address': TEST_VOL_ADDR,
             'verify_offline': False,
             'volid': TEST_VOL_SER,
-            'verify_existing_volid': '000000'
+            'verify_volid': '000000'
         }, 12),
         # volid value too long
         ({
-            'volume_address': 'ABCDEFGHIJK',
+            'address': 'ABCDEFGHIJK',
             'verify_offline': False,
             'volid': TEST_VOL_SER,
         }, 12),
@@ -299,16 +299,16 @@ def test_no_existing_data_sets_check(ansible_zos_module):
     hosts = ansible_zos_module
 
     setup_params = {
-        'volume_address': TEST_VOL_ADDR,
+        'address': TEST_VOL_ADDR,
         'verify_offline': False,
         'volid': TEST_VOL_SER,
         'sms_managed': False # need non-sms managed to add data set on ECs
     }
     test_params = {
-        'volume_address': TEST_VOL_ADDR,
+        'address': TEST_VOL_ADDR,
         'verify_offline': False,
         'volid': TEST_VOL_SER,
-        'verify_no_data_sets_exist': True,
+        'verify_volume_empty': True,
     }
 
     # take volume offline
@@ -354,7 +354,7 @@ def test_minimal_params(ansible_zos_module):
     hosts = ansible_zos_module
 
     params = dict(
-        volume_address=TEST_VOL_ADDR,
+        address=TEST_VOL_ADDR,
         verify_offline=False,
         volid=TEST_VOL_SER
     )
@@ -363,7 +363,7 @@ def test_minimal_params(ansible_zos_module):
     hosts.all.zos_operator(cmd=f"vary {TEST_VOL_ADDR},offline")
 
     results = hosts.all.zos_volume_init(
-        volume_address=params['volume_address'],
+        address=params['address'],
         verify_offline=params['verify_offline'],
         volid=params['volid']
         )

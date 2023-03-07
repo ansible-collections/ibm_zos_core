@@ -65,6 +65,7 @@ except Exception:
 class Unarchive(abc.ABC):
     def __init__(self, module):
         # TODO params init
+        self.module = module
         self.path = module.params.get("path")
         self.dest = module.params.get("dest")
         self.format = module.params.get("format").get("name")
@@ -73,7 +74,7 @@ class Unarchive(abc.ABC):
         self.force = module.params.get("force")
 
     @abc.abstractmethod
-    def extract(self):
+    def extract_path(self):
         pass
     
     @property
@@ -87,7 +88,7 @@ class MVSUnarchive(Unarchive):
     def __init__(self, module):
         # TODO MVSUnarchive params init
         super(MVSUnarchive, self).__init__(module)
-        self.dest_volume = module.params.get("format").suboptions("dest_volume")
+        # self.dest_volume = module.params.get("format").suboptions("dest_volume")
     
     def create_temp_ds(self, tmphlq):
         if tmphlq:
@@ -108,8 +109,10 @@ class MVSUnarchive(Unarchive):
         """
         Dump src datasets identified as self.targets into a temporary dataset using ADRDSSU.
         """
-        restore_cmd = """ RESTORE FULL INDDNAME(SOURCE) OUTDDNAME(TARGET) PURGE REPLACE"""
-        cmd = " mvscmdauth --pgm=ADRDSSU --SOURCE{0},old --TARGET={1},old --sysin=stdin --sysprint=*".format(source, self.target_volume)
+        restore_cmd = """ RESTORE INDD(ARCHIVE) - 
+                          DS(INCL(**)) - 
+                          CATALOG """
+        cmd = " mvscmdauth --pgm=ADRDSSU --archive={0},old --sysin=stdin --sysprint=*".format(source)
         rc, out, err = self.module.run_command(cmd, data=restore_cmd)
 
         if rc != 0:
@@ -134,7 +137,7 @@ class AMATerseUnarchive(MVSUnarchive):
         """
         Unpacks using AMATerse, assumes the data set has only been packed once.
         """
-        cmd = "mvscmdhelper --pgm=AMATERSE --args='UNPACK' --sysut1={0} --sysut2={2} --sysprint=*".format(path, dest)
+        cmd = "mvscmdhelper --pgm=AMATERSE --args='UNPACK' --sysut1={0} --sysut2={1} --sysprint=*".format(path, dest)
         rc, out, err = self.module.run_command(cmd)
         if rc != 0:
             self.module.fail_json(
@@ -151,8 +154,8 @@ class AMATerseUnarchive(MVSUnarchive):
         # 2. Call super to RESTORE using ADDRSU
         temp_ds = self.create_temp_ds(self.tmphlq)
         self.unpack(self.path, temp_ds)
-        rc = super(AMATerseUnarchive, self).restore(temp_ds, self.dest_volume)
-        self.changed = True
+        rc = super(AMATerseUnarchive, self).restore(temp_ds)
+        self.changed = not rc
         return rc
 
 # TODO Define XMITUnarchive class
@@ -173,7 +176,7 @@ def run_module():
     # TODO Add module parameters
     module = AnsibleModule(
         argument_spec=dict(
-            path=dict(type='list', elements='str', required=True),
+            path=dict(type='str', required=True),
             dest=dict(type='str'),
             format=dict(
                 type='dict',
@@ -207,7 +210,7 @@ def run_module():
     )
 
     arg_defs = dict(
-        path=dict(type='list', elements='str', required=True, alias='src'),
+        path=dict(type='str', required=True, alias='src'),
         dest=dict(type='str', required=False),
         exclude_path=dict(type='list', elements='str', default=[]),
         format=dict(
@@ -265,6 +268,8 @@ def run_module():
         module.fail_json(msg="{0} does not exists, please provide a valid path.".format(module.params.get("path")))
 
     unarchive.extract_path()
+
+    module.exit_json(**unarchive.result)
 
 def main():
     run_module()

@@ -380,9 +380,9 @@ class DataSet(object):
             bool -- If data is found.
         """
         try:
-            if datasets.exists(name):
-                return True
-            elif DataSet.data_set_cataloged(name):
+            # if datasets.exists(name):
+            #     return True
+            if DataSet.data_set_cataloged(name):
                 return True
             elif volume is not None:
                 return DataSet._is_in_vtoc(name, volume)

@@ -227,7 +227,7 @@ class AnsibleModuleHelper(AnsibleModule):
             stderr=subprocess.PIPE,
             preexec_fn=preexec,
             env=env,
-            bufsize=self.PIPE_MAX_SIZE * 8
+            # bufsize=self.PIPE_MAX_SIZE * 8
         )
         if PY3 and pass_fds:
             kwargs["pass_fds"] = pass_fds
@@ -273,8 +273,9 @@ class AnsibleModuleHelper(AnsibleModule):
                 if isinstance(data, text_type):
                     data = to_bytes(data)
                 cmd.stdin.write(data)
-                if not cmd.stdin.closed:
-                    cmd.stdin.close()
+                cmd.stdin.close()
+                # if not cmd.stdin.closed:
+                #     cmd.stdin.close()
 
             while True:
                 events = selector.select(1)

@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2022
+# Copyright (c) IBM Corporation 2022, 2023
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -17,12 +17,8 @@ import os
 import tempfile
 from os import path
 
-from ansible.module_utils._text import to_bytes
-from jinja2 import Environment, FileSystemLoader
-
-# from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
-#     AnsibleModuleHelper,
-# )
+from ansible.module_utils._text import to_bytes, to_native
+from jinja2 import Environment, FileSystemLoader, TemplateNotFound, TemplateError
 
 class TemplateRenderer:
     """This class implements functionality to load and render Jinja2
@@ -99,7 +95,9 @@ class TemplateRenderer:
             ValueError: When the newline sequence is not valid.
         """
         if not path.exists(template_path):
-            raise FileNotFoundError()
+            raise FileNotFoundError("The template path {0} does not exist".format(
+                template_path
+            ))
 
         template_canonical_path = path.realpath(template_path)
         if path.isdir(template_canonical_path):
@@ -111,7 +109,9 @@ class TemplateRenderer:
             newline_sequence = self._NEWLINE_DELIMITER_SWAP[newline_sequence]
 
         if newline_sequence not in self._ALLOWED_NEWLINE_DELIMITERS:
-            raise ValueError()
+            raise ValueError("Newline delimiter '{0}' is not valid".format(
+                to_native(newline_sequence)
+            ))
 
         self.encoding = encoding
         self.template_dir = template_dir
@@ -151,23 +151,56 @@ class TemplateRenderer:
                     rendered template.
 
         Raises:
-            FileNotFoundError: When the template file doesn't exist.
-            Exception: When the rendering or creation of the temporary file
-                    fail.
+            TemplateNotFound: When the template file doesn't exist in the
+                    template directory.
+            TemplateError: When rendering of the template fails.
+            FileExistsError: When there is an error while trying to create the
+                    temp directory for rendered templates.
+            PermissionError: When there is an error accessing the temp directory.
+            IOError: When there is an error writing the rendered template.
+            ValueError: When there is an error writing the rendered template.
         """
-        if not path.exists(path.join(self.template_dir, file_path)):
-            raise FileNotFoundError()
-
-        template = self.templating_env.get_template(file_path)
-        rendered_contents = template.render(variables)
+        try:
+            template = self.templating_env.get_template(file_path)
+            rendered_contents = template.render(variables)
+        except TemplateNotFound as err:
+            raise TemplateNotFound("Template {0} was not found: {1}".format(
+                file_path,
+                to_native(err)
+            ))
+        except TemplateError as err:
+            raise TemplateError("Error while rendering {0}: {1}".format(
+                file_path,
+                to_native(err)
+            ))
 
         try:
             temp_template_dir = tempfile.mkdtemp()
+        except FileExistsError as err:
+            raise FileExistsError("Unable to create directory for rendered templates: {0}".format(
+                to_native(err)
+            ))
+        except PermissionError as err:
+            raise PermissionError("Error while trying to access temp directory for templates: {0}".format(
+                to_native(err)
+            ))
+
+        try:
             template_file_path = path.join(temp_template_dir, file_path)
             with open(template_file_path, mode="w", encoding=self.encoding) as template:
                 template.write(rendered_contents)
-        except Exception as e:
-            raise e
+        # There could be encoding errors.
+        except IOError as err:
+            raise IOError("An error ocurred while writing the rendered template for {0}: {1}".format(
+                file_path,
+                to_native(err)
+            ))
+        except ValueError as err:
+            raise ValueError("An error ocurred while writing the rendered template for {0}: {1}".format(
+                file_path,
+                to_native(err)
+            ))
+
 
         return temp_template_dir, template_file_path
 
@@ -185,30 +218,68 @@ class TemplateRenderer:
                     rendered templates' directory.
 
         Raises:
-            Exception: When the rendering or creation of the temporary file
-                    fail.
+            TemplateNotFound: When the template file doesn't exist in the
+                    template directory.
+            TemplateError: When rendering of the template fails.
+            FileExistsError: When there is an error while trying to create the
+                    temp directory for rendered templates.
+            PermissionError: When there is an error accessing the temp directory.
+            OSError: When there is an error while trying to create the
+                    temp directory for rendered templates.
+            IOError: When there is an error writing the rendered template.
+            ValueError: When there is an error writing the rendered template.
         """
         try:
             temp_parent_dir = tempfile.mkdtemp()
             last_dir = os.path.basename(self.template_dir)
             temp_template_dir = os.path.join(temp_parent_dir, last_dir)
             os.makedirs(temp_template_dir, exist_ok=True)
-        except Exception as e:
-            raise e
+        except FileExistsError as err:
+            raise FileExistsError("Unable to create directory for rendered templates: {0}".format(
+                to_native(err)
+            ))
+        except PermissionError as err:
+            raise PermissionError("Error while trying to access temp directory: {0}".format(
+                to_native(err)
+            ))
+        except OSError as err:
+            raise OSError("Error while trying to access temp directory: {0}".format(
+                to_native(err)
+            ))
 
         for path, subdirs, files in os.walk(self.template_dir):
             for template_file in files:
                 relative_dir = os.path.relpath(path, self.template_dir)
                 file_path = os.path.normpath(os.path.join(relative_dir, template_file))
-                template = self.templating_env.get_template(file_path)
-                rendered_contents = template.render(variables)
+
+                try:
+                    template = self.templating_env.get_template(file_path)
+                    rendered_contents = template.render(variables)
+                except TemplateNotFound as err:
+                    raise TemplateNotFound("Template {0} was not found: {1}".format(
+                        file_path,
+                        to_native(err)
+                    ))
+                except TemplateError as err:
+                    raise TemplateError("Error while rendering {0}: {1}".format(
+                        file_path,
+                        to_native(err)
+                    ))
 
                 try:
                     template_file_path = os.path.join(temp_template_dir, file_path)
                     os.makedirs(os.path.dirname(template_file_path), exist_ok=True)
                     with open(template_file_path, mode="w", encoding=self.encoding) as temp:
                         temp.write(rendered_contents)
-                except Exception as e:
-                    raise e
+                except IOError as err:
+                    raise IOError("An error ocurred while writing the rendered template for {0}: {1}".format(
+                        file_path,
+                        to_native(err)
+                    ))
+                except ValueError as err:
+                    raise ValueError("An error ocurred while writing the rendered template for {0}: {1}".format(
+                        file_path,
+                        to_native(err)
+                    ))
 
         return temp_parent_dir, temp_template_dir

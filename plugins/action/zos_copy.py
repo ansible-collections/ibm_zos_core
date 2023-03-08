@@ -197,8 +197,7 @@ class ActionModule(ActionBase):
                                 encoding
                             )
                             template_dir, rendered_file = renderer.render_file_template(
-                                # os.path.basename(src),
-                                "what.jcl",
+                                os.path.basename(src),
                                 task_vars.get("vars", dict())
                             )
                             src = rendered_file

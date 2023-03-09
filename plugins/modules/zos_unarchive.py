@@ -55,11 +55,12 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
 )
 
 try:
-    from zoautil_py import datasets, mvscmd, types
+    from zoautil_py import datasets, mvscmd, types, jobs
 except Exception:
     Datasets = MissingZOAUImport()
     mvscmd = MissingZOAUImport()
     types = MissingZOAUImport()
+    jobs = MissingZOAUImport()
 
 # TODO Define Unarchive class
 class Unarchive(abc.ABC):
@@ -83,7 +84,6 @@ class Unarchive(abc.ABC):
             'path': self.path,
             'changed': self.changed,
         }
-# TODO Define MVSUnarchive class
 class MVSUnarchive(Unarchive):
     def __init__(self, module):
         # TODO MVSUnarchive params init
@@ -128,7 +128,6 @@ class MVSUnarchive(Unarchive):
     def path_exists(self):
         return data_set.DataSet.data_set_exists(self.path)
 
-# TODO Define AMATerseUnarchive class
 class AMATerseUnarchive(MVSUnarchive):
     def __init__(self, module):
         super(AMATerseUnarchive, self).__init__(module)
@@ -158,7 +157,43 @@ class AMATerseUnarchive(MVSUnarchive):
         self.changed = not rc
         return rc
 
-# TODO Define XMITUnarchive class
+class XMITUnarchive(MVSUnarchive):
+    def __init__(self, module):
+        super(XMITUnarchive, self).__init__(module)
+    
+    def unpack(self, path, dest):
+        """
+        Unpacks using XMIT.
+
+        path is the archive
+        dest is the destination dataset
+        """
+        unpack_cmd = """
+        RECEIVE INDSN('{0}') - 
+        DA('{1}')
+        """.format(path, dest)
+        cmd = "tsocmd RECEIVE INDSN\\( \\'{0}\\' \\) ".format(path)
+        # rc, out, err = self.module.run_command(cmd, data=unpack_cmd)
+        rc, out, err = self.module.run_command(cmd)
+        if rc != 0:
+            self.module.fail_json(
+                msg="Failed executing RECEIVE to restore {0} into {1}".format(path, dest),
+                stdout=out,
+                stderr=err,
+                rc=rc,
+            )
+        return rc
+
+    def extract_path(self):
+        # 0. Create a tmp data set to dump the contens of receive
+        # 1. Call RECEIVE.
+        # 2. Call super to RESTORE using ADDRSU
+        temp_ds = self.create_temp_ds(self.tmphlq)
+        self.unpack(self.path, temp_ds)
+        rc = super(XMITUnarchive, self).restore(temp_ds)
+        self.changed = not rc
+        return rc
+
 
 def get_unarchive_handler(module):
     format = module.params.get("format").get("name")
@@ -168,8 +203,7 @@ def get_unarchive_handler(module):
     elif format == "terse":
         return AMATerseUnarchive(module)
     elif format == "xmit":
-        # return XMITUnarchive(module)
-        None
+        return XMITUnarchive(module)
     # return ZipUnarchive(module)
 
 def run_module():
@@ -258,10 +292,7 @@ def run_module():
     except ValueError as err:
         module.fail_json(msg="Parameter verification failed", stderr=str(err))
     # TODO Add module logic steps
-    # 0. get the appropiate unarchive handler
-    # 1. step verify that the file or data set exists
-    # 2. Attempt extraction
-    # 3. how about keep newest?
+    # 3. how about keep newest file when unarchiving?
     unarchive = get_unarchive_handler(module)
 
     if not unarchive.path_exists():

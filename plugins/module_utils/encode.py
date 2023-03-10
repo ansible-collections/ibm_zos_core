@@ -472,6 +472,32 @@ class EncodeUtils(object):
         if rc != 0:
             raise TaggingError(file_path, tag, rc, out, err)
 
+    def uss_file_tag(self, file_path):
+        """Returns the current tag set for a file.
+        Arguments:
+            file_path {str} -- USS path to the file.
+        Returns:
+            str -- Current tag set for the file, as returned by 'ls -T'
+            None -- If the file does not exist or the command fails.
+        """
+        if not os.path.exists(file_path):
+            return None
+
+        try:
+            tag_cmd = "ls -T {0}".format(file_path)
+            rc, stdout, stderr = self.module.run_command(tag_cmd)
+
+            if rc != 0:
+                return None
+
+            # The output from 'ls -T' should be like this:
+            # t IBM-037     T=on  ansible-zos-copy-payload-D230123-T123818
+            # The second item from the split should be the tag.
+            ls_parts = stdout.split()
+            return ls_parts[1]
+        except Exception as err:
+            return None
+
 
 class EncodeError(Exception):
     def __init__(self, message):

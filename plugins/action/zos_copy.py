@@ -125,6 +125,8 @@ class ActionModule(ActionBase):
                 msg = "Cannot specify 'mode', 'owner' or 'group' for MVS destination"
                 return self._exit_action(result, msg, failed=True)
 
+        template_dir = None
+
         if not remote_src:
             if local_follow and not src:
                 msg = "No path given for local symlink"
@@ -140,8 +142,6 @@ class ActionModule(ActionBase):
                     "read permission".format(src)
                 )
                 return self._exit_action(result, msg, failed=True)
-
-            template_dir = None
 
             if content:
                 try:

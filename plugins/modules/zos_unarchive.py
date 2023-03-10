@@ -151,9 +151,13 @@ class AMATerseUnarchive(MVSUnarchive):
         # 0. Create a tmp data set to dump the contens of untersing
         # 1. Call Terse to unpack the dataset
         # 2. Call super to RESTORE using ADDRSU
-        temp_ds = self.create_temp_ds(self.tmphlq)
-        self.unpack(self.path, temp_ds)
-        rc = super(AMATerseUnarchive, self).restore(temp_ds)
+        rc = 1
+        try:
+            temp_ds = self.create_temp_ds(self.tmphlq)
+            self.unpack(self.path, temp_ds)
+            rc = super(AMATerseUnarchive, self).restore(temp_ds)
+        finally:
+            datasets.delete(temp_ds)
         self.changed = not rc
         return rc
 

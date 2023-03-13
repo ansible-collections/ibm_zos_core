@@ -173,12 +173,13 @@ class XMITUnarchive(MVSUnarchive):
         dest is the destination dataset
         """
         unpack_cmd = """
-        RECEIVE INDSN('{0}') - 
+        PROFILE NOPROMPT -
+        RECEIVE INDSN('{0}') -
         DA('{1}')
         """.format(path, dest)
-        cmd = "tsocmd RECEIVE INDSN\\( \\'{0}\\' \\) ".format(path)
-        # rc, out, err = self.module.run_command(cmd, data=unpack_cmd)
-        rc, out, err = self.module.run_command(cmd)
+        cmd = "mvscmdauth --pgm=IKJEFT01 --sysin=stdin --sysprint=*".format(path)
+        rc, out, err = self.module.run_command(cmd, data=unpack_cmd)
+        # rc, out, err = self.module.run_command(cmd)
         if rc != 0:
             self.module.fail_json(
                 msg="Failed executing RECEIVE to restore {0} into {1}".format(path, dest),

@@ -209,8 +209,12 @@ def run_module():
                     + '" execution failed.  RC was {0}; Max RC was {1}.'.format(cmd.get("rc"), max_rc),
                     **result
                 )
+            else:
+                cmd["changed"] = True
+                cmd["failed"] = False
 
         result["changed"] = True
+        result["failed"] = False
         module.exit_json(**result)
 
     except Exception as e:

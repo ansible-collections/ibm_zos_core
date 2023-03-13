@@ -101,10 +101,10 @@ EXAMPLES = r"""
       commands:
            - LU TESTUSER
 
-- name: Execute TSO command to list RACF Certificates (allow 4 for no cert found)
+- name: Execute TSO command to list databases (allow 4 for no cert found)
   zos_tso_command:
       commands:
-           - RADCERT LIST
+           - listdsd
       max_rc: 4
 
 """

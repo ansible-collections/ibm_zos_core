@@ -176,7 +176,7 @@ def list_or_str_type(contents, dependencies):
 def run_module():
     module_args = dict(
         commands=dict(type="raw", required=True, aliases=["command"]),
-        max_rc=dict(type="int", required=False ),
+        max_rc=dict(type="int", required=False),
     )
 
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)

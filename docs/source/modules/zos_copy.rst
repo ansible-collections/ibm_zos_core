@@ -16,7 +16,7 @@ zos_copy -- Copy data to z/OS
 
 Synopsis
 --------
-- The :ref:`zos_copy <zos_copy_module>` module copies a file or data set from a local or a remote machine to a location on the remote machine.
+- The `zos_copy <./zos_copy.html>`_ module copies a file or data set from a local or a remote machine to a location on the remote machine.
 
 
 
@@ -68,7 +68,7 @@ dest
 
   ``dest`` can be a USS file, directory or MVS data set name.
 
-  If ``src`` and ``dest`` are files and if the parent directory of ``dest`` does not exist, then the task will fail
+  If ``dest`` has missing parent directories, they will be created.
 
   If ``dest`` is a nonexistent USS file, it will be created.
 
@@ -685,7 +685,7 @@ Notes
 
    For supported character sets used to encode data, refer to the `documentation <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html>`_.
 
-   :ref:`zos_copy <zos_copy_module>` uses SFTP (Secure File Transfer Protocol) for the underlying transfer protocol; Co:Z SFTP is not supported. In the case of Co:z SFTP, you can exempt the Ansible userid on z/OS from using Co:Z thus falling back to using standard SFTP.
+   `zos_copy <./zos_copy.html>`_ uses SFTP (Secure File Transfer Protocol) for the underlying transfer protocol; Co:Z SFTP is not supported. In the case of Co:z SFTP, you can exempt the Ansible userid on z/OS from using Co:Z thus falling back to using standard SFTP.
 
 
 

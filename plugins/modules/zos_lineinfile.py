@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020, 2022
+# Copyright (c) IBM Corporation 2020, 2022, 2023
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -164,7 +164,7 @@ options:
     default: no
   encoding:
     description:
-      - The character set of the source I(src). M(zos_lineinfile)
+      - The character set of the source I(src). L(zos_lineinfile,./zos_lineinfile.html)
         requires to be provided with correct encoding to read the content
         of USS file or data set. If this parameter is not provided, this
         module assumes that USS file or data set is encoded in IBM-1047.
@@ -421,6 +421,11 @@ def main():
 
     # analysis the file type
     ds_utils = data_set.DataSetUtils(src)
+
+    # Check if dest/src exists
+    if not ds_utils.exists():
+        module.fail_json(msg="{0} does not exist".format(src))
+
     file_type = ds_utils.ds_type()
     if file_type == 'USS':
         file_type = 1

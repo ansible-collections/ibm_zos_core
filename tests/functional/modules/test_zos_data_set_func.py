@@ -17,6 +17,7 @@ __metaclass__ = type
 
 import pytest
 from pipes import quote
+from pprint import pprint
 
 # TODO: determine if data set names need to be more generic for testcases
 # TODO: add additional tests to check additional data set creation parameter combinations
@@ -151,10 +152,17 @@ def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl):
         hosts.all.file(path=TEMP_PATH, state="directory")
         hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl), TEMP_PATH))
         results = hosts.all.zos_job_submit(
-            src=TEMP_PATH + "/SAMPLE", location="USS", wait=True
+            src=TEMP_PATH + "/SAMPLE", location="USS", wait=True, wait_time_s=30
         )
         # verify data set creation was successful
         for result in results.contacted.values():
+            pprint(result)
+            if(result.get("jobs")[0].get("ret_code") is None):
+                submitted_job_id = result.get("jobs")[0].get("job_id")
+                assert submitted_job_id is not None
+                results = hosts.all.zos_job_output(job_id=submitted_job_id)
+                print("Getting failed JOB")
+                pprint(vars(results))
             assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
         # verify first uncatalog was performed
         results = hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="uncataloged")

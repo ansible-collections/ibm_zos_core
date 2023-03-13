@@ -12,8 +12,8 @@ and expandable feature set.
 Action
 ------
 
-* ``zos_ping``: A fork of Ansible `normal`_ action plugin that is modified to
-  support modules written in REXX such as `zos_ping`_.
+* ``zos_ping``: Manages the REXX source transferred to the z/OS managed node for
+  `zos_ping`_.
 * ``zos_copy``: Used to `copy data`_ from the controller to the z/OS managed
   node.
 * ``zos_fetch``: Used to `fetch data`_ from the z/OS managed node to the

@@ -191,6 +191,7 @@ def run_module():
 
     arg_defs = dict(
         commands=dict(type=list_or_str_type, required=True, aliases=["command"]),
+        max_rc=dict(type="int", required=False),
     )
     try:
         parser = BetterArgParser(arg_defs)

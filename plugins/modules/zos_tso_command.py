@@ -118,7 +118,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser
 )
 
 
-def run_tso_command(commands, module):
+def run_tso_command(commands, module, max_rc):
     script = """/* REXX */
 PARSE ARG cmd
 address tso
@@ -131,11 +131,11 @@ end
 x = outtrap('OFF')
 exit rc
 """
-    command_detail_json = copy_rexx_and_run_commands(script, commands, module)
+    command_detail_json = copy_rexx_and_run_commands(script, commands, module, max_rc)
     return command_detail_json
 
 
-def copy_rexx_and_run_commands(script, commands, module):
+def copy_rexx_and_run_commands(script, commands, module, max_rc):
     command_detail_json = []
     delete_on_close = True
     tmp_file = NamedTemporaryFile(delete=delete_on_close)
@@ -146,9 +146,14 @@ def copy_rexx_and_run_commands(script, commands, module):
         rc, stdout, stderr = module.run_command([tmp_file.name, command])
         command_results = {}
         command_results["command"] = command
+        command_results["origrc"] = rc
+        if(rc <= max_rc):
+            rc = 0
+            command_results["failed"] = False
         command_results["rc"] = rc
         command_results["content"] = stdout.split("\n")
         command_results["lines"] = len(command_results.get("content", []))
+        command_results["stderror"] = stderr
         command_detail_json.append(command_results)
     return command_detail_json
 
@@ -199,7 +204,7 @@ def run_module():
         max_rc = 0
 
     try:
-        result["output"] = run_tso_command(commands, module)
+        result["output"] = run_tso_command(commands, module, max_rc)
         result["max_rc"] = max_rc
         for cmd in result.get("output"):
             if cmd.get("rc") > max_rc:
@@ -209,9 +214,6 @@ def run_module():
                     + '" execution failed.  RC was {0}; Max RC was {1}.'.format(cmd.get("rc"), max_rc),
                     **result
                 )
-            else:
-                cmd["changed"] = True
-                cmd["failed"] = False
 
         result["changed"] = True
         result["failed"] = False

@@ -147,7 +147,7 @@ def copy_rexx_and_run_commands(script, commands, module, max_rc):
         command_results = {}
         command_results["command"] = command
         command_results["origrc"] = rc
-        if(rc <= max_rc):
+        if rc <= max_rc:
             rc = 0
             command_results["failed"] = False
         command_results["rc"] = rc

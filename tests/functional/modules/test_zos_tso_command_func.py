@@ -168,8 +168,6 @@ def test_zos_tso_command_maxrc(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_tso_command(commands=["LISTDSD"],max_rc=4)
     for result in results.contacted.values():
-        print( "=============================" )
-        print( result )
         for item in result.get("output"):
             print( item )
             assert item.get("rc") < 5

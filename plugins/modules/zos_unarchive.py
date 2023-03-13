@@ -37,7 +37,8 @@ import abc
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser,
-    data_set)
+    data_set,
+    mvs_cmd)
 from ansible.module_utils.common.text.converters import to_bytes, to_native
 import glob
 import bz2
@@ -173,13 +174,16 @@ class XMITUnarchive(MVSUnarchive):
         dest is the destination dataset
         """
         unpack_cmd = """
-        PROFILE NOPROMPT -
-        RECEIVE INDSN('{0}') -
+        PROFILE NOPROMPT
+        RECEIVE INDSN('{0}')
         DA('{1}')
         """.format(path, dest)
-        cmd = "mvscmdauth --pgm=IKJEFT01 --sysin=stdin --sysprint=*".format(path)
+        cmd = "mvscmdauth --pgm=IKJEFT01 --systsin=stdin --systsprt=*"
         rc, out, err = self.module.run_command(cmd, data=unpack_cmd)
-        # rc, out, err = self.module.run_command(cmd)
+        # rc, out, err = mvs_cmd.ikjeft01(
+        # unpack_cmd,
+        # authorized=True
+        # )
         if rc != 0:
             self.module.fail_json(
                 msg="Failed executing RECEIVE to restore {0} into {1}".format(path, dest),

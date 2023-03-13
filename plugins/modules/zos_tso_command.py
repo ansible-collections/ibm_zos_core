@@ -34,6 +34,12 @@ options:
     type: raw
     aliases:
         - command
+  max_rc:
+    description:
+        - maximum allowable return code before an exception/failure is triggered
+    required: false
+    type: int
+
 """
 
 RETURN = r"""
@@ -52,6 +58,12 @@ output:
         rc:
             description:
                 The return code from the executed TSO command.
+            returned: always
+            type: int
+            sample: 0
+        max_rc:
+            description:
+                The maximum acceptable return code.
             returned: always
             type: int
             sample: 0
@@ -88,6 +100,12 @@ EXAMPLES = r"""
   zos_tso_command:
       commands:
            - LU TESTUSER
+
+- name: Execute TSO command to list RACF Certificates (allow 4 for no cert found)
+  zos_tso_command:
+      commands:
+           - RADCERT LIST
+      max_rc: 4
 
 """
 
@@ -158,6 +176,7 @@ def list_or_str_type(contents, dependencies):
 def run_module():
     module_args = dict(
         commands=dict(type="raw", required=True, aliases=["command"]),
+        max_rc=dict(type="int", required=False ),
     )
 
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
@@ -175,15 +194,19 @@ def run_module():
         module.fail_json(msg=repr(e), **result)
 
     commands = parsed_args.get("commands")
+    max_rc = parsed_args.get("max_rc")
+    if max_rc is None:
+        max_rc = 0
 
     try:
         result["output"] = run_tso_command(commands, module)
+        result["max_rc"] = max_rc
         for cmd in result.get("output"):
-            if cmd.get("rc") != 0:
+            if cmd.get("rc") > max_rc:
                 module.fail_json(
                     msg='The TSO command "'
                     + cmd.get("command", "")
-                    + '" execution failed.',
+                    + '" execution failed.  RC was {0}; Max RC was {1}.'.format(cmd.get("rc"), max_rc),
                     **result
                 )
 

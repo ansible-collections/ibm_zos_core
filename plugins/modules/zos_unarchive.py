@@ -63,7 +63,7 @@ except Exception:
     types = MissingZOAUImport()
     jobs = MissingZOAUImport()
 
-# TODO Define Unarchive class
+data_set_regex = r"(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}(?:\([A-Z$#@]{1}[A-Z0-9$#@]{0,7}\)){0,1}"
 class Unarchive(abc.ABC):
     def __init__(self, module):
         # TODO params init
@@ -74,6 +74,7 @@ class Unarchive(abc.ABC):
         self.format_options = module.params.get("format").get("suboptions")
         self.tmphlq = module.params.get("tmp_hlq")
         self.force = module.params.get("force")
+        self.targets = list()
 
     @abc.abstractmethod
     def extract_path(self):
@@ -84,6 +85,7 @@ class Unarchive(abc.ABC):
         return {
             'path': self.path,
             'changed': self.changed,
+            'targets': self.targets,
         }
 class MVSUnarchive(Unarchive):
     def __init__(self, module):
@@ -124,10 +126,19 @@ class MVSUnarchive(Unarchive):
                 stdout_lines=restore_cmd,
                 rc=rc,
             )
+        self.get_restored_datasets(out)
         return rc
 
     def path_exists(self):
         return data_set.DataSet.data_set_exists(self.path)
+    
+    def get_restored_datasets(self, output):
+        ds_list = list()
+        find_ds_list = re.findall(r"SUCCESSFULLY PROCESSED\n.*\d*\n*.*0ADR006I", output)
+        if find_ds_list:
+            ds_list = re.findall(data_set_regex, find_ds_list[0])
+        self.targets = ds_list
+        return ds_list
 
 class AMATerseUnarchive(MVSUnarchive):
     def __init__(self, module):
@@ -152,15 +163,14 @@ class AMATerseUnarchive(MVSUnarchive):
         # 0. Create a tmp data set to dump the contens of untersing
         # 1. Call Terse to unpack the dataset
         # 2. Call super to RESTORE using ADDRSU
-        rc = 1
         try:
             temp_ds = self.create_temp_ds(self.tmphlq)
             self.unpack(self.path, temp_ds)
             rc = super(AMATerseUnarchive, self).restore(temp_ds)
+            self.changed = not rc
         finally:
             datasets.delete(temp_ds)
-        self.changed = not rc
-        return rc
+        return
 
 class XMITUnarchive(MVSUnarchive):
     def __init__(self, module):
@@ -197,10 +207,13 @@ class XMITUnarchive(MVSUnarchive):
         # 0. Create a tmp data set to dump the contens of receive
         # 1. Call RECEIVE.
         # 2. Call super to RESTORE using ADDRSU
-        temp_ds = self.create_temp_ds(self.tmphlq)
-        self.unpack(self.path, temp_ds)
-        rc = super(XMITUnarchive, self).restore(temp_ds)
-        self.changed = not rc
+        try:
+            temp_ds = self.create_temp_ds(self.tmphlq)
+            self.unpack(self.path, temp_ds)
+            rc = super(XMITUnarchive, self).restore(temp_ds)
+            self.changed = not rc
+        finally:
+            datasets.delete(temp_ds)
         return rc
 
 

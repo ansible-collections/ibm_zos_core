@@ -75,6 +75,7 @@ class Unarchive(abc.ABC):
         self.tmphlq = module.params.get("tmp_hlq")
         self.force = module.params.get("force")
         self.targets = list()
+        self.debug = list()
 
     @abc.abstractmethod
     def extract_path(self):
@@ -86,6 +87,7 @@ class Unarchive(abc.ABC):
             'path': self.path,
             'changed': self.changed,
             'targets': self.targets,
+            'debug': self.debug,
         }
 class MVSUnarchive(Unarchive):
     def __init__(self, module):
@@ -133,8 +135,9 @@ class MVSUnarchive(Unarchive):
         return data_set.DataSet.data_set_exists(self.path)
     
     def get_restored_datasets(self, output):
+        # TODO maybe use a set instead bc output may vary? 
         ds_list = list()
-        find_ds_list = re.findall(r"SUCCESSFULLY PROCESSED\n.*\d*\n*.*0ADR006I", output)
+        find_ds_list = re.findall(r"SUCCESSFULLY PROCESSED\n(?:.*\n)*", output)
         if find_ds_list:
             ds_list = re.findall(data_set_regex, find_ds_list[0])
         self.targets = ds_list

@@ -2237,31 +2237,31 @@ def run_module(module, arg_def):
 
     # Creating an emergency backup or an empty data set to use as a model to
     # be able to restore the destination in case the copy fails.
-    # emergency_backup = ""
-    # if dest_exists:
-    #     if is_uss or not data_set.DataSet.is_empty(dest_name):
-    #         use_backup = True
-    #         if is_uss:
-    #             # When copying a directory without a trailing slash,
-    #             # appending the source's base name to the backup path to
-    #             # avoid backing up the whole parent directory that won't
-    #             # be modified.
-    #             src_basename = os.path.basename(src) if src else ''
-    #             backup_dest = "{0}/{1}".format(dest, src_basename) if is_src_dir and not src.endswith("/") else dest
-    #             backup_dest = os.path.normpath(backup_dest)
+    emergency_backup = ""
+    if dest_exists:
+        if is_uss or not data_set.DataSet.is_empty(dest_name):
+            use_backup = True
+            if is_uss:
+                # When copying a directory without a trailing slash,
+                # appending the source's base name to the backup path to
+                # avoid backing up the whole parent directory that won't
+                # be modified.
+                src_basename = os.path.basename(src) if src else ''
+                backup_dest = "{0}/{1}".format(dest, src_basename) if is_src_dir and not src.endswith("/") else dest
+                backup_dest = os.path.normpath(backup_dest)
 
-    #             emergency_backup = tempfile.mkdtemp()
-    #             emergency_backup = backup_data(backup_dest, dest_ds_type, emergency_backup)
+                emergency_backup = tempfile.mkdtemp()
+                emergency_backup = backup_data(backup_dest, dest_ds_type, emergency_backup)
 
-    #         else:
-    #             if not (dest_ds_type in data_set.DataSet.MVS_PARTITIONED and src_member and not dest_member_exists):
-    #                 emergency_backup = backup_data(dest, dest_ds_type, None)
-    #     # If dest is an empty data set, instead create a data set to
-    #     # use as a model when restoring.
-    #     else:
-    #         use_backup = False
-    #         emergency_backup = data_set.DataSet.temp_name()
-    #         data_set.DataSet.allocate_model_data_set(emergency_backup, dest_name)
+            else:
+                if not (dest_ds_type in data_set.DataSet.MVS_PARTITIONED and src_member and not dest_member_exists):
+                    emergency_backup = backup_data(dest, dest_ds_type, None)
+        # If dest is an empty data set, instead create a data set to
+        # use as a model when restoring.
+        else:
+            use_backup = False
+            emergency_backup = data_set.DataSet.temp_name()
+            data_set.DataSet.allocate_model_data_set(emergency_backup, dest_name)
 
     # Shadowing the src momentarily.
     if converted_src:
@@ -2282,9 +2282,9 @@ def run_module(module, arg_def):
                 volume=volume
             )
     except Exception as err:
-        # if dest_exists:
-        #     restore_backup(dest_name, emergency_backup, dest_ds_type, use_backup)
-        #     erase_backup(emergency_backup, dest_ds_type)
+        if dest_exists:
+            restore_backup(dest_name, emergency_backup, dest_ds_type, use_backup)
+            erase_backup(emergency_backup, dest_ds_type)
         if converted_src:
             src = original_src
         module.fail_json(msg="Unable to allocate destination data set: {0}. Traceback: {1}".format(to_native(err), traceback.format_exc()))
@@ -2395,12 +2395,12 @@ def run_module(module, arg_def):
             res_args["changed"] = True
 
     except CopyOperationError as err:
-        # if dest_exists:
-        #     restore_backup(dest_name, emergency_backup, dest_ds_type, use_backup)
+        if dest_exists:
+            restore_backup(dest_name, emergency_backup, dest_ds_type, use_backup)
         raise err
-    # finally:
-    #     if dest_exists:
-    #         erase_backup(emergency_backup, dest_ds_type)
+    finally:
+        if dest_exists:
+            erase_backup(emergency_backup, dest_ds_type)
 
     res_args.update(
         dict(

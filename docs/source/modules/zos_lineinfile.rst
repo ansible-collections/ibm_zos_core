@@ -167,7 +167,7 @@ firstmatch
 
 
 encoding
-  The character set of the source *src*. :ref:`zos_lineinfile <zos_lineinfile_module>` requires to be provided with correct encoding to read the content of USS file or data set. If this parameter is not provided, this module assumes that USS file or data set is encoded in IBM-1047.
+  The character set of the source *src*. `zos_lineinfile <./zos_lineinfile.html>`_ requires to be provided with correct encoding to read the content of USS file or data set. If this parameter is not provided, this module assumes that USS file or data set is encoded in IBM-1047.
 
   Supported character sets rely on the charset conversion utility (iconv) version; the most common character sets are supported.
 

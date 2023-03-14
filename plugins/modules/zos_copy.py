@@ -23,7 +23,7 @@ module: zos_copy
 version_added: '1.2.0'
 short_description: Copy data to z/OS
 description:
-  - The M(zos_copy) module copies a file or data set from a local or a
+  - The L(zos_copy,./zos_copy.html) module copies a file or data set from a local or a
     remote machine to a location on the remote machine.
 author:
   - "Asif Mahmud (@asifmahmud)"
@@ -198,12 +198,12 @@ options:
     required: false
   sftp_port:
     description:
-      - Configuring the SFTP port used by the M(zos_copy) module has been
+      - Configuring the SFTP port used by the L(zos_copy,./zos_copy.html) module has been
         deprecated and will be removed in ibm.ibm_zos_core collection version
         1.5.0.
       - Configuring the SFTP port with I(sftp_port) will no longer have any
         effect on which port is used by this module.
-      - To configure the SFTP port used for module M(zos_copy), refer to topic
+      - To configure the SFTP port used for module L(zos_copy,./zos_copy.html), refer to topic
         L(using connection plugins,https://docs.ansible.com/ansible/latest/plugins/connection.html#using-connection-plugins)
       - If C(ansible_port) is not specified, port 22 will be used.
     type: int
@@ -383,7 +383,7 @@ notes:
     - VSAM data sets can only be copied to other VSAM data sets.
     - For supported character sets used to encode data, refer to the
       L(documentation,https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html).
-    - M(zos_copy) uses SFTP (Secure File Transfer Protocol) for the underlying
+    - L(zos_copy,./zos_copy.html) uses SFTP (Secure File Transfer Protocol) for the underlying
       transfer protocol; Co:Z SFTP is not supported. In the case of Co:z SFTP,
       you can exempt the Ansible userid on z/OS from using Co:Z thus falling back
       to using standard SFTP.
@@ -683,6 +683,7 @@ import traceback
 
 if PY3:
     from re import fullmatch
+    import pathlib
 else:
     from re import match as fullmatch
 
@@ -737,9 +738,9 @@ class CopyHandler(object):
                                transferred data to
             conv_path {str} -- Path to the converted source file
             dest {str} -- Name of destination data set
-            src_ds_type {str} -- The type of source
         """
         new_src = conv_path or temp_path or src
+
         copy_args = dict()
 
         if self.is_binary:
@@ -921,6 +922,58 @@ class CopyHandler(object):
             result.update(arg)
         return result
 
+    def file_has_crlf_endings(self, src):
+        """Reads src as a binary file and checks whether it uses CRLF or LF
+        line endings.
+
+        Arguments:
+            src {str} -- Path to a USS file
+
+        Returns:
+            {bool} -- True if the file uses CRLF endings, False if it uses LF
+                      ones.
+        """
+        with open(src, "rb") as src_file:
+            # readline() will read until it finds a \n.
+            content = src_file.readline()
+
+        # In EBCDIC, \r\n are bytes 0d and 15, respectively.
+        if content.endswith(b'\x0d\x15'):
+            return True
+        else:
+            return False
+
+    def create_temp_with_lf_endings(self, src):
+        """Creates a temporary file with the same content as src but without
+        carriage returns.
+
+        Arguments:
+            src {str} -- Path to a USS source file.
+
+        Raises:
+            CopyOperationError: If the conversion fails.
+
+        Returns:
+            {str} -- Path to the temporary file created.
+        """
+        try:
+            fd, converted_src = tempfile.mkstemp()
+            os.close(fd)
+
+            with open(converted_src, "wb") as converted_file:
+                with open(src, "rb") as src_file:
+                    current_line = src_file.read()
+                    converted_file.write(current_line.replace(b'\x0d', b''))
+
+            self._tag_file_encoding(converted_src, encode.Defaults.DEFAULT_EBCDIC_MVS_CHARSET)
+
+            return converted_src
+        except Exception as err:
+            raise CopyOperationError(
+                msg="Error while trying to convert EOL sequence for source.",
+                stderr=to_native(err)
+            )
+
 
 class USSCopyHandler(CopyHandler):
     def __init__(
@@ -982,9 +1035,22 @@ class USSCopyHandler(CopyHandler):
         else:
             norm_dest = os.path.normpath(dest)
             dest_parent_dir, tail = os.path.split(norm_dest)
-            path_helper = pathlib.Path(dest_parent_dir)
-            if dest_parent_dir != "/" and not path_helper.exists():
-                path_helper.mkdir(parents=True, exist_ok=True)
+            if PY3:
+                path_helper = pathlib.Path(dest_parent_dir)
+                if dest_parent_dir != "/" and not path_helper.exists():
+                    path_helper.mkdir(parents=True, exist_ok=True)
+            else:
+                # When using Python 2, instead of using pathlib, we'll use os.makedirs.
+                # pathlib is not available in Python 2.
+                try:
+                    if dest_parent_dir != "/" and not os.path.exists(dest_parent_dir):
+                        os.makedirs(dest_parent_dir)
+                except os.error as err:
+                    # os.makedirs throws an error whether the directories were already
+                    # present or their creation failed. There's no exist_ok to tell it
+                    # to ignore the first case, so we ignore it manually.
+                    if "File exists" not in err:
+                        raise CopyOperationError(msg=to_native(err))
 
             if os.path.isfile(temp_path or conv_path or src):
                 dest = self._copy_to_file(src, dest, conv_path, temp_path)
@@ -1401,9 +1467,11 @@ def get_file_record_length(file):
         with open(file, "r", encoding="UTF-8") as src_file:
             current_line = src_file.readline()
 
-            while current_line:
-                if len(current_line) > max_line_length:
-                    max_line_length = len(current_line)
+        while current_line:
+            line_length = len(current_line.rstrip("\n\r"))
+
+            if line_length > max_line_length:
+                max_line_length = line_length
 
                 current_line = src_file.readline()
     except Exception:
@@ -2238,7 +2306,7 @@ def run_module(module, arg_def):
     # Creating an emergency backup or an empty data set to use as a model to
     # be able to restore the destination in case the copy fails.
     emergency_backup = ""
-    if dest_exists:
+    if dest_exists and not force:
         if is_uss or not data_set.DataSet.is_empty(dest_name):
             use_backup = True
             if is_uss:
@@ -2282,7 +2350,7 @@ def run_module(module, arg_def):
                 volume=volume
             )
     except Exception as err:
-        if dest_exists:
+        if dest_exists and not force:
             restore_backup(dest_name, emergency_backup, dest_ds_type, use_backup)
             erase_backup(emergency_backup, dest_ds_type)
         if converted_src:
@@ -2361,6 +2429,37 @@ def run_module(module, arg_def):
         # Copy to sequential data set (PS / SEQ)
         # ---------------------------------------------------------------------
         elif dest_ds_type in data_set.DataSet.MVS_SEQ:
+            if src_ds_type == "USS" and not is_binary:
+                # Before copying into the destination dataset, we'll make sure that
+                # the source file doesn't contain any carriage returns that would
+                # result in empty records in the destination.
+                # Due to the differences between encodings, we'll normalize to IBM-037
+                # before checking the EOL sequence.
+                new_src = conv_path or temp_path or src
+                enc_utils = encode.EncodeUtils()
+                src_tag = enc_utils.uss_file_tag(new_src)
+
+                if src_tag == "untagged":
+                    src_tag = encode.Defaults.DEFAULT_EBCDIC_USS_CHARSET
+
+                if src_tag not in encode.Defaults.DEFAULT_EBCDIC_MVS_CHARSET:
+                    fd, converted_src = tempfile.mkstemp()
+                    os.close(fd)
+
+                    enc_utils.uss_convert_encoding(
+                        new_src,
+                        converted_src,
+                        src_tag,
+                        encode.Defaults.DEFAULT_EBCDIC_MVS_CHARSET
+                    )
+                    copy_handler._tag_file_encoding(converted_src, encode.Defaults.DEFAULT_EBCDIC_MVS_CHARSET)
+                    new_src = converted_src
+
+                if copy_handler.file_has_crlf_endings(new_src):
+                    new_src = copy_handler.create_temp_with_lf_endings(new_src)
+
+                conv_path = new_src
+
             copy_handler.copy_to_seq(
                 src,
                 temp_path,
@@ -2395,11 +2494,11 @@ def run_module(module, arg_def):
             res_args["changed"] = True
 
     except CopyOperationError as err:
-        if dest_exists:
+        if dest_exists and not force:
             restore_backup(dest_name, emergency_backup, dest_ds_type, use_backup)
         raise err
     finally:
-        if dest_exists:
+        if dest_exists and not force:
             erase_backup(emergency_backup, dest_ds_type)
 
     res_args.update(

@@ -447,8 +447,10 @@ class EncodeUtils(object):
 
     def uss_file_tag(self, file_path):
         """Returns the current tag set for a file.
+
         Arguments:
             file_path {str} -- USS path to the file.
+
         Returns:
             str -- Current tag set for the file, as returned by 'ls -T'
             None -- If the file does not exist or the command fails.

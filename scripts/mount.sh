@@ -33,7 +33,7 @@ fi
 ################################################################################
 # Global vars - since ksh is the default shell and local ksh vars are defined
 # with `typeset`, e.g. `typeset var foo`, I don't want to script this solely for
-# ksh given there are othe ported shells for z/OS.
+# ksh given there are other ported shells for z/OS.
 ################################################################################
 ZOAU_INDEX=""
 ZOAU_VERSION=""
@@ -44,8 +44,11 @@ PYTHON_INDEX=""
 PYTHON_VERSION=""
 PYTHON_PATH=""
 
-
-# Source should have array mount_list
+# ------------------------------------------------------------------------------
+# Mount all data sets from the mount table, check if there is something mounted
+# already, compare that to the data set being mounted, if they don't match,
+# umount and mount the correct one else skip over it.
+# ------------------------------------------------------------------------------
 mount(){
 	unset zoau_index
 	unset zoau_version
@@ -57,9 +60,15 @@ mount(){
         zoau_mount=`echo "${tgt}" | cut -d ":" -f 3`
 		zoau_data_set=`echo "${tgt}" | cut -d ":" -f 4`
 
+		# zoau_mounted_data_set can be empty so perform added validation
 		zoau_mounted_data_set=`df ${zoau_mount} | tr -s [:blank:] | tail -n +2 |cut -d' ' -f 2 | sed 's/(//' | sed 's/.$//'`
+
+		# If zoau_mounted_data_set is empty or not, we will perform a mount
 		if [ "$zoau_mounted_data_set" != "$zoau_data_set" ]; then
 			echo "Mouting ZOAU ${zoau_version} on data set ${zoau_data_set} to path ${zoau_mount}."
+
+			# If zoau_mounted_data_set not empty, compare the mount points and if they match, then unmount.
+			# Note, the mount point could be root (/) waitng for children so lets compare before unmounting.
 			if [ ! -z "${zoau_mounted_data_set}" ]; then
 				temp_mount=`df ${zoau_mount} | tr -s [:blank:] | tail -n +2 |cut -d' ' -f 1`
 				if [ "${zoau_mount}" = "${temp_mount}" ]; then
@@ -79,9 +88,15 @@ mount(){
 	    python_mount=`echo "${tgt}" | cut -d ":" -f 1`
         python_data_set=`echo "${tgt}" | cut -d ":" -f 2`
 
+		# python_mounted_data_set can be empty so perform added validation
 		python_mounted_data_set=`df ${python_mount} | tr -s [:blank:] | tail -n +2 |cut -d' ' -f 2 | sed 's/(//' | sed 's/.$//'`
+
+		# If python_mounted_data_set is empty or not, we will perform a mount
 		if [ "$python_mounted_data_set" != "$python_data_set" ]; then
 			echo "Mouting Python ${python_mount} on data set ${python_data_set}."
+
+			# If python_mounted_data_set not empty, compare the mount points and if they match, then unmount.
+			# Note, the mount point could be root (/) waitng for children so lets compare before unmounting.
 			if [ ! -z "${python_mounted_data_set}" ]; then
 				temp_mount=`df ${python_mount} | tr -s [:blank:] | tail -n +2 |cut -d' ' -f 1`
 				if [ "${python_mount}" = "${temp_mount}" ]; then
@@ -97,6 +112,9 @@ mount(){
     done
 }
 
+# ------------------------------------------------------------------------------
+# Unmount all data sets from the mount table
+# ------------------------------------------------------------------------------
 unmount(){
 	unset zoau_index
 	unset zoau_version
@@ -133,6 +151,11 @@ unmount(){
     done
 }
 
+# ------------------------------------------------------------------------------
+# Remount all data sets from the mount table, check if there is something mounted
+# already, compare that to the data set being mounted, if they don't match,
+# umount and mount the correct one else skip over it.
+# ------------------------------------------------------------------------------
 remount(){
 	unset zoau_index
 	unset zoau_version

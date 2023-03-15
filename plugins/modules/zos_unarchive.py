@@ -235,7 +235,7 @@ def run_module():
     # TODO Add module parameters
     module = AnsibleModule(
         argument_spec=dict(
-            path=dict(type='str', required=True),
+            path=dict(type='str', required=True, alias='src'),
             dest=dict(type='str'),
             format=dict(
                 type='dict',
@@ -263,7 +263,7 @@ def run_module():
                 default=dict(name="", supotions=dict(xmit_log_dataset="")),
                 ),
             tmp_hlq=dict(type='str', default=''),
-            force=dict(type='bool', default=False)
+            force=dict(type='bool', default=False),
             ),
         supports_check_mode=True,
     )
@@ -300,7 +300,7 @@ def run_module():
             default=dict(name="", supotions=dict(xmit_log_dataset="")),
             ),
         tmp_hlq=dict(type='qualifier_or_empty', default=''),
-        force=dict(type='bool', default=False)
+        force=dict(type='bool', default=False),
     )
     
     result = dict(

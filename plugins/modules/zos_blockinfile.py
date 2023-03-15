@@ -567,8 +567,6 @@ def main():
         # Try to extract information from stdout
         ret = json.loads(stdout)
         ret['cmd'] = ret['cmd'].replace("u'",'"')
-        ret['changed'] = ret['changed'].replace("u'",'"')
-        ret['found'] = ret['found'].replace("u'",'"')
 
         result['cmd'] = ret['cmd']
         result['changed'] = ret['changed']

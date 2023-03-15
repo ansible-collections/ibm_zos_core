@@ -237,6 +237,8 @@ def run_module():
         argument_spec=dict(
             path=dict(type='str', required=True, alias='src'),
             dest=dict(type='str'),
+            include=dict(type='str', elements='str', default=[]),
+            exclude=dict(type='list', elements='str', default=[]),
             format=dict(
                 type='dict',
                 required=False,
@@ -265,13 +267,17 @@ def run_module():
             tmp_hlq=dict(type='str', default=''),
             force=dict(type='bool', default=False),
             ),
+        mutually_exclusive = [
+            ('include', 'exclude'),
+        ],
         supports_check_mode=True,
     )
 
     arg_defs = dict(
         path=dict(type='str', required=True, alias='src'),
         dest=dict(type='str', required=False),
-        exclude_path=dict(type='list', elements='str', default=[]),
+        include=dict(type='str', elements='str', default=[]),
+        exclude=dict(type='list', elements='str', default=[]),
         format=dict(
             type='dict',
             required=False,
@@ -301,6 +307,9 @@ def run_module():
             ),
         tmp_hlq=dict(type='qualifier_or_empty', default=''),
         force=dict(type='bool', default=False),
+        mutually_exclusive = [
+            ('include', 'exclude'),
+        ]
     )
     
     result = dict(

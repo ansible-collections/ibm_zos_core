@@ -99,6 +99,18 @@ body:
         - zos_tso_command
     validations:
       required: false
+  - type: dropdown
+    id: z/OS version
+    attributes:
+      label: z/OS version
+      description: What is the version of z/OS on the managed node.
+      multiple: true
+      options:
+        - v2.3
+        - v2.4
+        - v2.5
+    validations:
+      required: false
   - type: textarea
     id: issue-description
     attributes:
@@ -155,12 +167,3 @@ body:
       render: shell
     validations:
       required: true
-
-  - type: input
-    id: zos-version
-    attributes:
-      label: z/OS version
-      description: What is the version of z/OS on the managed node.
-    validations:
-      required: false
-

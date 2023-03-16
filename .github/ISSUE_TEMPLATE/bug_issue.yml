@@ -41,7 +41,7 @@ body:
     validations:
       required: true
   - type: dropdown
-    id: collection-version
+    id: python-version
     attributes:
       label: IBM Enterprise Python
       description: Which version of IBM Enterprise Python are you using?

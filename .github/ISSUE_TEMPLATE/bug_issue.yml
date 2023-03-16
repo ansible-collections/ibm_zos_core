@@ -8,7 +8,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Before reporting a bug, please review existing isssues to avoid duplication.
+        Please complete all required fields.
         ---
   - type: checkboxes
     id: existing-issue
@@ -27,11 +27,37 @@ body:
         - label: The dependencies are supported.
           required: true
   - type: dropdown
+    id: zoau-version
+    attributes:
+      label: IBM Z Open Automation Utilities
+      description: Which version of ZOAU are you using?
+      multiple: true
+      options:
+        - v1.0.3
+        - v1.1.1
+        - v1.2.0
+        - v1.2.1
+        - v1.2.2
+    validations:
+      required: true
+  - type: dropdown
+    id: collection-version
+    attributes:
+      label: IBM Enterprise Python
+      description: Which version of IBM Enterprise Python are you using?
+      multiple: true
+      options:
+        - v3.8.x
+        - v3.9.x
+        - v3.10.x
+        - v3.11.x
+    validations:
+      required: true
+  - type: dropdown
     id: collection-version
     attributes:
       label: IBM z/OS Ansible core Version
-      description: |
-        Which version of the z/OS Ansible core collection are you using. If you are unsure, run the command: `cat ~/.ansible/collections/ansible_collections/ibm/ibm_zos_core/MANIFEST.json | grep version`
+      description: Which version of z/OS Ansible core collection are you using. If you are unsure, review the [documentation](https://ibm.github.io/z_ansible_collections_doc/faqs/faqs.html#how-do-i-update-a-collection-to-the-latest-version). 
       multiple: true
       options:
         - v1.0.0
@@ -42,20 +68,8 @@ body:
         - v1.3.3
         - v1.3.5
         - v1.3.6
-        - v1.4.0-beta.1
-        - v1.4.0-beta.2
-    validations:
-      required: true
-  - type: dropdown
-    id: zoau-version
-    attributes:
-      label: IBM ZOAU version
-      description: Which version of ZOAU are you using. Ensure you are on the latest PTF.
-      multiple: true
-      options:
-        - v1.0.3
-        - v1.1.1
-        - v1.2.0
+        - v1.4.0
+        - v1.5.0
     validations:
       required: true
   - type: dropdown

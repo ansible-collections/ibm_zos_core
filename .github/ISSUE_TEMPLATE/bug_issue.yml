@@ -136,8 +136,8 @@ body:
   - type: checkboxes
     id: terms
     attributes:
-      label: Code of Conduct
-      description: By submitting this issue, you agree to follow our [Code of Conduct](https://example.com)
+      label: Is there an existing issue for this?
+      description: Please search to see if an issue already exists for the bug you encountered.
       options:
-        - label: I agree to follow this project's Code of Conduct
+        - label: There are no existing issues.
           required: true

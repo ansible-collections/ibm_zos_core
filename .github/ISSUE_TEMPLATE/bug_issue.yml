@@ -8,8 +8,53 @@ body:
   - type: markdown
     attributes:
       value: |
-        Before reporting a bug, please review existing isssues to avoid duplication.
+        Before reporting a bug, please review existing issues to avoid duplication.
+        Issues can only be opened on supported combinations.
         ---
+  - type: checkboxes
+    attributes:
+      label: Is there an existing issue for this?
+      description: Please search to see if an issue already exists for the bug you encountered.
+    options:
+    - label: There are no existing issues.
+      required: true
+  - type: checkboxes
+    attributes:
+      label: Have you reviewed the required dependencies?
+      description: Please review that the version of ZOAU and IBM Enterprise Python are supported in the **Reference** section of the [release notes](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html).
+    options:
+    - label: The dependencies are supported.
+      required: true
+  - type: dropdown
+    id: zoau-version
+    attributes:
+      label: IBM ZOAU version
+      description: Which version of ZOAU are you using. Ensure you are using a supported version.
+      multiple: true
+      options:
+        - v1.0.3
+        - v1.1.0
+        - v1.1.1
+        - v1.2.0
+        - v1.2.1
+        - v1.2.1.1
+        - v1.2.2
+        - v1.2.3
+    validations:
+      required: true
+  - type: dropdown
+    id: python-version
+    attributes:
+      label: IBM Enterprise Python
+      description: Which version of IBM Enterprise Python are you using. Ensure you are using a supported version.
+      multiple: true
+      options:
+        - v3.8.x
+        - v3.9.x
+        - v3.10.x
+        - v3.11.x
+    validations:
+      required: true
   - type: textarea
     id: issue-description
     attributes:
@@ -61,7 +106,7 @@ body:
     id: ansible-version
     attributes:
       label: Ansible version
-      description: What is the verson of Ansible on the controller.
+      description: What is the version of Ansible on the controller.
       placeholder: Paste verbatim output from `ansible --version`.
       render: shell
     validations:
@@ -101,22 +146,7 @@ body:
         - v1.11.0
     validations:
       required: true
-  - type: dropdown
-    id: zoau-version
-    attributes:
-      label: IBM ZOAU version
-      description: Which version of ZOAU are you using. Ensure you are on the latest PTF.
-      multiple: true
-      options:
-        - v1.0.3
-        - v1.1.0
-        - v1.1.1
-        - v1.2.0
-        - v1.2.1
-        - v1.2.1.1
-        - v1.2.2
-    validations:
-      required: true
+
   - type: input
     id: zos-version
     attributes:

@@ -1,7 +1,7 @@
-name: Enabler task
-description: Identify a development task that does not correspond to other git issue types, eg this could be a pipeline task.
-title: "[Enabler] <title> "
-labels: [Enabler]
+name: Collaboration task
+description: Identify a collaboration between this development team and another party. e.g, A support case, dependency effort,etc
+title: "[Collaboration] <title> "
+labels: [Collaboration]
 assignees:
   - IBMAnsibleHelper
 body:
@@ -16,6 +16,30 @@ body:
       description: Please search to see if an issue already exists for the bug you encountered.
     options:
     - label: There are no existing issues.
+      required: true
+  - type: checkboxes
+    id: support-issue
+    attributes:
+      label: Support and service?
+      description: Is support and service involved in this collaboration
+    options:
+    - label: Yes, support and service is involved.
+      required: true
+  - type: textarea
+    id: issue-description
+    attributes:
+      label: Collaboration description
+      description: Describe the task, this is the equivalent of a agile story.
+      placeholder: Verbosity is encouraged, the more you share the better for us to understand.
+    validations:
+      required: true
+  - type: textarea
+    id: collaborators
+    attributes:
+      label: collaborators
+      description: Who or what product is part of this collaboration.
+      placeholder: GH IDs, product, etc
+    validations:
       required: true
   - type: dropdown
     id: modules
@@ -45,11 +69,3 @@ body:
         - zos_tso_command
     validations:
       required: false
-  - type: textarea
-    id: issue-description
-    attributes:
-      label: Enabler description
-      description: Describe the task, this is the equivalent of a agile story.
-      placeholder: Verbosity is encouraged, the more you share the better for us to understand.
-    validations:
-      required: true

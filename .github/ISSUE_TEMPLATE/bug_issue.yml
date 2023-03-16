@@ -58,34 +58,7 @@ body:
         - v1.2.0
     validations:
       required: true
-  - type: dropdown
-    id: modules
-    attributes:
-      label: Ansible module
-      description: Select which modules are being reported in this bug. You can select more than one.
-      multiple: true
-      options:
-        - zos_apf
-        - zos_backup_restore
-        - zos_blockinfile
-        - zos_copy
-        - zos_data_set
-        - zos_encode
-        - zos_fetch
-        - zos_find
-        - zos_gather_facts
-        - zos_job_output
-        - zos_job_query
-        - zos_job_submit
-        - zos_lineinfile
-        - zos_mount
-        - zos_mvs_raw
-        - zos_operator
-        - zos_operator_action_query
-        - zos_ping
-        - zos_tso_command
-    validations:
-      required: false
+
   - type: textarea
     id: issue-description
     attributes:
@@ -150,4 +123,31 @@ body:
       description: What is the version of z/OS on the managed node.
     validations:
       required: false
-
+  - type: dropdown
+    id: modules
+    attributes:
+      label: Ansible module
+      description: Select which modules are being reported in this bug. You can select more than one.
+      multiple: true
+      options:
+        - zos_apf
+        - zos_backup_restore
+        - zos_blockinfile
+        - zos_copy
+        - zos_data_set
+        - zos_encode
+        - zos_fetch
+        - zos_find
+        - zos_gather_facts
+        - zos_job_output
+        - zos_job_query
+        - zos_job_submit
+        - zos_lineinfile
+        - zos_mount
+        - zos_mvs_raw
+        - zos_operator
+        - zos_operator_action_query
+        - zos_ping
+        - zos_tso_command
+    validations:
+      required: false

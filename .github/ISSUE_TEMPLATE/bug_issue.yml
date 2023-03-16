@@ -30,7 +30,7 @@ body:
     attributes:
       label: IBM Z Open Automation Utilities
       description: Which version of ZOAU are you using?
-      multiple: true
+      multiple: false
       options:
         - v1.0.3
         - v1.1.1
@@ -44,7 +44,7 @@ body:
     attributes:
       label: IBM Enterprise Python
       description: Which version of IBM Enterprise Python are you using?
-      multiple: true
+      multiple: false
       options:
         - v3.8.x
         - v3.9.x
@@ -57,7 +57,7 @@ body:
     attributes:
       label: IBM z/OS Ansible core Version
       description: Which version of z/OS Ansible core collection are you using. If you are unsure, review the [documentation](https://ibm.github.io/z_ansible_collections_doc/faqs/faqs.html#how-do-i-update-a-collection-to-the-latest-version). 
-      multiple: true
+      multiple: false
       options:
         - v1.0.0
         - v1.1.0

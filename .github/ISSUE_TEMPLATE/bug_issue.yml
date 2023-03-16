@@ -1,5 +1,5 @@
 name: Report a bug
-description: Request that a bug be reviewed.
+description: Request that a bug be reviewed. Complete all required fields.
 title: "[Bug] <title> "
 labels: [Bug]
 assignees:
@@ -8,7 +8,6 @@ body:
   - type: markdown
     attributes:
       value: |
-        Please complete all required fields.
         ---
   - type: checkboxes
     id: existing-issue

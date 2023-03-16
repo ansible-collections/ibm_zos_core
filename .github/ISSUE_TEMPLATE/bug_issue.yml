@@ -100,11 +100,11 @@ body:
     validations:
       required: false
   - type: dropdown
-    id: z/OS version
+    id: zos-version
     attributes:
       label: z/OS version
-      description: What is the version of z/OS on the managed node.
-      multiple: true
+      description: What is the version of z/OS on the managed node?
+      multiple: false
       options:
         - v2.3
         - v2.4

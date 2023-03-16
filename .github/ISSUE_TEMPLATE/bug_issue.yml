@@ -10,6 +10,14 @@ body:
       value: |
         Before reporting a bug, please review existing isssues to avoid duplication.
         ---
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Is there an existing issue for this?
+      description: Please search to see if an issue already exists for the bug you encountered.
+      options:
+        - label: There are no existing issues.
+          required: true
   - type: textarea
     id: issue-description
     attributes:
@@ -133,11 +141,3 @@ body:
         - zos_tso_command
     validations:
       required: false
-  - type: checkboxes
-    id: terms
-    attributes:
-      label: Is there an existing issue for this?
-      description: Please search to see if an issue already exists for the bug you encountered.
-      options:
-        - label: There are no existing issues.
-          required: true

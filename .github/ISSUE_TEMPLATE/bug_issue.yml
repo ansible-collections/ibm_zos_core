@@ -11,7 +11,7 @@ body:
         Before reporting a bug, please review existing isssues to avoid duplication.
         ---
   - type: checkboxes
-    id: terms
+    id: existing-issue
     attributes:
       label: Is there an existing issue for this?
       description: Please search to see if an issue already exists for the bug you encountered.
@@ -19,14 +19,73 @@ body:
         - label: There are no existing issues.
           required: true
   - type: checkboxes
-    id: terms
+    id: valid-dependencies
     attributes:
       label: Are the dependencies a supported version?
       description: Please review the ZOAU and IBM Enterprise Python versions in the reference section of the [release notes](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html).
       options:
         - label: The dependencies are supported.
           required: true
-
+  - type: dropdown
+    id: collection-version
+    attributes:
+      label: IBM z/OS Ansible core Version
+      description: |
+        Which version of the z/OS Ansible core collection are you using. If you are unsure, run the command: `cat ~/.ansible/collections/ansible_collections/ibm/ibm_zos_core/MANIFEST.json | grep version`
+      multiple: true
+      options:
+        - v1.0.0
+        - v1.1.0
+        - v1.2.1
+        - v1.3.0
+        - v1.3.1
+        - v1.3.3
+        - v1.3.5
+        - v1.3.6
+        - v1.4.0-beta.1
+        - v1.4.0-beta.2
+    validations:
+      required: true
+  - type: dropdown
+    id: zoau-version
+    attributes:
+      label: IBM ZOAU version
+      description: Which version of ZOAU are you using. Ensure you are on the latest PTF.
+      multiple: true
+      options:
+        - v1.0.3
+        - v1.1.1
+        - v1.2.0
+    validations:
+      required: true
+  - type: dropdown
+    id: modules
+    attributes:
+      label: Ansible module
+      description: Select which modules are being reported in this bug. You can select more than one.
+      multiple: true
+      options:
+        - zos_apf
+        - zos_backup_restore
+        - zos_blockinfile
+        - zos_copy
+        - zos_data_set
+        - zos_encode
+        - zos_fetch
+        - zos_find
+        - zos_gather_facts
+        - zos_job_output
+        - zos_job_query
+        - zos_job_submit
+        - zos_lineinfile
+        - zos_mount
+        - zos_mvs_raw
+        - zos_operator
+        - zos_operator_action_query
+        - zos_ping
+        - zos_tso_command
+    validations:
+      required: false
   - type: textarea
     id: issue-description
     attributes:
@@ -83,38 +142,7 @@ body:
       render: shell
     validations:
       required: true
-  - type: dropdown
-    id: collection-version
-    attributes:
-      label: IBM z/OS Ansible core Version
-      description: |
-        Which version of the z/OS Ansible core collection are you using. If you are unsure, run the command: `cat ~/.ansible/collections/ansible_collections/ibm/ibm_zos_core/MANIFEST.json | grep version`
-      multiple: true
-      options:
-        - v1.0.0
-        - v1.1.0
-        - v1.2.1
-        - v1.3.0
-        - v1.3.1
-        - v1.3.3
-        - v1.3.5
-        - v1.3.6
-        - v1.4.0-beta.1
-        - v1.4.0-beta.2
-    validations:
-      required: true
-  - type: dropdown
-    id: zoau-version
-    attributes:
-      label: IBM ZOAU version
-      description: Which version of ZOAU are you using. Ensure you are on the latest PTF.
-      multiple: true
-      options:
-        - v1.0.3
-        - v1.1.1
-        - v1.2.0
-    validations:
-      required: true
+
   - type: input
     id: zos-version
     attributes:
@@ -122,31 +150,4 @@ body:
       description: What is the version of z/OS on the managed node.
     validations:
       required: false
-  - type: dropdown
-    id: modules
-    attributes:
-      label: Ansible module
-      description: Select which modules are being reported in this bug. You can select more than one.
-      multiple: true
-      options:
-        - zos_apf
-        - zos_backup_restore
-        - zos_blockinfile
-        - zos_copy
-        - zos_data_set
-        - zos_encode
-        - zos_fetch
-        - zos_find
-        - zos_gather_facts
-        - zos_job_output
-        - zos_job_query
-        - zos_job_submit
-        - zos_lineinfile
-        - zos_mount
-        - zos_mvs_raw
-        - zos_operator
-        - zos_operator_action_query
-        - zos_ping
-        - zos_tso_command
-    validations:
-      required: false
+

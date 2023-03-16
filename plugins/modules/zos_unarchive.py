@@ -76,6 +76,8 @@ class Unarchive(abc.ABC):
         self.force = module.params.get("force")
         self.targets = list()
         self.debug = list()
+        self.include = module.params.get("include")
+        self.exclude = module.params.get("exclude")
 
     @abc.abstractmethod
     def extract_path(self):
@@ -107,6 +109,20 @@ class MVSUnarchive(Unarchive):
         changed = data_set.DataSet.ensure_present(name=temp_ds, replace=True, type='SEQ', record_format='U')
         return temp_ds
 
+    def get_include_data_sets_cmd(self):
+        include_cmd = "INCL( "
+        for include_ds in self.include:
+            include_cmd += " '{0}', - \n".format(include_ds)
+        include_cmd += " ) - \n"
+        return include_cmd
+
+    def get_exclude_data_sets_cmd(self):
+        exclude_cmd = "EXCL( - \n"
+        for exclude_ds in self.exclude:
+            exclude_cmd += " '{0}', - \n".format(exclude_ds)
+        exclude_cmd += " ) - \n"
+        return exclude_cmd
+
     def restore(self, source):
         """
         Calls ADDRSU using RESTORE to unpack the dump datasets.
@@ -114,9 +130,15 @@ class MVSUnarchive(Unarchive):
         """
         Dump src datasets identified as self.targets into a temporary dataset using ADRDSSU.
         """
+        filter = "INCL(**) -"
+        if self.include:
+            filter = self.get_include_data_sets_cmd()
+        if self.exclude:
+            filter = self.get_exclude_data_sets_cmd()
         restore_cmd = """ RESTORE INDD(ARCHIVE) - 
-                          DS(INCL(**)) - 
-                          CATALOG """
+                          DS( -
+                            {0} ) -
+                        CATALOG""".format(filter)
         cmd = " mvscmdauth --pgm=ADRDSSU --archive={0},old --sysin=stdin --sysprint=*".format(source)
         rc, out, err = self.module.run_command(cmd, data=restore_cmd)
 
@@ -237,8 +259,8 @@ def run_module():
         argument_spec=dict(
             path=dict(type='str', required=True, alias='src'),
             dest=dict(type='str'),
-            include=dict(type='str', elements='str', default=[]),
-            exclude=dict(type='list', elements='str', default=[]),
+            include=dict(type='list', elements='str'),
+            exclude=dict(type='list', elements='str'),
             format=dict(
                 type='dict',
                 required=False,
@@ -268,7 +290,7 @@ def run_module():
             force=dict(type='bool', default=False),
             ),
         mutually_exclusive = [
-            ('include', 'exclude'),
+            ['include', 'exclude'],
         ],
         supports_check_mode=True,
     )
@@ -276,8 +298,8 @@ def run_module():
     arg_defs = dict(
         path=dict(type='str', required=True, alias='src'),
         dest=dict(type='str', required=False),
-        include=dict(type='str', elements='str', default=[]),
-        exclude=dict(type='list', elements='str', default=[]),
+        include=dict(type='list', elements='str'),
+        exclude=dict(type='list', elements='str'),
         format=dict(
             type='dict',
             required=False,
@@ -308,7 +330,7 @@ def run_module():
         tmp_hlq=dict(type='qualifier_or_empty', default=''),
         force=dict(type='bool', default=False),
         mutually_exclusive = [
-            ('include', 'exclude'),
+            ['include', 'exclude'],
         ]
     )
     

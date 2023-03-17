@@ -32,11 +32,11 @@ body:
       description: Which version of ZOAU are you using?
       multiple: false
       options:
-        - v1.0.3
-        - v1.1.1
-        - v1.2.0
-        - v1.2.1
         - v1.2.2
+        - v1.2.1
+        - v1.2.0
+        - v1.1.1
+        - v1.0.3
     validations:
       required: true
   - type: dropdown
@@ -46,10 +46,10 @@ body:
       description: Which version of IBM Enterprise Python are you using?
       multiple: false
       options:
-        - v3.8.x
-        - v3.9.x
-        - v3.10.x
         - v3.11.x
+        - v3.10.x
+        - v3.9.x
+        - v3.8.x
     validations:
       required: true
   - type: dropdown
@@ -59,18 +59,45 @@ body:
       description: Which version of z/OS Ansible core collection are you using. If you are unsure, review the [documentation](https://ibm.github.io/z_ansible_collections_doc/faqs/faqs.html#how-do-i-update-a-collection-to-the-latest-version). 
       multiple: false
       options:
-        - v1.0.0
-        - v1.1.0
-        - v1.2.1
-        - v1.3.0
-        - v1.3.1
-        - v1.3.3
-        - v1.3.5
-        - v1.3.6
-        - v1.4.0
         - v1.5.0
+        - v1.4.0
+        - v1.3.6
+        - v1.3.5
+        - v1.3.3
+        - v1.3.1
+        - v1.3.0
+        - v1.2.1
+        - v1.1.0
+        - v1.0.0
     validations:
       required: true
+  - type: dropdown
+    id: zos-version
+    attributes:
+      label: ansible-version
+      description: What is the version of Ansible on the controller (`ansible --version`)?
+      multiple: false
+      options:
+        - latest
+        - v2.14.x
+        - v2.13.x
+        - v2.12.x
+        - v2.11.x
+        - v2.9.x
+    validations:
+      required: false
+  - type: dropdown
+    id: zos-version
+    attributes:
+      label: z/OS version
+      description: What is the version of z/OS on the managed node?
+      multiple: false
+      options:
+        - v2.5
+        - v2.4
+        - v2.3
+    validations:
+      required: false
   - type: dropdown
     id: modules
     attributes:
@@ -99,18 +126,6 @@ body:
         - zos_tso_command
     validations:
       required: false
-  - type: dropdown
-    id: zos-version
-    attributes:
-      label: z/OS version
-      description: What is the version of z/OS on the managed node?
-      multiple: false
-      options:
-        - v2.3
-        - v2.4
-        - v2.5
-    validations:
-      required: false
   - type: textarea
     id: issue-description
     attributes:
@@ -127,18 +142,20 @@ body:
   - type: textarea
     id: issue-output
     attributes:
-      label: Playbook verbosity output
+      label: Playbook verbosity output.
       description: Provide the command line output with debug and verbosity enabled.
       placeholder: |
-        Insert the ouput using this form of the playbook command.
+        Insert the output using this form of the playbook command.
           - `ANSIBLE_DEBUG=1 ansible-playbook -i inventory your-playbook.yml -vvvv`
     validations:
       required: false
   - type: textarea
     id: ansible-cfg
     attributes:
-      label: Contents of `ansible.cfg`
-      description: Provide the contents of `ansible.cfg`.
+      label: Ansible configuration.
+      description: Show the current **ansible.cfg** settings.
+      placeholder: |
+        Insert for this command: `ansible-config view`
       render: YAML
     validations:
       required: false
@@ -146,7 +163,7 @@ body:
     id: ansible-inventory
     attributes:
       label: Contents of the inventory
-      description: Provide the contents of the inventory
+      description: Provide the contents of the inventory.
       render: YAML
     validations:
       required: false
@@ -158,12 +175,4 @@ body:
       render: YAML
     validations:
       required: false
-  - type: textarea
-    id: ansible-version
-    attributes:
-      label: Ansible version
-      description: What is the verson of Ansible on the controller.
-      placeholder: Paste verbatim output from `ansible --version`.
-      render: shell
-    validations:
-      required: true
+

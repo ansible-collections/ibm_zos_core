@@ -85,7 +85,7 @@ body:
         - v2.11.x
         - v2.9.x
     validations:
-      required: false
+      required: true
   - type: dropdown
     id: zos-version
     attributes:

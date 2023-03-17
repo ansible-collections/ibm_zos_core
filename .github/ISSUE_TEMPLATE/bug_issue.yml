@@ -5,10 +5,6 @@ labels: [Bug]
 assignees:
   - IBMAnsibleHelper
 body:
-  - type: markdown
-    attributes:
-      value: |
-        ---
   - type: checkboxes
     id: existing-issue
     attributes:

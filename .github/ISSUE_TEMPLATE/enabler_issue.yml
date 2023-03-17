@@ -5,18 +5,14 @@ labels: [Enabler]
 assignees:
   - IBMAnsibleHelper
 body:
-  - type: markdown
-    attributes:
-      value: |
-        Before authoring a task, please review existing issues to avoid duplication.
-        ---
   - type: checkboxes
+    id: existing-issue
     attributes:
       label: Is there an existing issue for this?
       description: Please search to see if an issue already exists for the bug you encountered.
-    options:
-    - label: There are no existing issues.
-      required: true
+      options:
+        - label: There are no existing issues.
+          required: true
   - type: dropdown
     id: modules
     attributes:

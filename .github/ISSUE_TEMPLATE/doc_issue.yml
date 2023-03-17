@@ -5,11 +5,14 @@ labels: [Documentation]
 assignees:
   - IBMAnsibleHelper
 body:
-  - type: markdown
+  - type: checkboxes
+    id: existing-issue
     attributes:
-      value: |
-        Before reporting a documentation issue, please review existing isssues to avoid duplication.
-        ---
+      label: Is there an existing issue for this?
+      description: Please search to see if an issue already exists for the bug you encountered.
+      options:
+        - label: There are no existing issues.
+          required: true
   - type: textarea
     id: issue-description
     attributes:
@@ -17,7 +20,7 @@ body:
       description: Describe the documentation issue.
       placeholder: |
         Verbosity is encouraged, the more you share the better for us to understand.
-          1. Include links to the page you are reffering to if applicable
+          1. Include links to the page you are referring to if applicable
           2. Include reproduction steps if applicable
           3. Include any additional information that will help us
           4. Include screen captures of applicable
@@ -28,7 +31,7 @@ body:
     id: ansible-version
     attributes:
       label: Ansible version
-      description: What is the verson of Ansible on the controller if applicable.
+      description: What is the version of Ansible on the controller if applicable.
       placeholder: Paste verbatim output from `ansible --version`.
       render: SHELL
     validations:

@@ -72,7 +72,7 @@ body:
     validations:
       required: true
   - type: dropdown
-    id: zos-version
+    id: ansible-version
     attributes:
       label: ansible-version
       description: What is the version of Ansible on the controller (`ansible --version`)?

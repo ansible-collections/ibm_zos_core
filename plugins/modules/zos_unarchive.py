@@ -130,7 +130,7 @@ class MVSUnarchive(Unarchive):
         """
         Dump src datasets identified as self.targets into a temporary dataset using ADRDSSU.
         """
-        filter = "INCL(**) -"
+        filter = "INCL(**) "
         if self.include:
             filter = self.get_include_data_sets_cmd()
         if self.exclude:

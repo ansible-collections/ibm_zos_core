@@ -1,5 +1,7 @@
 name: Enabler task
-description: Identify a development task that does not correspond to other git issue types, eg this could be a pipeline task.
+description: |
+    Identify a development task that does not correspond to other git issue types, eg this could be a pipeline task.
+    Complete all required fields. 
 title: "[Enabler] <title> "
 labels: [Enabler]
 assignees:

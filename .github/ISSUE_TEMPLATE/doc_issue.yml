@@ -1,5 +1,5 @@
 name: Report a documentation issue
-description: Request that documentation be reviewed.
+description: Request that documentation be reviewed. Complete all required fields. 
 title: "[Documentation] <title> "
 labels: [Documentation]
 assignees:

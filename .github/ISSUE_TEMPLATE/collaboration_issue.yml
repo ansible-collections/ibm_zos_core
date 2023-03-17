@@ -1,5 +1,5 @@
 name: Request a Collaboration
-description: A collaboration with the development team and another external resource. e.g, Support case, dependency, community, etc
+description: Request collaboration with a member of this team. Complete all required fields.
 title: "[Collaboration] <title> "
 labels: [Collaboration]
 assignees:

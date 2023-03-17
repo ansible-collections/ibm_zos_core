@@ -1,14 +1,10 @@
-name: Collaboration Issue
+name: Request a Collaboration
 description: A collaboration with the development team and another external resource. e.g, Support case, dependency, community, etc
 title: "[Collaboration] <title> "
 labels: [Collaboration]
 assignees:
   - IBMAnsibleHelper
 body:
-  - type: markdown
-    attributes:
-      value: |
-        ---
   - type: checkboxes
     id: existing-issue
     attributes:

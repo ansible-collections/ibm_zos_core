@@ -22,9 +22,9 @@ body:
     attributes:
       label: Support and service?
       description: Is support and service involved in this collaboration?
-    options:
-    - label: Yes, support and service is involved.
-      required: true
+      options:
+      - label: Yes, support and service is involved.
+        required: true
   - type: checkboxes
     id: valid-dependencies
     attributes:

@@ -52,7 +52,7 @@ body:
     attributes:
       label: IBM Enterprise Python
       description: Which version of IBM Enterprise Python are you using?
-      multiple: false
+      multiple: true
       options:
         - v3.11.x
         - v3.10.x
@@ -78,7 +78,7 @@ body:
         - v1.1.0
         - v1.0.0
     validations:
-      required: true
+      required: false
   - type: dropdown
     id: ansible-version
     attributes:

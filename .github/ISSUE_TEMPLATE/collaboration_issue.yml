@@ -20,14 +20,16 @@ body:
       description: Is support and service involved in this collaboration?
       options:
       - label: Yes, support and service is involved.
-        required: true
+      - label: No, support and service is involved.
+    validations:
+      required: false
   - type: checkboxes
     id: valid-dependencies
     attributes:
       label: Are the dependencies a supported?
       description: Please review the ZOAU and IBM Enterprise Python versions in the reference section of the [release notes](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html).
       options:
-        - label: The dependencies are supported.
+        - label: Yes, the dependencies are supported.
           required: false
   - type: dropdown
     id: zoau-version

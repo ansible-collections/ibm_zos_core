@@ -22,7 +22,7 @@ body:
       - label: Yes, support and service is involved.
       - label: No, support and service is involved.
     validations:
-      required: false
+      required: true
   - type: checkboxes
     id: valid-dependencies
     attributes:

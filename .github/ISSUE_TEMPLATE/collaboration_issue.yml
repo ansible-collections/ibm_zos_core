@@ -31,6 +31,8 @@ body:
       options:
         - label: Yes, the dependencies are supported.
           required: false
+        - label: Not applicable to this collaboration.
+          required: false
   - type: dropdown
     id: zoau-version
     attributes:

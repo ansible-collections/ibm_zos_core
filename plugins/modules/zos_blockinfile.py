@@ -245,6 +245,14 @@ EXAMPLES = r'''
           RUN  PROGRAM(DSNTEP2) PLAN(DSNTEP12) -
           LIB('{{ DB2RUN }}.RUNLIB.LOAD')
     indentation: 16
+
+- name: Update a script with commands at the end
+  zos_blockinfile:
+    src: "/u/scripts/script.sh"
+    insertafter: "EOF"
+    block: |
+          cat "//'{{ DS_NAME }}'"
+          cat "//'{{ DS_NAME_2 }}'"
 '''
 
 RETURN = r"""

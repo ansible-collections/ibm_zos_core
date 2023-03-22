@@ -208,8 +208,8 @@ def run_module():
         return result
 
     try:
-        validate_arguments(module.params)
-        jobs_raw = query_jobs(module.params)
+        name, id, owner = validate_arguments(module.params)
+        jobs_raw = query_jobs(name, id, owner)
         jobs = parsing_jobs(jobs_raw)
     except Exception as e:
         module.fail_json(msg=e, **result)
@@ -217,8 +217,10 @@ def run_module():
     module.exit_json(**result)
 
 
+# validate_arguments rturns a tuple, so we don't have to rebuild the job_name string
 def validate_arguments(params):
     job_name_in = params.get("job_name")
+    job_name_final = job_name_in
     job_id = params.get("job_id")
     owner = params.get("owner")
     if job_name_in or job_id:
@@ -229,10 +231,26 @@ def validate_arguments(params):
             )
             m = job_name_pattern.search(job_name_in)
             n = job_name_pattern_with_star.search(job_name_in)
-            if m or n:
-                pass
-            else:
+            # logic twist: o must be non-null value from m or n
+            o = m
+            if n:
+                o = n
+
+            # if neither m nor n were non-null, check if the string needed to be truncated to the first *
+            if not o:
+                ix = job_name_in.find("*")
+                if ix >= 0:
+                  job_name_short = job_name_in[0, ix+1]
+                  o = job_name_pattern.search(job_name_short)
+                  if not o:
+                      o = job_name_pattern_with_star.search(job_name_short)
+                  if o:
+                      job_name_final = job_name_short
+
+            # so now, fail if neither m, n, or o=m/n(short) found a match
+            if not o:
                 raise RuntimeError("Failed to validate the job name: " + job_name_in)
+
         if job_id:
             job_id_pattern = re.compile("(JOB|TSU|STC)[0-9]{5}|(J|T|S)[0-9]{7}$")
             if not job_id_pattern.search(job_id):
@@ -242,19 +260,17 @@ def validate_arguments(params):
     if job_id and owner:
         raise RuntimeError("Argument Error:job id can not be co-exist with owner")
 
+    return job_name_final, job_id, owner;
 
-def query_jobs(params):
-    job_name_in = params.get("job_name")
-    job_id = params.get("job_id")
-    owner = params.get("owner")
+def query_jobs(job_name, job_id, owner):
 
     jobs = []
     if job_id:
         jobs = job_status(job_id=job_id)
     elif owner:
-        jobs = job_status(owner=owner, job_name=job_name_in)
+        jobs = job_status(owner=owner, job_name=job_name)
     else:
-        jobs = job_status(job_name=job_name_in)
+        jobs = job_status(job_name=job_name)
     if not jobs:
         raise RuntimeError("List FAILED! no such job was found.")
     return jobs

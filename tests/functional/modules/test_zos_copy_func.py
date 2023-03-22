@@ -50,6 +50,106 @@ TEST_VSAM_KSDS = "SYS1.STGINDEX"
 TEST_PDSE = "SYS1.NFSLIBE"
 TEST_PDSE_MEMBER = "SYS1.NFSLIBE(GFSAMAIN)"
 
+COBOL_SRC = """
+                IDENTIFICATION DIVISION.\n
+                PROGRAM-ID. HELLOWRD.\n
+
+                PROCEDURE DIVISION.\n
+                    DISPLAY "SIMPLE HELLO WORLD".\n
+                    STOP RUN.\n
+"""
+
+LINK_JCL = """
+// *****************************************************************************
+//* Copyright (c) IBM Corporation 2021
+//* ****************************************************************************
+//*
+//* ****************************************************************************
+//* Configure the job card as needed, most common keyword parameters often
+//* needing editing are:
+//* CLASS:      Used to achieve a balance between different types of jobs and
+//*             avoid contention between jobs that use the same resources.
+//* MSGLEVEL:   Controls how the allocation and termination messages are
+//*             printed in the job's output listing (SYSOUT).
+//* MSGCLASS:   Assign an output class for your output listing (SYSOUT)
+//*
+//* COBOL pattern for this compile and link
+//* COBOL SRC
+//*         '-> COMPILE
+//*                   '-> OBJ CODE
+//*                              '-> LINK EDIT
+//*                                          '->LOAD MODULE
+//*                                                        '->GO
+//*                                                            '-> HELLOPGM.jcl
+//*
+//* SYSIN:      The COBOL source in DSN ANSIBLE.COBOL.SRC(HELLOSRC)
+//* SYSPRINT:   The output
+//* SYSLIN:     Where the COBOL binary is written, using &&LOADSET and parms to
+//*             manage this but you could create a PDS such as
+//*             DSN=ANSIBLE.COBOL.OBJ,UNIT=SYSDA,
+//*             DISP=(MOD,KEEP),SPACE=(TRK,(3,3))
+//* SYSUT:      Statements define the utility data sets that the compiler
+//*             will use to process the source program
+//*
+//* SYSMDECK:   Required for all compilations, it will contain a copy
+//*             of the updated input source after library processing
+//* ****************************************************************************
+//*
+//* ****************************************************************************
+//* COMPILE A COBOL PROGRAM
+//* ****************************************************************************
+//*
+//COMPLINK  JOB MSGCLASS=H,MSGLEVEL=(1,1),NOTIFY=&SYSUID,REGION=0M
+//STEP1     EXEC PGM=IGYCRCTL
+//STEPLIB   DD DSN=IGYV5R10.SIGYCOMP,DISP=SHR
+//          DD DSN=IGYV5R10.SIGYMAC,DISP=SHR
+//SYSIN     DD DISP=SHR,DSN={0}
+//SYSPRINT  DD SYSOUT=*
+//SYSLIN   DD  UNIT=SYSDA,DISP=(MOD),
+//             SPACE=(CYL,(1,1)),
+//             DCB=(RECFM=FB,LRECL=80,BLKSIZE=27920),
+//             DSN=&&LOADSET
+//SYSUT1    DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//SYSUT2    DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//SYSUT3    DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//SYSUT4    DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//SYSUT5    DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//SYSUT6    DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//SYSUT7    DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//SYSUT8    DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//SYSUT9    DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//SYSUT10   DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//SYSUT11   DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//SYSUT12   DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//SYSUT13   DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//SYSUT14   DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//SYSUT15   DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//SYSMDECK  DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//*
+//* ****************************************************************************
+//* LINKEDIT A COBOL PROGRAM
+//* SYSLMOD: The PDSE where the link editor will create a module, don't create
+//*          the member, let the link editor do this else you will get an OF4
+//* SYSLIN: The binder reads the object deck in this DD which is created in the
+//*         compile step. If you had not used &&LOADSET you would need to pass
+//*         your DSN such as DSN=ANSIBLE.COBOL.OBJ,DISP=(OLD,KEEP)
+//* ****************************************************************************
+//*
+//LKED     EXEC PGM=IEWL,REGION=0M
+//SYSPRINT DD  SYSOUT=*
+//SYSLIB   DD  DSN=CEE.SCEELKED,DISP=SHR
+//         DD  DSN=CEE.SCEELKEX,DISP=SHR
+//SYSLMOD  DD  DSN={1},
+//             DISP=SHR
+//SYSUT1   DD  UNIT=SYSDA,DCB=BLKSIZE=1024,
+//             SPACE=(TRK,(3,3))
+//SYSTERM  DD  SYSOUT=*
+//SYSPRINT DD  SYSOUT=*
+//SYSLIN   DD  DSN=&&LOADSET,DISP=(OLD,KEEP)
+//SYSIN    DD  DUMMY
+//*
+
+"""
 
 def populate_dir(dir_path):
     for i in range(5):
@@ -137,6 +237,42 @@ def create_vsam_data_set(hosts, name, ds_type, add_data=False, key_length=None, 
         hosts.all.zos_copy(content=VSAM_RECORDS, dest=record_src)
         hosts.all.zos_encode(src=record_src, dest=name, from_encoding="ISO8859-1", to_encoding="IBM-1047")
         hosts.all.file(path=record_src, state="absent")
+
+
+def link_loadlib_from_cobol(hosts, ds_name, cobol_pds):
+    """
+    Given a PDSE, links a cobol program making allocated in a temp ds resulting in ds_name
+    as a loadlib.
+
+    Arguments:
+        ds_name (str) -- PDS/E to be linked with the cobol program.
+        cobol_src (str) -- Cobol source code to be used as the program.
+
+        Notes: PDS names are in the format of SOME.PDSNAME(MEMBER)
+    """
+    # Copy the Link program
+    temp_jcl = "/tmp/link.jcl"
+    rc = 0
+    try:
+        cp_res = hosts.all.zos_copy(
+            content=LINK_JCL.format(cobol_pds, ds_name),
+            dest="/tmp/link.jcl",
+            force=True,
+        )
+        for res in cp_res.contacted.values():
+            print("copy link program result {0}".format(res))
+        # Link the temp ds with ds_name
+        job_result = hosts.all.zos_job_submit(
+            src="/tmp/link.jcl",
+            location="USS",
+            wait_time_s=60
+        )
+        for result in job_result.contacted.values():
+            print("link job submit result {0}".format(result))
+            rc = result.get("jobs")[0].get("ret_code").get("code")
+    finally:
+        hosts.all.file(path=temp_jcl, state="absent")
+    return rc
 
 
 @pytest.mark.uss
@@ -1681,6 +1817,106 @@ def test_copy_pds_member_with_system_symbol(ansible_zos_module,):
 
     finally:
         hosts.all.zos_data_set(name=dest, state="absent")
+
+
+@pytest.mark.pdse
+def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module,):
+    hosts = ansible_zos_module
+    # The volume for this dataset should use a system symbol.
+    # This dataset and member should be available on any z/OS system.
+    src = "USER.LOAD.SRC"
+    dest = "USER.LOAD.DEST"
+    cobol_pds = "USER.COBOL.SRC"
+    try:
+        src_rc = hosts.all.zos_data_set(
+            name=src,
+            state="present",
+            type="pdse",
+            record_format="U",
+            record_length=0,
+            block_size=32760,
+            space_primary=40,
+            space_type="M",
+            replace=True
+        )
+        for res in src_rc.contacted.values():
+            print("Create SRC dataset: {0}".format(res))
+
+        ds_rc = hosts.all.zos_data_set(
+            name=dest,
+            state="present",
+            type="pdse",
+            record_format="U",
+            record_length=0,
+            block_size=32760,
+            space_primary=40,
+            space_type="M",
+            replace=True
+        )
+
+        for res in ds_rc.contacted.values():
+            print("Create DEST dataset: {0}".format(res))
+
+        hosts.all.zos_data_set(
+            name=cobol_pds,
+            state="present",
+            type="pds",
+            space_primary=40,
+            record_format="FB",
+            record_length=80,
+            block_size=3120,
+            replace=True,
+        )
+        member = "HELLOSRC"
+        cobol_pds = "{0}({1})".format(cobol_pds, member)
+        rc = hosts.all.zos_copy(
+            content=COBOL_SRC,
+            dest=cobol_pds,
+        )
+        for res in rc.contacted.values():
+            print("cobol src copy result: {0}".format(res))
+        dest_name = "{0}({1})".format(dest, member)
+        src_name = "{0}({1})".format(src, member)
+        
+        
+        # both src and dest need to be a loadlib
+        rc = link_loadlib_from_cobol(hosts, dest_name, cobol_pds)
+        print("return code: {0}".format(rc))
+        # assert rc == 0
+        rc = link_loadlib_from_cobol(hosts, src_name, cobol_pds)
+        print("return code: {0}".format(rc))
+        # assert rc == 0
+
+        print("Dataset names {0}({1})".format(src, member))
+        print("Dataset names {0}({1})".format(dest, "MEM1"))
+        copy_res = hosts.all.zos_copy(
+            src="{0}({1})".format(src, member), 
+            dest="{0}({1})".format(dest, "MEM1"), 
+            remote_src=True)
+
+        verify_copy = hosts.all.shell(
+            cmd="mls {0}".format(dest),
+            executable=SHELL_EXECUTABLE
+        )
+
+        for result in copy_res.contacted.values():
+            print(result)
+            assert result.get("msg") is None
+            assert result.get("changed") is True
+            assert result.get("dest") == "{0}({1})".format(dest, "MEM1")
+
+        for v_cp in verify_copy.contacted.values():
+            print(result)
+            assert v_cp.get("rc") == 0
+            stdout = v_cp.get("stdout")
+            assert stdout is not None
+            # number of members
+            assert len(stdout.splitlines()) == 2
+
+    finally:
+        hosts.all.zos_data_set(name=dest, state="absent")
+        hosts.all.zos_data_set(name=src, state="absent")
+        hosts.all.zos_data_set(name=cobol_pds, state="absent")
 
 
 @pytest.mark.pdse

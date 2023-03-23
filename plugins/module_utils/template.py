@@ -201,7 +201,6 @@ class TemplateRenderer:
                 to_native(err)
             ))
 
-
         return temp_template_dir, template_file_path
 
     def render_dir_template(self, variables):

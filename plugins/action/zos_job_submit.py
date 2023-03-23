@@ -17,7 +17,12 @@ from ansible.plugins.action import ActionBase
 from ansible.errors import AnsibleError, AnsibleFileNotFound
 # from ansible.module_utils._text import to_bytes, to_text
 from ansible.module_utils.common.text.converters import to_bytes, to_text
+from ansible.module_utils.parsing.convert_bool import boolean
 import os
+
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import encode
+
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.template import TemplateRenderer
 
 
 class ActionModule(ActionBase):
@@ -94,6 +99,29 @@ class ActionModule(ActionBase):
 
             tmp_src = self._connection._shell.join_path(tmp, "source")
 
+            use_template = _process_boolean(module_args.get("use_template"))
+            if use_template:
+                try:
+                    template_parameters = module_args.get("template_parameters", dict())
+                    encoding = module_args.get("encoding", None)
+
+                    renderer = _create_template_environment(
+                        template_parameters,
+                        source_full,
+                        encoding
+                    )
+                    template_dir, rendered_file = renderer.render_file_template(
+                        os.path.basename(source_full),
+                        task_vars
+                    )
+                    source_full = rendered_file
+                except Exception as err:
+                    result["msg"] = to_text(err)
+                    result["failed"] = True
+                    result["changed"] = False
+                    result["invocation"] = dict(module_args=module_args)
+                    return result
+
             remote_path = None
             remote_path = self._transfer_file(source_full, tmp_src)
 
@@ -137,3 +165,26 @@ class ActionModule(ActionBase):
             )
 
         return result
+
+
+def _process_boolean(arg, default=False):
+    try:
+        return boolean(arg)
+    except TypeError:
+        return default
+
+
+def _create_template_environment(template_parameters, src, encoding):
+    """Parses boolean parameters for Jinja2 and creates a TemplateRenderer
+    instance."""
+    template_parameters["lstrip_blocks"] = _process_boolean(template_parameters.get("lstrip_blocks"), default=False)
+    template_parameters["trim_blocks"] = _process_boolean(template_parameters.get("trim_blocks"), default=False)
+    template_parameters["keep_trailing_newline"] = _process_boolean(template_parameters.get("keep_trailing_newline"), default=False)
+    template_parameters["auto_reload"] = _process_boolean(template_parameters.get("auto_reload"), default=False)
+
+    if encoding: #and encoding.get("from"):
+        template_encoding = encoding.get("from")
+    else:
+        template_encoding = encode.Defaults.get_default_system_charset()
+
+    return TemplateRenderer(src, template_encoding, **template_parameters)

@@ -124,6 +124,10 @@ options:
         required: false
         type: str
         default: IBM-1047
+
+extends_documentation_fragment:
+  - ibm.ibm_zos_core.template
+
 notes:
   - For supported character sets used to encode data, refer to the
     L(documentation,https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html).
@@ -722,6 +726,30 @@ def run_module():
         wait_time_s=dict(type="int", default=10),
         max_rc=dict(type="int", required=False),
         temp_file=dict(type="path", required=False),
+        use_template=dict(type='bool', default=False),
+        template_parameters=dict(
+            type='dict',
+            required=False,
+            options=dict(
+                variable_start_string=dict(type='str', default='{{'),
+                variable_end_string=dict(type='str', default='}}'),
+                block_start_string=dict(type='str', default='{%'),
+                block_end_string=dict(type='str', default='%}'),
+                comment_start_string=dict(type='str', default='{#'),
+                comment_end_string=dict(type='str', default='#}'),
+                line_statement_prefix=dict(type='str', required=False),
+                line_comment_prefix=dict(type='str', required=False),
+                lstrip_blocks=dict(type='bool', default=False),
+                trim_blocks=dict(type='bool', default=True),
+                keep_trailing_newline=dict(type='bool', default=False),
+                newline_sequence=dict(
+                    type='str',
+                    default='\n',
+                    choices=['\n', '\r', '\r\n']
+                ),
+                auto_reload=dict(type='bool', default=False),
+            )
+        ),
     )
 
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)

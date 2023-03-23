@@ -173,6 +173,14 @@ options:
     required: false
     type: str
     default: IBM-1047
+  force:
+    description:
+      - The case of a member of a PDSE held by a started task 
+      other members cannot be acces/modified but is requiere for another 
+      member from the same PDSE allow to work 
+    required: false
+    type: bool
+    default: False
 notes:
   - It is the playbook author or user's responsibility to avoid files
     that should not be encoded, such as binary files. A user is described
@@ -218,6 +226,14 @@ EXAMPLES = r"""
     regexp: '^(.*)User(\d+)m(.*)$'
     line: '\1APPUser\3'
     backrefs: yes
+
+- name: Add a line to a member while a task is in execution
+  zos_lineinfile:
+    src: "{{ DATASET_NAME }}(MEM3)"
+    insertafter: EOF
+    line: 'Should be working know Mothefucker'
+    force: True
+
 """
 
 RETURN = r"""
@@ -271,7 +287,7 @@ except Exception:
 DS_TYPE = ['PS', 'PO']
 
 
-def present(src, line, regexp, ins_aft, ins_bef, encoding, first_match, backrefs):
+def present(src, line, regexp, ins_aft, ins_bef, encoding, first_match, backrefs, force):
     """Replace a line with the matching regex pattern
     Insert a line before/after the matching pattern
     Insert a line at BOF/EOF
@@ -292,6 +308,7 @@ def present(src, line, regexp, ins_aft, ins_bef, encoding, first_match, backrefs
         encoding: {str} -- Encoding of the src.
         first_match: {bool} -- Take the first matching regex pattern.
         backrefs: {bool} -- Back reference
+        force: {bool} -- force for modify a member part of a task in execution
 
     Returns:
         str -- Information in JSON format. keys:
@@ -310,10 +327,11 @@ def present(src, line, regexp, ins_aft, ins_bef, encoding, first_match, backrefs
         backref=backrefs,
         state=True,
         debug=True,
+        force=force,
     )
 
 
-def absent(src, line, regexp, encoding):
+def absent(src, line, regexp, encoding,force):
     """Delete lines with matching regex pattern
 
     Arguments:
@@ -322,6 +340,7 @@ def absent(src, line, regexp, encoding):
             regexp will be ignored.
         regexp: {str} -- The regular expression to look for in every line of the src.
         encoding: {str} -- Encoding of the src.
+        force: {bool} -- force for modify a member part of a task in execution
 
     Returns:
         str -- Information in JSON format. keys:
@@ -329,7 +348,7 @@ def absent(src, line, regexp, encoding):
             found: {int} -- Number of matching regex pattern
             changed: {bool} -- Indicates if the source was modified.
     """
-    return datasets.lineinfile(src, line, regex=regexp, encoding=encoding, state=False, debug=True)
+    return datasets.lineinfile(src, line, regex=regexp, encoding=encoding, state=False, debug=True, force=force)
 
 
 def quotedString(string):
@@ -364,7 +383,8 @@ def main():
         backup_name=dict(type='str', required=False, default=None),
         firstmatch=dict(type='bool', default=False),
         encoding=dict(type='str', default="IBM-1047"),
-        tmp_hlq=dict(type='str', required=False, default=None)
+        tmp_hlq=dict(type='str', required=False, default=None),
+        force=dict(type='bool', default=False)
     )
     module = AnsibleModule(
         argument_spec=module_args,
@@ -385,6 +405,7 @@ def main():
         firstmatch=dict(arg_type="bool", required=False, default=False),
         backrefs=dict(arg_type="bool", dependencies=['regexp'], required=False, default=False),
         tmp_hlq=dict(type='qualifier_or_empty', required=False, default=None),
+        force=dict(arg_type='bool',required=False, default=False),
         mutually_exclusive=[["insertbefore", "insertafter"]],)
 
     try:
@@ -406,6 +427,7 @@ def main():
     ins_bef = parsed_args.get('insertbefore')
     encoding = parsed_args.get('encoding')
     tmphlq = parsed_args.get('tmp_hlq')
+    force = parsed_args.get('force')
 
     if parsed_args.get('state') == 'present':
         if backrefs and regexp is None:
@@ -453,9 +475,9 @@ def main():
     # state=present, insert/replace a line with matching regex pattern
     # state=absent, delete lines with matching regex pattern
     if parsed_args.get('state') == 'present':
-        return_content = present(src, quotedString(line), quotedString(regexp), quotedString(ins_aft), quotedString(ins_bef), encoding, firstmatch, backrefs)
+        return_content = present(src, quotedString(line), quotedString(regexp), quotedString(ins_aft), quotedString(ins_bef), encoding, firstmatch, backrefs,force)
     else:
-        return_content = absent(src, quotedString(line), quotedString(regexp), encoding)
+        return_content = absent(src, quotedString(line), quotedString(regexp), encoding,force)
     stdout = return_content.stdout_response
     stderr = return_content.stderr_response
     rc = return_content.rc

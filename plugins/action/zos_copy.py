@@ -467,6 +467,7 @@ def _write_content_to_temp_file(content):
         )
     return path
 
+
 def _create_template_environment(template_parameters, src, encoding):
     """Parses boolean parameters for Jinja2 and creates a TemplateRenderer
     instance."""

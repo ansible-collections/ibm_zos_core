@@ -1,4 +1,4 @@
 enhancements:
-  - zos_job_query - This bugfix adjusts the job_name parameter to handle multiple embedded wildcards.
-    This also required change to job.py/_get_job_status to follow the wildcard feature.
+  - zos_job_query - This enhancement adjusts the job_name and job_id parameters to handle embedded wildcards.
+    This also required change to job.py/_get_job_status to follow the wildcard feature, using fnmatch logic.
     (https://github.com/ansible-collections/ibm_zos_core/pull/---)

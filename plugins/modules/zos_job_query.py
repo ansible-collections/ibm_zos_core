@@ -210,7 +210,11 @@ def run_module():
     try:
         name, id, owner = validate_arguments(module.params)
         jobs_raw = query_jobs(name, id, owner)
-        jobs = parsing_jobs(jobs_raw)
+        if jobs_raw:
+            jobs = parsing_jobs(jobs_raw)
+        else:
+            jobs = None
+
     except Exception as e:
         module.fail_json(msg=e, **result)
     result["jobs"] = jobs
@@ -221,7 +225,10 @@ def run_module():
 def validate_arguments(params):
     job_name_in = params.get("job_name")
     job_name_final = job_name_in
+
     job_id = params.get("job_id")
+    job_id_final = job_id
+
     owner = params.get("owner")
     if job_name_in or job_id:
         if job_name_in and job_name_in != "*":
@@ -240,7 +247,7 @@ def validate_arguments(params):
             if not o:
                 ix = job_name_in.find("*")
                 if ix >= 0:
-                  job_name_short = job_name_in[0, ix+1]
+                  job_name_short = job_name_in[0:ix+1]
                   o = job_name_pattern.search(job_name_short)
                   if not o:
                       o = job_name_pattern_with_star.search(job_name_short)
@@ -249,18 +256,34 @@ def validate_arguments(params):
 
             # so now, fail if neither m, n, or o=m/n(short) found a match
             if not o:
-                raise RuntimeError("Failed to validate the job name: " + job_name_in)
+                raise RuntimeError("Failed to validate the job name: " + job_name_in + " ix was " + ix + " short was " + job_name_short)
 
         if job_id:
             job_id_pattern = re.compile("(JOB|TSU|STC)[0-9]{5}|(J|T|S)[0-9]{7}$")
-            if not job_id_pattern.search(job_id):
+            m = job_id_pattern.search(job_id)
+            o = None
+
+            if not m:
+                ix = job_id.find("*")
+                if ix > 0:
+                  # this differs from job_name, in that we'll drop the star for the search
+                  job_id_short = job_id[0:ix]
+
+                  if job_id_short[0:3] in ['JOB','TSU','STC'] or job_id_short[0:1] in ['J','T','S']:
+                      o = job_id_short
+
+                  if o:
+                      job_id_final = job_id_short + '*'
+
+            if not m and not o:
                 raise RuntimeError("Failed to validate the job id: " + job_id)
     else:
         raise RuntimeError("Argument Error:Either job name(s) or job id is required")
     if job_id and owner:
         raise RuntimeError("Argument Error:job id can not be co-exist with owner")
 
-    return job_name_final, job_id, owner;
+    # return job_name_final, job_id_final, owner;
+    return job_name_in, job_id, owner;
 
 def query_jobs(job_name, job_id, owner):
 

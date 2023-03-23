@@ -132,9 +132,9 @@ def job_status(job_id=None, owner=None, job_name=None, dd_name=None):
 
     """
     arg_defs = dict(
-        job_id=dict(arg_type="qualifier_pattern"),
+        job_id=dict(arg_type="str"),
         owner=dict(arg_type="qualifier_pattern"),
-        job_name=dict(arg_type="qualifier_pattern"),
+        job_name=dict(arg_type="str"),
         dd_name=dict(arg_type="str"),
     )
 
@@ -211,6 +211,9 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, duration=
                 # if job_name != entry.name:
                 #     continue
                 if not fnmatch.fnmatch( entry.name, job_name ):
+                    continue
+            if job_id_temp != None:
+                if not fnmatch.fnmatch( entry.id, job_id ):
                     continue
 
             job = {}

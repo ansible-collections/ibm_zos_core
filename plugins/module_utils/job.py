@@ -210,10 +210,10 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, duration=
             if job_name != "*":
                 # if job_name != entry.name:
                 #     continue
-                if not fnmatch.fnmatch( entry.name, job_name ):
+                if not fnmatch.fnmatch(entry.name, job_name):
                     continue
-            if job_id_temp != None:
-                if not fnmatch.fnmatch( entry.id, job_id ):
+            if job_id_temp is not None:
+                if not fnmatch.fnmatch(entry.id, job_id):
                     continue
 
             job = {}

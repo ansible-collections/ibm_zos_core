@@ -247,12 +247,12 @@ def validate_arguments(params):
             if not o:
                 ix = job_name_in.find("*")
                 if ix >= 0:
-                  job_name_short = job_name_in[0:ix+1]
-                  o = job_name_pattern.search(job_name_short)
-                  if not o:
-                      o = job_name_pattern_with_star.search(job_name_short)
-                  if o:
-                      job_name_final = job_name_short
+                    job_name_short = job_name_in[0:ix + 1]
+                    o = job_name_pattern.search(job_name_short)
+                    if not o:
+                        o = job_name_pattern_with_star.search(job_name_short)
+                    if o:
+                        job_name_final = job_name_short
 
             # so now, fail if neither m, n, or o=m/n(short) found a match
             if not o:
@@ -266,14 +266,14 @@ def validate_arguments(params):
             if not m:
                 ix = job_id.find("*")
                 if ix > 0:
-                  # this differs from job_name, in that we'll drop the star for the search
-                  job_id_short = job_id[0:ix]
+                    # this differs from job_name, in that we'll drop the star for the search
+                    job_id_short = job_id[0:ix]
 
-                  if job_id_short[0:3] in ['JOB','TSU','STC'] or job_id_short[0:1] in ['J','T','S']:
-                      o = job_id_short
+                    if job_id_short[0:3] in ['JOB', 'TSU', 'STC'] or job_id_short[0:1] in ['J', 'T', 'S']:
+                        o = job_id_short
 
-                  if o:
-                      job_id_final = job_id_short + '*'
+                    if o:
+                        job_id_final = job_id_short + '*'
 
             if not m and not o:
                 raise RuntimeError("Failed to validate the job id: " + job_id)
@@ -283,7 +283,8 @@ def validate_arguments(params):
         raise RuntimeError("Argument Error:job id can not be co-exist with owner")
 
     # return job_name_final, job_id_final, owner;
-    return job_name_in, job_id, owner;
+    return job_name_in, job_id, owner
+
 
 def query_jobs(job_name, job_id, owner):
 

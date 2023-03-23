@@ -393,7 +393,6 @@ def quotedString_outputJson(string):
     if not isinstance(string, str):
         return string
     return string.replace('"', "u'")
-    #return string.replace('\', "")
 
 
 def main():
@@ -571,7 +570,7 @@ def main():
         if ins_aft:
           stdout = stdout.replace(ins_aft, quotedString_outputJson(ins_aft))
         if ins_bef:
-            stdout = stdout.replace(ins_bef, quotedString_outputJson(ins_bef))
+          stdout = stdout.replace(ins_bef, quotedString_outputJson(ins_bef))
         # Try to extract information from stdout
         ret = json.loads(stdout)
         ret['cmd'] = ret['cmd'].replace("u'",'"')
@@ -584,8 +583,8 @@ def main():
         if len(stderr):
             result['stderr'] = str(stderr)
             result['rc'] = rc
-    except Exception as e:
-        messageDict = dict(msg="ZOAU dmod return content is NOT in json format", stdout=str(stdout), stderr=str(stderr), rc=rc, e=e)
+    except Exception:
+        messageDict = dict(msg="ZOAU dmod return content is NOT in json format", stdout=str(stdout), stderr=str(stderr), rc=rc)
         if result.get('backup_name'):
             messageDict['backup_name'] = result['backup_name']
         module.fail_json(**messageDict)

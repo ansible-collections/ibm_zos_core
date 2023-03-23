@@ -146,8 +146,8 @@ class ActionModule(ActionBase):
                 if key in dictionary:
                     del dictionary[key]
 
-        # Currently the direction is undecided if we the action plugin should
-        # continue to use the community modules or move to FTP so this code
+        # Currently the direction is undecided if we should continue to use the
+        # community action plugins or transition to SFTP, so this code
         # can remain should we want to clean up unrelated response values.
         # entries = ('checksum', 'dest', 'gid', 'group', 'md5sum', 'mode', 'owner', 'size', 'src', 'state', 'uid')
         # delete_dict_entries(entries, result)

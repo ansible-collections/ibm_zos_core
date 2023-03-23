@@ -35,10 +35,13 @@ def job_output(job_id=None, owner=None, job_name=None, dd_name=None, duration=0,
     """Get the output from a z/OS job based on various search criteria.
 
     Keyword Arguments:
-        job_id {str} -- The job ID to search for (default: {None})
-        owner {str} -- The owner of the job (default: {None})
-        job_name {str} -- The job name search for (default: {None})
-        dd_name {str} -- The data definition to retrieve (default: {None})
+        job_id (str) -- The job ID to search for (default: {None})
+        owner (str) -- The owner of the job (default: {None})
+        job_name (str) -- The job name search for (default: {None})
+        dd_name (str) -- The data definition to retrieve (default: {None})
+        duration (int) -- The time the submitted job ran for
+        timeout (int) - how long to wait in seconds for a job to complete
+        start_time (int) - time the JCL started its submission
 
     Returns:
         list[dict] -- The output information for a list of jobs matching specified criteria.

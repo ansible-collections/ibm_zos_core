@@ -58,20 +58,20 @@ location
 
 
 wait
+  Setting this option will yield no change, it is deprecated. There is no no need to set *wait*; setting *wait_times_s* is the correct way to configure the amount of tme to wait for a job to execute.
+
   Configuring wait used by the `zos_job_submit <./zos_job_submit.html>`_ module has been deprecated and will be removed in ibm.ibm_zos_core collection.
 
-  Setting this option will yield no change, it is deprecated.
-
-  See option ``wait_time_s``.
+  See option *wait_time_s*.
 
   | **required**: False
   | **type**: bool
 
 
 wait_time_s
-  When *wait* is true, the module will wait for the number of seconds for Job completion.
+  Option *wait_time_s* is the total time that module `zos_job_submit <./zos_job_submit.html>`_ will wait for a submitted job to complete. The time begins when the module is executed on the managed node.
 
-  User can set the wait time manually with this option.
+  *wait_time_s* is measured in seconds and must be a value greater than 0 and less than 86400.
 
   | **required**: False
   | **type**: int

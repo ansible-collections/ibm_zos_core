@@ -1,3 +1,3 @@
 bugfixes:
-- The use of quotes for any sentence is now in use for the users in blockinfile module
-- The message for the user about a correct insertion includes the quotes
+- The use of quotes for any sentence it wasn't support in use for the users in blockinfile module
+- The message for the user about a correct insertion did not include the quotes

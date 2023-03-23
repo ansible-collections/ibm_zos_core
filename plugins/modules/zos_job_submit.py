@@ -837,7 +837,6 @@ def run_module():
     duration = 0
     start_time = timer()
 
-
     if location == "DATA_SET":
         job_submitted_id, duration = submit_src_jcl(
             module, src, src_name=src, timeout=wait_time_s, hfs=False, volume=volume, start_time=start_time)
@@ -995,6 +994,7 @@ def assert_valid_return_code(max_rc, job_rc, ret_code):
         return False
 
     return True
+
 
 def main():
     run_module()

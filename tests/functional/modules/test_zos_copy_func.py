@@ -60,45 +60,6 @@ COBOL_SRC = """
 """
 
 LINK_JCL = """
-// *****************************************************************************
-//* Copyright (c) IBM Corporation 2021
-//* ****************************************************************************
-//*
-//* ****************************************************************************
-//* Configure the job card as needed, most common keyword parameters often
-//* needing editing are:
-//* CLASS:      Used to achieve a balance between different types of jobs and
-//*             avoid contention between jobs that use the same resources.
-//* MSGLEVEL:   Controls how the allocation and termination messages are
-//*             printed in the job's output listing (SYSOUT).
-//* MSGCLASS:   Assign an output class for your output listing (SYSOUT)
-//*
-//* COBOL pattern for this compile and link
-//* COBOL SRC
-//*         '-> COMPILE
-//*                   '-> OBJ CODE
-//*                              '-> LINK EDIT
-//*                                          '->LOAD MODULE
-//*                                                        '->GO
-//*                                                            '-> HELLOPGM.jcl
-//*
-//* SYSIN:      The COBOL source in DSN ANSIBLE.COBOL.SRC(HELLOSRC)
-//* SYSPRINT:   The output
-//* SYSLIN:     Where the COBOL binary is written, using &&LOADSET and parms to
-//*             manage this but you could create a PDS such as
-//*             DSN=ANSIBLE.COBOL.OBJ,UNIT=SYSDA,
-//*             DISP=(MOD,KEEP),SPACE=(TRK,(3,3))
-//* SYSUT:      Statements define the utility data sets that the compiler
-//*             will use to process the source program
-//*
-//* SYSMDECK:   Required for all compilations, it will contain a copy
-//*             of the updated input source after library processing
-//* ****************************************************************************
-//*
-//* ****************************************************************************
-//* COMPILE A COBOL PROGRAM
-//* ****************************************************************************
-//*
 //COMPLINK  JOB MSGCLASS=H,MSGLEVEL=(1,1),NOTIFY=&SYSUID,REGION=0M
 //STEP1     EXEC PGM=IGYCRCTL
 //STEPLIB   DD DSN=IGYV5R10.SIGYCOMP,DISP=SHR
@@ -125,15 +86,6 @@ LINK_JCL = """
 //SYSUT14   DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
 //SYSUT15   DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
 //SYSMDECK  DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
-//*
-//* ****************************************************************************
-//* LINKEDIT A COBOL PROGRAM
-//* SYSLMOD: The PDSE where the link editor will create a module, don't create
-//*          the member, let the link editor do this else you will get an OF4
-//* SYSLIN: The binder reads the object deck in this DD which is created in the
-//*         compile step. If you had not used &&LOADSET you would need to pass
-//*         your DSN such as DSN=ANSIBLE.COBOL.OBJ,DISP=(OLD,KEEP)
-//* ****************************************************************************
 //*
 //LKED     EXEC PGM=IEWL,REGION=0M
 //SYSPRINT DD  SYSOUT=*

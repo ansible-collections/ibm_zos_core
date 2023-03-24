@@ -37,6 +37,14 @@ class ActionModule(ActionBase):
             return result
 
         module_args = self._task.args.copy()
+
+        use_template = _process_boolean(module_args.get("use_template"))
+        if use_template and module_args.get("location") != "LOCAL":
+            result["failed"] = True
+            result["changed"] = False
+            result["msg"] = "Use of templates is only allowed for local files."
+            return result
+
         if module_args["location"] == "LOCAL":
 
             source = self._task.args.get("src", None)
@@ -99,7 +107,6 @@ class ActionModule(ActionBase):
 
             tmp_src = self._connection._shell.join_path(tmp, "source")
 
-            use_template = _process_boolean(module_args.get("use_template"))
             if use_template:
                 try:
                     template_parameters = module_args.get("template_parameters", dict())

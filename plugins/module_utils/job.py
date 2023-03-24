@@ -223,7 +223,8 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, duration=
             job["ret_code"] = {}
             job["ret_code"]["msg"] = entry.status + " " + entry.rc
             job["ret_code"]["msg_code"] = entry.rc
-            job["ret_code"]["code"] = ""
+            # Why was this set to an empty string?
+            job["ret_code"]["code"] = None
             if len(entry.rc) > 0:
                 if entry.rc.isdigit():
                     job["ret_code"]["code"] = int(entry.rc)
@@ -315,7 +316,7 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, duration=
                         job["ret_code"]["msg"] = tmptext.strip()
                         job["ret_code"]["msg_code"] = None
                         job["ret_code"]["code"] = None
-            if len(list_of_dds) > 1:
+            if len(list_of_dds) > 0:
                 # The duration should really only be returned for job submit but the code
                 # is used job_output as well, for now we can ignore this point unless
                 # we want to offer a wait_time_s for job output which might be reasonable.

@@ -215,8 +215,8 @@ TEST_INFO = dict(
         insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR",
         state="present", indentation=16),
     test_uss_block_insert_with_doublequotes=dict(
-        insertafter="EOF", block=r"""cat "//'OMVSADMI.CAT'"\ncat "//'OMVSADM.COPYMEM.TESTS'" > test.txt""", 
-        state="present"),
+        insertafter="EOF", block='cat \"//OMVSADMI.CAT\"\ncat \"//OMVSADM.COPYMEM.TESTS\" > test.txt', 
+        marker="// {mark} ANSIBLE MANAGED BLOCK",state="present"),
     test_ds_block_insertafter_regex=dict(test_name="T1"),
     test_ds_block_insertbefore_regex=dict(test_name="T2"),
     test_ds_block_insertafter_eof=dict(test_name="T3"),
@@ -286,10 +286,10 @@ SH ls -la /;
 sleep 30;
 /*
 //
-# BEGIN ANSIBLE MANAGED BLOCK
-cat "//'OMVSADMI.CAT'"
-cat "//'OMVSADM.COPYMEM.TESTS'" > test.txt
-# END ANSIBLE MANAGED BLOCK""",
+// BEGIN ANSIBLE MANAGED BLOCK
+cat "//OMVSADMI.CAT"
+cat "//OMVSADM.COPYMEM.TESTS" > test.txt
+// END ANSIBLE MANAGED BLOCK""",
                   test_uss_block_insertbefore_regex_defaultmarker="""if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none

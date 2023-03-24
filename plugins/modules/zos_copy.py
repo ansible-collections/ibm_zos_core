@@ -926,15 +926,20 @@ class CopyHandler(object):
             {bool} -- True if the file uses CRLF endings, False if it uses LF
                       ones.
         """
+        # Python has to read the file in binary mode to not mask CRLF
+        # endings or enable universal newlines. If we used encoding="cp037",
+        # we would get '\n' as the line ending even when the file uses '\r\n'.
         with open(src, "rb") as src_file:
-            # readline() will read until it finds a \n.
-            content = src_file.readline()
+            # Reading the file in 1024-byte chunks.
+            content = src_file.read(1024)
 
-        # In EBCDIC, \r\n are bytes 0d and 15, respectively.
-        if content.endswith(b'\x0d\x15'):
-            return True
-        else:
-            return False
+            while content:
+                # In EBCDIC, \r\n are bytes 0d and 15, respectively.
+                if b'\x0d\x15' in content:
+                    return True
+                content = src_file.read(1024)
+
+        return False
 
     def create_temp_with_lf_endings(self, src):
         """Creates a temporary file with the same content as src but without
@@ -956,9 +961,10 @@ class CopyHandler(object):
             with open(converted_src, "wb") as converted_file:
                 with open(src, "rb") as src_file:
                     current_line = src_file.read()
+                    # In IBM-037, \r is the byte 0d.
                     converted_file.write(current_line.replace(b'\x0d', b''))
 
-            self._tag_file_encoding(converted_src, encode.Defaults.DEFAULT_EBCDIC_MVS_CHARSET)
+            self._tag_file_encoding(converted_src, "IBM-037")
 
             return converted_src
         except Exception as err:
@@ -2380,9 +2386,9 @@ def run_module(module, arg_def):
                 src_tag = enc_utils.uss_file_tag(new_src)
 
                 if src_tag == "untagged":
-                    src_tag = encode.Defaults.DEFAULT_EBCDIC_USS_CHARSET
+                    src_tag = encoding["from"]
 
-                if src_tag not in encode.Defaults.DEFAULT_EBCDIC_MVS_CHARSET:
+                if src_tag != "IBM-037":
                     fd, converted_src = tempfile.mkstemp()
                     os.close(fd)
 
@@ -2390,9 +2396,9 @@ def run_module(module, arg_def):
                         new_src,
                         converted_src,
                         src_tag,
-                        encode.Defaults.DEFAULT_EBCDIC_MVS_CHARSET
+                        "IBM-037"
                     )
-                    copy_handler._tag_file_encoding(converted_src, encode.Defaults.DEFAULT_EBCDIC_MVS_CHARSET)
+                    copy_handler._tag_file_encoding(converted_src, "IBM-037")
                     new_src = converted_src
 
                 if copy_handler.file_has_crlf_endings(new_src):

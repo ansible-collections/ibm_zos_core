@@ -275,7 +275,8 @@ import os
 from math import ceil
 from shutil import rmtree
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils._text import to_bytes
+# from ansible.module_utils._text import to_bytes
+from ansible.module_utils.common.text.converters import to_bytes
 from ansible.module_utils.parsing.convert_bool import boolean
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser,

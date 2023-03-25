@@ -25,9 +25,9 @@ author:
     - "Demetrios Dimatos (@ddimatos)"
 short_description: Submit JCL
 description:
-    - Submit JCL from DATA_SET , USS, or LOCAL location.
-    - Submit a job and optionally monitor for its execution.
-    - Optionally wait a designated time until the job finishes.
+    - Submit JCL from a data set, USS, or from the controller.
+    - Submit a job and optionally monitor for completion.
+    - Optionally, wait a designated time until the job finishes.
     - For an uncataloged dataset, specify the volume serial number.
 version_added: "1.0.0"
 options:
@@ -36,7 +36,7 @@ options:
     type: str
     description:
       - The source file or data set containing the JCL to submit.
-      - It could be physical sequential data set or a partitioned data set
+      - It could be a physical sequential data set, a partitioned data set
         qualified by a member or a path. (e.g "USER.TEST","USER.JCL(TEST)")
       - Or a USS file. (e.g "/u/tester/demo/sample.jcl")
       - Or a LOCAL file in ansible control node.
@@ -97,7 +97,7 @@ options:
       - When configured, the L(zos_job_submit,./zos_job_submit.html) will try to
         catalog the data set for the volume serial. If it is not able to, the
         module will fail.
-      - Ignored for USS and LOCAL.
+      - Ignored for I(location=USS) and I(location=LOCAL).
   encoding:
     description:
       - Specifies which encoding the local JCL file should be converted from
@@ -224,18 +224,21 @@ jobs:
       contains:
         msg:
           description:
-            Return code resulting from the job submission.
+            Return code resulting from the job submission. Jobs that take
+            longer to assign a value can have a value of '?'.
           type: str
           sample: CC 0000
         msg_code:
           description:
             Return code extracted from the `msg` so that it can be evaluated
-            as a string.
+            as a string. Jobs that take longer to assign a value can have a
+            value of '?'.
           type: str
           sample: 0000
         msg_txt:
           description:
-             Returns additional information related to the job.
+             Returns additional information related to the job. Jobs that take
+             longer to assign a value can have a value of '?'.
           type: str
           sample: The job completion code (CC) was not available in the job
                   output, please review the job log."
@@ -660,6 +663,7 @@ def submit_src_jcl(module, src, src_name=None, timeout=0, hfs=True, volume=None,
             # drop through and get analyzed in the main as it will scan the job ouput
             # Any match to JOB_ERROR_MESSAGES ends our processing and wait times
             while (job_listing_status not in JOB_ERROR_MESSAGES and
+                    job_listing_status == 'AC' and
                     ((job_listing_rc is None or len(job_listing_rc) == 0 or
                       job_listing_rc == '?') and duration < timeout)):
                 current_time = timer()

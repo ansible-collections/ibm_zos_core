@@ -16,9 +16,9 @@ zos_job_submit -- Submit JCL
 
 Synopsis
 --------
-- Submit JCL from DATA_SET , USS, or LOCAL location.
-- Submit a job and optionally monitor for its execution.
-- Optionally wait a designated time until the job finishes.
+- Submit JCL from a data set, USS, or from the controller.
+- Submit a job and optionally monitor for completion.
+- Optionally, wait a designated time until the job finishes.
 - For an uncataloged dataset, specify the volume serial number.
 
 
@@ -32,7 +32,7 @@ Parameters
 src
   The source file or data set containing the JCL to submit.
 
-  It could be physical sequential data set or a partitioned data set qualified by a member or a path. (e.g "USER.TEST","USER.JCL(TEST)")
+  It could be a physical sequential data set, a partitioned data set qualified by a member or a path. (e.g "USER.TEST","USER.JCL(TEST)")
 
   Or a USS file. (e.g "/u/tester/demo/sample.jcl")
 
@@ -100,7 +100,7 @@ volume
 
   When configured, the `zos_job_submit <./zos_job_submit.html>`_ will try to catalog the data set for the volume serial. If it is not able to, the module will fail.
 
-  Ignored for USS and LOCAL.
+  Ignored for *location=USS* and *location=LOCAL*.
 
   | **required**: False
   | **type**: str
@@ -548,18 +548,18 @@ jobs
           }
 
     msg
-      Return code resulting from the job submission.
+      Return code resulting from the job submission. Jobs that take longer to assign a value can have a value of '?'.
 
       | **type**: str
       | **sample**: CC 0000
 
     msg_code
-      Return code extracted from the `msg` so that it can be evaluated as a string.
+      Return code extracted from the `msg` so that it can be evaluated as a string. Jobs that take longer to assign a value can have a value of '?'.
 
       | **type**: str
 
     msg_txt
-      Returns additional information related to the job.
+      Returns additional information related to the job. Jobs that take longer to assign a value can have a value of '?'.
 
       | **type**: str
       | **sample**: The job completion code (CC) was not available in the job output, please review the job log."

@@ -573,7 +573,7 @@ def main():
           stdout = stdout.replace(ins_bef, quotedString_outputJson(ins_bef))
         # Try to extract information from stdout
         ret = json.loads(stdout)
-        ret['cmd'] = ret['cmd'].replace("u'",'"')
+        ret['cmd'] = ret['cmd'].replace("u'", '"')
 
         result['cmd'] = ret['cmd']
         result['changed'] = ret['changed']

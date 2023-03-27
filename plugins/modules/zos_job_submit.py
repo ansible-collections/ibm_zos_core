@@ -682,8 +682,8 @@ def submit_src_jcl(module, src, src_name=None, timeout=0, hfs=True, volume=None,
         result["duration"] = duration
         result["job_id"] = job_submitted.id if job_submitted else None
         result["msg"] = ("Unable to submit job {0}, the job submission has failed. "
-                         "Without the job id, the error can not be determined, "
-                         "consider using module `zos_job_query` to poll for the "
+                         "Without the job id, the error can not be determined. "
+                         "Consider using module `zos_job_query` to poll for the "
                          "job by name or review the system log for purged jobs "
                          "resulting from an abend.".format(src_name))
         module.fail_json(**result)

@@ -1780,7 +1780,7 @@ def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module,):
     dest = "USER.LOAD.DEST"
     cobol_pds = "USER.COBOL.SRC"
     try:
-        src_rc = hosts.all.zos_data_set(
+        hosts.all.zos_data_set(
             name=src,
             state="present",
             type="pdse",
@@ -1791,10 +1791,8 @@ def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module,):
             space_type="M",
             replace=True
         )
-        for res in src_rc.contacted.values():
-            print("Create SRC dataset: {0}".format(res))
 
-        ds_rc = hosts.all.zos_data_set(
+        hosts.all.zos_data_set(
             name=dest,
             state="present",
             type="pdse",
@@ -1805,9 +1803,6 @@ def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module,):
             space_type="M",
             replace=True
         )
-
-        for res in ds_rc.contacted.values():
-            print("Create DEST dataset: {0}".format(res))
 
         hosts.all.zos_data_set(
             name=cobol_pds,
@@ -1825,22 +1820,16 @@ def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module,):
             content=COBOL_SRC,
             dest=cobol_pds,
         )
-        for res in rc.contacted.values():
-            print("cobol src copy result: {0}".format(res))
         dest_name = "{0}({1})".format(dest, member)
         src_name = "{0}({1})".format(src, member)
         
         
         # both src and dest need to be a loadlib
         rc = link_loadlib_from_cobol(hosts, dest_name, cobol_pds)
-        print("return code: {0}".format(rc))
         assert rc == 0
         rc = link_loadlib_from_cobol(hosts, src_name, cobol_pds)
-        print("return code: {0}".format(rc))
         assert rc == 0
 
-        print("Dataset names {0}({1})".format(src, member))
-        print("Dataset names {0}({1})".format(dest, "MEM1"))
         copy_res = hosts.all.zos_copy(
             src="{0}({1})".format(src, member), 
             dest="{0}({1})".format(dest, "MEM1"), 
@@ -1852,13 +1841,11 @@ def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module,):
         )
 
         for result in copy_res.contacted.values():
-            print(result)
             assert result.get("msg") is None
             assert result.get("changed") is True
             assert result.get("dest") == "{0}({1})".format(dest, "MEM1")
 
         for v_cp in verify_copy.contacted.values():
-            print(result)
             assert v_cp.get("rc") == 0
             stdout = v_cp.get("stdout")
             assert stdout is not None

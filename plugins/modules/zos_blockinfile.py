@@ -389,6 +389,7 @@ def quotedString(string):
         return string
     return string.replace('"', "")
 
+
 def quotedString_outputJson(string):
     if not isinstance(string, str):
         return string
@@ -566,14 +567,14 @@ def main():
         stdout = stdout.replace('1 i\\', '1 i\\\\')
 
         if block:
-          stdout = stdout.replace(block, quotedString_outputJson(block))
+            stdout = stdout.replace(block, quotedString_outputJson(block))
         if ins_aft:
-          stdout = stdout.replace(ins_aft, quotedString_outputJson(ins_aft))
+            stdout = stdout.replace(ins_aft, quotedString_outputJson(ins_aft))
         if ins_bef:
-          stdout = stdout.replace(ins_bef, quotedString_outputJson(ins_bef))
+            stdout = stdout.replace(ins_bef, quotedString_outputJson(ins_bef))
         # Try to extract information from stdout
         ret = json.loads(stdout)
-        ret['cmd'] = ret['cmd'].replace("u'",'"')
+        ret['cmd'] = ret['cmd'].replace("u'", '"')
 
         result['cmd'] = ret['cmd']
         result['changed'] = ret['changed']

@@ -2386,6 +2386,10 @@ def run_module(module, arg_def):
                 src_tag = enc_utils.uss_file_tag(new_src)
 
                 if src_tag == "untagged":
+                    # This should only be true when src is a remote file and no encoding
+                    # was specified by the user.
+                    if not encoding:
+                        encoding = {"from": encode.Defaults.get_default_system_charset()}
                     src_tag = encoding["from"]
 
                 if src_tag != "IBM-037":

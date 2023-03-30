@@ -1460,7 +1460,7 @@ def get_file_record_length(file):
     """
     max_line_length = 0
 
-    with open(file, "r") as src_file:
+    with open(file, "r", encoding="utf-8") as src_file:
         current_line = src_file.readline()
 
         while current_line:
@@ -2106,6 +2106,7 @@ def run_module(module, arg_def):
     # and destination datasets, if needed.
     # ********************************************************************
     dest_member_exists = False
+    converted_src = None
     try:
         # If temp_path, the plugin has copied a file from the controller to USS.
         if temp_path or "/" in src:
@@ -2113,6 +2114,35 @@ def run_module(module, arg_def):
 
             if remote_src and os.path.isdir(src):
                 is_src_dir = True
+
+            if not is_uss:
+                new_src = temp_path or src
+                new_src = os.path.normpath(new_src)
+                # Normalizing encoding when src is a USS file (only).
+                encode_utils = encode.EncodeUtils()
+                src_tag = encode_utils.uss_file_tag(new_src)
+                # Normalizing to UTF-8.
+                if not is_src_dir and src_tag != "UTF-8":
+                    # If untagged, assuming the encoding/tag is the system's default.
+                    if src_tag == "untagged" or src_tag is None:
+                        if encoding:
+                            src_tag = encoding["from"]
+                        else:
+                            src_tag = encode.Defaults.get_default_system_charset()
+
+                    # Converting the original src to a temporary one in UTF-8.
+                    fd, converted_src = tempfile.mkstemp()
+                    os.close(fd)
+                    encode_utils.uss_convert_encoding(
+                        new_src,
+                        converted_src,
+                        src_tag,
+                        "UTF-8"
+                    )
+
+                    # Creating the handler just for tagging, we're not copying yet!
+                    copy_handler = CopyHandler(module, is_binary=is_binary)
+                    copy_handler._tag_file_encoding(converted_src, "UTF-8")
         else:
             if data_set.DataSet.data_set_exists(src_name):
                 if src_member and not data_set.DataSet.data_set_member_exists(src):
@@ -2290,6 +2320,14 @@ def run_module(module, arg_def):
             emergency_backup = data_set.DataSet.temp_name()
             data_set.DataSet.allocate_model_data_set(emergency_backup, dest_name)
 
+    if converted_src:
+        if remote_src:
+            original_src = src
+            src = converted_src
+        else:
+            original_temp = temp_path
+            temp_path = converted_src
+
     try:
         if not is_uss:
             res_args["changed"] = allocate_destination_data_set(
@@ -2306,7 +2344,18 @@ def run_module(module, arg_def):
         if dest_exists and not force:
             restore_backup(dest_name, emergency_backup, dest_ds_type, use_backup)
             erase_backup(emergency_backup, dest_ds_type)
+        if converted_src:
+            if remote_src:
+                src = original_src
+            else:
+                temp_path = original_temp
         module.fail_json(msg="Unable to allocate destination data set: {0}".format(str(err)))
+
+    if converted_src:
+        if remote_src:
+            src = original_src
+        else:
+            temp_path = original_temp
 
     # ********************************************************************
     # Encoding conversion is only valid if the source is a local file,

@@ -95,7 +95,7 @@ class MVSUnarchive(Unarchive):
     def __init__(self, module):
         # TODO MVSUnarchive params init
         super(MVSUnarchive, self).__init__(module)
-        # self.dest_volume = module.params.get("format").suboptions("dest_volume")
+        self.volumes = self.format_options.get("dest_volumes")
     
     def create_temp_ds(self, tmphlq):
         if tmphlq:
@@ -123,6 +123,13 @@ class MVSUnarchive(Unarchive):
         exclude_cmd += " ) - \n"
         return exclude_cmd
 
+    def get_volumes(self):
+        volumes_cmd = "OUTDYNAM( - \n"
+        for volume in self.volumes:
+            volumes_cmd += " ('{0}'), - \n".format(volume)
+        volumes_cmd += " ) - \n"
+        return volumes_cmd
+
     def restore(self, source):
         """
         Calls ADDRSU using RESTORE to unpack the dump datasets.
@@ -131,14 +138,19 @@ class MVSUnarchive(Unarchive):
         Dump src datasets identified as self.targets into a temporary dataset using ADRDSSU.
         """
         filter = "INCL(**) "
+        volumes = ""
         if self.include:
             filter = self.get_include_data_sets_cmd()
         if self.exclude:
             filter = self.get_exclude_data_sets_cmd()
+        if self.volumes:
+            volumes = self.get_volumes()
         restore_cmd = """ RESTORE INDD(ARCHIVE) - 
                           DS( -
                             {0} ) -
-                        CATALOG""".format(filter)
+                            {1} -
+                        CATALOG""".format(filter, volumes)
+        self.debug = self.format_options.get("dest_volumes")
         cmd = " mvscmdauth --pgm=ADRDSSU --archive={0},old --sysin=stdin --sysprint=*".format(source)
         rc, out, err = self.module.run_command(cmd, data=restore_cmd)
 
@@ -149,6 +161,7 @@ class MVSUnarchive(Unarchive):
                 stderr=err,
                 stdout_lines=restore_cmd,
                 rc=rc,
+                debug=self.debug
             )
         self.get_restored_datasets(out)
         return rc
@@ -277,9 +290,9 @@ def run_module():
                                 type='str',
                                 required=False,
                             ),
-                            dest_volume=dict(
-                                type='str',
-                                required=False
+                            dest_volumes=dict(
+                                type='list',
+                                elements='str',
                             ),
                         ),
                         default=dict(xmit_log_dataset="")
@@ -317,9 +330,9 @@ def run_module():
                                 type='str',
                                 required=False,
                             ),
-                            dest_volume=dict(
-                                type='str',
-                                required=False
+                            dest_volumes=dict(
+                                type='list',
+                                elements='str'
                             ),
                         ),
                         default=dict(xmit_log_dataset=""),

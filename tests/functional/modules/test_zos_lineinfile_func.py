@@ -17,6 +17,8 @@ from ibm_zos_core.tests.helpers.zos_lineinfile_helper import (
     DsGeneral,
     DsNotSupportedHelper,
     DsGeneralResultKeyMatchesRegex,
+    DsGeneralForceFail,
+    DsGeneralForce,
 )
 import os
 import sys
@@ -120,6 +122,8 @@ TEST_INFO = dict(
     test_ds_line_replace_nomatch_insertbefore_nomatch=dict(test_name="T11"),
     test_ds_line_absent=dict(test_name="T12"),
     test_ds_line_tmp_hlq_option=dict(insertafter="EOF", line="export ZOAU_ROOT", state="present", backup=True, tmp_hlq="TMPHLQ"),
+    test_ds_line_force=dict(path="",insertafter="EOF", line="export ZOAU_ROOT",force=True),
+    test_ds_line_force_fail=dict(path="",insertafter="EOF", line="export ZOAU_ROOT",force=False),
     expected=dict(test_uss_line_replace="""if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -568,7 +572,42 @@ export ZOAUTIL_DIR
 export PYTHONPATH
 export PKG_CONFIG_PATH
 export PYTHON_HOME
-export _BPXK_AUTOCVT"""),
+export _BPXK_AUTOCVT""",
+                  test_ds_line_force="""if [ -z STEPLIB ] && tty -s;
+then
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+TZ=PST8PDT
+export TZ
+LANG=C
+export LANG
+readonly LOGNAME
+PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
+export PATH
+LIBPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+export LIBPATH
+NLSPATH=/usr/lib/nls/msg/%L/%N
+export NLSPATH
+MANPATH=/usr/man/%L
+export MANPATH
+MAIL=/usr/mail/LOGNAME
+export MAIL
+umask 022
+ZOAU_ROOT=/usr/lpp/zoautil/v100
+ZOAUTIL_DIR=/usr/lpp/zoautil/v100
+PYTHONPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
+PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
+_BPXK_AUTOCVT=ON
+export ZOAU_ROOT
+export ZOAUTIL_DIR
+export ZOAUTIL_DIR
+export PYTHONPATH
+export PKG_CONFIG_PATH
+export PYTHON_HOME
+export _BPXK_AUTOCVT
+export ZOAU_ROOT"""),
 )
 
 #########################
@@ -908,4 +947,31 @@ def test_ds_not_supported(ansible_zos_module, dstype):
     DsNotSupportedHelper(
         TEST_INFO["test_ds_line_replace"]["test_name"], ansible_zos_module,
         TEST_ENV, TEST_INFO["test_uss_line_replace"]
+    )
+
+
+#########################
+# Dataset test cases with force
+#########################
+
+@pytest.mark.ds
+@pytest.mark.parametrize("dstype", DS_TYPE)
+def test_ds_line_force(ansible_zos_module, dstype):
+    TEST_ENV["DS_TYPE"] = dstype
+    DsGeneralForce(
+        test_ds_line_force,
+        ansible_zos_module, TEST_ENV,
+        TEST_CONTENT,
+        TEST_INFO["test_ds_line_force"],
+        TEST_INFO["expected"]["test_ds_line_force"]
+    )
+
+
+@pytest.mark.ds
+@pytest.mark.parametrize("dstype", DS_TYPE)
+def test_ds_line_force_fail(ansible_zos_module, dstype):
+    TEST_ENV["DS_TYPE"] = dstype
+    DsGeneralForceFail(
+        ansible_zos_module, TEST_ENV,
+        TEST_INFO["test_ds_line_force_fail"]
     )

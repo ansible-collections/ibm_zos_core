@@ -2024,6 +2024,53 @@ def allocate_destination_data_set(
     return True
 
 
+def normalize_line_endings(src, encoding=None):
+    """
+    Normalizes src's encoding to IBM-037 (a dataset's default) and then normalizes
+    its line endings to LF.
+
+    Arguments:
+        src (str) -- Path of a USS file.
+        encoding (dict, optional) -- Encoding options for the module.
+
+    Returns:
+        str -- Path to the normalized file.
+    """
+    # Before copying into a destination dataset, we'll make sure that
+    # the source file doesn't contain any carriage returns that would
+    # result in empty records in the destination.
+    # Due to the differences between encodings, we'll normalize to IBM-037
+    # before checking the EOL sequence.
+    enc_utils = encode.EncodeUtils()
+    src_tag = enc_utils.uss_file_tag(src)
+    copy_handler = CopyHandler(AnsibleModuleHelper(dict()))
+
+    if src_tag == "untagged":
+        # This should only be true when src is a remote file and no encoding
+        # was specified by the user.
+        if not encoding:
+            encoding = {"from": encode.Defaults.get_default_system_charset()}
+        src_tag = encoding["from"]
+
+    if src_tag != "IBM-037":
+        fd, converted_src = tempfile.mkstemp()
+        os.close(fd)
+
+        enc_utils.uss_convert_encoding(
+            src,
+            converted_src,
+            src_tag,
+            "IBM-037"
+        )
+        copy_handler._tag_file_encoding(converted_src, "IBM-037")
+        src = converted_src
+
+    if copy_handler.file_has_crlf_endings(src):
+        src = copy_handler.create_temp_with_lf_endings(src)
+
+    return src
+
+
 def run_module(module, arg_def):
     # ********************************************************************
     # Verify the validity of module args. BetterArgParser raises ValueError
@@ -2425,39 +2472,8 @@ def run_module(module, arg_def):
         # ---------------------------------------------------------------------
         elif dest_ds_type in data_set.DataSet.MVS_SEQ:
             if src_ds_type == "USS" and not is_binary:
-                # Before copying into the destination dataset, we'll make sure that
-                # the source file doesn't contain any carriage returns that would
-                # result in empty records in the destination.
-                # Due to the differences between encodings, we'll normalize to IBM-037
-                # before checking the EOL sequence.
                 new_src = conv_path or temp_path or src
-                enc_utils = encode.EncodeUtils()
-                src_tag = enc_utils.uss_file_tag(new_src)
-
-                if src_tag == "untagged":
-                    # This should only be true when src is a remote file and no encoding
-                    # was specified by the user.
-                    if not encoding:
-                        encoding = {"from": encode.Defaults.get_default_system_charset()}
-                    src_tag = encoding["from"]
-
-                if src_tag != "IBM-037":
-                    fd, converted_src = tempfile.mkstemp()
-                    os.close(fd)
-
-                    enc_utils.uss_convert_encoding(
-                        new_src,
-                        converted_src,
-                        src_tag,
-                        "IBM-037"
-                    )
-                    copy_handler._tag_file_encoding(converted_src, "IBM-037")
-                    new_src = converted_src
-
-                if copy_handler.file_has_crlf_endings(new_src):
-                    new_src = copy_handler.create_temp_with_lf_endings(new_src)
-
-                conv_path = new_src
+                conv_path = normalize_line_endings(new_src, encoding)
 
             copy_handler.copy_to_seq(
                 src,
@@ -2474,6 +2490,10 @@ def run_module(module, arg_def):
         elif dest_ds_type in data_set.DataSet.MVS_PARTITIONED:
             if not remote_src and not copy_member and os.path.isdir(temp_path):
                 temp_path = os.path.join(temp_path, os.path.basename(src))
+
+            if src_ds_type == "USS" and copy_member and not is_binary:
+                new_src = conv_path or temp_path or src
+                conv_path = normalize_line_endings(new_src, encoding)
 
             pdse_copy_handler = PDSECopyHandler(
                 module, is_binary=is_binary, backup_name=backup_name

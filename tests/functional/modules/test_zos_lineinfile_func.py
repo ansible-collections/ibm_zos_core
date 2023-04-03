@@ -124,6 +124,26 @@ TEST_INFO = dict(
     test_ds_line_tmp_hlq_option=dict(insertafter="EOF", line="export ZOAU_ROOT", state="present", backup=True, tmp_hlq="TMPHLQ"),
     test_ds_line_force=dict(path="",insertafter="EOF", line="export ZOAU_ROOT",force=True),
     test_ds_line_force_fail=dict(path="",insertafter="EOF", line="export ZOAU_ROOT",force=False),
+    test_ds_line_replace_force=dict(path="",regexp="ZOAU_ROOT=", line="ZOAU_ROOT=/mvsutil-develop_dsed",
+        state="present",force=True),
+    test_ds_line_insertafter_regex_force=dict(path="",insertafter="ZOAU_ROOT=", line="ZOAU_ROOT=/mvsutil-develop_dsed",
+        state="present",force=True),
+    test_ds_line_insertbefore_regex_force=dict(path="",insertbefore="ZOAU_ROOT=", line="unset ZOAU_ROOT", state="present",force=True),
+    test_ds_line_insertbefore_bof_force=dict(path="",insertbefore="BOF", line="# this is file is for setting env vars",
+        state="present",force=True),
+    test_ds_line_replace_match_insertafter_ignore_force=dict(path="",regexp="ZOAU_ROOT=", insertafter="PATH=",
+        line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present",force=True),
+    test_ds_line_replace_match_insertbefore_ignore_force=dict(path="",regexp="ZOAU_ROOT=", insertbefore="PATH=", line="unset ZOAU_ROOT",
+        state="present",force=True),
+    test_ds_line_replace_nomatch_insertafter_match_force=dict(path="",regexp="abcxyz", insertafter="ZOAU_ROOT=",
+        line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present",force=True),
+    test_ds_line_replace_nomatch_insertbefore_match_force=dict(path="",regexp="abcxyz", insertbefore="ZOAU_ROOT=", line="unset ZOAU_ROOT",
+        state="present",force=True),
+    test_ds_line_replace_nomatch_insertafter_nomatch_force=dict(path="",regexp="abcxyz", insertafter="xyzijk",
+        line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present",force=True),
+    test_ds_line_replace_nomatch_insertbefore_nomatch_force=dict(path="",regexp="abcxyz", insertbefore="xyzijk", line="unset ZOAU_ROOT",
+        state="present",force=True),
+    test_ds_line_absent_force=dict(path="",regexp="ZOAU_ROOT=", line="", state="absent",force=True),
     expected=dict(test_uss_line_replace="""if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -610,6 +630,154 @@ export _BPXK_AUTOCVT
 export ZOAU_ROOT"""),
 )
 
+#######################
+# Test cases
+######################
+
+@pytest.mark.ds
+@pytest.mark.parametrize("dstype", DS_TYPE)
+def test_ds_line_force(ansible_zos_module, dstype):
+    TEST_ENV["DS_TYPE"] = dstype
+    DsGeneralForce(
+        ansible_zos_module, TEST_ENV,
+        TEST_CONTENT,
+        TEST_INFO["test_ds_line_force"],
+        TEST_INFO["expected"]["test_ds_line_force"]
+    )
+
+
+@pytest.mark.ds
+@pytest.mark.parametrize("dstype", DS_TYPE)
+def test_ds_line_replace_force(ansible_zos_module,dstype):
+    TEST_ENV["DS_TYPE"] = dstype
+    DsGeneralForce(
+        ansible_zos_module, TEST_ENV,
+        TEST_CONTENT,
+        TEST_INFO["test_ds_line_replace_force"],
+        TEST_INFO["expected"]["test_uss_line_replace"]
+    )
+
+@pytest.mark.ds
+@pytest.mark.parametrize("dstype", DS_TYPE)
+def test_ds_line_insertafter_regex_force(ansible_zos_module,dstype):
+    TEST_ENV["DS_TYPE"] = dstype
+    DsGeneralForce(
+        ansible_zos_module, TEST_ENV,
+        TEST_CONTENT,
+        TEST_INFO["test_ds_line_insertafter_regex_force"],
+        TEST_INFO["expected"]["test_uss_line_insertafter_regex"]
+    )
+
+@pytest.mark.ds
+@pytest.mark.parametrize("dstype", DS_TYPE)
+def test_ds_line_insertbefore_regex_force(ansible_zos_module,dstype):
+    TEST_ENV["DS_TYPE"] = dstype
+    DsGeneralForce(
+        ansible_zos_module, TEST_ENV,
+        TEST_CONTENT,
+        TEST_INFO["test_ds_line_insertbefore_regex_force"],
+        TEST_INFO["expected"]["test_uss_line_insertbefore_regex"]
+    )
+
+
+@pytest.mark.ds
+@pytest.mark.parametrize("dstype", DS_TYPE)
+def test_ds_line_insertbefore_bof_force(ansible_zos_module,dstype):
+    TEST_ENV["DS_TYPE"] = dstype
+    DsGeneralForce(
+        ansible_zos_module, TEST_ENV,
+        TEST_CONTENT,
+        TEST_INFO["test_ds_line_insertbefore_bof_force"],
+        TEST_INFO["expected"]["test_uss_line_insertbefore_bof"]
+    )
+
+@pytest.mark.ds
+@pytest.mark.parametrize("dstype", DS_TYPE)
+def test_ds_line_replace_match_insertafter_ignore_force(ansible_zos_module,dstype):
+    TEST_ENV["DS_TYPE"] = dstype
+    DsGeneralForce(
+        ansible_zos_module, TEST_ENV,
+        TEST_CONTENT,
+        TEST_INFO["test_ds_line_replace_match_insertafter_ignore_force"],
+        TEST_INFO["expected"]["test_uss_line_replace_match_insertafter_ignore"]
+    )
+
+@pytest.mark.ds
+@pytest.mark.parametrize("dstype", DS_TYPE)
+def test_ds_line_replace_match_insertbefore_ignore_force(ansible_zos_module,dstype):
+    TEST_ENV["DS_TYPE"] = dstype
+    DsGeneralForce(
+        ansible_zos_module, TEST_ENV,
+        TEST_CONTENT,
+        TEST_INFO["test_ds_line_replace_match_insertbefore_ignore_force"],
+        TEST_INFO["expected"]["test_uss_line_replace_match_insertbefore_ignore"]
+    )
+
+
+@pytest.mark.ds
+@pytest.mark.parametrize("dstype", DS_TYPE)
+def test_ds_line_replace_nomatch_insertafter_match_force(ansible_zos_module,dstype):
+    TEST_ENV["DS_TYPE"] = dstype
+    DsGeneralForce(
+        ansible_zos_module, TEST_ENV,
+        TEST_CONTENT,
+        TEST_INFO["test_ds_line_replace_nomatch_insertafter_match_force"],
+        TEST_INFO["expected"]["test_uss_line_replace_nomatch_insertafter_match"]
+    )
+
+
+@pytest.mark.ds
+@pytest.mark.parametrize("dstype", DS_TYPE)
+def test_ds_line_replace_nomatch_insertbefore_match_force(ansible_zos_module,dstype):
+    TEST_ENV["DS_TYPE"] = dstype
+    DsGeneralForce(
+        ansible_zos_module, TEST_ENV,
+        TEST_CONTENT,
+        TEST_INFO["test_ds_line_replace_nomatch_insertbefore_match_force"],
+        TEST_INFO["expected"]["test_uss_line_replace_nomatch_insertbefore_match"]
+    )
+
+@pytest.mark.ds
+@pytest.mark.parametrize("dstype", DS_TYPE)
+def test_ds_line_replace_nomatch_insertafter_nomatch_force(ansible_zos_module,dstype):
+    TEST_ENV["DS_TYPE"] = dstype
+    DsGeneralForce(
+        ansible_zos_module, TEST_ENV,
+        TEST_CONTENT,
+        TEST_INFO["test_ds_line_replace_nomatch_insertafter_nomatch_force"],
+        TEST_INFO["expected"]["test_uss_line_replace_nomatch_insertafter_nomatch"]
+    )
+
+@pytest.mark.ds
+@pytest.mark.parametrize("dstype", DS_TYPE)
+def test_ds_line_replace_nomatch_insertbefore_nomatch_force(ansible_zos_module,dstype):
+    TEST_ENV["DS_TYPE"] = dstype
+    DsGeneralForce(
+        ansible_zos_module, TEST_ENV,
+        TEST_CONTENT,
+        TEST_INFO["test_ds_line_replace_nomatch_insertbefore_nomatch_force"],
+        TEST_INFO["expected"]["test_uss_line_replace_nomatch_insertbefore_nomatch"]
+    )
+
+
+@pytest.mark.ds
+@pytest.mark.parametrize("dstype", DS_TYPE)
+def test_ds_line_absent_force(ansible_zos_module,dstype):
+    TEST_ENV["DS_TYPE"] = dstype
+    DsGeneralForce(
+        ansible_zos_module, TEST_ENV,
+        TEST_CONTENT,
+        TEST_INFO["test_ds_line_absent_force"],
+        TEST_INFO["expected"]["test_uss_line_absent"]
+    )
+
+
+
+
+
+
+
+
 #########################
 # USS test cases
 #########################
@@ -954,17 +1122,16 @@ def test_ds_not_supported(ansible_zos_module, dstype):
 # Dataset test cases with force
 #########################
 
-@pytest.mark.ds
-@pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_line_force(ansible_zos_module, dstype):
-    TEST_ENV["DS_TYPE"] = dstype
-    DsGeneralForce(
-        test_ds_line_force,
-        ansible_zos_module, TEST_ENV,
-        TEST_CONTENT,
-        TEST_INFO["test_ds_line_force"],
-        TEST_INFO["expected"]["test_ds_line_force"]
-    )
+#@pytest.mark.ds
+#@pytest.mark.parametrize("dstype", DS_TYPE)
+#def test_ds_line_force(ansible_zos_module, dstype):
+#    TEST_ENV["DS_TYPE"] = dstype
+#    DsGeneralForce(
+#        ansible_zos_module, TEST_ENV,
+#        TEST_CONTENT,
+#        TEST_INFO["test_ds_line_force"],
+#        TEST_INFO["expected"]["test_ds_line_force"]
+#    )
 
 
 @pytest.mark.ds

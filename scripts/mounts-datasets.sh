@@ -12,6 +12,11 @@
 # limitations under the License.
 # ==============================================================================
 
+# ******************************************************************************
+# The only reason to edit this script is if the array content provided to this
+# scipt chnages, those are ZOAU_MOUNTS OR PYTHON_MOUNTS
+# ******************************************************************************
+
 # ------------------------------------------------------------------------------
 # If the current shell is bash, exit it because the ported rocket shell misbaves
 # when VI'ing scripts and this script is specifically written to Korn Shell (ksh)
@@ -26,9 +31,11 @@ if [ "$CURR_SHELL" = "bash" ]; then
 fi
 
 # ------------------------------------------------------------------------------
-# Source the known mount points
+# Source the  script that converts strings of mount info into shell appropriate
+# arrays. Note that the helper sources the mounts.sh so there should be no need
+# to source mounts.sh here.
 # ------------------------------------------------------------------------------
-. ./mounts.sh
+. ./mounts-2-array.sh
 
 ################################################################################
 # Global vars - since ksh is the default shell and local ksh vars are defined
@@ -54,7 +61,8 @@ mount(){
 	unset zoau_version
 	unset zoau_mount
 	unset zoau_data_set
-	./mount-arr.sh --set_zoau
+	# Call helper script to have ZOAU_MOUNTS generated
+	set_zoau_mounts
     for tgt in "${ZOAU_MOUNTS[@]}" ; do
 	    zoau_index=`echo "${tgt}" | cut -d ":" -f 1`
         zoau_version=`echo "${tgt}" | cut -d ":" -f 2`
@@ -85,10 +93,13 @@ mount(){
 
 	unset python_mount
 	unset python_data_set
-	./mount-arr.sh --set_python
+	# Call helper script to have PYTHON_MOUNTS generated
+	set_python_mounts
     for tgt in "${PYTHON_MOUNTS[@]}" ; do
-	    python_mount=`echo "${tgt}" | cut -d ":" -f 1`
-        python_data_set=`echo "${tgt}" | cut -d ":" -f 2`
+		python_index=`echo "${tgt}" | cut -d ":" -f 1`
+        python_version=`echo "${tgt}" | cut -d ":" -f 2`
+        python_mount=`echo "${tgt}" | cut -d ":" -f 3`
+		python_data_set=`echo "${tgt}" | cut -d ":" -f 4`
 
 		# python_mounted_data_set can be empty so perform added validation
 		python_mounted_data_set=`df ${python_mount} 2>/dev/null | tr -s [:blank:] | tail -n +2 |cut -d' ' -f 2 | sed 's/(//' | sed 's/.$//'`
@@ -122,7 +133,8 @@ unmount(){
 	unset zoau_version
 	unset zoau_mount
 	unset zoau_data_set
-	./mount-arr.sh --set_zoau
+	# Call helper script to have ZOAU_MOUNTS generated
+	set_zoau_mounts
     for tgt in "${ZOAU_MOUNTS[@]}" ; do
 	    zoau_index=`echo "${tgt}" | cut -d ":" -f 1`
         zoau_version=`echo "${tgt}" | cut -d ":" -f 2`
@@ -140,10 +152,13 @@ unmount(){
 
 	unset python_mount
 	unset python_data_set
-	./mount-arr.sh --set_python
+	# Call helper script to have PYTHON_MOUNTS generated
+	set_python_mounts
     for tgt in "${PYTHON_MOUNTS[@]}" ; do
-	    python_mount=`echo "${tgt}" | cut -d ":" -f 1`
-        python_data_set=`echo "${tgt}" | cut -d ":" -f 2`
+		python_index=`echo "${tgt}" | cut -d ":" -f 1`
+        python_version=`echo "${tgt}" | cut -d ":" -f 2`
+        python_mount=`echo "${tgt}" | cut -d ":" -f 3`
+		python_data_set=`echo "${tgt}" | cut -d ":" -f 4`
 
 		python_mounted_data_set=`df ${python_mount} 2>/dev/null | tr -s [:blank:] | tail -n +2 |cut -d' ' -f 2 | sed 's/(//' | sed 's/.$//'`
 		if [ "$python_mounted_data_set" = "$python_data_set" ]; then
@@ -165,7 +180,8 @@ remount(){
 	unset zoau_version
 	unset zoau_mount
 	unset zoau_data_set
-	./mount-arr.sh --set_zoau
+	# Call helper script to have ZOAU_MOUNTS generated
+	set_zoau_mounts
     for tgt in "${ZOAU_MOUNTS[@]}" ; do
 	    zoau_index=`echo "${tgt}" | cut -d ":" -f 1`
         zoau_version=`echo "${tgt}" | cut -d ":" -f 2`
@@ -173,41 +189,64 @@ remount(){
 		zoau_data_set=`echo "${tgt}" | cut -d ":" -f 4`
 
 		zoau_mounted_data_set=`df ${zoau_mount} 2>/dev/null | tr -s [:blank:] | tail -n +2 |cut -d' ' -f 2 | sed 's/(//' | sed 's/.$//'`
-		if [ "$zoau_mounted_data_set" = "$zoau_data_set" ]; then
-			echo "Mouting ZOAU ${zoau_version} on data set ${zoau_data_set} to path ${zoau_mount}."
+		# ZOAU is not mounted, perform mount
+		if [ ! -n "$zoau_mounted_data_set" ]; then
+			echo "Nothing to unmount, mouting ZOAU ${zoau_version} on data set ${zoau_data_set} to path ${zoau_mount}."
+			mkdir -p ${zoau_mount}
+        	/usr/sbin/mount -r -t zfs -f ${zoau_data_set} ${zoau_mount}
+		# ZOAU is currently mounted and matches what we expect
+		elif [ "$zoau_mounted_data_set" = "$zoau_data_set" ]; then
+			echo "Unmounting ZOAU ${zoau_version} from path ${zoau_mount} on data set ${zoau_data_set}."
 			/usr/sbin/unmount ${zoau_mount}
+			echo "Mouting ZOAU ${zoau_version} on data set ${zoau_data_set} to path ${zoau_mount}."
+			mkdir -p ${zoau_mount}
+        	/usr/sbin/mount -r -t zfs -f ${zoau_data_set} ${zoau_mount}
+		# What is mounted does not match our expected value, perform unmount and mount
+		elif [ "$zoau_mounted_data_set" != "$zoau_data_set" ]; then
+		    echo "WARNING: Overriding existing mount ${python_mount}."
+			echo "Unmounting data set ${zoau_mounted_data_set} from path ${zoau_mount}."
+			/usr/sbin/unmount ${zoau_mount}
+			echo "Mouting ZOAU ${zoau_version} on data set ${zoau_data_set} to path ${zoau_mount}."
 			mkdir -p ${zoau_mount}
         	/usr/sbin/mount -r -t zfs -f ${zoau_data_set} ${zoau_mount}
 		else
-			echo "Mouting ZOAU ${zoau_version} on data set ${zoau_data_set} to path ${zoau_mount}."
-			if [ ! -z "${zoau_mounted_data_set}" ]; then
-				/usr/sbin/unmount ${zoau_mount}
-			fi
-			mkdir -p ${zoau_mount}
-        	/usr/sbin/mount -r -t zfs -f ${zoau_data_set} ${zoau_mount}
+			echo "Unable to determine the existing mounts to remount."
 		fi
     done
 
 	unset python_mount
 	unset python_data_set
-	./mount-arr.sh --set_python
+	# Call helper script to have PYTHON_MOUNTS generated
+	set_python_mounts
     for tgt in "${PYTHON_MOUNTS[@]}" ; do
-	    python_mount=`echo "${tgt}" | cut -d ":" -f 1`
-        python_data_set=`echo "${tgt}" | cut -d ":" -f 2`
+		python_index=`echo "${tgt}" | cut -d ":" -f 1`
+        python_version=`echo "${tgt}" | cut -d ":" -f 2`
+        python_mount=`echo "${tgt}" | cut -d ":" -f 3`
+		python_data_set=`echo "${tgt}" | cut -d ":" -f 4`
 
 		python_mounted_data_set=`df ${python_mount} 2>/dev/null | tr -s [:blank:] | tail -n +2 |cut -d' ' -f 2 | sed 's/(//' | sed 's/.$//'`
-		if [ "$python_mounted_data_set" = "$python_data_set" ]; then
-			echo "Mouting Python ${python_mount} on data set ${python_data_set}."
+		# Pythion is not mounted, perform mount
+		if [ ! -n "$python_mounted_data_set" ]; then
+			echo "Nothing to unmount, mouting Python ${python_version} on data set ${python_data_set} to path ${python_mount}."
+			mkdir -p ${python_mount}
+        	/usr/sbin/mount -r -t zfs -f ${python_data_set} ${python_mount}
+		#Python is currently mounted and matches what we expect
+		elif [ "$python_mounted_data_set" = "$python_data_set" ]; then
+			echo "Unmounting Python ${python_version} from path ${python_mount} on data set ${python_data_set}."
 			/usr/sbin/unmount ${python_mount}
+			echo "Mouting Python ${python_version} on data set ${python_data_set} to path ${python_mount}."
+			mkdir -p ${python_mount}
+        	/usr/sbin/mount -r -t zfs -f ${python_data_set} ${python_mount}
+		# What is mounted does not match our expected value, perform unmount and mount
+		elif [ "$python_mounted_data_set" != "$python_data_set" ]; then
+		    echo "WARNING: Overriding existing mount ${python_mount}."
+			echo "Unmounting data set ${python_mounted_data_set} from path ${python_mount}."
+			/usr/sbin/unmount ${python_mount}
+			echo "Mouting Python ${python_version} on data set ${python_data_set} to path ${python_mount}."
 			mkdir -p ${python_mount}
         	/usr/sbin/mount -r -t zfs -f ${python_data_set} ${python_mount}
 		else
-			echo "Mouting Python ${python_mount} on data set ${python_data_set}."
-			if [ ! -z "${python_mounted_data_set}" ]; then
-				/usr/sbin/unmount ${python_mount}
-			fi
-			mkdir -p ${python_mount}
-        	/usr/sbin/mount -r -t zfs -f ${python_data_set} ${python_mount}
+			echo "Unable to determine the existing mounts to remount."
 		fi
     done
 }
@@ -215,16 +254,21 @@ remount(){
 # Main arg parser
 ################################################################################
 case "$1" in
---mount)
+  --mount)
     mount
     ;;
---unmount)
+  --unmount)
     unmount
     ;;
---remount)
+  --remount)
 	remount
     ;;
-*)
-    echo "ERROR: unknown parameter $1"
-    ;;
+  *)
+   # If $1 exists and the script matches to $0 because when sourced this would
+   # thrown error and the added check is to prevent the errors when sourced.
+   if [ -n "$1" ]; then
+      if [ "$0" = "mounts-datasets.sh" ]; then
+         echo "ERROR: unknown parameter $1 for script $0"
+      fi
+   fi
 esac

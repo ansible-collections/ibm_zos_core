@@ -224,7 +224,6 @@ def run_module():
 # validate_arguments rturns a tuple, so we don't have to rebuild the job_name string
 def validate_arguments(params):
     job_name_in = params.get("job_name")
-    job_name_final = job_name_in
 
     job_id = params.get("job_id")
 
@@ -235,48 +234,48 @@ def validate_arguments(params):
             job_name_pattern_with_star = re.compile(
                 r"^[a-zA-Z$#@%][0-9a-zA-Z$#@%]{0,6}\*$"
             )
-            m = job_name_pattern.search(job_name_in)
-            n = job_name_pattern_with_star.search(job_name_in)
+            test_basic = job_name_pattern.search(job_name_in)
+            test_star = job_name_pattern_with_star.search(job_name_in)
             # logic twist: o must be non-null value from m or n
-            o = m
-            if n:
-                o = n
+            test_result = test_basic
+            if test_star:
+                test_result = test_star
 
+            job_name_short = "unused"
             # if neither m nor n were non-null, check if the string needed to be truncated to the first *
-            if not o:
+            if not test_result:
                 ix = job_name_in.find("*")
                 if ix >= 0:
                     job_name_short = job_name_in[0:ix + 1]
-                    o = job_name_pattern.search(job_name_short)
-                    if not o:
-                        o = job_name_pattern_with_star.search(job_name_short)
+                    test_result = job_name_pattern.search(job_name_short)
+                    if not test_result:
+                        test_result = job_name_pattern_with_star.search(job_name_short)
 
             # so now, fail if neither m, n, or o=m/n(short) found a match
-            if not o:
+            if not test_result:
                 raise RuntimeError("Failed to validate the job name: " + job_name_in + " ix was " + ix + " short was " + job_name_short)
 
         if job_id:
             job_id_pattern = re.compile("(JOB|TSU|STC)[0-9]{5}|(J|T|S)[0-9]{7}$")
-            m = job_id_pattern.search(job_id)
-            o = None
+            test_basic = job_id_pattern.search(job_id)
+            test_result = None
 
-            if not m:
+            if not test_basic:
                 ix = job_id.find("*")
                 if ix > 0:
                     # this differs from job_name, in that we'll drop the star for the search
                     job_id_short = job_id[0:ix]
 
                     if job_id_short[0:3] in ['JOB', 'TSU', 'STC'] or job_id_short[0:1] in ['J', 'T', 'S']:
-                        o = job_id_short
+                        test_result = job_id_short
 
-            if not m and not o:
+            if not test_basic and not test_result:
                 raise RuntimeError("Failed to validate the job id: " + job_id)
     else:
         raise RuntimeError("Argument Error:Either job name(s) or job id is required")
     if job_id and owner:
         raise RuntimeError("Argument Error:job id can not be co-exist with owner")
 
-    # return job_name_final, id, owner;
     return job_name_in, job_id, owner
 
 

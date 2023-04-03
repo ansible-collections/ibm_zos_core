@@ -35,7 +35,16 @@ def test_zos_job_query_func(ansible_zos_module):
         assert result.get("jobs") is not None
 
 
-# test to show multi wildcard won't crash the search
+# test to show multi wildcard in Job_id query won't crash the search
+def test_zos_job_query_multi_wildcards_func(ansible_zos_module):
+    hosts = ansible_zos_module
+    results = hosts.all.zos_job_query(job_id="STC*3*")
+    pprint(vars(results))
+    for result in results.contacted.values():
+        assert result.get("changed") is False
+        assert result.get("jobs") is not None
+
+# test to show multi wildcard in Job_name query won't crash the search
 def test_zos_job_query_multi_wildcards_func(ansible_zos_module):
     hosts = ansible_zos_module
     results = hosts.all.zos_job_query(job_name="JOB*1*", owner="*")

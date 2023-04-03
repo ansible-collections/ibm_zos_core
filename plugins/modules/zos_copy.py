@@ -955,15 +955,14 @@ class CopyHandler(object):
             {str} -- Path to the temporary file created.
         """
         try:
-            # TODO: do this in chunks.
             fd, converted_src = tempfile.mkstemp()
             os.close(fd)
 
             with open(converted_src, "wb") as converted_file:
                 with open(src, "rb") as src_file:
-                    current_line = src_file.read()
+                    chunk = src_file.read(1024)
                     # In IBM-037, \r is the byte 0d.
-                    converted_file.write(current_line.replace(b'\x0d', b''))
+                    converted_file.write(chunk.replace(b'\x0d', b''))
 
             self._tag_file_encoding(converted_src, "IBM-037")
 

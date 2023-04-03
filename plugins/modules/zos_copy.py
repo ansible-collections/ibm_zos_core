@@ -955,6 +955,7 @@ class CopyHandler(object):
             {str} -- Path to the temporary file created.
         """
         try:
+            # TODO: do this in chunks.
             fd, converted_src = tempfile.mkstemp()
             os.close(fd)
 
@@ -1320,6 +1321,7 @@ class PDSECopyHandler(CopyHandler):
         src_ds_type,
         src_member=None,
         dest_member=None,
+        encoding=None,
     ):
         """Copy source to a PDS/PDSE or PDS/PDSE member.
 
@@ -1329,12 +1331,13 @@ class PDSECopyHandler(CopyHandler):
         Arguments:
             src {str} -- Path to USS file/directory or data set name.
             temp_path {str} -- Path to the location where the control node
-                               transferred data to
-            conv_path {str} -- Path to the converted source file/directory
-            dest {str} -- Name of destination data set
-            src_ds_type {str} -- The type of source
+                               transferred data to.
+            conv_path {str} -- Path to the converted source file/directory.
+            dest {str} -- Name of destination data set.
+            src_ds_type {str} -- The type of source.
             src_member {bool, optional} -- Member of the source data set to copy.
-            dest_member {str, optional} -- Name of destination member in data set
+            dest_member {str, optional} -- Name of destination member in data set.
+            encoding {dict, optional} -- Dictionary with encoding options.
         """
         new_src = conv_path or temp_path or src
 
@@ -1352,6 +1355,9 @@ class PDSECopyHandler(CopyHandler):
                     dest_copy_name = "{0}({1})".format(dest, dest_member)
                 else:
                     dest_copy_name = "{0}({1})".format(dest, data_set.DataSet.get_member_name_from_file(file))
+
+                if not self.is_binary:
+                    full_file_path = normalize_line_endings(full_file_path, encoding)
 
                 result = self.copy_to_member(full_file_path, dest_copy_name)
 
@@ -2491,16 +2497,19 @@ def run_module(module, arg_def):
             if not remote_src and not copy_member and os.path.isdir(temp_path):
                 temp_path = os.path.join(temp_path, os.path.basename(src))
 
-            if src_ds_type == "USS" and copy_member and not is_binary:
-                new_src = conv_path or temp_path or src
-                conv_path = normalize_line_endings(new_src, encoding)
-
             pdse_copy_handler = PDSECopyHandler(
                 module, is_binary=is_binary, backup_name=backup_name
             )
 
             pdse_copy_handler.copy_to_pdse(
-                src, temp_path, conv_path, dest_name, src_ds_type, src_member=src_member, dest_member=dest_member
+                src,
+                temp_path,
+                conv_path,
+                dest_name,
+                src_ds_type,
+                src_member=src_member,
+                dest_member=dest_member,
+                encoding=encoding
             )
             res_args["changed"] = True
             dest = dest.upper()

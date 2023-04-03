@@ -78,11 +78,17 @@ class Unarchive(abc.ABC):
         self.debug = list()
         self.include = module.params.get("include")
         self.exclude = module.params.get("exclude")
+        self.list = module.params.get("list")
+        self.changed = False
 
     @abc.abstractmethod
     def extract_path(self):
         pass
     
+    @abc.abstractmethod
+    def list_content(self):
+        pass
+
     @property
     def result(self):
         return {
@@ -178,6 +184,13 @@ class MVSUnarchive(Unarchive):
         self.targets = ds_list
         return ds_list
 
+    def list_content(self, source):
+        restore_cmd = " RESTORE INDD(ARCHIVE) DS(INCL(**)) "
+        cmd = " mvscmdauth --pgm=ADRDSSU --archive={0},old --args='TYPRUN=NORUN' --sysin=stdin --sysprint=*".format(source)
+        rc, out, err = self.module.run_command(cmd, data=restore_cmd)
+        self.get_restored_datasets(out)
+
+
 class AMATerseUnarchive(MVSUnarchive):
     def __init__(self, module):
         super(AMATerseUnarchive, self).__init__(module)
@@ -209,6 +222,15 @@ class AMATerseUnarchive(MVSUnarchive):
         finally:
             datasets.delete(temp_ds)
         return
+
+    def list_archive_content(self):
+        try:
+            temp_ds = self.create_temp_ds(self.tmphlq)
+            self.unpack(self.path, temp_ds)
+            super(AMATerseUnarchive, self).list_content(temp_ds)
+        finally:
+            datasets.delete(temp_ds)
+
 
 class XMITUnarchive(MVSUnarchive):
     def __init__(self, module):
@@ -254,6 +276,14 @@ class XMITUnarchive(MVSUnarchive):
             datasets.delete(temp_ds)
         return rc
 
+    def list_archive_content(self):
+        try:
+            temp_ds = self.create_temp_ds(self.tmphlq)
+            self.unpack(self.path, temp_ds)
+            super(XMITUnarchive, self).list_content(temp_ds)
+        finally:
+            datasets.delete(temp_ds)
+
 
 def get_unarchive_handler(module):
     format = module.params.get("format").get("name")
@@ -274,6 +304,7 @@ def run_module():
             dest=dict(type='str'),
             include=dict(type='list', elements='str'),
             exclude=dict(type='list', elements='str'),
+            list=dict(type='bool', default=False),
             format=dict(
                 type='dict',
                 required=False,
@@ -313,6 +344,7 @@ def run_module():
         dest=dict(type='str', required=False),
         include=dict(type='list', elements='str'),
         exclude=dict(type='list', elements='str'),
+        list=dict(type='bool', default=False),
         format=dict(
             type='dict',
             required=False,
@@ -363,6 +395,10 @@ def run_module():
     # TODO Add module logic steps
     # 3. how about keep newest file when unarchiving?
     unarchive = get_unarchive_handler(module)
+
+    if unarchive.list:
+        unarchive.list_archive_content()
+        module.exit_json(**unarchive.result)
 
     if not unarchive.path_exists():
         module.fail_json(msg="{0} does not exists, please provide a valid path.".format(module.params.get("path")))

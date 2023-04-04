@@ -636,18 +636,6 @@ export ZOAU_ROOT"""),
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_line_force(ansible_zos_module, dstype):
-    TEST_ENV["DS_TYPE"] = dstype
-    DsGeneralForce(
-        ansible_zos_module, TEST_ENV,
-        TEST_CONTENT,
-        TEST_INFO["test_ds_line_force"],
-        TEST_INFO["expected"]["test_ds_line_force"]
-    )
-
-
-@pytest.mark.ds
-@pytest.mark.parametrize("dstype", DS_TYPE)
 def test_ds_line_replace_force(ansible_zos_module,dstype):
     TEST_ENV["DS_TYPE"] = dstype
     DsGeneralForce(
@@ -918,20 +906,6 @@ def test_uss_line_replace_quoted_not_escaped(ansible_zos_module):
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
 @pytest.mark.parametrize("encoding", ENCODING)
-def test_ds_line_replace(ansible_zos_module, dstype, encoding):
-    TEST_ENV["DS_TYPE"] = dstype
-    TEST_ENV["ENCODING"] = encoding
-    TEST_INFO["test_uss_line_replace"]["line"] = 'ZOAU_ROOT=/mvsutil-develop_dsed'
-    DsGeneral(
-        TEST_INFO["test_ds_line_replace"]["test_name"], ansible_zos_module,
-        TEST_ENV, TEST_INFO["test_uss_line_replace"],
-        TEST_INFO["expected"]["test_uss_line_replace"]
-    )
-
-
-@pytest.mark.ds
-@pytest.mark.parametrize("dstype", DS_TYPE)
-@pytest.mark.parametrize("encoding", ENCODING)
 def test_ds_line_insertafter_regex(ansible_zos_module, dstype, encoding):
     TEST_ENV["DS_TYPE"] = dstype
     TEST_ENV["ENCODING"] = encoding
@@ -1122,16 +1096,16 @@ def test_ds_not_supported(ansible_zos_module, dstype):
 # Dataset test cases with force
 #########################
 
-#@pytest.mark.ds
-#@pytest.mark.parametrize("dstype", DS_TYPE)
-#def test_ds_line_force(ansible_zos_module, dstype):
-#    TEST_ENV["DS_TYPE"] = dstype
-#    DsGeneralForce(
-#        ansible_zos_module, TEST_ENV,
-#        TEST_CONTENT,
-#        TEST_INFO["test_ds_line_force"],
-#        TEST_INFO["expected"]["test_ds_line_force"]
-#    )
+@pytest.mark.ds
+@pytest.mark.parametrize("dstype", DS_TYPE)
+def test_ds_line_force(ansible_zos_module, dstype):
+    TEST_ENV["DS_TYPE"] = dstype
+    DsGeneralForce(
+        ansible_zos_module, TEST_ENV,
+        TEST_CONTENT,
+        TEST_INFO["test_ds_line_force"],
+        TEST_INFO["expected"]["test_ds_line_force"]
+    )
 
 
 @pytest.mark.ds

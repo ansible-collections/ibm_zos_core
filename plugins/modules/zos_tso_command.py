@@ -36,7 +36,9 @@ options:
         - command
   max_rc:
     description:
-        - maximum allowable return code before an exception/failure is triggered
+        - Specifies the maximum return code allowed for a TSO command.
+        - If more than one TSO command is submitted, the I(max_rc) applies to all TSO commands.
+    default: 0
     required: false
     type: int
 
@@ -101,7 +103,7 @@ EXAMPLES = r"""
       commands:
            - LU TESTUSER
 
-- name: Execute TSO command to list databases (allow 4 for no cert found)
+- name: Execute TSO command to list dataset data (allow 4 for no dataset listed or cert found)
   zos_tso_command:
       commands:
            - listdsd
@@ -153,7 +155,7 @@ def copy_rexx_and_run_commands(script, commands, module, max_rc):
         command_results["rc"] = rc
         command_results["content"] = stdout.split("\n")
         command_results["lines"] = len(command_results.get("content", []))
-        command_results["stderror"] = stderr
+        command_results["stderr"] = stderr
         command_detail_json.append(command_results)
     return command_detail_json
 
@@ -181,7 +183,7 @@ def list_or_str_type(contents, dependencies):
 def run_module():
     module_args = dict(
         commands=dict(type="raw", required=True, aliases=["command"]),
-        max_rc=dict(type="int", required=False),
+        max_rc=dict(type="int", required=False, default=0),
     )
 
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
@@ -191,7 +193,7 @@ def run_module():
 
     arg_defs = dict(
         commands=dict(type=list_or_str_type, required=True, aliases=["command"]),
-        max_rc=dict(type="int", required=False),
+        max_rc=dict(type="int", required=False, default=0),
     )
     try:
         parser = BetterArgParser(arg_defs)

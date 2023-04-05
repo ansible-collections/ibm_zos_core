@@ -94,7 +94,7 @@ ansible_facts:
             "arch_level": "2",
             "hw_name": "SYSZD6",
             "ipl_volume": "RES820",
-            "lpar_name": "",
+            "lpar_name": "SVLLAB01",
             "primary_jes": "JES2",
             "product_mod_level": "00",
             "product_name": "z/OS",
@@ -103,7 +103,7 @@ ansible_facts:
             "product_version": "02",
             "smf_name": "3090",
             "sys_name": "EC33018A",
-            "sysplex_name": "",
+            "sysplex_name": "SVPLEX1",
             "vm_name": "EC33018A"
         }
     ]

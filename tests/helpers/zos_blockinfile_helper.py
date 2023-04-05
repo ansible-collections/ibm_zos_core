@@ -14,10 +14,38 @@
 from __future__ import absolute_import, division, print_function
 from shellescape import quote
 from pprint import pprint
+import time
 import re
 
 
 __metaclass__ = type
+
+
+DEFAULT_DATA_SET_NAME = "USER.PRIVATE.TESTDS"
+
+c_pgm="""#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+int main(int argc, char** argv)
+{
+    char dsname[ strlen(argv[1]) + 4];
+    sprintf(dsname, "//'%s'", argv[1]);
+    FILE* member;
+    member = fopen(dsname, "rb,type=record");
+    sleep(300);
+    fclose(member);
+    return 0;
+}
+"""
+
+call_c_jcl="""//PDSELOCK JOB MSGCLASS=A,MSGLEVEL=(1,1),NOTIFY=&SYSUID,REGION=0M
+//LOCKMEM  EXEC PGM=BPXBATCH
+//STDPARM DD *
+SH /tmp/disp_shr/pdse-lock '{0}({1})'
+//STDIN  DD DUMMY
+//STDOUT DD SYSOUT=*
+//STDERR DD SYSOUT=*
+//"""
 
 
 def set_uss_test_env(test_name, hosts, test_env):
@@ -155,3 +183,131 @@ def DsGeneralResultKeyMatchesRegex(test_name, ansible_zos_module, test_env, test
         for key in kwargs:
             assert re.match(kwargs.get(key), result.get(key))
     clean_ds_test_env(test_env["DS_NAME"], hosts)
+
+
+def DsGeneralForce(ansible_zos_module, test_env, test_info, expected):
+    MEMBER_1, MEMBER_2 = "MEM1", "MEM2"
+    hosts = ansible_zos_module
+    if test_env["ENCODING"]:
+        test_info["encoding"] = test_env["ENCODING"]
+    test_info["path"] = DEFAULT_DATA_SET_NAME+"({0})".format(MEMBER_2)
+    try:
+        # set up:
+        # create pdse
+        hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="present", type="pdse", replace=True)
+        # add members
+        hosts.all.zos_data_set(
+            batch=[
+                {
+                    "name": DEFAULT_DATA_SET_NAME + "({0})".format(MEMBER_1),
+                    "type": "member",
+                    "state": "present",
+                    "replace": True,
+                },
+                {
+                    "name": DEFAULT_DATA_SET_NAME + "({0})".format(MEMBER_2),
+                    "type": "member",
+                    "state": "present",
+                    "replace": True,
+                },
+            ]
+        )
+        # write memeber to verify cases
+        hosts.all.shell(cmd="echo \"{0}\" > {1}".format(test_env["TEST_CONT"], test_info["path"]))
+        # copy/compile c program and copy jcl to hold data set lock for n seconds in background(&)
+        hosts.all.zos_copy(content=c_pgm, dest='/tmp/disp_shr/pdse-lock.c', force=True)
+        hosts.all.zos_copy(
+            content=call_c_jcl.format(DEFAULT_DATA_SET_NAME, MEMBER_1),
+            dest='/tmp/disp_shr/call_c_pgm.jcl',
+            force=True
+        )
+        hosts.all.shell(cmd="xlc -o pdse-lock pdse-lock.c", chdir="/tmp/disp_shr/")
+
+        # submit jcl
+        hosts.all.shell(cmd="submit call_c_pgm.jcl", chdir="/tmp/disp_shr/")
+
+        # pause to ensure c code acquires lock
+        time.sleep(5)
+    
+        blockinfile_results = hosts.all.zos_blockinfile(**test_info)
+        for result in blockinfile_results.contacted.values():
+            pprint(result)
+            assert result.get("changed") == 1
+        if test_env["ENCODING"] == 'IBM-1047':
+            cmdStr = "cat \"//'{0}'\" ".format(test_env["DS_NAME"])
+            results = hosts.all.shell(cmd=cmdStr)
+            for result in results.contacted.values():
+                pprint(result)
+                assert result.get("stdout") == expected
+    finally:
+        # extract pid
+        ps_list_res = hosts.all.shell(cmd="ps -e | grep -i 'pdse-lock'")
+        # kill process - release lock - this also seems to end the job
+        pid = list(ps_list_res.contacted.values())[0].get('stdout').strip().split(' ')[0]
+        hosts.all.shell(cmd="kill 9 {0}".format(pid.strip()))
+        # clean up c code/object/executable files, jcl
+        hosts.all.shell(cmd='rm -r /tmp/disp_shr')
+        # remove pdse
+        hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")    
+    return blockinfile_results
+
+
+def DsGeneralForceFail(ansible_zos_module, test_env, test_info):
+    MEMBER_1, MEMBER_2 = "MEM1", "MEM2"
+    hosts = ansible_zos_module
+    if test_env["ENCODING"]:
+        test_info["encoding"] = test_env["ENCODING"]
+    test_info["path"] = DEFAULT_DATA_SET_NAME+"({0})".format(MEMBER_2)
+    try:
+        # set up:
+        # create pdse
+        hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="present", type="pdse", replace=True)
+        # add members
+        hosts.all.zos_data_set(
+            batch=[
+                {
+                    "name": DEFAULT_DATA_SET_NAME + "({0})".format(MEMBER_1),
+                    "type": "member",
+                    "state": "present",
+                    "replace": True,
+                },
+                {
+                    "name": DEFAULT_DATA_SET_NAME + "({0})".format(MEMBER_2),
+                    "type": "member",
+                    "state": "present",
+                    "replace": True,
+                },
+            ]
+        )
+        # write memeber to verify cases
+        hosts.all.shell(cmd="echo \"{0}\" > {1}".format(test_env["TEST_CONT"], test_info["path"]))
+        # copy/compile c program and copy jcl to hold data set lock for n seconds in background(&)
+        hosts.all.zos_copy(content=c_pgm, dest='/tmp/disp_shr/pdse-lock.c', force=True)
+        hosts.all.zos_copy(
+            content=call_c_jcl.format(DEFAULT_DATA_SET_NAME, MEMBER_1),
+            dest='/tmp/disp_shr/call_c_pgm.jcl',
+            force=True
+        )
+        hosts.all.shell(cmd="xlc -o pdse-lock pdse-lock.c", chdir="/tmp/disp_shr/")
+
+        # submit jcl
+        hosts.all.shell(cmd="submit call_c_pgm.jcl", chdir="/tmp/disp_shr/")
+
+        # pause to ensure c code acquires lock
+        time.sleep(5)
+    
+        blockinfile_results = hosts.all.zos_blockinfile(**test_info)
+        for result in blockinfile_results.contacted.values():
+            pprint(result)
+            assert result.get("changed") == 0
+            assert result.get("failed") == True
+    finally:
+        # extract pid
+        ps_list_res = hosts.all.shell(cmd="ps -e | grep -i 'pdse-lock'")
+        # kill process - release lock - this also seems to end the job
+        pid = list(ps_list_res.contacted.values())[0].get('stdout').strip().split(' ')[0]
+        hosts.all.shell(cmd="kill 9 {0}".format(pid.strip()))
+        # clean up c code/object/executable files, jcl
+        hosts.all.shell(cmd='rm -r /tmp/disp_shr')
+        # remove pdse
+        hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")  

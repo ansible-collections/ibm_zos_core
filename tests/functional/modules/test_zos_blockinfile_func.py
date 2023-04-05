@@ -930,16 +930,6 @@ export _BPXK_AUTOCVT
 
 
 @pytest.mark.uss
-def test_uss_block_insert_with_doublequotes(ansible_zos_module):
-    TEST_ENV["TEST_CONT"] = TEST_CONTENT_DOUBLEQUOTES
-    UssGeneral(
-        "test_uss_block_insert_with_doublequotes", ansible_zos_module,TEST_ENV, 
-        TEST_INFO["test_uss_block_insert_with_doublequotes"],
-        TEST_INFO["expected"]["test_uss_block_insert_with_doublequotes"])
-    TEST_ENV["TEST_CONT"] = TEST_CONTENT
-
-
-@pytest.mark.uss
 def test_uss_block_insertafter_regex_defaultmarker(ansible_zos_module):
     UssGeneral(
         "test_uss_block_insertafter_regex_defaultmarker", ansible_zos_module, TEST_ENV,
@@ -1210,14 +1200,14 @@ def test_uss_block_insert_with_indentation_level_specified(ansible_zos_module):
         TEST_INFO["expected"]["test_uss_block_insert_with_indentation_level_specified"])
 
 
-#@pytest.mark.uss
-#def test_uss_block_insert_with_doublequotes(ansible_zos_module):
-#    TEST_ENV["TEST_CONT"] = TEST_CONTENT_DOUBLEQUOTES
-#    UssGeneral(
-#        "test_uss_block_insert_with_doublequotes", ansible_zos_module,TEST_ENV, 
-#        TEST_INFO["test_uss_block_insert_with_doublequotes"],
-#        TEST_INFO["expected"]["test_uss_block_insert_with_doublequotes"])
-#    TEST_ENV["TEST_CONT"] = TEST_CONTENT
+@pytest.mark.uss
+def test_uss_block_insert_with_doublequotes(ansible_zos_module):
+    TEST_ENV["TEST_CONT"] = TEST_CONTENT_DOUBLEQUOTES
+    UssGeneral(
+        "test_uss_block_insert_with_doublequotes", ansible_zos_module,TEST_ENV, 
+        TEST_INFO["test_uss_block_insert_with_doublequotes"],
+        TEST_INFO["expected"]["test_uss_block_insert_with_doublequotes"])
+    TEST_ENV["TEST_CONT"] = TEST_CONTENT
 
 @pytest.mark.uss
 def test_uss_block_insertafter_eof_with_backup(ansible_zos_module):

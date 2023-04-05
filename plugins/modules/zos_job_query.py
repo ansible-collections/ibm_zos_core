@@ -35,6 +35,7 @@ options:
   job_name:
     description:
        - The job name to query.
+       - Job name can now contain multiple, embedded asterisks (e.g.: JC*NAM*)
     type: str
     required: False
     default: "*"
@@ -51,6 +52,7 @@ options:
         with STC, JOB, TSU and are followed by 5 digits. When job are
         potentially greater than 99,999, the job number format will begin with
         S, J, T and are followed by 7 digits.
+      - Job id can now contain multiple, embedded asterisks (e.g.: JOB*14*)
     type: str
     required: False
 """
@@ -63,6 +65,14 @@ EXAMPLES = r"""
 - name: list the jobs matching jobname 'IYK3*'
   zos_job_query:
     job_name: "IYK3*"
+
+- name: list the jobs that match 'IYKsomethingNAsomething'
+  zos_job_query:
+    job_name: "IYK*NA*"
+
+- name: list the jobs with JOB in the x014x range only
+  zos_job_query:
+    job_idname: JOB*014*
 
 - name: list the job with a jobname 'IYK3ZNA*' and jobid as JOB01427
   zos_job_query:
@@ -253,7 +263,7 @@ def validate_arguments(params):
 
             # so now, fail if neither test_basic, test_star or test_base from job_name_short found a match
             if not test_result:
-                raise RuntimeError("Failed to validate the job name: " + job_name_in + " ix was " + ix + " short was " + job_name_short)
+                raise RuntimeError("Unable to locate job name {0}.".format(job_name_in))
 
         if job_id:
             job_id_pattern = re.compile("(JOB|TSU|STC)[0-9]{5}|(J|T|S)[0-9]{7}$")

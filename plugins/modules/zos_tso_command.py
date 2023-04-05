@@ -69,6 +69,13 @@ output:
             returned: always
             type: int
             sample: 0
+        orig_rc:
+            description:
+                The original return code provided.
+                This is only significant when an max_rc > rc > 0.
+            returned: always
+            type: int
+            sample: 0
         content:
             description:
                 The response resulting from the execution of the TSO command.
@@ -148,7 +155,7 @@ def copy_rexx_and_run_commands(script, commands, module, max_rc):
         rc, stdout, stderr = module.run_command([tmp_file.name, command])
         command_results = {}
         command_results["command"] = command
-        command_results["origrc"] = rc
+        command_results["orig_rc"] = rc
         if rc <= max_rc:
             rc = 0
             command_results["failed"] = False
@@ -189,6 +196,7 @@ def run_module():
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
     result = dict(
         changed=False,
+        failed=True,
     )
 
     arg_defs = dict(
@@ -209,14 +217,30 @@ def run_module():
     try:
         result["output"] = run_tso_command(commands, module, max_rc)
         result["max_rc"] = max_rc
+        errors_found = 0
+        result_string = ""
+
         for cmd in result.get("output"):
+            tmp_string = 'Command "' + cmd.get("command", "") + '" execution'
+            tmp_string2 = ''
             if cmd.get("rc") > max_rc:
-                module.fail_json(
-                    msg='The TSO command "'
-                    + cmd.get("command", "")
-                    + '" execution failed.  RC was {0}; Max RC was {1}.'.format(cmd.get("rc"), max_rc),
-                    **result
-                )
+                # module.fail_json(
+                #     msg='The TSO command "'
+                #     + cmd.get("command", "")
+                #     + '" execution failed.  RC was {0}; Max RC was {1}.'.format(cmd.get("rc"), max_rc),
+                #     **result
+                # )
+                errors_found += 1
+                tmp_string2 = tmp_string + "failed.  RC was {0}; Max RC was {1}".format(cmd.get("rc"), max_rc)
+            else:
+                tmp_string2 = tmp_string + "succeeded.  RC was {0}.".format(cmd.get("rc"))
+
+            result_string = result_string + "\n" + tmp_string2
+
+        if errors_found > 0:
+            module.fail_json(
+                msg = "Some ({0}) command(s) failed:\n{0}".format(errors_found, result_string), **result
+            )
 
         result["changed"] = True
         result["failed"] = False

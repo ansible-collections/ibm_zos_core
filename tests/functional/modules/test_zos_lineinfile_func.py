@@ -630,142 +630,6 @@ export _BPXK_AUTOCVT
 export ZOAU_ROOT"""),
 )
 
-#######################
-# Test cases
-######################
-
-@pytest.mark.ds
-@pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_line_replace_force(ansible_zos_module,dstype):
-    TEST_ENV["DS_TYPE"] = dstype
-    DsGeneralForce(
-        ansible_zos_module, TEST_ENV,
-        TEST_CONTENT,
-        TEST_INFO["test_ds_line_replace_force"],
-        TEST_INFO["expected"]["test_uss_line_replace"]
-    )
-
-@pytest.mark.ds
-@pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_line_insertafter_regex_force(ansible_zos_module,dstype):
-    TEST_ENV["DS_TYPE"] = dstype
-    DsGeneralForce(
-        ansible_zos_module, TEST_ENV,
-        TEST_CONTENT,
-        TEST_INFO["test_ds_line_insertafter_regex_force"],
-        TEST_INFO["expected"]["test_uss_line_insertafter_regex"]
-    )
-
-@pytest.mark.ds
-@pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_line_insertbefore_regex_force(ansible_zos_module,dstype):
-    TEST_ENV["DS_TYPE"] = dstype
-    DsGeneralForce(
-        ansible_zos_module, TEST_ENV,
-        TEST_CONTENT,
-        TEST_INFO["test_ds_line_insertbefore_regex_force"],
-        TEST_INFO["expected"]["test_uss_line_insertbefore_regex"]
-    )
-
-
-@pytest.mark.ds
-@pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_line_insertbefore_bof_force(ansible_zos_module,dstype):
-    TEST_ENV["DS_TYPE"] = dstype
-    DsGeneralForce(
-        ansible_zos_module, TEST_ENV,
-        TEST_CONTENT,
-        TEST_INFO["test_ds_line_insertbefore_bof_force"],
-        TEST_INFO["expected"]["test_uss_line_insertbefore_bof"]
-    )
-
-@pytest.mark.ds
-@pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_line_replace_match_insertafter_ignore_force(ansible_zos_module,dstype):
-    TEST_ENV["DS_TYPE"] = dstype
-    DsGeneralForce(
-        ansible_zos_module, TEST_ENV,
-        TEST_CONTENT,
-        TEST_INFO["test_ds_line_replace_match_insertafter_ignore_force"],
-        TEST_INFO["expected"]["test_uss_line_replace_match_insertafter_ignore"]
-    )
-
-@pytest.mark.ds
-@pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_line_replace_match_insertbefore_ignore_force(ansible_zos_module,dstype):
-    TEST_ENV["DS_TYPE"] = dstype
-    DsGeneralForce(
-        ansible_zos_module, TEST_ENV,
-        TEST_CONTENT,
-        TEST_INFO["test_ds_line_replace_match_insertbefore_ignore_force"],
-        TEST_INFO["expected"]["test_uss_line_replace_match_insertbefore_ignore"]
-    )
-
-
-@pytest.mark.ds
-@pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_line_replace_nomatch_insertafter_match_force(ansible_zos_module,dstype):
-    TEST_ENV["DS_TYPE"] = dstype
-    DsGeneralForce(
-        ansible_zos_module, TEST_ENV,
-        TEST_CONTENT,
-        TEST_INFO["test_ds_line_replace_nomatch_insertafter_match_force"],
-        TEST_INFO["expected"]["test_uss_line_replace_nomatch_insertafter_match"]
-    )
-
-
-@pytest.mark.ds
-@pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_line_replace_nomatch_insertbefore_match_force(ansible_zos_module,dstype):
-    TEST_ENV["DS_TYPE"] = dstype
-    DsGeneralForce(
-        ansible_zos_module, TEST_ENV,
-        TEST_CONTENT,
-        TEST_INFO["test_ds_line_replace_nomatch_insertbefore_match_force"],
-        TEST_INFO["expected"]["test_uss_line_replace_nomatch_insertbefore_match"]
-    )
-
-@pytest.mark.ds
-@pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_line_replace_nomatch_insertafter_nomatch_force(ansible_zos_module,dstype):
-    TEST_ENV["DS_TYPE"] = dstype
-    DsGeneralForce(
-        ansible_zos_module, TEST_ENV,
-        TEST_CONTENT,
-        TEST_INFO["test_ds_line_replace_nomatch_insertafter_nomatch_force"],
-        TEST_INFO["expected"]["test_uss_line_replace_nomatch_insertafter_nomatch"]
-    )
-
-@pytest.mark.ds
-@pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_line_replace_nomatch_insertbefore_nomatch_force(ansible_zos_module,dstype):
-    TEST_ENV["DS_TYPE"] = dstype
-    DsGeneralForce(
-        ansible_zos_module, TEST_ENV,
-        TEST_CONTENT,
-        TEST_INFO["test_ds_line_replace_nomatch_insertbefore_nomatch_force"],
-        TEST_INFO["expected"]["test_uss_line_replace_nomatch_insertbefore_nomatch"]
-    )
-
-
-@pytest.mark.ds
-@pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_line_absent_force(ansible_zos_module,dstype):
-    TEST_ENV["DS_TYPE"] = dstype
-    DsGeneralForce(
-        ansible_zos_module, TEST_ENV,
-        TEST_CONTENT,
-        TEST_INFO["test_ds_line_absent_force"],
-        TEST_INFO["expected"]["test_uss_line_absent"]
-    )
-
-
-
-
-
-
-
-
 #########################
 # USS test cases
 #########################
@@ -1115,4 +979,136 @@ def test_ds_line_force_fail(ansible_zos_module, dstype):
     DsGeneralForceFail(
         ansible_zos_module, TEST_ENV,
         TEST_INFO["test_ds_line_force_fail"]
+    )
+
+
+@pytest.mark.ds
+@pytest.mark.parametrize("dstype", DS_TYPE)
+def test_ds_line_replace_force(ansible_zos_module,dstype):
+    TEST_ENV["DS_TYPE"] = dstype
+    DsGeneralForce(
+        ansible_zos_module, TEST_ENV,
+        TEST_CONTENT,
+        TEST_INFO["test_ds_line_replace_force"],
+        TEST_INFO["expected"]["test_uss_line_replace"]
+    )
+
+
+@pytest.mark.ds
+@pytest.mark.parametrize("dstype", DS_TYPE)
+def test_ds_line_insertafter_regex_force(ansible_zos_module,dstype):
+    TEST_ENV["DS_TYPE"] = dstype
+    DsGeneralForce(
+        ansible_zos_module, TEST_ENV,
+        TEST_CONTENT,
+        TEST_INFO["test_ds_line_insertafter_regex_force"],
+        TEST_INFO["expected"]["test_uss_line_insertafter_regex"]
+    )
+
+
+@pytest.mark.ds
+@pytest.mark.parametrize("dstype", DS_TYPE)
+def test_ds_line_insertbefore_regex_force(ansible_zos_module,dstype):
+    TEST_ENV["DS_TYPE"] = dstype
+    DsGeneralForce(
+        ansible_zos_module, TEST_ENV,
+        TEST_CONTENT,
+        TEST_INFO["test_ds_line_insertbefore_regex_force"],
+        TEST_INFO["expected"]["test_uss_line_insertbefore_regex"]
+    )
+
+
+@pytest.mark.ds
+@pytest.mark.parametrize("dstype", DS_TYPE)
+def test_ds_line_insertbefore_bof_force(ansible_zos_module,dstype):
+    TEST_ENV["DS_TYPE"] = dstype
+    DsGeneralForce(
+        ansible_zos_module, TEST_ENV,
+        TEST_CONTENT,
+        TEST_INFO["test_ds_line_insertbefore_bof_force"],
+        TEST_INFO["expected"]["test_uss_line_insertbefore_bof"]
+    )
+
+
+@pytest.mark.ds
+@pytest.mark.parametrize("dstype", DS_TYPE)
+def test_ds_line_replace_match_insertafter_ignore_force(ansible_zos_module,dstype):
+    TEST_ENV["DS_TYPE"] = dstype
+    DsGeneralForce(
+        ansible_zos_module, TEST_ENV,
+        TEST_CONTENT,
+        TEST_INFO["test_ds_line_replace_match_insertafter_ignore_force"],
+        TEST_INFO["expected"]["test_uss_line_replace_match_insertafter_ignore"]
+    )
+
+
+@pytest.mark.ds
+@pytest.mark.parametrize("dstype", DS_TYPE)
+def test_ds_line_replace_match_insertbefore_ignore_force(ansible_zos_module,dstype):
+    TEST_ENV["DS_TYPE"] = dstype
+    DsGeneralForce(
+        ansible_zos_module, TEST_ENV,
+        TEST_CONTENT,
+        TEST_INFO["test_ds_line_replace_match_insertbefore_ignore_force"],
+        TEST_INFO["expected"]["test_uss_line_replace_match_insertbefore_ignore"]
+    )
+
+
+@pytest.mark.ds
+@pytest.mark.parametrize("dstype", DS_TYPE)
+def test_ds_line_replace_nomatch_insertafter_match_force(ansible_zos_module,dstype):
+    TEST_ENV["DS_TYPE"] = dstype
+    DsGeneralForce(
+        ansible_zos_module, TEST_ENV,
+        TEST_CONTENT,
+        TEST_INFO["test_ds_line_replace_nomatch_insertafter_match_force"],
+        TEST_INFO["expected"]["test_uss_line_replace_nomatch_insertafter_match"]
+    )
+
+
+@pytest.mark.ds
+@pytest.mark.parametrize("dstype", DS_TYPE)
+def test_ds_line_replace_nomatch_insertbefore_match_force(ansible_zos_module,dstype):
+    TEST_ENV["DS_TYPE"] = dstype
+    DsGeneralForce(
+        ansible_zos_module, TEST_ENV,
+        TEST_CONTENT,
+        TEST_INFO["test_ds_line_replace_nomatch_insertbefore_match_force"],
+        TEST_INFO["expected"]["test_uss_line_replace_nomatch_insertbefore_match"]
+    )
+
+
+@pytest.mark.ds
+@pytest.mark.parametrize("dstype", DS_TYPE)
+def test_ds_line_replace_nomatch_insertafter_nomatch_force(ansible_zos_module,dstype):
+    TEST_ENV["DS_TYPE"] = dstype
+    DsGeneralForce(
+        ansible_zos_module, TEST_ENV,
+        TEST_CONTENT,
+        TEST_INFO["test_ds_line_replace_nomatch_insertafter_nomatch_force"],
+        TEST_INFO["expected"]["test_uss_line_replace_nomatch_insertafter_nomatch"]
+    )
+
+
+@pytest.mark.ds
+@pytest.mark.parametrize("dstype", DS_TYPE)
+def test_ds_line_replace_nomatch_insertbefore_nomatch_force(ansible_zos_module,dstype):
+    TEST_ENV["DS_TYPE"] = dstype
+    DsGeneralForce(
+        ansible_zos_module, TEST_ENV,
+        TEST_CONTENT,
+        TEST_INFO["test_ds_line_replace_nomatch_insertbefore_nomatch_force"],
+        TEST_INFO["expected"]["test_uss_line_replace_nomatch_insertbefore_nomatch"]
+    )
+
+
+@pytest.mark.ds
+@pytest.mark.parametrize("dstype", DS_TYPE)
+def test_ds_line_absent_force(ansible_zos_module,dstype):
+    TEST_ENV["DS_TYPE"] = dstype
+    DsGeneralForce(
+        ansible_zos_module, TEST_ENV,
+        TEST_CONTENT,
+        TEST_INFO["test_ds_line_absent_force"],
+        TEST_INFO["expected"]["test_uss_line_absent"]
     )

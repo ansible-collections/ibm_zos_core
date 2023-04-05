@@ -1,3 +1,5 @@
 bugfixes:
-- The use of quotes for any sentence it wasn't support in use for the users in blockinfile module
-- The message for the user about a correct insertion did not include the quotes
+- zos_blockinfile - was unable to use double quotes which prevented some use
+  cases and did not display an approriate message. The fix now allows for
+  double quotes to be used with the module. 
+  (https://github.com/ansible-collections/ibm_zos_core/pull/680)

@@ -215,7 +215,7 @@ TEST_INFO = dict(
         insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR",
         state="present", indentation=16),
     test_uss_block_insert_with_doublequotes=dict(
-        insertafter="EOF", block='cat \"//OMVSADMI.CAT\"\ncat \"//OMVSADM.COPYMEM.TESTS\" > test.txt', 
+        insertafter="sleep 30;", block='cat \"//OMVSADMI.CAT\"\ncat \"//OMVSADM.COPYMEM.TESTS\" > test.txt', 
         marker="// {mark} ANSIBLE MANAGED BLOCK",state="present"),
     test_ds_block_insertafter_regex=dict(test_name="T1"),
     test_ds_block_insertbefore_regex=dict(test_name="T2"),
@@ -284,12 +284,12 @@ export _BPXK_AUTOCVT""",
 //STDPARM DD *
 SH ls -la /;
 sleep 30;
-/*
-//
 // BEGIN ANSIBLE MANAGED BLOCK
 cat "//OMVSADMI.CAT"
 cat "//OMVSADM.COPYMEM.TESTS" > test.txt
-// END ANSIBLE MANAGED BLOCK""",
+// END ANSIBLE MANAGED BLOCK
+/*
+//""",
                   test_uss_block_insertbefore_regex_defaultmarker="""if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -930,6 +930,16 @@ export _BPXK_AUTOCVT
 
 
 @pytest.mark.uss
+def test_uss_block_insert_with_doublequotes(ansible_zos_module):
+    TEST_ENV["TEST_CONT"] = TEST_CONTENT_DOUBLEQUOTES
+    UssGeneral(
+        "test_uss_block_insert_with_doublequotes", ansible_zos_module,TEST_ENV, 
+        TEST_INFO["test_uss_block_insert_with_doublequotes"],
+        TEST_INFO["expected"]["test_uss_block_insert_with_doublequotes"])
+    TEST_ENV["TEST_CONT"] = TEST_CONTENT
+
+
+@pytest.mark.uss
 def test_uss_block_insertafter_regex_defaultmarker(ansible_zos_module):
     UssGeneral(
         "test_uss_block_insertafter_regex_defaultmarker", ansible_zos_module, TEST_ENV,
@@ -1200,14 +1210,14 @@ def test_uss_block_insert_with_indentation_level_specified(ansible_zos_module):
         TEST_INFO["expected"]["test_uss_block_insert_with_indentation_level_specified"])
 
 
-@pytest.mark.uss
-def test_uss_block_insert_with_doublequotes(ansible_zos_module):
-    TEST_ENV["TEST_CONT"] = TEST_CONTENT_DOUBLEQUOTES
-    UssGeneral(
-        "test_uss_block_insert_with_doublequotes", ansible_zos_module,TEST_ENV, 
-        TEST_INFO["test_uss_block_insert_with_doublequotes"],
-        TEST_INFO["expected"]["test_uss_block_insert_with_doublequotes"])
-    TEST_ENV["TEST_CONT"] = TEST_CONTENT
+#@pytest.mark.uss
+#def test_uss_block_insert_with_doublequotes(ansible_zos_module):
+#    TEST_ENV["TEST_CONT"] = TEST_CONTENT_DOUBLEQUOTES
+#    UssGeneral(
+#        "test_uss_block_insert_with_doublequotes", ansible_zos_module,TEST_ENV, 
+#        TEST_INFO["test_uss_block_insert_with_doublequotes"],
+#        TEST_INFO["expected"]["test_uss_block_insert_with_doublequotes"])
+#    TEST_ENV["TEST_CONT"] = TEST_CONTENT
 
 @pytest.mark.uss
 def test_uss_block_insertafter_eof_with_backup(ansible_zos_module):

@@ -246,7 +246,7 @@ EXAMPLES = r'''
           LIB('{{ DB2RUN }}.RUNLIB.LOAD')
     indentation: 16
 
-- name: Update a script with commands at the end
+- name: Update a script with commands containing quotes.
   zos_blockinfile:
     src: "/u/scripts/script.sh"
     insertafter: "EOF"
@@ -390,7 +390,7 @@ def quotedString(string):
     return string.replace('"', "")
 
 
-def quotedString_outputJson(string):
+def quoted_string_output_json(string):
     if not isinstance(string, str):
         return string
     return string.replace('"', "u'")
@@ -566,11 +566,11 @@ def main():
         stdout = stdout.replace('$ a\\', '$ a\\\\')
         stdout = stdout.replace('1 i\\', '1 i\\\\')
         if block:
-            stdout = stdout.replace(block, quotedString_outputJson(block))
+            stdout = stdout.replace(block, quoted_string_output_json(block))
         if ins_aft:
-            stdout = stdout.replace(ins_aft, quotedString_outputJson(ins_aft))
+            stdout = stdout.replace(ins_aft, quoted_string_output_json(ins_aft))
         if ins_bef:
-            stdout = stdout.replace(ins_bef, quotedString_outputJson(ins_bef))
+            stdout = stdout.replace(ins_bef, quoted_string_output_json(ins_bef))
         # Try to extract information from stdout
         ret = json.loads(stdout)
         ret['cmd'] = ret['cmd'].replace("u'", '"')

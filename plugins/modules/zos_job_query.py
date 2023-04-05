@@ -236,13 +236,13 @@ def validate_arguments(params):
             )
             test_basic = job_name_pattern.search(job_name_in)
             test_star = job_name_pattern_with_star.search(job_name_in)
-            # logic twist: o must be non-null value from m or n
+            # logic twist: test_result should be a non-null value from test_basic or test_star
             test_result = test_basic
             if test_star:
                 test_result = test_star
 
             job_name_short = "unused"
-            # if neither m nor n were non-null, check if the string needed to be truncated to the first *
+            # if neither test_basic nor test_star were non-null, check if the string needed to be truncated to the first *
             if not test_result:
                 ix = job_name_in.find("*")
                 if ix >= 0:
@@ -251,7 +251,7 @@ def validate_arguments(params):
                     if not test_result:
                         test_result = job_name_pattern_with_star.search(job_name_short)
 
-            # so now, fail if neither m, n, or o=m/n(short) found a match
+            # so now, fail if neither test_basic, test_star or test_base from job_name_short found a match
             if not test_result:
                 raise RuntimeError("Failed to validate the job name: " + job_name_in + " ix was " + ix + " short was " + job_name_short)
 

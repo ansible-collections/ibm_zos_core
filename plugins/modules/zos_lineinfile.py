@@ -476,7 +476,7 @@ def main():
     # state=absent, delete lines with matching regex pattern
     if parsed_args.get('state') == 'present':
         return_content = present(src, quotedString(line), quotedString(regexp), quotedString(ins_aft), quotedString(ins_bef), encoding, firstmatch,
-                                    backrefs, force)
+                                 backrefs, force)
     else:
         return_content = absent(src, quotedString(line), quotedString(regexp), encoding, force)
     stdout = return_content.stdout_response

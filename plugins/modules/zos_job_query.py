@@ -35,7 +35,7 @@ options:
   job_name:
     description:
        - The job name to query. Job name can now contain multiple,
-       embedded asterisks (e.g.: JC*NAM*)
+         embedded asterisks (e.g.: JC*NAM*)
     type: str
     required: False
     default: "*"

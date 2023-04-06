@@ -195,13 +195,11 @@ EXAMPLES = r'''
     block: |
        MOUNT FILESYSTEM('SOME.DATA.SET') TYPE(ZFS) MODE(READ)
           MOUNTPOINT('/tmp/src/somedirectory')
-
 - name: Remove a library as well as surrounding markers
   zos_blockinfile:
     state: absent
     src: SYS1.PARMLIB(PROG00)
     marker: "/* {mark} ANSIBLE MANAGED BLOCK FOR SOME.DATA.SET */"
-
 - name: Add ZOAU path to PATH in /etc/profile
   zos_blockinfile:
     src: /etc/profile
@@ -210,7 +208,6 @@ EXAMPLES = r'''
       ZOAU=/path/to/zoau_dir/bin
       export ZOAU
       PATH=$ZOAU:$PATH
-
 - name: Insert/Update HTML surrounded by custom markers after <body> line
   zos_blockinfile:
     path: /var/www/html/index.html
@@ -219,13 +216,11 @@ EXAMPLES = r'''
     block: |
       <h1>Welcome to {{ ansible_hostname }}</h1>
       <p>Last updated on {{ ansible_date_time.iso8601 }}</p>
-
 - name: Remove HTML as well as surrounding markers
   zos_blockinfile:
     path: /var/www/html/index.html
     state: absent
     marker: "<!-- {mark} ANSIBLE MANAGED BLOCK -->"
-
 - name: Add mappings to /etc/hosts
   zos_blockinfile:
     path: /etc/hosts
@@ -236,7 +231,6 @@ EXAMPLES = r'''
     - { name: host1, ip: 10.10.1.10 }
     - { name: host2, ip: 10.10.1.11 }
     - { name: host3, ip: 10.10.1.12 }
-
 - name: Add a code block to a member using a predefined indentation.
   zos_blockinfile:
     path: SYS1.PARMLIB(BPXPRM00)
@@ -245,14 +239,6 @@ EXAMPLES = r'''
           RUN  PROGRAM(DSNTEP2) PLAN(DSNTEP12) -
           LIB('{{ DB2RUN }}.RUNLIB.LOAD')
     indentation: 16
-
-- name: Update a script with commands at the end
-  zos_blockinfile:
-    src: "/u/scripts/script.sh"
-    insertafter: "EOF"
-    block: |
-          cat "//'{{ DS_NAME }}'"
-          cat "//'{{ DS_NAME_2 }}'"
 '''
 
 RETURN = r"""
@@ -316,12 +302,10 @@ DS_TYPE = ['PS', 'PO']
 
 def transformBlock(block, indentation_char, indentation_spaces):
     """Prepends the specified number of spaces to the block in all lines
-
     Arguments:
         block: {str} -- The block text to be transformed.
         indentation_char: {str} -- The indentation char to be used.
         indentation_spaces: {int} -- Number of times the indentation char to prepend.
-
     Returns:
         block: {str} -- The text block after applying the necessary transformations.
     """
@@ -340,7 +324,6 @@ def present(src, block, marker, ins_aft, ins_bef, encoding, force):
     """Replace a block with the matching regex pattern
     Insert a block before/after the matching pattern
     Insert a block at BOF/EOF
-
     Arguments:
         src: {str} -- The z/OS USS file or data set to modify.
         block: {str} -- The block to insert/replace into the src.
@@ -355,7 +338,6 @@ def present(src, block, marker, ins_aft, ins_bef, encoding, force):
                 - '*regex*'
         encoding: {str} -- Encoding of the src.
         force: {str} -- If not empty passes the -f option to dmod cmd.
-
     Returns:
         str -- Information in JSON format. keys:
             cmd: {str} -- dmod shell command
@@ -367,13 +349,11 @@ def present(src, block, marker, ins_aft, ins_bef, encoding, force):
 
 def absent(src, marker, encoding, force):
     """Delete blocks with matching regex pattern
-
     Arguments:
         src: {str} -- The z/OS USS file or data set to modify.
         marker: {str} -- Identifies the block to be removed.
         encoding: {str} -- Encoding of the src.
         force: {str} -- If not empty passes the -f option to dmod cmd.
-
     Returns:
         str -- Information in JSON format. keys:
             cmd: {str} -- dmod shell command
@@ -388,12 +368,6 @@ def quotedString(string):
     if not isinstance(string, str):
         return string
     return string.replace('"', "")
-
-
-def quotedString_outputJson(string):
-    if not isinstance(string, str):
-        return string
-    return string.replace('"', "u'")
 
 
 def main():
@@ -552,7 +526,7 @@ def main():
     # state=present, insert/replace a block with matching regex pattern
     # state=absent, delete blocks with matching regex pattern
     if parsed_args.get('state') == 'present':
-        return_content = present(src, block, quotedString(marker), quotedString(ins_aft), quotedString(ins_bef), encoding, force)
+        return_content = present(src, quotedString(block), quotedString(marker), quotedString(ins_aft), quotedString(ins_bef), encoding, force)
     else:
         return_content = absent(src, quotedString(marker), encoding, force)
     stdout = return_content.stdout_response
@@ -565,17 +539,14 @@ def main():
         stdout = stdout.replace('/i\\', '/i\\\\')
         stdout = stdout.replace('$ a\\', '$ a\\\\')
         stdout = stdout.replace('1 i\\', '1 i\\\\')
-
         if block:
-            stdout = stdout.replace(block, quotedString_outputJson(block))
+            stdout = stdout.replace(block, quotedString(block))
         if ins_aft:
-            stdout = stdout.replace(ins_aft, quotedString_outputJson(ins_aft))
+            stdout = stdout.replace(ins_aft, quotedString(ins_aft))
         if ins_bef:
-            stdout = stdout.replace(ins_bef, quotedString_outputJson(ins_bef))
+            stdout = stdout.replace(ins_bef, quotedString(ins_bef))
         # Try to extract information from stdout
         ret = json.loads(stdout)
-        ret['cmd'] = ret['cmd'].replace("u'", '"')
-
         result['cmd'] = ret['cmd']
         result['changed'] = ret['changed']
         result['found'] = ret['found']

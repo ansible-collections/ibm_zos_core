@@ -40,7 +40,7 @@ zoau_mount_list_str="1:1.2.0:/zoau/v1.2.0:IMSTESTU.ZOAU.V120.ZFS "\
 "20:latest:/zoau/latest:IMSTESTU.ZOAU.LATEST.ZFS "
 
 # ------------------------------------------------------------------------------
-# python_mount_list[0]="<mount>:<data_set><space>"
+# python_mount_list[0]="<index>:<version>:<home>:<mount>:<data_set><space>"
 # python_mount_list[0]="/python2:IMSTESTU.PYZ.ROCKET.V362B.ZFS "
 # Format:
 #   mount - the mount point path the data set will be mounted to
@@ -48,12 +48,12 @@ zoau_mount_list_str="1:1.2.0:/zoau/v1.2.0:IMSTESTU.ZOAU.V120.ZFS "\
 #   space - must be a space before the closing quote
 # Mismarked: "/allpython/3.8.5:IMSTESTU.PYZ.V380.GA.ZFS "\
 # ------------------------------------------------------------------------------
-python_mount_list_str="1:3.8.2:/allpython/3.8.2/usr/lpp/IBM/cyp/v3r8:IMSTESTU.PYZ.ROCKET.V362B.ZFS "\
-"2:3.8.3:/allpython/3.8.3/usr/lpp/IBM/cyp/v3r8:IMSTESTU.PYZ.V383PLUS.ZFS "\
-"3:3.9:/allpython/3.9/usr/lpp/IBM/cyp/v3r9:IMSTESTU.PYZ.V380.GA.ZFS "\
-"4:3.10:/allpython/3.10/usr/lpp/IBM/cyp/v3r10:IMSTESTU.PYZ.V3A0.ZFS "\
-"5:3.11:/allpython/3.11/usr/lpp/IBM/cyp/v3r11:IMSTESTU.PYZ.V3B0.ZFS "\
-"6:3.11-ga:/allpython/3.11-ga/usr/lpp/IBM/cyp/v3r11:IMSTESTU.PYZ.V311GA.ZFS "
+python_mount_list_str="1:3.8.2:/allpython/3.8.2/usr/lpp/IBM/cyp/v3r8/pyz:/allpython/3.8.2:IMSTESTU.PYZ.ROCKET.V362B.ZFS "\
+"2:3.8.3:/allpython/3.8.3/usr/lpp/IBM/cyp/v3r8/pyz:/allpython/3.8.3:IMSTESTU.PYZ.V383PLUS.ZFS "\
+"3:3.9:/allpython/3.9/usr/lpp/IBM/cyp/v3r9/pyz:/allpython/3.9:IMSTESTU.PYZ.V380.GA.ZFS "\
+"4:3.10:/allpython/3.10/usr/lpp/IBM/cyp/v3r10/pyz:/allpython/3.10:IMSTESTU.PYZ.V3A0.ZFS "\
+"5:3.11:/allpython/3.11/usr/lpp/IBM/cyp/v3r11/pyz:/allpython/3.11:IMSTESTU.PYZ.V3B0.ZFS "\
+"6:3.11-ga:/allpython/3.11-ga/usr/lpp/IBM/cyp/v3r11/pyz:/allpython/3.11-ga:IMSTESTU.PYZ.V311GA.ZFS "
 
 # ------------------------------------------------------------------------------
 # python_path_list[0]="<index>:<version>:<path><space>"

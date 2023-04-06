@@ -72,7 +72,7 @@ mount(){
 		# zoau_mounted_data_set can be empty so perform added validation
 		zoau_mounted_data_set=`df ${zoau_mount} 2>/dev/null | tr -s [:blank:] | tail -n +2 |cut -d' ' -f 2 | sed 's/(//' | sed 's/.$//'`
 
-		# If zoau_mounted_data_set is empty or not, we will perform a mount
+		# If zoau_mounted_data_set is empty or does not match expected, it means we should perform the mount
 		if [ "$zoau_mounted_data_set" != "$zoau_data_set" ]; then
 			echo "Mouting ZOAU ${zoau_version} on data set ${zoau_data_set} to path ${zoau_mount}."
 
@@ -85,7 +85,7 @@ mount(){
 				fi
 			fi
 			mkdir -p ${zoau_mount}
-        	/usr/sbin/mount -r -t zfs -f ${zoau_data_set} ${zoau_mount}
+        	/usr/sbin/mount ${1} ${zoau_data_set} ${zoau_mount}
 		else
 			echo "ZOAU ${zoau_version} is already mounted on data set ${zoau_data_set} to path ${zoau_mount}."
 		fi
@@ -98,8 +98,9 @@ mount(){
     for tgt in "${PYTHON_MOUNTS[@]}" ; do
 		python_index=`echo "${tgt}" | cut -d ":" -f 1`
         python_version=`echo "${tgt}" | cut -d ":" -f 2`
-        python_mount=`echo "${tgt}" | cut -d ":" -f 3`
-		python_data_set=`echo "${tgt}" | cut -d ":" -f 4`
+		python_home=`echo "${tgt}" | cut -d ":" -f 3`
+        python_mount=`echo "${tgt}" | cut -d ":" -f 4`
+		python_data_set=`echo "${tgt}" | cut -d ":" -f 5`
 
 		# python_mounted_data_set can be empty so perform added validation
 		python_mounted_data_set=`df ${python_mount} 2>/dev/null | tr -s [:blank:] | tail -n +2 |cut -d' ' -f 2 | sed 's/(//' | sed 's/.$//'`
@@ -118,7 +119,7 @@ mount(){
 			fi
 
 			mkdir -p ${python_mount}
-        	/usr/sbin/mount -r -t zfs -f ${python_data_set} ${python_mount}
+        	/usr/sbin/mount ${1} ${python_data_set} ${python_mount}
 		else
 			echo "Python ${python_mount} is already mounted on data set ${python_data_set}."
 		fi
@@ -157,8 +158,9 @@ unmount(){
     for tgt in "${PYTHON_MOUNTS[@]}" ; do
 		python_index=`echo "${tgt}" | cut -d ":" -f 1`
         python_version=`echo "${tgt}" | cut -d ":" -f 2`
-        python_mount=`echo "${tgt}" | cut -d ":" -f 3`
-		python_data_set=`echo "${tgt}" | cut -d ":" -f 4`
+		python_home=`echo "${tgt}" | cut -d ":" -f 3`
+        python_mount=`echo "${tgt}" | cut -d ":" -f 4`
+		python_data_set=`echo "${tgt}" | cut -d ":" -f 5`
 
 		python_mounted_data_set=`df ${python_mount} 2>/dev/null | tr -s [:blank:] | tail -n +2 |cut -d' ' -f 2 | sed 's/(//' | sed 's/.$//'`
 		if [ "$python_mounted_data_set" = "$python_data_set" ]; then
@@ -221,8 +223,9 @@ remount(){
     for tgt in "${PYTHON_MOUNTS[@]}" ; do
 		python_index=`echo "${tgt}" | cut -d ":" -f 1`
         python_version=`echo "${tgt}" | cut -d ":" -f 2`
-        python_mount=`echo "${tgt}" | cut -d ":" -f 3`
-		python_data_set=`echo "${tgt}" | cut -d ":" -f 4`
+		python_home=`echo "${tgt}" | cut -d ":" -f 3`
+        python_mount=`echo "${tgt}" | cut -d ":" -f 4`
+		python_data_set=`echo "${tgt}" | cut -d ":" -f 5`
 
 		python_mounted_data_set=`df ${python_mount} 2>/dev/null | tr -s [:blank:] | tail -n +2 |cut -d' ' -f 2 | sed 's/(//' | sed 's/.$//'`
 		# Pythion is not mounted, perform mount
@@ -255,7 +258,11 @@ remount(){
 ################################################################################
 case "$1" in
   --mount)
-    mount
+    mount "-r -t zfs -f"
+    ;;
+  --mount_rw)
+  	unmount
+    mount "-t zfs -f"
     ;;
   --unmount)
     unmount

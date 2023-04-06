@@ -175,9 +175,9 @@ options:
     default: IBM-1047
   force:
     description:
-      - The case of a member of a PDSE held by a started task 
-      other members cannot be acces/modified but is requiere for another 
-      member from the same PDSE allow to work 
+      - The case of a member of a PDSE held by a started task
+      other members cannot be acces/modified but is requiere for another
+      member from the same PDSE allow to work.
     required: false
     type: bool
     default: False
@@ -331,7 +331,7 @@ def present(src, line, regexp, ins_aft, ins_bef, encoding, first_match, backrefs
     )
 
 
-def absent(src, line, regexp, encoding,force):
+def absent(src, line, regexp, encoding, force):
     """Delete lines with matching regex pattern
 
     Arguments:
@@ -405,7 +405,7 @@ def main():
         firstmatch=dict(arg_type="bool", required=False, default=False),
         backrefs=dict(arg_type="bool", dependencies=['regexp'], required=False, default=False),
         tmp_hlq=dict(type='qualifier_or_empty', required=False, default=None),
-        force=dict(arg_type='bool',required=False, default=False),
+        force=dict(arg_type='bool', required=False, default=False),
         mutually_exclusive=[["insertbefore", "insertafter"]],)
 
     try:
@@ -475,9 +475,10 @@ def main():
     # state=present, insert/replace a line with matching regex pattern
     # state=absent, delete lines with matching regex pattern
     if parsed_args.get('state') == 'present':
-        return_content = present(src, quotedString(line), quotedString(regexp), quotedString(ins_aft), quotedString(ins_bef), encoding, firstmatch, backrefs,force)
+        return_content = present(src, quotedString(line), quotedString(regexp), quotedString(ins_aft), quotedString(ins_bef), encoding, firstmatch,
+        backrefs, force)
     else:
-        return_content = absent(src, quotedString(line), quotedString(regexp), encoding,force)
+        return_content = absent(src, quotedString(line), quotedString(regexp), encoding, force)
     stdout = return_content.stdout_response
     stderr = return_content.stderr_response
     rc = return_content.rc

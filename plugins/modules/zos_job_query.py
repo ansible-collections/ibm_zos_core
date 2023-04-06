@@ -18,7 +18,6 @@ __metaclass__ = type
 
 
 DOCUMENTATION = r"""
----
 module: zos_job_query
 version_added: '1.0.0'
 short_description: Query job status

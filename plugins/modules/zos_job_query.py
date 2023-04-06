@@ -34,8 +34,8 @@ author:
 options:
   job_name:
     description:
-       - The job name to query.
-       - Job name can now contain multiple, embedded asterisks (e.g.: JC*NAM*)
+       - The job name to query. Job name can now contain multiple,
+       embedded asterisks (e.g.: JC*NAM*)
     type: str
     required: False
     default: "*"
@@ -51,8 +51,8 @@ options:
       - The job number that has been assigned to the job. These normally begin
         with STC, JOB, TSU and are followed by 5 digits. When job are
         potentially greater than 99,999, the job number format will begin with
-        S, J, T and are followed by 7 digits.
-      - Job id can now contain multiple, embedded asterisks (e.g.: JOB*14*)
+        S, J, T and are followed by 7 digits. Job id can now contain multiple,
+        embedded asterisks (e.g.: JOB*14*)
     type: str
     required: False
 """

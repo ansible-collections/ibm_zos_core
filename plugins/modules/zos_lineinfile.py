@@ -176,8 +176,8 @@ options:
   force:
     description:
       - The case of a member of a PDSE held by a started task
-      other members cannot be acces/modified but is requiere for another
-      member from the same PDSE allow to work.
+        other members cannot be acces/modified but is requiere for another
+        member from the same PDSE allow to work.
     required: false
     type: bool
     default: False

@@ -136,4 +136,20 @@ class ActionModule(ActionBase):
                 )
             )
 
+        def delete_dict_entries(entries, dictionary):
+            """ Deletes entries from a dictionary when provided key and dictionary.
+
+                Arguments:
+                    entries    (tuple)  - entries to delete from dictionary
+                    dictionary (dic)    - dictionary to remove entries
+            """
+            for key in entries:
+                if key in dictionary:
+                    del dictionary[key]
+
+        # Currently the direction is undecided if we should continue to use the
+        # community action plugins or transition to SFTP, so this code
+        # can remain should we want to clean up unrelated response values.
+        # entries = ('checksum', 'dest', 'gid', 'group', 'md5sum', 'mode', 'owner', 'size', 'src', 'state', 'uid')
+        # delete_dict_entries(entries, result)
         return result

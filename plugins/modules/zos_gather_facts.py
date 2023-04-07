@@ -88,6 +88,25 @@ ansible_facts:
   description: Collection of facts that are gathered from the z/OS systems.
   returned: when collected
   type: dict
+  sample:
+    [
+        "ansible_facts": {
+            "arch_level": "2",
+            "hw_name": "SYSZD6",
+            "ipl_volume": "RES820",
+            "lpar_name": "SVLLAB01",
+            "primary_jes": "JES2",
+            "product_mod_level": "00",
+            "product_name": "z/OS",
+            "product_owner": "IBM CORP",
+            "product_release": "05",
+            "product_version": "02",
+            "smf_name": "3090",
+            "sys_name": "EC33018A",
+            "sysplex_name": "SVPLEX1",
+            "vm_name": "EC33018A"
+        }
+    ]
 """
 
 from fnmatch import fnmatch

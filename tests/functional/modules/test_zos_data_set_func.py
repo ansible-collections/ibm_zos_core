@@ -583,7 +583,7 @@ def test_data_member_force_delete(ansible_zos_module):
         results = hosts.all.command(cmd="mls {0}".format(DEFAULT_DATA_SET_NAME))
         for result in results.contacted.values():
             assert MEMBER_1 in result.get("stdout")
-            assert MEMBER_1 in result.get("stdout")
+            assert MEMBER_2 in result.get("stdout")
             assert MEMBER_3 not in result.get("stdout")
             assert MEMBER_4 not in result.get("stdout")
 

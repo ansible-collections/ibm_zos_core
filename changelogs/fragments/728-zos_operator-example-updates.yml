@@ -1,0 +1,4 @@
+trivial:
+- zos_operator - had errors in some of the commands and unnecessary escapes.
+  This change corrects the commands, escaping and adds one new example command.
+  (https://github.com/ansible-collections/ibm_zos_core/pull/728)

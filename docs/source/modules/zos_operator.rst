@@ -83,30 +83,32 @@ Examples
 .. code-block:: yaml+jinja
 
    
-   - name: Execute an operator command to show active jobs
+   - name: Execute an operator command to show device status and allocation
      zos_operator:
-       cmd: 'd u,all'
+       cmd: 'd u'
 
-   - name: Execute an operator command to show active jobs with verbose information
+   - name: Execute an operator command to show device status and allocation with verbose information
      zos_operator:
-       cmd: 'd u,all'
+       cmd: 'd u'
        verbose: true
 
    - name: Execute an operator command to purge all job logs (requires escaping)
      zos_operator:
-       cmd: "\\$PJ(*)"
+       cmd: "$PJ(*)"
 
    - name: Execute operator command to show jobs, waiting up to 5 seconds for response
      zos_operator:
-       cmd: 'd u,all'
+       cmd: 'd a,all'
        wait_time_s: 5
-       wait: false
 
    - name: Execute operator command to show jobs, always waiting 7 seconds for response
      zos_operator:
-       cmd: 'd u,all'
+       cmd: 'd a,all'
        wait_time_s: 7
-       wait: true
+
+   - name: Display the system symbols and associated substitution texts.
+     zos_operator:
+       cmd: 'D SYMBOLS'
 
 
 

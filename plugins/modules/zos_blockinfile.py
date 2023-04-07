@@ -22,6 +22,7 @@ module: zos_blockinfile
 version_added: '1.3.0'
 author:
   - "Behnam (@balkajbaf)"
+  - "Demetrios Dimatos (@ddimatos)"
 short_description: Manage block of multi-line textual data on z/OS
 description:
   - Manage block of multi-lines in z/OS UNIX System Services (USS) files,
@@ -42,7 +43,8 @@ options:
     required: true
   state:
     description:
-      - Whether the block should be inserted/replaced (present) or removed (absent).
+      - Whether the block should be inserted or replaced using I(state=present).
+      - Whether the block should be removed using I(state=absent).
     type: str
     choices:
       - absent
@@ -156,7 +158,7 @@ options:
         updated by others.
       - This is helpful when a data set is being used in a long running process
         such as a started task and you are wanting to update or read.
-      - The C(-f) option enables sharing of data sets through the disposition
+      - The C(force) option enables sharing of data sets through the disposition
         I(DISP=SHR).
     required: false
     type: bool
@@ -179,7 +181,7 @@ notes:
     data sets.
   - For supported character sets used to encode data, refer to the
     L(documentation,https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html).
-  - When using 'with_*' loops be aware that if you do not set a unique mark
+  - When using ``with_*`` loops be aware that if you do not set a unique mark
     the block will be overwritten on each iteration.
   - When more then one block should be handled in a file you must change
     the I(marker) per task.
@@ -245,6 +247,36 @@ EXAMPLES = r'''
           RUN  PROGRAM(DSNTEP2) PLAN(DSNTEP12) -
           LIB('{{ DB2RUN }}.RUNLIB.LOAD')
     indentation: 16
+
+- name: Set facts for the following two tasks.
+  set_fact:
+    HLQ: 'ANSIBLE'
+    MLQ: 'MEMBER'
+    LLQ: 'TEST'
+    MEM: '(JCL)'
+    MSG: 'your first JCL program'
+    CONTENT: "{{ lookup('file', 'files/content.txt') }}"
+
+- name: Update JCL in a PDS member with Jinja2 variable syntax.
+  zos_blockinfile:
+    src: "{{ HLQ }}.{{MLQ}}.{{LLQ}}{{MEM}}"
+    insertafter: "HELLO, WORLD"
+    marker: "//* {mark} *//"
+    marker_begin: "Begin Ansible Block Insertion 1"
+    marker_end: "End Ansible Block Insertion 1"
+    state: present
+    block: |
+      This is {{ MSG }}, and its now
+      managed by Ansible.
+
+- name: Update JCL in PDS member with content from a file.
+  zos_blockinfile:
+    src: "{{ HLQ }}.{{MLQ}}.{{LLQ}}{{MEM}}"
+    insertafter: "End Ansible Block Insertion 1"
+    marker: "//* {mark} *//"
+    marker_begin: "Begin Ansible Block Insertion 2"
+    marker_end: "End Ansible Block Insertion 2"
+    block: "{{ CONTENT }}"
 '''
 
 RETURN = r"""

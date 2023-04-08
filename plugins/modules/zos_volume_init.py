@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2023
+# Copyright (c) IBM Corporation 2022, 2023
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -30,7 +30,7 @@ version_added: 1.6.0
 author:
   - "Austen Stewart (@stewartad)"
   - "Almigdad Suliman (@Almigdad-Suliman)"
-  - "Nicholas Teves (@TODO)"
+  - "Nicholas Teves (@nktvs)"
   - "Nuoya Xie (@nxie13)"
   - "Trevor Glassey (@tkglassey)"
   - "Tyler Edwards (@TLEdwards-Git)"
@@ -82,14 +82,14 @@ options:
     description:
       - Create a volume table of contents (VTOC) index.
       - The VTOC index enhances the performance of VTOC access.
-      - When set to I(false), no index will be created.
+      - When set to C(false), no index will be created.
     required: false
     type: bool
     default: true
   sms_managed:
     description:
       - Specifies that hte volume be managed by Storage Management System (SMS).
-      - If I(sms_managed) is I(true) then I(index) mist also be I(true).
+      - If I(sms_managed) is C(true) then I(index) must also be C(true).
     type: bool
     required: false
     default: true
@@ -157,7 +157,7 @@ msg:
   description: Failure message returned by module.
   returned: failure
   type: str
-  sample: \'Index\' cannot be False for SMS managed volumes.
+  sample: "'Index' cannot be False for SMS managed volumes."
 rc:
   description:
     - Return code from ICKDSF init mvs command.

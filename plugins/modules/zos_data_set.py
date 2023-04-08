@@ -44,6 +44,10 @@ options:
         If I(state=absent) and the data set does exist on the managed node,
         remove the data set, module completes successfully with I(changed=True).
       - >
+        If I(state=absent) and I(type=MEMBER) and I(force=True), the data set
+        will be opened with I(DISP=SHR) such that the entire data set can be
+        accessed by other processes while the specified member is deleted.
+      - >
         If I(state=absent) and I(volumes) is provided, and the data set is not
         found in the catalog, the module attempts to perform catalog using supplied
         I(name) and I(volumes). If the attempt to catalog the data set catalog is successful,
@@ -253,9 +257,11 @@ options:
         delete operation which results in the data set you are updating to be
         simultaneously updated by others.
       - This is helpful when a data set is being used in a long running process
-        such as a started task and you are wanting to update or read.
-      - The C(-f) option enables sharing of data sets through the disposition
-        I(DISP=SHR).
+        such as a started task and you are wanting to delete a member.
+      - The I(force=True) option enables sharing of data sets through the
+        disposition I(DISP=SHR).
+      - The I(force=True) only applies to data set members when I(state=absent)
+        and I(type=MEMBER).
     type: bool
     required: false
     default: false
@@ -283,6 +289,11 @@ options:
           - >
             If I(state=absent) and the data set does exist on the managed node,
             remove the data set, module completes successfully with I(changed=True).
+          - >
+            If I(state=absent) and I(type=MEMBER) and I(force=True), the data
+            set will be opened with I(DISP=SHR) such that the entire data set
+            can be accessed by other processes while the specified member is
+            deleted.
           - >
             If I(state=absent) and I(volumes) is provided, and the data set is not
             found in the catalog, the module attempts to perform catalog using supplied
@@ -482,12 +493,15 @@ options:
       force:
         description:
           - Specifies that the data set can be shared with others during a member
-            delete operation which results in the data set you are updating to be
-            simultaneously updated by others.
-          - This is helpful when a data set is being used in a long running process
-            such as a started task and you are wanting to update or read.
-          - The C(-f) option enables sharing of data sets through the disposition
-            I(DISP=SHR).
+            delete operation which results in the data set you are updating to
+            be simultaneously updated by others.
+          - This is helpful when a data set is being used in a long running
+            process such as a started task and you are wanting to delete a
+            member.
+          - The I(force=True) option enables sharing of data sets through the
+            disposition I(DISP=SHR).
+          - The I(force=True) only applies to data set members when
+            I(state=absent) and I(type=MEMBER).
         type: bool
         required: false
         default: false

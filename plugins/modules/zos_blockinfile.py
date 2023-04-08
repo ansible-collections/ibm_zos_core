@@ -248,6 +248,14 @@ EXAMPLES = r'''
           LIB('{{ DB2RUN }}.RUNLIB.LOAD')
     indentation: 16
 
+- name: Update a script with commands containing quotes.
+  zos_blockinfile:
+    src: "/u/scripts/script.sh"
+    insertafter: "EOF"
+    block: |
+          cat "//'{{ DS_NAME }}'"
+          cat "//'{{ DS_NAME_2 }}'"
+
 - name: Set facts for the following two tasks.
   set_fact:
     HLQ: 'ANSIBLE'
@@ -414,6 +422,12 @@ def quotedString(string):
     return string.replace('"', "")
 
 
+def quoted_string_output_json(string):
+    if not isinstance(string, str):
+        return string
+    return string.replace('"', "u'")
+
+
 def main():
     module = AnsibleModule(
         argument_spec=dict(
@@ -570,7 +584,7 @@ def main():
     # state=present, insert/replace a block with matching regex pattern
     # state=absent, delete blocks with matching regex pattern
     if parsed_args.get('state') == 'present':
-        return_content = present(src, quotedString(block), quotedString(marker), quotedString(ins_aft), quotedString(ins_bef), encoding, force)
+        return_content = present(src, block, quotedString(marker), quotedString(ins_aft), quotedString(ins_bef), encoding, force)
     else:
         return_content = absent(src, quotedString(marker), encoding, force)
     stdout = return_content.stdout_response
@@ -584,13 +598,15 @@ def main():
         stdout = stdout.replace('$ a\\', '$ a\\\\')
         stdout = stdout.replace('1 i\\', '1 i\\\\')
         if block:
-            stdout = stdout.replace(block, quotedString(block))
+            stdout = stdout.replace(block, quoted_string_output_json(block))
         if ins_aft:
-            stdout = stdout.replace(ins_aft, quotedString(ins_aft))
+            stdout = stdout.replace(ins_aft, quoted_string_output_json(ins_aft))
         if ins_bef:
-            stdout = stdout.replace(ins_bef, quotedString(ins_bef))
+            stdout = stdout.replace(ins_bef, quoted_string_output_json(ins_bef))
         # Try to extract information from stdout
         ret = json.loads(stdout)
+        ret['cmd'] = ret['cmd'].replace("u'", '"')
+
         result['cmd'] = ret['cmd']
         result['changed'] = ret['changed']
         result['found'] = ret['found']

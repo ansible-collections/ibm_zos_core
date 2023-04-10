@@ -71,7 +71,7 @@ def test_zos_job_id_query_multi_wildcards_func(ansible_zos_module):
             assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
             assert result.get("jobs")[0].get("ret_code").get("code") == 0
 
-            fulljobid = result.get("jobs")[0].get("res_code").get("job_id")
+            fulljobid = result.get("jobs")[0].get("job_id")
             jobmask = fulljobid[0:3] + '*' + fulljobid[5:6] + '*'
             qresults = hosts.all.zos_job_query(jobmask)
             for qresult in qresults.contacted.values():

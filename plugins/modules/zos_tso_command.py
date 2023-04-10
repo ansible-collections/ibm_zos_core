@@ -218,11 +218,10 @@ def run_module():
         result["output"] = run_tso_command(commands, module, max_rc)
         result["max_rc"] = max_rc
         errors_found = False
-        result_string = ""
+        result_list = []
 
         for cmd in result.get("output"):
             tmp_string = 'Command "' + cmd.get("command", "") + '" execution'
-            tmp_string2 = ''
             if cmd.get("rc") > max_rc:
                 # module.fail_json(
                 #     msg='The TSO command "'
@@ -231,13 +230,13 @@ def run_module():
                 #     **result
                 # )
                 errors_found = True
-                tmp_string2 = tmp_string + "failed.  RC was {0}; Max RC was {1}".format(cmd.get("rc"), max_rc)
+                result_list.append(tmp_string + "failed.  RC was {0}; Max RC was {1}".format(cmd.get("rc"), max_rc))
             else:
-                tmp_string2 = tmp_string + "succeeded.  RC was {0}.".format(cmd.get("rc"))
-
-            result_string = result_string + "\n" + tmp_string2
+                result_list.append(tmp_string + "succeeded.  RC was {0}.".format(cmd.get("rc")))
 
         if errors_found:
+            result_string = "\n".join(result_list)
+
             module.fail_json(
                 msg="Some ({0}) command(s) failed:\n{1}".format(errors_found, result_string),
                 **result

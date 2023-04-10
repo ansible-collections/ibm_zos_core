@@ -166,7 +166,7 @@ def test_zos_tso_command_multiple_commands(ansible_zos_module):
 # The command that kicks off rc>0 which is allowed
 def test_zos_tso_command_maxrc(ansible_zos_module):
     hosts = ansible_zos_module
-    results = hosts.all.zos_tso_command(commands=["LISTDSD"],max_rc=4)
+    results = hosts.all.zos_tso_command(commands=["LISTDSD DATASET('HLQ.DATA.SET') ALL GENERIC"],max_rc=4)
     for result in results.contacted.values():
         for item in result.get("output"):
             print( item )

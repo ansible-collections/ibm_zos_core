@@ -1787,7 +1787,7 @@ def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module,):
             record_format="U",
             record_length=0,
             block_size=32760,
-            space_primary=40,
+            space_primary=2,
             space_type="M",
             replace=True
         )
@@ -1799,7 +1799,7 @@ def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module,):
             record_format="U",
             record_length=0,
             block_size=32760,
-            space_primary=40,
+            space_primary=2,
             space_type="M",
             replace=True
         )
@@ -1808,7 +1808,7 @@ def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module,):
             name=cobol_pds,
             state="present",
             type="pds",
-            space_primary=40,
+            space_primary=2,
             record_format="FB",
             record_length=80,
             block_size=3120,

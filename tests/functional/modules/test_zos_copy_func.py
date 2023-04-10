@@ -41,6 +41,8 @@ DUMMY DATA ---- LINE 006 ------
 DUMMY DATA ---- LINE 007 ------
 """
 
+DUMMY_DATA_CRLF = b"00000001 DUMMY DATA\r\n00000002 DUMMY DATA\r\n"
+
 VSAM_RECORDS = """00000001A record
 00000002A record
 00000003A record
@@ -113,6 +115,12 @@ def populate_dir(dir_path):
     for i in range(5):
         with open(dir_path + "/" + "file" + str(i + 1), "w") as infile:
             infile.write(DUMMY_DATA)
+
+
+def populate_dir_crlf_endings(dir_path):
+    for i in range(5):
+        with open(os.path.join(dir_path, "file{0}".format(i)), "wb") as infile:
+            infile.write(DUMMY_DATA_CRLF)
 
 
 def populate_partitioned_data_set(hosts, name, ds_type, members=None):
@@ -1066,6 +1074,56 @@ def test_copy_file_record_length_to_sequential_data_set(ansible_zos_module):
 
 @pytest.mark.uss
 @pytest.mark.seq
+def test_copy_file_crlf_endings_to_sequential_data_set(ansible_zos_module):
+    hosts = ansible_zos_module
+    dest = "USER.TEST.SEQ.FUNCTEST"
+
+    fd, src = tempfile.mkstemp()
+    os.close(fd)
+    with open(src, "wb") as infile:
+        infile.write(DUMMY_DATA_CRLF)
+
+    try:
+        hosts.all.zos_data_set(name=dest, state="absent")
+
+        copy_result = hosts.all.zos_copy(
+            src=src,
+            dest=dest,
+            remote_src=False,
+            is_binary=False
+        )
+
+        verify_copy = hosts.all.shell(
+            cmd="cat \"//'{0}'\"".format(dest),
+            executable=SHELL_EXECUTABLE,
+        )
+
+        verify_recl = hosts.all.shell(
+            cmd="dls -l {0}".format(dest),
+            executable=SHELL_EXECUTABLE,
+        )
+
+        for cp_res in copy_result.contacted.values():
+            assert cp_res.get("msg") is None
+            assert cp_res.get("changed") is True
+            assert cp_res.get("dest") == dest
+        for v_cp in verify_copy.contacted.values():
+            assert v_cp.get("rc") == 0
+            assert len(v_cp.get("stdout_lines")) == 2
+        for v_recl in verify_recl.contacted.values():
+            assert v_recl.get("rc") == 0
+            stdout = v_recl.get("stdout").split()
+            assert len(stdout) == 5
+            assert stdout[1] == "PS"
+            assert stdout[2] == "FB"
+            assert stdout[3] == "19"
+    finally:
+        hosts.all.zos_data_set(name=dest, state="absent")
+        os.remove(src)
+
+
+@pytest.mark.uss
+@pytest.mark.seq
 @pytest.mark.parametrize("src", [
     dict(src="/etc/profile", is_file=True, is_binary=False, is_remote=False),
     dict(src="/etc/profile", is_file=True, is_binary=True, is_remote=False),
@@ -1648,6 +1706,38 @@ def test_copy_dir_to_non_existing_pdse(ansible_zos_module):
             assert result.get("rc") == 0
     finally:
         hosts.all.file(path=src_dir, state="absent")
+        hosts.all.zos_data_set(name=dest, state="absent")
+
+
+@pytest.mark.uss
+@pytest.mark.pdse
+def test_copy_dir_crlf_endings_to_non_existing_pdse(ansible_zos_module):
+    hosts = ansible_zos_module
+    dest = "USER.TEST.PDSE.FUNCTEST"
+
+    temp_path = tempfile.mkdtemp()
+    src_basename = "source/"
+    source_path = "{0}/{1}".format(temp_path, src_basename)
+
+    try:
+        os.mkdir(source_path)
+        populate_dir_crlf_endings(source_path)
+
+        copy_res = hosts.all.zos_copy(src=source_path, dest=dest)
+        verify_copy = hosts.all.shell(
+            cmd="cat \"//'{0}({1})'\"".format(dest, "FILE2"),
+            executable=SHELL_EXECUTABLE,
+        )
+
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+            assert result.get("changed") is True
+            assert result.get("dest") == dest
+        for result in verify_copy.contacted.values():
+            assert result.get("rc") == 0
+            assert len(result.get("stdout_lines")) == 2
+    finally:
+        shutil.rmtree(temp_path)
         hosts.all.zos_data_set(name=dest, state="absent")
 
 

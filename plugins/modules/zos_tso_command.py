@@ -20,11 +20,12 @@ __metaclass__ = type
 DOCUMENTATION = r"""
 module: zos_tso_command
 version_added: '1.1.0'
-author: "Xiao Yuan Ma (@bjmaxy)"
 short_description: Execute TSO commands
 description:
-    - Execute TSO commands on the target z/OS system with the provided options
-      and receive a structured response.
+    - Execute TSO commands on the target z/OS system with the provided options and receive a structured response.
+author:
+    - "Xiao Yuan Ma (@bjmaxy)"
+    - "Rich Parker (@richp405)"
 options:
   commands:
     description:
@@ -66,8 +67,7 @@ output:
         max_rc:
             description:
                 - Specifies the maximum return code allowed for a TSO command.
-                - If more than one TSO command is submitted, the I(max_rc) applies to all
-                TSO commands.
+                - If more than one TSO command is submitted, the I(max_rc) applies to all TSO commands.
             returned: always
             type: int
             sample: 0
@@ -239,7 +239,8 @@ def run_module():
 
         if errors_found:
             module.fail_json(
-                msg = "Some ({0}) command(s) failed:\n{1}".format(errors_found, result_string), **result
+                msg="Some ({0}) command(s) failed:\n{1}".format(errors_found, result_string),
+                **result
             )
 
         result["changed"] = True

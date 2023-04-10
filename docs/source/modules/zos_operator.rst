@@ -101,6 +101,10 @@ Examples
        cmd: 'd a,all'
        wait_time_s: 7
 
+   - name: Display the system symbols and associated substitution texts.
+     zos_operator:
+       cmd: 'D SYMBOLS'
+
 
 
 

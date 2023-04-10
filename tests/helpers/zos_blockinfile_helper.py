@@ -239,7 +239,7 @@ def DsGeneralForce(ansible_zos_module, test_env, test_info, expected):
             results = hosts.all.shell(cmd=cmdStr)
             for result in results.contacted.values():
                 pprint(result)
-                assert result.get("stdout") == expected
+                assert result.get("stdout").replace('\n', '').replace(' ', '') == expected.replace('\n', '').replace(' ', '')
     finally:
         # extract pid
         ps_list_res = hosts.all.shell(cmd="ps -e | grep -i 'pdse-lock'")

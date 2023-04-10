@@ -136,8 +136,8 @@ export PYTHON_HOME
 export _BPXK_AUTOCVT"""
 
 # supported data set types
-# DS_TYPE = ['SEQ', 'PDS', 'PDSE']
-DS_TYPE = ['SEQ']
+DS_TYPE = ['SEQ', 'PDS', 'PDSE']
+# DS_TYPE = ['SEQ']
 # not supported data set types
 NS_DS_TYPE = ['ESDS', 'RRDS', 'LDS']
 """
@@ -228,11 +228,11 @@ TEST_INFO = dict(
         block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR",
         state="present", backup=True, backup_name=MVS_BACKUP_DS),
     test_ds_block_insertafter_regex_force=dict(
-        insertafter="ZOAU_ROOT=",
+        path="",insertafter="ZOAU_ROOT=",
         block="ZOAU_ROOT=/mvsutil-develop_dsed\nZOAU_HOME=\\$ZOAU_ROOT\nZOAU_DIR=\\$ZOAU_ROOT",
         state="present", force=True),
     test_ds_block_insertafter_regex_force_fail=dict(
-        insertafter="ZOAU_ROOT=",
+        path="",insertafter="ZOAU_ROOT=",
         block="ZOAU_ROOT=/mvsutil-develop_dsed\nZOAU_HOME=\\$ZOAU_ROOT\nZOAU_DIR=\\$ZOAU_ROOT",
         state="present", force=False),
     expected=dict(test_uss_block_insertafter_regex_defaultmarker="""if [ -z STEPLIB ] && tty -s;
@@ -1213,7 +1213,7 @@ def test_uss_block_insertafter_eof_with_backup_name(ansible_zos_module):
             for result in results.contacted.values():
                 assert result.get("stdout") == TEST_ENV["TEST_CONT"]
     finally:
-        ansible_zos_module.all.file(path=USS_BACKUP_FILE, state="absent")
+        ansible_zos_module.all.file(path=USS_BACKUP_FILE, state="absent") 
 
 
 #########################
@@ -1475,7 +1475,7 @@ def test_ds_block_insertafter_eof_with_backup(ansible_zos_module, dstype, encodi
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_block_insertafter_regex(ansible_zos_module, dstype):
+def test_ds_block_insertafter_regex_force(ansible_zos_module, dstype):
     TEST_ENV["DS_TYPE"] = dstype
     DsGeneralForce(
         ansible_zos_module, TEST_ENV,

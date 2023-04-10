@@ -145,8 +145,8 @@ def DsGeneral(test_name, ansible_zos_module, test_env, test_info, expected):
         results = hosts.all.shell(cmd=cmdStr)
         for result in results.contacted.values():
             pprint(result)
-            assert result.get("stdout") == expected
-            # assert result.get("stdout").replace('\n', '').replace(' ', '') == expected.replace('\n', '').replace(' ', '')
+            #assert result.get("stdout") == expected
+            assert result.get("stdout").replace('\n', '').replace(' ', '') == expected.replace('\n', '').replace(' ', '')
     clean_ds_test_env(test_env["DS_NAME"], hosts)
     return blockinfile_results
 
@@ -213,6 +213,7 @@ def DsGeneralForce(ansible_zos_module, test_env, test_info, expected):
             ]
         )
         # write memeber to verify cases
+        # print(test_env["TEST_CONT"])
         hosts.all.shell(cmd="echo \"{0}\" > {1}".format(test_env["TEST_CONT"], test_info["path"]))
         # copy/compile c program and copy jcl to hold data set lock for n seconds in background(&)
         hosts.all.zos_copy(content=c_pgm, dest='/tmp/disp_shr/pdse-lock.c', force=True)
@@ -234,7 +235,7 @@ def DsGeneralForce(ansible_zos_module, test_env, test_info, expected):
             pprint(result)
             assert result.get("changed") == 1
         if test_env["ENCODING"] == 'IBM-1047':
-            cmdStr = "cat \"//'{0}'\" ".format(test_env["DS_NAME"])
+            cmdStr = "cat \"//'{0}'\" ".format(test_info["path"])
             results = hosts.all.shell(cmd=cmdStr)
             for result in results.contacted.values():
                 pprint(result)

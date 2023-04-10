@@ -30,6 +30,7 @@ options:
     description:
         - One or more TSO commands to execute on the target z/OS system.
         - Accepts a single string or list of strings as input.
+        - If a list of strings is provided, processing will stop at the first failure, based on rc.
     required: true
     type: raw
     aliases:
@@ -41,7 +42,6 @@ options:
     default: 0
     required: false
     type: int
-
 """
 
 RETURN = r"""
@@ -65,14 +65,9 @@ output:
             sample: 0
         max_rc:
             description:
-                The maximum acceptable return code.
-            returned: always
-            type: int
-            sample: 0
-        orig_rc:
-            description:
-                The original return code provided.
-                This is only significant when an max_rc > rc > 0.
+                - Specifies the maximum return code allowed for a TSO command.
+                - If more than one TSO command is submitted, the I(max_rc) applies to all
+                TSO commands.
             returned: always
             type: int
             sample: 0
@@ -113,7 +108,7 @@ EXAMPLES = r"""
 - name: Execute TSO command to list dataset data (allow 4 for no dataset listed or cert found)
   zos_tso_command:
       commands:
-           - listdsd
+           - LISTDSD DATASET('HLQ.DATA.SET') ALL GENERIC
       max_rc: 4
 
 """
@@ -155,15 +150,20 @@ def copy_rexx_and_run_commands(script, commands, module, max_rc):
         rc, stdout, stderr = module.run_command([tmp_file.name, command])
         command_results = {}
         command_results["command"] = command
-        command_results["orig_rc"] = rc
-        if rc <= max_rc:
-            rc = 0
-            command_results["failed"] = False
         command_results["rc"] = rc
         command_results["content"] = stdout.split("\n")
         command_results["lines"] = len(command_results.get("content", []))
         command_results["stderr"] = stderr
+
+        if rc <= max_rc:
+            command_results["failed"] = False
+        else:
+            command_results["failed"] = True
+
         command_detail_json.append(command_results)
+        if command_results["failed"]:
+            break
+
     return command_detail_json
 
 
@@ -217,7 +217,7 @@ def run_module():
     try:
         result["output"] = run_tso_command(commands, module, max_rc)
         result["max_rc"] = max_rc
-        errors_found = 0
+        errors_found = False
         result_string = ""
 
         for cmd in result.get("output"):
@@ -230,16 +230,16 @@ def run_module():
                 #     + '" execution failed.  RC was {0}; Max RC was {1}.'.format(cmd.get("rc"), max_rc),
                 #     **result
                 # )
-                errors_found += 1
+                errors_found = True
                 tmp_string2 = tmp_string + "failed.  RC was {0}; Max RC was {1}".format(cmd.get("rc"), max_rc)
             else:
                 tmp_string2 = tmp_string + "succeeded.  RC was {0}.".format(cmd.get("rc"))
 
             result_string = result_string + "\n" + tmp_string2
 
-        if errors_found > 0:
+        if errors_found:
             module.fail_json(
-                msg = "Some ({0}) command(s) failed:\n{0}".format(errors_found, result_string), **result
+                msg = "Some ({0}) command(s) failed:\n{1}".format(errors_found, result_string), **result
             )
 
         result["changed"] = True

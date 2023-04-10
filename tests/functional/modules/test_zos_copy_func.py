@@ -1830,7 +1830,7 @@ def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module,):
         # make sure is executable
         cmd = "mvscmd --pgm={0}  --steplib={1} --sysprint=* --stderr=* --stdout=*"
         exec_res = hosts.all.shell(
-            cmd=cmd.format(member, dest_name)
+            cmd=cmd.format(member, dest)
         )
         for result in exec_res.contacted.values():
             assert result.get("rc") == 0
@@ -1838,14 +1838,14 @@ def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module,):
         assert rc == 0
 
         exec_res = hosts.all.shell(
-            cmd=cmd.format(member, src_name)
+            cmd=cmd.format(member, src)
         )
         for result in exec_res.contacted.values():
             assert result.get("rc") == 0
 
         copy_res = hosts.all.zos_copy(
-            src="{0}({1})".format(src, member), 
-            dest="{0}({1})".format(dest, "MEM1"), 
+            src="{0}({1})".format(src_name, member), 
+            dest="{0}({1})".format(dest_name, "MEM1"), 
             remote_src=True)
 
         verify_copy = hosts.all.shell(

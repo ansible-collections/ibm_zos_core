@@ -1827,8 +1827,21 @@ def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module,):
         # both src and dest need to be a loadlib
         rc = link_loadlib_from_cobol(hosts, dest_name, cobol_pds)
         assert rc == 0
+        # make sure is executable
+        cmd = "mvscmd --pgm={0}  --steplib={1} --sysprint=* --stderr=* --stdout=*"
+        exec_res = hosts.all.shell(
+            cmd=cmd.format(member, dest_name)
+        )
+        for result in exec_res.contacted.values():
+            assert result.get("rc") == 0
         rc = link_loadlib_from_cobol(hosts, src_name, cobol_pds)
         assert rc == 0
+
+        exec_res = hosts.all.shell(
+            cmd=cmd.format(member, src_name)
+        )
+        for result in exec_res.contacted.values():
+            assert result.get("rc") == 0
 
         copy_res = hosts.all.zos_copy(
             src="{0}({1})".format(src, member), 

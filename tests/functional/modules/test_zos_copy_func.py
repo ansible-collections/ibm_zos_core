@@ -1833,6 +1833,7 @@ def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module,):
             cmd=cmd.format(member, dest)
         )
         for result in exec_res.contacted.values():
+            print(exec_res.contacted.values())
             assert result.get("rc") == 0
         rc = link_loadlib_from_cobol(hosts, src, cobol_pds)
         assert rc == 0
@@ -1841,6 +1842,7 @@ def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module,):
             cmd=cmd.format(member, src)
         )
         for result in exec_res.contacted.values():
+            print(exec_res.contacted.values())
             assert result.get("rc") == 0
 
         copy_res = hosts.all.zos_copy(

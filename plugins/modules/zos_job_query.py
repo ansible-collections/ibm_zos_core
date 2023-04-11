@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020
+# Copyright (c) IBM Corporation 2019, 2020, 2023
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -23,9 +23,10 @@ version_added: '1.0.0'
 short_description: Query job status
 description:
   - List z/OS job(s) and the current status of the job(s).
+  - Uses job_name to filter the jobs by the job name.
+  - Uses job_id to filter the jobs by the job identifier.
   - Uses owner to filter the jobs by the job owner.
   - Uses system to filter the jobs by system where the job is running (or ran) on.
-  - Uses job_id to filter the jobs by the job id.
 author:
   - "Ping Xiao (@xiaopingBJ)"
   - "Demetrios Dimatos (@ddimatos)"
@@ -33,7 +34,10 @@ author:
 options:
   job_name:
     description:
-       - The job name to query. Job name can now contain multiple embedded asterisks.
+       - The job name to query.
+       - A job name can be up to 8 characters long.
+       - The I(job_name) can contain include multiple wildcards.
+       - The asterisk (`*`) wildcard will match zero or more specified characters.
     type: str
     required: False
     default: "*"
@@ -46,41 +50,43 @@ options:
     required: False
   job_id:
     description:
-      - The job number that has been assigned to the job. These normally begin
-        with STC, JOB, TSU and are followed by 5 digits. When job are
-        potentially greater than 99,999, the job number format will begin with
-        S, J, T and are followed by 7 digits. Job id can now contain multiple,
-        embedded asterisks.
+      - The job id that has been assigned to the job.
+      - A job id begins must begin with `STC`, `JOB`, `TSU` and are
+        followed by up to 5 digits.
+      - When a job id is greater than 99,999, the job id format will begin
+        with `S`, `J`, `T` and are followed by 7 digits.
+      - The I(job_id) can contain include multiple wildcards.
+      - The asterisk (`*`) wildcard will match zero or more specified characters.
     type: str
     required: False
 """
 
 EXAMPLES = r"""
-- name: list zos jobs with a jobname 'IYK3ZNA1'
+- name: Query a job with a job name of 'JOB12345'
   zos_job_query:
-    job_name: "IYK3ZNA1"
+    job_name: "JOB12345"
 
-- name: list the jobs matching jobname 'IYK3*'
+- name: Query jobs using a wildcard to match any job id begging with 'JOB12'
   zos_job_query:
-    job_name: "IYK3*"
+    job_id: "JOB12*"
 
-- name: list the jobs that match 'IYKsomethingNAsomething'
+- name: Query jobs using wildcards to match any job name begging with 'H' and ending in 'O'.
   zos_job_query:
-    job_name: "IYK*NA*"
+    job_name: "H*O"
 
-- name: list the jobs with JOB in the x014x range only
+- name: Query jobs using a wildcards to match a range of job id(s) that include 'JOB' and '014'.
   zos_job_query:
-    job_idname: JOB*014*
+    job_id: JOB*014*
 
-- name: list the job with a jobname 'IYK3ZNA*' and jobid as JOB01427
+- name: Query all job names beginning wih 'H' that match job id range that include '14'.
   zos_job_query:
-    job_name: IYK3ZNA*
-    job_id: JOB01427
+    job_name: "H*"
+    job_id: "JOB*14*"
 
-- name: list the job with a jobname 'IYK3ZNA*' and owner as BROWNAD
+- name: Query all jobs names beginning with 'LINK' for owner 'ADMIN'.
   zos_job_query:
-    job_name: IYK3ZNA*
-    owner: BROWNAD
+    job_name: "LINK*"
+    owner: ADMIN
 """
 
 RETURN = r"""

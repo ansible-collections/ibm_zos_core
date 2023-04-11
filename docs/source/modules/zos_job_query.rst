@@ -153,16 +153,16 @@ jobs
     The name of the batch job.
 
     | **type**: str
-    | **sample**: IYK3ZNA2
+    | **sample**: LINKJOB
 
   owner
     The owner who ran the job.
 
     | **type**: str
-    | **sample**: BROWNAD
+    | **sample**: ADMIN
 
   job_id
-    Unique job id assigned to the job by JES.
+    Unique job identifier assigned to the job by JES.
 
     | **type**: str
     | **sample**: JOB01427

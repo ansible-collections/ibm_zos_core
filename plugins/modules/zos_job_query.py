@@ -314,11 +314,11 @@ def parsing_jobs(jobs_raw):
         # Easier to see than checking for an empty string, JOB NOT FOUND was
         # replaced with None in the jobs.py and msg_txt field describes the job query instead
         if job.get("ret_code") is None:
-            status_raw = "JOB NOT FOUNDa"
+            status_raw = "JOB NOT FOUND"
         elif job.get("ret_code").get("msg", "JOB NOT FOUND") is None:
-            status_raw = "JOB NOT FOUNDb"
+            status_raw = "JOB NOT FOUND"
         else:
-            status_raw = job.get("ret_code").get("msg", "JOB NOT FOUNDc")
+            status_raw = job.get("ret_code").get("msg", "JOB NOT FOUND")
 
         if "AC" in status_raw:
             # the job is active

@@ -78,7 +78,7 @@ EXAMPLES = r"""
   zos_job_query:
     job_id: JOB*014*
 
-- name: Query all job names beginning wih 'H' that match job id range that include '14'.
+- name: Query all job names beginning wih 'H' that match job id that includes '14'.
   zos_job_query:
     job_name: "H*"
     job_id: "JOB*14*"

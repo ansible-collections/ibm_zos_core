@@ -83,7 +83,7 @@ options:
   volid:
     description:
       - The volume serial number used to initialize a volume or minidisk.
-      - Expects 1-6 alphanumeric, national (`$`, `#`, `@`) or special characters.
+      - Expects 1-6 alphanumeric, national ($,#,@) or special characters.
       - A I(volid) with less than 6 characters will be padded with spaces.
       - A I(volid) can also be referred to as volser or volume serial number.
       - When I(volid) is not specified for a previously initialized volume or

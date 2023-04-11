@@ -90,13 +90,13 @@ def _job_not_found(job_id, owner, job_name, dd_name):
     job["subsystem"] = None
     job["system"] = None
     job["owner"] = owner
-    
+
     job["ret_code"] = {}
     job["ret_code"]["msg"] = None
     job["ret_code"]["code"] = None
     job["ret_code"]["msg_code"] = None
     job["ret_code"]["msg_txt"] = "The job {0} could not be found.".format((job_name if job_name != "*" else job_id).upper())
-    
+
     job["class"] = ""
     job["content_type"] = ""
 

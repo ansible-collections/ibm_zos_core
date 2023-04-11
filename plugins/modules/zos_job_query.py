@@ -318,7 +318,7 @@ def parsing_jobs(jobs_raw):
         elif job.get("ret_code").get("msg", "JOB NOT FOUND") is None:
             status_raw = "JOB NOT FOUNDb"
         else:
-          status_raw = job.get("ret_code").get("msg", "JOB NOT FOUNDc")
+            status_raw = job.get("ret_code").get("msg", "JOB NOT FOUNDc")
 
         if "AC" in status_raw:
             # the job is active

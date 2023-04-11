@@ -177,14 +177,14 @@ jobs:
   sample:
     [
         {
-            "job_name": "IYK3ZNA1",
-            "owner": "BROWNAD",
+            "job_name": "LINKJOB",
+            "owner": "ADMIN",
             "job_id": "JOB01427",
             "ret_code": "null",
         },
         {
-            "job_name": "IYK3ZNA2",
-            "owner": "BROWNAD",
+            "job_name": "LINKCBL",
+            "owner": "ADMIN",
             "job_id": "JOB16577",
             "ret_code": { "msg": "CANCELED", "code": "null" },
         },

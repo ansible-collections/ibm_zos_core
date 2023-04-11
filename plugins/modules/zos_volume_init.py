@@ -21,11 +21,24 @@ module: zos_volume_init
 short_description: Initialize volumes or minidisks.
 description:
   - Initialize a volume or minidisk on z/OS.
-  - I(zos_volume_init) will create the volume label and entry into the volume table of contents (VTOC).
+  - I(zos_volume_init) will create the volume label and entry into the volume
+    table of contents (VTOC).
   - Volumes are used for storing data and executable programs.
   - A minidisk is a portion of a disk that is linked to your virtual machine.
-  - A VTOC lists the data sets that reside on a volume, their location, size, and other attirbutes.
-  - I(zos_volume_init) uses the ICKDSF utility.
+  - A VTOC lists the data sets that reside on a volume, their location, size, and
+    other attributes.
+  - I(zos_volume_init) uses the ICKDSF command INIT to initialize a volume. In some
+    cases the command could be protected by facility class `STGADMIN.ICK.INIT`.
+    Protection occurs when the class is active, and the class profile is defined.
+    Ensure the user executing the Ansible task is permitted to execute
+    ICKDSF command INIT, otherwise, any user can use the command.
+  - ICKDSF is an Authorized Program Facility (APF) program on z/OS,
+    I(zos_volume_init) will run in authorized mode but if the program ICKDSF is
+    not APF authorized, the task will end.
+  - If is recommended that data on the volume is backed up as the I(zos_volume_init)
+    module will not perform any backups. You can use the
+    L(zos_backup_restore,./zos_backup_restore.html) module to backup a volume.
+
 version_added: 1.6.0
 author:
   - "Austen Stewart (@stewartad)"
@@ -39,35 +52,42 @@ author:
 options:
   address:
     description:
-      - I(address) is a 3 or 4 digit hexadecimal number that specifies the address of the volume or minidisk.
-      - I(address) can be the number assigned to the device (device number) when it is installed or the virtual address.
+      - I(address) is a 3 or 4 digit hexadecimal number that specifies the
+        address of the volume or minidisk.
+      - I(address) can be the number assigned to the device (device number)
+        when it is installed or the virtual address.
     required: true
     type: str
   verify_volid:
     description:
       - Verify that the volume serial matches what is on the existing volume or minidisk.
       - I(verify_volid) must be 1 to 6 alphanumeric characters or "*NONE*".
-      - To verify that a volume serial number does not exist, use I(verify_volid="*NONE*").
-      - If I(verify_volid) is specified and the volume serial number does not match that found on the volume or minidisk, initialization does not complete.
-      - If I(verify_volid="*NONE*") is specified and a volume serial is found on the volume or minidisk, initialization does not complete.
-      - Note - This option is NOT a boolean, please leave it blank in order to skip the verification. # TODO
+      - To verify that a volume serial number does not exist, use
+        I(verify_volid="*NONE*").
+      - If I(verify_volid) is specified and the volume serial number does not
+        match that found on the volume or minidisk, initialization does not complete.
+      - If I(verify_volid="*NONE*") is specified and a volume serial is found on
+        the volume or minidisk, initialization does not complete.
+      - Note - This option is NOT a boolean, please leave it blank in order to
+        skip the verification.
     required: false
     type: str
   verify_offline:
     description:
-      - Verify that the device is not online to any other systems, initialization does not complete.
-      - Beware, defaults set on target z/OS systems may override ICKDSF parameters. # TODO
+      - Verify that the device is not online to any other systems, initialization
+        does not complete.
+      - Beware, defaults set on target z/OS systems may override ICKDSF parameters.
     type: bool
     required: false
     default: true
   volid:
     description:
       - The volume serial number used to initialize a volume or minidisk.
-      - Expects 1-6 alphanumeric, national ($, \\#, \\@) or special characters.
+      - Expects 1-6 alphanumeric, national ($, `#`, @) or special characters.
       - A I(volid) with less than 6 characters will be padded with spaces.
-      - Characters are not validated so check with operating system guide for valid alphanumeric characters.
       - A I(volid) can also be referred to as volser or volume serial number.
-      - When I(volid) is not specified for a previously initialized volume or minidisk, the volume serial number will remain unchanged.
+      - When I(volid) is not specified for a previously initialized volume or
+        minidisk, the volume serial number will remain unchanged.
     required: false
     type: str
   vtoc_size:
@@ -82,14 +102,14 @@ options:
     description:
       - Create a volume table of contents (VTOC) index.
       - The VTOC index enhances the performance of VTOC access.
-      - When set to C(false), no index will be created.
+      - When set to I(false), no index will be created.
     required: false
     type: bool
     default: true
   sms_managed:
     description:
       - Specifies that hte volume be managed by Storage Management System (SMS).
-      - If I(sms_managed) is C(true) then I(index) must also be C(true).
+      - If I(sms_managed) is I(true) then I(index) must also be I(true).
     type: bool
     required: false
     default: true
@@ -100,6 +120,8 @@ options:
     required: false
     type: bool
     default: true
+seealso:
+- module: zos_backup_restore
 """
 EXAMPLES = r"""
 - name: Initialize target volume with all default options. Target volume address is '1234', set volume name to 'DEMO01'.
@@ -143,16 +165,6 @@ EXAMPLES = r"""
   loop: "{{ range(1, 4, 1) }}"
 """
 RETURN = r"""
-cmd:
-  description: INIT command issued to ICKDSF tool.
-  returned: success
-  type: list
-  elements: str
-  sample:
-      [
-        " init unit(0903) noverify noverifyoffline volid(DEMO08) - ",
-        "   nods noindex",
-      ]
 msg:
   description: Failure message returned by module.
   returned: failure
@@ -160,13 +172,13 @@ msg:
   sample: "'Index' cannot be False for SMS managed volumes."
 rc:
   description:
-    - Return code from ICKDSF init mvs command.
+    - Return code from ICKDSF init command.
   type: dict
-  returned: when ICKDSF init command is issued.
+  returned: when ICKDSF program is run.
 content:
   description:
     - Raw output from ICKDSF.
-  returned: when ICKDSF init command is issued.
+  returned: when ICKDSF program is run.
   type: list
   elements: str
   sample:

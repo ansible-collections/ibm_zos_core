@@ -109,8 +109,6 @@ def init(module, result, parsed_args):
 
     # TODO - add error handling here and in get_init_command() for "bad" cmd
 
-    result['cmd'] = cmd  # add raw command to result -- good for debugging
-
     # format into MVS Command
     sysprintDDStatement = DDStatement("SYSPRINT", StdoutDefinition())
     sysInDDStatement = DDStatement("SYSIN", StdinDefinition(cmd))
@@ -132,7 +130,7 @@ def init(module, result, parsed_args):
     if rc != 0:
         result['failed'] = True
         # result['msg'] = "INIT Failed with return code {}".format(rc)
-        msg = "Non-zero return code. See 'content' for details"
+        msg = "Non-zero return code. See 'content' for details."
         module.fail_json(msg=msg, **result)
     else:
         result['changed'] = True

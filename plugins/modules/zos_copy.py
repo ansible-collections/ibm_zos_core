@@ -931,15 +931,20 @@ class CopyHandler(object):
             {bool} -- True if the file uses CRLF endings, False if it uses LF
                       ones.
         """
+        # Python has to read the file in binary mode to not mask CRLF
+        # endings or enable universal newlines. If we used encoding="cp037",
+        # we would get '\n' as the line ending even when the file uses '\r\n'.
         with open(src, "rb") as src_file:
-            # readline() will read until it finds a \n.
-            content = src_file.readline()
+            # Reading the file in 1024-byte chunks.
+            content = src_file.read(1024)
 
-        # In EBCDIC, \r\n are bytes 0d and 15, respectively.
-        if content.endswith(b'\x0d\x15'):
-            return True
-        else:
-            return False
+            while content:
+                # In EBCDIC, \r\n are bytes 0d and 15, respectively.
+                if b'\x0d\x15' in content:
+                    return True
+                content = src_file.read(1024)
+
+        return False
 
     def create_temp_with_lf_endings(self, src):
         """Creates a temporary file with the same content as src but without
@@ -960,10 +965,11 @@ class CopyHandler(object):
 
             with open(converted_src, "wb") as converted_file:
                 with open(src, "rb") as src_file:
-                    current_line = src_file.read()
-                    converted_file.write(current_line.replace(b'\x0d', b''))
+                    chunk = src_file.read(1024)
+                    # In IBM-037, \r is the byte 0d.
+                    converted_file.write(chunk.replace(b'\x0d', b''))
 
-            self._tag_file_encoding(converted_src, encode.Defaults.DEFAULT_EBCDIC_MVS_CHARSET)
+            self._tag_file_encoding(converted_src, "IBM-037")
 
             return converted_src
         except Exception as err:
@@ -1319,6 +1325,7 @@ class PDSECopyHandler(CopyHandler):
         src_ds_type,
         src_member=None,
         dest_member=None,
+        encoding=None,
     ):
         """Copy source to a PDS/PDSE or PDS/PDSE member.
 
@@ -1328,12 +1335,13 @@ class PDSECopyHandler(CopyHandler):
         Arguments:
             src {str} -- Path to USS file/directory or data set name.
             temp_path {str} -- Path to the location where the control node
-                               transferred data to
+                               transferred data to.
             conv_path {str} -- Path to the converted source file/directory
-            dest {str} -- Name of destination data set
-            src_ds_type {str} -- The type of source
+            dest {str} -- Name of destination data set.
+            src_ds_type {str} -- The type of source.
             src_member {bool, optional} -- Member of the source data set to copy.
-            dest_member {str, optional} -- Name of destination member in data set
+            dest_member {str, optional} -- Name of destination member in data set.
+            encoding {dict, optional} -- Dictionary with encoding options.
         """
         new_src = conv_path or temp_path or src
 
@@ -1351,6 +1359,9 @@ class PDSECopyHandler(CopyHandler):
                     dest_copy_name = "{0}({1})".format(dest, dest_member)
                 else:
                     dest_copy_name = "{0}({1})".format(dest, data_set.DataSet.get_member_name_from_file(file))
+
+                if not self.is_binary:
+                    full_file_path = normalize_line_endings(full_file_path, encoding)
 
                 result = self.copy_to_member(full_file_path, dest_copy_name)
 
@@ -1459,7 +1470,7 @@ def get_file_record_length(file):
     """
     max_line_length = 0
 
-    with open(file, "r") as src_file:
+    with open(file, "r", encoding="utf-8") as src_file:
         current_line = src_file.readline()
 
         while current_line:
@@ -2021,6 +2032,51 @@ def allocate_destination_data_set(
     return True
 
 
+def normalize_line_endings(src, encoding=None):
+    """
+    Normalizes src's encoding to IBM-037 (a dataset's default) and then normalizes
+    its line endings to LF.
+    Arguments:
+        src (str) -- Path of a USS file.
+        encoding (dict, optional) -- Encoding options for the module.
+    Returns:
+        str -- Path to the normalized file.
+    """
+    # Before copying into a destination dataset, we'll make sure that
+    # the source file doesn't contain any carriage returns that would
+    # result in empty records in the destination.
+    # Due to the differences between encodings, we'll normalize to IBM-037
+    # before checking the EOL sequence.
+    enc_utils = encode.EncodeUtils()
+    src_tag = enc_utils.uss_file_tag(src)
+    copy_handler = CopyHandler(AnsibleModuleHelper(dict()))
+
+    if src_tag == "untagged":
+        # This should only be true when src is a remote file and no encoding
+        # was specified by the user.
+        if not encoding:
+            encoding = {"from": encode.Defaults.get_default_system_charset()}
+        src_tag = encoding["from"]
+
+    if src_tag != "IBM-037":
+        fd, converted_src = tempfile.mkstemp()
+        os.close(fd)
+
+        enc_utils.uss_convert_encoding(
+            src,
+            converted_src,
+            src_tag,
+            "IBM-037"
+        )
+        copy_handler._tag_file_encoding(converted_src, "IBM-037")
+        src = converted_src
+
+    if copy_handler.file_has_crlf_endings(src):
+        src = copy_handler.create_temp_with_lf_endings(src)
+
+    return src
+
+
 def run_module(module, arg_def):
     # ********************************************************************
     # Verify the validity of module args. BetterArgParser raises ValueError
@@ -2102,6 +2158,7 @@ def run_module(module, arg_def):
     # and destination datasets, if needed.
     # ********************************************************************
     dest_member_exists = False
+    converted_src = None
     try:
         # If temp_path, the plugin has copied a file from the controller to USS.
         if temp_path or "/" in src:
@@ -2109,6 +2166,35 @@ def run_module(module, arg_def):
 
             if remote_src and os.path.isdir(src):
                 is_src_dir = True
+
+            if not is_uss:
+                new_src = temp_path or src
+                new_src = os.path.normpath(new_src)
+                # Normalizing encoding when src is a USS file (only).
+                encode_utils = encode.EncodeUtils()
+                src_tag = encode_utils.uss_file_tag(new_src)
+                # Normalizing to UTF-8.
+                if not is_src_dir and src_tag != "UTF-8":
+                    # If untagged, assuming the encoding/tag is the system's default.
+                    if src_tag == "untagged" or src_tag is None:
+                        if encoding:
+                            src_tag = encoding["from"]
+                        else:
+                            src_tag = encode.Defaults.get_default_system_charset()
+
+                    # Converting the original src to a temporary one in UTF-8.
+                    fd, converted_src = tempfile.mkstemp()
+                    os.close(fd)
+                    encode_utils.uss_convert_encoding(
+                        new_src,
+                        converted_src,
+                        src_tag,
+                        "UTF-8"
+                    )
+
+                    # Creating the handler just for tagging, we're not copying yet!
+                    copy_handler = CopyHandler(module, is_binary=is_binary)
+                    copy_handler._tag_file_encoding(converted_src, "UTF-8")
         else:
             if data_set.DataSet.data_set_exists(src_name):
                 if src_member and not data_set.DataSet.data_set_member_exists(src):
@@ -2284,6 +2370,14 @@ def run_module(module, arg_def):
             emergency_backup = data_set.DataSet.temp_name()
             data_set.DataSet.allocate_model_data_set(emergency_backup, dest_name)
 
+    if converted_src:
+        if remote_src:
+            original_src = src
+            src = converted_src
+        else:
+            original_temp = temp_path
+            temp_path = converted_src
+
     try:
         if not is_uss:
             res_args["changed"] = allocate_destination_data_set(
@@ -2300,7 +2394,18 @@ def run_module(module, arg_def):
         if dest_exists and not force:
             restore_backup(dest_name, emergency_backup, dest_ds_type, use_backup)
             erase_backup(emergency_backup, dest_ds_type)
+        if converted_src:
+            if remote_src:
+                src = original_src
+            else:
+                temp_path = original_temp
         module.fail_json(msg="Unable to allocate destination data set: {0}".format(str(err)))
+
+    if converted_src:
+        if remote_src:
+            src = original_src
+        else:
+            temp_path = original_temp
 
     # ********************************************************************
     # Encoding conversion is only valid if the source is a local file,
@@ -2370,35 +2475,8 @@ def run_module(module, arg_def):
         # ---------------------------------------------------------------------
         elif dest_ds_type in data_set.DataSet.MVS_SEQ:
             if src_ds_type == "USS" and not is_binary:
-                # Before copying into the destination dataset, we'll make sure that
-                # the source file doesn't contain any carriage returns that would
-                # result in empty records in the destination.
-                # Due to the differences between encodings, we'll normalize to IBM-037
-                # before checking the EOL sequence.
                 new_src = conv_path or temp_path or src
-                enc_utils = encode.EncodeUtils()
-                src_tag = enc_utils.uss_file_tag(new_src)
-
-                if src_tag == "untagged":
-                    src_tag = encode.Defaults.DEFAULT_EBCDIC_USS_CHARSET
-
-                if src_tag not in encode.Defaults.DEFAULT_EBCDIC_MVS_CHARSET:
-                    fd, converted_src = tempfile.mkstemp()
-                    os.close(fd)
-
-                    enc_utils.uss_convert_encoding(
-                        new_src,
-                        converted_src,
-                        src_tag,
-                        encode.Defaults.DEFAULT_EBCDIC_MVS_CHARSET
-                    )
-                    copy_handler._tag_file_encoding(converted_src, encode.Defaults.DEFAULT_EBCDIC_MVS_CHARSET)
-                    new_src = converted_src
-
-                if copy_handler.file_has_crlf_endings(new_src):
-                    new_src = copy_handler.create_temp_with_lf_endings(new_src)
-
-                conv_path = new_src
+                conv_path = normalize_line_endings(new_src, encoding)
 
             copy_handler.copy_to_seq(
                 src,
@@ -2421,7 +2499,14 @@ def run_module(module, arg_def):
             )
 
             pdse_copy_handler.copy_to_pdse(
-                src, temp_path, conv_path, dest_name, src_ds_type, src_member=src_member, dest_member=dest_member
+                src,
+                temp_path,
+                conv_path,
+                dest_name,
+                src_ds_type,
+                src_member=src_member,
+                dest_member=dest_member,
+                encoding=encoding
             )
             res_args["changed"] = True
             dest = dest.upper()

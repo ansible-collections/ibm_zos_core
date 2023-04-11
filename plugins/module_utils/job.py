@@ -92,10 +92,10 @@ def _job_not_found(job_id, owner, job_name, dd_name):
     job["owner"] = owner
 
     job["ret_code"] = {}
-    job["ret_code"]["msg"] = "{0} JOB NOT FOUND".format(job_name.upper())
+    job["ret_code"]["msg"] = None
     job["ret_code"]["code"] = None
-    job["ret_code"]["msg_code"] = "{0} NOT FOUND".format(job_name.upper())
-    job["ret_code"]["msg_txt"] = "The job {0} could not be found.".format(job_name.upper())
+    job["ret_code"]["msg_code"] = None
+    job["ret_code"]["msg_txt"] = "The job could not be found."
 
     job["class"] = ""
     job["content_type"] = ""

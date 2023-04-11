@@ -111,7 +111,15 @@ def init(module, result, parsed_args):
 
     # format into MVS Command
     sysprintDDStatement = DDStatement("SYSPRINT", StdoutDefinition())
-    sysInDDStatement = DDStatement("SYSIN", StdinDefinition(cmd))
+
+    if parsed_args.get('tmp_hlq'):
+        sysInDDStatement = DDStatement("SYSIN", StdinDefinition(cmd, tmphlq=parsed_args.get('tmp_hlq')))
+        # uncomment the following line to see MVSCmd verbose output in stderr.
+        # sysInDDStatement = DDStatement("SYSIN", StdinDefinition(cmd, tmphlq=parsed_args.get('tmp_hlq', verbose=True)))
+    else:
+        sysInDDStatement = DDStatement("SYSIN", StdinDefinition(cmd))
+        # uncomment the following line to see MVSCmd verbose output in stderr.
+        # sysInDDStatement = DDStatement("SYSIN", StdinDefinition(cmd), verbose=True)
 
     dds = []
     dds.append(sysprintDDStatement)
@@ -129,7 +137,6 @@ def init(module, result, parsed_args):
 
     if rc != 0:
         result['failed'] = True
-        # result['msg'] = "INIT Failed with return code {}".format(rc)
         msg = "Non-zero return code. See 'content' for details."
         module.fail_json(msg=msg, **result)
     else:

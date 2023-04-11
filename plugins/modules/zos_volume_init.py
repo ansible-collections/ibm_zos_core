@@ -120,6 +120,14 @@ options:
     required: false
     type: bool
     default: true
+  tmp_hlq:
+    description:
+      - Override the default high level qualifier (HLQ) for temporary and backup
+        datasets.
+      - The default HLQ is the Ansible user used to execute the module and if
+        that is not available, then the value C(TMPHLQ) is used.
+    required: false
+    type: str
 seealso:
 - module: zos_backup_restore
 """
@@ -143,6 +151,14 @@ EXAMPLES = r"""
     address: "1234"
     volid: "DEMO01"
     sms_managed: no
+
+- name: Initialize non-SMS managed target volume with all the default options and
+        override the default high level qualifier (HLQ).
+  zos_volume_init:
+    address: 1234
+    volid: DEMO01
+    sms_managed: no
+    tmp_hlq: TESTUSR
 
 - name: Initialize a new SMS managed DASD volume with new volume serial 'e8d8' with 30 track VTOC, an index, as long as
         the existing volume serial is 'ine8d8' and there are no pre-existing data sets on the target. The check to see
@@ -224,6 +240,8 @@ def run_module():
         index=dict(type="bool", required=False, default=True),
         sms_managed=dict(type="bool", required=False, default=True),
         verify_volume_empty=dict(type="bool", required=False, default=True),
+        # tmp_hlq=dict(type='qualifier_or_empty', required=False, default=None), # TODO
+        tmp_hlq=dict(type='str', required=False, default=None),
     )
 
     result = dict(

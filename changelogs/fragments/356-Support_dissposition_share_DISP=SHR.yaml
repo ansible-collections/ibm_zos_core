@@ -1,0 +1,3 @@
+minor_changes:
+- zos_lineinfile - was enhanced to acces/modified a member of a PDSE 
+  while another mebers is held by a starte tastk 

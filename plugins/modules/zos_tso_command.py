@@ -224,7 +224,10 @@ def run_module():
             tmp_string = 'Command "' + cmd.get("command", "") + '" execution'
             if cmd.get("rc") > max_rc:
                 errors_found = True
-                result_list.append(tmp_string + "failed.  RC was {0}; max_rc was {1}".format(cmd.get("rc"), max_rc))
+                if max_rc > 0:
+                    result_list.append(tmp_string + "failed.  RC was {0}; max_rc was {1}".format(cmd.get("rc"), max_rc))
+                else:
+                    result_list.append(tmp_string + "failed.  RC was {0}.".format(cmd.get("rc")))
             else:
                 result_list.append(tmp_string + "succeeded.  RC was {0}.".format(cmd.get("rc")))
 

@@ -1846,8 +1846,8 @@ def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module,):
             assert result.get("rc") == 0
 
         copy_res = hosts.all.zos_copy(
-            src="{0}({1})".format(src_name, member), 
-            dest="{0}({1})".format(dest_name, "MEM1"), 
+            src="{0}({1})".format(src, member), 
+            dest="{0}({1})".format(dest, "MEM1"), 
             remote_src=True)
 
         verify_copy = hosts.all.shell(

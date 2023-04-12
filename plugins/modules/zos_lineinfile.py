@@ -175,12 +175,16 @@ options:
     default: IBM-1047
   force:
     description:
-      - The case of a member of a PDSE held by a started task
-        other members cannot be acces/modified but is requiere for another
-        member from the same PDSE allow to work.
+      - Specifies that the data set can be shared with others during an update
+        which results in the data set you are updating to be simultaneously
+        updated by others.
+      - This is helpful when a data set is being used in a long running process
+        such as a started task and you are wanting to update or read.
+      - The C(force) option enables sharing of data sets through the disposition
+        I(DISP=SHR).
     required: false
     type: bool
-    default: False
+    default: false
 notes:
   - It is the playbook author or user's responsibility to avoid files
     that should not be encoded, such as binary files. A user is described

@@ -135,6 +135,16 @@ export PKG_CONFIG_PATH
 export PYTHON_HOME
 export _BPXK_AUTOCVT"""
 
+TEST_CONTENT_DOUBLEQUOTES = """//BPXSLEEP JOB MSGCLASS=A,MSGLEVEL=(1,1),NOTIFY=&SYSUID,REGION=0M
+//USSCMD EXEC PGM=BPXBATCH
+//STDERR  DD SYSOUT=*
+//STDOUT  DD SYSOUT=*
+//STDPARM DD *
+SH ls -la /;
+sleep 30;
+/*
+//"""
+
 # supported data set types
 # DS_TYPE = ['SEQ', 'PDS', 'PDSE']
 DS_TYPE = ['SEQ']
@@ -206,6 +216,9 @@ TEST_INFO = dict(
     test_uss_block_insert_with_indentation_level_specified=dict(
         insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR",
         state="present", indentation=16),
+    test_uss_block_insert_with_doublequotes=dict(
+        insertafter="sleep 30;", block='cat \"//OMVSADMI.CAT\"\ncat \"//OMVSADM.COPYMEM.TESTS\" > test.txt', 
+        marker="// {mark} ANSIBLE MANAGED BLOCK",state="present"),
     test_ds_block_insertafter_regex=dict(test_name="T1"),
     test_ds_block_insertbefore_regex=dict(test_name="T2"),
     test_ds_block_insertafter_eof=dict(test_name="T3"),
@@ -274,6 +287,19 @@ export PYTHONPATH
 export PKG_CONFIG_PATH
 export PYTHON_HOME
 export _BPXK_AUTOCVT""",
+                  test_uss_block_insert_with_doublequotes="""//BPXSLEEP JOB MSGCLASS=A,MSGLEVEL=(1,1),NOTIFY=&SYSUID,REGION=0M
+//USSCMD EXEC PGM=BPXBATCH
+//STDERR  DD SYSOUT=*
+//STDOUT  DD SYSOUT=*
+//STDPARM DD *
+SH ls -la /;
+sleep 30;
+// BEGIN ANSIBLE MANAGED BLOCK
+cat "//OMVSADMI.CAT"
+cat "//OMVSADM.COPYMEM.TESTS" > test.txt
+// END ANSIBLE MANAGED BLOCK
+/*
+//""",
                   test_uss_block_insertbefore_regex_defaultmarker="""if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -1185,6 +1211,15 @@ def test_uss_block_insert_with_indentation_level_specified(ansible_zos_module):
 
 
 @pytest.mark.uss
+def test_uss_block_insert_with_doublequotes(ansible_zos_module):
+    TEST_ENV["TEST_CONT"] = TEST_CONTENT_DOUBLEQUOTES
+    UssGeneral(
+        "test_uss_block_insert_with_doublequotes", ansible_zos_module,TEST_ENV, 
+        TEST_INFO["test_uss_block_insert_with_doublequotes"],
+        TEST_INFO["expected"]["test_uss_block_insert_with_doublequotes"])
+    TEST_ENV["TEST_CONT"] = TEST_CONTENT
+
+@pytest.mark.uss
 def test_uss_block_insertafter_eof_with_backup(ansible_zos_module):
     try:
         backup_name = USS_BACKUP_FILE
@@ -1541,4 +1576,4 @@ def test_ds_block_insertafter_regex_fail(ansible_zos_module, dstype):
     DsGeneralForceFail(
         ansible_zos_module, TEST_ENV,
         TEST_INFO["test_ds_block_insertafter_regex_force_fail"],
-    ) 
+    )

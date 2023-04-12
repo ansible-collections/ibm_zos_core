@@ -1,23 +1,20 @@
 name: Enabler task
-description: Identify a development task that does not correspond to other git issue types, eg this could be an enabler task.
+description: |
+    Identify a development task that does not correspond to other git issue types, eg this could be a pipeline task.
+    Complete all required fields. 
 title: "[Enabler] <title> "
 labels: [Enabler]
 assignees:
   - IBMAnsibleHelper
 body:
-  - type: markdown
+  - type: checkboxes
+    id: existing-issue
     attributes:
-      value: |
-        Before authoring a task, please review existing isssues to avoid duplication.
-        ---
-  - type: textarea
-    id: issue-description
-    attributes:
-      label: Enabler description
-      description: Describe the task, this is the equivilant of a agile story.
-      placeholder: Verbosity is encouraged, the more you share the better for us to understand.
-    validations:
-      required: true
+      label: Is there an existing issue for this?
+      description: Please search to see if an issue already exists for the bug you encountered.
+      options:
+        - label: There are no existing issues.
+          required: true
   - type: dropdown
     id: modules
     attributes:
@@ -46,3 +43,11 @@ body:
         - zos_tso_command
     validations:
       required: false
+  - type: textarea
+    id: issue-description
+    attributes:
+      label: Enabler description
+      description: Describe the task, this is the equivalent of a agile story.
+      placeholder: Verbosity is encouraged, the more you share the better for us to understand.
+    validations:
+      required: true

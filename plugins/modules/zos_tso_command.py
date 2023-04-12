@@ -223,14 +223,8 @@ def run_module():
         for cmd in result.get("output"):
             tmp_string = 'Command "' + cmd.get("command", "") + '" execution'
             if cmd.get("rc") > max_rc:
-                # module.fail_json(
-                #     msg='The TSO command "'
-                #     + cmd.get("command", "")
-                #     + '" execution failed.  RC was {0}; Max RC was {1}.'.format(cmd.get("rc"), max_rc),
-                #     **result
-                # )
                 errors_found = True
-                result_list.append(tmp_string + "failed.  RC was {0}; Max RC was {1}".format(cmd.get("rc"), max_rc))
+                result_list.append(tmp_string + "failed.  RC was {0}; max_rc was {1}".format(cmd.get("rc"), max_rc))
             else:
                 result_list.append(tmp_string + "succeeded.  RC was {0}.".format(cmd.get("rc")))
 

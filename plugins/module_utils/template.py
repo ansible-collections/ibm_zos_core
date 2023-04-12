@@ -20,6 +20,7 @@ from os import path
 from ansible.module_utils._text import to_bytes, to_native
 from jinja2 import Environment, FileSystemLoader, TemplateNotFound, TemplateError
 
+
 class TemplateRenderer:
     """This class implements functionality to load and render Jinja2
     templates. To add support for Jinja2 in a module, you need to include
@@ -40,19 +41,19 @@ class TemplateRenderer:
         self,
         template_path,
         encoding,
-        variable_start_string = "{{",
-        variable_end_string = "}}",
-        block_start_string = "{%",
-        block_end_string = "%}",
-        comment_start_string = "{#",
-        comment_end_string = "#}",
-        line_statement_prefix = None,
-        line_comment_prefix = None,
-        lstrip_blocks = False,
-        trim_blocks = True,
-        keep_trailing_newline = False,
-        newline_sequence = "\n",
-        auto_reload = False,
+        variable_start_string="{{",
+        variable_end_string="}}",
+        block_start_string="{%",
+        block_end_string="%}",
+        comment_start_string="{#",
+        comment_end_string="#}",
+        line_statement_prefix=None,
+        line_comment_prefix=None,
+        lstrip_blocks=False,
+        trim_blocks=True,
+        keep_trailing_newline=False,
+        newline_sequence="\n",
+        auto_reload=False,
     ):
         """Initializes a new TemplateRenderer object with a Jinja2
         environment that can use templates from a given directory.

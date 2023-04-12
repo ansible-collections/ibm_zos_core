@@ -476,7 +476,7 @@ def _create_template_environment(template_parameters, src, encoding):
     template_parameters["keep_trailing_newline"] = _process_boolean(template_parameters.get("keep_trailing_newline"), default=False)
     template_parameters["auto_reload"] = _process_boolean(template_parameters.get("auto_reload"), default=False)
 
-    if encoding: #and encoding.get("from"):
+    if encoding:
         template_encoding = encoding.get("from")
     else:
         template_encoding = encode.Defaults.get_default_system_charset()

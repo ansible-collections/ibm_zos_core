@@ -1,7 +1,6 @@
-#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2022
+# Copyright (c) IBM Corporation 2022, 2023
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -63,12 +62,12 @@ options:
         description:
           - Marker for the beginning of a comment in Jinja2
         type: str
-        default: '{\#'
+        default: '{#'
       comment_end_string:
         description:
           - Marker for the end of a comment in Jinja2
         type: str
-        default: '\#}'
+        default: '#}'
       line_statement_prefix:
         description:
           - Prefix used by Jinja2 to identify line-based statements.
@@ -100,11 +99,11 @@ options:
         description:
           - Sequence that starts a newline in a template.
         type: str
-        default: '\n'
+        default: "\n"
         choices:
-          - '\n'
-          - '\r'
-          - '\r\n'
+          - "\n"
+          - "\r"
+          - "\r\n"
       auto_reload:
         description:
           - Whether to reload a template file when it has changed after the task

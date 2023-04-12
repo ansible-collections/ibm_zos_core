@@ -336,7 +336,8 @@ def data_set_filter(module, pds_paths, patterns):
         rc, out, err = _dls_wrapper(pattern, list_details=True)
         if rc != 0:
             if "BGYSC1103E" in err:
-                return filtered_data_sets
+                # return filtered_data_sets
+                continue
 
             module.fail_json(
                 msg="Non-zero return code received while executing ZOAU shell command 'dls'",

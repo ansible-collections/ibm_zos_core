@@ -1,4 +1,0 @@
-minor_changes:
-- zos_lineinfile - was enhanced to acces/modified a member of a PDSE 
-  while another mebers is held by a started task
-  (https://github.com/ansible-collections/ibm_zos_core/pull/731)

@@ -2172,34 +2172,34 @@ def run_module(module, arg_def):
             if remote_src and os.path.isdir(src):
                 is_src_dir = True
 
-            if remote_src:
-                src = os.path.normpath(src)
-            else:
-                temp_path = os.path.normpath(temp_path)
+            if not is_uss:
+                new_src = temp_path or src
+                new_src = os.path.normpath(new_src)
+                # Normalizing encoding when src is a USS file (only).
+                encode_utils = encode.EncodeUtils()
+                src_tag = encode_utils.uss_file_tag(new_src)
+                # Normalizing to UTF-8.
+                if not is_src_dir and src_tag != "UTF-8":
+                    # If untagged, assuming the encoding/tag is the system's default.
+                    if src_tag == "untagged" or src_tag is None:
+                        if encoding:
+                            src_tag = encoding["from"]
+                        else:
+                            src_tag = encode.Defaults.get_default_system_charset()
 
-            new_src = temp_path or src
-            # Normalizing encoding when src is a USS file (only).
-            encode_utils = encode.EncodeUtils()
-            src_tag = encode_utils.uss_file_tag(new_src)
-            # Normalizing to UTF-8.
-            if not is_src_dir and src_tag != "UTF-8":
-                # If untagged, assuming the encoding/tag is the system's default.
-                if src_tag == "untagged" or src_tag is None:
-                    src_tag = encode.Defaults.get_default_system_charset()
+                    # Converting the original src to a temporary one in UTF-8.
+                    fd, converted_src = tempfile.mkstemp()
+                    os.close(fd)
+                    encode_utils.uss_convert_encoding(
+                        new_src,
+                        converted_src,
+                        src_tag,
+                        "UTF-8"
+                    )
 
-                # Converting the original src to a temporary one in UTF-8.
-                fd, converted_src = tempfile.mkstemp()
-                os.close(fd)
-                encode_utils.uss_convert_encoding(
-                    new_src,
-                    converted_src,
-                    src_tag,
-                    "UTF-8"
-                )
-
-                # Creating the handler just for tagging, we're not copying yet!
-                copy_handler = CopyHandler(module, is_binary=is_binary)
-                copy_handler._tag_file_encoding(converted_src, "UTF-8")
+                    # Creating the handler just for tagging, we're not copying yet!
+                    copy_handler = CopyHandler(module, is_binary=is_binary)
+                    copy_handler._tag_file_encoding(converted_src, "UTF-8")
         else:
             if data_set.DataSet.data_set_exists(src_name):
                 if src_member and not data_set.DataSet.data_set_member_exists(src):

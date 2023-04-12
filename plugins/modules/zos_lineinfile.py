@@ -231,7 +231,7 @@ EXAMPLES = r"""
   zos_lineinfile:
     src: "{{ DATASET_NAME }}(MEM3)"
     insertafter: EOF
-    line: 'Should be working know Mothefucker'
+    line: 'Should be a working test now'
     force: True
 
 """

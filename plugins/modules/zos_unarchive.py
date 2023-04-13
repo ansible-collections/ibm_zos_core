@@ -378,12 +378,6 @@ def run_module():
             ['include', 'exclude'],
         ]
     )
-    
-    result = dict(
-        changed=False,
-        original_message='',
-        message=''
-    )
 
     try:
         parser = better_arg_parser.BetterArgParser(arg_defs)

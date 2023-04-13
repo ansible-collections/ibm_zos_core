@@ -1248,7 +1248,7 @@ def test_uss_block_insertafter_eof_with_backup_name(ansible_zos_module):
             for result in results.contacted.values():
                 assert result.get("stdout") == TEST_ENV["TEST_CONT"]
     finally:
-        ansible_zos_module.all.file(path=USS_BACKUP_FILE, state="absent") 
+        ansible_zos_module.all.file(path=USS_BACKUP_FILE, state="absent")
 
 
 #########################
@@ -1508,15 +1508,15 @@ def test_ds_block_insertafter_eof_with_backup(ansible_zos_module, dstype, encodi
         ansible_zos_module.all.zos_data_set(name=backup_ds_name, state="absent")
 
 
-#@pytest.mark.ds
-#@pytest.mark.parametrize("dstype", DS_TYPE)
-#def test_ds_block_insertafter_regex_force(ansible_zos_module, dstype):
-#    TEST_ENV["DS_TYPE"] = dstype
-#    DsGeneralForce(
-#        ansible_zos_module, TEST_ENV,
-#        TEST_INFO["test_ds_block_insertafter_regex_force"],
-#        TEST_INFO["expected"]["test_uss_block_insertafter_regex_defaultmarker"]
-#    )
+@pytest.mark.ds
+@pytest.mark.parametrize("dstype", DS_TYPE)
+def test_ds_block_insertafter_regex_force(ansible_zos_module, dstype):
+    TEST_ENV["DS_TYPE"] = dstype
+    DsGeneralForce(
+        ansible_zos_module, TEST_ENV,
+        TEST_INFO["test_ds_block_insertafter_regex_force"],
+        TEST_INFO["expected"]["test_uss_block_insertafter_regex_defaultmarker"]
+    )
     
 
 #########################

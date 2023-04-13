@@ -192,8 +192,6 @@ def DsGeneralForce(ansible_zos_module, test_env, test_text, test_info, expected)
     MEMBER_1, MEMBER_2 = "MEM1", "MEM2"
     hosts = ansible_zos_module
     test_info["path"] = DEFAULT_DATA_SET_NAME+"({0})".format(MEMBER_2)
-    if test_env["ENCODING"]:
-        test_info["encoding"] = test_env["ENCODING"]
     try:
         # set up:
         # create pdse
@@ -258,8 +256,6 @@ def DsGeneralForceFail(ansible_zos_module, test_env, test_info):
     MEMBER_1, MEMBER_2 = "MEM1", "MEM2"
     hosts = ansible_zos_module
     test_info["path"] = DEFAULT_DATA_SET_NAME+"({0})".format(MEMBER_2)
-    if test_env["ENCODING"]:
-        test_info["encoding"] = test_env["ENCODING"]
     try:
         # set up:
         # create pdse
@@ -297,7 +293,7 @@ def DsGeneralForceFail(ansible_zos_module, test_env, test_info):
         results = hosts.all.zos_lineinfile(**test_info)
         pprint(vars(results))
         for result in results.contacted.values():
-            assert result.get("changed") == 0
+            assert result.get("changed") == False
             assert result.get("failed") == True
     finally:
         # extract pid

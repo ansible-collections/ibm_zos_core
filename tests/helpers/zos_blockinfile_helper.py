@@ -188,8 +188,6 @@ def DsGeneralResultKeyMatchesRegex(test_name, ansible_zos_module, test_env, test
 def DsGeneralForce(ansible_zos_module, test_env, test_info, expected):
     MEMBER_1, MEMBER_2 = "MEM1", "MEM2"
     hosts = ansible_zos_module
-    if test_env["ENCODING"]:
-        test_info["encoding"] = test_env["ENCODING"]
     test_info["path"] = DEFAULT_DATA_SET_NAME+"({0})".format(MEMBER_2)
     try:
         # set up:
@@ -233,7 +231,7 @@ def DsGeneralForce(ansible_zos_module, test_env, test_info, expected):
         blockinfile_results = hosts.all.zos_blockinfile(**test_info)
         for result in blockinfile_results.contacted.values():
             pprint(result)
-            assert result.get("changed") == 1
+            assert result.get("changed") == True
         if test_env["ENCODING"] == 'IBM-1047':
             cmdStr = "cat \"//'{0}'\" ".format(test_info["path"])
             results = hosts.all.shell(cmd=cmdStr)
@@ -256,8 +254,6 @@ def DsGeneralForce(ansible_zos_module, test_env, test_info, expected):
 def DsGeneralForceFail(ansible_zos_module, test_env, test_info):
     MEMBER_1, MEMBER_2 = "MEM1", "MEM2"
     hosts = ansible_zos_module
-    if test_env["ENCODING"]:
-        test_info["encoding"] = test_env["ENCODING"]
     test_info["path"] = DEFAULT_DATA_SET_NAME+"({0})".format(MEMBER_2)
     try:
         # set up:
@@ -300,7 +296,7 @@ def DsGeneralForceFail(ansible_zos_module, test_env, test_info):
         blockinfile_results = hosts.all.zos_blockinfile(**test_info)
         for result in blockinfile_results.contacted.values():
             pprint(result)
-            assert result.get("changed") == 0
+            assert result.get("changed") == False
             assert result.get("failed") == True
     finally:
         # extract pid

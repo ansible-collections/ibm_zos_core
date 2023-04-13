@@ -233,7 +233,7 @@ EXAMPLES = r"""
 
 - name: Add a line to a member while a task is in execution
   zos_lineinfile:
-    src: "{{ DATASET_NAME }}(MEM3)"
+    src: SOME.PARTITIONED.DATA.SET(DATA)
     insertafter: EOF
     line: 'Should be a working test now'
     force: True
@@ -388,7 +388,7 @@ def main():
         firstmatch=dict(type='bool', default=False),
         encoding=dict(type='str', default="IBM-1047"),
         tmp_hlq=dict(type='str', required=False, default=None),
-        force=dict(type='bool', default=False)
+        force=dict(type='bool', required=False, default=False)
     )
     module = AnsibleModule(
         argument_spec=module_args,

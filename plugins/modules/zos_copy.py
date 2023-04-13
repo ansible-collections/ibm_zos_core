@@ -1436,7 +1436,7 @@ class PDSECopyHandler(CopyHandler):
             # both program object members and data members. This can be
             # resolved by copying the program object with a "-X" flag.
             # *****************************************************************
-            if "FSUM8976" in err and "EDC5091I" in err:
+            if ("FSUM8976" in err and "EDC5091I" in err) or ("FSUM8976" in out and "EDC5091I" in out):
                 opts["options"] = "-X"
                 response = datasets._copy(src, dest, None, **opts)
                 rc, out, err = response.rc, response.stdout_response, response.stderr_response

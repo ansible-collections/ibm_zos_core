@@ -145,6 +145,7 @@ class MVSUnarchive(Unarchive):
         """
         filter = "INCL(**) "
         volumes = ""
+        force = "REPLACE -\n TOLERATE(ENQFAILURE) " if self.force else ""
         if self.include:
             filter = self.get_include_data_sets_cmd()
         if self.exclude:
@@ -155,7 +156,8 @@ class MVSUnarchive(Unarchive):
                           DS( -
                             {0} ) -
                             {1} -
-                        CATALOG""".format(filter, volumes)
+                        CATALOG -
+                        {2} """.format(filter, volumes, force)
         self.debug = self.format_options.get("dest_volumes")
         cmd = " mvscmdauth --pgm=ADRDSSU --archive={0},old --sysin=stdin --sysprint=*".format(source)
         rc, out, err = self.module.run_command(cmd, data=restore_cmd)

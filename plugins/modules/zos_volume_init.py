@@ -35,9 +35,11 @@ description:
   - ICKDSF is an Authorized Program Facility (APF) program on z/OS,
     I(zos_volume_init) will run in authorized mode but if the program ICKDSF is
     not APF authorized, the task will end.
+  - Note that defaults set on target z/OS systems may override ICKDSF parameters.
   - If is recommended that data on the volume is backed up as the I(zos_volume_init)
     module will not perform any backups. You can use the
     L(zos_backup_restore,./zos_backup_restore.html) module to backup a volume.
+
 
 version_added: 1.6.0
 author:
@@ -68,15 +70,13 @@ options:
         match that found on the volume or minidisk, initialization does not complete.
       - If I(verify_volid="*NONE*") is specified and a volume serial is found on
         the volume or minidisk, initialization does not complete.
-      - Note - This option is NOT a boolean, please leave it blank in order to
-        skip the verification.
+      - Note, this option is B(not) a boolean, leave it blank to skip the verification.
     required: false
     type: str
   verify_offline:
     description:
       - Verify that the device is not online to any other systems, initialization
         does not complete.
-      - Beware, defaults set on target z/OS systems may override ICKDSF parameters.
     type: bool
     required: false
     default: true
@@ -94,7 +94,8 @@ options:
     description:
       - The number of tracks to initialize the volume table of contents (VTOC) with.
       - The VTOC will be placed in cylinder 0 head 1.
-      - If no tracks are specified it will default to the number of tracks in a cylinder minus 1. Tracks in a cylinder vary based on direct-access storage
+      - If no tracks are specified it will default to the number of tracks in a
+        cylinder minus 1. Tracks in a cylinder vary based on direct-access storage
         device (DASD) models, for 3390 a cylinder is 15 tracks.
     required: false
     type: int
@@ -108,15 +109,15 @@ options:
     default: true
   sms_managed:
     description:
-      - Specifies that hte volume be managed by Storage Management System (SMS).
+      - Specifies that the volume be managed by Storage Management System (SMS).
       - If I(sms_managed) is I(true) then I(index) must also be I(true).
     type: bool
     required: false
     default: true
   verify_volume_empty:
     description:
-      - Verify that no data sets other than the volume table of contents (VTOC) index or the VSAM Volume Data Set(VVDS) exist on the target volume.
-      - Beware that z/OS system defaults can override ICKDSF parameters.
+      - Verify that no data sets other than the volume table of contents (VTOC)
+        index or the VSAM Volume Data Set(VVDS) exist on the target volume.
     required: false
     type: bool
     default: true

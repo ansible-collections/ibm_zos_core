@@ -44,6 +44,10 @@ options:
         If I(state=absent) and the data set does exist on the managed node,
         remove the data set, module completes successfully with I(changed=True).
       - >
+        If I(state=absent) and I(type=MEMBER) and I(force=True), the data set
+        will be opened with I(DISP=SHR) such that the entire data set can be
+        accessed by other processes while the specified member is deleted.
+      - >
         If I(state=absent) and I(volumes) is provided, and the data set is not
         found in the catalog, the module attempts to perform catalog using supplied
         I(name) and I(volumes). If the attempt to catalog the data set catalog is successful,
@@ -247,6 +251,20 @@ options:
         that is not available, then the value C(TMPHLQ) is used.
     required: false
     type: str
+  force:
+    description:
+      - Specifies that the data set can be shared with others during a member
+        delete operation which results in the data set you are updating to be
+        simultaneously updated by others.
+      - This is helpful when a data set is being used in a long running process
+        such as a started task and you are wanting to delete a member.
+      - The I(force=True) option enables sharing of data sets through the
+        disposition I(DISP=SHR).
+      - The I(force=True) only applies to data set members when I(state=absent)
+        and I(type=MEMBER).
+    type: bool
+    required: false
+    default: false
   batch:
     description:
       - Batch can be used to perform operations on multiple data sets in a single module call.
@@ -271,6 +289,11 @@ options:
           - >
             If I(state=absent) and the data set does exist on the managed node,
             remove the data set, module completes successfully with I(changed=True).
+          - >
+            If I(state=absent) and I(type=MEMBER) and I(force=True), the data
+            set will be opened with I(DISP=SHR) such that the entire data set
+            can be accessed by other processes while the specified member is
+            deleted.
           - >
             If I(state=absent) and I(volumes) is provided, and the data set is not
             found in the catalog, the module attempts to perform catalog using supplied
@@ -467,6 +490,21 @@ options:
         type: bool
         required: false
         default: false
+      force:
+        description:
+          - Specifies that the data set can be shared with others during a member
+            delete operation which results in the data set you are updating to
+            be simultaneously updated by others.
+          - This is helpful when a data set is being used in a long running
+            process such as a started task and you are wanting to delete a
+            member.
+          - The I(force=True) option enables sharing of data sets through the
+            disposition I(DISP=SHR).
+          - The I(force=True) only applies to data set members when
+            I(state=absent) and I(type=MEMBER).
+        type: bool
+        required: false
+        default: false
 
 """
 EXAMPLES = r"""
@@ -551,6 +589,13 @@ EXAMPLES = r"""
     name: someds.name.here(mydata)
     state: absent
     type: MEMBER
+
+- name: Remove a member from an existing PDS/E by opening with disposition DISP=SHR
+  zos_data_set:
+    name: someds.name.here(mydata)
+    state: absent
+    type: MEMBER
+    force: yes
 
 - name: Create multiple partitioned data sets and add one or more members to each
   zos_data_set:
@@ -894,6 +939,9 @@ def perform_data_set_operations(name, state, **extra_args):
     """Calls functions to perform desired operations on
     one or more data sets. Returns boolean indicating if changes were made."""
     changed = False
+    #  passing in **extra_args forced me to modify the acceptable parameters
+    #  for multiple functions in data_set.py including ensure_present, replace
+    #  and create where the force parameter has no bearing.
     if state == "present" and extra_args.get("type") != "MEMBER":
         changed = DataSet.ensure_present(name, **extra_args)
     elif state == "present" and extra_args.get("type") == "MEMBER":
@@ -901,7 +949,7 @@ def perform_data_set_operations(name, state, **extra_args):
     elif state == "absent" and extra_args.get("type") != "MEMBER":
         changed = DataSet.ensure_absent(name, extra_args.get("volumes"))
     elif state == "absent" and extra_args.get("type") == "MEMBER":
-        changed = DataSet.ensure_member_absent(name)
+        changed = DataSet.ensure_member_absent(name, extra_args.get("force"))
     elif state == "cataloged":
         changed = DataSet.ensure_cataloged(name, extra_args.get("volumes"))
     elif state == "uncataloged":
@@ -1017,6 +1065,11 @@ def parse_and_validate_args(params):
                     aliases=["volume"],
                     dependencies=["state"],
                 ),
+                force=dict(
+                    type="bool",
+                    required=False,
+                    default=False,
+                ),
             ),
         ),
         # For individual data set args
@@ -1086,6 +1139,11 @@ def parse_and_validate_args(params):
             required=False,
             default=None
         ),
+        force=dict(
+            type="bool",
+            required=False,
+            default=False,
+        ),
         mutually_exclusive=[
             ["batch", "name"],
             # ["batch", "state"],
@@ -1102,6 +1160,7 @@ def parse_and_validate_args(params):
             ["batch", "key_length"],
             # ["batch", "replace"],
             ["batch", "volumes"],
+            # ["batch", "force"],
         ],
     )
     parser = BetterArgParser(arg_defs)
@@ -1162,6 +1221,11 @@ def run_module():
                     default=False,
                 ),
                 volumes=dict(type="raw", required=False, aliases=["volume"]),
+                force=dict(
+                    type="bool",
+                    required=False,
+                    default=False,
+                ),
             ),
         ),
         # For individual data set args
@@ -1212,6 +1276,11 @@ def run_module():
             type="str",
             required=False,
             default=None
+        ),
+        force=dict(
+            type="bool",
+            required=False,
+            default=False
         ),
     )
     result = dict(changed=False, message="", names=[])

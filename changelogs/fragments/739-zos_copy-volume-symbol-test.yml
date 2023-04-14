@@ -1,0 +1,5 @@
+trivial:
+- zos_copy - prior, there was no test case for a special character on a volume.
+  This change adds a test case to test a volume which has in it a special
+  character, issue 738.
+  (https://github.com/ansible-collections/ibm_zos_core/pull/739)

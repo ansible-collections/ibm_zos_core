@@ -225,7 +225,6 @@ content:
 
 from ansible.module_utils.basic import AnsibleModule
 
-# from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import better_arg_parser
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import ickdsf  # pylint: disable=import-error
 
 
@@ -240,7 +239,6 @@ def run_module():
         index=dict(type="bool", required=False, default=True),
         sms_managed=dict(type="bool", required=False, default=True),
         verify_volume_empty=dict(type="bool", required=False, default=True),
-        # tmp_hlq=dict(type='qualifier_or_empty', required=False, default=None), # TODO
         tmp_hlq=dict(type='str', required=False, default=None),
     )
 
@@ -259,12 +257,6 @@ def run_module():
 
     if module.check_mode:
         module.exit_json(**result)
-
-    # try:
-    #     parser = better_arg_parser.BetterArgParser(module_args)
-    #     parser.parse_args(module.params)
-    # except ValueError as err:
-    #     module.fail_json(msg="Parameter verification failed", stderr=str(err))
 
     result.update(ickdsf.init(module, result, module.params))
 

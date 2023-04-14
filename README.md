@@ -49,7 +49,7 @@ and ansible-doc to automate tasks on z/OS.
 
 Copyright
 =========
-© Copyright IBM Corporation 2020-2021.
+© Copyright IBM Corporation 2020-2023.
 
 License
 =======

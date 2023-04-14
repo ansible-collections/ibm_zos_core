@@ -58,6 +58,58 @@ TEST_VSAM_KSDS = "SYS1.STGINDEX"
 TEST_PDSE = "SYS1.NFSLIBE"
 TEST_PDSE_MEMBER = "SYS1.NFSLIBE(GFSAMAIN)"
 
+COBOL_SRC = """
+       IDENTIFICATION DIVISION.\n
+       PROGRAM-ID. HELLOWRD.\n
+\n
+       PROCEDURE DIVISION.\n
+           DISPLAY "SIMPLE HELLO WORLD".\n
+           STOP RUN.\n
+"""
+
+LINK_JCL = """
+//COMPLINK  JOB MSGCLASS=H,MSGLEVEL=(1,1),NOTIFY=&SYSUID,REGION=0M
+//STEP1     EXEC PGM=IGYCRCTL
+//STEPLIB   DD DSN=IGYV5R10.SIGYCOMP,DISP=SHR
+//          DD DSN=IGYV5R10.SIGYMAC,DISP=SHR
+//SYSIN     DD DISP=SHR,DSN={0}
+//SYSPRINT  DD SYSOUT=*
+//SYSLIN   DD  UNIT=SYSDA,DISP=(MOD),
+//             SPACE=(CYL,(1,1)),
+//             DCB=(RECFM=FB,LRECL=80,BLKSIZE=27920),
+//             DSN=&&LOADSET
+//SYSUT1    DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//SYSUT2    DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//SYSUT3    DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//SYSUT4    DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//SYSUT5    DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//SYSUT6    DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//SYSUT7    DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//SYSUT8    DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//SYSUT9    DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//SYSUT10   DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//SYSUT11   DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//SYSUT12   DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//SYSUT13   DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//SYSUT14   DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//SYSUT15   DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//SYSMDECK  DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//*
+//LKED     EXEC PGM=IEWL,REGION=0M
+//SYSPRINT DD  SYSOUT=*
+//SYSLIB   DD  DSN=CEE.SCEELKED,DISP=SHR
+//         DD  DSN=CEE.SCEELKEX,DISP=SHR
+//SYSLMOD  DD  DSN={1},
+//             DISP=SHR
+//SYSUT1   DD  UNIT=SYSDA,DCB=BLKSIZE=1024,
+//             SPACE=(TRK,(3,3))
+//SYSTERM  DD  SYSOUT=*
+//SYSPRINT DD  SYSOUT=*
+//SYSLIN   DD  DSN=&&LOADSET,DISP=(OLD,KEEP)
+//SYSIN    DD  DUMMY
+//*
+
+"""
 
 def populate_dir(dir_path):
     for i in range(5):
@@ -151,6 +203,42 @@ def create_vsam_data_set(hosts, name, ds_type, add_data=False, key_length=None, 
         hosts.all.zos_copy(content=VSAM_RECORDS, dest=record_src)
         hosts.all.zos_encode(src=record_src, dest=name, encoding={"from": "ISO8859-1", "to": "IBM-1047"})
         hosts.all.file(path=record_src, state="absent")
+
+
+def link_loadlib_from_cobol(hosts, ds_name, cobol_pds):
+    """
+    Given a PDSE, links a cobol program making allocated in a temp ds resulting in ds_name
+    as a loadlib.
+
+    Arguments:
+        ds_name (str) -- PDS/E to be linked with the cobol program.
+        cobol_src (str) -- Cobol source code to be used as the program.
+
+        Notes: PDS names are in the format of SOME.PDSNAME(MEMBER)
+    """
+    # Copy the Link program
+    temp_jcl = "/tmp/link.jcl"
+    rc = 0
+    try:
+        cp_res = hosts.all.zos_copy(
+            content=LINK_JCL.format(cobol_pds, ds_name),
+            dest="/tmp/link.jcl",
+            force=True,
+        )
+        for res in cp_res.contacted.values():
+            print("copy link program result {0}".format(res))
+        # Link the temp ds with ds_name
+        job_result = hosts.all.zos_job_submit(
+            src="/tmp/link.jcl",
+            location="USS",
+            wait_time_s=60
+        )
+        for result in job_result.contacted.values():
+            print("link job submit result {0}".format(result))
+            rc = result.get("jobs")[0].get("ret_code").get("code")
+    finally:
+        hosts.all.file(path=temp_jcl, state="absent")
+    return rc
 
 
 @pytest.mark.uss
@@ -1770,6 +1858,150 @@ def test_copy_pds_to_existing_pds(ansible_zos_module, args):
 
 
 @pytest.mark.pdse
+<<<<<<< HEAD
+=======
+def test_copy_pds_member_with_system_symbol(ansible_zos_module,):
+    """This test is for bug #543 in GitHub. In some versions of ZOAU,
+    datasets.listing can't handle system symbols in volume names and
+    therefore fails to get details from a dataset.
+    """
+    hosts = ansible_zos_module
+    # The volume for this dataset should use a system symbol.
+    # This dataset and member should be available on any z/OS system.
+    src = "SYS1.SAMPLIB(IZUPRM00)"
+    dest = "USER.TEST.PDS.DEST"
+
+    try:
+        hosts.all.zos_data_set(
+            name=dest,
+            state="present",
+            type="pdse",
+            replace=True
+        )
+
+        copy_res = hosts.all.zos_copy(src=src, dest=dest, remote_src=True)
+        verify_copy = hosts.all.shell(
+            cmd="mls {0}".format(dest),
+            executable=SHELL_EXECUTABLE
+        )
+
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+            assert result.get("changed") is True
+            assert result.get("dest") == dest
+
+        for v_cp in verify_copy.contacted.values():
+            assert v_cp.get("rc") == 0
+            stdout = v_cp.get("stdout")
+            assert stdout is not None
+            assert len(stdout.splitlines()) == 1
+
+    finally:
+        hosts.all.zos_data_set(name=dest, state="absent")
+
+
+@pytest.mark.pdse
+def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module,):
+    hosts = ansible_zos_module
+    # The volume for this dataset should use a system symbol.
+    # This dataset and member should be available on any z/OS system.
+    src = "USER.LOAD.SRC"
+    dest = "USER.LOAD.DEST"
+    cobol_pds = "USER.COBOL.SRC"
+    try:
+        hosts.all.zos_data_set(
+            name=src,
+            state="present",
+            type="pdse",
+            record_format="U",
+            record_length=0,
+            block_size=32760,
+            space_primary=2,
+            space_type="M",
+            replace=True
+        )
+
+        hosts.all.zos_data_set(
+            name=dest,
+            state="present",
+            type="pdse",
+            record_format="U",
+            record_length=0,
+            block_size=32760,
+            space_primary=2,
+            space_type="M",
+            replace=True
+        )
+
+        hosts.all.zos_data_set(
+            name=cobol_pds,
+            state="present",
+            type="pds",
+            space_primary=2,
+            record_format="FB",
+            record_length=80,
+            block_size=3120,
+            replace=True,
+        )
+        member = "HELLOSRC"
+        cobol_pds = "{0}({1})".format(cobol_pds, member)
+        rc = hosts.all.zos_copy(
+            content=COBOL_SRC,
+            dest=cobol_pds,
+        )
+        dest_name = "{0}({1})".format(dest, member)
+        src_name = "{0}({1})".format(src, member)
+        
+        
+        # both src and dest need to be a loadlib
+        rc = link_loadlib_from_cobol(hosts, dest_name, cobol_pds)
+        assert rc == 0
+        # make sure is executable
+        cmd = "mvscmd --pgm={0}  --steplib={1} --sysprint=* --stderr=* --stdout=*"
+        exec_res = hosts.all.shell(
+            cmd=cmd.format(member, dest)
+        )
+        for result in exec_res.contacted.values():
+            assert result.get("rc") == 0
+        rc = link_loadlib_from_cobol(hosts, src_name, cobol_pds)
+        assert rc == 0
+
+        exec_res = hosts.all.shell(
+            cmd=cmd.format(member, src)
+        )
+        for result in exec_res.contacted.values():
+            assert result.get("rc") == 0
+
+        copy_res = hosts.all.zos_copy(
+            src="{0}({1})".format(src, member), 
+            dest="{0}({1})".format(dest, "MEM1"), 
+            remote_src=True)
+
+        verify_copy = hosts.all.shell(
+            cmd="mls {0}".format(dest),
+            executable=SHELL_EXECUTABLE
+        )
+
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+            assert result.get("changed") is True
+            assert result.get("dest") == "{0}({1})".format(dest, "MEM1")
+
+        for v_cp in verify_copy.contacted.values():
+            assert v_cp.get("rc") == 0
+            stdout = v_cp.get("stdout")
+            assert stdout is not None
+            # number of members
+            assert len(stdout.splitlines()) == 2
+
+    finally:
+        hosts.all.zos_data_set(name=dest, state="absent")
+        hosts.all.zos_data_set(name=src, state="absent")
+        hosts.all.zos_data_set(name=cobol_pds, state="absent")
+
+
+@pytest.mark.pdse
+>>>>>>> a871dd7 (Add and automate a load lib test case for module zos_copy (#640))
 def test_copy_multiple_data_set_members(ansible_zos_module):
     hosts = ansible_zos_module
     src = "USER.FUNCTEST.SRC.PDS"

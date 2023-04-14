@@ -58,6 +58,58 @@ TEST_VSAM_KSDS = "SYS1.STGINDEX"
 TEST_PDSE = "SYS1.NFSLIBE"
 TEST_PDSE_MEMBER = "SYS1.NFSLIBE(GFSAMAIN)"
 
+COBOL_SRC = """
+       IDENTIFICATION DIVISION.\n
+       PROGRAM-ID. HELLOWRD.\n
+\n
+       PROCEDURE DIVISION.\n
+           DISPLAY "SIMPLE HELLO WORLD".\n
+           STOP RUN.\n
+"""
+
+LINK_JCL = """
+//COMPLINK  JOB MSGCLASS=H,MSGLEVEL=(1,1),NOTIFY=&SYSUID,REGION=0M
+//STEP1     EXEC PGM=IGYCRCTL
+//STEPLIB   DD DSN=IGYV5R10.SIGYCOMP,DISP=SHR
+//          DD DSN=IGYV5R10.SIGYMAC,DISP=SHR
+//SYSIN     DD DISP=SHR,DSN={0}
+//SYSPRINT  DD SYSOUT=*
+//SYSLIN   DD  UNIT=SYSDA,DISP=(MOD),
+//             SPACE=(CYL,(1,1)),
+//             DCB=(RECFM=FB,LRECL=80,BLKSIZE=27920),
+//             DSN=&&LOADSET
+//SYSUT1    DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//SYSUT2    DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//SYSUT3    DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//SYSUT4    DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//SYSUT5    DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//SYSUT6    DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//SYSUT7    DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//SYSUT8    DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//SYSUT9    DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//SYSUT10   DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//SYSUT11   DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//SYSUT12   DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//SYSUT13   DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//SYSUT14   DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//SYSUT15   DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//SYSMDECK  DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//*
+//LKED     EXEC PGM=IEWL,REGION=0M
+//SYSPRINT DD  SYSOUT=*
+//SYSLIB   DD  DSN=CEE.SCEELKED,DISP=SHR
+//         DD  DSN=CEE.SCEELKEX,DISP=SHR
+//SYSLMOD  DD  DSN={1},
+//             DISP=SHR
+//SYSUT1   DD  UNIT=SYSDA,DCB=BLKSIZE=1024,
+//             SPACE=(TRK,(3,3))
+//SYSTERM  DD  SYSOUT=*
+//SYSPRINT DD  SYSOUT=*
+//SYSLIN   DD  DSN=&&LOADSET,DISP=(OLD,KEEP)
+//SYSIN    DD  DUMMY
+//*
+
+"""
 
 def populate_dir(dir_path):
     for i in range(5):
@@ -151,6 +203,42 @@ def create_vsam_data_set(hosts, name, ds_type, add_data=False, key_length=None, 
         hosts.all.zos_copy(content=VSAM_RECORDS, dest=record_src)
         hosts.all.zos_encode(src=record_src, dest=name, encoding={"from": "ISO8859-1", "to": "IBM-1047"})
         hosts.all.file(path=record_src, state="absent")
+
+
+def link_loadlib_from_cobol(hosts, ds_name, cobol_pds):
+    """
+    Given a PDSE, links a cobol program making allocated in a temp ds resulting in ds_name
+    as a loadlib.
+
+    Arguments:
+        ds_name (str) -- PDS/E to be linked with the cobol program.
+        cobol_src (str) -- Cobol source code to be used as the program.
+
+        Notes: PDS names are in the format of SOME.PDSNAME(MEMBER)
+    """
+    # Copy the Link program
+    temp_jcl = "/tmp/link.jcl"
+    rc = 0
+    try:
+        cp_res = hosts.all.zos_copy(
+            content=LINK_JCL.format(cobol_pds, ds_name),
+            dest="/tmp/link.jcl",
+            force=True,
+        )
+        for res in cp_res.contacted.values():
+            print("copy link program result {0}".format(res))
+        # Link the temp ds with ds_name
+        job_result = hosts.all.zos_job_submit(
+            src="/tmp/link.jcl",
+            location="USS",
+            wait_time_s=60
+        )
+        for result in job_result.contacted.values():
+            print("link job submit result {0}".format(result))
+            rc = result.get("jobs")[0].get("ret_code").get("code")
+    finally:
+        hosts.all.file(path=temp_jcl, state="absent")
+    return rc
 
 
 @pytest.mark.uss

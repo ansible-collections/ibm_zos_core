@@ -109,24 +109,30 @@ def init(module, result, parsed_args):
 
     # TODO - add error handling here and in get_init_command() for "bad" cmd
 
-    # format into MVS Command
-    sysprintDDStatement = DDStatement("SYSPRINT", StdoutDefinition())
+    # define/build DDs to pass into MVS Command
 
     if parsed_args.get('tmp_hlq'):
         sysInDDStatement = DDStatement("SYSIN", StdinDefinition(cmd, tmphlq=parsed_args.get('tmp_hlq')))
-        # uncomment the following line to see MVSCmd verbose output in stderr.
-        # sysInDDStatement = DDStatement("SYSIN", StdinDefinition(cmd, tmphlq=parsed_args.get('tmp_hlq', verbose=True)))
     else:
         sysInDDStatement = DDStatement("SYSIN", StdinDefinition(cmd))
-        # uncomment the following line to see MVSCmd verbose output in stderr.
-        # sysInDDStatement = DDStatement("SYSIN", StdinDefinition(cmd), verbose=True)
+
+    # tmphlq is not currently captured in the construction of the StdoutDefinition DD.
+    # tmphlq is handled in the mvscmd.execute_authorized call in this case.
+    sysprintDDStatement = DDStatement("SYSPRINT", StdoutDefinition())
 
     dds = []
     dds.append(sysprintDDStatement)
     dds.append(sysInDDStatement)
 
     # invoke MVS Command
-    response = MVSCmd.execute_authorized("ICKDSF", dds, parm='NOREPLYU,FORCE')
+    if parsed_args.get('tmp_hlq'):
+        response = MVSCmd.execute_authorized("ICKDSF", dds, parm='NOREPLYU,FORCE', tmp_hlq=parsed_args.get('tmp_hlq'))
+        # uncomment the following line to see MVSCmd verbose output in stderr.
+        # response = MVSCmd.execute_authorized("ICKDSF", dds, parm='NOREPLYU,FORCE', verbose=True, tmp_hlq=parsed_args.get('tmp_hlq'))
+    else:
+        response = MVSCmd.execute_authorized("ICKDSF", dds, parm='NOREPLYU,FORCE')
+        # uncomment the following line to see MVSCmd verbose output in stderr.
+        # response = MVSCmd.execute_authorized("ICKDSF", dds, parm='NOREPLYU,FORCE', verbose=True)
 
     rc = response.rc
 

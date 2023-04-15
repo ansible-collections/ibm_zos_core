@@ -1,10 +1,51 @@
 .. ...........................................................................
-.. © Copyright IBM Corporation 2020, 2021, 2021                                          .
+.. © Copyright IBM Corporation 2020, 2021, 2021, 2022, 2023                  .
 .. ...........................................................................
 
 ========
 Releases
 ========
+
+Version 1.4.1
+=============
+
+Bug fixes
+
+--------------------------
+
+* ``zos_copy``
+
+    * Copy failed from a loadlib member to another loadlib member. Fix
+      now looks for error in stdout in the if statement to use -X option.
+    * Fixes a bug where files not encoded in IBM-1047 would trigger an
+      error while computing the record length for a new destination dataset.
+    * Fixes a bug where the code for fixing an issue with newlines in
+      files.
+    * fixed wrongful creation of destination backups when module option
+      `force` is true, creating emergency backups meant to restore the system to
+      its initial state in case of a module failure only when force is false.
+    * fixes a bug where the computed record length for a new destination
+      dataset would include newline characters.
+
+* ``zos_job_query``
+
+    * fixes a bug where a boolean was not being properly compared.
+
+Availability
+------------
+
+* `Automation Hub`_
+* `Galaxy`_
+* `GitHub`_
+
+Reference
+---------
+
+* Supported by `z/OS V2R3`_ or later
+* Supported by the `z/OS® shell`_
+* Supported by `IBM Open Enterprise SDK for Python`_ `3.9`_
+* Supported by IBM `Z Open Automation Utilities 1.1.0`_ and
+  `Z Open Automation Utilities 1.1.1`_
 
 Version 1.4.0
 =============

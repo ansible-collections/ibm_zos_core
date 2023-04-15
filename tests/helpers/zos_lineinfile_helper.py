@@ -190,12 +190,14 @@ def DsGeneralResultKeyMatchesRegex(test_name, ansible_zos_module, test_env, test
 
 def DsGeneralForce(ansible_zos_module, test_env, test_text, test_info, expected):
     MEMBER_1, MEMBER_2 = "MEM1", "MEM2"
+    TEMP_FILE = "/tmp/{0}".format(MEMBER_2)
+    test_env["DS_NAME"] = DEFAULT_DATA_SET_NAME+"({0})".format(MEMBER_2)
+    test_info["path"] = DEFAULT_DATA_SET_NAME+"({0})".format(MEMBER_2) 
     hosts = ansible_zos_module
-    test_info["path"] = DEFAULT_DATA_SET_NAME+"({0})".format(MEMBER_2)
     try:
         # set up:
-        # create pdse
-        hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="present", type="pdse", replace=True)
+        hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="present", type=test_env["DS_TYPE"], replace=True)
+        hosts.all.shell(cmd="echo \"{0}\" > {1}".format(test_text, TEMP_FILE))
         # add members
         hosts.all.zos_data_set(
             batch=[
@@ -214,7 +216,21 @@ def DsGeneralForce(ansible_zos_module, test_env, test_text, test_info, expected)
             ]
         )
         # write memeber to verify cases
-        hosts.all.shell(cmd="echo \"{0}\" > {1}".format(test_text, test_info["path"]))
+        if test_env["DS_TYPE"] in ["PDS", "PDSE"]:
+            cmdStr = "cp -CM {0} \"//'{1}'\"".format(quote(TEMP_FILE), test_env["DS_NAME"])
+        else:
+            test_env["DS_NAME"] = DEFAULT_DATA_SET_NAME
+            test_info["path"] = DEFAULT_DATA_SET_NAME
+            cmdStr = "cp {0} \"//'{1}'\" ".format(quote(TEMP_FILE), test_env["DS_NAME"])
+        if test_env["ENCODING"]:
+            test_info["encoding"] = test_env["ENCODING"]
+        hosts.all.shell(cmd=cmdStr)
+        hosts.all.shell(cmd="rm -rf " + TEMP_FILE)
+        cmdStr = "cat \"//'{0}'\" | wc -l ".format(test_env["DS_NAME"])
+        results = hosts.all.shell(cmd=cmdStr)
+        pprint(vars(results))
+        for result in results.contacted.values():
+            assert int(result.get("stdout")) != 0
         # copy/compile c program and copy jcl to hold data set lock for n seconds in background(&)
         hosts.all.zos_copy(content=c_pgm, dest='/tmp/disp_shr/pdse-lock.c', force=True)
         hosts.all.zos_copy(
@@ -237,8 +253,18 @@ def DsGeneralForce(ansible_zos_module, test_env, test_text, test_info, expected)
             results = hosts.all.shell(cmd=cmdStr)
             pprint(vars(results))
             for result in results.contacted.values():
-                print()
-                assert result.get("stdout").replace('\n', '').replace(' ', '') == expected.replace('\n', '').replace(' ', '')
+                assert result.get("stdout") == expected
+                #assert result.get("stdout").replace('\n', '').replace(' ', '') == expected.replace('\n', '').replace(' ', '')
+        #else:
+        #    cmdStr =r"""cat "//'{0}'" """.format(test_info["path"])
+        #    cmdExp =r"""cat "//'{0}'" """.format(TEMP_FILE)
+        #    results = hosts.all.shell(cmd=cmdStr)
+        #    expected = hosts.all.shell(cmd=cmdExp)
+        #    pprint(vars(results))
+        #    for result in results.contacted.values():
+        #        assert result.get("stdout") == expected
+                #assert result.get("stdout").replace('\n', '').replace(' ', '') == expected.replace('\n', '').replace(' ', '')
+
     finally:
         # extract pid
         ps_list_res = hosts.all.shell(cmd="ps -e | grep -i 'pdse-lock'")
@@ -250,7 +276,6 @@ def DsGeneralForce(ansible_zos_module, test_env, test_text, test_info, expected)
         hosts.all.shell(cmd='rm -r /tmp/disp_shr')
         # remove pdse
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
-
 
 def DsGeneralForceFail(ansible_zos_module, test_env, test_info):
     MEMBER_1, MEMBER_2 = "MEM1", "MEM2"

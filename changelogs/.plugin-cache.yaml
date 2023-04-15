@@ -6,6 +6,7 @@ plugins:
   callback: {}
   cliconf: {}
   connection: {}
+  filter: {}
   httpapi: {}
   inventory: {}
   lookup: {}
@@ -103,5 +104,6 @@ plugins:
   netconf: {}
   shell: {}
   strategy: {}
+  test: {}
   vars: {}
-version: 1.4.0
+version: 1.4.1

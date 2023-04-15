@@ -82,7 +82,10 @@ def job_output(job_id=None, owner=None, job_name=None, dd_name=None, duration=0,
 def _job_not_found(job_id, owner, job_name, dd_name):
     # Note that the text in the msg_txt is used in test cases thus sensitive to change
     jobs = []
-
+    if job_id != '*' and job_name != '*':
+        job_not_founded = "{0} with the job_id {1}".format(job_name, job_id)
+    else:
+        job_not_founded = "{0}".format(job_name if job_name != "*" else job_id)
     job = {}
 
     job["job_id"] = job_id
@@ -95,7 +98,7 @@ def _job_not_found(job_id, owner, job_name, dd_name):
     job["ret_code"]["msg"] = None
     job["ret_code"]["code"] = None
     job["ret_code"]["msg_code"] = None
-    job["ret_code"]["msg_txt"] = "The job {0} could not be found.".format((job_name if job_name != "*" else job_id).upper())
+    job["ret_code"]["msg_txt"] = "The job {0} could not be found.".format(job_not_founded.upper())
 
     job["class"] = ""
     job["content_type"] = ""

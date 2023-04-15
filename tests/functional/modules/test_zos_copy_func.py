@@ -1872,6 +1872,10 @@ def test_copy_pds_member_with_system_symbol(ansible_zos_module,):
     """This test is for bug #543 in GitHub. In some versions of ZOAU,
     datasets.listing can't handle system symbols in volume names and
     therefore fails to get details from a dataset.
+
+    Note: `listcat ent('SYS1.SAMPLIB') all` will display 'volser = ******'
+    and `D SYMBOLS` will show you that `&SYSR2. = "RES80A"` where
+    the symbols for this volume correspond to volume `RES80A`
     """
     hosts = ansible_zos_module
     # The volume for this dataset should use a system symbol.

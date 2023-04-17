@@ -56,7 +56,6 @@ class Defaults:
     @staticmethod
     def get_default_system_charset():
         """Get the default encoding of the current machine
-
         Returns:
             str -- The encoding of the current machine
         """
@@ -79,7 +78,6 @@ class EncodeUtils(object):
     def __init__(self):
         """Call the coded character set conversion utility iconv
         to convert a USS file from one coded character set to another
-
         Arguments:
             module {AnsibleModule} -- The AnsibleModule object from currently running module
         """
@@ -121,10 +119,8 @@ class EncodeUtils(object):
     def listdsi_data_set(self, ds):
         """Invoke IDCAMS LISTCAT command to get the record length and space used
         to estimate the space used by the VSAM data set
-
         Arguments:
             ds: {str} -- The VSAM data set to be checked.
-
         Raises:
             EncodeError: When any exception is raised during the conversion.
         Returns:
@@ -178,14 +174,11 @@ class EncodeUtils(object):
 
     def temp_data_set(self, reclen, space_u):
         """Creates a temporary data set with the given record length and size
-
         Arguments:
             size {str} -- The size of the data set
             lrecl {int} -- The record length of the data set
-
         Returns:
             str -- Name of the allocated data set
-
         Raises:
             OSError: When any exception is raised during the data set allocation
         """
@@ -208,7 +201,6 @@ class EncodeUtils(object):
 
     def get_codeset(self):
         """Get the list of supported encodings from the  USS command 'iconv -l'
-
         Raises:
             EncodeError: When any exception is raised during the conversion
         Returns:
@@ -226,12 +218,10 @@ class EncodeUtils(object):
 
     def string_convert_encoding(self, src, from_encoding, to_encoding):
         """Convert the encoding of the data when the src is a normal string
-
         Arguments:
             from_code_set: {str} -- The source code set of the string
             to_code_set: {str} -- The destination code set for the string
             src: {str} -- The input string content
-
         Raises:
             EncodeError: When any exception is raised during the conversion
         Returns:
@@ -249,13 +239,11 @@ class EncodeUtils(object):
 
     def uss_convert_encoding(self, src, dest, from_code, to_code):
         """Convert the encoding of the data in a USS file
-
         Arguments:
             from_code: {str} -- The source code set of the input file
             to_code: {str} -- The destination code set for the output file
             src: {str} -- The input file name, it should be a uss file
             dest: {str} -- The output file name, it should be a uss file
-
         Raises:
             EncodeError: When any exception is raised during the conversion.
             MoveFileError: When any exception is raised during moving files.
@@ -306,13 +294,11 @@ class EncodeUtils(object):
     def uss_convert_encoding_prev(self, src, dest, from_code, to_code):
         """For multiple files conversion, such as a USS path or MVS PDS data set,
         use this method to split then do the conversion
-
         Arguments:
             from_code: {str} -- The source code set of the input path
             to_code: {str} -- The destination code set for the output path
             src: {str} -- The input uss path or a file
             dest: {str} -- The output uss path or a file
-
         Raises:
             EncodeError: When direcotry is empty or copy multiple files to a single file
         Returns:
@@ -373,17 +359,14 @@ class EncodeUtils(object):
            1) USS to MVS(PS, PDS/E VSAM)
            2) MVS to USS
            3) MVS to MVS
-
         Arguments:
             src: {str} -- The input MVS data set or USS path to be converted
             dest: {str} -- The output MVS data set or USS path to be converted
             from_code: {str} -- The source code set of the input MVS data set
             to_code: {str} -- The destination code set of the output MVS data set
-
         Keyword Arguments:
             src_type {[type]} -- The input MVS data set or type: PS, PDS, PDSE, VSAM(KSDS) (default: {None})
             dest_type {[type]} -- The output MVS data set type (default: {None})
-
         Returns:
             boolean -- Indicate whether the conversion is successful or not
         """
@@ -453,6 +436,23 @@ class EncodeUtils(object):
 
         return convert_rc
 
+    def uss_tag_encoding(self, file_path, tag):
+        """Tag the file/directory specified with the given code set.
+        If `file_path` is a directory, all of the files and subdirectories will
+        be tagged recursively.
+        Arguments:
+            file_path {str} -- Absolute file path to tag.
+            tag {str} -- Code set to tag the file/directory.
+        Raises:
+            TaggingError: When the chtag command fails.
+        """
+        is_dir = os.path.isdir(file_path)
+
+        tag_cmd = "chtag -{0}c {1} {2}".format("R" if is_dir else "t", tag, file_path)
+        rc, out, err = self.module.run_command(tag_cmd)
+        if rc != 0:
+            raise TaggingError(file_path, tag, rc, out, err)
+
     def uss_file_tag(self, file_path):
         """Returns the current tag set for a file.
         Arguments:
@@ -478,6 +478,23 @@ class EncodeUtils(object):
             return ls_parts[1]
         except Exception:
             return None
+
+    def uss_tag_encoding(self, file_path, tag):
+        """Tag the file/directory specified with the given code set.
+        If `file_path` is a directory, all of the files and subdirectories will
+        be tagged recursively.
+        Arguments:
+            file_path {str} -- Absolute file path to tag.
+            tag {str} -- Code set to tag the file/directory.
+        Raises:
+            TaggingError: When the chtag command fails.
+        """
+        is_dir = os.path.isdir(file_path)
+
+        tag_cmd = "chtag -{0}c {1} {2}".format("R" if is_dir else "t", tag, file_path)
+        rc, out, err = self.module.run_command(tag_cmd)
+        if rc != 0:
+            raise TaggingError(file_path, tag, rc, out, err)
 
 
 class EncodeError(Exception):

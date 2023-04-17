@@ -64,6 +64,7 @@ except Exception:
     jobs = MissingZOAUImport()
 
 data_set_regex = r"(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}(?:\([A-Z$#@]{1}[A-Z0-9$#@]{0,7}\)){0,1}"
+
 class Unarchive(abc.ABC):
     def __init__(self, module):
         # TODO params init
@@ -97,6 +98,27 @@ class Unarchive(abc.ABC):
             'targets': self.targets,
             'debug': self.debug,
         }
+
+class TarUnarchive(Unarchive):
+    def __init__(self, module):
+        super(TarUnarchive, self).__init__(module)
+
+    def list_archive_content(self):
+        if self.format == 'tar':
+            self.file = tarfile.open(self.path, 'r')
+        elif self.format in ('gz', 'bz2'):
+            self.file = tarfile.open(self.path, 'r|' + self.format)
+        else:
+            self.module.fail_json(msg="%s is not a valid archive format for listing contents" % self.format)
+        self.targets = self.file.getnames()
+        self.file.close()
+
+    def list_content(self):
+        return self.list_archive_content()
+
+    def extract_path(self):
+        None
+
 class MVSUnarchive(Unarchive):
     def __init__(self, module):
         # TODO MVSUnarchive params init
@@ -290,8 +312,7 @@ class XMITUnarchive(MVSUnarchive):
 def get_unarchive_handler(module):
     format = module.params.get("format").get("name")
     if format in ["tar", "gz", "bz2"]:
-        # return TarUnarchive(module)
-        None
+        return TarUnarchive(module)
     elif format == "terse":
         return AMATerseUnarchive(module)
     elif format == "xmit":

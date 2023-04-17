@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020, 2021
+# Copyright (c) IBM Corporation 2020, 2021, 2023
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -31,8 +31,9 @@ DUMMY DATA == LINE 02 ==
 DUMMY DATA == LINE 03 ==
 """
 
+
 TEST_PS = "IMSTESTL.IMS01.DDCHKPT"
-TEST_PS_VB = "IMSTESTL.IMS01.SPOOL1"
+TEST_PS_VB = "USER.PRIV.PSVB"
 TEST_PDS = "IMSTESTL.COMNUC"
 TEST_PDS_MEMBER = "IMSTESTL.COMNUC(ATRQUERY)"
 TEST_VSAM = "FETCH.TEST.VS"
@@ -77,6 +78,29 @@ KSDS_REPRO_JCL = """//DOREPRO    JOB (T043JM,JM00,1,0,0,0),'CREATE KSDS',CLASS=R
  EEXAMPLE RECORD   REMOVE THIS LINE IF EXAMPLES NOT REQUIRED
 /*
 """
+
+def create_and_populate_test_ps_vb(ansible_zos_module):
+    params=dict(
+        name=TEST_PS_VB,
+        type='SEQ',
+        record_format='VB',
+        record_length='3180',
+        block_size='3190'
+    )
+    ansible_zos_module.all.zos_data_set(**params)
+    params = dict(
+        src=TEST_PS_VB,
+        block=TEST_DATA
+    )
+    ansible_zos_module.all.zos_blockinfile(**params)
+
+
+def delete_test_ps_vb(ansible_zos_module):
+    params=dict(
+        name=TEST_PS_VB,
+        state='absent'
+    )
+    ansible_zos_module.all.zos_data_set(**params)
 
 
 def test_fetch_uss_file_not_present_on_local_machine(ansible_zos_module):
@@ -154,6 +178,7 @@ def test_fetch_sequential_data_set_fixed_block(ansible_zos_module):
 
 def test_fetch_sequential_data_set_variable_block(ansible_zos_module):
     hosts = ansible_zos_module
+    create_and_populate_test_ps_vb(ansible_zos_module)
     params = dict(src=TEST_PS_VB, dest="/tmp/", flat=True)
     dest_path = "/tmp/" + TEST_PS_VB
     try:
@@ -167,6 +192,7 @@ def test_fetch_sequential_data_set_variable_block(ansible_zos_module):
     finally:
         if os.path.exists(dest_path):
             os.remove(dest_path)
+        delete_test_ps_vb(ansible_zos_module)
 
 
 def test_fetch_partitioned_data_set(ansible_zos_module):

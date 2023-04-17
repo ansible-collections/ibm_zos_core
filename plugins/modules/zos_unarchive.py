@@ -89,6 +89,9 @@ class Unarchive(abc.ABC):
     @abc.abstractmethod
     def list_content(self):
         pass
+    
+    def path_exists(self):
+        return self.path and os.path.exists(self.path)
 
     @property
     def result(self):
@@ -102,6 +105,8 @@ class Unarchive(abc.ABC):
 class TarUnarchive(Unarchive):
     def __init__(self, module):
         super(TarUnarchive, self).__init__(module)
+        if self.dest == '':
+            self.dest = os.path.dirname(self.path)
 
     def list_archive_content(self):
         if self.format == 'tar':
@@ -117,7 +122,23 @@ class TarUnarchive(Unarchive):
         return self.list_archive_content()
 
     def extract_path(self):
-        None
+        original_working_dir = os.getcwd()
+        # The function gets relative paths, so it changes the current working
+        # directory to the root of src.
+        os.chdir(self.dest)
+        if self.format == 'tar':
+            self.file = tarfile.open(self.path, 'r')
+            self.file.extractall()
+        elif self.format in ('gz', 'bz2'):
+            self.file = tarfile.open(self.path, 'r|' + self.format)
+            self.file.extractall()
+        else:
+            self.module.fail_json(msg="%s is not a valid archive format for listing contents" % self.format)
+        self.targets = self.file.getnames()
+        self.file.close()
+        # Returning the current working directory to what it was before to not
+        # interfere with the rest of the module.
+        os.chdir(original_working_dir)
 
 class MVSUnarchive(Unarchive):
     def __init__(self, module):
@@ -324,7 +345,7 @@ def run_module():
     module = AnsibleModule(
         argument_spec=dict(
             path=dict(type='str', required=True, alias='src'),
-            dest=dict(type='str'),
+            dest=dict(type='str', default=''),
             include=dict(type='list', elements='str'),
             exclude=dict(type='list', elements='str'),
             list=dict(type='bool', default=False),
@@ -364,7 +385,7 @@ def run_module():
 
     arg_defs = dict(
         path=dict(type='str', required=True, alias='src'),
-        dest=dict(type='str', required=False),
+        dest=dict(type='str', required=False, default=''),
         include=dict(type='list', elements='str'),
         exclude=dict(type='list', elements='str'),
         list=dict(type='bool', default=False),

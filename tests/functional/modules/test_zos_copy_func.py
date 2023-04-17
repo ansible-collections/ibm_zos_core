@@ -1858,6 +1858,51 @@ def test_copy_pds_to_existing_pds(ansible_zos_module, args):
 
 
 @pytest.mark.pdse
+def test_copy_pds_member_with_system_symbol(ansible_zos_module,):
+    """This test is for bug #543 in GitHub. In some versions of ZOAU,
+    datasets.listing can't handle system symbols in volume names and
+    therefore fails to get details from a dataset.
+
+    Note: `listcat ent('SYS1.SAMPLIB') all` will display 'volser = ******'
+    and `D SYMBOLS` will show you that `&SYSR2. = "RES80A"` where
+    the symbols for this volume correspond to volume `RES80A`
+    """
+    hosts = ansible_zos_module
+    # The volume for this dataset should use a system symbol.
+    # This dataset and member should be available on any z/OS system.
+    src = "SYS1.SAMPLIB(IZUPRM00)"
+    dest = "USER.TEST.PDS.DEST"
+
+    try:
+        hosts.all.zos_data_set(
+            name=dest,
+            state="present",
+            type="pdse",
+            replace=True
+        )
+
+        copy_res = hosts.all.zos_copy(src=src, dest=dest, remote_src=True)
+        verify_copy = hosts.all.shell(
+            cmd="mls {0}".format(dest),
+            executable=SHELL_EXECUTABLE
+        )
+
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+            assert result.get("changed") is True
+            assert result.get("dest") == dest
+
+        for v_cp in verify_copy.contacted.values():
+            assert v_cp.get("rc") == 0
+            stdout = v_cp.get("stdout")
+            assert stdout is not None
+            assert len(stdout.splitlines()) == 1
+
+    finally:
+        hosts.all.zos_data_set(name=dest, state="absent")
+
+
+@pytest.mark.pdse
 def test_copy_multiple_data_set_members(ansible_zos_module):
     hosts = ansible_zos_module
     src = "USER.FUNCTEST.SRC.PDS"

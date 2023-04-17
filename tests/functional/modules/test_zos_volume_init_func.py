@@ -119,20 +119,29 @@ def test_volid_address_assigned_correctly(ansible_zos_module):
 
     # bring volume back online
     hosts.all.zos_operator(cmd=f"vary {TEST_VOL_ADDR},online")
-    # display command to print device status, volser and addr should correspond
 
     for result in results.contacted.values():
         assert result.get("changed") is True
         assert result.get('rc') == 0
 
     # The display command issued queries a volume called $TEST_VOL_SER. The
-    # expected return values are 'IEE455I UNIT STATUS NO DEVICES WITH REQUESTED
+    # expected return values are: 'IEE455I UNIT STATUS NO DEVICES WITH REQUESTED
     # ATTRIBUTES' or a line with several attributes including unit address
-    # (expected value $TEST_VOL_ADDR) and volume serial (expected value
-    # $TEST_VOL_SER). If those two match, then the 'volid' parameter is
-    # correctly assigned to the 'address' parameter.
-    display_cmd_output = list(hosts.all.zos_operator(cmd=f"D U,VOL={TEST_VOL_SER}").contacted.values())[0].get('content')
-    display_cmd_output = ''.join(s for s in display_cmd_output)
+    # example output:
+    # 'UNIT TYPE STATUS        VOLSER     VOLSTATE      SS'
+    # '0903 3390 O             DEMO01     PRIV/RSDNT     0'
+    # or:
+    # 'IEE455I UNIT STATUS NO DEVICES WITH REQUESTED ATTRIBUTES'
+    # (expected value $TEST_VOL_ADDR) and volume serial
+    # (expected value $TEST_VOL_SER). If those two match, then the 'volid'
+    # parameter is correctly assigned to the 'address' parameter.
+
+    # Display command to print device status, volser and addr should correspond
+    display_cmd_output = list(hosts.all.zos_operator(cmd=f"D U,VOL={TEST_VOL_SER}").contacted.values())[0]
+
+    # zos_operator output contains the command as well, only the last line of
+    # the output is relevant for the needs of this test case.
+    display_cmd_output = display_cmd_output.get('content')[-1]
 
     assert TEST_VOL_SER in display_cmd_output
 

@@ -26,6 +26,8 @@ Bug fixes
       its initial state in case of a module failure only when force is false.
     * fixes a bug where the computed record length for a new destination
       dataset would include newline characters.
+    * Fixed a bug where the module would change the mode for a directory
+      when copying into it the contents of another.
 
 * ``zos_job_query``
 

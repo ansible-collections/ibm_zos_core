@@ -122,8 +122,8 @@ TEST_INFO = dict(
     test_ds_line_replace_nomatch_insertbefore_nomatch=dict(test_name="T11"),
     test_ds_line_absent=dict(test_name="T12"),
     test_ds_line_tmp_hlq_option=dict(insertafter="EOF", line="export ZOAU_ROOT", state="present", backup=True, tmp_hlq="TMPHLQ"),
-    test_ds_line_force=dict(path="",insertafter="EOF", line="export ZOAU_ROOT",force=True),
-    test_ds_line_force_fail=dict(path="",insertafter="EOF", line="export ZOAU_ROOT",force=False),
+    test_ds_line_force=dict(path="",insertafter="EOF", line="export ZOAU_ROOT", force=True),
+    test_ds_line_force_fail=dict(path="",insertafter="EOF", line="export ZOAU_ROOT", force=False),
     test_ds_line_replace_force=dict(path="",regexp="ZOAU_ROOT=", line="ZOAU_ROOT=/mvsutil-develop_dsed",
         state="present",force=True),
     test_ds_line_insertafter_regex_force=dict(path="",insertafter="ZOAU_ROOT=", line="ZOAU_ROOT=/mvsutil-develop_dsed",
@@ -961,9 +961,11 @@ def test_ds_not_supported(ansible_zos_module, dstype):
 #########################
 
 @pytest.mark.ds
+@pytest.mark.parametrize("encoding", ENCODING)
 @pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_line_force(ansible_zos_module, dstype):
+def test_ds_line_force(ansible_zos_module, dstype, encoding):
     TEST_ENV["DS_TYPE"] = dstype
+    TEST_ENV["ENCODING"] = encoding
     DsGeneralForce(
         ansible_zos_module, TEST_ENV,
         TEST_CONTENT,

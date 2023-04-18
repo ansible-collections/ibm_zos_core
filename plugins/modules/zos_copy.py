@@ -1067,8 +1067,8 @@ class USSCopyHandler(CopyHandler):
             group = self.common_file_args.get("group")
             owner = self.common_file_args.get("owner")
             if mode is not None:
-                self.module.set_mode_if_different(dest, mode, False)
-
+                if not os.path.isdir(dest):
+                    self.module.set_mode_if_different(dest, mode, False)
                 if changed_files:
                     for filepath in changed_files:
                         self.module.set_mode_if_different(os.path.join(dest, filepath), mode, False)

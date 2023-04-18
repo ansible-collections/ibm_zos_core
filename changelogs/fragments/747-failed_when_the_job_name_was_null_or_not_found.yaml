@@ -1,0 +1,4 @@
+bugfix:
+- zos_job_output - Fixed a bug where the error message did not specify the job not found
+  to ensure the message send to the user.
+  (https://github.com/ansible-collections/ibm_zos_core/pull/747)

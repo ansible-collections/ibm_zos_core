@@ -457,6 +457,8 @@ releases:
       bugfixes:
       - zos_copy - Copy failed from a loadlib member to another loadlib member. Fix
         now looks for error in stdout in the if statement to use -X option. (https://github.com/ansible-collections/ibm_zos_core/pull/640)
+      - zos_copy - Fixed a bug where the module would change the mode for a directory
+        when copying into it the contents of another. (https://github.com/ansible-collections/ibm_zos_core/pull/742)
       - zos_copy - Fixes a bug where files not encoded in IBM-1047 would trigger an
         error while computing the record length for a new destination dataset. Issue
         664. (https://github.com/ansible-collections/ibm_zos_core/pull/732)
@@ -488,5 +490,6 @@ releases:
     - 601-copy-loadlib-member.yml
     - 728-zos_operator-example-updates.yml
     - 732-zos_copy-encoding-bugs.yml
+    - 742_zos_copy-mode-is-applied-to-the-destination-directory-a-deviation-from-the-communtiy-module-behavior.yaml
     - v1.4.1_summary.yml
     release_date: '2023-04-18'

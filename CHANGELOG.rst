@@ -22,6 +22,7 @@ Bugfixes
 --------
 
 - zos_copy - Copy failed from a loadlib member to another loadlib member. Fix now looks for error in stdout in the if statement to use -X option. (https://github.com/ansible-collections/ibm_zos_core/pull/640)
+- zos_copy - Fixed a bug where the module would change the mode for a directory when copying into it the contents of another. (https://github.com/ansible-collections/ibm_zos_core/pull/742)
 - zos_copy - Fixes a bug where files not encoded in IBM-1047 would trigger an error while computing the record length for a new destination dataset. Issue 664. (https://github.com/ansible-collections/ibm_zos_core/pull/732)
 - zos_copy - Fixes a bug where the code for fixing an issue with newlines in files (issue 599) would use the wrong encoding for normalization. Issue 678. (https://github.com/ansible-collections/ibm_zos_core/pull/732)
 - zos_copy - fixed wrongful creation of destination backups when module option `force` is true, creating emergency backups meant to restore the system to its initial state in case of a module failure only when force is false. (https://github.com/ansible-collections/ibm_zos_core/pull/590)

@@ -19,6 +19,7 @@ authors:
   - Ivan Alejandro Moreno Soto <ivan.moreno.soto@ibm.com>
   - Oscar Fernando Flores Garcia <fernando.flores@ibm.com>
   - Jenny Huang <jennyhuang@ibm.com>
+  - Marcel Guitierrez <andre.marcel.gutierrez@ibm.com>
 
 # Description
 description: The IBM z/OS core collection includes connection plugins, action plugins, modules, filters and ansible-doc to automate tasks on z/OS.

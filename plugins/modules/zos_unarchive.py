@@ -81,6 +81,7 @@ class Unarchive(abc.ABC):
         self.exclude = module.params.get("exclude")
         self.list = module.params.get("list")
         self.changed = False
+        self.missing = list()
 
     @abc.abstractmethod
     def extract_path(self):
@@ -100,6 +101,7 @@ class Unarchive(abc.ABC):
             'changed': self.changed,
             'targets': self.targets,
             'debug': self.debug,
+            'missing': self.missing,
         }
 
 class TarUnarchive(Unarchive):
@@ -128,13 +130,27 @@ class TarUnarchive(Unarchive):
         os.chdir(self.dest)
         if self.format == 'tar':
             self.file = tarfile.open(self.path, 'r')
-            self.file.extractall()
         elif self.format in ('gz', 'bz2'):
-            self.file = tarfile.open(self.path, 'r|' + self.format)
-            self.file.extractall()
+            self.file = tarfile.open(self.path, 'r:' + self.format)
         else:
             self.module.fail_json(msg="%s is not a valid archive format for listing contents" % self.format)
-        self.targets = self.file.getnames()
+        
+        files_in_archive = self.file.getnames()
+        if self.include:
+            for path in self.include:
+                if path not in files_in_archive:
+                    self.missing.append(path)
+                else:
+                    self.file.extract(path)
+                    self.targets.append(path)
+        elif self.exclude:
+            for path in files_in_archive:
+                if path not in self.exclude:
+                    self.file.extract(path)
+                    self.targets.append(path)
+        else:
+            self.file.extractall()
+            self.targets = files_in_archive
         self.file.close()
         # Returning the current working directory to what it was before to not
         # interfere with the rest of the module.

@@ -470,7 +470,7 @@ class EncodeUtils(object):
             # The second item from the split should be the tag.
             ls_parts = stdout.split()
             return ls_parts[1]
-        except Exception as err:
+        except Exception:
             return None
 
 

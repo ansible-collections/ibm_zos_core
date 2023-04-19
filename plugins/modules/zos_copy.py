@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020, 2021, 2022
+# Copyright (c) IBM Corporation 2019, 2020, 2021, 2022, 2023
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -1067,8 +1067,8 @@ class USSCopyHandler(CopyHandler):
             group = self.common_file_args.get("group")
             owner = self.common_file_args.get("owner")
             if mode is not None:
-                self.module.set_mode_if_different(dest, mode, False)
-
+                if not os.path.isdir(dest):
+                    self.module.set_mode_if_different(dest, mode, False)
                 if changed_files:
                     for filepath in changed_files:
                         self.module.set_mode_if_different(os.path.join(dest, filepath), mode, False)

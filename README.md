@@ -47,9 +47,13 @@ The **IBM z/OS core collection**, includes
 [filters](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/filters.html),
 and ansible-doc to automate tasks on z/OS.
 
+Ansible version compatibility
+=============================
+This collection has been tested against the following Ansible versions: >=2.9,<2.15.
+
 Copyright
 =========
-© Copyright IBM Corporation 2020-2021.
+© Copyright IBM Corporation 2020-2023.
 
 License
 =======

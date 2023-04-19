@@ -25,6 +25,7 @@ Synopsis
 
 
 
+
 Parameters
 ----------
 
@@ -121,7 +122,7 @@ persistent
 
     | **required**: False
     | **type**: str
-    | **default**: /\* {mark} ANSIBLE MANAGED BLOCK <timestamp> \*/
+    | **default**: /* {mark} ANSIBLE MANAGED BLOCK <timestamp> */
 
 
   backup

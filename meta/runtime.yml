@@ -1,2 +1,2 @@
 ---
-requires_ansible: '>=2.9,<=2.14.1'
+requires_ansible: '>=2.9,<2.15'

@@ -19,6 +19,7 @@ from shellescape import quote
 import tempfile
 import pytest
 import re
+import os
 
 JCL_FILE_CONTENTS = """//HELLO    JOB (T043JM,JM00,1,0,0,0),'HELLO WORLD - JRM',CLASS=R,
 //             MSGCLASS=X,MSGLEVEL=1,NOTIFY=S0JM
@@ -83,6 +84,36 @@ JCL_FILE_CONTENTS_RC_8 = """//RCBADJCL JOB MSGCLASS=A,MSGLEVEL=(1,1),NOTIFY=&SYS
  DELETE THIS.DATASET.DOES.NOT.EXIST
 /*
 """
+
+JCL_TEMPLATES = {
+    "Default": """//{{ pgm_name }}    JOB (T043JM,JM00,1,0,0,0),'HELLO WORLD - JRM',CLASS=R,
+//             MSGCLASS=X,MSGLEVEL=1,NOTIFY=S0JM
+{# This comment should not be part of the JCL #}
+//STEP0001 EXEC PGM=IEBGENER
+//SYSIN    DD {{ input_dataset }}
+//SYSPRINT DD SYSOUT=*
+//SYSUT1   DD *
+{{ message  }}
+/*
+//SYSUT2   DD SYSOUT=*
+//
+""",
+
+    "Custom": """//(( pgm_name ))    JOB (T043JM,JM00,1,0,0,0),'HELLO WORLD - JRM',CLASS=R,
+//             MSGCLASS=X,MSGLEVEL=1,NOTIFY=S0JM
+//STEP0001 EXEC PGM=IEBGENER
+(# This comment should not be part of the JCL #)
+//SYSIN    DD (( input_dataset ))
+//SYSPRINT DD SYSOUT=*
+//SYSUT1   DD *
+(( message  ))
+/*
+//SYSUT2   DD SYSOUT=*
+//
+"""
+
+    # TODO: add testcase for loop for steps
+}
 
 TEMP_PATH = "/tmp/jcl"
 DATA_SET_NAME = "imstestl.ims1.test05"
@@ -378,3 +409,54 @@ def test_job_submit_max_rc(ansible_zos_module, args):
 
     finally:
         hosts.all.file(path=tmp_file.name, state="absent")
+
+
+@pytest.mark.parametrize("args", [
+    dict(
+        template="Default",
+        options=dict(
+            keep_trailing_newline=False
+        )
+    ),
+    dict(
+        template="Custom",
+        options=dict(
+            keep_trailing_newline=False,
+            variable_start_string="((",
+            variable_end_string="))",
+            comment_start_string="(#",
+            comment_end_string="#)",
+        )
+    )
+])
+def test_job_submit_jinja_template(ansible_zos_module, args):
+    try:
+        hosts = ansible_zos_module
+
+        tmp_file = tempfile.NamedTemporaryFile(delete=True)
+        with open(tmp_file.name, "w") as f:
+            f.write(JCL_TEMPLATES[args["template"]])
+
+        template_vars = dict(
+            pgm_name="HELLO",
+            input_dataset="DUMMY",
+            message="Hello, world"
+        )
+        for host in hosts["options"]["inventory_manager"]._inventory.hosts.values():
+            host.vars.update(template_vars)
+
+        results = hosts.all.zos_job_submit(
+            src=tmp_file.name,
+            location="LOCAL",
+            use_template=True,
+            template_parameters=args["options"]
+        )
+
+        for result in results.contacted.values():
+            print(result)
+            assert result.get('changed') is True
+            assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
+            assert result.get("jobs")[0].get("ret_code").get("code") == 0
+
+    finally:
+        os.remove(tmp_file.name)

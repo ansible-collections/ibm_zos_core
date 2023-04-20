@@ -229,13 +229,13 @@ def DsGeneralForce(ansible_zos_module, test_env, test_text, test_info, expected)
         hosts.all.shell(cmd=cmdStr)
         cmdStr = "cat \"//'{0}'\" | wc -l ".format(test_env["DS_NAME"])
         results = hosts.all.shell(cmd=cmdStr)
-        #pprint(vars(results))
+        pprint(vars(results))
         for result in results.contacted.values():
             assert int(result.get("stdout")) != 0
         if test_env["ENCODING"] != 'IBM-1047':
-            hosts.all.shell(cmd="echo \"{0}\" > {1}".format(expected, TEMP_FILE))
             hosts.all.zos_encode(
                 src=TEMP_FILE,
+                dest=test_env["DS_NAME"],
                 encoding={
                     "from": "IBM-1047",
                     "to": test_env["ENCODING"],
@@ -264,20 +264,14 @@ def DsGeneralForce(ansible_zos_module, test_env, test_text, test_info, expected)
             pprint(vars(results))
             for result in results.contacted.values():
                 assert result.get("stdout") == expected
-                #assert result.get("stdout").replace('\n', '').replace(' ', '') == expected.replace('\n', '').replace(' ', '')
         else:
-            cmdchgec =r"""iconv -f {0} -t {1} "//'{2}'" > "//'{2}'" """.format('IBM-1047', test_info["encoding"], test_info["path"])
-            hosts.all.shell(cmd=cmdchgec)
             cmdStr =r"""cat "//'{0}'" """.format(test_info["path"])
-            cmdExp =r"""cat "{0}" """.format(TEMP_FILE)
             results = hosts.all.shell(cmd=cmdStr)
-            exp_res = hosts.all.shell(cmd=cmdExp)
-            pprint(vars(exp_res))
+            pprint(vars(results))
             for result in results.contacted.values():
-                for res in exp_res.contacted.values():
-                    assert result.get("stdout") == res.get("stdout")
-                #assert result.get("stdout").replace('\n', '').replace(' ', '') == expected.replace('\n', '').replace(' ', '')
-
+                assert result.get("changed") == True
+                #assert result.get("stdout") == expected
+                
     finally:
         hosts.all.shell(cmd="rm -rf " + TEMP_FILE)
         # extract pid

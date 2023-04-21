@@ -1064,8 +1064,12 @@ def test_copy_file_record_length_to_sequential_data_set(ansible_zos_module):
             assert v_recl.get("rc") == 0
             stdout = v_recl.get("stdout").split()
             assert len(stdout) == 5
+            # Verifying the dataset type (sequential).
             assert stdout[1] == "PS"
+            # Verifying the record format is Fixed Block.
             assert stdout[2] == "FB"
+            # Verifying the record length is 31. The dummy data has 31
+            # characters per line.
             assert stdout[3] == "31"
     finally:
         hosts.all.zos_data_set(name=dest, state="absent")
@@ -1114,8 +1118,12 @@ def test_copy_file_crlf_endings_to_sequential_data_set(ansible_zos_module):
             assert v_recl.get("rc") == 0
             stdout = v_recl.get("stdout").split()
             assert len(stdout) == 5
+            # Verifying the dataset type (sequential).
             assert stdout[1] == "PS"
+            # Verifying the record format is Fixed Block.
             assert stdout[2] == "FB"
+            # Verifying the record length is 19. The dummy data has 19
+            # characters per line.
             assert stdout[3] == "19"
     finally:
         hosts.all.zos_data_set(name=dest, state="absent")

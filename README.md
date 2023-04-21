@@ -53,7 +53,7 @@ This collection has been tested against the following Ansible versions: >=2.9,<2
 
 Copyright
 =========
-© Copyright IBM Corporation 2020-2021.
+© Copyright IBM Corporation 2020-2023.
 
 License
 =======

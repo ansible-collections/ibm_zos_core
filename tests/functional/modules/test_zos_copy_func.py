@@ -2632,6 +2632,8 @@ def test_copy_uss_file_to_existing_sequential_data_set_twice_with_tmphlq_option(
     finally:
         hosts.all.zos_data_set(name=dest, state="absent")
 
+
+# Test to ensure the zox_copy module work as community module 
 @pytest.mark.uss
 @pytest.mark.parametrize("src", [
     dict(src="/etc/profile", is_file=False, is_binary=False, is_remote=False),
@@ -2641,6 +2643,7 @@ def test_copy_dest_directory_remain(ansible_zos_module, src):
     dest_path = "/tmp/test/"
 
     try:
+        # Create the dest and adjust the permissions to compare in the assertion after the zos_copy execution
         hosts.all.shell(cmd="mkdir -p {0}".format(dest_path))
         hosts.all.shell(cmd="chmod 750 {0}".format(dest_path))
         permissions_before = hosts.all.shell(cmd="ls -la {0}".format(dest_path))
@@ -2652,6 +2655,7 @@ def test_copy_dest_directory_remain(ansible_zos_module, src):
             permissions_be_copy = before.get("stdout")
         for after in permissions.contacted.values():
             permissions_af_copy = after.get("stdout") 
+
         permissions_be_copy = permissions_be_copy.splitlines()[1].split()[0]
         permissions_af_copy = permissions_af_copy.splitlines()[1].split()[0]
                 

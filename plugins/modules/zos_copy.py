@@ -2228,6 +2228,9 @@ def run_module(module, arg_def):
             if remote_src and os.path.isdir(src):
                 is_src_dir = True
 
+            # When the destination is a dataset, we'll normalize the source
+            # file to UTF-8 for the record length computation as Python
+            # generally uses UTF-8 as the default encoding.
             if not is_uss:
                 new_src = temp_path or src
                 new_src = os.path.normpath(new_src)
@@ -2433,6 +2436,9 @@ def run_module(module, arg_def):
             emergency_backup = data_set.DataSet.temp_name()
             data_set.DataSet.allocate_model_data_set(emergency_backup, dest_name)
 
+    # Here we'll use the normalized source file by shadowing the
+    # original one. This change applies only to the
+    # allocate_destination_data_set call.
     if converted_src:
         if remote_src:
             original_src = src

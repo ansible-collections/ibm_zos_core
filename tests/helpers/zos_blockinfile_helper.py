@@ -187,12 +187,19 @@ def DsGeneralResultKeyMatchesRegex(test_name, ansible_zos_module, test_env, test
 
 def DsGeneralForce(ansible_zos_module, test_env, test_info, expected):
     MEMBER_1, MEMBER_2 = "MEM1", "MEM2"
+    TEMP_FILE = "/tmp/{0}".format(MEMBER_2)
+    if test_env["DS_TYPE"] == "SEQ":
+        test_env["DS_NAME"] = DEFAULT_DATA_SET_NAME+".{0}".format(MEMBER_2)
+        test_info["path"] = DEFAULT_DATA_SET_NAME+".{0}".format(MEMBER_2)
+    else:
+        test_env["DS_NAME"] = DEFAULT_DATA_SET_NAME+"({0})".format(MEMBER_2)
+        test_info["path"] = DEFAULT_DATA_SET_NAME+"({0})".format(MEMBER_2) 
     hosts = ansible_zos_module
-    test_info["path"] = DEFAULT_DATA_SET_NAME+"({0})".format(MEMBER_2)
     try:
         # set up:
         # create pdse
-        hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="present", type="pdse", replace=True)
+        hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="present", type=test_env["DS_TYPE"], replace=True)
+        hosts.all.shell(cmd="echo \"{0}\" > {1}".format(test_env["TEST_CONT"], TEMP_FILE))
         # add members
         hosts.all.zos_data_set(
             batch=[
@@ -203,7 +210,7 @@ def DsGeneralForce(ansible_zos_module, test_env, test_info, expected):
                     "replace": True,
                 },
                 {
-                    "name": DEFAULT_DATA_SET_NAME + "({0})".format(MEMBER_2),
+                    "name": test_env["DS_NAME"],
                     "type": "member",
                     "state": "present",
                     "replace": True,
@@ -212,7 +219,27 @@ def DsGeneralForce(ansible_zos_module, test_env, test_info, expected):
         )
         # write memeber to verify cases
         # print(test_env["TEST_CONT"])
-        hosts.all.shell(cmd="echo \"{0}\" > {1}".format(test_env["TEST_CONT"], test_info["path"]))
+        if test_env["DS_TYPE"] in ["PDS", "PDSE"]:
+            cmdStr = "cp -CM {0} \"//'{1}'\"".format(quote(TEMP_FILE), test_env["DS_NAME"])
+        else:
+            cmdStr = "cp {0} \"//'{1}'\" ".format(quote(TEMP_FILE), test_env["DS_NAME"])
+        if test_env["ENCODING"]:
+            test_info["encoding"] = test_env["ENCODING"]
+        hosts.all.shell(cmd=cmdStr)
+        cmdStr = "cat \"//'{0}'\" | wc -l ".format(test_env["DS_NAME"])
+        results = hosts.all.shell(cmd=cmdStr)
+        pprint(vars(results))
+        for result in results.contacted.values():
+            assert int(result.get("stdout")) != 0
+        if test_env["ENCODING"] != 'IBM-1047':
+            hosts.all.zos_encode(
+                src=TEMP_FILE,
+                dest=test_env["DS_NAME"],
+                encoding={
+                    "from": "IBM-1047",
+                    "to": test_env["ENCODING"],
+                },
+            )
         # copy/compile c program and copy jcl to hold data set lock for n seconds in background(&)
         hosts.all.zos_copy(content=c_pgm, dest='/tmp/disp_shr/pdse-lock.c', force=True)
         hosts.all.zos_copy(
@@ -230,15 +257,23 @@ def DsGeneralForce(ansible_zos_module, test_env, test_info, expected):
     
         blockinfile_results = hosts.all.zos_blockinfile(**test_info)
         for result in blockinfile_results.contacted.values():
-            pprint(result)
             assert result.get("changed") == True
+
+
         if test_env["ENCODING"] == 'IBM-1047':
             cmdStr = "cat \"//'{0}'\" ".format(test_info["path"])
             results = hosts.all.shell(cmd=cmdStr)
             for result in results.contacted.values():
                 pprint(result)
                 assert result.get("stdout").replace('\n', '').replace(' ', '') == expected.replace('\n', '').replace(' ', '')
+        else:
+            cmdStr =r"""cat "//'{0}'" """.format(test_info["path"])
+            results = hosts.all.shell(cmd=cmdStr)
+            pprint(vars(results))
+            for result in results.contacted.values():
+                assert result.get("changed") == True
     finally:
+        hosts.all.shell(cmd="rm -rf " + TEMP_FILE)
         # extract pid
         ps_list_res = hosts.all.shell(cmd="ps -e | grep -i 'pdse-lock'")
         # kill process - release lock - this also seems to end the job

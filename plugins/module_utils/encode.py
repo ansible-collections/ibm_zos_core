@@ -502,3 +502,4 @@ class MoveFileError(Exception):
     def __init__(self, src, dest, e):
         self.msg = "Failed when moving {0} to {1}: {2}".format(src, dest, e)
         super().__init__(self.msg)
+        

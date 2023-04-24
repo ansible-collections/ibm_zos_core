@@ -29,6 +29,7 @@ author:
   - "Asif Mahmud (@asifmahmud)"
   - "Demetrios Dimatos (@ddimatos)"
   - "Ivan Moreno (@rexemin)"
+  - "Rich Parker (@richp405)"
 options:
   backup:
     description:
@@ -1617,242 +1618,6 @@ def create_seq_dataset_from_file(
     data_set.DataSet.ensure_present(replace=force, **dest_params)
 
 
-def backup_data(ds_name, ds_type, backup_name, tmphlq=None):
-    """Back up the given data set or file to the location specified by 'backup_name'.
-    If 'backup_name' is not specified, then calculate a temporary location
-    and copy the file or data set there.
-    Arguments:
-        ds_name {str} -- Name of the file or data set to be backed up
-        ds_type {str} -- Type of the file or data set
-        backup_name {str} -- Path to USS location or name of data set
-        where data will be backed up
-    Returns:
-        {str} -- The USS path or data set name where data was backed up
-    """
-    module = AnsibleModuleHelper(argument_spec={})
-    try:
-        if ds_type == "USS":
-            return backup.uss_file_backup(ds_name, backup_name=backup_name)
-        return backup.mvs_file_backup(ds_name, backup_name, tmphlq)
-    except Exception as err:
-        module.fail_json(
-            msg=str(err.msg),
-            stdout=err.stdout,
-            stderr=err.stderr,
-            rc=err.rc
-        )
-
-
-def restore_backup(
-    dest,
-    backup,
-    dest_type,
-    use_backup,
-    volume=None,
-    members_to_restore=None,
-    members_to_delete=None
-):
-    """Restores a destination file/directory/data set by using a given backup.
-
-    Arguments:
-        dest (str) -- Name of the destination data set or path of the file/directory.
-        backup (str) -- Name or path of the backup.
-        dest_type (str) -- Type of the destination.
-        use_backup (bool) -- Whether the destination actually created a backup, sometimes the user
-            tries to use an empty data set, and in that case a new data set is allocated instead
-            of copied.
-        volume (str, optional) -- Volume where the data set should be.
-        members_to_restore (list, optional) -- List of members of a PDS/PDSE that were overwritten
-            and need to be restored.
-        members_to_delete (list, optional) -- List of members of a PDS/PDSE that need to be erased
-            because they were newly added.
-    """
-    volumes = [volume] if volume else None
-
-    if use_backup:
-        if dest_type == "USS":
-            if os.path.isfile(backup):
-                os.remove(dest)
-                shutil.copy(backup, dest)
-            else:
-                shutil.rmtree(dest, ignore_errors=True)
-                shutil.copytree(backup, dest)
-        else:
-            if dest_type in data_set.DataSet.MVS_VSAM:
-                data_set.DataSet.ensure_absent(dest, volumes)
-                repro_cmd = """  REPRO -
-                INDATASET('{0}') -
-                OUTDATASET('{1}')""".format(backup.upper(), dest.upper())
-                idcams(repro_cmd, authorized=True)
-            elif dest_type in data_set.DataSet.MVS_SEQ:
-                response = datasets._copy(backup, dest)
-                if response.rc != 0:
-                    raise CopyOperationError(
-                        "An error ocurred while restoring {0} from {1}".format(dest, backup),
-                        response.rc,
-                        response.stdout_response,
-                        response.stderr_response
-                    )
-            else:
-                if not members_to_restore:
-                    members_to_restore = []
-                if not members_to_delete:
-                    members_to_delete = []
-
-                for i, member in enumerate(members_to_restore):
-                    response = datasets._copy(
-                        "{0}({1})".format(backup, member),
-                        "{0}({1})".format(dest, member)
-                    )
-
-                    if response.rc != 0:
-                        # In case of a failure, we'll assume that all past
-                        # members in the list (with index < i) were restored successfully.
-                        raise CopyOperationError(
-                            "Error ocurred while restoring {0}({1}) from backup {2}.".format(
-                                dest,
-                                member,
-                                backup
-                            ) + " Members restored: {0}. Members that didn't get restored: {1}".format(
-                                members_to_restore[:i],
-                                members_to_restore[i:]
-                            ),
-                            response.rc,
-                            response.stdout_response,
-                            response.stderr_response
-                        )
-
-                for i, member in enumerate(members_to_delete):
-                    response = datasets._delete_members("{0}({1})".format(dest, member))
-
-                    if response.rc != 0:
-                        raise CopyOperationError(
-                            "Error while deleting {0}({1}) after copy failure.".format(dest, member) +
-                            " Members deleted: {0}. Members not able to be deleted: {1}".format(
-                                members_to_delete[:i],
-                                members_to_delete[i:]
-                            ),
-                            response.rc,
-                            response.stdout_response,
-                            response.stderr_response
-                        )
-
-    else:
-        data_set.DataSet.ensure_absent(dest, volumes)
-        data_set.DataSet.allocate_model_data_set(dest, backup, volume)
-
-
-def erase_backup(backup, dest_type, volume=None):
-    """Erases a temporary backup from the system.
-
-    Arguments:
-        backup (str) -- Name or path of the backup.
-        dest_type (str) -- Type of the destination.
-        volume (str, optional) -- Volume where the data set should be.
-    """
-    if dest_type == "USS":
-        if os.path.isfile(backup):
-            os.remove(backup)
-        else:
-            shutil.rmtree(backup, ignore_errors=True)
-    else:
-        volumes = [volume] if volume else None
-        data_set.DataSet.ensure_absent(backup, volumes)
-
-
-def is_compatible(
-    src_type,
-    dest_type,
-    copy_member,
-    src_member,
-    is_src_dir,
-    is_src_inline
-):
-    """Determine whether the src and dest are compatible and src can be
-    copied to dest.
-
-    Arguments:
-        src_type {str} -- Type of the source (e.g. PDSE, USS).
-        dest_type {str} -- Type of destination.
-        copy_member {bool} -- Whether dest is a data set member.
-        src_member {bool} -- Whether src is a data set member.
-        is_src_dir {bool} -- Whether the src is a USS directory.
-        is_src_inline {bool} -- Whether the src comes from inline content.
-
-    Returns:
-        {bool} -- Whether src can be copied to dest.
-    """
-    # ********************************************************************
-    # If the destination does not exist, then obviously it will need
-    # to be created. As a result, target is compatible.
-    # ********************************************************************
-    if dest_type is None:
-        return True
-
-    # ********************************************************************
-    # If source is a sequential data set, then destination must be
-    # partitioned data set member, other sequential data sets or USS files.
-    # Anything else is incompatible.
-    # ********************************************************************
-    if src_type in data_set.DataSet.MVS_SEQ:
-        return not (
-            (dest_type in data_set.DataSet.MVS_PARTITIONED and not copy_member) or dest_type == "VSAM"
-        )
-
-    # ********************************************************************
-    # If source is a partitioned data set, then we need to determine
-    # target compatibility for two different scenarios:
-    #   - If the source is a data set member
-    #   - If the source is an entire data set
-    #
-    # In the first case, the possible targets are: USS files, PDS/PDSE
-    # members and sequential data sets. Anything else is incompatible.
-    #
-    # In the second case, the possible targets are USS directories and
-    # other PDS/PDSE. Anything else is incompatible.
-    # ********************************************************************
-    elif src_type in data_set.DataSet.MVS_PARTITIONED:
-        if dest_type == "VSAM":
-            return False
-        if not src_member:
-            return not (copy_member or dest_type in data_set.DataSet.MVS_SEQ)
-        return True
-
-    # ********************************************************************
-    # If source is a USS file, then the destination can be another USS file,
-    # a directory, a sequential data set or a partitioned data set member.
-    # When using the content option, the destination should specify
-    # a member name if copying into a partitioned data set.
-    #
-    # If source is instead a directory, the destination has to be another
-    # directory or a partitioned data set.
-    # ********************************************************************
-    elif src_type == "USS":
-        if dest_type in data_set.DataSet.MVS_SEQ or copy_member:
-            return not is_src_dir
-        elif dest_type in data_set.DataSet.MVS_PARTITIONED and not copy_member and is_src_inline:
-            return False
-        elif dest_type in data_set.DataSet.MVS_VSAM:
-            return False
-        else:
-            return True
-
-    # ********************************************************************
-    # If source is a VSAM data set, we need to check compatibility between
-    # all the different types of VSAMs, following the documentation for the
-    # dest parameter.
-    # ********************************************************************
-    else:
-        if (dest_type == "KSDS" or dest_type == "ESDS"):
-            return src_type == "ESDS" or src_type == "KSDS" or src_type == "RRDS"
-        elif dest_type == "RRDS":
-            return src_type == "RRDS"
-        elif dest_type == "LDS":
-            return src_type == "LDS"
-        else:
-            return dest_type == "VSAM"
-
-
 def does_destination_allow_copy(
     src,
     src_type,
@@ -2346,17 +2111,6 @@ def run_module(module, arg_def):
         )
 
     # ********************************************************************
-    # Backup should only be performed if dest is an existing file or
-    # data set. Otherwise ignored.
-    # ********************************************************************
-    if dest_exists:
-        if backup or backup_name:
-            if dest_ds_type in data_set.DataSet.MVS_PARTITIONED and data_set.DataSet.is_empty(dest_name):
-                # The partitioned data set is empty
-                res_args["note"] = "Destination is empty, backup request ignored"
-            else:
-                backup_name = backup_data(dest, dest_ds_type, backup_name, tmphlq)
-    # ********************************************************************
     # If destination does not exist, it must be created. To determine
     # what type of data set destination must be, a couple of simple checks
     # can be done. For example:
@@ -2372,7 +2126,7 @@ def run_module(module, arg_def):
     # is_pds is determined in the action plugin when src is a directory and destination
     # is a data set (is_src_dir and is_mvs_dest are true)
     # ********************************************************************
-    else:
+    if not dest_exists:
         if not dest_ds_type:
             if (
                 is_pds
@@ -2410,32 +2164,6 @@ def run_module(module, arg_def):
             dest=dest
         )
 
-    # Creating an emergency backup or an empty data set to use as a model to
-    # be able to restore the destination in case the copy fails.
-    emergency_backup = ""
-    if dest_exists and not force:
-        if is_uss or not data_set.DataSet.is_empty(dest_name):
-            use_backup = True
-            if is_uss:
-                # When copying a directory without a trailing slash,
-                # appending the source's base name to the backup path to
-                # avoid backing up the whole parent directory that won't
-                # be modified.
-                src_basename = os.path.basename(src) if src else ''
-                backup_dest = "{0}/{1}".format(dest, src_basename) if is_src_dir and not src.endswith("/") else dest
-                backup_dest = os.path.normpath(backup_dest)
-                emergency_backup = tempfile.mkdtemp()
-                emergency_backup = backup_data(backup_dest, dest_ds_type, emergency_backup, tmphlq)
-            else:
-                if not (dest_ds_type in data_set.DataSet.MVS_PARTITIONED and src_member and not dest_member_exists):
-                    emergency_backup = backup_data(dest, dest_ds_type, None, tmphlq)
-        # If dest is an empty data set, instead create a data set to
-        # use as a model when restoring.
-        else:
-            use_backup = False
-            emergency_backup = data_set.DataSet.temp_name()
-            data_set.DataSet.allocate_model_data_set(emergency_backup, dest_name)
-
     # Here we'll use the normalized source file by shadowing the
     # original one. This change applies only to the
     # allocate_destination_data_set call.
@@ -2460,9 +2188,6 @@ def run_module(module, arg_def):
                 volume=volume
             )
     except Exception as err:
-        if dest_exists and not force:
-            restore_backup(dest_name, emergency_backup, dest_ds_type, use_backup)
-            erase_backup(emergency_backup, dest_ds_type)
         if converted_src:
             if remote_src:
                 src = original_src
@@ -2592,11 +2317,9 @@ def run_module(module, arg_def):
 
     except CopyOperationError as err:
         if dest_exists and not force:
-            restore_backup(dest_name, emergency_backup, dest_ds_type, use_backup)
         raise err
     finally:
         if dest_exists and not force:
-            erase_backup(emergency_backup, dest_ds_type)
 
     res_args.update(
         dict(

@@ -527,7 +527,7 @@ releases:
         log when a non-zero return code would occur, issue 655. (https://github.com/ansible-collections/ibm_zos_core/pull/683)
       - zos_operator - fixed incorrect example descriptions and updated the doc to
         highlight the deprecated option `wait`. (https://github.com/ansible-collections/ibm_zos_core/pull/648)
-      release_summary: 'Release Date: ''2023-4-21''
+      release_summary: 'Release Date: ''2023-04-21''
 
         This changelog describes all changes made to the modules and plugins included
 
@@ -684,7 +684,7 @@ releases:
         behaviors and reduces the possibility to encounter a permissions issue. (https://github.com/ansible-collections/ibm_zos_core/issues/389).
       - zos_job_submit - was updated to include an additional error code condition
         JCLERR. (https://github.com/ansible-collections/ibm_zos_core/pull/312)
-      - zos_lineinfile- updates the module with a new option named tmp_hlq. This allows
+      - zos_lineinfile - updates the module with a new option named tmp_hlq. This allows
         for a user to specify the data set high level qualifier (HLQ) used in any
         temporary data set created by the module. Often, the defaults are not permitted
         on systems, this provides a way to override the defaults. (https://github.com/ansible-collections/ibm_zos_core/pull/341).

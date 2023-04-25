@@ -16,9 +16,9 @@ zos_job_submit -- Submit JCL
 
 Synopsis
 --------
-- Submit JCL from DATA_SET , USS, or LOCAL location.
-- Submit a job and optionally monitor for its execution.
-- Optionally wait a designated time until the job finishes.
+- Submit JCL from a data set, USS, or from the controller.
+- Submit a job and optionally monitor for completion.
+- Optionally, wait a designated time until the job finishes.
 - For an uncataloged dataset, specify the volume serial number.
 
 
@@ -32,7 +32,7 @@ Parameters
 src
   The source file or data set containing the JCL to submit.
 
-  It could be physical sequential data set or a partitioned data set qualified by a member or a path. (e.g "USER.TEST","USER.JCL(TEST)")
+  It could be a physical sequential data set, a partitioned data set qualified by a member or a path. (e.g "USER.TEST","USER.JCL(TEST)")
 
   Or a USS file. (e.g "/u/tester/demo/sample.jcl")
 
@@ -58,20 +58,20 @@ location
 
 
 wait
-  Configuring wait used by the :ref:`zos_job_submit <zos_job_submit_module>` module has been deprecated and will be removed in ibm.ibm_zos_core collection.
+  Setting this option will yield no change, it is deprecated. There is no no need to set *wait*; setting *wait_times_s* is the correct way to configure the amount of tme to wait for a job to execute.
 
-  Setting this option will yield no change, it is deprecated.
+  Configuring wait used by the `zos_job_submit <./zos_job_submit.html>`_ module has been deprecated and will be removed in ibm.ibm_zos_core collection.
 
-  See option ``wait_time_s``.
+  See option *wait_time_s*.
 
   | **required**: False
   | **type**: bool
 
 
 wait_time_s
-  When *wait* is true, the module will wait for the number of seconds for Job completion.
+  Option *wait_time_s* is the total time that module `zos_job_submit <./zos_job_submit.html>`_ will wait for a submitted job to complete. The time begins when the module is executed on the managed node.
 
-  User can set the wait time manually with this option.
+  *wait_time_s* is measured in seconds and must be a value greater than 0 and less than 86400.
 
   | **required**: False
   | **type**: int
@@ -98,7 +98,9 @@ return_output
 volume
   The volume serial (VOLSER)is where the data set resides. The option is required only when the data set is not cataloged on the system.
 
-  When configured, the :ref:`zos_job_submit <zos_job_submit_module>` will try to catalog the data set for the volume serial. If it is not able to, the module will fail. Ignored for USS and LOCAL.
+  When configured, the `zos_job_submit <./zos_job_submit.html>`_ will try to catalog the data set for the volume serial. If it is not able to, the module will fail.
+
+  Ignored for *location=USS* and *location=LOCAL*.
 
   | **required**: False
   | **type**: str
@@ -546,18 +548,18 @@ jobs
           }
 
     msg
-      Return code resulting from the job submission.
+      Return code resulting from the job submission. Jobs that take longer to assign a value can have a value of '?'.
 
       | **type**: str
       | **sample**: CC 0000
 
     msg_code
-      Return code extracted from the `msg` so that it can be evaluated as a string.
+      Return code extracted from the `msg` so that it can be evaluated as a string. Jobs that take longer to assign a value can have a value of '?'.
 
       | **type**: str
 
     msg_txt
-      Returns additional information related to the job.
+      Returns additional information related to the job. Jobs that take longer to assign a value can have a value of '?'.
 
       | **type**: str
       | **sample**: The job completion code (CC) was not available in the job output, please review the job log."

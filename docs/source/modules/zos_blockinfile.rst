@@ -38,7 +38,9 @@ src
 
 
 state
-  Whether the block should be inserted/replaced (present) or removed (absent).
+  Whether the block should be inserted or replaced using *state=present*.
+
+  Whether the block should be removed using *state=absent*.
 
   | **required**: False
   | **type**: str
@@ -151,7 +153,7 @@ tmp_hlq
 
 
 encoding
-  The character set of the source *src*. :ref:`zos_blockinfile <zos_blockinfile_module>` requires to be provided with correct encoding to read the content of USS file or data set. If this parameter is not provided, this module assumes that USS file or data set is encoded in IBM-1047.
+  The character set of the source *src*. `zos_blockinfile <./zos_blockinfile.html>`_ requires it to be provided with correct encoding to read the content of a USS file or data set. If this parameter is not provided, this module assumes that USS file or data set is encoded in IBM-1047.
 
   Supported character sets rely on the charset conversion utility (iconv) version; the most common character sets are supported.
 
@@ -165,7 +167,7 @@ force
 
   This is helpful when a data set is being used in a long running process such as a started task and you are wanting to update or read.
 
-  The ``-f`` option enables sharing of data sets through the disposition *DISP=SHR*.
+  The ``force`` option enables sharing of data sets through the disposition *DISP=SHR*.
 
   | **required**: False
   | **type**: bool
@@ -244,6 +246,36 @@ Examples
              LIB('{{ DB2RUN }}.RUNLIB.LOAD')
        indentation: 16
 
+   - name: Set facts for the following two tasks.
+     set_fact:
+       HLQ: 'ANSIBLE'
+       MLQ: 'MEMBER'
+       LLQ: 'TEST'
+       MEM: '(JCL)'
+       MSG: 'your first JCL program'
+       CONTENT: "{{ lookup('file', 'files/content.txt') }}"
+
+   - name: Update JCL in a PDS member with Jinja2 variable syntax.
+     zos_blockinfile:
+       src: "{{ HLQ }}.{{MLQ}}.{{LLQ}}{{MEM}}"
+       insertafter: "HELLO, WORLD"
+       marker: "//* {mark} *//"
+       marker_begin: "Begin Ansible Block Insertion 1"
+       marker_end: "End Ansible Block Insertion 1"
+       state: present
+       block: |
+         This is {{ MSG }}, and its now
+         managed by Ansible.
+
+   - name: Update JCL in PDS member with content from a file.
+     zos_blockinfile:
+       src: "{{ HLQ }}.{{MLQ}}.{{LLQ}}{{MEM}}"
+       insertafter: "End Ansible Block Insertion 1"
+       marker: "//* {mark} *//"
+       marker_begin: "Begin Ansible Block Insertion 2"
+       marker_end: "End Ansible Block Insertion 2"
+       block: "{{ CONTENT }}"
+
 
 
 
@@ -253,11 +285,11 @@ Notes
 .. note::
    It is the playbook author or user's responsibility to avoid files that should not be encoded, such as binary files. A user is described as the remote user, configured either for the playbook or playbook tasks, who can also obtain escalated privileges to execute as root or another user.
 
-   All data sets are always assumed to be cataloged. If an uncataloged data set needs to be encoded, it should be cataloged first. The :ref:`zos_data_set <zos_data_set_module>` module can be used to catalog uncataloged data sets.
+   All data sets are always assumed to be cataloged. If an uncataloged data set needs to be encoded, it should be cataloged first. The `zos_data_set <./zos_data_set.html>`_ module can be used to catalog uncataloged data sets.
 
    For supported character sets used to encode data, refer to the `documentation <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html>`_.
 
-   When using 'with_*' loops be aware that if you do not set a unique mark the block will be overwritten on each iteration.
+   When using ``with_*`` loops be aware that if you do not set a unique mark the block will be overwritten on each iteration.
 
    When more then one block should be handled in a file you must change the *marker* per task.
 

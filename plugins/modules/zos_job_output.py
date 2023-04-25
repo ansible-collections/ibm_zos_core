@@ -160,21 +160,21 @@ jobs:
           type: list
           elements: str
           sample:
-             [ "         1 //HELLO    JOB (T043JM,JM00,1,0,0,0),'HELLO WORLD - JRM',CLASS=R,       JOB00134",
-               "           //             MSGCLASS=X,MSGLEVEL=1,NOTIFY=S0JM                                ",
-               "           //*                                                                             ",
-               "           //* PRINT \"HELLO WORLD\" ON JOB OUTPUT                                          ",
-               "           //*                                                                             ",
-               "           //* NOTE THAT THE EXCLAMATION POINT IS INVALID EBCDIC FOR JCL                   ",
-               "           //*   AND WILL CAUSE A JCL ERROR                                                ",
-               "           //*                                                                             ",
-               "         2 //STEP0001 EXEC PGM=IEBGENER                                                    ",
-               "         3 //SYSIN    DD DUMMY                                                             ",
-               "         4 //SYSPRINT DD SYSOUT=*                                                          ",
-               "         5 //SYSUT1   DD *                                                                 ",
-               "         6 //SYSUT2   DD SYSOUT=*                                                          ",
-               "         7 //                                                                              "
-             ]
+             [ "         1 //HELLO    JOB (T043JM,JM00,1,0,0,0),'HELLO WORLD - JRM',CLASS=R,       JOB00134",
+               "           //             MSGCLASS=X,MSGLEVEL=1,NOTIFY=S0JM                                ",
+               "           //*                                                                             ",
+               "           //* PRINT \"HELLO WORLD\" ON JOB OUTPUT                                         ",
+               "           //*                                                                             ",
+               "           //* NOTE THAT THE EXCLAMATION POINT IS INVALID EBCDIC FOR JCL                   ",
+               "           //*   AND WILL CAUSE A JCL ERROR                                                ",
+               "           //*                                                                             ",
+               "         2 //STEP0001 EXEC PGM=IEBGENER                                                    ",
+               "         3 //SYSIN    DD DUMMY                                                             ",
+               "         4 //SYSPRINT DD SYSOUT=*                                                          ",
+               "         5 //SYSUT1   DD *                                                                 ",
+               "         6 //SYSUT2   DD SYSOUT=*                                                          ",
+               "         7 //                                                                              "
+             ]
     ret_code:
       description:
          Return code output collected from job log.

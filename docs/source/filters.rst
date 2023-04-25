@@ -28,7 +28,7 @@ For more details on filters, review the filters and documentation under
 the `filter`_ directory included in the collection.
 
 .. _filter:
-   https://github.com/ansible-collections/ibm_zos_core/tree/master/plugins/filter/
+   https://github.com/ansible-collections/ibm_zos_core/tree/main/plugins/filter/
 
 
 

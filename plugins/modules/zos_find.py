@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020
+# Copyright (c) IBM Corporation 2020, 2023
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -127,9 +127,9 @@ options:
       - volumes
 notes:
   - Only cataloged data sets will be searched. If an uncataloged data set needs to
-    be searched, it should be cataloged first. The M(zos_data_set) module can be
+    be searched, it should be cataloged first. The L(zos_data_set,./zos_data_set.html) module can be
     used to catalog uncataloged data sets.
-  - The M(zos_find) module currently does not support wildcards for high level qualifiers.
+  - The L(zos_find,./zos_find.html) module currently does not support wildcards for high level qualifiers.
     For example, C(SOME.*.DATA.SET) is a valid pattern, but C(*.DATA.SET) is not.
   - If a data set pattern is specified as C(USER.*), the matching data sets will have two
     name segments such as C(USER.ABC), C(USER.XYZ) etc. If a wildcard is specified
@@ -336,7 +336,8 @@ def data_set_filter(module, pds_paths, patterns):
         rc, out, err = _dls_wrapper(pattern, list_details=True)
         if rc != 0:
             if "BGYSC1103E" in err:
-                return filtered_data_sets
+                # return filtered_data_sets
+                continue
 
             module.fail_json(
                 msg="Non-zero return code received while executing ZOAU shell command 'dls'",

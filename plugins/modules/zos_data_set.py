@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020
+# Copyright (c) IBM Corporation 2019, 2020, 2023
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -43,6 +43,10 @@ options:
       - >
         If I(state=absent) and the data set does exist on the managed node,
         remove the data set, module completes successfully with I(changed=True).
+      - >
+        If I(state=absent) and I(type=MEMBER) and I(force=True), the data set
+        will be opened with I(DISP=SHR) such that the entire data set can be
+        accessed by other processes while the specified member is deleted.
       - >
         If I(state=absent) and I(volumes) is provided, and the data set is not
         found in the catalog, the module attempts to perform catalog using supplied
@@ -141,6 +145,9 @@ options:
     description:
       - The format of the data set. (e.g C(FB))
       - Choices are case-insensitive.
+      - When I(type=KSDS), I(type=ESDS), I(type=RRDS), I(type=LDS) or I(type=ZFS)
+        then I(record_format=None), these types do not have a default
+        I(record_format).
     required: false
     choices:
       - FB
@@ -148,8 +155,8 @@ options:
       - FBA
       - VBA
       - U
-    default: FB
     type: str
+    default: FB
   sms_storage_class:
     description:
       - The storage class for an SMS-managed dataset.
@@ -213,11 +220,11 @@ options:
         If creating a data set, I(volumes) specifies the volume(s) where the data set should be created.
       - >
         If I(volumes) is provided when I(state=present), and the data set is not found in the catalog,
-        M(zos_data_set) will check the volume table of contents to see if the data set exists.
+        L(zos_data_set,./zos_data_set.html) will check the volume table of contents to see if the data set exists.
         If the data set does exist, it will be cataloged.
       - >
         If I(volumes) is provided when I(state=absent) and the data set is not found in the catalog,
-        M(zos_data_set) will check the volume table of contents to see if the data set exists.
+        L(zos_data_set,./zos_data_set.html) will check the volume table of contents to see if the data set exists.
         If the data set does exist, it will be cataloged and promptly removed from the system.
       - I(volumes) is required when I(state=cataloged).
       - Accepts a string when using a single volume and a list of strings when using multiple.
@@ -244,6 +251,20 @@ options:
         that is not available, then the value C(TMPHLQ) is used.
     required: false
     type: str
+  force:
+    description:
+      - Specifies that the data set can be shared with others during a member
+        delete operation which results in the data set you are updating to be
+        simultaneously updated by others.
+      - This is helpful when a data set is being used in a long running process
+        such as a started task and you are wanting to delete a member.
+      - The I(force=True) option enables sharing of data sets through the
+        disposition I(DISP=SHR).
+      - The I(force=True) only applies to data set members when I(state=absent)
+        and I(type=MEMBER).
+    type: bool
+    required: false
+    default: false
   batch:
     description:
       - Batch can be used to perform operations on multiple data sets in a single module call.
@@ -268,6 +289,11 @@ options:
           - >
             If I(state=absent) and the data set does exist on the managed node,
             remove the data set, module completes successfully with I(changed=True).
+          - >
+            If I(state=absent) and I(type=MEMBER) and I(force=True), the data
+            set will be opened with I(DISP=SHR) such that the entire data set
+            can be accessed by other processes while the specified member is
+            deleted.
           - >
             If I(state=absent) and I(volumes) is provided, and the data set is not
             found in the catalog, the module attempts to perform catalog using supplied
@@ -366,6 +392,9 @@ options:
         description:
           - The format of the data set. (e.g C(FB))
           - Choices are case-insensitive.
+          - When I(type=KSDS), I(type=ESDS), I(type=RRDS), I(type=LDS) or
+            I(type=ZFS) then I(record_format=None), these types do not have a
+            default I(record_format).
         required: false
         choices:
           - FB
@@ -373,8 +402,8 @@ options:
           - FBA
           - VBA
           - U
-        default: FB
         type: str
+        default: FB
       sms_storage_class:
         description:
           - The storage class for an SMS-managed dataset.
@@ -438,11 +467,11 @@ options:
             If creating a data set, I(volumes) specifies the volume(s) where the data set should be created.
           - >
             If I(volumes) is provided when I(state=present), and the data set is not found in the catalog,
-            M(zos_data_set) will check the volume table of contents to see if the data set exists.
+            L(zos_data_set,./zos_data_set.html) will check the volume table of contents to see if the data set exists.
             If the data set does exist, it will be cataloged.
           - >
             If I(volumes) is provided when I(state=absent) and the data set is not found in the catalog,
-            M(zos_data_set) will check the volume table of contents to see if the data set exists.
+            L(zos_data_set,./zos_data_set.html) will check the volume table of contents to see if the data set exists.
             If the data set does exist, it will be cataloged and promptly removed from the system.
           - I(volumes) is required when I(state=cataloged).
           - Accepts a string when using a single volume and a list of strings when using multiple.
@@ -458,6 +487,21 @@ options:
             the same name and desired attributes. Since the existing data set will
             be deleted prior to creating the new data set, no data set will exist if creation of the new data set fails.
           - If I(replace=True), all data in the original data set will be lost.
+        type: bool
+        required: false
+        default: false
+      force:
+        description:
+          - Specifies that the data set can be shared with others during a member
+            delete operation which results in the data set you are updating to
+            be simultaneously updated by others.
+          - This is helpful when a data set is being used in a long running
+            process such as a started task and you are wanting to delete a
+            member.
+          - The I(force=True) option enables sharing of data sets through the
+            disposition I(DISP=SHR).
+          - The I(force=True) only applies to data set members when
+            I(state=absent) and I(type=MEMBER).
         type: bool
         required: false
         default: false
@@ -546,6 +590,13 @@ EXAMPLES = r"""
     state: absent
     type: MEMBER
 
+- name: Remove a member from an existing PDS/E by opening with disposition DISP=SHR
+  zos_data_set:
+    name: someds.name.here(mydata)
+    state: absent
+    type: MEMBER
+    force: yes
+
 - name: Create multiple partitioned data sets and add one or more members to each
   zos_data_set:
     batch:
@@ -630,6 +681,14 @@ DEFAULT_RECORD_LENGTHS = {
     "VBA": 137,
     "U": 0,
 }
+
+DATA_SET_TYPES_VSAM = [
+    "KSDS",
+    "ESDS",
+    "RRDS",
+    "LDS",
+    "ZFS",
+]
 
 # ------------- Functions to validate arguments ------------- #
 
@@ -880,6 +939,9 @@ def perform_data_set_operations(name, state, **extra_args):
     """Calls functions to perform desired operations on
     one or more data sets. Returns boolean indicating if changes were made."""
     changed = False
+    #  passing in **extra_args forced me to modify the acceptable parameters
+    #  for multiple functions in data_set.py including ensure_present, replace
+    #  and create where the force parameter has no bearing.
     if state == "present" and extra_args.get("type") != "MEMBER":
         changed = DataSet.ensure_present(name, **extra_args)
     elif state == "present" and extra_args.get("type") == "MEMBER":
@@ -887,7 +949,7 @@ def perform_data_set_operations(name, state, **extra_args):
     elif state == "absent" and extra_args.get("type") != "MEMBER":
         changed = DataSet.ensure_absent(name, extra_args.get("volumes"))
     elif state == "absent" and extra_args.get("type") == "MEMBER":
-        changed = DataSet.ensure_member_absent(name)
+        changed = DataSet.ensure_member_absent(name, extra_args.get("force"))
     elif state == "cataloged":
         changed = DataSet.ensure_cataloged(name, extra_args.get("volumes"))
     elif state == "uncataloged":
@@ -1003,6 +1065,11 @@ def parse_and_validate_args(params):
                     aliases=["volume"],
                     dependencies=["state"],
                 ),
+                force=dict(
+                    type="bool",
+                    required=False,
+                    default=False,
+                ),
             ),
         ),
         # For individual data set args
@@ -1072,12 +1139,17 @@ def parse_and_validate_args(params):
             required=False,
             default=None
         ),
+        force=dict(
+            type="bool",
+            required=False,
+            default=False,
+        ),
         mutually_exclusive=[
             ["batch", "name"],
             # ["batch", "state"],
             # ["batch", "space_type"],
-            ["batch", "space_primary"],
-            ["batch", "space_secondary"],
+            # ["batch", "space_primary"],
+            # ["batch", "space_secondary"],
             ["batch", "record_format"],
             ["batch", "sms_management_class"],
             ["batch", "sms_storage_class"],
@@ -1088,6 +1160,7 @@ def parse_and_validate_args(params):
             ["batch", "key_length"],
             # ["batch", "replace"],
             ["batch", "volumes"],
+            # ["batch", "force"],
         ],
     )
     parser = BetterArgParser(arg_defs)
@@ -1118,13 +1191,13 @@ def run_module():
                 ),
                 type=dict(type="str", required=False, default="PDS"),
                 space_type=dict(type="str", required=False, default="M"),
-                space_primary=dict(type="int", required=False, aliases=["size"]),
-                space_secondary=dict(type="int", required=False),
-                record_format=dict(type="str", required=False, aliases=["format"]),
+                space_primary=dict(type="int", required=False, aliases=["size"], default=5),
+                space_secondary=dict(type="int", required=False, default=3),
+                record_format=dict(type="str", required=False, aliases=["format"], default="FB"),
                 sms_management_class=dict(type="str", required=False),
                 # I know this alias is odd, ZOAU used to document they supported
                 # SMS data class when they were actually passing as storage class
-                # support for backwards compatability with previous module versions
+                # support for backwards compatibility with previous module versions
                 sms_storage_class=dict(
                     type="str", required=False, aliases=["data_class"]
                 ),
@@ -1148,6 +1221,11 @@ def run_module():
                     default=False,
                 ),
                 volumes=dict(type="raw", required=False, aliases=["volume"]),
+                force=dict(
+                    type="bool",
+                    required=False,
+                    default=False,
+                ),
             ),
         ),
         # For individual data set args
@@ -1162,9 +1240,9 @@ def run_module():
         ),
         type=dict(type="str", required=False, default="PDS"),
         space_type=dict(type="str", required=False, default="M"),
-        space_primary=dict(type="raw", required=False, aliases=["size"]),
-        space_secondary=dict(type="int", required=False),
-        record_format=dict(type="str", required=False, aliases=["format"]),
+        space_primary=dict(type="raw", required=False, aliases=["size"], default=5),
+        space_secondary=dict(type="int", required=False, default=3),
+        record_format=dict(type="str", required=False, aliases=["format"], default="FB"),
         sms_management_class=dict(type="str", required=False),
         # I know this alias is odd, ZOAU used to document they supported
         # SMS data class when they were actually passing as storage class
@@ -1199,10 +1277,41 @@ def run_module():
             required=False,
             default=None
         ),
+        force=dict(
+            type="bool",
+            required=False,
+            default=False
+        ),
     )
     result = dict(changed=False, message="", names=[])
 
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
+
+    # This evaluation will always occur as a result of the limitation on the
+    # better arg parser, this will serve as a solution for now and ensure
+    # the non-batch and batch arguments are correctly set
+    if module.params.get("batch") is not None:
+        for entry in module.params.get("batch"):
+            if entry.get('type') is not None and entry.get("type").upper() in DATA_SET_TYPES_VSAM:
+                entry["record_format"] = None
+        if module.params.get("type") is not None:
+            module.params["type"] = None
+        if module.params.get("state") is not None:
+            module.params["state"] = None
+        if module.params.get("space_type") is not None:
+            module.params["space_type"] = None
+        if module.params.get("space_primary") is not None:
+            module.params["space_primary"] = None
+        if module.params.get("space_secondary") is not None:
+            module.params["space_secondary"] = None
+        if module.params.get("replace") is not None:
+            module.params["replace"] = None
+        if module.params.get("record_format") is not None:
+            module.params["record_format"] = None
+    elif module.params.get("type") is not None:
+        if module.params.get("type").upper() in DATA_SET_TYPES_VSAM:
+            # For VSAM types set the value to nothing and let the code manage it
+            module.params["record_format"] = None
 
     if not module.check_mode:
         try:

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020, 2022
+# Copyright (c) IBM Corporation 2019, 2020, 2022, 2023
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -57,22 +57,24 @@ options:
     default: 1
   wait:
     description:
-      - Configuring wait used by the M(zos_operator) module has been
-        deprecated and will be removed in ibm.ibm_zos_core collection.
+      - Configuring wait used by the L(zos_operator,./zos_operator.html) module
+        has been deprecated and will be removed in a future ibm.ibm_zos_core
+        collection.
       - Setting this option will yield no change, it is deprecated.
+      - Review option I(wait_time_s) to instruct operator commands to wait.
     type: bool
     required: false
     default: true
 """
 
 EXAMPLES = r"""
-- name: Execute an operator command to show active jobs
+- name: Execute an operator command to show device status and allocation
   zos_operator:
-    cmd: 'd u,all'
+    cmd: 'd u'
 
-- name: Execute an operator command to show active jobs with verbose information
+- name: Execute an operator command to show device status and allocation with verbose information
   zos_operator:
-    cmd: 'd u,all'
+    cmd: 'd u'
     verbose: true
 
 - name: Execute an operator command to purge all job logs (requires escaping)
@@ -81,13 +83,17 @@ EXAMPLES = r"""
 
 - name: Execute operator command to show jobs, waiting up to 5 seconds for response
   zos_operator:
-    cmd: 'd u,all'
+    cmd: 'd a,all'
     wait_time_s: 5
 
 - name: Execute operator command to show jobs, always waiting 7 seconds for response
   zos_operator:
-    cmd: 'd u,all'
+    cmd: 'd a,all'
     wait_time_s: 7
+
+- name: Display the system symbols and associated substitution texts.
+  zos_operator:
+    cmd: 'D SYMBOLS'
 """
 
 RETURN = r"""

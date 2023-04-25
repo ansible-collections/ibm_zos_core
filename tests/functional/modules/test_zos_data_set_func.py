@@ -16,7 +16,11 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 import pytest
+import time
+import subprocess
 from pipes import quote
+from pprint import pprint
+
 
 # TODO: determine if data set names need to be more generic for testcases
 # TODO: add additional tests to check additional data set creation parameter combinations
@@ -151,10 +155,17 @@ def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl):
         hosts.all.file(path=TEMP_PATH, state="directory")
         hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl), TEMP_PATH))
         results = hosts.all.zos_job_submit(
-            src=TEMP_PATH + "/SAMPLE", location="USS", wait=True
+            src=TEMP_PATH + "/SAMPLE", location="USS", wait=True, wait_time_s=30
         )
         # verify data set creation was successful
         for result in results.contacted.values():
+            pprint(result)
+            if(result.get("jobs")[0].get("ret_code") is None):
+                submitted_job_id = result.get("jobs")[0].get("job_id")
+                assert submitted_job_id is not None
+                results = hosts.all.zos_job_output(job_id=submitted_job_id)
+                print("Getting failed JOB")
+                pprint(vars(results))
             assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
         # verify first uncatalog was performed
         results = hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="uncataloged")
@@ -449,6 +460,143 @@ def test_batch_data_set_and_member_creation(ansible_zos_module):
             assert result.get("changed") is True
             assert result.get("module_stderr") is None
     finally:
+        hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
+
+
+c_pgm="""#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+int main(int argc, char** argv)
+{
+    char dsname[ strlen(argv[1]) + 4];
+    sprintf(dsname, "//'%s'", argv[1]);
+    FILE* member;
+    member = fopen(dsname, "rb,type=record");
+    sleep(300);
+    fclose(member);
+    return 0;
+}
+"""
+
+call_c_jcl="""//PDSELOCK JOB MSGCLASS=A,MSGLEVEL=(1,1),NOTIFY=&SYSUID,REGION=0M
+//LOCKMEM  EXEC PGM=BPXBATCH
+//STDPARM DD *
+SH /tmp/disp_shr/pdse-lock '{0}({1})'
+//STDIN  DD DUMMY
+//STDOUT DD SYSOUT=*
+//STDERR DD SYSOUT=*
+//"""
+
+def test_data_member_force_delete(ansible_zos_module):
+    MEMBER_1, MEMBER_2, MEMBER_3, MEMBER_4 = "MEM1", "MEM2", "MEM3", "MEM4"
+    try:
+        hosts = ansible_zos_module
+
+        # set up:
+        # create pdse
+        results = hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="present", type="pdse", replace=True)
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+
+        # add members
+        results = hosts.all.zos_data_set(
+            batch=[
+                {
+                    "name": DEFAULT_DATA_SET_NAME + "({0})".format(MEMBER_1),
+                    "type": "member",
+                    "state": "present",
+                    "replace": True,
+                },
+                {
+                    "name": DEFAULT_DATA_SET_NAME + "({0})".format(MEMBER_2),
+                    "type": "member",
+                    "state": "present",
+                    "replace": True,
+                },
+                {
+                    "name": DEFAULT_DATA_SET_NAME + "({0})".format(MEMBER_3),
+                    "type": "member",
+                    "state": "present",
+                    "replace": True,
+                },
+                {
+                    "name": DEFAULT_DATA_SET_NAME + "({0})".format(MEMBER_4),
+                    "type": "member",
+                    "state": "present",
+                    "replace": True,
+                },
+            ]
+        )
+        # ensure data set/members create successful
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+
+        # copy/compile c program and copy jcl to hold data set lock for n seconds in background(&)
+        hosts.all.zos_copy(content=c_pgm, dest='/tmp/disp_shr/pdse-lock.c', force=True)
+        hosts.all.zos_copy(
+            content=call_c_jcl.format(DEFAULT_DATA_SET_NAME, MEMBER_1),
+            dest='/tmp/disp_shr/call_c_pgm.jcl',
+            force=True
+        )
+        hosts.all.shell(cmd="xlc -o pdse-lock pdse-lock.c", chdir="/tmp/disp_shr/")
+
+        # submit jcl
+        hosts.all.shell(cmd="submit call_c_pgm.jcl", chdir="/tmp/disp_shr/")
+
+        # pause to ensure c code acquires lock
+        time.sleep(5)
+
+        # non-force attempt to delete MEMBER_2 - should fail since pdse in in use.
+        results = hosts.all.zos_data_set(
+            name="{0}({1})".format(DEFAULT_DATA_SET_NAME, MEMBER_2),
+            state="absent",
+            type="MEMBER"
+        )
+        for result in results.contacted.values():
+            assert result.get("failed") is True
+            assert "DatasetMemberDeleteError" in result.get("msg")
+
+        # attempt to delete MEMBER_3 with force option.
+        results = hosts.all.zos_data_set(
+            name="{0}({1})".format(DEFAULT_DATA_SET_NAME, MEMBER_3), state="absent", type="MEMBER", force=True
+        )
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+
+        # attempt to delete MEMBER_4 with force option in batch mode.
+        results = hosts.all.zos_data_set(
+            batch=[
+                {
+                    "name": "{0}({1})".format(DEFAULT_DATA_SET_NAME, MEMBER_4),
+                    "state": "absent",
+                    "type": "MEMBER",
+                    "force": True
+                }
+            ]
+        )
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+
+        # confirm member deleted with mls -- mem1 and mem2 should be present but no mem3 and no mem4
+        results = hosts.all.command(cmd="mls {0}".format(DEFAULT_DATA_SET_NAME))
+        for result in results.contacted.values():
+            assert MEMBER_1 in result.get("stdout")
+            assert MEMBER_2 in result.get("stdout")
+            assert MEMBER_3 not in result.get("stdout")
+            assert MEMBER_4 not in result.get("stdout")
+
+    finally:
+        # extract pid
+        ps_list_res = hosts.all.shell(cmd="ps -e | grep -i 'pdse-lock'")
+
+        # kill process - release lock - this also seems to end the job
+        pid = list(ps_list_res.contacted.values())[0].get('stdout').strip().split(' ')[0]
+        hosts.all.shell(cmd="kill 9 {0}".format(pid.strip()))
+        # clean up c code/object/executable files, jcl
+        hosts.all.shell(cmd='rm -r /tmp/disp_shr')
+        # remove pdse
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
 
 

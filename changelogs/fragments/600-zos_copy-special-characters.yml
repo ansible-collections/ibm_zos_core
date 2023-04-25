@@ -1,4 +1,0 @@
-bugfixes:
- - zos_copy - fixes a bug where if a destination has accented characters in
-   its content, the module would fail when trying to determine if it is empty.
-   (https://github.com/ansible-collections/ibm_zos_core/pull/634)

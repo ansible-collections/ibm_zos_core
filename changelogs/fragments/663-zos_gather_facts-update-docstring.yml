@@ -1,3 +1,0 @@
-trivial:
-- zos_gather_facts - cherry pick - add sample output to RETURN docstring.
-  (https://github.com/ansible-collections/ibm_zos_core/pull/744)

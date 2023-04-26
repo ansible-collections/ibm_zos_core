@@ -5,18 +5,17 @@ ibm.ibm_zos_core Release Notes
 .. contents:: Topics
 
 
-v1.5.0-beta.1
-=============
+v1.5.0
+======
 
 Release Summary
 ---------------
 
-Release Date: '2022-11-17'
+Release Date: '2023-04-21'
 This changelog describes all changes made to the modules and plugins included
 in this collection. The release date is the date the changelog is created.
 For additional details such as required dependencies and availability review
 the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__
-
 
 Major Changes
 -------------
@@ -66,22 +65,35 @@ Deprecated Features
 Bugfixes
 --------
 
+- zos_copy - Copy failed from a loadlib member to another loadlib member. Fix now looks for error in stdout in the if statement to use -X option. (https://github.com/ansible-collections/ibm_zos_core/pull/641)
+- zos_copy - Fixed a bug where the module would change the mode for a directory when copying into it the contents of another. (https://github.com/ansible-collections/ibm_zos_core/pull/746)
 - zos_copy - Fixes a bug such that the module fails when copying files from a directory needing also to be encoded. The failure would also delete the `src` which was not desirable behavior. Fixes deletion of src on encoding error. (https://github.com/ansible-collections/ibm_zos_core/pull/321).
-- zos_copy - Fixes wrongful creation of destination backups when module option `force` is true, creating emergency backups meant to restore the system to its initial state in case of a module failure only when force is false. (https://github.com/ansible-collections/ibm_zos_core/pull/590)
 - zos_copy - Fixes a bug where copying a member from a loadlib to another loadlib fails. (https://github.com/ansible-collections/ibm_zos_core/pull/640)
+- zos_copy - Fixes a bug where files not encoded in IBM-1047 would trigger an error while computing the record length for a new destination dataset. Issue 664. (https://github.com/ansible-collections/ibm_zos_core/pull/725)
 - zos_copy - Fixes a bug where if a destination has accented characters in its content, the module would fail when trying to determine if it is empty. (https://github.com/ansible-collections/ibm_zos_core/pull/634)
+- zos_copy - Fixes a bug where the code for fixing an issue with newlines in files (issue 599) would use the wrong encoding for normalization. Issue 678. (https://github.com/ansible-collections/ibm_zos_core/pull/725)
 - zos_copy - Fixes a bug where the computed record length for a new destination dataset would include newline characters. (https://github.com/ansible-collections/ibm_zos_core/pull/620)
+- zos_copy - Fixes wrongful creation of destination backups when module option `force` is true, creating emergency backups meant to restore the system to its initial state in case of a module failure only when force is false. (https://github.com/ansible-collections/ibm_zos_core/pull/590)
 - zos_copy - module was updated to correct a bug in the case when the destination (dest) is a PDSE and the source (src) is a Unix Systems File (USS). The module would fail in determining if the PDSE actually existed and try to create it when it already existed resulting in an error that would prevent the module from correctly executing. (https://github.com/ansible-collections/ibm_zos_core/pull/327)
 - zos_data_set - Fixes a bug such that the module will delete a catalogued data set over an uncatalogued data set even though the volume is provided for the uncataloged data set. This is unexpected behavior and does not align to documentation; correct behavior is that when a volume is provided that is the first place the module should look for the data set, whether or not it is cataloged. (https://github.com/ansible-collections/ibm_zos_core/pull/325).
-- zos_data_set - Fixes a bug where the default record format FB was actually never enforced and when enforced it would cause VSAM creation to fail with a Dynalloc failure. This also cleans up some of the options that are set by default when they have no bearing for batch. (https://github.com/ansible-collections/ibm_zos_core/pull/647)
+- zos_data_set - Fixes a bug where the default record format FB was actually never enforced and when enforced it would cause VSAM creation to fail with a Dynalloc failure. Also cleans up some of the options that are set by default when they have no bearing for batch. (https://github.com/ansible-collections/ibm_zos_core/pull/647)
 - zos_fetch - Updates the modules behavior when fetching VSAM data sets such that the maximum record length is now determined when creating a temporary data set to copy the VSAM data into and a variable-length (VB) data set is used. (https://github.com/ansible-collections/ibm_zos_core/pull/350)
 - zos_job_output - Fixes a bug that returned all ddname's when a specific ddnamae was provided. Now a specific ddname can be returned and all others ignored. (https://github.com/ansible-collections/ibm_zos_core/pull/334)
 - zos_job_query - was updated to correct a boolean condition that always evaluated to "CANCELLED". (https://github.com/ansible-collections/ibm_zos_core/pull/312).
+- zos_job_submit - Fixes the issue when `wait_time_s` was set to 0 that would result in a `type` error that a stack trace would result in the response, issue 670. (https://github.com/ansible-collections/ibm_zos_core/pull/683)
+- zos_job_submit - Fixes the issue when a job encounters a security exception no job log would would result in the response, issue 684. (https://github.com/ansible-collections/ibm_zos_core/pull/683)
+- zos_job_submit - Fixes the issue when a job is configured for a syntax check using TYPRUN=SCAN that it would wait the full duration set by `wait_time_s` to return a response, issue 685. (https://github.com/ansible-collections/ibm_zos_core/pull/683)
+- zos_job_submit - Fixes the issue when a job is configured for a syntax check using TYPRUN=SCAN that no job log would result in the response, issue 685. (https://github.com/ansible-collections/ibm_zos_core/pull/683)
+- zos_job_submit - Fixes the issue when a job is purged by the system that a stack trace would result in the response, issue 681. (https://github.com/ansible-collections/ibm_zos_core/pull/683)
+- zos_job_submit - Fixes the issue when invalid JCL syntax is submitted that a stack trace would result in the response, issue 623. (https://github.com/ansible-collections/ibm_zos_core/pull/683)
+- zos_job_submit - Fixes the issue when resources (data sets) identified in JCL did not exist such that a stack trace would result in the response, issue 624. (https://github.com/ansible-collections/ibm_zos_core/pull/683)
+- zos_job_submit - Fixes the issue where the response did not include the job log when a non-zero return code would occur, issue 655. (https://github.com/ansible-collections/ibm_zos_core/pull/683)
 - zos_mount - Fixes option `tag_ccsid` to correctly allow for type int. (https://github.com/ansible-collections/ibm_zos_core/pull/511)
 - zos_mvs_raw - module was updated to correct a bug when no DD statements were provided. The module when no option was provided for `dds` would error, a default was provided to correct this behavior. (https://github.com/ansible-collections/ibm_zos_core/pull/336)
 - zos_operator - Fixes case sensitive error checks, invalid, error & unidentifiable (https://github.com/ansible-collections/ibm_zos_core/issues/389).
 - zos_operator - Fixes such that specifying wait_time_s would throw an error (https://github.com/ansible-collections/ibm_zos_core/issues/389).
 - zos_operator - Fixes the wait_time_s to default to 1 second (https://github.com/ansible-collections/ibm_zos_core/issues/389).
+- zos_operator - fixed incorrect example descriptions and updated the doc to highlight the deprecated option `wait`. (https://github.com/ansible-collections/ibm_zos_core/pull/648)
 - zos_operator - was updated to correct missing verbosity content when the option verbose was set to True. zos_operator - was updated to correct the trailing lines that would appear in the result content. (https://github.com/ansible-collections/ibm_zos_core/pull/400).
 
 New Modules
@@ -89,50 +101,41 @@ New Modules
 
 - ibm.ibm_zos_core.zos_gather_facts - Gather z/OS system facts.
 
-v1.4.0-beta.2
-=============
+v1.4.1
+======
 
 Release Summary
 ---------------
 
-Release Date: '2022-10-17'
+Release Date: '2023-04-18'
 This changelog describes all changes made to the modules and plugins included
 in this collection. The release date is the date the changelog is created.
 For additional details such as required dependencies and availability review
 the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__
 
 
-Minor Changes
--------------
-
-- zos_copy - enhanced the force option when `force=true` and the remote file or data set `dest` is NOT empty, the `dest` will be deleted and recreated with the `src` data set attributes, otherwise it will be recreated with the `dest` data set attributes. (https://github.com/ansible-collections/ibm_zos_core/pull/306)
-- zos_copy - fixes a bug that when a directory is copied from the controller to the managed node and a mode is set, the mode is applied to the directory on the managed node. If the directory being copied contains files and mode is set, mode will only be applied to the files being copied not the pre-existing files. (https://github.com/ansible-collections/ibm_zos_core/pull/306)
-- zos_copy - fixes a bug where options were not defined in the module argument spec that will result in error when running `ansible-core` v2.11 and using options `force` or `mode`. (https://github.com/ansible-collections/ibm_zos_core/pull/496)
-- zos_copy - introduced an updated creation policy referred to as precedence rules such that if `dest_data_set` is set, this will take precedence. If `dest` is an empty data set, the empty data set will be written with the expectation its attributes satisfy the copy. If no precedent rule has been exercised, `dest` will be created with the same attributes of `src`. (https://github.com/ansible-collections/ibm_zos_core/pull/306)
-- zos_copy - introduced new computation capabilities such that if `dest` is a nonexistent data set, the attributes assigned will depend on the type of `src`. If `src` is a USS file, `dest` will have a Fixed Block (FB) record format and the remaining attributes will be computed. If `src` is binary, `dest` will have a Fixed Block (FB) record format with a record length of 80, block size of 32760, and the remaining attributes will be computed. (https://github.com/ansible-collections/ibm_zos_core/pull/306)
-- zos_copy - option `dest_dataset` has been deprecated and removed in favor of the new option `dest_data_set`. (https://github.com/ansible-collections/ibm_zos_core/pull/306)
-- zos_copy - was enhanced for when `src` is a directory and ends with "/", the contents of it will be copied into the root of `dest`. It it doesn't end with "/", the directory itself will be copied. (https://github.com/ansible-collections/ibm_zos_core/pull/496)
-
 Bugfixes
 --------
 
-- zos_copy - fixes a bug that did not create a data set on the specified volume. (https://github.com/ansible-collections/ibm_zos_core/pull/306)
-- zos_copy - fixes a bug where a number of attributes were not an option when using `dest_data_set`. (https://github.com/ansible-collections/ibm_zos_core/pull/306)
-- zos_job_output - fixes a bug that returned all ddname's when a specific ddname was provided. Now a specific ddname can be returned and all others ignored. (https://github.com/ansible-collections/ibm_zos_core/pull/507)
-- zos_mount - fixed option `tag_ccsid` to correctly allow for type int. (https://github.com/ansible-collections/ibm_zos_core/pull/502)
-- zos_operator - enhanced to allow for MVS operator `SET` command, `SET` is equivalent to the abbreviated `T` command. (https://github.com/ansible-collections/ibm_zos_core/pull/501)
+- zos_copy - Copy failed from a loadlib member to another loadlib member. Fix now looks for error in stdout in the if statement to use -X option. (https://github.com/ansible-collections/ibm_zos_core/pull/640)
+- zos_copy - Fixed a bug where the module would change the mode for a directory when copying into it the contents of another. (https://github.com/ansible-collections/ibm_zos_core/pull/742)
+- zos_copy - Fixes a bug where files not encoded in IBM-1047 would trigger an error while computing the record length for a new destination dataset. Issue 664. (https://github.com/ansible-collections/ibm_zos_core/pull/732)
+- zos_copy - Fixes a bug where the code for fixing an issue with newlines in files (issue 599) would use the wrong encoding for normalization. Issue 678. (https://github.com/ansible-collections/ibm_zos_core/pull/732)
+- zos_copy - fixed wrongful creation of destination backups when module option `force` is true, creating emergency backups meant to restore the system to its initial state in case of a module failure only when force is false. (https://github.com/ansible-collections/ibm_zos_core/pull/590)
+- zos_copy - fixes a bug where the computed record length for a new destination dataset would include newline characters. (https://github.com/ansible-collections/ibm_zos_core/pull/620)
+- zos_job_query - fixes a bug where a boolean was not being properly compared. (https://github.com/ansible-collections/ibm_zos_core/pull/379)
 
-v1.4.0-beta.1
-=============
+v1.4.0
+======
 
 Release Summary
 ---------------
 
-Release Date: '2021-06-23'
-This changlelog describes all changes made to the modules and plugins included
-in this collection.
-For additional details such as required dependencies and availablity review
-the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__ 
+Release Date: '2022-12-07'
+This changelog describes all changes made to the modules and plugins included
+in this collection. The release date is the date the changelog is created.
+For additional details such as required dependencies and availability review
+the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__
 
 
 Major Changes
@@ -150,6 +153,20 @@ Major Changes
 - zos_operator_action_query response messages were improved with more diagnostic information in the event an error is encountered.
 - zos_ping was updated to remove the need for the zos_ssh connection plugin dependency.
 
+Minor Changes
+-------------
+
+- zos_copy - enhanced the force option when `force=true` and the remote file or data set `dest` is NOT empty, the `dest` will be deleted and recreated with the `src` data set attributes, otherwise it will be recreated with the `dest` data set attributes. (https://github.com/ansible-collections/ibm_zos_core/pull/306)
+- zos_copy - enhanced to optimize how it captures the permission bits state for the `dest`. This change now reviews the source files instead of traversing the entire `dest` path. (https://github.com/ansible-collections/ibm_zos_core/pull/561)
+- zos_copy - enhanced to support creating a parent directory when it does not exist in the `dest` path. Prior to this change, if a parent directory anywhere in the path did not exist the task would fail as it was stated in documentation. (https://github.com/ansible-collections/ibm_zos_core/pull/561)
+- zos_copy - enhanced to support system symbols in PARMLIB. System symbols are elements that allow different z/OS® systems to share PARMLIB definitions while retaining unique values in those definitions. This was fixed in a future release through the use of one of the ZOAU dependency but this version of `ibm_zos_core` does not support that dependency version so this support was added. (https://github.com/ansible-collections/ibm_zos_core/pull/566)
+- zos_copy - fixes a bug that when a directory is copied from the controller to the managed node and a mode is set, the mode is applied to the directory on the managed node. If the directory being copied contains files and mode is set, mode will only be applied to the files being copied not the pre-existing files. (https://github.com/ansible-collections/ibm_zos_core/pull/306)
+- zos_copy - fixes a bug where options were not defined in the module argument spec that will result in error when running `ansible-core` v2.11 and using options `force` or `mode`. (https://github.com/ansible-collections/ibm_zos_core/pull/496)
+- zos_copy - introduced an updated creation policy referred to as precedence rules such that if `dest_data_set` is set, this will take precedence. If `dest` is an empty data set, the empty data set will be written with the expectation its attributes satisfy the copy. If no precedent rule has been exercised, `dest` will be created with the same attributes of `src`. (https://github.com/ansible-collections/ibm_zos_core/pull/306)
+- zos_copy - introduced new computation capabilities such that if `dest` is a nonexistent data set, the attributes assigned will depend on the type of `src`. If `src` is a USS file, `dest` will have a Fixed Block (FB) record format and the remaining attributes will be computed. If `src` is binary, `dest` will have a Fixed Block (FB) record format with a record length of 80, block size of 32760, and the remaining attributes will be computed. (https://github.com/ansible-collections/ibm_zos_core/pull/306)
+- zos_copy - option `dest_dataset` has been deprecated and removed in favor of the new option `dest_data_set`. (https://github.com/ansible-collections/ibm_zos_core/pull/306)
+- zos_copy - was enhanced for when `src` is a directory and ends with "/", the contents of it will be copied into the root of `dest`. It it doesn't end with "/", the directory itself will be copied. (https://github.com/ansible-collections/ibm_zos_core/pull/496)
+
 Deprecated Features
 -------------------
 
@@ -160,7 +177,12 @@ Deprecated Features
 Bugfixes
 --------
 
+- zos_copy - fixes a bug that did not create a data set on the specified volume. (https://github.com/ansible-collections/ibm_zos_core/pull/306)
+- zos_copy - fixes a bug where a number of attributes were not an option when using `dest_data_set`. (https://github.com/ansible-collections/ibm_zos_core/pull/306)
+- zos_job_output - fixes a bug that returned all ddname's when a specific ddname was provided. Now a specific ddname can be returned and all others ignored. (https://github.com/ansible-collections/ibm_zos_core/pull/507)
 - zos_job_output was updated to correct possible truncated responses for the ddname content. This would occur for jobs with very large amounts of content from a ddname.
+- zos_mount - fixed option `tag_ccsid` to correctly allow for type int. (https://github.com/ansible-collections/ibm_zos_core/pull/502)
+- zos_operator - enhanced to allow for MVS operator `SET` command, `SET` is equivalent to the abbreviated `T` command. (https://github.com/ansible-collections/ibm_zos_core/pull/501)
 - zos_ssh - connection plugin was updated to correct a bug in Ansible that
     would result in playbook task retries overriding the SSH connection
     retries. This is resolved by renaming the zos_ssh option
@@ -175,7 +197,36 @@ New Modules
 
 - ibm.ibm_zos_core.zos_mount - Mount a z/OS file system.
 
-v1.3.4
+v1.3.6
+======
+
+Release Summary
+---------------
+
+Release Date: '2022-10-07'
+This changelog describes all changes made to the modules and plugins included
+in this collection. The release date is the date the changelog is created.
+For additional details such as required dependencies and availability review
+the collections `release notes <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html>`__ 
+
+
+Minor Changes
+-------------
+
+- zos_copy - was enhanced for when `src` is a directory and ends with "/", the contents of it will be copied into the root of `dest`. If it doesn't end with "/", the directory itself will be copied. (https://github.com/ansible-collections/ibm_zos_core/pull/515)
+
+Bugfixes
+--------
+
+- jobs.py - fixes a utility used by module `zos_job_output` that would truncate the DD content. (https://github.com/ansible-collections/ibm_zos_core/pull/462)
+- zos_copy - fixes a bug that when a directory is copied from the controller to the managed node and a mode is set, the mode is now applied to the directory on the controller. If the directory being copied contains files and mode is set, mode will only be applied to the files being copied not the pre-existing files.(https://github.com/ansible-collections/ibm_zos_core/pull/462)
+- zos_copy - fixes a bug where options were not defined in the module argument spec that will result in error when running `ansible-core` 2.11 and using options `force` or `mode`. (https://github.com/ansible-collections/ibm_zos_core/pull/462)
+- zos_fetch - fixes a bug where an option was not defined in the module argument spec that will result in error when running `ansible-core` 2.11 and using option `encoding`. (https://github.com/ansible-collections/ibm_zos_core/pull/462)
+- zos_job_submit - fixes a bug where an option was not defined in the module argument spec that will result in error when running `ansible-core` 2.11 and using option `encoding`. (https://github.com/ansible-collections/ibm_zos_core/pull/462)
+- zos_ssh - fixes connection plugin which will error when using `ansible-core` 2.11 with an `AttributeError module 'ansible.constants' has no attribute 'ANSIBLE_SSH_CONTROL_PATH_DIR'`. (https://github.com/ansible-collections/ibm_zos_core/pull/462)
+- zos_ssh - fixes connection plugin which will error when using `ansible-core` 2.11 with an `AttributeError module 'ansible.constants' has no attribute 'ANSIBLE_SSH_CONTROL_PATH_DIR'`. (https://github.com/ansible-collections/ibm_zos_core/pull/513)
+
+v1.3.5
 ======
 
 Release Summary

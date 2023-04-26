@@ -217,7 +217,14 @@ def run_module():
         # short_str is local, and just to check for problem response values.
         # ssctr is a limit variable so we don't pull more than 5 lines of each.
         result["content"] = []
-        short_str = []
+        check_error = []
+        stdout = rc_message.get("stdout")
+        if stdout is not None:
+          for out in stdout.split("\n"):
+            result["content"].append(out)
+            check_error.append(out)
+
+        """short_str = []
         ssctr = 0
         tstr = rc_message.get("stdout")
         if tstr is not None:
@@ -226,16 +233,21 @@ def run_module():
                     result["content"].append(s)
                 if ssctr < 5:
                     short_str.append(s)
-                    ssctr += 1
-        ssctr = 0
+                    ssctr += 1"""
+        stderr = rc_message.get("stderr")
+        error = []
+        if stderr is not None:
+          for err in stderr.split("\n"):
+            error.append(err)
+        """ssctr = 0
         tstr = rc_message.get("stderr")
         if tstr is not None:
             for s in tstr.split("\n"):
                 if s:
                     result["content"].append(s)
-                if ssctr < 5:
+                if ssct < 5:
                     short_str.append(s)
-                    ssctr += 1
+                    ssctr += 1"""
 
         # call is returned from run_operator_command, specifying what was run.
         # result["cmd"] = new_params.get("cmd")
@@ -247,26 +259,30 @@ def run_module():
         # but it could still be a bad/invalid command.
         # As long as there are more than 2 lines, it's worth looking through.
         if int(result["rc"]) == 0:
-            if len(short_str) > 2:
+            if len(result["content"]) > 2:
                 result["changed"] = True
-                for linetocheck in short_str:
+
+                for linetocheck in check_error:
                     if "invalid" in linetocheck.lower():
                         result["exception"] = "Invalid detected: " + linetocheck
-                        result["changed"] = False
-                        module.fail_json(msg=result["exception"], **result)
+                        #result["exception"] = "Invalid detected: " + linetocheck
+                        #result["changed"] = False
+                        #module.fail_json(msg=result["exception"], **result)
                     elif "error" in linetocheck.lower():
                         result["exception"] = "Error detected: " + linetocheck
-                        result["changed"] = False
-                        module.fail_json(msg=result["exception"], **result)
+                        #result["exception"] = "Error detected: " + linetocheck
+                        #result["changed"] = False
+                        #module.fail_json(msg=result["exception"], **result)
                     elif "unidentifiable" in linetocheck.lower():
                         result["exception"] = "Unidentifiable detected: " + linetocheck
-                        result["changed"] = False
-                        module.fail_json(msg=result["exception"], **result)
+                        #result["exception"] = "Unidentifiable detected: " + linetocheck
+                        #result["changed"] = False
+                        #module.fail_json(msg=result["exception"], **result)
             else:
                 module.fail_json(msg="Expected response to be more than 2 lines.", **result)
         else:
             module.fail_json(
-                msg="Non-zero response received: " + str(result["rc"]), **result
+                msg="Non-zero response received: " + str(result["rc"] + "\n" +". Stderr: " + str(error)), **result
             )
     except Error as e:
         module.fail_json(msg=repr(e), **result)

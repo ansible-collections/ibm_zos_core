@@ -5,6 +5,7 @@
 ========
 Releases
 ========
+
 Version 1.6.0-beta.1
 ====================
 
@@ -17,11 +18,10 @@ Minor Changes
 -------------
 
 - ``zos_blockinfile`` - Adds an enhancement to allow double quotes within a block.
-- ``zos_copy`` - Adds an enhancement to keep track of modified members in a destination dataset, restoring them to their previous state in case of a failure.
-- ``zos_data_set`` - Adds a new option named force to enable deletion of a data member in a PDSE that is simultaneously in use by others.
-- ``zos_job_query`` - Enables embedded positional wild card placement throughout `job_name` and `job_id` parameters.
-- ``zos_lineinfile`` - Adds a new option named force to enable modification of a data member in a data set that is simultaneously in use by others.
-- ``zos_tso_command`` - Adds a new option named max_rc to enable non-zero return codes lower than the specified maximum return as succeeded.
+- ``zos_data_set`` - Adds a new option named *force* to enable deletion of a data member in a PDSE that is simultaneously in use by others.
+- ``zos_job_query`` - Enables embedded positional wild card placement throughout *job_name* and *job_id* parameters.
+- ``zos_lineinfile`` - Adds a new option named *force* to enable modification of a data member in a data set that is simultaneously in use by others.
+- ``zos_tso_command`` - Adds a new option named *max_rc* to enable non-zero return codes lower than the specified maximum return as succeeded.
 
 Bugfixes
 --------

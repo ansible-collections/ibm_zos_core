@@ -47,6 +47,9 @@ state
   If *state=absent* and the data set does exist on the managed node, remove the data set, module completes successfully with *changed=True*.
 
 
+  If *state=absent* and *type=MEMBER* and *force=True*, the data set will be opened with *DISP=SHR* such that the entire data set can be accessed by other processes while the specified member is deleted.
+
+
   If *state=absent* and *volumes* is provided, and the data set is not found in the catalog, the module attempts to perform catalog using supplied *name* and *volumes*. If the attempt to catalog the data set catalog is successful, then the data set is removed. Module completes successfully with *changed=True*.
 
 
@@ -268,6 +271,19 @@ tmp_hlq
   | **type**: str
 
 
+force
+  Specifies that the data set can be shared with others during a member delete operation which results in the data set you are updating to be simultaneously updated by others.
+
+  This is helpful when a data set is being used in a long running process such as a started task and you are wanting to delete a member.
+
+  The *force=True* option enables sharing of data sets through the disposition *DISP=SHR*.
+
+  The *force=True* only applies to data set members when *state=absent* and *type=MEMBER*.
+
+  | **required**: False
+  | **type**: bool
+
+
 batch
   Batch can be used to perform operations on multiple data sets in a single module call.
 
@@ -294,6 +310,9 @@ batch
 
 
     If *state=absent* and the data set does exist on the managed node, remove the data set, module completes successfully with *changed=True*.
+
+
+    If *state=absent* and *type=MEMBER* and *force=True*, the data set will be opened with *DISP=SHR* such that the entire data set can be accessed by other processes while the specified member is deleted.
 
 
     If *state=absent* and *volumes* is provided, and the data set is not found in the catalog, the module attempts to perform catalog using supplied *name* and *volumes*. If the attempt to catalog the data set catalog is successful, then the data set is removed. Module completes successfully with *changed=True*.
@@ -508,6 +527,19 @@ batch
     | **type**: bool
 
 
+  force
+    Specifies that the data set can be shared with others during a member delete operation which results in the data set you are updating to be simultaneously updated by others.
+
+    This is helpful when a data set is being used in a long running process such as a started task and you are wanting to delete a member.
+
+    The *force=True* option enables sharing of data sets through the disposition *DISP=SHR*.
+
+    The *force=True* only applies to data set members when *state=absent* and *type=MEMBER*.
+
+    | **required**: False
+    | **type**: bool
+
+
 
 
 
@@ -598,6 +630,13 @@ Examples
        name: someds.name.here(mydata)
        state: absent
        type: MEMBER
+
+   - name: Remove a member from an existing PDS/E by opening with disposition DISP=SHR
+     zos_data_set:
+       name: someds.name.here(mydata)
+       state: absent
+       type: MEMBER
+       force: yes
 
    - name: Create multiple partitioned data sets and add one or more members to each
      zos_data_set:

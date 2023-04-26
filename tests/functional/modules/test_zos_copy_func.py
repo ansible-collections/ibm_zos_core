@@ -1017,13 +1017,13 @@ def test_copy_non_existent_file_fails(ansible_zos_module, is_remote):
 
 @pytest.mark.uss
 @pytest.mark.parametrize("src", [
-    dict(src="/etc/profile", is_file=False, is_binary=False, is_remote=False),
-    dict(src="/etc/profile", is_file=False, is_binary=False, is_remote=True),])
-def test_copy_dest_directory_remain(ansible_zos_module, src):
+    dict(src="/etc/profile", is_remote=False),
+    dict(src="/etc/profile", is_remote=True),])
+def test_ensure_copy_file_dont_change_permission_on_dest(ansible_zos_module, src):
     hosts = ansible_zos_module
     dest_path = "/tmp/test/"
     try:
-        hosts.all.shell(cmd="mkdir -p {0}".format(dest_path))
+        hosts.all.file(path=dest_path, state="directory")
         hosts.all.shell(cmd="chmod 750 {0}".format(dest_path))
         permissions_before = hosts.all.shell(cmd="ls -la {0}".format(dest_path))
         hosts.all.zos_copy(content=src["src"], dest=dest_path, is_binary=src["is_binary"])
@@ -1040,18 +1040,18 @@ def test_copy_dest_directory_remain(ansible_zos_module, src):
                 
         assert permissions_be_copy == permissions_af_copy
     finally:
-        hosts.all.shell(cmd="rm -r {0}".format(dest_path))
+        hosts.all.file(path=dest_path, state="absent")
 
 
 @pytest.mark.uss
 @pytest.mark.parametrize("src", [
-    dict(src="/etc/", is_file=False, is_binary=False, is_remote=False),
-    dict(src="/etc/", is_file=False, is_binary=False, is_remote=True),])
-def test_copy_dest_folder_directory_remain(ansible_zos_module, src):
+    dict(src="/etc/", is_remote=False),
+    dict(src="/etc/", is_remote=True),])
+def test_ensure_copy_folder_dont_change_permission_on_dest(ansible_zos_module, src):
     hosts = ansible_zos_module
     dest_path = "/tmp/test/"
     try:
-        hosts.all.shell(cmd="mkdir -p {0}".format(dest_path))
+        hosts.all.file(path=dest_path, state="directory")
         hosts.all.shell(cmd="chmod 750 {0}".format(dest_path))
         permissions_before = hosts.all.shell(cmd="ls -la {0}".format(dest_path))
         hosts.all.zos_copy(content=src["src"], dest=dest_path, is_binary=src["is_binary"])
@@ -1068,7 +1068,7 @@ def test_copy_dest_folder_directory_remain(ansible_zos_module, src):
                 
         assert permissions_be_copy == permissions_af_copy
     finally:
-        hosts.all.shell(cmd="rm -r {0}".format(dest_path))
+        hosts.all.file(path=dest_path, state="absent")
         
 
 @pytest.mark.uss

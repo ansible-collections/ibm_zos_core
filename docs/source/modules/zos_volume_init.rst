@@ -46,13 +46,13 @@ address
 verify_volid
   Verify that the volume serial matches what is on the existing volume or minidisk.
 
-  *verify_volid* must be 1 to 6 alphanumeric characters or "*NONE*".
+  *verify_volid* must be 1 to 6 alphanumeric characters or ``*NONE*``.
 
-  To verify that a volume serial number does not exist, use *verify_volid="*NONE*"*.
+  To verify that a volume serial number does not exist, use *verify_volid=*NONE**.
 
   If *verify_volid* is specified and the volume serial number does not match that found on the volume or minidisk, initialization does not complete.
 
-  If *verify_volid="*NONE*"* is specified and a volume serial is found on the volume or minidisk, initialization does not complete.
+  If *verify_volid=*NONE** is specified and a volume serial is found on the volume or minidisk, initialization does not complete.
 
   Note, this option is **not** a boolean, leave it blank to skip the verification.
 

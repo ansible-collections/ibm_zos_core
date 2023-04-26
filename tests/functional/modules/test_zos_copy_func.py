@@ -1019,14 +1019,13 @@ def test_copy_non_existent_file_fails(ansible_zos_module, is_remote):
 @pytest.mark.parametrize("src", [
     dict(src="/etc/profile", is_remote=False),
     dict(src="/etc/profile", is_remote=True),])
-def test_ensure_copy_file_dont_change_permission_on_dest(ansible_zos_module, src):
+def test_ensure_copy_file_does_not_change_permission_on_dest(ansible_zos_module, src):
     hosts = ansible_zos_module
     dest_path = "/tmp/test/"
     try:
-        hosts.all.file(path=dest_path, state="directory")
-        hosts.all.shell(cmd="chmod 750 {0}".format(dest_path))
+        hosts.all.file(path=dest_path, state="directory", mode="750")
         permissions_before = hosts.all.shell(cmd="ls -la {0}".format(dest_path))
-        hosts.all.zos_copy(content=src["src"], dest=dest_path, is_binary=src["is_binary"])
+        hosts.all.zos_copy(content=src["src"], dest=dest_path)
         permissions = hosts.all.shell(cmd="ls -la {0}".format(dest_path))
 
         for before in permissions_before.contacted.values():
@@ -1047,14 +1046,13 @@ def test_ensure_copy_file_dont_change_permission_on_dest(ansible_zos_module, src
 @pytest.mark.parametrize("src", [
     dict(src="/etc/", is_remote=False),
     dict(src="/etc/", is_remote=True),])
-def test_ensure_copy_folder_dont_change_permission_on_dest(ansible_zos_module, src):
+def test_ensure_copy_directory_does_not_change_permission_on_dest(ansible_zos_module, src):
     hosts = ansible_zos_module
     dest_path = "/tmp/test/"
     try:
-        hosts.all.file(path=dest_path, state="directory")
-        hosts.all.shell(cmd="chmod 750 {0}".format(dest_path))
+        hosts.all.file(path=dest_path, state="directory", mode="750")
         permissions_before = hosts.all.shell(cmd="ls -la {0}".format(dest_path))
-        hosts.all.zos_copy(content=src["src"], dest=dest_path, is_binary=src["is_binary"])
+        hosts.all.zos_copy(content=src["src"], dest=dest_path)
         permissions = hosts.all.shell(cmd="ls -la {0}".format(dest_path))
 
         for before in permissions_before.contacted.values():

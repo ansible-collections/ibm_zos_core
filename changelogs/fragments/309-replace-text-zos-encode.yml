@@ -1,4 +1,0 @@
-bugfixes:
-- zos_encode - fixes a bug where converted files were not tagged afterwards
-  with the new code set.
-  (https://github.com/ansible-collections/ibm_zos_core/pull/534)

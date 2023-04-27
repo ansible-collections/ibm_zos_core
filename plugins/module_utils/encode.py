@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2020, 2022
+# Copyright (c) IBM Corporation 2020, 2023
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -495,25 +495,6 @@ class EncodeUtils(object):
             return ls_parts[1]
         except Exception:
             return None
-
-    def uss_tag_encoding(self, file_path, tag):
-        """Tag the file/directory specified with the given code set.
-        If `file_path` is a directory, all of the files and subdirectories will
-        be tagged recursively.
-
-        Arguments:
-            file_path {str} -- Absolute file path to tag.
-            tag {str} -- Code set to tag the file/directory.
-
-        Raises:
-            TaggingError: When the chtag command fails.
-        """
-        is_dir = os.path.isdir(file_path)
-
-        tag_cmd = "chtag -{0}c {1} {2}".format("R" if is_dir else "t", tag, file_path)
-        rc, out, err = self.module.run_command(tag_cmd)
-        if rc != 0:
-            raise TaggingError(file_path, tag, rc, out, err)
 
 
 class EncodeError(Exception):

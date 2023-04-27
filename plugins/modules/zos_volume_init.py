@@ -63,12 +63,12 @@ options:
   verify_volid:
     description:
       - Verify that the volume serial matches what is on the existing volume or minidisk.
-      - I(verify_volid) must be 1 to 6 alphanumeric characters or "*NONE*".
+      - I(verify_volid) must be 1 to 6 alphanumeric characters or C(*NONE*).
       - To verify that a volume serial number does not exist, use
-        I(verify_volid="*NONE*").
+        I(verify_volid=*NONE*).
       - If I(verify_volid) is specified and the volume serial number does not
         match that found on the volume or minidisk, initialization does not complete.
-      - If I(verify_volid="*NONE*") is specified and a volume serial is found on
+      - If I(verify_volid=*NONE*) is specified and a volume serial is found on
         the volume or minidisk, initialization does not complete.
       - Note, this option is B(not) a boolean, leave it blank to skip the verification.
     required: false

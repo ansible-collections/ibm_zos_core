@@ -1064,8 +1064,12 @@ def test_copy_file_record_length_to_sequential_data_set(ansible_zos_module):
             assert v_recl.get("rc") == 0
             stdout = v_recl.get("stdout").split()
             assert len(stdout) == 5
+            # Verifying the dataset type (sequential).
             assert stdout[1] == "PS"
+            # Verifying the record format is Fixed Block.
             assert stdout[2] == "FB"
+            # Verifying the record length is 31. The dummy data has 31
+            # characters per line.
             assert stdout[3] == "31"
     finally:
         hosts.all.zos_data_set(name=dest, state="absent")
@@ -1114,8 +1118,12 @@ def test_copy_file_crlf_endings_to_sequential_data_set(ansible_zos_module):
             assert v_recl.get("rc") == 0
             stdout = v_recl.get("stdout").split()
             assert len(stdout) == 5
+            # Verifying the dataset type (sequential).
             assert stdout[1] == "PS"
+            # Verifying the record format is Fixed Block.
             assert stdout[2] == "FB"
+            # Verifying the record length is 19. The dummy data has 19
+            # characters per line.
             assert stdout[3] == "19"
     finally:
         hosts.all.zos_data_set(name=dest, state="absent")
@@ -1855,6 +1863,105 @@ def test_copy_pds_to_existing_pds(ansible_zos_module, args):
     finally:
         hosts.all.zos_data_set(name=src, state="absent")
         hosts.all.zos_data_set(name=dest, state="absent")
+
+
+@pytest.mark.pdse
+def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module,):
+    hosts = ansible_zos_module
+    # The volume for this dataset should use a system symbol.
+    # This dataset and member should be available on any z/OS system.
+    src = "USER.LOAD.SRC"
+    dest = "USER.LOAD.DEST"
+    cobol_pds = "USER.COBOL.SRC"
+    try:
+        hosts.all.zos_data_set(
+            name=src,
+            state="present",
+            type="pdse",
+            record_format="U",
+            record_length=0,
+            block_size=32760,
+            space_primary=2,
+            space_type="M",
+            replace=True
+        )
+
+        hosts.all.zos_data_set(
+            name=dest,
+            state="present",
+            type="pdse",
+            record_format="U",
+            record_length=0,
+            block_size=32760,
+            space_primary=2,
+            space_type="M",
+            replace=True
+        )
+
+        hosts.all.zos_data_set(
+            name=cobol_pds,
+            state="present",
+            type="pds",
+            space_primary=2,
+            record_format="FB",
+            record_length=80,
+            block_size=3120,
+            replace=True,
+        )
+        member = "HELLOSRC"
+        cobol_pds = "{0}({1})".format(cobol_pds, member)
+        rc = hosts.all.zos_copy(
+            content=COBOL_SRC,
+            dest=cobol_pds,
+        )
+        dest_name = "{0}({1})".format(dest, member)
+        src_name = "{0}({1})".format(src, member)
+
+        # both src and dest need to be a loadlib
+        rc = link_loadlib_from_cobol(hosts, dest_name, cobol_pds)
+        assert rc == 0
+        # make sure is executable
+        cmd = "mvscmd --pgm={0}  --steplib={1} --sysprint=* --stderr=* --stdout=*"
+        exec_res = hosts.all.shell(
+            cmd=cmd.format(member, dest)
+        )
+        for result in exec_res.contacted.values():
+            assert result.get("rc") == 0
+        rc = link_loadlib_from_cobol(hosts, src_name, cobol_pds)
+        assert rc == 0
+
+        exec_res = hosts.all.shell(
+            cmd=cmd.format(member, src)
+        )
+        for result in exec_res.contacted.values():
+            assert result.get("rc") == 0
+
+        copy_res = hosts.all.zos_copy(
+            src="{0}({1})".format(src, member), 
+            dest="{0}({1})".format(dest, "MEM1"), 
+            remote_src=True)
+
+        verify_copy = hosts.all.shell(
+            cmd="mls {0}".format(dest),
+            executable=SHELL_EXECUTABLE
+        )
+
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+            assert result.get("changed") is True
+            assert result.get("dest") == "{0}({1})".format(dest, "MEM1")
+
+        for v_cp in verify_copy.contacted.values():
+            assert v_cp.get("rc") == 0
+            stdout = v_cp.get("stdout")
+            assert stdout is not None
+            # number of members
+            assert len(stdout.splitlines()) == 2
+
+    finally:
+        hosts.all.zos_data_set(name=dest, state="absent")
+        hosts.all.zos_data_set(name=src, state="absent")
+        hosts.all.zos_data_set(name=cobol_pds, state="absent")
 
 
 @pytest.mark.pdse

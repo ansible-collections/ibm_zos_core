@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2019, 2020, 2021, 2022
+# Copyright (c) IBM Corporation 2019-2023
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -17,7 +17,8 @@ import os
 import re
 
 from hashlib import sha256
-from ansible.module_utils._text import to_bytes, to_text
+# from ansible.module_utils._text import to_bytes, to_text
+from ansible.module_utils.common.text.converters import to_bytes, to_text
 from ansible.module_utils.six import string_types
 from ansible.module_utils.parsing.convert_bool import boolean
 from ansible.plugins.action import ActionBase

@@ -13,6 +13,7 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
+import fnmatch
 import re
 from time import sleep
 from timeit import default_timer as timer
@@ -134,9 +135,9 @@ def job_status(job_id=None, owner=None, job_name=None, dd_name=None):
 
     """
     arg_defs = dict(
-        job_id=dict(arg_type="qualifier_pattern"),
+        job_id=dict(arg_type="str"),
         owner=dict(arg_type="qualifier_pattern"),
-        job_name=dict(arg_type="qualifier_pattern"),
+        job_name=dict(arg_type="str"),
         dd_name=dict(arg_type="str"),
     )
 
@@ -210,7 +211,10 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, duration=
                 if owner != entry.owner:
                     continue
             if job_name != "*":
-                if job_name != entry.name:
+                if not fnmatch.fnmatch(entry.name, job_name):
+                    continue
+            if job_id_temp is not None:
+                if not fnmatch.fnmatch(entry.id, job_id):
                     continue
 
             job = {}

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) IBM Corporation 2020
+# Copyright (c) IBM Corporation 2020, 2023
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -312,3 +312,29 @@ def test_find_non_existent_data_set_members(ansible_zos_module):
     for val in find_res.contacted.values():
         assert len(val.get('data_sets')) == 0
         assert val.get('matched') == 0
+
+
+def test_find_mixed_members_from_pds_paths(ansible_zos_module):
+    hosts = ansible_zos_module
+    try:
+        hosts.all.zos_data_set(
+            batch=[dict(name=i, type='pds', state='present') for i in PDS_NAMES]
+        )
+        hosts.all.zos_data_set(
+            batch=[dict(name=i + "(MEMBER)", type="MEMBER") for i in PDS_NAMES]
+        )
+        hosts.all.zos_data_set(
+            batch=[dict(name=i + "(FILE)", type="MEMBER") for i in PDS_NAMES]
+        )
+        find_res = hosts.all.zos_find(
+            pds_paths=['TEST.NONE.PDS.*','TEST.FIND.PDS.FUNCTEST.*'], excludes=['.*FILE$'], patterns=['.*']
+        )
+        print(vars(find_res))
+        for val in find_res.contacted.values():
+            assert len(val.get('data_sets')) == 3
+            for ds in val.get('data_sets'):
+                assert len(ds.get('members')) == 1
+    finally:
+        hosts.all.zos_data_set(
+            batch=[dict(name=i, state='absent') for i in PDS_NAMES]
+        )

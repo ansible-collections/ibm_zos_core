@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2020
+# Copyright (c) IBM Corporation 2020, 2023
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -18,7 +18,8 @@ import tempfile
 from os import path, walk
 from string import ascii_uppercase, digits
 from random import randint
-from ansible.module_utils._text import to_bytes
+# from ansible.module_utils._text import to_bytes
+from ansible.module_utils.common.text.converters import to_bytes
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
     AnsibleModuleHelper,
 )
@@ -115,6 +116,7 @@ class DataSet(object):
         sms_management_class=None,
         volumes=None,
         tmp_hlq=None,
+        force=None,
     ):
         """Creates data set if it does not already exist.
 
@@ -170,6 +172,8 @@ class DataSet(object):
                     has GUARANTEED_SPACE=YES specified. Otherwise, the allocation will fail.
                     Defaults to None.
             tmp_hlq (str, optional): High level qualifier for temporary datasets.
+            force (bool, optional): Used to determine behavior when performing member operations on a pdse.
+                    Defaults to None.
 
         Returns:
             bool -- Indicates if changes were made.
@@ -246,11 +250,11 @@ class DataSet(object):
         return True
 
     @staticmethod
-    def ensure_member_absent(name):
+    def ensure_member_absent(name, force=False):
         """Deletes provided data set member if it exists.
         Returns a boolean indicating if changes were made."""
         if DataSet.data_set_member_exists(name):
-            DataSet.delete_member(name)
+            DataSet.delete_member(name, force)
             return True
         return False
 
@@ -771,6 +775,7 @@ class DataSet(object):
         sms_management_class=None,
         volumes=None,
         tmp_hlq=None,
+        force=None,
     ):
         """Attempts to replace an existing data set.
 
@@ -825,6 +830,8 @@ class DataSet(object):
                     has GUARANTEED_SPACE=YES specified. Otherwise, the allocation will fail.
                     Defaults to None.
             tmp_hlq (str, optional): High level qualifier for temporary datasets.
+            force (bool, optional): Used to determine behavior when performing member operations on a pdse.
+                    Defaults to None.
         """
         arguments = locals()
         DataSet.delete(name)
@@ -883,6 +890,7 @@ class DataSet(object):
         sms_management_class=None,
         volumes=None,
         tmp_hlq=None,
+        force=None,
     ):
         """A wrapper around zoautil_py
         Dataset.create() to raise exceptions on failure.
@@ -939,6 +947,8 @@ class DataSet(object):
                     has GUARANTEED_SPACE=YES specified. Otherwise, the allocation will fail.
                     Defaults to None.
             tmp_hlq (str, optional): High level qualifier for temporary datasets.
+            force (bool, optional): Used to determine behavior when performing member operations on a pdse.
+                    Defaults to None.
         Raises:
             DatasetCreateError: When data set creation fails.
         """
@@ -991,7 +1001,7 @@ class DataSet(object):
             raise DatasetMemberCreateError(name, rc)
 
     @staticmethod
-    def delete_member(name):
+    def delete_member(name, force=False):
         """A wrapper around zoautil_py
         Dataset.delete_members() to raise exceptions on failure.
 
@@ -1001,7 +1011,7 @@ class DataSet(object):
         Raises:
             DatasetMemberDeleteError: When data set member deletion fails.
         """
-        rc = datasets.delete_members(name)
+        rc = datasets.delete_members(name, force=force)
         if rc > 0:
             raise DatasetMemberDeleteError(name, rc)
 

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020, 2022
+# Copyright (c) IBM Corporation 2020, 2022, 2023
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -17,6 +17,8 @@ from ibm_zos_core.tests.helpers.zos_lineinfile_helper import (
     DsGeneral,
     DsNotSupportedHelper,
     DsGeneralResultKeyMatchesRegex,
+    DsGeneralForceFail,
+    DsGeneralForce,
 )
 import os
 import sys
@@ -120,6 +122,23 @@ TEST_INFO = dict(
     test_ds_line_replace_nomatch_insertbefore_nomatch=dict(test_name="T11"),
     test_ds_line_absent=dict(test_name="T12"),
     test_ds_line_tmp_hlq_option=dict(insertafter="EOF", line="export ZOAU_ROOT", state="present", backup=True, tmp_hlq="TMPHLQ"),
+    test_ds_line_force=dict(path="",insertafter="EOF", line="export ZOAU_ROOT", force=True),
+    test_ds_line_force_fail=dict(path="",insertafter="EOF", line="export ZOAU_ROOT", force=False),
+    test_ds_line_replace_force=dict(path="",regexp="ZOAU_ROOT=", line="ZOAU_ROOT=/mvsutil-develop_dsed",
+        state="present",force=True),
+    test_ds_line_insertafter_regex_force=dict(path="",insertafter="ZOAU_ROOT=", line="ZOAU_ROOT=/mvsutil-develop_dsed",
+        state="present",force=True),
+    test_ds_line_insertbefore_regex_force=dict(path="",insertbefore="ZOAU_ROOT=", line="unset ZOAU_ROOT", state="present",force=True),
+    test_ds_line_insertbefore_bof_force=dict(path="",insertbefore="BOF", line="# this is file is for setting env vars",
+        state="present",force=True),
+    test_ds_line_replace_match_insertafter_ignore_force=dict(path="",regexp="ZOAU_ROOT=", insertafter="PATH=",
+        line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present",force=True),
+    test_ds_line_replace_match_insertbefore_ignore_force=dict(path="",regexp="ZOAU_ROOT=", insertbefore="PATH=", line="unset ZOAU_ROOT",
+        state="present",force=True),
+    test_ds_line_replace_nomatch_insertafter_match_force=dict(path="",regexp="abcxyz", insertafter="ZOAU_ROOT=",
+        line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present",force=True),
+    test_ds_line_replace_nomatch_insertbefore_match_force=dict(path="",regexp="abcxyz", insertbefore="ZOAU_ROOT=", line="unset ZOAU_ROOT",
+        state="present",force=True),
     expected=dict(test_uss_line_replace="""if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -568,7 +587,42 @@ export ZOAUTIL_DIR
 export PYTHONPATH
 export PKG_CONFIG_PATH
 export PYTHON_HOME
-export _BPXK_AUTOCVT"""),
+export _BPXK_AUTOCVT""",
+                  test_ds_line_force="""if [ -z STEPLIB ] && tty -s;
+then
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+TZ=PST8PDT
+export TZ
+LANG=C
+export LANG
+readonly LOGNAME
+PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
+export PATH
+LIBPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+export LIBPATH
+NLSPATH=/usr/lib/nls/msg/%L/%N
+export NLSPATH
+MANPATH=/usr/man/%L
+export MANPATH
+MAIL=/usr/mail/LOGNAME
+export MAIL
+umask 022
+ZOAU_ROOT=/usr/lpp/zoautil/v100
+ZOAUTIL_DIR=/usr/lpp/zoautil/v100
+PYTHONPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
+PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
+_BPXK_AUTOCVT=ON
+export ZOAU_ROOT
+export ZOAUTIL_DIR
+export ZOAUTIL_DIR
+export PYTHONPATH
+export PKG_CONFIG_PATH
+export PYTHON_HOME
+export _BPXK_AUTOCVT
+export ZOAU_ROOT"""),
 )
 
 #########################
@@ -707,20 +761,6 @@ def test_uss_line_replace_quoted_not_escaped(ansible_zos_module):
 #########################
 # Dataset test cases
 #########################
-
-@pytest.mark.ds
-@pytest.mark.parametrize("dstype", DS_TYPE)
-@pytest.mark.parametrize("encoding", ENCODING)
-def test_ds_line_replace(ansible_zos_module, dstype, encoding):
-    TEST_ENV["DS_TYPE"] = dstype
-    TEST_ENV["ENCODING"] = encoding
-    TEST_INFO["test_uss_line_replace"]["line"] = 'ZOAU_ROOT=/mvsutil-develop_dsed'
-    DsGeneral(
-        TEST_INFO["test_ds_line_replace"]["test_name"], ansible_zos_module,
-        TEST_ENV, TEST_INFO["test_uss_line_replace"],
-        TEST_INFO["expected"]["test_uss_line_replace"]
-    )
-
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
@@ -908,4 +948,146 @@ def test_ds_not_supported(ansible_zos_module, dstype):
     DsNotSupportedHelper(
         TEST_INFO["test_ds_line_replace"]["test_name"], ansible_zos_module,
         TEST_ENV, TEST_INFO["test_uss_line_replace"]
+    )
+
+
+#########################
+# Dataset test cases with force
+#########################
+
+@pytest.mark.ds
+@pytest.mark.parametrize("encoding", ENCODING)
+@pytest.mark.parametrize("dstype", DS_TYPE)
+def test_ds_line_force(ansible_zos_module, dstype, encoding):
+    TEST_ENV["DS_TYPE"] = dstype
+    TEST_ENV["ENCODING"] = encoding
+    DsGeneralForce(
+        ansible_zos_module, TEST_ENV,
+        TEST_CONTENT,
+        TEST_INFO["test_ds_line_force"],
+        TEST_INFO["expected"]["test_ds_line_force"]
+    )
+
+
+@pytest.mark.ds
+@pytest.mark.parametrize("encoding", ENCODING)
+@pytest.mark.parametrize("dstype", DS_TYPE)
+def test_ds_line_force_fail(ansible_zos_module, dstype, encoding):
+    TEST_ENV["DS_TYPE"] = dstype
+    TEST_ENV["ENCODING"] = encoding
+    DsGeneralForceFail(
+        ansible_zos_module, TEST_ENV,
+        TEST_INFO["test_ds_line_force_fail"]
+    )
+
+
+@pytest.mark.ds
+@pytest.mark.parametrize("encoding", ENCODING)
+@pytest.mark.parametrize("dstype", DS_TYPE)
+def test_ds_line_replace_force(ansible_zos_module, dstype, encoding):
+    TEST_ENV["DS_TYPE"] = dstype
+    TEST_ENV["ENCODING"] = encoding
+    DsGeneralForce(
+        ansible_zos_module, TEST_ENV,
+        TEST_CONTENT,
+        TEST_INFO["test_ds_line_replace_force"],
+        TEST_INFO["expected"]["test_uss_line_replace"]
+    )
+
+
+@pytest.mark.ds
+@pytest.mark.parametrize("encoding", ENCODING)
+@pytest.mark.parametrize("dstype", DS_TYPE)
+def test_ds_line_insertafter_regex_force(ansible_zos_module, dstype, encoding):
+    TEST_ENV["DS_TYPE"] = dstype
+    TEST_ENV["ENCODING"] = encoding
+    DsGeneralForce(
+        ansible_zos_module, TEST_ENV,
+        TEST_CONTENT,
+        TEST_INFO["test_ds_line_insertafter_regex_force"],
+        TEST_INFO["expected"]["test_uss_line_insertafter_regex"]
+    )
+
+
+@pytest.mark.ds
+@pytest.mark.parametrize("encoding", ENCODING)
+@pytest.mark.parametrize("dstype", DS_TYPE)
+def test_ds_line_insertbefore_regex_force(ansible_zos_module, dstype, encoding):
+    TEST_ENV["DS_TYPE"] = dstype
+    TEST_ENV["ENCODING"] = encoding
+    DsGeneralForce(
+        ansible_zos_module, TEST_ENV,
+        TEST_CONTENT,
+        TEST_INFO["test_ds_line_insertbefore_regex_force"],
+        TEST_INFO["expected"]["test_uss_line_insertbefore_regex"]
+    )
+
+
+@pytest.mark.ds
+@pytest.mark.parametrize("encoding", ENCODING)
+@pytest.mark.parametrize("dstype", DS_TYPE)
+def test_ds_line_insertbefore_bof_force(ansible_zos_module, dstype, encoding):
+    TEST_ENV["DS_TYPE"] = dstype
+    TEST_ENV["ENCODING"] = encoding
+    DsGeneralForce(
+        ansible_zos_module, TEST_ENV,
+        TEST_CONTENT,
+        TEST_INFO["test_ds_line_insertbefore_bof_force"],
+        TEST_INFO["expected"]["test_uss_line_insertbefore_bof"]
+    )
+
+
+@pytest.mark.ds
+@pytest.mark.parametrize("encoding", ENCODING)
+@pytest.mark.parametrize("dstype", DS_TYPE)
+def test_ds_line_replace_match_insertafter_ignore_force(ansible_zos_module, dstype, encoding):
+    TEST_ENV["DS_TYPE"] = dstype
+    TEST_ENV["ENCODING"] = encoding
+    DsGeneralForce(
+        ansible_zos_module, TEST_ENV,
+        TEST_CONTENT,
+        TEST_INFO["test_ds_line_replace_match_insertafter_ignore_force"],
+        TEST_INFO["expected"]["test_uss_line_replace_match_insertafter_ignore"]
+    )
+
+
+@pytest.mark.ds
+@pytest.mark.parametrize("encoding", ENCODING)
+@pytest.mark.parametrize("dstype", DS_TYPE)
+def test_ds_line_replace_match_insertbefore_ignore_force(ansible_zos_module, dstype, encoding):
+    TEST_ENV["DS_TYPE"] = dstype
+    TEST_ENV["ENCODING"] = encoding
+    DsGeneralForce(
+        ansible_zos_module, TEST_ENV,
+        TEST_CONTENT,
+        TEST_INFO["test_ds_line_replace_match_insertbefore_ignore_force"],
+        TEST_INFO["expected"]["test_uss_line_replace_match_insertbefore_ignore"]
+    )
+
+
+@pytest.mark.ds
+@pytest.mark.parametrize("encoding", ENCODING)
+@pytest.mark.parametrize("dstype", DS_TYPE)
+def test_ds_line_replace_nomatch_insertafter_match_force(ansible_zos_module, dstype, encoding):
+    TEST_ENV["DS_TYPE"] = dstype
+    TEST_ENV["ENCODING"] = encoding
+    DsGeneralForce(
+        ansible_zos_module, TEST_ENV,
+        TEST_CONTENT,
+        TEST_INFO["test_ds_line_replace_nomatch_insertafter_match_force"],
+        TEST_INFO["expected"]["test_uss_line_replace_nomatch_insertafter_match"]
+    )
+
+
+@pytest.mark.ds
+@pytest.mark.parametrize("encoding", ENCODING)
+@pytest.mark.parametrize("dstype", DS_TYPE)
+def test_ds_line_replace_nomatch_insertbefore_match_force(ansible_zos_module, dstype, encoding):
+    TEST_ENV["DS_TYPE"] = dstype
+    TEST_ENV["ENCODING"] = encoding
+    DsGeneralForce(
+        ansible_zos_module, TEST_ENV,
+        TEST_CONTENT,
+        TEST_INFO["test_ds_line_replace_nomatch_insertbefore_match_force"],
+        TEST_INFO["expected"]["test_uss_line_replace_nomatch_insertbefore_match"]
     )

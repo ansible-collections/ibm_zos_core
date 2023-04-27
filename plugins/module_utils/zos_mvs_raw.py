@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2020
+# Copyright (c) IBM Corporation 2020, 2023
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -45,23 +45,26 @@ class MVSCmd(object):
         return MVSCmdResponse(rc, out, err)
 
     @staticmethod
-    def execute_authorized(pgm, dds, parm="", debug=False, verbose=False):
+    def execute_authorized(pgm, dds, parm="", debug=False, verbose=False, tmp_hlq=None):
         """Execute an authorized MVS command.
 
         Args:
             pgm (str): The name of the program to execute.
             dds (list[DDStatement]): A list of DDStatement objects.
             parm (str, optional): Argument string if required by the program. Defaults to "".
+            tmp_hlq (str): The name of the temporary high level qualifier to use for temp data sets.
 
         Returns:
             MVSCmdResponse: The response of the command.
         """
         module = AnsibleModuleHelper(argument_spec={})
-        command = "mvscmdauth {0} {1} {2} ".format(
+        command = "mvscmdauth {0} {1} {2} {3} ".format(
             "-d" if debug else "",
             "-v" if verbose else "",
+            "--tmphlq={0}".format(tmp_hlq.upper()) if tmp_hlq else "",
             MVSCmd._build_command(pgm, dds, parm),
         )
+
         rc, out, err = module.run_command(command)
         return MVSCmdResponse(rc, out, err)
 

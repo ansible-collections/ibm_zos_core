@@ -219,14 +219,14 @@ def run_module():
         result["content"] = []
         stdout = rc_message.get("stdout")
         if stdout is not None:
-          for out in stdout.split("\n"):
-            result["content"].append(out)
+            for out in stdout.split("\n"):
+                result["content"].append(out)
         stderr = rc_message.get("stderr")
         error = []
         if stderr is not None:
-          for err in stderr.split("\n"):
-            error.append(err)
-            result["content"].append(err)
+            for err in stderr.split("\n"):
+                error.append(err)
+                result["content"].append(err)
         # call is returned from run_operator_command, specifying what was run.
         # result["cmd"] = new_params.get("cmd")
         result["cmd"] = rc_message.get("call")
@@ -243,7 +243,7 @@ def run_module():
                 module.fail_json(msg="Expected response to be more than 2 lines.", **result)
         else:
             module.fail_json(
-                msg="Non-zero response received: " + str(result["rc"] + "\n" +". Stderr: " + str(error)), **result
+                msg="Non-zero response received: " + str(result["rc"] + "\n" + ". Stderr: " + str(error)), **result
             )
     except Error as e:
         module.fail_json(msg=repr(e), **result)

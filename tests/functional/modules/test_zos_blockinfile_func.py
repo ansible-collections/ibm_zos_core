@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020, 2022
+# Copyright (c) IBM Corporation 2020, 2022, 2023
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -17,6 +17,8 @@ from ibm_zos_core.tests.helpers.zos_blockinfile_helper import (
     DsGeneral,
     DsNotSupportedHelper,
     DsGeneralResultKeyMatchesRegex,
+    DsGeneralForce,
+    DsGeneralForceFail,
 )
 import os
 import sys
@@ -133,6 +135,16 @@ export PKG_CONFIG_PATH
 export PYTHON_HOME
 export _BPXK_AUTOCVT"""
 
+TEST_CONTENT_DOUBLEQUOTES = """//BPXSLEEP JOB MSGCLASS=A,MSGLEVEL=(1,1),NOTIFY=&SYSUID,REGION=0M
+//USSCMD EXEC PGM=BPXBATCH
+//STDERR  DD SYSOUT=*
+//STDOUT  DD SYSOUT=*
+//STDPARM DD *
+SH ls -la /;
+sleep 30;
+/*
+//"""
+
 # supported data set types
 # DS_TYPE = ['SEQ', 'PDS', 'PDSE']
 DS_TYPE = ['SEQ']
@@ -204,6 +216,9 @@ TEST_INFO = dict(
     test_uss_block_insert_with_indentation_level_specified=dict(
         insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR",
         state="present", indentation=16),
+    test_uss_block_insert_with_doublequotes=dict(
+        insertafter="sleep 30;", block='cat \"//OMVSADMI.CAT\"\ncat \"//OMVSADM.COPYMEM.TESTS\" > test.txt', 
+        marker="// {mark} ANSIBLE MANAGED BLOCK",state="present"),
     test_ds_block_insertafter_regex=dict(test_name="T1"),
     test_ds_block_insertbefore_regex=dict(test_name="T2"),
     test_ds_block_insertafter_eof=dict(test_name="T3"),
@@ -225,6 +240,14 @@ TEST_INFO = dict(
     test_ds_block_insertafter_eof_with_backup_name=dict(
         block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR",
         state="present", backup=True, backup_name=MVS_BACKUP_DS),
+    test_ds_block_insertafter_regex_force=dict(
+        path="",insertafter="ZOAU_ROOT=",
+        block="ZOAU_ROOT=/mvsutil-develop_dsed\nZOAU_HOME=\\$ZOAU_ROOT\nZOAU_DIR=\\$ZOAU_ROOT",
+        state="present", force=True),
+    test_ds_block_insertafter_regex_force_fail=dict(
+        path="",insertafter="ZOAU_ROOT=",
+        block="ZOAU_ROOT=/mvsutil-develop_dsed\nZOAU_HOME=\\$ZOAU_ROOT\nZOAU_DIR=\\$ZOAU_ROOT",
+        state="present", force=False),
     expected=dict(test_uss_block_insertafter_regex_defaultmarker="""if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -264,6 +287,19 @@ export PYTHONPATH
 export PKG_CONFIG_PATH
 export PYTHON_HOME
 export _BPXK_AUTOCVT""",
+                  test_uss_block_insert_with_doublequotes="""//BPXSLEEP JOB MSGCLASS=A,MSGLEVEL=(1,1),NOTIFY=&SYSUID,REGION=0M
+//USSCMD EXEC PGM=BPXBATCH
+//STDERR  DD SYSOUT=*
+//STDOUT  DD SYSOUT=*
+//STDPARM DD *
+SH ls -la /;
+sleep 30;
+// BEGIN ANSIBLE MANAGED BLOCK
+cat "//OMVSADMI.CAT"
+cat "//OMVSADM.COPYMEM.TESTS" > test.txt
+// END ANSIBLE MANAGED BLOCK
+/*
+//""",
                   test_uss_block_insertbefore_regex_defaultmarker="""if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -1175,6 +1211,15 @@ def test_uss_block_insert_with_indentation_level_specified(ansible_zos_module):
 
 
 @pytest.mark.uss
+def test_uss_block_insert_with_doublequotes(ansible_zos_module):
+    TEST_ENV["TEST_CONT"] = TEST_CONTENT_DOUBLEQUOTES
+    UssGeneral(
+        "test_uss_block_insert_with_doublequotes", ansible_zos_module,TEST_ENV, 
+        TEST_INFO["test_uss_block_insert_with_doublequotes"],
+        TEST_INFO["expected"]["test_uss_block_insert_with_doublequotes"])
+    TEST_ENV["TEST_CONT"] = TEST_CONTENT
+
+@pytest.mark.uss
 def test_uss_block_insertafter_eof_with_backup(ansible_zos_module):
     try:
         backup_name = USS_BACKUP_FILE
@@ -1463,6 +1508,17 @@ def test_ds_block_insertafter_eof_with_backup(ansible_zos_module, dstype, encodi
         ansible_zos_module.all.zos_data_set(name=backup_ds_name, state="absent")
 
 
+@pytest.mark.ds
+@pytest.mark.parametrize("dstype", DS_TYPE)
+def test_ds_block_insertafter_regex_force(ansible_zos_module, dstype):
+    TEST_ENV["DS_TYPE"] = dstype
+    DsGeneralForce(
+        ansible_zos_module, TEST_ENV,
+        TEST_INFO["test_ds_block_insertafter_regex_force"],
+        TEST_INFO["expected"]["test_uss_block_insertafter_regex_defaultmarker"]
+    )
+    
+
 #########################
 # Negative tests
 #########################
@@ -1510,4 +1566,14 @@ def test_ds_not_supported(ansible_zos_module, dstype):
     DsNotSupportedHelper(
         TEST_INFO["test_ds_block_insertafter_regex"]["test_name"], ansible_zos_module,
         TEST_ENV, TEST_INFO["test_uss_block_insertafter_regex"]
+    )
+
+
+@pytest.mark.ds
+@pytest.mark.parametrize("dstype", DS_TYPE)
+def test_ds_block_insertafter_regex_fail(ansible_zos_module, dstype):
+    TEST_ENV["DS_TYPE"] = dstype
+    DsGeneralForceFail(
+        ansible_zos_module, TEST_ENV,
+        TEST_INFO["test_ds_block_insertafter_regex_force_fail"],
     )

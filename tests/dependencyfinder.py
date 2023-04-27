@@ -450,6 +450,28 @@ def build_artifacts_from_collection(collection_root):
     return artifacts
 
 
+def get_all_tests(collection_root):
+    """Build a list of all test cases for when all tests need to be run
+    Args:
+        collection_root (str): The path to the root of the collection
+    Returns:
+        list[tests]: A list of test cases.
+    """
+
+    files = []
+    files += get_all_files_in_dir_tree(collection_root + "/tests/unit")
+    files += get_all_files_in_dir_tree(collection_root + "/tests/functional")
+
+    test_suites = []
+    for file in files:
+        if file.endswith(".py"):
+            path, filename = os.path.split(file)
+            if filename.startswith('test'):
+                test_suites.append(file)
+
+    return test_suites
+
+
 def get_all_files_in_dir_tree(base_path):
     """Recursively search subdirectories for files.
 
@@ -620,6 +642,14 @@ def parse_arguments():
         default=False,
         help="Detect only the changes from the branch request-pull.",
     )
+    parser.add_argument(
+        "-a",
+        "--all",
+        required=False,
+        action="store_true",
+        default=False,
+        help="A list of all test cases minus any skipped tests.",
+    )
     args = parser.parse_args()
     return args
 
@@ -635,6 +665,8 @@ if __name__ == "__main__":
 
     if args.minimum:
         changed_files = get_changed_plugins(args.path, args.branch)
+    elif args.all:
+        changed_files = get_all_tests(args.path)
     else:
         changed_files = get_changed_files(args.path, args.branch)
 

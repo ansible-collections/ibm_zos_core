@@ -1,0 +1,154 @@
+name: Request a Collaboration
+description: Request collaboration with a member of this team. Complete all required fields.
+title: "[Collaboration] <title> "
+labels: [Collaboration]
+assignees:
+  - IBMAnsibleHelper
+body:
+  - type: checkboxes
+    id: existing-issue
+    attributes:
+      label: Is there an existing issue for this?
+      description: Please search to see if an issue already exists for the bug you encountered.
+      options:
+        - label: There are no existing issues.
+          required: true
+  - type: checkboxes
+    id: support-issue
+    attributes:
+      label: Support and service?
+      description: Is support and service involved in this collaboration?
+      options:
+      - label: Yes, support and service is involved.
+        required: false
+      - label: No, support and service is involved.
+        required: false
+  - type: checkboxes
+    id: valid-dependencies
+    attributes:
+      label: Are the dependencies a supported?
+      description: Please review the ZOAU and IBM Enterprise Python versions in the reference section of the [release notes](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html).
+      options:
+        - label: Yes, the dependencies are supported.
+          required: false
+        - label: Not applicable to this collaboration.
+          required: false
+  - type: dropdown
+    id: zoau-version
+    attributes:
+      label: IBM Z Open Automation Utilities
+      description: Which version of ZOAU are you using?
+      multiple: false
+      options:
+        - v1.2.2
+        - v1.2.1
+        - v1.2.0
+        - v1.1.1
+        - v1.0.3
+    validations:
+      required: false
+  - type: dropdown
+    id: python-version
+    attributes:
+      label: IBM Enterprise Python
+      description: Which version of IBM Enterprise Python are you using?
+      multiple: true
+      options:
+        - v3.11.x
+        - v3.10.x
+        - v3.9.x
+        - v3.8.x
+    validations:
+      required: false
+  - type: dropdown
+    id: collection-version
+    attributes:
+      label: IBM z/OS Ansible core Version
+      description: Which version of z/OS Ansible core collection are you using. If you are unsure, review the [documentation](https://ibm.github.io/z_ansible_collections_doc/faqs/faqs.html#how-do-i-update-a-collection-to-the-latest-version). 
+      multiple: false
+      options:
+        - v1.5.0
+        - v1.4.0
+        - v1.3.6
+        - v1.3.5
+        - v1.3.3
+        - v1.3.1
+        - v1.3.0
+        - v1.2.1
+        - v1.1.0
+        - v1.0.0
+    validations:
+      required: false
+  - type: dropdown
+    id: ansible-version
+    attributes:
+      label: ansible-version
+      description: What is the version of Ansible on the controller (`ansible --version`)?
+      multiple: false
+      options:
+        - latest
+        - v2.14.x
+        - v2.13.x
+        - v2.12.x
+        - v2.11.x
+        - v2.9.x
+    validations:
+      required: false
+  - type: dropdown
+    id: zos-version
+    attributes:
+      label: z/OS version
+      description: What is the version of z/OS on the managed node?
+      multiple: false
+      options:
+        - v2.5
+        - v2.4
+        - v2.3
+    validations:
+      required: false
+  - type: dropdown
+    id: modules
+    attributes:
+      label: Ansible module
+      description: Select which modules are being reported in this bug. You can select more than one.
+      multiple: true
+      options:
+        - zos_apf
+        - zos_backup_restore
+        - zos_blockinfile
+        - zos_copy
+        - zos_data_set
+        - zos_encode
+        - zos_fetch
+        - zos_find
+        - zos_gather_facts
+        - zos_job_output
+        - zos_job_query
+        - zos_job_submit
+        - zos_lineinfile
+        - zos_mount
+        - zos_mvs_raw
+        - zos_operator
+        - zos_operator_action_query
+        - zos_ping
+        - zos_tso_command
+    validations:
+      required: false
+  - type: textarea
+    id: issue-description
+    attributes:
+      label: Collaboration description
+      description: Describe the collaboration issue.
+      placeholder: |
+        For example
+          1. Working with IBM Enterprise Python to resolve issue xyz.
+          2. Working with z/OS application team DFSMS to resolve xyz.
+          3. Assisting IBM support to resolve an ibm_zos_copy issue.
+    validations:
+      required: true
+
+
+
+
+
+

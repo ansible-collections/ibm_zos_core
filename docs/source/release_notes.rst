@@ -6,7 +6,7 @@
 Releases
 ========
 
-Version 1.5.0-beta.1
+Version 1.5.0
 ====================
 
 New Modules
@@ -61,7 +61,7 @@ Minor Changes
 Bugfixes
 --------
 
-- ``ibm_zos_copy``
+- ``zos_copy``
 
       - fixes a bug such that the module fails when copying files from a directory needing also to be encoded. The failure would also delete the `src` which was not desirable behavior. Fixes deletion of src on encoding error.
       - module was updated to correct a bug in the case when the destination (dest) is a PDSE and the source (src) is a Unix Systems File (USS). The module would fail in determining if the PDSE actually existed and try to create it when it already existed resulting in an error that would prevent the module from correctly executing.
@@ -69,6 +69,10 @@ Bugfixes
       - fixes a bug where if a destination has accented characters in its content, the module would fail when trying to determine if it is empty.
       - fixes a bug where copying a member from a loadlib to another loadlib fails.
       - fixed wrongful creation of destination backups when module option `force` is true, creating emergency backups meant to restore the system to its initial state in case of a module failure only when force is false.
+      - copy failed from a loadlib member to another loadlib member. Fix now looks for an error in stdout while copying to perform a fallback copy for executables.
+      - fixes a bug where the module would change the mode for a directory when copying into it the contents of another.
+      - fixes a bug where source files not encoded in IBM-1047 would trigger an encoding error while computing the record length for a new destination dataset.
+      - fixes a bug where the code for fixing an issue with newlines in files would use the wrong encoding for normalization.
 - ``zos_data_set``
 
       - Fixes a bug such that the module will delete a catalogued data set over an uncatalogued data set even though the volume is provided for the uncataloged data set. This is unexpected behavior and does not align to documentation; correct behavior is that when a volume is provided that is the first place the module should look for the data set, whether or not it is cataloged.
@@ -76,6 +80,16 @@ Bugfixes
 - ``zos_fetch`` - Updates the modules behavior when fetching VSAM data sets such that the maximum record length is now determined when creating a temporary data set to copy the VSAM data into and a variable-length (VB) data set is used.
 - ``zos_job_output`` - fixes a bug that returned all ddname's when a specific ddnamae was provided. Now a specific ddname can be returned and all others ignored.
 - ``zos_job_query`` - was updated to correct a boolean condition that always evaluated to "CANCELLED".
+- ``zos_job_submit``
+
+      - fixes the issue when `wait_time_s` was set to 0 that would result in a `type` error and the response would be a stack trace.
+      - fixes the issue when a job encounters a security exception, no job log would would result in the response.
+      - fixes the issue when a job is configured for a syntax check using TYPRUN=SCAN that it would wait the full duration set by `wait_time_s` to return a response.
+      - fixes the issue when a job is configured for a syntax check using TYPRUN=SCAN that no job log would result in the response.
+      - fixes the issue when a job is purged by the system that the response would result in a stack trace.
+      - fixes the issue when invalid JCL syntax is submitted such that the response would result in a stack trace.
+      - fixes the issue when resources (data sets) identified in JCL did not exist such that a response would result in a stack trace.
+      - fixes the issue where the response did not include the job log when a non-zero return code would occur.
 - ``zos_mount`` - fixed option `tag_ccsid` to correctly allow for type int.
 - ``zos_mvs_raw`` - module was updated to correct a bug when no DD statements were provided. The module when no option was provided for `dds` would error, a default was provided to correct this behavior.
 - ``zos_operator``
@@ -84,6 +98,7 @@ Bugfixes
       - fixed such that specifying wait_time_s would throw an error.
       - fixed the wait_time_s to default to 1 second.
       - was updated to correct missing verbosity content when the option verbose was set to True. zos_operator - was updated to correct the trailing lines that would appear in the result content.
+      - fixed incorrect example descriptions and updated the doc to highlight the deprecated option `wait`.
 
 Deprecated Features
 -------------------
@@ -95,6 +110,7 @@ Deprecated Features
 Availability
 ------------
 
+* `Automation Hub`_
 * `Galaxy`_
 * `GitHub`_
 
@@ -104,7 +120,48 @@ Reference
 * Supported by `z/OS V2R3`_ or later
 * Supported by the `z/OS® shell`_
 * Supported by `IBM Open Enterprise SDK for Python`_ `3.9`_ - `3.11`_
-* Supported by IBM `Z Open Automation Utilities 1.2.x`_
+* Supported by IBM `Z Open Automation Utilities 1.2.2`_ (or later) but prior to version 1.3.
+
+Version 1.4.1
+=============
+
+Bug fixes
+
+--------------------------
+
+* ``zos_copy``
+
+    * Copy failed from a loadlib member to another loadlib member. Fix
+      now looks for error in stdout in the if statement to use -X option.
+    * Fixes a bug where files not encoded in IBM-1047 would trigger an
+      error while computing the record length for a new destination dataset.
+    * Fixes a bug where the code for fixing an issue with newlines in
+      files.
+    * fixed wrongful creation of destination backups when module option
+      `force` is true, creating emergency backups meant to restore the system to
+      its initial state in case of a module failure only when force is false.
+    * fixes a bug where the computed record length for a new destination
+      dataset would include newline characters.
+
+* ``zos_job_query``
+
+    * fixes a bug where a boolean was not being properly compared.
+
+Availability
+------------
+
+* `Automation Hub`_
+* `Galaxy`_
+* `GitHub`_
+
+Reference
+---------
+
+* Supported by `z/OS V2R3`_ or later
+* Supported by the `z/OS® shell`_
+* Supported by `IBM Open Enterprise SDK for Python`_ `3.9`_
+* Supported by IBM `Z Open Automation Utilities 1.1.0`_ and
+  `Z Open Automation Utilities 1.1.1`_
 
 Version 1.4.0
 =============
@@ -744,10 +801,10 @@ Reference
 .. _3.11:
    https://www.ibm.com/docs/en/python-zos/3.11
 .. _Z Open Automation Utilities 1.1.0:
-   https://www.ibm.com/docs/en/zoau/1.1.0
+   https://www.ibm.com/docs/en/zoau/1.1.x
 .. _Z Open Automation Utilities 1.1.1:
    https://www.ibm.com/docs/en/zoau/1.1.1
-.. _Z Open Automation Utilities 1.2.x:
+.. _Z Open Automation Utilities 1.2.2:
    https://www.ibm.com/docs/en/zoau/1.2.x
 .. _z/OS® shell:
    https://www.ibm.com/support/knowledgecenter/en/SSLTBW_2.4.0/com.ibm.zos.v2r4.bpxa400/part1.htm

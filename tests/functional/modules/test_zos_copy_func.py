@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020, 2021
+# Copyright (c) IBM Corporation 2020, 2021, 2023
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -41,6 +41,8 @@ DUMMY DATA ---- LINE 006 ------
 DUMMY DATA ---- LINE 007 ------
 """
 
+DUMMY_DATA_CRLF = b"00000001 DUMMY DATA\r\n00000002 DUMMY DATA\r\n"
+
 VSAM_RECORDS = """00000001A record
 00000002A record
 00000003A record
@@ -56,11 +58,69 @@ TEST_VSAM_KSDS = "SYS1.STGINDEX"
 TEST_PDSE = "SYS1.NFSLIBE"
 TEST_PDSE_MEMBER = "SYS1.NFSLIBE(GFSAMAIN)"
 
+COBOL_SRC = """
+       IDENTIFICATION DIVISION.\n
+       PROGRAM-ID. HELLOWRD.\n
+\n
+       PROCEDURE DIVISION.\n
+           DISPLAY "SIMPLE HELLO WORLD".\n
+           STOP RUN.\n
+"""
+
+LINK_JCL = """
+//COMPLINK  JOB MSGCLASS=H,MSGLEVEL=(1,1),NOTIFY=&SYSUID,REGION=0M
+//STEP1     EXEC PGM=IGYCRCTL
+//STEPLIB   DD DSN=IGYV5R10.SIGYCOMP,DISP=SHR
+//          DD DSN=IGYV5R10.SIGYMAC,DISP=SHR
+//SYSIN     DD DISP=SHR,DSN={0}
+//SYSPRINT  DD SYSOUT=*
+//SYSLIN   DD  UNIT=SYSDA,DISP=(MOD),
+//             SPACE=(CYL,(1,1)),
+//             DCB=(RECFM=FB,LRECL=80,BLKSIZE=27920),
+//             DSN=&&LOADSET
+//SYSUT1    DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//SYSUT2    DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//SYSUT3    DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//SYSUT4    DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//SYSUT5    DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//SYSUT6    DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//SYSUT7    DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//SYSUT8    DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//SYSUT9    DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//SYSUT10   DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//SYSUT11   DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//SYSUT12   DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//SYSUT13   DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//SYSUT14   DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//SYSUT15   DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//SYSMDECK  DD SPACE=(80,(10,10),,,ROUND),UNIT=SYSDA
+//*
+//LKED     EXEC PGM=IEWL,REGION=0M
+//SYSPRINT DD  SYSOUT=*
+//SYSLIB   DD  DSN=CEE.SCEELKED,DISP=SHR
+//         DD  DSN=CEE.SCEELKEX,DISP=SHR
+//SYSLMOD  DD  DSN={1},
+//             DISP=SHR
+//SYSUT1   DD  UNIT=SYSDA,DCB=BLKSIZE=1024,
+//             SPACE=(TRK,(3,3))
+//SYSTERM  DD  SYSOUT=*
+//SYSPRINT DD  SYSOUT=*
+//SYSLIN   DD  DSN=&&LOADSET,DISP=(OLD,KEEP)
+//SYSIN    DD  DUMMY
+//*
+
+"""
 
 def populate_dir(dir_path):
     for i in range(5):
         with open(dir_path + "/" + "file" + str(i + 1), "w") as infile:
             infile.write(DUMMY_DATA)
+
+
+def populate_dir_crlf_endings(dir_path):
+    for i in range(5):
+        with open(os.path.join(dir_path, "file{0}".format(i)), "wb") as infile:
+            infile.write(DUMMY_DATA_CRLF)
 
 
 def populate_partitioned_data_set(hosts, name, ds_type, members=None):
@@ -143,6 +203,42 @@ def create_vsam_data_set(hosts, name, ds_type, add_data=False, key_length=None, 
         hosts.all.zos_copy(content=VSAM_RECORDS, dest=record_src)
         hosts.all.zos_encode(src=record_src, dest=name, encoding={"from": "ISO8859-1", "to": "IBM-1047"})
         hosts.all.file(path=record_src, state="absent")
+
+
+def link_loadlib_from_cobol(hosts, ds_name, cobol_pds):
+    """
+    Given a PDSE, links a cobol program making allocated in a temp ds resulting in ds_name
+    as a loadlib.
+
+    Arguments:
+        ds_name (str) -- PDS/E to be linked with the cobol program.
+        cobol_src (str) -- Cobol source code to be used as the program.
+
+        Notes: PDS names are in the format of SOME.PDSNAME(MEMBER)
+    """
+    # Copy the Link program
+    temp_jcl = "/tmp/link.jcl"
+    rc = 0
+    try:
+        cp_res = hosts.all.zos_copy(
+            content=LINK_JCL.format(cobol_pds, ds_name),
+            dest="/tmp/link.jcl",
+            force=True,
+        )
+        for res in cp_res.contacted.values():
+            print("copy link program result {0}".format(res))
+        # Link the temp ds with ds_name
+        job_result = hosts.all.zos_job_submit(
+            src="/tmp/link.jcl",
+            location="USS",
+            wait_time_s=60
+        )
+        for result in job_result.contacted.values():
+            print("link job submit result {0}".format(result))
+            rc = result.get("jobs")[0].get("ret_code").get("code")
+    finally:
+        hosts.all.file(path=temp_jcl, state="absent")
+    return rc
 
 
 @pytest.mark.uss
@@ -968,9 +1064,67 @@ def test_copy_file_record_length_to_sequential_data_set(ansible_zos_module):
             assert v_recl.get("rc") == 0
             stdout = v_recl.get("stdout").split()
             assert len(stdout) == 5
+            # Verifying the dataset type (sequential).
             assert stdout[1] == "PS"
+            # Verifying the record format is Fixed Block.
             assert stdout[2] == "FB"
+            # Verifying the record length is 31. The dummy data has 31
+            # characters per line.
             assert stdout[3] == "31"
+    finally:
+        hosts.all.zos_data_set(name=dest, state="absent")
+        os.remove(src)
+
+
+@pytest.mark.uss
+@pytest.mark.seq
+def test_copy_file_crlf_endings_to_sequential_data_set(ansible_zos_module):
+    hosts = ansible_zos_module
+    dest = "USER.TEST.SEQ.FUNCTEST"
+
+    fd, src = tempfile.mkstemp()
+    os.close(fd)
+    with open(src, "wb") as infile:
+        infile.write(DUMMY_DATA_CRLF)
+
+    try:
+        hosts.all.zos_data_set(name=dest, state="absent")
+
+        copy_result = hosts.all.zos_copy(
+            src=src,
+            dest=dest,
+            remote_src=False,
+            is_binary=False
+        )
+
+        verify_copy = hosts.all.shell(
+            cmd="cat \"//'{0}'\"".format(dest),
+            executable=SHELL_EXECUTABLE,
+        )
+
+        verify_recl = hosts.all.shell(
+            cmd="dls -l {0}".format(dest),
+            executable=SHELL_EXECUTABLE,
+        )
+
+        for cp_res in copy_result.contacted.values():
+            assert cp_res.get("msg") is None
+            assert cp_res.get("changed") is True
+            assert cp_res.get("dest") == dest
+        for v_cp in verify_copy.contacted.values():
+            assert v_cp.get("rc") == 0
+            assert len(v_cp.get("stdout_lines")) == 2
+        for v_recl in verify_recl.contacted.values():
+            assert v_recl.get("rc") == 0
+            stdout = v_recl.get("stdout").split()
+            assert len(stdout) == 5
+            # Verifying the dataset type (sequential).
+            assert stdout[1] == "PS"
+            # Verifying the record format is Fixed Block.
+            assert stdout[2] == "FB"
+            # Verifying the record length is 19. The dummy data has 19
+            # characters per line.
+            assert stdout[3] == "19"
     finally:
         hosts.all.zos_data_set(name=dest, state="absent")
         os.remove(src)
@@ -1565,6 +1719,38 @@ def test_copy_dir_to_non_existing_pdse(ansible_zos_module):
 
 @pytest.mark.uss
 @pytest.mark.pdse
+def test_copy_dir_crlf_endings_to_non_existing_pdse(ansible_zos_module):
+    hosts = ansible_zos_module
+    dest = "USER.TEST.PDSE.FUNCTEST"
+
+    temp_path = tempfile.mkdtemp()
+    src_basename = "source/"
+    source_path = "{0}/{1}".format(temp_path, src_basename)
+
+    try:
+        os.mkdir(source_path)
+        populate_dir_crlf_endings(source_path)
+
+        copy_res = hosts.all.zos_copy(src=source_path, dest=dest)
+        verify_copy = hosts.all.shell(
+            cmd="cat \"//'{0}({1})'\"".format(dest, "FILE2"),
+            executable=SHELL_EXECUTABLE,
+        )
+
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+            assert result.get("changed") is True
+            assert result.get("dest") == dest
+        for result in verify_copy.contacted.values():
+            assert result.get("rc") == 0
+            assert len(result.get("stdout_lines")) == 2
+    finally:
+        shutil.rmtree(temp_path)
+        hosts.all.zos_data_set(name=dest, state="absent")
+
+
+@pytest.mark.uss
+@pytest.mark.pdse
 @pytest.mark.parametrize("src_type", ["pds", "pdse"])
 def test_copy_dir_to_existing_pdse(ansible_zos_module, src_type):
     hosts = ansible_zos_module
@@ -1676,6 +1862,151 @@ def test_copy_pds_to_existing_pds(ansible_zos_module, args):
             assert len(stdout.splitlines()) == 3
     finally:
         hosts.all.zos_data_set(name=src, state="absent")
+        hosts.all.zos_data_set(name=dest, state="absent")
+
+
+@pytest.mark.pdse
+def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module,):
+    hosts = ansible_zos_module
+    # The volume for this dataset should use a system symbol.
+    # This dataset and member should be available on any z/OS system.
+    src = "USER.LOAD.SRC"
+    dest = "USER.LOAD.DEST"
+    cobol_pds = "USER.COBOL.SRC"
+    try:
+        hosts.all.zos_data_set(
+            name=src,
+            state="present",
+            type="pdse",
+            record_format="U",
+            record_length=0,
+            block_size=32760,
+            space_primary=2,
+            space_type="M",
+            replace=True
+        )
+
+        hosts.all.zos_data_set(
+            name=dest,
+            state="present",
+            type="pdse",
+            record_format="U",
+            record_length=0,
+            block_size=32760,
+            space_primary=2,
+            space_type="M",
+            replace=True
+        )
+
+        hosts.all.zos_data_set(
+            name=cobol_pds,
+            state="present",
+            type="pds",
+            space_primary=2,
+            record_format="FB",
+            record_length=80,
+            block_size=3120,
+            replace=True,
+        )
+        member = "HELLOSRC"
+        cobol_pds = "{0}({1})".format(cobol_pds, member)
+        rc = hosts.all.zos_copy(
+            content=COBOL_SRC,
+            dest=cobol_pds,
+        )
+        dest_name = "{0}({1})".format(dest, member)
+        src_name = "{0}({1})".format(src, member)
+        
+        
+        # both src and dest need to be a loadlib
+        rc = link_loadlib_from_cobol(hosts, dest_name, cobol_pds)
+        assert rc == 0
+        # make sure is executable
+        cmd = "mvscmd --pgm={0}  --steplib={1} --sysprint=* --stderr=* --stdout=*"
+        exec_res = hosts.all.shell(
+            cmd=cmd.format(member, dest)
+        )
+        for result in exec_res.contacted.values():
+            assert result.get("rc") == 0
+        rc = link_loadlib_from_cobol(hosts, src_name, cobol_pds)
+        assert rc == 0
+
+        exec_res = hosts.all.shell(
+            cmd=cmd.format(member, src)
+        )
+        for result in exec_res.contacted.values():
+            assert result.get("rc") == 0
+
+        copy_res = hosts.all.zos_copy(
+            src="{0}({1})".format(src, member), 
+            dest="{0}({1})".format(dest, "MEM1"), 
+            remote_src=True)
+
+        verify_copy = hosts.all.shell(
+            cmd="mls {0}".format(dest),
+            executable=SHELL_EXECUTABLE
+        )
+
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+            assert result.get("changed") is True
+            assert result.get("dest") == "{0}({1})".format(dest, "MEM1")
+
+        for v_cp in verify_copy.contacted.values():
+            assert v_cp.get("rc") == 0
+            stdout = v_cp.get("stdout")
+            assert stdout is not None
+            # number of members
+            assert len(stdout.splitlines()) == 2
+
+    finally:
+        hosts.all.zos_data_set(name=dest, state="absent")
+        hosts.all.zos_data_set(name=src, state="absent")
+        hosts.all.zos_data_set(name=cobol_pds, state="absent")
+
+
+@pytest.mark.pdse
+def test_copy_pds_member_with_system_symbol(ansible_zos_module,):
+    """This test is for bug #543 in GitHub. In some versions of ZOAU,
+    datasets.listing can't handle system symbols in volume names and
+    therefore fails to get details from a dataset.
+
+    Note: `listcat ent('SYS1.SAMPLIB') all` will display 'volser = ******'
+    and `D SYMBOLS` will show you that `&SYSR2. = "RES80A"` where
+    the symbols for this volume correspond to volume `RES80A`
+    """
+    hosts = ansible_zos_module
+    # The volume for this dataset should use a system symbol.
+    # This dataset and member should be available on any z/OS system.
+    src = "SYS1.SAMPLIB(IZUPRM00)"
+    dest = "USER.TEST.PDS.DEST"
+
+    try:
+        hosts.all.zos_data_set(
+            name=dest,
+            state="present",
+            type="pdse",
+            replace=True
+        )
+
+        copy_res = hosts.all.zos_copy(src=src, dest=dest, remote_src=True)
+        verify_copy = hosts.all.shell(
+            cmd="mls {0}".format(dest),
+            executable=SHELL_EXECUTABLE
+        )
+
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+            assert result.get("changed") is True
+            assert result.get("dest") == dest
+
+        for v_cp in verify_copy.contacted.values():
+            assert v_cp.get("rc") == 0
+            stdout = v_cp.get("stdout")
+            assert stdout is not None
+            assert len(stdout.splitlines()) == 1
+
+    finally:
         hosts.all.zos_data_set(name=dest, state="absent")
 
 

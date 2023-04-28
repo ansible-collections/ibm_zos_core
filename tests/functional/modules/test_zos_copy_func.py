@@ -1916,8 +1916,6 @@ def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module,):
         )
         dest_name = "{0}({1})".format(dest, member)
         src_name = "{0}({1})".format(src, member)
-        
-        
         # both src and dest need to be a loadlib
         rc = link_loadlib_from_cobol(hosts, dest_name, cobol_pds)
         assert rc == 0

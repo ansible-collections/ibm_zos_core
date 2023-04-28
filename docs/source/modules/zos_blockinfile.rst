@@ -195,13 +195,11 @@ Examples
        block: |
           MOUNT FILESYSTEM('SOME.DATA.SET') TYPE(ZFS) MODE(READ)
              MOUNTPOINT('/tmp/src/somedirectory')
-
    - name: Remove a library as well as surrounding markers
      zos_blockinfile:
        state: absent
        src: SYS1.PARMLIB(PROG00)
        marker: "/* {mark} ANSIBLE MANAGED BLOCK FOR SOME.DATA.SET */"
-
    - name: Add ZOAU path to PATH in /etc/profile
      zos_blockinfile:
        src: /etc/profile
@@ -210,7 +208,6 @@ Examples
          ZOAU=/path/to/zoau_dir/bin
          export ZOAU
          PATH=$ZOAU:$PATH
-
    - name: Insert/Update HTML surrounded by custom markers after <body> line
      zos_blockinfile:
        path: /var/www/html/index.html
@@ -219,13 +216,11 @@ Examples
        block: |
          <h1>Welcome to {{ ansible_hostname }}</h1>
          <p>Last updated on {{ ansible_date_time.iso8601 }}</p>
-
    - name: Remove HTML as well as surrounding markers
      zos_blockinfile:
        path: /var/www/html/index.html
        state: absent
        marker: "<!-- {mark} ANSIBLE MANAGED BLOCK -->"
-
    - name: Add mappings to /etc/hosts
      zos_blockinfile:
        path: /etc/hosts
@@ -236,7 +231,6 @@ Examples
        - { name: host1, ip: 10.10.1.10 }
        - { name: host2, ip: 10.10.1.11 }
        - { name: host3, ip: 10.10.1.12 }
-
    - name: Add a code block to a member using a predefined indentation.
      zos_blockinfile:
        path: SYS1.PARMLIB(BPXPRM00)
@@ -245,6 +239,14 @@ Examples
              RUN  PROGRAM(DSNTEP2) PLAN(DSNTEP12) -
              LIB('{{ DB2RUN }}.RUNLIB.LOAD')
        indentation: 16
+
+   - name: Update a script with commands containing quotes.
+     zos_blockinfile:
+       src: "/u/scripts/script.sh"
+       insertafter: "EOF"
+       block: |
+             cat "//'{{ DS_NAME }}'"
+             cat "//'{{ DS_NAME_2 }}'"
 
    - name: Set facts for the following two tasks.
      set_fact:

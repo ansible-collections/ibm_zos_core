@@ -220,13 +220,15 @@ def run_module():
         stdout = rc_message.get("stdout")
         if stdout is not None:
             for out in stdout.split("\n"):
-                result["content"].append(out)
+                if out:
+                    result["content"].append(out)
         stderr = rc_message.get("stderr")
         error = []
         if stderr is not None:
             for err in stderr.split("\n"):
-                error.append(err)
-                result["content"].append(err)
+                if err:
+                    error.append(err)
+                    result["content"].append(err)
         # call is returned from run_operator_command, specifying what was run.
         # result["cmd"] = new_params.get("cmd")
         result["cmd"] = rc_message.get("call")

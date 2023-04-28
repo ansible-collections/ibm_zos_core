@@ -471,10 +471,14 @@ def _write_content_to_temp_file(content):
 def _create_template_environment(template_parameters, src, encoding):
     """Parses boolean parameters for Jinja2 and creates a TemplateRenderer
     instance."""
-    template_parameters["lstrip_blocks"] = _process_boolean(template_parameters.get("lstrip_blocks"), default=False)
-    template_parameters["trim_blocks"] = _process_boolean(template_parameters.get("trim_blocks"), default=False)
-    template_parameters["keep_trailing_newline"] = _process_boolean(template_parameters.get("keep_trailing_newline"), default=False)
-    template_parameters["auto_reload"] = _process_boolean(template_parameters.get("auto_reload"), default=False)
+    if template_parameters.get("lstrip_blocks"):
+        template_parameters["lstrip_blocks"] = _process_boolean(template_parameters.get("lstrip_blocks"), default=False)
+    if template_parameters.get("trim_blocks"):
+        template_parameters["trim_blocks"] = _process_boolean(template_parameters.get("trim_blocks"), default=True)
+    if template_parameters.get("keep_trailing_newline"):
+        template_parameters["keep_trailing_newline"] = _process_boolean(template_parameters.get("keep_trailing_newline"), default=False)
+    if template_parameters.get("auto_reload"):
+        template_parameters["auto_reload"] = _process_boolean(template_parameters.get("auto_reload"), default=False)
 
     if encoding:
         template_encoding = encoding.get("from")

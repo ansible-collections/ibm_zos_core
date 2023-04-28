@@ -425,7 +425,7 @@ def test_job_submit_max_rc(ansible_zos_module, args):
             variable_start_string="((",
             variable_end_string="))",
             comment_start_string="(#",
-            comment_end_string="#)",
+            comment_end_string="#)"
         )
     )
 ])
@@ -433,7 +433,7 @@ def test_job_submit_jinja_template(ansible_zos_module, args):
     try:
         hosts = ansible_zos_module
 
-        tmp_file = tempfile.NamedTemporaryFile(delete=True)
+        tmp_file = tempfile.NamedTemporaryFile(delete=False)
         with open(tmp_file.name, "w") as f:
             f.write(JCL_TEMPLATES[args["template"]])
 
@@ -453,7 +453,6 @@ def test_job_submit_jinja_template(ansible_zos_module, args):
         )
 
         for result in results.contacted.values():
-            print(result)
             assert result.get('changed') is True
             assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
             assert result.get("jobs")[0].get("ret_code").get("code") == 0

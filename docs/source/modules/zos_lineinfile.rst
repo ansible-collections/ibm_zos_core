@@ -185,6 +185,17 @@ encoding
   | **default**: IBM-1047
 
 
+force
+  Specifies that the data set can be shared with others during an update which results in the data set you are updating to be simultaneously updated by others.
+
+  This is helpful when a data set is being used in a long running process such as a started task and you are wanting to update or read.
+
+  The ``force`` option enables sharing of data sets through the disposition *DISP=SHR*.
+
+  | **required**: False
+  | **type**: bool
+
+
 
 
 Examples
@@ -225,6 +236,14 @@ Examples
        regexp: '^(.*)User(\d+)m(.*)$'
        line: '\1APPUser\3'
        backrefs: yes
+
+   - name: Add a line to a member while a task is in execution
+     zos_lineinfile:
+       src: SOME.PARTITIONED.DATA.SET(DATA)
+       insertafter: EOF
+       line: 'Should be a working test now'
+       force: True
+
 
 
 

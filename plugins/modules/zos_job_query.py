@@ -354,7 +354,15 @@ def parsing_jobs(jobs_raw):
             "system": job.get("system"),
             "subsystem": job.get("subsystem"),
             "ret_code": ret_code,
+            "jobclass": job.get("jobclass"),
+            "serviceclass": job.get("serviceclass"),
+            "priority": job.get("priority"),
+            "asid": job.get("asid"),
+            "creationdate": job.get("creationdate"),
+            "creationtime": job.get("creationtime"),
+            "queueposition": job.get("queueposition"),
         }
+        
         jobs.append(job_dict)
     return jobs
 

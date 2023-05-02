@@ -181,9 +181,10 @@ class ActionModule(ActionBase):
                         except Exception as err:
                             return self._exit_action(result, str(err), failed=True)
 
-                    # TODO: change this to account for rendered templates.
                     task_args["size"] = sum(
-                        os.stat(path + "/" + f).st_size for f in files
+                        os.stat(os.path.join(path, f)).st_size
+                        for path, dirs, files in os.walk(src)
+                        for f in files
                     )
                 else:
                     if mode == "preserve":

@@ -35,7 +35,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import encode
 
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.template import TemplateRenderer
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import template
 
 display = Display()
 
@@ -164,11 +164,15 @@ class ActionModule(ActionBase):
                     if use_template:
                         try:
                             template_parameters = task_args.get("template_parameters", dict())
+                            if encoding:
+                                template_encoding = encoding.get("from", None)
+                            else:
+                                template_encoding = None
 
-                            renderer = _create_template_environment(
+                            renderer = template.create_template_environment(
                                 template_parameters,
                                 src,
-                                encoding
+                                template_encoding
                             )
                             template_dir, rendered_dir = renderer.render_dir_template(
                                 task_vars.get("vars", dict())
@@ -190,11 +194,15 @@ class ActionModule(ActionBase):
                     if use_template:
                         try:
                             template_parameters = task_args.get("template_parameters", dict())
+                            if encoding:
+                                template_encoding = encoding.get("from", None)
+                            else:
+                                template_encoding = None
 
-                            renderer = _create_template_environment(
+                            renderer = template.create_template_environment(
                                 template_parameters,
                                 src,
-                                encoding
+                                template_encoding
                             )
                             template_dir, rendered_file = renderer.render_file_template(
                                 os.path.basename(src),
@@ -466,23 +474,3 @@ def _write_content_to_temp_file(content):
             "Unable to write content to temporary file: {0}".format(repr(err))
         )
     return path
-
-
-def _create_template_environment(template_parameters, src, encoding):
-    """Parses boolean parameters for Jinja2 and creates a TemplateRenderer
-    instance."""
-    if template_parameters.get("lstrip_blocks"):
-        template_parameters["lstrip_blocks"] = _process_boolean(template_parameters.get("lstrip_blocks"), default=False)
-    if template_parameters.get("trim_blocks"):
-        template_parameters["trim_blocks"] = _process_boolean(template_parameters.get("trim_blocks"), default=True)
-    if template_parameters.get("keep_trailing_newline"):
-        template_parameters["keep_trailing_newline"] = _process_boolean(template_parameters.get("keep_trailing_newline"), default=False)
-    if template_parameters.get("auto_reload"):
-        template_parameters["auto_reload"] = _process_boolean(template_parameters.get("auto_reload"), default=False)
-
-    if encoding:
-        template_encoding = encoding.get("from")
-    else:
-        template_encoding = encode.Defaults.get_default_system_charset()
-
-    return TemplateRenderer(src, template_encoding, **template_parameters)

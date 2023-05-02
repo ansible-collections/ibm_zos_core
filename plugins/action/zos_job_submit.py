@@ -20,9 +20,7 @@ from ansible.module_utils.common.text.converters import to_bytes, to_text
 from ansible.module_utils.parsing.convert_bool import boolean
 import os
 
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import encode
-
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.template import TemplateRenderer
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import template
 
 
 class ActionModule(ActionBase):
@@ -110,12 +108,12 @@ class ActionModule(ActionBase):
             if use_template:
                 try:
                     template_parameters = module_args.get("template_parameters", dict())
-                    encoding = module_args.get("encoding", None)
+                    encoding = module_args.get("encoding", dict())
 
-                    renderer = _create_template_environment(
+                    renderer = template.create_template_environment(
                         template_parameters,
                         source_full,
-                        encoding
+                        encoding.get("from", None)
                     )
                     template_dir, rendered_file = renderer.render_file_template(
                         os.path.basename(source_full),
@@ -179,23 +177,3 @@ def _process_boolean(arg, default=False):
         return boolean(arg)
     except TypeError:
         return default
-
-
-def _create_template_environment(template_parameters, src, encoding):
-    """Parses boolean parameters for Jinja2 and creates a TemplateRenderer
-    instance."""
-    if template_parameters.get("lstrip_blocks"):
-        template_parameters["lstrip_blocks"] = _process_boolean(template_parameters.get("lstrip_blocks"), default=False)
-    if template_parameters.get("trim_blocks"):
-        template_parameters["trim_blocks"] = _process_boolean(template_parameters.get("trim_blocks"), default=True)
-    if template_parameters.get("keep_trailing_newline"):
-        template_parameters["keep_trailing_newline"] = _process_boolean(template_parameters.get("keep_trailing_newline"), default=False)
-    if template_parameters.get("auto_reload"):
-        template_parameters["auto_reload"] = _process_boolean(template_parameters.get("auto_reload"), default=False)
-
-    if encoding:
-        template_encoding = encoding.get("from")
-    else:
-        template_encoding = encode.Defaults.get_default_system_charset()
-
-    return TemplateRenderer(src, template_encoding, **template_parameters)

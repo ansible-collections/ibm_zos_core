@@ -411,6 +411,7 @@ def test_job_submit_max_rc(ansible_zos_module, args):
         hosts.all.file(path=tmp_file.name, state="absent")
 
 
+@pytest.mark.template
 @pytest.mark.parametrize("args", [
     dict(
         template="Default",

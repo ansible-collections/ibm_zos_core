@@ -18,7 +18,46 @@ import tempfile
 from os import path
 
 from ansible.module_utils._text import to_bytes, to_native
+from ansible.module_utils.parsing.convert_bool import boolean
 from jinja2 import Environment, FileSystemLoader, TemplateNotFound, TemplateError
+
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import encode
+
+
+def _process_boolean(arg, default=False):
+    try:
+        return boolean(arg)
+    except TypeError:
+        return default
+
+
+def create_template_environment(template_parameters, src, template_encoding=None):
+    """Parses boolean parameters for Jinja2 and returns a TemplateRenderer
+    instance.
+
+    Arguments:
+        template_parametrs (dict): Parameters for creating the template environment.
+        src (str): Local path where the templates are located.
+        template_encoding (dict, optional): encoding used by the templates. If not
+                given, the default locale set in the system will be used.
+
+    Returns:
+        TemplateRenderer -- Object with a new template environment ready to
+                render the templates found in src.
+    """
+    if template_parameters.get("lstrip_blocks"):
+        template_parameters["lstrip_blocks"] = _process_boolean(template_parameters.get("lstrip_blocks"), default=False)
+    if template_parameters.get("trim_blocks"):
+        template_parameters["trim_blocks"] = _process_boolean(template_parameters.get("trim_blocks"), default=True)
+    if template_parameters.get("keep_trailing_newline"):
+        template_parameters["keep_trailing_newline"] = _process_boolean(template_parameters.get("keep_trailing_newline"), default=False)
+    if template_parameters.get("auto_reload"):
+        template_parameters["auto_reload"] = _process_boolean(template_parameters.get("auto_reload"), default=False)
+
+    if not template_encoding:
+        template_encoding = encode.Defaults.get_default_system_charset()
+
+    return TemplateRenderer(src, template_encoding, **template_parameters)
 
 
 class TemplateRenderer:

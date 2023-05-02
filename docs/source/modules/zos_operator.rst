@@ -59,9 +59,11 @@ wait_time_s
 
 
 wait
-  Configuring wait used by the `zos_operator <./zos_operator.html>`_ module has been deprecated and will be removed in ibm.ibm_zos_core collection.
+  Configuring wait used by the `zos_operator <./zos_operator.html>`_ module has been deprecated and will be removed in a future ibm.ibm_zos_core collection.
 
   Setting this option will yield no change, it is deprecated.
+
+  Review option *wait_time_s* to instruct operator commands to wait.
 
   | **required**: False
   | **type**: bool
@@ -76,13 +78,13 @@ Examples
 .. code-block:: yaml+jinja
 
    
-   - name: Execute an operator command to show active jobs
+   - name: Execute an operator command to show device status and allocation
      zos_operator:
-       cmd: 'd u,all'
+       cmd: 'd u'
 
-   - name: Execute an operator command to show active jobs with verbose information
+   - name: Execute an operator command to show device status and allocation with verbose information
      zos_operator:
-       cmd: 'd u,all'
+       cmd: 'd u'
        verbose: true
 
    - name: Execute an operator command to purge all job logs (requires escaping)
@@ -91,13 +93,17 @@ Examples
 
    - name: Execute operator command to show jobs, waiting up to 5 seconds for response
      zos_operator:
-       cmd: 'd u,all'
+       cmd: 'd a,all'
        wait_time_s: 5
 
    - name: Execute operator command to show jobs, always waiting 7 seconds for response
      zos_operator:
-       cmd: 'd u,all'
+       cmd: 'd a,all'
        wait_time_s: 7
+
+   - name: Display the system symbols and associated substitution texts.
+     zos_operator:
+       cmd: 'D SYMBOLS'
 
 
 

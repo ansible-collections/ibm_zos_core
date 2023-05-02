@@ -25,9 +25,9 @@ author:
     - "Demetrios Dimatos (@ddimatos)"
 short_description: Submit JCL
 description:
-    - Submit JCL from DATA_SET , USS, or LOCAL location.
-    - Submit a job and optionally monitor for its execution.
-    - Optionally wait a designated time until the job finishes.
+    - Submit JCL from a data set, USS, or from the controller.
+    - Submit a job and optionally monitor for completion.
+    - Optionally, wait a designated time until the job finishes.
     - For an uncataloged dataset, specify the volume serial number.
 version_added: "1.0.0"
 options:
@@ -36,7 +36,7 @@ options:
     type: str
     description:
       - The source file or data set containing the JCL to submit.
-      - It could be physical sequential data set or a partitioned data set
+      - It could be a physical sequential data set, a partitioned data set
         qualified by a member or a path. (e.g "USER.TEST","USER.JCL(TEST)")
       - Or a USS file. (e.g "/u/tester/demo/sample.jcl")
       - Or a LOCAL file in ansible control node.
@@ -59,17 +59,23 @@ options:
     default: false
     type: bool
     description:
+      - Setting this option will yield no change, it is deprecated. There is no
+        no need to set I(wait); setting I(wait_times_s) is the correct way to
+        configure the amount of tme to wait for a job to execute.
       - Configuring wait used by the L(zos_job_submit,./zos_job_submit.html) module has been
         deprecated and will be removed in ibm.ibm_zos_core collection.
-      - Setting this option will yield no change, it is deprecated.
-      - See option ``wait_time_s``.
+      - See option I(wait_time_s).
   wait_time_s:
     required: false
     default: 10
     type: int
     description:
-      - When I(wait) is true, the module will wait for the number of seconds for Job completion.
-      - User can set the wait time manually with this option.
+      - Option I(wait_time_s) is the total time that module
+        L(zos_job_submit,./zos_job_submit.html) will wait for a submitted job
+        to complete. The time begins when the module is executed on the managed
+        node.
+      - I(wait_time_s) is measured in seconds and must be a value greater than 0
+        and less than 86400.
   max_rc:
     required: false
     type: int
@@ -91,7 +97,7 @@ options:
       - When configured, the L(zos_job_submit,./zos_job_submit.html) will try to
         catalog the data set for the volume serial. If it is not able to, the
         module will fail.
-      - Ignored for USS and LOCAL.
+      - Ignored for I(location=USS) and I(location=LOCAL).
   encoding:
     description:
       - Specifies which encoding the local JCL file should be converted from
@@ -222,18 +228,21 @@ jobs:
       contains:
         msg:
           description:
-            Return code resulting from the job submission.
+            Return code resulting from the job submission. Jobs that take
+            longer to assign a value can have a value of '?'.
           type: str
           sample: CC 0000
         msg_code:
           description:
             Return code extracted from the `msg` so that it can be evaluated
-            as a string.
+            as a string. Jobs that take longer to assign a value can have a
+            value of '?'.
           type: str
           sample: 0000
         msg_txt:
           description:
-             Returns additional information related to the job.
+             Returns additional information related to the job. Jobs that take
+             longer to assign a value can have a value of '?'.
           type: str
           sample: The job completion code (CC) was not available in the job
                   output, please review the job log."
@@ -584,29 +593,31 @@ else:
 
 
 JOB_COMPLETION_MESSAGES = frozenset(["CC", "ABEND", "SEC ERROR", "JCL ERROR", "JCLERR"])
-JOB_ERROR_MESSAGES = frozenset(["ABEND", "SEC ERROR", "JCL ERROR", "JCLERR"])
+JOB_ERROR_MESSAGES = frozenset(["ABEND", "SEC ERROR", "SEC", "JCL ERROR", "JCLERR"])
 MAX_WAIT_TIME_S = 86400
 
 
-def submit_src_jcl(module, src, timeout=0, hfs=True, volume=None, start_time=timer()):
+def submit_src_jcl(module, src, src_name=None, timeout=0, hfs=True, volume=None, start_time=timer()):
     """ Submit src JCL whether JCL is local (Ansible Controller), USS or in a data set.
 
         Arguments:
             module - module instnace to access the module api
-            src (str) - JCL, can be relative or absolute paths either on controller or USS
-                      - Data set, can be PS, PDS, PDSE Member
-            timeout (int) - how long to wait in seconds for a job to complete
-            hfs (boolean) - True if JCL is a file in USS, otherwise False; Note that all
-                            JCL local to a controller is transfered to USS thus would be
-                            True
-            volume (str) - volume the data set JCL is located on that will be cataloged before
-                           being submitted
-            start_time - time the JCL started its submission
+            src (str)       - JCL, can be relative or absolute paths either on controller or USS
+                            - Data set, can be PS, PDS, PDSE Member
+            src_name (str)  - the src name that was provided in the module because through
+                              the runtime src could be replace with a temporary file name
+            timeout (int)   - how long to wait in seconds for a job to complete
+            hfs (boolean)   - True if JCL is a file in USS, otherwise False; Note that all
+                              JCL local to a controller is transfered to USS thus would be
+                              True
+            volume (str)    - volume the data set JCL is located on that will be cataloged before
+                              being submitted
+            start_time      - time the JCL started its submission
 
         Returns:
-            job_submitted_id - the JCL job ID returned from submitting a job, else if no
-                               job submits, None will be returned
-            duration - how long the job ran for in this method
+            job_submitted_id  - the JCL job ID returned from submitting a job, else if no
+                                job submits, None will be returned
+            duration          - how long the job ran for in this method
     """
 
     kwargs = {
@@ -656,6 +667,7 @@ def submit_src_jcl(module, src, timeout=0, hfs=True, volume=None, start_time=tim
             # drop through and get analyzed in the main as it will scan the job ouput
             # Any match to JOB_ERROR_MESSAGES ends our processing and wait times
             while (job_listing_status not in JOB_ERROR_MESSAGES and
+                    job_listing_status == 'AC' and
                     ((job_listing_rc is None or len(job_listing_rc) == 0 or
                       job_listing_rc == '?') and duration < timeout)):
                 current_time = timer()
@@ -664,16 +676,20 @@ def submit_src_jcl(module, src, timeout=0, hfs=True, volume=None, start_time=tim
                 job_listing_rc = jobs.listing(job_submitted.id)[0].rc
                 job_listing_status = jobs.listing(job_submitted.id)[0].status
 
-    # ZOAU throws a ZOAUException when the job sumbission fails, not when the
-    # JCL is non-zero, for non-zero JCL RCs that is caught in the job_output
-    # processing
+    # ZOAU throws a ZOAUException when the job sumbission fails thus there is no
+    # JCL RC to share with the user, if there is a RC, that will be processed
+    # in the job_output parser.
     except ZOAUException as err:
         result["changed"] = False
         result["failed"] = True
         result["stderr"] = str(err)
-        result["msg"] = ("Unable to submit job {0}, a job sumission has returned "
-                         "a non-zero return code, please review the standard error "
-                         "and contact a system administrator.".format(src))
+        result["duration"] = duration
+        result["job_id"] = job_submitted.id if job_submitted else None
+        result["msg"] = ("Unable to submit job {0}, the job submission has failed. "
+                         "Without the job id, the error can not be determined. "
+                         "Consider using module `zos_job_query` to poll for the "
+                         "job by name or review the system log for purged jobs "
+                         "resulting from an abend.".format(src_name))
         module.fail_json(**result)
 
     # ZOAU throws a JobSubmitException when timeout has execeeded in that no job_id
@@ -688,7 +704,29 @@ def submit_src_jcl(module, src, timeout=0, hfs=True, volume=None, start_time=tim
                          "within the allocated time of {1} seconds. Consider using "
                          " module zos_job_query to poll for a long running "
                          "jobs or increasing the value for "
-                         "'wait_times_s`.".format(src, str(timeout)))
+                         "`wait_times_s`.".format(src_name, str(timeout)))
+        module.fail_json(**result)
+
+    # Between getting a job_submitted and the jobs.listing(job_submitted.id)[0].rc
+    # is enough time for the system to purge an invalid job, so catch it and let
+    # it fall through to the catchall.
+    except IndexError:
+        job_submitted = None
+
+    # There appears to be a small fraction of time when ZOAU has a handle on the
+    # job and and suddenly its purged, this check is to ensure the job is there
+    # long after the purge else we throw an error here if its been purged.
+    if job_submitted is None:
+        result["changed"] = False
+        result["failed"] = True
+        result["duration"] = duration
+        result["job_id"] = job_submitted.id if job_submitted else None
+        result["msg"] = ("The job {0} has been submitted and no job id was returned "
+                         "within the allocated time of {1} seconds. Without the "
+                         "job id, the error can not be determined, consider using "
+                         "module `zos_job_query` to poll for the job by name or "
+                         "review the system log for purged jobs resulting from an "
+                         "abend.".format(src_name, str(timeout)))
         module.fail_json(**result)
 
     return job_submitted.id if job_submitted else None, duration
@@ -814,17 +852,18 @@ def run_module():
     # temporary file names for copied files when user sets location to LOCAL
     temp_file = parsed_args.get("temp_file")
     temp_file_encoded = None
-    if temp_file:
-        temp_file_encoded = NamedTemporaryFile(delete=True)
 
     # Default 'changed' is False in case the module is not able to execute
     result = dict(changed=False)
 
     if wait_time_s <= 0 or wait_time_s > MAX_WAIT_TIME_S:
         result["failed"] = True
-        result["msg"] = ("The value for option wait_time_s is not valid, it must "
-                         "be greater than 0 and less than " + MAX_WAIT_TIME_S)
+        result["msg"] = ("The value for option `wait_time_s` is not valid, it must "
+                         "be greater than 0 and less than {0}.".format(str(MAX_WAIT_TIME_S)))
         module.fail_json(**result)
+
+    if temp_file:
+        temp_file_encoded = NamedTemporaryFile(delete=True)
 
     job_submitted_id = None
     duration = 0
@@ -832,9 +871,9 @@ def run_module():
 
     if location == "DATA_SET":
         job_submitted_id, duration = submit_src_jcl(
-            module, src, wait_time_s, False, volume, start_time=start_time)
+            module, src, src_name=src, timeout=wait_time_s, hfs=False, volume=volume, start_time=start_time)
     elif location == "USS":
-        job_submitted_id, duration = submit_src_jcl(module, src, wait_time_s, True)
+        job_submitted_id, duration = submit_src_jcl(module, src, src_name=src, timeout=wait_time_s, hfs=True)
     else:
         # added -c to iconv to prevent '\r' from erroring as invalid chars to EBCDIC
         conv_str = "iconv -c -f {0} -t {1} {2} > {3}".format(
@@ -851,7 +890,7 @@ def run_module():
 
         if conv_rc == 0:
             job_submitted_id, duration = submit_src_jcl(
-                module, temp_file_encoded.name, wait_time_s, True)
+                module, temp_file_encoded.name, src_name=src, timeout=wait_time_s, hfs=True)
         else:
             result["failed"] = True
             result["stdout"] = stdout
@@ -875,6 +914,8 @@ def run_module():
         if duration >= wait_time_s:
             result["failed"] = True
             result["changed"] = False
+            if job_output_txt is not None:
+                result["jobs"] = job_output_txt
             result["msg"] = (
                 "The JCL submitted with job id {0} but appears to be a long "
                 "running job that exceeded its maximum wait time of {1} "
@@ -888,6 +929,7 @@ def run_module():
         is_changed = True
 
         if job_output_txt:
+            result["jobs"] = job_output_txt
             job_ret_code = job_output_txt[0].get("ret_code")
 
             if job_ret_code:
@@ -921,8 +963,6 @@ def run_module():
                     raise Exception("The job return code {0} was non-zero in the "
                                     "job output, this job has failed.".format(str(job_code)))
 
-                result["jobs"] = job_output_txt
-
                 if not return_output:
                     for job in result.get("jobs", []):
                         job["ddnames"] = []
@@ -942,7 +982,7 @@ def run_module():
         result["changed"] = False
         result["msg"] = ("The JCL submitted with job id {0} but "
                          "there was an error, please review "
-                         "the error for further details: {1}.".format
+                         "the error for further details: {1}".format
                          (str(job_submitted_id), str(err)))
         module.exit_json(**result)
 

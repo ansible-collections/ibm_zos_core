@@ -237,13 +237,14 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, duration=
                     job["ret_code"]["code"] = int(entry.rc)
             job["ret_code"]["msg_text"] = entry.status
 
-            job["jobclass"] = entry.jobclass 
-            job["serviceclass"] = entry.serviceclass
+            job["job_class"] = entry.job_class 
+            job["svc_class"] = entry.svc_class
             job["priority"] = entry.priority
             job["asid"] = entry.asid
-            job["creationdate"] = entry.creationdate 
-            job["creationtime"] = entry.creationtime
-            job["queueposition"] = entry.queueposition  
+
+            job["creation_datetime"] = entry.creation_datetime
+
+            job["queue_position"] = entry.queue_position  
 
             job["class"] = ""
             job["content_type"] = ""

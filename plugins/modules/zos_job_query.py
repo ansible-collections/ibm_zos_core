@@ -354,13 +354,12 @@ def parsing_jobs(jobs_raw):
             "system": job.get("system"),
             "subsystem": job.get("subsystem"),
             "ret_code": ret_code,
-            "jobclass": job.get("jobclass"),
-            "serviceclass": job.get("serviceclass"),
+            "job_class": job.get("job_class"),
+            "svc_class": job.get("svc_class"),
             "priority": job.get("priority"),
             "asid": job.get("asid"),
-            "creationdate": job.get("creationdate"),
-            "creationtime": job.get("creationtime"),
-            "queueposition": job.get("queueposition"),
+            "creation_datetime": job.get("creation_datetime"),
+            "queue_position": job.get("queue_position"),
         }
         
         jobs.append(job_dict)

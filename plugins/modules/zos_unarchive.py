@@ -81,6 +81,8 @@ class Unarchive(abc.ABC):
         self.list = module.params.get("list")
         self.changed = False
         self.missing = list()
+        if self.dest == '':
+            self.dest = os.path.dirname(self.path)
 
     @abc.abstractmethod
     def extract_path(self):
@@ -106,16 +108,17 @@ class Unarchive(abc.ABC):
 class TarUnarchive(Unarchive):
     def __init__(self, module):
         super(TarUnarchive, self).__init__(module)
-        if self.dest == '':
-            self.dest = os.path.dirname(self.path)
-
-    def list_archive_content(self):
+    
+    def open(self, path):
         if self.format == 'tar':
             self.file = tarfile.open(self.path, 'r')
         elif self.format in ('gz', 'bz2'):
             self.file = tarfile.open(self.path, 'r|' + self.format)
         else:
             self.module.fail_json(msg="%s is not a valid archive format for listing contents" % self.format)
+
+    def list_archive_content(self):
+        self.file = open(self.path)
         self.targets = self.file.getnames()
         self.file.close()
 
@@ -127,12 +130,7 @@ class TarUnarchive(Unarchive):
         # The function gets relative paths, so it changes the current working
         # directory to the root of src.
         os.chdir(self.dest)
-        if self.format == 'tar':
-            self.file = tarfile.open(self.path, 'r')
-        elif self.format in ('gz', 'bz2'):
-            self.file = tarfile.open(self.path, 'r:' + self.format)
-        else:
-            self.module.fail_json(msg="%s is not a valid archive format for listing contents" % self.format)
+        self.file = self.open(self.path)
         
         files_in_archive = self.file.getnames()
         if self.include:
@@ -154,6 +152,57 @@ class TarUnarchive(Unarchive):
         # Returning the current working directory to what it was before to not
         # interfere with the rest of the module.
         os.chdir(original_working_dir)
+
+
+class ZipUnarchive(Unarchive):
+    def __init__(self, module):
+        super(ZipUnarchive, self).__init__(module)
+
+    def open(self, path):
+        try:
+            file = zipfile.ZipFile(path, 'r', zipfile.ZIP_DEFLATED, True)
+        except zipfile.BadZipFile:
+            self.module.fail_json(
+                msg="Bad zip file error when trying to open file {0} ".format(path)
+            )
+        return file
+
+    def list_archive_content(self):
+        self.file = self.open(self.path)
+        self.targets = self.file.namelist()
+        self.file.close()
+
+    def list_content(self):
+        return self.list_archive_content()
+
+    def extract_path(self):
+        original_working_dir = os.getcwd()
+        # The function gets relative paths, so it changes the current working
+        # directory to the root of src.
+        os.chdir(self.dest)
+        self.file = self.open(self.path)
+
+        files_in_archive = self.file.namelist()
+        if self.include:
+            for path in self.include:
+                if path not in files_in_archive:
+                    self.missing.append(path)
+                else:
+                    self.file.extract(path)
+                    self.targets.append(path)
+        elif self.exclude:
+            for path in files_in_archive:
+                if path not in self.exclude:
+                    self.file.extract(path)
+                    self.targets.append(path)
+        else:
+            self.file.extractall()
+            self.targets = files_in_archive
+        self.file.close()
+        # Returning the current working directory to what it was before to not
+        # interfere with the rest of the module.
+        os.chdir(original_working_dir)
+
 
 class MVSUnarchive(Unarchive):
     def __init__(self, module):
@@ -340,7 +389,7 @@ def get_unarchive_handler(module):
         return AMATerseUnarchive(module)
     elif format == "xmit":
         return XMITUnarchive(module)
-    # return ZipUnarchive(module)
+    return ZipUnarchive(module)
 
 def run_module():
     module = AnsibleModule(

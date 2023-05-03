@@ -67,7 +67,6 @@ data_set_regex = r"(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{
 
 class Unarchive(abc.ABC):
     def __init__(self, module):
-        # TODO params init
         self.module = module
         self.path = module.params.get("path")
         self.dest = module.params.get("dest")
@@ -216,9 +215,6 @@ class MVSUnarchive(Unarchive):
                             {1} -
                         CATALOG -
                         {2} """.format(filter, volumes, force)
-        # self.debug = self.format_options.get("dest_volumes")
-        # cmd = " mvscmdauth --pgm=ADRDSSU --archive={0},old --sysin=stdin --sysprint=*".format(source)
-        # rc, out, err = self.module.run_command(cmd, data=restore_cmd)
         dds = dict(archive="{0},old".format(source))
         rc, out, err = mvs_cmd.adrdssu(cmd=restore_cmd, dds=dds, authorized=True)
 
@@ -273,9 +269,6 @@ class AMATerseUnarchive(MVSUnarchive):
         return rc
 
     def extract_path(self):
-        # 0. Create a tmp data set to dump the contens of untersing
-        # 1. Call Terse to unpack the dataset
-        # 2. Call super to RESTORE using ADDRSU
         try:
             temp_ds = self.create_temp_ds(self.tmphlq)
             self.unpack(self.path, temp_ds)
@@ -310,9 +303,7 @@ class XMITUnarchive(MVSUnarchive):
         RECEIVE INDSN('{0}')
         DA('{1}')
         """.format(path, dest)
-        # cmd = "mvscmdauth --pgm=IKJEFT01 --systsin=stdin --systsprt=*"
         rc, out, err = mvs_cmd.ikjeft01(cmd=unpack_cmd, authorized=True)
-        # rc, out, err = self.module.run_command(cmd, data=unpack_cmd)
         if rc != 0:
             self.module.fail_json(
                 msg="Failed executing RECEIVE to restore {0} into {1}".format(path, dest),
@@ -323,9 +314,6 @@ class XMITUnarchive(MVSUnarchive):
         return rc
 
     def extract_path(self):
-        # 0. Create a tmp data set to dump the contens of receive
-        # 1. Call RECEIVE.
-        # 2. Call super to RESTORE using ADDRSU
         try:
             temp_ds = self.create_temp_ds(self.tmphlq)
             self.unpack(self.path, temp_ds)
@@ -355,7 +343,6 @@ def get_unarchive_handler(module):
     # return ZipUnarchive(module)
 
 def run_module():
-    # TODO Add module parameters
     module = AnsibleModule(
         argument_spec=dict(
             path=dict(type='str', required=True, alias='src'),
@@ -440,12 +427,9 @@ def run_module():
     try:
         parser = better_arg_parser.BetterArgParser(arg_defs)
         parsed_args = parser.parse_args(module.params)
-        # TODO Is it ok to override module.params with parsed_args ?
         module.params = parsed_args
     except ValueError as err:
         module.fail_json(msg="Parameter verification failed", stderr=str(err))
-    # TODO Add module logic steps
-    # 3. how about keep newest file when unarchiving?
     unarchive = get_unarchive_handler(module)
 
     if unarchive.list:

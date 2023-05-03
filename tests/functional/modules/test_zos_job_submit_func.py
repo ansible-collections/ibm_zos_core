@@ -23,7 +23,6 @@ import os
 from pprint import pprint
 
 
-
 # ##############################################################################
 # Configure the job card as needed, most common keyword parameters:
 #   CLASS: Used to achieve a balance between different types of jobs and avoid
@@ -145,10 +144,11 @@ JCL_TEMPLATES = {
 //SYSUT2   DD SYSOUT=*
 //
 """
+}
 
 JCL_FILE_CONTENTS_NO_DSN = """//*
 //******************************************************************************
-//* Job containing a non existent DSN that will force an error. 
+//* Job containing a non existent DSN that will force an error.
 //* Returns:
 //*   ret_code->(code=null, msg=JCLERR ?, msg_text=JCLERR, msg_code=?)
 //*   msg --> The JCL submitted with job id JOB00532 but there was an error,
@@ -183,7 +183,7 @@ JCL_FILE_CONTENTS_NO_DSN = """//*
 JCL_FILE_CONTENTS_JCL_ERROR_INT = """//*
 //******************************************************************************
 //* Another job containing no job card resulting in a JCLERROR with an value. It
-//* won't always be 952, it will increment. 
+//* won't always be 952, it will increment.
 //* Returns:
 //*   ret_code->(code=null, msg=JCL ERROR  952, msg_text=JCLERR, msg_code=null)
 //*   msg --> The JCL submitted with job id JOB00728 but there was an error,
@@ -616,6 +616,7 @@ def test_negative_job_submit_local_jcl_invalid_user(ansible_zos_module):
         assert re.search(r'error SEC', repr(result.get("msg")))
         assert result.get("jobs")[0].get("job_id") is not None
         assert re.search(r'SEC', repr(result.get("jobs")[0].get("ret_code").get("msg_text")))
+
 
 def test_negative_job_submit_local_jcl_typrun_scan(ansible_zos_module):
     tmp_file = tempfile.NamedTemporaryFile(delete=True)

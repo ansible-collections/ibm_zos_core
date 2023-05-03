@@ -158,7 +158,6 @@ class TarUnarchive(Unarchive):
 
 class MVSUnarchive(Unarchive):
     def __init__(self, module):
-        # TODO MVSUnarchive params init
         super(MVSUnarchive, self).__init__(module)
         self.volumes = self.format_options.get("dest_volumes")
     
@@ -217,9 +216,11 @@ class MVSUnarchive(Unarchive):
                             {1} -
                         CATALOG -
                         {2} """.format(filter, volumes, force)
-        self.debug = self.format_options.get("dest_volumes")
-        cmd = " mvscmdauth --pgm=ADRDSSU --archive={0},old --sysin=stdin --sysprint=*".format(source)
-        rc, out, err = self.module.run_command(cmd, data=restore_cmd)
+        # self.debug = self.format_options.get("dest_volumes")
+        # cmd = " mvscmdauth --pgm=ADRDSSU --archive={0},old --sysin=stdin --sysprint=*".format(source)
+        # rc, out, err = self.module.run_command(cmd, data=restore_cmd)
+        dds = dict(archive="{0},old".format(source))
+        rc, out, err = mvs_cmd.adrdssu(cmd=restore_cmd, dds=dds, authorized=True)
 
         if rc != 0:
             self.module.fail_json(

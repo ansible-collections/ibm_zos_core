@@ -260,8 +260,8 @@ class AMATerseUnarchive(MVSUnarchive):
         """
         Unpacks using AMATerse, assumes the data set has only been packed once.
         """
-        cmd = "mvscmdhelper --pgm=AMATERSE --args='UNPACK' --sysut1={0} --sysut2={1} --sysprint=*".format(path, dest)
-        rc, out, err = self.module.run_command(cmd)
+        dds = {'args': 'UNPACK', 'sysut1': path, 'sysut2': dest}
+        rc, out, err = mvs_cmd.amaterse(cmd="", dds=dds)
         if rc != 0:
             self.module.fail_json(
                 msg="Failed executing AMATERSE to restore {0} into {1}".format(path, dest),
@@ -309,12 +309,9 @@ class XMITUnarchive(MVSUnarchive):
         RECEIVE INDSN('{0}')
         DA('{1}')
         """.format(path, dest)
-        cmd = "mvscmdauth --pgm=IKJEFT01 --systsin=stdin --systsprt=*"
-        rc, out, err = self.module.run_command(cmd, data=unpack_cmd)
-        # rc, out, err = mvs_cmd.ikjeft01(
-        # unpack_cmd,
-        # authorized=True
-        # )
+        # cmd = "mvscmdauth --pgm=IKJEFT01 --systsin=stdin --systsprt=*"
+        rc, out, err = mvs_cmd.ikjeft01(cmd=unpack_cmd, authorized=True)
+        # rc, out, err = self.module.run_command(cmd, data=unpack_cmd)
         if rc != 0:
             self.module.fail_json(
                 msg="Failed executing RECEIVE to restore {0} into {1}".format(path, dest),

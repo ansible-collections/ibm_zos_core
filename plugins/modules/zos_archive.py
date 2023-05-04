@@ -206,6 +206,11 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     MissingZOAUImport,
 )
+import os
+import tarfile
+import zipfile
+import abc
+
 
 try:
     from zoautil_py import datasets
@@ -252,19 +257,52 @@ class Archive():
         self.paths = module.params['path']
         self.tmp_debug = ""
 
+        # remove files from exclusion list
+
+
     def targets_exist(self):
         return bool(self.targets)
 
+    @abc.abstractmethod
+    def dest_exists(self):
+        pass
+
+    @abc.abstractmethod
     def dest_type(self):
         return "USS"
 
+    @abc.abstractmethod
     def update_permissions(self):
         return
+
+    @abc.abstractmethod
+    def find_targets(self):
+        for path in self.paths:
+            if os.path.exists(path):
+                self.targets.append(path)
+            else:
+                self.not_found.append(path)
+
+    @abc.abstractmethod
+    def _get_checksums(self, path):
+        pass
+
+    @abc.abstractmethod
+    def dest_checksums(self):
+        pass
+
+    @abc.abstractmethod
+    def is_different_from_original(self):
+        pass
+
+    @abc.abstractmethod
+    def remove_targets(self):
+        pass
 
     @property
     def result(self):
         return {
-            'archived': self.found,
+            'archived': self.targets,
             'dest': self.dest,
             # 'dest_state': self.dest_state,
             'changed': self.changed,
@@ -278,14 +316,106 @@ class Archive():
         }
 
 
-class TarArchive(Archive):
+class USSArchive(Archive):
+    def __init__(self, module):
+        super(USSArchive, self).__init__(module)
+        self.original_checksums = self.dest_checksums()
+        self.arcroot = os.path.commonpath(self.paths)
+
+    def dest_exists(self):
+        return os.path.exists(self.dest)
+
+    def dest_type(self):
+        return "USS"
+
+    def update_permissions(self):
+        return
+
+    def find_targets(self):
+        for path in self.paths:
+            if os.path.exists(path):
+                self.targets.append(path)
+            else:
+                self.not_found.append(path)
+
+    def _get_checksums(self, path):
+        md5_cmd = "md5 -r \"{0}\"".format(path)
+        rc, out, err = self.module.run_command(md5_cmd)
+        checksums = out.split(" ")[0]
+        return checksums
+
+    def dest_checksums(self):
+        if self.dest_exists():
+            return self._get_checksums(self.dest)
+        return None
+
+    def is_different_from_original(self):
+        if self.original_checksums is not None:
+            return self.original_checksums != self.dest_checksums()
+        return True
+
+    def remove_targets(self):
+        for target in self.targets:
+            if os.path.isdir(target):
+                os.removedirs(target)
+            else:
+                os.remove(target)
+
+class TarArchive(USSArchive):
     def __init__(self, module):
         super(TarArchive, self).__init__(module)
+    
+    def open(self, path):
+        if self.format == 'tar':
+            self.file = tarfile.open(path, 'w')
+        elif self.format in ('gz', 'bz2'):
+            self.file = tarfile.open(path, 'w|' + self.format)
+
+    def add(self, source):
+        self.file.add(source, os.path.relpath(source, self.arcroot))
+
+    def archive_targets(self):
+        self.open(self.dest)
+        for file in self.targets:
+            self.add(file)
+        self.file.close()
 
 
-class ZipArchive(Archive):
+class ZipArchive(USSArchive):
     def __init__(self, module):
         super(ZipArchive, self).__init__(module)
+    
+    def open(self, path):
+        try:
+            file = zipfile.ZipFile(path, 'w', zipfile.ZIP_DEFLATED, True)
+        except zipfile.BadZipFile:
+            self.module.fail_json(
+                msg="Bad zip file error when trying to open file {0} ".format(path)
+            )
+        return file
+
+    def add(self, source):
+        self.file.write(source)
+
+    def archive_targets(self):
+        for file in self.targets:
+            self.add(file)
+        self.file.close()
+            
+
+
+class PaxArchive(USSArchive):
+    def __init__(self, module):
+        super(PaxArchive, self).__init__(module)
+    
+    def open(self):
+        pass
+    def close(self):
+        pass
+    def add(self):
+        pass
+    def archive_targets(self):
+        pass
 
 
 class MVSArchive(Archive):
@@ -437,7 +567,6 @@ class AMATerseArchive(MVSArchive):
                 self.module.fail_json(
                     msg="You cannot archive multiple source data sets without accepting to use adrdssu")
             source = self.targets[0]
-        self.tmp_debug = self.targets
         dest = self.create_dest_ds(self.dest)
         self.add(source, dest)
         datasets.delete(source)
@@ -617,7 +746,8 @@ def run_module():
             archive.remove_targets()
     if archive.dest_exists():
         if archive.dest_type() == "USS":
-            archive.update_permissions()
+            # archive.update_permissions()
+            None
         archive.changed = archive.is_different_from_original()
 
     module.exit_json(**archive.result)

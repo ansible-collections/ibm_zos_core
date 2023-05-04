@@ -111,11 +111,12 @@ class TarUnarchive(Unarchive):
     
     def open(self, path):
         if self.format == 'tar':
-            self.file = tarfile.open(self.path, 'r')
+            file = tarfile.open(path, 'r')
         elif self.format in ('gz', 'bz2'):
-            self.file = tarfile.open(self.path, 'r|' + self.format)
+            file = tarfile.open(path, 'r|' + self.format)
         else:
             self.module.fail_json(msg="%s is not a valid archive format for listing contents" % self.format)
+        return file
 
     def list_archive_content(self):
         self.file = open(self.path)
@@ -152,6 +153,7 @@ class TarUnarchive(Unarchive):
         # Returning the current working directory to what it was before to not
         # interfere with the rest of the module.
         os.chdir(original_working_dir)
+        self.changed = bool(self.targets)
 
 
 class ZipUnarchive(Unarchive):
@@ -202,6 +204,7 @@ class ZipUnarchive(Unarchive):
         # Returning the current working directory to what it was before to not
         # interfere with the rest of the module.
         os.chdir(original_working_dir)
+        self.changed = bool(self.targets)
 
 
 class MVSUnarchive(Unarchive):

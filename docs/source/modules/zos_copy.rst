@@ -434,7 +434,7 @@ template_parameters
 
     | **required**: False
     | **type**: str
-    | **default**: {\#
+    | **default**: {#
 
 
   comment_end_string
@@ -442,7 +442,7 @@ template_parameters
 
     | **required**: False
     | **type**: str
-    | **default**: \#}
+    | **default**: #}
 
 
   line_statement_prefix
@@ -469,6 +469,8 @@ template_parameters
   trim_blocks
     Whether Jinja2 should remove the first newline after a block is removed.
 
+    Setting this option to ``False`` will result in newlines being added to the rendered template. This could create invalid code when working with JCL templates or empty records in destination datasets.
+
     | **required**: False
     | **type**: bool
     | **default**: True
@@ -486,8 +488,8 @@ template_parameters
 
     | **required**: False
     | **type**: str
-    | **default**: \n
-    | **choices**: \n, \r, \r\n
+    | **default**: \\n
+    | **choices**: \\n, \\r, \\r\\n
 
 
   auto_reload

@@ -87,7 +87,7 @@ options:
       trim_blocks:
         description:
           - Whether Jinja2 should remove the first newline after a block is removed.
-          - Setting this option to C(false) will result in newlines being added to
+          - Setting this option to C(False) will result in newlines being added to
             the rendered template. This could create invalid code when working with
             JCL templates or empty records in destination datasets.
         type: bool

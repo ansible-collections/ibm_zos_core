@@ -1024,6 +1024,60 @@ def test_copy_non_existent_file_fails(ansible_zos_module, is_remote):
 
 
 @pytest.mark.uss
+@pytest.mark.parametrize("src", [
+    dict(src="/etc/profile", is_remote=False),
+    dict(src="/etc/profile", is_remote=True),])
+def test_ensure_copy_file_does_not_change_permission_on_dest(ansible_zos_module, src):
+    hosts = ansible_zos_module
+    dest_path = "/tmp/test/"
+    try:
+        hosts.all.file(path=dest_path, state="directory", mode="750")
+        permissions_before = hosts.all.shell(cmd="ls -la {0}".format(dest_path))
+        hosts.all.zos_copy(content=src["src"], dest=dest_path)
+        permissions = hosts.all.shell(cmd="ls -la {0}".format(dest_path))
+
+        for before in permissions_before.contacted.values():
+            permissions_be_copy = before.get("stdout")
+            
+        for after in permissions.contacted.values():
+            permissions_af_copy = after.get("stdout") 
+
+        permissions_be_copy = permissions_be_copy.splitlines()[1].split()[0]
+        permissions_af_copy = permissions_af_copy.splitlines()[1].split()[0]
+                
+        assert permissions_be_copy == permissions_af_copy
+    finally:
+        hosts.all.file(path=dest_path, state="absent")
+
+
+@pytest.mark.uss
+@pytest.mark.parametrize("src", [
+    dict(src="/etc/", is_remote=False),
+    dict(src="/etc/", is_remote=True),])
+def test_ensure_copy_directory_does_not_change_permission_on_dest(ansible_zos_module, src):
+    hosts = ansible_zos_module
+    dest_path = "/tmp/test/"
+    try:
+        hosts.all.file(path=dest_path, state="directory", mode="750")
+        permissions_before = hosts.all.shell(cmd="ls -la {0}".format(dest_path))
+        hosts.all.zos_copy(content=src["src"], dest=dest_path)
+        permissions = hosts.all.shell(cmd="ls -la {0}".format(dest_path))
+
+        for before in permissions_before.contacted.values():
+            permissions_be_copy = before.get("stdout")
+
+        for after in permissions.contacted.values():
+            permissions_af_copy = after.get("stdout") 
+
+        permissions_be_copy = permissions_be_copy.splitlines()[1].split()[0]
+        permissions_af_copy = permissions_af_copy.splitlines()[1].split()[0]
+                
+        assert permissions_be_copy == permissions_af_copy
+    finally:
+        hosts.all.file(path=dest_path, state="absent")
+        
+
+@pytest.mark.uss
 @pytest.mark.seq
 def test_copy_file_record_length_to_sequential_data_set(ansible_zos_module):
     hosts = ansible_zos_module
@@ -2727,3 +2781,4 @@ def test_copy_uss_file_to_existing_sequential_data_set_twice_with_tmphlq_option(
                 assert v_cp.get("rc") == 0
     finally:
         hosts.all.zos_data_set(name=dest, state="absent")
+        

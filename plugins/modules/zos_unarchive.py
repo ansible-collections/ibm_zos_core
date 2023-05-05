@@ -112,6 +112,8 @@ class TarUnarchive(Unarchive):
     def open(self, path):
         if self.format == 'tar':
             file = tarfile.open(path, 'r')
+        elif self.format in ('pax'):
+            file = tarfile.open(path, 'r', format=tarfile.GNU_FORMAT)
         elif self.format in ('gz', 'bz2'):
             file = tarfile.open(path, 'r:' + self.format)
         else:
@@ -386,7 +388,7 @@ class XMITUnarchive(MVSUnarchive):
 
 def get_unarchive_handler(module):
     format = module.params.get("format").get("name")
-    if format in ["tar", "gz", "bz2"]:
+    if format in ["tar", "gz", "bz2", "pax"]:
         return TarUnarchive(module)
     elif format == "terse":
         return AMATerseUnarchive(module)

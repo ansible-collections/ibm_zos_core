@@ -42,7 +42,8 @@ STATE_ARCHIVED = 'archive'
 STATE_COMPRESSED = 'compress'
 STATE_INCOMPLETE = 'incomplete'
 
-USS_FORMATS = ['tar', 'gz', 'bz2', 'zip']
+USS_FORMATS = ['tar', 'gz', 'bz2', 'zip', 'pax']
+# USS_FORMATS = ['pax']
 
 def set_uss_test_env(ansible_zos_module, test_files):
     for key, value in test_files.items():
@@ -81,6 +82,7 @@ def test_uss_unarchive(ansible_zos_module, format):
         for result in unarchive_result.contacted.values():
             print(result)
             assert result.get("failed", False) is False
+            assert result.get("changed") is True
             # Command to assert the file is in place
             cmd_result = hosts.all.shell(cmd=f"ls {USS_TEMP_DIR}")
             for c_result in cmd_result.contacted.values():

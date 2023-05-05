@@ -231,7 +231,7 @@ def get_archive_handler(module):
 
     """
     format = module.params.get("format").get("name")
-    if format in ["tar", "gz", "bz2"]:
+    if format in ["tar", "gz", "bz2", "pax"]:
         return TarArchive(module)
     elif format == "terse":
         return AMATerseArchive(module)
@@ -320,7 +320,10 @@ class USSArchive(Archive):
     def __init__(self, module):
         super(USSArchive, self).__init__(module)
         self.original_checksums = self.dest_checksums()
-        self.arcroot = os.path.commonpath(self.paths)
+        if len(self.paths) == 1:
+            self.arcroot = os.path.dirname(os.path.commonpath(self.paths))
+        else:
+            self.arcroot = os.path.commonpath(self.paths)
 
     def dest_exists(self):
         return os.path.exists(self.dest)
@@ -368,6 +371,8 @@ class TarArchive(USSArchive):
     def open(self, path):
         if self.format == 'tar':
             self.file = tarfile.open(path, 'w')
+        elif self.format == 'pax':
+            self.file = tarfile.open(path, 'w', format=tarfile.GNU_FORMAT)
         elif self.format in ('gz', 'bz2'):
             self.file = tarfile.open(path, 'w|' + self.format)
 
@@ -378,6 +383,7 @@ class TarArchive(USSArchive):
         self.open(self.dest)
         for file in self.targets:
             self.add(file)
+        self.tmp_debug = self.targets
         self.file.close()
 
 
@@ -402,21 +408,6 @@ class ZipArchive(USSArchive):
         for file in self.targets:
             self.add(file)
         self.file.close()
-            
-
-
-class PaxArchive(USSArchive):
-    def __init__(self, module):
-        super(PaxArchive, self).__init__(module)
-    
-    def open(self):
-        pass
-    def close(self):
-        pass
-    def add(self):
-        pass
-    def archive_targets(self):
-        pass
 
 
 class MVSArchive(Archive):

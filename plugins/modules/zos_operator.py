@@ -244,14 +244,13 @@ def run_module():
             else:
                 module.fail_json(msg="Expected response to be more than 2 lines.", **result)
         else:
-            module.fail_json(
-                              msg=("A non-zero return code was received : {0}. Review the response for more details.").format(result["rc"]),
-                              cmd=result["cmd"],
-                              elapsed_time=result["elapsed"],
-                              wait_time_s=result["wait_time_s"],
-                              stderr=str(error) if error != None else result["content"],
-                              stderr_lines=str(error).splitlines() if error != None else result["content"],
-                              changed=result["changed"],)
+            module.fail_json(msg=("A non-zero return code was received : {0}. Review the response for more details.").format(result["rc"]),
+                            cmd=result["cmd"],
+                            elapsed_time=result["elapsed"],
+                            wait_time_s=result["wait_time_s"],
+                            stderr=str(error) if error is not None else result["content"],
+                            stderr_lines=str(error).splitlines() if error is not None else result["content"],
+                            changed=result["changed"],)
     except Error as e:
         module.fail_json(msg=repr(e), **result)
     except Exception as e:

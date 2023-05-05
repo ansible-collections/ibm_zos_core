@@ -182,6 +182,41 @@ def test_uss_unarchive_exclude(ansible_zos_module, format):
     finally:
         hosts.all.file(path=f"{USS_TEMP_DIR}", state="absent")
 
+@pytest.mark.uss
+@pytest.mark.parametrize("format", USS_FORMATS)
+def test_uss_unarchive_list(ansible_zos_module, format):
+    try:
+        hosts = ansible_zos_module
+        hosts.all.file(path=f"{USS_TEMP_DIR}", state="absent")
+        hosts.all.file(path=USS_TEMP_DIR, state="directory")
+        set_uss_test_env(hosts, USS_TEST_FILES)
+        dest = f"{USS_TEMP_DIR}/archive.{format}"
+        archive_result = hosts.all.zos_archive( path=list(USS_TEST_FILES.keys()),
+                                        dest=dest,
+                                        format=dict(
+                                            name=format
+                                        ))
+        print(archive_result.contacted.values())
+        # remove files
+        for file in USS_TEST_FILES.keys():
+            hosts.all.file(path=file, state="absent")
+        unarchive_result = hosts.all.zos_unarchive(
+            path=dest,
+            format=dict(
+                name=format
+            )
+        )
+
+        for result in unarchive_result.contacted.values():
+            print(result)
+            assert result.get("failed", False) is False
+            assert result.get("changed") is True
+            for file in USS_TEST_FILES.keys():
+                    assert file[len(USS_TEMP_DIR)+1:] in result.get("targets")
+                
+    finally:
+        hosts.all.file(path=f"{USS_TEMP_DIR}", state="absent")
+
 
 # @pytest.mark.uss
 # @pytest.mark.parametrize("format", USS_FORMATS)

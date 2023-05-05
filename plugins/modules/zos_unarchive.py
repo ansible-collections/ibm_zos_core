@@ -121,7 +121,7 @@ class TarUnarchive(Unarchive):
         return file
 
     def list_archive_content(self):
-        self.file = open(self.path)
+        self.file = self.open(self.path)
         self.targets = self.file.getnames()
         self.file.close()
 

@@ -398,6 +398,7 @@ class ZipArchive(USSArchive):
         self.file.write(source, os.path.relpath(source, self.arcroot))
 
     def archive_targets(self):
+        self.file = self.open(self.dest)
         for file in self.targets:
             self.add(file)
         self.file.close()

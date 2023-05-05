@@ -141,7 +141,7 @@ def set_uss_test_env(ansible_zos_module, test_files):
         ]
 )
 @pytest.mark.parametrize(
-    "record_length", [80, 120, 180]
+    "record_length", [80, 120, 1024]
 )
 @pytest.mark.parametrize(
     "record_format", ["FB", "VB", "FBA", "VBA", "U"]

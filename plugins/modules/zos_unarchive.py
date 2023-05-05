@@ -113,7 +113,7 @@ class TarUnarchive(Unarchive):
         if self.format == 'tar':
             file = tarfile.open(path, 'r')
         elif self.format in ('gz', 'bz2'):
-            file = tarfile.open(path, 'r|' + self.format)
+            file = tarfile.open(path, 'r:' + self.format)
         else:
             self.module.fail_json(msg="%s is not a valid archive format for listing contents" % self.format)
         return file

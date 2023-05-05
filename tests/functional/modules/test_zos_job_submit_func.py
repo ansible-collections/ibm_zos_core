@@ -143,6 +143,18 @@ JCL_TEMPLATES = {
 /*
 //SYSUT2   DD SYSOUT=*
 //
+""",
+
+    "Loop": """//JINJA    JOB (T043JM,JM00,1,0,0,0),'HELLO WORLD - JRM',CLASS=R,
+//             MSGCLASS=X,MSGLEVEL=1,NOTIFY=S0JM
+//STEP0001 EXEC PGM=IEFBR14
+{% for item in steps %}
+//SYS{{ item.step_name }}    DD {{ item.dd }}
+{% endfor %}
+Hello, world!
+/*
+//SYSUT2   DD SYSOUT=*
+//
 """
 }
 
@@ -555,6 +567,12 @@ def test_job_submit_max_rc(ansible_zos_module, args):
             comment_start_string="(#",
             comment_end_string="#)"
         )
+    ),
+    dict(
+        template="Loop",
+        options=dict(
+            keep_trailing_newline=False
+        )
     )
 ])
 def test_job_submit_jinja_template(ansible_zos_module, args):
@@ -568,7 +586,12 @@ def test_job_submit_jinja_template(ansible_zos_module, args):
         template_vars = dict(
             pgm_name="HELLO",
             input_dataset="DUMMY",
-            message="Hello, world"
+            message="Hello, world",
+            steps=[
+                dict(step_name="IN", dd="DUMMY"),
+                dict(step_name="PRINT", dd="SYSOUT=*"),
+                dict(step_name="UT1", dd="*")
+            ]
         )
         for host in hosts["options"]["inventory_manager"]._inventory.hosts.values():
             host.vars.update(template_vars)

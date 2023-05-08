@@ -344,6 +344,7 @@ def _update_result(is_binary, copy_res, original_args):
     src = copy_res.get("src")
     note = copy_res.get("note")
     backup_name = copy_res.get("backup_name")
+    dynamic = copy_res.get("dynamic_values_dest")
     updated_result = dict(
         dest=copy_res.get("dest"),
         is_binary=is_binary,
@@ -356,7 +357,6 @@ def _update_result(is_binary, copy_res, original_args):
         updated_result["note"] = note
     if backup_name:
         updated_result["backup_name"] = backup_name
-
     if ds_type == "USS":
         updated_result.update(
             dict(
@@ -372,6 +372,10 @@ def _update_result(is_binary, copy_res, original_args):
         checksum = copy_res.get("checksum")
         if checksum:
             updated_result["checksum"] = checksum
+    if len(dynamic):
+        dynamic.pop("name")
+        updated_result["dest_created"] = True
+        updated_result["destination_attributes"] = dynamic
 
     return updated_result
 

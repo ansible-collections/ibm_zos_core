@@ -2006,6 +2006,7 @@ def allocate_destination_data_set(
 
     Returns:
         bool -- True if the data set was created, False otherwise.
+        dest_params -- values of the dataset allocated if exist is and empty dictionary
     """
     src_name = data_set.extract_dsname(src)
     is_dest_empty = data_set.DataSet.is_empty(dest) if dest_exists else True
@@ -2014,8 +2015,10 @@ def allocate_destination_data_set(
     # empty dataset was created for the user by an admin/operator, and they don't have permissions
     # to create new datasets.
     # These rules assume that source and destination types are compatible.
+    # Ensure if the dest_exist pass and empty dict
+    dest_params={}
     if dest_exists and is_dest_empty:
-        return False
+        return False, dest_params
 
     # Giving more priority to the parameters given by the user.
     if dest_data_set:
@@ -2086,8 +2089,8 @@ def allocate_destination_data_set(
         volumes = [volume] if volume else None
         data_set.DataSet.ensure_absent(dest, volumes=volumes)
         data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, vol=volume)
-
-    return True
+    
+    return True, dest_params
 
 
 def normalize_line_endings(src, encoding=None):
@@ -2449,7 +2452,7 @@ def run_module(module, arg_def):
 
     try:
         if not is_uss:
-            res_args["changed"] = allocate_destination_data_set(
+            res_args["changed"], res_args["dynamic_values_dest"] = allocate_destination_data_set(
                 temp_path or src,
                 dest_name, src_ds_type,
                 dest_ds_type,

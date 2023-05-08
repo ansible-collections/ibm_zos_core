@@ -2016,7 +2016,7 @@ def allocate_destination_data_set(
     # to create new datasets.
     # These rules assume that source and destination types are compatible.
     # Ensure if the dest_exist pass and empty dict
-    dest_params={}
+    dest_params = {}
     if dest_exists and is_dest_empty:
         return False, dest_params
 
@@ -2089,7 +2089,7 @@ def allocate_destination_data_set(
         volumes = [volume] if volume else None
         data_set.DataSet.ensure_absent(dest, volumes=volumes)
         data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, vol=volume)
-    
+
     return True, dest_params
 
 

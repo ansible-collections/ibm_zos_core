@@ -17,8 +17,8 @@ __metaclass__ = type
 #     MissingImport,
 # )
 
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.zos_mvs_raw import MVSCmd  # pylint: disable=import-error
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.dd_statement import (  # pylint: disable=import-error
+from ibm_zos_core.plugins.module_utils.zos_mvs_raw import MVSCmd  # pylint: disable=import-error
+from ibm_zos_core.plugins.module_utils.dd_statement import (  # pylint: disable=import-error
     DDStatement,
     StdoutDefinition,
     StdinDefinition,

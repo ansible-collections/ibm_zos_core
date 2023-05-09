@@ -25,14 +25,14 @@ import os
 import re
 import locale
 
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
+from ibm_zos_core.plugins.module_utils.import_handler import (
     MissingZOAUImport,
 )
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
+from ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,
 )
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import copy, system
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
+from ibm_zos_core.plugins.module_utils import copy, system
+from ibm_zos_core.plugins.module_utils.ansible_module import (
     AnsibleModuleHelper,
 )
 

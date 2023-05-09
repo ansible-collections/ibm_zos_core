@@ -16,27 +16,27 @@ __metaclass__ = type
 
 import os
 from ansible.module_utils.six import PY3
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
+from ibm_zos_core.plugins.module_utils.ansible_module import (
     AnsibleModuleHelper,
 )
 
 import time
 from shutil import copy2, copytree, rmtree
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
+from ibm_zos_core.plugins.module_utils.import_handler import (
     MissingZOAUImport,
 )
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
+from ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,
 )
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.file import make_dirs
+from ibm_zos_core.plugins.module_utils.file import make_dirs
 
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
+from ibm_zos_core.plugins.module_utils.data_set import (
     is_member,
     extract_dsname,
     temp_member_name,
     DataSet,
 )
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.mvs_cmd import iebcopy
+from ibm_zos_core.plugins.module_utils.mvs_cmd import iebcopy
 
 try:
     from zoautil_py import datasets

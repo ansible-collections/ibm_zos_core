@@ -12,7 +12,7 @@
 # limitations under the License.
 
 from __future__ import absolute_import, division, print_function
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
+from ibm_zos_core.plugins.module_utils.data_set import (
     extract_member_name
 )
 import os

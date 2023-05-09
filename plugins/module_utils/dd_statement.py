@@ -13,11 +13,11 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-from ibm_zos_core.plugins.module_utils.import_handler import (
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     MissingZOAUImport,
 )
 
-from ibm_zos_core.plugins.module_utils.data_set import DataSet
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import DataSet
 
 try:
     from zoautil_py import datasets

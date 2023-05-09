@@ -17,10 +17,10 @@ import fnmatch
 import re
 from time import sleep
 from timeit import default_timer as timer
-from ibm_zos_core.plugins.module_utils.better_arg_parser import (
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser import (
     BetterArgParser,
 )
-from ibm_zos_core.plugins.module_utils.import_handler import (
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     MissingZOAUImport,
 )
 

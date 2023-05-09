@@ -20,21 +20,21 @@ from string import ascii_uppercase, digits
 from random import randint
 # from ansible.module_utils._text import to_bytes
 from ansible.module_utils.common.text.converters import to_bytes
-from ibm_zos_core.plugins.module_utils.ansible_module import (
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
     AnsibleModuleHelper,
 )
-from ibm_zos_core.plugins.module_utils.import_handler import (
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     MissingZOAUImport,
     MissingImport,
 )
 
-from ibm_zos_core.plugins.module_utils import (
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser,
     mvs_cmd,
 )
 
 try:
-    from ibm_zos_core.plugins.module_utils import vtoc
+    from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import vtoc
 except ImportError:
     vtoc = MissingImport("vtoc")
 

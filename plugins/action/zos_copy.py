@@ -373,7 +373,7 @@ def _update_result(is_binary, copy_res, original_args):
         if checksum:
             updated_result["checksum"] = checksum
     if dynamic is not None:
-        if len(dynamic) > 0: 
+        if len(dynamic) > 0:
             dynamic.pop("name")
             updated_result["dest_created"] = True
             updated_result["destination_attributes"] = dynamic

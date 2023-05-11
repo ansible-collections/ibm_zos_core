@@ -36,6 +36,7 @@ try:
 except Exception:
     ZOAU_API_VERSION = "1.2.0"
 
+
 def job_output(job_id=None, owner=None, job_name=None, dd_name=None, duration=0, timeout=0, start_time=timer()):
     """Get the output from a z/OS job based on various search criteria.
 
@@ -241,17 +242,16 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, duration=
                     job["ret_code"]["code"] = int(entry.rc)
             job["ret_code"]["msg_text"] = entry.status
 
-            ## this section only works on zoau 1.2.3 vvv
+            # this section only works on zoau 1.2.3 vvv
             if ZOAU_API_VERSION > "1.2.2":
-                job["job_class"] = entry.job_class 
+                job["job_class"] = entry.job_class
                 job["svc_class"] = entry.svc_class
                 job["priority"] = entry.priority
                 job["asid"] = entry.asid
-
                 job["creation_datetime"] = entry.creation_datetime
+                job["queue_position"] = entry.queue_position
 
-                job["queue_position"] = entry.queue_position  
-            ## this section only works on zoau 1.2.3 ^^^
+            # this section only works on zoau 1.2.3 ^^^
 
             job["class"] = ""
             job["content_type"] = ""

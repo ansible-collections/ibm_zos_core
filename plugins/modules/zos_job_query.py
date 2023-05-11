@@ -174,6 +174,36 @@ jobs:
             }
           ]
         }
+    job_class:
+      description:
+        Letter indicating job class for this job.
+      type: str
+      sample: A
+    svc_class:
+      description:
+        Character indicating service class for this job.
+      type: str
+      sample: C
+    priority:
+      description:
+        A numeric indicator of the job priority assigned through JES.
+      type: int
+      sample: 4
+    asid:
+      description:
+        An identifier created by JES.
+      type: int
+      sample: 0
+    creation_datetime:
+      description:
+        Date and time, local to the target system, when the job was created.
+      type: str
+      sample: 20230504T141500
+    queue_position:
+      description:
+        Integer of the position within the job queue where this jobs resided.
+      type: int
+      sample: 3
   sample:
     [
         {
@@ -181,12 +211,24 @@ jobs:
             "owner": "ADMIN",
             "job_id": "JOB01427",
             "ret_code": "null",
+            "job_class": "K",
+            "svc_class": "?",
+            "priority": 1,
+            "asid": 0,
+            "creation_datetime": "20230503T121300",
+            "queue_position": 3,
         },
         {
             "job_name": "LINKCBL",
             "owner": "ADMIN",
             "job_id": "JOB16577",
             "ret_code": { "msg": "CANCELED", "code": "null" },
+            "job_class": "A",
+            "svc_class": "E",
+            "priority": 0,
+            "asid": 4,
+            "creation_datetime": "20230503T121400",
+            "queue_position": 0,
         },
     ]
 message:
@@ -361,7 +403,6 @@ def parsing_jobs(jobs_raw):
             "creation_datetime": job.get("creation_datetime"),
             "queue_position": job.get("queue_position"),
         }
-        
         jobs.append(job_dict)
     return jobs
 

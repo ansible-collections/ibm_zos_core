@@ -40,12 +40,9 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     data_set,
     mvs_cmd)
 from ansible.module_utils.common.text.converters import to_bytes, to_native
-import glob
-import bz2
 from sys import version_info
 import re
 import os
-import io
 import zipfile
 import tarfile
 from traceback import format_exc
@@ -431,6 +428,7 @@ def run_module():
                 ),
             tmp_hlq=dict(type='str', default=''),
             force=dict(type='bool', default=False),
+            remote_src=dict(type='bool', default=False),
             ),
         mutually_exclusive = [
             ['include', 'exclude'],
@@ -475,7 +473,8 @@ def run_module():
         force=dict(type='bool', default=False),
         mutually_exclusive = [
             ['include', 'exclude'],
-        ]
+        ],
+        remote_src=dict(type='bool', default=False),
     )
 
     try:

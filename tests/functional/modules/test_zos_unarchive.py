@@ -76,7 +76,8 @@ def test_uss_unarchive(ansible_zos_module, format):
             path=dest,
             format=dict(
                 name=format
-            )
+            ),
+            remote_src=True,
         )
 
         for result in unarchive_result.contacted.values():
@@ -119,6 +120,7 @@ def test_uss_unarchive_include(ansible_zos_module, format):
                 name=format
             ),
             include=include_list,
+            remote_src=True,
         )
 
         for result in unarchive_result.contacted.values():
@@ -164,6 +166,7 @@ def test_uss_unarchive_exclude(ansible_zos_module, format):
                 name=format
             ),
             exclude=exclude_list,
+            remote_src=True,
         )
 
         for result in unarchive_result.contacted.values():
@@ -204,7 +207,8 @@ def test_uss_unarchive_list(ansible_zos_module, format):
             path=dest,
             format=dict(
                 name=format
-            )
+            ),
+            remote_src=True,
         )
 
         for result in unarchive_result.contacted.values():

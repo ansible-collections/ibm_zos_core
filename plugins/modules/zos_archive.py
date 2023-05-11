@@ -210,6 +210,7 @@ import os
 import tarfile
 import zipfile
 import abc
+import glob
 
 
 try:
@@ -239,6 +240,18 @@ def get_archive_handler(module):
         return XMITArchive(module)
     return ZipArchive(module)
 
+def strip_prefix(prefix, string):
+    return string[len(prefix):] if string.startswith(prefix) else string
+
+def expand_paths(paths):
+    expanded_path = []
+    for path in paths:
+        if '*' in path or '?' in path:
+            e_paths = glob.glob(path)
+        else:
+            e_paths = [path]
+        expanded_path.extend(e_paths)
+    return expanded_path
 
 class Archive():
     def __init__(self, module):
@@ -252,11 +265,14 @@ class Archive():
         self.errors = []
         self.found = []
         self.targets = []
+        self.archived = []
         self.not_found = []
         self.force = module.params['force']
         self.paths = module.params['path']
         self.tmp_debug = ""
-
+        self.arcroot = ""
+        self.expanded_paths = ""
+        self.expanded_exclude_paths = ""
         # remove files from exclusion list
 
 
@@ -302,17 +318,16 @@ class Archive():
     @property
     def result(self):
         return {
-            'archived': self.targets,
+            'archived': self.archived,
             'dest': self.dest,
             # 'dest_state': self.dest_state,
             'changed': self.changed,
-            # 'arcroot': self.root,
+            'arcroot': self.arcroot,
             'missing': self.not_found,
-            # 'expanded_paths': list(self.expanded_paths),
-            # 'expanded_exclude_paths': list(self.expanded_exclude_paths),
-            # tmp debug variables
+            'expanded_paths': list(self.expanded_paths),
+            'expanded_exclude_paths': list(self.expanded_exclude_paths),
             'tmp_debug': self.tmp_debug,
-            # 'targets': self.targets,
+            'targets': self.targets,
         }
 
 
@@ -324,6 +339,11 @@ class USSArchive(Archive):
             self.arcroot = os.path.dirname(os.path.commonpath(self.paths))
         else:
             self.arcroot = os.path.commonpath(self.paths)
+        self.expanded_paths = expand_paths(self.paths)
+        self.expanded_exclude_paths = expand_paths(module.params['exclude_path'])
+        self.expanded_exclude_paths = "" if len(self.expanded_exclude_paths) == 0 else self.expanded_exclude_paths[0]
+
+        self.paths = sorted(set(self.expanded_paths) - set(self.expanded_exclude_paths))
 
     def dest_exists(self):
         return os.path.exists(self.dest)
@@ -358,33 +378,60 @@ class USSArchive(Archive):
         return True
 
     def remove_targets(self):
-        for target in self.targets:
+        for target in self.archived:
             if os.path.isdir(target):
                 os.removedirs(target)
             else:
                 os.remove(target)
+    
+    def archive_targets(self):
+        self.file = self.open(self.dest)
+
+        try:
+            for target in self.targets:
+                if os.path.isdir(target):
+                    for directory_path, directory_names, file_names in os.walk(target, topdown=True):
+                        for directory_name in directory_names:
+                            full_path = os.path.join(directory_path, directory_name)
+                            self.add(full_path, strip_prefix(self.arcroot, full_path))
+
+                        for file_name in file_names:
+                            full_path = os.path.join(directory_path, file_name)
+                            self.add(full_path, strip_prefix(self.arcroot, full_path))
+                else:
+                    self.add(target, strip_prefix(self.arcroot, target))
+        except Exception as e:
+            if self.format == 'tar':
+                archive_format = self.format
+            else:
+                archive_format = 'tar.' + self.format
+            self.module.fail_json(
+                msg='Error when writing %s archive at %s: %s' % (
+                    archive_format, self.destination, e
+                ),
+                exception=e
+            )
+        self.file.close()
+
+    def add(self, source, arcname):
+        self._add(source, arcname)
+        self.archived.append(source)
 
 class TarArchive(USSArchive):
     def __init__(self, module):
         super(TarArchive, self).__init__(module)
-    
+
     def open(self, path):
         if self.format == 'tar':
-            self.file = tarfile.open(path, 'w')
+            file = tarfile.open(path, 'w')
         elif self.format == 'pax':
-            self.file = tarfile.open(path, 'w', format=tarfile.GNU_FORMAT)
+            file = tarfile.open(path, 'w', format=tarfile.GNU_FORMAT)
         elif self.format in ('gz', 'bz2'):
-            self.file = tarfile.open(path, 'w|' + self.format)
+            file = tarfile.open(path, 'w|' + self.format)
+        return file
 
-    def add(self, source):
-        self.file.add(source, os.path.relpath(source, self.arcroot))
-
-    def archive_targets(self):
-        self.open(self.dest)
-        for file in self.targets:
-            self.add(file)
-        self.tmp_debug = self.targets
-        self.file.close()
+    def _add(self, source, arcname):
+        self.file.add(source, arcname)
 
 
 class ZipArchive(USSArchive):
@@ -400,14 +447,8 @@ class ZipArchive(USSArchive):
             )
         return file
 
-    def add(self, source):
-        self.file.write(source, os.path.relpath(source, self.arcroot))
-
-    def archive_targets(self):
-        self.file = self.open(self.dest)
-        for file in self.targets:
-            self.add(file)
-        self.file.close()
+    def _add(self, source, arcname):
+        self.file.write(source, arcname)
 
 
 class MVSArchive(Archive):
@@ -519,6 +560,8 @@ class MVSArchive(Archive):
         return data_set.DataSet.data_set_exists(self.dest)
 
     def remove_targets(self):
+        for target in self.archived:
+            data_set.DataSet.ensure_absent(target)
         return
 
 
@@ -543,7 +586,7 @@ class AMATerseArchive(MVSArchive):
                 stderr=err,
                 rc=rc,
             )
-        self.found = self.targets[:]
+        self.archived = self.targets[:]
         return rc
 
     def archive_targets(self):
@@ -586,7 +629,7 @@ class XMITArchive(MVSArchive):
                 stderr=err,
                 rc=rc,
             )
-        self.found = self.targets[:]
+        self.archived = self.targets[:]
         return rc
 
     def archive_targets(self):

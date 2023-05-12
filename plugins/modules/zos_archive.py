@@ -341,7 +341,8 @@ class USSArchive(Archive):
             self.arcroot = os.path.commonpath(self.paths)
         self.expanded_paths = expand_paths(self.paths)
         self.expanded_exclude_paths = expand_paths(module.params['exclude_path'])
-        self.expanded_exclude_paths = "" if len(self.expanded_exclude_paths) == 0 else self.expanded_exclude_paths[0]
+        self.expanded_exclude_paths = "" if len(self.expanded_exclude_paths) == 0 else self.expanded_exclude_paths
+        self.tmp_debug = self.expanded_exclude_paths
 
         self.paths = sorted(set(self.expanded_paths) - set(self.expanded_exclude_paths))
 
@@ -364,6 +365,7 @@ class USSArchive(Archive):
     def _get_checksums(self, path):
         md5_cmd = "md5 -r \"{0}\"".format(path)
         rc, out, err = self.module.run_command(md5_cmd)
+        self.tmp_debug += out
         checksums = out.split(" ")[0]
         return checksums
 

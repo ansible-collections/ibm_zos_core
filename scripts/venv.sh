@@ -391,6 +391,20 @@ latest_venv(){
 # USAGE:        set_zoau_mounts
 # ==============================================================================
 set_hosts_to_array(){
+
+    # Source the envrionment file here rather than at the top of this script.
+    # If you source it to early it will trigger the condtion below that was
+    # removed from info.env.
+    if [[ -e "info.env" ]]; then
+        . ./info.env
+    else # check if the env varas instead have been exported
+        if [ -z "$USER" ] || [ -z "$PASS" ]  || [ -z "$HOST_SUFFIX" ]; then
+            echo "This configuration requires either 'info.env' exist or environment vars for the z/OS host exist and be exported."
+            echo "Export and set vars: 'USER', 'PASS' and'HOST_SUFFIX', or place them in a file named info.env."
+            exit 1
+        fi
+    fi
+
     _set_shell_array HOSTS_ALL "$(echo $host_list_str)"
 }
 

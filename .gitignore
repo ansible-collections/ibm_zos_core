@@ -245,8 +245,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
-venv*
-
+ 
 ###################################
 # Ansible z/OS Core Development   #
 ###################################
@@ -255,9 +254,12 @@ venv*
 .DS_Store
 .python-version
 .pytest_cache
-hosts
 info.env
 shell_exploits.txt
-scripts/info.env
-test_config.yml
-venv/
+
+################################################################################
+# Debugging .ignore, if you want to know why a particular file is being ignored
+# and by which rule, try `git check-ignore -v <file>`
+# e.g.  `git check-ignore -v venv/`
+#         .gitignore:244:venv/	venv/
+################################################################################

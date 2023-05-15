@@ -210,6 +210,8 @@ class MVSUnarchive(Unarchive):
     def __init__(self, module):
         super(MVSUnarchive, self).__init__(module)
         self.volumes = self.format_options.get("dest_volumes")
+        self.use_adrdssu = self.format_options.get("use_adrdssu")
+        self.dest_data_set = module.params.get("dest_data_set")
     
     def create_temp_ds(self, tmphlq):
         if tmphlq:
@@ -222,6 +224,9 @@ class MVSUnarchive(Unarchive):
         temp_ds = temp_ds.replace('\n', '')
         changed = data_set.DataSet.ensure_present(name=temp_ds, replace=True, type='SEQ', record_format='U')
         return temp_ds
+    
+    def create_dest_data_set(self, dest_params, force):
+        return data_set.DataSet.ensure_present(replace=force, **dest_params)
 
     def get_include_data_sets_cmd(self):
         include_cmd = "INCL( "
@@ -320,13 +325,16 @@ class AMATerseUnarchive(MVSUnarchive):
         return rc
 
     def extract_path(self):
-        try:
+        temp_ds = ""
+        if not self.use_adrdssu:
+            temp_ds = self.create_dest_data_set(self.dest_data_set, self.force)
+            rc = self.unpack(self.path, self.dest_data_set.get("name"))
+        else:
             temp_ds = self.create_temp_ds(self.tmphlq)
             self.unpack(self.path, temp_ds)
             rc = super(AMATerseUnarchive, self).restore(temp_ds)
-            self.changed = not rc
-        finally:
             datasets.delete(temp_ds)
+        self.changed = not rc
         return
 
     def list_archive_content(self):
@@ -421,11 +429,57 @@ def run_module():
                                 type='list',
                                 elements='str',
                             ),
+                            use_adrdssu=dict(
+                                type='bool',
+                                default=False,
+                            )
                         ),
-                        default=dict(xmit_log_dataset="")
+                        default=dict(xmit_log_dataset="",
+                                     dest_volumes=[],
+                                     use_adrdssu=False,)
                     ),
-                default=dict(name="", supotions=dict(xmit_log_dataset="")),
+                default=dict(name="", supotions=dict(
+                                                    xmit_log_dataset="",
+                                                    dest_volumes=[],
+                                                    use_adrdssu=False,)),
                 ),
+            dest_data_set=dict(
+                type='dict',
+                required=False,
+                options=dict(
+                    name=dict(
+                        type='str', required=False,
+                    ),
+                    type=dict(
+                        type='str',
+                        choices=['BASIC', 'KSDS', 'ESDS', 'RRDS',
+                                 'LDS', 'SEQ', 'PDS', 'PDSE', 'MEMBER'],
+                        required=True,
+                    ),
+                    space_primary=dict(
+                        type='int', required=False),
+                    space_secondary=dict(
+                        type='int', required=False),
+                    space_type=dict(
+                        type='str',
+                        choices=['K', 'M', 'G', 'CYL', 'TRK'],
+                        required=False,
+                    ),
+                    record_format=dict(
+                        type='str',
+                        choices=["FB", "VB", "FBA", "VBA", "U"],
+                        required=False
+                    ),
+                    record_length=dict(type='int', required=False),
+                    block_size=dict(type='int', required=False),
+                    directory_blocks=dict(type="int", required=False),
+                    key_offset=dict(type="int", required=False, no_log=False),
+                    key_length=dict(type="int", required=False, no_log=False),
+                    sms_storage_class=dict(type="str", required=False),
+                    sms_data_class=dict(type="str", required=False),
+                    sms_management_class=dict(type="str", required=False),
+                )
+            ),
             tmp_hlq=dict(type='str', default=''),
             force=dict(type='bool', default=False),
             remote_src=dict(type='bool', default=False),
@@ -463,12 +517,38 @@ def run_module():
                                 type='list',
                                 elements='str'
                             ),
+                            use_adrdssu=dict(
+                                type='bool',
+                                default=False,
+                            ),
                         ),
                         default=dict(xmit_log_dataset=""),
                     )
                 ),
             default=dict(name="", supotions=dict(xmit_log_dataset="")),
             ),
+        dest_data_set=dict(
+            arg_type='dict',
+            required=False,
+            options=dict(
+                name=dict(arg_type='str', required=False),
+                type=dict(arg_type='str', required=True),
+                space_primary=dict(arg_type='int', required=False),
+                space_secondary=dict(
+                    arg_type='int', required=False),
+                space_type=dict(arg_type='str', required=False),
+                record_format=dict(
+                    arg_type='str', required=False),
+                record_length=dict(type='int', required=False),
+                block_size=dict(arg_type='int', required=False),
+                directory_blocks=dict(arg_type="int", required=False),
+                key_offset=dict(arg_type="int", required=False),
+                key_length=dict(arg_type="int", required=False),
+                sms_storage_class=dict(arg_type="str", required=False),
+                sms_data_class=dict(arg_type="str", required=False),
+                sms_management_class=dict(arg_type="str", required=False),
+            )
+        ),
         tmp_hlq=dict(type='qualifier_or_empty', default=''),
         force=dict(type='bool', default=False),
         mutually_exclusive = [

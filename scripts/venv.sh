@@ -27,14 +27,14 @@ VENV_HOME_MANAGED=${PWD%/*}/venv
 # Array where each entry is: "<index>:<version>:<mount>:<data_set>"
 HOSTS_ALL=""
 
-hosts_env="hosts.env"
+# hosts_env="hosts.env"
 
-if [[ -e "$hosts_env" ]]; then
-    . ./$hosts_env
-else
-    echo "Unable to source file: $hosts_env, exiting."
-    exit 1
-fi
+# if [[ -e "$hosts_env" ]]; then
+#     . ./$hosts_env
+# else
+#     echo "Unable to source file: $hosts_env, exiting."
+#     exit 1
+# fi
 
 mount_sh="mounts.sh"
 
@@ -368,12 +368,16 @@ echo_zoau(){
 
 latest_venv(){
     dir_version_latest="0"
-    for dir_version in `ls -d "$VENV_HOME_MANAGED"/venv-[0-9].[0-9]* | cut -d"-" -f2`; do
-        if [ $(normalize_version $dir_version) -ge $(normalize_version $dir_version_latest) ]; then
-            dir_version_latest=$dir_version
-        fi
-    done
+    test_for_managed_venv=`ls -d "$VENV_HOME_MANAGED"/venv-[0-9].[0-9]* 2>/dev/null`
+
+    if [ ! -z "$test_for_managed_venv" ]; then
+        for dir_version in `ls -d "$VENV_HOME_MANAGED"/venv-[0-9].[0-9]* | cut -d"-" -f2`; do
+            if [ $(normalize_version $dir_version) -ge $(normalize_version $dir_version_latest) ]; then
+                dir_version_latest=$dir_version
+            fi
+        done
         echo "${VENV_HOME_MANAGED}"/"venv-"$dir_version_latest
+    fi
 }
 
 
@@ -403,6 +407,15 @@ set_hosts_to_array(){
             echo "Export and set vars: 'USER', 'PASS' and'HOST_SUFFIX', or place them in a file named info.env."
             exit 1
         fi
+    fi
+
+    hosts_env="hosts.env"
+
+    if [[ -e "$hosts_env" ]]; then
+        . ./$hosts_env
+    else
+        echo "Unable to source file: $hosts_env, exiting."
+        exit 1
     fi
 
     _set_shell_array HOSTS_ALL "$(echo $host_list_str)"

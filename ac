@@ -15,17 +15,52 @@
 # ==============================================================================
 # Global Vars
 # ==============================================================================
+
+# Note: using the venv.sh script to find the latest venv puts the current 'ac'
+# in the scripts directory because venv.sh performs a 'cd $(dirname $0)' and
+# then other scripts can't be found in the managed venv corectly. Although this
+# is probably a temporary solution, we now take the same code from venv.sh and
+# use it here in 'ac' to find the latst managed venv. What should be
+# done is to have some meta-data written out to venv/* that this command 'ac'
+# can easily find, might be helpful to have some stats like dates created and
+# so on.
+# VENV=`scripts/./venv.sh --latest_venv`
+
+VENV_HOME_MANAGED=${PWD%/venv}/venv
+
+# Lest normalize the version from 3.10.2 to 3010002000
+# Do we we need that 4th octet?
+normalize_version() {
+    echo "$@" | awk -F. '{ printf("%d%03d%03d%03d\n", $1,$2,$3,$4); }';
+}
+
+latest_venv(){
+    dir_version_latest="0"
+    test_for_managed_venv=`ls -d "$VENV_HOME_MANAGED"/venv-[0-9].[0-9]* 2>/dev/null`
+
+    if [ ! -z "$test_for_managed_venv" ]; then
+        for dir_version in `ls -d "$VENV_HOME_MANAGED"/venv-[0-9].[0-9]* | cut -d"-" -f2`; do
+            if [ $(normalize_version $dir_version) -ge $(normalize_version $dir_version_latest) ]; then
+                dir_version_latest=$dir_version
+            fi
+        done
+        echo "${VENV_HOME_MANAGED}"/"venv-"$dir_version_latest
+    fi
+}
+
+VENV=`latest_venv`
+
 file=""
 verbose=0
 DIV="-----------------------------------------------------------------------"
 curr_dir=`pwd`
-# This cause a bit of trouble bouncing out of our managed venv's , maybe we
-# ought to drop a hidden file with some meta , eg latest venv
-VENV=`scripts/./venv.sh --latest_venv`
 cd $curr_dir
 # VENV_BIN should equate to same as $VIRTUAL_ENV after the venv activate
-VENV_BIN=$VENV/bin
-VENV_BASENAME=`basename $VENV`
+if [ ! -z "$VENV" ]; then
+    VENV_BIN=$VENV/bin
+    VENV_BASENAME=`basename $VENV`
+fi
+
 CURR_DIR=`pwd`
 RED=$'\e[1;31m'
 GRN=$'\e[1;32m'
@@ -507,6 +542,7 @@ host_nodes(){
 ## Create managed virtual environments using the hosts latest discovred python3.
 ## Usage: ac [--venv-setup] [--password 123456]
 ## Example:
+##  $ ac --venv-setup --passsword 123456
 ##  $ ac --venv-setup
 venv_setup(){
     option_pass=$1

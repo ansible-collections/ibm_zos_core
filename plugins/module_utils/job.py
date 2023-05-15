@@ -1,4 +1,4 @@
-# Copyright (c) IBM Corporation 2019, 2020
+# Copyright (c) IBM Corporation 2019, 2020, 2023
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -13,6 +13,7 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
+import fnmatch
 import re
 from time import sleep
 from timeit import default_timer as timer
@@ -35,10 +36,13 @@ def job_output(job_id=None, owner=None, job_name=None, dd_name=None, duration=0,
     """Get the output from a z/OS job based on various search criteria.
 
     Keyword Arguments:
-        job_id {str} -- The job ID to search for (default: {None})
-        owner {str} -- The owner of the job (default: {None})
-        job_name {str} -- The job name search for (default: {None})
-        dd_name {str} -- The data definition to retrieve (default: {None})
+        job_id (str) -- The job ID to search for (default: {None})
+        owner (str) -- The owner of the job (default: {None})
+        job_name (str) -- The job name search for (default: {None})
+        dd_name (str) -- The data definition to retrieve (default: {None})
+        duration (int) -- The time the submitted job ran for
+        timeout (int) - how long to wait in seconds for a job to complete
+        start_time (int) - time the JCL started its submission
 
     Returns:
         list[dict] -- The output information for a list of jobs matching specified criteria.
@@ -82,7 +86,12 @@ def job_output(job_id=None, owner=None, job_name=None, dd_name=None, duration=0,
 def _job_not_found(job_id, owner, job_name, dd_name):
     # Note that the text in the msg_txt is used in test cases thus sensitive to change
     jobs = []
-
+    if job_id != '*' and job_name != '*':
+        job_not_found_msg = "{0} with the job_id {1}".format(job_name.upper(), job_id.upper())
+    elif job_id != '*':
+        job_not_found_msg = "with the job_id {0}".format(job_id.upper())
+    else:
+        job_not_found_msg = "with the name {0}".format(job_name.upper())
     job = {}
 
     job["job_id"] = job_id
@@ -95,7 +104,7 @@ def _job_not_found(job_id, owner, job_name, dd_name):
     job["ret_code"]["msg"] = None
     job["ret_code"]["code"] = None
     job["ret_code"]["msg_code"] = None
-    job["ret_code"]["msg_txt"] = "The job could not be found."
+    job["ret_code"]["msg_txt"] = "The job {0} could not be found.".format(job_not_found_msg)
 
     job["class"] = ""
     job["content_type"] = ""
@@ -131,9 +140,9 @@ def job_status(job_id=None, owner=None, job_name=None, dd_name=None):
 
     """
     arg_defs = dict(
-        job_id=dict(arg_type="qualifier_pattern"),
+        job_id=dict(arg_type="str"),
         owner=dict(arg_type="qualifier_pattern"),
-        job_name=dict(arg_type="qualifier_pattern"),
+        job_name=dict(arg_type="str"),
         dd_name=dict(arg_type="str"),
     )
 
@@ -207,7 +216,10 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, duration=
                 if owner != entry.owner:
                     continue
             if job_name != "*":
-                if job_name != entry.name:
+                if not fnmatch.fnmatch(entry.name, job_name):
+                    continue
+            if job_id_temp is not None:
+                if not fnmatch.fnmatch(entry.id, job_id):
                     continue
 
             job = {}
@@ -220,7 +232,8 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, duration=
             job["ret_code"] = {}
             job["ret_code"]["msg"] = entry.status + " " + entry.rc
             job["ret_code"]["msg_code"] = entry.rc
-            job["ret_code"]["code"] = ""
+            # Why was this set to an empty string?
+            job["ret_code"]["code"] = None
             if len(entry.rc) > 0:
                 if entry.rc.isdigit():
                     job["ret_code"]["code"] = int(entry.rc)
@@ -312,7 +325,7 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, duration=
                         job["ret_code"]["msg"] = tmptext.strip()
                         job["ret_code"]["msg_code"] = None
                         job["ret_code"]["code"] = None
-            if len(list_of_dds) > 1:
+            if len(list_of_dds) > 0:
                 # The duration should really only be returned for job submit but the code
                 # is used job_output as well, for now we can ignore this point unless
                 # we want to offer a wait_time_s for job output which might be reasonable.

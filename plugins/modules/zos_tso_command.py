@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020
+# Copyright (c) IBM Corporation 2019, 2020, 2023
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -20,20 +20,29 @@ __metaclass__ = type
 DOCUMENTATION = r"""
 module: zos_tso_command
 version_added: '1.1.0'
-author: "Xiao Yuan Ma (@bjmaxy)"
 short_description: Execute TSO commands
 description:
-    - Execute TSO commands on the target z/OS system with the provided options
-      and receive a structured response.
+    - Execute TSO commands on the target z/OS system with the provided options and receive a structured response.
+author:
+    - "Xiao Yuan Ma (@bjmaxy)"
+    - "Rich Parker (@richp405)"
 options:
   commands:
     description:
         - One or more TSO commands to execute on the target z/OS system.
         - Accepts a single string or list of strings as input.
+        - If a list of strings is provided, processing will stop at the first failure, based on rc.
     required: true
     type: raw
     aliases:
         - command
+  max_rc:
+    description:
+        - Specifies the maximum return code allowed for a TSO command.
+        - If more than one TSO command is submitted, the I(max_rc) applies to all TSO commands.
+    default: 0
+    required: false
+    type: int
 """
 
 RETURN = r"""
@@ -52,6 +61,13 @@ output:
         rc:
             description:
                 The return code from the executed TSO command.
+            returned: always
+            type: int
+            sample: 0
+        max_rc:
+            description:
+                - Specifies the maximum return code allowed for a TSO command.
+                - If more than one TSO command is submitted, the I(max_rc) applies to all TSO commands.
             returned: always
             type: int
             sample: 0
@@ -89,6 +105,12 @@ EXAMPLES = r"""
       commands:
            - LU TESTUSER
 
+- name: Execute TSO command to list dataset data (allow 4 for no dataset listed or cert found)
+  zos_tso_command:
+      commands:
+           - LISTDSD DATASET('HLQ.DATA.SET') ALL GENERIC
+      max_rc: 4
+
 """
 
 from ansible.module_utils.basic import AnsibleModule
@@ -100,7 +122,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.better_arg_parser
 )
 
 
-def run_tso_command(commands, module):
+def run_tso_command(commands, module, max_rc):
     script = """/* REXX */
 PARSE ARG cmd
 address tso
@@ -113,11 +135,11 @@ end
 x = outtrap('OFF')
 exit rc
 """
-    command_detail_json = copy_rexx_and_run_commands(script, commands, module)
+    command_detail_json = copy_rexx_and_run_commands(script, commands, module, max_rc)
     return command_detail_json
 
 
-def copy_rexx_and_run_commands(script, commands, module):
+def copy_rexx_and_run_commands(script, commands, module, max_rc):
     command_detail_json = []
     delete_on_close = True
     tmp_file = NamedTemporaryFile(delete=delete_on_close)
@@ -131,7 +153,17 @@ def copy_rexx_and_run_commands(script, commands, module):
         command_results["rc"] = rc
         command_results["content"] = stdout.split("\n")
         command_results["lines"] = len(command_results.get("content", []))
+        command_results["stderr"] = stderr
+
+        if rc <= max_rc:
+            command_results["failed"] = False
+        else:
+            command_results["failed"] = True
+
         command_detail_json.append(command_results)
+        if command_results["failed"]:
+            break
+
     return command_detail_json
 
 
@@ -158,15 +190,18 @@ def list_or_str_type(contents, dependencies):
 def run_module():
     module_args = dict(
         commands=dict(type="raw", required=True, aliases=["command"]),
+        max_rc=dict(type="int", required=False, default=0),
     )
 
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
     result = dict(
         changed=False,
+        failed=True,
     )
 
     arg_defs = dict(
         commands=dict(type=list_or_str_type, required=True, aliases=["command"]),
+        max_rc=dict(type="int", required=False, default=0),
     )
     try:
         parser = BetterArgParser(arg_defs)
@@ -175,19 +210,37 @@ def run_module():
         module.fail_json(msg=repr(e), **result)
 
     commands = parsed_args.get("commands")
+    max_rc = parsed_args.get("max_rc")
+    if max_rc is None:
+        max_rc = 0
 
     try:
-        result["output"] = run_tso_command(commands, module)
+        result["output"] = run_tso_command(commands, module, max_rc)
+        result["max_rc"] = max_rc
+        errors_found = False
+        result_list = []
+
         for cmd in result.get("output"):
-            if cmd.get("rc") != 0:
-                module.fail_json(
-                    msg='The TSO command "'
-                    + cmd.get("command", "")
-                    + '" execution failed.',
-                    **result
-                )
+            tmp_string = 'Command "' + cmd.get("command", "") + '" execution'
+            if cmd.get("rc") > max_rc:
+                errors_found = True
+                if max_rc > 0:
+                    result_list.append(tmp_string + "failed.  RC was {0}; max_rc was {1}".format(cmd.get("rc"), max_rc))
+                else:
+                    result_list.append(tmp_string + "failed.  RC was {0}.".format(cmd.get("rc")))
+            else:
+                result_list.append(tmp_string + "succeeded.  RC was {0}.".format(cmd.get("rc")))
+
+        if errors_found:
+            result_string = "\n".join(result_list)
+
+            module.fail_json(
+                msg="Some ({0}) command(s) failed:\n{1}".format(errors_found, result_string),
+                **result
+            )
 
         result["changed"] = True
+        result["failed"] = False
         module.exit_json(**result)
 
     except Exception as e:

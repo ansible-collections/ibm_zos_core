@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2019, 2020
+# Copyright (c) IBM Corporation 2019, 2020, 2023
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -159,4 +159,16 @@ def test_zos_tso_command_multiple_commands(ansible_zos_module):
     for result in results.contacted.values():
         for item in result.get("output"):
             assert item.get("rc") == 0
+        assert result.get("changed") is True
+
+
+# The positive test
+# The command that kicks off rc>0 which is allowed
+def test_zos_tso_command_maxrc(ansible_zos_module):
+    hosts = ansible_zos_module
+    results = hosts.all.zos_tso_command(commands=["LISTDSD DATASET('HLQ.DATA.SET') ALL GENERIC"],max_rc=4)
+    for result in results.contacted.values():
+        for item in result.get("output"):
+            print( item )
+            assert item.get("rc") < 5
         assert result.get("changed") is True

@@ -6,6 +6,7 @@ plugins:
   callback: {}
   cliconf: {}
   connection: {}
+  filter: {}
   httpapi: {}
   inventory: {}
   lookup: {}
@@ -105,8 +106,14 @@ plugins:
       name: zos_tso_command
       namespace: ''
       version_added: 1.1.0
+    zos_volume_init:
+      description: Initialize volumes or minidisks.
+      name: zos_volume_init
+      namespace: ''
+      version_added: 1.6.0
   netconf: {}
   shell: {}
   strategy: {}
+  test: {}
   vars: {}
-version: 1.5.0-beta.1
+version: 1.6.0-beta.1

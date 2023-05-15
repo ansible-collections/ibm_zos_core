@@ -1,127 +1,97 @@
 name: Report a bug
-description: Request that a bug be reviewed.
+description: Request that a bug be reviewed. Complete all required fields.
 title: "[Bug] <title> "
 labels: [Bug]
 assignees:
   - IBMAnsibleHelper
 body:
-  - type: markdown
+  - type: checkboxes
+    id: existing-issue
     attributes:
-      value: |
-        Before reporting a bug, please review existing isssues to avoid duplication.
-        ---
-  - type: textarea
-    id: issue-description
+      label: Is there an existing issue for this?
+      description: Please search to see if an issue already exists for the bug you encountered.
+      options:
+        - label: There are no existing issues.
+          required: true
+  - type: checkboxes
+    id: valid-dependencies
     attributes:
-      label: Bug description
-      description: Describe the bug you are experiencing.
-      placeholder: |
-        Verbosity is encouraged, the more you share the better for us to understand.
-          1. Include the steps to reproduce
-          2. Include playbook if applicable
-          3. Include screen captures of applicable
-          4. Include expected vs actual results if applicable
+      label: Are the dependencies a supported version?
+      description: Please review the ZOAU and IBM Enterprise Python versions in the reference section of the [release notes](https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/release_notes.html).
+      options:
+        - label: The dependencies are supported.
+          required: true
+  - type: dropdown
+    id: zoau-version
+    attributes:
+      label: IBM Z Open Automation Utilities
+      description: Which version of ZOAU are you using?
+      multiple: false
+      options:
+        - v1.2.2
+        - v1.2.1
+        - v1.2.0
+        - v1.1.1
+        - v1.0.3
     validations:
       required: true
-  - type: textarea
-    id: issue-output
+  - type: dropdown
+    id: python-version
     attributes:
-      label: Playbook verbosity output
-      description: Provide the command line output with debug and verbosity enabled.
-      placeholder: |
-        Insert the ouput using this form of the playbook command.
-          - `ANSIBLE_DEBUG=1 ansible-playbook -i inventory your-playbook.yml -vvvv`
-    validations:
-      required: false
-  - type: textarea
-    id: ansible-cfg
-    attributes:
-      label: Contents of `ansible.cfg`
-      description: Provide the contents of `ansible.cfg`.
-      render: YAML
-    validations:
-      required: false
-  - type: textarea
-    id: ansible-inventory
-    attributes:
-      label: Contents of the inventory
-      description: Provide the contents of the inventory
-      render: YAML
-    validations:
-      required: false
-  - type: textarea
-    id: ansible-vars
-    attributes:
-      label: Contents of `group_vars` or `host_vars`
-      description: Provide the contents of `group_vars` or `host_vars`
-      render: YAML
-    validations:
-      required: false
-  - type: textarea
-    id: ansible-version
-    attributes:
-      label: Ansible version
-      description: What is the verson of Ansible on the controller.
-      placeholder: Paste verbatim output from `ansible --version`.
-      render: shell
+      label: IBM Enterprise Python
+      description: Which version of IBM Enterprise Python are you using?
+      multiple: false
+      options:
+        - v3.11.x
+        - v3.10.x
+        - v3.9.x
+        - v3.8.x
     validations:
       required: true
   - type: dropdown
     id: collection-version
     attributes:
       label: IBM z/OS Ansible core Version
-      description: |
-        Which version of the z/OS Ansible core collection are you using. If you are unsure, run the command: `cat ~/.ansible/collections/ansible_collections/ibm/ibm_zos_core/MANIFEST.json | grep version`
-      multiple: true
+      description: Which version of z/OS Ansible core collection are you using. If you are unsure, review the [documentation](https://ibm.github.io/z_ansible_collections_doc/faqs/faqs.html#how-do-i-update-a-collection-to-the-latest-version). 
+      multiple: false
       options:
-        - v1.0.0
-        - v1.1.0
-        - v1.2.1
-        - v1.3.0
-        - v1.3.1
-        - v1.3.3
-        - v1.3.5
-        - v1.3.6
-        - v1.4.0-beta.1
-        - v1.4.0-beta.2
-        - v1.4.0
-        - v1.5.0-beta.1
         - v1.5.0
-        - v1.6.0-beta.1
-        - v1.6.0
-        - v1.7.0-beta.1
-        - v1.7.0
-        - v1.8.0-beta.1
-        - v1.8.0
-        - v1.9.0-beta.1
-        - v1.9.0
-        - v1.10.0-beta.1
-        - v1.10.0
-        - v1.11.0-beta.1
-        - v1.11.0
+        - v1.4.0
+        - v1.3.6
+        - v1.3.5
+        - v1.3.3
+        - v1.3.1
+        - v1.3.0
+        - v1.2.1
+        - v1.1.0
+        - v1.0.0
     validations:
       required: true
   - type: dropdown
-    id: zoau-version
+    id: ansible-version
     attributes:
-      label: IBM ZOAU version
-      description: Which version of ZOAU are you using. Ensure you are on the latest PTF.
-      multiple: true
+      label: ansible-version
+      description: What is the version of Ansible on the controller (`ansible --version`)?
+      multiple: false
       options:
-        - v1.0.3
-        - v1.1.0
-        - v1.1.1
-        - v1.2.0
-        - v1.2.1
-        - v1.2.1.1
-        - v1.2.2
+        - latest
+        - v2.14.x
+        - v2.13.x
+        - v2.12.x
+        - v2.11.x
+        - v2.9.x
     validations:
       required: true
-  - type: input
+  - type: dropdown
     id: zos-version
     attributes:
       label: z/OS version
-      description: What is the version of z/OS on the managed node.
+      description: What is the version of z/OS on the managed node?
+      multiple: false
+      options:
+        - v2.5
+        - v2.4
+        - v2.3
     validations:
       required: false
   - type: dropdown
@@ -152,3 +122,53 @@ body:
         - zos_tso_command
     validations:
       required: false
+  - type: textarea
+    id: issue-description
+    attributes:
+      label: Bug description
+      description: Describe the bug you are experiencing.
+      placeholder: |
+        Verbosity is encouraged, the more you share the better for us to understand.
+          1. Include the steps to reproduce
+          2. Include playbook if applicable
+          3. Include screen captures of applicable
+          4. Include expected vs actual results if applicable
+    validations:
+      required: true
+  - type: textarea
+    id: issue-output
+    attributes:
+      label: Playbook verbosity output.
+      description: Provide the command line output with debug and verbosity enabled.
+      placeholder: |
+        Insert the output using this form of the playbook command.
+          - `ANSIBLE_DEBUG=1 ansible-playbook -i inventory your-playbook.yml -vvvv`
+    validations:
+      required: false
+  - type: textarea
+    id: ansible-cfg
+    attributes:
+      label: Ansible configuration.
+      description: Show the current **ansible.cfg** settings.
+      placeholder: |
+        Insert for this command: `ansible-config view`
+      render: YAML
+    validations:
+      required: false
+  - type: textarea
+    id: ansible-inventory
+    attributes:
+      label: Contents of the inventory
+      description: Provide the contents of the inventory.
+      render: YAML
+    validations:
+      required: false
+  - type: textarea
+    id: ansible-vars
+    attributes:
+      label: Contents of `group_vars` or `host_vars`
+      description: Provide the contents of `group_vars` or `host_vars`
+      render: YAML
+    validations:
+      required: false
+

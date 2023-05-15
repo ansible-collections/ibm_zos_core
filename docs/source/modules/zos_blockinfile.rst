@@ -38,7 +38,9 @@ src
 
 
 state
-  Whether the block should be inserted/replaced (present) or removed (absent).
+  Whether the block should be inserted or replaced using *state=present*.
+
+  Whether the block should be removed using *state=absent*.
 
   | **required**: False
   | **type**: str
@@ -165,7 +167,7 @@ force
 
   This is helpful when a data set is being used in a long running process such as a started task and you are wanting to update or read.
 
-  The ``-f`` option enables sharing of data sets through the disposition *DISP=SHR*.
+  The ``force`` option enables sharing of data sets through the disposition *DISP=SHR*.
 
   | **required**: False
   | **type**: bool
@@ -193,13 +195,11 @@ Examples
        block: |
           MOUNT FILESYSTEM('SOME.DATA.SET') TYPE(ZFS) MODE(READ)
              MOUNTPOINT('/tmp/src/somedirectory')
-
    - name: Remove a library as well as surrounding markers
      zos_blockinfile:
        state: absent
        src: SYS1.PARMLIB(PROG00)
        marker: "/* {mark} ANSIBLE MANAGED BLOCK FOR SOME.DATA.SET */"
-
    - name: Add ZOAU path to PATH in /etc/profile
      zos_blockinfile:
        src: /etc/profile
@@ -208,7 +208,6 @@ Examples
          ZOAU=/path/to/zoau_dir/bin
          export ZOAU
          PATH=$ZOAU:$PATH
-
    - name: Insert/Update HTML surrounded by custom markers after <body> line
      zos_blockinfile:
        path: /var/www/html/index.html
@@ -217,13 +216,11 @@ Examples
        block: |
          <h1>Welcome to {{ ansible_hostname }}</h1>
          <p>Last updated on {{ ansible_date_time.iso8601 }}</p>
-
    - name: Remove HTML as well as surrounding markers
      zos_blockinfile:
        path: /var/www/html/index.html
        state: absent
        marker: "<!-- {mark} ANSIBLE MANAGED BLOCK -->"
-
    - name: Add mappings to /etc/hosts
      zos_blockinfile:
        path: /etc/hosts
@@ -234,7 +231,6 @@ Examples
        - { name: host1, ip: 10.10.1.10 }
        - { name: host2, ip: 10.10.1.11 }
        - { name: host3, ip: 10.10.1.12 }
-
    - name: Add a code block to a member using a predefined indentation.
      zos_blockinfile:
        path: SYS1.PARMLIB(BPXPRM00)
@@ -243,6 +239,44 @@ Examples
              RUN  PROGRAM(DSNTEP2) PLAN(DSNTEP12) -
              LIB('{{ DB2RUN }}.RUNLIB.LOAD')
        indentation: 16
+
+   - name: Update a script with commands containing quotes.
+     zos_blockinfile:
+       src: "/u/scripts/script.sh"
+       insertafter: "EOF"
+       block: |
+             cat "//'{{ DS_NAME }}'"
+             cat "//'{{ DS_NAME_2 }}'"
+
+   - name: Set facts for the following two tasks.
+     set_fact:
+       HLQ: 'ANSIBLE'
+       MLQ: 'MEMBER'
+       LLQ: 'TEST'
+       MEM: '(JCL)'
+       MSG: 'your first JCL program'
+       CONTENT: "{{ lookup('file', 'files/content.txt') }}"
+
+   - name: Update JCL in a PDS member with Jinja2 variable syntax.
+     zos_blockinfile:
+       src: "{{ HLQ }}.{{MLQ}}.{{LLQ}}{{MEM}}"
+       insertafter: "HELLO, WORLD"
+       marker: "//* {mark} *//"
+       marker_begin: "Begin Ansible Block Insertion 1"
+       marker_end: "End Ansible Block Insertion 1"
+       state: present
+       block: |
+         This is {{ MSG }}, and its now
+         managed by Ansible.
+
+   - name: Update JCL in PDS member with content from a file.
+     zos_blockinfile:
+       src: "{{ HLQ }}.{{MLQ}}.{{LLQ}}{{MEM}}"
+       insertafter: "End Ansible Block Insertion 1"
+       marker: "//* {mark} *//"
+       marker_begin: "Begin Ansible Block Insertion 2"
+       marker_end: "End Ansible Block Insertion 2"
+       block: "{{ CONTENT }}"
 
 
 
@@ -257,7 +291,7 @@ Notes
 
    For supported character sets used to encode data, refer to the `documentation <https://ibm.github.io/z_ansible_collections_doc/ibm_zos_core/docs/source/resources/character_set.html>`_.
 
-   When using 'with_*' loops be aware that if you do not set a unique mark the block will be overwritten on each iteration.
+   When using ``with_*`` loops be aware that if you do not set a unique mark the block will be overwritten on each iteration.
 
    When more then one block should be handled in a file you must change the *marker* per task.
 

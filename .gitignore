@@ -260,4 +260,4 @@ info.env
 shell_exploits.txt
 scripts/info.env
 test_config.yml
-venv*
+venv/

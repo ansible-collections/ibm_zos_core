@@ -53,8 +53,8 @@ VENV=`latest_venv`
 file=""
 verbose=0
 DIV="-----------------------------------------------------------------------"
-curr_dir=`pwd`
-cd $curr_dir
+CURRENT_DIR=`pwd`
+cd $CURRENT_DIR
 # VENV_BIN should equate to same as $VIRTUAL_ENV after the venv activate
 if [ ! -z "$VENV" ]; then
     VENV_BIN=$VENV/bin
@@ -328,7 +328,7 @@ ac_test(){
     zoau=$3
     file=$4
     debug=$5
-    skip=tests/functional/modules/test_module_security.py
+    skip=$CURR_DIR/tests/functional/modules/test_module_security.py
 
     # Create the config always overwriting existing
     ${VENV}/./venv.sh --config ${host} ${python} ${zoau} ${VENV}
@@ -339,19 +339,28 @@ ac_test(){
 		exit 1
 	fi
 
+    cd ${VENV_BIN}
+
     if [ "$file" ]; then
         if [ "$debug" ]; then
-		    . ${VENV_BIN}/activate && ${VENV_BIN}/pytest --ignore="${skip}" ${file} --host-pattern=all --zinventory=${VENV}/config.yml -s
+		    . ${VENV_BIN}/activate && ${VENV_BIN}/pytest --ignore="${skip}" $CURR_DIR/${file} --host-pattern=all --zinventory=${VENV}/config.yml -s
         else
-		. ${VENV_BIN}/activate && ${VENV_BIN}/pytest --ignore="${skip}" ${file} --host-pattern=all --zinventory=${VENV}/config.yml
+		    . ${VENV_BIN}/activate && ${VENV_BIN}/pytest --ignore="${skip}" $CURR_DIR/${file} --host-pattern=all --zinventory=${VENV}/config.yml
         fi
     else
-        if [ "$debug" ]; then
-		    . ${VENV_BIN}/activate && ${VENV_BIN}/pytest --ignore="${skip}" --host-pattern=all --zinventory=${VENV}/config.yml -s
-        else
-		    . ${VENV_BIN}/activate && ${VENV_BIN}/pytest --ignore="${skip}" --host-pattern=all --zinventory=${VENV}/config.yml
-        fi
+        for file in `ls tests/functional/modules/*.py`; do
+            # For some reason '--ignor'e not being honored so injecting a work around
+            if [ "$file" != "$skip" ]; then
+                if [ "$debug" ]; then
+                    . ${VENV_BIN}/activate && ${VENV_BIN}/pytest --ignore="${skip}" $CURR_DIR/${file} --host-pattern=all --zinventory=${VENV}/config.yml -s
+                else
+                    . ${VENV_BIN}/activate && ${VENV_BIN}/pytest --ignore="${skip}" $CURR_DIR/${file} --host-pattern=all --zinventory=${VENV}/config.yml
+                fi
+            fi
+        done
     fi
+
+    cd ${CURR_DIR}
 }
 
 # ------------------------------------------------------------------------------
@@ -755,7 +764,7 @@ elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-install" ] ; then
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-sanity" ] ; then
     ac_sanity $version
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-test" ] ; then
-    ac_test $host $python $zoau $file $debug
+    ac_test ${host:=""} ${python:=""} ${zoau:=""} ${file:=""} ${debug:=""}
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-test-config" ] ; then
     ac_test_config
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-version" ] ; then

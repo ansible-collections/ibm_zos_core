@@ -162,13 +162,13 @@ class ActionModule(ActionBase):
                         return result
 
                     if use_template:
-                        try:
-                            template_parameters = task_args.get("template_parameters", dict())
-                            if encoding:
-                                template_encoding = encoding.get("from", None)
-                            else:
-                                template_encoding = None
+                        template_parameters = task_args.get("template_parameters", dict())
+                        if encoding:
+                            template_encoding = encoding.get("from", None)
+                        else:
+                            template_encoding = None
 
+                        try:
                             renderer = template.create_template_environment(
                                 template_parameters,
                                 src,
@@ -177,9 +177,10 @@ class ActionModule(ActionBase):
                             template_dir, rendered_dir = renderer.render_dir_template(
                                 task_vars.get("vars", dict())
                             )
-                            src = rendered_dir
                         except Exception as err:
                             return self._exit_action(result, str(err), failed=True)
+
+                        src = rendered_dir
 
                     task_args["size"] = sum(
                         os.stat(os.path.join(path, f)).st_size
@@ -193,13 +194,13 @@ class ActionModule(ActionBase):
                         )
 
                     if use_template:
-                        try:
-                            template_parameters = task_args.get("template_parameters", dict())
-                            if encoding:
-                                template_encoding = encoding.get("from", None)
-                            else:
-                                template_encoding = None
+                        template_parameters = task_args.get("template_parameters", dict())
+                        if encoding:
+                            template_encoding = encoding.get("from", None)
+                        else:
+                            template_encoding = None
 
+                        try:
                             renderer = template.create_template_environment(
                                 template_parameters,
                                 src,
@@ -209,9 +210,10 @@ class ActionModule(ActionBase):
                                 os.path.basename(src),
                                 task_vars.get("vars", dict())
                             )
-                            src = rendered_file
                         except Exception as err:
                             return self._exit_action(result, str(err), failed=True)
+
+                        src = rendered_file
 
                     task_args["size"] = os.stat(src).st_size
                 display.vvv(u"ibm_zos_copy calculated size: {0}".format(os.stat(src).st_size), host=self._play_context.remote_addr)

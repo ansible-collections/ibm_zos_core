@@ -106,10 +106,10 @@ class ActionModule(ActionBase):
             tmp_src = self._connection._shell.join_path(tmp, "source")
 
             if use_template:
-                try:
-                    template_parameters = module_args.get("template_parameters", dict())
-                    encoding = module_args.get("encoding", dict())
+                template_parameters = module_args.get("template_parameters", dict())
+                encoding = module_args.get("encoding", dict())
 
+                try:
                     renderer = template.create_template_environment(
                         template_parameters,
                         source_full,
@@ -119,13 +119,14 @@ class ActionModule(ActionBase):
                         os.path.basename(source_full),
                         task_vars
                     )
-                    source_full = rendered_file
                 except Exception as err:
                     result["msg"] = to_text(err)
                     result["failed"] = True
                     result["changed"] = False
                     result["invocation"] = dict(module_args=module_args)
                     return result
+
+                source_full = rendered_file
 
             remote_path = None
             remote_path = self._transfer_file(source_full, tmp_src)

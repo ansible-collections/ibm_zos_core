@@ -358,7 +358,7 @@ def test_mvs_archive_single_dataset(ansible_zos_module, format, data_set, record
 
         format_dict = dict(name=format)
         if format == "terse":
-            format_dict["suboptions"] = dict(terse_pack="SPACK")
+            format_dict["format_options"] = dict(terse_pack="SPACK")
         archive_result = hosts.all.zos_archive(
             path=data_set.get("name"),
             dest=MVS_DEST_ARCHIVE,
@@ -430,9 +430,9 @@ def test_mvs_archive_single_dataset_use_adrdssu(ansible_zos_module, format, data
             hosts.all.shell(cmd=f"decho '{test_line}' \"{ds_to_write}\"")
 
         format_dict = dict(name=format)
-        format_dict["suboptions"] = dict(use_adrdssu=True)
+        format_dict["format_options"] = dict(use_adrdssu=True)
         if format == "terse":
-            format_dict["suboptions"].update(terse_pack="SPACK")
+            format_dict["format_options"].update(terse_pack="SPACK")
         archive_result = hosts.all.zos_archive(
             path=data_set.get("name"),
             dest=MVS_DEST_ARCHIVE,
@@ -504,7 +504,7 @@ def test_mvs_archive_single_data_set_remove_target(ansible_zos_module, format, d
 
         format_dict = dict(name=format)
         if format == "terse":
-            format_dict["suboptions"] = dict(terse_pack="SPACK")
+            format_dict["format_options"] = dict(terse_pack="SPACK")
         archive_result = hosts.all.zos_archive(
             path=data_set.get("name"),
             dest=MVS_DEST_ARCHIVE,

@@ -42,7 +42,7 @@ options:
       - The type of compression to use.
     type: dict
     required: false
-    suboptions:
+    format_options:
       name:
           description:
             - The name of the format to use.
@@ -57,12 +57,12 @@ options:
             - terse
             - xmit
             - pax
-      suboptions:
+      format_options:
           description:
             - Options specific to each format.
           type: dict
           required: false
-          suboptions:
+          format_options:
             terse_pack:
               description: Pack option to use for terse format.
               type: str
@@ -353,7 +353,8 @@ class USSArchive(Archive):
         return "USS"
 
     def update_permissions(self):
-        return
+        file_args = self.module.load_file_common_arguments(self.module.params, path=self.dest)
+        self.changed = self.module.set_fs_attributes_if_different(file_args, self.changed)
 
     def find_targets(self):
         for path in self.paths:
@@ -457,7 +458,7 @@ class MVSArchive(Archive):
     def __init__(self, module):
         super(MVSArchive, self).__init__(module)
         self.original_checksums = self.dest_checksums()
-        self.use_adrdssu = module.params.get("format").get("suboptions").get("use_adrdssu")
+        self.use_adrdssu = module.params.get("format").get("format_options").get("use_adrdssu")
 
     def open(self):
         pass
@@ -570,7 +571,7 @@ class MVSArchive(Archive):
 class AMATerseArchive(MVSArchive):
     def __init__(self, module):
         super(AMATerseArchive, self).__init__(module)
-        self.pack_arg = module.params.get("format").get("suboptions").get("terse_pack")
+        self.pack_arg = module.params.get("format").get("format_options").get("terse_pack")
 
     def add(self, path, archive):
         """
@@ -612,7 +613,7 @@ class AMATerseArchive(MVSArchive):
 class XMITArchive(MVSArchive):
     def __init__(self, module):
         super(XMITArchive, self).__init__(module)
-        self.xmit_log_dataset = module.params.get("format").get("suboptions").get("xmit_log_dataset")
+        self.xmit_log_dataset = module.params.get("format").get("format_options").get("xmit_log_dataset")
 
     def add(self, path, archive):
         """
@@ -667,7 +668,7 @@ def run_module():
                         default='gz',
                         choices=['bz2', 'gz', 'tar', 'zip', 'terse', 'xmit', 'pax']
                     ),
-                    suboptions=dict(
+                    format_options=dict(
                         type='dict',
                         required=False,
                         options=dict(
@@ -688,9 +689,9 @@ def run_module():
                 )
                 # default=dict(name="", supotions=dict(terse_pack="", xmit_log_dataset="")),
             ),
-            group=dict(type='str', default=''),
-            mode=dict(type='str', default=''),
-            owner=dict(type='str', default=''),
+            group=dict(type='str'),
+            mode=dict(type='str'),
+            owner=dict(type='str'),
             remove=dict(type='bool', default=False),
             exclusion_patterns=dict(type='list', elements='str'),
             replace_dest=dict(type='bool', default=False),
@@ -713,7 +714,7 @@ def run_module():
                     default='gz',
                     choices=['bz2', 'gz', 'tar', 'zip', 'terse', 'xmit', 'pax']
                 ),
-                suboptions=dict(
+                format_options=dict(
                     type='dict',
                     required=False,
                     options=dict(
@@ -746,9 +747,9 @@ def run_module():
                 )
             ),
         ),
-        group=dict(type='str', default=''),
-        mode=dict(type='str', default=''),
-        owner=dict(type='str', default=''),
+        group=dict(type='str'),
+        mode=dict(type='str'),
+        owner=dict(type='str'),
         remove=dict(type='bool', default=False),
         exclusion_patterns=dict(type='list', elements='str'),
         replace_dest=dict(type='bool', default=False, alias='force'),
@@ -783,8 +784,7 @@ def run_module():
             archive.remove_targets()
     if archive.dest_exists():
         if archive.dest_type() == "USS":
-            # archive.update_permissions()
-            None
+            archive.update_permissions()
         archive.changed = archive.is_different_from_original()
 
     module.exit_json(**archive.result)

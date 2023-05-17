@@ -68,7 +68,7 @@ class Unarchive(abc.ABC):
         self.path = module.params.get("path")
         self.dest = module.params.get("dest")
         self.format = module.params.get("format").get("name")
-        self.format_options = module.params.get("format").get("suboptions")
+        self.format_options = module.params.get("format").get("format_options")
         self.tmphlq = module.params.get("tmp_hlq")
         self.force = module.params.get("force")
         self.targets = list()
@@ -107,6 +107,14 @@ class TarUnarchive(Unarchive):
         super(TarUnarchive, self).__init__(module)
     
     def open(self, path):
+        """Open an archive using tarfile lib for read.
+        
+        Arguments:
+            path(str): Path to a tar, pax, gz or bz2 file to be opened.
+        
+        Returns:
+            Return a TarFile object for the path name.
+        """
         if self.format == 'tar':
             file = tarfile.open(path, 'r')
         elif self.format in ('pax'):
@@ -117,15 +125,28 @@ class TarUnarchive(Unarchive):
             self.module.fail_json(msg="%s is not a valid archive format for listing contents" % self.format)
         return file
 
-    def list_archive_content(self):
-        self.file = self.open(self.path)
-        self.targets = self.file.getnames()
+    def list_archive_content(self, path):
+        """Returns a list of members in an archive.
+        
+        Arguments:
+            path(str): Path to a tar, pax, gz or bz2 file to list its contents.
+        
+        Returns:
+            list(str): List of members inside the archive.
+        """
+        self.file = self.open(path)
+        members = self.file.getnames()
         self.file.close()
+        return members
 
     def list_content(self):
-        return self.list_archive_content()
+        self.targets = self.list_archive_content(self.path)
+        return
 
     def extract_path(self):
+        """Unpacks the contents of the archive stored in path into dest folder.
+        
+        """
         original_working_dir = os.getcwd()
         # The function gets relative paths, so it changes the current working
         # directory to the root of src.
@@ -160,6 +181,9 @@ class ZipUnarchive(Unarchive):
         super(ZipUnarchive, self).__init__(module)
 
     def open(self, path):
+        """Unpacks the contents of the archive stored in path into dest folder.
+        
+        """
         try:
             file = zipfile.ZipFile(path, 'r', zipfile.ZIP_DEFLATED, True)
         except zipfile.BadZipFile:
@@ -168,15 +192,33 @@ class ZipUnarchive(Unarchive):
             )
         return file
 
-    def list_archive_content(self):
-        self.file = self.open(self.path)
-        self.targets = self.file.namelist()
+    def list_archive_content(self, path):
+        """Returns a list of members in an archive.
+        
+        Arguments:
+            path(str): Path to a tar, pax, gz or bz2 file to list its contents.
+        
+        Returns:
+            list(str): List of members inside the archive.
+        """
+        self.file = self.open(path)
+        members = self.file.namelist()
         self.file.close()
+        return members
 
     def list_content(self):
-        return self.list_archive_content()
+        self.targets = self.list_archive_content(self.path)
+        return 
 
     def extract_path(self):
+        """Returns a list of members in an archive.
+        
+        Arguments:
+            path(str): Path to a tar, pax, gz or bz2 file to list its contents.
+        
+        Returns:
+            list(str): List of members inside the archive.
+        """
         original_working_dir = os.getcwd()
         # The function gets relative paths, so it changes the current working
         # directory to the root of src.
@@ -214,6 +256,14 @@ class MVSUnarchive(Unarchive):
         self.dest_data_set = module.params.get("dest_data_set")
     
     def create_temp_ds(self, tmphlq):
+        """Create a temporary sequential data set. 
+        
+        Arguments:
+            tmphlq(str): A HLQ specified by the user for temporary data sets.
+        
+        Returns:
+            str: Name of the temporary data set created.
+        """
         if tmphlq:
             hlq = tmphlq
         else:
@@ -252,9 +302,12 @@ class MVSUnarchive(Unarchive):
     def restore(self, source):
         """
         Calls ADDRSU using RESTORE to unpack the dump datasets.
-        """
-        """
-        Dump src datasets identified as self.targets into a temporary dataset using ADRDSSU.
+
+        Arguments:
+            source(str): Name of the data set to use as archive in ADRDSSU restore operation.
+        
+        Returns:
+            int: Return code result of restore operation.
         """
         filter = "INCL(**) "
         volumes = ""
@@ -290,19 +343,46 @@ class MVSUnarchive(Unarchive):
         return data_set.DataSet.data_set_exists(self.path)
     
     def get_restored_datasets(self, output):
-        # TODO maybe use a set instead bc output may vary? 
         ds_list = list()
         find_ds_list = re.findall(r"SUCCESSFULLY PROCESSED\n(?:.*\n)*", output)
         if find_ds_list:
             ds_list = re.findall(data_set_regex, find_ds_list[0])
         self.targets = ds_list
         return ds_list
+        
+    @abc.abstractmethod
+    def unpack(self):
+        pass
+    
+    def extract_path(self):
+        """Extract the MVS path contents.
+        
+        """
+        temp_ds = ""
+        if not self.use_adrdssu:
+            temp_ds = self.create_dest_data_set(self.dest_data_set, self.force)
+            rc = self.unpack(self.path, self.dest_data_set.get("name"))
+        else:
+            temp_ds = self.create_temp_ds(self.tmphlq)
+            self.unpack(self.path, temp_ds)
+            rc = self.restore(temp_ds)
+            datasets.delete(temp_ds)
+        self.changed = not rc
+        return
 
     def list_content(self, source):
         restore_cmd = " RESTORE INDD(ARCHIVE) DS(INCL(**)) "
         cmd = " mvscmdauth --pgm=ADRDSSU --archive={0},old --args='TYPRUN=NORUN' --sysin=stdin --sysprint=*".format(source)
         rc, out, err = self.module.run_command(cmd, data=restore_cmd)
         self.get_restored_datasets(out)
+    
+    def list_archive_content(self):
+        try:
+            temp_ds = self.create_temp_ds(self.tmphlq)
+            self.unpack(self.path, temp_ds)
+            self.list_content(temp_ds)
+        finally:
+            datasets.delete(temp_ds)
 
 
 class AMATerseUnarchive(MVSUnarchive):
@@ -323,27 +403,6 @@ class AMATerseUnarchive(MVSUnarchive):
                 rc=rc,
             )
         return rc
-
-    def extract_path(self):
-        temp_ds = ""
-        if not self.use_adrdssu:
-            temp_ds = self.create_dest_data_set(self.dest_data_set, self.force)
-            rc = self.unpack(self.path, self.dest_data_set.get("name"))
-        else:
-            temp_ds = self.create_temp_ds(self.tmphlq)
-            self.unpack(self.path, temp_ds)
-            rc = super(AMATerseUnarchive, self).restore(temp_ds)
-            datasets.delete(temp_ds)
-        self.changed = not rc
-        return
-
-    def list_archive_content(self):
-        try:
-            temp_ds = self.create_temp_ds(self.tmphlq)
-            self.unpack(self.path, temp_ds)
-            super(AMATerseUnarchive, self).list_content(temp_ds)
-        finally:
-            datasets.delete(temp_ds)
 
 
 class XMITUnarchive(MVSUnarchive):
@@ -372,24 +431,6 @@ class XMITUnarchive(MVSUnarchive):
             )
         return rc
 
-    def extract_path(self):
-        try:
-            temp_ds = self.create_temp_ds(self.tmphlq)
-            self.unpack(self.path, temp_ds)
-            rc = super(XMITUnarchive, self).restore(temp_ds)
-            self.changed = not rc
-        finally:
-            datasets.delete(temp_ds)
-        return rc
-
-    def list_archive_content(self):
-        try:
-            temp_ds = self.create_temp_ds(self.tmphlq)
-            self.unpack(self.path, temp_ds)
-            super(XMITUnarchive, self).list_content(temp_ds)
-        finally:
-            datasets.delete(temp_ds)
-
 
 def get_unarchive_handler(module):
     format = module.params.get("format").get("name")
@@ -417,7 +458,7 @@ def run_module():
                     default='gz',
                     choices=['bz2', 'gz', 'tar', 'zip', 'terse', 'xmit', 'pax']
                     ),
-                    suboptions=dict(
+                    format_options=dict(
                         type='dict',
                         required=False,
                         options=dict(
@@ -505,7 +546,7 @@ def run_module():
                     default='gz',
                     choices=['bz2', 'gz', 'tar', 'zip', 'terse', 'xmit', 'pax']
                     ),
-                    suboptions=dict(
+                    format_options=dict(
                         type='dict',
                         required=False,
                         options=dict(

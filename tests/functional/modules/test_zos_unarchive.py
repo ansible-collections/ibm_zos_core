@@ -261,7 +261,7 @@ def test_uss_unarchive_list(ansible_zos_module, format):
 @pytest.mark.parametrize(
     "format", [
         "terse",
-        # "xmit",
+        "xmit",
         ])
 @pytest.mark.parametrize(
     "data_set", [
@@ -310,7 +310,7 @@ def test_mvs_unarchive_single_dataset(ansible_zos_module, format, data_set, reco
 
         format_dict = dict(name=format)
         if format == "terse":
-            format_dict["suboptions"] = dict(terse_pack="SPACK")
+            format_dict["format_options"] = dict(terse_pack="SPACK")
         archive_result = hosts.all.zos_archive(
             path=data_set.get("name"),
             dest=MVS_DEST_ARCHIVE,
@@ -409,9 +409,9 @@ def test_mvs_unarchive_single_dataset(ansible_zos_module, format, data_set, reco
 #             hosts.all.shell(cmd=f"decho '{test_line}' \"{ds_to_write}\"")
 
 #         format_dict = dict(name=format)
-#         format_dict["suboptions"] = dict(use_adrdssu=True)
+#         format_dict["format_options"] = dict(use_adrdssu=True)
 #         if format == "terse":
-#             format_dict["suboptions"].update(terse_pack="SPACK")
+#             format_dict["format_options"].update(terse_pack="SPACK")
 #         archive_result = hosts.all.zos_archive(
 #             path=data_set.get("name"),
 #             dest=MVS_DEST_ARCHIVE,

@@ -149,11 +149,11 @@ def populate_dir(dir_path):
             infile.write(DUMMY_DATA)
 
 
-def create_template_file(dir_path, use_default_markers=True):
+def create_template_file(dir_path, use_default_markers=True, encoding="utf-8"):
     content = TEMPLATE_CONTENT if use_default_markers else TEMPLATE_CONTENT_NON_DEFAULT_MARKERS
     template_path = os.path.join(dir_path, "template")
 
-    with open(template_path, "w") as infile:
+    with open(template_path, "w", encoding=encoding) as infile:
         infile.write(content)
 
     return template_path
@@ -1067,13 +1067,18 @@ def test_copy_non_existent_file_fails(ansible_zos_module, is_remote):
 
 @pytest.mark.uss
 @pytest.mark.template
-def test_copy_template_file(ansible_zos_module):
+@pytest.mark.parametrize("encoding", ["utf-8", "iso8859-1"])
+def test_copy_template_file(ansible_zos_module, encoding):
     hosts = ansible_zos_module
     dest_path = "/tmp/new_dir"
     temp_dir = tempfile.mkdtemp()
 
     try:
-        temp_template = create_template_file(temp_dir, use_default_markers=True)
+        temp_template = create_template_file(
+            temp_dir,
+            use_default_markers=True,
+            encoding=encoding
+        )
         dest_template = os.path.join(dest_path, os.path.basename(temp_template))
 
         hosts.all.file(path=dest_path, state="directory")
@@ -1090,7 +1095,11 @@ def test_copy_template_file(ansible_zos_module):
         copy_result = hosts.all.zos_copy(
             src=temp_template,
             dest=dest_path,
-            use_template=True
+            use_template=True,
+            encoding={
+                "from": encoding,
+                "to": "IBM-1047"
+            }
         )
 
         verify_copy = hosts.all.shell(

@@ -38,9 +38,11 @@ class ActionModule(ActionBase):
 
         use_template = _process_boolean(module_args.get("use_template"))
         if use_template and module_args.get("location") != "LOCAL":
-            result["failed"] = True
-            result["changed"] = False
-            result["msg"] = "Use of templates is only allowed for local files."
+            result.update(dict(
+                failed=True,
+                changed=False,
+                msg="Use of templates is only allowed for local files."
+            ))
             return result
 
         if module_args["location"] == "LOCAL":

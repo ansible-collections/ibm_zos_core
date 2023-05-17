@@ -86,23 +86,23 @@ def test_uss_single_archive_with_mode(ansible_zos_module, format):
         hosts.all.file(path=USS_TEMP_DIR, state="directory")
         set_uss_test_env(hosts, USS_TEST_FILES)
         dest = f"{USS_TEMP_DIR}/archive.{format}"
+        dest_mode = "0755"
         archive_result = hosts.all.zos_archive( path=list(USS_TEST_FILES.keys()),
                                         dest=dest,
                                         format=dict(
                                             name=format
                                         ),
-                                        mode='u+rwX,g-rwx,o-rwx')
+                                        mode=dest_mode)
         print(archive_result.contacted.values())
-
+        stat_dest_res = hosts.all.stat(path=dest)
         for result in archive_result.contacted.values():
             print(result)
             assert result.get("failed", False) is False
             assert result.get("changed") is True
-            # Command to assert the file is in place
-            cmd_result = hosts.all.shell(cmd=f"ls {USS_TEMP_DIR}")
-            for c_result in cmd_result.contacted.values():
-                print(c_result)
-                assert "archive.{0}".format(format) in c_result.get("stdout")
+            for stat_result in stat_dest_res.contacted.values():
+                print(stat_result)
+                assert stat_result.get("stat").get("exists") is True
+                assert stat_result.get("stat").get("mode") == dest_mode
                 
     finally:
         hosts.all.file(path=f"{USS_TEMP_DIR}", state="absent")

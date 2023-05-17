@@ -27,6 +27,9 @@ options:
       - All variables defined in inventory files, vars files and the playbook
         will be passed to the template engine, as well as Ansible-defined ones,
         such as C(playbook_dir), C(ansible_version), etc.
+      - If variables defined in different scopes share the same name, Ansible will
+        apply variable precedence to them. You can see the complete precedence order
+        L(in Ansible's documentation,https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_variables.html#understanding-variable-precedence)
     type: bool
     default: false
   template_parameters:

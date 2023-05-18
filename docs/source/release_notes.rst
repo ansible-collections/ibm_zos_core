@@ -27,12 +27,14 @@ Bugfixes
 --------
 
 - ``zos_copy``
+
       - Fixes a bug where files not encoded in IBM-1047 would trigger an error while computing the record length for a new destination dataset.
       - Fixes a bug where the module would change the mode for a directory when copying in the contents of another directory.
       - Fixes a bug where the incorrect encoding would be used during normalization, particularly when processing newlines in files.
 - ``zos_encode`` - Fixes a bug where converted files were not tagged with the new code set afterwards.
 - ``zos_find`` - Fixes a bug where the module would stop searching and exit after the first value in a list was not found.
 - ``zos_lineinfile``
+
       - Removes use of Python f-string to ensure support for Python 2.7 on the controller.
       - Fixes a bug where an incorect error message would be raised when a USS source was not found.
 
@@ -172,8 +174,7 @@ Version 1.4.1
 =============
 
 Bug fixes
-
---------------------------
+---------
 
 * ``zos_copy``
 

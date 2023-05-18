@@ -103,16 +103,7 @@ _set_shell_array(){
 # Source scripts needed by this script.
 # ------------------------------------------------------------------------------
 
-# # TODO: put scripts in an array and source, cleans up this redudant code.
-
-# if [[ -e "shell-helper.sh" ]]; then
-# 	. ./shell-helper.sh
-# else
-#     echo "Unable to source file: 'shell-helper.sh', exiting."
-# 	exit 1
-# fi
-
-if [[ -e "mounts.env" ]]; then
+if [ -f "mounts.env" ]; then
 	. ./mounts.env
 else
     echo "Unable to source file: 'mounts.env', exiting."

@@ -33,7 +33,7 @@ fi
 # ------------------------------------------------------------------------------
 mounts_env="mounts.env"
 
-if [[ -e "$mounts_env" ]]; then
+if [ -f "$mounts_env" ]; then
     . ./$mounts_env
 else
     echo "Unable to source file: $mounts_env, exiting."
@@ -42,7 +42,7 @@ fi
 
 mount_sh="mounts.sh"
 
-if [[ -e "$mount_sh" ]]; then
+if [ -f "$mount_sh" ]; then
     . ./$mount_sh
 else
     echo "Unable to source file: $mount_sh, exiting."

@@ -422,14 +422,15 @@ file_encrypt(){
     option_out_file=$2
     option_pass=$3
 
-    if [ ! "$option_file" ] || [ ! "$option_out_file" ] ||   [ ! "$option_pass" ]; then
+    if [ ! "$option_file" ] || [ ! "$option_out_file" ] || [ ! "$option_pass" ]; then
         message "Unable to encrpyt file, missing option values."
         exit 1
     fi
     message "Encrypting file $option_file as file $option_out_file."
     touch $option_out_file
     chmod 700 $option_out_file
-	echo "${option_pass}" | openssl bf -a -in $option_file -out $option_out_file -pass stdin
+    echo "${option_pass}" | openssl enc -aes-256-cbc -a -salt -in $option_file -out $option_out_file -pass stdin
+	#echo "${option_pass}" | openssl bf -a -in $option_file -out $option_out_file -pass stdin
 }
 
 # ------------------------------------------------------------------------------
@@ -455,7 +456,8 @@ file_decrypt(){
         exit 1
     fi
     message "Decrypting the file ${option_file} as ${option_out_file}."
-	echo "${option_pass}" | openssl bf -d -a -in $option_file -out $option_out_file -pass stdin
+	#echo "${option_pass}" | openssl bf -d -a -in $option_file -out $option_out_file -pass stdin
+    echo "${option_pass}" | openssl enc -d -aes-256-cbc -a -in $option_file -out $option_out_file -pass stdin
     chmod 700 $option_out_file
 }
 

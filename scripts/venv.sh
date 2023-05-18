@@ -29,7 +29,7 @@ HOSTS_ALL=""
 
 # hosts_env="hosts.env"
 
-# if [[ -e "$hosts_env" ]]; then
+# if [ -f "$hosts_env" ]; then
 #     . ./$hosts_env
 # else
 #     echo "Unable to source file: $hosts_env, exiting."
@@ -38,7 +38,7 @@ HOSTS_ALL=""
 
 mount_sh="mounts.sh"
 
-if [[ -e "$mount_sh" ]]; then
+if [ -f "$mount_sh" ]; then
     . ./$mount_sh
 else
     echo "Unable to source file: $mount_sh, exiting."
@@ -77,7 +77,7 @@ echo_requirements(){
     requirements_common="requirements-common.env"
     unset REQ_COMMON
 
-    if [[ -e "$requirements_common" ]]; then
+    if [ -f "$requirements_common" ]; then
         . ./$requirements_common
     else
         echo "Unable to source file: $requirements_common, exiting."
@@ -103,7 +103,7 @@ echo_requirements(){
         unset requirements
         unset venv
         # Soure the file
-        if [[ -e "$file" ]]; then
+        if [ -f "$file" ]; then
             . ./$file
         else
             echo "Unable to source file: $file."
@@ -162,7 +162,6 @@ make_venv_dirs(){
 }
 
 write_requirements(){
-
     option_pass=$1
     unset requirements_common
     unset requirements
@@ -172,7 +171,7 @@ write_requirements(){
 
     # Source the requirements file for now, easy way to do this. Exit may not
     # not be needed but leave it for now.
-    if [[ -e "$requirements_common_file" ]]; then
+    if [ -f "$requirements_common_file" ]; then
         . ./$requirements_common_file
     else
         echo "Unable to source file: $requirements_common_file, exiting."
@@ -198,7 +197,7 @@ write_requirements(){
         unset requirements
         unset venv
         # Soure the file
-        if [[ -e "$file" ]]; then
+        if [ -f "$file" ]; then
             . ./$file
         else
             echo "Unable to source file: $file."
@@ -244,7 +243,8 @@ write_requirements(){
                 touch "${VENV_HOME_MANAGED}"/"${venv_name}"/info.env
                 # Probably can be a 600 - needs testing
                 chmod 700 "${VENV_HOME_MANAGED}"/"${venv_name}"/info.env
-                echo "${option_pass}" | openssl bf -d -a -in info.env.axx -out "${VENV_HOME_MANAGED}"/"${venv_name}"/info.env -pass stdin
+                #echo "${option_pass}" | openssl bf -d -a -in info.env.axx -out "${VENV_HOME_MANAGED}"/"${venv_name}"/info.env -pass stdin
+                echo "${option_pass}" | openssl enc -d -aes-256-cbc -a -in info.env.axx -out "${VENV_HOME_MANAGED}"/"${venv_name}"/info.env -pass stdin
             fi
         else
             echo "Not able to create managed venv path: ${VENV_HOME_MANAGED}/${venv_name} , min python required is ${py_req}, found version $VERSION_PYTHON"
@@ -263,7 +263,7 @@ create_venv_and_pip_install_req(){
         venv_name="venv"-$ansible_version
         echo $venv_name
 
-        if [[ -e $VENV_HOME_MANAGED/$venv_name/requirements.txt ]]; then
+        if [ -f $VENV_HOME_MANAGED/$venv_name/requirements.txt ]; then
             echo ${DIVIDER}
 		    echo "Creating python virtual environment: ${VENV_HOME_MANAGED}/${venv_name}."
 		    echo ${DIVIDER}
@@ -399,7 +399,7 @@ set_hosts_to_array(){
     # Source the envrionment file here rather than at the top of this script.
     # If you source it to early it will trigger the condtion below that was
     # removed from info.env.
-    if [[ -e "info.env" ]]; then
+    if [ -f "info.env" ]; then
         . ./info.env
     else # check if the env varas instead have been exported
         if [ -z "$USER" ] || [ -z "$PASS" ]  || [ -z "$HOST_SUFFIX" ]; then
@@ -411,7 +411,7 @@ set_hosts_to_array(){
 
     hosts_env="hosts.env"
 
-    if [[ -e "$hosts_env" ]]; then
+    if [ -f "$hosts_env" ]; then
         . ./$hosts_env
     else
         echo "Unable to source file: $hosts_env, exiting."
@@ -481,7 +481,7 @@ ssh_copy_key(){
 # Scp some scripts to the remote host and execute them.
 ################################################################################
 ssh_copy_files_and_mount(){
-    scp "$1" "$2" "$3" "${user}"@"${host}":/u/"${user}"
+    scp -O "$1" "$2" "$3" "${user}"@"${host}":/u/"${user}"
     ssh "${user}"@"${host}" "cd /u/"${user}"; chmod 755 *.sh; ./mounts.sh --mount; exit;"
 }
 

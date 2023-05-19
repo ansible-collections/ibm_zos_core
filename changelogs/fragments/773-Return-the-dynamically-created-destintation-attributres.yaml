@@ -1,5 +1,5 @@
 minor_changes:
-- zos_copy - zos_copy overs many edge cases for users who set a destination 
+- zos_copy - zos_copy covers many edge cases for users who set a destination 
   that does not exists but the information about creation was not included
   in the output. This enhancement adds the to the output information to about
   the destination created.

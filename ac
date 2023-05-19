@@ -552,7 +552,7 @@ host_nodes(){
 #->venv-setup:
 ## Create managed virtual environments using the latest (discovred) python3.
 ## If the password option is not provided, the info.env.axx file will not be
-## associated to the managed venv's, thust you will see messages asking you to
+## associated to the managed venv's, thus you will see messages asking you to
 ## export some variables such as USER, HOST_SUFFIX, etc. Choosing not to use
 ## the 'password' option should only an option when the utility can not decrypt.
 ## Usage: ac [--venv-setup] [--password 123456]

@@ -809,6 +809,7 @@ def test_data_set_temp_data_set_name_batch(ansible_zos_module):
     ["HFS", "ZFS"],
 )
 def test_filesystem_create_and_mount(ansible_zos_module, filesystem):
+    hosts = ansible_zos_module
     try:
         fulltest = True
         if filesystem.upper() == "HFS":
@@ -821,7 +822,6 @@ def test_filesystem_create_and_mount(ansible_zos_module, filesystem):
                 print( "skipping HFS test: zOS > 02.04" )
 
         if fulltest:
-            hosts = ansible_zos_module
             hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
             results = hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, type=filesystem)
             temp_dir_name = make_tempfile(hosts, directory=True)

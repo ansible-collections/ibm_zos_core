@@ -56,6 +56,7 @@ def test_uss_single_archive(ansible_zos_module, format):
         hosts.all.file(path=USS_TEMP_DIR, state="directory")
         set_uss_test_env(hosts, USS_TEST_FILES)
         dest = f"{USS_TEMP_DIR}/archive.{format}"
+        expected_state = STATE_ARCHIVED
         archive_result = hosts.all.zos_archive( path=list(USS_TEST_FILES.keys()),
                                         dest=dest,
                                         format=dict(
@@ -67,6 +68,7 @@ def test_uss_single_archive(ansible_zos_module, format):
             print(result)
             assert result.get("failed", False) is False
             assert result.get("changed") is True
+            assert result.get("dest_state") == expected_state
             # Command to assert the file is in place
             cmd_result = hosts.all.shell(cmd=f"ls {USS_TEMP_DIR}")
             for c_result in cmd_result.contacted.values():
@@ -87,6 +89,7 @@ def test_uss_single_archive_with_mode(ansible_zos_module, format):
         set_uss_test_env(hosts, USS_TEST_FILES)
         dest = f"{USS_TEMP_DIR}/archive.{format}"
         dest_mode = "0755"
+        expected_state = STATE_ARCHIVED
         archive_result = hosts.all.zos_archive( path=list(USS_TEST_FILES.keys()),
                                         dest=dest,
                                         format=dict(
@@ -99,6 +102,7 @@ def test_uss_single_archive_with_mode(ansible_zos_module, format):
             print(result)
             assert result.get("failed", False) is False
             assert result.get("changed") is True
+            assert result.get("dest_state") == expected_state
             for stat_result in stat_dest_res.contacted.values():
                 print(stat_result)
                 assert stat_result.get("stat").get("exists") is True
@@ -117,6 +121,7 @@ def test_uss_single_archive_with_force_option(ansible_zos_module, format):
         hosts.all.file(path=USS_TEMP_DIR, state="directory")
         set_uss_test_env(hosts, USS_TEST_FILES)
         dest = f"{USS_TEMP_DIR}/archive.{format}"
+        expected_state = STATE_ARCHIVED
         archive_result = hosts.all.zos_archive( path=list(USS_TEST_FILES.keys()),
                                         dest=dest,
                                         format=dict(
@@ -139,6 +144,7 @@ def test_uss_single_archive_with_force_option(ansible_zos_module, format):
             print(result)
             assert result.get("failed", False) is True
             assert result.get("changed") is False
+        
         set_uss_test_env(hosts, USS_TEST_FILES)
         archive_result = hosts.all.zos_archive( path=list(USS_TEST_FILES.keys()),
                                         dest=dest,
@@ -151,6 +157,7 @@ def test_uss_single_archive_with_force_option(ansible_zos_module, format):
             print(result)
             assert result.get("failed", False) is False
             assert result.get("changed") is True
+            assert result.get("dest_state") == expected_state
 
 
     finally:
@@ -171,19 +178,18 @@ def test_uss_archive_multiple_files(ansible_zos_module, format, path):
         hosts.all.file(path=USS_TEMP_DIR, state="directory")
         set_uss_test_env(hosts, USS_TEST_FILES)
         dest = f"{USS_TEMP_DIR}/archive.{format}"
+        expected_state = STATE_ARCHIVED
         archive_result = hosts.all.zos_archive( path=path.get("files"),
                                         dest=dest,
                                         format=dict(name=format),)
 
         # resulting archived tag varies in size when a folder is archived using zip.
         size = path.get("size")
-        # if format == "zip" and path.get("files") == f"{USS_TEMP_DIR}/":
-        #     size += 1
         
         for result in archive_result.contacted.values():
             print(result)
             assert result.get("changed") is True
-            # assert result.get("dest_state") == expected_state
+            assert result.get("dest_state") == expected_state
             assert len(result.get("archived")) == size
             # Command to assert the file is in place
             cmd_result = hosts.all.shell(cmd=f"ls {USS_TEMP_DIR}")
@@ -207,6 +213,7 @@ def test_uss_archive_multiple_files_with_exclude_path(ansible_zos_module, format
         hosts.all.file(path=USS_TEMP_DIR, state="directory")
         set_uss_test_env(hosts, USS_TEST_FILES)
         dest = f"{USS_TEMP_DIR}/archive.{format}"
+        expected_state = STATE_ARCHIVED
         archive_result = hosts.all.zos_archive( path=path.get("files"),
                                         dest=dest,
                                         format=dict(name=format),
@@ -219,7 +226,7 @@ def test_uss_archive_multiple_files_with_exclude_path(ansible_zos_module, format
             print(result)
             assert result.get("failed", False) is False
             assert result.get("changed") is True
-            # assert result.get("dest_state") == expected_state
+            assert result.get("dest_state") == expected_state
             assert len(result.get("archived")) == size
             # Command to assert the file is in place
             cmd_result = hosts.all.shell(cmd=f"ls {USS_TEMP_DIR}")
@@ -258,44 +265,6 @@ def test_uss_archive_remove_targets(ansible_zos_module, format):
                 
     finally:
         hosts.all.file(path=USS_TEMP_DIR, state="absent")
-
-
-# @pytest.mark.uss
-# @pytest.mark.parametrize("format", USS_FORMATS)
-# @pytest.mark.parametrize("path", [
-#     dict(files= f"{USS_TEMP_DIR}/*.txt", size=len(USS_TEST_FILES) - 1, exclude_path=USS_EXCLUSION_FILE),
-#     dict(files=list(USS_TEST_FILES.keys()),  size=len(USS_TEST_FILES) - 1, exclude_path=USS_EXCLUSION_FILE), 
-#     dict(files= f"{USS_TEMP_DIR}/" , size=len(USS_TEST_FILES) - 1, exclude_path=USS_EXCLUSION_FILE), 
-#     ])
-# def test_uss_archive_with_exclusion_list(ansible_zos_module, format, path):
-#     try:
-#         hosts = ansible_zos_module
-#         expected_state = STATE_ARCHIVED if format in ['tar', 'zip'] else STATE_COMPRESSED
-#         hosts.all.file(path=USS_TEMP_DIR, state="absent")
-#         hosts.all.file(path=USS_TEMP_DIR, state="directory")
-#         set_uss_test_env(hosts, USS_TEST_FILES)
-#         dest = f"{USS_TEMP_DIR}/archive.{format}"
-#         archive_result = hosts.all.zos_archive( path=path.get("files"),
-#                                         dest=dest,
-#                                         format=dict(name=format),
-#                                         exclude_path=path.get("exclude_path"))
-
-#         # resulting archived tag varies in size when a folder is archived using zip.
-#         size = path.get("size")
-#         if format == "zip" and path.get("files") == f"{USS_TEMP_DIR}/":
-#             size += 1
-        
-#         for result in archive_result.contacted.values():
-#             assert result.get("changed") is True
-#             # assert result.get("dest_state") == expected_state
-#             assert len(result.get("archived")) == size
-#             # Command to assert the file is in place
-#             cmd_result = hosts.all.shell(cmd=f"ls {USS_TEMP_DIR}")
-#             for c_result in cmd_result.contacted.values():
-#                 assert f"archive.{format}" in c_result.get("stdout")
-                
-#     finally:
-#         hosts.all.file(path=USS_TEMP_DIR, state="absent")
 
 
 ######################################################################

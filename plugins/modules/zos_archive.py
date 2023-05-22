@@ -54,6 +54,7 @@ options:
             - gz
             - tar
             - zip
+            - pax
             - terse
             - xmit
             - pax
@@ -124,12 +125,6 @@ options:
     type: bool
     required: false
     default: false
-  replace_dest:
-    description:
-      - Replace the existing archive C(dest).
-    type: bool
-    default: false
-    required: false
   tmp_hlq:
     description:
       - High Level Qualifier used for temporary datasets.
@@ -211,6 +206,7 @@ import tarfile
 import zipfile
 import abc
 import glob
+import re
 
 
 try:
@@ -221,6 +217,10 @@ except Exception:
 XMIT_RECORD_LENGTH = 80
 AMATERSE_RECORD_LENGTH = 1024
 
+STATE_ABSENT = 'absent'
+STATE_ARCHIVE = 'archive'
+STATE_COMPRESSED = 'compressed'
+STATE_INCOMPLETE = 'incomplete'
 
 def get_archive_handler(module):
     """
@@ -253,6 +253,9 @@ def expand_paths(paths):
         expanded_path.extend(e_paths)
     return expanded_path
 
+def is_archive(path):
+    return re.search(r'\.(tar|tar\.(gz|bz2|xz)|tgz|tbz2|zip|gz|bz2|xz|pax)$', os.path.basename(path), re.IGNORECASE)
+
 class Archive():
     def __init__(self, module):
         self.module = module
@@ -273,6 +276,7 @@ class Archive():
         self.arcroot = ""
         self.expanded_paths = ""
         self.expanded_exclude_paths = ""
+        self.dest_state = STATE_ABSENT
         # remove files from exclusion list
 
 
@@ -315,19 +319,29 @@ class Archive():
     def remove_targets(self):
         pass
 
+    def get_state(self):
+        if not self.dest_exists():
+            self.dest_state = STATE_ABSENT
+        else:
+            if is_archive(self.dest):
+                self.dest_state = STATE_ARCHIVE
+            if bool(self.not_found):
+                self.dest_state = STATE_INCOMPLETE
+
+
     @property
     def result(self):
         return {
             'archived': self.archived,
             'dest': self.dest,
-            # 'dest_state': self.dest_state,
-            'changed': self.changed,
             'arcroot': self.arcroot,
+            'dest_state': self.dest_state,
+            'changed': self.changed,
             'missing': self.not_found,
             'expanded_paths': list(self.expanded_paths),
             'expanded_exclude_paths': list(self.expanded_exclude_paths),
-            'tmp_debug': self.tmp_debug,
-            'targets': self.targets,
+            # 'tmp_debug': self.tmp_debug,
+            # 'targets': self.targets,
         }
 
 
@@ -404,6 +418,7 @@ class USSArchive(Archive):
                 else:
                     self.add(target, strip_prefix(self.arcroot, target))
         except Exception as e:
+            self.state = STATE_INCOMPLETE
             if self.format == 'tar':
                 archive_format = self.format
             else:
@@ -687,14 +702,13 @@ def run_module():
                         # default=dict(terse_pack="", xmit_log_dataset=""),
                     ),
                 )
-                # default=dict(name="", supotions=dict(terse_pack="", xmit_log_dataset="")),
+                # default=dict(name="", format_options=dict(terse_pack="", xmit_log_dataset="")),
             ),
             group=dict(type='str'),
             mode=dict(type='str'),
             owner=dict(type='str'),
             remove=dict(type='bool', default=False),
             exclusion_patterns=dict(type='list', elements='str'),
-            replace_dest=dict(type='bool', default=False),
             tmp_hlq=dict(type='str', default=''),
             force=dict(type='bool', default=False)
         ),
@@ -740,7 +754,7 @@ def run_module():
             ),
             default=dict(
                 name="",
-                supotions=dict(
+                format_options=dict(
                     terse_pack="SPACK",
                     xmit_log_dataset="",
                     use_adrdssu=False
@@ -752,7 +766,6 @@ def run_module():
         owner=dict(type='str'),
         remove=dict(type='bool', default=False),
         exclusion_patterns=dict(type='list', elements='str'),
-        replace_dest=dict(type='bool', default=False, alias='force'),
         tmp_hlq=dict(type='qualifier_or_empty', default=''),
         force=dict(type='bool', default=False)
     )
@@ -786,6 +799,7 @@ def run_module():
         if archive.dest_type() == "USS":
             archive.update_permissions()
         archive.changed = archive.is_different_from_original()
+    archive.get_state()
 
     module.exit_json(**archive.result)
 

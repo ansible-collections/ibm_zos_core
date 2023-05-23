@@ -809,8 +809,12 @@ def test_data_set_temp_data_set_name_batch(ansible_zos_module):
     ["HFS", "ZFS"],
 )
 def test_filesystem_create_and_mount(ansible_zos_module, filesystem):
+    fulltest = True
+    hosts = ansible_zos_module
+
     try:
-        fulltest = True
+        hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
+
         if filesystem.upper() == "HFS":
             result0 = hosts.all.shell(cmd="zinfo -t sys")
             for result in result0.contacted.values():

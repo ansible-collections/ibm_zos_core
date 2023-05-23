@@ -152,6 +152,7 @@ def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl):
             name=DEFAULT_DATA_SET_NAME, state="cataloged", volumes=DEFAULT_VOLUME
         )
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
+
         hosts.all.file(path=TEMP_PATH, state="directory")
         hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl), TEMP_PATH))
         results = hosts.all.zos_job_submit(
@@ -192,6 +193,8 @@ def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl):
         hosts.all.file(path=TEMP_PATH, state="absent")
         # Added volumes to force a catalog in case they were somehow uncataloged to avoid an duplicate on volume error
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent", volumes=[DEFAULT_VOLUME, DEFAULT_VOLUME2])
+        hosts.all.shell( cmd='echo "  DELETE USER.PRIVATE.TESTDS.INDEX FILE(DD1) VVR" | mvscmdauth --pgm=IDCAMS --sysprint=* --dd1={0},vol --sysin=stdin'.format(DEFAULT_VOLUME) )
+        hosts.all.shell( cmd='echo "  DELETE USER.PRIVATE.TESTDS.INDEX FILE(DD1) VVR" | mvscmdauth --pgm=IDCAMS --sysprint=* --dd1={0},vol --sysin=stdin'.format(DEFAULT_VOLUME2) )
 
 
 @pytest.mark.parametrize(
@@ -824,8 +827,6 @@ def test_filesystem_create_and_mount(ansible_zos_module, filesystem):
             if product_release >= "05" or product_version > "02":
                 fulltest = False
                 print( "skipping HFS test: zOS > 02.04" )
-            else:
-                print( "Allowing test of {0} on v{1} r{2}".format( filesystem, product_version, product_release ))
 
         if fulltest:
             hosts = ansible_zos_module

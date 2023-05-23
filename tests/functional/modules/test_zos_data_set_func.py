@@ -810,16 +810,19 @@ def test_data_set_temp_data_set_name_batch(ansible_zos_module):
 )
 def test_filesystem_create_and_mount(ansible_zos_module, filesystem):
     hosts = ansible_zos_module
+    fulltest = True
     try:
-        fulltest = True
         if filesystem.upper() == "HFS":
-            result0 = hosts.all.command(
-                cmd="uname -rsvI"
-            )
-            result_values = result0.split()
-            if result_values[1] >= "05.00" and result_values[2] >= "02":
-                fulltest = False
-                print( "skipping HFS test: zOS > 02.04" )
+            fulltest = False
+            print( "skipping HFS test: zOS > 02.04" )
+            # Need to verify the version o Z/OS in other way the code just return the EC machine
+            #result0 = hosts.all.command(
+            #    cmd="uname -v"
+            #)
+            #result_values = result0.split()
+            #if result_values[1] >= "05.00" and result_values[2] >= "02":
+            #    fulltest = False
+            #    print( "skipping HFS test: zOS > 02.04" )
 
         if fulltest:
             hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")

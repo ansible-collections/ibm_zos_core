@@ -815,7 +815,7 @@ def test_filesystem_create_and_mount(ansible_zos_module, filesystem):
     try:
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
 
-        if filesystem.upper() == "HFS":
+        if filesystem == "HFS":
             result0 = hosts.all.shell(cmd="zinfo -t sys")
             for result in result0.contacted.values():
                 sys_info = result.get("stdout_lines")
@@ -824,6 +824,8 @@ def test_filesystem_create_and_mount(ansible_zos_module, filesystem):
             if product_release >= "05" or product_version > "02":
                 fulltest = False
                 print( "skipping HFS test: zOS > 02.04" )
+            else:
+                print( "Allowing test of {0} on v{1} r{2}".format( filesystem, product_version, product_release ))
 
         if fulltest:
             hosts = ansible_zos_module

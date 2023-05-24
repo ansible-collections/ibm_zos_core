@@ -1,6 +1,5 @@
 bugfixes:
-  - zos_copy - Zos_copy did not encode inner content of a inner folder on 
-    the source once is copy to the destiny.
-    Fix now encodes all content in a source folder include inner files of
-    inner folders of the source.   
+  - zos_copy - Zos_copy did not encode inner content inside subdirectories once the source was copied to the destination.
+    Fix now encodes all content in a source directory, including 
+    subdirectories.   
     (https://github.com/ansible-collections/ibm_zos_core/pull/772).

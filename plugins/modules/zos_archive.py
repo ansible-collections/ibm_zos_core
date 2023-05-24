@@ -637,9 +637,14 @@ class XMITArchive(MVSArchive):
             path: {str}
             archive: {str}
         """
-        log_option = "LOGDSNAME\\({0}\\)".format(self.xmit_log_dataset) if self.xmit_log_dataset else "NOLOG"
-        tso_cmd = " tsocmd XMIT A.B DSN\\( \\'{0}\\' \\) OUTDSN\\( \\'{1}\\' \\) {2}".format(path, archive, log_option)
-        rc, out, err = self.module.run_command(tso_cmd)
+        log_option = "LOGDSNAME({0})".format(self.xmit_log_dataset) if self.xmit_log_dataset else "NOLOG"
+        xmit_cmd = """ XMIT A.B -
+        FILE(SYSUT1) OUTFILE(SYSUT2) -
+        {2} -
+        """.format(path, archive, log_option)
+        dds = {"SYSUT1": "{0},shr".format(path), "SYSUT2": archive}
+        rc, out, err = mvs_cmd.ikjeft01(cmd=xmit_cmd, authorized=True, dds=dds)
+        # rc, out, err = self.module.run_command(tso_cmd)
         if rc != 0:
             self.module.fail_json(
                 msg="Failed executing TSO XMIT to archive {0} into {1}".format(path, archive),

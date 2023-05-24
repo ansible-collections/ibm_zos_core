@@ -1046,18 +1046,18 @@ def test_backup_uss_file(ansible_zos_module, backup):
 @pytest.mark.uss
 def test_copy_file_insufficient_read_permission_fails(ansible_zos_module):
     hosts = ansible_zos_module
-    dest_path = "/tmp/testfile"
+    src_path = "/tmp/testfile"
     dest = "/tmp"
     try:
-        open(dest_path, "w").close()
-        os.chmod(dest_path, 0)
-        copy_res = hosts.all.zos_copy(src=dest_path, dest=dest)
+        open(src_path, "w").close()
+        os.chmod(src_path, 0)
+        copy_res = hosts.all.zos_copy(src=src_path, dest=dest)
         for result in copy_res.contacted.values():
             assert result.get("msg") is not None
             assert "read permission" in result.get("msg")
     finally:
-        if os.path.exists(dest_path):
-            os.remove(dest_path)
+        if os.path.exists(src_path):
+            os.remove(src_path)
 
 
 @pytest.mark.uss

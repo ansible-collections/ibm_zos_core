@@ -89,7 +89,8 @@ message(){
 ensure_managed_venv_exists(){
     if [ -z "$VENV" ]; then
         echo "Option $1 requires that a managed virtual environment be configured. "\
-        "Run $0 --vsetup to create managed viritual environments."
+        "Run $0 -venv-setup to create managed viritual environments. "\
+        "For additional optons, use $0 --help."
         exit 1
     fi
 }
@@ -339,7 +340,7 @@ ac_test(){
 		exit 1
 	fi
 
-    cd ${VENV_BIN}
+    #cd ${VENV_BIN}
 
     if [ "$file" ]; then
         if [ "$debug" ]; then
@@ -360,7 +361,7 @@ ac_test(){
         done
     fi
 
-    cd ${CURR_DIR}
+    #cd ${CURR_DIR}
 }
 
 # ------------------------------------------------------------------------------

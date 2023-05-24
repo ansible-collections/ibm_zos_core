@@ -812,13 +812,13 @@ def test_filesystem_create_and_mount(ansible_zos_module, filesystem):
     hosts = ansible_zos_module
     fulltest = True
     try:
-        if filesystem.upper() == "HFS":
+        if filesystem == "HFS":
             result0 = hosts.all.shell(cmd="zinfo -t sys")
             for result in result0.contacted.values():
                 sys_info = result.get("stdout_lines")
-            product_version = sys_info[4]
-            product_release = sys_info[5]
-            if product_release >= "05.00" and product_version >= "02":
+            product_version = sys_info[4].split()[1].strip("'")
+            product_release = sys_info[5].split()[1].strip("'")
+            if product_release >= "05" or product_version > "02":
                 fulltest = False
                 print( "skipping HFS test: zOS > 02.04" )
 

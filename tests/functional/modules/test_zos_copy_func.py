@@ -19,6 +19,7 @@ import shutil
 import re
 import tempfile
 from tempfile import mkstemp
+import time
 
 __metaclass__ = type
 
@@ -2781,4 +2782,45 @@ def test_copy_uss_file_to_existing_sequential_data_set_twice_with_tmphlq_option(
                 assert v_cp.get("rc") == 0
     finally:
         hosts.all.zos_data_set(name=dest, state="absent")
-        
+
+
+def test_Probe_force_work_better(ansible_zos_module):
+    DEFAULT_DATA_SET_NAME = "USER.PRIVATE.TESTDS"
+    MEMBER_1 = "USER.PRIVATE.TESTDS(MEM1)"
+    MEMBER_2 = "USER.PRIVATE.TESTDS(MEM2)"
+    text = "This text should no be copy to show error"
+    hosts = ansible_zos_module
+    try:
+        hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="present", type="pdse", replace=True)
+        hosts.all.zos_data_set(
+            batch=[
+                {
+                    "name": MEMBER_1,
+                    "type": "member",
+                    "state": "present",
+                    "replace": True,
+                },
+                {
+                    "name": MEMBER_2,
+                    "type": "member",
+                    "state": "present",
+                    "replace": True,
+                },
+            ]
+        )
+        hosts.all.zos_lineinfile(src=MEMBER_1, insertafter="EOF", line=text)
+        ensure_text_comparation = hosts.all.shell(cmd=r"""dcat "{0}" """.format(MEMBER_1))
+        hosts.all.shell(cmd=r"""dlockcmd "{0}" 360""".format(MEMBER_2))
+        time.sleep(5)
+        copy_block = hosts.all.zos_copy(src=MEMBER_1, dest=MEMBER_2, remote_src=True, force=True)
+        for result in copy_block.contacted.values():
+            assert result.get("changed") == True
+        time.sleep(5)
+        ensure_text = hosts.all.shell(cmd=r"""dcat "{0}" """.format(MEMBER_2))
+        for result in ensure_text.contacted.values():
+            example = result.get("stdout")
+        for result_origin in ensure_text_comparation.contacted.values():
+            example_org = result_origin.get("stdout")
+        assert example == example_org
+    finally:
+        hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")

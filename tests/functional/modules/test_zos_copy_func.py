@@ -1064,10 +1064,10 @@ def test_copy_file_insufficient_read_permission_fails(ansible_zos_module):
 @pytest.mark.parametrize("is_remote", [False, True])
 def test_copy_non_existent_file_fails(ansible_zos_module, is_remote):
     hosts = ansible_zos_module
-    dest_path = "/tmp/non_existent_src"
+    src_path = "/tmp/non_existent_src"
     dest = "/tmp"
 
-    copy_res = hosts.all.zos_copy(src=dest_path, dest=dest, remote_src=is_remote)
+    copy_res = hosts.all.zos_copy(src=src_path, dest=dest, remote_src=is_remote)
     for result in copy_res.contacted.values():
         assert result.get("msg") is not None
         assert "does not exist" in result.get("msg")

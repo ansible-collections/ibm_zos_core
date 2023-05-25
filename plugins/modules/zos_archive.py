@@ -474,6 +474,10 @@ class MVSArchive(Archive):
         super(MVSArchive, self).__init__(module)
         self.original_checksums = self.dest_checksums()
         self.use_adrdssu = module.params.get("format").get("format_options").get("use_adrdssu")
+        self.expanded_paths = self.expand_mvs_paths(self.paths)
+        self.tmp_debug = self.expanded_paths
+        self.expanded_exclude_paths = self.expand_mvs_paths(module.params['exclude_path'])
+        self.paths = sorted(set(self.expanded_paths) - set(self.expanded_exclude_paths))
 
     def open(self):
         pass
@@ -582,11 +586,23 @@ class MVSArchive(Archive):
             data_set.DataSet.ensure_absent(target)
         return
 
+    def expand_mvs_paths(self, paths):
+        expanded_path = []
+        for path in paths:
+            if '*' in path:
+                e_paths = datasets.listing(path)
+                e_paths = [path.name for path in e_paths]
+            else:
+                e_paths = [path]
+            expanded_path.extend(e_paths)
+        return expanded_path
 
 class AMATerseArchive(MVSArchive):
     def __init__(self, module):
         super(AMATerseArchive, self).__init__(module)
         self.pack_arg = module.params.get("format").get("format_options").get("terse_pack")
+        if self.pack_arg is None:
+            self.pack_arg = "SPACK"
 
     def add(self, path, archive):
         """

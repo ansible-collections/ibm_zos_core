@@ -30,7 +30,7 @@ def test_zos_job_query_func(ansible_zos_module):
     results = hosts.all.zos_job_query(job_name="*", owner="*")
     pprint(vars(results))
     for result in results.contacted.values():
-        # assert result.get("changed") is False
+        assert result.get("changed") is False
         assert result.get("jobs") is not None
 
 JCLQ_FILE_CONTENTS = """//HELLO    JOB (T043JM,JM00,1,0,0,0),'HELLO WORLD - JRM',CLASS=R,

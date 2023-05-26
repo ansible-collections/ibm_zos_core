@@ -205,7 +205,7 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, duration=
     # jls output: owner=job[0], name=job[1], id=job[2], status=job[3], rc=job[4]
     # e.g.: OMVSADM  HELLO    JOB00126 JCLERR   ?
     # listing(job_id, owner) in 1.2.0 has owner param, 1.1 does not
-    # jls output has expanded in zos 1.2.3 and later: jls -l -v shows headers
+    # jls output has expanded in zoau 1.2.3 and later: jls -l -v shows headers
     # jobclass=job[5] serviceclass=job[6] priority=job[7] asid=job[8]
     # creationdate=job[9] creationtime=job[10] queueposition=job[11]
 
@@ -248,6 +248,7 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, duration=
             job["ret_code"]["msg_text"] = entry.status
 
             # this section only works on zoau 1.2.3 vvv
+
             if ZOAU_API_VERSION > "1.2.2":
                 job["job_class"] = entry.job_class
                 job["svc_class"] = entry.svc_class

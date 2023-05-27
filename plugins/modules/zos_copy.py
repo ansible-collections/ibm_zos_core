@@ -1977,6 +1977,45 @@ def is_member_wildcard(src):
     )
 
 
+def get_attributes_of_any_dataset_created(
+    dest,
+    src_ds_type, 
+    src, 
+    src_name,
+    is_binary,
+    volume=None
+):
+    """
+    Get the attributes of dataset created by any case to ensure give the information
+    to the user
+
+    Arguments:
+        dest (str) -- Name of the destination data set.
+        src_ds_type (str) -- Source of the destination data set.
+        src (str) -- Name of the source data set, used as a model when appropiate.
+        src_name (str) -- Extraction of the source name without the member pattern.
+        is_binary (bool) -- Whether the data set will contain binary data.
+        volume (str, optional) -- Volume where the data set should be allocated into.
+
+    Returns:
+        params (dict) -- Parameters created for the dataset created as name, type,
+        space_primary, space_secondary, record_format, record_length, block_size and space_type
+    """
+    params = {}
+    if src_ds_type == "USS":
+        if os.path.isfile(src):
+            size = os.stat(src).st_size
+            params = get_data_set_attributes(dest, size=size, is_binary=is_binary,volume=volume)
+        else:
+            size = os.path.getsize(src)
+            params = get_data_set_attributes(dest, size=size, is_binary=is_binary,volume=volume)
+    else:
+        src_attributes = datasets.listing(src_name)[0]
+        size = int(src_attributes.total_space)
+        params = get_data_set_attributes(dest, size=size, is_binary=is_binary,volume=volume)
+    return params
+
+
 def allocate_destination_data_set(
     src,
     dest,
@@ -2006,7 +2045,9 @@ def allocate_destination_data_set(
 
     Returns:
         bool -- True if the data set was created, False otherwise.
-        dest_params -- values of the dataset allocated if exist is and empty dictionary
+        dest_params (dict) -- Parameters created for the dataset created as name, 
+        block_size, record_format, record_length, space_primary, space_secondary, 
+        space_type, type.
     """
     src_name = data_set.extract_dsname(src)
     is_dest_empty = data_set.DataSet.is_empty(dest) if dest_exists else True
@@ -2015,7 +2056,7 @@ def allocate_destination_data_set(
     # empty dataset was created for the user by an admin/operator, and they don't have permissions
     # to create new datasets.
     # These rules assume that source and destination types are compatible.
-    # Ensure if the dest_exist pass and empty dict
+    # To not generate and None return to the main code generate an empty dict of dest_params to return
     dest_params = {}
     if dest_exists and is_dest_empty:
         return False, dest_params
@@ -2089,7 +2130,7 @@ def allocate_destination_data_set(
         volumes = [volume] if volume else None
         data_set.DataSet.ensure_absent(dest, volumes=volumes)
         data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, vol=volume)
-
+    dest_params = get_attributes_of_any_dataset_created(dest, src_ds_type, src, src_name, is_binary, volume)
     return True, dest_params
 
 
@@ -2452,7 +2493,7 @@ def run_module(module, arg_def):
 
     try:
         if not is_uss:
-            res_args["changed"], res_args["dynamic_values_dest"] = allocate_destination_data_set(
+            res_args["changed"], res_args["dest_data_set_attrs"] = allocate_destination_data_set(
                 temp_path or src,
                 dest_name, src_ds_type,
                 dest_ds_type,

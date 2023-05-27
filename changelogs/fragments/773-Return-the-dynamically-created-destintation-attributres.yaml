@@ -1,6 +1,7 @@
 minor_changes:
-- zos_copy - zos_copy covers many edge cases for users who set a destination 
-  that does not exists but the information about creation was not included
-  in the output. This enhancement adds the to the output information to about
-  the destination created.
-  (https://github.com/ansible-collections/ibm_zos_core/pull/721)
+- zos_copy - zos_copy create data sets that not exist but the return output 
+  did  not included dynamic values created as Return the values of block_size, 
+  record_format, record_length, space_primary, space_secondary, space_type 
+  and type. The minor_change adds the MVS data set attributes of a dynamically 
+  created destination in the return output.
+  (https://github.com/ansible-collections/ibm_zos_core/pull/773)

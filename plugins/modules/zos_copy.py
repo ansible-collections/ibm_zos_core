@@ -563,6 +563,62 @@ dest:
     returned: success
     type: str
     sample: SAMPLE.SEQ.DATA.SET
+dest_created:
+    description: Boolean value that indicate the creation of dest.
+    returned: success and if dest is create by the module.
+    type: bool
+    sample: true
+destination_attributes:
+    description: Dictionary of values with values of a dest create by the
+    module.
+    returned: success and values of the dest created by module.
+    type: dict
+    contains:
+      block_size:
+        description:
+         Block size of the dataset.
+        type: int
+        sample: 32760
+      record_format:
+        description:
+         Type of record neither binary or not.
+        type: str
+        sample: FB
+      record_length:
+        description:
+         Length of the dataset.
+        type: int
+        sample: 45
+      space_primary:
+        description:
+         Needed size to allocate the dataset.
+        type: int
+        sample: 2
+      space_secondary:
+        description:
+         Needed secondary space to allocate dataset.
+        type: int
+        sample: 1
+      space_type:
+        description:
+         Extend of space use for dataset.
+        type: str
+        sample: K
+      type:
+        description:
+         Type of dataset allocated.
+        type: str
+        sample: PDSE
+    sample:
+        {
+            "block_size": 32760,
+            "record_format": "FB",
+            "record_length": 45,
+            "space_primary": 2,
+            "space_secondary": 1,
+            "space_type": "K",
+            "type": "PDSE"
+        }
 checksum:
     description: SHA256 checksum of the file after running zos_copy.
     returned: C(validate) is C(true) and if dest is USS

@@ -815,6 +815,7 @@ def test_filesystem_create_and_mount(ansible_zos_module, filesystem):
 
     try:
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
+
         if filesystem == "HFS":
             result0 = hosts.all.shell(cmd="zinfo -t sys")
             for result in result0.contacted.values():

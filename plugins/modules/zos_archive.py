@@ -289,7 +289,7 @@ class Archive():
 
     @abc.abstractmethod
     def dest_type(self):
-        return "USS"
+        pass
 
     @abc.abstractmethod
     def update_permissions(self):
@@ -297,11 +297,7 @@ class Archive():
 
     @abc.abstractmethod
     def find_targets(self):
-        for path in self.paths:
-            if os.path.exists(path):
-                self.targets.append(path)
-            else:
-                self.not_found.append(path)
+        pass
 
     @abc.abstractmethod
     def _get_checksums(self, path):

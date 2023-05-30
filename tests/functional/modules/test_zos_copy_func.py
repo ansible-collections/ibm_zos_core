@@ -29,8 +29,7 @@ DUMMY DATA ---- LINE 003 ------
 DUMMY DATA ---- LINE 004 ------
 DUMMY DATA ---- LINE 005 ------
 DUMMY DATA ---- LINE 006 ------
-DUMMY DATA ---- LINE 007 ------
-"""
+DUMMY DATA ---- LINE 007 ------"""
 
 DUMMY_DATA_SPECIAL_CHARS = """DUMMY DATA ---- LINE 001 ------
 DUMMY DATA ---- LINE ÁÁÁ------
@@ -485,21 +484,19 @@ def test_copy_subdirs_folders_and_validate_recursive_encoding(ansible_zos_module
         hosts.all.file(path=outer_file, state = "touch")
         hosts.all.shell(cmd="echo '{0}' > '{1}'".format(text_outer_file, outer_file))
         hosts.all.shell(cmd="echo '{0}' > '{1}'".format(text_inner_file, inner_file))
-        hosts.all.file(path=dest_path, state="directory")
         
-        copy_res = hosts.all.zos_copy(content=src_path, dest=dest_path, encoding={"from": "ISO8859-1", "to": "IBM-1047"})
+        copy_res = hosts.all.zos_copy(src=src_path, dest=dest_path, encoding={"from": "ISO8859-1", "to": "IBM-1047"}, remote_src=True)
 
         for result in copy_res.contacted.values():
             assert result.get("msg") is None
             assert result.get("changed") is True
 
-        stat_res = hosts.all.stat(path="/tmp/test/level_1")
+        stat_res = hosts.all.stat(path="/tmp/test/level_2/")
         for st in stat_res.contacted.values():
-            print(st)
             assert st.get("stat").get("exists") is True
 
-        full_inner_path = dest_path + "/level_1/level_2/text_B.txt"
-        full_outer_path = dest_path + "/level_1/text_A.txt"
+        full_inner_path = dest_path + "/level_2/text_B.txt"
+        full_outer_path = dest_path + "/text_A.txt"
         inner_file_text_aft_encoding = hosts.all.shell(cmd="cat {0}".format(full_inner_path))
         outer_file_text_aft_encoding = hosts.all.shell(cmd="cat {0}".format(full_outer_path))
         for text in outer_file_text_aft_encoding.contacted.values():
@@ -514,45 +511,42 @@ def test_copy_subdirs_folders_and_validate_recursive_encoding(ansible_zos_module
         hosts.all.file(path=dest_path, state="absent")
 
 
-# This test case should be reviewed every time changes in folders on EC 
 @pytest.mark.uss
 def test_copy_subdirs_folders_and_validate_recursive_encoding_local(ansible_zos_module):
     hosts = ansible_zos_module
     dest_path = "/tmp/test/"
-    src_path = "/etc/"
 
     try:
-        hosts.all.file(path=dest_path, state="directory")
+        source_1 = tempfile.TemporaryDirectory(prefix="level_", suffix="_1")
+        source = source_1.name
+        source_2 = tempfile.TemporaryDirectory(dir = source, prefix="level_", suffix="_2")
+        full_source = source_2.name
+        populate_dir(source)
+        populate_dir(full_source)
+        level_1 = os.path.basename(source)
+        level_2 = os.path.basename(full_source)
 
-        copy_res = hosts.all.zos_copy(content=src_path, dest=dest_path, encoding={"from": "ISO8859-1", "to": "IBM-1047"}, remote_src=False)
+        copy_res = hosts.all.zos_copy(src=source, dest=dest_path, encoding={"from": "ISO8859-1", "to": "IBM-1047"})
 
         for result in copy_res.contacted.values():
             assert result.get("msg") is None
             assert result.get("changed") is True
 
-        stat_res = hosts.all.stat(path="/tmp/etc/")
-        for st in stat_res.contacted.values():
-            assert st.get("stat").get("exists") is True
+        full_outer_file= "{0}/{1}/file3".format(dest_path, level_1)
+        full_iner_file= "{0}/{1}/{2}/file3".format(dest_path, level_1, level_2)
+        verify_copy_1 = hosts.all.shell(cmd="cat {0}".format(full_outer_file))
+        verify_copy_2 = hosts.all.shell(cmd="cat {0}".format(full_iner_file))
 
-        full_inner_path = dest_path + "etc/ssh/moduli"
-        full_outer_path = dest_path + "etc/profile"
-        inner_file_text_aft_encoding = hosts.all.shell(cmd="cat {0}".format(full_inner_path))
-        outer_file_text_aft_encoding = hosts.all.shell(cmd="cat {0}".format(full_outer_path))
-        for text in outer_file_text_aft_encoding.contacted.values():
-            text_outer = text.get("stdout")
-        for text in inner_file_text_aft_encoding.contacted.values():
-            text_inner = text.get("stdout")
-        res_text_inner_file = hosts.all.shell(cmd="cat {0}".format("/etc/ssh/moduli"))
-        res_text_outer_file = hosts.all.shell(cmd="cat {0}".format("/etc/profile"))
-        for text in res_text_inner_file.contacted.values():
-            text_inner_file = text.get("stdout")
-        for text in res_text_outer_file.contacted.values():
-            text_outer_file = text.get("stdout")
-
-        assert text_inner == text_inner_file
-        assert text_outer == text_outer_file
+        for result in verify_copy_1.contacted.values():
+            print(result)
+            assert result.get("stdout") == DUMMY_DATA
+        for result in verify_copy_2.contacted.values():
+            print(result)
+            assert result.get("stdout") == DUMMY_DATA
     finally:
-        hosts.all.file(path="/tmp/etc/", state="absent")
+        hosts.all.zos_data_set(name=dest_path, state="absent")
+        source_2.cleanup()
+        source_1.cleanup()
 
 
 @pytest.mark.uss

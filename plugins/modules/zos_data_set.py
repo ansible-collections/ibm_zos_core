@@ -155,6 +155,7 @@ options:
       - FBA
       - VBA
       - U
+      - F
     type: str
     default: FB
   sms_storage_class:
@@ -402,6 +403,7 @@ options:
           - FBA
           - VBA
           - U
+          - F
         type: str
         default: FB
       sms_storage_class:
@@ -672,6 +674,7 @@ DATA_SET_FORMATS = [
     "FBA",
     "VBA",
     "U",
+    "F",
 ]
 
 DEFAULT_RECORD_LENGTHS = {

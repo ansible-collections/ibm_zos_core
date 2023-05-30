@@ -574,41 +574,41 @@ destination_attributes:
     returned: success and values of the dest created by module.
     type: dict
     contains:
-      block_size:
-        description:
-         Block size of the dataset.
-        type: int
-        sample: 32760
-      record_format:
-        description:
-         Type of record neither binary or not.
-        type: str
-        sample: FB
-      record_length:
-        description:
-         Length of the dataset.
-        type: int
-        sample: 45
-      space_primary:
-        description:
-         Needed size to allocate the dataset.
-        type: int
-        sample: 2
-      space_secondary:
-        description:
-         Needed secondary space to allocate dataset.
-        type: int
-        sample: 1
-      space_type:
-        description:
-         Extend of space use for dataset.
-        type: str
-        sample: K
-      type:
-        description:
-         Type of dataset allocated.
-        type: str
-        sample: PDSE
+        block_size:
+            description:
+               Block size of the dataset.
+            type: int
+            sample: 32760
+        record_format:
+            description:
+               Type of record neither binary or not.
+            type: str
+            sample: FB
+        record_length:
+            description:
+               Length of the dataset.
+            type: int
+            sample: 45
+        space_primary:
+            description:
+               Needed size to allocate the dataset.
+            type: int
+            sample: 2
+        space_secondary:
+            description:
+               Needed secondary space to allocate dataset.
+            type: int
+            sample: 1
+        space_type:
+            description:
+               Extend of space use for dataset.
+            type: str
+            sample: K
+        type:
+            description:
+               Type of dataset allocated.
+            type: str
+            sample: PDSE
     sample:
         {
             "block_size": 32760,

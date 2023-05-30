@@ -2035,8 +2035,8 @@ def is_member_wildcard(src):
 
 def get_attributes_of_any_dataset_created(
     dest,
-    src_ds_type, 
-    src, 
+    src_ds_type,
+    src,
     src_name,
     is_binary,
     volume=None
@@ -2061,14 +2061,14 @@ def get_attributes_of_any_dataset_created(
     if src_ds_type == "USS":
         if os.path.isfile(src):
             size = os.stat(src).st_size
-            params = get_data_set_attributes(dest, size=size, is_binary=is_binary,volume=volume)
+            params = get_data_set_attributes(dest, size=size, is_binary=is_binary, volume=volume)
         else:
             size = os.path.getsize(src)
-            params = get_data_set_attributes(dest, size=size, is_binary=is_binary,volume=volume)
+            params = get_data_set_attributes(dest, size=size, is_binary=is_binary, volume=volume)
     else:
         src_attributes = datasets.listing(src_name)[0]
         size = int(src_attributes.total_space)
-        params = get_data_set_attributes(dest, size=size, is_binary=is_binary,volume=volume)
+        params = get_data_set_attributes(dest, size=size, is_binary=is_binary, volume=volume)
     return params
 
 
@@ -2101,8 +2101,8 @@ def allocate_destination_data_set(
 
     Returns:
         bool -- True if the data set was created, False otherwise.
-        dest_params (dict) -- Parameters created for the dataset created as name, 
-        block_size, record_format, record_length, space_primary, space_secondary, 
+        dest_params (dict) -- Parameters created for the dataset created as name,
+        block_size, record_format, record_length, space_primary, space_secondary,
         space_type, type.
     """
     src_name = data_set.extract_dsname(src)

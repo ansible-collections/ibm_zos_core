@@ -682,7 +682,7 @@ else:
     from re import match as fullmatch
 
 try:
-    from zoautil_py import datasets
+    from zoautil_py import datasets, opercmd
 except Exception:
     datasets = MissingZOAUImport()
 
@@ -2137,6 +2137,17 @@ def normalize_line_endings(src, encoding=None):
     return src
 
 
+def validate_shr(dataset_name, module):
+    command_dgrs = "D GRS,RES=(*,{0})".format(dataset_name)
+    response = opercmd.execute(command=command_dgrs)
+    stdout = response.stdout_response
+    module.fail_json(
+            msg="{0}".format(
+                stdout
+            )
+    return True
+
+
 def run_module(module, arg_def):
     # ********************************************************************
     # Verify the validity of module args. BetterArgParser raises ValueError
@@ -2344,6 +2355,30 @@ def run_module(module, arg_def):
                 dest_ds_type, src_ds_type
             )
         )
+
+    # ********************************************************************
+    # To validate the source and dest are not lock in a batch procces by
+    # the machine and not generate a false positive check the values.
+    # ********************************************************************
+    if src_ds_type != "USS" and dest_ds_type != "USS":
+        source_validation = validate_shr(src_ds_type, module)
+        dest_validation = validate_shr(dest_name, module)
+        if source_validation and dest_validation:
+            module.fail_json(
+            msg="DATASETS in lock unable to access'{0}' and '{1}'".format(
+                src_name, dest_name
+            )
+        )
+    elif dest_ds_type != "USS":
+        dest_validation = validate_shr(dest_name, module)
+        if dest_validation:
+            module.fail_json(
+            msg="DATASETS in lock unable to access'{0}'".format(
+                dest_name
+            )
+        )
+
+
 
     # ********************************************************************
     # Backup should only be performed if dest is an existing file or

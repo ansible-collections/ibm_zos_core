@@ -564,13 +564,13 @@ dest:
     type: str
     sample: SAMPLE.SEQ.DATA.SET
 dest_created:
-    description: Boolean value that indicate the creation of dest.
-    returned: success and if dest is create by the module.
+    description: Indicates whether the module created the destination.
+    returned: success and if dest was created by the module.
     type: bool
     sample: true
 destination_attributes:
-    description: Values of a dest create by the module.
-    returned: success and values of the dest created by module.
+    description: Attributes of a dest create by the module.
+    returned: success and destination was created by the module.
     type: dict
     contains:
       block_size:
@@ -580,27 +580,27 @@ destination_attributes:
         sample: 32760
       record_format:
         description:
-          Type of record neither binary or not.
+          Content data type encoding.
         type: str
         sample: FB
       record_length:
         description:
-          Length of the dataset.
+          Record length of the dataset.
         type: int
         sample: 45
       space_primary:
         description:
-          Needed size to allocate the dataset.
+          Allocated primary space for the dataset.
         type: int
         sample: 2
       space_secondary:
         description:
-          Needed secondary space to allocate dataset.
+          Allocated secondary space for the dataset.
         type: int
         sample: 1
       space_type:
         description:
-          Extend of space use for dataset.
+          Unit of measurement for space.
         type: str
         sample: K
       type:
@@ -2041,8 +2041,8 @@ def get_attributes_of_any_dataset_created(
     volume=None
 ):
     """
-    Get the attributes of dataset created by any case to ensure give the information
-    to the user
+    Get the attributes of dataset created by the function allocate_destination_data_set 
+    except for VSAM.
 
     Arguments:
         dest (str) -- Name of the destination data set.
@@ -2053,7 +2053,7 @@ def get_attributes_of_any_dataset_created(
         volume (str, optional) -- Volume where the data set should be allocated into.
 
     Returns:
-        params (dict) -- Parameters created for the dataset created as name, type,
+        params (dict) -- Parameters used for the dataset created as name, type,
         space_primary, space_secondary, record_format, record_length, block_size and space_type
     """
     params = {}
@@ -2100,7 +2100,7 @@ def allocate_destination_data_set(
 
     Returns:
         bool -- True if the data set was created, False otherwise.
-        dest_params (dict) -- Parameters created for the dataset created as name,
+        dest_params (dict) -- Parameters used for the dataset created as name,
         block_size, record_format, record_length, space_primary, space_secondary,
         space_type, type.
     """

@@ -2390,6 +2390,12 @@ def run_module(module, arg_def):
                 src_name, dest_name
             )
         )
+        elif not dest_validation:
+            module.fail_json(
+            msg="DATASET in lock, unable to wrote in '{0}'".format(
+                dest_name
+            )
+        )
     elif dest_ds_type != "USS":
         dest_validation = validate_disposition(dest_name)
         if not dest_validation:

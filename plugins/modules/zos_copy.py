@@ -2041,7 +2041,7 @@ def get_attributes_of_any_dataset_created(
     volume=None
 ):
     """
-    Get the attributes of dataset created by the function allocate_destination_data_set 
+    Get the attributes of dataset created by the function allocate_destination_data_set
     except for VSAM.
 
     Arguments:

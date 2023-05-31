@@ -28,6 +28,9 @@ body:
       description: Which version of ZOAU are you using?
       multiple: false
       options:
+        - v1.2.5
+        - v1.2.4
+        - v1.2.3
         - v1.2.2
         - v1.2.1
         - v1.2.0
@@ -42,6 +45,9 @@ body:
       description: Which version of IBM Enterprise Python are you using?
       multiple: false
       options:
+        - v3.14.x
+        - v3.13.x
+        - v3.12.x
         - v3.11.x
         - v3.10.x
         - v3.9.x
@@ -55,13 +61,17 @@ body:
       description: Which version of z/OS Ansible core collection are you using. If you are unsure, review the [documentation](https://ibm.github.io/z_ansible_collections_doc/faqs/faqs.html#how-do-i-update-a-collection-to-the-latest-version). 
       multiple: false
       options:
+        - v1.9.0
+        - v1.9.0-beta.1
+        - v1.8.0
+        - v1.8.0-beta.1
+        - v1.7.0
+        - v1.7.0-beta.1
+        - v1.6.0
+        - v1.6.0-beta.1
         - v1.5.0
-        - v1.4.0
+        - v1.4.1
         - v1.3.6
-        - v1.3.5
-        - v1.3.3
-        - v1.3.1
-        - v1.3.0
         - v1.2.1
         - v1.1.0
         - v1.0.0
@@ -75,6 +85,8 @@ body:
       multiple: false
       options:
         - latest
+        - v2.16.x
+        - v2.15.x
         - v2.14.x
         - v2.13.x
         - v2.12.x
@@ -89,6 +101,7 @@ body:
       description: What is the version of z/OS on the managed node?
       multiple: false
       options:
+        - v3.1
         - v2.5
         - v2.4
         - v2.3

@@ -2137,15 +2137,35 @@ def normalize_line_endings(src, encoding=None):
     return src
 
 
-def validate_shr(dataset_name, module):
+def validate_disposition(dataset_name):
+    """
+    Validate if the dataset is not in lock.
+
+    Arguments:
+        dataset_name (str) -- Name of the dataset to search if is on use.
+
+    Returns:
+        bool -- True if the dataset has not lock false if has lock.
+    """
+    # To not get false positives is send to validation dataset name
+    # to verify if is in lock or not by the response of the oprcmd
+    # "D GRS,RES=(*,{dataset_name})" do not contain EXC/SHR and SHARE
+    # also the len of response is above 4.
+    result = dict(changed=False)
+    result["stdout"] = []
     command_dgrs = "D GRS,RES=(*,{0})".format(dataset_name)
     response = opercmd.execute(command=command_dgrs)
     stdout = response.stdout_response
-    module.fail_json(
-            msg="{0}".format(
-                stdout
-            )
-    return True
+    if stdout is not None:
+            for out in stdout.split("\n"):
+                if out:
+                    result["stdout"].append(out)
+    if len(result["stdout"]) > 4 and "EXC/SHR" in stdout and "SHARE" in stdout:
+        return False
+    elif len(result["stdout"]) <= 4 and "NO REQUESTORS FOR RESOURCE" in stdout:
+        return True
+    else:
+        return True
 
 
 def run_module(module, arg_def):
@@ -2357,23 +2377,24 @@ def run_module(module, arg_def):
         )
 
     # ********************************************************************
-    # To validate the source and dest are not lock in a batch procces by
-    # the machine and not generate a false positive check the values.
+    # To validate the source and dest are not lock in a batch process by
+    # the machine and not generate a false positive check the disposition
+    # for try to write in dest and if both src and dest are in lock.
     # ********************************************************************
     if src_ds_type != "USS" and dest_ds_type != "USS":
-        source_validation = validate_shr(src_ds_type, module)
-        dest_validation = validate_shr(dest_name, module)
-        if source_validation and dest_validation:
+        source_validation = validate_disposition(src_name)
+        dest_validation = validate_disposition(dest_name)
+        if not source_validation and not dest_validation:
             module.fail_json(
-            msg="DATASETS in lock unable to access'{0}' and '{1}'".format(
+            msg="DATASETS in lock, unable to access'{0}' without force and unable to write in'{1}'".format(
                 src_name, dest_name
             )
         )
     elif dest_ds_type != "USS":
-        dest_validation = validate_shr(dest_name, module)
-        if dest_validation:
+        dest_validation = validate_disposition(dest_name)
+        if not dest_validation:
             module.fail_json(
-            msg="DATASETS in lock unable to access'{0}'".format(
+            msg="DATASET in lock, unable to wrote in '{0}'".format(
                 dest_name
             )
         )

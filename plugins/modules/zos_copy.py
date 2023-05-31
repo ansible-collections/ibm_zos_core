@@ -2151,7 +2151,7 @@ def validate_disposition(dataset_name):
     # to verify if is in lock or not by the response of the oprcmd
     # "D GRS,RES=(*,{dataset_name})" do not contain EXC/SHR and SHARE
     # also the len of response is above 4.
-    result = dict(changed=False)
+    result = dict()
     result["stdout"] = []
     command_dgrs = "D GRS,RES=(*,{0})".format(dataset_name)
     response = opercmd.execute(command=command_dgrs)

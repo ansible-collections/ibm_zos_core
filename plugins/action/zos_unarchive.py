@@ -22,12 +22,11 @@ import copy
 from ansible_collections.ibm.ibm_zos_core.plugins.action.zos_copy import ActionModule as ZosCopyActionModule
 
 
-
-
 USS_SUPPORTED_FORMATS = ['tar', 'zip', 'bz2', 'pax', 'gz']
 MVS_SUPPORTED_FORMATS = ['terse', 'xmit']
 
 display = Display()
+
 
 class ActionModule(ActionBase):
     def run(self, tmp=None, task_vars=None):
@@ -40,7 +39,7 @@ class ActionModule(ActionBase):
             return result
 
         module_args = self._task.args.copy()
-        
+
         if module_args.get("remote_src", False):
             result.update(
                 self._execute_module(
@@ -50,13 +49,13 @@ class ActionModule(ActionBase):
                 )
             )
         else:
-            source = module_args.get("path") if  module_args.get("path") is not None else  module_args.get("src")
+            source = module_args.get("path") if module_args.get("path") is not None else module_args.get("src")
             force = module_args.get("force")
             format = self._task.args.get("format")
             format_name = format.get("name")
             copy_module_args = dict()
-            dest_data_set=dict()
-            dest=""
+            dest_data_set = dict()
+            dest = ""
             if source.startswith('~'):
                 source = os.path.expanduser(source)
             source = os.path.realpath(source)
@@ -68,10 +67,11 @@ class ActionModule(ActionBase):
             elif format_name in MVS_SUPPORTED_FORMATS:
                 tmp_hlq = module_args.get("tmp_hlq") if module_args.get("tmp_hlq") is not None else ""
                 cmd_res = self._execute_module(
-                    module_name="command", 
+                    module_name="command",
                     module_args=dict(
-                        _raw_params="mvstmp {0}".format(tmp_hlq)),
-                        task_vars=task_vars,
+                        _raw_params="mvstmp {0}".format(tmp_hlq)
+                    ),
+                    task_vars=task_vars,
                 )
                 dest = cmd_res.get("stdout")
                 if format_name == 'terse':
@@ -81,7 +81,6 @@ class ActionModule(ActionBase):
             else:
                 # Raise unsupported format name
                 None
-
 
             copy_module_args.update(
                 dict(
@@ -101,14 +100,6 @@ class ActionModule(ActionBase):
                                                          templar=self._templar,
                                                          shared_loader_obj=self._shared_loader_obj)
             result.update(zos_copy_action_module.run(task_vars=task_vars))
-            
-            # result.update(
-            #     self._execute_module(
-            #         module_name="ibm.ibm_zos_core.zos_copy",
-            #         module_args=copy_module_args,
-            #         task_vars=task_vars,
-            #     )
-            # )
 
             module_args["path"] = dest
             display.vvv(u"Copy args {0}".format(result), host=self._play_context.remote_addr)

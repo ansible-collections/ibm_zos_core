@@ -88,11 +88,11 @@ class Unarchive(abc.ABC):
     @abc.abstractmethod
     def extract_path(self):
         pass
-    
+
     @abc.abstractmethod
-    def list_content(self):
+    def _list_content(self):
         pass
-    
+
     def path_exists(self):
         return self.path and os.path.exists(self.path)
 
@@ -106,16 +106,17 @@ class Unarchive(abc.ABC):
             'missing': self.missing,
         }
 
+
 class TarUnarchive(Unarchive):
     def __init__(self, module):
         super(TarUnarchive, self).__init__(module)
-    
+
     def open(self, path):
         """Open an archive using tarfile lib for read.
-        
+
         Arguments:
             path(str): Path to a tar, pax, gz or bz2 file to be opened.
-        
+
         Returns:
             Return a TarFile object for the path name.
         """
@@ -130,11 +131,14 @@ class TarUnarchive(Unarchive):
         return file
 
     def list_archive_content(self, path):
+        self.targets = self._list_content(self.path)
+
+    def _list_content(self, path):
         """Returns a list of members in an archive.
-        
+
         Arguments:
             path(str): Path to a tar, pax, gz or bz2 file to list its contents.
-        
+
         Returns:
             list(str): List of members inside the archive.
         """
@@ -143,20 +147,16 @@ class TarUnarchive(Unarchive):
         self.file.close()
         return members
 
-    def list_content(self):
-        self.targets = self.list_archive_content(self.path)
-        return
-
     def extract_path(self):
         """Unpacks the contents of the archive stored in path into dest folder.
-        
+
         """
         original_working_dir = os.getcwd()
         # The function gets relative paths, so it changes the current working
         # directory to the root of src.
         os.chdir(self.dest)
         self.file = self.open(self.path)
-        
+
         files_in_archive = self.file.getnames()
         if self.include:
             for path in self.include:
@@ -186,7 +186,7 @@ class ZipUnarchive(Unarchive):
 
     def open(self, path):
         """Unpacks the contents of the archive stored in path into dest folder.
-        
+
         """
         try:
             file = zipfile.ZipFile(path, 'r', zipfile.ZIP_DEFLATED, True)
@@ -196,12 +196,15 @@ class ZipUnarchive(Unarchive):
             )
         return file
 
-    def list_archive_content(self, path):
+    def list_archive_content(self):
+        self.targets = self._list_content(self.path)
+
+    def _list_content(self, path):
         """Returns a list of members in an archive.
-        
+
         Arguments:
             path(str): Path to a tar, pax, gz or bz2 file to list its contents.
-        
+
         Returns:
             list(str): List of members inside the archive.
         """
@@ -210,16 +213,12 @@ class ZipUnarchive(Unarchive):
         self.file.close()
         return members
 
-    def list_content(self):
-        self.targets = self.list_archive_content(self.path)
-        return 
-
     def extract_path(self):
         """Returns a list of members in an archive.
-        
+
         Arguments:
             path(str): Path to a tar, pax, gz or bz2 file to list its contents.
-        
+
         Returns:
             list(str): List of members inside the archive.
         """
@@ -259,9 +258,9 @@ class MVSUnarchive(Unarchive):
         self.use_adrdssu = self.format_options.get("use_adrdssu")
         self.dest_data_set = module.params.get("dest_data_set")
         self.dest_data_set = dict() if self.dest_data_set is None else self.dest_data_set
-    
-    def create_dest_data_set(
-            self, 
+
+    def _create_dest_data_set(
+            self,
             name=None,
             replace=None,
             type=None,
@@ -279,13 +278,13 @@ class MVSUnarchive(Unarchive):
             sms_management_class=None,
             volumes=None,
             tmp_hlq=None,
-            force=None,            
-        ):
-        """Create a temporary data set. 
-        
+            force=None,
+    ):
+        """Create a temporary data set.
+
         Arguments:
             tmp_hlq(str): A HLQ specified by the user for temporary data sets.
-        
+
         Returns:
             str: Name of the temporary data set created.
         """
@@ -298,45 +297,45 @@ class MVSUnarchive(Unarchive):
                 hlq = hlq.replace('\n', '')
             cmd = "mvstmphelper {0}.RESTORE".format(hlq)
             rc, temp_ds, err = self.module.run_command(cmd)
-            arguments.update(name = temp_ds.replace('\n', '')) 
+            arguments.update(name=temp_ds.replace('\n', ''))
         if record_format is None:
-            arguments.update(record_format = "FB")
+            arguments.update(record_format="FB")
         if record_length is None:
-            arguments.update(record_length = 80)
+            arguments.update(record_length=80)
         if type is None:
-            arguments.update(type = "SEQ")
+            arguments.update(type="SEQ")
         arguments.pop("self")
         changed = data_set.DataSet.ensure_present(**arguments)
         return arguments["name"], changed
 
-    def get_include_data_sets_cmd(self):
+    def _get_include_data_sets_cmd(self):
         include_cmd = "INCL( "
         for include_ds in self.include:
             include_cmd += " '{0}', - \n".format(include_ds)
         include_cmd += " ) - \n"
         return include_cmd
 
-    def get_exclude_data_sets_cmd(self):
+    def _get_exclude_data_sets_cmd(self):
         exclude_cmd = "EXCL( - \n"
         for exclude_ds in self.exclude:
             exclude_cmd += " '{0}', - \n".format(exclude_ds)
         exclude_cmd += " ) - \n"
         return exclude_cmd
 
-    def get_volumes(self):
+    def _get_volumes(self):
         volumes_cmd = "OUTDYNAM( - \n"
         for volume in self.volumes:
             volumes_cmd += " ('{0}'), - \n".format(volume)
         volumes_cmd += " ) - \n"
         return volumes_cmd
 
-    def restore(self, source):
+    def _restore(self, source):
         """
         Calls ADDRSU using RESTORE to unpack the dump datasets.
 
         Arguments:
             source(str): Name of the data set to use as archive in ADRDSSU restore operation.
-        
+
         Returns:
             int: Return code result of restore operation.
         """
@@ -344,12 +343,12 @@ class MVSUnarchive(Unarchive):
         volumes = ""
         force = "REPLACE -\n TOLERATE(ENQFAILURE) " if self.force else ""
         if self.include:
-            filter = self.get_include_data_sets_cmd()
+            filter = self._get_include_data_sets_cmd()
         if self.exclude:
-            filter = self.get_exclude_data_sets_cmd()
+            filter = self._get_exclude_data_sets_cmd()
         if self.volumes:
-            volumes = self.get_volumes()
-        restore_cmd = """ RESTORE INDD(ARCHIVE) - 
+            volumes = self._get_volumes()
+        restore_cmd = """ RESTORE INDD(ARCHIVE) -
                           DS( -
                             {0} ) -
                             {1} -
@@ -357,9 +356,9 @@ class MVSUnarchive(Unarchive):
                         {2} """.format(filter, volumes, force)
         dds = dict(archive="{0},old".format(source))
         rc, out, err = mvs_cmd.adrdssu(cmd=restore_cmd, dds=dds, authorized=True)
-        self.debug = self.get_restored_datasets(out)
+        self.debug = self._get_restored_datasets(out)
         if rc != 0:
-            unrestore_data_sets = self.get_unrestored_datasets(out)
+            unrestore_data_sets = self._get_unrestored_datasets(out)
             unrestore_data_sets = ", ".join(unrestore_data_sets)
             self.clean_environment(data_sets=[source], uss_files=[], remove_targets=True)
             self.module.fail_json(
@@ -373,8 +372,8 @@ class MVSUnarchive(Unarchive):
 
     def path_exists(self):
         return data_set.DataSet.data_set_exists(self.path)
-    
-    def get_restored_datasets(self, output):
+
+    def _get_restored_datasets(self, output):
         ds_list = list()
         find_ds_list = re.findall(r"SUCCESSFULLY PROCESSED\n(?:.*\n)*", output)
         if find_ds_list:
@@ -382,7 +381,7 @@ class MVSUnarchive(Unarchive):
         self.targets = ds_list
         return ds_list
 
-    def get_unrestored_datasets(self, output):
+    def _get_unrestored_datasets(self, output):
         ds_list = list()
         output = output.split("SUCCESSFULLY PROCESSED")[0]
         find_ds_list = re.findall(r"NOT PROCESSED FROM THE LOGICALLY FORMATTED DUMP TAPE DUE TO \n(?:.*\n)*", output)
@@ -393,46 +392,50 @@ class MVSUnarchive(Unarchive):
     @abc.abstractmethod
     def unpack(self):
         pass
-    
+
     def extract_path(self):
         """Extract the MVS path contents.
-        
+
         """
         temp_ds = ""
         if not self.use_adrdssu:
-            temp_ds, _ = self.create_dest_data_set(**self.dest_data_set)
+            temp_ds, rc = self._create_dest_data_set(**self.dest_data_set)
             rc = self.unpack(self.path, temp_ds)
         else:
-            temp_ds, _ = self.create_dest_data_set(type="SEQ", record_format="U", tmp_hlq=self.tmphlq, replace=True)
+            temp_ds, rc = self._create_dest_data_set(type="SEQ", record_format="U", tmp_hlq=self.tmphlq, replace=True)
             self.unpack(self.path, temp_ds)
-            rc = self.restore(temp_ds)
+            rc = self._restore(temp_ds)
             datasets.delete(temp_ds)
         self.changed = not rc
         return
 
-    def list_content(self, source):
+    def _list_content(self, source):
         restore_cmd = " RESTORE INDD(ARCHIVE) DS(INCL(**)) "
         cmd = " mvscmdauth --pgm=ADRDSSU --archive={0},old --args='TYPRUN=NORUN' --sysin=stdin --sysprint=*".format(source)
         rc, out, err = self.module.run_command(cmd, data=restore_cmd)
-        self.get_restored_datasets(out)
-    
+        self._get_restored_datasets(out)
+
     def list_archive_content(self):
         try:
-            temp_ds = self.create_dest_data_set(type="SEQ", record_format="U", tmp_hlq=self.tmphlq, replace=True)
+            temp_ds = self._create_dest_data_set(type="SEQ", record_format="U", tmp_hlq=self.tmphlq, replace=True)
             self.unpack(self.path, temp_ds)
-            self.list_content(temp_ds)
+            self._list_content(temp_ds)
         finally:
             datasets.delete(temp_ds)
 
-    def clean_environment(self, data_sets=[], uss_files=[], remove_targets=False):
+    def clean_environment(self, data_sets=None, uss_files=None, remove_targets=False):
         """Removes any allocated data sets that won't be needed after module termination.
         Arguments:
             data_sets - {list(str)} : list of data sets to remove
             uss_files - {list(str)} : list of uss files to remove
             remove_targets - bool : Indicates if already unpacked data sets need to be removed too.
         """
-        for ds in data_sets:
-            data_set.DataSet.ensure_absent(ds)
+        if data_set is not None:
+            for ds in data_sets:
+                data_set.DataSet.ensure_absent(ds)
+        if uss_files is not None:
+            for file in uss_files:
+                os.remove(file)
         if remove_targets:
             for target in self.targets:
                 data_set.DataSet.ensure_absent(target)
@@ -441,7 +444,7 @@ class MVSUnarchive(Unarchive):
 class AMATerseUnarchive(MVSUnarchive):
     def __init__(self, module):
         super(AMATerseUnarchive, self).__init__(module)
-    
+
     def unpack(self, path, dest):
         """
         Unpacks using AMATerse, assumes the data set has only been packed once.
@@ -461,7 +464,7 @@ class AMATerseUnarchive(MVSUnarchive):
 class XMITUnarchive(MVSUnarchive):
     def __init__(self, module):
         super(XMITUnarchive, self).__init__(module)
-    
+
     def unpack(self, path, dest):
         """
         Unpacks using XMIT.
@@ -495,6 +498,7 @@ def get_unarchive_handler(module):
         return XMITUnarchive(module)
     return ZipUnarchive(module)
 
+
 def run_module():
     module = AnsibleModule(
         argument_spec=dict(
@@ -506,37 +510,43 @@ def run_module():
             format=dict(
                 type='dict',
                 required=False,
-                name = dict(
+                name=dict(
                     type='str',
                     default='gz',
                     choices=['bz2', 'gz', 'tar', 'zip', 'terse', 'xmit', 'pax']
-                    ),
-                    format_options=dict(
-                        type='dict',
-                        required=False,
-                        options=dict(
-                            xmit_log_dataset=dict(
-                                type='str',
-                                required=False,
-                            ),
-                            dest_volumes=dict(
-                                type='list',
-                                elements='str',
-                            ),
-                            use_adrdssu=dict(
-                                type='bool',
-                                default=False,
-                            )
-                        ),
-                        default=dict(xmit_log_dataset="",
-                                     dest_volumes=[],
-                                     use_adrdssu=False,)
-                    ),
-                default=dict(name="", supotions=dict(
-                                                    xmit_log_dataset="",
-                                                    dest_volumes=[],
-                                                    use_adrdssu=False,)),
                 ),
+                format_options=dict(
+                    type='dict',
+                    required=False,
+                    options=dict(
+                        xmit_log_dataset=dict(
+                            type='str',
+                            required=False,
+                        ),
+                        dest_volumes=dict(
+                            type='list',
+                            elements='str',
+                        ),
+                        use_adrdssu=dict(
+                            type='bool',
+                            default=False,
+                        )
+                    ),
+                    default=dict(
+                        xmit_log_dataset="",
+                        dest_volumes=[],
+                        use_adrdssu=False,
+                    )
+                ),
+                default=dict(
+                    name="",
+                    supotions=dict(
+                        xmit_log_dataset="",
+                        dest_volumes=[],
+                        use_adrdssu=False,
+                    )
+                ),
+            ),
             dest_data_set=dict(
                 type='dict',
                 required=False,
@@ -577,8 +587,8 @@ def run_module():
             tmp_hlq=dict(type='str', default=''),
             force=dict(type='bool', default=False),
             remote_src=dict(type='bool', default=False),
-            ),
-        mutually_exclusive = [
+        ),
+        mutually_exclusive=[
             ['include', 'exclude'],
         ],
         supports_check_mode=True,
@@ -594,33 +604,33 @@ def run_module():
             type='dict',
             required=False,
             options=dict(
-                    name=dict(
+                name=dict(
                     type='str',
                     default='gz',
                     choices=['bz2', 'gz', 'tar', 'zip', 'terse', 'xmit', 'pax']
-                    ),
-                    format_options=dict(
-                        type='dict',
-                        required=False,
-                        options=dict(
-                            xmit_log_dataset=dict(
-                                type='str',
-                                required=False,
-                            ),
-                            dest_volumes=dict(
-                                type='list',
-                                elements='str'
-                            ),
-                            use_adrdssu=dict(
-                                type='bool',
-                                default=False,
-                            ),
-                        ),
-                        default=dict(xmit_log_dataset=""),
-                    )
                 ),
-            default=dict(name="", supotions=dict(xmit_log_dataset="")),
+                format_options=dict(
+                    type='dict',
+                    required=False,
+                    options=dict(
+                        xmit_log_dataset=dict(
+                            type='str',
+                            required=False,
+                        ),
+                        dest_volumes=dict(
+                            type='list',
+                            elements='str'
+                        ),
+                        use_adrdssu=dict(
+                            type='bool',
+                            default=False,
+                        ),
+                    ),
+                    default=dict(xmit_log_dataset=""),
+                )
             ),
+            default=dict(name="", supotions=dict(xmit_log_dataset="")),
+        ),
         dest_data_set=dict(
             arg_type='dict',
             required=False,
@@ -645,7 +655,7 @@ def run_module():
         ),
         tmp_hlq=dict(type='qualifier_or_empty', default=''),
         force=dict(type='bool', default=False),
-        mutually_exclusive = [
+        mutually_exclusive=[
             ['include', 'exclude'],
         ],
         remote_src=dict(type='bool', default=False),
@@ -669,6 +679,7 @@ def run_module():
     unarchive.extract_path()
 
     module.exit_json(**unarchive.result)
+
 
 def main():
     run_module()

@@ -222,6 +222,7 @@ STATE_ARCHIVE = 'archive'
 STATE_COMPRESSED = 'compressed'
 STATE_INCOMPLETE = 'incomplete'
 
+
 def get_archive_handler(module):
     """
     Return the proper archive handler based on archive format.
@@ -240,8 +241,10 @@ def get_archive_handler(module):
         return XMITArchive(module)
     return ZipArchive(module)
 
+
 def strip_prefix(prefix, string):
     return string[len(prefix):] if string.startswith(prefix) else string
+
 
 def expand_paths(paths):
     expanded_path = []
@@ -253,8 +256,10 @@ def expand_paths(paths):
         expanded_path.extend(e_paths)
     return expanded_path
 
+
 def is_archive(path):
     return re.search(r'\.(tar|tar\.(gz|bz2|xz)|tgz|tbz2|zip|gz|bz2|xz|pax)$', os.path.basename(path), re.IGNORECASE)
+
 
 class Archive():
     def __init__(self, module):
@@ -277,8 +282,6 @@ class Archive():
         self.expanded_paths = ""
         self.expanded_exclude_paths = ""
         self.dest_state = STATE_ABSENT
-        # remove files from exclusion list
-
 
     def targets_exist(self):
         return bool(self.targets)
@@ -323,7 +326,6 @@ class Archive():
                 self.dest_state = STATE_ARCHIVE
             if bool(self.not_found):
                 self.dest_state = STATE_INCOMPLETE
-
 
     @property
     def result(self):
@@ -396,7 +398,7 @@ class USSArchive(Archive):
                 os.removedirs(target)
             else:
                 os.remove(target)
-    
+
     def archive_targets(self):
         self.file = self.open(self.dest)
 
@@ -431,6 +433,7 @@ class USSArchive(Archive):
         self._add(source, arcname)
         self.archived.append(source)
 
+
 class TarArchive(USSArchive):
     def __init__(self, module):
         super(TarArchive, self).__init__(module)
@@ -451,7 +454,7 @@ class TarArchive(USSArchive):
 class ZipArchive(USSArchive):
     def __init__(self, module):
         super(ZipArchive, self).__init__(module)
-    
+
     def open(self, path):
         try:
             file = zipfile.ZipFile(path, 'w', zipfile.ZIP_DEFLATED, True)
@@ -593,6 +596,7 @@ class MVSArchive(Archive):
             expanded_path.extend(e_paths)
         return expanded_path
 
+
 class AMATerseArchive(MVSArchive):
     def __init__(self, module):
         super(AMATerseArchive, self).__init__(module)
@@ -652,8 +656,8 @@ class XMITArchive(MVSArchive):
         log_option = "LOGDSNAME({0})".format(self.xmit_log_dataset) if self.xmit_log_dataset else "NOLOG"
         xmit_cmd = """ XMIT A.B -
         FILE(SYSUT1) OUTFILE(SYSUT2) -
-        {2} -
-        """.format(path, archive, log_option)
+        {0} -
+        """.format(log_option)
         dds = {"SYSUT1": "{0},shr".format(path), "SYSUT2": archive}
         rc, out, err = mvs_cmd.ikjeft01(cmd=xmit_cmd, authorized=True, dds=dds)
         # rc, out, err = self.module.run_command(tso_cmd)

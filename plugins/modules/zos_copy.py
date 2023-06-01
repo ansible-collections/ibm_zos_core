@@ -1193,12 +1193,6 @@ class USSCopyHandler(CopyHandler):
         parent_dir = os.path.basename(src) if copy_directory else ''
 
         changed_files = []
-        # My suggestion
-        #    original_files should be a list of existing files and dir can get it with
-        #    os.listdir(os.path.join(dest, parent_dir) if exist
-        #   because what is trying to get is original files that are also in the src
-        #   That's why can not be changed in overwrite.
-        #
         original_files = []
         for relative_path in copied_files:
             if os.path.exists(os.path.join(dest, parent_dir, relative_path)):
@@ -1206,6 +1200,9 @@ class USSCopyHandler(CopyHandler):
             else:
                 changed_files.append(relative_path)
 
+        # This change ensure that is overwriting a dir the files were already in
+        # will ge changed mode if mode is give by the user.
+        changed_files.extend(original_files)
         # Creating tuples with (filename, permissions).
         original_permissions = [
             (filepath, os.stat(os.path.join(dest, parent_dir, filepath)).st_mode)

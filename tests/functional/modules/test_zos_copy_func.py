@@ -1033,7 +1033,7 @@ def test_ensure_copy_file_does_not_change_permission_on_dest(ansible_zos_module,
     try:
         hosts.all.file(path=dest_path, state="directory", mode="750")
         permissions_before = hosts.all.shell(cmd="ls -la {0}".format(dest_path))
-        hosts.all.zos_copy(content=src["src"], dest=dest_path)
+        hosts.all.zos_copy(content=src["src"], dest=dest_path, mode="750")
         permissions = hosts.all.shell(cmd="ls -la {0}".format(dest_path))
 
         for before in permissions_before.contacted.values():
@@ -1046,6 +1046,14 @@ def test_ensure_copy_file_does_not_change_permission_on_dest(ansible_zos_module,
         permissions_af_copy = permissions_af_copy.splitlines()[1].split()[0]
                 
         assert permissions_be_copy == permissions_af_copy
+
+        # Extra asserts to ensure change mode rewrite a copy
+        hosts.all.zos_copy(content=src["src"], dest=dest_path, mode="777")
+        permissions_overwriten = hosts.all.shell(cmd="ls -la {0}".format(dest_path))
+        for over in permissions_overwriten.contacted.values():
+            overwrite_per = over.get("stdout")
+        overwrite_per = overwrite_per.splitlines()[3].split()[0]
+        assert overwrite_per == "-rwxrwxrwx"
     finally:
         hosts.all.file(path=dest_path, state="absent")
 

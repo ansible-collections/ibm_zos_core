@@ -56,7 +56,7 @@ owner
 job_id
   The job id that has been assigned to the job.
 
-  A job id begins must begin with `STC`, `JOB`, `TSU` and are followed by up to 5 digits.
+  A job id must begin with `STC`, `JOB`, `TSU` and are followed by up to 5 digits.
 
   When a job id is greater than 99,999, the job id format will begin with `S`, `J`, `T` and are followed by 7 digits.
 

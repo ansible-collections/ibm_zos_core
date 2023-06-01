@@ -62,6 +62,10 @@ except Exception:
 
 data_set_regex = r"(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}(?:\([A-Z$#@]{1}[A-Z0-9$#@]{0,7}\)){0,1}"
 
+XMIT_RECORD_LENGTH = 80
+AMATERSE_RECORD_LENGTH = 1024
+
+
 class Unarchive(abc.ABC):
     def __init__(self, module):
         self.module = module
@@ -298,7 +302,7 @@ class MVSUnarchive(Unarchive):
         if record_format is None:
             arguments.update(record_format = "FB")
         if record_length is None:
-            arguments.update(record_length = 1024)
+            arguments.update(record_length = 80)
         if type is None:
             arguments.update(type = "SEQ")
         arguments.pop("self")

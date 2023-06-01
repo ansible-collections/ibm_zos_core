@@ -254,29 +254,56 @@ class MVSUnarchive(Unarchive):
         self.volumes = self.format_options.get("dest_volumes")
         self.use_adrdssu = self.format_options.get("use_adrdssu")
         self.dest_data_set = module.params.get("dest_data_set")
+        self.dest_data_set = dict() if self.dest_data_set is None else self.dest_data_set
     
-    def create_temp_ds(self, tmphlq):
-        """Create a temporary sequential data set. 
+    def create_dest_data_set(
+            self, 
+            name=None,
+            replace=None,
+            type=None,
+            space_primary=None,
+            space_secondary=None,
+            space_type=None,
+            record_format=None,
+            record_length=None,
+            block_size=None,
+            directory_blocks=None,
+            key_length=None,
+            key_offset=None,
+            sms_storage_class=None,
+            sms_data_class=None,
+            sms_management_class=None,
+            volumes=None,
+            tmp_hlq=None,
+            force=None,            
+        ):
+        """Create a temporary data set. 
         
         Arguments:
-            tmphlq(str): A HLQ specified by the user for temporary data sets.
+            tmp_hlq(str): A HLQ specified by the user for temporary data sets.
         
         Returns:
             str: Name of the temporary data set created.
         """
-        if tmphlq:
-            hlq = tmphlq
-        else:
-            rc, hlq, err = self.module.run_command("hlq")
-            hlq = hlq.replace('\n', '')
-        cmd = "mvstmphelper {0}.RESTORE".format(hlq)
-        rc, temp_ds, err = self.module.run_command(cmd)
-        temp_ds = temp_ds.replace('\n', '')
-        changed = data_set.DataSet.ensure_present(name=temp_ds, replace=True, type='SEQ', record_format='U')
-        return temp_ds
-    
-    def create_dest_data_set(self, dest_params, force):
-        return data_set.DataSet.ensure_present(replace=force, **dest_params)
+        arguments = locals()
+        if name is None:
+            if tmp_hlq:
+                hlq = tmp_hlq
+            else:
+                rc, hlq, err = self.module.run_command("hlq")
+                hlq = hlq.replace('\n', '')
+            cmd = "mvstmphelper {0}.RESTORE".format(hlq)
+            rc, temp_ds, err = self.module.run_command(cmd)
+            arguments.update(name = temp_ds.replace('\n', '')) 
+        if record_format is None:
+            arguments.update(record_format = "FB")
+        if record_length is None:
+            arguments.update(record_length = 1024)
+        if type is None:
+            arguments.update(type = "SEQ")
+        arguments.pop("self")
+        changed = data_set.DataSet.ensure_present(**arguments)
+        return arguments["name"], changed
 
     def get_include_data_sets_cmd(self):
         include_cmd = "INCL( "
@@ -326,17 +353,18 @@ class MVSUnarchive(Unarchive):
                         {2} """.format(filter, volumes, force)
         dds = dict(archive="{0},old".format(source))
         rc, out, err = mvs_cmd.adrdssu(cmd=restore_cmd, dds=dds, authorized=True)
-
+        self.debug = self.get_restored_datasets(out)
         if rc != 0:
+            unrestore_data_sets = self.get_unrestored_datasets(out)
+            unrestore_data_sets = ", ".join(unrestore_data_sets)
+            self.clean_environment(data_sets=[source], uss_files=[], remove_targets=True)
             self.module.fail_json(
-                msg="Failed executing ADRDSSU to archive {0}".format(source),
+                msg="Failed executing ADRDSSU to archive {0}. List of data sets not restored : {1}".format(source, unrestore_data_sets),
                 stdout=out,
                 stderr=err,
                 stdout_lines=restore_cmd,
                 rc=rc,
-                debug=self.debug
             )
-        self.get_restored_datasets(out)
         return rc
 
     def path_exists(self):
@@ -349,7 +377,15 @@ class MVSUnarchive(Unarchive):
             ds_list = re.findall(data_set_regex, find_ds_list[0])
         self.targets = ds_list
         return ds_list
-        
+
+    def get_unrestored_datasets(self, output):
+        ds_list = list()
+        output = output.split("SUCCESSFULLY PROCESSED")[0]
+        find_ds_list = re.findall(r"NOT PROCESSED FROM THE LOGICALLY FORMATTED DUMP TAPE DUE TO \n(?:.*\n)*", output)
+        if find_ds_list:
+            ds_list = re.findall(data_set_regex, find_ds_list[0])
+        return ds_list
+
     @abc.abstractmethod
     def unpack(self):
         pass
@@ -360,10 +396,10 @@ class MVSUnarchive(Unarchive):
         """
         temp_ds = ""
         if not self.use_adrdssu:
-            temp_ds = self.create_dest_data_set(self.dest_data_set, self.force)
-            rc = self.unpack(self.path, self.dest_data_set.get("name"))
+            temp_ds, _ = self.create_dest_data_set(**self.dest_data_set)
+            rc = self.unpack(self.path, temp_ds)
         else:
-            temp_ds = self.create_temp_ds(self.tmphlq)
+            temp_ds, _ = self.create_dest_data_set(type="SEQ", record_format="U", tmp_hlq=self.tmphlq, replace=True)
             self.unpack(self.path, temp_ds)
             rc = self.restore(temp_ds)
             datasets.delete(temp_ds)
@@ -378,11 +414,24 @@ class MVSUnarchive(Unarchive):
     
     def list_archive_content(self):
         try:
-            temp_ds = self.create_temp_ds(self.tmphlq)
+            temp_ds = self.create_dest_data_set(type="SEQ", record_format="U", tmp_hlq=self.tmphlq, replace=True)
             self.unpack(self.path, temp_ds)
             self.list_content(temp_ds)
         finally:
             datasets.delete(temp_ds)
+
+    def clean_environment(self, data_sets=[], uss_files=[], remove_targets=False):
+        """Removes any allocated data sets that won't be needed after module termination.
+        Arguments:
+            data_sets - {list(str)} : list of data sets to remove
+            uss_files - {list(str)} : list of uss files to remove
+            remove_targets - bool : Indicates if already unpacked data sets need to be removed too.
+        """
+        for ds in data_sets:
+            data_set.DataSet.ensure_absent(ds)
+        if remove_targets:
+            for target in self.targets:
+                data_set.DataSet.ensure_absent(target)
 
 
 class AMATerseUnarchive(MVSUnarchive):

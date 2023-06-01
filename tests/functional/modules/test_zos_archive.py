@@ -324,7 +324,7 @@ List of tests:
 - test_mvs_archive_multiple_data_sets_with_missing
 
 Are there reasons to test tmp_hlq? is resource-consuming since we need to do a loop to check
-how to test force? Similar to DISP=SHR for 
+how to test force? Similar to DISP=SHR for
 
 """
 

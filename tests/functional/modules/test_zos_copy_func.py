@@ -854,7 +854,7 @@ def test_copy_local_dir_and_change_mode(ansible_zos_module, copy_directory):
         for result in stat_overwritten_file_res.contacted.values():
             assert result.get("stat").get("exists") is True
             assert result.get("stat").get("isdir") is False
-            assert result.get("stat").get("mode") == dest_mode
+            assert result.get("stat").get("mode") == mode
 
         for result in stat_new_file_res.contacted.values():
             assert result.get("stat").get("exists") is True
@@ -948,7 +948,7 @@ def test_copy_uss_dir_and_change_mode(ansible_zos_module, copy_directory):
         for result in stat_overwritten_file_res.contacted.values():
             assert result.get("stat").get("exists") is True
             assert result.get("stat").get("isdir") is False
-            assert result.get("stat").get("mode") == dest_mode
+            assert result.get("stat").get("mode") == mode
 
         for result in stat_new_file_res.contacted.values():
             assert result.get("stat").get("exists") is True

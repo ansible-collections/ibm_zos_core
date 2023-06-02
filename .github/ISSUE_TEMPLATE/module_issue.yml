@@ -1,5 +1,5 @@
 name: Request a new module
-description: Request a new module be added to the collection. Complete all required fields. 
+description: Request a new module be added to the collection. Complete all required fields.
 title: "[Module] <title> "
 labels: [Module]
 assignees:

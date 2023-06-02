@@ -152,6 +152,7 @@ def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl):
             name=DEFAULT_DATA_SET_NAME, state="cataloged", volumes=DEFAULT_VOLUME
         )
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
+
         hosts.all.file(path=TEMP_PATH, state="directory")
         hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl), TEMP_PATH))
         results = hosts.all.zos_job_submit(
@@ -810,8 +811,8 @@ def test_data_set_temp_data_set_name_batch(ansible_zos_module):
 )
 def test_filesystem_create_and_mount(ansible_zos_module, filesystem):
     hosts = ansible_zos_module
-    fulltest = True
     try:
+        hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
         if filesystem == "HFS":
             result0 = hosts.all.shell(cmd="zinfo -t sys")
             for result in result0.contacted.values():

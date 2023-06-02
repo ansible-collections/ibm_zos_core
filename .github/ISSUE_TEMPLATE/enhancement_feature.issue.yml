@@ -1,5 +1,5 @@
 name: Request an enhancement or new feature
-description: Request a new feature or an enhancement. Complete all required fields. 
+description: Request a new feature or an enhancement. Complete all required fields.
 title: "[Enhancement] <title> "
 labels: [Enhancement]
 assignees:

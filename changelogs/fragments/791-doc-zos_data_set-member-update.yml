@@ -1,0 +1,5 @@
+trivial:
+- zos_data_set - when a member is created by the module, the format is type
+  data which is not suitable for executables. This change describes the
+  format used when creating member.
+  (https://github.com/ansible-collections/ibm_zos_core/pull/791)

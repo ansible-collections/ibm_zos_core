@@ -65,6 +65,9 @@ state
   If *state=present* and *replace=False* and the data set is present on the managed node, no action taken, module completes successfully with *changed=False*.
 
 
+  If *state=present* and *type=MEMBER* and the member does not exist in the data set, create a member formatted to store data, module completes successfully with *changed=True*. Note, a PDSE does not allow a mixture of formats such that there is executables (program objects) and data. The member created is formatted to store data, not an executable.
+
+
   If *state=cataloged* and *volumes* is provided and the data set is already cataloged, no action taken, module completes successfully with *changed=False*.
 
 
@@ -74,7 +77,7 @@ state
   If *state=cataloged* and *volumes* is provided and the data set is not cataloged, module attempts to perform catalog using supplied *name* and *volumes*. If the attempt to catalog the data set catalog fails, returns failure with *changed=False*.
 
 
-  If *state=uncataloged* and the data set is not found, no action taken , module completes successfully with *changed=False*.
+  If *state=uncataloged* and the data set is not found, no action taken, module completes successfully with *changed=False*.
 
 
   If *state=uncataloged* and the data set is found, the data set is uncataloged, module completes successfully with *changed=True*.
@@ -330,6 +333,9 @@ batch
     If *state=present* and *replace=False* and the data set is present on the managed node, no action taken, module completes successfully with *changed=False*.
 
 
+    If *state=present* and *type=MEMBER* and the member does not exist in the data set, create a member formatted to store data, module completes successfully with *changed=True*. Note, a PDSE does not allow a mixture of formats such that there is executables (program objects) and data. The member created is formatted to store data, not an executable.
+
+
     If *state=cataloged* and *volumes* is provided and the data set is already cataloged, no action taken, module completes successfully with *changed=False*.
 
 
@@ -339,7 +345,7 @@ batch
     If *state=cataloged* and *volumes* is provided and the data set is not cataloged, module attempts to perform catalog using supplied *name* and *volumes*. If the attempt to catalog the data set catalog fails, returns failure with *changed=False*.
 
 
-    If *state=uncataloged* and the data set is not found, no action taken , module completes successfully with *changed=False*.
+    If *state=uncataloged* and the data set is not found, no action taken, module completes successfully with *changed=False*.
 
 
     If *state=uncataloged* and the data set is found, the data set is uncataloged, module completes successfully with *changed=True*.
@@ -352,7 +358,7 @@ batch
 
 
   type
-    The data set type to be used when creating a data set. (e.g ``pdse``)
+    The data set type to be used when creating a data set. (e.g ``PDSE``)
 
     ``MEMBER`` expects to be used with an existing partitioned data set.
 

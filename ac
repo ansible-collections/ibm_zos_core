@@ -188,6 +188,9 @@ option_processor(){
     fi
 }
 
+# If option_processor echo's an exit , the sanitize will execute it else it will
+# just be a echo, might be worth seeing if this can just be called or embedded
+# into the option_processor to simplify the calls
 option_sanitize(){
     option_value=$1
     $option_value 2> /dev/null
@@ -317,9 +320,12 @@ ac_sanity(){
 ##     zoau     - ZOAU to use in testing, choices are 1.0.3, 1.1.1, 1.2.0, 1.2.1,
 ##                no selection defaults to 1.1.1 .
 ##     file     - the absoulte path to a test suite to run, no selection
+##                defaults to all test suite running.
+##     test     - the absoulte path to a test case to run, no selection
 ##                defaults to all tests running.
 ##     debug    - enable debug for pytest (-s), choices are true and false
 ## Example:
+##  $ ac --ac-test --host ec01150a --python 3.10 --zoau 1.2.2 --file tests/functional/modules/test_zos_operator_func.py --test  test_zos_operator_positive_path --debug true
 ##  $ ac --ac-test --host ec33012a --python 3.10 --zoau 1.2.2 --file tests/functional/modules/test_zos_operator_func.py --debug true
 ##  $ ac --ac-test --file tests/functional/modules/test_zos_operator_func.py --debug true
 ##  $ ac --ac-test
@@ -328,7 +334,18 @@ ac_test(){
     python=$2
     zoau=$3
     file=$4
-    debug=$5
+    test=$5
+    debug=$6
+
+    # Run test by node IDs, eg pytest -v tests/my-directory/test_demo.py::test_specific_function
+    if [ "$file" ] && [ "$test" ]; then
+        file="${file}::${test}"
+    fi
+
+    if [ "$debug" ]; then
+        debug="-s"
+    fi
+
     skip=$CURR_DIR/tests/functional/modules/test_module_security.py
 
     # Create the config always overwriting existing
@@ -343,20 +360,12 @@ ac_test(){
     #cd ${VENV_BIN}
 
     if [ "$file" ]; then
-        if [ "$debug" ]; then
-		    . ${VENV_BIN}/activate && ${VENV_BIN}/pytest --ignore="${skip}" $CURR_DIR/${file} --host-pattern=all --zinventory=${VENV}/config.yml -s
-        else
-		    . ${VENV_BIN}/activate && ${VENV_BIN}/pytest --ignore="${skip}" $CURR_DIR/${file} --host-pattern=all --zinventory=${VENV}/config.yml
-        fi
+        . ${VENV_BIN}/activate && ${VENV_BIN}/pytest --ignore="${skip}" $CURR_DIR/${file} --host-pattern=all --zinventory=${VENV}/config.yml "${debug}"
     else
         for file in `ls tests/functional/modules/*.py`; do
-            # For some reason '--ignor'e not being honored so injecting a work around
+            # For some reason '--ignore not being honored so injecting a work around
             if [ "$file" != "$skip" ]; then
-                if [ "$debug" ]; then
-                    . ${VENV_BIN}/activate && ${VENV_BIN}/pytest --ignore="${skip}" $CURR_DIR/${file} --host-pattern=all --zinventory=${VENV}/config.yml -s
-                else
-                    . ${VENV_BIN}/activate && ${VENV_BIN}/pytest --ignore="${skip}" $CURR_DIR/${file} --host-pattern=all --zinventory=${VENV}/config.yml
-                fi
+                . ${VENV_BIN}/activate && ${VENV_BIN}/pytest --ignore="${skip}" $CURR_DIR/${file} --host-pattern=all --zinventory=${VENV}/config.yml "${debug}"
             fi
         done
     fi
@@ -722,6 +731,11 @@ while true; do
             option_sanitize $python
             shift
             ;;
+      --test|--test=?*)                         # option
+            test=`option_processor $1 $2`
+            option_sanitize $test
+            shift
+            ;;
     #   --tests|--tests=?*)                       # option
     #         tests=`option_processor $1 $2`
     #         option_sanitize $tests
@@ -771,7 +785,7 @@ elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-install" ] ; then
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-sanity" ] ; then
     ac_sanity $version
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-test" ] ; then
-    ac_test ${host:=""} ${python:=""} ${zoau:=""} ${file:=""} ${debug:=""}
+    ac_test ${host:=""} ${python:=""} ${zoau:=""} ${file:=""} ${test:=""} ${debug:=""}
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-test-config" ] ; then
     ac_test_config
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-version" ] ; then

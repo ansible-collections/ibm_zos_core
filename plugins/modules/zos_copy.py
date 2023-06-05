@@ -564,13 +564,13 @@ dest:
     type: str
     sample: SAMPLE.SEQ.DATA.SET
 dest_created:
-    description: Indicates whether the module created the destination.
-    returned: success and if dest was created by the module.
+    description: Indicates whether the module create the destination.
+    returned: success and if dest was create by the module.
     type: bool
     sample: true
 destination_attributes:
     description: Attributes of a dest create by the module.
-    returned: success and destination was created by the module.
+    returned: success and destination was create by the module.
     type: dict
     contains:
       block_size:
@@ -580,7 +580,7 @@ destination_attributes:
         sample: 32760
       record_format:
         description:
-          Content data type encoding.
+          Record format of the dataset.
         type: str
         sample: FB
       record_length:
@@ -2111,7 +2111,8 @@ def allocate_destination_data_set(
     # empty dataset was created for the user by an admin/operator, and they don't have permissions
     # to create new datasets.
     # These rules assume that source and destination types are compatible.
-    # To not generate and None return to the main code generate an empty dict of dest_params to return
+    # Create the dict that will contains the values created by the module if it's empty action module will
+    # not display the content.
     dest_params = {}
     if dest_exists and is_dest_empty:
         return False, dest_params

@@ -1,0 +1,5 @@
+bugfixes:
+- zos_copy - kept permissions on target directory when copy overwrite
+  pre-existing files. The fix now ensure the pre-exiting content on target
+  change permissions if the mode is given by the user.
+  (https://github.com/ansible-collections/ibm_zos_core/pull/790)

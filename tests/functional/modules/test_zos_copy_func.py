@@ -1113,8 +1113,10 @@ def test_copy_dest_lock(ansible_zos_module):
         hosts.all.zos_data_set(name=DATASET_2, state="present", type="pdse", replace=True)
         hosts.all.zos_data_set(name=DATASET_1 + "({0})".format(MEMBER_1), state="present", type="member", replace=True)
         hosts.all.zos_data_set(name=DATASET_2 + "({0})".format(MEMBER_1), state="present", type="member", replace=True)
+        # copy text_in source
+        hosts.all.shell(cmd="echo \"{0}\" > {1}".format(DUMMY_DATA, DATASET_2+"({0})".format(MEMBER_1)))
         # copy/compile c program and copy jcl to hold data set lock for n seconds in background(&)
-        hosts.all.shell(cmd="echo {0} > {1}".format(c_pgm,'/tmp/disp_shr/pdse-lock.c'))
+        hosts.all.zos_copy(content=c_pgm, dest='/tmp/disp_shr/pdse-lock.c', force=True)
         hosts.all.zos_copy(
             content=call_c_jcl.format(DATASET_1, MEMBER_1),
             dest='/tmp/disp_shr/call_c_pgm.jcl',
@@ -1125,7 +1127,6 @@ def test_copy_dest_lock(ansible_zos_module):
         hosts.all.shell(cmd="submit call_c_pgm.jcl", chdir="/tmp/disp_shr/")
         # pause to ensure c code acquires lock
         time.sleep(5)
-        # non-force member delete should fail since pdse is in use
         results = hosts.all.zos_copy(
             src = DATASET_2 + "({0})".format(MEMBER_1),
             dest = DATASET_1 + "({0})".format(MEMBER_1),

@@ -809,42 +809,58 @@ def test_data_set_temp_data_set_name_batch(ansible_zos_module):
     ["HFS", "ZFS"],
 )
 def test_filesystem_create_and_mount(ansible_zos_module, filesystem):
+    fulltest = True
+    hosts = ansible_zos_module
+
     try:
-        hosts = ansible_zos_module
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
-        results = hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, type=filesystem)
-        temp_dir_name = make_tempfile(hosts, directory=True)
-        results2 = hosts.all.command(
-            cmd="mount -t {0} -f {1} {2}".format(
-                filesystem, DEFAULT_DATA_SET_NAME, temp_dir_name
+
+        if filesystem == "HFS":
+            result0 = hosts.all.shell(cmd="zinfo -t sys")
+            for result in result0.contacted.values():
+                sys_info = result.get("stdout_lines")
+            product_version = sys_info[4].split()[1].strip("'")
+            product_release = sys_info[5].split()[1].strip("'")
+            if product_release >= "05" or product_version > "02":
+                fulltest = False
+                print( "skipping HFS test: zOS > 02.04" )
+
+        if fulltest:
+            hosts = ansible_zos_module
+            hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
+            results = hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, type=filesystem)
+            temp_dir_name = make_tempfile(hosts, directory=True)
+            results2 = hosts.all.command(
+                cmd="mount -t {0} -f {1} {2}".format(
+                    filesystem, DEFAULT_DATA_SET_NAME, temp_dir_name
+                )
             )
-        )
-        results3 = hosts.all.shell(cmd="cd {0} ; df .".format(temp_dir_name))
+            results3 = hosts.all.shell(cmd="cd {0} ; df .".format(temp_dir_name))
 
-        # clean up
-        results4 = hosts.all.command(cmd="unmount {0}".format(temp_dir_name))
-        results5 = hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
-        results6 = hosts.all.file(path=temp_dir_name, state="absent")
+            # clean up
+            results4 = hosts.all.command(cmd="unmount {0}".format(temp_dir_name))
+            results5 = hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
+            results6 = hosts.all.file(path=temp_dir_name, state="absent")
 
-        for result in results.contacted.values():
-            assert result.get("changed") is True
-            assert result.get("module_stderr") is None
-        for result in results2.contacted.values():
-            assert result.get("changed") is True
-            assert result.get("stderr") == ""
-        for result in results3.contacted.values():
-            assert result.get("changed") is True
-            assert result.get("stderr") == ""
-            assert DEFAULT_DATA_SET_NAME.upper() in result.get("stdout", "")
-        for result in results4.contacted.values():
-            assert result.get("changed") is True
-            assert result.get("stderr") == ""
-        for result in results5.contacted.values():
-            assert result.get("changed") is True
-            assert result.get("module_stderr") is None
-        for result in results6.contacted.values():
-            assert result.get("changed") is True
-            assert result.get("module_stderr") is None
+            for result in results.contacted.values():
+                assert result.get("changed") is True
+                assert result.get("module_stderr") is None
+            for result in results2.contacted.values():
+                assert result.get("changed") is True
+                assert result.get("stderr") == ""
+            for result in results3.contacted.values():
+                assert result.get("changed") is True
+                assert result.get("stderr") == ""
+                assert DEFAULT_DATA_SET_NAME.upper() in result.get("stdout", "")
+            for result in results4.contacted.values():
+                assert result.get("changed") is True
+                assert result.get("stderr") == ""
+            for result in results5.contacted.values():
+                assert result.get("changed") is True
+                assert result.get("module_stderr") is None
+            for result in results6.contacted.values():
+                assert result.get("changed") is True
+                assert result.get("module_stderr") is None
     finally:
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
 

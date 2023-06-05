@@ -2157,9 +2157,9 @@ def validate_disposition(dataset_name):
     response = opercmd.execute(command=command_dgrs)
     stdout = response.stdout_response
     if stdout is not None:
-            for out in stdout.split("\n"):
-                if out:
-                    result["stdout"].append(out)
+        for out in stdout.split("\n"):
+            if out:
+                result["stdout"].append(out)
     if len(result["stdout"]) > 4 and "EXC/SHR" in stdout and "SHARE" in stdout:
         return False
     elif len(result["stdout"]) <= 4 and "NO REQUESTORS FOR RESOURCE" in stdout:
@@ -2386,27 +2386,24 @@ def run_module(module, arg_def):
         dest_validation = validate_disposition(dest_name)
         if not source_validation and not dest_validation:
             module.fail_json(
-            msg="DATASETS in lock, unable to access'{0}' without force and unable to write in'{1}'".format(
-                src_name, dest_name
-            )
-        )
+                    msg="DATASETS in lock, unable to access'{0}' without force and unable to write in'{1}'".format(
+                        src_name, dest_name
+                    )
+                )
         elif not dest_validation:
             module.fail_json(
-            msg="DATASET in lock, unable to wrote in '{0}'".format(
-                dest_name
-            )
-        )
+                    msg="DATASET in lock, unable to wrote in '{0}'".format(
+                        dest_name
+                    )
+                )
     elif dest_ds_type != "USS":
         dest_validation = validate_disposition(dest_name)
         if not dest_validation:
             module.fail_json(
-            msg="DATASET in lock, unable to wrote in '{0}'".format(
-                dest_name
-            )
-        )
-
-
-
+                    msg="DATASET in lock, unable to wrote in '{0}'".format(
+                        dest_name
+                    )
+                )
     # ********************************************************************
     # Backup should only be performed if dest is an existing file or
     # data set. Otherwise ignored.

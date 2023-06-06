@@ -429,17 +429,60 @@ class DataSet(object):
         Returns:
             bool -- Return code from the mvs_cmd, if 0 then it was successful.
         """
-        # if is VSAM is_vsam(name, volumes)
-        vsam_code = 'NVR'
-        vsam_name_extension = ''
+
+        # NVR specifies that the object to be deleted is an SMS-managed non-VSAM
+        # volume record (NVR) entry. This parameter must be specified to delete
+        # an NVR from a VSAM volume data set (VVDS) and its corresponding record
+        # from the VTOC. The NVR/VTOC entries are deleted only if the related
+        # non-VSAM object catalog entry does not exist.
+
+        # VVR specifies that the objects to be deleted are one or more unrelated
+        # VSAM volume record (VVR) entries. To delete a VVR from both the VSAM
+        # volume data set (VVDS) and from the VTOC, you must specify this parameter.
+
+        # To delete a VSAM DS that is not cataloged you must delete each VSAM record
+        # for that VSAM type and use VVR and FILE. You can simulate a uncataloged DS
+        # with commands:
+        # - echo "  DELETE IBMUSER.VSAM.KSDS CLUSTER NOSCRATCH NOPURGE" |
+        #    mvscmdauth --pgm=IDCAMS --sysprint=* --sysin=stdin
+        # echo "  DELETE IBMUSER.DATASET NOSCRATCH" | mvscmdauth --pgm=IDCAMS
+        #   --sysprint=* --sysin=stdin
+
         if DataSet.is_vsam(name, volumes):
-            vsam_code = 'VVR'
+            vol_record_entry = 'VVR'
+            # Delete the DATA record of a VSAM, applies to KSDS, RRDS, ESDS, LDS
             vsam_name_extension = '.DATA'
-        command = " DELETE {0} FILE(DD1) {1}".format(name + vsam_name_extension, vsam_code)
-        dds = dict(DD1=',vol,'.join(volumes) + ',vol')
-        rc, stdout, stderr = mvs_cmd.idcams(cmd=command, dds=dds, authorized=True)
-        if rc > 0:
-            raise DatasetDeleteError(name, rc)
+            command = " DELETE {0} FILE(DD1) {1}".format(name + vsam_name_extension, vol_record_entry)
+            dds = dict(DD1=',vol,'.join(volumes) + ',vol')
+            rc, stdout, stderr = mvs_cmd.idcams(cmd=command, dds=dds, authorized=True)
+            # RC 8 occurs when the VSAM Record does not exist, thus acceptable
+            if rc > 8:
+                raise DatasetDeleteError(name, rc)
+
+            # Delete the INDEX record of a VSAM, this does NOT apply to RRDS, ESDS, LDS but
+            # the VASAM is not in catalog so we can't detect the type of VSAM so we
+            # can expect an RC 8 to appear for non KSDS types.
+            vsam_name_extension = '.INDEX'
+            command = " DELETE {0} FILE(DD1) {1}".format(name + vsam_name_extension, vol_record_entry)
+            dds = dict(DD1=',vol,'.join(volumes) + ',vol')
+            rc, stdout, stderr = mvs_cmd.idcams(cmd=command, dds=dds, authorized=True)
+            # RC 8 occurs when the VSAM Record does exist, thus acceptable
+            if rc > 8:
+                raise DatasetDeleteError(name, rc)
+        else:
+            vol_record_entry = 'NVR'
+            command = " DELETE {0} FILE(DD1) {1}".format(name, vol_record_entry)
+            dds = dict(DD1=',vol,'.join(volumes) + ',vol')
+            rc, stdout, stderr = mvs_cmd.idcams(cmd=command, dds=dds, authorized=True)
+            # RC 8 occurs when the VSAM Record does not exist, thus acceptable
+            if rc > 8:
+                raise DatasetDeleteError(name, rc)
+
+        # Callers expect a RC 0 to evaluate if there was a change, so normalize
+        # to rc 0
+        if rc <= 8:
+            rc = 0
+
         return rc
 
     @staticmethod
@@ -464,7 +507,8 @@ class DataSet(object):
 
     @staticmethod
     def attempt_to_delete_uncataloged_data_set_if_necessary(name, volumes):
-        """Attempt to delete any uncataloged dataset if exists on any volume and there is a cataloged dataset with the same name.
+        """Attempt to delete any uncataloged dataset if exists on any user provided volumes
+           and there is a cataloged dataset with the same name.
         Arguments:
             name (str) -- The data set name to check if cataloged.
             volumes (list[str]) -- The volumes the data set may reside on.
@@ -481,9 +525,13 @@ class DataSet(object):
         cataloged_volume_list = DataSet.get_volume_list_for_cataloged_data_set(name)
         if len(cataloged_volume_list) == 0:
             return changed, present, True
-        # If any volume provided is not in the list, means we need to delete it from uncataloged dataset.
+
+        # If a volume provided (volumes) is not in the list cataloged_volume_list, we need to
+        # delete them from the cataloged_volume_list, this leaves us with with uncataloged data sets that
+        # correspond to the volumes argument.
         volumes_for_uncataloged_dataset = list(filter(lambda vol: vol not in cataloged_volume_list, volumes))
-        # If any volume provided is in the list we will delete from the catalog as normal.
+
+        # If any volume provided (volumes) is in the list we will delete from catalog as normal.
         pending_to_delete_cataloged_dataset = any(vol in volumes for vol in cataloged_volume_list)
 
         if len(volumes_for_uncataloged_dataset) > 0:

@@ -103,7 +103,7 @@ def get_zoau_version_str():
         .stdout
         .decode('UTF-8')
         .strip()
-        .split(' ')[-1][1:]
+        .split(' ')[3][1:]
         .split('.')
     )
     return version_list

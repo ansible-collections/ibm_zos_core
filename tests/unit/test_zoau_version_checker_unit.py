@@ -15,17 +15,17 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-# from ansible.module_utils.basic import AnsibleModule
-from ibm_zos_core.plugins.module_utils.zoau_version_checker import get_zoau_version_str, is_valid_version_string
+from ibm_zos_core.plugins.module_utils.zoau_version_checker import (
+    get_zoau_version_str,
+    is_valid_version_string,
+    is_zoau_version_higher_than
+)
 
 import pytest, mock
 import types
-import sys, subprocess
-# from mock import call
 
-# Used my some mock modules, should match import directly below
-# IMPORT_NAME = "ibm_zos_core.plugins.modules.zos_operator"
-
+# used in patch decorators below
+IMPORT_NAME = "ibm_zos_core.plugins.module_utils.zoau_version_checker"
 
 # Tests for zoau_version_checker
 
@@ -51,33 +51,55 @@ zoaversion_output = [
     (['1', '2', '4', '0'], "2023/06/02 13:28:30 CUT V1.2.4.0 3b866824 2873 PH52034 826 267d9646"),
 
 ]
-@pytest.mark.parametrize("version_string,zoaversion", zoaversion_output)
-def test_get_zoau_version_str(version_string, zoaversion):
 
-    # get_zoau_version_str makes a call to `zoaversion` on the target host by
-    # calling subprocess.run, which returns an object with an attr 'stdout'
-    # which contains the byte string of the console output. The following mocks
+
+@pytest.mark.parametrize("version_string, zoaversion", zoaversion_output)
+@mock.patch('subprocess.run')
+def test_get_zoau_version_str(mocker, version_string, zoaversion):
+    # 'get_zoau_version_str' makes a call to 'zoaversion' on the target host by
+    # calling 'subprocess.run', which returns an object with an attr 'stdout'
+    # that contains the byte string of the console output. The following mocks
     # this behavior so the code can be tested without making a call to a host.
     # Instead, zoaversion output for various versions of ZOAU are stored in the
     # list of tuples 'zoaversion_output' above and returned by the mocked call
-    # to subprocess.run after being converted to bytes. SimpleNamespace is an
+    # to 'subprocess.run' after being converted to bytes. SimpleNamespace is an
     # object subclass which allows for attributes to be set/removed. In our
-    # case, get_zoau_version_str expects a 'stdout' attribute in the return
-    # struct of subprocess.run, which we mock via SimpleNamespace.
+    # case, 'get_zoau_version_str' expects a 'stdout' attribute in the return
+    # struct of 'subprocess.run', which we mock via SimpleNamespace.
 
-    subprocess.run = mock.MagicMock(
-        return_value = types.SimpleNamespace(
-            stdout = bytes(zoaversion, 'utf-8')
+    mocker.return_value = types.SimpleNamespace(
+            stdout = bytes(zoaversion, 'utf-8'),
         )
-    )
+
     assert version_string == get_zoau_version_str()
 
-@pytest.mark.parametrize("version_string,zoaversion", zoaversion_output)
+
+@pytest.mark.parametrize("version_string, zoaversion", zoaversion_output)
 def test_is_valid_version_string(version_string,zoaversion):
     # The first parameter in our zoaversion_output list of tuples above is the
-    # return value of the function get_zoau_version_str in the form of
+    # return value of the function 'get_zoau_version_str' in the form of
     # ['#','#','#'] or ['#','#','#','#']. A 'join' str operation with a dot(.)
     # yields "#.#.#" or "#.#.#.#". And since these values are taken from this
     # list, they can all be expected to be valid ZOAU verison strings.
 
     assert True == is_valid_version_string('.'.join(version_string))
+
+
+test_data = [
+#   result, "sytem-level" ZOAU  >=  min-ZOAU
+    (True,     ['1', '2', '1'],    "1.2.1"),
+    (False,     ['1', '1', '1'],    "1.2.3"),
+    (False,     ['1', '1', '1'],    "1.2.4.0"),
+]
+
+
+@pytest.mark.parametrize("expected, sys_zoau, min_version_str", test_data)
+@mock.patch(IMPORT_NAME+'.get_zoau_version_str')
+def test_is_zoau_version_higher_than(mocker, expected, sys_zoau, min_version_str):
+    # The 'is_zoau_version_higher_than' function calls 'get_zoau_version_str' to
+    # get the ZOAU version string from the system. We mock that call and provide
+    # our own "system" level ZOAU version str to compare against our provided
+    # minimum ZOAU version string.
+
+    mocker.return_value = sys_zoau
+    expected == is_zoau_version_higher_than(min_version_str)

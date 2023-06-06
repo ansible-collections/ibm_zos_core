@@ -27,8 +27,10 @@ def is_zoau_version_higher_than(min_version_str):
         bool -- Whether ZOAU version found was high enough.
     """
     if is_valid_version_string(min_version_str):
-        # check zoau version on system
+        # check zoau version on system (already a list)
         system_version_list = get_zoau_version_str()
+
+        # convert input to list format
         min_version_list = min_version_str.split('.')
 
         # convert list of strs to list of ints

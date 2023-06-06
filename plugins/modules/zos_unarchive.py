@@ -23,8 +23,225 @@ author:
   - Oscar Fernando Flores Garcia (@fernandofloresg)
 short_description: Unarchive a dataset on z/OS.
 description:
-  - The C(zos_unarchive) module unpacks an archive. It will not unpack a compressed file that does not contain an archive.
+  - The C(zos_unarchive) module unpacks an archive after optionally sending it to the remote.
+    It will not unpack a compressed file that does not contain an archive.
+
 options:
+  path:
+    description:
+    - Remote absolute path, glob, or list of paths or globs for the file or files to compress or archive.
+    type: list
+    required: true
+    elements: str
+  format:
+    description:
+      - The type of compression to use.
+    type: dict
+    required: false
+    format_options:
+      name:
+          description:
+            - The name of the format to use.
+          type: str
+          required: false
+          default: gz
+          choices:
+            - bz2
+            - gz
+            - tar
+            - zip
+            - pax
+            - terse
+            - xmit
+            - pax
+      format_options:
+          description:
+            - Options specific to each format.
+          type: dict
+          required: false
+          options:
+            xmit_log_dataset:
+              description: Provide a name of data set to use for xmit log.
+              type: str
+            use_adrdssu:
+              description: Use DFSMSdss ADRDSSU step.
+              type: bool
+              default: False
+  dest:
+    description: 
+    - Remote absolute path where the archive should be unpacked.
+    The given path must exist. Base directory is not created by this module.
+    type: str
+    required: false
+  group:
+    description:
+      - Name of the group that should own the filesystem object, as would be fed to chown.
+      - When left unspecified, it uses the current group of the current user unless you are root,
+        in which case it can preserve the previous ownership.
+    type: str
+    required: false
+  mode:
+    description:
+      - The permissions the resulting filesystem object should have.
+    type: str
+    required: false
+  owner:
+    description:
+      - Name of the user that should own the filesystem object, as would be fed to chown.
+      - When left unspecified, it uses the current user unless you are root, in which case it can preserve the previous ownership.
+    type: str
+    required: false
+  include:
+    description:
+      - Glob style patterns to exclude files or directories from the resulting archive.
+    type: list
+    elements: str
+    required: false
+  exclude:
+    description:
+      - Glob style patterns to exclude files or directories from the resulting archive.
+    type: list
+    elements: str
+    required: false
+  list:
+    description:
+      - Set to true to only list the archive content without unpacking.
+    type: bool
+    required: false
+    default: false
+  dest_data_set:
+    description:
+      - Data set attributes to customize a C(dest) data set to be copied into.
+    required: false
+    type: dict
+    suboptions:
+      type:
+        description:
+          - Organization of the destination
+        type: str
+        required: true
+        choices:
+          - KSDS
+          - ESDS
+          - RRDS
+          - LDS
+          - SEQ
+          - PDS
+          - PDSE
+          - MEMBER
+          - BASIC
+      space_primary:
+        description:
+          - If the destination I(dest) data set does not exist , this sets the
+            primary space allocated for the data set.
+          - The unit of space used is set using I(space_type).
+        type: int
+        required: false
+      space_secondary:
+        description:
+          - If the destination I(dest) data set does not exist , this sets the
+            secondary space allocated for the data set.
+          - The unit of space used is set using I(space_type).
+        type: int
+        required: false
+      space_type:
+        description:
+          - If the destination data set does not exist, this sets the unit of
+            measurement to use when defining primary and secondary space.
+          - Valid units of size are C(K), C(M), C(G), C(CYL), and C(TRK).
+        type: str
+        choices:
+          - K
+          - M
+          - G
+          - CYL
+          - TRK
+        required: false
+      record_format:
+        description:
+          - If the destination data set does not exist, this sets the format of the
+            data set. (e.g C(FB))
+          - Choices are case-insensitive.
+        required: false
+        choices:
+          - FB
+          - VB
+          - FBA
+          - VBA
+          - U
+        type: str
+      record_length:
+        description:
+          - The length of each record in the data set, in bytes.
+          - For variable data sets, the length must include the 4-byte prefix area.
+          - "Defaults vary depending on format: If FB/FBA 80, if VB/VBA 137, if U 0."
+        type: int
+        required: false
+      block_size:
+        description:
+          - The block size to use for the data set.
+        type: int
+        required: false
+      directory_blocks:
+        description:
+          - The number of directory blocks to allocate to the data set.
+        type: int
+        required: false
+      key_offset:
+        description:
+          - The key offset to use when creating a KSDS data set.
+          - I(key_offset) is required when I(type=KSDS).
+          - I(key_offset) should only be provided when I(type=KSDS)
+        type: int
+        required: false
+      key_length:
+        description:
+          - The key length to use when creating a KSDS data set.
+          - I(key_length) is required when I(type=KSDS).
+          - I(key_length) should only be provided when I(type=KSDS)
+        type: int
+        required: false
+      sms_storage_class:
+        description:
+          - The storage class for an SMS-managed dataset.
+          - Required for SMS-managed datasets that do not match an SMS-rule.
+          - Not valid for datasets that are not SMS-managed.
+          - Note that all non-linear VSAM datasets are SMS-managed.
+        type: str
+        required: false
+      sms_data_class:
+        description:
+          - The data class for an SMS-managed dataset.
+          - Optional for SMS-managed datasets that do not match an SMS-rule.
+          - Not valid for datasets that are not SMS-managed.
+          - Note that all non-linear VSAM datasets are SMS-managed.
+        type: str
+        required: false
+      sms_management_class:
+        description:
+          - The management class for an SMS-managed dataset.
+          - Optional for SMS-managed datasets that do not match an SMS-rule.
+          - Not valid for datasets that are not SMS-managed.
+          - Note that all non-linear VSAM datasets are SMS-managed.
+        type: str
+        required: false
+  tmp_hlq:
+    description:
+      - High Level Qualifier used for temporary datasets.
+    type: str
+    required: false
+  force:
+    description:
+      - Create the dest archive file even if it already exists.
+    type: bool
+    required: false
+    default: false
+  remote_src:
+    description:
+      - Set to true to indicate the archive file is already on the remote system and not local to the Ansible controller.
+    type: bool
+    required: false
+    default: false
 '''
 
 EXAMPLES = r'''

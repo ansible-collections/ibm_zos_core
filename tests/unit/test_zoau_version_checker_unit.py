@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 # from ansible.module_utils.basic import AnsibleModule
-from ibm_zos_core.plugins.module_utils.zoau_version_checker import get_zoau_version_str
+from ibm_zos_core.plugins.module_utils.zoau_version_checker import get_zoau_version_str, is_valid_version_string
 
 import pytest, mock
 import types
@@ -30,6 +30,7 @@ import sys, subprocess
 # Tests for zoau_version_checker
 
 zoaversion_output = [
+
     (['1','0','2'], "2020/03/03 19:24:41 CUT V1.0.2"),
     (['1','0','3'], "2020/05/06 18:17:13 CUT V1.0.3"),
     (['1','0','3'], "2020/07/07 14:54:31 CUT V1.0.3"),
@@ -70,3 +71,13 @@ def test_get_zoau_version_str(version_string, zoaversion):
         )
     )
     assert version_string == get_zoau_version_str()
+
+@pytest.mark.parametrize("version_string,zoaversion", zoaversion_output)
+def test_is_valid_version_string(version_string,zoaversion):
+    # The first parameter in our zoaversion_output list of tuples above is the
+    # return value of the function get_zoau_version_str in the form of
+    # ['#','#','#'] or ['#','#','#','#']. A 'join' str operation with a dot(.)
+    # yields "#.#.#" or "#.#.#.#". And since these values are taken from this
+    # list, they can all be expected to be valid ZOAU verison strings.
+
+    assert True == is_valid_version_string('.'.join(version_string))

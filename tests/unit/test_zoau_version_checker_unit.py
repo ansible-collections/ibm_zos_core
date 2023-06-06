@@ -87,9 +87,13 @@ def test_is_valid_version_string(version_string,zoaversion):
 
 test_data = [
 #   result, "sytem-level" ZOAU  >=  min-ZOAU
-    (True,     ['1', '2', '1'],    "1.2.1"),
-    (False,     ['1', '1', '1'],    "1.2.3"),
-    (False,     ['1', '1', '1'],    "1.2.4.0"),
+    (True,     ['1', '2', '1'],         "1.2.1"),
+    (True,     ['1', '2', '3'],         "1.2.1"),
+    (True,     ['1', '2', '4', '0'],    "1.2.2"),
+
+    (False,     ['1', '1', '1'],        "1.2.3"),
+    (False,     ['1', '1', '1'],        "1.2.4.0"),
+    (False,     ['1', '2', '0', '1'],    "1.2.1"),
 ]
 
 
@@ -102,4 +106,4 @@ def test_is_zoau_version_higher_than(mocker, expected, sys_zoau, min_version_str
     # minimum ZOAU version string.
 
     mocker.return_value = sys_zoau
-    expected == is_zoau_version_higher_than(min_version_str)
+    assert expected == is_zoau_version_higher_than(min_version_str)

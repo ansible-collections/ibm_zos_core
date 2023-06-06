@@ -321,8 +321,8 @@ ac_sanity(){
 ##                no selection defaults to 1.1.1 .
 ##     file     - the absoulte path to a test suite to run, no selection
 ##                defaults to all test suite running.
-##     test     - the absoulte path to a test case to run, no selection
-##                defaults to all tests running.
+##     test     - a test case to run found in 'file', no selection
+##                defaults to all tests in file running.
 ##     debug    - enable debug for pytest (-s), choices are true and false
 ## Example:
 ##  $ ac --ac-test --host ec01150a --python 3.10 --zoau 1.2.2 --file tests/functional/modules/test_zos_operator_func.py --test  test_zos_operator_positive_path --debug true

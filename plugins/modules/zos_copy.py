@@ -1200,8 +1200,8 @@ class USSCopyHandler(CopyHandler):
             else:
                 files_to_change.append(relative_path)
 
-        # This change ensure that is overwriting a dir the files were already in
-        # will ge changed mode if mode is give by the user.
+        # This change adds to the files_to_change variable any file that accord with
+        # a name found in the source copy.
         files_to_change.extend(existing_files)
         # Creating tuples with (filename, permissions).
         original_permissions = [

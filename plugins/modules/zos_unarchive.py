@@ -37,13 +37,13 @@ options:
     description:
       - The type of compression to use.
     type: dict
-    required: false
+    required: true
     format_options:
       name:
           description:
             - The name of the format to use.
           type: str
-          required: false
+          required: true
           default: gz
           choices:
             - bz2
@@ -70,7 +70,7 @@ options:
   dest:
     description: 
     - Remote absolute path where the archive should be unpacked.
-    The given path must exist. Base directory is not created by this module.
+    - The given path must exist. Base directory is not created by this module.
     type: str
     required: false
   group:
@@ -93,13 +93,16 @@ options:
     required: false
   include:
     description:
-      - Glob style patterns to exclude files or directories from the resulting archive.
+      - List of directory and file or data set names that you would like to extract from the archive.
+        If include is not empty, only files listed here will be extracted.
+        Mutually exclusive with exclude.
     type: list
     elements: str
     required: false
   exclude:
     description:
-      - Glob style patterns to exclude files or directories from the resulting archive.
+      - List the directory and file or data set names that you would like to exclude from the unarchive action.
+        Mutually exclusive with include.
     type: list
     elements: str
     required: false
@@ -227,12 +230,12 @@ options:
         required: false
   tmp_hlq:
     description:
-      - High Level Qualifier used for temporary datasets.
+      - High Level Qualifier used for temporary datasets created during the module execution.
     type: str
     required: false
   force:
     description:
-      - Create the dest archive file even if it already exists.
+      - Replace existing files or data sets if files or data sets to unarchive have conflicting paths.
     type: bool
     required: false
     default: false
@@ -819,10 +822,11 @@ def run_module():
         list=dict(type='bool', default=False),
         format=dict(
             type='dict',
-            required=False,
+            required=True,
             options=dict(
                 name=dict(
                     type='str',
+                    required=True,
                     default='gz',
                     choices=['bz2', 'gz', 'tar', 'zip', 'terse', 'xmit', 'pax']
                 ),
@@ -872,10 +876,10 @@ def run_module():
         ),
         tmp_hlq=dict(type='qualifier_or_empty', default=''),
         force=dict(type='bool', default=False),
+        remote_src=dict(type='bool', default=False),
         mutually_exclusive=[
             ['include', 'exclude'],
         ],
-        remote_src=dict(type='bool', default=False),
     )
 
     try:

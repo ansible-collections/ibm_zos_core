@@ -23,8 +23,6 @@ author:
   - Oscar Fernando Flores Garcia (@fernandofloresg)
 short_description: Archive a dataset on z/OS.
 
-
-
 description:
   - Creates or extends an archive.
   - The source and archive are on the remote host,
@@ -42,32 +40,33 @@ options:
       - The type of compression to use.
     type: dict
     required: false
-    format_options:
+    suboptions:
       name:
-          description:
-            - The name of the format to use.
-          type: str
-          required: false
-          default: gz
-          choices:
-            - bz2
-            - gz
-            - tar
-            - zip
-            - pax
-            - terse
-            - xmit
-            - pax
+        description:
+          - The name of the format to use.
+        type: str
+        required: false
+        default: gz
+        choices:
+          - bz2
+          - gz
+          - tar
+          - zip
+          - terse
+          - xmit
+          - pax
       format_options:
           description:
             - Options specific to each format.
           type: dict
           required: false
-          format_options:
+          suboptions:
             terse_pack:
               description: Pack option to use for terse format.
               type: str
-              choices: ['PACK', 'SPACK']
+              choices:
+                - PACK
+                - SPACK
             xmit_log_dataset:
               description: Provide a name of data set to use for xmit log.
               type: str
@@ -694,7 +693,7 @@ def run_module():
         argument_spec=dict(
             path=dict(type='list', elements='str', required=True),
             dest=dict(type='str'),
-            exclude_path=dict(type='list', elements='str', default=[]),
+            exclude_path=dict(type='list', elements='str'),
             force_archive=dict(type='bool', default=False),
             format=dict(
                 type='dict',
@@ -720,17 +719,15 @@ def run_module():
                                 default=False,
                             )
                         ),
-                        # default=dict(terse_pack="", xmit_log_dataset=""),
                     ),
                 )
-                # default=dict(name="", format_options=dict(terse_pack="", xmit_log_dataset="")),
             ),
             group=dict(type='str'),
             mode=dict(type='str'),
             owner=dict(type='str'),
             remove=dict(type='bool', default=False),
             exclusion_patterns=dict(type='list', elements='str'),
-            tmp_hlq=dict(type='str', default=''),
+            tmp_hlq=dict(type='str'),
             force=dict(type='bool', default=False)
         ),
         supports_check_mode=True,

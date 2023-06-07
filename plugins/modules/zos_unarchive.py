@@ -30,27 +30,24 @@ options:
   path:
     description:
     - Remote absolute path, glob, or list of paths or globs for the file or files to compress or archive.
-    type: list
+    type: str
     required: true
-    elements: str
   format:
     description:
       - The type of compression to use.
     type: dict
     required: true
-    format_options:
+    suboptions:
       name:
           description:
             - The name of the format to use.
           type: str
           required: true
-          default: gz
           choices:
             - bz2
             - gz
             - tar
             - zip
-            - pax
             - terse
             - xmit
             - pax
@@ -59,7 +56,7 @@ options:
             - Options specific to each format.
           type: dict
           required: false
-          options:
+          suboptions:
             xmit_log_dataset:
               description: Provide a name of data set to use for xmit log.
               type: str
@@ -67,8 +64,12 @@ options:
               description: Use DFSMSdss ADRDSSU step.
               type: bool
               default: False
+            dest_volumes:
+              description: When using ADRDSSU select on which volume the datasets will be placed first.
+              type: list
+              elements: str
   dest:
-    description: 
+    description:
     - Remote absolute path where the archive should be unpacked.
     - The given path must exist. Base directory is not created by this module.
     type: str
@@ -118,6 +119,11 @@ options:
     required: false
     type: dict
     suboptions:
+      name:
+        description:
+          - Desired name for destination dataset.
+        type: str
+        required: false
       type:
         description:
           - Organization of the destination
@@ -259,26 +265,18 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser,
     data_set,
     mvs_cmd)
-from ansible.module_utils.common.text.converters import to_bytes, to_native
-from sys import version_info
 import re
 import os
 import zipfile
 import tarfile
-from traceback import format_exc
-from zlib import crc32
-from fnmatch import fnmatch
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
     MissingZOAUImport,
 )
 
 try:
-    from zoautil_py import datasets, mvscmd, types, jobs
+    from zoautil_py import datasets
 except Exception:
     Datasets = MissingZOAUImport()
-    mvscmd = MissingZOAUImport()
-    types = MissingZOAUImport()
-    jobs = MissingZOAUImport()
 
 data_set_regex = r"(?:(?:[A-Z$#@]{1}[A-Z0-9$#@-]{0,7})(?:[.]{1})){1,21}[A-Z$#@]{1}[A-Z0-9$#@-]{0,7}(?:\([A-Z$#@]{1}[A-Z0-9$#@]{0,7}\)){0,1}"
 
@@ -722,51 +720,43 @@ def get_unarchive_handler(module):
 def run_module():
     module = AnsibleModule(
         argument_spec=dict(
-            path=dict(type='str', required=True, alias='src'),
-            dest=dict(type='str', default=''),
+            path=dict(type='str', required=True),
+            dest=dict(type='str'),
             include=dict(type='list', elements='str'),
             exclude=dict(type='list', elements='str'),
             list=dict(type='bool', default=False),
             format=dict(
                 type='dict',
-                required=False,
-                name=dict(
-                    type='str',
-                    default='gz',
-                    choices=['bz2', 'gz', 'tar', 'zip', 'terse', 'xmit', 'pax']
-                ),
-                format_options=dict(
-                    type='dict',
-                    required=False,
-                    options=dict(
-                        xmit_log_dataset=dict(
-                            type='str',
-                            required=False,
-                        ),
-                        dest_volumes=dict(
-                            type='list',
-                            elements='str',
-                        ),
-                        use_adrdssu=dict(
-                            type='bool',
-                            default=False,
+                required=True,
+                options=dict(
+                    name=dict(
+                        type='str',
+                        required=True,
+                        choices=['bz2', 'gz', 'tar', 'zip', 'terse', 'xmit', 'pax']
+                    ),
+                    format_options=dict(
+                        type='dict',
+                        required=False,
+                        options=dict(
+                            xmit_log_dataset=dict(
+                                type='str',
+                                required=False,
+                            ),
+                            dest_volumes=dict(
+                                type='list',
+                                elements='str',
+                            ),
+                            use_adrdssu=dict(
+                                type='bool',
+                                default=False,
+                            )
                         )
                     ),
-                    default=dict(
-                        xmit_log_dataset="",
-                        dest_volumes=[],
-                        use_adrdssu=False,
-                    )
-                ),
-                default=dict(
-                    name="",
-                    supotions=dict(
-                        xmit_log_dataset="",
-                        dest_volumes=[],
-                        use_adrdssu=False,
-                    )
                 ),
             ),
+            group=dict(type='str'),
+            mode=dict(type='str'),
+            owner=dict(type='str'),
             dest_data_set=dict(
                 type='dict',
                 required=False,
@@ -804,7 +794,7 @@ def run_module():
                     sms_management_class=dict(type="str", required=False),
                 )
             ),
-            tmp_hlq=dict(type='str', default=''),
+            tmp_hlq=dict(type='str'),
             force=dict(type='bool', default=False),
             remote_src=dict(type='bool', default=False),
         ),
@@ -815,7 +805,7 @@ def run_module():
     )
 
     arg_defs = dict(
-        path=dict(type='str', required=True, alias='src'),
+        path=dict(type='str', required=True, aliases=['src']),
         dest=dict(type='str', required=False, default=''),
         include=dict(type='list', elements='str'),
         exclude=dict(type='list', elements='str'),

@@ -15,8 +15,6 @@ __metaclass__ = type
 
 from ansible.plugins.action import ActionBase
 from ansible.utils.display import Display
-from ansible.errors import AnsibleError, AnsibleFileNotFound
-from ansible.module_utils.common.text.converters import to_bytes, to_text
 import os
 import copy
 from ansible_collections.ibm.ibm_zos_core.plugins.action.zos_copy import ActionModule as ZosCopyActionModule

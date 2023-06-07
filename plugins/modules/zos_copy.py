@@ -2400,10 +2400,10 @@ def run_module(module, arg_def):
         dest_validation = validate_disposition(dest_name)
         if not dest_validation:
             module.fail_json(
-                    msg="DATASET in lock, unable to wrote in '{0}'".format(
-                        dest_name
-                    )
+                msg="DATASET in lock, unable to wrote in '{0}'".format(
+                    dest_name
                 )
+            )
     # ********************************************************************
     # Backup should only be performed if dest is an existing file or
     # data set. Otherwise ignored.

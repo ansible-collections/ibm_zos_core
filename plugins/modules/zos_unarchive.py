@@ -284,7 +284,7 @@ XMIT_RECORD_LENGTH = 80
 AMATERSE_RECORD_LENGTH = 1024
 
 
-class Unarchive(abc.ABC):
+class Unarchive():
     def __init__(self, module):
         self.module = module
         self.path = module.params.get("path")

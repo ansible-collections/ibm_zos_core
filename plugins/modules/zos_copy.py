@@ -564,13 +564,13 @@ dest:
     type: str
     sample: SAMPLE.SEQ.DATA.SET
 dest_created:
-    description: Indicates whether the module create the destination.
-    returned: success and if dest was create by the module.
+    description: Indicates whether the module created the destination.
+    returned: success and if dest was created by the module.
     type: bool
     sample: true
 destination_attributes:
-    description: Attributes of a dest create by the module.
-    returned: success and destination was create by the module.
+    description: Attributes of a dest created by the module.
+    returned: success and destination was created by the module.
     type: dict
     contains:
       block_size:

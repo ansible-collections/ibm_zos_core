@@ -866,17 +866,17 @@ class CopyHandler(object):
             EncodingConversionError -- When the encoding of a USS file is not
                                        able to be converted
         """
-        path, dirs, files = next(os.walk(dir_path))
         enc_utils = encode.EncodeUtils()
-        for file in files:
-            full_file_path = path + "/" + file
-            rc = enc_utils.uss_convert_encoding(
-                full_file_path, full_file_path, from_code_set, to_code_set
-            )
-            if not rc:
-                raise EncodingConversionError(
-                    full_file_path, from_code_set, to_code_set
+        for path, dirs, files in os.walk(dir_path):
+            for file_path in files:
+                full_file_path = os.path.join(path, file_path)
+                rc = enc_utils.uss_convert_encoding(
+                    full_file_path, full_file_path, from_code_set, to_code_set
                 )
+                if not rc:
+                    raise EncodingConversionError(
+                        full_file_path, from_code_set, to_code_set
+                    )
 
     def _tag_file_encoding(self, file_path, tag, is_dir=False):
         """Tag the file specified by 'file_path' with the given code set.

@@ -389,7 +389,7 @@ class TarUnarchive(Unarchive):
                     self.file.extract(path)
                     self.targets.append(path)
         else:
-            self.file.extractall()
+            self.file.extractall(members=sanitize_members(self.file.getmembers(), self.dest, self.format))
             self.targets = files_in_archive
         self.file.close()
         # Returning the current working directory to what it was before to not
@@ -460,7 +460,7 @@ class ZipUnarchive(Unarchive):
                     self.file.extract(path)
                     self.targets.append(path)
         else:
-            self.file.extractall()
+            self.file.extractall(members=sanitize_members(self.file.infolist(), self.dest, self.format))
             self.targets = files_in_archive
         self.file.close()
         # Returning the current working directory to what it was before to not
@@ -715,6 +715,85 @@ def get_unarchive_handler(module):
     elif format == "xmit":
         return XMITUnarchive(module)
     return ZipUnarchive(module)
+
+
+def tar_filter(member, dest_path):
+    name = member.name
+    if name.startswith(('/', os.sep)):
+        name = member.path.lstrip('/' + os.sep)
+    if os.path.isabs(name):
+        raise AbsolutePathError
+    target_path = os.path.realpath(os.path.join(dest_path, name))
+    if os.path.commonpath([target_path, dest_path]) != dest_path:
+        raise OutsideDestinationError(member, target_path)
+    if member.islnk() or member.issym():
+        if os.path.isabs(member.linkname):
+            raise AbsoluteLinkError(member)
+        target_path = os.path.realpath(os.path.join(dest_path, member.linkname))
+        if os.path.commonpath([target_path, dest_path]) != dest_path:
+            raise LinkOutsideDestinationError(member, target_path)
+
+
+def zip_filter(member, dest_path):
+    name = member.filename
+    if name.startswith(('/', os.sep)):
+        name = name.lstrip('/' + os.sep)
+    if os.path.isabs(name):
+        raise AbsolutePathError
+    target_path = os.path.realpath(os.path.join(dest_path, name))
+    if os.path.commonpath([target_path, dest_path]) != dest_path:
+        raise OutsideDestinationError(member, target_path)
+    # if os.path.islink(target_path):
+    #     if os.path.isabs(member.linkname):
+    #         raise AbsoluteLinkError(member)
+    #     target_path = os.path.realpath(os.path.join(dest_path, member.linkname))
+    #     if os.path.commonpath([target_path, dest_path]) != dest_path:
+    #         raise LinkOutsideDestinationError(member, target_path)
+
+
+def sanitize_members(members, dest, format):
+    """
+    Filter inspired by (PEP 706)
+        - Refuse to extract any absolute path
+        - Refuse to extract any member with leading '/'
+    """
+    dest_path = os.path.realpath(dest)
+    for member in members:
+        if format == 'zip':
+            zip_filter(member, dest_path)
+        else:
+            tar_filter(member, dest_path)
+    return members
+
+
+class AbsolutePathError(Exception):
+    def __init__(self, tarinfo):
+        self.msg = "member {0} has an absolute path".format(tarinfo.name)
+        super().__init__(self.msg)
+
+
+class OutsideDestinationError(Exception):
+    def __init__(self, tarinfo, path):
+        self.msg = '{0} would be extracted to {1}, which is outside the destination'.format(tarinfo.name, path)
+        super().__init__(self.msg)
+
+
+class SpecialFileError(Exception):
+    def __init__(self, tarinfo):
+        self.msg = '{0} is a special file'.format(tarinfo.name)
+        super().__init__(self.msg)
+
+
+class AbsoluteLinkError(Exception):
+    def __init__(self, tarinfo):
+        self.msg = '{0} is a symlink to an absolute path'.format(tarinfo.name)
+        super().__init__(self.msg)
+
+
+class LinkOutsideDestinationError(Exception):
+    def __init__(self, tarinfo, path):
+        self.msg = '{0} would link to {1}, which is outside the destination'.format(tarinfo.name, path)
+        super().__init__()
 
 
 def run_module():

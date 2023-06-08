@@ -329,6 +329,8 @@ def test_mvs_unarchive_single_dataset(ansible_zos_module, format, data_set, reco
         
         hosts.all.zos_data_set(name=data_set.get("name"), state="absent")
         
+        if format == "terse":
+            del format_dict["format_options"]["terse_pack"]
         # Unarchive action
         unarchive_result = hosts.all.zos_unarchive(
             path=MVS_DEST_ARCHIVE,

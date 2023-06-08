@@ -743,12 +743,6 @@ def zip_filter(member, dest_path):
     target_path = os.path.realpath(os.path.join(dest_path, name))
     if os.path.commonpath([target_path, dest_path]) != dest_path:
         raise OutsideDestinationError(member, target_path)
-    # if os.path.islink(target_path):
-    #     if os.path.isabs(member.linkname):
-    #         raise AbsoluteLinkError(member)
-    #     target_path = os.path.realpath(os.path.join(dest_path, member.linkname))
-    #     if os.path.commonpath([target_path, dest_path]) != dest_path:
-    #         raise LinkOutsideDestinationError(member, target_path)
 
 
 def sanitize_members(members, dest, format):

@@ -563,6 +563,61 @@ dest:
     returned: success
     type: str
     sample: SAMPLE.SEQ.DATA.SET
+dest_created:
+    description: Indicates whether the module created the destination.
+    returned: success and if dest was created by the module.
+    type: bool
+    sample: true
+destination_attributes:
+    description: Attributes of a dest created by the module.
+    returned: success and destination was created by the module.
+    type: dict
+    contains:
+      block_size:
+        description:
+          Block size of the dataset.
+        type: int
+        sample: 32760
+      record_format:
+        description:
+          Record format of the dataset.
+        type: str
+        sample: FB
+      record_length:
+        description:
+          Record length of the dataset.
+        type: int
+        sample: 45
+      space_primary:
+        description:
+          Allocated primary space for the dataset.
+        type: int
+        sample: 2
+      space_secondary:
+        description:
+          Allocated secondary space for the dataset.
+        type: int
+        sample: 1
+      space_type:
+        description:
+          Unit of measurement for space.
+        type: str
+        sample: K
+      type:
+        description:
+          Type of dataset allocated.
+        type: str
+        sample: PDSE
+    sample:
+        {
+            "block_size": 32760,
+            "record_format": "FB",
+            "record_length": 45,
+            "space_primary": 2,
+            "space_secondary": 1,
+            "space_type": "K",
+            "type": "PDSE"
+        }
 checksum:
     description: SHA256 checksum of the file after running zos_copy.
     returned: C(validate) is C(true) and if dest is USS
@@ -866,17 +921,17 @@ class CopyHandler(object):
             EncodingConversionError -- When the encoding of a USS file is not
                                        able to be converted
         """
-        path, dirs, files = next(os.walk(dir_path))
         enc_utils = encode.EncodeUtils()
-        for file in files:
-            full_file_path = path + "/" + file
-            rc = enc_utils.uss_convert_encoding(
-                full_file_path, full_file_path, from_code_set, to_code_set
-            )
-            if not rc:
-                raise EncodingConversionError(
-                    full_file_path, from_code_set, to_code_set
+        for path, dirs, files in os.walk(dir_path):
+            for file_path in files:
+                full_file_path = os.path.join(path, file_path)
+                rc = enc_utils.uss_convert_encoding(
+                    full_file_path, full_file_path, from_code_set, to_code_set
                 )
+                if not rc:
+                    raise EncodingConversionError(
+                        full_file_path, from_code_set, to_code_set
+                    )
 
     def _tag_file_encoding(self, file_path, tag, is_dir=False):
         """Tag the file specified by 'file_path' with the given code set.
@@ -1977,6 +2032,45 @@ def is_member_wildcard(src):
     )
 
 
+def get_attributes_of_any_dataset_created(
+    dest,
+    src_ds_type,
+    src,
+    src_name,
+    is_binary,
+    volume=None
+):
+    """
+    Get the attributes of dataset created by the function allocate_destination_data_set
+    except for VSAM.
+
+    Arguments:
+        dest (str) -- Name of the destination data set.
+        src_ds_type (str) -- Source of the destination data set.
+        src (str) -- Name of the source data set, used as a model when appropiate.
+        src_name (str) -- Extraction of the source name without the member pattern.
+        is_binary (bool) -- Whether the data set will contain binary data.
+        volume (str, optional) -- Volume where the data set should be allocated into.
+
+    Returns:
+        params (dict) -- Parameters used for the dataset created as name, type,
+        space_primary, space_secondary, record_format, record_length, block_size and space_type
+    """
+    params = {}
+    if src_ds_type == "USS":
+        if os.path.isfile(src):
+            size = os.stat(src).st_size
+            params = get_data_set_attributes(dest, size=size, is_binary=is_binary, volume=volume)
+        else:
+            size = os.path.getsize(src)
+            params = get_data_set_attributes(dest, size=size, is_binary=is_binary, volume=volume)
+    else:
+        src_attributes = datasets.listing(src_name)[0]
+        size = int(src_attributes.total_space)
+        params = get_data_set_attributes(dest, size=size, is_binary=is_binary, volume=volume)
+    return params
+
+
 def allocate_destination_data_set(
     src,
     dest,
@@ -2006,6 +2100,9 @@ def allocate_destination_data_set(
 
     Returns:
         bool -- True if the data set was created, False otherwise.
+        dest_params (dict) -- Parameters used for the dataset created as name,
+        block_size, record_format, record_length, space_primary, space_secondary,
+        space_type, type.
     """
     src_name = data_set.extract_dsname(src)
     is_dest_empty = data_set.DataSet.is_empty(dest) if dest_exists else True
@@ -2014,8 +2111,11 @@ def allocate_destination_data_set(
     # empty dataset was created for the user by an admin/operator, and they don't have permissions
     # to create new datasets.
     # These rules assume that source and destination types are compatible.
+    # Create the dict that will contains the values created by the module if it's empty action module will
+    # not display the content.
+    dest_params = {}
     if dest_exists and is_dest_empty:
-        return False
+        return False, dest_params
 
     # Giving more priority to the parameters given by the user.
     if dest_data_set:
@@ -2086,8 +2186,9 @@ def allocate_destination_data_set(
         volumes = [volume] if volume else None
         data_set.DataSet.ensure_absent(dest, volumes=volumes)
         data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, vol=volume)
-
-    return True
+    if dest_ds_type not in data_set.DataSet.MVS_VSAM:
+        dest_params = get_attributes_of_any_dataset_created(dest, src_ds_type, src, src_name, is_binary, volume)
+    return True, dest_params
 
 
 def normalize_line_endings(src, encoding=None):
@@ -2508,7 +2609,7 @@ def run_module(module, arg_def):
 
     try:
         if not is_uss:
-            res_args["changed"] = allocate_destination_data_set(
+            res_args["changed"], res_args["dest_data_set_attrs"] = allocate_destination_data_set(
                 temp_path or src,
                 dest_name, src_ds_type,
                 dest_ds_type,

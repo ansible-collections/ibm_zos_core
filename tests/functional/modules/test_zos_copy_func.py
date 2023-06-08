@@ -1295,6 +1295,7 @@ def test_copy_file_to_non_existing_sequential_data_set(ansible_zos_module, src):
             assert cp_res.get("msg") is None
             assert cp_res.get("changed") is True
             assert cp_res.get("dest") == dest
+            assert cp_res.get("dest_created") is True
             assert cp_res.get("is_binary") == src["is_binary"]
         for v_cp in verify_copy.contacted.values():
             assert v_cp.get("rc") == 0
@@ -1467,6 +1468,7 @@ def test_copy_ps_to_non_existing_ps(ansible_zos_module):
             assert result.get("msg") is None
             assert result.get("changed") is True
             assert result.get("dest") == dest
+            assert result.get("dest_created") is True
         for result in verify_copy.contacted.values():
             assert result.get("rc") == 0
             assert result.get("stdout") != ""
@@ -1816,6 +1818,7 @@ def test_copy_file_to_non_existing_pdse(ansible_zos_module, is_remote):
             assert cp_res.get("msg") is None
             assert cp_res.get("changed") is True
             assert cp_res.get("dest") == dest_path
+            assert cp_res.get("dest_created") is True
         for v_cp in verify_copy.contacted.values():
             assert v_cp.get("rc") == 0
     finally:
@@ -1844,6 +1847,7 @@ def test_copy_dir_to_non_existing_pdse(ansible_zos_module):
             assert result.get("msg") is None
             assert result.get("changed") is True
             assert result.get("dest") == dest
+            assert result.get("dest_created") is True
         for result in verify_copy.contacted.values():
             assert result.get("rc") == 0
     finally:
@@ -1875,6 +1879,7 @@ def test_copy_dir_crlf_endings_to_non_existing_pdse(ansible_zos_module):
             assert result.get("msg") is None
             assert result.get("changed") is True
             assert result.get("dest") == dest
+            assert result.get("dest_created") is True
         for result in verify_copy.contacted.values():
             assert result.get("rc") == 0
             assert len(result.get("stdout_lines")) == 2
@@ -1954,6 +1959,7 @@ def test_copy_data_set_to_non_existing_pdse(ansible_zos_module, src_type):
             assert cp_res.get("msg") is None
             assert cp_res.get("changed") is True
             assert cp_res.get("dest") == dest
+            assert cp_res.get("dest_created") is True
         for v_cp in verify_copy.contacted.values():
             assert v_cp.get("rc") == 0
             assert v_cp.get("stdout") != ""
@@ -2415,6 +2421,7 @@ def test_copy_member_to_non_existing_seq_data_set(ansible_zos_module, src_type):
             assert result.get("msg") is None
             assert result.get("changed") is True
             assert result.get("dest") == dest
+            assert result.get("dest_created") is True
         for result in verify_copy.contacted.values():
             assert result.get("rc") == 0
             assert result.get("stdout") != ""

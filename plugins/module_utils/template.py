@@ -29,7 +29,7 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler im
 # node tried to use this module_util, hence the use of MissingImport.
 try:
     import jinja2
-except ModuleNotFoundError:
+except Exception:
     jinja2 = MissingImport("jinja2")
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import encode

@@ -1012,6 +1012,19 @@ def test_copy_file_insufficient_read_permission_fails(ansible_zos_module):
 
 
 @pytest.mark.uss
+@pytest.mark.parametrize("is_remote", [False, True])
+def test_copy_non_existent_file_fails(ansible_zos_module, is_remote):
+    hosts = ansible_zos_module
+    src_path = "/tmp/non_existent_src"
+    dest = "/tmp"
+
+    copy_res = hosts.all.zos_copy(src=src_path, dest=dest, remote_src=is_remote)
+    for result in copy_res.contacted.values():
+        assert result.get("msg") is not None
+        assert "does not exist" in result.get("msg")
+
+
+@pytest.mark.uss
 @pytest.mark.parametrize("src", [
     dict(src="/etc/profile", is_remote=False),
     dict(src="/etc/profile", is_remote=True),])
@@ -1040,7 +1053,6 @@ def test_ensure_copy_file_does_not_change_permission_on_dest(ansible_zos_module,
         hosts.all.zos_copy(src=src["src"], dest=dest_path, mode=mode_overwrite)
         permissions_overwriten = hosts.all.stat(path = full_path)
         for over in permissions_overwriten.contacted.values():
-            print(over)
             assert over.get("stat").get("mode") == mode_overwrite
     finally:
         hosts.all.file(path=dest_path, state="absent")

@@ -17,9 +17,20 @@ import os
 import tempfile
 from os import path
 
-from ansible.module_utils._text import to_bytes, to_native
+from ansible.module_utils._text import to_native
 from ansible.module_utils.parsing.convert_bool import boolean
-from jinja2 import Environment, FileSystemLoader, TemplateNotFound, TemplateError
+
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
+    MissingImport,
+)
+
+# This module is to be used locally, so jinja2 only needs to be installed in the
+# controller, but Ansible sanity testing simulates what would happen if a managed
+# node tried to use this module_util, hence the use of MissingImport.
+try:
+    import jinja2
+except ModuleNotFoundError:
+    jinja2 = MissingImport("jinja2")
 
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import encode
 
@@ -155,7 +166,7 @@ class TemplateRenderer:
 
         self.encoding = encoding
         self.template_dir = template_dir
-        self.templating_env = Environment(
+        self.templating_env = jinja2.Environment(
             block_start_string=block_start_string,
             block_end_string=block_end_string,
             variable_start_string=variable_start_string,
@@ -168,7 +179,7 @@ class TemplateRenderer:
             lstrip_blocks=lstrip_blocks,
             newline_sequence=newline_sequence,
             keep_trailing_newline=keep_trailing_newline,
-            loader=FileSystemLoader(
+            loader=jinja2.FileSystemLoader(
                 searchpath=template_dir,
                 encoding=encoding,
             ),
@@ -203,13 +214,13 @@ class TemplateRenderer:
         try:
             template = self.templating_env.get_template(file_path)
             rendered_contents = template.render(variables)
-        except TemplateNotFound as err:
-            raise TemplateNotFound("Template {0} was not found: {1}".format(
+        except jinja2.TemplateNotFound as err:
+            raise jinja2.TemplateNotFound("Template {0} was not found: {1}".format(
                 file_path,
                 to_native(err)
             ))
-        except TemplateError as err:
-            raise TemplateError("Error while rendering {0}: {1}".format(
+        except jinja2.TemplateError as err:
+            raise jinja2.TemplateError("Error while rendering {0}: {1}".format(
                 file_path,
                 to_native(err)
             ))
@@ -294,13 +305,13 @@ class TemplateRenderer:
                 try:
                     template = self.templating_env.get_template(file_path)
                     rendered_contents = template.render(variables)
-                except TemplateNotFound as err:
-                    raise TemplateNotFound("Template {0} was not found: {1}".format(
+                except jinja2.TemplateNotFound as err:
+                    raise jinja2.TemplateNotFound("Template {0} was not found: {1}".format(
                         file_path,
                         to_native(err)
                     ))
-                except TemplateError as err:
-                    raise TemplateError("Error while rendering {0}: {1}".format(
+                except jinja2.TemplateError as err:
+                    raise jinja2.TemplateError("Error while rendering {0}: {1}".format(
                         file_path,
                         to_native(err)
                     ))

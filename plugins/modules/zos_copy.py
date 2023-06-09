@@ -2258,6 +2258,7 @@ def run_module(module, arg_def):
     dest = module.params.get('dest')
     remote_src = module.params.get('remote_src')
     is_binary = module.params.get('is_binary')
+    is_executable = module.params.get('is_executable')
     backup = module.params.get('backup')
     backup_name = module.params.get('backup_name')
     validate = module.params.get('validate')
@@ -2718,6 +2719,7 @@ def main():
             src=dict(type='path'),
             dest=dict(required=True, type='str'),
             is_binary=dict(type='bool', default=False),
+            is_executable=dict(type='bool', default=False),
             encoding=dict(
                 type='dict',
                 required=False,
@@ -2794,6 +2796,7 @@ def main():
         src=dict(arg_type='data_set_or_path', required=False),
         dest=dict(arg_type='data_set_or_path', required=True),
         is_binary=dict(arg_type='bool', required=False, default=False),
+        is_executable=dict(arg_type='bool', required=False, default=False),
         content=dict(arg_type='str', required=False),
         backup=dict(arg_type='bool', default=False, required=False),
         backup_name=dict(arg_type='data_set_or_path', required=False),

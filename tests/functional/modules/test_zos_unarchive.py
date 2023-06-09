@@ -354,9 +354,8 @@ def test_mvs_unarchive_single_dataset(ansible_zos_module, format, data_set, reco
                 assert data_set.get("name") in c_result.get("stdout")
         
     finally:
-        None
-        # hosts.all.zos_data_set(name=data_set.get("name"), state="absent")
-        # hosts.all.zos_data_set(name=MVS_DEST_ARCHIVE, state="absent")
+        hosts.all.zos_data_set(name=data_set.get("name"), state="absent")
+        hosts.all.zos_data_set(name=MVS_DEST_ARCHIVE, state="absent")
 
 
 # @pytest.mark.parametrize(

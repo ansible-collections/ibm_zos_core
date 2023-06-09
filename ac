@@ -361,6 +361,9 @@ ac_test(){
         done
     fi
 
+    # Clean up the collections folder after running the tests, temporary work around.
+    rm -rf collections/ansible_collections
+
     #cd ${CURR_DIR}
 }
 

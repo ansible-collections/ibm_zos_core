@@ -570,7 +570,7 @@ def test_copy_subdirs_folders_and_validate_recursive_encoding_local(ansible_zos_
             assert result.get("stdout") == DUMMY_DATA
     finally:
         hosts.all.file(name=dest_path, state="absent")
-        source_1.cleanup(ignore_cleanup_errors = True)
+        source_1.cleanup()
 
 
 @pytest.mark.uss

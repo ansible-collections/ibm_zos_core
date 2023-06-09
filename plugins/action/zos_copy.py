@@ -405,6 +405,7 @@ def _update_result(is_binary, copy_res, original_args):
     src = copy_res.get("src")
     note = copy_res.get("note")
     backup_name = copy_res.get("backup_name")
+    dest_data_set_attrs = copy_res.get("dest_data_set_attrs")
     updated_result = dict(
         dest=copy_res.get("dest"),
         is_binary=is_binary,
@@ -417,7 +418,6 @@ def _update_result(is_binary, copy_res, original_args):
         updated_result["note"] = note
     if backup_name:
         updated_result["backup_name"] = backup_name
-
     if ds_type == "USS":
         updated_result.update(
             dict(
@@ -433,6 +433,11 @@ def _update_result(is_binary, copy_res, original_args):
         checksum = copy_res.get("checksum")
         if checksum:
             updated_result["checksum"] = checksum
+    if dest_data_set_attrs is not None:
+        if len(dest_data_set_attrs) > 0:
+            dest_data_set_attrs.pop("name")
+            updated_result["dest_created"] = True
+            updated_result["destination_attributes"] = dest_data_set_attrs
 
     return updated_result
 

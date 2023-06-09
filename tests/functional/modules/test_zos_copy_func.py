@@ -853,7 +853,7 @@ def test_copy_local_dir_and_change_mode(ansible_zos_module, copy_directory):
         for result in stat_overwritten_file_res.contacted.values():
             assert result.get("stat").get("exists") is True
             assert result.get("stat").get("isdir") is False
-            assert result.get("stat").get("mode") == dest_mode
+            assert result.get("stat").get("mode") == mode
 
         for result in stat_new_file_res.contacted.values():
             assert result.get("stat").get("exists") is True
@@ -947,7 +947,7 @@ def test_copy_uss_dir_and_change_mode(ansible_zos_module, copy_directory):
         for result in stat_overwritten_file_res.contacted.values():
             assert result.get("stat").get("exists") is True
             assert result.get("stat").get("isdir") is False
-            assert result.get("stat").get("mode") == dest_mode
+            assert result.get("stat").get("mode") == mode
 
         for result in stat_new_file_res.contacted.values():
             assert result.get("stat").get("exists") is True
@@ -1021,6 +1021,41 @@ def test_copy_non_existent_file_fails(ansible_zos_module, is_remote):
     for result in copy_res.contacted.values():
         assert result.get("msg") is not None
         assert "does not exist" in result.get("msg")
+
+
+@pytest.mark.uss
+@pytest.mark.parametrize("src", [
+    dict(src="/etc/profile", is_remote=False),
+    dict(src="/etc/profile", is_remote=True),])
+def test_ensure_copy_file_does_not_change_permission_on_dest(ansible_zos_module, src):
+    hosts = ansible_zos_module
+    dest_path = "/tmp/test/"
+    mode = "750"
+    other_mode = "744"
+    mode_overwrite = "0777"
+    full_path = "{0}/profile".format(dest_path)
+    try:
+        hosts.all.file(path=dest_path, state="directory", mode=mode)
+        permissions_before = hosts.all.stat(path=dest_path)
+        hosts.all.zos_copy(src=src["src"], dest=dest_path, mode=other_mode)
+        permissions = hosts.all.stat(path=dest_path)
+
+        for before in permissions_before.contacted.values():
+            permissions_be_copy = before.get("stat").get("mode")
+
+        for after in permissions.contacted.values():
+            permissions_af_copy = after.get("stat").get("mode")
+
+        assert permissions_be_copy == permissions_af_copy
+
+        # Extra asserts to ensure change mode rewrite a copy
+        hosts.all.zos_copy(src=src["src"], dest=dest_path, mode=mode_overwrite)
+        permissions_overwriten = hosts.all.stat(path = full_path)
+        for over in permissions_overwriten.contacted.values():
+            print(over)
+            assert over.get("stat").get("mode") == mode_overwrite
+    finally:
+        hosts.all.file(path=dest_path, state="absent")
 
 
 @pytest.mark.uss

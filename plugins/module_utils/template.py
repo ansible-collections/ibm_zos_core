@@ -184,6 +184,7 @@ class TemplateRenderer:
                 encoding=encoding,
             ),
             auto_reload=auto_reload,
+            autoescape=True,
         )
 
     def render_file_template(self, file_path, variables):

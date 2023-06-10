@@ -210,9 +210,7 @@ class DataSet(object):
         Returns:
             changed (bool) -- Indicates if changes were made.
         """
-
-        changed, present =  DataSet.attempt_catalog_if_necessary_and_delete(name, volumes)
-
+        changed, present = DataSet.attempt_catalog_if_necessary_and_delete(name, volumes)
         return changed
 
     # ? should we do additional check to ensure member was actually created?
@@ -350,7 +348,7 @@ class DataSet(object):
 
         if volumes:
             cataloged_volume_list = DataSet.data_set_cataloged_volume_list(name) or []
-            if bool(set(volumes) & set (cataloged_volume_list)):
+            if bool(set(volumes) & set(cataloged_volume_list)):
                 return True
         else:
             if re.search(r"-\s" + name + r"\s*\n\s+IN-CAT", stdout):
@@ -729,7 +727,7 @@ class DataSet(object):
                     except DatasetCatalogError:
                         try:
                             # A failure, so recatalog the original data set on the original volumes
-                            DataSet.catalog(name,cataloged_volume_list_original)
+                            DataSet.catalog(name, cataloged_volume_list_original)
                         except DatasetCatalogError:
                             pass
                         return changed, present
@@ -745,12 +743,12 @@ class DataSet(object):
                                 DataSet.uncatalog(name)
                             except DatasetUncatalogError:
                                 try:
-                                    DataSet.catalog(name,cataloged_volume_list_original)
+                                    DataSet.catalog(name, cataloged_volume_list_original)
                                 except DatasetCatalogError:
                                     pass
                             return changed, present
                         try:
-                            DataSet.catalog(name,cataloged_volume_list_original)
+                            DataSet.catalog(name, cataloged_volume_list_original)
                             changed = True
                             present = False
                         except DatasetCatalogError:
@@ -1113,13 +1111,13 @@ class DataSet(object):
         data_set_name = name.upper()
         success = False
         command_rc = 0
-        command =""
+        command = ""
 
         # In order to catalog a uncataloged data set, we can't rely on LISTCAT
         # so using the VTOC entries we can make some assumptions of if the data set
         # is indexed, linear etc.
-        ds_vtoc_data_entry = vtoc.get_data_set_entry(name+".DATA", volumes[0])
-        ds_vtoc_index_entry = vtoc.get_data_set_entry(name+".INDEX", volumes[0])
+        ds_vtoc_data_entry = vtoc.get_data_set_entry(name + ".DATA", volumes[0])
+        ds_vtoc_index_entry = vtoc.get_data_set_entry(name + ".INDEX", volumes[0])
 
         if ds_vtoc_data_entry and ds_vtoc_index_entry:
             data_set_type_vsam = "INDEXED"

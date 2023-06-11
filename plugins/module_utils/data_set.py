@@ -13,7 +13,6 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-import pprint
 import re
 import tempfile
 from os import path, walk
@@ -40,11 +39,9 @@ except ImportError:
     vtoc = MissingImport("vtoc")
 
 try:
-    from zoautil_py import datasets, mvscmd, types
+    from zoautil_py import datasets
 except ImportError:
     datasets = MissingZOAUImport()
-    mvscmd = MissingZOAUImport()
-    types = MissingZOAUImport()
 
 
 class DataSet(object):

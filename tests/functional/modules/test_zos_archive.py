@@ -83,6 +83,22 @@ def create_multiple_members(ansible_zos_module, pds_name, member_base_name, n):
         batch=test_members
     )
 
+######################################################
+#
+# USS TEST
+#
+######################################################
+"""
+List of tests:
+- test_uss_single_archive
+- test_uss_single_archive_with_mode
+- test_uss_single_archive_with_force_option
+- test_uss_archive_multiple_files
+- test_uss_archive_multiple_files_with_exclude_path
+- test_uss_archive_remove_targets
+"""
+
+
 # Core functionality tests
 # Test archive with no options
 @pytest.mark.uss
@@ -307,7 +323,6 @@ def test_uss_archive_remove_targets(ansible_zos_module, format):
 
 ######################################################################
 #
-#
 #   MVS data sets tests
 #
 ######################################################################
@@ -318,13 +333,10 @@ List of tests:
 - test_mvs_archive_single_dataset_use_adrdssu
 - test_mvs_archive_single_data_set_remove_target
 - test_mvs_archive_multiple_data_sets
-- test_mvs_archive_multiple_data_sets_use_adrdssu wip
-- test_mvs_archive_multiple_data_sets_remove_target wip
+- test_mvs_archive_multiple_data_sets_use_adrdssu
+- test_mvs_archive_multiple_data_sets_remove_target
 - test_mvs_archive_multiple_data_sets_with_exclusion
 - test_mvs_archive_multiple_data_sets_with_missing
-
-Are there reasons to test tmp_hlq? is resource-consuming since we need to do a loop to check
-how to test force? Similar to DISP=SHR for
 
 """
 

@@ -620,7 +620,8 @@ class MVSUnarchive(Unarchive):
             temp_ds, rc = self._create_dest_data_set(**self.dest_data_set)
             rc = self.unpack(self.path, temp_ds)
         else:
-            temp_ds, rc = self._create_dest_data_set(type="SEQ", record_format="U", tmp_hlq=self.tmphlq, replace=True)
+            record_length = XMIT_RECORD_LENGTH if self.format == 'xmit' else AMATERSE_RECORD_LENGTH
+            temp_ds, rc = self._create_dest_data_set(type="SEQ", record_format="U", tmp_hlq=self.tmphlq, replace=True, record_length=record_length)
             self.unpack(self.path, temp_ds)
             rc = self._restore(temp_ds)
             datasets.delete(temp_ds)

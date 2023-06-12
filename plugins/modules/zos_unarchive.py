@@ -577,6 +577,7 @@ class MVSUnarchive(Unarchive):
         self.debug = self._get_restored_datasets(out)
 
         if rc != 0:
+            # AdrddssuRestoreError
             unrestore_data_sets = self._get_unrestored_datasets(out)
             unrestore_data_sets = ", ".join(unrestore_data_sets)
             self.clean_environment(data_sets=[source], uss_files=[], remove_targets=True)
@@ -671,6 +672,7 @@ class AMATerseUnarchive(MVSUnarchive):
         dds = {'args': 'UNPACK', 'sysut1': path, 'sysut2': dest}
         rc, out, err = mvs_cmd.amaterse(cmd="", dds=dds)
         if rc != 0:
+            self.clean_environment(data_sets=[dest], uss_files=[], remove_targets=True)
             self.module.fail_json(
                 msg="Failed executing AMATERSE to restore {0} into {1}".format(path, dest),
                 stdout=out,

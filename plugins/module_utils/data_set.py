@@ -39,11 +39,9 @@ except ImportError:
     vtoc = MissingImport("vtoc")
 
 try:
-    from zoautil_py import datasets, mvscmd, types
+    from zoautil_py import datasets
 except ImportError:
     datasets = MissingZOAUImport()
-    mvscmd = MissingZOAUImport()
-    types = MissingZOAUImport()
 
 
 class DataSet(object):
@@ -68,25 +66,18 @@ class DataSet(object):
     }
 
     _VSAM_CATALOG_COMMAND_NOT_INDEXED = """ DEFINE CLUSTER -
-        (NAME('{0}') -
-        VOLUMES({1} -
-        ) -
-        RECATALOG -
-        {2}) -
-    DATA( -
-        NAME('{0}.DATA'))
+    (NAME('{0}') -
+    VOLUMES({1}) -
+    RECATALOG {2}) -
+    DATA(NAME('{0}.DATA'))
     """
 
     _VSAM_CATALOG_COMMAND_INDEXED = """ DEFINE CLUSTER -
-        (NAME('{0}') -
-        VOLUMES({1} -
-        ) -
-        RECATALOG -
-        {2}) -
-    DATA( -
-        NAME('{0}.DATA')) -
-    INDEX( -
-        NAME('{0}.INDEX'))
+    (NAME('{0}') -
+    VOLUMES({1}) -
+    RECATALOG {2}) -
+    DATA(NAME('{0}.DATA')) -
+    INDEX(NAME('{0}.INDEX'))
     """
 
     _NON_VSAM_UNCATALOG_COMMAND = " UNCATLG DSNAME={0}"
@@ -214,22 +205,12 @@ class DataSet(object):
             name (str) -- The name of the data set to ensure is absent.
             volumes (list[str]) -- The volumes the data set may reside on.
         Returns:
-            bool -- Indicates if changes were made.
+            changed (bool) -- Indicates if changes were made.
         """
-        if volumes:
-            changed, present, pending_to_catalog_and_delete = DataSet.attempt_to_delete_uncataloged_data_set_if_necessary(
-                name, volumes)
-            if not pending_to_catalog_and_delete:
-                return changed
-
-        present, changed = DataSet.attempt_catalog_if_necessary(name, volumes)
-        if present:
-            DataSet.delete(name)
-            return True
-        return False
+        changed, present = DataSet.attempt_catalog_if_necessary_and_delete(name, volumes)
+        return changed
 
     # ? should we do additional check to ensure member was actually created?
-
     @staticmethod
     def ensure_member_present(name, replace=False):
         """Creates data set member if it does not already exist.
@@ -270,7 +251,7 @@ class DataSet(object):
         Returns:
             bool -- If changes were made.
         """
-        if DataSet.data_set_cataloged(name):
+        if DataSet.data_set_cataloged(name, None):
             return False
         try:
             DataSet.catalog(name, volumes)
@@ -345,7 +326,7 @@ class DataSet(object):
             raise MVSCmdExecError(rc, out, err)
 
     @staticmethod
-    def data_set_cataloged(name):
+    def data_set_cataloged(name, volumes=None):
         """Determine if a data set is in catalog.
 
         Arguments:
@@ -354,18 +335,26 @@ class DataSet(object):
         Returns:
             bool -- If data is is cataloged.
         """
+
         name = name.upper()
         module = AnsibleModuleHelper(argument_spec={})
         stdin = " LISTCAT ENTRIES('{0}')".format(name)
         rc, stdout, stderr = module.run_command(
             "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=stdin
         )
-        if re.search(r"-\s" + name + r"\s*\n\s+IN-CAT", stdout):
-            return True
+
+        if volumes:
+            cataloged_volume_list = DataSet.data_set_cataloged_volume_list(name) or []
+            if bool(set(volumes) & set(cataloged_volume_list)):
+                return True
+        else:
+            if re.search(r"-\s" + name + r"\s*\n\s+IN-CAT", stdout):
+                return True
+
         return False
 
     @staticmethod
-    def get_volume_list_for_cataloged_data_set(name):
+    def data_set_cataloged_volume_list(name):
         """Get the volume list for a cataloged dataset name.
         Arguments:
             name (str) -- The data set name to check if cataloged.
@@ -380,8 +369,8 @@ class DataSet(object):
         )
         delimiter = 'VOLSER------------'
         arr = stdout.split(delimiter)
-        # If a volume serial is not always of lenght 6 we could use ":x.find(' ')" here instead of that index.
-        volume_list = [x[:x.find(' ')] for x in arr[1:]]
+        # A volume serial (VOLSER) is not always of fixed length, use ":x.find(' ')" here instead of arr[index].
+        volume_list = list(set([x[:x.find(' ')] for x in arr[1:]]))
         return volume_list
 
     @staticmethod
@@ -421,28 +410,6 @@ class DataSet(object):
         return True
 
     @staticmethod
-    def delete_uncataloged_dataset(name, volumes):
-        """Delete an uncataloged dataset by specifying volumes.
-        Arguments:
-            name (str) -- The data set name to check if cataloged.
-            volumes (list[str]) -- The volumes the data set may reside on.
-        Returns:
-            bool -- Return code from the mvs_cmd, if 0 then it was successful.
-        """
-        # if is VSAM is_vsam(name, volumes)
-        vsam_code = 'NVR'
-        vsam_name_extension = ''
-        if DataSet.is_vsam(name, volumes):
-            vsam_code = 'VVR'
-            vsam_name_extension = '.DATA'
-        command = " DELETE {0} FILE(DD1) {1}".format(name + vsam_name_extension, vsam_code)
-        dds = dict(DD1=',vol,'.join(volumes) + ',vol')
-        rc, stdout, stderr = mvs_cmd.idcams(cmd=command, dds=dds, authorized=True)
-        if rc > 0:
-            raise DatasetDeleteError(name, rc)
-        return rc
-
-    @staticmethod
     def data_set_shared_members(src, dest):
         """Checks for the existence of members from a source data set in
         a destination data set.
@@ -461,40 +428,6 @@ class DataSet(object):
                 return True
 
         return False
-
-    @staticmethod
-    def attempt_to_delete_uncataloged_data_set_if_necessary(name, volumes):
-        """Attempt to delete any uncataloged dataset if exists on any volume and there is a cataloged dataset with the same name.
-        Arguments:
-            name (str) -- The data set name to check if cataloged.
-            volumes (list[str]) -- The volumes the data set may reside on.
-        Returns:
-            bool -- If any action was performed on the data.
-            bool -- If the dataset is still present.
-            bool -- If given the volumes list and dataset name we need to continue with deleting the dataset as usual,
-            either by cataloging it and deleting or deleting a cataloged dataset.
-        """
-        changed = False
-        present = True
-        pending_to_delete_cataloged_dataset = False
-        # Get the list of volumes that the dataset is catalogued in.
-        cataloged_volume_list = DataSet.get_volume_list_for_cataloged_data_set(name)
-        if len(cataloged_volume_list) == 0:
-            return changed, present, True
-        # If any volume provided is not in the list, means we need to delete it from uncataloged dataset.
-        volumes_for_uncataloged_dataset = list(filter(lambda vol: vol not in cataloged_volume_list, volumes))
-        # If any volume provided is in the list we will delete from the catalog as normal.
-        pending_to_delete_cataloged_dataset = any(vol in volumes for vol in cataloged_volume_list)
-
-        if len(volumes_for_uncataloged_dataset) > 0:
-            volumes = list(filter(lambda vol: DataSet._is_in_vtoc(name, vol), volumes))
-            if len(volumes) > 0:
-                present = DataSet.delete_uncataloged_dataset(name, volumes)
-                changed = present == 0
-            else:
-                changed = False
-
-        return changed, present, pending_to_delete_cataloged_dataset
 
     @staticmethod
     def get_member_name_from_file(file_name):
@@ -575,7 +508,7 @@ class DataSet(object):
 
     @staticmethod
     def data_set_type(name, volume=None):
-        """Checks the type of a data set.
+        """Checks the type of a data set, data sets must be cataloged.
 
         Arguments:
             name (str) -- The name of the data set.
@@ -734,6 +667,114 @@ class DataSet(object):
                 changed = True
                 present = True
         return present, changed
+
+    @staticmethod
+    def attempt_catalog_if_necessary_and_delete(name, volumes):
+        """Attempts to catalog a data set if not already cataloged, then deletes
+           the data set.
+           This is helpful when a data set currently cataloged is not the data
+           set needing to be deleted, meaning the one in the provided volumes
+           is needing to be deleted.. Recall, you can have a data set in
+           two different volumes, and only one cataloged.
+
+        Arguments:
+            name (str) -- The name of the data set.
+            volumes (list[str]) -- The volumes the data set may reside on.
+
+        Returns:
+            changed (bool) -- Whether changes were made.
+            present (bool) -- Whether the data set is now present.
+        """
+
+        changed = False
+        present = True
+
+        if volumes:
+            # Check if the data set is cataloged
+            present = DataSet.data_set_cataloged(name)
+
+            if present:
+                # Data set is cataloged, now check it its cataloged on the provided volumes
+                # If it is, we just delete because the DS is the right one wanting deletion.
+                present = DataSet.data_set_cataloged(name, volumes)
+
+                if present:
+                    DataSet.delete(name)
+                    changed = True
+                    present = False
+                else:
+                    # It appears that what is in catalog does not match the provided
+                    # volumes, therefore the user wishes we delete a data set on a
+                    # particular volue, NOT what is in catalog.
+                    # for the provided volumes
+
+                    # We need to identify the volumes where the current cataloged data set
+                    # is located for use later when we recatalog. Code is strategically
+                    # placed before the uncatalog.
+                    cataloged_volume_list_original = DataSet.data_set_cataloged_volume_list(name)
+
+                    try:
+                        DataSet.uncatalog(name)
+                    except DatasetUncatalogError:
+                        return changed, present
+
+                    # Catalog the data set for the provided volumes
+                    try:
+                        DataSet.catalog(name, volumes)
+                    except DatasetCatalogError:
+                        try:
+                            # A failure, so recatalog the original data set on the original volumes
+                            DataSet.catalog(name, cataloged_volume_list_original)
+                        except DatasetCatalogError:
+                            pass
+                        return changed, present
+
+                    # Check the recatalog, ensure it cataloged before we try to remove
+                    present = DataSet.data_set_cataloged(name, volumes)
+
+                    if present:
+                        try:
+                            DataSet.delete(name)
+                        except DatasetDeleteError:
+                            try:
+                                DataSet.uncatalog(name)
+                            except DatasetUncatalogError:
+                                try:
+                                    DataSet.catalog(name, cataloged_volume_list_original)
+                                except DatasetCatalogError:
+                                    pass
+                            return changed, present
+                        try:
+                            DataSet.catalog(name, cataloged_volume_list_original)
+                            changed = True
+                            present = False
+                        except DatasetCatalogError:
+                            changed = True
+                            present = False
+                            return changed, present
+            else:
+                try:
+                    DataSet.catalog(name, volumes)
+                except DatasetCatalogError:
+                    return changed, present
+
+                present = DataSet.data_set_cataloged(name, volumes)
+
+                if present:
+                    DataSet.delete(name)
+                    changed = True
+                    present = False
+        else:
+            present = DataSet.data_set_cataloged(name, None)
+            if present:
+                try:
+                    DataSet.delete(name)
+                    changed = True
+                    present = False
+                except DatasetDeleteError:
+                    return changed, present
+
+        return changed, present
 
     @staticmethod
     def _is_in_vtoc(name, volume):
@@ -1067,25 +1108,53 @@ class DataSet(object):
         data_set_name = name.upper()
         success = False
         command_rc = 0
-        for data_set_type in ["", "LINEAR", "INDEXED", "NONINDEXED", "NUMBERED"]:
-            if data_set_type != "INDEXED":
-                command = DataSet._VSAM_CATALOG_COMMAND_NOT_INDEXED.format(
-                    data_set_name,
-                    DataSet._build_volume_string_idcams(volumes),
-                    data_set_type,
-                )
-            else:
-                command = DataSet._VSAM_CATALOG_COMMAND_INDEXED.format(
-                    data_set_name,
-                    DataSet._build_volume_string_idcams(volumes),
-                    data_set_type,
-                )
-            command_rc, stdout, stderr = module.run_command(
-                "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=command
+        command = ""
+
+        # In order to catalog a uncataloged data set, we can't rely on LISTCAT
+        # so using the VTOC entries we can make some assumptions of if the data set
+        # is indexed, linear etc.
+        ds_vtoc_data_entry = vtoc.get_data_set_entry(name + ".DATA", volumes[0])
+        ds_vtoc_index_entry = vtoc.get_data_set_entry(name + ".INDEX", volumes[0])
+
+        if ds_vtoc_data_entry and ds_vtoc_index_entry:
+            data_set_type_vsam = "INDEXED"
+        else:
+            data_set_type_vsam = "NONINDEXED"
+
+        if data_set_type_vsam != "INDEXED":
+            command = DataSet._VSAM_CATALOG_COMMAND_NOT_INDEXED.format(
+                data_set_name,
+                DataSet._build_volume_string_idcams(volumes),
+                data_set_type_vsam,
             )
+        else:
+            command = DataSet._VSAM_CATALOG_COMMAND_INDEXED.format(
+                data_set_name,
+                DataSet._build_volume_string_idcams(volumes),
+                data_set_type_vsam,
+            )
+
+        command_rc, stdout, stderr = module.run_command(
+            "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=command)
+
+        if command_rc == 0:
+            success = True
+            # break
+
+        if not success:
+            # Liberty taken such that here we can assume  its a LINEAR VSAM
+            command = DataSet._VSAM_CATALOG_COMMAND_NOT_INDEXED.format(
+                data_set_name,
+                DataSet._build_volume_string_idcams(volumes),
+                "LINEAR",
+            )
+
+            command_rc, stdout, stderr = module.run_command(
+                "mvscmdauth --pgm=idcams --sysprint=* --sysin=stdin", data=command)
+
             if command_rc == 0:
                 success = True
-                break
+
         if not success:
             raise DatasetCatalogError(
                 name,

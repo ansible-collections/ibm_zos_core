@@ -58,6 +58,13 @@ options:
         I(name) and I(volumes). If the attempt to catalog the data set catalog fails,
         then no action is taken. Module completes successfully with I(changed=False).
       - >
+        If I(state=absent) and I(volumes) is provided, and the data set is found in
+        the catalog, the module compares the catalog volume attributes to the provided
+        I(volumes). If they volume attributes are different, the cataloged data set
+        will be uncataloged temporarily while the requested data set be deleted is cataloged.
+        The module will catalog the original data set on completion, if the attempts to
+        catalog fail, no action is taken. Module completes successfully with I(changed=False).
+      - >
         If I(state=present) and the data set does not exist on the managed node,
         create and catalog the data set, module completes successfully with I(changed=True).
       - >
@@ -67,6 +74,12 @@ options:
       - >
         If I(state=present) and I(replace=False) and the data set is present
         on the managed node, no action taken, module completes successfully with I(changed=False).
+      - >
+        If I(state=present) and I(type=MEMBER) and the member does not exist in the data set,
+        create a member formatted to store data, module completes successfully with I(changed=True).
+        Note, a PDSE does not allow a mixture of formats such that there is
+        executables (program objects) and data. The member created is formatted to store data,
+        not an executable.
       - >
         If I(state=cataloged) and I(volumes) is provided and the data set is already cataloged,
         no action taken, module completes successfully with I(changed=False).
@@ -79,11 +92,11 @@ options:
         module attempts to perform catalog using supplied I(name) and I(volumes). If the attempt to
         catalog the data set catalog fails, returns failure with I(changed=False).
       - >
-        If I(state=uncataloged) and the data set is not found,
-        no action taken , module completes successfully with I(changed=False).
+        If I(state=uncataloged) and the data set is not found, no action taken,
+        module completes successfully with I(changed=False).
       - >
-        If I(state=uncataloged) and the data set is found,
-        the data set is uncataloged, module completes successfully with I(changed=True).
+        If I(state=uncataloged) and the data set is found, the data set is uncataloged,
+        module completes successfully with I(changed=True).
     required: false
     type: str
     default: present
@@ -305,6 +318,13 @@ options:
             I(name) and I(volumes). If the attempt to catalog the data set catalog fails,
             then no action is taken. Module completes successfully with I(changed=False).
           - >
+            If I(state=absent) and I(volumes) is provided, and the data set is found in
+            the catalog, the module compares the catalog volume attributes to the provided
+            I(volumes). If they volume attributes are different, the cataloged data set
+            will be uncataloged temporarily while the requested data set be deleted is cataloged.
+            The module will catalog the original data set on completion, if the attempts to
+            catalog fail, no action is taken. Module completes successfully with I(changed=False).
+          - >
             If I(state=present) and the data set does not exist on the managed node,
             create and catalog the data set, module completes successfully with I(changed=True).
           - >
@@ -314,6 +334,12 @@ options:
           - >
             If I(state=present) and I(replace=False) and the data set is present
             on the managed node, no action taken, module completes successfully with I(changed=False).
+          - >
+            If I(state=present) and I(type=MEMBER) and the member does not exist in the data set,
+            create a member formatted to store data, module completes successfully with I(changed=True).
+            Note, a PDSE does not allow a mixture of formats such that there is
+            executables (program objects) and data. The member created is formatted to store data,
+            not an executable.
           - >
             If I(state=cataloged) and I(volumes) is provided and the data set is already cataloged,
             no action taken, module completes successfully with I(changed=False).
@@ -326,11 +352,11 @@ options:
             module attempts to perform catalog using supplied I(name) and I(volumes). If the attempt to
             catalog the data set catalog fails, returns failure with I(changed=False).
           - >
-            If I(state=uncataloged) and the data set is not found,
-            no action taken , module completes successfully with I(changed=False).
+            If I(state=uncataloged) and the data set is not found, no action taken,
+            module completes successfully with I(changed=False).
           - >
-            If I(state=uncataloged) and the data set is found,
-            the data set is uncataloged, module completes successfully with I(changed=True).
+            If I(state=uncataloged) and the data set is found, the data set is uncataloged,
+            module completes successfully with I(changed=True).
         required: false
         type: str
         default: present
@@ -341,7 +367,7 @@ options:
           - uncataloged
       type:
         description:
-          - The data set type to be used when creating a data set. (e.g C(pdse))
+          - The data set type to be used when creating a data set. (e.g C(PDSE))
           - C(MEMBER) expects to be used with an existing partitioned data set.
           - Choices are case-insensitive.
         required: false

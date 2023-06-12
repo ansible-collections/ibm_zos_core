@@ -414,112 +414,6 @@ def test_mvs_archive_single_dataset(ansible_zos_module, format, data_set, record
         hosts.all.zos_data_set(name=MVS_DEST_ARCHIVE, state="absent")
 
 
-c_pgm="""#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-int main(int argc, char** argv)
-{
-    char dsname[ strlen(argv[1]) + 4];
-    sprintf(dsname, "//'%s'", argv[1]);
-    FILE* member;
-    member = fopen(dsname, "rb,type=record");
-    sleep(300);
-    fclose(member);
-    return 0;
-}
-"""
-
-call_c_jcl="""//PDSELOCK JOB MSGCLASS=A,MSGLEVEL=(1,1),NOTIFY=&SYSUID,REGION=0M
-//LOCKMEM  EXEC PGM=BPXBATCH
-//STDPARM DD *
-SH /tmp/disp_shr/pdse-lock '{0}'
-//STDIN  DD DUMMY
-//STDOUT DD SYSOUT=*
-//STDERR DD SYSOUT=*
-//"""
-
-
-@pytest.mark.parametrize(
-    "format", [
-        "terse",
-        "xmit",
-        ])
-@pytest.mark.parametrize(
-    "data_set", [
-        dict(name=TEST_PS, dstype="seq", members=[""]),
-        dict(name=TEST_PDS, dstype="pds", members=["MEM1", "MEM2"]),
-        dict(name=TEST_PDS, dstype="pdse", members=["MEM1", "MEM2"]),
-        ]
-)
-def test_mvs_archive_single_dataset_force_lock(ansible_zos_module, format, data_set,):
-    try:
-        hosts = ansible_zos_module
-        # Clean env
-        hosts.all.zos_data_set(name=data_set.get("name"), state="absent")
-        hosts.all.zos_data_set(name=MVS_DEST_ARCHIVE, state="absent")
-        # Create source data set
-        hosts.all.zos_data_set(
-            name=data_set.get("name"),
-            type=data_set.get("dstype"),
-            state="present",
-        )
-        # Create members if needed
-        if data_set.get("dstype") in ["pds", "pdse"]:
-            for member in data_set.get("members"):
-                hosts.all.zos_data_set(
-                    name=f"{data_set.get('name')}({member})",
-                    type="member",
-                    state="present"
-                )
-        # Write some content into src
-        test_line = "this is a test line"
-        for member in data_set.get("members"):
-            if member == "":
-                ds_to_write = f"{data_set.get('name')}"
-            else:
-                ds_to_write = f"{data_set.get('name')}({member})"
-            hosts.all.shell(cmd=f"decho '{test_line}' \"{ds_to_write}\"")
-
-        format_dict = dict(name=format)
-        if format == "terse":
-            format_dict["format_options"] = dict(terse_pack="SPACK")
-        
-        # copy/compile c program and copy jcl to hold data set lock for n seconds in background(&)
-        hosts.all.zos_copy(content=c_pgm, dest='/tmp/disp_shr/pdse-lock.c', force=True)
-        hosts.all.zos_copy(
-            content=call_c_jcl.format(ds_to_write),
-            dest='/tmp/disp_shr/call_c_pgm.jcl',
-            force=True
-        )
-        hosts.all.shell(cmd="xlc -o pdse-lock pdse-lock.c", chdir="/tmp/disp_shr/")
-
-        # submit jcl
-        hosts.all.shell(cmd="submit call_c_pgm.jcl", chdir="/tmp/disp_shr/")
-
-        # pause to ensure c code acquires lock
-        time.sleep(5)
-
-        archive_result = hosts.all.zos_archive(
-            path=data_set.get("name"),
-            dest=MVS_DEST_ARCHIVE,
-            format=format_dict,
-        )
-        
-        # assert response is positive 
-        for result in archive_result.contacted.values():
-            print(result)
-            assert result.get("changed") is True
-            assert result.get("dest") == MVS_DEST_ARCHIVE
-            assert data_set.get("name") in result.get("archived")
-            cmd_result = hosts.all.shell(cmd = "dls {0}.*".format(HLQ))
-            for c_result in cmd_result.contacted.values():
-                assert MVS_DEST_ARCHIVE in c_result.get("stdout")
-        
-    finally:
-        hosts.all.zos_data_set(name=data_set.get("name"), state="absent")
-        hosts.all.zos_data_set(name=MVS_DEST_ARCHIVE, state="absent")
-
-
 @pytest.mark.parametrize(
     "format", [
         "terse",
@@ -935,3 +829,109 @@ def test_mvs_archive_multiple_data_sets_with_missing(ansible_zos_module, format,
         hosts.all.shell(cmd="drm {0}*".format(data_set.get("name")))
         hosts.all.zos_data_set(name=MVS_DEST_ARCHIVE, state="absent")
 
+
+# Sent this test to the end bc of locking issues with other tests
+c_pgm="""#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+int main(int argc, char** argv)
+{
+    char dsname[ strlen(argv[1]) + 4];
+    sprintf(dsname, "//'%s'", argv[1]);
+    FILE* member;
+    member = fopen(dsname, "rb,type=record");
+    sleep(300);
+    fclose(member);
+    return 0;
+}
+"""
+
+call_c_jcl="""//PDSELOCK JOB MSGCLASS=A,MSGLEVEL=(1,1),NOTIFY=&SYSUID,REGION=0M
+//LOCKMEM  EXEC PGM=BPXBATCH
+//STDPARM DD *
+SH /tmp/disp_shr/pdse-lock '{0}'
+//STDIN  DD DUMMY
+//STDOUT DD SYSOUT=*
+//STDERR DD SYSOUT=*
+//"""
+
+
+@pytest.mark.parametrize(
+    "format", [
+        "terse",
+        "xmit",
+        ])
+@pytest.mark.parametrize(
+    "data_set", [
+        dict(name=TEST_PS, dstype="seq", members=[""]),
+        dict(name=TEST_PDS, dstype="pds", members=["MEM1", "MEM2"]),
+        dict(name=TEST_PDS, dstype="pdse", members=["MEM1", "MEM2"]),
+        ]
+)
+def test_mvs_archive_single_dataset_force_lock(ansible_zos_module, format, data_set,):
+    try:
+        hosts = ansible_zos_module
+        # Clean env
+        hosts.all.zos_data_set(name=data_set.get("name"), state="absent")
+        hosts.all.zos_data_set(name=MVS_DEST_ARCHIVE, state="absent")
+        # Create source data set
+        hosts.all.zos_data_set(
+            name=data_set.get("name"),
+            type=data_set.get("dstype"),
+            state="present",
+        )
+        # Create members if needed
+        if data_set.get("dstype") in ["pds", "pdse"]:
+            for member in data_set.get("members"):
+                hosts.all.zos_data_set(
+                    name=f"{data_set.get('name')}({member})",
+                    type="member",
+                    state="present"
+                )
+        # Write some content into src
+        test_line = "this is a test line"
+        for member in data_set.get("members"):
+            if member == "":
+                ds_to_write = f"{data_set.get('name')}"
+            else:
+                ds_to_write = f"{data_set.get('name')}({member})"
+            hosts.all.shell(cmd=f"decho '{test_line}' \"{ds_to_write}\"")
+
+        format_dict = dict(name=format)
+        if format == "terse":
+            format_dict["format_options"] = dict(terse_pack="SPACK")
+        
+        # copy/compile c program and copy jcl to hold data set lock for n seconds in background(&)
+        hosts.all.zos_copy(content=c_pgm, dest='/tmp/disp_shr/pdse-lock.c', force=True)
+        hosts.all.zos_copy(
+            content=call_c_jcl.format(ds_to_write),
+            dest='/tmp/disp_shr/call_c_pgm.jcl',
+            force=True
+        )
+        hosts.all.shell(cmd="xlc -o pdse-lock pdse-lock.c", chdir="/tmp/disp_shr/")
+
+        # submit jcl
+        hosts.all.shell(cmd="submit call_c_pgm.jcl", chdir="/tmp/disp_shr/")
+
+        # pause to ensure c code acquires lock
+        time.sleep(5)
+
+        archive_result = hosts.all.zos_archive(
+            path=data_set.get("name"),
+            dest=MVS_DEST_ARCHIVE,
+            format=format_dict,
+        )
+        
+        # assert response is positive 
+        for result in archive_result.contacted.values():
+            print(result)
+            assert result.get("changed") is True
+            assert result.get("dest") == MVS_DEST_ARCHIVE
+            assert data_set.get("name") in result.get("archived")
+            cmd_result = hosts.all.shell(cmd = "dls {0}.*".format(HLQ))
+            for c_result in cmd_result.contacted.values():
+                assert MVS_DEST_ARCHIVE in c_result.get("stdout")
+        
+    finally:
+        hosts.all.zos_data_set(name=data_set.get("name"), state="absent")
+        hosts.all.zos_data_set(name=MVS_DEST_ARCHIVE, state="absent")

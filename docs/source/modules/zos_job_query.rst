@@ -133,19 +133,31 @@ jobs
 
         [
             {
+                "asid": 0,
+                "creation_datetime": "20230503T121300",
+                "job_class": "K",
                 "job_id": "JOB01427",
                 "job_name": "LINKJOB",
                 "owner": "ADMIN",
-                "ret_code": "null"
+                "priority": 1,
+                "queue_position": 3,
+                "ret_code": "null",
+                "svc_class": "?"
             },
             {
+                "asid": 4,
+                "creation_datetime": "20230503T121400",
+                "job_class": "A",
                 "job_id": "JOB16577",
                 "job_name": "LINKCBL",
                 "owner": "ADMIN",
+                "priority": 0,
+                "queue_position": 0,
                 "ret_code": {
                     "code": "null",
                     "msg": "CANCELED"
-                }
+                },
+                "svc_class": "E"
             }
         ]
 
@@ -231,6 +243,41 @@ jobs
         | **type**: int
 
 
+
+  job_class
+    Letter indicating job class for this job.
+
+    | **type**: str
+    | **sample**: A
+
+  svc_class
+    Character indicating service class for this job.
+
+    | **type**: str
+    | **sample**: C
+
+  priority
+    A numeric indicator of the job priority assigned through JES.
+
+    | **type**: int
+    | **sample**: 4
+
+  asid
+    An identifier created by JES.
+
+    | **type**: int
+
+  creation_datetime
+    Date and time, local to the target system, when the job was created.
+
+    | **type**: str
+    | **sample**: 20230504T141500
+
+  queue_position
+    Integer of the position within the job queue where this jobs resided.
+
+    | **type**: int
+    | **sample**: 3
 
 
 message

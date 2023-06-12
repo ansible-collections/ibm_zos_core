@@ -172,6 +172,13 @@ options:
     type: bool
     default: false
     required: false
+  is_executable:
+    description:
+      - If set to C(true), indicates that the file or data set to be copied is a
+        executable to ensure permissions of execution.
+    type: bool
+    default: false
+    required: false
   local_follow:
     description:
       - This flag indicates that any existing filesystem links in the source tree
@@ -747,6 +754,7 @@ class CopyHandler(object):
         self,
         module,
         is_binary=False,
+        is_executable=False,
         backup_name=None
     ):
         """Utility class to handle copying data between two targets
@@ -758,11 +766,14 @@ class CopyHandler(object):
         Keyword Arguments:
             is_binary {bool} -- Whether the file or data set to be copied
                                 contains binary data
+            is_executable {bool} -- Whether the file or data set to be copied
+                                is executable
             backup_name {str} -- The USS path or data set name of destination
                                  backup
         """
         self.module = module
         self.is_binary = is_binary
+        self.is_executable = is_executable
         self.backup_name = backup_name
 
     def run_command(self, cmd, **kwargs):
@@ -794,6 +805,8 @@ class CopyHandler(object):
         if self.is_binary:
             copy_args["options"] = "-B"
 
+        if self.is_executable:
+            copy_args["options"] = "-X"
         response = datasets._copy(new_src, dest, None, **copy_args)
         if response.rc != 0:
             raise CopyOperationError(
@@ -1034,6 +1047,7 @@ class USSCopyHandler(CopyHandler):
         self,
         module,
         is_binary=False,
+        is_executable=False,
         common_file_args=None,
         backup_name=None,
     ):
@@ -1051,7 +1065,7 @@ class USSCopyHandler(CopyHandler):
             backup_name {str} -- The USS path or data set name of destination backup
         """
         super().__init__(
-            module, is_binary=is_binary, backup_name=backup_name
+            module, is_binary=is_binary, is_executable=is_executable, backup_name=backup_name
         )
         self.common_file_args = common_file_args
 
@@ -1116,6 +1130,9 @@ class USSCopyHandler(CopyHandler):
             mode = self.common_file_args.get("mode")
             group = self.common_file_args.get("group")
             owner = self.common_file_args.get("owner")
+            # Handle the error of the user delete executable bit in the mode introduction
+            if self.is_executable:
+                mode = mode | "0100"
             if mode is not None:
                 if not os.path.isdir(dest):
                     self.module.set_mode_if_different(dest, mode, False)
@@ -1154,6 +1171,9 @@ class USSCopyHandler(CopyHandler):
                 copy.copy_uss2uss_binary(new_src, dest)
             else:
                 shutil.copy(new_src, dest)
+            if self.is_executable:
+                status = os.stat(dest)
+                os.chmod(dest, status.st_mode | os.stat.S_IEXEC)
         except OSError as err:
             raise CopyOperationError(
                 msg="Destination {0} is not writable".format(dest),
@@ -1325,9 +1345,15 @@ class USSCopyHandler(CopyHandler):
                     os.mkdir(dest)
                 except FileExistsError:
                     pass
+        if os.path.isfile(dest) and self.is_executable:
+            opts = dict()
+            opts["options"] = "-X"
         try:
             if src_member or src_ds_type in data_set.DataSet.MVS_SEQ:
-                response = datasets._copy(src, dest)
+                if self.is_executable:
+                    response = datasets._copy(src, dest, **opts)
+                elif not self.is_executable:
+                    response = datasets._copy(src, dest)
                 if response.rc != 0:
                     raise CopyOperationError(
                         msg="Error while copying source {0} to {1}".format(src, dest),
@@ -1346,6 +1372,7 @@ class PDSECopyHandler(CopyHandler):
         self,
         module,
         is_binary=False,
+        is_executable=False,
         backup_name=None
     ):
         """ Utility class to handle copying to partitioned data sets or
@@ -1487,20 +1514,23 @@ class PDSECopyHandler(CopyHandler):
         if self.is_binary:
             opts["options"] = "-B"
 
+        if self.is_executable:
+            opts["options"] = "-X"
+
         response = datasets._copy(src, dest, None, **opts)
         rc, out, err = response.rc, response.stdout_response, response.stderr_response
 
-        if rc != 0:
+        #if rc != 0:
             # *****************************************************************
             # An error occurs while attempting to write a data set member to a
             # PDSE containing program object members, a PDSE cannot contain
             # both program object members and data members. This can be
             # resolved by copying the program object with a "-X" flag.
             # *****************************************************************
-            if ("FSUM8976" in err and "EDC5091I" in err) or ("FSUM8976" in out and "EDC5091I" in out):
-                opts["options"] = "-X"
-                response = datasets._copy(src, dest, None, **opts)
-                rc, out, err = response.rc, response.stdout_response, response.stderr_response
+            #if ("FSUM8976" in err and "EDC5091I" in err) or ("FSUM8976" in out and "EDC5091I" in out):
+            #    opts["options"] = "-X"
+            #    response = datasets._copy(src, dest, None, **opts)
+            #    rc, out, err = response.rc, response.stdout_response, response.stderr_response
 
         return dict(
             rc=rc,
@@ -1639,6 +1669,7 @@ def create_seq_dataset_from_file(
     dest,
     force,
     is_binary,
+    is_executable,
     volume=None
 ):
     """Creates a new sequential dataset with attributes suitable to copy the
@@ -1649,6 +1680,7 @@ def create_seq_dataset_from_file(
         dest (str) -- Name of the data set.
         force (bool) -- Whether to replace an existing data set.
         is_binary (bool) -- Whether the file has binary data.
+        is_executable (bool) -- Whether the file is an executable.
         volume (str, optional) -- Volume where the data set should be.
     """
     src_size = os.stat(file).st_size
@@ -1660,12 +1692,19 @@ def create_seq_dataset_from_file(
         record_format = "FB"
         record_length = get_file_record_length(file)
 
+    if is_executable:
+        record_format = "U"
+        type = "LIBRARY"
+    else:
+        type = "SEQ"
+
     dest_params = get_data_set_attributes(
         name=dest,
         size=src_size,
         is_binary=is_binary,
         record_format=record_format,
         record_length=record_length,
+        type=type,
         volume=volume
     )
 
@@ -2079,6 +2118,7 @@ def allocate_destination_data_set(
     dest_exists,
     force,
     is_binary,
+    is_executable,
     dest_data_set=None,
     volume=None
 ):
@@ -2094,6 +2134,7 @@ def allocate_destination_data_set(
         dest_exists (bool) -- Whether the destination data set already exists.
         force (bool) -- Whether to replace an existent data set.
         is_binary (bool) -- Whether the data set will contain binary data.
+        is_executable (bool) -- Whether the data to copy is an executable dataset or file.
         dest_data_set (dict, optional) -- Parameters containing a full definition
             of the new data set; they will take precedence over any other allocation logic.
         volume (str, optional) -- Volume where the data set should be allocated into.
@@ -2118,17 +2159,23 @@ def allocate_destination_data_set(
         return False, dest_params
 
     # Giving more priority to the parameters given by the user.
+    # Cover case the user set is_executable to true to create dataset valid.
     if dest_data_set:
         dest_params = dest_data_set
         dest_params["name"] = dest
-        data_set.DataSet.ensure_present(replace=force, **dest_params)
+        if not is_executable:
+            data_set.DataSet.ensure_present(replace=force, **dest_params)
+        else:
+            dest_params["record_format"] = "U"
+            dest_params["type"] = "LIBRARY"
+            data_set.DataSet.ensure_present(replace=force, **dest_params)
     elif dest_ds_type in data_set.DataSet.MVS_SEQ:
         volumes = [volume] if volume else None
         data_set.DataSet.ensure_absent(dest, volumes=volumes)
 
         if src_ds_type == "USS":
             # Taking the temp file when a local file was copied with sftp.
-            create_seq_dataset_from_file(src, dest, force, is_binary, volume=volume)
+            create_seq_dataset_from_file(src, dest, force, is_binary, is_executable, volume=volume)
         elif src_ds_type in data_set.DataSet.MVS_SEQ:
             data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, vol=volume)
         else:
@@ -2137,7 +2184,7 @@ def allocate_destination_data_set(
                 # Dumping the member into a file in USS to compute the record length and
                 # size for the new data set.
                 temp_dump = dump_data_set_member_to_file(src, is_binary)
-                create_seq_dataset_from_file(temp_dump, dest, force, is_binary, volume=volume)
+                create_seq_dataset_from_file(temp_dump, dest, force, is_binary, is_executable, volume=volume)
             finally:
                 if temp_dump:
                     os.remove(temp_dump)
@@ -2151,8 +2198,10 @@ def allocate_destination_data_set(
             size = int(src_attributes.total_space)
             record_format = src_attributes.recfm
             record_length = int(src_attributes.lrecl)
-
-            dest_params = get_data_set_attributes(dest, size, is_binary, record_format=record_format, record_length=record_length, type="PDSE", volume=volume)
+            if not is_executable:
+                dest_params = get_data_set_attributes(dest, size, is_binary, record_format=record_format, record_length=record_length, type="PDSE", volume=volume)
+            else:
+                dest_params = get_data_set_attributes(dest, size, is_binary, record_format="U", record_length=record_length, type="LIBRARY", volume=volume)
             data_set.DataSet.ensure_present(replace=force, **dest_params)
         elif src_ds_type == "USS":
             if os.path.isfile(src):
@@ -2164,13 +2213,16 @@ def allocate_destination_data_set(
                     record_format = "FB"
                     record_length = get_file_record_length(src)
 
+                if is_executable:
+                    record_format = "U"
+
                 dest_params = get_data_set_attributes(
                     dest,
                     size,
                     is_binary,
                     record_format=record_format,
                     record_length=record_length,
-                    type="PDSE",
+                    type= "LIBRARY" if is_executable else "PDSE",
                     volume=volume
                 )
             else:
@@ -2558,6 +2610,7 @@ def run_module(module, arg_def):
                 dest_exists,
                 force,
                 is_binary,
+                is_executable,
                 dest_data_set=dest_data_set,
                 volume=volume
             )
@@ -2588,6 +2641,7 @@ def run_module(module, arg_def):
     copy_handler = CopyHandler(
         module,
         is_binary=is_binary,
+        is_executable=is_executable,
         backup_name=backup_name
     )
 
@@ -2606,6 +2660,7 @@ def run_module(module, arg_def):
             uss_copy_handler = USSCopyHandler(
                 module,
                 is_binary=is_binary,
+                is_executable=is_executable,
                 common_file_args=dict(mode=mode, group=group, owner=owner),
                 backup_name=backup_name,
             )
@@ -2669,7 +2724,7 @@ def run_module(module, arg_def):
                 temp_path = os.path.join(temp_path, os.path.basename(src))
 
             pdse_copy_handler = PDSECopyHandler(
-                module, is_binary=is_binary, backup_name=backup_name
+                module, is_binary=is_binary, is_executable=is_executable, backup_name=backup_name
             )
 
             pdse_copy_handler.copy_to_pdse(

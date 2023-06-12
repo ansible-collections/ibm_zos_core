@@ -575,7 +575,7 @@ class MVSUnarchive(Unarchive):
         dds = dict(archive="{0},old".format(source))
         rc, out, err = mvs_cmd.adrdssu(cmd=restore_cmd, dds=dds, authorized=True)
         self.debug = self._get_restored_datasets(out)
-        
+
         if rc != 0:
             unrestore_data_sets = self._get_unrestored_datasets(out)
             unrestore_data_sets = ", ".join(unrestore_data_sets)

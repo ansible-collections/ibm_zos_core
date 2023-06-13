@@ -350,8 +350,10 @@ jobs
 
         [
             {
+                "asid": 0,
                 "class": "K",
                 "content_type": "JOB",
+                "creation_datetime": "20230503T121300",
                 "ddnames": [
                     {
                         "byte_count": "677",
@@ -546,9 +548,12 @@ jobs
                         "stepname": "DLORD6"
                     }
                 ],
+                "job_class": "K",
                 "job_id": "JOB00361",
                 "job_name": "DBDGEN00",
                 "owner": "OMVSADM",
+                "priority": 1,
+                "queue_position": 3,
                 "ret_code": {
                     "code": 0,
                     "msg": "CC 0000",
@@ -561,7 +566,8 @@ jobs
                         }
                     ]
                 },
-                "subsystem": "STL1"
+                "subsystem": "STL1",
+                "svc_class": "?"
             }
         ]
 
@@ -714,6 +720,41 @@ jobs
         | **type**: int
 
 
+
+  job_class
+    Letter indicating job class for this job.
+
+    | **type**: str
+    | **sample**: A
+
+  svc_class
+    Character indicating service class for this job.
+
+    | **type**: str
+    | **sample**: C
+
+  priority
+    A numeric indicator of the job priority assigned through JES.
+
+    | **type**: int
+    | **sample**: 4
+
+  asid
+    An identifier created by JES.
+
+    | **type**: int
+
+  creation_datetime
+    Date and time, local to the target system, when the job was created.
+
+    | **type**: str
+    | **sample**: 20230504T141500
+
+  queue_position
+    Integer of the position within the job queue where this jobs resided.
+
+    | **type**: int
+    | **sample**: 3
 
 
 message

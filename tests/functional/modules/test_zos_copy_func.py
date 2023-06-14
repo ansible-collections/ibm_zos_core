@@ -489,7 +489,7 @@ def test_copy_subdirs_folders_and_validate_recursive_encoding(ansible_zos_module
     src_file_three = src_dir_two + "/dir_three/three.txt"
 
     # Remote dest path to encoded files placed
-    dest_path = "/tmp/ansible/dest"
+    dest_path = path + "/dest"
 
     # Nested dest UTF-8 files
     dst_file_one = dest_path + "/dir_one/one.txt"
@@ -529,9 +529,9 @@ def test_copy_subdirs_folders_and_validate_recursive_encoding(ansible_zos_module
 
         # Echo contents into files (could use zos_lineinfile or zos_copy), echo'ing will
         # result in managed node's locale which currently is IBM-1047
-        hosts.all.shell(cmd="echo '{0}' > '{1}'".format(str_one, src_file_one))
-        hosts.all.shell(cmd="echo '{0}' > '{1}'".format(str_two, src_file_two))
-        hosts.all.shell(cmd="echo '{0}' > '{1}'".format(str_three, src_file_three))
+        hosts.all.raw("echo '{0}' > '{1}'".format(str_one, src_file_one))
+        hosts.all.raw("echo '{0}' > '{1}'".format(str_two, src_file_two))
+        hosts.all.raw("echo '{0}' > '{1}'".format(str_three, src_file_three))
 
         # Lets stat the deepest nested directory, not necessary to stat all of them
         results = hosts.all.stat(path=src_file_three)

@@ -478,7 +478,7 @@ def test_copy_local_dir_to_non_existing_dir(ansible_zos_module, copy_directory):
     temp_path = tempfile.mkdtemp()
     src_basename = "source" if copy_directory else "source/"
     source_path = "{0}/{1}".format(temp_path, src_basename)
-
+    
     try:
         os.mkdir(source_path)
         populate_dir(source_path)

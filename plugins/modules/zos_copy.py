@@ -805,8 +805,6 @@ class CopyHandler(object):
         if self.is_binary:
             copy_args["options"] = "-B"
 
-        if self.is_executable:
-            copy_args["options"] = "-X"
         response = datasets._copy(new_src, dest, None, **copy_args)
         if response.rc != 0:
             raise CopyOperationError(

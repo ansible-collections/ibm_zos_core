@@ -38,7 +38,8 @@ def z_python_interpreter(request):
     helper = ZTestHelper.from_yaml_file(path)
     interpreter_str = helper.build_interpreter_string()
     inventory = helper.get_inventory_info()
-    yield (interpreter_str, inventory)
+    python_path = helper.get_python_path()
+    yield (interpreter_str, inventory, python_path)
 
 
 def clean_logs(adhoc):
@@ -62,12 +63,18 @@ def clean_logs(adhoc):
 def ansible_zos_module(request, z_python_interpreter):
     """ Initialize pytest-ansible plugin with values from
     our YAML config and inject interpreter path into inventory. """
-    interpreter, inventory = z_python_interpreter
+    interpreter, inventory, python_path = z_python_interpreter
+
     # next two lines perform similar action to ansible_adhoc fixture
     plugin = request.config.pluginmanager.getplugin("ansible")
     adhoc = plugin.initialize(request.config, request, **inventory)
-    # * Inject our environment
+
+    # Inject our environment
     hosts = adhoc["options"]["inventory_manager"]._inventory.hosts
+
+    # Courtesy, pass along the python_path for some test cases need this information
+    adhoc["options"]["ansible_python_path"] = python_path
+
     for host in hosts.values():
         host.vars["ansible_python_interpreter"] = interpreter
         # host.vars["ansible_connection"] = "zos_ssh"

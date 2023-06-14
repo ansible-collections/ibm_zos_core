@@ -20,7 +20,6 @@ import re
 import tempfile
 from tempfile import mkstemp
 import subprocess
-from pprint import pprint
 
 __metaclass__ = type
 
@@ -2779,7 +2778,7 @@ def test_display_verbosity_in_zos_copy_plugin(ansible_zos_module, options):
     """Test the display verbosity, ensure it matches the verbosity_level.
      This test requires access to verbosity and pytest-ansbile provides no
      reasonable handle for this so for now subprocess is used. This test
-     results in no actual copy happening, the iterest is in the verbosity"""
+     results in no actual copy happening, the interest is in the verbosity"""
 
     try:
         hosts = ansible_zos_module

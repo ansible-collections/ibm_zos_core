@@ -569,9 +569,9 @@ def test_mvs_archive_single_data_set_remove_target(ansible_zos_module, format, d
         ])
 @pytest.mark.parametrize(
     "data_set", [
-        dict(name=TEST_PS, dstype="seq"),
-        dict(name=TEST_PDS, dstype="pds"),
-        dict(name=TEST_PDS, dstype="pdse"),
+        dict(name=TEST_PS, dstype="SEQ"),
+        dict(name=TEST_PDS, dstype="PDS"),
+        dict(name=TEST_PDS, dstype="PDSE"),
         ]
 )
 def test_mvs_archive_multiple_data_sets(ansible_zos_module, format, data_set ):

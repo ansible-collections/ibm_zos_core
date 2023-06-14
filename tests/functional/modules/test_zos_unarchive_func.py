@@ -52,6 +52,40 @@ def set_uss_test_env(ansible_zos_module, test_files):
             executable=SHELL_EXECUTABLE,
         )
 
+
+def create_multiple_data_sets(ansible_zos_module, base_name, n, type, ):
+    test_data_sets = []
+    for i in range(n):
+        curr_ds = dict(name=base_name+str(i),
+                       type=type,
+                       state="present",
+                       replace=True,
+                       force=True)
+        test_data_sets.append(curr_ds)
+
+        
+    # Create data sets in batch
+    ansible_zos_module.all.zos_data_set(
+        batch=test_data_sets
+    )
+    return test_data_sets
+
+
+def create_multiple_members(ansible_zos_module, pds_name, member_base_name, n):
+    test_members = []
+    for i in range(n):
+        curr_ds = dict(name="{0}({1})".format(pds_name, member_base_name+str(i)),
+                       type="member",
+                       state="present",
+                       replace=True,
+                       force=True)
+        test_members.append(curr_ds)
+    ansible_zos_module.all.zos_data_set(
+        batch=test_members
+    )
+    return test_members
+
+
 ######################################################
 #
 # USS TEST
@@ -451,5 +485,323 @@ def test_mvs_unarchive_single_dataset_use_adrdssu(ansible_zos_module, format, da
         
     finally:
         hosts.all.zos_data_set(name=data_set.get("name"), state="absent")
+        hosts.all.zos_data_set(name=MVS_DEST_ARCHIVE, state="absent")
+
+
+@pytest.mark.parametrize(
+    "format", [
+        "terse",
+        "xmit",
+        ])
+@pytest.mark.parametrize(
+    "data_set", [
+        dict(name=TEST_PS, dstype="SEQ"),
+        dict(name=TEST_PDS, dstype="PDS"),
+        dict(name=TEST_PDS, dstype="PDSE"),
+        ]
+)
+def test_mvs_unarchive_multiple_dataset_use_adrdssu(ansible_zos_module, format, data_set):
+    try:
+        hosts = ansible_zos_module
+        target_ds_list = create_multiple_data_sets(ansible_zos_module=hosts,
+                                    base_name=data_set.get("name"),
+                                    n=1,
+                                    type=data_set.get("dstype"))
+        ds_to_write = target_ds_list
+        if data_set.get("dstype") in ["PDS", "PDSE"]:
+            target_member_list = []
+            for ds in target_ds_list:
+                target_member_list.extend(
+                    create_multiple_members(ansible_zos_module=hosts,
+                                        pds_name=ds.get("name"),
+                                        member_base_name="MEM",
+                                        n=3
+                    )
+                )
+            ds_to_write = target_member_list
+        # Write some content into src
+        test_line = "this is a test line"
+        for ds in ds_to_write:
+            hosts.all.shell(cmd="decho '{0}' \"{1}\"".format(test_line, ds.get("name")))
+        
+        format_dict = dict(name=format, format_options=dict())
+        if format == "terse":
+            format_dict["format_options"].update(terse_pack="SPACK")
+        format_dict["format_options"].update(use_adrdssu=True)
+        archive_result = hosts.all.zos_archive(
+            path="{0}*".format(data_set.get("name")),
+            dest=MVS_DEST_ARCHIVE,
+            format=format_dict,
+        )
+
+        # remote datasets from host
+        hosts.all.shell(cmd="drm {0}*".format(data_set.get("name")))
+
+        if format == "terse":
+            del format_dict["format_options"]["terse_pack"]
+        # Unarchive action
+        unarchive_result = hosts.all.zos_unarchive(
+            path=MVS_DEST_ARCHIVE,
+            format=format_dict,
+            remote_src=True,
+            force=True
+        )
+        
+        # assert response is positive 
+        for result in unarchive_result.contacted.values():
+            print(result)
+            assert result.get("changed") is True
+            assert result.get("failed", False) is False
+            assert result.get("path") == MVS_DEST_ARCHIVE
+            
+            cmd_result = hosts.all.shell(cmd="dls {0}.*".format(HLQ))
+            for c_result in cmd_result.contacted.values():
+                print("dls result : {0}".format(c_result))
+                for target_ds in target_ds_list:
+                    assert target_ds.get("name") in result.get("targets")
+                    assert target_ds.get("name") in c_result.get("stdout")
+    finally:
+        hosts.all.shell(cmd="drm {0}*".format(data_set.get("name")))
+        hosts.all.zos_data_set(name=MVS_DEST_ARCHIVE, state="absent")
+
+
+@pytest.mark.parametrize(
+    "format", [
+        "terse",
+        "xmit",
+        ])
+@pytest.mark.parametrize(
+    "data_set", [
+        dict(name=TEST_PS, dstype="SEQ"),
+        dict(name=TEST_PDS, dstype="PDS"),
+        dict(name=TEST_PDS, dstype="PDSE"),
+        ]
+)
+def test_mvs_unarchive_multiple_dataset_use_adrdssu_include(ansible_zos_module, format, data_set):
+    try:
+        hosts = ansible_zos_module
+        target_ds_list = create_multiple_data_sets(ansible_zos_module=hosts,
+                                    base_name=data_set.get("name"),
+                                    n=2,
+                                    type=data_set.get("dstype"))
+        ds_to_write = target_ds_list
+        if data_set.get("dstype") in ["PDS", "PDSE"]:
+            target_member_list = []
+            for ds in target_ds_list:
+                target_member_list.extend(
+                    create_multiple_members(ansible_zos_module=hosts,
+                                        pds_name=ds.get("name"),
+                                        member_base_name="MEM",
+                                        n=3
+                    )
+                )
+            ds_to_write = target_member_list
+        # Write some content into src
+        test_line = "this is a test line"
+        for ds in ds_to_write:
+            hosts.all.shell(cmd="decho '{0}' \"{1}\"".format(test_line, ds.get("name")))
+        
+        format_dict = dict(name=format, format_options=dict())
+        if format == "terse":
+            format_dict["format_options"].update(terse_pack="SPACK")
+        format_dict["format_options"].update(use_adrdssu=True)
+        archive_result = hosts.all.zos_archive(
+            path="{0}*".format(data_set.get("name")),
+            dest=MVS_DEST_ARCHIVE,
+            format=format_dict,
+        )
+
+        # remote datasets from host
+        hosts.all.shell(cmd="drm {0}*".format(data_set.get("name")))
+
+        if format == "terse":
+            del format_dict["format_options"]["terse_pack"]
+        # Unarchive action
+        include_ds = "{0}0".format(data_set.get("name"))
+        unarchive_result = hosts.all.zos_unarchive(
+            path=MVS_DEST_ARCHIVE,
+            format=format_dict,
+            remote_src=True,
+            include=[include_ds],
+        )
+        
+        # assert response is positive 
+        for result in unarchive_result.contacted.values():
+            print(result)
+            assert result.get("changed") is True
+            assert result.get("failed", False) is False
+            assert result.get("path") == MVS_DEST_ARCHIVE
+            
+            cmd_result = hosts.all.shell(cmd="dls {0}.*".format(HLQ))
+            for c_result in cmd_result.contacted.values():
+                print("dls result : {0}".format(c_result))
+                for target_ds in target_ds_list:
+                    if target_ds.get("name") == include_ds:
+                        assert target_ds.get("name") in result.get("targets")
+                        assert target_ds.get("name") in c_result.get("stdout")
+                    else:
+                        assert target_ds.get("name") not in result.get("targets")
+                        assert target_ds.get("name") not in c_result.get("stdout")
+    finally:
+        hosts.all.shell(cmd="drm {0}*".format(data_set.get("name")))
+        hosts.all.zos_data_set(name=MVS_DEST_ARCHIVE, state="absent")
+
+
+@pytest.mark.parametrize(
+    "format", [
+        "terse",
+        "xmit",
+        ])
+@pytest.mark.parametrize(
+    "data_set", [
+        dict(name=TEST_PS, dstype="SEQ"),
+        dict(name=TEST_PDS, dstype="PDS"),
+        dict(name=TEST_PDS, dstype="PDSE"),
+        ]
+)
+def test_mvs_unarchive_multiple_dataset_use_adrdssu_exclude(ansible_zos_module, format, data_set):
+    try:
+        hosts = ansible_zos_module
+        target_ds_list = create_multiple_data_sets(ansible_zos_module=hosts,
+                                    base_name=data_set.get("name"),
+                                    n=2,
+                                    type=data_set.get("dstype"))
+        ds_to_write = target_ds_list
+        if data_set.get("dstype") in ["PDS", "PDSE"]:
+            target_member_list = []
+            for ds in target_ds_list:
+                target_member_list.extend(
+                    create_multiple_members(ansible_zos_module=hosts,
+                                        pds_name=ds.get("name"),
+                                        member_base_name="MEM",
+                                        n=3
+                    )
+                )
+            ds_to_write = target_member_list
+        # Write some content into src
+        test_line = "this is a test line"
+        for ds in ds_to_write:
+            hosts.all.shell(cmd="decho '{0}' \"{1}\"".format(test_line, ds.get("name")))
+        
+        format_dict = dict(name=format, format_options=dict())
+        if format == "terse":
+            format_dict["format_options"].update(terse_pack="SPACK")
+        format_dict["format_options"].update(use_adrdssu=True)
+        archive_result = hosts.all.zos_archive(
+            path="{0}*".format(data_set.get("name")),
+            dest=MVS_DEST_ARCHIVE,
+            format=format_dict,
+        )
+
+        # remote datasets from host
+        hosts.all.shell(cmd="drm {0}*".format(data_set.get("name")))
+
+        if format == "terse":
+            del format_dict["format_options"]["terse_pack"]
+        # Unarchive action
+        exclude_ds = "{0}0".format(data_set.get("name"))
+        unarchive_result = hosts.all.zos_unarchive(
+            path=MVS_DEST_ARCHIVE,
+            format=format_dict,
+            remote_src=True,
+            exclude=[exclude_ds],
+        )
+        
+        # assert response is positive 
+        for result in unarchive_result.contacted.values():
+            print(result)
+            assert result.get("changed") is True
+            assert result.get("failed", False) is False
+            assert result.get("path") == MVS_DEST_ARCHIVE
+            
+            cmd_result = hosts.all.shell(cmd="dls {0}.*".format(HLQ))
+            for c_result in cmd_result.contacted.values():
+                print("dls result : {0}".format(c_result))
+                for target_ds in target_ds_list:
+                    if target_ds.get("name") == exclude_ds:
+                        assert target_ds.get("name") not in result.get("targets")
+                        assert target_ds.get("name") not in c_result.get("stdout")
+                    else:
+                        assert target_ds.get("name") in result.get("targets")
+                        assert target_ds.get("name") in c_result.get("stdout")
+    finally:
+        hosts.all.shell(cmd="drm {0}*".format(data_set.get("name")))
+        hosts.all.zos_data_set(name=MVS_DEST_ARCHIVE, state="absent")
+
+
+@pytest.mark.parametrize(
+    "format", [
+        "terse",
+        "xmit",
+        ])
+@pytest.mark.parametrize(
+    "data_set", [
+        dict(name=TEST_PS, dstype="SEQ"),
+        dict(name=TEST_PDS, dstype="PDS"),
+        dict(name=TEST_PDS, dstype="PDSE"),
+        ]
+)
+def test_mvs_unarchive_multiple_dataset_list(ansible_zos_module, format, data_set):
+    try:
+        hosts = ansible_zos_module
+        target_ds_list = create_multiple_data_sets(ansible_zos_module=hosts,
+                                    base_name=data_set.get("name"),
+                                    n=2,
+                                    type=data_set.get("dstype"))
+        ds_to_write = target_ds_list
+        if data_set.get("dstype") in ["PDS", "PDSE"]:
+            target_member_list = []
+            for ds in target_ds_list:
+                target_member_list.extend(
+                    create_multiple_members(ansible_zos_module=hosts,
+                                        pds_name=ds.get("name"),
+                                        member_base_name="MEM",
+                                        n=3
+                    )
+                )
+            ds_to_write = target_member_list
+        # Write some content into src
+        test_line = "this is a test line"
+        for ds in ds_to_write:
+            hosts.all.shell(cmd="decho '{0}' \"{1}\"".format(test_line, ds.get("name")))
+        
+        format_dict = dict(name=format, format_options=dict())
+        if format == "terse":
+            format_dict["format_options"].update(terse_pack="SPACK")
+        format_dict["format_options"].update(use_adrdssu=True)
+        archive_result = hosts.all.zos_archive(
+            path="{0}*".format(data_set.get("name")),
+            dest=MVS_DEST_ARCHIVE,
+            format=format_dict,
+        )
+
+        # remote datasets from host
+        hosts.all.shell(cmd="drm {0}*".format(data_set.get("name")))
+
+        if format == "terse":
+            del format_dict["format_options"]["terse_pack"]
+        # Unarchive action
+        unarchive_result = hosts.all.zos_unarchive(
+            path=MVS_DEST_ARCHIVE,
+            format=format_dict,
+            remote_src=True,
+            list=True
+        )
+        
+        # assert response is positive 
+        for result in unarchive_result.contacted.values():
+            print(result)
+            assert result.get("changed") is False
+            assert result.get("failed", False) is False
+            assert result.get("path") == MVS_DEST_ARCHIVE
+            
+            cmd_result = hosts.all.shell(cmd="dls {0}.*".format(HLQ))
+            for c_result in cmd_result.contacted.values():
+                print("dls result : {0}".format(c_result))
+                for target_ds in target_ds_list:
+                    assert target_ds.get("name") in result.get("targets")
+                    assert target_ds.get("name") not in c_result.get("stdout")
+    finally:
+        hosts.all.shell(cmd="drm {0}*".format(data_set.get("name")))
         hosts.all.zos_data_set(name=MVS_DEST_ARCHIVE, state="absent")
 

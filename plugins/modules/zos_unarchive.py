@@ -637,7 +637,7 @@ class MVSUnarchive(Unarchive):
 
     def list_archive_content(self):
         try:
-            temp_ds = self._create_dest_data_set(type="SEQ", record_format="U", record_length=0, tmp_hlq=self.tmphlq, replace=True)
+            temp_ds, rc = self._create_dest_data_set(type="SEQ", record_format="U", record_length=0, tmp_hlq=self.tmphlq, replace=True)
             self.unpack(self.path, temp_ds)
             self._list_content(temp_ds)
         finally:

@@ -279,7 +279,7 @@ class ActionModule(ActionBase):
             err = _detect_sftp_errors(stderr)
 
             if ansible_verbosity > 3:
-                    ignore_stderr = True
+                ignore_stderr = True
 
             if returncode != 0 or (err and not ignore_stderr):
                 return dict(

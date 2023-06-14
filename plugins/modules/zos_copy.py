@@ -1390,6 +1390,7 @@ class PDSECopyHandler(CopyHandler):
         super().__init__(
             module,
             is_binary=is_binary,
+            is_executable=is_executable,
             backup_name=backup_name
         )
 

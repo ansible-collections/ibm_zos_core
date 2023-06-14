@@ -224,8 +224,8 @@ def link_loadlib_from_cobol(hosts, ds_name, cobol_pds):
             dest="/tmp/link.jcl",
             force=True,
         )
-        for res in cp_res.contacted.values():
-            print("copy link program result {0}".format(res))
+        #for res in cp_res.contacted.values():
+            #print("copy link program result {0}".format(res))
         # Link the temp ds with ds_name
         job_result = hosts.all.zos_job_submit(
             src="/tmp/link.jcl",
@@ -233,7 +233,7 @@ def link_loadlib_from_cobol(hosts, ds_name, cobol_pds):
             wait_time_s=60
         )
         for result in job_result.contacted.values():
-            print("link job submit result {0}".format(result))
+            #print("link job submit result {0}".format(result))
             rc = result.get("jobs")[0].get("ret_code").get("code")
     finally:
         hosts.all.file(path=temp_jcl, state="absent")
@@ -545,7 +545,7 @@ def test_copy_subdirs_folders_and_validate_recursive_encoding_local(ansible_zos_
             assert result.get("stdout") == DUMMY_DATA
     finally:
         hosts.all.file(name=dest_path, state="absent")
-        source_1.cleanup(ignore_cleanup_errors = True)
+        source_1.cleanup()
 
 
 @pytest.mark.uss
@@ -2052,7 +2052,7 @@ def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module,):
         cobol_pds = "{0}({1})".format(cobol_pds, member)
         rc = hosts.all.zos_copy(
             content=COBOL_SRC,
-            dest=cobol_pds,
+            dest=cobol_pds
         )
         dest_name = "{0}({1})".format(dest, member)
         src_name = "{0}({1})".format(src, member)
@@ -2078,7 +2078,8 @@ def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module,):
         copy_res = hosts.all.zos_copy(
             src="{0}({1})".format(src, member), 
             dest="{0}({1})".format(dest, "MEM1"), 
-            remote_src=True)
+            remote_src=True,
+            is_executable=True)
 
         verify_copy = hosts.all.shell(
             cmd="mls {0}".format(dest),

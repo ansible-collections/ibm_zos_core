@@ -254,6 +254,20 @@ options:
 '''
 
 EXAMPLES = r'''
+# Simple extract
+- name: Send tar file and unpack in managed node
+  zos_unarchive:
+    path: "./files/archive_folder_test.tar"
+    format:
+      name: tar
+
+- name: List content from TRS
+    zos_unarchive:
+      path: "/tmp/test.bz2"
+      format:
+        name: bz2
+      include:
+        - 'foo.txt'
 '''
 
 RETURN = r'''

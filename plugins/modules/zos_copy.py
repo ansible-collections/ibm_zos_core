@@ -1098,6 +1098,9 @@ class USSCopyHandler(CopyHandler):
             self._mvs_copy_to_uss(
                 src, dest, src_ds_type, src_member, member_name=member_name
             )
+            if self.is_executable:
+                status = os.stat(dest)
+                os.chmod(dest, status.st_mode | os.stat.S_IEXEC)
         else:
             norm_dest = os.path.normpath(dest)
             dest_parent_dir, tail = os.path.split(norm_dest)
@@ -1128,9 +1131,6 @@ class USSCopyHandler(CopyHandler):
             mode = self.common_file_args.get("mode")
             group = self.common_file_args.get("group")
             owner = self.common_file_args.get("owner")
-            # Handle the error of the user delete executable bit in the mode introduction
-            if self.is_executable:
-                mode = mode | "0100"
             if mode is not None:
                 if not os.path.isdir(dest):
                     self.module.set_mode_if_different(dest, mode, False)
@@ -1169,9 +1169,9 @@ class USSCopyHandler(CopyHandler):
                 copy.copy_uss2uss_binary(new_src, dest)
             else:
                 shutil.copy(new_src, dest)
-            if self.is_executable:
-                status = os.stat(dest)
-                os.chmod(dest, status.st_mode | os.stat.S_IEXEC)
+                if self.is_executable:
+                    status = os.stat(dest)
+                    os.chmod(dest, status.st_mode | os.stat.S_IEXEC)
         except OSError as err:
             raise CopyOperationError(
                 msg="Destination {0} is not writable".format(dest),
@@ -1343,15 +1343,9 @@ class USSCopyHandler(CopyHandler):
                     os.mkdir(dest)
                 except FileExistsError:
                     pass
-        if os.path.isfile(dest) and self.is_executable:
-            opts = dict()
-            opts["options"] = "-X"
         try:
             if src_member or src_ds_type in data_set.DataSet.MVS_SEQ:
-                if self.is_executable:
-                    response = datasets._copy(src, dest, **opts)
-                elif not self.is_executable:
-                    response = datasets._copy(src, dest)
+                response = datasets._copy(src, dest)
                 if response.rc != 0:
                     raise CopyOperationError(
                         msg="Error while copying source {0} to {1}".format(src, dest),

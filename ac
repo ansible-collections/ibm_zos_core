@@ -230,9 +230,9 @@ ac_bandit(){
 # ------------------------------------------------------------------------------
 #->ac-build:
 ## Build and install collection of the local GH branch.
-## Usage: ac [-b, --ac-build]
+## Usage: ac [-ac-lint]
 ## Example:
-##  $ ac --ac-build
+##  $ ac --ac-lint
 ac_build(){
     gh_branch=`git branch |grep "*" | cut -d" " -f2`
     message "Build and install collection of the local GH branch: '$gh_branch'."
@@ -263,6 +263,21 @@ ac_install(){
         message "Installing 'ibm.ibm_zos_core' lastet GA version."
         . $VENV_BIN/activate && $VENV_BIN/ansible-galaxy collection install -fc ibm.ibm_zos_core
     fi
+}
+
+# ------------------------------------------------------------------------------
+# Run ansible-lint on the locally checked out GH Branch
+# ------------------------------------------------------------------------------
+#->ac-lint:
+## Run ansible-lint on the local GH branch.
+## Usage: ac [-b, --ac-build]
+## Example:
+##  $ ac --ac-build
+/Users/ddimatos/git/github/ibm_zos_core/venv/venv-2.15/bin/
+ac_ansible_lint(){
+    gh_branch=`git branch |grep "*" | cut -d" " -f2`
+    message "Linting with ansible-lint on GH branch: '$gh_branch'."
+    . $VENV_BIN/activate && $VENV_BIN/ansible-lint
 }
 
 # ------------------------------------------------------------------------------
@@ -644,6 +659,10 @@ while true; do
             ensure_managed_venv_exists $1      # Command
             option_submitted="--ac-install"
             ;;
+      --ac-lint)
+            ensure_managed_venv_exists $1      # Command
+            option_submitted="--ac-lint"
+            ;;
       --ac-sanity |--ac-sanity=?*)             # Command
             ensure_managed_venv_exists $1
             option_submitted="--ac-sanity"
@@ -785,6 +804,8 @@ elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-build" ] ; then
     ac_build
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-install" ] ; then
     ac_install $version
+elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-lint" ] ; then
+    ac_ansible_lint
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-sanity" ] ; then
     ac_sanity $version
 elif [ "$option_submitted" ] && [ "$option_submitted" = "--ac-test" ] ; then

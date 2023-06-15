@@ -138,21 +138,45 @@ options:
 '''
 
 EXAMPLES = r'''
-# Pass in a message
-- name: Test with a message
-  my_namespace.my_collection.my_test:
-    name: hello world
+- name: Archive file into tar
+    zos_archive:
+      path: /tmp/archive/foo.txt
+      dest: /tmp/archive/foo_archive_test.tar
+      format:
+        name: tar
 
-# pass in a message and have changed true
-- name: Test with a message and changed output
-  my_namespace.my_collection.my_test:
-    name: hello world
-    new: true
+- name: Compress list of files into zip
+    zos_archive:
+      path: 
+      - /tmp/archive/foo.txt
+      - /tmp/archive/bar.txt
+      dest: /tmp/archive/foo_bar_archive_test.zip
+      format:
+        name: zip
 
-# fail the module
-- name: Test failure of the module
-  my_namespace.my_collection.my_test:
-    name: fail me
+- name: Compress data set into terse
+    zos_archive:
+      path: "USER.ARCHIVE.TEST"
+      dest: "USER.ARCHIVE.RESULT.TRS"
+      format:
+        name: terse
+
+- name: Compress data set into terse, specify pack algorithm and use adrdssu
+    zos_archive:
+      path: "USER.ARCHIVE.TEST"
+      dest: "USER.ARCHIVE.RESULT.TRS"
+      format:
+        name: terse
+        format_options:
+          terse_pack: "SPACK"
+          use_adrdssu: True
+
+- name: Compress data set pattern using xmit
+    zos_archive:
+      path: "USER.ARCHIVE.*"
+      dest: "USER.ARCHIVE.RESULT.XMIT"
+      format:
+        name: xmit
 '''
 
 RETURN = r'''

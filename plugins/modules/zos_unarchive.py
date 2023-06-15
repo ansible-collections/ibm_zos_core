@@ -257,6 +257,26 @@ EXAMPLES = r'''
 '''
 
 RETURN = r'''
+path:
+    description:
+        File path or data set name unarchived.
+    type: str
+    returned: always
+dest_path:
+    description:
+        - Destination path where archive was extracted.
+    type: str
+    returned: always
+targets:
+    description:
+        List of files or data sets in the archive.
+    type: str
+    returned: success
+missing:
+    description:
+        Any files or data sets not found during extraction.
+    type: str
+    returned: success
 '''
 
 import abc
@@ -318,6 +338,7 @@ class Unarchive():
     def result(self):
         return {
             'path': self.path,
+            'dest_path': self.dest,
             'changed': self.changed,
             'targets': self.targets,
             'debug': self.debug,

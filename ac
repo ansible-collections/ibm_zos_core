@@ -205,8 +205,8 @@ option_sanitize(){
 # ------------------------------------------------------------------------------
 #->ac-bandit:
 ## Run a bandit security scan on the plugins directory, set the severity level.
-## Usage: ac [-s <level>, --bandit <level>]
-## Usage: ac [-s <level>, --bandit <level>]
+## Usage: ac [--bandit <level>]
+## Usage: ac [--bandit <level>]
 ## <level> - choose from 'l', 'll', 'lll'
 ##         - l all low, medium, high severity
 ##         - ll all medium, high severity
@@ -230,9 +230,9 @@ ac_bandit(){
 # ------------------------------------------------------------------------------
 #->ac-build:
 ## Build and install collection of the local GH branch.
-## Usage: ac [--ac-lint]
+## Usage: ac [--ac-build]
 ## Example:
-##  $ ac --ac-lint
+##  $ ac --ac-build
 ac_build(){
     gh_branch=`git branch |grep "*" | cut -d" " -f2`
     message "Build and install collection of the local GH branch: '$gh_branch'."
@@ -269,15 +269,14 @@ ac_install(){
 # Run ansible-lint on the locally checked out GH Branch
 # ------------------------------------------------------------------------------
 #->ac-lint:
-## Run ansible-lint on the local GH branch.
-## Usage: ac [-b, --ac-build]
+## Run ansible-lint on the local GH branch with the production profile.
+## Usage: ac [--ac-lint]
 ## Example:
-##  $ ac --ac-build
-/Users/ddimatos/git/github/ibm_zos_core/venv/venv-2.15/bin/
+##  $ ac --ac-lint
 ac_ansible_lint(){
     gh_branch=`git branch |grep "*" | cut -d" " -f2`
     message "Linting with ansible-lint on GH branch: '$gh_branch'."
-    . $VENV_BIN/activate && $VENV_BIN/ansible-lint
+    . $VENV_BIN/activate && $VENV_BIN/ansible-lint --profile production
 }
 
 # ------------------------------------------------------------------------------
@@ -286,7 +285,7 @@ ac_ansible_lint(){
 #->ac-sanity:
 ## Run ansible-test in docker if the docker engine is running, else run them in
 ## a managed virtual environment using the installed python version.
-## Usage: ac [--ac-lint] [--version <version>]
+## Usage: ac [--ac-sanity] [--version <version>]
 ## Options:
 ##   <version> - Only applies to when docker is running.
 ##             - No version selection will run all available python versions in docker.

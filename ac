@@ -230,7 +230,7 @@ ac_bandit(){
 # ------------------------------------------------------------------------------
 #->ac-build:
 ## Build and install collection of the local GH branch.
-## Usage: ac [-ac-lint]
+## Usage: ac [--ac-lint]
 ## Example:
 ##  $ ac --ac-lint
 ac_build(){

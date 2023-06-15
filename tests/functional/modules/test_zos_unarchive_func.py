@@ -322,6 +322,7 @@ def test_mvs_unarchive_single_dataset(ansible_zos_module, format, data_set, reco
             state="present",
             record_length=record_length,
             record_format=record_format,
+            replace=True,
         )
         # Create members if needed
         if data_set.get("dstype") in ["pds", "pdse"]:
@@ -422,6 +423,7 @@ def test_mvs_unarchive_single_dataset_use_adrdssu(ansible_zos_module, format, da
             state="present",
             record_length=record_length,
             record_format=record_format,
+            replace=True,
         )
         # Create members if needed
         if data_set.get("dstype") in ["pds", "pdse"]:
@@ -925,6 +927,7 @@ def test_mvs_unarchive_single_dataset_remote_src(ansible_zos_module, format, dat
             state="present",
             record_length=record_length,
             record_format=record_format,
+            replace=True,
         )
         # Create members if needed
         if data_set.get("dstype") in ["pds", "pdse"]:

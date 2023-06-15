@@ -77,12 +77,6 @@ def create_multiple_members(ansible_zos_module, pds_name, member_base_name, n):
     )
     return test_members
 
-        
-    # Create data sets in batch
-    ansible_zos_module.all.zos_data_set(
-        batch=test_members
-    )
-
 ######################################################
 #
 # USS TEST
@@ -372,6 +366,7 @@ def test_mvs_archive_single_dataset(ansible_zos_module, format, data_set, record
             state="present",
             record_length=record_length,
             record_format=record_format,
+            replace=True,
         )
         # Create members if needed
         if data_set.get("dstype") in ["pds", "pdse"]:
@@ -446,6 +441,7 @@ def test_mvs_archive_single_dataset_use_adrdssu(ansible_zos_module, format, data
             state="present",
             record_length=record_length,
             record_format=record_format,
+            replace=True,
         )
         # Create members if needed
         if data_set.get("dstype") in ["pds", "pdse"]:
@@ -519,6 +515,7 @@ def test_mvs_archive_single_data_set_remove_target(ansible_zos_module, format, d
             state="present",
             record_length=record_length,
             record_format=record_format,
+            replace=True,
         )
         # Create members if needed
         if data_set.get("dstype") in ["pds", "pdse"]:
@@ -879,6 +876,7 @@ def test_mvs_archive_single_dataset_force_lock(ansible_zos_module, format, data_
             name=data_set.get("name"),
             type=data_set.get("dstype"),
             state="present",
+            replace=True,
         )
         # Create members if needed
         if data_set.get("dstype") in ["pds", "pdse"]:

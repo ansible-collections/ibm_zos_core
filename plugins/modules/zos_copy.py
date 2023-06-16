@@ -1100,7 +1100,7 @@ class USSCopyHandler(CopyHandler):
             )
             if self.is_executable:
                 status = os.stat(dest)
-                os.chmod(dest, status.st_mode | os.stat.S_IEXEC)
+                os.chmod(dest, status.st_mode | stat.S_IEXEC)
         else:
             norm_dest = os.path.normpath(dest)
             dest_parent_dir, tail = os.path.split(norm_dest)
@@ -1171,7 +1171,7 @@ class USSCopyHandler(CopyHandler):
                 shutil.copy(new_src, dest)
                 if self.is_executable:
                     status = os.stat(dest)
-                    os.chmod(dest, status.st_mode | os.stat.S_IEXEC)
+                    os.chmod(dest, status.st_mode | stat.S_IEXEC)
         except OSError as err:
             raise CopyOperationError(
                 msg="Destination {0} is not writable".format(dest),
@@ -1343,9 +1343,16 @@ class USSCopyHandler(CopyHandler):
                     os.mkdir(dest)
                 except FileExistsError:
                     pass
+        opts = dict()
+        if self.is_executable:
+            opts["options"] = "-IX"
+
         try:
             if src_member or src_ds_type in data_set.DataSet.MVS_SEQ:
-                response = datasets._copy(src, dest)
+                if self.is_executable:
+                    response = datasets._copy(src, dest, None, **opts)
+                else:
+                    response = datasets._copy(src, dest)
                 if response.rc != 0:
                     raise CopyOperationError(
                         msg="Error while copying source {0} to {1}".format(src, dest),
@@ -1418,6 +1425,8 @@ class PDSECopyHandler(CopyHandler):
         dest_members = []
 
         if src_ds_type == "USS":
+            if self.is_executable:
+                self.is_binary = True
             if os.path.isfile(new_src):
                 path = os.path.dirname(new_src)
                 files = [os.path.basename(new_src)]
@@ -1508,7 +1517,7 @@ class PDSECopyHandler(CopyHandler):
             opts["options"] = "-B"
 
         if self.is_executable:
-            opts["options"] = "-X"
+            opts["options"] = "-IX"
 
         response = datasets._copy(src, dest, None, **opts)
         rc, out, err = response.rc, response.stdout_response, response.stderr_response
@@ -1688,8 +1697,6 @@ def create_seq_dataset_from_file(
     if is_executable:
         record_format = "U"
         type = "LIBRARY"
-    else:
-        type = "SEQ"
 
     dest_params = get_data_set_attributes(
         name=dest,
@@ -2191,10 +2198,10 @@ def allocate_destination_data_set(
             size = int(src_attributes.total_space)
             record_format = src_attributes.recfm
             record_length = int(src_attributes.lrecl)
-            if not is_executable:
-                dest_params = get_data_set_attributes(dest, size, is_binary, record_format=record_format, record_length=record_length, type="PDSE", volume=volume)
-            else:
+            if is_executable:
                 dest_params = get_data_set_attributes(dest, size, is_binary, record_format="U", record_length=record_length, type="LIBRARY", volume=volume)
+            else:
+                dest_params = get_data_set_attributes(dest, size, is_binary, record_format=record_format, record_length=record_length, type="PDSE", volume=volume)
             data_set.DataSet.ensure_present(replace=force, **dest_params)
         elif src_ds_type == "USS":
             if os.path.isfile(src):
@@ -2221,8 +2228,9 @@ def allocate_destination_data_set(
             else:
                 # TODO: decide on whether to compute the longest file record length and use that for the whole PDSE.
                 size = sum(os.stat("{0}/{1}".format(src, member)).st_size for member in os.listdir(src))
+                record_format = None
                 # This PDSE will be created with record format VB and a record length of 1028.
-                dest_params = get_data_set_attributes(dest, size, is_binary, type="PDSE", volume=volume)
+                dest_params = get_data_set_attributes(dest, size, is_binary, record_format="U" if is_executable else record_format, type="PDSE", volume=volume)
 
             data_set.DataSet.ensure_present(replace=force, **dest_params)
     elif dest_ds_type in data_set.DataSet.MVS_VSAM:

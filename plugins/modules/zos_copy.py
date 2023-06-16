@@ -2185,7 +2185,7 @@ def allocate_destination_data_set(
             if is_executable:
                 dest_params = get_data_set_attributes(dest, size, is_binary, record_format="U", record_length=record_length, type="LIBRARY", volume=volume)
             else:
-                dest_params = get_data_set_attributes(dest, size, is_binary, record_format=record_format, record_length=record_length, type="PDSE", 
+                dest_params = get_data_set_attributes(dest, size, is_binary, record_format=record_format, record_length=record_length, type="PDSE",
                                                       volume=volume)
             data_set.DataSet.ensure_present(replace=force, **dest_params)
         elif src_ds_type == "USS":
@@ -2205,9 +2205,9 @@ def allocate_destination_data_set(
                     dest,
                     size,
                     is_binary,
-                    record_format = record_format,
-                    record_length = record_length,
-                    type= "LIBRARY" if is_executable else "PDSE",
+                    record_format=record_format,
+                    record_length=record_length,
+                    type="LIBRARY" if is_executable else "PDSE",
                     volume=volume
                 )
             else:

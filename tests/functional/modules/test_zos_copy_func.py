@@ -224,8 +224,6 @@ def link_loadlib_from_cobol(hosts, ds_name, cobol_pds):
             dest="/tmp/link.jcl",
             force=True,
         )
-        #for res in cp_res.contacted.values():
-            #print("copy link program result {0}".format(res))
         # Link the temp ds with ds_name
         job_result = hosts.all.zos_job_submit(
             src="/tmp/link.jcl",
@@ -2006,13 +2004,15 @@ def test_copy_pds_to_existing_pds(ansible_zos_module, args):
 
 
 @pytest.mark.pdse
-def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module,):
+@pytest.mark.parametrize("is_created", ["true", "false"])
+def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module, is_created):
     hosts = ansible_zos_module
     # The volume for this dataset should use a system symbol.
     # This dataset and member should be available on any z/OS system.
     src = "USER.LOAD.SRC"
     dest = "USER.LOAD.DEST"
     cobol_pds = "USER.COBOL.SRC"
+    uss_dest = "/tmp/HELLO"
     try:
         hosts.all.zos_data_set(
             name=src,
@@ -2025,18 +2025,18 @@ def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module,):
             space_type="M",
             replace=True
         )
-
-        hosts.all.zos_data_set(
-            name=dest,
-            state="present",
-            type="pdse",
-            record_format="U",
-            record_length=0,
-            block_size=32760,
-            space_primary=2,
-            space_type="M",
-            replace=True
-        )
+        if is_created:
+            hosts.all.zos_data_set(
+                name=dest,
+                state="present",
+                type="pdse",
+                record_format="U",
+                record_length=0,
+                block_size=32760,
+                space_primary=2,
+                space_type="M",
+                replace=True
+            )
 
         hosts.all.zos_data_set(
             name=cobol_pds,
@@ -2086,6 +2086,26 @@ def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module,):
             executable=SHELL_EXECUTABLE
         )
 
+        copy_uss_res = hosts.all.zos_copy(
+            src="{0}({1})".format(dest, "MEM1"),
+            dest=uss_dest,
+            remote_src=True,
+            is_executable=True,
+            force=True)
+
+        verify_exe_uss = hosts.all.shell(
+            cmd="{0}".format(uss_dest)
+        )
+
+        for v_cp_u in verify_exe_uss.contacted.values():
+            assert v_cp_u.get("rc") == 0
+            stdout = v_cp_u.get("stdout")
+            assert  "SIMPLE HELLO WORLD" in str(stdout)
+
+        for result in copy_uss_res.contacted.values():
+            assert result.get("msg") is None
+            assert result.get("changed") is True
+
         for result in copy_res.contacted.values():
             assert result.get("msg") is None
             assert result.get("changed") is True
@@ -2102,6 +2122,7 @@ def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module,):
         hosts.all.zos_data_set(name=dest, state="absent")
         hosts.all.zos_data_set(name=src, state="absent")
         hosts.all.zos_data_set(name=cobol_pds, state="absent")
+        hosts.all.file(name=uss_dest, state="absent")
 
 
 @pytest.mark.pdse

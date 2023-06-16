@@ -63,6 +63,7 @@ homepage: https://www.ibm.com/support/z-content-solutions/ansible/
 issues: https://github.com/ansible-collections/ibm_zos_core/issues
 
 # Ignore files and directories matching the following patterns
+build_ignore:
   - '*.tar.gz'
   - __pycache__
   - .cache

@@ -563,7 +563,7 @@ def test_copy_subdirs_folders_and_validate_recursive_encoding(ansible_zos_module
             assert result.get("stdout") == str_three_big_endian_hex
 
     finally:
-       hosts.all.file(path=path, state="absent")
+        hosts.all.file(path=path, state="absent")
 
 
 @pytest.mark.uss

@@ -1345,7 +1345,7 @@ class USSCopyHandler(CopyHandler):
                     pass
         opts = dict()
         if self.is_executable:
-            opts["options"] = "-IX"
+            opts["options"] = "-X"
 
         try:
             if src_member or src_ds_type in data_set.DataSet.MVS_SEQ:
@@ -1427,6 +1427,7 @@ class PDSECopyHandler(CopyHandler):
         if src_ds_type == "USS":
             if self.is_executable:
                 self.is_binary = True
+
             if os.path.isfile(new_src):
                 path = os.path.dirname(new_src)
                 files = [os.path.basename(new_src)]
@@ -1517,22 +1518,10 @@ class PDSECopyHandler(CopyHandler):
             opts["options"] = "-B"
 
         if self.is_executable:
-            opts["options"] = "-IX"
+            opts["options"] = "-X"
 
         response = datasets._copy(src, dest, None, **opts)
         rc, out, err = response.rc, response.stdout_response, response.stderr_response
-
-        #if rc != 0:
-            # *****************************************************************
-            # An error occurs while attempting to write a data set member to a
-            # PDSE containing program object members, a PDSE cannot contain
-            # both program object members and data members. This can be
-            # resolved by copying the program object with a "-X" flag.
-            # *****************************************************************
-            #if ("FSUM8976" in err and "EDC5091I" in err) or ("FSUM8976" in out and "EDC5091I" in out):
-            #    opts["options"] = "-X"
-            #    response = datasets._copy(src, dest, None, **opts)
-            #    rc, out, err = response.rc, response.stdout_response, response.stderr_response
 
         return dict(
             rc=rc,
@@ -1694,17 +1683,12 @@ def create_seq_dataset_from_file(
         record_format = "FB"
         record_length = get_file_record_length(file)
 
-    if is_executable:
-        record_format = "U"
-        type = "LIBRARY"
-
     dest_params = get_data_set_attributes(
         name=dest,
         size=src_size,
         is_binary=is_binary,
         record_format=record_format,
         record_length=record_length,
-        type=type,
         volume=volume
     )
 
@@ -2228,9 +2212,8 @@ def allocate_destination_data_set(
             else:
                 # TODO: decide on whether to compute the longest file record length and use that for the whole PDSE.
                 size = sum(os.stat("{0}/{1}".format(src, member)).st_size for member in os.listdir(src))
-                record_format = None
                 # This PDSE will be created with record format VB and a record length of 1028.
-                dest_params = get_data_set_attributes(dest, size, is_binary, record_format="U" if is_executable else record_format, type="PDSE", volume=volume)
+                dest_params = get_data_set_attributes(dest, size, is_binary, type="PDSE", volume=volume)
 
             data_set.DataSet.ensure_present(replace=force, **dest_params)
     elif dest_ds_type in data_set.DataSet.MVS_VSAM:

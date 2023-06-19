@@ -900,3 +900,21 @@ def test_data_set_creation_with_tmp_hlq(ansible_zos_module):
     finally:
         if dsname:
             hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
+
+
+def test_data_set_f_formats(ansible_zos_module):
+    try:
+        hosts = ansible_zos_module
+        hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
+        results = hosts.all.zos_data_set(
+            name=DEFAULT_DATA_SET_NAME,
+            state="present",
+            format="f",
+            size="5m",
+            volume=DEFAULT_VOLUME,
+        )
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+    finally:
+        hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")

@@ -335,7 +335,6 @@ def test_data_set_absent_when_uncataloged_and_same_name_cataloged_is_present(ans
 
     # uncatalog the data set
     results = hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="uncataloged")
-    print_results(results)
     for result in results.contacted.values():
         assert result.get("changed") is True
 

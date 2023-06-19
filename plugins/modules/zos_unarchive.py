@@ -261,13 +261,34 @@ EXAMPLES = r'''
     format:
       name: tar
 
+# use include
 - name: List content from TRS
+  zos_unarchive:
+    path: "/tmp/test.bz2"
+    format:
+      name: bz2
+    include:
+      - 'foo.txt'
+
+# Use exclude
+- name: Unarchive from terse data set excluding some from unpacking
     zos_unarchive:
-      path: "/tmp/test.bz2"
+      path: "USER.ARCHIVE.RESULT.TRS"
       format:
-        name: bz2
-      include:
-        - 'foo.txt'
+        name: terse
+      exclude:
+        - USER.ARCHIVE.TEST1
+        - USER.ARCHIVE.TEST2
+
+# List option
+- name: List content from XMIT
+    zos_unarchive:
+      path: "OMVSADM.ARCHIVE.RESULT.XMIT"
+      format:
+        name: xmit
+        format_options:
+          use_adrdssu: True
+      list: True
 '''
 
 RETURN = r'''

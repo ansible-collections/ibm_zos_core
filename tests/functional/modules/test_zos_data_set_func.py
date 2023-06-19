@@ -308,6 +308,7 @@ def test_data_set_absent_when_uncataloged(ansible_zos_module, jcl):
         results = hosts.all.zos_data_set(
             name=DEFAULT_DATA_SET_NAME, state="absent", volumes=VOLUME_000000
         )
+        print_results(results)
         for result in results.contacted.values():
             assert result.get("changed") is True
     finally:

@@ -264,6 +264,7 @@ def test_data_set_replacement_when_uncataloged(ansible_zos_module, jcl):
             assert result.get("changed") is False
         # uncatalog the data set
         results = hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="uncataloged")
+        print_results(results)
         for result in results.contacted.values():
             assert result.get("changed") is True
         # ensure data set present

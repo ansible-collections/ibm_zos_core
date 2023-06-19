@@ -919,7 +919,7 @@ def test_data_set_f_formats(ansible_zos_module):
             state="present",
             format="f",
             size="5m",
-            volume=DEFAULT_VOLUME,
+            volume=VOLUME_000000,
         )
         for result in results.contacted.values():
             assert result.get("changed") is True

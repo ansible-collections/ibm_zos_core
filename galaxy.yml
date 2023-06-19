@@ -6,7 +6,7 @@ namespace: ibm
 name: ibm_zos_core
 
 # The collection version
-version: 1.5.0-beta.1
+version: 1.6.0-beta.1
 
 # Collection README file
 readme: README.md
@@ -17,7 +17,9 @@ authors:
   - Rich Parker <richp@ibm.com>
   - Ketan Kelkar <ketan.kelkar@ibm.com>
   - Ivan Moreno <ivan.moreno.soto@ibm.com>
-  - Oscar Fernando Flores Garcia<fernando.flores@ibm.com>
+  - Oscar Fernando Flores Garcia <fernando.flores@ibm.com>
+  - Jenny Huang <jennyhuang@ibm.com>
+  - Marcel Guitierrez <andre.marcel.gutierrez@ibm.com>
 
 # Description
 description: The IBM z/OS core collection includes connection plugins, action plugins, modules, filters and ansible-doc to automate tasks on z/OS.
@@ -62,27 +64,33 @@ issues: https://github.com/ansible-collections/ibm_zos_core/issues
 
 # Ignore files and directories matching the following patterns
 build_ignore:
-  - Jenkinsfile
-  - ansible.cfg
-  - .gitignore
-  - .github
   - '*.tar.gz'
-  - docs
-  - collections
+  - __pycache__
+  - .cache
+  - .DS_Store
+  - .git
+  - .github
+  - .gitignore
+  - .python-version
+  - .pytest_cache
+  - .vscode
+  - Jenkinsfile
+  - ac
+  - ansible.cfg
   - changelogs
+  - collections
   - docs
-  - tests/__pycache__
+  - scripts
+  - test_config.yml
+  - tests/*.ini
+  - tests/*.py
   - tests/.pytest_cache
+  - tests/__pycache__
   - tests/functional
   - tests/helpers
-  - tests/unit
-  - tests/*.py
-  - tests/*.ini
   - tests/requirements.txt
-  - test_config.yml
-  - changelogs
+  - tests/unit
+  - tests/sanity/ignore-2.9.txt
+  - tests/sanity/ignore-2.10.txt
+  - tests/sanity/ignore-2.11.txt
   - venv*
-  - make.env.encrypt
-  - Makefile
-  - make.env
-  - scripts

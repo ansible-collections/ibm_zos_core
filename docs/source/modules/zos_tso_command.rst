@@ -31,8 +31,19 @@ commands
 
   Accepts a single string or list of strings as input.
 
+  If a list of strings is provided, processing will stop at the first failure, based on rc.
+
   | **required**: True
   | **type**: raw
+
+
+max_rc
+  Specifies the maximum return code allowed for a TSO command.
+
+  If more than one TSO command is submitted, the *max_rc* applies to all TSO commands.
+
+  | **required**: False
+  | **type**: int
 
 
 
@@ -53,6 +64,12 @@ Examples
      zos_tso_command:
          commands:
               - LU TESTUSER
+
+   - name: Execute TSO command to list dataset data (allow 4 for no dataset listed or cert found)
+     zos_tso_command:
+         commands:
+              - LISTDSD DATASET('HLQ.DATA.SET') ALL GENERIC
+         max_rc: 4
 
 
 
@@ -83,6 +100,14 @@ output
 
   rc
     The return code from the executed TSO command.
+
+    | **returned**: always
+    | **type**: int
+
+  max_rc
+    Specifies the maximum return code allowed for a TSO command.
+
+    If more than one TSO command is submitted, the *max_rc* applies to all TSO commands.
 
     | **returned**: always
     | **type**: int

@@ -47,10 +47,16 @@ state
   If *state=absent* and the data set does exist on the managed node, remove the data set, module completes successfully with *changed=True*.
 
 
+  If *state=absent* and *type=MEMBER* and *force=True*, the data set will be opened with *DISP=SHR* such that the entire data set can be accessed by other processes while the specified member is deleted.
+
+
   If *state=absent* and *volumes* is provided, and the data set is not found in the catalog, the module attempts to perform catalog using supplied *name* and *volumes*. If the attempt to catalog the data set catalog is successful, then the data set is removed. Module completes successfully with *changed=True*.
 
 
   If *state=absent* and *volumes* is provided, and the data set is not found in the catalog, the module attempts to perform catalog using supplied *name* and *volumes*. If the attempt to catalog the data set catalog fails, then no action is taken. Module completes successfully with *changed=False*.
+
+
+  If *state=absent* and *volumes* is provided, and the data set is found in the catalog, the module compares the catalog volume attributes to the provided *volumes*. If they volume attributes are different, the cataloged data set will be uncataloged temporarily while the requested data set be deleted is cataloged. The module will catalog the original data set on completion, if the attempts to catalog fail, no action is taken. Module completes successfully with *changed=False*.
 
 
   If *state=present* and the data set does not exist on the managed node, create and catalog the data set, module completes successfully with *changed=True*.
@@ -62,6 +68,9 @@ state
   If *state=present* and *replace=False* and the data set is present on the managed node, no action taken, module completes successfully with *changed=False*.
 
 
+  If *state=present* and *type=MEMBER* and the member does not exist in the data set, create a member formatted to store data, module completes successfully with *changed=True*. Note, a PDSE does not allow a mixture of formats such that there is executables (program objects) and data. The member created is formatted to store data, not an executable.
+
+
   If *state=cataloged* and *volumes* is provided and the data set is already cataloged, no action taken, module completes successfully with *changed=False*.
 
 
@@ -71,7 +80,7 @@ state
   If *state=cataloged* and *volumes* is provided and the data set is not cataloged, module attempts to perform catalog using supplied *name* and *volumes*. If the attempt to catalog the data set catalog fails, returns failure with *changed=False*.
 
 
-  If *state=uncataloged* and the data set is not found, no action taken , module completes successfully with *changed=False*.
+  If *state=uncataloged* and the data set is not found, no action taken, module completes successfully with *changed=False*.
 
 
   If *state=uncataloged* and the data set is found, the data set is uncataloged, module completes successfully with *changed=True*.
@@ -268,6 +277,19 @@ tmp_hlq
   | **type**: str
 
 
+force
+  Specifies that the data set can be shared with others during a member delete operation which results in the data set you are updating to be simultaneously updated by others.
+
+  This is helpful when a data set is being used in a long running process such as a started task and you are wanting to delete a member.
+
+  The *force=True* option enables sharing of data sets through the disposition *DISP=SHR*.
+
+  The *force=True* only applies to data set members when *state=absent* and *type=MEMBER*.
+
+  | **required**: False
+  | **type**: bool
+
+
 batch
   Batch can be used to perform operations on multiple data sets in a single module call.
 
@@ -296,10 +318,16 @@ batch
     If *state=absent* and the data set does exist on the managed node, remove the data set, module completes successfully with *changed=True*.
 
 
+    If *state=absent* and *type=MEMBER* and *force=True*, the data set will be opened with *DISP=SHR* such that the entire data set can be accessed by other processes while the specified member is deleted.
+
+
     If *state=absent* and *volumes* is provided, and the data set is not found in the catalog, the module attempts to perform catalog using supplied *name* and *volumes*. If the attempt to catalog the data set catalog is successful, then the data set is removed. Module completes successfully with *changed=True*.
 
 
     If *state=absent* and *volumes* is provided, and the data set is not found in the catalog, the module attempts to perform catalog using supplied *name* and *volumes*. If the attempt to catalog the data set catalog fails, then no action is taken. Module completes successfully with *changed=False*.
+
+
+    If *state=absent* and *volumes* is provided, and the data set is found in the catalog, the module compares the catalog volume attributes to the provided *volumes*. If they volume attributes are different, the cataloged data set will be uncataloged temporarily while the requested data set be deleted is cataloged. The module will catalog the original data set on completion, if the attempts to catalog fail, no action is taken. Module completes successfully with *changed=False*.
 
 
     If *state=present* and the data set does not exist on the managed node, create and catalog the data set, module completes successfully with *changed=True*.
@@ -311,6 +339,9 @@ batch
     If *state=present* and *replace=False* and the data set is present on the managed node, no action taken, module completes successfully with *changed=False*.
 
 
+    If *state=present* and *type=MEMBER* and the member does not exist in the data set, create a member formatted to store data, module completes successfully with *changed=True*. Note, a PDSE does not allow a mixture of formats such that there is executables (program objects) and data. The member created is formatted to store data, not an executable.
+
+
     If *state=cataloged* and *volumes* is provided and the data set is already cataloged, no action taken, module completes successfully with *changed=False*.
 
 
@@ -320,7 +351,7 @@ batch
     If *state=cataloged* and *volumes* is provided and the data set is not cataloged, module attempts to perform catalog using supplied *name* and *volumes*. If the attempt to catalog the data set catalog fails, returns failure with *changed=False*.
 
 
-    If *state=uncataloged* and the data set is not found, no action taken , module completes successfully with *changed=False*.
+    If *state=uncataloged* and the data set is not found, no action taken, module completes successfully with *changed=False*.
 
 
     If *state=uncataloged* and the data set is found, the data set is uncataloged, module completes successfully with *changed=True*.
@@ -333,7 +364,7 @@ batch
 
 
   type
-    The data set type to be used when creating a data set. (e.g ``pdse``)
+    The data set type to be used when creating a data set. (e.g ``PDSE``)
 
     ``MEMBER`` expects to be used with an existing partitioned data set.
 
@@ -508,6 +539,19 @@ batch
     | **type**: bool
 
 
+  force
+    Specifies that the data set can be shared with others during a member delete operation which results in the data set you are updating to be simultaneously updated by others.
+
+    This is helpful when a data set is being used in a long running process such as a started task and you are wanting to delete a member.
+
+    The *force=True* option enables sharing of data sets through the disposition *DISP=SHR*.
+
+    The *force=True* only applies to data set members when *state=absent* and *type=MEMBER*.
+
+    | **required**: False
+    | **type**: bool
+
+
 
 
 
@@ -598,6 +642,13 @@ Examples
        name: someds.name.here(mydata)
        state: absent
        type: MEMBER
+
+   - name: Remove a member from an existing PDS/E by opening with disposition DISP=SHR
+     zos_data_set:
+       name: someds.name.here(mydata)
+       state: absent
+       type: MEMBER
+       force: yes
 
    - name: Create multiple partitioned data sets and add one or more members to each
      zos_data_set:

@@ -29,8 +29,7 @@ DUMMY DATA ---- LINE 003 ------
 DUMMY DATA ---- LINE 004 ------
 DUMMY DATA ---- LINE 005 ------
 DUMMY DATA ---- LINE 006 ------
-DUMMY DATA ---- LINE 007 ------
-"""
+DUMMY DATA ---- LINE 007 ------"""
 
 DUMMY_DATA_SPECIAL_CHARS = """DUMMY DATA ---- LINE 001 ------
 DUMMY DATA ---- LINE ÁÁÁ------
@@ -466,6 +465,87 @@ def test_copy_dir_to_existing_uss_dir_not_forced(ansible_zos_module):
     finally:
         hosts.all.file(path=src_dir, state="absent")
         hosts.all.file(path=dest_dir, state="absent")
+
+
+@pytest.mark.uss
+def test_copy_subdirs_folders_and_validate_recursive_encoding(ansible_zos_module):
+    hosts = ansible_zos_module
+    dest_path = "/tmp/test/"
+    text_outer_file = "Hi I am point A"
+    text_inner_file = "Hi I am point B"
+    src_path = "/tmp/level_1/"
+    outer_file = "/tmp/level_1/text_A.txt"
+    inner_src_path = "/tmp/level_1/level_2/"
+    inner_file = "/tmp/level_1/level_2/text_B.txt"
+
+    try:
+        hosts.all.file(path=inner_src_path, state="directory")
+        hosts.all.file(path=inner_file, state = "touch")
+        hosts.all.file(path=outer_file, state = "touch")
+        hosts.all.shell(cmd="echo '{0}' > '{1}'".format(text_outer_file, outer_file))
+        hosts.all.shell(cmd="echo '{0}' > '{1}'".format(text_inner_file, inner_file))
+        
+        copy_res = hosts.all.zos_copy(src=src_path, dest=dest_path, encoding={"from": "ISO8859-1", "to": "IBM-1047"}, remote_src=True)
+
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+            assert result.get("changed") is True
+
+        stat_res = hosts.all.stat(path="/tmp/test/level_2/")
+        for st in stat_res.contacted.values():
+            assert st.get("stat").get("exists") is True
+
+        full_inner_path = dest_path + "/level_2/text_B.txt"
+        full_outer_path = dest_path + "/text_A.txt"
+        inner_file_text_aft_encoding = hosts.all.shell(cmd="cat {0}".format(full_inner_path))
+        outer_file_text_aft_encoding = hosts.all.shell(cmd="cat {0}".format(full_outer_path))
+        for text in outer_file_text_aft_encoding.contacted.values():
+            text_outer = text.get("stdout")
+        for text in inner_file_text_aft_encoding.contacted.values():
+            text_inner = text.get("stdout")
+
+        assert text_inner == text_inner_file
+        assert text_outer == text_outer_file
+    finally:
+        hosts.all.file(path=src_path, state="absent")
+        hosts.all.file(path=dest_path, state="absent")
+
+
+@pytest.mark.uss
+def test_copy_subdirs_folders_and_validate_recursive_encoding_local(ansible_zos_module):
+    hosts = ansible_zos_module
+    dest_path = "/tmp/test/"
+
+    try:
+        source_1 = tempfile.TemporaryDirectory(prefix="level_", suffix="_1")
+        source = source_1.name
+        source_2 = tempfile.TemporaryDirectory(dir = source, prefix="level_", suffix="_2")
+        full_source = source_2.name
+        populate_dir(source)
+        populate_dir(full_source)
+        level_1 = os.path.basename(source)
+        level_2 = os.path.basename(full_source)
+
+        copy_res = hosts.all.zos_copy(src=source, dest=dest_path, encoding={"from": "ISO8859-1", "to": "IBM-1047"})
+
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+            assert result.get("changed") is True
+
+        full_outer_file= "{0}/{1}/file3".format(dest_path, level_1)
+        full_iner_file= "{0}/{1}/{2}/file3".format(dest_path, level_1, level_2)
+        verify_copy_1 = hosts.all.shell(cmd="cat {0}".format(full_outer_file))
+        verify_copy_2 = hosts.all.shell(cmd="cat {0}".format(full_iner_file))
+
+        for result in verify_copy_1.contacted.values():
+            print(result)
+            assert result.get("stdout") == DUMMY_DATA
+        for result in verify_copy_2.contacted.values():
+            print(result)
+            assert result.get("stdout") == DUMMY_DATA
+    finally:
+        hosts.all.file(name=dest_path, state="absent")
+        source_1.cleanup()
 
 
 @pytest.mark.uss
@@ -1024,6 +1104,60 @@ def test_copy_non_existent_file_fails(ansible_zos_module, is_remote):
 
 
 @pytest.mark.uss
+@pytest.mark.parametrize("src", [
+    dict(src="/etc/profile", is_remote=False),
+    dict(src="/etc/profile", is_remote=True),])
+def test_ensure_copy_file_does_not_change_permission_on_dest(ansible_zos_module, src):
+    hosts = ansible_zos_module
+    dest_path = "/tmp/test/"
+    try:
+        hosts.all.file(path=dest_path, state="directory", mode="750")
+        permissions_before = hosts.all.shell(cmd="ls -la {0}".format(dest_path))
+        hosts.all.zos_copy(content=src["src"], dest=dest_path)
+        permissions = hosts.all.shell(cmd="ls -la {0}".format(dest_path))
+
+        for before in permissions_before.contacted.values():
+            permissions_be_copy = before.get("stdout")
+            
+        for after in permissions.contacted.values():
+            permissions_af_copy = after.get("stdout") 
+
+        permissions_be_copy = permissions_be_copy.splitlines()[1].split()[0]
+        permissions_af_copy = permissions_af_copy.splitlines()[1].split()[0]
+                
+        assert permissions_be_copy == permissions_af_copy
+    finally:
+        hosts.all.file(path=dest_path, state="absent")
+
+
+@pytest.mark.uss
+@pytest.mark.parametrize("src", [
+    dict(src="/etc/", is_remote=False),
+    dict(src="/etc/", is_remote=True),])
+def test_ensure_copy_directory_does_not_change_permission_on_dest(ansible_zos_module, src):
+    hosts = ansible_zos_module
+    dest_path = "/tmp/test/"
+    try:
+        hosts.all.file(path=dest_path, state="directory", mode="750")
+        permissions_before = hosts.all.shell(cmd="ls -la {0}".format(dest_path))
+        hosts.all.zos_copy(content=src["src"], dest=dest_path)
+        permissions = hosts.all.shell(cmd="ls -la {0}".format(dest_path))
+
+        for before in permissions_before.contacted.values():
+            permissions_be_copy = before.get("stdout")
+
+        for after in permissions.contacted.values():
+            permissions_af_copy = after.get("stdout") 
+
+        permissions_be_copy = permissions_be_copy.splitlines()[1].split()[0]
+        permissions_af_copy = permissions_af_copy.splitlines()[1].split()[0]
+                
+        assert permissions_be_copy == permissions_af_copy
+    finally:
+        hosts.all.file(path=dest_path, state="absent")
+        
+
+@pytest.mark.uss
 @pytest.mark.seq
 def test_copy_file_record_length_to_sequential_data_set(ansible_zos_module):
     hosts = ansible_zos_module
@@ -1161,6 +1295,7 @@ def test_copy_file_to_non_existing_sequential_data_set(ansible_zos_module, src):
             assert cp_res.get("msg") is None
             assert cp_res.get("changed") is True
             assert cp_res.get("dest") == dest
+            assert cp_res.get("dest_created") is True
             assert cp_res.get("is_binary") == src["is_binary"]
         for v_cp in verify_copy.contacted.values():
             assert v_cp.get("rc") == 0
@@ -1333,6 +1468,7 @@ def test_copy_ps_to_non_existing_ps(ansible_zos_module):
             assert result.get("msg") is None
             assert result.get("changed") is True
             assert result.get("dest") == dest
+            assert result.get("dest_created") is True
         for result in verify_copy.contacted.values():
             assert result.get("rc") == 0
             assert result.get("stdout") != ""
@@ -1682,6 +1818,7 @@ def test_copy_file_to_non_existing_pdse(ansible_zos_module, is_remote):
             assert cp_res.get("msg") is None
             assert cp_res.get("changed") is True
             assert cp_res.get("dest") == dest_path
+            assert cp_res.get("dest_created") is True
         for v_cp in verify_copy.contacted.values():
             assert v_cp.get("rc") == 0
     finally:
@@ -1710,6 +1847,7 @@ def test_copy_dir_to_non_existing_pdse(ansible_zos_module):
             assert result.get("msg") is None
             assert result.get("changed") is True
             assert result.get("dest") == dest
+            assert result.get("dest_created") is True
         for result in verify_copy.contacted.values():
             assert result.get("rc") == 0
     finally:
@@ -1741,6 +1879,7 @@ def test_copy_dir_crlf_endings_to_non_existing_pdse(ansible_zos_module):
             assert result.get("msg") is None
             assert result.get("changed") is True
             assert result.get("dest") == dest
+            assert result.get("dest_created") is True
         for result in verify_copy.contacted.values():
             assert result.get("rc") == 0
             assert len(result.get("stdout_lines")) == 2
@@ -1820,6 +1959,7 @@ def test_copy_data_set_to_non_existing_pdse(ansible_zos_module, src_type):
             assert cp_res.get("msg") is None
             assert cp_res.get("changed") is True
             assert cp_res.get("dest") == dest
+            assert cp_res.get("dest_created") is True
         for v_cp in verify_copy.contacted.values():
             assert v_cp.get("rc") == 0
             assert v_cp.get("stdout") != ""
@@ -1916,8 +2056,6 @@ def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module,):
         )
         dest_name = "{0}({1})".format(dest, member)
         src_name = "{0}({1})".format(src, member)
-        
-        
         # both src and dest need to be a loadlib
         rc = link_loadlib_from_cobol(hosts, dest_name, cobol_pds)
         assert rc == 0
@@ -2283,6 +2421,7 @@ def test_copy_member_to_non_existing_seq_data_set(ansible_zos_module, src_type):
             assert result.get("msg") is None
             assert result.get("changed") is True
             assert result.get("dest") == dest
+            assert result.get("dest_created") is True
         for result in verify_copy.contacted.values():
             assert result.get("rc") == 0
             assert result.get("stdout") != ""
@@ -2729,3 +2868,4 @@ def test_copy_uss_file_to_existing_sequential_data_set_twice_with_tmphlq_option(
                 assert v_cp.get("rc") == 0
     finally:
         hosts.all.zos_data_set(name=dest, state="absent")
+        

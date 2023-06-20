@@ -371,6 +371,23 @@ class Unarchive():
     def path_exists(self):
         return self.path and os.path.exists(self.path)
 
+    def dest_type(self):
+        return "USS"
+
+    def dest_unarchived(self):
+        return bool(self.targets)
+
+    def update_permissions(self):
+        """
+        Update permissions in unarchived files.
+        """
+        for target in self.targets:
+            file_name = os.path.join(self.dest, target)
+            file_args = self.module.load_file_common_arguments(self.module.params, path=file_name)
+            changed = changed or self.module.set_fs_attributes_if_different(file_args, self.changed)
+        self.changed = self.changed or changed
+        return changed
+
     @property
     def result(self):
         return {
@@ -534,6 +551,9 @@ class MVSUnarchive(Unarchive):
         self.use_adrdssu = self.format_options.get("use_adrdssu")
         self.dest_data_set = module.params.get("dest_data_set")
         self.dest_data_set = dict() if self.dest_data_set is None else self.dest_data_set
+
+    def dest_type(self):
+        return "MVS"
 
     def _create_dest_data_set(
             self,
@@ -1022,6 +1042,9 @@ def run_module():
         module.fail_json(msg="{0} does not exists, please provide a valid path.".format(module.params.get("path")))
 
     unarchive.extract_path()
+
+    if unarchive.dest_unarchived() and unarchive.dest_type() == "USS":
+        unarchive.update_permissions()
 
     module.exit_json(**unarchive.result)
 

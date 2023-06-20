@@ -56,25 +56,26 @@ options:
           - xmit
           - pax
       format_options:
-          description:
-            - Options specific to each format.
-          type: dict
-          required: false
-          suboptions:
-            terse_pack:
-              description: Pack option to use for terse format.
-              type: str
-              choices:
-                - PACK
-                - SPACK
-            xmit_log_dataset:
-              description: Provide a name of data set to use for xmit log.
-              type: str
-            use_adrdssu:
-              description: Use DFSMSdss ADRDSSU step.
-              type: bool
-              default: False
-
+        description:
+          - Options specific to each format.
+        type: dict
+        required: false
+        suboptions:
+          terse_pack:
+            description: Pack option to use for terse format.
+            type: str
+            choices:
+              - PACK
+              - SPACK
+          xmit_log_dataset:
+            description: Provide a name of data set to use for xmit log.
+            type: str
+          use_adrdssu:
+            description:
+              - If set to true, after unpacking a data set in C(xmit) or c(terse) format
+                it will perform a single DFSMSdss ADRDSSU RESTORE step.
+            type: bool
+            default: False
   dest:
     description: The file name of the dest archive.
     type: str
@@ -138,13 +139,14 @@ options:
 '''
 
 EXAMPLES = r'''
+# Simple archive
 - name: Archive file into tar
     zos_archive:
       path: /tmp/archive/foo.txt
       dest: /tmp/archive/foo_archive_test.tar
       format:
         name: tar
-
+# Archive multiple files
 - name: Compress list of files into zip
     zos_archive:
       path: 
@@ -154,6 +156,7 @@ EXAMPLES = r'''
       format:
         name: zip
 
+# Archive one data set into terse
 - name: Compress data set into terse
     zos_archive:
       path: "USER.ARCHIVE.TEST"
@@ -161,6 +164,7 @@ EXAMPLES = r'''
       format:
         name: terse
 
+# Usae terse with different options
 - name: Compress data set into terse, specify pack algorithm and use adrdssu
     zos_archive:
       path: "USER.ARCHIVE.TEST"
@@ -171,9 +175,11 @@ EXAMPLES = r'''
           terse_pack: "SPACK"
           use_adrdssu: True
 
+# Use a pattern to store
 - name: Compress data set pattern using xmit
     zos_archive:
       path: "USER.ARCHIVE.*"
+      exclude_paths: "USER.ARCHIVE.EXCLUDE.*"
       dest: "USER.ARCHIVE.RESULT.XMIT"
       format:
         name: xmit

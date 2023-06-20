@@ -21,17 +21,17 @@ module: zos_unarchive
 version_added: "1.7.0"
 author:
   - Oscar Fernando Flores Garcia (@fernandofloresg)
-short_description: Unarchive a dataset on z/OS.
+short_description: Unarchive a dataset or file in z/OS.
 description:
   - The C(zos_unarchive) module unpacks an archive after optionally sending it to the remote.
-    It will not unpack a compressed file that does not contain an archive.
 
 options:
   path:
     description:
-    - Remote absolute path, glob, or list of paths or globs for the file or files to compress or archive.
+      - Local or remote absolute path or data set name of the archive to be unpacked on the remote.
     type: str
     required: true
+    alias: src
   format:
     description:
       - The type of compression to use.
@@ -58,10 +58,12 @@ options:
           required: false
           suboptions:
             xmit_log_dataset:
-              description: Provide a name of data set to use for xmit log.
+              description: Provide a name of data set to store xmit log output.
               type: str
             use_adrdssu:
-              description: Use DFSMSdss ADRDSSU step.
+              description: 
+                - If set to true, after unpacking a data set in C(xmit) or c(terse) format
+                  it will perform a single DFSMSdss ADRDSSU RESTORE step.
               type: bool
               default: False
             dest_volumes:
@@ -95,15 +97,15 @@ options:
   include:
     description:
       - List of directory and file or data set names that you would like to extract from the archive.
-        If include is not empty, only files listed here will be extracted.
-        Mutually exclusive with exclude.
+      - If include is not empty, only files listed here will be extracted.
+      - Mutually exclusive with exclude.
     type: list
     elements: str
     required: false
   exclude:
     description:
       - List the directory and file or data set names that you would like to exclude from the unarchive action.
-        Mutually exclusive with include.
+      - Mutually exclusive with include.
     type: list
     elements: str
     required: false
@@ -293,25 +295,25 @@ EXAMPLES = r'''
 
 RETURN = r'''
 path:
-    description:
-        File path or data set name unarchived.
-    type: str
-    returned: always
+  description:
+    File path or data set name unarchived.
+  type: str
+  returned: always
 dest_path:
-    description:
-        - Destination path where archive was extracted.
-    type: str
-    returned: always
+  description:
+    - Destination path where archive was extracted.
+  type: str
+  returned: always
 targets:
-    description:
-        List of files or data sets in the archive.
-    type: str
-    returned: success
+  description:
+    List of files or data sets in the archive.
+  type: str
+  returned: success
 missing:
-    description:
-        Any files or data sets not found during extraction.
-    type: str
-    returned: success
+  description:
+    Any files or data sets not found during extraction.
+  type: str
+  returned: success
 '''
 
 import abc

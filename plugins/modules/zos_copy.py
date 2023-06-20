@@ -2238,7 +2238,7 @@ def normalize_line_endings(src, encoding=None):
     return src
 
 
-def validate_disposition(dataset_name):
+def source_locked(dataset_name):
     """
     Validate if the dataset is not in lock.
 
@@ -2483,8 +2483,8 @@ def run_module(module, arg_def):
     # for try to write in dest and if both src and dest are in lock.
     # ********************************************************************
     if src_ds_type != "USS" and dest_ds_type != "USS":
-        source_validation = validate_disposition(src_name)
-        dest_validation = validate_disposition(dest_name)
+        source_validation = source_locked(src_name)
+        dest_validation = source_locked(dest_name)
         if not source_validation and not dest_validation:
             module.fail_json(
                 msg="DATASETS in lock, unable to access'{0}' without force and unable to write in'{1}'".format(
@@ -2498,7 +2498,7 @@ def run_module(module, arg_def):
                 )
             )
     elif dest_ds_type != "USS":
-        dest_validation = validate_disposition(dest_name)
+        dest_validation = source_locked(dest_name)
         if not dest_validation:
             module.fail_json(
                 msg="DATASET in lock, unable to wrote in '{0}'".format(

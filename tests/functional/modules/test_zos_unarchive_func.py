@@ -270,6 +270,47 @@ def test_uss_unarchive_list(ansible_zos_module, format):
         hosts.all.file(path=f"{USS_TEMP_DIR}", state="absent")
 
 
+@pytest.mark.uss
+@pytest.mark.parametrize("format", USS_FORMATS)
+def test_uss_single_archive_with_mode(ansible_zos_module, format):
+    try:
+        hosts = ansible_zos_module
+        hosts.all.file(path=f"{USS_TEMP_DIR}", state="absent")
+        hosts.all.file(path=USS_TEMP_DIR, state="directory")
+        set_uss_test_env(hosts, USS_TEST_FILES)
+        dest = f"{USS_TEMP_DIR}/archive.{format}"
+        dest_mode = "0755"
+        archive_result = hosts.all.zos_archive(path=list(USS_TEST_FILES.keys()),
+                                        dest=dest,
+                                        format=dict(
+                                            name=format
+                                        ))
+        print(archive_result.contacted.values())
+        for file in list(USS_TEST_FILES.keys()):
+            hosts.all.file(path=file, state="absent")
+        unarchive_result = hosts.all.zos_unarchive(
+            path=dest,
+            format=dict(
+                name=format
+            ),
+            remote_src=True,
+            mode=dest_mode,
+        )
+        for result in unarchive_result.contacted.values():
+            print(result)
+            assert result.get("failed", False) is False
+            assert result.get("changed") is True
+            dest_files = list(USS_TEST_FILES.keys())
+            for file in dest_files:
+                stat_dest_res = hosts.all.stat(path=file)
+                for stat_result in stat_dest_res.contacted.values():
+                    print(stat_result)
+                    assert stat_result.get("stat").get("exists") is True
+                    assert stat_result.get("stat").get("mode") == dest_mode
+    finally:
+        hosts.all.file(path=f"{USS_TEMP_DIR}", state="absent")
+
+
 ######################################################################
 #
 #   MVS data sets tests
@@ -917,6 +958,7 @@ def test_mvs_unarchive_multiple_dataset_use_adrdssu_force(ansible_zos_module, fo
 def test_mvs_unarchive_single_dataset_remote_src(ansible_zos_module, format, data_set, record_length, record_format):
     try:
         hosts = ansible_zos_module
+        tmp_folder = tempfile.TemporaryDirectory(prefix="tmpfetch")
         # Clean env
         hosts.all.zos_data_set(name=data_set.get("name"), state="absent")
         hosts.all.zos_data_set(name=MVS_DEST_ARCHIVE, state="absent")
@@ -968,7 +1010,6 @@ def test_mvs_unarchive_single_dataset_remote_src(ansible_zos_module, format, dat
         hosts.all.zos_data_set(name=data_set.get("name"), state="absent")
 
         # fetch archive data set into tmp folder
-        tmp_folder = tempfile.TemporaryDirectory(prefix="tmpfetch")
         fetch_result = hosts.all.zos_fetch(src=MVS_DEST_ARCHIVE, dest=tmp_folder.name)
 
         for res in fetch_result.contacted.values(): 

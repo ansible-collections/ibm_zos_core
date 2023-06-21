@@ -381,12 +381,11 @@ class Unarchive():
         """
         Update permissions in unarchived files.
         """
+        self.debug = list()
         for target in self.targets:
             file_name = os.path.join(self.dest, target)
             file_args = self.module.load_file_common_arguments(self.module.params, path=file_name)
-            changed = changed or self.module.set_fs_attributes_if_different(file_args, self.changed)
-        self.changed = self.changed or changed
-        return changed
+            self.module.set_fs_attributes_if_different(file_args, self.changed)
 
     @property
     def result(self):
@@ -1018,6 +1017,9 @@ def run_module():
                 sms_management_class=dict(arg_type="str", required=False),
             )
         ),
+        group=dict(type='str'),
+        mode=dict(type='str'),
+        owner=dict(type='str'),
         tmp_hlq=dict(type='qualifier_or_empty', default=''),
         force=dict(type='bool', default=False),
         remote_src=dict(type='bool', default=False),

@@ -1,5 +1,5 @@
 bugfixes:
 - zos_copy - Encoding normalization used to handle newlines in
-  text files was applied to binary files too. Fix now makes sure
+  text files was applied to binary files too. Fix makes sure
   that binary files bypass this normalization.
   (https://github.com/ansible-collections/ibm_zos_core/pull/810)

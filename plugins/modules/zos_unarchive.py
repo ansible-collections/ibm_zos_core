@@ -253,6 +253,12 @@ options:
     type: bool
     required: false
     default: false
+  is_binary:
+    description:
+      - Set to true if archive file is to be treated as binary when sending to remote.
+    type: bool
+    required: false
+    default: false
 '''
 
 EXAMPLES = r'''
@@ -950,6 +956,7 @@ def run_module():
             tmp_hlq=dict(type='str'),
             force=dict(type='bool', default=False),
             remote_src=dict(type='bool', default=False),
+            is_binary=dict(type='bool', default=False),
         ),
         mutually_exclusive=[
             ['include', 'exclude'],
@@ -1023,6 +1030,7 @@ def run_module():
         tmp_hlq=dict(type='qualifier_or_empty', default=''),
         force=dict(type='bool', default=False),
         remote_src=dict(type='bool', default=False),
+        is_binary=dict(type='bool', default=False),
         mutually_exclusive=[
             ['include', 'exclude'],
         ],

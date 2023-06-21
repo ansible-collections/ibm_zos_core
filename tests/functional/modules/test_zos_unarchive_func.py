@@ -898,7 +898,7 @@ def test_mvs_unarchive_multiple_dataset_use_adrdssu_force(ansible_zos_module, fo
         if format == "terse":
             format_dict["format_options"].update(terse_pack="SPACK")
         format_dict["format_options"].update(use_adrdssu=True)
-        archive_result = hosts.all.zos_archive(
+        hosts.all.zos_archive(
             path="{0}*".format(data_set.get("name")),
             dest=MVS_DEST_ARCHIVE,
             format=format_dict,

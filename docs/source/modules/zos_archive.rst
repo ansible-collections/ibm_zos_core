@@ -75,7 +75,7 @@ format
 
 
     use_adrdssu
-      If set to true, after unpacking a data set in ``xmit`` or c(terse) format it will perform a single DFSMSdss ADRDSSU DUMP step.
+      If set to true, after unpacking a data set in ``xmit`` or ``terse`` format it will perform a single DFSMSdss ADRDSSU DUMP step.
 
       | **required**: False
       | **type**: bool

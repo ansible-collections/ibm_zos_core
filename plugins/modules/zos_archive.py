@@ -73,7 +73,7 @@ options:
           use_adrdssu:
             description:
               - If set to true, after unpacking a data set in C(xmit) or c(terse) format
-                it will perform a single DFSMSdss ADRDSSU RESTORE step.
+                it will perform a single DFSMSdss ADRDSSU DUMP step.
             type: bool
             default: False
   dest:
@@ -82,18 +82,11 @@ options:
     required: false
   exclude_path:
     description:
-        - Remote absolute path, glob, or list of paths or globs for the file or files to exclude
+        - Remote absolute path, glob, or list of paths, globs or data set name patterns for the file, files or data sets to exclude
            from path list and glob expansion.
     type: list
     required: false
     elements: str
-  force_archive:
-    description:
-      - Allows you to force the module to treat this as an archive even if only a single file is specified.
-      - By default when a single file is specified it is compressed only (not archived).
-    type: bool
-    required: false
-    default: false
   group:
     description:
       - Name of the group that should own the filesystem object, as would be fed to chown.
@@ -146,6 +139,7 @@ EXAMPLES = r'''
       dest: /tmp/archive/foo_archive_test.tar
       format:
         name: tar
+
 # Archive multiple files
 - name: Compress list of files into zip
     zos_archive:
@@ -724,7 +718,6 @@ def run_module():
             path=dict(type='list', elements='str', required=True),
             dest=dict(type='str'),
             exclude_path=dict(type='list', elements='str'),
-            force_archive=dict(type='bool', default=False),
             format=dict(
                 type='dict',
                 options=dict(
@@ -767,7 +760,6 @@ def run_module():
         path=dict(type='list', elements='str', required=True, alias='src'),
         dest=dict(type='str', required=False),
         exclude_path=dict(type='list', elements='str', default=[]),
-        force_archive=dict(type='bool', default=False),
         format=dict(
             type='dict',
             options=dict(

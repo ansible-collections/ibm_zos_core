@@ -357,7 +357,6 @@ class Unarchive():
         self.tmphlq = module.params.get("tmp_hlq")
         self.force = module.params.get("force")
         self.targets = list()
-        self.debug = list()
         self.include = module.params.get("include")
         self.exclude = module.params.get("exclude")
         self.list = module.params.get("list")
@@ -387,7 +386,6 @@ class Unarchive():
         """
         Update permissions in unarchived files.
         """
-        self.debug = list()
         for target in self.targets:
             file_name = os.path.join(self.dest, target)
             file_args = self.module.load_file_common_arguments(self.module.params, path=file_name)
@@ -400,7 +398,6 @@ class Unarchive():
             'dest_path': self.dest,
             'changed': self.changed,
             'targets': self.targets,
-            'debug': self.debug,
             'missing': self.missing,
         }
 
@@ -657,7 +654,6 @@ class MVSUnarchive(Unarchive):
                         {2} """.format(filter, volumes, force)
         dds = dict(archive="{0},old".format(source))
         rc, out, err = mvs_cmd.adrdssu(cmd=restore_cmd, dds=dds, authorized=True)
-        self.debug = self._get_restored_datasets(out)
 
         if rc != 0:
             # AdrddssuRestoreError

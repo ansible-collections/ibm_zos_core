@@ -15,6 +15,7 @@ __metaclass__ = type
 
 from ansible.plugins.action import ActionBase
 from ansible.utils.display import Display
+from ansible.module_utils.parsing.convert_bool import boolean
 import os
 import copy
 from ansible_collections.ibm.ibm_zos_core.plugins.action.zos_copy import ActionModule as ZosCopyActionModule
@@ -24,6 +25,13 @@ USS_SUPPORTED_FORMATS = ['tar', 'zip', 'bz2', 'pax', 'gz']
 MVS_SUPPORTED_FORMATS = ['terse', 'xmit']
 
 display = Display()
+
+
+def _process_boolean(arg, default=False):
+    try:
+        return boolean(arg)
+    except TypeError:
+        return default
 
 
 class ActionModule(ActionBase):
@@ -48,7 +56,7 @@ class ActionModule(ActionBase):
             )
         else:
             source = module_args.get("path") if module_args.get("path") is not None else module_args.get("src")
-            force = module_args.get("force")
+            force = _process_boolean(module_args.get("force"))
             format = self._task.args.get("format")
             format_name = format.get("name")
             copy_module_args = dict()

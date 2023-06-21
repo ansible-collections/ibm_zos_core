@@ -300,7 +300,6 @@ class Archive():
         self.not_found = []
         self.force = module.params['force']
         self.paths = module.params['path']
-        self.tmp_debug = ""
         self.arcroot = ""
         self.expanded_paths = ""
         self.expanded_exclude_paths = ""
@@ -361,8 +360,6 @@ class Archive():
             'missing': self.not_found,
             'expanded_paths': list(self.expanded_paths),
             'expanded_exclude_paths': list(self.expanded_exclude_paths),
-            # 'tmp_debug': self.tmp_debug,
-            # 'targets': self.targets,
         }
 
 
@@ -377,7 +374,6 @@ class USSArchive(Archive):
         self.expanded_paths = expand_paths(self.paths)
         self.expanded_exclude_paths = expand_paths(module.params['exclude_path'])
         self.expanded_exclude_paths = "" if len(self.expanded_exclude_paths) == 0 else self.expanded_exclude_paths
-        self.tmp_debug = self.expanded_exclude_paths
 
         self.paths = sorted(set(self.expanded_paths) - set(self.expanded_exclude_paths))
 
@@ -401,7 +397,6 @@ class USSArchive(Archive):
     def _get_checksums(self, path):
         md5_cmd = "md5 -r \"{0}\"".format(path)
         rc, out, err = self.module.run_command(md5_cmd)
-        self.tmp_debug += out
         checksums = out.split(" ")[0]
         return checksums
 
@@ -497,7 +492,6 @@ class MVSArchive(Archive):
         self.original_checksums = self.dest_checksums()
         self.use_adrdssu = module.params.get("format").get("format_options").get("use_adrdssu")
         self.expanded_paths = self.expand_mvs_paths(self.paths)
-        self.tmp_debug = self.expanded_paths
         self.expanded_exclude_paths = self.expand_mvs_paths(module.params['exclude_path'])
         self.paths = sorted(set(self.expanded_paths) - set(self.expanded_exclude_paths))
 

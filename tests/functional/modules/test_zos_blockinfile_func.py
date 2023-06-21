@@ -146,8 +146,8 @@ sleep 30;
 //"""
 
 # supported data set types
-# DS_TYPE = ['SEQ', 'PDS', 'PDSE']
-DS_TYPE = ['SEQ']
+DS_TYPE = ['SEQ', 'PDS', 'PDSE']
+#DS_TYPE = ['SEQ']
 # not supported data set types
 NS_DS_TYPE = ['ESDS', 'RRDS', 'LDS']
 """
@@ -171,70 +171,22 @@ TEST_ENV = dict(
 )
 
 TEST_INFO = dict(
-    test_uss_block_insertafter_regex=dict(
-        insertafter="ZOAU_ROOT=",
-        block="ZOAU_ROOT=/mvsutil-develop_dsed\nZOAU_HOME=\\$ZOAU_ROOT\nZOAU_DIR=\\$ZOAU_ROOT",
-        state="present"),
-    test_uss_block_insertbefore_regex=dict(
-        insertbefore="ZOAU_ROOT=", block="unset ZOAU_ROOT\nunset ZOAU_HOME\nunset ZOAU_DIR",
-        state="present"),
-    test_uss_block_insertafter_eof=dict(
-        insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR",
-        state="present"),
-    test_uss_block_insertafter_eof_with_backup=dict(
-        insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR",
-        state="present", backup=True),
-    test_uss_block_insertafter_eof_with_backup_name=dict(
-        insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR",
-        state="present", backup=True,
-        backup_name=USS_BACKUP_FILE),
-    test_uss_block_insert_with_force_option_as_true=dict(
-        insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR",
-        state="present", force=True),
-    test_uss_block_insert_with_force_option_as_false=dict(
-        insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR",
-        state="present", force=False),
-    test_uss_block_insertbefore_bof=dict(
-        insertbefore="BOF", block="# this is file is for setting env vars",
-        state="present"),
-    test_uss_block_absent=dict(block="", state="absent"),
-    test_uss_block_absent_with_force_option_as_true=dict(block="", state="absent", force=True),
-    test_uss_block_absent_with_force_option_as_false=dict(block="", state="absent", force=True),
-    test_uss_block_replace_insertafter_regex=dict(
-        insertafter="PYTHON_HOME=",
-        block="ZOAU_ROOT=/mvsutil-develop_dsed\nZOAU_HOME=\\$ZOAU_ROOT\nZOAU_DIR=\\$ZOAU_ROOT",
-        state="present"),
-    test_uss_block_replace_insertbefore_regex=dict(
-        insertbefore="PYTHON_HOME=", block="unset ZOAU_ROOT\nunset ZOAU_HOME\nunset ZOAU_DIR",
-        state="present"),
-    test_uss_block_replace_insertafter_eof=dict(
-        insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR",
-        state="present"),
-    test_uss_block_replace_insertbefore_bof=dict(
-        insertbefore="BOF", block="# this is file is for setting env vars",
-        state="present"),
-    test_uss_block_insert_with_indentation_level_specified=dict(
+    test_block_insertafter_regex=dict(insertafter="ZOAU_ROOT=", block="ZOAU_ROOT=/mvsutil-develop_dsed\nZOAU_HOME=\\$ZOAU_ROOT\nZOAU_DIR=\\$ZOAU_ROOT", state="present"),
+    test_block_insertbefore_regex=dict(insertbefore="ZOAU_ROOT=", block="unset ZOAU_ROOT\nunset ZOAU_HOME\nunset ZOAU_DIR", state="present"),
+    test_block_insertafter_eof=dict(insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present"),
+    test_uss_block_insertafter_eof_with_backup=dict(insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present", backup=True),
+    test_uss_block_insertafter_eof_with_backup_name=dict(insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present", backup=True, backup_name=USS_BACKUP_FILE),
+    test_block_insertbefore_bof=dict(insertbefore="BOF", block="# this is file is for setting env vars", state="present"),
+    test_block_absent=dict(block="", state="absent"),
+    test_block_replace_insertafter_regex=dict(insertafter="PYTHON_HOME=", block="ZOAU_ROOT=/mvsutil-develop_dsed\nZOAU_HOME=\\$ZOAU_ROOT\nZOAU_DIR=\\$ZOAU_ROOT", state="present"),
+    test_block_replace_insertbefore_regex=dict(insertbefore="PYTHON_HOME=", block="unset ZOAU_ROOT\nunset ZOAU_HOME\nunset ZOAU_DIR", state="present"),
+    test_block_replace_insertafter_eof=dict(insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present"),
+    test_block_replace_insertbefore_bof=dict(insertbefore="BOF", block="# this is file is for setting env vars", state="present"),
+    test_block_insert_with_indentation_level_specified=dict(
         insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR",
         state="present", indentation=16),
-    test_uss_block_insert_with_doublequotes=dict(
-        insertafter="sleep 30;", block='cat \"//OMVSADMI.CAT\"\ncat \"//OMVSADM.COPYMEM.TESTS\" > test.txt', 
-        marker="// {mark} ANSIBLE MANAGED BLOCK",state="present"),
-    test_ds_block_insertafter_regex=dict(test_name="T1"),
-    test_ds_block_insertbefore_regex=dict(test_name="T2"),
-    test_ds_block_insertafter_eof=dict(test_name="T3"),
-    test_ds_block_insertbefore_bof=dict(test_name="T4"),
-    test_ds_block_absent=dict(test_name="T5"),
-    test_ds_block_tmp_hlq_option=dict(
-        insertafter="EOF", block="export ZOAU_ROOT\n", state="present", backup=True,
-        tmp_hlq="TMPHLQ"),
-    test_ds_block_insert_with_force_option_as_true=dict(
-        block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present", force=True),
-    test_ds_block_absent_with_force_option_as_true=dict(
-        block="", state="absent", force=True),
-    test_ds_block_insert_with_force_option_as_false=dict(
-        block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present", force=False),
-    test_ds_block_absent_with_force_option_as_false=dict(block="", state="absent", force=False),
-    test_ds_block_insert_with_indentation_level_specified=dict(test_name="T7"),
+    test_uss_block_insert_with_doublequotes=dict(insertafter="sleep 30;", block='cat \"//OMVSADMI.CAT\"\ncat \"//OMVSADM.COPYMEM.TESTS\" > test.txt', marker="// {mark} ANSIBLE MANAGED BLOCK", state="present"),
+    test_ds_block_tmp_hlq_option=dict(insertafter="EOF", block="export ZOAU_ROOT\n", state="present", backup=True, tmp_hlq="TMPHLQ"),
     test_ds_block_insertafter_eof_with_backup=dict(
         block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present", backup=True),
     test_ds_block_insertafter_eof_with_backup_name=dict(
@@ -244,10 +196,7 @@ TEST_INFO = dict(
         path="",insertafter="ZOAU_ROOT=",
         block="ZOAU_ROOT=/mvsutil-develop_dsed\nZOAU_HOME=\\$ZOAU_ROOT\nZOAU_DIR=\\$ZOAU_ROOT",
         state="present", force=True),
-    test_ds_block_insertafter_regex_force_fail=dict(
-        path="",insertafter="ZOAU_ROOT=",
-        block="ZOAU_ROOT=/mvsutil-develop_dsed\nZOAU_HOME=\\$ZOAU_ROOT\nZOAU_DIR=\\$ZOAU_ROOT",
-        state="present", force=False),
+    test_ds_block_insertafter_regex_force_fail=dict(path="", insertafter="ZOAU_ROOT=", block="ZOAU_ROOT=/mvsutil-develop_dsed\nZOAU_HOME=\\$ZOAU_ROOT\nZOAU_DIR=\\$ZOAU_ROOT", state="present", force=False),
     expected=dict(test_uss_block_insertafter_regex_defaultmarker="""if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -943,7 +892,7 @@ export _BPXK_AUTOCVT
 def test_uss_block_insertafter_regex_defaultmarker(ansible_zos_module):
     UssGeneral(
         "test_uss_block_insertafter_regex_defaultmarker", ansible_zos_module, TEST_ENV,
-        TEST_INFO["test_uss_block_insertafter_regex"],
+        TEST_INFO["test_block_insertafter_regex"],
         TEST_INFO["expected"]["test_uss_block_insertafter_regex_defaultmarker"])
 
 
@@ -951,7 +900,7 @@ def test_uss_block_insertafter_regex_defaultmarker(ansible_zos_module):
 def test_uss_block_insertbefore_regex_defaultmarker(ansible_zos_module):
     UssGeneral(
         "test_uss_block_insertbefore_regex_defaultmarker", ansible_zos_module, TEST_ENV,
-        TEST_INFO["test_uss_block_insertbefore_regex"],
+        TEST_INFO["test_block_insertbefore_regex"],
         TEST_INFO["expected"]["test_uss_block_insertbefore_regex_defaultmarker"])
 
 
@@ -959,7 +908,7 @@ def test_uss_block_insertbefore_regex_defaultmarker(ansible_zos_module):
 def test_uss_block_insertafter_eof_defaultmarker(ansible_zos_module):
     UssGeneral(
         "test_uss_block_insertafter_eof_defaultmarker", ansible_zos_module,
-        TEST_ENV, TEST_INFO["test_uss_block_insertafter_eof"],
+        TEST_ENV, TEST_INFO["test_block_insertafter_eof"],
         TEST_INFO["expected"]["test_uss_block_insertafter_eof_defaultmarker"])
 
 
@@ -967,13 +916,13 @@ def test_uss_block_insertafter_eof_defaultmarker(ansible_zos_module):
 def test_uss_block_insertbefore_bof_defaultmarker(ansible_zos_module):
     UssGeneral(
         "test_uss_block_insertbefore_bof_defaultmarker", ansible_zos_module,
-        TEST_ENV, TEST_INFO["test_uss_block_insertbefore_bof"],
+        TEST_ENV, TEST_INFO["test_block_insertbefore_bof"],
         TEST_INFO["expected"]["test_uss_block_insertbefore_bof_defaultmarker"])
 
 
 @pytest.mark.uss
 def test_uss_block_insertafter_regex_custommarker(ansible_zos_module):
-    _TEST_INFO = TEST_INFO["test_uss_block_insertafter_regex"]
+    _TEST_INFO = TEST_INFO["test_block_insertafter_regex"]
     _TEST_INFO["marker"] = '# {mark} IBM MANAGED BLOCK'
     _TEST_INFO["marker_begin"] = 'OPEN'
     _TEST_INFO["marker_end"] = 'CLOSE'
@@ -988,7 +937,7 @@ def test_uss_block_insertafter_regex_custommarker(ansible_zos_module):
 
 @pytest.mark.uss
 def test_uss_block_insertbefore_regex_custommarker(ansible_zos_module):
-    _TEST_INFO = TEST_INFO["test_uss_block_insertbefore_regex"]
+    _TEST_INFO = TEST_INFO["test_block_insertbefore_regex"]
     _TEST_INFO["marker"] = '# {mark} IBM MANAGED BLOCK'
     _TEST_INFO["marker_begin"] = 'OPEN'
     _TEST_INFO["marker_end"] = 'CLOSE'
@@ -1003,7 +952,7 @@ def test_uss_block_insertbefore_regex_custommarker(ansible_zos_module):
 
 @pytest.mark.uss
 def test_uss_block_insertafter_eof_custommarker(ansible_zos_module):
-    _TEST_INFO = TEST_INFO["test_uss_block_insertafter_eof"]
+    _TEST_INFO = TEST_INFO["test_block_insertafter_eof"]
     _TEST_INFO["marker"] = '# {mark} IBM MANAGED BLOCK'
     _TEST_INFO["marker_begin"] = 'OPEN'
     _TEST_INFO["marker_end"] = 'CLOSE'
@@ -1018,7 +967,7 @@ def test_uss_block_insertafter_eof_custommarker(ansible_zos_module):
 
 @pytest.mark.uss
 def test_uss_block_insertbefore_bof_custommarker(ansible_zos_module):
-    _TEST_INFO = TEST_INFO["test_uss_block_insertbefore_bof"]
+    _TEST_INFO = TEST_INFO["test_block_insertbefore_bof"]
     _TEST_INFO["marker"] = '# {mark} IBM MANAGED BLOCK'
     _TEST_INFO["marker_begin"] = 'OPEN'
     _TEST_INFO["marker_end"] = 'CLOSE'
@@ -1036,14 +985,14 @@ def test_uss_block_absent_defaultmarker(ansible_zos_module):
     TEST_ENV["TEST_CONT"] = TEST_CONTENT_DEFAULTMARKER
     UssGeneral(
         "test_uss_block_absent_defaultmarker", ansible_zos_module, TEST_ENV,
-        TEST_INFO["test_uss_block_absent"],
+        TEST_INFO["test_block_absent"],
         TEST_INFO["expected"]["test_uss_block_absent"])
     TEST_ENV["TEST_CONT"] = TEST_CONTENT
 
 
 @pytest.mark.uss
 def test_uss_block_absent_custommarker(ansible_zos_module):
-    _TEST_INFO = TEST_INFO["test_uss_block_absent"]
+    _TEST_INFO = TEST_INFO["test_block_absent"]
     _TEST_INFO["marker"] = '# {mark} IBM MANAGED BLOCK'
     _TEST_INFO["marker_begin"] = 'OPEN'
     _TEST_INFO["marker_end"] = 'CLOSE'
@@ -1063,7 +1012,7 @@ def test_uss_block_replace_insertafter_regex_defaultmarker(ansible_zos_module):
     TEST_ENV["TEST_CONT"] = TEST_CONTENT_DEFAULTMARKER
     UssGeneral(
         "test_uss_block_replace_insertafter_regex_defaultmarker", ansible_zos_module, TEST_ENV,
-        TEST_INFO["test_uss_block_replace_insertafter_regex"],
+        TEST_INFO["test_block_replace_insertafter_regex"],
         TEST_INFO["expected"]["test_uss_block_replace_insertafter_regex_defaultmarker"])
     TEST_ENV["TEST_CONT"] = TEST_CONTENT
 
@@ -1073,7 +1022,7 @@ def test_uss_block_replace_insertbefore_regex_defaultmarker(ansible_zos_module):
     TEST_ENV["TEST_CONT"] = TEST_CONTENT_DEFAULTMARKER
     UssGeneral(
         "test_uss_block_replace_insertbefore_regex_defaultmarker", ansible_zos_module, TEST_ENV,
-        TEST_INFO["test_uss_block_replace_insertbefore_regex"],
+        TEST_INFO["test_block_replace_insertbefore_regex"],
         TEST_INFO["expected"]["test_uss_block_replace_insertbefore_regex_defaultmarker"])
     TEST_ENV["TEST_CONT"] = TEST_CONTENT
 
@@ -1083,7 +1032,7 @@ def test_uss_block_replace_insertafter_eof_defaultmarker(ansible_zos_module):
     TEST_ENV["TEST_CONT"] = TEST_CONTENT_DEFAULTMARKER
     UssGeneral(
         "test_uss_block_replace_insertafter_eof_defaultmarker", ansible_zos_module,
-        TEST_ENV, TEST_INFO["test_uss_block_replace_insertafter_eof"],
+        TEST_ENV, TEST_INFO["test_block_replace_insertafter_eof"],
         TEST_INFO["expected"]["test_uss_block_replace_insertafter_eof_defaultmarker"])
     TEST_ENV["TEST_CONT"] = TEST_CONTENT
 
@@ -1093,14 +1042,14 @@ def test_uss_block_replace_insertbefore_bof_defaultmarker(ansible_zos_module):
     TEST_ENV["TEST_CONT"] = TEST_CONTENT_DEFAULTMARKER
     UssGeneral(
         "test_uss_block_replace_insertbefore_bof_defaultmarker", ansible_zos_module,
-        TEST_ENV, TEST_INFO["test_uss_block_replace_insertbefore_bof"],
+        TEST_ENV, TEST_INFO["test_block_replace_insertbefore_bof"],
         TEST_INFO["expected"]["test_uss_block_replace_insertbefore_bof_defaultmarker"])
     TEST_ENV["TEST_CONT"] = TEST_CONTENT
 
 
 @pytest.mark.uss
 def test_uss_block_replace_insertafter_regex_custommarker(ansible_zos_module):
-    _TEST_INFO = TEST_INFO["test_uss_block_replace_insertafter_regex"]
+    _TEST_INFO = TEST_INFO["test_block_replace_insertafter_regex"]
     _TEST_INFO["marker"] = '# {mark} IBM MANAGED BLOCK'
     _TEST_INFO["marker_begin"] = 'OPEN'
     _TEST_INFO["marker_end"] = 'CLOSE'
@@ -1117,7 +1066,7 @@ def test_uss_block_replace_insertafter_regex_custommarker(ansible_zos_module):
 
 @pytest.mark.uss
 def test_uss_block_replace_insertbefore_regex_custommarker(ansible_zos_module):
-    _TEST_INFO = TEST_INFO["test_uss_block_replace_insertbefore_regex"]
+    _TEST_INFO = TEST_INFO["test_block_replace_insertbefore_regex"]
     _TEST_INFO["marker"] = '# {mark} IBM MANAGED BLOCK'
     _TEST_INFO["marker_begin"] = 'OPEN'
     _TEST_INFO["marker_end"] = 'CLOSE'
@@ -1134,7 +1083,7 @@ def test_uss_block_replace_insertbefore_regex_custommarker(ansible_zos_module):
 
 @pytest.mark.uss
 def test_uss_block_replace_insertafter_eof_custommarker(ansible_zos_module):
-    _TEST_INFO = TEST_INFO["test_uss_block_replace_insertafter_eof"]
+    _TEST_INFO = TEST_INFO["test_block_replace_insertafter_eof"]
     _TEST_INFO["marker"] = '# {mark} IBM MANAGED BLOCK'
     _TEST_INFO["marker_begin"] = 'OPEN'
     _TEST_INFO["marker_end"] = 'CLOSE'
@@ -1151,7 +1100,7 @@ def test_uss_block_replace_insertafter_eof_custommarker(ansible_zos_module):
 
 @pytest.mark.uss
 def test_uss_block_replace_insertbefore_bof_custommarker(ansible_zos_module):
-    _TEST_INFO = TEST_INFO["test_uss_block_replace_insertbefore_bof"]
+    _TEST_INFO = TEST_INFO["test_block_replace_insertbefore_bof"]
     _TEST_INFO["marker"] = '# {mark} IBM MANAGED BLOCK'
     _TEST_INFO["marker_begin"] = 'OPEN'
     _TEST_INFO["marker_end"] = 'CLOSE'
@@ -1167,46 +1116,10 @@ def test_uss_block_replace_insertbefore_bof_custommarker(ansible_zos_module):
 
 
 @pytest.mark.uss
-def test_uss_block_insert_with_force_option_as_true(ansible_zos_module):
-    UssGeneral(
-        "test_uss_block_insertafter_eof_defaultmarker", ansible_zos_module,
-        TEST_ENV, TEST_INFO["test_uss_block_insert_with_force_option_as_true"],
-        TEST_INFO["expected"]["test_uss_block_insertafter_eof_defaultmarker"])
-
-
-@pytest.mark.uss
-def test_uss_block_insert_with_force_option_as_false(ansible_zos_module):
-    UssGeneral(
-        "test_uss_block_insertafter_eof_defaultmarker", ansible_zos_module,
-        TEST_ENV, TEST_INFO["test_uss_block_insert_with_force_option_as_false"],
-        TEST_INFO["expected"]["test_uss_block_insertafter_eof_defaultmarker"])
-
-
-@pytest.mark.uss
-def test_uss_block_absent_with_force_option_as_true(ansible_zos_module):
-    TEST_ENV["TEST_CONT"] = TEST_CONTENT_DEFAULTMARKER
-    UssGeneral(
-        "test_uss_block_absent_defaultmarker", ansible_zos_module, TEST_ENV,
-        TEST_INFO["test_uss_block_absent_with_force_option_as_true"],
-        TEST_INFO["expected"]["test_uss_block_absent"])
-    TEST_ENV["TEST_CONT"] = TEST_CONTENT
-
-
-@pytest.mark.uss
-def test_uss_block_absent_with_force_option_as_false(ansible_zos_module):
-    TEST_ENV["TEST_CONT"] = TEST_CONTENT_DEFAULTMARKER
-    UssGeneral(
-        "test_uss_block_absent_defaultmarker", ansible_zos_module, TEST_ENV,
-        TEST_INFO["test_uss_block_absent_with_force_option_as_false"],
-        TEST_INFO["expected"]["test_uss_block_absent"])
-    TEST_ENV["TEST_CONT"] = TEST_CONTENT
-
-
-@pytest.mark.uss
 def test_uss_block_insert_with_indentation_level_specified(ansible_zos_module):
     UssGeneral(
         "test_uss_block_insert_with_indentation_level_specified", ansible_zos_module,
-        TEST_ENV, TEST_INFO["test_uss_block_insert_with_indentation_level_specified"],
+        TEST_ENV, TEST_INFO["test_block_insert_with_indentation_level_specified"],
         TEST_INFO["expected"]["test_uss_block_insert_with_indentation_level_specified"])
 
 
@@ -1218,6 +1131,7 @@ def test_uss_block_insert_with_doublequotes(ansible_zos_module):
         TEST_INFO["test_uss_block_insert_with_doublequotes"],
         TEST_INFO["expected"]["test_uss_block_insert_with_doublequotes"])
     TEST_ENV["TEST_CONT"] = TEST_CONTENT
+
 
 @pytest.mark.uss
 def test_uss_block_insertafter_eof_with_backup(ansible_zos_module):
@@ -1262,10 +1176,11 @@ def test_uss_block_insertafter_eof_with_backup_name(ansible_zos_module):
 def test_ds_block_insertafter_regex(ansible_zos_module, dstype, encoding):
     TEST_ENV["DS_TYPE"] = dstype
     TEST_ENV["ENCODING"] = encoding
+    TEST_INFO_DS = {**TEST_INFO["test_block_insertafter_regex"]}
     DsGeneral(
-        TEST_INFO["test_ds_block_insertafter_regex"]["test_name"],
+        "T1",
         ansible_zos_module, TEST_ENV,
-        TEST_INFO["test_uss_block_insertafter_regex"],
+        TEST_INFO_DS,
         TEST_INFO["expected"]["test_uss_block_insertafter_regex_defaultmarker"]
     )
 
@@ -1276,10 +1191,11 @@ def test_ds_block_insertafter_regex(ansible_zos_module, dstype, encoding):
 def test_ds_block_insertbefore_regex(ansible_zos_module, dstype, encoding):
     TEST_ENV["DS_TYPE"] = dstype
     TEST_ENV["ENCODING"] = encoding
+    TEST_INFO_DS = {**TEST_INFO["test_block_insertbefore_regex"]}
     DsGeneral(
-        TEST_INFO["test_ds_block_insertbefore_regex"]["test_name"],
+        "T1",
         ansible_zos_module, TEST_ENV,
-        TEST_INFO["test_uss_block_insertbefore_regex"],
+        TEST_INFO_DS,
         TEST_INFO["expected"]["test_uss_block_insertbefore_regex_defaultmarker"]
     )
 
@@ -1290,10 +1206,11 @@ def test_ds_block_insertbefore_regex(ansible_zos_module, dstype, encoding):
 def test_ds_block_insertafter_eof(ansible_zos_module, dstype, encoding):
     TEST_ENV["DS_TYPE"] = dstype
     TEST_ENV["ENCODING"] = encoding
+    TEST_INFO_DS = {**TEST_INFO["test_block_insertafter_eof"]}
     DsGeneral(
-        TEST_INFO["test_ds_block_insertafter_eof"]["test_name"],
+        "T1",
         ansible_zos_module, TEST_ENV,
-        TEST_INFO["test_uss_block_insertafter_eof"],
+        TEST_INFO_DS,
         TEST_INFO["expected"]["test_uss_block_insertafter_eof_defaultmarker"]
     )
 
@@ -1304,10 +1221,11 @@ def test_ds_block_insertafter_eof(ansible_zos_module, dstype, encoding):
 def test_ds_block_insertbefore_bof(ansible_zos_module, dstype, encoding):
     TEST_ENV["DS_TYPE"] = dstype
     TEST_ENV["ENCODING"] = encoding
+    TEST_INFO_DS = {**TEST_INFO["test_block_insertbefore_bof"]}
     DsGeneral(
-        TEST_INFO["test_ds_block_insertbefore_bof"]["test_name"],
+        "T1",
         ansible_zos_module, TEST_ENV,
-        TEST_INFO["test_uss_block_insertbefore_bof"],
+        TEST_INFO_DS,
         TEST_INFO["expected"]["test_uss_block_insertbefore_bof_defaultmarker"]
     )
 
@@ -1319,10 +1237,11 @@ def test_ds_block_replace_insertafter_regex(ansible_zos_module, dstype, encoding
     TEST_ENV["DS_TYPE"] = dstype
     TEST_ENV["ENCODING"] = encoding
     TEST_ENV["TEST_CONT"] = TEST_CONTENT_DEFAULTMARKER
+    TEST_INFO_DS = {**TEST_INFO["test_block_replace_insertafter_regex"]}
     DsGeneral(
-        TEST_INFO["test_ds_block_insertafter_regex"]["test_name"],
+        "T1",
         ansible_zos_module, TEST_ENV,
-        TEST_INFO["test_uss_block_replace_insertafter_regex"],
+        TEST_INFO_DS,
         TEST_INFO["expected"]["test_uss_block_replace_insertafter_regex_defaultmarker"]
     )
     TEST_ENV["TEST_CONT"] = TEST_CONTENT
@@ -1335,10 +1254,11 @@ def test_ds_block_replace_insertbefore_regex(ansible_zos_module, dstype, encodin
     TEST_ENV["DS_TYPE"] = dstype
     TEST_ENV["ENCODING"] = encoding
     TEST_ENV["TEST_CONT"] = TEST_CONTENT_DEFAULTMARKER
+    TEST_INFO_DS = {**TEST_INFO["test_block_replace_insertbefore_regex"]}
     DsGeneral(
-        TEST_INFO["test_ds_block_insertbefore_regex"]["test_name"],
+        "T1",
         ansible_zos_module, TEST_ENV,
-        TEST_INFO["test_uss_block_replace_insertbefore_regex"],
+        TEST_INFO_DS,
         TEST_INFO["expected"]["test_uss_block_replace_insertbefore_regex_defaultmarker"]
     )
     TEST_ENV["TEST_CONT"] = TEST_CONTENT
@@ -1351,10 +1271,11 @@ def test_ds_block_replace_insertafter_eof(ansible_zos_module, dstype, encoding):
     TEST_ENV["DS_TYPE"] = dstype
     TEST_ENV["ENCODING"] = encoding
     TEST_ENV["TEST_CONT"] = TEST_CONTENT_DEFAULTMARKER
+    TEST_INFO_DS = {**TEST_INFO["test_block_replace_insertafter_eof"]}
     DsGeneral(
-        TEST_INFO["test_ds_block_insertafter_eof"]["test_name"],
+        "T1",
         ansible_zos_module, TEST_ENV,
-        TEST_INFO["test_uss_block_replace_insertafter_eof"],
+        TEST_INFO_DS,
         TEST_INFO["expected"]["test_uss_block_replace_insertafter_eof_defaultmarker"]
     )
     TEST_ENV["TEST_CONT"] = TEST_CONTENT
@@ -1367,10 +1288,11 @@ def test_ds_block_replace_insertbefore_bof(ansible_zos_module, dstype, encoding)
     TEST_ENV["DS_TYPE"] = dstype
     TEST_ENV["ENCODING"] = encoding
     TEST_ENV["TEST_CONT"] = TEST_CONTENT_DEFAULTMARKER
+    TEST_INFO_DS = {**TEST_INFO["test_block_replace_insertbefore_bof"]}
     DsGeneral(
-        TEST_INFO["test_ds_block_insertbefore_bof"]["test_name"],
+        "T1",
         ansible_zos_module, TEST_ENV,
-        TEST_INFO["test_uss_block_replace_insertbefore_bof"],
+        TEST_INFO_DS,
         TEST_INFO["expected"]["test_uss_block_replace_insertbefore_bof_defaultmarker"]
     )
     TEST_ENV["TEST_CONT"] = TEST_CONTENT
@@ -1383,9 +1305,10 @@ def test_ds_block_absent(ansible_zos_module, dstype, encoding):
     TEST_ENV["DS_TYPE"] = dstype
     TEST_ENV["ENCODING"] = encoding
     TEST_ENV["TEST_CONT"] = TEST_CONTENT_DEFAULTMARKER
+    TEST_INFO_DS = {**TEST_INFO["test_block_absent"]}
     DsGeneral(
-        TEST_INFO["test_ds_block_absent"]["test_name"], ansible_zos_module,
-        TEST_ENV, TEST_INFO["test_uss_block_absent"],
+        "T1", ansible_zos_module,
+        TEST_ENV, TEST_INFO_DS,
         TEST_INFO["expected"]["test_uss_block_absent"]
     )
     TEST_ENV["TEST_CONT"] = TEST_CONTENT
@@ -1398,69 +1321,13 @@ def test_ds_tmp_hlq_option(ansible_zos_module, dstype, encoding):
     TEST_ENV["DS_TYPE"] = dstype
     TEST_ENV["ENCODING"] = encoding
     TEST_ENV["TEST_CONT"] = TEST_CONTENT_DEFAULTMARKER
+    TEST_INFO_DS = {**TEST_INFO["test_ds_block_tmp_hlq_option"]}
     test_name = "T6"
     kwargs = dict(backup_name=r"TMPHLQ\..")
     DsGeneralResultKeyMatchesRegex(
         test_name, ansible_zos_module,
-        TEST_ENV, TEST_INFO["test_ds_block_tmp_hlq_option"],
+        TEST_ENV, TEST_INFO_DS,
         **kwargs
-    )
-    TEST_ENV["TEST_CONT"] = TEST_CONTENT
-
-
-@pytest.mark.ds
-@pytest.mark.parametrize("dstype", DS_TYPE)
-@pytest.mark.parametrize("encoding", ENCODING)
-def test_ds_block_insert_with_force_option_as_true(ansible_zos_module, dstype, encoding):
-    TEST_ENV["DS_TYPE"] = dstype
-    TEST_ENV["ENCODING"] = encoding
-    DsGeneral(
-        "T6",
-        ansible_zos_module, TEST_ENV,
-        TEST_INFO["test_ds_block_insert_with_force_option_as_true"],
-        TEST_INFO["expected"]["test_uss_block_insertafter_eof_defaultmarker"]
-    )
-
-
-@pytest.mark.ds
-@pytest.mark.parametrize("dstype", DS_TYPE)
-@pytest.mark.parametrize("encoding", ENCODING)
-def test_ds_block_absent_with_force_option_as_true(ansible_zos_module, dstype, encoding):
-    TEST_ENV["DS_TYPE"] = dstype
-    TEST_ENV["ENCODING"] = encoding
-    TEST_ENV["TEST_CONT"] = TEST_CONTENT_DEFAULTMARKER
-    DsGeneral(
-        "T7", ansible_zos_module,
-        TEST_ENV, TEST_INFO["test_ds_block_absent_with_force_option_as_true"],
-        TEST_INFO["expected"]["test_uss_block_absent"]
-    )
-    TEST_ENV["TEST_CONT"] = TEST_CONTENT
-
-
-@pytest.mark.ds
-@pytest.mark.parametrize("dstype", DS_TYPE)
-@pytest.mark.parametrize("encoding", ENCODING)
-def test_ds_block_insert_with_force_option_as_false(ansible_zos_module, dstype, encoding):
-    TEST_ENV["DS_TYPE"] = dstype
-    TEST_ENV["ENCODING"] = encoding
-    DsGeneral(
-        "T8", ansible_zos_module,
-        TEST_ENV, TEST_INFO["test_ds_block_insert_with_force_option_as_false"],
-        TEST_INFO["expected"]["test_uss_block_insertafter_eof_defaultmarker"]
-    )
-
-
-@pytest.mark.ds
-@pytest.mark.parametrize("dstype", DS_TYPE)
-@pytest.mark.parametrize("encoding", ENCODING)
-def test_ds_block_absent_with_force_option_as_false(ansible_zos_module, dstype, encoding):
-    TEST_ENV["DS_TYPE"] = dstype
-    TEST_ENV["ENCODING"] = encoding
-    TEST_ENV["TEST_CONT"] = TEST_CONTENT_DEFAULTMARKER
-    DsGeneral(
-        "T9", ansible_zos_module,
-        TEST_ENV, TEST_INFO["test_ds_block_absent_with_force_option_as_false"],
-        TEST_INFO["expected"]["test_uss_block_absent"]
     )
     TEST_ENV["TEST_CONT"] = TEST_CONTENT
 
@@ -1471,10 +1338,11 @@ def test_ds_block_absent_with_force_option_as_false(ansible_zos_module, dstype, 
 def test_ds_block_insert_with_indentation_level_specified(ansible_zos_module, dstype, encoding):
     TEST_ENV["DS_TYPE"] = dstype
     TEST_ENV["ENCODING"] = encoding
+    TEST_INFO["test_block_insert_with_indentation_level_specified_name"] = {**TEST_INFO["test_block_insert_with_indentation_level_specified"], "test_name":"T7"}
     DsGeneral(
-        TEST_INFO["test_ds_block_insert_with_indentation_level_specified"]["test_name"],
+        TEST_INFO["test_block_insert_with_indentation_level_specified_name"]["test_name"],
         ansible_zos_module, TEST_ENV,
-        TEST_INFO["test_uss_block_insert_with_indentation_level_specified"],
+        TEST_INFO["test_block_insert_with_indentation_level_specified"],
         TEST_INFO["expected"]["test_uss_block_insert_with_indentation_level_specified"]
     )
 
@@ -1527,7 +1395,7 @@ def test_ds_block_insertafter_regex_force(ansible_zos_module, dstype):
 @pytest.mark.ds
 def test_not_exist_ds_block_insertafter_regex(ansible_zos_module):
     hosts = ansible_zos_module
-    test_info = TEST_INFO["test_uss_block_insertafter_regex"]
+    test_info = TEST_INFO["test_block_insertafter_regex"]
     test_info["path"] = "BIFTEST.NOTEXIST.SEQ"
     results = hosts.all.zos_blockinfile(**test_info)
     for result in results.contacted.values():
@@ -1538,11 +1406,11 @@ def test_not_exist_ds_block_insertafter_regex(ansible_zos_module):
 def test_ds_block_insertafter_nomatch_eof_insert(ansible_zos_module):
     TEST_ENV["DS_TYPE"] = 'SEQ'
     TEST_ENV["ENCODING"] = 'IBM-1047'
-    TEST_INFO["test_uss_block_insertafter_eof"]["insertafter"] = 'SOME_NON_EXISTING_PATTERN'
+    TEST_INFO["test_block_insertafter_eof"]["insertafter"] = 'SOME_NON_EXISTING_PATTERN'
     DsGeneral(
-        TEST_INFO["test_ds_block_insertafter_eof"]["test_name"],
+        "T1",
         ansible_zos_module, TEST_ENV,
-        TEST_INFO["test_uss_block_insertafter_eof"],
+        TEST_INFO["test_block_insertafter_eof"],
         TEST_INFO["expected"]["test_uss_block_insertafter_eof_defaultmarker"]
     )
 
@@ -1550,7 +1418,7 @@ def test_ds_block_insertafter_nomatch_eof_insert(ansible_zos_module):
 @pytest.mark.ds
 def test_ds_block_insertafter_regex_wrongmarker(ansible_zos_module):
     hosts = ansible_zos_module
-    test_info = TEST_INFO["test_uss_block_insertafter_regex"]
+    test_info = TEST_INFO["test_block_insertafter_regex"]
     test_info["path"] = "BIFTEST.NOTEXIST.SEQ"
     test_info["marker"] = '# MANAGED BLOCK'
     results = hosts.all.zos_blockinfile(**test_info)
@@ -1564,8 +1432,8 @@ def test_ds_block_insertafter_regex_wrongmarker(ansible_zos_module):
 def test_ds_not_supported(ansible_zos_module, dstype):
     TEST_ENV["DS_TYPE"] = dstype
     DsNotSupportedHelper(
-        TEST_INFO["test_ds_block_insertafter_regex"]["test_name"], ansible_zos_module,
-        TEST_ENV, TEST_INFO["test_uss_block_insertafter_regex"]
+        "T1", ansible_zos_module,
+        TEST_ENV, TEST_INFO["test_block_insertafter_regex"]
     )
 
 

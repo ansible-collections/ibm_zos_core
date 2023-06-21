@@ -71,12 +71,10 @@ def UssGeneral(test_name, ansible_zos_module, test_env, test_info, expected):
     test_info["path"] = test_env["TEST_FILE"]
     blockinfile_results = hosts.all.zos_blockinfile(**test_info)
     for result in blockinfile_results.contacted.values():
-        pprint(result)
         assert result.get("changed") == 1
     cmdStr = "cat {0}".format(test_info["path"])
     results = hosts.all.shell(cmd=cmdStr)
     for result in results.contacted.values():
-        pprint(result)
         assert result.get("stdout") == expected
     clean_uss_test_env(test_env["TEST_DIR"], hosts)
     return blockinfile_results
@@ -264,12 +262,11 @@ def DsGeneralForce(ansible_zos_module, test_env, test_info, expected):
             cmdStr = "cat \"//'{0}'\" ".format(test_info["path"])
             results = hosts.all.shell(cmd=cmdStr)
             for result in results.contacted.values():
-                pprint(result)
                 assert result.get("stdout").replace('\n', '').replace(' ', '') == expected.replace('\n', '').replace(' ', '')
         else:
             cmdStr =r"""cat "//'{0}'" """.format(test_info["path"])
             results = hosts.all.shell(cmd=cmdStr)
-            pprint(vars(results))
+
             for result in results.contacted.values():
                 assert result.get("changed") == True
     finally:

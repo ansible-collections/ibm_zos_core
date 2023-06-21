@@ -92,6 +92,7 @@ TEST_INFO = dict(
     test_line_replace_nomatch_insertbefore_nomatch=dict(regexp="abcxyz", insertbefore="xyzijk", line="unset ZOAU_ROOT", state="present"),
     test_line_replace_match_insertbefore_ignore=dict(regexp="ZOAU_ROOT=", insertbefore="PATH=", line="unset ZOAU_ROOT", state="present"),
     test_line_replace_nomatch_insertafter_nomatch=dict(regexp="abcxyz", insertafter="xyzijk", line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present"),
+    test_ds_line_force_fail=dict(path="",insertafter="EOF", line="export ZOAU_ROOT", force=False),
     test_ds_line_tmp_hlq_option=dict(insertafter="EOF", line="export ZOAU_ROOT", state="present", backup=True, tmp_hlq="TMPHLQ"),
     # Remove from expected text not used anymore as well as the parameters the same text for uss is use for DS 
     expected=dict(test_uss_line_replace="""if [ -z STEPLIB ] && tty -s;
@@ -687,276 +688,166 @@ def test_uss_line_replace_quoted_not_escaped(ansible_zos_module):
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
 @pytest.mark.parametrize("encoding", ENCODING)
-@pytest.mark.parametrize("force", FORCE)
-def test_ds_line_insertafter_regex(ansible_zos_module, dstype, encoding, force):
+def test_ds_line_insertafter_regex(ansible_zos_module, dstype, encoding, ):
     TEST_ENV["DS_TYPE"] = dstype
     TEST_ENV["ENCODING"] = encoding
-    if force:
-        TEST_INFO["test_line_insertafter_regex_force"] = {**TEST_INFO["test_line_insertafter_regex"], "force": "True"}
-        DsGeneralForce(
+    TEST_INFO["test_line_insertafter_regex_name"] = {**TEST_INFO["test_line_insertafter_regex"], "test_name":"T1"}
+    DsGeneral(
+        TEST_INFO["test_line_insertafter_regex_name"]["test_name"],
         ansible_zos_module, TEST_ENV,
-        TEST_CONTENT,
-        TEST_INFO["test_line_insertafter_regex_force"],
+        TEST_INFO["test_line_insertafter_regex"],
         TEST_INFO["expected"]["test_uss_line_insertafter_regex"]
     )
-    else:
-        TEST_INFO["test_line_insertafter_regex_name"] = {**TEST_INFO["test_line_insertafter_regex"], "test_name":"T1"}
-        DsGeneral(
-            TEST_INFO["test_line_insertafter_regex_name"]["test_name"],
-            ansible_zos_module, TEST_ENV,
-            TEST_INFO["test_line_insertafter_regex"],
-            TEST_INFO["expected"]["test_uss_line_insertafter_regex"]
-        )
 
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
 @pytest.mark.parametrize("encoding", ENCODING)
-@pytest.mark.parametrize("force", FORCE)
-def test_ds_line_insertbefore_regex(ansible_zos_module, dstype, encoding, force):
+def test_ds_line_insertbefore_regex(ansible_zos_module, dstype, encoding):
     TEST_ENV["DS_TYPE"] = dstype
     TEST_ENV["ENCODING"] = encoding
-    if force:
-        TEST_INFO["test_line_insertbefore_regex_force"] = {**TEST_INFO["test_line_insertbefore_regex"], "force": "True"}
-        DsGeneralForce(
+    TEST_INFO["test_line_insertbefore_regex_name"] = {**TEST_INFO["test_line_insertbefore_regex"], "test_name":"T1"}
+    DsGeneral(
+        TEST_INFO["test_line_insertbefore_regex_name"]["test_name"],
         ansible_zos_module, TEST_ENV,
-        TEST_CONTENT,
-        TEST_INFO["test_line_insertbefore_regex_force"],
+        TEST_INFO["test_line_insertbefore_regex"],
         TEST_INFO["expected"]["test_uss_line_insertbefore_regex"]
     )
-    else:
-        TEST_INFO["test_line_insertbefore_regex_name"] = {**TEST_INFO["test_line_insertbefore_regex"], "test_name":"T1"}
-        DsGeneral(
-            TEST_INFO["test_line_insertbefore_regex_name"]["test_name"],
-            ansible_zos_module, TEST_ENV,
-            TEST_INFO["test_line_insertbefore_regex"],
-            TEST_INFO["expected"]["test_uss_line_insertbefore_regex"]
-        )
 
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
 @pytest.mark.parametrize("encoding", ENCODING)
-@pytest.mark.parametrize("force", FORCE)
-def test_ds_line_insertafter_eof(ansible_zos_module, dstype, encoding, force):
+def test_ds_line_insertafter_eof(ansible_zos_module, dstype, encoding):
     TEST_ENV["DS_TYPE"] = dstype
     TEST_ENV["ENCODING"] = encoding
-    if force:
-        TEST_INFO["test_line_insertafter_eof_force"] = {**TEST_INFO["test_line_insertafter_eof"], "force": "True"}
-        DsGeneralForce(
+    TEST_INFO["test_line_insertafter_eof_name"] = {**TEST_INFO["test_line_insertafter_eof"], "test_name":"T1"}
+    DsGeneral(
+        TEST_INFO["test_line_insertafter_eof_name"]["test_name"],
         ansible_zos_module, TEST_ENV,
-        TEST_CONTENT,
-        TEST_INFO["test_line_insertafter_eof_force"],
+        TEST_INFO["test_line_insertafter_eof"],
         TEST_INFO["expected"]["test_uss_line_insertafter_eof"]
     )
-    else:
-        TEST_INFO["test_line_insertafter_eof_name"] = {**TEST_INFO["test_line_insertafter_eof"], "test_name":"T1"}
-        DsGeneral(
-            TEST_INFO["test_line_insertafter_eof_name"]["test_name"],
-            ansible_zos_module, TEST_ENV,
-            TEST_INFO["test_line_insertafter_eof"],
-            TEST_INFO["expected"]["test_uss_line_insertafter_eof"]
-        )
 
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
 @pytest.mark.parametrize("encoding", ENCODING)
-@pytest.mark.parametrize("force", FORCE)
-def test_ds_line_insertbefore_bof(ansible_zos_module, dstype, encoding, force):
+def test_ds_line_insertbefore_bof(ansible_zos_module, dstype, encoding):
     TEST_ENV["DS_TYPE"] = dstype
     TEST_ENV["ENCODING"] = encoding
-    if force:
-        TEST_INFO["test_line_insertbefore_bof_force"] = {**TEST_INFO["test_line_insertbefore_bof"], "force": "True"}
-        DsGeneralForce(
+    TEST_INFO["test_line_insertbefore_bof_name"] = {**TEST_INFO["test_line_insertbefore_bof"], "test_name":"T1"}
+    DsGeneral(
+        TEST_INFO["test_line_insertbefore_bof_name"]["test_name"],
         ansible_zos_module, TEST_ENV,
-        TEST_CONTENT,
-        TEST_INFO["test_line_insertbefore_bof_force"],
+        TEST_INFO["test_line_insertbefore_bof"],
         TEST_INFO["expected"]["test_uss_line_insertbefore_bof"]
     )
-    else:
-        TEST_INFO["test_line_insertbefore_bof_name"] = {**TEST_INFO["test_line_insertbefore_bof"], "test_name":"T1"}
-        DsGeneral(
-            TEST_INFO["test_line_insertbefore_bof_name"]["test_name"],
-            ansible_zos_module, TEST_ENV,
-            TEST_INFO["test_line_insertbefore_bof"],
-            TEST_INFO["expected"]["test_uss_line_insertbefore_bof"]
-        )
 
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
 @pytest.mark.parametrize("encoding", ENCODING)
-@pytest.mark.parametrize("force", FORCE)
-def test_ds_line_replace_match_insertafter_ignore(ansible_zos_module, dstype, encoding, force):
+def test_ds_line_replace_match_insertafter_ignore(ansible_zos_module, dstype, encoding):
     TEST_ENV["DS_TYPE"] = dstype
     TEST_ENV["ENCODING"] = encoding
-    if force:
-        TEST_INFO["test_line_replace_match_insertafter_ignore_force"] = {**TEST_INFO["test_line_replace_match_insertafter_ignore"], "force": "True"}
-        DsGeneralForce(
+    TEST_INFO["test_line_replace_match_insertafter_ignore_name"] = {**TEST_INFO["test_line_replace_match_insertafter_ignore"], "test_name":"T1"}
+    DsGeneral(
+        TEST_INFO["test_line_replace_match_insertafter_ignore_name"]["test_name"],
         ansible_zos_module, TEST_ENV,
-        TEST_CONTENT,
-        TEST_INFO["test_line_replace_match_insertafter_ignore_force"],
+        TEST_INFO["test_line_replace_match_insertafter_ignore"],
         TEST_INFO["expected"]["test_uss_line_replace_match_insertafter_ignore"]
     )
-    else:
-        TEST_INFO["test_line_replace_match_insertafter_ignore_name"] = {**TEST_INFO["test_line_replace_match_insertafter_ignore"], "test_name":"T1"}
-        DsGeneral(
-            TEST_INFO["test_line_replace_match_insertafter_ignore_name"]["test_name"],
-            ansible_zos_module, TEST_ENV,
-            TEST_INFO["test_line_replace_match_insertafter_ignore"],
-            TEST_INFO["expected"]["test_uss_line_replace_match_insertafter_ignore"]
-        )
 
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
 @pytest.mark.parametrize("encoding", ENCODING)
-@pytest.mark.parametrize("force", FORCE)
-def test_ds_line_replace_match_insertbefore_ignore(ansible_zos_module, dstype, encoding, force):
+def test_ds_line_replace_match_insertbefore_ignore(ansible_zos_module, dstype, encoding):
     TEST_ENV["DS_TYPE"] = dstype
     TEST_ENV["ENCODING"] = encoding
-    if force:
-        TEST_INFO["test_line_replace_match_insertbefore_ignore_force"] = {**TEST_INFO["test_line_replace_match_insertbefore_ignore"], "force": "True"}
-        DsGeneralForce(
+    TEST_INFO["test_line_replace_match_insertbefore_ignore_name"] = {**TEST_INFO["test_line_replace_match_insertbefore_ignore"], "test_name":"T1"}
+    DsGeneral(
+        TEST_INFO["test_line_replace_match_insertbefore_ignore_name"]["test_name"],
         ansible_zos_module, TEST_ENV,
-        TEST_CONTENT,
-        TEST_INFO["test_line_replace_match_insertbefore_ignore_force"],
+        TEST_INFO["test_line_replace_match_insertbefore_ignore"],
         TEST_INFO["expected"]["test_uss_line_replace_match_insertbefore_ignore"]
     )
-    else:
-        TEST_INFO["test_line_replace_match_insertbefore_ignore_name"] = {**TEST_INFO["test_line_replace_match_insertbefore_ignore"], "test_name":"T1"}
-        DsGeneral(
-            TEST_INFO["test_line_replace_match_insertbefore_ignore_name"]["test_name"],
-            ansible_zos_module, TEST_ENV,
-            TEST_INFO["test_line_replace_match_insertbefore_ignore"],
-            TEST_INFO["expected"]["test_uss_line_replace_match_insertbefore_ignore"]
-        )
 
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
 @pytest.mark.parametrize("encoding", ENCODING)
-@pytest.mark.parametrize("force", FORCE)
-def test_ds_line_replace_nomatch_insertafter_match(ansible_zos_module, dstype, encoding, force):
+def test_ds_line_replace_nomatch_insertafter_match(ansible_zos_module, dstype, encoding):
     TEST_ENV["DS_TYPE"] = dstype
     TEST_ENV["ENCODING"] = encoding
-    if force:
-        TEST_INFO["test_line_replace_nomatch_insertafter_match_force"] = {**TEST_INFO["test_line_replace_nomatch_insertafter_match"], "force": "True"}
-        DsGeneralForce(
+    TEST_INFO["test_line_replace_nomatch_insertafter_match_name"] = {**TEST_INFO["test_line_replace_nomatch_insertafter_match"], "test_name":"T1"}
+    DsGeneral(
+        TEST_INFO["test_line_replace_nomatch_insertafter_match_name"]["test_name"],
         ansible_zos_module, TEST_ENV,
-        TEST_CONTENT,
-        TEST_INFO["test_line_replace_nomatch_insertafter_match_force"],
+        TEST_INFO["test_line_replace_nomatch_insertafter_match"],
         TEST_INFO["expected"]["test_uss_line_replace_nomatch_insertafter_match"]
     )
-    else:
-        TEST_INFO["test_line_replace_nomatch_insertafter_match_name"] = {**TEST_INFO["test_line_replace_nomatch_insertafter_match"], "test_name":"T1"}
-        DsGeneral(
-            TEST_INFO["test_line_replace_nomatch_insertafter_match_name"]["test_name"],
-            ansible_zos_module, TEST_ENV,
-            TEST_INFO["test_line_replace_nomatch_insertafter_match"],
-            TEST_INFO["expected"]["test_uss_line_replace_nomatch_insertafter_match"]
-        )
 
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
 @pytest.mark.parametrize("encoding", ENCODING)
-@pytest.mark.parametrize("force", FORCE)
-def test_ds_line_replace_nomatch_insertbefore_match(ansible_zos_module, dstype, encoding, force):
+def test_ds_line_replace_nomatch_insertbefore_match(ansible_zos_module, dstype, encoding):
     TEST_ENV["DS_TYPE"] = dstype
     TEST_ENV["ENCODING"] = encoding
-    if force:
-        TEST_INFO["test_line_replace_nomatch_insertbefore_match_force"] = {**TEST_INFO["test_line_replace_nomatch_insertbefore_match"], "force": "True"}
-        DsGeneralForce(
+    TEST_INFO["test_line_replace_nomatch_insertbefore_match_name"] = {**TEST_INFO["test_line_replace_nomatch_insertbefore_match"], "test_name":"T1"}
+    DsGeneral(
+        TEST_INFO["test_line_replace_nomatch_insertbefore_match_name"]["test_name"],
         ansible_zos_module, TEST_ENV,
-        TEST_CONTENT,
-        TEST_INFO["test_line_replace_nomatch_insertbefore_match_force"],
+        TEST_INFO["test_line_replace_nomatch_insertbefore_match"],
         TEST_INFO["expected"]["test_uss_line_replace_nomatch_insertbefore_match"]
     )
-    else:
-        TEST_INFO["test_line_replace_nomatch_insertbefore_match_name"] = {**TEST_INFO["test_line_replace_nomatch_insertbefore_match"], "test_name":"T1"}
-        DsGeneral(
-            TEST_INFO["test_line_replace_nomatch_insertbefore_match_name"]["test_name"],
-            ansible_zos_module, TEST_ENV,
-            TEST_INFO["test_line_replace_nomatch_insertbefore_match"],
-            TEST_INFO["expected"]["test_uss_line_replace_nomatch_insertbefore_match"]
-        )
 
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
 @pytest.mark.parametrize("encoding", ENCODING)
-@pytest.mark.parametrize("force", FORCE)
-def test_ds_line_replace_nomatch_insertafter_nomatch(ansible_zos_module, dstype, encoding, force):
+def test_ds_line_replace_nomatch_insertafter_nomatch(ansible_zos_module, dstype, encoding):
     TEST_ENV["DS_TYPE"] = dstype
     TEST_ENV["ENCODING"] = encoding
-    if force:
-        TEST_INFO["test_line_replace_nomatch_insertafter_nomatch_force"] = {**TEST_INFO["test_line_replace_nomatch_insertafter_nomatch"], "force": "True"}
-        DsGeneralForce(
+    TEST_INFO["test_line_replace_nomatch_insertafter_nomatch_name"] = {**TEST_INFO["test_line_replace_nomatch_insertafter_nomatch"], "test_name":"T1"}
+    DsGeneral(
+        TEST_INFO["test_line_replace_nomatch_insertafter_nomatch_name"]["test_name"],
         ansible_zos_module, TEST_ENV,
-        TEST_CONTENT,
-        TEST_INFO["test_line_replace_nomatch_insertafter_nomatch_force"],
+        TEST_INFO["test_line_replace_nomatch_insertafter_nomatch"],
         TEST_INFO["expected"]["test_uss_line_replace_nomatch_insertafter_nomatch"]
     )
-    else:
-        TEST_INFO["test_line_replace_nomatch_insertafter_nomatch_name"] = {**TEST_INFO["test_line_replace_nomatch_insertafter_nomatch"], "test_name":"T1"}
-        DsGeneral(
-            TEST_INFO["test_line_replace_nomatch_insertafter_nomatch_name"]["test_name"],
-            ansible_zos_module, TEST_ENV,
-            TEST_INFO["test_line_replace_nomatch_insertafter_nomatch"],
-            TEST_INFO["expected"]["test_uss_line_replace_nomatch_insertafter_nomatch"]
-        )
 
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
 @pytest.mark.parametrize("encoding", ENCODING)
-@pytest.mark.parametrize("force", FORCE)
-def test_ds_line_replace_nomatch_insertbefore_nomatch(ansible_zos_module, dstype, encoding, force):
+def test_ds_line_replace_nomatch_insertbefore_nomatch(ansible_zos_module, dstype, encoding):
     TEST_ENV["DS_TYPE"] = dstype
     TEST_ENV["ENCODING"] = encoding
-    if force:
-        TEST_INFO["test_line_replace_nomatch_insertbefore_nomatch_force"] = {**TEST_INFO["test_line_replace_nomatch_insertbefore_nomatch"], "force": "True"}
-        DsGeneralForce(
-        ansible_zos_module, TEST_ENV,
-        TEST_CONTENT,
-        TEST_INFO["test_line_replace_nomatch_insertbefore_nomatch_force"],
-        TEST_INFO["expected"]["test_uss_line_replace_nomatch_insertbefore_nomatch"]
+    TEST_INFO["test_line_replace_nomatch_insertbefore_nomatch_name"] = {**TEST_INFO["test_line_replace_nomatch_insertbefore_nomatch"], "test_name":"T1"}
+    DsGeneral(
+    TEST_INFO["test_line_replace_nomatch_insertbefore_nomatch_name"]["test_name"],
+    ansible_zos_module, TEST_ENV,
+    TEST_INFO["test_line_replace_nomatch_insertbefore_nomatch"],
+    TEST_INFO["expected"]["test_uss_line_replace_nomatch_insertbefore_nomatch"]
     )
-    else:
-        TEST_INFO["test_line_replace_nomatch_insertbefore_nomatch_name"] = {**TEST_INFO["test_line_replace_nomatch_insertbefore_nomatch"], "test_name":"T1"}
-        DsGeneral(
-            TEST_INFO["test_line_replace_nomatch_insertbefore_nomatch_name"]["test_name"],
-            ansible_zos_module, TEST_ENV,
-            TEST_INFO["test_line_replace_nomatch_insertbefore_nomatch"],
-            TEST_INFO["expected"]["test_uss_line_replace_nomatch_insertbefore_nomatch"]
-        )
 
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
 @pytest.mark.parametrize("encoding", ENCODING)
-@pytest.mark.parametrize("force", FORCE)
-def test_ds_line_absent(ansible_zos_module, dstype, encoding, force):
+def test_ds_line_absent(ansible_zos_module, dstype, encoding):
     TEST_ENV["DS_TYPE"] = dstype
     TEST_ENV["ENCODING"] = encoding
-    if force:
-        TEST_INFO["test_line_absent_force"] = {**TEST_INFO["test_line_absent"], "force": "True"}
-        DsGeneralForce(
+    TEST_INFO["test_line_absent_name"] = {**TEST_INFO["test_line_absent"], "test_name":"T1"}
+    DsGeneral(
+        TEST_INFO["test_line_absent_name"]["test_name"],
         ansible_zos_module, TEST_ENV,
-        TEST_CONTENT,
-        TEST_INFO["test_line_absent_force"],
+        TEST_INFO["test_line_absent"],
         TEST_INFO["expected"]["test_uss_line_absent"]
     )
-    else:
-        TEST_INFO["test_line_absent_name"] = {**TEST_INFO["test_line_absent"], "test_name":"T1"}
-        DsGeneral(
-            TEST_INFO["test_line_absent_name"]["test_name"],
-            ansible_zos_module, TEST_ENV,
-            TEST_INFO["test_line_absent"],
-            TEST_INFO["expected"]["test_uss_line_absent"]
-        )
 
 
 @pytest.mark.ds
@@ -985,15 +876,30 @@ def test_ds_not_supported(ansible_zos_module, dstype):
         TEST_ENV, TEST_INFO["test_line_replace"]
     )
 
+# Force test case one for success and one for fail 
 # Just keep the DS_TYPE on use 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_line_force_fail(ansible_zos_module, dstype):
+@pytest.mark.parametrize("encoding", ENCODING)
+def test_ds_line_force(ansible_zos_module, dstype, encoding):
     TEST_ENV["DS_TYPE"] = dstype
-    TEST_INFO["test_line_replace_force_fail"] = {**TEST_INFO["test_line_replace"], "force":"false"}
+    TEST_ENV["ENCODING"] = encoding
+    TEST_INFO["test_line_replace_force"] = {**TEST_INFO["test_line_replace"], "force":"True"}
+    DsGeneralForce(
+    ansible_zos_module, TEST_ENV,
+    TEST_CONTENT,
+    TEST_INFO["test_line_replace_force"],
+    TEST_INFO["expected"]["test_uss_line_replace"]
+    )
+
+
+@pytest.mark.ds
+@pytest.mark.parametrize("dstype", DS_TYPE)
+def test_ds_line_force_fail(ansible_zos_module, dstype, ):
+    TEST_ENV["DS_TYPE"] = dstype
     DsGeneralForceFail(
-        ansible_zos_module, TEST_ENV,
-        TEST_INFO["test_line_replace_force_fail"]
+        ansible_zos_module,
+        TEST_INFO["test_ds_line_force_fail"]
     )
 
 

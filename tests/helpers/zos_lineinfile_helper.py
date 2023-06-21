@@ -285,7 +285,8 @@ def DsGeneralForce(ansible_zos_module, test_env, test_text, test_info, expected)
         # remove pdse
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
 
-def DsGeneralForceFail(ansible_zos_module, test_env, test_info):
+
+def DsGeneralForceFail(ansible_zos_module, test_info):
     MEMBER_1, MEMBER_2 = "MEM1", "MEM2"
     hosts = ansible_zos_module
     test_info["path"] = DEFAULT_DATA_SET_NAME+"({0})".format(MEMBER_2)

@@ -75,7 +75,7 @@ format
 
 
     use_adrdssu
-      If set to true, after unpacking a data set in ``xmit`` or c(terse) format it will perform a single DFSMSdss ADRDSSU RESTORE step.
+      If set to true, after unpacking a data set in ``xmit`` or c(terse) format it will perform a single DFSMSdss ADRDSSU DUMP step.
 
       | **required**: False
       | **type**: bool
@@ -91,20 +91,11 @@ dest
 
 
 exclude_path
-  Remote absolute path, glob, or list of paths or globs for the file or files to exclude from path list and glob expansion.
+  Remote absolute path, glob, or list of paths, globs or data set name patterns for the file, files or data sets to exclude from path list and glob expansion.
 
   | **required**: False
   | **type**: list
   | **elements**: str
-
-
-force_archive
-  Allows you to force the module to treat this as an archive even if only a single file is specified.
-
-  By default when a single file is specified it is compressed only (not archived).
-
-  | **required**: False
-  | **type**: bool
 
 
 group
@@ -178,6 +169,7 @@ Examples
          dest: /tmp/archive/foo_archive_test.tar
          format:
            name: tar
+
    # Archive multiple files
    - name: Compress list of files into zip
        zos_archive:

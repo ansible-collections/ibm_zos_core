@@ -64,7 +64,7 @@ format
 
 
     use_adrdssu
-      If set to true, after unpacking a data set in ``xmit`` or c(terse) format it will perform a single DFSMSdss ADRDSSU RESTORE step.
+      If set to true, after unpacking a data set in ``xmit`` or ``terse`` format it will perform a single DFSMSdss ADRDSSU RESTORE step.
 
       | **required**: False
       | **type**: bool
@@ -355,7 +355,7 @@ Examples
    # List option
    - name: List content from XMIT
        zos_unarchive:
-         path: "OMVSADM.ARCHIVE.RESULT.XMIT"
+         path: "USER.ARCHIVE.RESULT.XMIT"
          format:
            name: xmit
            format_options:

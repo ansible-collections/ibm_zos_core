@@ -19,6 +19,7 @@ import shutil
 import re
 import tempfile
 from tempfile import mkstemp
+import subprocess
 
 __metaclass__ = type
 
@@ -2841,3 +2842,40 @@ def test_copy_uss_file_to_existing_sequential_data_set_twice_with_tmphlq_option(
                 assert v_cp.get("rc") == 0
     finally:
         hosts.all.zos_data_set(name=dest, state="absent")
+
+
+@pytest.mark.parametrize("options", [
+    dict(src="/etc/profile", dest="/tmp/zos_copy_test_profile",
+         force=True, is_remote=False, verbosity="-vvvvv", verbosity_level=5),
+    dict(src="/etc/profile", dest="/mp/zos_copy_test_profile", force=True,
+         is_remote=False, verbosity="-vvvv", verbosity_level=4),
+    dict(src="/etc/profile", dest="/tmp/zos_copy_test_profile",
+         force=True, is_remote=False, verbosity="", verbosity_level=0),
+])
+def test_display_verbosity_in_zos_copy_plugin(ansible_zos_module, options):
+    """Test the display verbosity, ensure it matches the verbosity_level.
+     This test requires access to verbosity and pytest-ansbile provides no
+     reasonable handle for this so for now subprocess is used. This test
+     results in no actual copy happening, the interest is in the verbosity"""
+
+    try:
+        hosts = ansible_zos_module
+        user = hosts["options"]["user"]
+        # Optionally hosts["options"]["inventory_manager"].list_hosts()[0]
+        node = hosts["options"]["inventory"].rstrip(',')
+        python_path = hosts["options"]["ansible_python_path"]
+
+        # This is an adhoc command, because there was no
+        cmd = "ansible all -i " + str(node) + ", -u " + user + " -m ibm.ibm_zos_core.zos_copy -a \"src=" + options["src"] + " dest=" + options["dest"] + " is_remote=" + str(
+            options["is_remote"]) + " encoding={{enc}} \" -e '{\"enc\":{\"from\": \"ISO8859-1\", \"to\": \"IBM-1047\"}}' -e \"ansible_python_interpreter=" + python_path + "\" " + options["verbosity"] + ""
+
+        result = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE).stdout
+        output = result.read().decode()
+
+        if options["verbosity_level"] != 0:
+            assert ("play context verbosity: "+ str(options["verbosity_level"])+"" in output)
+        else:
+            assert ("play context verbosity:" not in output)
+
+    finally:
+        hosts.all.file(path=options["dest"], state="absent")

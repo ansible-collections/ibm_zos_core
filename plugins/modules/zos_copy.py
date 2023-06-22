@@ -2418,9 +2418,11 @@ def run_module(module, arg_def):
 
     except CopyOperationError as err:
         if dest_exists and not force:
-        raise err
+            raise err
+
     finally:
         if dest_exists and not force:
+            raise err
 
     res_args.update(
         dict(

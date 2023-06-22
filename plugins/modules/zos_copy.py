@@ -2234,7 +2234,7 @@ def run_module(module, arg_def):
             # When the destination is a dataset, we'll normalize the source
             # file to UTF-8 for the record length computation as Python
             # generally uses UTF-8 as the default encoding.
-            if not is_uss:
+            if not is_binary and not is_uss:
                 new_src = temp_path or src
                 new_src = os.path.normpath(new_src)
                 # Normalizing encoding when src is a USS file (only).

@@ -1061,7 +1061,8 @@ def test_backup_uss_file(ansible_zos_module, backup):
             if backup:
                 assert backup_name == backup
             else:
-                assert backup_name is not None
+                assert backup_name is None
+                # behavior was changed so that backup_name is not kept/generated if backup is not true
 
         stat_res = hosts.all.stat(path=backup_name)
         for result in stat_res.contacted.values():

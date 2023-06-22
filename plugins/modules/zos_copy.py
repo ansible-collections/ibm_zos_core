@@ -1673,6 +1673,99 @@ def create_seq_dataset_from_file(
     data_set.DataSet.ensure_present(replace=force, **dest_params)
 
 
+def is_compatible(
+    src_type,
+    dest_type,
+    copy_member,
+    src_member,
+    is_src_dir,
+    is_src_inline
+):
+    """Determine whether the src and dest are compatible and src can be
+    copied to dest.
+
+    Arguments:
+        src_type {str} -- Type of the source (e.g. PDSE, USS).
+        dest_type {str} -- Type of destination.
+        copy_member {bool} -- Whether dest is a data set member.
+        src_member {bool} -- Whether src is a data set member.
+        is_src_dir {bool} -- Whether the src is a USS directory.
+        is_src_inline {bool} -- Whether the src comes from inline content.
+
+    Returns:
+        {bool} -- Whether src can be copied to dest.
+    """
+    # ********************************************************************
+    # If the destination does not exist, then obviously it will need
+    # to be created. As a result, target is compatible.
+    # ********************************************************************
+    if dest_type is None:
+        return True
+
+    # ********************************************************************
+    # If source is a sequential data set, then destination must be
+    # partitioned data set member, other sequential data sets or USS files.
+    # Anything else is incompatible.
+    # ********************************************************************
+    if src_type in data_set.DataSet.MVS_SEQ:
+        return not (
+            (dest_type in data_set.DataSet.MVS_PARTITIONED and not copy_member) or dest_type == "VSAM"
+        )
+
+    # ********************************************************************
+    # If source is a partitioned data set, then we need to determine
+    # target compatibility for two different scenarios:
+    #   - If the source is a data set member
+    #   - If the source is an entire data set
+    #
+    # In the first case, the possible targets are: USS files, PDS/PDSE
+    # members and sequential data sets. Anything else is incompatible.
+    #
+    # In the second case, the possible targets are USS directories and
+    # other PDS/PDSE. Anything else is incompatible.
+    # ********************************************************************
+    elif src_type in data_set.DataSet.MVS_PARTITIONED:
+        if dest_type == "VSAM":
+            return False
+        if not src_member:
+            return not (copy_member or dest_type in data_set.DataSet.MVS_SEQ)
+        return True
+
+    # ********************************************************************
+    # If source is a USS file, then the destination can be another USS file,
+    # a directory, a sequential data set or a partitioned data set member.
+    # When using the content option, the destination should specify
+    # a member name if copying into a partitioned data set.
+    #
+    # If source is instead a directory, the destination has to be another
+    # directory or a partitioned data set.
+    # ********************************************************************
+    elif src_type == "USS":
+        if dest_type in data_set.DataSet.MVS_SEQ or copy_member:
+            return not is_src_dir
+        elif dest_type in data_set.DataSet.MVS_PARTITIONED and not copy_member and is_src_inline:
+            return False
+        elif dest_type in data_set.DataSet.MVS_VSAM:
+            return False
+        else:
+            return True
+
+    # ********************************************************************
+    # If source is a VSAM data set, we need to check compatibility between
+    # all the different types of VSAMs, following the documentation for the
+    # dest parameter.
+    # ********************************************************************
+    else:
+        if (dest_type == "KSDS" or dest_type == "ESDS"):
+            return src_type == "ESDS" or src_type == "KSDS" or src_type == "RRDS"
+        elif dest_type == "RRDS":
+            return src_type == "RRDS"
+        elif dest_type == "LDS":
+            return src_type == "LDS"
+        else:
+            return dest_type == "VSAM"
+
+
 def does_destination_allow_copy(
     src,
     src_type,

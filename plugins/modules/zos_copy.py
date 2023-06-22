@@ -2483,23 +2483,23 @@ def run_module(module, arg_def):
     # for try to write in dest and if both src and dest are in lock.
     # ********************************************************************
     if src_ds_type != "USS" and dest_ds_type != "USS":
-        source_validation = source_locked(src_name)
-        dest_validation = source_locked(dest_name)
-        if not source_validation and not dest_validation:
+        is_source_lock = source_locked(src_name)
+        is_dest_lock = source_locked(dest_name)
+        if not is_source_lock and not is_dest_lock:
             module.fail_json(
                 msg="DATASETS in lock, unable to access'{0}' without force and unable to write in'{1}'".format(
                     src_name, dest_name
                 )
             )
-        elif not dest_validation:
+        elif not is_dest_lock:
             module.fail_json(
                 msg="DATASET in lock, unable to wrote in '{0}'".format(
                     dest_name
                 )
             )
     elif dest_ds_type != "USS":
-        dest_validation = source_locked(dest_name)
-        if not dest_validation:
+        is_dest_lock = source_locked(dest_name)
+        if not is_dest_lock:
             module.fail_json(
                 msg="DATASET in lock, unable to wrote in '{0}'".format(
                     dest_name

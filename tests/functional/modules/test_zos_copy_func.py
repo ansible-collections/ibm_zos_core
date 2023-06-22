@@ -460,8 +460,8 @@ def test_copy_dir_to_existing_uss_dir_not_forced(ansible_zos_module):
         for result in copy_result.contacted.values():
             assert result.get("msg") is not None
             assert result.get("changed") is False
-            assert "Error" in result.get("msg")
-            assert "EDC5117I" in result.get("stdout")
+            assert "error" in result.get("msg").lower()
+            # assert "EDC5117I" in result.get("stdout")  # No longer valid, because different utility was used
     finally:
         hosts.all.file(path=src_dir, state="absent")
         hosts.all.file(path=dest_dir, state="absent")
@@ -484,7 +484,7 @@ def test_copy_subdirs_folders_and_validate_recursive_encoding(ansible_zos_module
         hosts.all.file(path=outer_file, state = "touch")
         hosts.all.shell(cmd="echo '{0}' > '{1}'".format(text_outer_file, outer_file))
         hosts.all.shell(cmd="echo '{0}' > '{1}'".format(text_inner_file, inner_file))
-        
+
         copy_res = hosts.all.zos_copy(src=src_path, dest=dest_path, encoding={"from": "ISO8859-1", "to": "IBM-1047"}, remote_src=True)
 
         for result in copy_res.contacted.values():
@@ -1118,13 +1118,13 @@ def test_ensure_copy_file_does_not_change_permission_on_dest(ansible_zos_module,
 
         for before in permissions_before.contacted.values():
             permissions_be_copy = before.get("stdout")
-            
+
         for after in permissions.contacted.values():
-            permissions_af_copy = after.get("stdout") 
+            permissions_af_copy = after.get("stdout")
 
         permissions_be_copy = permissions_be_copy.splitlines()[1].split()[0]
         permissions_af_copy = permissions_af_copy.splitlines()[1].split()[0]
-                
+
         assert permissions_be_copy == permissions_af_copy
     finally:
         hosts.all.file(path=dest_path, state="absent")
@@ -1147,15 +1147,15 @@ def test_ensure_copy_directory_does_not_change_permission_on_dest(ansible_zos_mo
             permissions_be_copy = before.get("stdout")
 
         for after in permissions.contacted.values():
-            permissions_af_copy = after.get("stdout") 
+            permissions_af_copy = after.get("stdout")
 
         permissions_be_copy = permissions_be_copy.splitlines()[1].split()[0]
         permissions_af_copy = permissions_af_copy.splitlines()[1].split()[0]
-                
+
         assert permissions_be_copy == permissions_af_copy
     finally:
         hosts.all.file(path=dest_path, state="absent")
-        
+
 
 @pytest.mark.uss
 @pytest.mark.seq
@@ -2076,8 +2076,8 @@ def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module,):
             assert result.get("rc") == 0
 
         copy_res = hosts.all.zos_copy(
-            src="{0}({1})".format(src, member), 
-            dest="{0}({1})".format(dest, "MEM1"), 
+            src="{0}({1})".format(src, member),
+            dest="{0}({1})".format(dest, "MEM1"),
             remote_src=True)
 
         verify_copy = hosts.all.shell(
@@ -2868,4 +2868,3 @@ def test_copy_uss_file_to_existing_sequential_data_set_twice_with_tmphlq_option(
                 assert v_cp.get("rc") == 0
     finally:
         hosts.all.zos_data_set(name=dest, state="absent")
-        

@@ -124,7 +124,7 @@ class DataSet(object):
             space_type (str, optional): The unit of measurement to use when defining primary and secondary space.
                     Defaults to None.
             record_format (str, optional): The record format to use for the dataset.
-                    Valid options are: FB, VB, FBA, VBA, U.
+                    Valid options are: F, FB, VB, FBA, VBA, U.
                     Defaults to None.
             record_length (int, optional) The length, in bytes, of each record in the data set.
                     Defaults to None.

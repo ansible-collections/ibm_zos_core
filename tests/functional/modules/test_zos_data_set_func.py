@@ -908,15 +908,18 @@ def test_data_set_creation_with_tmp_hlq(ansible_zos_module):
         if dsname:
             hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
 
-
-def test_data_set_f_formats(ansible_zos_module):
+@pytest.mark.parametrize(
+    "formats",
+    ["F","FB", "VB", "FBA", "VBA", "U"],
+)
+def test_data_set_f_formats(ansible_zos_module, formats):
     try:
         hosts = ansible_zos_module
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
         results = hosts.all.zos_data_set(
             name=DEFAULT_DATA_SET_NAME,
             state="present",
-            format="f",
+            format=formats,
             size="5m",
             volume=VOLUME_000000,
         )

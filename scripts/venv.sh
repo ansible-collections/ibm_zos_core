@@ -444,6 +444,39 @@ get_host_ids(){
     done
 }
 
+get_host_ids_production(){
+    set_hosts_to_array
+    unset host_index
+    unset host_prefix
+    unset host_production
+    first_entry=true
+    for tgt in "${HOSTS_ALL[@]}" ; do
+        host_index=`echo "${tgt}" | cut -d ":" -f 1`
+        host_prefix=`echo "${tgt}" | cut -d ":" -f 2`
+        host_production=`echo "${tgt}" | cut -d ":" -f 5`
+        if [ "$host_production" == "production" ];then
+            if [ "$first_entry" == "true" ];then
+                first_entry=false
+                echo "$host_prefix"
+            else
+                echo " $host_prefix"
+            fi
+        fi
+    done
+}
+
+    first_entry=true
+    skip_tests=""
+    for i in $(echo $skip | sed "s/,/ /g")
+    do
+        if [ "$first_entry" == "true" ];then
+            first_entry=false
+            skip_tests="$CURR_DIR/tests/functional/modules/$i"
+        else
+            skip_tests="$skip_tests $CURR_DIR/tests/functional/modules/$i"
+        fi
+    done
+
 # Should renane this with a prefix of set_ to make it more readable
 ssh_host_credentials(){
 	arg=$1
@@ -556,6 +589,9 @@ case "$1" in
     ;;
 --targets)
     get_host_ids
+    ;;
+--targets-production)
+    get_host_ids_production
     ;;
 --config)
     write_test_config $2 $3 $4 $5

@@ -92,3 +92,4 @@ build_ignore:
   - tests/unit
   - tests/sanity/ignore-2.10.txt
   - venv*
+  

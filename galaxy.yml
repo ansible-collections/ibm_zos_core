@@ -80,6 +80,7 @@ build_ignore:
   - changelogs
   - collections
   - docs
+  - importer_result.json
   - scripts
   - test_config.yml
   - tests/*.ini
@@ -92,4 +93,3 @@ build_ignore:
   - tests/unit
   - tests/sanity/ignore-2.10.txt
   - venv*
-  

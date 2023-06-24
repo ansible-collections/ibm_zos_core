@@ -82,6 +82,7 @@ build_ignore:
   - docs
   - importer_result.json
   - make.env.encrypt
+  - Makefile
   - scripts
   - test_config.yml
   - tests/*.ini

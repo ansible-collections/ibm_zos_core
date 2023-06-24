@@ -26,7 +26,7 @@ Minor Changes
 -------------
 
 - Updated the text converter import from "from ansible.module_utils._text" to "from ansible.module_utils.common.text.converters" to remove warning".. warn Use ansible.module_utils.common.text.converters instead.". (https://github.com/ansible-collections/ibm_zos_core/pull/602)
-- module_utils - job.py utility did not support positional wiled card placement, this enhancement uses `fnmatch` logic to support wild cards.
+- module_utils - job.py utility did not support positional wild card placement, this enhancement uses `fnmatch` logic to support wild cards.
 - zos_copy - Fixed a bug where the module would change the mode for a directory when copying into it the contents of another. (https://github.com/ansible-collections/ibm_zos_core/pull/723)
 - zos_copy - was enhanced to keep track of modified members in a destination dataset, restoring them to their previous state in case of a failure. (https://github.com/ansible-collections/ibm_zos_core/pull/551)
 - zos_data_set - add force parameter to enable member delete while PDS/e is in use (https://github.com/ansible-collections/ibm_zos_core/pull/718).

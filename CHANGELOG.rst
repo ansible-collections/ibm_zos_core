@@ -5,13 +5,13 @@ ibm.ibm_zos_core Release Notes
 .. contents:: Topics
 
 
-v1.6.0-beta.1
-=============
+v1.6.0
+======
 
 Release Summary
 ---------------
 
-Release Date: '2023-04-26'
+Release Date: '2023-06-23'
 This changelog describes all changes made to the modules and plugins included
 in this collection. The release date is the date the changelog is created.
 For additional details such as required dependencies and availability review
@@ -26,11 +26,11 @@ Minor Changes
 -------------
 
 - Updated the text converter import from "from ansible.module_utils._text" to "from ansible.module_utils.common.text.converters" to remove warning".. warn Use ansible.module_utils.common.text.converters instead.". (https://github.com/ansible-collections/ibm_zos_core/pull/602)
-- module_utils - job.py utility did not support positional wiled card placement, this enhancement uses `fnmatch` logic to support wild cards.
+- module_utils - job.py utility did not support positional wild card placement, this enhancement uses `fnmatch` logic to support wild cards.
 - zos_copy - Fixed a bug where the module would change the mode for a directory when copying into it the contents of another. (https://github.com/ansible-collections/ibm_zos_core/pull/723)
 - zos_copy - was enhanced to keep track of modified members in a destination dataset, restoring them to their previous state in case of a failure. (https://github.com/ansible-collections/ibm_zos_core/pull/551)
-- zos_data_set - add force parameter to enable member delete while pdse is in use (https://github.com/ansible-collections/ibm_zos_core/pull/718).
-- zos_job_query - ansible module does not support positional wild card placement for `job_name1 or `job_id`. This enhancement allows embedded wildcards throughout the `job_name` and `job_id`. (https://github.com/ansible-collections/ibm_zos_core/pull/721)
+- zos_data_set - add force parameter to enable member delete while PDS/e is in use (https://github.com/ansible-collections/ibm_zos_core/pull/718).
+- zos_job_query - ansible module does not support positional wild card placement for `job_name` or `job_id`. This enhancement allows embedded wildcards throughout the `job_name` and `job_id`. (https://github.com/ansible-collections/ibm_zos_core/pull/721)
 - zos_lineinfile - would access data sets with exclusive access so no other task can read the data, this enhancement allows for a data set to be opened with a disposition set to share so that other tasks can access the data when option `force` is set to `true`. (https://github.com/ansible-collections/ibm_zos_core/pull/731)
 - zos_tso_command - was enhanced to accept `max_rc` as an option. This option allows a non-zero return code to succeed as a valid return code. (https://github.com/ansible-collections/ibm_zos_core/pull/666)
 
@@ -38,11 +38,18 @@ Bugfixes
 --------
 
 - Fixed wrong error message when a USS source is not found, aligning with a similar error message from zos_blockinfile "{src} does not exist".
-- zos_blockinfile - was unable to use double quotes which prevented some use cases and did not display an approriate message. The fix now allows for double quotes to be used with the module. (https://github.com/ansible-collections/ibm_zos_core/pull/680)
+- module_utils - data_set.py - Reported a failure caused when cataloging a VSAM data set. Fix now corrects how VSAM data sets are cataloged. (https://github.com/ansible-collections/ibm_zos_core/pull/816).
+- zos_blockinfile - was unable to use double quotes which prevented some use cases and did not display an appropriate message. The fix now allows for double quotes to be used with the module. (https://github.com/ansible-collections/ibm_zos_core/pull/680)
+- zos_copy - Encoding normalization used to handle newlines in text files was applied to binary files too. Fix makes sure that binary files bypass this normalization. (https://github.com/ansible-collections/ibm_zos_core/pull/810)
 - zos_copy - Fixes a bug where files not encoded in IBM-1047 would trigger an error while computing the record length for a new destination dataset. Issue 664. (https://github.com/ansible-collections/ibm_zos_core/pull/743)
 - zos_copy - Fixes a bug where the code for fixing an issue with newlines in files (issue 599) would use the wrong encoding for normalization. Issue 678. (https://github.com/ansible-collections/ibm_zos_core/pull/743)
+- zos_copy - Reported a warning about the use of _play_context.verbosity.This change corrects the module action to prevent the warning message. (https://github.com/ansible-collections/ibm_zos_core/pull/814).
+- zos_copy - kept permissions on target directory when copy overwrote files. The fix now set permissions when mode is given. (https://github.com/ansible-collections/ibm_zos_core/pull/790)
+- zos_data_set - Reported a failure caused when `present=absent` for a VSAM data set leaving behind cluster components. Fix introduces a new logical flow that will evaluate the volumes, compare it to the provided value and if necessary catalog and delete. (https://github.com/ansible-collections/ibm_zos_core/pull/816).
 - zos_encode - fixes a bug where converted files were not tagged afterwards with the new code set. (https://github.com/ansible-collections/ibm_zos_core/pull/534)
+- zos_fetch - Reported a warning about the use of _play_context.verbosity.This change corrects the module action to prevent the warning message. (https://github.com/ansible-collections/ibm_zos_core/pull/814).
 - zos_find - fixes a bug where find result values stopped being returned after first value in a list was 'not found'. (https://github.com/ansible-collections/ibm_zos_core/pull/668)
+- zos_gather_facts - Fixes an issue in the zoau version checker which prevented the zos_gather_facts module from running with newer versions of ZOAU. (https://github.com/ansible-collections/ibm_zos_core/pull/797)
 - zos_lineinfile - Fixed a bug where a Python f-string was used and thus removed to ensure support for Python 2.7 on the controller. (https://github.com/ansible-collections/ibm_zos_core/pull/659)
 
 New Modules

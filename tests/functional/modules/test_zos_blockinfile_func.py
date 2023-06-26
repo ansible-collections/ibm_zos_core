@@ -146,8 +146,8 @@ sleep 30;
 //"""
 
 # supported data set types
-DS_TYPE = ['SEQ', 'PDS', 'PDSE']
-#DS_TYPE = ['SEQ']
+# DS_TYPE = ['SEQ', 'PDS', 'PDSE']
+DS_TYPE = ['SEQ']
 # not supported data set types
 NS_DS_TYPE = ['ESDS', 'RRDS', 'LDS']
 """

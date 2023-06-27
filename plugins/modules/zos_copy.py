@@ -1348,7 +1348,7 @@ class USSCopyHandler(CopyHandler):
                     pass
         opts = dict()
         if self.is_executable:
-            opts["options"] = "-X"
+            opts["options"] = "-IX"
 
         try:
             if src_member or src_ds_type in data_set.DataSet.MVS_SEQ:
@@ -1521,7 +1521,7 @@ class PDSECopyHandler(CopyHandler):
             opts["options"] = "-B"
 
         if self.is_executable:
-            opts["options"] = "-X"
+            opts["options"] = "-IX"
 
         response = datasets._copy(src, dest, None, **opts)
         rc, out, err = response.rc, response.stdout_response, response.stderr_response
@@ -1663,7 +1663,6 @@ def create_seq_dataset_from_file(
     dest,
     force,
     is_binary,
-    is_executable,
     volume=None
 ):
     """Creates a new sequential dataset with attributes suitable to copy the
@@ -1674,7 +1673,6 @@ def create_seq_dataset_from_file(
         dest (str) -- Name of the data set.
         force (bool) -- Whether to replace an existing data set.
         is_binary (bool) -- Whether the file has binary data.
-        is_executable (bool) -- Whether the file is an executable.
         volume (str, optional) -- Volume where the data set should be.
     """
     src_size = os.stat(file).st_size
@@ -2150,19 +2148,17 @@ def allocate_destination_data_set(
     if dest_data_set:
         dest_params = dest_data_set
         dest_params["name"] = dest
-        if not is_executable:
-            data_set.DataSet.ensure_present(replace=force, **dest_params)
-        else:
+        if is_executable:
             dest_params["record_format"] = "U"
             dest_params["type"] = "LIBRARY"
-            data_set.DataSet.ensure_present(replace=force, **dest_params)
+        data_set.DataSet.ensure_present(replace=force, **dest_params)
     elif dest_ds_type in data_set.DataSet.MVS_SEQ:
         volumes = [volume] if volume else None
         data_set.DataSet.ensure_absent(dest, volumes=volumes)
 
         if src_ds_type == "USS":
             # Taking the temp file when a local file was copied with sftp.
-            create_seq_dataset_from_file(src, dest, force, is_binary, is_executable, volume=volume)
+            create_seq_dataset_from_file(src, dest, force, is_binary, volume=volume)
         elif src_ds_type in data_set.DataSet.MVS_SEQ:
             data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, vol=volume)
         else:
@@ -2171,7 +2167,7 @@ def allocate_destination_data_set(
                 # Dumping the member into a file in USS to compute the record length and
                 # size for the new data set.
                 temp_dump = dump_data_set_member_to_file(src, is_binary)
-                create_seq_dataset_from_file(temp_dump, dest, force, is_binary, is_executable, volume=volume)
+                create_seq_dataset_from_file(temp_dump, dest, force, is_binary, volume=volume)
             finally:
                 if temp_dump:
                     os.remove(temp_dump)

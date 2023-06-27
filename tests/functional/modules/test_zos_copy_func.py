@@ -1052,7 +1052,7 @@ def test_backup_uss_file(ansible_zos_module, backup):
         if backup:
             copy_res = hosts.all.zos_copy(src=src, dest=dest, force=True, backup=True, backup_name=backup)
         else:
-            copy_res = hosts.all.zos_copy(src=src, dest=dest, force=True, backup=True)
+            copy_res = hosts.all.zos_copy(src=src, dest=dest, force=True, backup=False)
 
         for result in copy_res.contacted.values():
             assert result.get("msg") is None

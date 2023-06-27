@@ -2493,7 +2493,7 @@ def run_module(module, arg_def):
             )
         elif not is_dest_lock:
             module.fail_json(
-                msg="DATASET in lock, unable to wrote in '{0}'".format(
+                msg="DATASET in lock, unable to write in '{0}'".format(
                     dest_name
                 )
             )
@@ -2501,7 +2501,7 @@ def run_module(module, arg_def):
         is_dest_lock = source_locked(dest_name)
         if not is_dest_lock:
             module.fail_json(
-                msg="DATASET in lock, unable to wrote in '{0}'".format(
+                msg="DATASET in lock, unable to write in '{0}'".format(
                     dest_name
                 )
             )

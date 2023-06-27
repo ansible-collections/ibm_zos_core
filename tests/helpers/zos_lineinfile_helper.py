@@ -15,6 +15,7 @@ from __future__ import absolute_import, division, print_function
 from shellescape import quote
 import time
 from pprint import pprint
+import pytest
 import re
 
 __metaclass__ = type
@@ -46,37 +47,25 @@ SH /tmp/disp_shr/pdse-lock '{0}({1})'
 //"""
 
 
-def set_uss_test_env(test_name, hosts, test_env):
+def General_uss_test(test_name, ansible_zos_module, test_env, test_info, expected):
+    hosts = ansible_zos_module
     test_env["TEST_FILE"] = test_env["TEST_DIR"] + test_name
     try:
+        # Create the files to work on it of USS case
         hosts.all.shell(cmd="mkdir -p {0}".format(test_env["TEST_DIR"]))
         hosts.all.shell(cmd="echo \"{0}\" > {1}".format(test_env["TEST_CONT"], test_env["TEST_FILE"]))
-    except Exception:
-        clean_uss_test_env(test_env["TEST_DIR"], hosts)
-        assert 1 == 0, "Failed to set the test env"
-
-
-def clean_uss_test_env(test_dir, hosts):
-    try:
-        hosts.all.shell(cmd="rm -rf " + test_dir)
-    except Exception:
-        assert 1 == 0, "Failed to clean the test env"
-
-
-def UssGeneral(test_name, ansible_zos_module, test_env, test_info, expected):
-    hosts = ansible_zos_module
-    set_uss_test_env(test_name, hosts, test_env)
-    test_info["path"] = test_env["TEST_FILE"]
-    results = hosts.all.zos_lineinfile(**test_info)
-    pprint(vars(results))
-    for result in results.contacted.values():
-        assert result.get("changed") == 1
-    cmdStr = "cat {0}".format(test_info["path"])
-    results = hosts.all.shell(cmd=cmdStr)
-    pprint(vars(results))
-    for result in results.contacted.values():
-        assert result.get("stdout") == expected
-    clean_uss_test_env(test_env["TEST_DIR"], hosts)
+        # Testing itself
+        test_info["path"] = test_env["TEST_FILE"]
+        results = hosts.all.zos_lineinfile(**test_info)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        cmdStr = "cat {0}".format(test_info["path"])
+        results = hosts.all.shell(cmd=cmdStr)
+        for result in results.contacted.values():
+            assert result.get("stdout") == expected
+    finally:
+        # Delete_cases
+        hosts.all.shell(cmd="rm -rf " + test_env["TEST_DIR"])
 
 
 def set_ds_test_env(test_name, hosts, test_env):
@@ -167,7 +156,6 @@ def DsNotSupportedHelper(test_name, ansible_zos_module, test_env, test_info):
         assert result.get("changed") is True
     test_info["path"] = test_env["DS_NAME"]
     results = hosts.all.zos_lineinfile(**test_info)
-    pprint(vars(results))
     for result in results.contacted.values():
         assert result.get("changed") is False
         assert result.get("msg") == "VSAM data set type is NOT supported"

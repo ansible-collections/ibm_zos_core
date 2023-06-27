@@ -31,7 +31,6 @@ options:
       - Local or remote absolute path or data set name of the archive to be unpacked on the remote.
     type: str
     required: true
-    alias: src
   format:
     description:
       - The type of compression to use.
@@ -61,7 +60,7 @@ options:
               description: Provide a name of data set to store xmit log output.
               type: str
             use_adrdssu:
-              description: 
+              description:
                 - If set to true, after unpacking a data set in C(xmit) or C(terse) format
                   it will perform a single DFSMSdss ADRDSSU RESTORE step.
               type: bool
@@ -280,23 +279,23 @@ EXAMPLES = r'''
 
 # Use exclude
 - name: Unarchive from terse data set excluding some from unpacking
-    zos_unarchive:
-      path: "USER.ARCHIVE.RESULT.TRS"
-      format:
-        name: terse
-      exclude:
-        - USER.ARCHIVE.TEST1
-        - USER.ARCHIVE.TEST2
+  zos_unarchive:
+    path: "USER.ARCHIVE.RESULT.TRS"
+    format:
+      name: terse
+    exclude:
+      - USER.ARCHIVE.TEST1
+      - USER.ARCHIVE.TEST2
 
 # List option
 - name: List content from XMIT
-    zos_unarchive:
-      path: "USER.ARCHIVE.RESULT.XMIT"
-      format:
-        name: xmit
-        format_options:
-          use_adrdssu: True
-      list: True
+  zos_unarchive:
+    path: "USER.ARCHIVE.RESULT.XMIT"
+    format:
+      name: xmit
+      format_options:
+        use_adrdssu: True
+    list: True
 '''
 
 RETURN = r'''

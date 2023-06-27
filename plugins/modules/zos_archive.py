@@ -134,49 +134,49 @@ options:
 EXAMPLES = r'''
 # Simple archive
 - name: Archive file into tar
-    zos_archive:
-      path: /tmp/archive/foo.txt
-      dest: /tmp/archive/foo_archive_test.tar
-      format:
-        name: tar
+  zos_archive:
+    path: /tmp/archive/foo.txt
+    dest: /tmp/archive/foo_archive_test.tar
+    format:
+      name: tar
 
 # Archive multiple files
 - name: Compress list of files into zip
-    zos_archive:
-      path: 
+  zos_archive:
+    path:
       - /tmp/archive/foo.txt
       - /tmp/archive/bar.txt
-      dest: /tmp/archive/foo_bar_archive_test.zip
-      format:
-        name: zip
+    dest: /tmp/archive/foo_bar_archive_test.zip
+    format:
+    name: zip
 
 # Archive one data set into terse
 - name: Compress data set into terse
-    zos_archive:
-      path: "USER.ARCHIVE.TEST"
-      dest: "USER.ARCHIVE.RESULT.TRS"
-      format:
-        name: terse
+  zos_archive:
+    path: "USER.ARCHIVE.TEST"
+    dest: "USER.ARCHIVE.RESULT.TRS"
+    format:
+      name: terse
 
 # Usae terse with different options
 - name: Compress data set into terse, specify pack algorithm and use adrdssu
-    zos_archive:
-      path: "USER.ARCHIVE.TEST"
-      dest: "USER.ARCHIVE.RESULT.TRS"
-      format:
-        name: terse
-        format_options:
-          terse_pack: "SPACK"
-          use_adrdssu: True
+  zos_archive:
+    path: "USER.ARCHIVE.TEST"
+    dest: "USER.ARCHIVE.RESULT.TRS"
+    format:
+      name: terse
+      format_options:
+        terse_pack: "SPACK"
+        use_adrdssu: True
 
 # Use a pattern to store
 - name: Compress data set pattern using xmit
-    zos_archive:
-      path: "USER.ARCHIVE.*"
-      exclude_paths: "USER.ARCHIVE.EXCLUDE.*"
-      dest: "USER.ARCHIVE.RESULT.XMIT"
-      format:
-        name: xmit
+  zos_archive:
+    path: "USER.ARCHIVE.*"
+    exclude_paths: "USER.ARCHIVE.EXCLUDE.*"
+    dest: "USER.ARCHIVE.RESULT.XMIT"
+    format:
+      name: xmit
 '''
 
 RETURN = r'''

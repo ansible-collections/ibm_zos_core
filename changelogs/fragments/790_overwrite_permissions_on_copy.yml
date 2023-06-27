@@ -1,4 +1,0 @@
-bugfixes:
-- zos_copy - kept permissions on target directory when copy overwrote
-  files. The fix now set permissions when mode is given.
-  (https://github.com/ansible-collections/ibm_zos_core/pull/790)

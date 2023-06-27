@@ -1,4 +1,0 @@
-bugfixes:
-- zos_gather_facts - Fixes an issue in the zoau version checker which prevented
-  the zos_gather_facts module from running with newer versions of ZOAU.
-  (https://github.com/ansible-collections/ibm_zos_core/pull/797)

@@ -1241,27 +1241,30 @@ class USSCopyHandler(CopyHandler):
                      for the files and directories already present on the
                      destination.
         """
-        copied_files = self._walk_uss_tree(src)
+        files_to_copy = self._walk_uss_tree(src)
 
         # It's not needed to normalize the path because it was already normalized
         # on _copy_to_dir.
         parent_dir = os.path.basename(src) if copy_directory else ''
 
-        changed_files = []
-        original_files = []
-        for relative_path in copied_files:
+        files_to_change = []
+        existing_files = []
+        for relative_path in files_to_copy:
             if os.path.exists(os.path.join(dest, parent_dir, relative_path)):
-                original_files.append(relative_path)
+                existing_files.append(relative_path)
             else:
-                changed_files.append(relative_path)
+                files_to_change.append(relative_path)
 
+        # This change adds to the files_to_change variable any file that accord with
+        # a name found in the source copy.
+        files_to_change.extend(existing_files)
         # Creating tuples with (filename, permissions).
         original_permissions = [
             (filepath, os.stat(os.path.join(dest, parent_dir, filepath)).st_mode)
-            for filepath in original_files
+            for filepath in existing_files
         ]
 
-        return changed_files, original_permissions
+        return files_to_change, original_permissions
 
     def _walk_uss_tree(self, dir):
         """Walks the tree directory for dir and returns all relative paths
@@ -2188,6 +2191,10 @@ def allocate_destination_data_set(
         data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, vol=volume)
     if dest_ds_type not in data_set.DataSet.MVS_VSAM:
         dest_params = get_attributes_of_any_dataset_created(dest, src_ds_type, src, src_name, is_binary, volume)
+        dest_attributes = datasets.listing(dest)[0]
+        record_format = dest_attributes.recfm
+        dest_params["type"] = dest_ds_type
+        dest_params["record_format"] = record_format
     return True, dest_params
 
 

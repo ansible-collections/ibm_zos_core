@@ -1068,6 +1068,7 @@ def test_backup_uss_file(ansible_zos_module, backup):
         if backup and backup_name:
             stat_res = hosts.all.stat(path=backup_name)
             for result in stat_res.contacted.values():
+                print( "\n\nbackup: {0}  name: {1}\n\n".format( backup, backup_name))
                 assert result.get("stat").get("exists") is True
 
     finally:

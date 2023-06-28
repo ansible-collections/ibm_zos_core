@@ -19,6 +19,7 @@ import shutil
 import re
 import tempfile
 from tempfile import mkstemp
+import subprocess
 
 __metaclass__ = type
 
@@ -42,6 +43,11 @@ DUMMY DATA ---- LINE 007 ------
 """
 
 DUMMY_DATA_CRLF = b"00000001 DUMMY DATA\r\n00000002 DUMMY DATA\r\n"
+
+# FD is outside of the range of UTF-8, so it should be useful when testing
+# that binary data is not getting converted.
+DUMMY_DATA_BINARY = b"\xFD\xFD\xFD\xFD"
+DUMMY_DATA_BINARY_ESCAPED = "\\xFD\\xFD\\xFD\\xFD"
 
 VSAM_RECORDS = """00000001A record
 00000002A record
@@ -853,7 +859,7 @@ def test_copy_local_dir_and_change_mode(ansible_zos_module, copy_directory):
         for result in stat_overwritten_file_res.contacted.values():
             assert result.get("stat").get("exists") is True
             assert result.get("stat").get("isdir") is False
-            assert result.get("stat").get("mode") == dest_mode
+            assert result.get("stat").get("mode") == mode
 
         for result in stat_new_file_res.contacted.values():
             assert result.get("stat").get("exists") is True
@@ -947,7 +953,7 @@ def test_copy_uss_dir_and_change_mode(ansible_zos_module, copy_directory):
         for result in stat_overwritten_file_res.contacted.values():
             assert result.get("stat").get("exists") is True
             assert result.get("stat").get("isdir") is False
-            assert result.get("stat").get("mode") == dest_mode
+            assert result.get("stat").get("mode") == mode
 
         for result in stat_new_file_res.contacted.values():
             assert result.get("stat").get("exists") is True
@@ -1021,6 +1027,41 @@ def test_copy_non_existent_file_fails(ansible_zos_module, is_remote):
     for result in copy_res.contacted.values():
         assert result.get("msg") is not None
         assert "does not exist" in result.get("msg")
+
+
+@pytest.mark.uss
+@pytest.mark.parametrize("src", [
+    dict(src="/etc/profile", is_remote=False),
+    dict(src="/etc/profile", is_remote=True),])
+def test_ensure_copy_file_does_not_change_permission_on_dest(ansible_zos_module, src):
+    hosts = ansible_zos_module
+    dest_path = "/tmp/test/"
+    mode = "750"
+    other_mode = "744"
+    mode_overwrite = "0777"
+    full_path = "{0}/profile".format(dest_path)
+    try:
+        hosts.all.file(path=dest_path, state="directory", mode=mode)
+        permissions_before = hosts.all.stat(path=dest_path)
+        hosts.all.zos_copy(src=src["src"], dest=dest_path, mode=other_mode)
+        permissions = hosts.all.stat(path=dest_path)
+
+        for before in permissions_before.contacted.values():
+            permissions_be_copy = before.get("stat").get("mode")
+
+        for after in permissions.contacted.values():
+            permissions_af_copy = after.get("stat").get("mode")
+
+        assert permissions_be_copy == permissions_af_copy
+
+        # Extra asserts to ensure change mode rewrite a copy
+        hosts.all.zos_copy(src=src["src"], dest=dest_path, mode=mode_overwrite)
+        permissions_overwriten = hosts.all.stat(path = full_path)
+        for over in permissions_overwriten.contacted.values():
+            print(over)
+            assert over.get("stat").get("mode") == mode_overwrite
+    finally:
+        hosts.all.file(path=dest_path, state="absent")
 
 
 @pytest.mark.uss
@@ -1128,6 +1169,79 @@ def test_copy_file_crlf_endings_to_sequential_data_set(ansible_zos_module):
     finally:
         hosts.all.zos_data_set(name=dest, state="absent")
         os.remove(src)
+
+
+# The following two tests are to address the bugfix for issue #807.
+@pytest.mark.uss
+@pytest.mark.seq
+def test_copy_local_binary_file_without_encoding_conversion(ansible_zos_module):
+    hosts = ansible_zos_module
+    dest = "USER.TEST.SEQ.FUNCTEST"
+
+    fd, src = tempfile.mkstemp()
+    os.close(fd)
+    with open(src, "wb") as infile:
+        infile.write(DUMMY_DATA_BINARY)
+
+    try:
+        hosts.all.zos_data_set(name=dest, state="absent")
+
+        copy_result = hosts.all.zos_copy(
+            src=src,
+            dest=dest,
+            remote_src=False,
+            is_binary=True
+        )
+
+        for cp_res in copy_result.contacted.values():
+            assert cp_res.get("msg") is None
+            assert cp_res.get("changed") is True
+            assert cp_res.get("dest") == dest
+    finally:
+        hosts.all.zos_data_set(name=dest, state="absent")
+        os.remove(src)
+
+
+@pytest.mark.uss
+@pytest.mark.seq
+def test_copy_remote_binary_file_without_encoding_conversion(ansible_zos_module):
+    hosts = ansible_zos_module
+    src = "/tmp/zos_copy_binary_file"
+    dest = "USER.TEST.SEQ.FUNCTEST"
+
+    try:
+        hosts.all.zos_data_set(name=dest, state="absent")
+
+        # Creating a binary file on the remote system through Python
+        # to avoid encoding issues if we were to copy a local file
+        # or use the shell directly.
+        python_cmd = """python3 -c 'with open("{0}", "wb") as f: f.write(b"{1}")'""".format(
+            src,
+            DUMMY_DATA_BINARY_ESCAPED
+        )
+        python_result = hosts.all.shell(python_cmd)
+        for result in python_result.contacted.values():
+            assert result.get("msg") is None or result.get("msg") == ""
+            assert result.get("stderr") is None or result.get("stderr") == ""
+
+        # Because the original bug report used a file tagged as 'binary'
+        # on z/OS, we'll recreate that use case here.
+        hosts.all.shell("chtag -b {0}".format(src))
+
+        copy_result = hosts.all.zos_copy(
+            src=src,
+            dest=dest,
+            remote_src=True,
+            is_binary=True
+        )
+
+        for cp_res in copy_result.contacted.values():
+            assert cp_res.get("msg") is None
+            assert cp_res.get("changed") is True
+            assert cp_res.get("dest") == dest
+    finally:
+        hosts.all.zos_data_set(name=dest, state="absent")
+        hosts.all.file(path=src, state="absent")
 
 
 @pytest.mark.uss
@@ -2728,3 +2842,40 @@ def test_copy_uss_file_to_existing_sequential_data_set_twice_with_tmphlq_option(
                 assert v_cp.get("rc") == 0
     finally:
         hosts.all.zos_data_set(name=dest, state="absent")
+
+
+@pytest.mark.parametrize("options", [
+    dict(src="/etc/profile", dest="/tmp/zos_copy_test_profile",
+         force=True, is_remote=False, verbosity="-vvvvv", verbosity_level=5),
+    dict(src="/etc/profile", dest="/mp/zos_copy_test_profile", force=True,
+         is_remote=False, verbosity="-vvvv", verbosity_level=4),
+    dict(src="/etc/profile", dest="/tmp/zos_copy_test_profile",
+         force=True, is_remote=False, verbosity="", verbosity_level=0),
+])
+def test_display_verbosity_in_zos_copy_plugin(ansible_zos_module, options):
+    """Test the display verbosity, ensure it matches the verbosity_level.
+     This test requires access to verbosity and pytest-ansbile provides no
+     reasonable handle for this so for now subprocess is used. This test
+     results in no actual copy happening, the interest is in the verbosity"""
+
+    try:
+        hosts = ansible_zos_module
+        user = hosts["options"]["user"]
+        # Optionally hosts["options"]["inventory_manager"].list_hosts()[0]
+        node = hosts["options"]["inventory"].rstrip(',')
+        python_path = hosts["options"]["ansible_python_path"]
+
+        # This is an adhoc command, because there was no
+        cmd = "ansible all -i " + str(node) + ", -u " + user + " -m ibm.ibm_zos_core.zos_copy -a \"src=" + options["src"] + " dest=" + options["dest"] + " is_remote=" + str(
+            options["is_remote"]) + " encoding={{enc}} \" -e '{\"enc\":{\"from\": \"ISO8859-1\", \"to\": \"IBM-1047\"}}' -e \"ansible_python_interpreter=" + python_path + "\" " + options["verbosity"] + ""
+
+        result = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE).stdout
+        output = result.read().decode()
+
+        if options["verbosity_level"] != 0:
+            assert ("play context verbosity: "+ str(options["verbosity_level"])+"" in output)
+        else:
+            assert ("play context verbosity:" not in output)
+
+    finally:
+        hosts.all.file(path=options["dest"], state="absent")

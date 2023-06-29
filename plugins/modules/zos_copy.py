@@ -2224,6 +2224,10 @@ def allocate_destination_data_set(
         data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, vol=volume)
     if dest_ds_type not in data_set.DataSet.MVS_VSAM:
         dest_params = get_attributes_of_any_dataset_created(dest, src_ds_type, src, src_name, is_binary, volume)
+        dest_attributes = datasets.listing(dest)[0]
+        record_format = dest_attributes.recfm
+        dest_params["type"] = dest_ds_type
+        dest_params["record_format"] = record_format
     return True, dest_params
 
 

@@ -343,9 +343,10 @@ class ActionModule(ActionBase):
             display.vvv(u"ibm_zos_fetch return code: {0}".format(returncode), host=self._play_context.remote_addr)
             display.vvv(u"ibm_zos_fetch stdout: {0}".format(stdout), host=self._play_context.remote_addr)
             display.vvv(u"ibm_zos_fetch stderr: {0}".format(stderr), host=self._play_context.remote_addr)
-            display.vvv(u"play context verbosity: {0}".format(self._play_context.verbosity), host=self._play_context.remote_addr)
 
-            err = _detect_sftp_errors(stderr)
+            ansible_verbosity = None
+            ansible_verbosity = display.verbosity
+            display.vvv(u"play context verbosity: {0}".format(ansible_verbosity), host=self._play_context.remote_addr)
 
             # ************************************************************************* #
             # When plugin shh connection member _build_command(..) detects verbosity    #
@@ -360,7 +361,9 @@ class ActionModule(ActionBase):
             # the verbosity is returned as 'stderr'.                                    #
             # ************************************************************************* #
 
-            if self._play_context.verbosity > 3:
+            err = _detect_sftp_errors(stderr)
+
+            if ansible_verbosity > 3:
                 ignore_stderr = True
 
             if re.findall(r"Permission denied", err):

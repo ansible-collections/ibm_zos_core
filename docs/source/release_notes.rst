@@ -6,8 +6,8 @@
 Releases
 ========
 
-Version 1.6.0
-=============
+Version 1.6.0-beta.1
+====================
 
 New Modules
 -----------
@@ -18,18 +18,10 @@ Minor Changes
 -------------
 
 - ``zos_blockinfile`` - Adds an enhancement to allow double quotes within a block.
-- ``zos_copy``
-
-      - Updates the behavior of the `mode` option so that permissions are applied to existing directories and contents.
-      - Adds an enhancement to option `restore_backup` to track modified members in a data set in the event of an error, restoring them to their previous state without reallocating the data set.
 - ``zos_data_set`` - Adds a new option named *force* to enable deletion of a data member in a PDSE that is simultaneously in use by others.
 - ``zos_job_query`` - Enables embedded positional wild card placement throughout *job_name* and *job_id* parameters.
 - ``zos_lineinfile`` - Adds a new option named *force* to enable modification of a data member in a data set that is simultaneously in use by others.
 - ``zos_tso_command`` - Adds a new option named *max_rc* to enable non-zero return codes lower than the specified maximum return as succeeded.
-- ``module_utils``
-
-      - job - Adds support for positional wild card placement for `job_name`` and `job_id`.
-      - Adds support for import *common.text.converters* over the deprecated *_text* import.
 
 Bugfixes
 --------
@@ -39,20 +31,12 @@ Bugfixes
       - Fixes a bug where files not encoded in IBM-1047 would trigger an error while computing the record length for a new destination dataset.
       - Fixes a bug where the module would change the mode for a directory when copying in the contents of another directory.
       - Fixes a bug where the incorrect encoding would be used during normalization, particularly when processing newlines in files.
-      - Fixes a bug where binary files were not excluded when normalizing data to remove newlines.
-      - Fixes a bug where a *_play_context.verbosity* deprecation warning would appear.
-- ``zos_fetch`` - Fixes a bug where a *_play_context.verbosity* deprecation warning would appear.
 - ``zos_encode`` - Fixes a bug where converted files were not tagged with the new code set afterwards.
 - ``zos_find`` - Fixes a bug where the module would stop searching and exit after the first value in a list was not found.
 - ``zos_lineinfile``
 
       - Removes use of Python f-string to ensure support for Python 2.7 on the controller.
-      - Fixes a bug where an incorrect error message would be raised when a USS source was not found.
-- ``module_utils``
-
-      - data_set - Fixes an failure caused by cataloging a VSAM data set when the data set is not cataloged.
-- ``zos_data_set`` - Fixes a bug that will leave VSAM data set cluster components behind when instructed to delete the data set (`present=absent`).
-- ``zos_gather_facts`` - Fixes a bug that prevented the module from executing with newer versions of ZOAU.
+      - Fixes a bug where an incorect error message would be raised when a USS source was not found.
 
 Availability
 ------------
@@ -64,7 +48,7 @@ Availability
 Reference
 ---------
 
-* Supported by `z/OS V2R3`_ or later
+* Supported by `z/OS Version`_ V2R4 or later
 * Supported by the `z/OS® shell`_
 * Supported by `IBM Open Enterprise SDK for Python`_ `3.9`_ - `3.11`_
 * Supported by IBM `Z Open Automation Utilities 1.2.2`_ (or later) but prior to version 1.3.
@@ -181,7 +165,7 @@ Availability
 Reference
 ---------
 
-* Supported by `z/OS V2R3`_ or later
+* Supported by `z/OS Version`_ V2R4 or later
 * Supported by the `z/OS® shell`_
 * Supported by `IBM Open Enterprise SDK for Python`_ `3.9`_ - `3.11`_
 * Supported by IBM `Z Open Automation Utilities 1.2.2`_ (or later) but prior to version 1.3.
@@ -190,8 +174,7 @@ Version 1.4.1
 =============
 
 Bug fixes
-
---------------------------
+---------
 
 * ``zos_copy``
 
@@ -874,6 +857,8 @@ Reference
    https://www.ibm.com/support/knowledgecenter/en/SSLTBW_2.4.0/com.ibm.zos.v2r4.bpxa400/part1.htm
 .. _z/OS V2R3:
    https://www.ibm.com/support/knowledgecenter/SSLTBW_2.3.0/com.ibm.zos.v2r3/en/homepage.html
+.. _z/OS Version:
+   https://www.ibm.com/docs/en/zos
 .. _FAQs:
    https://ibm.github.io/z_ansible_collections_doc/faqs/faqs.html
 

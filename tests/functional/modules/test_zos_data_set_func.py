@@ -155,6 +155,7 @@ def test_data_set_catalog_and_uncatalog(ansible_zos_module, jcl):
             name=DEFAULT_DATA_SET_NAME, state="cataloged", volumes=VOLUME_000000
         )
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
+
         hosts.all.file(path=TEMP_PATH, state="directory")
         hosts.all.shell(cmd=ECHO_COMMAND.format(quote(jcl), TEMP_PATH))
         results = hosts.all.zos_job_submit(
@@ -505,7 +506,7 @@ def test_data_member_force_delete(ansible_zos_module):
         for result in results.contacted.values():
             assert result.get("changed") is True
 
-        # add members
+        #add members
         results = hosts.all.zos_data_set(
             batch=[
                 {
@@ -906,3 +907,24 @@ def test_data_set_creation_with_tmp_hlq(ansible_zos_module):
     finally:
         if dsname:
             hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
+
+@pytest.mark.parametrize(
+    "formats",
+    ["F","FB", "VB", "FBA", "VBA", "U"],
+)
+def test_data_set_f_formats(ansible_zos_module, formats):
+    try:
+        hosts = ansible_zos_module
+        hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
+        results = hosts.all.zos_data_set(
+            name=DEFAULT_DATA_SET_NAME,
+            state="present",
+            format=formats,
+            size="5m",
+            volume=VOLUME_000000,
+        )
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+            assert result.get("module_stderr") is None
+    finally:
+        hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")

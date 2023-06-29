@@ -17,6 +17,7 @@ import pytest
 import os
 import shutil
 import re
+import time
 import tempfile
 from tempfile import mkstemp
 import subprocess
@@ -30,8 +31,7 @@ DUMMY DATA ---- LINE 003 ------
 DUMMY DATA ---- LINE 004 ------
 DUMMY DATA ---- LINE 005 ------
 DUMMY DATA ---- LINE 006 ------
-DUMMY DATA ---- LINE 007 ------
-"""
+DUMMY DATA ---- LINE 007 ------"""
 
 DUMMY_DATA_SPECIAL_CHARS = """DUMMY DATA ---- LINE 001 ------
 DUMMY DATA ---- LINE ÁÁÁ------
@@ -472,6 +472,141 @@ def test_copy_dir_to_existing_uss_dir_not_forced(ansible_zos_module):
     finally:
         hosts.all.file(path=src_dir, state="absent")
         hosts.all.file(path=dest_dir, state="absent")
+
+
+@pytest.mark.uss
+def test_copy_subdirs_folders_and_validate_recursive_encoding(ansible_zos_module):
+    hosts = ansible_zos_module
+
+    # Remote path
+    path = "/tmp/ansible"
+
+    # Remote src path with original files
+    src_path = path + "/src"
+
+    # Nested src dirs
+    src_dir_one = src_path + "/dir_one"
+    src_dir_two = src_dir_one + "/dir_two"
+    src_dir_three = src_dir_two + "/dir_three"
+
+    # Nested src IBM-1047 files
+    src_file_one = src_path + "/dir_one/one.txt"
+    src_file_two = src_dir_one + "/dir_two/two.txt"
+    src_file_three = src_dir_two + "/dir_three/three.txt"
+
+    # Remote dest path to encoded files placed
+    dest_path = path + "/dest"
+
+    # Nested dest UTF-8 files
+    dst_file_one = dest_path + "/dir_one/one.txt"
+    dst_file_two = dest_path + "/dir_one/dir_two/two.txt"
+    dst_file_three = dest_path + "/dir_one/dir_two//dir_three/three.txt"
+
+    # Strings echo'd to files on USS
+    str_one = "This is file one."
+    str_two = "This is file two."
+    str_three = "This is file three."
+
+    # Hex values for expected results, expected used beause pytest-ansible does not allow for delegate_to
+    # and depending on where the `od` runs, you may face big/little endian issues, so using expected utf-8
+    str_one_big_endian_hex="""0000000000      5468    6973    2069    7320    6669    6C65    206F    6E65
+0000000020      2E0A
+0000000022"""
+
+    str_two_big_endian_hex="""0000000000      5468    6973    2069    7320    6669    6C65    2074    776F
+0000000020      2E0A
+0000000022"""
+
+    str_three_big_endian_hex="""0000000000      5468    6973    2069    7320    6669    6C65    2074    6872
+0000000020      6565    2E0A
+0000000024"""
+
+    try:
+        # Ensure clean slate
+        results = hosts.all.file(path=path, state="absent")
+
+        # Create nested directories
+        hosts.all.file(path=src_dir_three, state="directory", mode="0755")
+
+        # Touch empty files
+        hosts.all.file(path=src_file_one, state = "touch")
+        hosts.all.file(path=src_file_two, state = "touch")
+        hosts.all.file(path=src_file_three, state = "touch")
+
+        # Echo contents into files (could use zos_lineinfile or zos_copy), echo'ing will
+        # result in managed node's locale which currently is IBM-1047
+        hosts.all.raw("echo '{0}' > '{1}'".format(str_one, src_file_one))
+        hosts.all.raw("echo '{0}' > '{1}'".format(str_two, src_file_two))
+        hosts.all.raw("echo '{0}' > '{1}'".format(str_three, src_file_three))
+
+        # Lets stat the deepest nested directory, not necessary to stat all of them
+        results = hosts.all.stat(path=src_file_three)
+        for result in results.contacted.values():
+            assert result.get("stat").get("exists") is True
+
+        # Nested zos_copy from IBM-1047 to UTF-8
+        # Testing src ending in / such that the contents of the src directory will be copied
+        copy_res = hosts.all.zos_copy(src=src_path+"/", dest=dest_path, encoding={"from": "IBM-1047", "to": "UTF-8"}, remote_src=True)
+
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+            assert result.get("changed") is True
+
+        # File z/OS dest is now UTF-8, dump the hex value and compare it to an
+        # expected big-endian version, can't run delegate_to local host so expected
+        # value is the work around for now.
+        str_one_od_dst = hosts.all.shell(cmd="od -x {0}".format(dst_file_one))
+        str_two_od_dst = hosts.all.shell(cmd="od -x {0}".format(dst_file_two))
+        str_three_od_dst = hosts.all.shell(cmd="od -x {0}".format(dst_file_three))
+
+        for result in str_one_od_dst.contacted.values():
+            assert result.get("stdout") == str_one_big_endian_hex
+
+        for result in str_two_od_dst.contacted.values():
+            assert result.get("stdout") == str_two_big_endian_hex
+
+        for result in str_three_od_dst.contacted.values():
+            assert result.get("stdout") == str_three_big_endian_hex
+
+    finally:
+        hosts.all.file(path=path, state="absent")
+
+
+@pytest.mark.uss
+def test_copy_subdirs_folders_and_validate_recursive_encoding_local(ansible_zos_module):
+    hosts = ansible_zos_module
+    dest_path = "/tmp/test/"
+
+    try:
+        source_1 = tempfile.TemporaryDirectory(prefix="level_", suffix="_1")
+        source = source_1.name
+        source_2 = tempfile.TemporaryDirectory(dir = source, prefix="level_", suffix="_2")
+        full_source = source_2.name
+        populate_dir(source)
+        populate_dir(full_source)
+        level_1 = os.path.basename(source)
+        level_2 = os.path.basename(full_source)
+
+        copy_res = hosts.all.zos_copy(src=source, dest=dest_path, encoding={"from": "ISO8859-1", "to": "IBM-1047"})
+
+        for result in copy_res.contacted.values():
+            assert result.get("msg") is None
+            assert result.get("changed") is True
+
+        full_outer_file= "{0}/{1}/file3".format(dest_path, level_1)
+        full_iner_file= "{0}/{1}/{2}/file3".format(dest_path, level_1, level_2)
+        verify_copy_1 = hosts.all.shell(cmd="cat {0}".format(full_outer_file))
+        verify_copy_2 = hosts.all.shell(cmd="cat {0}".format(full_iner_file))
+
+        for result in verify_copy_1.contacted.values():
+            print(result)
+            assert result.get("stdout") == DUMMY_DATA
+        for result in verify_copy_2.contacted.values():
+            print(result)
+            assert result.get("stdout") == DUMMY_DATA
+    finally:
+        hosts.all.file(name=dest_path, state="absent")
+        source_1.cleanup()
 
 
 @pytest.mark.uss
@@ -1058,7 +1193,6 @@ def test_ensure_copy_file_does_not_change_permission_on_dest(ansible_zos_module,
         hosts.all.zos_copy(src=src["src"], dest=dest_path, mode=mode_overwrite)
         permissions_overwriten = hosts.all.stat(path = full_path)
         for over in permissions_overwriten.contacted.values():
-            print(over)
             assert over.get("stat").get("mode") == mode_overwrite
     finally:
         hosts.all.file(path=dest_path, state="absent")
@@ -1275,6 +1409,7 @@ def test_copy_file_to_non_existing_sequential_data_set(ansible_zos_module, src):
             assert cp_res.get("msg") is None
             assert cp_res.get("changed") is True
             assert cp_res.get("dest") == dest
+            assert cp_res.get("dest_created") is True
             assert cp_res.get("is_binary") == src["is_binary"]
         for v_cp in verify_copy.contacted.values():
             assert v_cp.get("rc") == 0
@@ -1447,6 +1582,7 @@ def test_copy_ps_to_non_existing_ps(ansible_zos_module):
             assert result.get("msg") is None
             assert result.get("changed") is True
             assert result.get("dest") == dest
+            assert result.get("dest_created") is True
         for result in verify_copy.contacted.values():
             assert result.get("rc") == 0
             assert result.get("stdout") != ""
@@ -1796,6 +1932,7 @@ def test_copy_file_to_non_existing_pdse(ansible_zos_module, is_remote):
             assert cp_res.get("msg") is None
             assert cp_res.get("changed") is True
             assert cp_res.get("dest") == dest_path
+            assert cp_res.get("dest_created") is True
         for v_cp in verify_copy.contacted.values():
             assert v_cp.get("rc") == 0
     finally:
@@ -1824,6 +1961,7 @@ def test_copy_dir_to_non_existing_pdse(ansible_zos_module):
             assert result.get("msg") is None
             assert result.get("changed") is True
             assert result.get("dest") == dest
+            assert result.get("dest_created") is True
         for result in verify_copy.contacted.values():
             assert result.get("rc") == 0
     finally:
@@ -1855,6 +1993,7 @@ def test_copy_dir_crlf_endings_to_non_existing_pdse(ansible_zos_module):
             assert result.get("msg") is None
             assert result.get("changed") is True
             assert result.get("dest") == dest
+            assert result.get("dest_created") is True
         for result in verify_copy.contacted.values():
             assert result.get("rc") == 0
             assert len(result.get("stdout_lines")) == 2
@@ -1934,6 +2073,7 @@ def test_copy_data_set_to_non_existing_pdse(ansible_zos_module, src_type):
             assert cp_res.get("msg") is None
             assert cp_res.get("changed") is True
             assert cp_res.get("dest") == dest
+            assert cp_res.get("dest_created") is True
         for v_cp in verify_copy.contacted.values():
             assert v_cp.get("rc") == 0
             assert v_cp.get("stdout") != ""
@@ -2030,7 +2170,6 @@ def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module,):
         )
         dest_name = "{0}({1})".format(dest, member)
         src_name = "{0}({1})".format(src, member)
-
         # both src and dest need to be a loadlib
         rc = link_loadlib_from_cobol(hosts, dest_name, cobol_pds)
         assert rc == 0
@@ -2396,6 +2535,7 @@ def test_copy_member_to_non_existing_seq_data_set(ansible_zos_module, src_type):
             assert result.get("msg") is None
             assert result.get("changed") is True
             assert result.get("dest") == dest
+            assert result.get("dest_created") is True
         for result in verify_copy.contacted.values():
             assert result.get("rc") == 0
             assert result.get("stdout") != ""

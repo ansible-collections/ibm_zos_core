@@ -14,7 +14,7 @@
 from __future__ import absolute_import, division, print_function
 from ibm_zos_core.tests.helpers.zos_lineinfile_helper import (
     General_uss_test,
-    DsGeneral,
+    General_ds_test,
     DsNotSupportedHelper,
     DsGeneralResultKeyMatchesRegex,
     DsGeneralForceFail,
@@ -558,78 +558,391 @@ def test_uss_line_replace(ansible_zos_module):
         ansible_zos_module,
         TEST_ENV,
         TEST_INFO["test_line_replace"],
-        TEST_INFO["expected"]["test_uss_line_replace"])
+        """if [ -z STEPLIB ] && tty -s;
+then
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+TZ=PST8PDT
+export TZ
+LANG=C
+export LANG
+readonly LOGNAME
+PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
+export PATH
+LIBPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+export LIBPATH
+NLSPATH=/usr/lib/nls/msg/%L/%N
+export NLSPATH
+MANPATH=/usr/man/%L
+export MANPATH
+MAIL=/usr/mail/LOGNAME
+export MAIL
+umask 022
+ZOAU_ROOT=/mvsutil-develop_dsed
+ZOAUTIL_DIR=/usr/lpp/zoautil/v100
+PYTHONPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
+PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
+_BPXK_AUTOCVT=ON
+export ZOAU_ROOT
+export ZOAUTIL_DIR
+export ZOAUTIL_DIR
+export PYTHONPATH
+export PKG_CONFIG_PATH
+export PYTHON_HOME
+export _BPXK_AUTOCVT""")
 
 
 @pytest.mark.uss
 def test_uss_line_insertafter_regex(ansible_zos_module):
     General_uss_test(
-        "test_uss_line_insertafter_regex", ansible_zos_module, TEST_ENV,
+        "test_uss_line_insertafter_regex", ansible_zos_module, 
+        TEST_ENV,
         TEST_INFO["test_line_insertafter_regex"],
-        TEST_INFO["expected"]["test_uss_line_insertafter_regex"])    
+        """if [ -z STEPLIB ] && tty -s;
+then
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+TZ=PST8PDT
+export TZ
+LANG=C
+export LANG
+readonly LOGNAME
+PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
+export PATH
+LIBPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+export LIBPATH
+NLSPATH=/usr/lib/nls/msg/%L/%N
+export NLSPATH
+MANPATH=/usr/man/%L
+export MANPATH
+MAIL=/usr/mail/LOGNAME
+export MAIL
+umask 022
+ZOAU_ROOT=/usr/lpp/zoautil/v100
+ZOAU_ROOT=/mvsutil-develop_dsed
+ZOAUTIL_DIR=/usr/lpp/zoautil/v100
+PYTHONPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
+PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
+_BPXK_AUTOCVT=ON
+export ZOAU_ROOT
+export ZOAUTIL_DIR
+export ZOAUTIL_DIR
+export PYTHONPATH
+export PKG_CONFIG_PATH
+export PYTHON_HOME
+export _BPXK_AUTOCVT""")    
 
 
 @pytest.mark.uss
 def test_uss_line_insertbefore_regex(ansible_zos_module):
     General_uss_test(
-        "test_uss_line_insertbefore_regex", ansible_zos_module, TEST_ENV,
+        "test_uss_line_insertbefore_regex", ansible_zos_module, 
+        TEST_ENV,
         TEST_INFO["test_line_insertbefore_regex"],
-        TEST_INFO["expected"]["test_uss_line_insertbefore_regex"])
+        """if [ -z STEPLIB ] && tty -s;
+then
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+TZ=PST8PDT
+export TZ
+LANG=C
+export LANG
+readonly LOGNAME
+PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
+export PATH
+LIBPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+export LIBPATH
+NLSPATH=/usr/lib/nls/msg/%L/%N
+export NLSPATH
+MANPATH=/usr/man/%L
+export MANPATH
+MAIL=/usr/mail/LOGNAME
+export MAIL
+umask 022
+unset ZOAU_ROOT
+ZOAU_ROOT=/usr/lpp/zoautil/v100
+ZOAUTIL_DIR=/usr/lpp/zoautil/v100
+PYTHONPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
+PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
+_BPXK_AUTOCVT=ON
+export ZOAU_ROOT
+export ZOAUTIL_DIR
+export ZOAUTIL_DIR
+export PYTHONPATH
+export PKG_CONFIG_PATH
+export PYTHON_HOME
+export _BPXK_AUTOCVT""")
 
 
 @pytest.mark.uss
 def test_uss_line_insertafter_eof(ansible_zos_module):
     General_uss_test(
-        "test_uss_line_insertafter_eof", ansible_zos_module,
-        TEST_ENV, TEST_INFO["test_line_insertafter_eof"],
-        TEST_INFO["expected"]["test_uss_line_insertafter_eof"])
+        "test_uss_line_insertafter_eof", 
+        ansible_zos_module,
+        TEST_ENV, 
+        TEST_INFO["test_line_insertafter_eof"],
+        """if [ -z STEPLIB ] && tty -s;
+then
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+TZ=PST8PDT
+export TZ
+LANG=C
+export LANG
+readonly LOGNAME
+PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
+export PATH
+LIBPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+export LIBPATH
+NLSPATH=/usr/lib/nls/msg/%L/%N
+export NLSPATH
+MANPATH=/usr/man/%L
+export MANPATH
+MAIL=/usr/mail/LOGNAME
+export MAIL
+umask 022
+ZOAU_ROOT=/usr/lpp/zoautil/v100
+ZOAUTIL_DIR=/usr/lpp/zoautil/v100
+PYTHONPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
+PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
+_BPXK_AUTOCVT=ON
+export ZOAU_ROOT
+export ZOAUTIL_DIR
+export ZOAUTIL_DIR
+export PYTHONPATH
+export PKG_CONFIG_PATH
+export PYTHON_HOME
+export _BPXK_AUTOCVT
+export ZOAU_ROOT""")
 
 
 @pytest.mark.uss
 def test_uss_line_insertbefore_bof(ansible_zos_module):
     General_uss_test(
-        "test_uss_line_insertbefore_bof", ansible_zos_module,
-        TEST_ENV, TEST_INFO["test_line_insertbefore_bof"],
-        TEST_INFO["expected"]["test_uss_line_insertbefore_bof"])
+        "test_uss_line_insertbefore_bof", 
+        ansible_zos_module,
+        TEST_ENV, 
+        TEST_INFO["test_line_insertbefore_bof"],
+        """# this is file is for setting env vars
+if [ -z STEPLIB ] && tty -s;
+then
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+TZ=PST8PDT
+export TZ
+LANG=C
+export LANG
+readonly LOGNAME
+PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
+export PATH
+LIBPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+export LIBPATH
+NLSPATH=/usr/lib/nls/msg/%L/%N
+export NLSPATH
+MANPATH=/usr/man/%L
+export MANPATH
+MAIL=/usr/mail/LOGNAME
+export MAIL
+umask 022
+ZOAU_ROOT=/usr/lpp/zoautil/v100
+ZOAUTIL_DIR=/usr/lpp/zoautil/v100
+PYTHONPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
+PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
+_BPXK_AUTOCVT=ON
+export ZOAU_ROOT
+export ZOAUTIL_DIR
+export ZOAUTIL_DIR
+export PYTHONPATH
+export PKG_CONFIG_PATH
+export PYTHON_HOME
+export _BPXK_AUTOCVT""")
 
 
 @pytest.mark.uss
 def test_uss_line_replace_match_insertafter_ignore(ansible_zos_module):
     General_uss_test(
-        "test_uss_line_replace_match_insertafter_ignore", ansible_zos_module,
-        TEST_ENV, TEST_INFO["test_line_replace_match_insertafter_ignore"],
-        TEST_INFO["expected"]["test_uss_line_replace_match_insertafter_ignore"]
+        "test_uss_line_replace_match_insertafter_ignore", 
+        ansible_zos_module,
+        TEST_ENV, 
+        TEST_INFO["test_line_replace_match_insertafter_ignore"],
+        """if [ -z STEPLIB ] && tty -s;
+then
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+TZ=PST8PDT
+export TZ
+LANG=C
+export LANG
+readonly LOGNAME
+PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
+export PATH
+LIBPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+export LIBPATH
+NLSPATH=/usr/lib/nls/msg/%L/%N
+export NLSPATH
+MANPATH=/usr/man/%L
+export MANPATH
+MAIL=/usr/mail/LOGNAME
+export MAIL
+umask 022
+ZOAU_ROOT=/mvsutil-develop_dsed
+ZOAUTIL_DIR=/usr/lpp/zoautil/v100
+PYTHONPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
+PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
+_BPXK_AUTOCVT=ON
+export ZOAU_ROOT
+export ZOAUTIL_DIR
+export ZOAUTIL_DIR
+export PYTHONPATH
+export PKG_CONFIG_PATH
+export PYTHON_HOME
+export _BPXK_AUTOCVT"""
     )
 
 
 @pytest.mark.uss
 def test_uss_line_replace_match_insertbefore_ignore(ansible_zos_module):
     General_uss_test(
-        "test_uss_line_replace_match_insertbefore_ignore", ansible_zos_module,
-        TEST_ENV, TEST_INFO["test_line_replace_match_insertbefore_ignore"],
-        TEST_INFO["expected"]
-        ["test_uss_line_replace_match_insertbefore_ignore"]
+        "test_uss_line_replace_match_insertbefore_ignore", 
+        ansible_zos_module,
+        TEST_ENV, 
+        TEST_INFO["test_line_replace_match_insertbefore_ignore"],
+        """if [ -z STEPLIB ] && tty -s;
+then
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+TZ=PST8PDT
+export TZ
+LANG=C
+export LANG
+readonly LOGNAME
+PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
+export PATH
+LIBPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+export LIBPATH
+NLSPATH=/usr/lib/nls/msg/%L/%N
+export NLSPATH
+MANPATH=/usr/man/%L
+export MANPATH
+MAIL=/usr/mail/LOGNAME
+export MAIL
+umask 022
+unset ZOAU_ROOT
+ZOAUTIL_DIR=/usr/lpp/zoautil/v100
+PYTHONPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
+PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
+_BPXK_AUTOCVT=ON
+export ZOAU_ROOT
+export ZOAUTIL_DIR
+export ZOAUTIL_DIR
+export PYTHONPATH
+export PKG_CONFIG_PATH
+export PYTHON_HOME
+export _BPXK_AUTOCVT"""
     )
 
 
 @pytest.mark.uss
 def test_uss_line_replace_nomatch_insertafter_match(ansible_zos_module):
     General_uss_test(
-        "test_uss_line_replace_nomatch_insertafter_match", ansible_zos_module,
-        TEST_ENV, TEST_INFO["test_line_replace_nomatch_insertafter_match"],
-        TEST_INFO["expected"]
-        ["test_uss_line_replace_nomatch_insertafter_match"]
+        "test_uss_line_replace_nomatch_insertafter_match", 
+        ansible_zos_module,
+        TEST_ENV, 
+        TEST_INFO["test_line_replace_nomatch_insertafter_match"],
+        """if [ -z STEPLIB ] && tty -s;
+then
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+TZ=PST8PDT
+export TZ
+LANG=C
+export LANG
+readonly LOGNAME
+PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
+export PATH
+LIBPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+export LIBPATH
+NLSPATH=/usr/lib/nls/msg/%L/%N
+export NLSPATH
+MANPATH=/usr/man/%L
+export MANPATH
+MAIL=/usr/mail/LOGNAME
+export MAIL
+umask 022
+ZOAU_ROOT=/usr/lpp/zoautil/v100
+ZOAU_ROOT=/mvsutil-develop_dsed
+ZOAUTIL_DIR=/usr/lpp/zoautil/v100
+PYTHONPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
+PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
+_BPXK_AUTOCVT=ON
+export ZOAU_ROOT
+export ZOAUTIL_DIR
+export ZOAUTIL_DIR
+export PYTHONPATH
+export PKG_CONFIG_PATH
+export PYTHON_HOME
+export _BPXK_AUTOCVT"""
     )
 
 
 @pytest.mark.uss
 def test_uss_line_replace_nomatch_insertbefore_match(ansible_zos_module):
     General_uss_test(
-        "test_uss_line_replace_nomatch_insertbefore_match", ansible_zos_module,
+        "test_uss_line_replace_nomatch_insertbefore_match", 
+        ansible_zos_module,
         TEST_ENV,
         TEST_INFO["test_line_replace_nomatch_insertbefore_match"],
-        TEST_INFO["expected"]
-        ["test_uss_line_replace_nomatch_insertbefore_match"]
+        """if [ -z STEPLIB ] && tty -s;
+then
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+TZ=PST8PDT
+export TZ
+LANG=C
+export LANG
+readonly LOGNAME
+PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
+export PATH
+LIBPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+export LIBPATH
+NLSPATH=/usr/lib/nls/msg/%L/%N
+export NLSPATH
+MANPATH=/usr/man/%L
+export MANPATH
+MAIL=/usr/mail/LOGNAME
+export MAIL
+umask 022
+unset ZOAU_ROOT
+ZOAU_ROOT=/usr/lpp/zoautil/v100
+ZOAUTIL_DIR=/usr/lpp/zoautil/v100
+PYTHONPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
+PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
+_BPXK_AUTOCVT=ON
+export ZOAU_ROOT
+export ZOAUTIL_DIR
+export ZOAUTIL_DIR
+export PYTHONPATH
+export PKG_CONFIG_PATH
+export PYTHON_HOME
+export _BPXK_AUTOCVT"""
     )
 
 
@@ -637,10 +950,44 @@ def test_uss_line_replace_nomatch_insertbefore_match(ansible_zos_module):
 def test_uss_line_replace_nomatch_insertafter_nomatch(ansible_zos_module):
     General_uss_test(
         "test_uss_line_replace_nomatch_insertafter_nomatch",
-        ansible_zos_module, TEST_ENV,
+        ansible_zos_module, 
+        TEST_ENV,
         TEST_INFO["test_line_replace_nomatch_insertafter_nomatch"],
-        TEST_INFO["expected"]
-        ["test_uss_line_replace_nomatch_insertafter_nomatch"]
+        """if [ -z STEPLIB ] && tty -s;
+then
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+TZ=PST8PDT
+export TZ
+LANG=C
+export LANG
+readonly LOGNAME
+PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
+export PATH
+LIBPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+export LIBPATH
+NLSPATH=/usr/lib/nls/msg/%L/%N
+export NLSPATH
+MANPATH=/usr/man/%L
+export MANPATH
+MAIL=/usr/mail/LOGNAME
+export MAIL
+umask 022
+ZOAU_ROOT=/usr/lpp/zoautil/v100
+ZOAUTIL_DIR=/usr/lpp/zoautil/v100
+PYTHONPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
+PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
+_BPXK_AUTOCVT=ON
+export ZOAU_ROOT
+export ZOAUTIL_DIR
+export ZOAUTIL_DIR
+export PYTHONPATH
+export PKG_CONFIG_PATH
+export PYTHON_HOME
+export _BPXK_AUTOCVT
+ZOAU_ROOT=/mvsutil-develop_dsed"""
     )
 
 
@@ -648,28 +995,130 @@ def test_uss_line_replace_nomatch_insertafter_nomatch(ansible_zos_module):
 def test_uss_line_replace_nomatch_insertbefore_nomatch(ansible_zos_module):
     General_uss_test(
         "test_uss_line_replace_nomatch_insertbefore_nomatch",
-        ansible_zos_module, TEST_ENV,
+        ansible_zos_module, 
+        TEST_ENV,
         TEST_INFO["test_line_replace_nomatch_insertbefore_nomatch"],
-        TEST_INFO["expected"]
-        ["test_uss_line_replace_nomatch_insertbefore_nomatch"]
-    )
+        """if [ -z STEPLIB ] && tty -s;
+then
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+TZ=PST8PDT
+export TZ
+LANG=C
+export LANG
+readonly LOGNAME
+PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
+export PATH
+LIBPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+export LIBPATH
+NLSPATH=/usr/lib/nls/msg/%L/%N
+export NLSPATH
+MANPATH=/usr/man/%L
+export MANPATH
+MAIL=/usr/mail/LOGNAME
+export MAIL
+umask 022
+ZOAU_ROOT=/usr/lpp/zoautil/v100
+ZOAUTIL_DIR=/usr/lpp/zoautil/v100
+PYTHONPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
+PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
+_BPXK_AUTOCVT=ON
+export ZOAU_ROOT
+export ZOAUTIL_DIR
+export ZOAUTIL_DIR
+export PYTHONPATH
+export PKG_CONFIG_PATH
+export PYTHON_HOME
+export _BPXK_AUTOCVT
+unset ZOAU_ROOT""")
 
 
 @pytest.mark.uss
 def test_uss_line_absent(ansible_zos_module):
     General_uss_test(
-        "test_uss_line_absent", ansible_zos_module, TEST_ENV,
+        "test_uss_line_absent", 
+        ansible_zos_module, 
+        TEST_ENV,
         TEST_INFO["test_line_absent"],
-        TEST_INFO["expected"]["test_uss_line_absent"])
+        """if [ -z STEPLIB ] && tty -s;
+then
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+TZ=PST8PDT
+export TZ
+LANG=C
+export LANG
+readonly LOGNAME
+PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
+export PATH
+LIBPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+export LIBPATH
+NLSPATH=/usr/lib/nls/msg/%L/%N
+export NLSPATH
+MANPATH=/usr/man/%L
+export MANPATH
+MAIL=/usr/mail/LOGNAME
+export MAIL
+umask 022
+ZOAUTIL_DIR=/usr/lpp/zoautil/v100
+PYTHONPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
+PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
+_BPXK_AUTOCVT=ON
+export ZOAU_ROOT
+export ZOAUTIL_DIR
+export ZOAUTIL_DIR
+export PYTHONPATH
+export PKG_CONFIG_PATH
+export PYTHON_HOME
+export _BPXK_AUTOCVT""")
 
 
 @pytest.mark.uss
 def test_uss_line_replace_quoted_escaped(ansible_zos_module):
     TEST_INFO["test_line_replace"]["line"] = 'ZOAU_ROOT=\"/mvsutil-develop_dsed\"'
     General_uss_test(
-        "test_uss_line_replace", ansible_zos_module, TEST_ENV,
+        "test_uss_line_replace", 
+        ansible_zos_module, 
+        TEST_ENV,
         TEST_INFO["test_line_replace"],
-        TEST_INFO["expected"]["test_uss_line_replace_quoted"])
+        """if [ -z STEPLIB ] && tty -s;
+then
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+TZ=PST8PDT
+export TZ
+LANG=C
+export LANG
+readonly LOGNAME
+PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
+export PATH
+LIBPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+export LIBPATH
+NLSPATH=/usr/lib/nls/msg/%L/%N
+export NLSPATH
+MANPATH=/usr/man/%L
+export MANPATH
+MAIL=/usr/mail/LOGNAME
+export MAIL
+umask 022
+ZOAU_ROOT="/mvsutil-develop_dsed"
+ZOAUTIL_DIR=/usr/lpp/zoautil/v100
+PYTHONPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
+PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
+_BPXK_AUTOCVT=ON
+export ZOAU_ROOT
+export ZOAUTIL_DIR
+export ZOAUTIL_DIR
+export PYTHONPATH
+export PKG_CONFIG_PATH
+export PYTHON_HOME
+export _BPXK_AUTOCVT""")
 
 
 @pytest.mark.uss
@@ -678,7 +1127,40 @@ def test_uss_line_replace_quoted_not_escaped(ansible_zos_module):
     General_uss_test(
         "test_uss_line_replace", ansible_zos_module, TEST_ENV,
         TEST_INFO["test_line_replace"],
-        TEST_INFO["expected"]["test_uss_line_replace_quoted"])
+        """if [ -z STEPLIB ] && tty -s;
+then
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+TZ=PST8PDT
+export TZ
+LANG=C
+export LANG
+readonly LOGNAME
+PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
+export PATH
+LIBPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+export LIBPATH
+NLSPATH=/usr/lib/nls/msg/%L/%N
+export NLSPATH
+MANPATH=/usr/man/%L
+export MANPATH
+MAIL=/usr/mail/LOGNAME
+export MAIL
+umask 022
+ZOAU_ROOT="/mvsutil-develop_dsed"
+ZOAUTIL_DIR=/usr/lpp/zoautil/v100
+PYTHONPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
+PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
+_BPXK_AUTOCVT=ON
+export ZOAU_ROOT
+export ZOAUTIL_DIR
+export ZOAUTIL_DIR
+export PYTHONPATH
+export PKG_CONFIG_PATH
+export PYTHON_HOME
+export _BPXK_AUTOCVT""")
 
 
 #########################
@@ -694,7 +1176,7 @@ def test_ds_line_insertafter_regex(ansible_zos_module, dstype, encoding, ):
     TEST_ENV["DS_TYPE"] = dstype
     TEST_ENV["ENCODING"] = encoding
     TEST_INFO["test_line_insertafter_regex_name"] = {**TEST_INFO["test_line_insertafter_regex"], "test_name":"T1"}
-    DsGeneral(
+    General_ds_test(
         TEST_INFO["test_line_insertafter_regex_name"]["test_name"],
         ansible_zos_module, TEST_ENV,
         TEST_INFO["test_line_insertafter_regex"],
@@ -709,7 +1191,7 @@ def test_ds_line_insertbefore_regex(ansible_zos_module, dstype, encoding):
     TEST_ENV["DS_TYPE"] = dstype
     TEST_ENV["ENCODING"] = encoding
     TEST_INFO["test_line_insertbefore_regex_name"] = {**TEST_INFO["test_line_insertbefore_regex"], "test_name":"T1"}
-    DsGeneral(
+    General_ds_test(
         TEST_INFO["test_line_insertbefore_regex_name"]["test_name"],
         ansible_zos_module, TEST_ENV,
         TEST_INFO["test_line_insertbefore_regex"],

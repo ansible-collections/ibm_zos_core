@@ -74,7 +74,6 @@ def General_ds_test(test_name, ansible_zos_module, test_env, test_info, expected
     # simplifying dataset name, zos_encode seems to have issues with some dataset names (can be from ZOAU)
     encoding = "ENC"
     test_env["DS_NAME"] = test_name.upper() + "." + encoding + "." + test_env["DS_TYPE"]
-
     try:
         hosts.all.zos_data_set(name=test_env["DS_NAME"], type=test_env["DS_TYPE"])
         hosts.all.shell(cmd="echo \"{0}\" > {1}".format(test_env["TEST_CONT"], TEMP_FILE))
@@ -84,34 +83,17 @@ def General_ds_test(test_name, ansible_zos_module, test_env, test_info, expected
             cmdStr = "cp -CM {0} \"//'{1}'\"".format(quote(TEMP_FILE), test_env["DS_NAME"])
         else:
             cmdStr = "cp {0} \"//'{1}'\" ".format(quote(TEMP_FILE), test_env["DS_NAME"])
-
-        # Encoding for any cases
-        if test_env["ENCODING"] != "IBM-1047":
-            hosts.all.zos_encode(
-                src=TEMP_FILE,
-                dest=test_env["DS_NAME"],
-                encoding={
-                    "from": "IBM-1047",
-                    "to": test_env["ENCODING"],
-                },
-            )
-        else:
-            hosts.all.shell(cmd=cmdStr)
+        hosts.all.shell(cmd=cmdStr)
         hosts.all.shell(cmd="rm -rf " + TEMP_FILE)
         cmdStr = "cat \"//'{0}'\" | wc -l ".format(test_env["DS_NAME"])
         results = hosts.all.shell(cmd=cmdStr)
         for result in results.contacted.values():
             assert int(result.get("stdout")) != 0
-
         # Test case as it is
         test_info["path"] = test_env["DS_NAME"]
-        if test_env["ENCODING"]:
-            test_info["encoding"] = test_env["ENCODING"]
         results = hosts.all.zos_lineinfile(**test_info)
-        pprint(vars(results))
         for result in results.contacted.values():
             assert result.get("changed") == 1
-        if test_env["ENCODING"] == 'IBM-1047':
             cmdStr = "cat \"//'{0}'\" ".format(test_env["DS_NAME"])
             results = hosts.all.shell(cmd=cmdStr)
             for result in results.contacted.values():
@@ -124,35 +106,63 @@ def General_ds_test(test_name, ansible_zos_module, test_env, test_info, expected
 
 def DsNotSupportedHelper(test_name, ansible_zos_module, test_env, test_info):
     hosts = ansible_zos_module
-    results = hosts.all.shell(cmd='hlq')
-    for result in results.contacted.values():
-        hlq = result.get("stdout")
-    assert len(hlq) <= 8 or hlq != ''
-    test_env["DS_NAME"] = test_name.upper() + "." + test_name.upper() + "." + test_env["DS_TYPE"]
-    results = hosts.all.zos_data_set(name=test_env["DS_NAME"], type=test_env["DS_TYPE"], replace='yes')
-    pprint(vars(results))
-    for result in results.contacted.values():
-        assert result.get("changed") is True
-    test_info["path"] = test_env["DS_NAME"]
-    results = hosts.all.zos_lineinfile(**test_info)
-    for result in results.contacted.values():
-        assert result.get("changed") is False
-        assert result.get("msg") == "VSAM data set type is NOT supported"
-    clean_ds_test_env(test_env["DS_NAME"], hosts)
+    try:
+        results = hosts.all.shell(cmd='hlq')
+        for result in results.contacted.values():
+            hlq = result.get("stdout")
+        assert len(hlq) <= 8 or hlq != ''
+        test_env["DS_NAME"] = test_name.upper() + "." + test_name.upper() + "." + test_env["DS_TYPE"]
+        results = hosts.all.zos_data_set(name=test_env["DS_NAME"], type=test_env["DS_TYPE"], replace='yes')
+        for result in results.contacted.values():
+            assert result.get("changed") is True
+        test_info["path"] = test_env["DS_NAME"]
+        results = hosts.all.zos_lineinfile(**test_info)
+        for result in results.contacted.values():
+            assert result.get("changed") is False
+            assert result.get("msg") == "VSAM data set type is NOT supported"
+    finally:
+        ds_name = test_env["DS_NAME"]
+        ds_name = ds_name.replace("(MEM)", "")
+        hosts.all.zos_data_set(name=ds_name, state="absent")
 
 
 def DsGeneralResultKeyMatchesRegex(test_name, ansible_zos_module, test_env, test_info, **kwargs):
     hosts = ansible_zos_module
-    set_ds_test_env(test_name, hosts, test_env)
-    test_info["path"] = test_env["DS_NAME"]
-    if test_env["ENCODING"]:
-        test_info["encoding"] = test_env["ENCODING"]
-    results = hosts.all.zos_lineinfile(**test_info)
-    pprint(vars(results))
-    for result in results.contacted.values():
-        for key in kwargs:
-            assert re.match(kwargs.get(key), result.get(key))
-    clean_ds_test_env(test_env["DS_NAME"], hosts)
+    TEMP_FILE = "/tmp/" + test_name
+    # simplifying dataset name, zos_encode seems to have issues with some dataset names (can be from ZOAU)
+    TEMP_FILE = test_env["TEST_DIR"] + test_name
+    try:
+        hosts.all.shell(cmd="mkdir -p {0}".format(test_env["TEST_DIR"]))
+        results = hosts.all.shell(cmd='hlq')
+        for result in results.contacted.values():
+            hlq = result.get("stdout")
+        if len(hlq) > 8:
+            hlq = hlq[:8]
+        test_env["DS_NAME"] = hlq + "." + test_name.upper() + "." + test_env["DS_TYPE"]
+        hosts.all.zos_data_set(name=test_env["DS_NAME"], type=test_env["DS_TYPE"], replace=True)
+        hosts.all.shell(cmd="echo \"{0}\" > {1}".format(test_env["TEST_CONT"], TEMP_FILE))
+        if test_env["DS_TYPE"] in ["PDS", "PDSE"]:
+            test_env["DS_NAME"] = test_env["DS_NAME"] + "(MEM)"
+            hosts.all.zos_data_set(name=test_env["DS_NAME"], state="present", type="member")
+            cmdStr = "cp -CM {0} \"//'{1}'\"".format(quote(TEMP_FILE), test_env["DS_NAME"])
+        else:
+            cmdStr = "cp {0} \"//'{1}'\" ".format(quote(TEMP_FILE), test_env["DS_NAME"])
+        hosts.all.shell(cmd=cmdStr)
+        hosts.all.shell(cmd="rm -rf " + test_env["TEST_DIR"])
+        cmdStr = "cat \"//'{0}'\" | wc -l ".format(test_env["DS_NAME"])
+        results = hosts.all.shell(cmd=cmdStr)
+        for result in results.contacted.values():
+            assert int(result.get("stdout")) != 0
+        test_info["path"] = test_env["DS_NAME"]
+        results = hosts.all.zos_lineinfile(**test_info)
+        for result in results.contacted.values():
+            for key in kwargs:
+                assert re.match(kwargs.get(key), result.get(key))
+    finally:
+        ds_name = test_env["DS_NAME"]
+        ds_name = ds_name.replace("(MEM)", "")
+        hosts.all.zos_data_set(name=ds_name, state="absent")
+
 
 
 def DsGeneralForce(ansible_zos_module, test_env, test_text, test_info, expected):
@@ -191,23 +201,11 @@ def DsGeneralForce(ansible_zos_module, test_env, test_text, test_info, expected)
             cmdStr = "cp -CM {0} \"//'{1}'\"".format(quote(TEMP_FILE), test_env["DS_NAME"])
         else:
             cmdStr = "cp {0} \"//'{1}'\" ".format(quote(TEMP_FILE), test_env["DS_NAME"])
-        if test_env["ENCODING"]:
-            test_info["encoding"] = test_env["ENCODING"]
         hosts.all.shell(cmd=cmdStr)
         cmdStr = "cat \"//'{0}'\" | wc -l ".format(test_env["DS_NAME"])
         results = hosts.all.shell(cmd=cmdStr)
-        pprint(vars(results))
         for result in results.contacted.values():
             assert int(result.get("stdout")) != 0
-        if test_env["ENCODING"] != 'IBM-1047':
-            hosts.all.zos_encode(
-                src=TEMP_FILE,
-                dest=test_env["DS_NAME"],
-                encoding={
-                    "from": "IBM-1047",
-                    "to": test_env["ENCODING"],
-                },
-            )
         # copy/compile c program and copy jcl to hold data set lock for n seconds in background(&)
         hosts.all.zos_copy(content=c_pgm, dest='/tmp/disp_shr/pdse-lock.c', force=True)
         hosts.all.zos_copy(
@@ -218,32 +216,18 @@ def DsGeneralForce(ansible_zos_module, test_env, test_text, test_info, expected)
         hosts.all.shell(cmd="xlc -o pdse-lock pdse-lock.c", chdir="/tmp/disp_shr/")
         # submit jcl
         hosts.all.shell(cmd="submit call_c_pgm.jcl", chdir="/tmp/disp_shr/")
-
         # pause to ensure c code acquires lock
         time.sleep(5)  
         # call line infile to see results      
         results = hosts.all.zos_lineinfile(**test_info)
-        pprint(vars(results))
-        
-        if test_env["ENCODING"] == 'IBM-1047':
-            cmdStr =r"""cat "//'{0}'" """.format(test_info["path"])
-            results = hosts.all.shell(cmd=cmdStr)
-            pprint(vars(results))
-            for result in results.contacted.values():
-                assert result.get("stdout") == expected
-        else:
-            cmdStr =r"""cat "//'{0}'" """.format(test_info["path"])
-            results = hosts.all.shell(cmd=cmdStr)
-            pprint(vars(results))
-            for result in results.contacted.values():
-                assert result.get("changed") == True
-                #assert result.get("stdout") == expected
-                
+        cmdStr =r"""cat "//'{0}'" """.format(test_info["path"])
+        results = hosts.all.shell(cmd=cmdStr)
+        for result in results.contacted.values():
+            assert result.get("stdout") == expected
     finally:
         hosts.all.shell(cmd="rm -rf " + TEMP_FILE)
         # extract pid
         ps_list_res = hosts.all.shell(cmd="ps -e | grep -i 'pdse-lock'")
-
         # kill process - release lock - this also seems to end the job
         pid = list(ps_list_res.contacted.values())[0].get('stdout').strip().split(' ')[0]
         hosts.all.shell(cmd="kill 9 {0}".format(pid.strip()))

@@ -379,7 +379,7 @@ ac_test(){
     #cd ${VENV_BIN}
 
     if [ "$file" ]; then
-        . ${VENV_BIN}/activate && ${VENV_BIN}/pytest --ignore="${skip}" $CURR_DIR/${file} --host-pattern=all --zinventory=${VENV}/config.yml "${debug}" >&2 ; echo $? >&1
+        . ${VENV_BIN}/activate && cd tests && ${VENV_BIN}/pytest --ignore="${skip}" $CURR_DIR/${file} --host-pattern=all --zinventory=${VENV}/config.yml "${debug}" >&2 ; echo $? >&1
         #. ${VENV_BIN}/activate && ${VENV_BIN}/pytest --ignore="${skip}" $CURR_DIR/${file} --host-pattern=all --zinventory=${VENV}/config.yml "${debug}" ; echo $?
     else
         for file in `ls tests/functional/modules/*.py`; do

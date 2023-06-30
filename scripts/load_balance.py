@@ -85,7 +85,7 @@ def get_all_test_cases(collection_root):
     return test_suites
 
 
-def get_jobs_as_dictionary(python=None, zoau=None, cmd_prefix=""):
+def get_jobs_as_dictionary(python=None, zoau=None, cmd_prefix="", local_test=None):
     """Build a dictionary of job objects representing the test cases to be executed.
     Args:
         collection_root (str): The path to the root of the collection
@@ -101,12 +101,18 @@ def get_jobs_as_dictionary(python=None, zoau=None, cmd_prefix=""):
     nodes_len = len(nodes)
 
     files = []
-    # files += get_all_files_in_dir_tree(collection_root + "/tests/functional")
-    # Rely on ./ac for files because ./ac it is a regularly used flow over something custom coded
-    result = subprocess.run(["cd ..;./ac --ac-test-discover --all true"], shell=True, capture_output=True, text=True)
-    files = result.stdout.split()
 
-    # files = ['/Users/ddimatos/git/github/ibm_zos_core/tests/functional/modules/test_load_balance.py']
+    if local_test is not None:
+        files.append(local_test)
+    else:
+        # Instead of using get_all_files_in_dir_tree, use ./ac './ac --ac-test-discover'
+        # files += get_all_files_in_dir_tree(collection_root + "/tests/functional")
+
+        # TODO: This may need the prefix added here
+        result = subprocess.run(["cd ..;./ac --ac-test-discover --all true"], shell=True, capture_output=True, text=True)
+        files = result.stdout.split()
+
+    #files = ['/Users/ddimatos/git/github/ibm_zos_core/tests/functional/modules/test_load_balance.py']
     jobs = dictionary()
     index = 0
     for file in files:
@@ -123,7 +129,9 @@ def get_jobs_as_dictionary(python=None, zoau=None, cmd_prefix=""):
                             # to append nodes.
                             if (nodes_index % nodes_len) == 0:
                                 nodes_index = 0
-                            _job = job(host=nodes[nodes_index], python=python, zoau=zoau, file="tests/functional/modules/" + filename,test=line.partition(" ")[2].partition("(")[0], debug=False, id=index )
+                            test_function_line = line.partition('(')[0].strip().split()
+
+                            _job = job(host=nodes[nodes_index], python=python, zoau=zoau, file="tests/functional/modules/" + filename, test=test_function_line[1], debug=False, id=index )
                             _job.add_cmd_prefix(cmd_prefix)
                             jobs.update(index, _job)
                             index += 1
@@ -678,33 +686,35 @@ def run(key, jobs, nodes, completed):
     # Run the job
     # ----------------
     host = job.get_last_host()
-    print("Accessing job: " + str(job.get_id()) + " is running on host: " + host)
-    print("Nodes have a length of: " + str(nodes.len()))
+    # print("Nodes have a length of: " + str(nodes.len()))
     # Remove the host from the nodes dictionary so it can be used without concern of another thread
     # accessing it. This won't be needed when the tests can be run concurrently.
+    nodes_len = nodes.len()
     node_entry = nodes.pop(host)
 
     if node_entry is not None:
-        print("Command running is: " + job.get_command())
+        # print("Accessing job: " + str(job.get_id()) + " is running on host: " + host)
+        # print("Command running is: " + job.get_command())
+
+        print("Available nodes = " + str(nodes_len) + ", Job ID = " + str(job.get_id()) + ", Command = " + job.get_command())
         result = subprocess.run([job.get_command()], shell=True, capture_output=True, text=True)
         rc = result.stdout
-
         if int(rc) == 0:
-            print("Job: " + str(job.get_id()) + " + has a return code : "+ rc)
+            print("Job ID = " + str(job.get_id()) + ", return code = "+ rc)
             job.set_rc(int(rc))
             completed.update(job.get_id(), job)
             nodes.update(node_entry.get_hostname(), node_entry)
             return rc
         else:
-            print("Job failure " + result.stderr)
-            print("RC for failure is " + rc)
+            print("Job ID = " + str(job.get_id()) + ", return code = "+ rc + ", msg = " + result.stderr)
             job.set_rc(int(rc))
             job.add_failure()
             jobs.update(job.get_id(), job)
             nodes.update(node_entry.get_hostname(), node_entry)
     else:
         # Were not able to obtain a node in the allocated default 100 seconds
-        print("Not able to obtain access to a node.")
+        # print("Not able to obtain access to a node."
+        # Don't need to print anything here but maybe a verbose mode in the future would be good
         return 2
 
     return int(rc)
@@ -730,18 +740,26 @@ def runner(jobs, nodes, completed):
 def main(argv):
     # Example usage: python load_balance.py --python "3.9" --zoau "1.2.2" --itr 10 --prefix "cd /Users/ddimatos/git/github/ibm_zos_core;"
     try:
-      opts, args = getopt.getopt(argv,'-h',['python=','zoau=','itr=', 'prefix='])
+      opts, args = getopt.getopt(argv,'-h',['python=','zoau=','itr=', 'prefix=', 'local-test='])
     except getopt.GetoptError:
-      print ('load_balance.py --python <(str)python> --zoau <(str)zoau> --itr <int>')
+      print ('load_balance.py --python <(str)python> --zoau <(str)zoau> --itr <int> --prefix <str>')
+      print ('python load_balance.py --python \"3.9\" --zoau \"1.2.2\" --itr 10 --prefix \"cd /Users/ddimatos/git/github/ibm_zos_core;\"')
       sys.exit(2)
 
     zoau = "1.2.2"
     pyz = "3.9"
     itr = 10
     cmd_prefix = ""
+    local_test = None
     for opt, arg in opts:
         if opt == '-h':
-            print ('load_balance.py --python <python> --zoau <zoau>')
+            print ('load_balance.py --python <python> --zoau <zoau> --itr <int> --prefix <str>')
+            print ('python load_balance.py --python \"3.9\" --zoau \"1.2.2\" --itr 10 --prefix \"cd /Users/ddimatos/git/github/ibm_zos_core;\" --local-test \"test_load_balance.py\"')
+            # Use argparse for real help, for now this works:
+            print("--python - (str) python version ")
+            print("--zoau - (str) zoau version")
+            print("--prefix - (str) a prefix to be run before the generated command, optional")
+            print("--local-test - (str) a local test that overrides the parsing of all tests")
             sys.exit()
         elif opt in '--python':
             pyz = arg or "3.9"
@@ -751,6 +769,8 @@ def main(argv):
             itr = arg or 10
         elif opt in '--prefix':
             cmd_prefix = arg or ""
+        elif opt in '--local-test':
+            local_test = arg or None
 
     start_time_full_run = time.time()
 
@@ -765,20 +785,24 @@ def main(argv):
         print("    " + key)
 
     # Get a dictionary of jobs containing the work to be run on a node.
-    jobs = get_jobs_as_dictionary(python=pyz, zoau=zoau, cmd_prefix=cmd_prefix)
+    jobs = get_jobs_as_dictionary(python=pyz, zoau=zoau, cmd_prefix=cmd_prefix, local_test=local_test)
 
     count = 1
+    iterations_result=""
     while completed.len() != jobs.len() and count < int(itr):
         print("Thread pool iteration " + str(count))
+        job_completed_before = completed.len();
         start_time = time.time()
         runner(jobs, nodes, completed)
-        count +=1
         time_in_seconds= ((time.time() - start_time)/60)
-        print("Thread pool iteration " + str(count) + " completed " + str(completed.len()) + " jobs in " + str(time_in_seconds) + " seconds.")
+        jobs_completed_after = completed.len() - job_completed_before
+        #print("Thread pool iteration " + str(count) + " completed " + str(jobs_completed_after) + " job(s) in " + str(round(time_in_seconds,2)) + " seconds.")
+        iterations_result += "Thread pool iteration " + str(count) + " completed " + str(jobs_completed_after) + " job(s) in " + str(round(time_in_seconds,2)) + " seconds.\n"
+        count +=1
 
     time_in_seconds=((time.time() - start_time_full_run)/60)
-    print("All " + str(count) + " thread pool iterations completed in " +  str(time_in_seconds) + " seconds.")
-
+    print("All " + str(count - 1) + " thread pool iterations completed in " +  str(round(time_in_seconds,2)) + " seconds.")
+    print(iterations_result)
     print("Number of jobs that completed: " + str(jobs.len()))
 
     fail_gt_eq_to_six=0
@@ -798,10 +822,10 @@ def main(argv):
         if len(bal) > 1:
             total_balanced+=1
 
-    print("Number of jobs that failed with 6 or greater: " + str(fail_gt_eq_to_six))
-    print("Number of jobs that failed with 6 or less: " + str(fail_less_than_six))
-    print("Total number of jobs that failed: " + str(total_failed))
-    print("Number of jobs that had nodes rebalanced: " + str(total_balanced))
+    print("Number of jobs that failed with 6 or greater = " + str(fail_gt_eq_to_six))
+    print("Number of jobs that failed with 6 or less = " + str(fail_less_than_six))
+    print("Total number of jobs that failed = " + str(total_failed))
+    print("Number of jobs that had nodes rebalanced = " + str(total_balanced))
 
 if __name__ == '__main__':
      main(sys.argv[1:])

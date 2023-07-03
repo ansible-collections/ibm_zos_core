@@ -64,7 +64,7 @@ DS_TYPE = ['SEQ', 'PDS', 'PDSE']
 # not supported data set types
 NS_DS_TYPE = ['ESDS', 'RRDS', 'LDS']
 # The encoding will be only use on a few test
-# ENCODING = ['IBM-1047', 'ISO8859-1', 'UTF-8']
+ENCODING = ['IBM-1047', 'ISO8859-1', 'UTF-8']
 
 
 TEST_ENV = dict(
@@ -73,25 +73,41 @@ TEST_ENV = dict(
     TEST_FILE="",
     DS_NAME="",
     DS_TYPE="",
+    ENCODING="IBM-1047",
 )
 
-TEST_INFO = dict(
+MODULE_PARAMS = dict(
     # This new declaration are one for all cases we were testing, before the declaration for dataset was test_ds_line_replace=dict(test_name="T1") and send
     # the same arguments than a USS only for force change a little bit, but still repeat most arguments (my bad, the last one)
-    test_line_replace=dict(path="", regexp="ZOAU_ROOT=", line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present"),
+    test_line_replace=dict(path="", regexp="ZOAU_ROOT=", 
+                           line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present"),
     test_line_absent=dict(regexp="ZOAU_ROOT=", line="", state="absent"),
-    test_line_insertafter_regex=dict(insertafter="ZOAU_ROOT=", line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present"),
-    test_line_insertbefore_regex=dict(insertbefore="ZOAU_ROOT=", line="unset ZOAU_ROOT", state="present"),
-    test_line_insertafter_eof=dict(insertafter="EOF", line="export ZOAU_ROOT", state="present"),
-    test_line_insertbefore_bof=dict(insertbefore="BOF", line="# this is file is for setting env vars", state="present"),
-    test_line_replace_nomatch_insertafter_match=dict(regexp="abcxyz", insertafter="ZOAU_ROOT=", line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present"),
-    test_line_replace_nomatch_insertbefore_match=dict(regexp="abcxyz", insertbefore="ZOAU_ROOT=", line="unset ZOAU_ROOT", state="present"),
-    test_line_replace_match_insertafter_ignore=dict(regexp="ZOAU_ROOT=", insertafter="PATH=", line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present"),    
-    test_line_replace_nomatch_insertbefore_nomatch=dict(regexp="abcxyz", insertbefore="xyzijk", line="unset ZOAU_ROOT", state="present"),
-    test_line_replace_match_insertbefore_ignore=dict(regexp="ZOAU_ROOT=", insertbefore="PATH=", line="unset ZOAU_ROOT", state="present"),
-    test_line_replace_nomatch_insertafter_nomatch=dict(regexp="abcxyz", insertafter="xyzijk", line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present"),
-    test_ds_line_force_fail=dict(path="",insertafter="EOF", line="export ZOAU_ROOT", force=False),
-    test_ds_line_tmp_hlq_option=dict(insertafter="EOF", line="export ZOAU_ROOT", state="present", backup=True, tmp_hlq="TMPHLQ"),
+    test_line_insertafter_regex=dict(insertafter="ZOAU_ROOT=", 
+                                     line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present"),
+    test_line_insertbefore_regex=dict(insertbefore="ZOAU_ROOT=", 
+                                      line="unset ZOAU_ROOT", state="present"),
+    test_line_insertafter_eof=dict(insertafter="EOF", 
+                                   line="export ZOAU_ROOT", state="present"),
+    test_line_insertbefore_bof=dict(insertbefore="BOF", 
+                                    line="# this is file is for setting env vars", state="present"),
+    test_line_replace_nomatch_insertafter_match=dict(regexp="abcxyz", 
+                                                     insertafter="ZOAU_ROOT=", line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present"),
+    test_line_replace_nomatch_insertbefore_match=dict(regexp="abcxyz", 
+                                                      insertbefore="ZOAU_ROOT=", line="unset ZOAU_ROOT", state="present"),
+    test_line_replace_match_insertafter_ignore=dict(regexp="ZOAU_ROOT=", 
+                                                    insertafter="PATH=", 
+                                                    line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present"),    
+    test_line_replace_nomatch_insertbefore_nomatch=dict(regexp="abcxyz", 
+                                                        insertbefore="xyzijk", line="unset ZOAU_ROOT", state="present"),
+    test_line_replace_match_insertbefore_ignore=dict(regexp="ZOAU_ROOT=", 
+                                                     insertbefore="PATH=", 
+                                                     line="unset ZOAU_ROOT", state="present"),
+    test_line_replace_nomatch_insertafter_nomatch=dict(regexp="abcxyz", 
+                                                       insertafter="xyzijk", line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present"),
+    test_ds_line_force_fail=dict(path="",insertafter="EOF", 
+                                 line="export ZOAU_ROOT", force=False),
+    test_ds_line_tmp_hlq_option=dict(insertafter="EOF", 
+                                     line="export ZOAU_ROOT", state="present", backup=True, tmp_hlq="TMPHLQ"),
     # Remove from expected text not used anymore as well as the parameters the same text for uss is use for DS 
 )
 
@@ -106,7 +122,7 @@ def test_uss_line_replace(ansible_zos_module):
         "test_uss_line_replace",
         ansible_zos_module,
         TEST_ENV,
-        TEST_INFO["test_line_replace"],
+        MODULE_PARAMS["test_line_replace"],
         """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -146,9 +162,10 @@ export _BPXK_AUTOCVT""")
 @pytest.mark.uss
 def test_uss_line_insertafter_regex(ansible_zos_module):
     General_uss_test(
-        "test_uss_line_insertafter_regex", ansible_zos_module, 
+        "test_uss_line_insertafter_regex", 
+        ansible_zos_module, 
         TEST_ENV,
-        TEST_INFO["test_line_insertafter_regex"],
+        MODULE_PARAMS["test_line_insertafter_regex"],
         """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -189,9 +206,10 @@ export _BPXK_AUTOCVT""")
 @pytest.mark.uss
 def test_uss_line_insertbefore_regex(ansible_zos_module):
     General_uss_test(
-        "test_uss_line_insertbefore_regex", ansible_zos_module, 
+        "test_uss_line_insertbefore_regex", 
+        ansible_zos_module, 
         TEST_ENV,
-        TEST_INFO["test_line_insertbefore_regex"],
+        MODULE_PARAMS["test_line_insertbefore_regex"],
         """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -235,7 +253,7 @@ def test_uss_line_insertafter_eof(ansible_zos_module):
         "test_uss_line_insertafter_eof", 
         ansible_zos_module,
         TEST_ENV, 
-        TEST_INFO["test_line_insertafter_eof"],
+        MODULE_PARAMS["test_line_insertafter_eof"],
         """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -279,7 +297,7 @@ def test_uss_line_insertbefore_bof(ansible_zos_module):
         "test_uss_line_insertbefore_bof", 
         ansible_zos_module,
         TEST_ENV, 
-        TEST_INFO["test_line_insertbefore_bof"],
+        MODULE_PARAMS["test_line_insertbefore_bof"],
         """# this is file is for setting env vars
 if [ -z STEPLIB ] && tty -s;
 then
@@ -323,7 +341,7 @@ def test_uss_line_replace_match_insertafter_ignore(ansible_zos_module):
         "test_uss_line_replace_match_insertafter_ignore", 
         ansible_zos_module,
         TEST_ENV, 
-        TEST_INFO["test_line_replace_match_insertafter_ignore"],
+        MODULE_PARAMS["test_line_replace_match_insertafter_ignore"],
         """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -367,7 +385,7 @@ def test_uss_line_replace_match_insertbefore_ignore(ansible_zos_module):
         "test_uss_line_replace_match_insertbefore_ignore", 
         ansible_zos_module,
         TEST_ENV, 
-        TEST_INFO["test_line_replace_match_insertbefore_ignore"],
+        MODULE_PARAMS["test_line_replace_match_insertbefore_ignore"],
         """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -411,7 +429,7 @@ def test_uss_line_replace_nomatch_insertafter_match(ansible_zos_module):
         "test_uss_line_replace_nomatch_insertafter_match", 
         ansible_zos_module,
         TEST_ENV, 
-        TEST_INFO["test_line_replace_nomatch_insertafter_match"],
+        MODULE_PARAMS["test_line_replace_nomatch_insertafter_match"],
         """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -456,7 +474,7 @@ def test_uss_line_replace_nomatch_insertbefore_match(ansible_zos_module):
         "test_uss_line_replace_nomatch_insertbefore_match", 
         ansible_zos_module,
         TEST_ENV,
-        TEST_INFO["test_line_replace_nomatch_insertbefore_match"],
+        MODULE_PARAMS["test_line_replace_nomatch_insertbefore_match"],
         """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -501,7 +519,7 @@ def test_uss_line_replace_nomatch_insertafter_nomatch(ansible_zos_module):
         "test_uss_line_replace_nomatch_insertafter_nomatch",
         ansible_zos_module, 
         TEST_ENV,
-        TEST_INFO["test_line_replace_nomatch_insertafter_nomatch"],
+        MODULE_PARAMS["test_line_replace_nomatch_insertafter_nomatch"],
         """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -546,7 +564,7 @@ def test_uss_line_replace_nomatch_insertbefore_nomatch(ansible_zos_module):
         "test_uss_line_replace_nomatch_insertbefore_nomatch",
         ansible_zos_module, 
         TEST_ENV,
-        TEST_INFO["test_line_replace_nomatch_insertbefore_nomatch"],
+        MODULE_PARAMS["test_line_replace_nomatch_insertbefore_nomatch"],
         """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -590,7 +608,7 @@ def test_uss_line_absent(ansible_zos_module):
         "test_uss_line_absent", 
         ansible_zos_module, 
         TEST_ENV,
-        TEST_INFO["test_line_absent"],
+        MODULE_PARAMS["test_line_absent"],
         """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -628,12 +646,12 @@ export _BPXK_AUTOCVT""")
 
 @pytest.mark.uss
 def test_uss_line_replace_quoted_escaped(ansible_zos_module):
-    TEST_INFO["test_line_replace"]["line"] = 'ZOAU_ROOT=\"/mvsutil-develop_dsed\"'
+    MODULE_PARAMS["test_line_replace"]["line"] = 'ZOAU_ROOT=\"/mvsutil-develop_dsed\"'
     General_uss_test(
-        "test_uss_line_replace", 
+        "test_uss_line_replace_quoted_escaped", 
         ansible_zos_module, 
         TEST_ENV,
-        TEST_INFO["test_line_replace"],
+        MODULE_PARAMS["test_line_replace"],
         """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -672,10 +690,12 @@ export _BPXK_AUTOCVT""")
 
 @pytest.mark.uss
 def test_uss_line_replace_quoted_not_escaped(ansible_zos_module):
-    TEST_INFO["test_line_replace"]["line"] = 'ZOAU_ROOT="/mvsutil-develop_dsed"'
+    MODULE_PARAMS["test_line_replace"]["line"] = 'ZOAU_ROOT="/mvsutil-develop_dsed"'
     General_uss_test(
-        "test_uss_line_replace", ansible_zos_module, TEST_ENV,
-        TEST_INFO["test_line_replace"],
+        "test_uss_line_replace_quoted_not_escaped", 
+        ansible_zos_module, 
+        TEST_ENV,
+        MODULE_PARAMS["test_line_replace"],
         """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -722,12 +742,11 @@ export _BPXK_AUTOCVT""")
 @pytest.mark.parametrize("dstype", DS_TYPE)
 def test_ds_line_insertafter_regex(ansible_zos_module, dstype):
     TEST_ENV["DS_TYPE"] = dstype
-    TEST_INFO["test_line_insertafter_regex_name"] = {**TEST_INFO["test_line_insertafter_regex"], "test_name":"T1"}
     General_ds_test(
-        TEST_INFO["test_line_insertafter_regex_name"]["test_name"],
+        "T1",
         ansible_zos_module, 
         TEST_ENV,
-        TEST_INFO["test_line_insertafter_regex"],
+        MODULE_PARAMS["test_line_insertafter_regex"],
         """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -770,12 +789,11 @@ export _BPXK_AUTOCVT"""
 @pytest.mark.parametrize("dstype", DS_TYPE)
 def test_ds_line_insertbefore_regex(ansible_zos_module, dstype):
     TEST_ENV["DS_TYPE"] = dstype
-    TEST_INFO["test_line_insertbefore_regex_name"] = {**TEST_INFO["test_line_insertbefore_regex"], "test_name":"T1"}
     General_ds_test(
-        TEST_INFO["test_line_insertbefore_regex_name"]["test_name"],
+        "T2",
         ansible_zos_module, 
         TEST_ENV,
-        TEST_INFO["test_line_insertbefore_regex"],
+        MODULE_PARAMS["test_line_insertbefore_regex"],
         """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -818,12 +836,11 @@ export _BPXK_AUTOCVT"""
 @pytest.mark.parametrize("dstype", DS_TYPE)
 def test_ds_line_insertafter_eof(ansible_zos_module, dstype):
     TEST_ENV["DS_TYPE"] = dstype
-    TEST_INFO["test_line_insertafter_eof_name"] = {**TEST_INFO["test_line_insertafter_eof"], "test_name":"T1"}
     General_ds_test(
-        TEST_INFO["test_line_insertafter_eof_name"]["test_name"],
+        "T3",
         ansible_zos_module, 
         TEST_ENV,
-        TEST_INFO["test_line_insertafter_eof"],
+        MODULE_PARAMS["test_line_insertafter_eof"],
         """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -866,12 +883,11 @@ export ZOAU_ROOT"""
 @pytest.mark.parametrize("dstype", DS_TYPE)
 def test_ds_line_insertbefore_bof(ansible_zos_module, dstype):
     TEST_ENV["DS_TYPE"] = dstype
-    TEST_INFO["test_line_insertbefore_bof_name"] = {**TEST_INFO["test_line_insertbefore_bof"], "test_name":"T1"}
     General_ds_test(
-        TEST_INFO["test_line_insertbefore_bof_name"]["test_name"],
+        "T4",
         ansible_zos_module, 
         TEST_ENV,
-        TEST_INFO["test_line_insertbefore_bof"],
+        MODULE_PARAMS["test_line_insertbefore_bof"],
         """# this is file is for setting env vars
 if [ -z STEPLIB ] && tty -s;
 then
@@ -914,12 +930,11 @@ export _BPXK_AUTOCVT"""
 @pytest.mark.parametrize("dstype", DS_TYPE)
 def test_ds_line_replace_match_insertafter_ignore(ansible_zos_module, dstype):
     TEST_ENV["DS_TYPE"] = dstype
-    TEST_INFO["test_line_replace_match_insertafter_ignore_name"] = {**TEST_INFO["test_line_replace_match_insertafter_ignore"], "test_name":"T1"}
     General_ds_test(
-        TEST_INFO["test_line_replace_match_insertafter_ignore_name"]["test_name"],
+        "T5",
         ansible_zos_module, 
         TEST_ENV,
-        TEST_INFO["test_line_replace_match_insertafter_ignore"],
+        MODULE_PARAMS["test_line_replace_match_insertafter_ignore"],
 """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -961,12 +976,11 @@ export _BPXK_AUTOCVT"""
 @pytest.mark.parametrize("dstype", DS_TYPE)
 def test_ds_line_replace_match_insertbefore_ignore(ansible_zos_module, dstype):
     TEST_ENV["DS_TYPE"] = dstype
-    TEST_INFO["test_line_replace_match_insertbefore_ignore_name"] = {**TEST_INFO["test_line_replace_match_insertbefore_ignore"], "test_name":"T1"}
     General_ds_test(
-        TEST_INFO["test_line_replace_match_insertbefore_ignore_name"]["test_name"],
+        "T6",
         ansible_zos_module, 
         TEST_ENV,
-        TEST_INFO["test_line_replace_match_insertbefore_ignore"],
+        MODULE_PARAMS["test_line_replace_match_insertbefore_ignore"],
         """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -1008,12 +1022,11 @@ export _BPXK_AUTOCVT"""
 @pytest.mark.parametrize("dstype", DS_TYPE)
 def test_ds_line_replace_nomatch_insertafter_match(ansible_zos_module, dstype):
     TEST_ENV["DS_TYPE"] = dstype
-    TEST_INFO["test_line_replace_nomatch_insertafter_match_name"] = {**TEST_INFO["test_line_replace_nomatch_insertafter_match"], "test_name":"T1"}
     General_ds_test(
-        TEST_INFO["test_line_replace_nomatch_insertafter_match_name"]["test_name"],
+        "T7",
         ansible_zos_module, 
         TEST_ENV,
-        TEST_INFO["test_line_replace_nomatch_insertafter_match"],
+        MODULE_PARAMS["test_line_replace_nomatch_insertafter_match"],
         """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -1056,12 +1069,11 @@ export _BPXK_AUTOCVT"""
 @pytest.mark.parametrize("dstype", DS_TYPE)
 def test_ds_line_replace_nomatch_insertbefore_match(ansible_zos_module, dstype):
     TEST_ENV["DS_TYPE"] = dstype
-    TEST_INFO["test_line_replace_nomatch_insertbefore_match_name"] = {**TEST_INFO["test_line_replace_nomatch_insertbefore_match"], "test_name":"T1"}
     General_ds_test(
-        TEST_INFO["test_line_replace_nomatch_insertbefore_match_name"]["test_name"],
+        "T8",
         ansible_zos_module, 
         TEST_ENV,
-        TEST_INFO["test_line_replace_nomatch_insertbefore_match"],
+        MODULE_PARAMS["test_line_replace_nomatch_insertbefore_match"],
         """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -1104,12 +1116,11 @@ export _BPXK_AUTOCVT"""
 @pytest.mark.parametrize("dstype", DS_TYPE)
 def test_ds_line_replace_nomatch_insertafter_nomatch(ansible_zos_module, dstype):
     TEST_ENV["DS_TYPE"] = dstype
-    TEST_INFO["test_line_replace_nomatch_insertafter_nomatch_name"] = {**TEST_INFO["test_line_replace_nomatch_insertafter_nomatch"], "test_name":"T1"}
     General_ds_test(
-        TEST_INFO["test_line_replace_nomatch_insertafter_nomatch_name"]["test_name"],
+        "T9",
         ansible_zos_module, 
         TEST_ENV,
-        TEST_INFO["test_line_replace_nomatch_insertafter_nomatch"],
+        MODULE_PARAMS["test_line_replace_nomatch_insertafter_nomatch"],
         """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -1152,12 +1163,11 @@ ZOAU_ROOT=/mvsutil-develop_dsed"""
 @pytest.mark.parametrize("dstype", DS_TYPE)
 def test_ds_line_replace_nomatch_insertbefore_nomatch(ansible_zos_module, dstype):
     TEST_ENV["DS_TYPE"] = dstype
-    TEST_INFO["test_line_replace_nomatch_insertbefore_nomatch_name"] = {**TEST_INFO["test_line_replace_nomatch_insertbefore_nomatch"], "test_name":"T1"}
     General_ds_test(
-    TEST_INFO["test_line_replace_nomatch_insertbefore_nomatch_name"]["test_name"],
+    "T10",
     ansible_zos_module, 
     TEST_ENV,
-    TEST_INFO["test_line_replace_nomatch_insertbefore_nomatch"],
+    MODULE_PARAMS["test_line_replace_nomatch_insertbefore_nomatch"],
     """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -1200,12 +1210,11 @@ unset ZOAU_ROOT"""
 @pytest.mark.parametrize("dstype", DS_TYPE)
 def test_ds_line_absent(ansible_zos_module, dstype):
     TEST_ENV["DS_TYPE"] = dstype
-    TEST_INFO["test_line_absent_name"] = {**TEST_INFO["test_line_absent"], "test_name":"T1"}
     General_ds_test(
-        TEST_INFO["test_line_absent_name"]["test_name"],
+        "T11",
         ansible_zos_module, 
         TEST_ENV,
-        TEST_INFO["test_line_absent"],
+        MODULE_PARAMS["test_line_absent"],
         """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -1246,12 +1255,12 @@ export _BPXK_AUTOCVT"""
 def test_ds_tmp_hlq_option(ansible_zos_module, encoding):
     # This TMPHLQ only works with sequential datasets
     TEST_ENV["DS_TYPE"] = 'SEQ'
-    test_name = "T12"
     kwargs = dict(backup_name=r"TMPHLQ\..")
     DsGeneralResultKeyMatchesRegex(
-        test_name, ansible_zos_module,
+        "T12", 
+        ansible_zos_module,
         TEST_ENV, 
-        TEST_INFO["test_ds_line_tmp_hlq_option"],
+        MODULE_PARAMS["test_ds_line_tmp_hlq_option"],
         **kwargs
     )
 
@@ -1261,12 +1270,11 @@ def test_ds_tmp_hlq_option(ansible_zos_module, encoding):
 @pytest.mark.parametrize("dstype", NS_DS_TYPE)
 def test_ds_not_supported(ansible_zos_module, dstype):
     TEST_ENV["DS_TYPE"] = dstype
-    TEST_INFO["test_line_replace_not_supported"] = {**TEST_INFO["test_line_replace"], "test_name":"T1"}
     DsNotSupportedHelper(
-        TEST_INFO["test_line_replace_not_supported"]["test_name"], 
+        "T13", 
         ansible_zos_module,
         TEST_ENV, 
-        TEST_INFO["test_line_replace"]
+        MODULE_PARAMS["test_line_replace"]
     )
 
 # Force test case one for success and one for fail 
@@ -1275,12 +1283,11 @@ def test_ds_not_supported(ansible_zos_module, dstype):
 @pytest.mark.parametrize("dstype", DS_TYPE)
 def test_ds_line_force(ansible_zos_module, dstype):
     TEST_ENV["DS_TYPE"] = dstype
-    TEST_INFO["test_line_replace_force"] = {**TEST_INFO["test_line_replace"], "force":"True"}
+    MODULE_PARAMS["test_line_replace_force"] = {**MODULE_PARAMS["test_line_replace"], "force":"True"}
     DsGeneralForce(
     ansible_zos_module, 
     TEST_ENV,
-    TEST_CONTENT,
-    TEST_INFO["test_line_replace_force"],
+    MODULE_PARAMS["test_line_replace_force"],
     """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -1320,14 +1327,21 @@ export _BPXK_AUTOCVT"""
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_line_force_fail(ansible_zos_module, dstype, ):
+def test_ds_line_force_fail(ansible_zos_module, dstype, test_env):
     TEST_ENV["DS_TYPE"] = dstype
     DsGeneralForceFail(
         ansible_zos_module,
-        TEST_INFO["test_ds_line_force_fail"]
+        MODULE_PARAMS["test_ds_line_force_fail"],
+        test_env
     )
 
 # Space for test cases with different encoding
 # ENCODING = ['IBM-1047', 'ISO8859-1', 'UTF-8']
+
+
+#@pytest.mark.enc
+#@pytest.mark.parametrize("encoding", ENCODING)
+#def test_different_encodings(ansible_zos_module, encoding):
+#    assert 1==1
 
 

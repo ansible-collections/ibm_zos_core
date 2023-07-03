@@ -20,8 +20,6 @@ from ibm_zos_core.tests.helpers.zos_blockinfile_helper import (
     DsGeneralForce,
     DsGeneralForceFail,
 )
-import os
-import sys
 import pytest
 
 __metaclass__ = type
@@ -146,8 +144,8 @@ sleep 30;
 //"""
 
 # supported data set types
-# DS_TYPE = ['SEQ', 'PDS', 'PDSE']
-DS_TYPE = ['SEQ']
+DS_TYPE = ['SEQ', 'PDS', 'PDSE']
+
 # not supported data set types
 NS_DS_TYPE = ['ESDS', 'RRDS', 'LDS']
 """
@@ -155,8 +153,6 @@ Note: zos_encode module uses USS cp command for copying from USS file to MVS dat
 I had to develop and use a new tool for converting and copying to data set in order to set up environment for tests to publish results on Jira.
 Until the issue be addressed I disable related tests.
 """
-# ENCODING = ['IBM-1047', 'ISO8859-1', 'UTF-8']
-ENCODING = ['IBM-1047']
 USS_BACKUP_FILE = "/tmp/backup.tmp"
 MVS_BACKUP_DS = "BLOCKIF.TEST.BACKUP"
 MVS_BACKUP_PDS = "BLOCKIF.TEST.BACKUP(BACKUP)"
@@ -167,15 +163,17 @@ TEST_ENV = dict(
     TEST_FILE="",
     DS_NAME="",
     DS_TYPE="",
-    ENCODING="",
+    ENCODING="IBM-1047",
 )
 
 TEST_INFO = dict(
     test_block_insertafter_regex=dict(insertafter="ZOAU_ROOT=", block="ZOAU_ROOT=/mvsutil-develop_dsed\nZOAU_HOME=\\$ZOAU_ROOT\nZOAU_DIR=\\$ZOAU_ROOT", state="present"),
     test_block_insertbefore_regex=dict(insertbefore="ZOAU_ROOT=", block="unset ZOAU_ROOT\nunset ZOAU_HOME\nunset ZOAU_DIR", state="present"),
     test_block_insertafter_eof=dict(insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present"),
-    test_uss_block_insertafter_eof_with_backup=dict(insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present", backup=True),
-    test_uss_block_insertafter_eof_with_backup_name=dict(insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present", backup=True, backup_name=USS_BACKUP_FILE),
+    test_uss_block_insertafter_eof_with_backup=dict(insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", 
+                                                    state="present", backup=True),
+    test_uss_block_insertafter_eof_with_backup_name=dict(insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", 
+                                                            state="present", backup=True, backup_name=USS_BACKUP_FILE),
     test_block_insertbefore_bof=dict(insertbefore="BOF", block="# this is file is for setting env vars", state="present"),
     test_block_absent=dict(block="", state="absent"),
     test_block_replace_insertafter_regex=dict(insertafter="PYTHON_HOME=", block="ZOAU_ROOT=/mvsutil-develop_dsed\nZOAU_HOME=\\$ZOAU_ROOT\nZOAU_DIR=\\$ZOAU_ROOT", state="present"),
@@ -197,7 +195,21 @@ TEST_INFO = dict(
         block="ZOAU_ROOT=/mvsutil-develop_dsed\nZOAU_HOME=\\$ZOAU_ROOT\nZOAU_DIR=\\$ZOAU_ROOT",
         state="present", force=True),
     test_ds_block_insertafter_regex_force_fail=dict(path="", insertafter="ZOAU_ROOT=", block="ZOAU_ROOT=/mvsutil-develop_dsed\nZOAU_HOME=\\$ZOAU_ROOT\nZOAU_DIR=\\$ZOAU_ROOT", state="present", force=False),
-    expected=dict(test_uss_block_insertafter_regex_defaultmarker="""if [ -z STEPLIB ] && tty -s;
+)
+
+#########################
+# USS test cases
+#########################
+
+
+@pytest.mark.uss
+def test_uss_block_insertafter_regex_defaultmarker(ansible_zos_module):
+    UssGeneral(
+        "test_uss_block_insertafter_regex_defaultmarker", 
+        ansible_zos_module, 
+        TEST_ENV,
+        TEST_INFO["test_block_insertafter_regex"],
+        """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
@@ -235,21 +247,17 @@ export ZOAUTIL_DIR
 export PYTHONPATH
 export PKG_CONFIG_PATH
 export PYTHON_HOME
-export _BPXK_AUTOCVT""",
-                  test_uss_block_insert_with_doublequotes="""//BPXSLEEP JOB MSGCLASS=A,MSGLEVEL=(1,1),NOTIFY=&SYSUID,REGION=0M
-//USSCMD EXEC PGM=BPXBATCH
-//STDERR  DD SYSOUT=*
-//STDOUT  DD SYSOUT=*
-//STDPARM DD *
-SH ls -la /;
-sleep 30;
-// BEGIN ANSIBLE MANAGED BLOCK
-cat "//OMVSADMI.CAT"
-cat "//OMVSADM.COPYMEM.TESTS" > test.txt
-// END ANSIBLE MANAGED BLOCK
-/*
-//""",
-                  test_uss_block_insertbefore_regex_defaultmarker="""if [ -z STEPLIB ] && tty -s;
+export _BPXK_AUTOCVT""")
+
+
+@pytest.mark.uss
+def test_uss_block_insertbefore_regex_defaultmarker(ansible_zos_module):
+    UssGeneral(
+        "test_uss_block_insertbefore_regex_defaultmarker", 
+        ansible_zos_module, 
+        TEST_ENV,
+        TEST_INFO["test_block_insertbefore_regex"],
+        """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
@@ -287,8 +295,17 @@ export ZOAUTIL_DIR
 export PYTHONPATH
 export PKG_CONFIG_PATH
 export PYTHON_HOME
-export _BPXK_AUTOCVT""",
-                  test_uss_block_insertafter_eof_defaultmarker="""if [ -z STEPLIB ] && tty -s;
+export _BPXK_AUTOCVT""")
+
+
+@pytest.mark.uss
+def test_uss_block_insertafter_eof_defaultmarker(ansible_zos_module):
+    UssGeneral(
+        "test_uss_block_insertafter_eof_defaultmarker", 
+        ansible_zos_module,
+        TEST_ENV, 
+        TEST_INFO["test_block_insertafter_eof"],
+        """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
@@ -326,8 +343,17 @@ export _BPXK_AUTOCVT
 export ZOAU_ROOT
 export ZOAU_HOME
 export ZOAU_DIR
-# END ANSIBLE MANAGED BLOCK""",
-                  test_uss_block_insertbefore_bof_defaultmarker="""# BEGIN ANSIBLE MANAGED BLOCK
+# END ANSIBLE MANAGED BLOCK""")
+
+
+@pytest.mark.uss
+def test_uss_block_insertbefore_bof_defaultmarker(ansible_zos_module):
+    UssGeneral(
+        "test_uss_block_insertbefore_bof_defaultmarker", 
+        ansible_zos_module,
+        TEST_ENV, 
+        TEST_INFO["test_block_insertbefore_bof"],
+        """# BEGIN ANSIBLE MANAGED BLOCK
 # this is file is for setting env vars
 # END ANSIBLE MANAGED BLOCK
 if [ -z STEPLIB ] && tty -s;
@@ -363,8 +389,21 @@ export ZOAUTIL_DIR
 export PYTHONPATH
 export PKG_CONFIG_PATH
 export PYTHON_HOME
-export _BPXK_AUTOCVT""",
-                  test_uss_block_insertafter_regex_custommarker="""if [ -z STEPLIB ] && tty -s;
+export _BPXK_AUTOCVT""")
+
+
+@pytest.mark.uss
+def test_uss_block_insertafter_regex_custommarker(ansible_zos_module):
+    _TEST_INFO = TEST_INFO["test_block_insertafter_regex"]
+    _TEST_INFO["marker"] = '# {mark} IBM MANAGED BLOCK'
+    _TEST_INFO["marker_begin"] = 'OPEN'
+    _TEST_INFO["marker_end"] = 'CLOSE'
+    UssGeneral(
+        "test_uss_block_insertafter_regex_custommarker", 
+        ansible_zos_module, 
+        TEST_ENV,
+        _TEST_INFO,
+        """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
@@ -402,8 +441,24 @@ export ZOAUTIL_DIR
 export PYTHONPATH
 export PKG_CONFIG_PATH
 export PYTHON_HOME
-export _BPXK_AUTOCVT""",
-                  test_uss_block_insertbefore_regex_custommarker="""if [ -z STEPLIB ] && tty -s;
+export _BPXK_AUTOCVT""")
+    del _TEST_INFO["marker"]
+    del _TEST_INFO["marker_begin"]
+    del _TEST_INFO["marker_end"]
+
+
+@pytest.mark.uss
+def test_uss_block_insertbefore_regex_custommarker(ansible_zos_module):
+    _TEST_INFO = TEST_INFO["test_block_insertbefore_regex"]
+    _TEST_INFO["marker"] = '# {mark} IBM MANAGED BLOCK'
+    _TEST_INFO["marker_begin"] = 'OPEN'
+    _TEST_INFO["marker_end"] = 'CLOSE'
+    UssGeneral(
+        "test_uss_block_insertbefore_regex_custommarker", 
+        ansible_zos_module, 
+        TEST_ENV,
+        _TEST_INFO,
+        """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
@@ -441,8 +496,24 @@ export ZOAUTIL_DIR
 export PYTHONPATH
 export PKG_CONFIG_PATH
 export PYTHON_HOME
-export _BPXK_AUTOCVT""",
-                  test_uss_block_insertafter_eof_custommarker="""if [ -z STEPLIB ] && tty -s;
+export _BPXK_AUTOCVT""")
+    del _TEST_INFO["marker"]
+    del _TEST_INFO["marker_begin"]
+    del _TEST_INFO["marker_end"]
+
+
+@pytest.mark.uss
+def test_uss_block_insertafter_eof_custommarker(ansible_zos_module):
+    _TEST_INFO = TEST_INFO["test_block_insertafter_eof"]
+    _TEST_INFO["marker"] = '# {mark} IBM MANAGED BLOCK'
+    _TEST_INFO["marker_begin"] = 'OPEN'
+    _TEST_INFO["marker_end"] = 'CLOSE'
+    UssGeneral(
+        "test_uss_block_insertafter_eof_custommarker", 
+        ansible_zos_module,
+        TEST_ENV, 
+        _TEST_INFO,
+        """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
@@ -480,8 +551,24 @@ export _BPXK_AUTOCVT
 export ZOAU_ROOT
 export ZOAU_HOME
 export ZOAU_DIR
-# CLOSE IBM MANAGED BLOCK""",
-                  test_uss_block_insertbefore_bof_custommarker="""# OPEN IBM MANAGED BLOCK
+# CLOSE IBM MANAGED BLOCK""")
+    del _TEST_INFO["marker"]
+    del _TEST_INFO["marker_begin"]
+    del _TEST_INFO["marker_end"]
+
+
+@pytest.mark.uss
+def test_uss_block_insertbefore_bof_custommarker(ansible_zos_module):
+    _TEST_INFO = TEST_INFO["test_block_insertbefore_bof"]
+    _TEST_INFO["marker"] = '# {mark} IBM MANAGED BLOCK'
+    _TEST_INFO["marker_begin"] = 'OPEN'
+    _TEST_INFO["marker_end"] = 'CLOSE'
+    UssGeneral(
+        "test_uss_block_insertbefore_bof_custommarker", 
+        ansible_zos_module,
+        TEST_ENV, 
+        _TEST_INFO,
+        """# OPEN IBM MANAGED BLOCK
 # this is file is for setting env vars
 # CLOSE IBM MANAGED BLOCK
 if [ -z STEPLIB ] && tty -s;
@@ -517,8 +604,21 @@ export ZOAUTIL_DIR
 export PYTHONPATH
 export PKG_CONFIG_PATH
 export PYTHON_HOME
-export _BPXK_AUTOCVT""",
-                  test_uss_block_absent="""if [ -z STEPLIB ] && tty -s;
+export _BPXK_AUTOCVT""")
+    del _TEST_INFO["marker"]
+    del _TEST_INFO["marker_begin"]
+    del _TEST_INFO["marker_end"]
+
+
+@pytest.mark.uss
+def test_uss_block_absent_defaultmarker(ansible_zos_module):
+    TEST_ENV["TEST_CONT"] = TEST_CONTENT_DEFAULTMARKER
+    UssGeneral(
+        "test_uss_block_absent_defaultmarker", 
+        ansible_zos_module, 
+        TEST_ENV,
+        TEST_INFO["test_block_absent"],
+        """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
@@ -549,8 +649,69 @@ export ZOAUTIL_DIR
 export PYTHONPATH
 export PKG_CONFIG_PATH
 export PYTHON_HOME
-export _BPXK_AUTOCVT""",
-                  test_uss_block_replace_insertafter_regex_defaultmarker="""if [ -z STEPLIB ] && tty -s;
+export _BPXK_AUTOCVT""")
+    TEST_ENV["TEST_CONT"] = TEST_CONTENT
+
+
+@pytest.mark.uss
+def test_uss_block_absent_custommarker(ansible_zos_module):
+    _TEST_INFO = TEST_INFO["test_block_absent"]
+    _TEST_INFO["marker"] = '# {mark} IBM MANAGED BLOCK'
+    _TEST_INFO["marker_begin"] = 'OPEN'
+    _TEST_INFO["marker_end"] = 'CLOSE'
+    TEST_ENV["TEST_CONT"] = TEST_CONTENT_CUSTOMMARKER
+    UssGeneral(
+        "test_uss_block_absent_custommarker", 
+        ansible_zos_module, 
+        TEST_ENV,
+        _TEST_INFO,
+        """if [ -z STEPLIB ] && tty -s;
+then
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+TZ=PST8PDT
+export TZ
+LANG=C
+export LANG
+readonly LOGNAME
+PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
+export PATH
+LIBPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+export LIBPATH
+NLSPATH=/usr/lib/nls/msg/%L/%N
+export NLSPATH
+MANPATH=/usr/man/%L
+export MANPATH
+MAIL=/usr/mail/LOGNAME
+export MAIL
+umask 022
+PYTHONPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
+PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
+_BPXK_AUTOCVT=ON
+export ZOAU_ROOT
+export ZOAUTIL_DIR
+export ZOAUTIL_DIR
+export PYTHONPATH
+export PKG_CONFIG_PATH
+export PYTHON_HOME
+export _BPXK_AUTOCVT""")
+    del _TEST_INFO["marker"]
+    del _TEST_INFO["marker_begin"]
+    del _TEST_INFO["marker_end"]
+    TEST_ENV["TEST_CONT"] = TEST_CONTENT
+
+
+@pytest.mark.uss
+def test_uss_block_replace_insertafter_regex_defaultmarker(ansible_zos_module):
+    TEST_ENV["TEST_CONT"] = TEST_CONTENT_DEFAULTMARKER
+    UssGeneral(
+        "test_uss_block_replace_insertafter_regex_defaultmarker", 
+        ansible_zos_module, 
+        TEST_ENV,
+        TEST_INFO["test_block_replace_insertafter_regex"],
+        """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
@@ -586,8 +747,19 @@ export ZOAUTIL_DIR
 export PYTHONPATH
 export PKG_CONFIG_PATH
 export PYTHON_HOME
-export _BPXK_AUTOCVT""",
-                  test_uss_block_replace_insertbefore_regex_defaultmarker="""if [ -z STEPLIB ] && tty -s;
+export _BPXK_AUTOCVT""")
+    TEST_ENV["TEST_CONT"] = TEST_CONTENT
+
+
+@pytest.mark.uss
+def test_uss_block_replace_insertbefore_regex_defaultmarker(ansible_zos_module):
+    TEST_ENV["TEST_CONT"] = TEST_CONTENT_DEFAULTMARKER
+    UssGeneral(
+        "test_uss_block_replace_insertbefore_regex_defaultmarker", 
+        ansible_zos_module, 
+        TEST_ENV,
+        TEST_INFO["test_block_replace_insertbefore_regex"],
+        """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
@@ -623,8 +795,19 @@ export ZOAUTIL_DIR
 export PYTHONPATH
 export PKG_CONFIG_PATH
 export PYTHON_HOME
-export _BPXK_AUTOCVT""",
-                  test_uss_block_replace_insertafter_eof_defaultmarker="""if [ -z STEPLIB ] && tty -s;
+export _BPXK_AUTOCVT""")
+    TEST_ENV["TEST_CONT"] = TEST_CONTENT
+
+
+@pytest.mark.uss
+def test_uss_block_replace_insertafter_eof_defaultmarker(ansible_zos_module):
+    TEST_ENV["TEST_CONT"] = TEST_CONTENT_DEFAULTMARKER
+    UssGeneral(
+        "test_uss_block_replace_insertafter_eof_defaultmarker", 
+        ansible_zos_module,
+        TEST_ENV, 
+        TEST_INFO["test_block_replace_insertafter_eof"],
+        """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
@@ -660,8 +843,19 @@ export _BPXK_AUTOCVT
 export ZOAU_ROOT
 export ZOAU_HOME
 export ZOAU_DIR
-# END ANSIBLE MANAGED BLOCK""",
-                  test_uss_block_replace_insertbefore_bof_defaultmarker="""# BEGIN ANSIBLE MANAGED BLOCK
+# END ANSIBLE MANAGED BLOCK""")
+    TEST_ENV["TEST_CONT"] = TEST_CONTENT
+
+
+@pytest.mark.uss
+def test_uss_block_replace_insertbefore_bof_defaultmarker(ansible_zos_module):
+    TEST_ENV["TEST_CONT"] = TEST_CONTENT_DEFAULTMARKER
+    UssGeneral(
+        "test_uss_block_replace_insertbefore_bof_defaultmarker", 
+        ansible_zos_module,
+        TEST_ENV, 
+        TEST_INFO["test_block_replace_insertbefore_bof"],
+        """# BEGIN ANSIBLE MANAGED BLOCK
 # this is file is for setting env vars
 # END ANSIBLE MANAGED BLOCK
 if [ -z STEPLIB ] && tty -s;
@@ -695,8 +889,23 @@ export ZOAUTIL_DIR
 export PYTHONPATH
 export PKG_CONFIG_PATH
 export PYTHON_HOME
-export _BPXK_AUTOCVT""",
-                  test_uss_block_replace_insertafter_regex_custommarker="""if [ -z STEPLIB ] && tty -s;
+export _BPXK_AUTOCVT""")
+    TEST_ENV["TEST_CONT"] = TEST_CONTENT
+
+
+@pytest.mark.uss
+def test_uss_block_replace_insertafter_regex_custommarker(ansible_zos_module):
+    _TEST_INFO = TEST_INFO["test_block_replace_insertafter_regex"]
+    _TEST_INFO["marker"] = '# {mark} IBM MANAGED BLOCK'
+    _TEST_INFO["marker_begin"] = 'OPEN'
+    _TEST_INFO["marker_end"] = 'CLOSE'
+    TEST_ENV["TEST_CONT"] = TEST_CONTENT_CUSTOMMARKER
+    UssGeneral(
+        "test_uss_block_replace_insertafter_regex_custommarker", 
+        ansible_zos_module, 
+        TEST_ENV,
+        _TEST_INFO,
+        """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
@@ -732,8 +941,26 @@ export ZOAUTIL_DIR
 export PYTHONPATH
 export PKG_CONFIG_PATH
 export PYTHON_HOME
-export _BPXK_AUTOCVT""",
-                  test_uss_block_replace_insertbefore_regex_custommarker="""if [ -z STEPLIB ] && tty -s;
+export _BPXK_AUTOCVT""")
+    del _TEST_INFO["marker"]
+    del _TEST_INFO["marker_begin"]
+    del _TEST_INFO["marker_end"]
+    TEST_ENV["TEST_CONT"] = TEST_CONTENT
+
+
+@pytest.mark.uss
+def test_uss_block_replace_insertbefore_regex_custommarker(ansible_zos_module):
+    _TEST_INFO = TEST_INFO["test_block_replace_insertbefore_regex"]
+    _TEST_INFO["marker"] = '# {mark} IBM MANAGED BLOCK'
+    _TEST_INFO["marker_begin"] = 'OPEN'
+    _TEST_INFO["marker_end"] = 'CLOSE'
+    TEST_ENV["TEST_CONT"] = TEST_CONTENT_CUSTOMMARKER
+    UssGeneral(
+        "test_uss_block_replace_insertbefore_regex_custommarker", 
+        ansible_zos_module, 
+        TEST_ENV,
+        _TEST_INFO,
+        """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
@@ -769,8 +996,26 @@ export ZOAUTIL_DIR
 export PYTHONPATH
 export PKG_CONFIG_PATH
 export PYTHON_HOME
-export _BPXK_AUTOCVT""",
-                  test_uss_block_replace_insertafter_eof_custommarker="""if [ -z STEPLIB ] && tty -s;
+export _BPXK_AUTOCVT""")
+    del _TEST_INFO["marker"]
+    del _TEST_INFO["marker_begin"]
+    del _TEST_INFO["marker_end"]
+    TEST_ENV["TEST_CONT"] = TEST_CONTENT
+
+
+@pytest.mark.uss
+def test_uss_block_replace_insertafter_eof_custommarker(ansible_zos_module):
+    _TEST_INFO = TEST_INFO["test_block_replace_insertafter_eof"]
+    _TEST_INFO["marker"] = '# {mark} IBM MANAGED BLOCK'
+    _TEST_INFO["marker_begin"] = 'OPEN'
+    _TEST_INFO["marker_end"] = 'CLOSE'
+    TEST_ENV["TEST_CONT"] = TEST_CONTENT_CUSTOMMARKER
+    UssGeneral(
+        "test_uss_block_replace_insertafter_eof_custommarker", 
+        ansible_zos_module,
+        TEST_ENV, 
+        _TEST_INFO,
+        """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
@@ -806,8 +1051,26 @@ export _BPXK_AUTOCVT
 export ZOAU_ROOT
 export ZOAU_HOME
 export ZOAU_DIR
-# CLOSE IBM MANAGED BLOCK""",
-                  test_uss_block_replace_insertbefore_bof_custommarker="""# OPEN IBM MANAGED BLOCK
+# CLOSE IBM MANAGED BLOCK""")
+    del _TEST_INFO["marker"]
+    del _TEST_INFO["marker_begin"]
+    del _TEST_INFO["marker_end"]
+    TEST_ENV["TEST_CONT"] = TEST_CONTENT
+
+
+@pytest.mark.uss
+def test_uss_block_replace_insertbefore_bof_custommarker(ansible_zos_module):
+    _TEST_INFO = TEST_INFO["test_block_replace_insertbefore_bof"]
+    _TEST_INFO["marker"] = '# {mark} IBM MANAGED BLOCK'
+    _TEST_INFO["marker_begin"] = 'OPEN'
+    _TEST_INFO["marker_end"] = 'CLOSE'
+    TEST_ENV["TEST_CONT"] = TEST_CONTENT_CUSTOMMARKER
+    UssGeneral(
+        "test_uss_block_replace_insertbefore_bof_custommarker", 
+        ansible_zos_module,
+        TEST_ENV, 
+        _TEST_INFO,
+        """# OPEN IBM MANAGED BLOCK
 # this is file is for setting env vars
 # CLOSE IBM MANAGED BLOCK
 if [ -z STEPLIB ] && tty -s;
@@ -841,8 +1104,21 @@ export ZOAUTIL_DIR
 export PYTHONPATH
 export PKG_CONFIG_PATH
 export PYTHON_HOME
-export _BPXK_AUTOCVT""",
-                  test_uss_block_insert_with_indentation_level_specified="""if [ -z STEPLIB ] && tty -s;
+export _BPXK_AUTOCVT""")
+    del _TEST_INFO["marker"]
+    del _TEST_INFO["marker_begin"]
+    del _TEST_INFO["marker_end"]
+    TEST_ENV["TEST_CONT"] = TEST_CONTENT
+
+
+@pytest.mark.uss
+def test_uss_block_insert_with_indentation_level_specified(ansible_zos_module):
+    UssGeneral(
+        "test_uss_block_insert_with_indentation_level_specified", 
+        ansible_zos_module,
+        TEST_ENV, 
+        TEST_INFO["test_block_insert_with_indentation_level_specified"],
+        """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
@@ -880,256 +1156,30 @@ export _BPXK_AUTOCVT
                 export ZOAU_ROOT
                 export ZOAU_HOME
                 export ZOAU_DIR
-# END ANSIBLE MANAGED BLOCK""",),
-)
-
-#########################
-# USS test cases
-#########################
-
-
-@pytest.mark.uss
-def test_uss_block_insertafter_regex_defaultmarker(ansible_zos_module):
-    UssGeneral(
-        "test_uss_block_insertafter_regex_defaultmarker", ansible_zos_module, TEST_ENV,
-        TEST_INFO["test_block_insertafter_regex"],
-        TEST_INFO["expected"]["test_uss_block_insertafter_regex_defaultmarker"])
-
-
-@pytest.mark.uss
-def test_uss_block_insertbefore_regex_defaultmarker(ansible_zos_module):
-    UssGeneral(
-        "test_uss_block_insertbefore_regex_defaultmarker", ansible_zos_module, TEST_ENV,
-        TEST_INFO["test_block_insertbefore_regex"],
-        TEST_INFO["expected"]["test_uss_block_insertbefore_regex_defaultmarker"])
-
-
-@pytest.mark.uss
-def test_uss_block_insertafter_eof_defaultmarker(ansible_zos_module):
-    UssGeneral(
-        "test_uss_block_insertafter_eof_defaultmarker", ansible_zos_module,
-        TEST_ENV, TEST_INFO["test_block_insertafter_eof"],
-        TEST_INFO["expected"]["test_uss_block_insertafter_eof_defaultmarker"])
-
-
-@pytest.mark.uss
-def test_uss_block_insertbefore_bof_defaultmarker(ansible_zos_module):
-    UssGeneral(
-        "test_uss_block_insertbefore_bof_defaultmarker", ansible_zos_module,
-        TEST_ENV, TEST_INFO["test_block_insertbefore_bof"],
-        TEST_INFO["expected"]["test_uss_block_insertbefore_bof_defaultmarker"])
-
-
-@pytest.mark.uss
-def test_uss_block_insertafter_regex_custommarker(ansible_zos_module):
-    _TEST_INFO = TEST_INFO["test_block_insertafter_regex"]
-    _TEST_INFO["marker"] = '# {mark} IBM MANAGED BLOCK'
-    _TEST_INFO["marker_begin"] = 'OPEN'
-    _TEST_INFO["marker_end"] = 'CLOSE'
-    UssGeneral(
-        "test_uss_block_insertafter_regex_custommarker", ansible_zos_module, TEST_ENV,
-        _TEST_INFO,
-        TEST_INFO["expected"]["test_uss_block_insertafter_regex_custommarker"])
-    del _TEST_INFO["marker"]
-    del _TEST_INFO["marker_begin"]
-    del _TEST_INFO["marker_end"]
-
-
-@pytest.mark.uss
-def test_uss_block_insertbefore_regex_custommarker(ansible_zos_module):
-    _TEST_INFO = TEST_INFO["test_block_insertbefore_regex"]
-    _TEST_INFO["marker"] = '# {mark} IBM MANAGED BLOCK'
-    _TEST_INFO["marker_begin"] = 'OPEN'
-    _TEST_INFO["marker_end"] = 'CLOSE'
-    UssGeneral(
-        "test_uss_block_insertbefore_regex_custommarker", ansible_zos_module, TEST_ENV,
-        _TEST_INFO,
-        TEST_INFO["expected"]["test_uss_block_insertbefore_regex_custommarker"])
-    del _TEST_INFO["marker"]
-    del _TEST_INFO["marker_begin"]
-    del _TEST_INFO["marker_end"]
-
-
-@pytest.mark.uss
-def test_uss_block_insertafter_eof_custommarker(ansible_zos_module):
-    _TEST_INFO = TEST_INFO["test_block_insertafter_eof"]
-    _TEST_INFO["marker"] = '# {mark} IBM MANAGED BLOCK'
-    _TEST_INFO["marker_begin"] = 'OPEN'
-    _TEST_INFO["marker_end"] = 'CLOSE'
-    UssGeneral(
-        "test_uss_block_insertafter_eof_custommarker", ansible_zos_module,
-        TEST_ENV, _TEST_INFO,
-        TEST_INFO["expected"]["test_uss_block_insertafter_eof_custommarker"])
-    del _TEST_INFO["marker"]
-    del _TEST_INFO["marker_begin"]
-    del _TEST_INFO["marker_end"]
-
-
-@pytest.mark.uss
-def test_uss_block_insertbefore_bof_custommarker(ansible_zos_module):
-    _TEST_INFO = TEST_INFO["test_block_insertbefore_bof"]
-    _TEST_INFO["marker"] = '# {mark} IBM MANAGED BLOCK'
-    _TEST_INFO["marker_begin"] = 'OPEN'
-    _TEST_INFO["marker_end"] = 'CLOSE'
-    UssGeneral(
-        "test_uss_block_insertbefore_bof_custommarker", ansible_zos_module,
-        TEST_ENV, _TEST_INFO,
-        TEST_INFO["expected"]["test_uss_block_insertbefore_bof_custommarker"])
-    del _TEST_INFO["marker"]
-    del _TEST_INFO["marker_begin"]
-    del _TEST_INFO["marker_end"]
-
-
-@pytest.mark.uss
-def test_uss_block_absent_defaultmarker(ansible_zos_module):
-    TEST_ENV["TEST_CONT"] = TEST_CONTENT_DEFAULTMARKER
-    UssGeneral(
-        "test_uss_block_absent_defaultmarker", ansible_zos_module, TEST_ENV,
-        TEST_INFO["test_block_absent"],
-        TEST_INFO["expected"]["test_uss_block_absent"])
-    TEST_ENV["TEST_CONT"] = TEST_CONTENT
-
-
-@pytest.mark.uss
-def test_uss_block_absent_custommarker(ansible_zos_module):
-    _TEST_INFO = TEST_INFO["test_block_absent"]
-    _TEST_INFO["marker"] = '# {mark} IBM MANAGED BLOCK'
-    _TEST_INFO["marker_begin"] = 'OPEN'
-    _TEST_INFO["marker_end"] = 'CLOSE'
-    TEST_ENV["TEST_CONT"] = TEST_CONTENT_CUSTOMMARKER
-    UssGeneral(
-        "test_uss_block_absent_custommarker", ansible_zos_module, TEST_ENV,
-        _TEST_INFO,
-        TEST_INFO["expected"]["test_uss_block_absent"])
-    del _TEST_INFO["marker"]
-    del _TEST_INFO["marker_begin"]
-    del _TEST_INFO["marker_end"]
-    TEST_ENV["TEST_CONT"] = TEST_CONTENT
-
-
-@pytest.mark.uss
-def test_uss_block_replace_insertafter_regex_defaultmarker(ansible_zos_module):
-    TEST_ENV["TEST_CONT"] = TEST_CONTENT_DEFAULTMARKER
-    UssGeneral(
-        "test_uss_block_replace_insertafter_regex_defaultmarker", ansible_zos_module, TEST_ENV,
-        TEST_INFO["test_block_replace_insertafter_regex"],
-        TEST_INFO["expected"]["test_uss_block_replace_insertafter_regex_defaultmarker"])
-    TEST_ENV["TEST_CONT"] = TEST_CONTENT
-
-
-@pytest.mark.uss
-def test_uss_block_replace_insertbefore_regex_defaultmarker(ansible_zos_module):
-    TEST_ENV["TEST_CONT"] = TEST_CONTENT_DEFAULTMARKER
-    UssGeneral(
-        "test_uss_block_replace_insertbefore_regex_defaultmarker", ansible_zos_module, TEST_ENV,
-        TEST_INFO["test_block_replace_insertbefore_regex"],
-        TEST_INFO["expected"]["test_uss_block_replace_insertbefore_regex_defaultmarker"])
-    TEST_ENV["TEST_CONT"] = TEST_CONTENT
-
-
-@pytest.mark.uss
-def test_uss_block_replace_insertafter_eof_defaultmarker(ansible_zos_module):
-    TEST_ENV["TEST_CONT"] = TEST_CONTENT_DEFAULTMARKER
-    UssGeneral(
-        "test_uss_block_replace_insertafter_eof_defaultmarker", ansible_zos_module,
-        TEST_ENV, TEST_INFO["test_block_replace_insertafter_eof"],
-        TEST_INFO["expected"]["test_uss_block_replace_insertafter_eof_defaultmarker"])
-    TEST_ENV["TEST_CONT"] = TEST_CONTENT
-
-
-@pytest.mark.uss
-def test_uss_block_replace_insertbefore_bof_defaultmarker(ansible_zos_module):
-    TEST_ENV["TEST_CONT"] = TEST_CONTENT_DEFAULTMARKER
-    UssGeneral(
-        "test_uss_block_replace_insertbefore_bof_defaultmarker", ansible_zos_module,
-        TEST_ENV, TEST_INFO["test_block_replace_insertbefore_bof"],
-        TEST_INFO["expected"]["test_uss_block_replace_insertbefore_bof_defaultmarker"])
-    TEST_ENV["TEST_CONT"] = TEST_CONTENT
-
-
-@pytest.mark.uss
-def test_uss_block_replace_insertafter_regex_custommarker(ansible_zos_module):
-    _TEST_INFO = TEST_INFO["test_block_replace_insertafter_regex"]
-    _TEST_INFO["marker"] = '# {mark} IBM MANAGED BLOCK'
-    _TEST_INFO["marker_begin"] = 'OPEN'
-    _TEST_INFO["marker_end"] = 'CLOSE'
-    TEST_ENV["TEST_CONT"] = TEST_CONTENT_CUSTOMMARKER
-    UssGeneral(
-        "test_uss_block_replace_insertafter_regex_custommarker", ansible_zos_module, TEST_ENV,
-        _TEST_INFO,
-        TEST_INFO["expected"]["test_uss_block_replace_insertafter_regex_custommarker"])
-    del _TEST_INFO["marker"]
-    del _TEST_INFO["marker_begin"]
-    del _TEST_INFO["marker_end"]
-    TEST_ENV["TEST_CONT"] = TEST_CONTENT
-
-
-@pytest.mark.uss
-def test_uss_block_replace_insertbefore_regex_custommarker(ansible_zos_module):
-    _TEST_INFO = TEST_INFO["test_block_replace_insertbefore_regex"]
-    _TEST_INFO["marker"] = '# {mark} IBM MANAGED BLOCK'
-    _TEST_INFO["marker_begin"] = 'OPEN'
-    _TEST_INFO["marker_end"] = 'CLOSE'
-    TEST_ENV["TEST_CONT"] = TEST_CONTENT_CUSTOMMARKER
-    UssGeneral(
-        "test_uss_block_replace_insertbefore_regex_custommarker", ansible_zos_module, TEST_ENV,
-        _TEST_INFO,
-        TEST_INFO["expected"]["test_uss_block_replace_insertbefore_regex_custommarker"])
-    del _TEST_INFO["marker"]
-    del _TEST_INFO["marker_begin"]
-    del _TEST_INFO["marker_end"]
-    TEST_ENV["TEST_CONT"] = TEST_CONTENT
-
-
-@pytest.mark.uss
-def test_uss_block_replace_insertafter_eof_custommarker(ansible_zos_module):
-    _TEST_INFO = TEST_INFO["test_block_replace_insertafter_eof"]
-    _TEST_INFO["marker"] = '# {mark} IBM MANAGED BLOCK'
-    _TEST_INFO["marker_begin"] = 'OPEN'
-    _TEST_INFO["marker_end"] = 'CLOSE'
-    TEST_ENV["TEST_CONT"] = TEST_CONTENT_CUSTOMMARKER
-    UssGeneral(
-        "test_uss_block_replace_insertafter_eof_custommarker", ansible_zos_module,
-        TEST_ENV, _TEST_INFO,
-        TEST_INFO["expected"]["test_uss_block_replace_insertafter_eof_custommarker"])
-    del _TEST_INFO["marker"]
-    del _TEST_INFO["marker_begin"]
-    del _TEST_INFO["marker_end"]
-    TEST_ENV["TEST_CONT"] = TEST_CONTENT
-
-
-@pytest.mark.uss
-def test_uss_block_replace_insertbefore_bof_custommarker(ansible_zos_module):
-    _TEST_INFO = TEST_INFO["test_block_replace_insertbefore_bof"]
-    _TEST_INFO["marker"] = '# {mark} IBM MANAGED BLOCK'
-    _TEST_INFO["marker_begin"] = 'OPEN'
-    _TEST_INFO["marker_end"] = 'CLOSE'
-    TEST_ENV["TEST_CONT"] = TEST_CONTENT_CUSTOMMARKER
-    UssGeneral(
-        "test_uss_block_replace_insertbefore_bof_custommarker", ansible_zos_module,
-        TEST_ENV, _TEST_INFO,
-        TEST_INFO["expected"]["test_uss_block_replace_insertbefore_bof_custommarker"])
-    del _TEST_INFO["marker"]
-    del _TEST_INFO["marker_begin"]
-    del _TEST_INFO["marker_end"]
-    TEST_ENV["TEST_CONT"] = TEST_CONTENT
-
-
-@pytest.mark.uss
-def test_uss_block_insert_with_indentation_level_specified(ansible_zos_module):
-    UssGeneral(
-        "test_uss_block_insert_with_indentation_level_specified", ansible_zos_module,
-        TEST_ENV, TEST_INFO["test_block_insert_with_indentation_level_specified"],
-        TEST_INFO["expected"]["test_uss_block_insert_with_indentation_level_specified"])
+# END ANSIBLE MANAGED BLOCK""")
 
 
 @pytest.mark.uss
 def test_uss_block_insert_with_doublequotes(ansible_zos_module):
     TEST_ENV["TEST_CONT"] = TEST_CONTENT_DOUBLEQUOTES
     UssGeneral(
-        "test_uss_block_insert_with_doublequotes", ansible_zos_module,TEST_ENV, 
+        "test_uss_block_insert_with_doublequotes", 
+        ansible_zos_module,
+        TEST_ENV, 
         TEST_INFO["test_uss_block_insert_with_doublequotes"],
-        TEST_INFO["expected"]["test_uss_block_insert_with_doublequotes"])
+        """//BPXSLEEP JOB MSGCLASS=A,MSGLEVEL=(1,1),NOTIFY=&SYSUID,REGION=0M
+//USSCMD EXEC PGM=BPXBATCH
+//STDERR  DD SYSOUT=*
+//STDOUT  DD SYSOUT=*
+//STDPARM DD *
+SH ls -la /;
+sleep 30;
+// BEGIN ANSIBLE MANAGED BLOCK
+cat "//OMVSADMI.CAT"
+cat "//OMVSADM.COPYMEM.TESTS" > test.txt
+// END ANSIBLE MANAGED BLOCK
+/*
+//""")
     TEST_ENV["TEST_CONT"] = TEST_CONTENT
 
 
@@ -1138,9 +1188,49 @@ def test_uss_block_insertafter_eof_with_backup(ansible_zos_module):
     try:
         backup_name = USS_BACKUP_FILE
         uss_result = UssGeneral(
-            "test_uss_block_insertafter_eof_with_backup", ansible_zos_module,
-            TEST_ENV, TEST_INFO["test_uss_block_insertafter_eof_with_backup"],
-            TEST_INFO["expected"]["test_uss_block_insertafter_eof_defaultmarker"])
+            "test_uss_block_insertafter_eof_with_backup", 
+            ansible_zos_module,
+            TEST_ENV, 
+            TEST_INFO["test_uss_block_insertafter_eof_with_backup"],
+            """if [ -z STEPLIB ] && tty -s;
+then
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+TZ=PST8PDT
+export TZ
+LANG=C
+export LANG
+readonly LOGNAME
+PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
+export PATH
+LIBPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+export LIBPATH
+NLSPATH=/usr/lib/nls/msg/%L/%N
+export NLSPATH
+MANPATH=/usr/man/%L
+export MANPATH
+MAIL=/usr/mail/LOGNAME
+export MAIL
+umask 022
+ZOAU_ROOT=/usr/lpp/zoautil/v100
+ZOAUTIL_DIR=/usr/lpp/zoautil/v100
+PYTHONPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
+PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
+_BPXK_AUTOCVT=ON
+export ZOAU_ROOT
+export ZOAUTIL_DIR
+export ZOAUTIL_DIR
+export PYTHONPATH
+export PKG_CONFIG_PATH
+export PYTHON_HOME
+export _BPXK_AUTOCVT
+# BEGIN ANSIBLE MANAGED BLOCK
+export ZOAU_ROOT
+export ZOAU_HOME
+export ZOAU_DIR
+# END ANSIBLE MANAGED BLOCK""")
         for result in uss_result.contacted.values():
             backup_name = result.get("backup_name")
             assert backup_name is not None
@@ -1152,9 +1242,49 @@ def test_uss_block_insertafter_eof_with_backup(ansible_zos_module):
 def test_uss_block_insertafter_eof_with_backup_name(ansible_zos_module):
     try:
         uss_result = UssGeneral(
-            "test_uss_block_insertafter_eof_with_backup_name", ansible_zos_module,
-            TEST_ENV, TEST_INFO["test_uss_block_insertafter_eof_with_backup_name"],
-            TEST_INFO["expected"]["test_uss_block_insertafter_eof_defaultmarker"])
+            "test_uss_block_insertafter_eof_with_backup_name", 
+            ansible_zos_module,
+            TEST_ENV, 
+            TEST_INFO["test_uss_block_insertafter_eof_with_backup_name"],
+            """if [ -z STEPLIB ] && tty -s;
+then
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+TZ=PST8PDT
+export TZ
+LANG=C
+export LANG
+readonly LOGNAME
+PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
+export PATH
+LIBPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+export LIBPATH
+NLSPATH=/usr/lib/nls/msg/%L/%N
+export NLSPATH
+MANPATH=/usr/man/%L
+export MANPATH
+MAIL=/usr/mail/LOGNAME
+export MAIL
+umask 022
+ZOAU_ROOT=/usr/lpp/zoautil/v100
+ZOAUTIL_DIR=/usr/lpp/zoautil/v100
+PYTHONPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
+PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
+_BPXK_AUTOCVT=ON
+export ZOAU_ROOT
+export ZOAUTIL_DIR
+export ZOAUTIL_DIR
+export PYTHONPATH
+export PKG_CONFIG_PATH
+export PYTHON_HOME
+export _BPXK_AUTOCVT
+# BEGIN ANSIBLE MANAGED BLOCK
+export ZOAU_ROOT
+export ZOAU_HOME
+export ZOAU_DIR
+# END ANSIBLE MANAGED BLOCK""")
         for result in uss_result.contacted.values():
             assert result.get("backup_name") == USS_BACKUP_FILE
             cmdStr = "cat {0}".format(result.get("backup_name"))
@@ -1172,161 +1302,470 @@ def test_uss_block_insertafter_eof_with_backup_name(ansible_zos_module):
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
-@pytest.mark.parametrize("encoding", ENCODING)
-def test_ds_block_insertafter_regex(ansible_zos_module, dstype, encoding):
+def test_ds_block_insertafter_regex(ansible_zos_module, dstype):
     TEST_ENV["DS_TYPE"] = dstype
-    TEST_ENV["ENCODING"] = encoding
     TEST_INFO_DS = {**TEST_INFO["test_block_insertafter_regex"]}
     DsGeneral(
         "T1",
-        ansible_zos_module, TEST_ENV,
+        ansible_zos_module, 
+        TEST_ENV,
         TEST_INFO_DS,
-        TEST_INFO["expected"]["test_uss_block_insertafter_regex_defaultmarker"]
+        """if [ -z STEPLIB ] && tty -s;
+then
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+TZ=PST8PDT
+export TZ
+LANG=C
+export LANG
+readonly LOGNAME
+PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
+export PATH
+LIBPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+export LIBPATH
+NLSPATH=/usr/lib/nls/msg/%L/%N
+export NLSPATH
+MANPATH=/usr/man/%L
+export MANPATH
+MAIL=/usr/mail/LOGNAME
+export MAIL
+umask 022
+ZOAU_ROOT=/usr/lpp/zoautil/v100
+# BEGIN ANSIBLE MANAGED BLOCK
+ZOAU_ROOT=/mvsutil-develop_dsed
+ZOAU_HOME=$ZOAU_ROOT
+ZOAU_DIR=$ZOAU_ROOT
+# END ANSIBLE MANAGED BLOCK
+ZOAUTIL_DIR=/usr/lpp/zoautil/v100
+PYTHONPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
+PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
+_BPXK_AUTOCVT=ON
+export ZOAU_ROOT
+export ZOAUTIL_DIR
+export ZOAUTIL_DIR
+export PYTHONPATH
+export PKG_CONFIG_PATH
+export PYTHON_HOME
+export _BPXK_AUTOCVT"""
     )
 
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
-@pytest.mark.parametrize("encoding", ENCODING)
-def test_ds_block_insertbefore_regex(ansible_zos_module, dstype, encoding):
+def test_ds_block_insertbefore_regex(ansible_zos_module, dstype):
     TEST_ENV["DS_TYPE"] = dstype
-    TEST_ENV["ENCODING"] = encoding
     TEST_INFO_DS = {**TEST_INFO["test_block_insertbefore_regex"]}
     DsGeneral(
         "T1",
-        ansible_zos_module, TEST_ENV,
+        ansible_zos_module, 
+        TEST_ENV,
         TEST_INFO_DS,
-        TEST_INFO["expected"]["test_uss_block_insertbefore_regex_defaultmarker"]
+        """if [ -z STEPLIB ] && tty -s;
+then
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+TZ=PST8PDT
+export TZ
+LANG=C
+export LANG
+readonly LOGNAME
+PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
+export PATH
+LIBPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+export LIBPATH
+NLSPATH=/usr/lib/nls/msg/%L/%N
+export NLSPATH
+MANPATH=/usr/man/%L
+export MANPATH
+MAIL=/usr/mail/LOGNAME
+export MAIL
+umask 022
+# BEGIN ANSIBLE MANAGED BLOCK
+unset ZOAU_ROOT
+unset ZOAU_HOME
+unset ZOAU_DIR
+# END ANSIBLE MANAGED BLOCK
+ZOAU_ROOT=/usr/lpp/zoautil/v100
+ZOAUTIL_DIR=/usr/lpp/zoautil/v100
+PYTHONPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
+PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
+_BPXK_AUTOCVT=ON
+export ZOAU_ROOT
+export ZOAUTIL_DIR
+export ZOAUTIL_DIR
+export PYTHONPATH
+export PKG_CONFIG_PATH
+export PYTHON_HOME
+export _BPXK_AUTOCVT"""
     )
 
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
-@pytest.mark.parametrize("encoding", ENCODING)
-def test_ds_block_insertafter_eof(ansible_zos_module, dstype, encoding):
+def test_ds_block_insertafter_eof(ansible_zos_module, dstype):
     TEST_ENV["DS_TYPE"] = dstype
-    TEST_ENV["ENCODING"] = encoding
     TEST_INFO_DS = {**TEST_INFO["test_block_insertafter_eof"]}
     DsGeneral(
         "T1",
-        ansible_zos_module, TEST_ENV,
+        ansible_zos_module, 
+        TEST_ENV,
         TEST_INFO_DS,
-        TEST_INFO["expected"]["test_uss_block_insertafter_eof_defaultmarker"]
+        """if [ -z STEPLIB ] && tty -s;
+then
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+TZ=PST8PDT
+export TZ
+LANG=C
+export LANG
+readonly LOGNAME
+PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
+export PATH
+LIBPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+export LIBPATH
+NLSPATH=/usr/lib/nls/msg/%L/%N
+export NLSPATH
+MANPATH=/usr/man/%L
+export MANPATH
+MAIL=/usr/mail/LOGNAME
+export MAIL
+umask 022
+ZOAU_ROOT=/usr/lpp/zoautil/v100
+ZOAUTIL_DIR=/usr/lpp/zoautil/v100
+PYTHONPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
+PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
+_BPXK_AUTOCVT=ON
+export ZOAU_ROOT
+export ZOAUTIL_DIR
+export ZOAUTIL_DIR
+export PYTHONPATH
+export PKG_CONFIG_PATH
+export PYTHON_HOME
+export _BPXK_AUTOCVT
+# BEGIN ANSIBLE MANAGED BLOCK
+export ZOAU_ROOT
+export ZOAU_HOME
+export ZOAU_DIR
+# END ANSIBLE MANAGED BLOCK"""
     )
 
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
-@pytest.mark.parametrize("encoding", ENCODING)
-def test_ds_block_insertbefore_bof(ansible_zos_module, dstype, encoding):
+def test_ds_block_insertbefore_bof(ansible_zos_module, dstype, ):
     TEST_ENV["DS_TYPE"] = dstype
-    TEST_ENV["ENCODING"] = encoding
     TEST_INFO_DS = {**TEST_INFO["test_block_insertbefore_bof"]}
     DsGeneral(
         "T1",
-        ansible_zos_module, TEST_ENV,
+        ansible_zos_module, 
+        TEST_ENV,
         TEST_INFO_DS,
-        TEST_INFO["expected"]["test_uss_block_insertbefore_bof_defaultmarker"]
-    )
+        """# BEGIN ANSIBLE MANAGED BLOCK
+# this is file is for setting env vars
+# END ANSIBLE MANAGED BLOCK
+if [ -z STEPLIB ] && tty -s;
+then
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+TZ=PST8PDT
+export TZ
+LANG=C
+export LANG
+readonly LOGNAME
+PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
+export PATH
+LIBPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+export LIBPATH
+NLSPATH=/usr/lib/nls/msg/%L/%N
+export NLSPATH
+MANPATH=/usr/man/%L
+export MANPATH
+MAIL=/usr/mail/LOGNAME
+export MAIL
+umask 022
+ZOAU_ROOT=/usr/lpp/zoautil/v100
+ZOAUTIL_DIR=/usr/lpp/zoautil/v100
+PYTHONPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
+PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
+_BPXK_AUTOCVT=ON
+export ZOAU_ROOT
+export ZOAUTIL_DIR
+export ZOAUTIL_DIR
+export PYTHONPATH
+export PKG_CONFIG_PATH
+export PYTHON_HOME
+export _BPXK_AUTOCVT""")
 
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
-@pytest.mark.parametrize("encoding", ENCODING)
-def test_ds_block_replace_insertafter_regex(ansible_zos_module, dstype, encoding):
+def test_ds_block_replace_insertafter_regex(ansible_zos_module, dstype):
     TEST_ENV["DS_TYPE"] = dstype
-    TEST_ENV["ENCODING"] = encoding
     TEST_ENV["TEST_CONT"] = TEST_CONTENT_DEFAULTMARKER
     TEST_INFO_DS = {**TEST_INFO["test_block_replace_insertafter_regex"]}
     DsGeneral(
         "T1",
-        ansible_zos_module, TEST_ENV,
+        ansible_zos_module, 
+        TEST_ENV,
         TEST_INFO_DS,
-        TEST_INFO["expected"]["test_uss_block_replace_insertafter_regex_defaultmarker"]
-    )
+        """if [ -z STEPLIB ] && tty -s;
+then
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+TZ=PST8PDT
+export TZ
+LANG=C
+export LANG
+readonly LOGNAME
+PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
+export PATH
+LIBPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+export LIBPATH
+NLSPATH=/usr/lib/nls/msg/%L/%N
+export NLSPATH
+MANPATH=/usr/man/%L
+export MANPATH
+MAIL=/usr/mail/LOGNAME
+export MAIL
+umask 022
+PYTHONPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
+PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
+# BEGIN ANSIBLE MANAGED BLOCK
+ZOAU_ROOT=/mvsutil-develop_dsed
+ZOAU_HOME=$ZOAU_ROOT
+ZOAU_DIR=$ZOAU_ROOT
+# END ANSIBLE MANAGED BLOCK
+_BPXK_AUTOCVT=ON
+export ZOAU_ROOT
+export ZOAUTIL_DIR
+export ZOAUTIL_DIR
+export PYTHONPATH
+export PKG_CONFIG_PATH
+export PYTHON_HOME
+export _BPXK_AUTOCVT""")
     TEST_ENV["TEST_CONT"] = TEST_CONTENT
 
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
-@pytest.mark.parametrize("encoding", ENCODING)
-def test_ds_block_replace_insertbefore_regex(ansible_zos_module, dstype, encoding):
+def test_ds_block_replace_insertbefore_regex(ansible_zos_module, dstype):
     TEST_ENV["DS_TYPE"] = dstype
-    TEST_ENV["ENCODING"] = encoding
     TEST_ENV["TEST_CONT"] = TEST_CONTENT_DEFAULTMARKER
     TEST_INFO_DS = {**TEST_INFO["test_block_replace_insertbefore_regex"]}
     DsGeneral(
         "T1",
-        ansible_zos_module, TEST_ENV,
+        ansible_zos_module,
+        TEST_ENV,
         TEST_INFO_DS,
-        TEST_INFO["expected"]["test_uss_block_replace_insertbefore_regex_defaultmarker"]
-    )
+        """if [ -z STEPLIB ] && tty -s;
+then
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+TZ=PST8PDT
+export TZ
+LANG=C
+export LANG
+readonly LOGNAME
+PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
+export PATH
+LIBPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+export LIBPATH
+NLSPATH=/usr/lib/nls/msg/%L/%N
+export NLSPATH
+MANPATH=/usr/man/%L
+export MANPATH
+MAIL=/usr/mail/LOGNAME
+export MAIL
+umask 022
+PYTHONPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
+# BEGIN ANSIBLE MANAGED BLOCK
+unset ZOAU_ROOT
+unset ZOAU_HOME
+unset ZOAU_DIR
+# END ANSIBLE MANAGED BLOCK
+PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
+_BPXK_AUTOCVT=ON
+export ZOAU_ROOT
+export ZOAUTIL_DIR
+export ZOAUTIL_DIR
+export PYTHONPATH
+export PKG_CONFIG_PATH
+export PYTHON_HOME
+export _BPXK_AUTOCVT""")
     TEST_ENV["TEST_CONT"] = TEST_CONTENT
 
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
-@pytest.mark.parametrize("encoding", ENCODING)
-def test_ds_block_replace_insertafter_eof(ansible_zos_module, dstype, encoding):
+def test_ds_block_replace_insertafter_eof(ansible_zos_module, dstype):
     TEST_ENV["DS_TYPE"] = dstype
-    TEST_ENV["ENCODING"] = encoding
     TEST_ENV["TEST_CONT"] = TEST_CONTENT_DEFAULTMARKER
     TEST_INFO_DS = {**TEST_INFO["test_block_replace_insertafter_eof"]}
     DsGeneral(
         "T1",
-        ansible_zos_module, TEST_ENV,
+        ansible_zos_module, 
+        TEST_ENV,
         TEST_INFO_DS,
-        TEST_INFO["expected"]["test_uss_block_replace_insertafter_eof_defaultmarker"]
-    )
+        """if [ -z STEPLIB ] && tty -s;
+then
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+TZ=PST8PDT
+export TZ
+LANG=C
+export LANG
+readonly LOGNAME
+PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
+export PATH
+LIBPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+export LIBPATH
+NLSPATH=/usr/lib/nls/msg/%L/%N
+export NLSPATH
+MANPATH=/usr/man/%L
+export MANPATH
+MAIL=/usr/mail/LOGNAME
+export MAIL
+umask 022
+PYTHONPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
+PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
+_BPXK_AUTOCVT=ON
+export ZOAU_ROOT
+export ZOAUTIL_DIR
+export ZOAUTIL_DIR
+export PYTHONPATH
+export PKG_CONFIG_PATH
+export PYTHON_HOME
+export _BPXK_AUTOCVT
+# BEGIN ANSIBLE MANAGED BLOCK
+export ZOAU_ROOT
+export ZOAU_HOME
+export ZOAU_DIR
+# END ANSIBLE MANAGED BLOCK""")
     TEST_ENV["TEST_CONT"] = TEST_CONTENT
 
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
-@pytest.mark.parametrize("encoding", ENCODING)
-def test_ds_block_replace_insertbefore_bof(ansible_zos_module, dstype, encoding):
+def test_ds_block_replace_insertbefore_bof(ansible_zos_module, dstype):
     TEST_ENV["DS_TYPE"] = dstype
-    TEST_ENV["ENCODING"] = encoding
     TEST_ENV["TEST_CONT"] = TEST_CONTENT_DEFAULTMARKER
     TEST_INFO_DS = {**TEST_INFO["test_block_replace_insertbefore_bof"]}
     DsGeneral(
         "T1",
-        ansible_zos_module, TEST_ENV,
+        ansible_zos_module, 
+        TEST_ENV,
         TEST_INFO_DS,
-        TEST_INFO["expected"]["test_uss_block_replace_insertbefore_bof_defaultmarker"]
-    )
+        """# BEGIN ANSIBLE MANAGED BLOCK
+# this is file is for setting env vars
+# END ANSIBLE MANAGED BLOCK
+if [ -z STEPLIB ] && tty -s;
+then
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+TZ=PST8PDT
+export TZ
+LANG=C
+export LANG
+readonly LOGNAME
+PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
+export PATH
+LIBPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+export LIBPATH
+NLSPATH=/usr/lib/nls/msg/%L/%N
+export NLSPATH
+MANPATH=/usr/man/%L
+export MANPATH
+MAIL=/usr/mail/LOGNAME
+export MAIL
+umask 022
+PYTHONPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
+PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
+_BPXK_AUTOCVT=ON
+export ZOAU_ROOT
+export ZOAUTIL_DIR
+export ZOAUTIL_DIR
+export PYTHONPATH
+export PKG_CONFIG_PATH
+export PYTHON_HOME
+export _BPXK_AUTOCVT""")
     TEST_ENV["TEST_CONT"] = TEST_CONTENT
 
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
-@pytest.mark.parametrize("encoding", ENCODING)
-def test_ds_block_absent(ansible_zos_module, dstype, encoding):
+def test_ds_block_absent(ansible_zos_module, dstype):
     TEST_ENV["DS_TYPE"] = dstype
-    TEST_ENV["ENCODING"] = encoding
     TEST_ENV["TEST_CONT"] = TEST_CONTENT_DEFAULTMARKER
     TEST_INFO_DS = {**TEST_INFO["test_block_absent"]}
     DsGeneral(
-        "T1", ansible_zos_module,
-        TEST_ENV, TEST_INFO_DS,
-        TEST_INFO["expected"]["test_uss_block_absent"]
-    )
+        "T1", 
+        ansible_zos_module,
+        TEST_ENV, 
+        TEST_INFO_DS,
+        """if [ -z STEPLIB ] && tty -s;
+then
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+TZ=PST8PDT
+export TZ
+LANG=C
+export LANG
+readonly LOGNAME
+PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
+export PATH
+LIBPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+export LIBPATH
+NLSPATH=/usr/lib/nls/msg/%L/%N
+export NLSPATH
+MANPATH=/usr/man/%L
+export MANPATH
+MAIL=/usr/mail/LOGNAME
+export MAIL
+umask 022
+PYTHONPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
+PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
+_BPXK_AUTOCVT=ON
+export ZOAU_ROOT
+export ZOAUTIL_DIR
+export ZOAUTIL_DIR
+export PYTHONPATH
+export PKG_CONFIG_PATH
+export PYTHON_HOME
+export _BPXK_AUTOCVT""")
     TEST_ENV["TEST_CONT"] = TEST_CONTENT
 
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
-@pytest.mark.parametrize("encoding", ENCODING)
-def test_ds_tmp_hlq_option(ansible_zos_module, dstype, encoding):
+def test_ds_tmp_hlq_option(ansible_zos_module, dstype):
     TEST_ENV["DS_TYPE"] = dstype
-    TEST_ENV["ENCODING"] = encoding
     TEST_ENV["TEST_CONT"] = TEST_CONTENT_DEFAULTMARKER
     TEST_INFO_DS = {**TEST_INFO["test_ds_block_tmp_hlq_option"]}
     test_name = "T6"
     kwargs = dict(backup_name=r"TMPHLQ\..")
     DsGeneralResultKeyMatchesRegex(
-        test_name, ansible_zos_module,
-        TEST_ENV, TEST_INFO_DS,
+        test_name, 
+        ansible_zos_module,
+        TEST_ENV, 
+        TEST_INFO_DS,
         **kwargs
     )
     TEST_ENV["TEST_CONT"] = TEST_CONTENT
@@ -1334,44 +1773,114 @@ def test_ds_tmp_hlq_option(ansible_zos_module, dstype, encoding):
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
-@pytest.mark.parametrize("encoding", ENCODING)
-def test_ds_block_insert_with_indentation_level_specified(ansible_zos_module, dstype, encoding):
+def test_ds_block_insert_with_indentation_level_specified(ansible_zos_module, dstype):
     TEST_ENV["DS_TYPE"] = dstype
-    TEST_ENV["ENCODING"] = encoding
     TEST_INFO["test_block_insert_with_indentation_level_specified_name"] = {**TEST_INFO["test_block_insert_with_indentation_level_specified"], "test_name":"T7"}
     DsGeneral(
         TEST_INFO["test_block_insert_with_indentation_level_specified_name"]["test_name"],
-        ansible_zos_module, TEST_ENV,
+        ansible_zos_module, 
+        TEST_ENV,
         TEST_INFO["test_block_insert_with_indentation_level_specified"],
-        TEST_INFO["expected"]["test_uss_block_insert_with_indentation_level_specified"]
-    )
+        """if [ -z STEPLIB ] && tty -s;
+then
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+TZ=PST8PDT
+export TZ
+LANG=C
+export LANG
+readonly LOGNAME
+PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
+export PATH
+LIBPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+export LIBPATH
+NLSPATH=/usr/lib/nls/msg/%L/%N
+export NLSPATH
+MANPATH=/usr/man/%L
+export MANPATH
+MAIL=/usr/mail/LOGNAME
+export MAIL
+umask 022
+ZOAU_ROOT=/usr/lpp/zoautil/v100
+ZOAUTIL_DIR=/usr/lpp/zoautil/v100
+PYTHONPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
+PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
+_BPXK_AUTOCVT=ON
+export ZOAU_ROOT
+export ZOAUTIL_DIR
+export ZOAUTIL_DIR
+export PYTHONPATH
+export PKG_CONFIG_PATH
+export PYTHON_HOME
+export _BPXK_AUTOCVT
+# BEGIN ANSIBLE MANAGED BLOCK
+                export ZOAU_ROOT
+                export ZOAU_HOME
+                export ZOAU_DIR
+# END ANSIBLE MANAGED BLOCK""")
 
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
-@pytest.mark.parametrize("encoding", ENCODING)
 @pytest.mark.parametrize("backup_name", BACKUP_OPTIONS)
-def test_ds_block_insertafter_eof_with_backup(ansible_zos_module, dstype, encoding, backup_name):
+def test_ds_block_insertafter_eof_with_backup(ansible_zos_module, dstype, backup_name):
     try:
         backup_ds_name = MVS_BACKUP_DS
         TEST_ENV["DS_TYPE"] = dstype
-        TEST_ENV["ENCODING"] = encoding
         TEST_INFO["test_ds_block_insertafter_eof_with_backup"]["backup_name"] = backup_name
         ds_result = DsGeneral(
             "T10",
-            ansible_zos_module, TEST_ENV,
+            ansible_zos_module, 
+            TEST_ENV,
             TEST_INFO["test_ds_block_insertafter_eof_with_backup"],
-            TEST_INFO["expected"]["test_uss_block_insertafter_eof_defaultmarker"]
-        )
+            """if [ -z STEPLIB ] && tty -s;
+then
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+TZ=PST8PDT
+export TZ
+LANG=C
+export LANG
+readonly LOGNAME
+PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
+export PATH
+LIBPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+export LIBPATH
+NLSPATH=/usr/lib/nls/msg/%L/%N
+export NLSPATH
+MANPATH=/usr/man/%L
+export MANPATH
+MAIL=/usr/mail/LOGNAME
+export MAIL
+umask 022
+ZOAU_ROOT=/usr/lpp/zoautil/v100
+ZOAUTIL_DIR=/usr/lpp/zoautil/v100
+PYTHONPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
+PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
+_BPXK_AUTOCVT=ON
+export ZOAU_ROOT
+export ZOAUTIL_DIR
+export ZOAUTIL_DIR
+export PYTHONPATH
+export PKG_CONFIG_PATH
+export PYTHON_HOME
+export _BPXK_AUTOCVT
+# BEGIN ANSIBLE MANAGED BLOCK
+export ZOAU_ROOT
+export ZOAU_HOME
+export ZOAU_DIR
+# END ANSIBLE MANAGED BLOCK""")
         for result in ds_result.contacted.values():
             backup_ds_name = result.get("backup_name")
             assert backup_ds_name is not None
-            if encoding == 'IBM-1047':
-                cmdStr = "cat \"//'{0}'\" ".format(backup_ds_name)
-                results = ansible_zos_module.all.shell(cmd=cmdStr)
-                print(vars(results))
-                for result in results.contacted.values():
-                    assert result.get("stdout") == TEST_ENV["TEST_CONT"]
+            cmdStr = "cat \"//'{0}'\" ".format(backup_ds_name)
+            results = ansible_zos_module.all.shell(cmd=cmdStr)
+            for result in results.contacted.values():
+                assert result.get("stdout") == TEST_ENV["TEST_CONT"]
     finally:
         ansible_zos_module.all.zos_data_set(name=backup_ds_name, state="absent")
 
@@ -1381,10 +1890,48 @@ def test_ds_block_insertafter_eof_with_backup(ansible_zos_module, dstype, encodi
 def test_ds_block_insertafter_regex_force(ansible_zos_module, dstype):
     TEST_ENV["DS_TYPE"] = dstype
     DsGeneralForce(
-        ansible_zos_module, TEST_ENV,
+        ansible_zos_module, 
+        TEST_ENV,
         TEST_INFO["test_ds_block_insertafter_regex_force"],
-        TEST_INFO["expected"]["test_uss_block_insertafter_regex_defaultmarker"]
-    )
+        """if [ -z STEPLIB ] && tty -s;
+then
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+TZ=PST8PDT
+export TZ
+LANG=C
+export LANG
+readonly LOGNAME
+PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
+export PATH
+LIBPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+export LIBPATH
+NLSPATH=/usr/lib/nls/msg/%L/%N
+export NLSPATH
+MANPATH=/usr/man/%L
+export MANPATH
+MAIL=/usr/mail/LOGNAME
+export MAIL
+umask 022
+ZOAU_ROOT=/usr/lpp/zoautil/v100
+# BEGIN ANSIBLE MANAGED BLOCK
+ZOAU_ROOT=/mvsutil-develop_dsed
+ZOAU_HOME=$ZOAU_ROOT
+ZOAU_DIR=$ZOAU_ROOT
+# END ANSIBLE MANAGED BLOCK
+ZOAUTIL_DIR=/usr/lpp/zoautil/v100
+PYTHONPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
+PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
+_BPXK_AUTOCVT=ON
+export ZOAU_ROOT
+export ZOAUTIL_DIR
+export ZOAUTIL_DIR
+export PYTHONPATH
+export PKG_CONFIG_PATH
+export PYTHON_HOME
+export _BPXK_AUTOCVT""")
     
 
 #########################
@@ -1409,10 +1956,48 @@ def test_ds_block_insertafter_nomatch_eof_insert(ansible_zos_module):
     TEST_INFO["test_block_insertafter_eof"]["insertafter"] = 'SOME_NON_EXISTING_PATTERN'
     DsGeneral(
         "T1",
-        ansible_zos_module, TEST_ENV,
+        ansible_zos_module, 
+        TEST_ENV,
         TEST_INFO["test_block_insertafter_eof"],
-        TEST_INFO["expected"]["test_uss_block_insertafter_eof_defaultmarker"]
-    )
+        """if [ -z STEPLIB ] && tty -s;
+then
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+TZ=PST8PDT
+export TZ
+LANG=C
+export LANG
+readonly LOGNAME
+PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
+export PATH
+LIBPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+export LIBPATH
+NLSPATH=/usr/lib/nls/msg/%L/%N
+export NLSPATH
+MANPATH=/usr/man/%L
+export MANPATH
+MAIL=/usr/mail/LOGNAME
+export MAIL
+umask 022
+ZOAU_ROOT=/usr/lpp/zoautil/v100
+ZOAUTIL_DIR=/usr/lpp/zoautil/v100
+PYTHONPATH=/usr/lpp/izoda/v110/anaconda/lib:/usr/lpp/zoautil/v100/lib:/lib
+PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
+PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
+_BPXK_AUTOCVT=ON
+export ZOAU_ROOT
+export ZOAUTIL_DIR
+export ZOAUTIL_DIR
+export PYTHONPATH
+export PKG_CONFIG_PATH
+export PYTHON_HOME
+export _BPXK_AUTOCVT
+# BEGIN ANSIBLE MANAGED BLOCK
+export ZOAU_ROOT
+export ZOAU_HOME
+export ZOAU_DIR
+# END ANSIBLE MANAGED BLOCK""")
 
 
 @pytest.mark.ds
@@ -1432,7 +2017,8 @@ def test_ds_block_insertafter_regex_wrongmarker(ansible_zos_module):
 def test_ds_not_supported(ansible_zos_module, dstype):
     TEST_ENV["DS_TYPE"] = dstype
     DsNotSupportedHelper(
-        "T1", ansible_zos_module,
+        "T1", 
+        ansible_zos_module,
         TEST_ENV, TEST_INFO["test_block_insertafter_regex"]
     )
 
@@ -1442,6 +2028,7 @@ def test_ds_not_supported(ansible_zos_module, dstype):
 def test_ds_block_insertafter_regex_fail(ansible_zos_module, dstype):
     TEST_ENV["DS_TYPE"] = dstype
     DsGeneralForceFail(
-        ansible_zos_module, TEST_ENV,
+        ansible_zos_module,
+        TEST_ENV,
         TEST_INFO["test_ds_block_insertafter_regex_force_fail"],
     )

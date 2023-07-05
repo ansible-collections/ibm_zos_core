@@ -931,5 +931,13 @@ def test_mvs_archive_single_dataset_force_lock(ansible_zos_module, format, data_
                 assert MVS_DEST_ARCHIVE in c_result.get("stdout")
         
     finally:
+        # extract pid
+        ps_list_res = hosts.all.shell(cmd="ps -e | grep -i 'pdse-lock'")
+
+        # kill process - release lock - this also seems to end the job
+        pid = list(ps_list_res.contacted.values())[0].get('stdout').strip().split(' ')[0]
+        hosts.all.shell(cmd="kill 9 {0}".format(pid.strip()))
+        # clean up c code/object/executable files, jcl
+        hosts.all.shell(cmd='rm -r /tmp/disp_shr')
         hosts.all.zos_data_set(name=data_set.get("name"), state="absent")
         hosts.all.zos_data_set(name=MVS_DEST_ARCHIVE, state="absent")

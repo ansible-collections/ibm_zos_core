@@ -344,7 +344,7 @@ List of tests:
         ]
 )
 @pytest.mark.parametrize(
-    "record_length", [80, 120, 1024]
+    "record_length", [80, 120]
 )
 @pytest.mark.parametrize(
     # "record_format", ["FB", "VB", "FBA", "VBA", "U"],

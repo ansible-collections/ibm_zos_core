@@ -653,6 +653,7 @@ class MVSUnarchive(Unarchive):
                         {2} """.format(filter, volumes, force)
         dds = dict(archive="{0},old".format(source))
         rc, out, err = mvs_cmd.adrdssu(cmd=restore_cmd, dds=dds, authorized=True)
+        self._get_restored_datasets(out)
 
         if rc != 0:
             # AdrddssuRestoreError

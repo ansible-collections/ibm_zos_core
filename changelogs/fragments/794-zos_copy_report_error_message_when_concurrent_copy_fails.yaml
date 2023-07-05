@@ -1,5 +1,6 @@
 bugfixes:
-  - zos_copy - Reported false positives when copy with target file on lock or 
-    both the target and source in lock. Fix now gives a error message about the 
-    dataset in lock.   
+  - zos_copy - Reported a false positive such that the response would have
+    `changed=true` when copying from a source (src) or destination (dest)
+    data set that was in use (DISP=SHR). This change now displays an appropriate
+    error message and returns `changed=false`.
     (https://github.com/ansible-collections/ibm_zos_core/pull/794).

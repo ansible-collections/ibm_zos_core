@@ -2245,20 +2245,20 @@ def normalize_line_endings(src, encoding=None):
     return src
 
 
-def source_locked(dataset_name):
+def data_set_locked(dataset_name):
     """
-    Validate if the dataset is not in lock.
+    Checks if a data set has a lock on it meaning the data set is opened
+    with DISP=SHR, often by a long running task.
 
     Arguments:
-        dataset_name (str) -- Name of the dataset to search if is on use.
+        dataset_name (str) - the data set name used to check if there is a lock.
 
     Returns:
         bool -- True if the dataset has not lock false if has lock.
     """
-    # To not get false positives is send to validation dataset name
-    # to verify if is in lock or not by the response of the oprcmd
-    # "D GRS,RES=(*,{dataset_name})" do not contain EXC/SHR and SHARE
-    # also the len of response is above 4.
+    # Using operator command "D GRS,RES=(*,{dataset_name})" to detect if a data set
+    # is in use, when a data set is in use it will have "EXC/SHR and SHARE"
+    # in the result with a length greater than 4.
     result = dict()
     result["stdout"] = []
     command_dgrs = "D GRS,RES=(*,{0})".format(dataset_name)
@@ -2269,13 +2269,13 @@ def source_locked(dataset_name):
             if out:
                 result["stdout"].append(out)
     if len(result["stdout"]) > 4 and "EXC/SHR" in stdout and "SHARE" in stdout:
-        return False
+        return True
     elif len(result["stdout"]) <= 4 and "NO REQUESTORS FOR RESOURCE" in stdout:
-        return True
+        return False
     else:
-        return True
-      
-      
+        return False
+
+
 def normalize_line_endings(src, encoding=None):
     """
     Normalizes src's encoding to IBM-037 (a dataset's default) and then normalizes
@@ -2538,23 +2538,23 @@ def run_module(module, arg_def):
     # for try to write in dest and if both src and dest are in lock.
     # ********************************************************************
     if src_ds_type != "USS" and dest_ds_type != "USS":
-        is_source_lock = source_locked(src_name)
-        is_dest_lock = source_locked(dest_name)
-        if not is_source_lock and not is_dest_lock:
+        is_source_lock = data_set_locked(src_name)
+        is_dest_lock = data_set_locked(dest_name)
+        if is_source_lock and is_dest_lock:
             module.fail_json(
                 msg="DATASETS in lock, unable to access'{0}' without force and unable to write in'{1}'".format(
                     src_name, dest_name
                 )
             )
-        elif not is_dest_lock:
+        elif is_dest_lock:
             module.fail_json(
                 msg="DATASET in lock, unable to write in '{0}'".format(
                     dest_name
                 )
             )
     elif dest_ds_type != "USS":
-        is_dest_lock = source_locked(dest_name)
-        if not is_dest_lock:
+        is_dest_lock = data_set_locked(dest_name)
+        if is_dest_lock:
             module.fail_json(
                 msg="DATASET in lock, unable to write in '{0}'".format(
                     dest_name

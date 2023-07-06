@@ -1,0 +1,11 @@
+bugfixes:
+- zos_copy - Test case for recursive encoding directories reported a
+  UTF-8 failure. This change ensures proper test coverage for nested
+  directories and file permissions.
+  (https://github.com/ansible-collections/ibm_zos_core/pull/806).
+- zos_copy - Reported a warning about the use of _play_context.verbosity.This
+  change corrects the module action to prevent the warning message.
+  (https://github.com/ansible-collections/ibm_zos_core/pull/806).
+- zos_fetch - Reported a warning about the use of _play_context.verbosity.This
+  change corrects the module action to prevent the warning message.
+  (https://github.com/ansible-collections/ibm_zos_core/pull/806).

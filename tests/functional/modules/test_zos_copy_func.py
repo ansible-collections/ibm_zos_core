@@ -20,6 +20,7 @@ import re
 import time
 import tempfile
 from tempfile import mkstemp
+import subprocess
 
 __metaclass__ = type
 
@@ -471,45 +472,99 @@ def test_copy_dir_to_existing_uss_dir_not_forced(ansible_zos_module):
 @pytest.mark.uss
 def test_copy_subdirs_folders_and_validate_recursive_encoding(ansible_zos_module):
     hosts = ansible_zos_module
-    dest_path = "/tmp/test/"
-    text_outer_file = "Hi I am point A"
-    text_inner_file = "Hi I am point B"
-    src_path = "/tmp/level_1/"
-    outer_file = "/tmp/level_1/text_A.txt"
-    inner_src_path = "/tmp/level_1/level_2/"
-    inner_file = "/tmp/level_1/level_2/text_B.txt"
+
+    # Remote path
+    path = "/tmp/ansible"
+
+    # Remote src path with original files
+    src_path = path + "/src"
+
+    # Nested src dirs
+    src_dir_one = src_path + "/dir_one"
+    src_dir_two = src_dir_one + "/dir_two"
+    src_dir_three = src_dir_two + "/dir_three"
+
+    # Nested src IBM-1047 files
+    src_file_one = src_path + "/dir_one/one.txt"
+    src_file_two = src_dir_one + "/dir_two/two.txt"
+    src_file_three = src_dir_two + "/dir_three/three.txt"
+
+    # Remote dest path to encoded files placed
+    dest_path = path + "/dest"
+
+    # Nested dest UTF-8 files
+    dst_file_one = dest_path + "/dir_one/one.txt"
+    dst_file_two = dest_path + "/dir_one/dir_two/two.txt"
+    dst_file_three = dest_path + "/dir_one/dir_two//dir_three/three.txt"
+
+    # Strings echo'd to files on USS
+    str_one = "This is file one."
+    str_two = "This is file two."
+    str_three = "This is file three."
+
+    # Hex values for expected results, expected used beause pytest-ansible does not allow for delegate_to
+    # and depending on where the `od` runs, you may face big/little endian issues, so using expected utf-8
+    str_one_big_endian_hex="""0000000000      5468    6973    2069    7320    6669    6C65    206F    6E65
+0000000020      2E0A
+0000000022"""
+
+    str_two_big_endian_hex="""0000000000      5468    6973    2069    7320    6669    6C65    2074    776F
+0000000020      2E0A
+0000000022"""
+
+    str_three_big_endian_hex="""0000000000      5468    6973    2069    7320    6669    6C65    2074    6872
+0000000020      6565    2E0A
+0000000024"""
 
     try:
-        hosts.all.file(path=inner_src_path, state="directory")
-        hosts.all.file(path=inner_file, state = "touch")
-        hosts.all.file(path=outer_file, state = "touch")
-        hosts.all.shell(cmd="echo '{0}' > '{1}'".format(text_outer_file, outer_file))
-        hosts.all.shell(cmd="echo '{0}' > '{1}'".format(text_inner_file, inner_file))
+        # Ensure clean slate
+        results = hosts.all.file(path=path, state="absent")
 
-        copy_res = hosts.all.zos_copy(src=src_path, dest=dest_path, encoding={"from": "ISO8859-1", "to": "IBM-1047"}, remote_src=True)
+        # Create nested directories
+        hosts.all.file(path=src_dir_three, state="directory", mode="0755")
+
+        # Touch empty files
+        hosts.all.file(path=src_file_one, state = "touch")
+        hosts.all.file(path=src_file_two, state = "touch")
+        hosts.all.file(path=src_file_three, state = "touch")
+
+        # Echo contents into files (could use zos_lineinfile or zos_copy), echo'ing will
+        # result in managed node's locale which currently is IBM-1047
+        hosts.all.raw("echo '{0}' > '{1}'".format(str_one, src_file_one))
+        hosts.all.raw("echo '{0}' > '{1}'".format(str_two, src_file_two))
+        hosts.all.raw("echo '{0}' > '{1}'".format(str_three, src_file_three))
+
+        # Lets stat the deepest nested directory, not necessary to stat all of them
+        results = hosts.all.stat(path=src_file_three)
+        for result in results.contacted.values():
+            assert result.get("stat").get("exists") is True
+
+        # Nested zos_copy from IBM-1047 to UTF-8
+        # Testing src ending in / such that the contents of the src directory will be copied
+        copy_res = hosts.all.zos_copy(src=src_path+"/", dest=dest_path, encoding={"from": "IBM-1047", "to": "UTF-8"}, remote_src=True)
 
         for result in copy_res.contacted.values():
             assert result.get("msg") is None
             assert result.get("changed") is True
 
-        stat_res = hosts.all.stat(path="/tmp/test/level_2/")
-        for st in stat_res.contacted.values():
-            assert st.get("stat").get("exists") is True
+        # File z/OS dest is now UTF-8, dump the hex value and compare it to an
+        # expected big-endian version, can't run delegate_to local host so expected
+        # value is the work around for now.
+        str_one_od_dst = hosts.all.shell(cmd="od -x {0}".format(dst_file_one))
+        str_two_od_dst = hosts.all.shell(cmd="od -x {0}".format(dst_file_two))
+        str_three_od_dst = hosts.all.shell(cmd="od -x {0}".format(dst_file_three))
 
-        full_inner_path = dest_path + "/level_2/text_B.txt"
-        full_outer_path = dest_path + "/text_A.txt"
-        inner_file_text_aft_encoding = hosts.all.shell(cmd="cat {0}".format(full_inner_path))
-        outer_file_text_aft_encoding = hosts.all.shell(cmd="cat {0}".format(full_outer_path))
-        for text in outer_file_text_aft_encoding.contacted.values():
-            text_outer = text.get("stdout")
-        for text in inner_file_text_aft_encoding.contacted.values():
-            text_inner = text.get("stdout")
+        for result in str_one_od_dst.contacted.values():
+            assert result.get("stdout") == str_one_big_endian_hex
 
-        assert text_inner == text_inner_file
-        assert text_outer == text_outer_file
+        for result in str_two_od_dst.contacted.values():
+            assert result.get("stdout") == str_two_big_endian_hex
+
+        for result in str_three_od_dst.contacted.values():
+            assert result.get("stdout") == str_three_big_endian_hex
+
     finally:
-        hosts.all.file(path=src_path, state="absent")
-        hosts.all.file(path=dest_path, state="absent")
+        hosts.all.file(path=path, state="absent")
 
 
 @pytest.mark.uss
@@ -2880,3 +2935,40 @@ def test_copy_uss_file_to_existing_sequential_data_set_twice_with_tmphlq_option(
                 assert v_cp.get("rc") == 0
     finally:
         hosts.all.zos_data_set(name=dest, state="absent")
+
+
+@pytest.mark.parametrize("options", [
+    dict(src="/etc/profile", dest="/tmp/zos_copy_test_profile",
+         force=True, is_remote=False, verbosity="-vvvvv", verbosity_level=5),
+    dict(src="/etc/profile", dest="/mp/zos_copy_test_profile", force=True,
+         is_remote=False, verbosity="-vvvv", verbosity_level=4),
+    dict(src="/etc/profile", dest="/tmp/zos_copy_test_profile",
+         force=True, is_remote=False, verbosity="", verbosity_level=0),
+])
+def test_display_verbosity_in_zos_copy_plugin(ansible_zos_module, options):
+    """Test the display verbosity, ensure it matches the verbosity_level.
+     This test requires access to verbosity and pytest-ansible provides no
+     reasonable handle for this so for now subprocess is used. This test
+     results in no actual copy happening, the interest is in the verbosity"""
+
+    try:
+        hosts = ansible_zos_module
+        user = hosts["options"]["user"]
+        # Optionally hosts["options"]["inventory_manager"].list_hosts()[0]
+        node = hosts["options"]["inventory"].rstrip(',')
+        python_path = hosts["options"]["ansible_python_path"]
+
+        # This is an adhoc command, because there was no
+        cmd = "ansible all -i " + str(node) + ", -u " + user + " -m ibm.ibm_zos_core.zos_copy -a \"src=" + options["src"] + " dest=" + options["dest"] + " is_remote=" + str(
+            options["is_remote"]) + " encoding={{enc}} \" -e '{\"enc\":{\"from\": \"ISO8859-1\", \"to\": \"IBM-1047\"}}' -e \"ansible_python_interpreter=" + python_path + "\" " + options["verbosity"] + ""
+
+        result = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE).stdout
+        output = result.read().decode()
+
+        if options["verbosity_level"] != 0:
+            assert ("play context verbosity: "+ str(options["verbosity_level"])+"" in output)
+        else:
+            assert ("play context verbosity:" not in output)
+
+    finally:
+        hosts.all.file(path=options["dest"], state="absent")

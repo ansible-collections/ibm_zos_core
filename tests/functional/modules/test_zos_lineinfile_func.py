@@ -79,36 +79,36 @@ TEST_ENV = dict(
 MODULE_PARAMS = dict(
     # This new declaration are one for all cases we were testing, before the declaration for dataset was test_ds_line_replace=dict(test_name="T1") and send
     # the same arguments than a USS only for force change a little bit, but still repeat most arguments (my bad, the last one)
-    test_line_replace=dict(path="", regexp="ZOAU_ROOT=", 
+    test_line_replace=dict(path="", regexp="ZOAU_ROOT=",
                            line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present"),
     test_line_absent=dict(regexp="ZOAU_ROOT=", line="", state="absent"),
-    test_line_insertafter_regex=dict(insertafter="ZOAU_ROOT=", 
+    test_line_insertafter_regex=dict(insertafter="ZOAU_ROOT=",
                                      line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present"),
-    test_line_insertbefore_regex=dict(insertbefore="ZOAU_ROOT=", 
+    test_line_insertbefore_regex=dict(insertbefore="ZOAU_ROOT=",
                                       line="unset ZOAU_ROOT", state="present"),
-    test_line_insertafter_eof=dict(insertafter="EOF", 
+    test_line_insertafter_eof=dict(insertafter="EOF",
                                    line="export ZOAU_ROOT", state="present"),
-    test_line_insertbefore_bof=dict(insertbefore="BOF", 
+    test_line_insertbefore_bof=dict(insertbefore="BOF",
                                     line="# this is file is for setting env vars", state="present"),
-    test_line_replace_nomatch_insertafter_match=dict(regexp="abcxyz", 
+    test_line_replace_nomatch_insertafter_match=dict(regexp="abcxyz",
                                                      insertafter="ZOAU_ROOT=", line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present"),
-    test_line_replace_nomatch_insertbefore_match=dict(regexp="abcxyz", 
+    test_line_replace_nomatch_insertbefore_match=dict(regexp="abcxyz",
                                                       insertbefore="ZOAU_ROOT=", line="unset ZOAU_ROOT", state="present"),
-    test_line_replace_match_insertafter_ignore=dict(regexp="ZOAU_ROOT=", 
-                                                    insertafter="PATH=", 
-                                                    line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present"),    
-    test_line_replace_nomatch_insertbefore_nomatch=dict(regexp="abcxyz", 
+    test_line_replace_match_insertafter_ignore=dict(regexp="ZOAU_ROOT=",
+                                                    insertafter="PATH=",
+                                                    line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present"),
+    test_line_replace_nomatch_insertbefore_nomatch=dict(regexp="abcxyz",
                                                         insertbefore="xyzijk", line="unset ZOAU_ROOT", state="present"),
-    test_line_replace_match_insertbefore_ignore=dict(regexp="ZOAU_ROOT=", 
-                                                     insertbefore="PATH=", 
+    test_line_replace_match_insertbefore_ignore=dict(regexp="ZOAU_ROOT=",
+                                                     insertbefore="PATH=",
                                                      line="unset ZOAU_ROOT", state="present"),
-    test_line_replace_nomatch_insertafter_nomatch=dict(regexp="abcxyz", 
+    test_line_replace_nomatch_insertafter_nomatch=dict(regexp="abcxyz",
                                                        insertafter="xyzijk", line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present"),
-    test_ds_line_force_fail=dict(path="",insertafter="EOF", 
+    test_ds_line_force_fail=dict(path="",insertafter="EOF",
                                  line="export ZOAU_ROOT", force=False),
-    test_ds_line_tmp_hlq_option=dict(insertafter="EOF", 
+    test_ds_line_tmp_hlq_option=dict(insertafter="EOF",
                                      line="export ZOAU_ROOT", state="present", backup=True, tmp_hlq="TMPHLQ"),
-    # Remove from expected text not used anymore as well as the parameters the same text for uss is use for DS 
+    # Remove from expected text not used anymore as well as the parameters the same text for uss is use for DS
 )
 
 #########################
@@ -162,8 +162,8 @@ export _BPXK_AUTOCVT""")
 @pytest.mark.uss
 def test_uss_line_insertafter_regex(ansible_zos_module):
     General_uss_test(
-        "test_uss_line_insertafter_regex", 
-        ansible_zos_module, 
+        "test_uss_line_insertafter_regex",
+        ansible_zos_module,
         TEST_ENV,
         MODULE_PARAMS["test_line_insertafter_regex"],
         """if [ -z STEPLIB ] && tty -s;
@@ -200,14 +200,14 @@ export ZOAUTIL_DIR
 export PYTHONPATH
 export PKG_CONFIG_PATH
 export PYTHON_HOME
-export _BPXK_AUTOCVT""")    
+export _BPXK_AUTOCVT""")
 
 
 @pytest.mark.uss
 def test_uss_line_insertbefore_regex(ansible_zos_module):
     General_uss_test(
-        "test_uss_line_insertbefore_regex", 
-        ansible_zos_module, 
+        "test_uss_line_insertbefore_regex",
+        ansible_zos_module,
         TEST_ENV,
         MODULE_PARAMS["test_line_insertbefore_regex"],
         """if [ -z STEPLIB ] && tty -s;
@@ -250,9 +250,9 @@ export _BPXK_AUTOCVT""")
 @pytest.mark.uss
 def test_uss_line_insertafter_eof(ansible_zos_module):
     General_uss_test(
-        "test_uss_line_insertafter_eof", 
+        "test_uss_line_insertafter_eof",
         ansible_zos_module,
-        TEST_ENV, 
+        TEST_ENV,
         MODULE_PARAMS["test_line_insertafter_eof"],
         """if [ -z STEPLIB ] && tty -s;
 then
@@ -294,9 +294,9 @@ export ZOAU_ROOT""")
 @pytest.mark.uss
 def test_uss_line_insertbefore_bof(ansible_zos_module):
     General_uss_test(
-        "test_uss_line_insertbefore_bof", 
+        "test_uss_line_insertbefore_bof",
         ansible_zos_module,
-        TEST_ENV, 
+        TEST_ENV,
         MODULE_PARAMS["test_line_insertbefore_bof"],
         """# this is file is for setting env vars
 if [ -z STEPLIB ] && tty -s;
@@ -338,9 +338,9 @@ export _BPXK_AUTOCVT""")
 @pytest.mark.uss
 def test_uss_line_replace_match_insertafter_ignore(ansible_zos_module):
     General_uss_test(
-        "test_uss_line_replace_match_insertafter_ignore", 
+        "test_uss_line_replace_match_insertafter_ignore",
         ansible_zos_module,
-        TEST_ENV, 
+        TEST_ENV,
         MODULE_PARAMS["test_line_replace_match_insertafter_ignore"],
         """if [ -z STEPLIB ] && tty -s;
 then
@@ -382,9 +382,9 @@ export _BPXK_AUTOCVT"""
 @pytest.mark.uss
 def test_uss_line_replace_match_insertbefore_ignore(ansible_zos_module):
     General_uss_test(
-        "test_uss_line_replace_match_insertbefore_ignore", 
+        "test_uss_line_replace_match_insertbefore_ignore",
         ansible_zos_module,
-        TEST_ENV, 
+        TEST_ENV,
         MODULE_PARAMS["test_line_replace_match_insertbefore_ignore"],
         """if [ -z STEPLIB ] && tty -s;
 then
@@ -1252,14 +1252,14 @@ export _BPXK_AUTOCVT"""
 
 
 @pytest.mark.ds
-def test_ds_tmp_hlq_option(ansible_zos_module, encoding):
+def test_ds_tmp_hlq_option(ansible_zos_module):
     # This TMPHLQ only works with sequential datasets
     TEST_ENV["DS_TYPE"] = 'SEQ'
     kwargs = dict(backup_name=r"TMPHLQ\..")
     DsGeneralResultKeyMatchesRegex(
-        "T12", 
+        "T12",
         ansible_zos_module,
-        TEST_ENV, 
+        TEST_ENV,
         MODULE_PARAMS["test_ds_line_tmp_hlq_option"],
         **kwargs
     )
@@ -1326,13 +1326,13 @@ export _BPXK_AUTOCVT"""
 
 
 @pytest.mark.ds
-@pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_line_force_fail(ansible_zos_module, dstype, test_env):
+@pytest.mark.parametrize("dstype", ["PDS","PDSE"])
+def test_ds_line_force_fail(ansible_zos_module, dstype):
     TEST_ENV["DS_TYPE"] = dstype
     DsGeneralForceFail(
         ansible_zos_module,
         MODULE_PARAMS["test_ds_line_force_fail"],
-        test_env
+        TEST_ENV
     )
 
 # Space for test cases with different encoding

@@ -69,13 +69,18 @@ def General_uss_test(test_name, ansible_zos_module, test_env, test_info, expecte
 
 def General_ds_test(test_name, ansible_zos_module, test_env, test_info, expected):
     hosts = ansible_zos_module
+    TEMP_FILE = "/tmp/{0}".format(test_name)
     test_env["DS_NAME"] = test_name.upper() + "." + test_env["DS_TYPE"]
     try:
+        hosts.all.shell(cmd="echo \"{0}\" > {1}".format(test_env["TEST_CONT"], TEMP_FILE))
         hosts.all.zos_data_set(name=test_env["DS_NAME"], type=test_env["DS_TYPE"])
         if test_env["DS_TYPE"] in ["PDS", "PDSE"]:
             test_env["DS_NAME"] = test_env["DS_NAME"] + "(MEM)"
             hosts.all.zos_data_set(name=test_env["DS_NAME"], state="present", type="member")
-        hosts.all.shell(cmd="echo \"{0}\" > {1}".format(test_env["TEST_CONT"], test_env["DS_NAME"]))
+            cmdStr = "cp -CM {0} \"//'{1}'\"".format(quote(TEMP_FILE), test_env["DS_NAME"])
+        else:
+            cmdStr = "cp {0} \"//'{1}'\" ".format(quote(TEMP_FILE), test_env["DS_NAME"])
+        hosts.all.shell(cmd=cmdStr)
         results = hosts.all.shell(cmd="cat \"//'{0}'\" | wc -l ".format(test_env["DS_NAME"]))
         for result in results.contacted.values():
             assert int(result.get("stdout")) != 0
@@ -86,8 +91,9 @@ def General_ds_test(test_name, ansible_zos_module, test_env, test_info, expected
             assert result.get("changed") == 1
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(test_env["DS_NAME"]))
         for result in results.contacted.values():
-            assert result.get("stdout").replace('\n', '').replace(' ', '') == expected.replace('\n', '').replace(' ', '')
+            assert result.get("stdout") == expected
     finally:
+        hosts.all.shell(cmd="rm -rf " + TEMP_FILE)
         ds_name = test_env["DS_NAME"]
         hosts.all.zos_data_set(name=ds_name, state="absent")
 
@@ -156,7 +162,7 @@ def DsGeneralForce(ansible_zos_module, test_env, test_info, expected):
         test_info["path"] = DEFAULT_DATA_SET_NAME+".{0}".format(MEMBER_2)
     else:
         test_env["DS_NAME"] = DEFAULT_DATA_SET_NAME+"({0})".format(MEMBER_2)
-        test_info["path"] = DEFAULT_DATA_SET_NAME+"({0})".format(MEMBER_2) 
+        test_info["path"] = DEFAULT_DATA_SET_NAME+"({0})".format(MEMBER_2)
     hosts = ansible_zos_module
     try:
         # set up:
@@ -166,7 +172,7 @@ def DsGeneralForce(ansible_zos_module, test_env, test_info, expected):
             batch=[
                 {   "name": DEFAULT_DATA_SET_NAME + "({0})".format(MEMBER_1),
                     "type": "member", "state": "present", "replace": True, },
-                {   "name": test_env["DS_NAME"], "type": "member", 
+                {   "name": test_env["DS_NAME"], "type": "member",
                     "state": "present", "replace": True, },
             ]
         )
@@ -188,8 +194,8 @@ def DsGeneralForce(ansible_zos_module, test_env, test_info, expected):
         )
         hosts.all.shell(cmd="xlc -o pdse-lock pdse-lock.c", chdir="/tmp/disp_shr/")
         hosts.all.shell(cmd="submit call_c_pgm.jcl", chdir="/tmp/disp_shr/")
-        time.sleep(5)  
-        # call lineinfile to see results      
+        time.sleep(5)
+        # call lineinfile to see results
         results = hosts.all.zos_lineinfile(**test_info)
         results = hosts.all.shell(cmd=r"""cat "//'{0}'" """.format(test_info["path"]))
         for result in results.contacted.values():
@@ -206,12 +212,8 @@ def DsGeneralForce(ansible_zos_module, test_env, test_info, expected):
 def DsGeneralForceFail(ansible_zos_module, test_info, test_env):
     MEMBER_1, MEMBER_2 = "MEM1", "MEM2"
     TEMP_FILE = "/tmp/{0}".format(MEMBER_2)
-    if test_env["DS_TYPE"] == "SEQ":
-        test_env["DS_NAME"] = DEFAULT_DATA_SET_NAME+".{0}".format(MEMBER_2)
-        test_info["path"] = DEFAULT_DATA_SET_NAME+".{0}".format(MEMBER_2)
-    else:
-        test_env["DS_NAME"] = DEFAULT_DATA_SET_NAME+"({0})".format(MEMBER_2)
-        test_info["path"] = DEFAULT_DATA_SET_NAME+"({0})".format(MEMBER_2) 
+    test_env["DS_NAME"] = DEFAULT_DATA_SET_NAME+"({0})".format(MEMBER_2)
+    test_info["path"] = DEFAULT_DATA_SET_NAME+"({0})".format(MEMBER_2)
     hosts = ansible_zos_module
     try:
         # set up:
@@ -221,14 +223,11 @@ def DsGeneralForceFail(ansible_zos_module, test_info, test_env):
             batch=[
                 {   "name": DEFAULT_DATA_SET_NAME + "({0})".format(MEMBER_1),
                     "type": "member", "state": "present", "replace": True, },
-                {   "name": test_env["DS_NAME"], "type": "member", 
+                {   "name": test_env["DS_NAME"], "type": "member",
                     "state": "present", "replace": True, },
             ]
         )
-        if test_env["DS_TYPE"] in ["PDS", "PDSE"]:
-            cmdStr = "cp -CM {0} \"//'{1}'\"".format(quote(TEMP_FILE), test_env["DS_NAME"])
-        else:
-            cmdStr = "cp {0} \"//'{1}'\" ".format(quote(TEMP_FILE), test_env["DS_NAME"])
+        cmdStr = "cp -CM {0} \"//'{1}'\"".format(quote(TEMP_FILE), test_env["DS_NAME"])
         hosts.all.shell(cmd=cmdStr)
         results = hosts.all.shell(cmd="cat \"//'{0}'\" | wc -l ".format(test_env["DS_NAME"]))
         for result in results.contacted.values():
@@ -242,10 +241,9 @@ def DsGeneralForceFail(ansible_zos_module, test_info, test_env):
         )
         hosts.all.shell(cmd="xlc -o pdse-lock pdse-lock.c", chdir="/tmp/disp_shr/")
         hosts.all.shell(cmd="submit call_c_pgm.jcl", chdir="/tmp/disp_shr/")
-        time.sleep(5)  
-        # call lineinfile to see results      
+        time.sleep(5)
+        # call lineinfile to see results
         results = hosts.all.zos_lineinfile(**test_info)
-        pprint(vars(results))
         for result in results.contacted.values():
             assert result.get("changed") == False
             assert result.get("failed") == True

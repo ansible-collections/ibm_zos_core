@@ -340,7 +340,6 @@ class Archive():
     def remove_targets(self):
         pass
 
-
     @property
     def result(self):
         return {
@@ -626,6 +625,7 @@ class MVSArchive(Archive):
                 self.dest_state = STATE_INCOMPLETE
             elif bool(self.archived):
                 self.dest_state = STATE_ARCHIVE
+
 
 class AMATerseArchive(MVSArchive):
     def __init__(self, module):

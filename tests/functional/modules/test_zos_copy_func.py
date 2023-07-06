@@ -1116,17 +1116,19 @@ def test_backup_uss_file(ansible_zos_module, backup):
 
     try:
         hosts.all.file(path=dest, state="touch")
+        print( "\n\nPre-run backup: {0}  name: -{1}-\n\n".format( bool(backup), backup_name))
+
         if backup:
-            copy_res = hosts.all.zos_copy(src=src, dest=dest, force=True, backup=True, backup_name=backup)
+            copy_res = hosts.all.zos_copy(src=src, dest=dest, force=True, backup=True, backup_name=backup_name)
         else:
             copy_res = hosts.all.zos_copy(src=src, dest=dest, force=True, backup=False)
 
         for result in copy_res.contacted.values():
             assert result.get("msg") is None
-            backup_name = result.get("backup_name")
+            got_backup_name = result.get("backup_name")
 
             if backup:
-                assert backup_name == backup
+                assert backup_name == got_backup_name
             else:
                 assert backup_name is None
                 # behavior was changed so that backup_name is not kept/generated if backup is not true

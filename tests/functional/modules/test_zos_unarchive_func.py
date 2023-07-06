@@ -37,13 +37,7 @@ MVS_DEST_ARCHIVE = "USER.PRIVATE.ARCHIVE"
 
 USS_DEST_ARCHIVE = "testarchive.dzp"
 
-STATE_ABSENT = 'absent'
-STATE_ARCHIVED = 'archive'
-STATE_COMPRESSED = 'compress'
-STATE_INCOMPLETE = 'incomplete'
-
 USS_FORMATS = ['tar', 'gz', 'bz2', 'zip', 'pax']
-# USS_FORMATS = ['pax']
 
 def set_uss_test_env(ansible_zos_module, test_files):
     for key, value in test_files.items():
@@ -63,7 +57,6 @@ def create_multiple_data_sets(ansible_zos_module, base_name, n, type, ):
                        force=True)
         test_data_sets.append(curr_ds)
 
-        
     # Create data sets in batch
     ansible_zos_module.all.zos_data_set(
         batch=test_data_sets
@@ -116,7 +109,6 @@ def test_uss_unarchive(ansible_zos_module, format):
                                         format=dict(
                                             name=format
                                         ))
-        print(archive_result.contacted.values())
         # remove files
         for file in USS_TEST_FILES.keys():
             hosts.all.file(path=file, state="absent")
@@ -129,16 +121,13 @@ def test_uss_unarchive(ansible_zos_module, format):
         )
 
         for result in unarchive_result.contacted.values():
-            print(result)
             assert result.get("failed", False) is False
             assert result.get("changed") is True
             # Command to assert the file is in place
             cmd_result = hosts.all.shell(cmd=f"ls {USS_TEMP_DIR}")
             for c_result in cmd_result.contacted.values():
-                print(c_result)
                 for file in USS_TEST_FILES.keys():
                     assert file[len(USS_TEMP_DIR)+1:] in c_result.get("stdout")
-                
     finally:
         hosts.all.file(path=f"{USS_TEMP_DIR}", state="absent")
 
@@ -156,7 +145,6 @@ def test_uss_unarchive_include(ansible_zos_module, format):
                                         format=dict(
                                             name=format
                                         ))
-        print(archive_result.contacted.values())
         uss_files = [file[len(USS_TEMP_DIR)+1:] for file in USS_TEST_FILES]
         include_list = uss_files[:2]
         # remove files
@@ -172,19 +160,16 @@ def test_uss_unarchive_include(ansible_zos_module, format):
         )
 
         for result in unarchive_result.contacted.values():
-            print(result)
             assert result.get("failed", False) is False
             assert result.get("changed") is True
             # Command to assert the file is in place
             cmd_result = hosts.all.shell(cmd=f"ls {USS_TEMP_DIR}")
             for c_result in cmd_result.contacted.values():
-                print(c_result)
                 for file in uss_files:
                     if file in include_list:
                         assert file in c_result.get("stdout")
                     else:
                         assert file not in c_result.get("stdout")
-                
     finally:
         hosts.all.file(path=f"{USS_TEMP_DIR}", state="absent")
 
@@ -202,7 +187,6 @@ def test_uss_unarchive_exclude(ansible_zos_module, format):
                                         format=dict(
                                             name=format
                                         ))
-        print(archive_result.contacted.values())
         # remove files
         uss_files = [file[len(USS_TEMP_DIR)+1:] for file in USS_TEST_FILES]
         exclude_list = uss_files[:2]
@@ -218,18 +202,15 @@ def test_uss_unarchive_exclude(ansible_zos_module, format):
         )
 
         for result in unarchive_result.contacted.values():
-            print(result)
             assert result.get("failed", False) is False
             # Command to assert the file is in place
             cmd_result = hosts.all.shell(cmd=f"ls {USS_TEMP_DIR}")
             for c_result in cmd_result.contacted.values():
-                print(c_result)
                 for file in uss_files:
                     if file in exclude_list:
                         assert file not in c_result.get("stdout")
                     else:
                         assert file in c_result.get("stdout")
-                
     finally:
         hosts.all.file(path=f"{USS_TEMP_DIR}", state="absent")
 
@@ -247,7 +228,6 @@ def test_uss_unarchive_list(ansible_zos_module, format):
                                         format=dict(
                                             name=format
                                         ))
-        print(archive_result.contacted.values())
         # remove files
         for file in USS_TEST_FILES.keys():
             hosts.all.file(path=file, state="absent")
@@ -260,12 +240,10 @@ def test_uss_unarchive_list(ansible_zos_module, format):
         )
 
         for result in unarchive_result.contacted.values():
-            print(result)
             assert result.get("failed", False) is False
             assert result.get("changed") is True
             for file in USS_TEST_FILES.keys():
                     assert file[len(USS_TEMP_DIR)+1:] in result.get("targets")
-                
     finally:
         hosts.all.file(path=f"{USS_TEMP_DIR}", state="absent")
 
@@ -285,7 +263,6 @@ def test_uss_single_archive_with_mode(ansible_zos_module, format):
                                         format=dict(
                                             name=format
                                         ))
-        print(archive_result.contacted.values())
         for file in list(USS_TEST_FILES.keys()):
             hosts.all.file(path=file, state="absent")
         unarchive_result = hosts.all.zos_unarchive(
@@ -297,14 +274,12 @@ def test_uss_single_archive_with_mode(ansible_zos_module, format):
             mode=dest_mode,
         )
         for result in unarchive_result.contacted.values():
-            print(result)
             assert result.get("failed", False) is False
             assert result.get("changed") is True
             dest_files = list(USS_TEST_FILES.keys())
             for file in dest_files:
                 stat_dest_res = hosts.all.stat(path=file)
                 for stat_result in stat_dest_res.contacted.values():
-                    print(stat_result)
                     assert stat_result.get("stat").get("exists") is True
                     assert stat_result.get("stat").get("mode") == dest_mode
     finally:
@@ -389,19 +364,17 @@ def test_mvs_unarchive_single_dataset(ansible_zos_module, format, data_set, reco
             dest=MVS_DEST_ARCHIVE,
             format=format_dict,
         )
-        
-        # assert response is positive 
+        # assert response is positive
         for result in archive_result.contacted.values():
-            print(result)
             assert result.get("changed") is True
             assert result.get("dest") == MVS_DEST_ARCHIVE
             assert data_set.get("name") in result.get("archived")
             cmd_result = hosts.all.shell(cmd = "dls {0}.*".format(HLQ))
             for c_result in cmd_result.contacted.values():
                 assert MVS_DEST_ARCHIVE in c_result.get("stdout")
-        
+
         hosts.all.zos_data_set(name=data_set.get("name"), state="absent")
-        
+
         if format == "terse":
             del format_dict["format_options"]["terse_pack"]
         # Unarchive action
@@ -411,13 +384,11 @@ def test_mvs_unarchive_single_dataset(ansible_zos_module, format, data_set, reco
             remote_src=True,
             dest_data_set=dict(name=data_set.get("name"),
                                type=data_set.get("dstype"),
-                               record_format=record_format, 
+                               record_format=record_format,
                                record_length=record_length)
         )
-        
-        # assert response is positive 
+        # assert response is positive
         for result in unarchive_result.contacted.values():
-            print(result)
             assert result.get("changed") is True
             assert result.get("failed", False) is False
             # assert result.get("dest") == MVS_DEST_ARCHIVE
@@ -425,7 +396,6 @@ def test_mvs_unarchive_single_dataset(ansible_zos_module, format, data_set, reco
             cmd_result = hosts.all.shell(cmd = "dls {0}.*".format(HLQ))
             for c_result in cmd_result.contacted.values():
                 assert data_set.get("name") in c_result.get("stdout")
-        
     finally:
         hosts.all.zos_data_set(name=data_set.get("name"), state="absent")
         hosts.all.zos_data_set(name=MVS_DEST_ARCHIVE, state="absent")
@@ -490,19 +460,17 @@ def test_mvs_unarchive_single_dataset_use_adrdssu(ansible_zos_module, format, da
             dest=MVS_DEST_ARCHIVE,
             format=format_dict,
         )
-        
         # assert response is positive
         for result in archive_result.contacted.values():
-            print(result)
             assert result.get("changed") is True
             assert result.get("dest") == MVS_DEST_ARCHIVE
             assert data_set.get("name") in result.get("archived")
             cmd_result = hosts.all.shell(cmd = "dls {0}.*".format(HLQ))
             for c_result in cmd_result.contacted.values():
                 assert MVS_DEST_ARCHIVE in c_result.get("stdout")
-        
+
         hosts.all.zos_data_set(name=data_set.get("name"), state="absent")
-        
+
         if format == "terse":
             del format_dict["format_options"]["terse_pack"]
         # Unarchive action
@@ -511,10 +479,9 @@ def test_mvs_unarchive_single_dataset_use_adrdssu(ansible_zos_module, format, da
             format=format_dict,
             remote_src=True
         )
-        
-        # assert response is positive 
+
+        # assert response is positive
         for result in unarchive_result.contacted.values():
-            print(result)
             assert result.get("changed") is True
             assert result.get("failed", False) is False
             # assert result.get("dest") == MVS_DEST_ARCHIVE
@@ -522,7 +489,6 @@ def test_mvs_unarchive_single_dataset_use_adrdssu(ansible_zos_module, format, da
             cmd_result = hosts.all.shell(cmd = "dls {0}.*".format(HLQ))
             for c_result in cmd_result.contacted.values():
                 assert data_set.get("name") in c_result.get("stdout")
-        
     finally:
         hosts.all.zos_data_set(name=data_set.get("name"), state="absent")
         hosts.all.zos_data_set(name=MVS_DEST_ARCHIVE, state="absent")
@@ -563,7 +529,7 @@ def test_mvs_unarchive_multiple_dataset_use_adrdssu(ansible_zos_module, format, 
         test_line = "this is a test line"
         for ds in ds_to_write:
             hosts.all.shell(cmd="decho '{0}' \"{1}\"".format(test_line, ds.get("name")))
-        
+
         format_dict = dict(name=format, format_options=dict())
         if format == "terse":
             format_dict["format_options"].update(terse_pack="SPACK")
@@ -586,17 +552,14 @@ def test_mvs_unarchive_multiple_dataset_use_adrdssu(ansible_zos_module, format, 
             remote_src=True,
             force=True
         )
-        
-        # assert response is positive 
+        # assert response is positive
         for result in unarchive_result.contacted.values():
-            print(result)
             assert result.get("changed") is True
             assert result.get("failed", False) is False
             assert result.get("path") == MVS_DEST_ARCHIVE
-            
+
             cmd_result = hosts.all.shell(cmd="dls {0}.*".format(HLQ))
             for c_result in cmd_result.contacted.values():
-                print("dls result : {0}".format(c_result))
                 for target_ds in target_ds_list:
                     assert target_ds.get("name") in result.get("targets")
                     assert target_ds.get("name") in c_result.get("stdout")
@@ -640,7 +603,7 @@ def test_mvs_unarchive_multiple_dataset_use_adrdssu_include(ansible_zos_module, 
         test_line = "this is a test line"
         for ds in ds_to_write:
             hosts.all.shell(cmd="decho '{0}' \"{1}\"".format(test_line, ds.get("name")))
-        
+
         format_dict = dict(name=format, format_options=dict())
         if format == "terse":
             format_dict["format_options"].update(terse_pack="SPACK")
@@ -664,17 +627,15 @@ def test_mvs_unarchive_multiple_dataset_use_adrdssu_include(ansible_zos_module, 
             remote_src=True,
             include=[include_ds],
         )
-        
-        # assert response is positive 
+
+        # assert response is positive
         for result in unarchive_result.contacted.values():
-            print(result)
             assert result.get("changed") is True
             assert result.get("failed", False) is False
             assert result.get("path") == MVS_DEST_ARCHIVE
-            
+
             cmd_result = hosts.all.shell(cmd="dls {0}.*".format(HLQ))
             for c_result in cmd_result.contacted.values():
-                print("dls result : {0}".format(c_result))
                 for target_ds in target_ds_list:
                     if target_ds.get("name") == include_ds:
                         assert target_ds.get("name") in result.get("targets")
@@ -722,7 +683,7 @@ def test_mvs_unarchive_multiple_dataset_use_adrdssu_exclude(ansible_zos_module, 
         test_line = "this is a test line"
         for ds in ds_to_write:
             hosts.all.shell(cmd="decho '{0}' \"{1}\"".format(test_line, ds.get("name")))
-        
+
         format_dict = dict(name=format, format_options=dict())
         if format == "terse":
             format_dict["format_options"].update(terse_pack="SPACK")
@@ -746,17 +707,14 @@ def test_mvs_unarchive_multiple_dataset_use_adrdssu_exclude(ansible_zos_module, 
             remote_src=True,
             exclude=[exclude_ds],
         )
-        
-        # assert response is positive 
+        # assert response is positive
         for result in unarchive_result.contacted.values():
-            print(result)
             assert result.get("changed") is True
             assert result.get("failed", False) is False
             assert result.get("path") == MVS_DEST_ARCHIVE
-            
+
             cmd_result = hosts.all.shell(cmd="dls {0}.*".format(HLQ))
             for c_result in cmd_result.contacted.values():
-                print("dls result : {0}".format(c_result))
                 for target_ds in target_ds_list:
                     if target_ds.get("name") == exclude_ds:
                         assert target_ds.get("name") not in result.get("targets")
@@ -804,7 +762,7 @@ def test_mvs_unarchive_multiple_dataset_list(ansible_zos_module, format, data_se
         test_line = "this is a test line"
         for ds in ds_to_write:
             hosts.all.shell(cmd="decho '{0}' \"{1}\"".format(test_line, ds.get("name")))
-        
+
         format_dict = dict(name=format, format_options=dict())
         if format == "terse":
             format_dict["format_options"].update(terse_pack="SPACK")
@@ -827,17 +785,14 @@ def test_mvs_unarchive_multiple_dataset_list(ansible_zos_module, format, data_se
             remote_src=True,
             list=True
         )
-        
-        # assert response is positive 
+        # assert response is positive
         for result in unarchive_result.contacted.values():
-            print(result)
             assert result.get("changed") is False
             assert result.get("failed", False) is False
             assert result.get("path") == MVS_DEST_ARCHIVE
-            
+
             cmd_result = hosts.all.shell(cmd="dls {0}.*".format(HLQ))
             for c_result in cmd_result.contacted.values():
-                print("dls result : {0}".format(c_result))
                 for target_ds in target_ds_list:
                     assert target_ds.get("name") in result.get("targets")
                     assert target_ds.get("name") not in c_result.get("stdout")
@@ -891,7 +846,7 @@ def test_mvs_unarchive_multiple_dataset_use_adrdssu_force(ansible_zos_module, fo
         test_line = "this is a test line"
         for ds in ds_to_write:
             hosts.all.shell(cmd="decho '{0}' \"{1}\"".format(test_line, ds.get("name")))
-        
+
         format_dict = dict(name=format, format_options=dict())
         if format == "terse":
             format_dict["format_options"].update(terse_pack="SPACK")
@@ -911,18 +866,15 @@ def test_mvs_unarchive_multiple_dataset_use_adrdssu_force(ansible_zos_module, fo
             remote_src=True,
             force=force
         )
-        
-        # assert response is positive 
+        # assert response is positive
         for result in unarchive_result.contacted.values():
-            print(result)
             if force:
                 assert result.get("changed") is True
                 assert result.get("failed", False) is False
                 assert result.get("path") == MVS_DEST_ARCHIVE
-            
+
                 cmd_result = hosts.all.shell(cmd="dls {0}.*".format(HLQ))
                 for c_result in cmd_result.contacted.values():
-                    print("dls result : {0}".format(c_result))
                     for target_ds in target_ds_list:
                         assert target_ds.get("name") in result.get("targets")
                         assert target_ds.get("name") in c_result.get("stdout")
@@ -994,25 +946,22 @@ def test_mvs_unarchive_single_dataset_remote_src(ansible_zos_module, format, dat
             dest=MVS_DEST_ARCHIVE,
             format=format_dict,
         )
-         
         for result in archive_result.contacted.values():
-            print(result)
             assert result.get("changed") is True
             assert result.get("dest") == MVS_DEST_ARCHIVE
             assert data_set.get("name") in result.get("archived")
             cmd_result = hosts.all.shell(cmd = "dls {0}.*".format(HLQ))
             for c_result in cmd_result.contacted.values():
                 assert MVS_DEST_ARCHIVE in c_result.get("stdout")
-        
+
         hosts.all.zos_data_set(name=data_set.get("name"), state="absent")
 
         # fetch archive data set into tmp folder
         fetch_result = hosts.all.zos_fetch(src=MVS_DEST_ARCHIVE, dest=tmp_folder.name)
 
-        for res in fetch_result.contacted.values(): 
-            print(res)
+        for res in fetch_result.contacted.values():
             source_path = res.get("dest")
-        
+
         if format == "terse":
             del format_dict["format_options"]["terse_pack"]
         # Unarchive action
@@ -1021,9 +970,8 @@ def test_mvs_unarchive_single_dataset_remote_src(ansible_zos_module, format, dat
             format=format_dict,
             remote_src=False
         )
-        
+
         for result in unarchive_result.contacted.values():
-            print(result)
             assert result.get("changed") is True
             assert result.get("failed", False) is False
             # assert result.get("dest") == MVS_DEST_ARCHIVE
@@ -1031,7 +979,6 @@ def test_mvs_unarchive_single_dataset_remote_src(ansible_zos_module, format, dat
             cmd_result = hosts.all.shell(cmd = "dls {0}.*".format(HLQ))
             for c_result in cmd_result.contacted.values():
                 assert data_set.get("name") in c_result.get("stdout")
-        
     finally:
         hosts.all.zos_data_set(name=data_set.get("name"), state="absent")
         hosts.all.zos_data_set(name=MVS_DEST_ARCHIVE, state="absent")

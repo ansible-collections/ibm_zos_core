@@ -44,6 +44,11 @@ DUMMY DATA ---- LINE 007 ------
 
 DUMMY_DATA_CRLF = b"00000001 DUMMY DATA\r\n00000002 DUMMY DATA\r\n"
 
+# FD is outside of the range of UTF-8, so it should be useful when testing
+# that binary data is not getting converted.
+DUMMY_DATA_BINARY = b"\xFD\xFD\xFD\xFD"
+DUMMY_DATA_BINARY_ESCAPED = "\\xFD\\xFD\\xFD\\xFD"
+
 VSAM_RECORDS = """00000001A record
 00000002A record
 00000003A record
@@ -1329,6 +1334,79 @@ def test_copy_file_crlf_endings_to_sequential_data_set(ansible_zos_module):
     finally:
         hosts.all.zos_data_set(name=dest, state="absent")
         os.remove(src)
+
+
+# The following two tests are to address the bugfix for issue #807.
+@pytest.mark.uss
+@pytest.mark.seq
+def test_copy_local_binary_file_without_encoding_conversion(ansible_zos_module):
+    hosts = ansible_zos_module
+    dest = "USER.TEST.SEQ.FUNCTEST"
+
+    fd, src = tempfile.mkstemp()
+    os.close(fd)
+    with open(src, "wb") as infile:
+        infile.write(DUMMY_DATA_BINARY)
+
+    try:
+        hosts.all.zos_data_set(name=dest, state="absent")
+
+        copy_result = hosts.all.zos_copy(
+            src=src,
+            dest=dest,
+            remote_src=False,
+            is_binary=True
+        )
+
+        for cp_res in copy_result.contacted.values():
+            assert cp_res.get("msg") is None
+            assert cp_res.get("changed") is True
+            assert cp_res.get("dest") == dest
+    finally:
+        hosts.all.zos_data_set(name=dest, state="absent")
+        os.remove(src)
+
+
+@pytest.mark.uss
+@pytest.mark.seq
+def test_copy_remote_binary_file_without_encoding_conversion(ansible_zos_module):
+    hosts = ansible_zos_module
+    src = "/tmp/zos_copy_binary_file"
+    dest = "USER.TEST.SEQ.FUNCTEST"
+
+    try:
+        hosts.all.zos_data_set(name=dest, state="absent")
+
+        # Creating a binary file on the remote system through Python
+        # to avoid encoding issues if we were to copy a local file
+        # or use the shell directly.
+        python_cmd = """python3 -c 'with open("{0}", "wb") as f: f.write(b"{1}")'""".format(
+            src,
+            DUMMY_DATA_BINARY_ESCAPED
+        )
+        python_result = hosts.all.shell(python_cmd)
+        for result in python_result.contacted.values():
+            assert result.get("msg") is None or result.get("msg") == ""
+            assert result.get("stderr") is None or result.get("stderr") == ""
+
+        # Because the original bug report used a file tagged as 'binary'
+        # on z/OS, we'll recreate that use case here.
+        hosts.all.shell("chtag -b {0}".format(src))
+
+        copy_result = hosts.all.zos_copy(
+            src=src,
+            dest=dest,
+            remote_src=True,
+            is_binary=True
+        )
+
+        for cp_res in copy_result.contacted.values():
+            assert cp_res.get("msg") is None
+            assert cp_res.get("changed") is True
+            assert cp_res.get("dest") == dest
+    finally:
+        hosts.all.zos_data_set(name=dest, state="absent")
+        hosts.all.file(path=src, state="absent")
 
 
 @pytest.mark.uss

@@ -1107,6 +1107,12 @@ def test_backup_uss_file(ansible_zos_module, backup):
     src = "/etc/profile"
     dest = "/tmp/profile"
     backup_name = None
+    if backup:
+        backup_name = backup
+        backup = True
+    else:
+        backup_name = None
+        backup = False
 
     try:
         hosts.all.file(path=dest, state="touch")
@@ -1129,7 +1135,7 @@ def test_backup_uss_file(ansible_zos_module, backup):
             stat_res = hosts.all.stat(path=backup_name)
             for result in stat_res.contacted.values():
                 # issue is a file was named, backup true, but file wouldn't stat... need to trace
-                print( "\n\nbackup: {0}  name: {1}\n\n".format( backup, backup_name))
+                print( "\n\nbackup: {0}  name: -{1}-  exists: {2}\n\n".format( bool(backup), backup_name, bool(result.get("stat").get("exists"))))
                 assert result.get("stat").get("exists") is True
 
     finally:

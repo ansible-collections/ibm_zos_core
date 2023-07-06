@@ -340,14 +340,6 @@ class Archive():
     def remove_targets(self):
         pass
 
-    def get_state(self):
-        if not self.dest_exists():
-            self.dest_state = STATE_ABSENT
-        else:
-            if is_archive(self.dest):
-                self.dest_state = STATE_ARCHIVE
-            if bool(self.not_found):
-                self.dest_state = STATE_INCOMPLETE
 
     @property
     def result(self):
@@ -450,6 +442,15 @@ class USSArchive(Archive):
     def add(self, source, arcname):
         self._add(source, arcname)
         self.archived.append(source)
+
+    def get_state(self):
+        if not self.dest_exists():
+            self.dest_state = STATE_ABSENT
+        else:
+            if is_archive(self.dest):
+                self.dest_state = STATE_ARCHIVE
+            if bool(self.not_found):
+                self.dest_state = STATE_INCOMPLETE
 
 
 class TarArchive(USSArchive):
@@ -617,6 +618,14 @@ class MVSArchive(Archive):
             expanded_path.extend(e_paths)
         return expanded_path
 
+    def get_state(self):
+        if not self.dest_exists():
+            self.dest_state = STATE_ABSENT
+        else:
+            if bool(self.not_found):
+                self.dest_state = STATE_INCOMPLETE
+            elif bool(self.archived):
+                self.dest_state = STATE_ARCHIVE
 
 class AMATerseArchive(MVSArchive):
     def __init__(self, module):
@@ -651,6 +660,7 @@ class AMATerseArchive(MVSArchive):
         if self.use_adrdssu:
             source = self.prepare_temp_ds(self.module.params.get("tmp_hlq"))
             self.dump_into_temp_ds(source)
+            datasets.delete(source)
         else:
             # If we don't use a adrdssu container we cannot pack multiple data sets
             if len(self.targets) > 1:
@@ -659,7 +669,6 @@ class AMATerseArchive(MVSArchive):
             source = self.targets[0]
         dest = self.create_dest_ds(self.dest)
         self.add(source, dest)
-        datasets.delete(source)
 
 
 class XMITArchive(MVSArchive):
@@ -699,6 +708,7 @@ class XMITArchive(MVSArchive):
         if self.use_adrdssu:
             source = self.prepare_temp_ds(self.module.params.get("tmp_hlq"))
             self.dump_into_temp_ds(source)
+            datasets.delete(source)
         else:
             # If we don't use a adrdssu container we cannot pack multiple data sets
             if len(self.paths) > 1:
@@ -707,7 +717,6 @@ class XMITArchive(MVSArchive):
             source = self.paths[0]
         dest = self.create_dest_ds(self.dest)
         self.add(source, dest)
-        datasets.delete(source)
 
 
 def run_module():

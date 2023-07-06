@@ -2542,7 +2542,7 @@ def run_module(module, arg_def):
         is_dest_lock = data_set_locked(dest_name)
         if is_source_lock and is_dest_lock:
             module.fail_json(
-                msg="DATASETS in lock, unable to access'{0}' without force and unable to write in'{1}'".format(
+                msg="DATASETS in lock, unable to access'{0}' and unable to write in'{1}'".format(
                     src_name, dest_name
                 )
             )

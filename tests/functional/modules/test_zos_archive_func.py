@@ -797,6 +797,7 @@ def test_mvs_archive_multiple_data_sets_with_missing(ansible_zos_module, format,
         for result in archive_result.contacted.values():
             assert result.get("changed") is True
             assert result.get("dest") == MVS_DEST_ARCHIVE
+            assert result.get("dest_state") == STATE_INCOMPLETE
             assert missing_ds in result.get("missing")
             for ds in target_ds_list:
                 if ds.get("name") == missing_ds:

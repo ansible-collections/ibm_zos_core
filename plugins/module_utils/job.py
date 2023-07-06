@@ -240,7 +240,6 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, duration=
             job["ret_code"] = {}
             job["ret_code"]["msg"] = entry.status + " " + entry.rc
             job["ret_code"]["msg_code"] = entry.rc
-
             job["ret_code"]["code"] = None
             if len(entry.rc) > 0:
                 if entry.rc.isdigit():

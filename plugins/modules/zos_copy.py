@@ -2323,7 +2323,6 @@ def normalize_line_endings(src, encoding=None):
     return src
 
 
-
 def run_module(module, arg_def):
     # ********************************************************************
     # Verify the validity of module args. BetterArgParser raises ValueError

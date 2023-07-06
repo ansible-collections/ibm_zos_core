@@ -16,9 +16,6 @@
 from __future__ import absolute_import, division, print_function
 
 import pytest
-import os
-import shutil
-import re
 import tempfile
 from tempfile import mkstemp
 

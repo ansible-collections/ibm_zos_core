@@ -56,7 +56,7 @@ class ActionModule(ActionBase):
         local_follow = _process_boolean(task_args.get('local_follow'), default=False)
         remote_src = _process_boolean(task_args.get('remote_src'), default=False)
         is_binary = _process_boolean(task_args.get('is_binary'), default=False)
-        is_executable = _process_boolean(task_args.get('is_executable'), default=False)
+        executable = _process_boolean(task_args.get('executable'), default=False)
         ignore_sftp_stderr = _process_boolean(task_args.get("ignore_sftp_stderr"), default=False)
         backup_name = task_args.get("backup_name", None)
         encoding = task_args.get("encoding", None)

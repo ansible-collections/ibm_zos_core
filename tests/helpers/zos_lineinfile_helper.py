@@ -14,8 +14,6 @@
 from __future__ import absolute_import, division, print_function
 from shellescape import quote
 import time
-from pprint import pprint
-import pytest
 import re
 
 __metaclass__ = type
@@ -133,12 +131,7 @@ def DsGeneralResultKeyMatchesRegex(test_name, ansible_zos_module, test_env, test
         test_env["DS_NAME"] = hlq + "." + test_name.upper() + "." + test_env["DS_TYPE"]
         hosts.all.zos_data_set(name=test_env["DS_NAME"], type=test_env["DS_TYPE"], replace=True)
         hosts.all.shell(cmd="echo \"{0}\" > {1}".format(test_env["TEST_CONT"], TEMP_FILE))
-        if test_env["DS_TYPE"] in ["PDS", "PDSE"]:
-            test_env["DS_NAME"] = test_env["DS_NAME"] + "(MEM)"
-            hosts.all.zos_data_set(name=test_env["DS_NAME"], state="present", type="member")
-            cmdStr = "cp -CM {0} \"//'{1}'\"".format(quote(TEMP_FILE), test_env["DS_NAME"])
-        else:
-            cmdStr = "cp {0} \"//'{1}'\" ".format(quote(TEMP_FILE), test_env["DS_NAME"])
+        cmdStr = "cp {0} \"//'{1}'\" ".format(quote(TEMP_FILE), test_env["DS_NAME"])
         hosts.all.shell(cmd=cmdStr)
         hosts.all.shell(cmd="rm -rf " + test_env["TEST_DIR"])
         results = hosts.all.shell(cmd="cat \"//'{0}'\" | wc -l ".format(test_env["DS_NAME"]))
@@ -197,6 +190,8 @@ def DsGeneralForce(ansible_zos_module, test_env, test_info, expected):
         time.sleep(5)
         # call lineinfile to see results
         results = hosts.all.zos_lineinfile(**test_info)
+        for result in results.contacted.values():
+            assert result.get("changed") == True
         results = hosts.all.shell(cmd=r"""cat "//'{0}'" """.format(test_info["path"]))
         for result in results.contacted.values():
             assert result.get("stdout") == expected

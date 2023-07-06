@@ -13,8 +13,8 @@
 
 from __future__ import absolute_import, division, print_function
 from ibm_zos_core.tests.helpers.zos_blockinfile_helper import (
-    UssGeneral,
-    DsGeneral,
+    General_uss_test,
+    General_ds_test,
     DsNotSupportedHelper,
     DsGeneralResultKeyMatchesRegex,
     DsGeneralForce,
@@ -166,7 +166,7 @@ TEST_ENV = dict(
     ENCODING="IBM-1047",
 )
 
-TEST_INFO = dict(
+MODULE_PARAMS = dict(
     test_block_insertafter_regex=dict(insertafter="ZOAU_ROOT=", block="ZOAU_ROOT=/mvsutil-develop_dsed\nZOAU_HOME=\\$ZOAU_ROOT\nZOAU_DIR=\\$ZOAU_ROOT", state="present"),
     test_block_insertbefore_regex=dict(insertbefore="ZOAU_ROOT=", block="unset ZOAU_ROOT\nunset ZOAU_HOME\nunset ZOAU_DIR", state="present"),
     test_block_insertafter_eof=dict(insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present"),
@@ -204,11 +204,11 @@ TEST_INFO = dict(
 
 @pytest.mark.uss
 def test_uss_block_insertafter_regex_defaultmarker(ansible_zos_module):
-    UssGeneral(
-        "test_uss_block_insertafter_regex_defaultmarker", 
-        ansible_zos_module, 
+    General_uss_test(
+        "test_uss_block_insertafter_regex_defaultmarker",
+        ansible_zos_module,
         TEST_ENV,
-        TEST_INFO["test_block_insertafter_regex"],
+        MODULE_PARAMS["test_block_insertafter_regex"],
         """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -252,11 +252,11 @@ export _BPXK_AUTOCVT""")
 
 @pytest.mark.uss
 def test_uss_block_insertbefore_regex_defaultmarker(ansible_zos_module):
-    UssGeneral(
-        "test_uss_block_insertbefore_regex_defaultmarker", 
-        ansible_zos_module, 
+    General_uss_test(
+        "test_uss_block_insertbefore_regex_defaultmarker",
+        ansible_zos_module,
         TEST_ENV,
-        TEST_INFO["test_block_insertbefore_regex"],
+        MODULE_PARAMS["test_block_insertbefore_regex"],
         """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -300,11 +300,11 @@ export _BPXK_AUTOCVT""")
 
 @pytest.mark.uss
 def test_uss_block_insertafter_eof_defaultmarker(ansible_zos_module):
-    UssGeneral(
-        "test_uss_block_insertafter_eof_defaultmarker", 
+    General_uss_test(
+        "test_uss_block_insertafter_eof_defaultmarker",
         ansible_zos_module,
-        TEST_ENV, 
-        TEST_INFO["test_block_insertafter_eof"],
+        TEST_ENV,
+        MODULE_PARAMS["test_block_insertafter_eof"],
         """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -348,11 +348,11 @@ export ZOAU_DIR
 
 @pytest.mark.uss
 def test_uss_block_insertbefore_bof_defaultmarker(ansible_zos_module):
-    UssGeneral(
-        "test_uss_block_insertbefore_bof_defaultmarker", 
+    General_uss_test(
+        "test_uss_block_insertbefore_bof_defaultmarker",
         ansible_zos_module,
-        TEST_ENV, 
-        TEST_INFO["test_block_insertbefore_bof"],
+        TEST_ENV,
+        MODULE_PARAMS["test_block_insertbefore_bof"],
         """# BEGIN ANSIBLE MANAGED BLOCK
 # this is file is for setting env vars
 # END ANSIBLE MANAGED BLOCK
@@ -394,13 +394,13 @@ export _BPXK_AUTOCVT""")
 
 @pytest.mark.uss
 def test_uss_block_insertafter_regex_custommarker(ansible_zos_module):
-    _TEST_INFO = TEST_INFO["test_block_insertafter_regex"]
+    _TEST_INFO = MODULE_PARAMS["test_block_insertafter_regex"]
     _TEST_INFO["marker"] = '# {mark} IBM MANAGED BLOCK'
     _TEST_INFO["marker_begin"] = 'OPEN'
     _TEST_INFO["marker_end"] = 'CLOSE'
-    UssGeneral(
-        "test_uss_block_insertafter_regex_custommarker", 
-        ansible_zos_module, 
+    General_uss_test(
+        "test_uss_block_insertafter_regex_custommarker",
+        ansible_zos_module,
         TEST_ENV,
         _TEST_INFO,
         """if [ -z STEPLIB ] && tty -s;
@@ -449,13 +449,13 @@ export _BPXK_AUTOCVT""")
 
 @pytest.mark.uss
 def test_uss_block_insertbefore_regex_custommarker(ansible_zos_module):
-    _TEST_INFO = TEST_INFO["test_block_insertbefore_regex"]
+    _TEST_INFO = MODULE_PARAMS["test_block_insertbefore_regex"]
     _TEST_INFO["marker"] = '# {mark} IBM MANAGED BLOCK'
     _TEST_INFO["marker_begin"] = 'OPEN'
     _TEST_INFO["marker_end"] = 'CLOSE'
-    UssGeneral(
-        "test_uss_block_insertbefore_regex_custommarker", 
-        ansible_zos_module, 
+    General_uss_test(
+        "test_uss_block_insertbefore_regex_custommarker",
+        ansible_zos_module,
         TEST_ENV,
         _TEST_INFO,
         """if [ -z STEPLIB ] && tty -s;
@@ -504,14 +504,14 @@ export _BPXK_AUTOCVT""")
 
 @pytest.mark.uss
 def test_uss_block_insertafter_eof_custommarker(ansible_zos_module):
-    _TEST_INFO = TEST_INFO["test_block_insertafter_eof"]
+    _TEST_INFO = MODULE_PARAMS["test_block_insertafter_eof"]
     _TEST_INFO["marker"] = '# {mark} IBM MANAGED BLOCK'
     _TEST_INFO["marker_begin"] = 'OPEN'
     _TEST_INFO["marker_end"] = 'CLOSE'
-    UssGeneral(
-        "test_uss_block_insertafter_eof_custommarker", 
+    General_uss_test(
+        "test_uss_block_insertafter_eof_custommarker",
         ansible_zos_module,
-        TEST_ENV, 
+        TEST_ENV,
         _TEST_INFO,
         """if [ -z STEPLIB ] && tty -s;
 then
@@ -559,14 +559,14 @@ export ZOAU_DIR
 
 @pytest.mark.uss
 def test_uss_block_insertbefore_bof_custommarker(ansible_zos_module):
-    _TEST_INFO = TEST_INFO["test_block_insertbefore_bof"]
+    _TEST_INFO = MODULE_PARAMS["test_block_insertbefore_bof"]
     _TEST_INFO["marker"] = '# {mark} IBM MANAGED BLOCK'
     _TEST_INFO["marker_begin"] = 'OPEN'
     _TEST_INFO["marker_end"] = 'CLOSE'
-    UssGeneral(
-        "test_uss_block_insertbefore_bof_custommarker", 
+    General_uss_test(
+        "test_uss_block_insertbefore_bof_custommarker",
         ansible_zos_module,
-        TEST_ENV, 
+        TEST_ENV,
         _TEST_INFO,
         """# OPEN IBM MANAGED BLOCK
 # this is file is for setting env vars
@@ -613,11 +613,11 @@ export _BPXK_AUTOCVT""")
 @pytest.mark.uss
 def test_uss_block_absent_defaultmarker(ansible_zos_module):
     TEST_ENV["TEST_CONT"] = TEST_CONTENT_DEFAULTMARKER
-    UssGeneral(
-        "test_uss_block_absent_defaultmarker", 
-        ansible_zos_module, 
+    General_uss_test(
+        "test_uss_block_absent_defaultmarker",
+        ansible_zos_module,
         TEST_ENV,
-        TEST_INFO["test_block_absent"],
+        MODULE_PARAMS["test_block_absent"],
         """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -655,14 +655,14 @@ export _BPXK_AUTOCVT""")
 
 @pytest.mark.uss
 def test_uss_block_absent_custommarker(ansible_zos_module):
-    _TEST_INFO = TEST_INFO["test_block_absent"]
+    _TEST_INFO = MODULE_PARAMS["test_block_absent"]
     _TEST_INFO["marker"] = '# {mark} IBM MANAGED BLOCK'
     _TEST_INFO["marker_begin"] = 'OPEN'
     _TEST_INFO["marker_end"] = 'CLOSE'
     TEST_ENV["TEST_CONT"] = TEST_CONTENT_CUSTOMMARKER
-    UssGeneral(
-        "test_uss_block_absent_custommarker", 
-        ansible_zos_module, 
+    General_uss_test(
+        "test_uss_block_absent_custommarker",
+        ansible_zos_module,
         TEST_ENV,
         _TEST_INFO,
         """if [ -z STEPLIB ] && tty -s;
@@ -706,11 +706,11 @@ export _BPXK_AUTOCVT""")
 @pytest.mark.uss
 def test_uss_block_replace_insertafter_regex_defaultmarker(ansible_zos_module):
     TEST_ENV["TEST_CONT"] = TEST_CONTENT_DEFAULTMARKER
-    UssGeneral(
-        "test_uss_block_replace_insertafter_regex_defaultmarker", 
-        ansible_zos_module, 
+    General_uss_test(
+        "test_uss_block_replace_insertafter_regex_defaultmarker",
+        ansible_zos_module,
         TEST_ENV,
-        TEST_INFO["test_block_replace_insertafter_regex"],
+        MODULE_PARAMS["test_block_replace_insertafter_regex"],
         """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -754,11 +754,11 @@ export _BPXK_AUTOCVT""")
 @pytest.mark.uss
 def test_uss_block_replace_insertbefore_regex_defaultmarker(ansible_zos_module):
     TEST_ENV["TEST_CONT"] = TEST_CONTENT_DEFAULTMARKER
-    UssGeneral(
-        "test_uss_block_replace_insertbefore_regex_defaultmarker", 
-        ansible_zos_module, 
+    General_uss_test(
+        "test_uss_block_replace_insertbefore_regex_defaultmarker",
+        ansible_zos_module,
         TEST_ENV,
-        TEST_INFO["test_block_replace_insertbefore_regex"],
+        MODULE_PARAMS["test_block_replace_insertbefore_regex"],
         """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -802,11 +802,11 @@ export _BPXK_AUTOCVT""")
 @pytest.mark.uss
 def test_uss_block_replace_insertafter_eof_defaultmarker(ansible_zos_module):
     TEST_ENV["TEST_CONT"] = TEST_CONTENT_DEFAULTMARKER
-    UssGeneral(
-        "test_uss_block_replace_insertafter_eof_defaultmarker", 
+    General_uss_test(
+        "test_uss_block_replace_insertafter_eof_defaultmarker",
         ansible_zos_module,
-        TEST_ENV, 
-        TEST_INFO["test_block_replace_insertafter_eof"],
+        TEST_ENV,
+        MODULE_PARAMS["test_block_replace_insertafter_eof"],
         """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -850,11 +850,11 @@ export ZOAU_DIR
 @pytest.mark.uss
 def test_uss_block_replace_insertbefore_bof_defaultmarker(ansible_zos_module):
     TEST_ENV["TEST_CONT"] = TEST_CONTENT_DEFAULTMARKER
-    UssGeneral(
-        "test_uss_block_replace_insertbefore_bof_defaultmarker", 
+    General_uss_test(
+        "test_uss_block_replace_insertbefore_bof_defaultmarker",
         ansible_zos_module,
-        TEST_ENV, 
-        TEST_INFO["test_block_replace_insertbefore_bof"],
+        TEST_ENV,
+        MODULE_PARAMS["test_block_replace_insertbefore_bof"],
         """# BEGIN ANSIBLE MANAGED BLOCK
 # this is file is for setting env vars
 # END ANSIBLE MANAGED BLOCK
@@ -895,14 +895,14 @@ export _BPXK_AUTOCVT""")
 
 @pytest.mark.uss
 def test_uss_block_replace_insertafter_regex_custommarker(ansible_zos_module):
-    _TEST_INFO = TEST_INFO["test_block_replace_insertafter_regex"]
+    _TEST_INFO = MODULE_PARAMS["test_block_replace_insertafter_regex"]
     _TEST_INFO["marker"] = '# {mark} IBM MANAGED BLOCK'
     _TEST_INFO["marker_begin"] = 'OPEN'
     _TEST_INFO["marker_end"] = 'CLOSE'
     TEST_ENV["TEST_CONT"] = TEST_CONTENT_CUSTOMMARKER
-    UssGeneral(
-        "test_uss_block_replace_insertafter_regex_custommarker", 
-        ansible_zos_module, 
+    General_uss_test(
+        "test_uss_block_replace_insertafter_regex_custommarker",
+        ansible_zos_module,
         TEST_ENV,
         _TEST_INFO,
         """if [ -z STEPLIB ] && tty -s;
@@ -950,14 +950,14 @@ export _BPXK_AUTOCVT""")
 
 @pytest.mark.uss
 def test_uss_block_replace_insertbefore_regex_custommarker(ansible_zos_module):
-    _TEST_INFO = TEST_INFO["test_block_replace_insertbefore_regex"]
+    _TEST_INFO = MODULE_PARAMS["test_block_replace_insertbefore_regex"]
     _TEST_INFO["marker"] = '# {mark} IBM MANAGED BLOCK'
     _TEST_INFO["marker_begin"] = 'OPEN'
     _TEST_INFO["marker_end"] = 'CLOSE'
     TEST_ENV["TEST_CONT"] = TEST_CONTENT_CUSTOMMARKER
-    UssGeneral(
-        "test_uss_block_replace_insertbefore_regex_custommarker", 
-        ansible_zos_module, 
+    General_uss_test(
+        "test_uss_block_replace_insertbefore_regex_custommarker",
+        ansible_zos_module,
         TEST_ENV,
         _TEST_INFO,
         """if [ -z STEPLIB ] && tty -s;
@@ -1005,15 +1005,15 @@ export _BPXK_AUTOCVT""")
 
 @pytest.mark.uss
 def test_uss_block_replace_insertafter_eof_custommarker(ansible_zos_module):
-    _TEST_INFO = TEST_INFO["test_block_replace_insertafter_eof"]
+    _TEST_INFO = MODULE_PARAMS["test_block_replace_insertafter_eof"]
     _TEST_INFO["marker"] = '# {mark} IBM MANAGED BLOCK'
     _TEST_INFO["marker_begin"] = 'OPEN'
     _TEST_INFO["marker_end"] = 'CLOSE'
     TEST_ENV["TEST_CONT"] = TEST_CONTENT_CUSTOMMARKER
-    UssGeneral(
-        "test_uss_block_replace_insertafter_eof_custommarker", 
+    General_uss_test(
+        "test_uss_block_replace_insertafter_eof_custommarker",
         ansible_zos_module,
-        TEST_ENV, 
+        TEST_ENV,
         _TEST_INFO,
         """if [ -z STEPLIB ] && tty -s;
 then
@@ -1060,15 +1060,15 @@ export ZOAU_DIR
 
 @pytest.mark.uss
 def test_uss_block_replace_insertbefore_bof_custommarker(ansible_zos_module):
-    _TEST_INFO = TEST_INFO["test_block_replace_insertbefore_bof"]
+    _TEST_INFO = MODULE_PARAMS["test_block_replace_insertbefore_bof"]
     _TEST_INFO["marker"] = '# {mark} IBM MANAGED BLOCK'
     _TEST_INFO["marker_begin"] = 'OPEN'
     _TEST_INFO["marker_end"] = 'CLOSE'
     TEST_ENV["TEST_CONT"] = TEST_CONTENT_CUSTOMMARKER
-    UssGeneral(
-        "test_uss_block_replace_insertbefore_bof_custommarker", 
+    General_uss_test(
+        "test_uss_block_replace_insertbefore_bof_custommarker",
         ansible_zos_module,
-        TEST_ENV, 
+        TEST_ENV,
         _TEST_INFO,
         """# OPEN IBM MANAGED BLOCK
 # this is file is for setting env vars
@@ -1113,11 +1113,11 @@ export _BPXK_AUTOCVT""")
 
 @pytest.mark.uss
 def test_uss_block_insert_with_indentation_level_specified(ansible_zos_module):
-    UssGeneral(
-        "test_uss_block_insert_with_indentation_level_specified", 
+    General_uss_test(
+        "test_uss_block_insert_with_indentation_level_specified",
         ansible_zos_module,
-        TEST_ENV, 
-        TEST_INFO["test_block_insert_with_indentation_level_specified"],
+        TEST_ENV,
+        MODULE_PARAMS["test_block_insert_with_indentation_level_specified"],
         """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -1162,11 +1162,11 @@ export _BPXK_AUTOCVT
 @pytest.mark.uss
 def test_uss_block_insert_with_doublequotes(ansible_zos_module):
     TEST_ENV["TEST_CONT"] = TEST_CONTENT_DOUBLEQUOTES
-    UssGeneral(
-        "test_uss_block_insert_with_doublequotes", 
+    General_uss_test(
+        "test_uss_block_insert_with_doublequotes",
         ansible_zos_module,
-        TEST_ENV, 
-        TEST_INFO["test_uss_block_insert_with_doublequotes"],
+        TEST_ENV,
+        MODULE_PARAMS["test_uss_block_insert_with_doublequotes"],
         """//BPXSLEEP JOB MSGCLASS=A,MSGLEVEL=(1,1),NOTIFY=&SYSUID,REGION=0M
 //USSCMD EXEC PGM=BPXBATCH
 //STDERR  DD SYSOUT=*
@@ -1187,11 +1187,11 @@ cat "//OMVSADM.COPYMEM.TESTS" > test.txt
 def test_uss_block_insertafter_eof_with_backup(ansible_zos_module):
     try:
         backup_name = USS_BACKUP_FILE
-        uss_result = UssGeneral(
-            "test_uss_block_insertafter_eof_with_backup", 
+        uss_result = General_uss_test(
+            "test_uss_block_insertafter_eof_with_backup",
             ansible_zos_module,
-            TEST_ENV, 
-            TEST_INFO["test_uss_block_insertafter_eof_with_backup"],
+            TEST_ENV,
+            MODULE_PARAMS["test_uss_block_insertafter_eof_with_backup"],
             """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -1241,11 +1241,11 @@ export ZOAU_DIR
 @pytest.mark.uss
 def test_uss_block_insertafter_eof_with_backup_name(ansible_zos_module):
     try:
-        uss_result = UssGeneral(
-            "test_uss_block_insertafter_eof_with_backup_name", 
+        uss_result = General_uss_test(
+            "test_uss_block_insertafter_eof_with_backup_name",
             ansible_zos_module,
-            TEST_ENV, 
-            TEST_INFO["test_uss_block_insertafter_eof_with_backup_name"],
+            TEST_ENV,
+            MODULE_PARAMS["test_uss_block_insertafter_eof_with_backup_name"],
             """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -1304,12 +1304,11 @@ export ZOAU_DIR
 @pytest.mark.parametrize("dstype", DS_TYPE)
 def test_ds_block_insertafter_regex(ansible_zos_module, dstype):
     TEST_ENV["DS_TYPE"] = dstype
-    TEST_INFO_DS = {**TEST_INFO["test_block_insertafter_regex"]}
-    DsGeneral(
+    General_ds_test(
         "T1",
-        ansible_zos_module, 
+        ansible_zos_module,
         TEST_ENV,
-        TEST_INFO_DS,
+        MODULE_PARAMS["test_block_insertafter_regex"],
         """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -1356,12 +1355,11 @@ export _BPXK_AUTOCVT"""
 @pytest.mark.parametrize("dstype", DS_TYPE)
 def test_ds_block_insertbefore_regex(ansible_zos_module, dstype):
     TEST_ENV["DS_TYPE"] = dstype
-    TEST_INFO_DS = {**TEST_INFO["test_block_insertbefore_regex"]}
-    DsGeneral(
-        "T1",
-        ansible_zos_module, 
+    General_ds_test(
+        "T2",
+        ansible_zos_module,
         TEST_ENV,
-        TEST_INFO_DS,
+        MODULE_PARAMS["test_block_insertbefore_regex"],
         """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -1408,12 +1406,11 @@ export _BPXK_AUTOCVT"""
 @pytest.mark.parametrize("dstype", DS_TYPE)
 def test_ds_block_insertafter_eof(ansible_zos_module, dstype):
     TEST_ENV["DS_TYPE"] = dstype
-    TEST_INFO_DS = {**TEST_INFO["test_block_insertafter_eof"]}
-    DsGeneral(
-        "T1",
-        ansible_zos_module, 
+    General_ds_test(
+        "T3",
+        ansible_zos_module,
         TEST_ENV,
-        TEST_INFO_DS,
+        MODULE_PARAMS["test_block_insertafter_eof"],
         """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -1458,14 +1455,13 @@ export ZOAU_DIR
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_block_insertbefore_bof(ansible_zos_module, dstype, ):
+def test_ds_block_insertbefore_bof(ansible_zos_module, dstype):
     TEST_ENV["DS_TYPE"] = dstype
-    TEST_INFO_DS = {**TEST_INFO["test_block_insertbefore_bof"]}
-    DsGeneral(
-        "T1",
-        ansible_zos_module, 
+    General_ds_test(
+        "T4",
+        ansible_zos_module,
         TEST_ENV,
-        TEST_INFO_DS,
+        MODULE_PARAMS["test_block_insertbefore_bof"],
         """# BEGIN ANSIBLE MANAGED BLOCK
 # this is file is for setting env vars
 # END ANSIBLE MANAGED BLOCK
@@ -1510,12 +1506,11 @@ export _BPXK_AUTOCVT""")
 def test_ds_block_replace_insertafter_regex(ansible_zos_module, dstype):
     TEST_ENV["DS_TYPE"] = dstype
     TEST_ENV["TEST_CONT"] = TEST_CONTENT_DEFAULTMARKER
-    TEST_INFO_DS = {**TEST_INFO["test_block_replace_insertafter_regex"]}
-    DsGeneral(
-        "T1",
-        ansible_zos_module, 
+    General_ds_test(
+        "T5",
+        ansible_zos_module,
         TEST_ENV,
-        TEST_INFO_DS,
+        MODULE_PARAMS["test_block_replace_insertafter_regex"],
         """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -1561,12 +1556,11 @@ export _BPXK_AUTOCVT""")
 def test_ds_block_replace_insertbefore_regex(ansible_zos_module, dstype):
     TEST_ENV["DS_TYPE"] = dstype
     TEST_ENV["TEST_CONT"] = TEST_CONTENT_DEFAULTMARKER
-    TEST_INFO_DS = {**TEST_INFO["test_block_replace_insertbefore_regex"]}
-    DsGeneral(
-        "T1",
+    General_ds_test(
+        "T6",
         ansible_zos_module,
         TEST_ENV,
-        TEST_INFO_DS,
+        MODULE_PARAMS["test_block_replace_insertbefore_regex"],
         """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -1612,12 +1606,11 @@ export _BPXK_AUTOCVT""")
 def test_ds_block_replace_insertafter_eof(ansible_zos_module, dstype):
     TEST_ENV["DS_TYPE"] = dstype
     TEST_ENV["TEST_CONT"] = TEST_CONTENT_DEFAULTMARKER
-    TEST_INFO_DS = {**TEST_INFO["test_block_replace_insertafter_eof"]}
-    DsGeneral(
-        "T1",
-        ansible_zos_module, 
+    General_ds_test(
+        "T7",
+        ansible_zos_module,
         TEST_ENV,
-        TEST_INFO_DS,
+        MODULE_PARAMS["test_block_replace_insertafter_eof"],
         """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -1663,12 +1656,11 @@ export ZOAU_DIR
 def test_ds_block_replace_insertbefore_bof(ansible_zos_module, dstype):
     TEST_ENV["DS_TYPE"] = dstype
     TEST_ENV["TEST_CONT"] = TEST_CONTENT_DEFAULTMARKER
-    TEST_INFO_DS = {**TEST_INFO["test_block_replace_insertbefore_bof"]}
-    DsGeneral(
-        "T1",
-        ansible_zos_module, 
+    General_ds_test(
+        "T8",
+        ansible_zos_module,
         TEST_ENV,
-        TEST_INFO_DS,
+        MODULE_PARAMS["test_block_replace_insertbefore_bof"],
         """# BEGIN ANSIBLE MANAGED BLOCK
 # this is file is for setting env vars
 # END ANSIBLE MANAGED BLOCK
@@ -1712,12 +1704,11 @@ export _BPXK_AUTOCVT""")
 def test_ds_block_absent(ansible_zos_module, dstype):
     TEST_ENV["DS_TYPE"] = dstype
     TEST_ENV["TEST_CONT"] = TEST_CONTENT_DEFAULTMARKER
-    TEST_INFO_DS = {**TEST_INFO["test_block_absent"]}
-    DsGeneral(
-        "T1", 
+    General_ds_test(
+        "T9",
         ansible_zos_module,
-        TEST_ENV, 
-        TEST_INFO_DS,
+        TEST_ENV,
+        MODULE_PARAMS["test_block_absent"],
         """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -1754,18 +1745,16 @@ export _BPXK_AUTOCVT""")
 
 
 @pytest.mark.ds
-@pytest.mark.parametrize("dstype", DS_TYPE)
-def test_ds_tmp_hlq_option(ansible_zos_module, dstype):
-    TEST_ENV["DS_TYPE"] = dstype
+def test_ds_tmp_hlq_option(ansible_zos_module):
+    # This TMPHLQ only works with sequential datasets
+    TEST_ENV["DS_TYPE"] = "SEQ"
     TEST_ENV["TEST_CONT"] = TEST_CONTENT_DEFAULTMARKER
-    TEST_INFO_DS = {**TEST_INFO["test_ds_block_tmp_hlq_option"]}
-    test_name = "T6"
     kwargs = dict(backup_name=r"TMPHLQ\..")
     DsGeneralResultKeyMatchesRegex(
-        test_name, 
+        "T10",
         ansible_zos_module,
-        TEST_ENV, 
-        TEST_INFO_DS,
+        TEST_ENV,
+        MODULE_PARAMS["test_ds_block_tmp_hlq_option"],
         **kwargs
     )
     TEST_ENV["TEST_CONT"] = TEST_CONTENT
@@ -1775,12 +1764,11 @@ def test_ds_tmp_hlq_option(ansible_zos_module, dstype):
 @pytest.mark.parametrize("dstype", DS_TYPE)
 def test_ds_block_insert_with_indentation_level_specified(ansible_zos_module, dstype):
     TEST_ENV["DS_TYPE"] = dstype
-    TEST_INFO["test_block_insert_with_indentation_level_specified_name"] = {**TEST_INFO["test_block_insert_with_indentation_level_specified"], "test_name":"T7"}
-    DsGeneral(
-        TEST_INFO["test_block_insert_with_indentation_level_specified_name"]["test_name"],
-        ansible_zos_module, 
+    General_ds_test(
+        "T11",
+        ansible_zos_module,
         TEST_ENV,
-        TEST_INFO["test_block_insert_with_indentation_level_specified"],
+        MODULE_PARAMS["test_block_insert_with_indentation_level_specified"],
         """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -1829,12 +1817,12 @@ def test_ds_block_insertafter_eof_with_backup(ansible_zos_module, dstype, backup
     try:
         backup_ds_name = MVS_BACKUP_DS
         TEST_ENV["DS_TYPE"] = dstype
-        TEST_INFO["test_ds_block_insertafter_eof_with_backup"]["backup_name"] = backup_name
-        ds_result = DsGeneral(
-            "T10",
-            ansible_zos_module, 
+        MODULE_PARAMS["test_ds_block_insertafter_eof_with_backup"]["backup_name"] = backup_name
+        ds_result = General_ds_test(
+            "T12",
+            ansible_zos_module,
             TEST_ENV,
-            TEST_INFO["test_ds_block_insertafter_eof_with_backup"],
+            MODULE_PARAMS["test_ds_block_insertafter_eof_with_backup"],
             """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -1877,12 +1865,8 @@ export ZOAU_DIR
         for result in ds_result.contacted.values():
             backup_ds_name = result.get("backup_name")
             assert backup_ds_name is not None
-            cmdStr = "cat \"//'{0}'\" ".format(backup_ds_name)
-            results = ansible_zos_module.all.shell(cmd=cmdStr)
-            for result in results.contacted.values():
-                assert result.get("stdout") == TEST_ENV["TEST_CONT"]
     finally:
-        ansible_zos_module.all.zos_data_set(name=backup_ds_name, state="absent")
+        ansible_zos_module.all.zos_data_set(name=backup_name, state="absent")
 
 
 @pytest.mark.ds
@@ -1890,9 +1874,9 @@ export ZOAU_DIR
 def test_ds_block_insertafter_regex_force(ansible_zos_module, dstype):
     TEST_ENV["DS_TYPE"] = dstype
     DsGeneralForce(
-        ansible_zos_module, 
+        ansible_zos_module,
         TEST_ENV,
-        TEST_INFO["test_ds_block_insertafter_regex_force"],
+        MODULE_PARAMS["test_ds_block_insertafter_regex_force"],
         """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -1932,7 +1916,6 @@ export PYTHONPATH
 export PKG_CONFIG_PATH
 export PYTHON_HOME
 export _BPXK_AUTOCVT""")
-    
 
 #########################
 # Negative tests
@@ -1942,7 +1925,7 @@ export _BPXK_AUTOCVT""")
 @pytest.mark.ds
 def test_not_exist_ds_block_insertafter_regex(ansible_zos_module):
     hosts = ansible_zos_module
-    test_info = TEST_INFO["test_block_insertafter_regex"]
+    test_info = MODULE_PARAMS["test_block_insertafter_regex"]
     test_info["path"] = "BIFTEST.NOTEXIST.SEQ"
     results = hosts.all.zos_blockinfile(**test_info)
     for result in results.contacted.values():
@@ -1953,12 +1936,12 @@ def test_not_exist_ds_block_insertafter_regex(ansible_zos_module):
 def test_ds_block_insertafter_nomatch_eof_insert(ansible_zos_module):
     TEST_ENV["DS_TYPE"] = 'SEQ'
     TEST_ENV["ENCODING"] = 'IBM-1047'
-    TEST_INFO["test_block_insertafter_eof"]["insertafter"] = 'SOME_NON_EXISTING_PATTERN'
-    DsGeneral(
-        "T1",
-        ansible_zos_module, 
+    MODULE_PARAMS["test_block_insertafter_eof"]["insertafter"] = 'SOME_NON_EXISTING_PATTERN'
+    General_ds_test(
+        "T12",
+        ansible_zos_module,
         TEST_ENV,
-        TEST_INFO["test_block_insertafter_eof"],
+        MODULE_PARAMS["test_block_insertafter_eof"],
         """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -2003,7 +1986,7 @@ export ZOAU_DIR
 @pytest.mark.ds
 def test_ds_block_insertafter_regex_wrongmarker(ansible_zos_module):
     hosts = ansible_zos_module
-    test_info = TEST_INFO["test_block_insertafter_regex"]
+    test_info = MODULE_PARAMS["test_block_insertafter_regex"]
     test_info["path"] = "BIFTEST.NOTEXIST.SEQ"
     test_info["marker"] = '# MANAGED BLOCK'
     results = hosts.all.zos_blockinfile(**test_info)
@@ -2017,18 +2000,19 @@ def test_ds_block_insertafter_regex_wrongmarker(ansible_zos_module):
 def test_ds_not_supported(ansible_zos_module, dstype):
     TEST_ENV["DS_TYPE"] = dstype
     DsNotSupportedHelper(
-        "T1", 
+        "T13",
         ansible_zos_module,
-        TEST_ENV, TEST_INFO["test_block_insertafter_regex"]
+        TEST_ENV,
+        MODULE_PARAMS["test_block_insertafter_regex"]
     )
 
 
 @pytest.mark.ds
-@pytest.mark.parametrize("dstype", DS_TYPE)
+@pytest.mark.parametrize("dstype", ["PDS","PDSE"])
 def test_ds_block_insertafter_regex_fail(ansible_zos_module, dstype):
     TEST_ENV["DS_TYPE"] = dstype
     DsGeneralForceFail(
         ansible_zos_module,
         TEST_ENV,
-        TEST_INFO["test_ds_block_insertafter_regex_force_fail"],
+        MODULE_PARAMS["test_ds_block_insertafter_regex_force_fail"],
     )

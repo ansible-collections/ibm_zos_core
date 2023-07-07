@@ -2540,7 +2540,7 @@ def run_module(module, arg_def):
         is_dest_lock = data_set_locked(dest_name)
         if is_dest_lock:
             module.fail_json(
-                            msg="Unable to write to dest '{0}' because a task is accessing the data set.".format(dest_name))
+                        msg="Unable to write to dest '{0}' because a task is accessing the data set.".format(dest_name))
     # ********************************************************************
     # Backup should only be performed if dest is an existing file or
     # data set. Otherwise ignored.

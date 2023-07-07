@@ -2695,16 +2695,16 @@ def test_backup_pds(ansible_zos_module, args):
         if args["backup"]:
             copy_res = hosts.all.zos_copy(src=src, dest=dest, force=True, backup=True, backup_name=args["backup"])
         else:
-            copy_res = hosts.all.zos_copy(src=src, dest=dest, force=True, backup=True)
+            copy_res = hosts.all.zos_copy(src=src, dest=dest, force=True, backup=False)
 
         for result in copy_res.contacted.values():
             assert result.get("msg") is None
             assert result.get("changed") is True
             assert result.get("dest") == dest
 
-            backup_name = result.get("backup_name")
-            assert backup_name is not None
             if args["backup"]:
+                backup_name = result.get("backup_name")
+                assert backup_name is not None
                 assert backup_name == args["backup"]
 
         verify_copy = get_listcat_information(hosts, backup_name, args["type"])

@@ -375,6 +375,133 @@ dest_data_set
 
 
 
+use_template
+  Whether the module should treat ``src`` as a Jinja2 template and render it before continuing with the rest of the module.
+
+  Only valid when ``src`` is a local file or directory.
+
+  All variables defined in inventory files, vars files and the playbook will be passed to the template engine, as well as `Ansible special variables <https://docs.ansible.com/ansible/latest/reference_appendices/special_variables.html#special-variables>`_, such as ``playbook_dir``, ``ansible_version``, etc.
+
+  If variables defined in different scopes share the same name, Ansible will apply variable precedence to them. You can see the complete precedence order `in Ansible's documentation <https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_variables.html#understanding-variable-precedence>`_
+
+  | **required**: False
+  | **type**: bool
+
+
+template_parameters
+  Options to set the way Jinja2 will process templates.
+
+  Jinja2 already sets defaults for the markers it uses, you can find more information at its `official documentation <https://jinja.palletsprojects.com/en/latest/templates/>`_.
+
+  These options are ignored unless ``use_template`` is true.
+
+  | **required**: False
+  | **type**: dict
+
+
+  variable_start_string
+    Marker for the beginning of a statement to print a variable in Jinja2.
+
+    | **required**: False
+    | **type**: str
+    | **default**: {{
+
+
+  variable_end_string
+    Marker for the end of a statement to print a variable in Jinja2.
+
+    | **required**: False
+    | **type**: str
+    | **default**: }}
+
+
+  block_start_string
+    Marker for the beginning of a block in Jinja2.
+
+    | **required**: False
+    | **type**: str
+    | **default**: {%
+
+
+  block_end_string
+    Marker for the end of a block in Jinja2.
+
+    | **required**: False
+    | **type**: str
+    | **default**: %}
+
+
+  comment_start_string
+    Marker for the beginning of a comment in Jinja2.
+
+    | **required**: False
+    | **type**: str
+    | **default**: {#
+
+
+  comment_end_string
+    Marker for the end of a comment in Jinja2.
+
+    | **required**: False
+    | **type**: str
+    | **default**: #}
+
+
+  line_statement_prefix
+    Prefix used by Jinja2 to identify line-based statements.
+
+    | **required**: False
+    | **type**: str
+
+
+  line_comment_prefix
+    Prefix used by Jinja2 to identify comment lines.
+
+    | **required**: False
+    | **type**: str
+
+
+  lstrip_blocks
+    Whether Jinja2 should strip leading spaces from the start of a line to a block.
+
+    | **required**: False
+    | **type**: bool
+
+
+  trim_blocks
+    Whether Jinja2 should remove the first newline after a block is removed.
+
+    Setting this option to ``False`` will result in newlines being added to the rendered template. This could create invalid code when working with JCL templates or empty records in destination data sets.
+
+    | **required**: False
+    | **type**: bool
+    | **default**: True
+
+
+  keep_trailing_newline
+    Whether Jinja2 should keep the first trailing newline at the end of a template after rendering.
+
+    | **required**: False
+    | **type**: bool
+
+
+  newline_sequence
+    Sequence that starts a newline in a template.
+
+    | **required**: False
+    | **type**: str
+    | **default**: \\n
+    | **choices**: \\n, \\r, \\r\\n
+
+
+  auto_reload
+    Whether to reload a template file when it has changed after the task has started.
+
+    | **required**: False
+    | **type**: bool
+
+
+
 
 
 Examples
@@ -594,6 +721,79 @@ dest
   | **returned**: success
   | **type**: str
   | **sample**: SAMPLE.SEQ.DATA.SET
+
+dest_created
+  Indicates whether the module created the destination.
+
+  | **returned**: success and if dest was created by the module.
+  | **type**: bool
+  | **sample**:
+
+    .. code-block:: json
+
+        true
+
+destination_attributes
+  Attributes of a dest created by the module.
+
+  | **returned**: success and destination was created by the module.
+  | **type**: dict
+  | **sample**:
+
+    .. code-block:: json
+
+        {
+            "block_size": 32760,
+            "record_format": "FB",
+            "record_length": 45,
+            "space_primary": 2,
+            "space_secondary": 1,
+            "space_type": "K",
+            "type": "PDSE"
+        }
+
+  block_size
+    Block size of the dataset.
+
+    | **type**: int
+    | **sample**: 32760
+
+  record_format
+    Record format of the dataset.
+
+    | **type**: str
+    | **sample**: FB
+
+  record_length
+    Record length of the dataset.
+
+    | **type**: int
+    | **sample**: 45
+
+  space_primary
+    Allocated primary space for the dataset.
+
+    | **type**: int
+    | **sample**: 2
+
+  space_secondary
+    Allocated secondary space for the dataset.
+
+    | **type**: int
+    | **sample**: 1
+
+  space_type
+    Unit of measurement for space.
+
+    | **type**: str
+    | **sample**: K
+
+  type
+    Type of dataset allocated.
+
+    | **type**: str
+    | **sample**: PDSE
+
 
 checksum
   SHA256 checksum of the file after running zos_copy.

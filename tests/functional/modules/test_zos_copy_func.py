@@ -55,6 +55,38 @@ VSAM_RECORDS = """00000001A record
 00000003A record
 """
 
+TEMPLATE_CONTENT = """
+This is a Jinja2 test: {{ var }}
+
+{# This is a comment. #}
+
+If:
+{% if if_var is divisibleby 5 %}
+Condition is true.
+{% endif %}
+
+Inside a loop:
+{% for i in array %}
+Current element: {{ i }}
+{% endfor %}
+"""
+
+TEMPLATE_CONTENT_NON_DEFAULT_MARKERS = """
+This is a Jinja2 test: (( var ))
+
+#% This is a comment. %#
+
+If:
+{% if if_var is divisibleby 5 %}
+Condition is true.
+{% endif %}
+
+Inside a loop:
+{% for i in array %}
+Current element: (( i ))
+{% endfor %}
+"""
+
 # SHELL_EXECUTABLE = "/usr/lpp/rsusr/ported/bin/bash"
 SHELL_EXECUTABLE = "/bin/sh"
 TEST_PS = "IMSTESTL.IMS01.DDCHKPT"
@@ -146,6 +178,16 @@ def populate_dir(dir_path):
     for i in range(5):
         with open(dir_path + "/" + "file" + str(i + 1), "w") as infile:
             infile.write(DUMMY_DATA)
+
+
+def create_template_file(dir_path, use_default_markers=True, encoding="utf-8"):
+    content = TEMPLATE_CONTENT if use_default_markers else TEMPLATE_CONTENT_NON_DEFAULT_MARKERS
+    template_path = os.path.join(dir_path, "template")
+
+    with open(template_path, "w", encoding=encoding) as infile:
+        infile.write(content)
+
+    return template_path
 
 
 def populate_dir_crlf_endings(dir_path):
@@ -1190,6 +1232,264 @@ def test_copy_non_existent_file_fails(ansible_zos_module, is_remote):
 
 
 @pytest.mark.uss
+@pytest.mark.template
+@pytest.mark.parametrize("encoding", ["utf-8", "iso8859-1"])
+def test_copy_template_file(ansible_zos_module, encoding):
+    hosts = ansible_zos_module
+    dest_path = "/tmp/new_dir"
+    temp_dir = tempfile.mkdtemp()
+
+    try:
+        temp_template = create_template_file(
+            temp_dir,
+            use_default_markers=True,
+            encoding=encoding
+        )
+        dest_template = os.path.join(dest_path, os.path.basename(temp_template))
+
+        hosts.all.file(path=dest_path, state="directory")
+
+        # Adding the template vars to each host.
+        template_vars = dict(
+            var="This should be rendered",
+            if_var=5,
+            array=[1, 2, 3]
+        )
+        for host in hosts["options"]["inventory_manager"]._inventory.hosts.values():
+            host.vars.update(template_vars)
+
+        copy_result = hosts.all.zos_copy(
+            src=temp_template,
+            dest=dest_path,
+            use_template=True,
+            encoding={
+                "from": encoding,
+                "to": "IBM-1047"
+            }
+        )
+
+        verify_copy = hosts.all.shell(
+            cmd="cat {0}".format(dest_template),
+            executable=SHELL_EXECUTABLE,
+        )
+
+        for cp_res in copy_result.contacted.values():
+            assert cp_res.get("msg") is None
+            assert cp_res.get("changed") is True
+            assert cp_res.get("dest") == dest_template
+        for v_cp in verify_copy.contacted.values():
+            assert v_cp.get("rc") == 0
+            # Checking that all markers got replaced.
+            assert "{{" not in v_cp.get("stdout")
+            assert "{%" not in v_cp.get("stdout")
+            # Checking comments didn't get rendered.
+            assert "{#" not in v_cp.get("stdout")
+            # Checking that the vars where substituted.
+            assert template_vars["var"] in v_cp.get("stdout")
+            assert "Condition is true." in v_cp.get("stdout")
+            assert "Current element: 2" in v_cp.get("stdout")
+    finally:
+        hosts.all.file(path=dest_path, state="absent")
+        shutil.rmtree(temp_dir)
+
+
+@pytest.mark.uss
+@pytest.mark.template
+def test_copy_template_dir(ansible_zos_module):
+    hosts = ansible_zos_module
+    dest_path = "/tmp/new_dir"
+
+    # Ensuring there's a traling slash to copy the contents of the directory.
+    temp_dir = os.path.normpath(tempfile.mkdtemp())
+    temp_dir = "{0}/".format(temp_dir)
+
+    temp_subdir_a = os.path.join(temp_dir, "subdir_a")
+    temp_subdir_b = os.path.join(temp_dir, "subdir_b")
+    os.makedirs(temp_subdir_a)
+    os.makedirs(temp_subdir_b)
+
+    try:
+        temp_template_a = create_template_file(temp_subdir_a, use_default_markers=True)
+        temp_template_b = create_template_file(temp_subdir_b, use_default_markers=True)
+        dest_template_a = os.path.join(
+            dest_path,
+            "subdir_a",
+            os.path.basename(temp_template_a)
+        )
+        dest_template_b = os.path.join(
+            dest_path,
+            "subdir_b",
+            os.path.basename(temp_template_b)
+        )
+
+        hosts.all.file(path=dest_path, state="directory")
+
+        # Adding the template vars to each host.
+        template_vars = dict(
+            var="This should be rendered",
+            if_var=5,
+            array=[1, 2, 3]
+        )
+        for host in hosts["options"]["inventory_manager"]._inventory.hosts.values():
+            host.vars.update(template_vars)
+
+        copy_result = hosts.all.zos_copy(
+            src=temp_dir,
+            dest=dest_path,
+            use_template=True,
+            force=True
+        )
+
+        verify_copy_a = hosts.all.shell(
+            cmd="cat {0}".format(dest_template_a),
+            executable=SHELL_EXECUTABLE,
+        )
+        verify_copy_b = hosts.all.shell(
+            cmd="cat {0}".format(dest_template_b),
+            executable=SHELL_EXECUTABLE,
+        )
+
+        for cp_res in copy_result.contacted.values():
+            assert cp_res.get("msg") is None
+            assert cp_res.get("changed") is True
+            assert cp_res.get("dest") == dest_path
+        for v_cp in verify_copy_a.contacted.values():
+            assert v_cp.get("rc") == 0
+            # Checking that all markers got replaced.
+            assert "{{" not in v_cp.get("stdout")
+            assert "{%" not in v_cp.get("stdout")
+            # Checking comments didn't get rendered.
+            assert "{#" not in v_cp.get("stdout")
+            # Checking that the vars where substituted.
+            assert template_vars["var"] in v_cp.get("stdout")
+            assert "Condition is true." in v_cp.get("stdout")
+            assert "Current element: 2" in v_cp.get("stdout")
+        for v_cp in verify_copy_b.contacted.values():
+            assert v_cp.get("rc") == 0
+            # Checking that all markers got replaced.
+            assert "{{" not in v_cp.get("stdout")
+            assert "{%" not in v_cp.get("stdout")
+            # Checking comments didn't get rendered.
+            assert "{#" not in v_cp.get("stdout")
+            # Checking that the vars where substituted.
+            assert template_vars["var"] in v_cp.get("stdout")
+            assert "Condition is true." in v_cp.get("stdout")
+            assert "Current element: 2" in v_cp.get("stdout")
+    finally:
+        hosts.all.file(path=dest_path, state="absent")
+        shutil.rmtree(temp_dir)
+
+
+@pytest.mark.uss
+@pytest.mark.template
+def test_copy_template_file_with_non_default_markers(ansible_zos_module):
+    hosts = ansible_zos_module
+    dest_path = "/tmp/new_dir"
+    temp_dir = tempfile.mkdtemp()
+
+    try:
+        temp_template = create_template_file(temp_dir, use_default_markers=False)
+        dest_template = os.path.join(dest_path, os.path.basename(temp_template))
+
+        hosts.all.file(path=dest_path, state="directory")
+
+        # Adding the template vars to each host.
+        template_vars = dict(
+            var="This should be rendered",
+            if_var=5,
+            array=[1, 2, 3]
+        )
+        for host in hosts["options"]["inventory_manager"]._inventory.hosts.values():
+            host.vars.update(template_vars)
+
+        copy_result = hosts.all.zos_copy(
+            src=temp_template,
+            dest=dest_path,
+            use_template=True,
+            template_parameters=dict(
+                variable_start_string="((",
+                variable_end_string="))",
+                comment_start_string="#%",
+                comment_end_string="%#"
+            )
+        )
+
+        verify_copy = hosts.all.shell(
+            cmd="cat {0}".format(dest_template),
+            executable=SHELL_EXECUTABLE,
+        )
+
+        for cp_res in copy_result.contacted.values():
+            assert cp_res.get("msg") is None
+            assert cp_res.get("changed") is True
+            assert cp_res.get("dest") == dest_template
+        for v_cp in verify_copy.contacted.values():
+            assert v_cp.get("rc") == 0
+            # Checking that all markers got replaced.
+            assert "((" not in v_cp.get("stdout")
+            assert "{%" not in v_cp.get("stdout")
+            # Checking comments didn't get rendered.
+            assert "#%" not in v_cp.get("stdout")
+            # Checking that the vars where substituted.
+            assert template_vars["var"] in v_cp.get("stdout")
+            assert "Condition is true." in v_cp.get("stdout")
+            assert "Current element: 2" in v_cp.get("stdout")
+    finally:
+        hosts.all.file(path=dest_path, state="absent")
+        shutil.rmtree(temp_dir)
+
+
+@pytest.mark.seq
+@pytest.mark.pdse
+@pytest.mark.template
+def test_copy_template_file_to_dataset(ansible_zos_module):
+    hosts = ansible_zos_module
+    dest_dataset = "USER.TEST.TEMPLATE"
+    temp_dir = tempfile.mkdtemp()
+
+    try:
+        temp_template = create_template_file(temp_dir, use_default_markers=True)
+
+        # Adding the template vars to each host.
+        template_vars = dict(
+            var="This should be rendered",
+            if_var=5,
+            array=[1, 2, 3]
+        )
+        for host in hosts["options"]["inventory_manager"]._inventory.hosts.values():
+            host.vars.update(template_vars)
+
+        copy_result = hosts.all.zos_copy(
+            src=temp_template,
+            dest=dest_dataset,
+            use_template=True
+        )
+
+        verify_copy = hosts.all.shell(
+            cmd="cat \"//'{0}'\"".format(dest_dataset),
+            executable=SHELL_EXECUTABLE,
+        )
+
+        for cp_res in copy_result.contacted.values():
+            assert cp_res.get("msg") is None
+            assert cp_res.get("changed") is True
+            assert cp_res.get("dest") == dest_dataset
+        for v_cp in verify_copy.contacted.values():
+            assert v_cp.get("rc") == 0
+            # Checking that all markers got replaced.
+            assert "{{" not in v_cp.get("stdout")
+            assert "{%" not in v_cp.get("stdout")
+            # Checking comments didn't get rendered.
+            assert "{#" not in v_cp.get("stdout")
+            # Checking that the vars where substituted.
+            assert template_vars["var"] in v_cp.get("stdout")
+            assert "Condition is true." in v_cp.get("stdout")
+            assert "Current element: 2" in v_cp.get("stdout")
+    finally:
+        hosts.all.zos_data_set(name=dest_dataset, state="absent")
+        shutil.rmtree(temp_dir)
+
+
 @pytest.mark.parametrize("src", [
     dict(src="/etc/profile", is_remote=False),
     dict(src="/etc/profile", is_remote=True),])

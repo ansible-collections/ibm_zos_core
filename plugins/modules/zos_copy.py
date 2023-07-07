@@ -364,6 +364,9 @@ options:
         type: str
         required: false
 
+extends_documentation_fragment:
+  - ibm.ibm_zos_core.template
+
 notes:
     - Destination data sets are assumed to be in catalog. When trying to copy
       to an uncataloged data set, the module assumes that the data set does
@@ -2688,8 +2691,8 @@ def run_module(module, arg_def):
     try:
         if encoding:
             # 'conv_path' points to the converted src file or directory
-            if is_mvs_dest:
-                encoding["to"] = encode.Defaults.DEFAULT_EBCDIC_MVS_CHARSET
+            # if is_mvs_dest:
+            #     encoding["to"] = encode.Defaults.DEFAULT_EBCDIC_MVS_CHARSET
 
             conv_path = copy_handler.convert_encoding(src, temp_path, encoding)
 
@@ -2869,6 +2872,30 @@ def main():
                     sms_management_class=dict(type="str", required=False),
                 )
             ),
+            use_template=dict(type='bool', default=False),
+            template_parameters=dict(
+                type='dict',
+                required=False,
+                options=dict(
+                    variable_start_string=dict(type='str', default='{{'),
+                    variable_end_string=dict(type='str', default='}}'),
+                    block_start_string=dict(type='str', default='{%'),
+                    block_end_string=dict(type='str', default='%}'),
+                    comment_start_string=dict(type='str', default='{#'),
+                    comment_end_string=dict(type='str', default='#}'),
+                    line_statement_prefix=dict(type='str', required=False),
+                    line_comment_prefix=dict(type='str', required=False),
+                    lstrip_blocks=dict(type='bool', default=False),
+                    trim_blocks=dict(type='bool', default=True),
+                    keep_trailing_newline=dict(type='bool', default=False),
+                    newline_sequence=dict(
+                        type='str',
+                        default='\n',
+                        choices=['\n', '\r', '\r\n']
+                    ),
+                    auto_reload=dict(type='bool', default=False),
+                )
+            ),
             is_uss=dict(type='bool'),
             is_pds=dict(type='bool'),
             is_src_dir=dict(type='bool'),
@@ -2916,6 +2943,27 @@ def main():
                 sms_storage_class=dict(arg_type="str", required=False),
                 sms_data_class=dict(arg_type="str", required=False),
                 sms_management_class=dict(arg_type="str", required=False),
+            )
+        ),
+
+        use_template=dict(arg_type='bool', required=False),
+        template_parameters=dict(
+            arg_type='dict',
+            required=False,
+            options=dict(
+                variable_start_string=dict(arg_type='str', required=False),
+                variable_end_string=dict(arg_type='str', required=False),
+                block_start_string=dict(arg_type='str', required=False),
+                block_end_string=dict(arg_type='str', required=False),
+                comment_start_string=dict(arg_type='str', required=False),
+                comment_end_string=dict(arg_type='str', required=False),
+                line_statement_prefix=dict(arg_type='str', required=False),
+                line_comment_prefix=dict(arg_type='str', required=False),
+                lstrip_blocks=dict(arg_type='bool', required=False),
+                trim_blocks=dict(arg_type='bool', required=False),
+                keep_trailing_newline=dict(arg_type='bool', required=False),
+                newline_sequence=dict(arg_type='str', required=False),
+                auto_reload=dict(arg_type='bool', required=False),
             )
         ),
     )

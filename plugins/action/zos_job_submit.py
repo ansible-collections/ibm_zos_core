@@ -37,11 +37,12 @@ class ActionModule(ActionBase):
         module_args = self._task.args.copy()
 
         use_template = _process_boolean(module_args.get("use_template"))
-        if use_template and module_args.get("location") != "LOCAL":
+        location = module_args.get("location")
+        if use_template and location != "LOCAL":
             result.update(dict(
                 failed=True,
                 changed=False,
-                msg="Use of templates is only allowed for local files."
+                msg="Use of Jinja2 templates is only valid for local files. Location is set to '{0}' but should be 'LOCAL'".format(location)
             ))
             return result
 
@@ -107,6 +108,7 @@ class ActionModule(ActionBase):
 
             tmp_src = self._connection._shell.join_path(tmp, "source")
 
+            rendered_file = None
             if use_template:
                 template_parameters = module_args.get("template_parameters", dict())
                 encoding = module_args.get("encoding", dict())
@@ -163,6 +165,10 @@ class ActionModule(ActionBase):
                     task_vars=task_vars,
                 )
             )
+
+            if rendered_file:
+                os.remove(rendered_file)
+
         else:
             result.update(
                 self._execute_module(

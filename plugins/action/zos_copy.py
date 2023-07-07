@@ -117,7 +117,7 @@ class ActionModule(ActionBase):
 
         use_template = _process_boolean(task_args.get("use_template"), default=False)
         if remote_src and use_template:
-            msg = "Use of Jinja2 templates is only valid for local files and directories"
+            msg = "Use of Jinja2 templates is only valid for local files, remote_src cannot be set to true."
             return self._exit_action(result, msg, failed=True)
 
         if not is_uss:
@@ -178,6 +178,8 @@ class ActionModule(ActionBase):
                                 task_vars.get("vars", dict())
                             )
                         except Exception as err:
+                            if template_dir:
+                                shutil.rmtree(template_dir, ignore_errors=True)
                             return self._exit_action(result, str(err), failed=True)
 
                         src = rendered_dir
@@ -211,6 +213,8 @@ class ActionModule(ActionBase):
                                 task_vars.get("vars", dict())
                             )
                         except Exception as err:
+                            if template_dir:
+                                shutil.rmtree(template_dir, ignore_errors=True)
                             return self._exit_action(result, str(err), failed=True)
 
                         src = rendered_file
@@ -246,7 +250,7 @@ class ActionModule(ActionBase):
 
         # Erasing all rendered Jinja2 templates from the controller.
         if template_dir:
-            shutil.rmtree(template_dir)
+            shutil.rmtree(template_dir, ignore_errors=True)
 
         if copy_res.get("note") and not force:
             result["note"] = copy_res.get("note")

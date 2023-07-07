@@ -2707,14 +2707,16 @@ def test_backup_pds(ansible_zos_module, args):
                 assert backup_name is not None
                 assert backup_name == args["backup"]
 
-        verify_copy = get_listcat_information(hosts, backup_name, args["type"])
+                verify_copy = get_listcat_information(hosts, backup_name, args["type"])
 
-        for result in verify_copy.contacted.values():
-            assert result.get("dd_names") is not None
-            dd_names = result.get("dd_names")
-            assert len(dd_names) > 0
-            output = "\n".join(dd_names[0]["content"])
-            assert "IN-CAT" in output
+                for result in verify_copy.contacted.values():
+                    assert result.get("dd_names") is not None
+                    dd_names = result.get("dd_names")
+                    assert len(dd_names) > 0
+                    output = "\n".join(dd_names[0]["content"])
+                    # temp
+                    print( "\n\nOUTPUT IS: {0}\n\n".format(output))
+                    assert "IN-CAT" in output
 
     finally:
         shutil.rmtree(src)

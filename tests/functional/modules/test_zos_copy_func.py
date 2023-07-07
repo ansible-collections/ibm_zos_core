@@ -22,6 +22,7 @@ import tempfile
 from tempfile import mkstemp
 import subprocess
 
+
 __metaclass__ = type
 
 
@@ -116,6 +117,30 @@ LINK_JCL = """
 //*
 
 """
+
+c_pgm="""#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+int main(int argc, char** argv)
+{
+    char dsname[ strlen(argv[1]) + 4];
+    sprintf(dsname, "//'%s'", argv[1]);
+    FILE* member;
+    member = fopen(dsname, "rb,type=record");
+    sleep(300);
+    fclose(member);
+    return 0;
+}
+"""
+
+call_c_jcl="""//PDSELOCK JOB MSGCLASS=A,MSGLEVEL=(1,1),NOTIFY=&SYSUID,REGION=0M
+//LOCKMEM  EXEC PGM=BPXBATCH
+//STDPARM DD *
+SH /tmp/disp_shr/pdse-lock '{0}({1})'
+//STDIN  DD DUMMY
+//STDOUT DD SYSOUT=*
+//STDERR DD SYSOUT=*
+//"""
 
 def populate_dir(dir_path):
     for i in range(5):
@@ -1196,6 +1221,54 @@ def test_ensure_copy_file_does_not_change_permission_on_dest(ansible_zos_module,
             assert over.get("stat").get("mode") == mode_overwrite
     finally:
         hosts.all.file(path=dest_path, state="absent")
+
+
+@pytest.mark.seq
+def test_copy_dest_lock(ansible_zos_module):
+    DATASET_1 = "USER.PRIVATE.TESTDS"
+    DATASET_2 = "ADMI.PRIVATE.TESTDS"
+    MEMBER_1 = "MEM1"
+    try:
+        hosts = ansible_zos_module
+        hosts.all.zos_data_set(name=DATASET_1, state="present", type="pdse", replace=True)
+        hosts.all.zos_data_set(name=DATASET_2, state="present", type="pdse", replace=True)
+        hosts.all.zos_data_set(name=DATASET_1 + "({0})".format(MEMBER_1), state="present", type="member", replace=True)
+        hosts.all.zos_data_set(name=DATASET_2 + "({0})".format(MEMBER_1), state="present", type="member", replace=True)
+        # copy text_in source
+        hosts.all.shell(cmd="echo \"{0}\" > {1}".format(DUMMY_DATA, DATASET_2+"({0})".format(MEMBER_1)))
+        # copy/compile c program and copy jcl to hold data set lock for n seconds in background(&)
+        hosts.all.zos_copy(content=c_pgm, dest='/tmp/disp_shr/pdse-lock.c', force=True)
+        hosts.all.zos_copy(
+            content=call_c_jcl.format(DATASET_1, MEMBER_1),
+            dest='/tmp/disp_shr/call_c_pgm.jcl',
+            force=True
+        )
+        hosts.all.shell(cmd="xlc -o pdse-lock pdse-lock.c", chdir="/tmp/disp_shr/")
+        # submit jcl
+        hosts.all.shell(cmd="submit call_c_pgm.jcl", chdir="/tmp/disp_shr/")
+        # pause to ensure c code acquires lock
+        time.sleep(5)
+        results = hosts.all.zos_copy(
+            src = DATASET_2 + "({0})".format(MEMBER_1),
+            dest = DATASET_1 + "({0})".format(MEMBER_1),
+            remote_src = True,
+            force = True
+        )
+        for result in results.contacted.values():
+            print(result)
+            assert result.get("changed") == False
+            assert result.get("msg") is not None
+    finally:
+        # extract pid
+        ps_list_res = hosts.all.shell(cmd="ps -e | grep -i 'pdse-lock'")
+        # kill process - release lock - this also seems to end the job
+        pid = list(ps_list_res.contacted.values())[0].get('stdout').strip().split(' ')[0]
+        hosts.all.shell(cmd="kill 9 {0}".format(pid.strip()))
+        # clean up c code/object/executable files, jcl
+        hosts.all.shell(cmd='rm -r /tmp/disp_shr')
+        # remove pdse
+        hosts.all.zos_data_set(name=DATASET_1, state="absent")
+        hosts.all.zos_data_set(name=DATASET_2, state="absent")
 
 
 @pytest.mark.uss
@@ -2984,6 +3057,7 @@ def test_copy_uss_file_to_existing_sequential_data_set_twice_with_tmphlq_option(
         hosts.all.zos_data_set(name=dest, state="absent")
 
 
+
 @pytest.mark.parametrize("options", [
     dict(src="/etc/profile", dest="/tmp/zos_copy_test_profile",
          force=True, is_remote=False, verbosity="-vvvvv", verbosity_level=5),
@@ -3019,3 +3093,4 @@ def test_display_verbosity_in_zos_copy_plugin(ansible_zos_module, options):
 
     finally:
         hosts.all.file(path=options["dest"], state="absent")
+

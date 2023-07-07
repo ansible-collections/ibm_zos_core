@@ -494,6 +494,7 @@ class MVSArchive(Archive):
         self.expanded_paths = self.expand_mvs_paths(self.paths)
         self.expanded_exclude_paths = self.expand_mvs_paths(module.params['exclude_path'])
         self.paths = sorted(set(self.expanded_paths) - set(self.expanded_exclude_paths))
+        self.tmp_data_sets = list()
 
     def open(self):
         pass
@@ -626,6 +627,23 @@ class MVSArchive(Archive):
             elif bool(self.archived):
                 self.dest_state = STATE_ARCHIVE
 
+    def clean_environment(self, data_sets=None, uss_files=None, remove_targets=False):
+        """Removes any allocated data sets that won't be needed after module termination.
+        Arguments:
+            data_sets - {list(str)} : list of data sets to remove
+            uss_files - {list(str)} : list of uss files to remove
+            remove_targets - bool : Indicates if already unpacked data sets need to be removed too.
+        """
+        if data_set is not None:
+            for ds in data_sets:
+                data_set.DataSet.ensure_absent(ds)
+        if uss_files is not None:
+            for file in uss_files:
+                os.remove(file)
+        if remove_targets:
+            for target in self.targets:
+                data_set.DataSet.ensure_absent(target)
+
 
 class AMATerseArchive(MVSArchive):
     def __init__(self, module):
@@ -660,15 +678,16 @@ class AMATerseArchive(MVSArchive):
         if self.use_adrdssu:
             source = self.prepare_temp_ds(self.module.params.get("tmp_hlq"))
             self.dump_into_temp_ds(source)
-            datasets.delete(source)
+            self.tmp_data_sets.append(source)
         else:
             # If we don't use a adrdssu container we cannot pack multiple data sets
             if len(self.targets) > 1:
                 self.module.fail_json(
-                    msg="You cannot archive multiple source data sets without accepting to use adrdssu")
+                    msg="You cannot archive multiple source data sets without using adrdssu")
             source = self.targets[0]
         dest = self.create_dest_ds(self.dest)
         self.add(source, dest)
+        self.clean_environment(data_sets=self.tmp_data_sets)
 
 
 class XMITArchive(MVSArchive):
@@ -708,15 +727,16 @@ class XMITArchive(MVSArchive):
         if self.use_adrdssu:
             source = self.prepare_temp_ds(self.module.params.get("tmp_hlq"))
             self.dump_into_temp_ds(source)
-            datasets.delete(source)
+            self.tmp_data_sets.append(source)
         else:
             # If we don't use a adrdssu container we cannot pack multiple data sets
             if len(self.paths) > 1:
                 self.module.fail_json(
-                    msg="You cannot archive multiple source data sets without accepting to use adrdssu")
+                    msg="You cannot archive multiple source data sets without using adrdssu")
             source = self.paths[0]
         dest = self.create_dest_ds(self.dest)
         self.add(source, dest)
+        self.clean_environment(data_sets=self.tmp_data_sets)
 
 
 def run_module():

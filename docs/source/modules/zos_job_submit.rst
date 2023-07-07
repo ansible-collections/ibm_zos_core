@@ -145,7 +145,7 @@ use_template
 
   Only valid when ``src`` is a local file or directory.
 
-  All variables defined in inventory files, vars files and the playbook will be passed to the template engine, as well as Ansible-defined ones, such as ``playbook_dir``, ``ansible_version``, etc.
+  All variables defined in inventory files, vars files and the playbook will be passed to the template engine, as well as `Ansible special variables <https://docs.ansible.com/ansible/latest/reference_appendices/special_variables.html#special-variables>`_, such as ``playbook_dir``, ``ansible_version``, etc.
 
   If variables defined in different scopes share the same name, Ansible will apply variable precedence to them. You can see the complete precedence order `in Ansible's documentation <https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_variables.html#understanding-variable-precedence>`_
 
@@ -156,7 +156,7 @@ use_template
 template_parameters
   Options to set the way Jinja2 will process templates.
 
-  Jinja2 already sets defaults for the markers it uses, you can find more information at its `official documentation <https://jinja.palletsprojects.com/en/3.0.x/templates/>`_.
+  Jinja2 already sets defaults for the markers it uses, you can find more information at its `official documentation <https://jinja.palletsprojects.com/en/latest/templates/>`_.
 
   These options are ignored unless ``use_template`` is true.
 
@@ -197,7 +197,7 @@ template_parameters
 
 
   comment_start_string
-    Marker for the beginning of a comment in Jinja2
+    Marker for the beginning of a comment in Jinja2.
 
     | **required**: False
     | **type**: str
@@ -205,7 +205,7 @@ template_parameters
 
 
   comment_end_string
-    Marker for the end of a comment in Jinja2
+    Marker for the end of a comment in Jinja2.
 
     | **required**: False
     | **type**: str
@@ -236,7 +236,7 @@ template_parameters
   trim_blocks
     Whether Jinja2 should remove the first newline after a block is removed.
 
-    Setting this option to ``False`` will result in newlines being added to the rendered template. This could create invalid code when working with JCL templates or empty records in destination datasets.
+    Setting this option to ``False`` will result in newlines being added to the rendered template. This could create invalid code when working with JCL templates or empty records in destination data sets.
 
     | **required**: False
     | **type**: bool

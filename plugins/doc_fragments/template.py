@@ -25,7 +25,8 @@ options:
         render it before continuing with the rest of the module.
       - Only valid when C(src) is a local file or directory.
       - All variables defined in inventory files, vars files and the playbook
-        will be passed to the template engine, as well as Ansible-defined ones,
+        will be passed to the template engine,
+        as well as L(Ansible special variables,https://docs.ansible.com/ansible/latest/reference_appendices/special_variables.html#special-variables),
         such as C(playbook_dir), C(ansible_version), etc.
       - If variables defined in different scopes share the same name, Ansible will
         apply variable precedence to them. You can see the complete precedence order
@@ -36,7 +37,7 @@ options:
     description:
       - Options to set the way Jinja2 will process templates.
       - Jinja2 already sets defaults for the markers it uses, you can find more
-        information at its L(official documentation,https://jinja.palletsprojects.com/en/3.0.x/templates/).
+        information at its L(official documentation,https://jinja.palletsprojects.com/en/latest/templates/).
       - These options are ignored unless C(use_template) is true.
     required: false
     type: dict
@@ -63,12 +64,12 @@ options:
         default: '%}'
       comment_start_string:
         description:
-          - Marker for the beginning of a comment in Jinja2
+          - Marker for the beginning of a comment in Jinja2.
         type: str
         default: '{#'
       comment_end_string:
         description:
-          - Marker for the end of a comment in Jinja2
+          - Marker for the end of a comment in Jinja2.
         type: str
         default: '#}'
       line_statement_prefix:
@@ -92,7 +93,7 @@ options:
           - Whether Jinja2 should remove the first newline after a block is removed.
           - Setting this option to C(False) will result in newlines being added to
             the rendered template. This could create invalid code when working with
-            JCL templates or empty records in destination datasets.
+            JCL templates or empty records in destination data sets.
         type: bool
         default: true
       keep_trailing_newline:

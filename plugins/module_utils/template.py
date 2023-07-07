@@ -233,7 +233,7 @@ class TemplateRenderer:
                 to_native(err)
             ))
         except PermissionError as err:
-            raise PermissionError("Error while trying to access temp directory for templates: {0}".format(
+            raise PermissionError("Error while trying to access temporary directory for templates: {0}".format(
                 to_native(err)
             ))
 
@@ -290,11 +290,11 @@ class TemplateRenderer:
                 to_native(err)
             ))
         except PermissionError as err:
-            raise PermissionError("Error while trying to access temp directory: {0}".format(
+            raise PermissionError("Error while trying to access temporary directory: {0}".format(
                 to_native(err)
             ))
         except OSError as err:
-            raise OSError("Error while trying to access temp directory: {0}".format(
+            raise OSError("Error while trying to access temporary directory: {0}".format(
                 to_native(err)
             ))
 

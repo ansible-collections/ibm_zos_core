@@ -2247,14 +2247,14 @@ def normalize_line_endings(src, encoding=None):
 
 def data_set_locked(dataset_name):
     """
-    Checks if a data set has a lock on it meaning the data set is opened
-    with DISP=SHR, often by a long running task.
+    Checks if a data set is in use and therefore locked (DISP=SHR), which
+    is often caused by a long running task. Returns a boolean value to indicate the data set status.
 
     Arguments:
         dataset_name (str) - the data set name used to check if there is a lock.
 
     Returns:
-        bool -- True if the dataset has not lock false if has lock.
+        bool -- rue if the data set is locked, or False if the data set is not locked.
     """
     # Using operator command "D GRS,RES=(*,{dataset_name})" to detect if a data set
     # is in use, when a data set is in use it will have "EXC/SHR and SHARE"
@@ -2536,29 +2536,11 @@ def run_module(module, arg_def):
     # the machine and not generate a false positive check the disposition
     # for try to write in dest and if both src and dest are in lock.
     # ********************************************************************
-    if src_ds_type != "USS" and dest_ds_type != "USS":
-        is_source_lock = data_set_locked(src_name)
-        is_dest_lock = data_set_locked(dest_name)
-        if is_source_lock and is_dest_lock:
-            module.fail_json(
-                msg="DATASETS in lock, unable to access'{0}' and unable to write in'{1}'".format(
-                    src_name, dest_name
-                )
-            )
-        elif is_dest_lock:
-            module.fail_json(
-                msg="DATASET in lock, unable to write in '{0}'".format(
-                    dest_name
-                )
-            )
-    elif dest_ds_type != "USS":
+    if dest_ds_type != "USS":
         is_dest_lock = data_set_locked(dest_name)
         if is_dest_lock:
             module.fail_json(
-                msg="DATASET in lock, unable to write in '{0}'".format(
-                    dest_name
-                )
-            )
+                            msg="Unable to write to dest '{0}' because a task is accessing the data set.".format(dest_name))
     # ********************************************************************
     # Backup should only be performed if dest is an existing file or
     # data set. Otherwise ignored.

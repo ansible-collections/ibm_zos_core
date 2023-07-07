@@ -1722,6 +1722,7 @@ def test_backup_sequential_data_set(ansible_zos_module, backup):
     hosts = ansible_zos_module
     src = "/etc/profile"
     dest = "USER.TEST.SEQ.FUNCTEST"
+    got_backup_name = None
 
     try:
         hosts.all.zos_data_set(name=dest, type="seq", state="present")
@@ -1729,25 +1730,27 @@ def test_backup_sequential_data_set(ansible_zos_module, backup):
         if backup:
             copy_res = hosts.all.zos_copy(src=src, dest=dest, force=True, backup=True, backup_name=backup)
         else:
-            copy_res = hosts.all.zos_copy(src=src, dest=dest, force=True, backup=True)
+            copy_res = hosts.all.zos_copy(src=src, dest=dest, force=True, backup=False)
 
         for result in copy_res.contacted.values():
             assert result.get("msg") is None
-            backup_name = result.get("backup_name")
-            assert backup_name is not None
+            if backup:
+                got_backup_name = result.get("backup_name")
+                assert got_backup_name is not None
 
-        stat_res = hosts.all.shell(
-            cmd="tsocmd \"LISTDS '{0}'\"".format(backup_name),
-            executable=SHELL_EXECUTABLE,
-        )
-        for result in stat_res.contacted.values():
-            assert result.get("rc") == 0
-            assert "NOT IN CATALOG" not in result.get("stdout")
-            assert "NOT IN CATALOG" not in result.get("stderr")
+        if backup:
+            stat_res = hosts.all.shell(
+                cmd="tsocmd \"LISTDS '{0}'\"".format(got_backup_name),
+                executable=SHELL_EXECUTABLE,
+            )
+            for result in stat_res.contacted.values():
+                assert result.get("rc") == 0
+                assert "NOT IN CATALOG" not in result.get("stdout")
+                assert "NOT IN CATALOG" not in result.get("stderr")
 
     finally:
         hosts.all.zos_data_set(name=dest, state="absent")
-        if backup_name:
+        if got_backup_name:
             hosts.all.zos_data_set(name=backup_name, state="absent")
 
 

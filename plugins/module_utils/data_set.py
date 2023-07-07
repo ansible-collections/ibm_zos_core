@@ -124,7 +124,7 @@ class DataSet(object):
             space_type (str, optional): The unit of measurement to use when defining primary and secondary space.
                     Defaults to None.
             record_format (str, optional): The record format to use for the dataset.
-                    Valid options are: FB, VB, FBA, VBA, U.
+                    Valid options are: F, FB, VB, FBA, VBA, U.
                     Defaults to None.
             record_length (int, optional) The length, in bytes, of each record in the data set.
                     Defaults to None.
@@ -832,7 +832,7 @@ class DataSet(object):
             space_type (str, optional): The unit of measurement to use when defining primary and secondary space.
                     Defaults to None.
             record_format (str, optional): The record format to use for the dataset.
-                    Valid options are: FB, VB, FBA, VBA, U.
+                    Valid options are: F, FB, VB, FBA, VBA, U.
                     Defaults to None.
             record_length (int, optional) The length, in bytes, of each record in the data set.
                     Defaults to None.
@@ -949,7 +949,7 @@ class DataSet(object):
             space_type (str, optional): The unit of measurement to use when defining primary and secondary space.
                     Defaults to None.
             record_format (str, optional): The record format to use for the dataset.
-                    Valid options are: FB, VB, FBA, VBA, U.
+                    Valid options are: F, FB, VB, FBA, VBA, U.
                     Defaults to None.
             record_length (int, optional) The length, in bytes, of each record in the data set.
                     Defaults to None.
@@ -1317,7 +1317,7 @@ class DataSet(object):
                     Valid options are: SEQ, BASIC, LARGE, PDS, PDSE, LIBRARY, LDS, RRDS, ESDS, KSDS.
                     Defaults to "SEQ".
             record_format (str, optional): The record format to use for the dataset.
-                    Valid options are: FB, VB, FBA, VBA, U.
+                    Valid options are: F, FB, VB, FBA, VBA, U.
                     Defaults to "FB".
             space_primary (int, optional): The amount of primary space to allocate for the dataset.
                     Defaults to 5.

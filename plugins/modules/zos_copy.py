@@ -740,7 +740,7 @@ else:
     from re import match as fullmatch
 
 try:
-    from zoautil_py import datasets
+    from zoautil_py import datasets, opercmd
 except Exception:
     datasets = MissingZOAUImport()
 
@@ -1244,27 +1244,30 @@ class USSCopyHandler(CopyHandler):
                      for the files and directories already present on the
                      destination.
         """
-        copied_files = self._walk_uss_tree(src)
+        files_to_copy = self._walk_uss_tree(src)
 
         # It's not needed to normalize the path because it was already normalized
         # on _copy_to_dir.
         parent_dir = os.path.basename(src) if copy_directory else ''
 
-        changed_files = []
-        original_files = []
-        for relative_path in copied_files:
+        files_to_change = []
+        existing_files = []
+        for relative_path in files_to_copy:
             if os.path.exists(os.path.join(dest, parent_dir, relative_path)):
-                original_files.append(relative_path)
+                existing_files.append(relative_path)
             else:
-                changed_files.append(relative_path)
+                files_to_change.append(relative_path)
 
+        # This change adds to the files_to_change variable any file that accord with
+        # a name found in the source copy
+        files_to_change.extend(existing_files)
         # Creating tuples with (filename, permissions).
         original_permissions = [
             (filepath, os.stat(os.path.join(dest, parent_dir, filepath)).st_mode)
-            for filepath in original_files
+            for filepath in existing_files
         ]
 
-        return changed_files, original_permissions
+        return files_to_change, original_permissions
 
     def _walk_uss_tree(self, dir):
         """Walks the tree directory for dir and returns all relative paths
@@ -2191,7 +2194,89 @@ def allocate_destination_data_set(
         data_set.DataSet.allocate_model_data_set(ds_name=dest, model=src_name, vol=volume)
     if dest_ds_type not in data_set.DataSet.MVS_VSAM:
         dest_params = get_attributes_of_any_dataset_created(dest, src_ds_type, src, src_name, is_binary, volume)
+        dest_attributes = datasets.listing(dest)[0]
+        record_format = dest_attributes.recfm
+        dest_params["type"] = dest_ds_type
+        dest_params["record_format"] = record_format
     return True, dest_params
+
+
+def normalize_line_endings(src, encoding=None):
+    """
+    Normalizes src's encoding to IBM-037 (a dataset's default) and then normalizes
+    its line endings to LF.
+
+    Arguments:
+        src (str) -- Path of a USS file.
+        encoding (dict, optional) -- Encoding options for the module.
+
+    Returns:
+        str -- Path to the normalized file.
+    """
+    # Before copying into a destination dataset, we'll make sure that
+    # the source file doesn't contain any carriage returns that would
+    # result in empty records in the destination.
+    # Due to the differences between encodings, we'll normalize to IBM-037
+    # before checking the EOL sequence.
+    enc_utils = encode.EncodeUtils()
+    src_tag = enc_utils.uss_file_tag(src)
+    copy_handler = CopyHandler(AnsibleModuleHelper(dict()))
+
+    if src_tag == "untagged":
+        # This should only be true when src is a remote file and no encoding
+        # was specified by the user.
+        if not encoding:
+            encoding = {"from": encode.Defaults.get_default_system_charset()}
+        src_tag = encoding["from"]
+
+    if src_tag != "IBM-037":
+        fd, converted_src = tempfile.mkstemp()
+        os.close(fd)
+
+        enc_utils.uss_convert_encoding(
+            src,
+            converted_src,
+            src_tag,
+            "IBM-037"
+        )
+        copy_handler._tag_file_encoding(converted_src, "IBM-037")
+        src = converted_src
+
+    if copy_handler.file_has_crlf_endings(src):
+        src = copy_handler.create_temp_with_lf_endings(src)
+
+    return src
+
+
+def data_set_locked(dataset_name):
+    """
+    Checks if a data set is in use and therefore locked (DISP=SHR), which
+    is often caused by a long running task. Returns a boolean value to indicate the data set status.
+
+    Arguments:
+        dataset_name (str) - the data set name used to check if there is a lock.
+
+    Returns:
+        bool -- rue if the data set is locked, or False if the data set is not locked.
+    """
+    # Using operator command "D GRS,RES=(*,{dataset_name})" to detect if a data set
+    # is in use, when a data set is in use it will have "EXC/SHR and SHARE"
+    # in the result with a length greater than 4.
+    result = dict()
+    result["stdout"] = []
+    command_dgrs = "D GRS,RES=(*,{0})".format(dataset_name)
+    response = opercmd.execute(command=command_dgrs)
+    stdout = response.stdout_response
+    if stdout is not None:
+        for out in stdout.split("\n"):
+            if out:
+                result["stdout"].append(out)
+    if len(result["stdout"]) > 4 and "EXC/SHR" in stdout and "SHARE" in stdout:
+        return True
+    elif len(result["stdout"]) <= 4 and "NO REQUESTORS FOR RESOURCE" in stdout:
+        return False
+    else:
+        return False
 
 
 def normalize_line_endings(src, encoding=None):
@@ -2335,7 +2420,7 @@ def run_module(module, arg_def):
             # When the destination is a dataset, we'll normalize the source
             # file to UTF-8 for the record length computation as Python
             # generally uses UTF-8 as the default encoding.
-            if not is_uss:
+            if not is_binary and not is_uss:
                 new_src = temp_path or src
                 new_src = os.path.normpath(new_src)
                 # Normalizing encoding when src is a USS file (only).
@@ -2449,6 +2534,16 @@ def run_module(module, arg_def):
             )
         )
 
+    # ********************************************************************
+    # To validate the source and dest are not lock in a batch process by
+    # the machine and not generate a false positive check the disposition
+    # for try to write in dest and if both src and dest are in lock.
+    # ********************************************************************
+    if dest_ds_type != "USS":
+        is_dest_lock = data_set_locked(dest_name)
+        if is_dest_lock:
+            module.fail_json(
+                msg="Unable to write to dest '{0}' because a task is accessing the data set.".format(dest_name))
     # ********************************************************************
     # Backup should only be performed if dest is an existing file or
     # data set. Otherwise ignored.

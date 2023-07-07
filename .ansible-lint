@@ -1,0 +1,33 @@
+exclude_paths:
+  - .tar.gz
+  - __pycache__/
+  - .cache/
+  - .DS_Store
+  - .git/
+  - .github/
+  - .gitignore
+  - .python-version
+  - .pytest_cache/
+  - .vscode/
+  - Jenkinsfile
+  - ac
+  - ansible.cfg
+  - changelogs/
+  - collections/
+  - docs/
+  - scripts/
+  - test_config.yml
+  - tests/*.ini
+  - tests/*.py
+  - tests/.pytest_cache
+  - tests/__pycache__
+  - tests/functional
+  - tests/helpers
+  - tests/requirements.txt
+  - tests/unit
+  - tests/sanity/ignore-2.10.txt
+  - venv*
+parseable: true
+quiet: false
+use_default_rules: true
+verbosity: 1

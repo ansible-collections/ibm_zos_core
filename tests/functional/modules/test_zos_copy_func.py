@@ -17,8 +17,11 @@ import pytest
 import os
 import shutil
 import re
+import time
 import tempfile
 from tempfile import mkstemp
+import subprocess
+
 
 __metaclass__ = type
 
@@ -41,6 +44,11 @@ DUMMY DATA ---- LINE 007 ------
 """
 
 DUMMY_DATA_CRLF = b"00000001 DUMMY DATA\r\n00000002 DUMMY DATA\r\n"
+
+# FD is outside of the range of UTF-8, so it should be useful when testing
+# that binary data is not getting converted.
+DUMMY_DATA_BINARY = b"\xFD\xFD\xFD\xFD"
+DUMMY_DATA_BINARY_ESCAPED = "\\xFD\\xFD\\xFD\\xFD"
 
 VSAM_RECORDS = """00000001A record
 00000002A record
@@ -141,6 +149,30 @@ LINK_JCL = """
 //*
 
 """
+
+c_pgm="""#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+int main(int argc, char** argv)
+{
+    char dsname[ strlen(argv[1]) + 4];
+    sprintf(dsname, "//'%s'", argv[1]);
+    FILE* member;
+    member = fopen(dsname, "rb,type=record");
+    sleep(300);
+    fclose(member);
+    return 0;
+}
+"""
+
+call_c_jcl="""//PDSELOCK JOB MSGCLASS=A,MSGLEVEL=(1,1),NOTIFY=&SYSUID,REGION=0M
+//LOCKMEM  EXEC PGM=BPXBATCH
+//STDPARM DD *
+SH /tmp/disp_shr/pdse-lock '{0}({1})'
+//STDIN  DD DUMMY
+//STDOUT DD SYSOUT=*
+//STDERR DD SYSOUT=*
+//"""
 
 def populate_dir(dir_path):
     for i in range(5):
@@ -512,45 +544,99 @@ def test_copy_dir_to_existing_uss_dir_not_forced(ansible_zos_module):
 @pytest.mark.uss
 def test_copy_subdirs_folders_and_validate_recursive_encoding(ansible_zos_module):
     hosts = ansible_zos_module
-    dest_path = "/tmp/test/"
-    text_outer_file = "Hi I am point A"
-    text_inner_file = "Hi I am point B"
-    src_path = "/tmp/level_1/"
-    outer_file = "/tmp/level_1/text_A.txt"
-    inner_src_path = "/tmp/level_1/level_2/"
-    inner_file = "/tmp/level_1/level_2/text_B.txt"
+
+    # Remote path
+    path = "/tmp/ansible"
+
+    # Remote src path with original files
+    src_path = path + "/src"
+
+    # Nested src dirs
+    src_dir_one = src_path + "/dir_one"
+    src_dir_two = src_dir_one + "/dir_two"
+    src_dir_three = src_dir_two + "/dir_three"
+
+    # Nested src IBM-1047 files
+    src_file_one = src_path + "/dir_one/one.txt"
+    src_file_two = src_dir_one + "/dir_two/two.txt"
+    src_file_three = src_dir_two + "/dir_three/three.txt"
+
+    # Remote dest path to encoded files placed
+    dest_path = path + "/dest"
+
+    # Nested dest UTF-8 files
+    dst_file_one = dest_path + "/dir_one/one.txt"
+    dst_file_two = dest_path + "/dir_one/dir_two/two.txt"
+    dst_file_three = dest_path + "/dir_one/dir_two//dir_three/three.txt"
+
+    # Strings echo'd to files on USS
+    str_one = "This is file one."
+    str_two = "This is file two."
+    str_three = "This is file three."
+
+    # Hex values for expected results, expected used beause pytest-ansible does not allow for delegate_to
+    # and depending on where the `od` runs, you may face big/little endian issues, so using expected utf-8
+    str_one_big_endian_hex="""0000000000      5468    6973    2069    7320    6669    6C65    206F    6E65
+0000000020      2E0A
+0000000022"""
+
+    str_two_big_endian_hex="""0000000000      5468    6973    2069    7320    6669    6C65    2074    776F
+0000000020      2E0A
+0000000022"""
+
+    str_three_big_endian_hex="""0000000000      5468    6973    2069    7320    6669    6C65    2074    6872
+0000000020      6565    2E0A
+0000000024"""
 
     try:
-        hosts.all.file(path=inner_src_path, state="directory")
-        hosts.all.file(path=inner_file, state = "touch")
-        hosts.all.file(path=outer_file, state = "touch")
-        hosts.all.shell(cmd="echo '{0}' > '{1}'".format(text_outer_file, outer_file))
-        hosts.all.shell(cmd="echo '{0}' > '{1}'".format(text_inner_file, inner_file))
-        
-        copy_res = hosts.all.zos_copy(src=src_path, dest=dest_path, encoding={"from": "ISO8859-1", "to": "IBM-1047"}, remote_src=True)
+        # Ensure clean slate
+        results = hosts.all.file(path=path, state="absent")
+
+        # Create nested directories
+        hosts.all.file(path=src_dir_three, state="directory", mode="0755")
+
+        # Touch empty files
+        hosts.all.file(path=src_file_one, state = "touch")
+        hosts.all.file(path=src_file_two, state = "touch")
+        hosts.all.file(path=src_file_three, state = "touch")
+
+        # Echo contents into files (could use zos_lineinfile or zos_copy), echo'ing will
+        # result in managed node's locale which currently is IBM-1047
+        hosts.all.raw("echo '{0}' > '{1}'".format(str_one, src_file_one))
+        hosts.all.raw("echo '{0}' > '{1}'".format(str_two, src_file_two))
+        hosts.all.raw("echo '{0}' > '{1}'".format(str_three, src_file_three))
+
+        # Lets stat the deepest nested directory, not necessary to stat all of them
+        results = hosts.all.stat(path=src_file_three)
+        for result in results.contacted.values():
+            assert result.get("stat").get("exists") is True
+
+        # Nested zos_copy from IBM-1047 to UTF-8
+        # Testing src ending in / such that the contents of the src directory will be copied
+        copy_res = hosts.all.zos_copy(src=src_path+"/", dest=dest_path, encoding={"from": "IBM-1047", "to": "UTF-8"}, remote_src=True)
 
         for result in copy_res.contacted.values():
             assert result.get("msg") is None
             assert result.get("changed") is True
 
-        stat_res = hosts.all.stat(path="/tmp/test/level_2/")
-        for st in stat_res.contacted.values():
-            assert st.get("stat").get("exists") is True
+        # File z/OS dest is now UTF-8, dump the hex value and compare it to an
+        # expected big-endian version, can't run delegate_to local host so expected
+        # value is the work around for now.
+        str_one_od_dst = hosts.all.shell(cmd="od -x {0}".format(dst_file_one))
+        str_two_od_dst = hosts.all.shell(cmd="od -x {0}".format(dst_file_two))
+        str_three_od_dst = hosts.all.shell(cmd="od -x {0}".format(dst_file_three))
 
-        full_inner_path = dest_path + "/level_2/text_B.txt"
-        full_outer_path = dest_path + "/text_A.txt"
-        inner_file_text_aft_encoding = hosts.all.shell(cmd="cat {0}".format(full_inner_path))
-        outer_file_text_aft_encoding = hosts.all.shell(cmd="cat {0}".format(full_outer_path))
-        for text in outer_file_text_aft_encoding.contacted.values():
-            text_outer = text.get("stdout")
-        for text in inner_file_text_aft_encoding.contacted.values():
-            text_inner = text.get("stdout")
+        for result in str_one_od_dst.contacted.values():
+            assert result.get("stdout") == str_one_big_endian_hex
 
-        assert text_inner == text_inner_file
-        assert text_outer == text_outer_file
+        for result in str_two_od_dst.contacted.values():
+            assert result.get("stdout") == str_two_big_endian_hex
+
+        for result in str_three_od_dst.contacted.values():
+            assert result.get("stdout") == str_three_big_endian_hex
+
     finally:
-        hosts.all.file(path=src_path, state="absent")
-        hosts.all.file(path=dest_path, state="absent")
+        hosts.all.file(path=path, state="absent")
 
 
 @pytest.mark.uss
@@ -975,7 +1061,7 @@ def test_copy_local_dir_and_change_mode(ansible_zos_module, copy_directory):
         for result in stat_overwritten_file_res.contacted.values():
             assert result.get("stat").get("exists") is True
             assert result.get("stat").get("isdir") is False
-            assert result.get("stat").get("mode") == dest_mode
+            assert result.get("stat").get("mode") == mode
 
         for result in stat_new_file_res.contacted.values():
             assert result.get("stat").get("exists") is True
@@ -1069,7 +1155,7 @@ def test_copy_uss_dir_and_change_mode(ansible_zos_module, copy_directory):
         for result in stat_overwritten_file_res.contacted.values():
             assert result.get("stat").get("exists") is True
             assert result.get("stat").get("isdir") is False
-            assert result.get("stat").get("mode") == dest_mode
+            assert result.get("stat").get("mode") == mode
 
         for result in stat_new_file_res.contacted.values():
             assert result.get("stat").get("exists") is True
@@ -1410,52 +1496,80 @@ def test_copy_template_file_to_dataset(ansible_zos_module):
 def test_ensure_copy_file_does_not_change_permission_on_dest(ansible_zos_module, src):
     hosts = ansible_zos_module
     dest_path = "/tmp/test/"
+    mode = "750"
+    other_mode = "744"
+    mode_overwrite = "0777"
+    full_path = "{0}/profile".format(dest_path)
     try:
-        hosts.all.file(path=dest_path, state="directory", mode="750")
-        permissions_before = hosts.all.shell(cmd="ls -la {0}".format(dest_path))
-        hosts.all.zos_copy(content=src["src"], dest=dest_path)
-        permissions = hosts.all.shell(cmd="ls -la {0}".format(dest_path))
+        hosts.all.file(path=dest_path, state="directory", mode=mode)
+        permissions_before = hosts.all.stat(path=dest_path)
+        hosts.all.zos_copy(src=src["src"], dest=dest_path, mode=other_mode)
+        permissions = hosts.all.stat(path=dest_path)
 
         for before in permissions_before.contacted.values():
-            permissions_be_copy = before.get("stdout")
-            
-        for after in permissions.contacted.values():
-            permissions_af_copy = after.get("stdout") 
+            permissions_be_copy = before.get("stat").get("mode")
 
-        permissions_be_copy = permissions_be_copy.splitlines()[1].split()[0]
-        permissions_af_copy = permissions_af_copy.splitlines()[1].split()[0]
-                
+        for after in permissions.contacted.values():
+            permissions_af_copy = after.get("stat").get("mode")
+
         assert permissions_be_copy == permissions_af_copy
+
+        # Extra asserts to ensure change mode rewrite a copy
+        hosts.all.zos_copy(src=src["src"], dest=dest_path, mode=mode_overwrite)
+        permissions_overwriten = hosts.all.stat(path = full_path)
+        for over in permissions_overwriten.contacted.values():
+            assert over.get("stat").get("mode") == mode_overwrite
     finally:
         hosts.all.file(path=dest_path, state="absent")
 
 
-@pytest.mark.uss
-@pytest.mark.parametrize("src", [
-    dict(src="/etc/", is_remote=False),
-    dict(src="/etc/", is_remote=True),])
-def test_ensure_copy_directory_does_not_change_permission_on_dest(ansible_zos_module, src):
-    hosts = ansible_zos_module
-    dest_path = "/tmp/test/"
+@pytest.mark.seq
+def test_copy_dest_lock(ansible_zos_module):
+    DATASET_1 = "USER.PRIVATE.TESTDS"
+    DATASET_2 = "ADMI.PRIVATE.TESTDS"
+    MEMBER_1 = "MEM1"
     try:
-        hosts.all.file(path=dest_path, state="directory", mode="750")
-        permissions_before = hosts.all.shell(cmd="ls -la {0}".format(dest_path))
-        hosts.all.zos_copy(content=src["src"], dest=dest_path)
-        permissions = hosts.all.shell(cmd="ls -la {0}".format(dest_path))
-
-        for before in permissions_before.contacted.values():
-            permissions_be_copy = before.get("stdout")
-
-        for after in permissions.contacted.values():
-            permissions_af_copy = after.get("stdout") 
-
-        permissions_be_copy = permissions_be_copy.splitlines()[1].split()[0]
-        permissions_af_copy = permissions_af_copy.splitlines()[1].split()[0]
-                
-        assert permissions_be_copy == permissions_af_copy
+        hosts = ansible_zos_module
+        hosts.all.zos_data_set(name=DATASET_1, state="present", type="pdse", replace=True)
+        hosts.all.zos_data_set(name=DATASET_2, state="present", type="pdse", replace=True)
+        hosts.all.zos_data_set(name=DATASET_1 + "({0})".format(MEMBER_1), state="present", type="member", replace=True)
+        hosts.all.zos_data_set(name=DATASET_2 + "({0})".format(MEMBER_1), state="present", type="member", replace=True)
+        # copy text_in source
+        hosts.all.shell(cmd="echo \"{0}\" > {1}".format(DUMMY_DATA, DATASET_2+"({0})".format(MEMBER_1)))
+        # copy/compile c program and copy jcl to hold data set lock for n seconds in background(&)
+        hosts.all.zos_copy(content=c_pgm, dest='/tmp/disp_shr/pdse-lock.c', force=True)
+        hosts.all.zos_copy(
+            content=call_c_jcl.format(DATASET_1, MEMBER_1),
+            dest='/tmp/disp_shr/call_c_pgm.jcl',
+            force=True
+        )
+        hosts.all.shell(cmd="xlc -o pdse-lock pdse-lock.c", chdir="/tmp/disp_shr/")
+        # submit jcl
+        hosts.all.shell(cmd="submit call_c_pgm.jcl", chdir="/tmp/disp_shr/")
+        # pause to ensure c code acquires lock
+        time.sleep(5)
+        results = hosts.all.zos_copy(
+            src = DATASET_2 + "({0})".format(MEMBER_1),
+            dest = DATASET_1 + "({0})".format(MEMBER_1),
+            remote_src = True,
+            force = True
+        )
+        for result in results.contacted.values():
+            print(result)
+            assert result.get("changed") == False
+            assert result.get("msg") is not None
     finally:
-        hosts.all.file(path=dest_path, state="absent")
-        
+        # extract pid
+        ps_list_res = hosts.all.shell(cmd="ps -e | grep -i 'pdse-lock'")
+        # kill process - release lock - this also seems to end the job
+        pid = list(ps_list_res.contacted.values())[0].get('stdout').strip().split(' ')[0]
+        hosts.all.shell(cmd="kill 9 {0}".format(pid.strip()))
+        # clean up c code/object/executable files, jcl
+        hosts.all.shell(cmd='rm -r /tmp/disp_shr')
+        # remove pdse
+        hosts.all.zos_data_set(name=DATASET_1, state="absent")
+        hosts.all.zos_data_set(name=DATASET_2, state="absent")
+
 
 @pytest.mark.uss
 @pytest.mark.seq
@@ -1562,6 +1676,79 @@ def test_copy_file_crlf_endings_to_sequential_data_set(ansible_zos_module):
     finally:
         hosts.all.zos_data_set(name=dest, state="absent")
         os.remove(src)
+
+
+# The following two tests are to address the bugfix for issue #807.
+@pytest.mark.uss
+@pytest.mark.seq
+def test_copy_local_binary_file_without_encoding_conversion(ansible_zos_module):
+    hosts = ansible_zos_module
+    dest = "USER.TEST.SEQ.FUNCTEST"
+
+    fd, src = tempfile.mkstemp()
+    os.close(fd)
+    with open(src, "wb") as infile:
+        infile.write(DUMMY_DATA_BINARY)
+
+    try:
+        hosts.all.zos_data_set(name=dest, state="absent")
+
+        copy_result = hosts.all.zos_copy(
+            src=src,
+            dest=dest,
+            remote_src=False,
+            is_binary=True
+        )
+
+        for cp_res in copy_result.contacted.values():
+            assert cp_res.get("msg") is None
+            assert cp_res.get("changed") is True
+            assert cp_res.get("dest") == dest
+    finally:
+        hosts.all.zos_data_set(name=dest, state="absent")
+        os.remove(src)
+
+
+@pytest.mark.uss
+@pytest.mark.seq
+def test_copy_remote_binary_file_without_encoding_conversion(ansible_zos_module):
+    hosts = ansible_zos_module
+    src = "/tmp/zos_copy_binary_file"
+    dest = "USER.TEST.SEQ.FUNCTEST"
+
+    try:
+        hosts.all.zos_data_set(name=dest, state="absent")
+
+        # Creating a binary file on the remote system through Python
+        # to avoid encoding issues if we were to copy a local file
+        # or use the shell directly.
+        python_cmd = """python3 -c 'with open("{0}", "wb") as f: f.write(b"{1}")'""".format(
+            src,
+            DUMMY_DATA_BINARY_ESCAPED
+        )
+        python_result = hosts.all.shell(python_cmd)
+        for result in python_result.contacted.values():
+            assert result.get("msg") is None or result.get("msg") == ""
+            assert result.get("stderr") is None or result.get("stderr") == ""
+
+        # Because the original bug report used a file tagged as 'binary'
+        # on z/OS, we'll recreate that use case here.
+        hosts.all.shell("chtag -b {0}".format(src))
+
+        copy_result = hosts.all.zos_copy(
+            src=src,
+            dest=dest,
+            remote_src=True,
+            is_binary=True
+        )
+
+        for cp_res in copy_result.contacted.values():
+            assert cp_res.get("msg") is None
+            assert cp_res.get("changed") is True
+            assert cp_res.get("dest") == dest
+    finally:
+        hosts.all.zos_data_set(name=dest, state="absent")
+        hosts.all.file(path=src, state="absent")
 
 
 @pytest.mark.uss
@@ -3168,4 +3355,42 @@ def test_copy_uss_file_to_existing_sequential_data_set_twice_with_tmphlq_option(
                 assert v_cp.get("rc") == 0
     finally:
         hosts.all.zos_data_set(name=dest, state="absent")
-        
+
+
+
+@pytest.mark.parametrize("options", [
+    dict(src="/etc/profile", dest="/tmp/zos_copy_test_profile",
+         force=True, is_remote=False, verbosity="-vvvvv", verbosity_level=5),
+    dict(src="/etc/profile", dest="/mp/zos_copy_test_profile", force=True,
+         is_remote=False, verbosity="-vvvv", verbosity_level=4),
+    dict(src="/etc/profile", dest="/tmp/zos_copy_test_profile",
+         force=True, is_remote=False, verbosity="", verbosity_level=0),
+])
+def test_display_verbosity_in_zos_copy_plugin(ansible_zos_module, options):
+    """Test the display verbosity, ensure it matches the verbosity_level.
+     This test requires access to verbosity and pytest-ansbile provides no
+     reasonable handle for this so for now subprocess is used. This test
+     results in no actual copy happening, the interest is in the verbosity"""
+
+    try:
+        hosts = ansible_zos_module
+        user = hosts["options"]["user"]
+        # Optionally hosts["options"]["inventory_manager"].list_hosts()[0]
+        node = hosts["options"]["inventory"].rstrip(',')
+        python_path = hosts["options"]["ansible_python_path"]
+
+        # This is an adhoc command, because there was no
+        cmd = "ansible all -i " + str(node) + ", -u " + user + " -m ibm.ibm_zos_core.zos_copy -a \"src=" + options["src"] + " dest=" + options["dest"] + " is_remote=" + str(
+            options["is_remote"]) + " encoding={{enc}} \" -e '{\"enc\":{\"from\": \"ISO8859-1\", \"to\": \"IBM-1047\"}}' -e \"ansible_python_interpreter=" + python_path + "\" " + options["verbosity"] + ""
+
+        result = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE).stdout
+        output = result.read().decode()
+
+        if options["verbosity_level"] != 0:
+            assert ("play context verbosity: "+ str(options["verbosity_level"])+"" in output)
+        else:
+            assert ("play context verbosity:" not in output)
+
+    finally:
+        hosts.all.file(path=options["dest"], state="absent")
+

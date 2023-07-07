@@ -6,7 +6,7 @@ namespace: ibm
 name: ibm_zos_core
 
 # The collection version
-version: 1.6.0-beta.1
+version: 1.7.0-beta.1
 
 # Collection README file
 readme: README.md
@@ -80,6 +80,7 @@ build_ignore:
   - changelogs
   - collections
   - docs
+  - importer_result.json
   - scripts
   - test_config.yml
   - tests/*.ini
@@ -90,4 +91,5 @@ build_ignore:
   - tests/helpers
   - tests/requirements.txt
   - tests/unit
+  - tests/sanity/ignore-2.10.txt
   - venv*

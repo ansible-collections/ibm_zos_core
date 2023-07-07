@@ -60,7 +60,7 @@ options:
       - >
         If I(state=absent) and I(volumes) is provided, and the data set is found in
         the catalog, the module compares the catalog volume attributes to the provided
-        I(volumes). If they volume attributes are different, the cataloged data set
+        I(volumes). If the volume attributes are different, the cataloged data set
         will be uncataloged temporarily while the requested data set be deleted is cataloged.
         The module will catalog the original data set on completion, if the attempts to
         catalog fail, no action is taken. Module completes successfully with I(changed=False).
@@ -168,6 +168,7 @@ options:
       - FBA
       - VBA
       - U
+      - F
     type: str
     default: FB
   sms_storage_class:
@@ -428,6 +429,7 @@ options:
           - FBA
           - VBA
           - U
+          - F
         type: str
         default: FB
       sms_storage_class:
@@ -698,6 +700,7 @@ DATA_SET_FORMATS = [
     "FBA",
     "VBA",
     "U",
+    "F",
 ]
 
 DEFAULT_RECORD_LENGTHS = {

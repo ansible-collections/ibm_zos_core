@@ -1750,8 +1750,8 @@ def test_backup_sequential_data_set(ansible_zos_module, backup):
 
     finally:
         hosts.all.zos_data_set(name=dest, state="absent")
-        if got_backup_name:
-            hosts.all.zos_data_set(name=backup_name, state="absent")
+        if backup:
+            hosts.all.zos_data_set(name=got_backup_name, state="absent")
 
 
 @pytest.mark.uss

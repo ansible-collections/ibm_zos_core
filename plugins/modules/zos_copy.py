@@ -364,6 +364,9 @@ options:
         type: str
         required: false
 
+extends_documentation_fragment:
+  - ibm.ibm_zos_core.template
+
 notes:
     - Destination data sets are assumed to be in catalog. When trying to copy
       to an uncataloged data set, the module assumes that the data set does
@@ -737,7 +740,7 @@ else:
     from re import match as fullmatch
 
 try:
-    from zoautil_py import datasets
+    from zoautil_py import datasets, opercmd
 except Exception:
     datasets = MissingZOAUImport()
 
@@ -1256,7 +1259,7 @@ class USSCopyHandler(CopyHandler):
                 files_to_change.append(relative_path)
 
         # This change adds to the files_to_change variable any file that accord with
-        # a name found in the source copy.
+        # a name found in the source copy
         files_to_change.extend(existing_files)
         # Creating tuples with (filename, permissions).
         original_permissions = [
@@ -2245,6 +2248,84 @@ def normalize_line_endings(src, encoding=None):
     return src
 
 
+def data_set_locked(dataset_name):
+    """
+    Checks if a data set is in use and therefore locked (DISP=SHR), which
+    is often caused by a long running task. Returns a boolean value to indicate the data set status.
+
+    Arguments:
+        dataset_name (str) - the data set name used to check if there is a lock.
+
+    Returns:
+        bool -- rue if the data set is locked, or False if the data set is not locked.
+    """
+    # Using operator command "D GRS,RES=(*,{dataset_name})" to detect if a data set
+    # is in use, when a data set is in use it will have "EXC/SHR and SHARE"
+    # in the result with a length greater than 4.
+    result = dict()
+    result["stdout"] = []
+    command_dgrs = "D GRS,RES=(*,{0})".format(dataset_name)
+    response = opercmd.execute(command=command_dgrs)
+    stdout = response.stdout_response
+    if stdout is not None:
+        for out in stdout.split("\n"):
+            if out:
+                result["stdout"].append(out)
+    if len(result["stdout"]) > 4 and "EXC/SHR" in stdout and "SHARE" in stdout:
+        return True
+    elif len(result["stdout"]) <= 4 and "NO REQUESTORS FOR RESOURCE" in stdout:
+        return False
+    else:
+        return False
+
+
+def normalize_line_endings(src, encoding=None):
+    """
+    Normalizes src's encoding to IBM-037 (a dataset's default) and then normalizes
+    its line endings to LF.
+
+    Arguments:
+        src (str) -- Path of a USS file.
+        encoding (dict, optional) -- Encoding options for the module.
+
+    Returns:
+        str -- Path to the normalized file.
+    """
+    # Before copying into a destination dataset, we'll make sure that
+    # the source file doesn't contain any carriage returns that would
+    # result in empty records in the destination.
+    # Due to the differences between encodings, we'll normalize to IBM-037
+    # before checking the EOL sequence.
+    enc_utils = encode.EncodeUtils()
+    src_tag = enc_utils.uss_file_tag(src)
+    copy_handler = CopyHandler(AnsibleModuleHelper(dict()))
+
+    if src_tag == "untagged":
+        # This should only be true when src is a remote file and no encoding
+        # was specified by the user.
+        if not encoding:
+            encoding = {"from": encode.Defaults.get_default_system_charset()}
+        src_tag = encoding["from"]
+
+    if src_tag != "IBM-037":
+        fd, converted_src = tempfile.mkstemp()
+        os.close(fd)
+
+        enc_utils.uss_convert_encoding(
+            src,
+            converted_src,
+            src_tag,
+            "IBM-037"
+        )
+        copy_handler._tag_file_encoding(converted_src, "IBM-037")
+        src = converted_src
+
+    if copy_handler.file_has_crlf_endings(src):
+        src = copy_handler.create_temp_with_lf_endings(src)
+
+    return src
+
+
 def run_module(module, arg_def):
     # ********************************************************************
     # Verify the validity of module args. BetterArgParser raises ValueError
@@ -2339,7 +2420,7 @@ def run_module(module, arg_def):
             # When the destination is a dataset, we'll normalize the source
             # file to UTF-8 for the record length computation as Python
             # generally uses UTF-8 as the default encoding.
-            if not is_uss:
+            if not is_binary and not is_uss:
                 new_src = temp_path or src
                 new_src = os.path.normpath(new_src)
                 # Normalizing encoding when src is a USS file (only).
@@ -2453,6 +2534,16 @@ def run_module(module, arg_def):
             )
         )
 
+    # ********************************************************************
+    # To validate the source and dest are not lock in a batch process by
+    # the machine and not generate a false positive check the disposition
+    # for try to write in dest and if both src and dest are in lock.
+    # ********************************************************************
+    if dest_ds_type != "USS":
+        is_dest_lock = data_set_locked(dest_name)
+        if is_dest_lock:
+            module.fail_json(
+                msg="Unable to write to dest '{0}' because a task is accessing the data set.".format(dest_name))
     # ********************************************************************
     # Backup should only be performed if dest is an existing file or
     # data set. Otherwise ignored.
@@ -2600,8 +2691,8 @@ def run_module(module, arg_def):
     try:
         if encoding:
             # 'conv_path' points to the converted src file or directory
-            if is_mvs_dest:
-                encoding["to"] = encode.Defaults.DEFAULT_EBCDIC_MVS_CHARSET
+            # if is_mvs_dest:
+            #     encoding["to"] = encode.Defaults.DEFAULT_EBCDIC_MVS_CHARSET
 
             conv_path = copy_handler.convert_encoding(src, temp_path, encoding)
 
@@ -2781,6 +2872,30 @@ def main():
                     sms_management_class=dict(type="str", required=False),
                 )
             ),
+            use_template=dict(type='bool', default=False),
+            template_parameters=dict(
+                type='dict',
+                required=False,
+                options=dict(
+                    variable_start_string=dict(type='str', default='{{'),
+                    variable_end_string=dict(type='str', default='}}'),
+                    block_start_string=dict(type='str', default='{%'),
+                    block_end_string=dict(type='str', default='%}'),
+                    comment_start_string=dict(type='str', default='{#'),
+                    comment_end_string=dict(type='str', default='#}'),
+                    line_statement_prefix=dict(type='str', required=False),
+                    line_comment_prefix=dict(type='str', required=False),
+                    lstrip_blocks=dict(type='bool', default=False),
+                    trim_blocks=dict(type='bool', default=True),
+                    keep_trailing_newline=dict(type='bool', default=False),
+                    newline_sequence=dict(
+                        type='str',
+                        default='\n',
+                        choices=['\n', '\r', '\r\n']
+                    ),
+                    auto_reload=dict(type='bool', default=False),
+                )
+            ),
             is_uss=dict(type='bool'),
             is_pds=dict(type='bool'),
             is_src_dir=dict(type='bool'),
@@ -2828,6 +2943,27 @@ def main():
                 sms_storage_class=dict(arg_type="str", required=False),
                 sms_data_class=dict(arg_type="str", required=False),
                 sms_management_class=dict(arg_type="str", required=False),
+            )
+        ),
+
+        use_template=dict(arg_type='bool', required=False),
+        template_parameters=dict(
+            arg_type='dict',
+            required=False,
+            options=dict(
+                variable_start_string=dict(arg_type='str', required=False),
+                variable_end_string=dict(arg_type='str', required=False),
+                block_start_string=dict(arg_type='str', required=False),
+                block_end_string=dict(arg_type='str', required=False),
+                comment_start_string=dict(arg_type='str', required=False),
+                comment_end_string=dict(arg_type='str', required=False),
+                line_statement_prefix=dict(arg_type='str', required=False),
+                line_comment_prefix=dict(arg_type='str', required=False),
+                lstrip_blocks=dict(arg_type='bool', required=False),
+                trim_blocks=dict(arg_type='bool', required=False),
+                keep_trailing_newline=dict(arg_type='bool', required=False),
+                newline_sequence=dict(arg_type='str', required=False),
+                auto_reload=dict(arg_type='bool', required=False),
             )
         ),
     )

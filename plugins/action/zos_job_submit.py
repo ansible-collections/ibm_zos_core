@@ -17,7 +17,10 @@ from ansible.plugins.action import ActionBase
 from ansible.errors import AnsibleError, AnsibleFileNotFound
 # from ansible.module_utils._text import to_bytes, to_text
 from ansible.module_utils.common.text.converters import to_bytes, to_text
+from ansible.module_utils.parsing.convert_bool import boolean
 import os
+
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import template
 
 
 class ActionModule(ActionBase):
@@ -32,6 +35,17 @@ class ActionModule(ActionBase):
             return result
 
         module_args = self._task.args.copy()
+
+        use_template = _process_boolean(module_args.get("use_template"))
+        location = module_args.get("location")
+        if use_template and location != "LOCAL":
+            result.update(dict(
+                failed=True,
+                changed=False,
+                msg="Use of Jinja2 templates is only valid for local files. Location is set to '{0}' but should be 'LOCAL'".format(location)
+            ))
+            return result
+
         if module_args["location"] == "LOCAL":
 
             source = self._task.args.get("src", None)
@@ -94,6 +108,30 @@ class ActionModule(ActionBase):
 
             tmp_src = self._connection._shell.join_path(tmp, "source")
 
+            rendered_file = None
+            if use_template:
+                template_parameters = module_args.get("template_parameters", dict())
+                encoding = module_args.get("encoding", dict())
+
+                try:
+                    renderer = template.create_template_environment(
+                        template_parameters,
+                        source_full,
+                        encoding.get("from", None)
+                    )
+                    template_dir, rendered_file = renderer.render_file_template(
+                        os.path.basename(source_full),
+                        task_vars
+                    )
+                except Exception as err:
+                    result["msg"] = to_text(err)
+                    result["failed"] = True
+                    result["changed"] = False
+                    result["invocation"] = dict(module_args=module_args)
+                    return result
+
+                source_full = rendered_file
+
             remote_path = None
             remote_path = self._transfer_file(source_full, tmp_src)
 
@@ -127,6 +165,10 @@ class ActionModule(ActionBase):
                     task_vars=task_vars,
                 )
             )
+
+            if rendered_file:
+                os.remove(rendered_file)
+
         else:
             result.update(
                 self._execute_module(
@@ -153,3 +195,10 @@ class ActionModule(ActionBase):
         # entries = ('checksum', 'dest', 'gid', 'group', 'md5sum', 'mode', 'owner', 'size', 'src', 'state', 'uid')
         # delete_dict_entries(entries, result)
         return result
+
+
+def _process_boolean(arg, default=False):
+    try:
+        return boolean(arg)
+    except TypeError:
+        return default

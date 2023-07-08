@@ -12,7 +12,8 @@ executing operator commands, executing TSO commands, ping,
 querying operator actions, APF authorizing libraries,
 editing textual data in data sets or Unix System Services files,
 finding data sets, backing up and restoring data sets and
-volumes, mounting file systems and running z/OS programs without JCL.
+volumes, mounting file systems, running z/OS programs without JCL and
+initializing volumes.
 
 
 Red Hat Ansible Certified Content for IBM Z
@@ -49,7 +50,7 @@ and ansible-doc to automate tasks on z/OS.
 
 Ansible version compatibility
 =============================
-This collection has been tested against **Ansible** and **Ansible Core** versions >=2.9,<2.15.
+This collection has been tested against **Ansible** and **Ansible Core** versions >=2.9,<2.16.
 The Ansible and Ansible Core versions supported for this collection align to the
 [ansible-core support matrix](https://docs.ansible.com/ansible/latest/reference_appendices/release_and_maintenance.html#ansible-core-support-matrix). Review the
 [Ansible community changelogs](https://docs.ansible.com/ansible/latest/reference_appendices/release_and_maintenance.html#ansible-community-changelogs) for corresponding **Ansible community packages**

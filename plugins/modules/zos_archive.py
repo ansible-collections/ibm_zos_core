@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020, 2022
+# Copyright (c) IBM Corporation 2023
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -21,7 +21,7 @@ module: zos_archive
 version_added: "1.7.0"
 author:
   - Oscar Fernando Flores Garcia (@fernandofloresg)
-short_description: Archive a dataset on z/OS.
+short_description: Archive files and data sets on z/OS.
 
 description:
   - Creates or extends an archive.
@@ -29,7 +29,7 @@ description:
     and the archive is not copied to the local host.
 
 options:
-  path:
+  src:
     description:
       - Remote absolute path, glob, or list of paths or globs for the file or files to compress or archive.
     type: list

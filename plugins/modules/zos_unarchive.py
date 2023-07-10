@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) IBM Corporation 2020, 2022
+# Copyright (c) IBM Corporation 2023
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -704,8 +704,11 @@ class MVSUnarchive(Unarchive):
             temp_ds, rc = self._create_dest_data_set(type="SEQ", record_format="U", record_length=0, tmp_hlq=self.tmphlq, replace=True)
             self.unpack(self.path, temp_ds)
             rc = self._restore(temp_ds)
-        datasets.delete(temp_ds)
+            datasets.delete(temp_ds)
         self.changed = not rc
+
+        if not self.module.params.get("remote_src"):
+            datasets.delete(self.path)
         return
 
     def _list_content(self, source):
@@ -715,12 +718,12 @@ class MVSUnarchive(Unarchive):
         self._get_restored_datasets(out)
 
     def list_archive_content(self):
-        try:
-            temp_ds, rc = self._create_dest_data_set(type="SEQ", record_format="U", record_length=0, tmp_hlq=self.tmphlq, replace=True)
-            self.unpack(self.path, temp_ds)
-            self._list_content(temp_ds)
-        finally:
-            datasets.delete(temp_ds)
+        temp_ds, rc = self._create_dest_data_set(type="SEQ", record_format="U", record_length=0, tmp_hlq=self.tmphlq, replace=True)
+        self.unpack(self.path, temp_ds)
+        self._list_content(temp_ds)
+        datasets.delete(temp_ds)
+        if not self.module.params.get("remote_src"):
+            datasets.delete(self.path)
 
     def clean_environment(self, data_sets=None, uss_files=None, remove_targets=False):
         """Removes any allocated data sets that won't be needed after module termination.

@@ -2840,14 +2840,14 @@ def test_backup_ksds(ansible_zos_module, backup):
         for result in copy_res.contacted.values():
             assert result.get("msg") is None
             assert result.get("changed") is True
-            backup_name = result.get("backup_name")
-            assert backup_name is not None
-
             if backup:
+                backup_name = result.get("backup_name")
+                assert backup_name is not None
                 assert backup_name == backup
 
         verify_copy = get_listcat_information(hosts, dest, "ksds")
-        verify_backup = get_listcat_information(hosts, backup_name, "ksds")
+        if backup:
+            verify_backup = get_listcat_information(hosts, backup_name, "ksds")
 
         for result in verify_copy.contacted.values():
             assert result.get("dd_names") is not None
@@ -2856,13 +2856,14 @@ def test_backup_ksds(ansible_zos_module, backup):
             output = "\n".join(dd_names[0]["content"])
             assert "IN-CAT" in output
             assert re.search(r"\bINDEXED\b", output)
-        for result in verify_backup.contacted.values():
-            assert result.get("dd_names") is not None
-            dd_names = result.get("dd_names")
-            assert len(dd_names) > 0
-            output = "\n".join(dd_names[0]["content"])
-            assert "IN-CAT" in output
-            assert re.search(r"\bINDEXED\b", output)
+        if backup:
+            for result in verify_backup.contacted.values():
+                assert result.get("dd_names") is not None
+                dd_names = result.get("dd_names")
+                assert len(dd_names) > 0
+                output = "\n".join(dd_names[0]["content"])
+                assert "IN-CAT" in output
+                assert re.search(r"\bINDEXED\b", output)
 
     finally:
         hosts.all.zos_data_set(name=src, state="absent")

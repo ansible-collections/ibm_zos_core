@@ -704,7 +704,7 @@ class MVSUnarchive(Unarchive):
             temp_ds, rc = self._create_dest_data_set(type="SEQ", record_format="U", record_length=0, tmp_hlq=self.tmphlq, replace=True)
             self.unpack(self.path, temp_ds)
             rc = self._restore(temp_ds)
-            datasets.delete(temp_ds)
+        datasets.delete(temp_ds)
         self.changed = not rc
         return
 

@@ -31,7 +31,9 @@ description:
 options:
   src:
     description:
-      - Remote absolute path, glob, or list of paths or globs for the file or files to compress or archive.
+      - List of names or globs of UNIX System Services (USS) files, PS (sequential data sets), PDS, PDSE to compress or archive.
+      - USS file paths should be absolute paths.
+      - VSAMs are not supported.
     type: list
     required: true
     elements: str
@@ -129,6 +131,15 @@ options:
     type: bool
     required: false
     default: false
+notes:
+  - This module does not perform a send or transmit operation to a remote node.
+    If you want to transport the archive you can use zos_fetch to retrieve to the controller
+    and then zos_copy or zos_unarchive for copying to a remote or send to the remote and
+    then unpack the archive respectively.
+
+seealso:
+  - module: zos_fetch
+  - module: zos_unarchive
 '''
 
 EXAMPLES = r'''

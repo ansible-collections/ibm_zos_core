@@ -196,14 +196,30 @@ jobs:
       sample: 0
     creation_datetime:
       description:
-        Date and time, local to the target system, when the job was created.
+        Date and time, local to the target system, when the job was created. Zoau 1.2.3 only.
       type: str
       sample: 20230504T141500
+    creation_date:
+      description:
+        Date, local to the target system, when the job was created. Zoau 1.2.4 and later.
+      type: str
+      sample: 20230504
+    creation_time:
+      description:
+        Time, local to the target system, when the job was created. Zoau 1.2.4 and later.
+      type: str
+      sample: 141500
     queue_position:
       description:
         Integer of the position within the job queue where this jobs resided.
       type: int
       sample: 3
+    program_name:
+      description:
+        Name of the program, as per the job card.
+      type: str
+      sample: "HELLO"
+
   sample:
     [
         {

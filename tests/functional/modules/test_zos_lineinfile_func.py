@@ -111,14 +111,15 @@ export _BPXK_AUTOCVT""",
 def test_uss_line_replace(ansible_zos_module):
     hosts = ansible_zos_module
     params = dict(path="", regexp="ZOAU_ROOT=", line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present")
-    set_uss_enviroment(ansible_zos_module, "test_uss_line_replace", TEST_ENV)
-    params["path"] = TEST_ENV["TEST_FILE"]
-    results = hosts.all.zos_lineinfile(**params)
-    for result in results.contacted.values():
-        assert result.get("changed") == 1
-    results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
-    for result in results.contacted.values():
-        assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
+    try:
+        set_uss_enviroment(ansible_zos_module, "test_uss_line_replace", TEST_ENV)
+        params["path"] = TEST_ENV["TEST_FILE"]
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
@@ -128,21 +129,23 @@ export PATH
 ZOAU_ROOT=/mvsutil-develop_dsed
 export ZOAU_ROOT
 export _BPXK_AUTOCVT"""
-    remove_uss_enviroment(ansible_zos_module, TEST_ENV)
+    finally:
+        remove_uss_enviroment(ansible_zos_module, TEST_ENV)
 
 
 @pytest.mark.uss
 def test_uss_line_insertafter_regex(ansible_zos_module):
     hosts = ansible_zos_module
     params = dict(insertafter="ZOAU_ROOT=", line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present")
-    set_uss_enviroment(ansible_zos_module, "test_uss_line_insertafter_regex", TEST_ENV)
-    params["path"] = TEST_ENV["TEST_FILE"]
-    results = hosts.all.zos_lineinfile(**params)
-    for result in results.contacted.values():
-        assert result.get("changed") == 1
-    results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
-    for result in results.contacted.values():
-        assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
+    try:
+        set_uss_enviroment(ansible_zos_module, "test_uss_line_insertafter_regex", TEST_ENV)
+        params["path"] = TEST_ENV["TEST_FILE"]
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
@@ -153,21 +156,23 @@ ZOAU_ROOT=/usr/lpp/zoautil/v100
 ZOAU_ROOT=/mvsutil-develop_dsed
 export ZOAU_ROOT
 export _BPXK_AUTOCVT"""
-    remove_uss_enviroment(ansible_zos_module, TEST_ENV)
+    finally:
+        remove_uss_enviroment(ansible_zos_module, TEST_ENV)
 
 
 @pytest.mark.uss
 def test_uss_line_insertbefore_regex(ansible_zos_module):
     hosts = ansible_zos_module
     params = dict(insertbefore="ZOAU_ROOT=", line="unset ZOAU_ROOT", state="present")
-    set_uss_enviroment(ansible_zos_module, "test_uss_line_insertbefore_regex", TEST_ENV)
-    params["path"] = TEST_ENV["TEST_FILE"]
-    results = hosts.all.zos_lineinfile(**params)
-    for result in results.contacted.values():
-        assert result.get("changed") == 1
-    results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
-    for result in results.contacted.values():
-        assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
+    try:
+        set_uss_enviroment(ansible_zos_module, "test_uss_line_insertbefore_regex", TEST_ENV)
+        params["path"] = TEST_ENV["TEST_FILE"]
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
@@ -178,21 +183,23 @@ unset ZOAU_ROOT
 ZOAU_ROOT=/usr/lpp/zoautil/v100
 export ZOAU_ROOT
 export _BPXK_AUTOCVT"""
-    remove_uss_enviroment(ansible_zos_module, TEST_ENV)
+    finally:
+        remove_uss_enviroment(ansible_zos_module, TEST_ENV)
 
 
 @pytest.mark.uss
 def test_uss_line_insertafter_eof(ansible_zos_module):
     hosts = ansible_zos_module
     params = dict(insertafter="EOF", line="export ZOAU_ROOT", state="present")
-    set_uss_enviroment(ansible_zos_module, "test_uss_line_insertafter_eof", TEST_ENV)
-    params["path"] = TEST_ENV["TEST_FILE"]
-    results = hosts.all.zos_lineinfile(**params)
-    for result in results.contacted.values():
-        assert result.get("changed") == 1
-    results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
-    for result in results.contacted.values():
-        assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
+    try:
+        set_uss_enviroment(ansible_zos_module, "test_uss_line_insertafter_eof", TEST_ENV)
+        params["path"] = TEST_ENV["TEST_FILE"]
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
@@ -203,21 +210,23 @@ ZOAU_ROOT=/usr/lpp/zoautil/v100
 export ZOAU_ROOT
 export _BPXK_AUTOCVT
 export ZOAU_ROOT"""
-    remove_uss_enviroment(ansible_zos_module, TEST_ENV)
+    finally:
+        remove_uss_enviroment(ansible_zos_module, TEST_ENV)
 
 
 @pytest.mark.uss
 def test_uss_line_insertbefore_bof(ansible_zos_module):
     hosts = ansible_zos_module
     params = dict(insertbefore="BOF", line="# this is file is for setting env vars", state="present")
-    set_uss_enviroment(ansible_zos_module, "test_uss_line_insertbefore_bof", TEST_ENV)
-    params["path"] = TEST_ENV["TEST_FILE"]
-    results = hosts.all.zos_lineinfile(**params)
-    for result in results.contacted.values():
-        assert result.get("changed") == 1
-    results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
-    for result in results.contacted.values():
-        assert result.get("stdout") == """# this is file is for setting env vars
+    try:
+        set_uss_enviroment(ansible_zos_module, "test_uss_line_insertbefore_bof", TEST_ENV)
+        params["path"] = TEST_ENV["TEST_FILE"]
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == """# this is file is for setting env vars
 if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -228,21 +237,23 @@ export PATH
 ZOAU_ROOT=/usr/lpp/zoautil/v100
 export ZOAU_ROOT
 export _BPXK_AUTOCVT"""
-    remove_uss_enviroment(ansible_zos_module, TEST_ENV)
+    finally:
+        remove_uss_enviroment(ansible_zos_module, TEST_ENV)
 
 
 @pytest.mark.uss
 def test_uss_line_replace_match_insertafter_ignore(ansible_zos_module):
     hosts = ansible_zos_module
     params = dict(regexp="ZOAU_ROOT=", insertafter="PATH=", line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present")
-    set_uss_enviroment(ansible_zos_module, "test_uss_line_replace_match_insertafter_ignore", TEST_ENV)
-    params["path"] = TEST_ENV["TEST_FILE"]
-    results = hosts.all.zos_lineinfile(**params)
-    for result in results.contacted.values():
-        assert result.get("changed") == 1
-    results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
-    for result in results.contacted.values():
-        assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
+    try:
+        set_uss_enviroment(ansible_zos_module, "test_uss_line_replace_match_insertafter_ignore", TEST_ENV)
+        params["path"] = TEST_ENV["TEST_FILE"]
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
@@ -252,21 +263,23 @@ export PATH
 ZOAU_ROOT=/mvsutil-develop_dsed
 export ZOAU_ROOT
 export _BPXK_AUTOCVT"""
-    remove_uss_enviroment(ansible_zos_module, TEST_ENV)
+    finally:
+        remove_uss_enviroment(ansible_zos_module, TEST_ENV)
 
 
 @pytest.mark.uss
 def test_uss_line_replace_match_insertbefore_ignore(ansible_zos_module):
     hosts = ansible_zos_module
     params = dict(regexp="ZOAU_ROOT=", insertbefore="PATH=", line="unset ZOAU_ROOT", state="present")
-    set_uss_enviroment(ansible_zos_module, "test_uss_line_replace_match_insertbefore_ignore", TEST_ENV)
-    params["path"] = TEST_ENV["TEST_FILE"]
-    results = hosts.all.zos_lineinfile(**params)
-    for result in results.contacted.values():
-        assert result.get("changed") == 1
-    results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
-    for result in results.contacted.values():
-        assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
+    try:
+        set_uss_enviroment(ansible_zos_module, "test_uss_line_replace_match_insertbefore_ignore", TEST_ENV)
+        params["path"] = TEST_ENV["TEST_FILE"]
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
@@ -276,21 +289,23 @@ export PATH
 unset ZOAU_ROOT
 export ZOAU_ROOT
 export _BPXK_AUTOCVT"""
-    remove_uss_enviroment(ansible_zos_module, TEST_ENV)
+    finally:
+        remove_uss_enviroment(ansible_zos_module, TEST_ENV)
 
 
 @pytest.mark.uss
 def test_uss_line_replace_nomatch_insertafter_match(ansible_zos_module):
     hosts = ansible_zos_module
     params = dict(regexp="abcxyz", insertafter="ZOAU_ROOT=", line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present")
-    set_uss_enviroment(ansible_zos_module, "test_uss_line_replace_nomatch_insertafter_match", TEST_ENV)
-    params["path"] = TEST_ENV["TEST_FILE"]
-    results = hosts.all.zos_lineinfile(**params)
-    for result in results.contacted.values():
-        assert result.get("changed") == 1
-    results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
-    for result in results.contacted.values():
-        assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
+    try:
+        set_uss_enviroment(ansible_zos_module, "test_uss_line_replace_nomatch_insertafter_match", TEST_ENV)
+        params["path"] = TEST_ENV["TEST_FILE"]
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
@@ -301,21 +316,23 @@ ZOAU_ROOT=/usr/lpp/zoautil/v100
 ZOAU_ROOT=/mvsutil-develop_dsed
 export ZOAU_ROOT
 export _BPXK_AUTOCVT"""
-    remove_uss_enviroment(ansible_zos_module, TEST_ENV)
+    finally:
+        remove_uss_enviroment(ansible_zos_module, TEST_ENV)
 
 
 @pytest.mark.uss
 def test_uss_line_replace_nomatch_insertbefore_match(ansible_zos_module):
     hosts = ansible_zos_module
     params = dict(regexp="abcxyz", insertbefore="ZOAU_ROOT=", line="unset ZOAU_ROOT", state="present")
-    set_uss_enviroment(ansible_zos_module, "test_uss_line_replace_nomatch_insertbefore_match", TEST_ENV)
-    params["path"] = TEST_ENV["TEST_FILE"]
-    results = hosts.all.zos_lineinfile(**params)
-    for result in results.contacted.values():
-        assert result.get("changed") == 1
-    results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
-    for result in results.contacted.values():
-        assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
+    try:
+        set_uss_enviroment(ansible_zos_module, "test_uss_line_replace_nomatch_insertbefore_match", TEST_ENV)
+        params["path"] = TEST_ENV["TEST_FILE"]
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
@@ -326,21 +343,23 @@ unset ZOAU_ROOT
 ZOAU_ROOT=/usr/lpp/zoautil/v100
 export ZOAU_ROOT
 export _BPXK_AUTOCVT"""
-    remove_uss_enviroment(ansible_zos_module, TEST_ENV)
+    finally:
+        remove_uss_enviroment(ansible_zos_module, TEST_ENV)
 
 
 @pytest.mark.uss
 def test_uss_line_replace_nomatch_insertafter_nomatch(ansible_zos_module):
     hosts = ansible_zos_module
     params = dict(regexp="abcxyz", insertafter="xyzijk", line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present")
-    set_uss_enviroment(ansible_zos_module, "test_uss_line_replace_nomatch_insertafter_nomatch", TEST_ENV)
-    params["path"] = TEST_ENV["TEST_FILE"]
-    results = hosts.all.zos_lineinfile(**params)
-    for result in results.contacted.values():
-        assert result.get("changed") == 1
-    results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
-    for result in results.contacted.values():
-        assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
+    try:
+        set_uss_enviroment(ansible_zos_module, "test_uss_line_replace_nomatch_insertafter_nomatch", TEST_ENV)
+        params["path"] = TEST_ENV["TEST_FILE"]
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
@@ -351,21 +370,23 @@ ZOAU_ROOT=/usr/lpp/zoautil/v100
 export ZOAU_ROOT
 export _BPXK_AUTOCVT
 ZOAU_ROOT=/mvsutil-develop_dsed"""
-    remove_uss_enviroment(ansible_zos_module, TEST_ENV)
+    finally:
+        remove_uss_enviroment(ansible_zos_module, TEST_ENV)
 
 
 @pytest.mark.uss
 def test_uss_line_replace_nomatch_insertbefore_nomatch(ansible_zos_module):
     hosts = ansible_zos_module
     params = dict(regexp="abcxyz", insertbefore="xyzijk", line="unset ZOAU_ROOT", state="present")
-    set_uss_enviroment(ansible_zos_module, "test_uss_line_replace_nomatch_insertbefore_nomatch", TEST_ENV)
-    params["path"] = TEST_ENV["TEST_FILE"]
-    results = hosts.all.zos_lineinfile(**params)
-    for result in results.contacted.values():
-        assert result.get("changed") == 1
-    results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
-    for result in results.contacted.values():
-        assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
+    try:
+        set_uss_enviroment(ansible_zos_module, "test_uss_line_replace_nomatch_insertbefore_nomatch", TEST_ENV)
+        params["path"] = TEST_ENV["TEST_FILE"]
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
@@ -376,21 +397,23 @@ ZOAU_ROOT=/usr/lpp/zoautil/v100
 export ZOAU_ROOT
 export _BPXK_AUTOCVT
 unset ZOAU_ROOT"""
-    remove_uss_enviroment(ansible_zos_module, TEST_ENV)
+    finally:
+        remove_uss_enviroment(ansible_zos_module, TEST_ENV)
 
 
 @pytest.mark.uss
 def test_uss_line_absent(ansible_zos_module):
     hosts = ansible_zos_module
     params = dict(regexp="ZOAU_ROOT=", line="", state="absent")
-    set_uss_enviroment(ansible_zos_module, "test_uss_line_absent", TEST_ENV)
-    params["path"] = TEST_ENV["TEST_FILE"]
-    results = hosts.all.zos_lineinfile(**params)
-    for result in results.contacted.values():
-        assert result.get("changed") == 1
-    results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
-    for result in results.contacted.values():
-        assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
+    try:
+        set_uss_enviroment(ansible_zos_module, "test_uss_line_absent", TEST_ENV)
+        params["path"] = TEST_ENV["TEST_FILE"]
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
@@ -399,21 +422,23 @@ PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
 export PATH
 export ZOAU_ROOT
 export _BPXK_AUTOCVT"""
-    remove_uss_enviroment(ansible_zos_module, TEST_ENV)
+    finally:
+        remove_uss_enviroment(ansible_zos_module, TEST_ENV)
 
 
 @pytest.mark.uss
 def test_uss_line_replace_quoted_escaped(ansible_zos_module):
     hosts = ansible_zos_module
     params = dict(path="", regexp="ZOAU_ROOT=", line='ZOAU_ROOT=\"/mvsutil-develop_dsed\"', state="present")
-    set_uss_enviroment(ansible_zos_module, "test_uss_line_replace_quoted_escaped", TEST_ENV)
-    params["path"] = TEST_ENV["TEST_FILE"]
-    results = hosts.all.zos_lineinfile(**params)
-    for result in results.contacted.values():
-        assert result.get("changed") == 1
-    results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
-    for result in results.contacted.values():
-        assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
+    try:
+        set_uss_enviroment(ansible_zos_module, "test_uss_line_replace_quoted_escaped", TEST_ENV)
+        params["path"] = TEST_ENV["TEST_FILE"]
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
@@ -423,21 +448,23 @@ export PATH
 ZOAU_ROOT="/mvsutil-develop_dsed"
 export ZOAU_ROOT
 export _BPXK_AUTOCVT"""
-    remove_uss_enviroment(ansible_zos_module, TEST_ENV)
+    finally:
+        remove_uss_enviroment(ansible_zos_module, TEST_ENV)
 
 
 @pytest.mark.uss
 def test_uss_line_replace_quoted_not_escaped(ansible_zos_module):
     hosts = ansible_zos_module
     params = dict(path="", regexp="ZOAU_ROOT=", line='ZOAU_ROOT="/mvsutil-develop_dsed"', state="present")
-    set_uss_enviroment(ansible_zos_module, "test_uss_line_replace_quoted_not_escaped", TEST_ENV)
-    params["path"] = TEST_ENV["TEST_FILE"]
-    results = hosts.all.zos_lineinfile(**params)
-    for result in results.contacted.values():
-        assert result.get("changed") == 1
-    results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
-    for result in results.contacted.values():
-        assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
+    try:
+        set_uss_enviroment(ansible_zos_module, "test_uss_line_replace_quoted_not_escaped", TEST_ENV)
+        params["path"] = TEST_ENV["TEST_FILE"]
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
@@ -447,7 +474,8 @@ export PATH
 ZOAU_ROOT="/mvsutil-develop_dsed"
 export ZOAU_ROOT
 export _BPXK_AUTOCVT"""
-    remove_uss_enviroment(ansible_zos_module, TEST_ENV)
+    finally:
+        remove_uss_enviroment(ansible_zos_module, TEST_ENV)
 
 
 #########################
@@ -462,14 +490,15 @@ def test_ds_line_insertafter_regex(ansible_zos_module, dstype):
     TEST_ENV["DS_TYPE"] = dstype
     hosts = ansible_zos_module
     params = dict(insertafter="ZOAU_ROOT=", line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present")
-    set_ds_enviroment(ansible_zos_module, "DST1", TEST_ENV)
-    params["path"] = TEST_ENV["DS_NAME"]
-    results = hosts.all.zos_lineinfile(**params)
-    for result in results.contacted.values():
-        assert result.get("changed") == 1
-    results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(TEST_ENV["DS_NAME"]))
-    for result in results.contacted.values():
-        assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
+    try:
+        set_ds_enviroment(ansible_zos_module, "DST1", TEST_ENV)
+        params["path"] = TEST_ENV["DS_NAME"]
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(TEST_ENV["DS_NAME"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
@@ -480,7 +509,8 @@ ZOAU_ROOT=/usr/lpp/zoautil/v100
 ZOAU_ROOT=/mvsutil-develop_dsed
 export ZOAU_ROOT
 export _BPXK_AUTOCVT"""
-    remove_ds_enviroment(ansible_zos_module, TEST_ENV)
+    finally:
+        remove_ds_enviroment(ansible_zos_module, TEST_ENV)
 
 
 @pytest.mark.ds
@@ -489,14 +519,15 @@ def test_ds_line_insertbefore_regex(ansible_zos_module, dstype):
     TEST_ENV["DS_TYPE"] = dstype
     hosts = ansible_zos_module
     params = dict(insertbefore="ZOAU_ROOT=", line="unset ZOAU_ROOT", state="present")
-    set_ds_enviroment(ansible_zos_module, "DST2", TEST_ENV)
-    params["path"] = TEST_ENV["DS_NAME"]
-    results = hosts.all.zos_lineinfile(**params)
-    for result in results.contacted.values():
-        assert result.get("changed") == 1
-    results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(TEST_ENV["DS_NAME"]))
-    for result in results.contacted.values():
-        assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
+    try:
+        set_ds_enviroment(ansible_zos_module, "DST2", TEST_ENV)
+        params["path"] = TEST_ENV["DS_NAME"]
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(TEST_ENV["DS_NAME"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
@@ -507,7 +538,8 @@ unset ZOAU_ROOT
 ZOAU_ROOT=/usr/lpp/zoautil/v100
 export ZOAU_ROOT
 export _BPXK_AUTOCVT"""
-    remove_ds_enviroment(ansible_zos_module, TEST_ENV)
+    finally:
+        remove_ds_enviroment(ansible_zos_module, TEST_ENV)
 
 
 @pytest.mark.ds
@@ -516,14 +548,15 @@ def test_ds_line_insertafter_eof(ansible_zos_module, dstype):
     TEST_ENV["DS_TYPE"] = dstype
     hosts = ansible_zos_module
     params = dict(insertafter="EOF", line="export ZOAU_ROOT", state="present")
-    set_ds_enviroment(ansible_zos_module, "DST3", TEST_ENV)
-    params["path"] = TEST_ENV["DS_NAME"]
-    results = hosts.all.zos_lineinfile(**params)
-    for result in results.contacted.values():
-        assert result.get("changed") == 1
-    results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(TEST_ENV["DS_NAME"]))
-    for result in results.contacted.values():
-        assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
+    try:
+        set_ds_enviroment(ansible_zos_module, "DST3", TEST_ENV)
+        params["path"] = TEST_ENV["DS_NAME"]
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(TEST_ENV["DS_NAME"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
@@ -534,7 +567,8 @@ ZOAU_ROOT=/usr/lpp/zoautil/v100
 export ZOAU_ROOT
 export _BPXK_AUTOCVT
 export ZOAU_ROOT"""
-    remove_ds_enviroment(ansible_zos_module, TEST_ENV)
+    finally:
+        remove_ds_enviroment(ansible_zos_module, TEST_ENV)
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
@@ -542,14 +576,15 @@ def test_ds_line_insertbefore_bof(ansible_zos_module, dstype):
     TEST_ENV["DS_TYPE"] = dstype
     hosts = ansible_zos_module
     params = dict(insertbefore="BOF", line="# this is file is for setting env vars", state="present")
-    set_ds_enviroment(ansible_zos_module, "DST4", TEST_ENV)
-    params["path"] = TEST_ENV["DS_NAME"]
-    results = hosts.all.zos_lineinfile(**params)
-    for result in results.contacted.values():
-        assert result.get("changed") == 1
-    results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(TEST_ENV["DS_NAME"]))
-    for result in results.contacted.values():
-        assert result.get("stdout") == """# this is file is for setting env vars
+    try:
+        set_ds_enviroment(ansible_zos_module, "DST4", TEST_ENV)
+        params["path"] = TEST_ENV["DS_NAME"]
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(TEST_ENV["DS_NAME"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == """# this is file is for setting env vars
 if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
@@ -560,7 +595,8 @@ export PATH
 ZOAU_ROOT=/usr/lpp/zoautil/v100
 export ZOAU_ROOT
 export _BPXK_AUTOCVT"""
-    remove_ds_enviroment(ansible_zos_module, TEST_ENV)
+    finally:
+        remove_ds_enviroment(ansible_zos_module, TEST_ENV)
 
 
 @pytest.mark.ds
@@ -569,14 +605,15 @@ def test_ds_line_replace_match_insertafter_ignore(ansible_zos_module, dstype):
     TEST_ENV["DS_TYPE"] = dstype
     hosts = ansible_zos_module
     params = dict(regexp="ZOAU_ROOT=", insertafter="PATH=", line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present")
-    set_ds_enviroment(ansible_zos_module, "DST5", TEST_ENV)
-    params["path"] = TEST_ENV["DS_NAME"]
-    results = hosts.all.zos_lineinfile(**params)
-    for result in results.contacted.values():
-        assert result.get("changed") == 1
-    results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(TEST_ENV["DS_NAME"]))
-    for result in results.contacted.values():
-        assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
+    try:
+        set_ds_enviroment(ansible_zos_module, "DST5", TEST_ENV)
+        params["path"] = TEST_ENV["DS_NAME"]
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(TEST_ENV["DS_NAME"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
@@ -586,7 +623,8 @@ export PATH
 ZOAU_ROOT=/mvsutil-develop_dsed
 export ZOAU_ROOT
 export _BPXK_AUTOCVT"""
-    remove_ds_enviroment(ansible_zos_module, TEST_ENV)
+    finally:
+        remove_ds_enviroment(ansible_zos_module, TEST_ENV)
 
 
 @pytest.mark.ds
@@ -595,14 +633,15 @@ def test_ds_line_replace_match_insertbefore_ignore(ansible_zos_module, dstype):
     TEST_ENV["DS_TYPE"] = dstype
     hosts = ansible_zos_module
     params = dict(regexp="ZOAU_ROOT=", insertbefore="PATH=", line="unset ZOAU_ROOT", state="present")
-    set_ds_enviroment(ansible_zos_module, "DST6", TEST_ENV)
-    params["path"] = TEST_ENV["DS_NAME"]
-    results = hosts.all.zos_lineinfile(**params)
-    for result in results.contacted.values():
-        assert result.get("changed") == 1
-    results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(TEST_ENV["DS_NAME"]))
-    for result in results.contacted.values():
-        assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
+    try:
+        set_ds_enviroment(ansible_zos_module, "DST6", TEST_ENV)
+        params["path"] = TEST_ENV["DS_NAME"]
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(TEST_ENV["DS_NAME"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
@@ -612,7 +651,8 @@ export PATH
 unset ZOAU_ROOT
 export ZOAU_ROOT
 export _BPXK_AUTOCVT"""
-    remove_ds_enviroment(ansible_zos_module, TEST_ENV)
+    finally:
+        remove_ds_enviroment(ansible_zos_module, TEST_ENV)
 
 
 @pytest.mark.ds
@@ -621,14 +661,15 @@ def test_ds_line_replace_nomatch_insertafter_match(ansible_zos_module, dstype):
     TEST_ENV["DS_TYPE"] = dstype
     hosts = ansible_zos_module
     params = dict(regexp="abcxyz", insertafter="ZOAU_ROOT=", line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present")
-    set_ds_enviroment(ansible_zos_module, "DST7", TEST_ENV)
-    params["path"] = TEST_ENV["DS_NAME"]
-    results = hosts.all.zos_lineinfile(**params)
-    for result in results.contacted.values():
-        assert result.get("changed") == 1
-    results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(TEST_ENV["DS_NAME"]))
-    for result in results.contacted.values():
-        assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
+    try:
+        set_ds_enviroment(ansible_zos_module, "DST7", TEST_ENV)
+        params["path"] = TEST_ENV["DS_NAME"]
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(TEST_ENV["DS_NAME"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
@@ -639,23 +680,25 @@ ZOAU_ROOT=/usr/lpp/zoautil/v100
 ZOAU_ROOT=/mvsutil-develop_dsed
 export ZOAU_ROOT
 export _BPXK_AUTOCVT"""
-    remove_ds_enviroment(ansible_zos_module, TEST_ENV)
+    finally:
+        remove_ds_enviroment(ansible_zos_module, TEST_ENV)
 
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
 def test_ds_line_replace_nomatch_insertbefore_match(ansible_zos_module, dstype):
-    TEST_ENV["DS_TYPE"] = dstype
     hosts = ansible_zos_module
+    TEST_ENV["DS_TYPE"] = dstype
     params = dict(regexp="abcxyz", insertbefore="ZOAU_ROOT=", line="unset ZOAU_ROOT", state="present")
-    set_ds_enviroment(ansible_zos_module, "DST8", TEST_ENV)
-    params["path"] = TEST_ENV["DS_NAME"]
-    results = hosts.all.zos_lineinfile(**params)
-    for result in results.contacted.values():
-        assert result.get("changed") == 1
-    results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(TEST_ENV["DS_NAME"]))
-    for result in results.contacted.values():
-        assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
+    try:
+        set_ds_enviroment(ansible_zos_module, "DST8", TEST_ENV)
+        params["path"] = TEST_ENV["DS_NAME"]
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(TEST_ENV["DS_NAME"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
@@ -666,23 +709,25 @@ unset ZOAU_ROOT
 ZOAU_ROOT=/usr/lpp/zoautil/v100
 export ZOAU_ROOT
 export _BPXK_AUTOCVT"""
-    remove_ds_enviroment(ansible_zos_module, TEST_ENV)
+    finally:
+        remove_ds_enviroment(ansible_zos_module, TEST_ENV)
 
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
 def test_ds_line_replace_nomatch_insertafter_nomatch(ansible_zos_module, dstype):
-    TEST_ENV["DS_TYPE"] = dstype
     hosts = ansible_zos_module
+    TEST_ENV["DS_TYPE"] = dstype
     params = dict(regexp="abcxyz", insertafter="xyzijk", line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present")
-    set_ds_enviroment(ansible_zos_module, "DST9", TEST_ENV)
-    params["path"] = TEST_ENV["DS_NAME"]
-    results = hosts.all.zos_lineinfile(**params)
-    for result in results.contacted.values():
-        assert result.get("changed") == 1
-    results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(TEST_ENV["DS_NAME"]))
-    for result in results.contacted.values():
-        assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
+    try:
+        set_ds_enviroment(ansible_zos_module, "DST9", TEST_ENV)
+        params["path"] = TEST_ENV["DS_NAME"]
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(TEST_ENV["DS_NAME"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
@@ -693,23 +738,25 @@ ZOAU_ROOT=/usr/lpp/zoautil/v100
 export ZOAU_ROOT
 export _BPXK_AUTOCVT
 ZOAU_ROOT=/mvsutil-develop_dsed"""
-    remove_ds_enviroment(ansible_zos_module, TEST_ENV)
+    finally:
+        remove_ds_enviroment(ansible_zos_module, TEST_ENV)
 
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
 def test_ds_line_replace_nomatch_insertbefore_nomatch(ansible_zos_module, dstype):
-    TEST_ENV["DS_TYPE"] = dstype
     hosts = ansible_zos_module
+    TEST_ENV["DS_TYPE"] = dstype
     params = dict(regexp="abcxyz", insertbefore="xyzijk", line="unset ZOAU_ROOT", state="present")
-    set_ds_enviroment(ansible_zos_module, "DST10", TEST_ENV)
-    params["path"] = TEST_ENV["DS_NAME"]
-    results = hosts.all.zos_lineinfile(**params)
-    for result in results.contacted.values():
-        assert result.get("changed") == 1
-    results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(TEST_ENV["DS_NAME"]))
-    for result in results.contacted.values():
-        assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
+    try:
+        set_ds_enviroment(ansible_zos_module, "DST10", TEST_ENV)
+        params["path"] = TEST_ENV["DS_NAME"]
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(TEST_ENV["DS_NAME"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
@@ -720,23 +767,25 @@ ZOAU_ROOT=/usr/lpp/zoautil/v100
 export ZOAU_ROOT
 export _BPXK_AUTOCVT
 unset ZOAU_ROOT"""
-    remove_ds_enviroment(ansible_zos_module, TEST_ENV)
+    finally:
+        remove_ds_enviroment(ansible_zos_module, TEST_ENV)
 
 
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
 def test_ds_line_absent(ansible_zos_module, dstype):
-    TEST_ENV["DS_TYPE"] = dstype
     hosts = ansible_zos_module
+    TEST_ENV["DS_TYPE"] = dstype
     params = dict(regexp="ZOAU_ROOT=", line="", state="absent")
-    set_ds_enviroment(ansible_zos_module, "DST11", TEST_ENV)
-    params["path"] = TEST_ENV["DS_NAME"]
-    results = hosts.all.zos_lineinfile(**params)
-    for result in results.contacted.values():
-        assert result.get("changed") == 1
-    results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(TEST_ENV["DS_NAME"]))
-    for result in results.contacted.values():
-        assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
+    try:
+        set_ds_enviroment(ansible_zos_module, "DST11", TEST_ENV)
+        params["path"] = TEST_ENV["DS_NAME"]
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(TEST_ENV["DS_NAME"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
 then
     export STEPLIB=none
     exec -a 0 SHELL
@@ -745,16 +794,17 @@ PATH=/usr/lpp/zoautil/v100/bin:/usr/lpp/rsusr/ported/bin:/bin:/var/bin
 export PATH
 export ZOAU_ROOT
 export _BPXK_AUTOCVT"""
-    remove_ds_enviroment(ansible_zos_module, TEST_ENV)
+    finally:
+        remove_ds_enviroment(ansible_zos_module, TEST_ENV)
 
 
 @pytest.mark.ds
 def test_ds_tmp_hlq_option(ansible_zos_module):
     # This TMPHLQ only works with sequential datasets
+    hosts = ansible_zos_module
     TEST_ENV["DS_TYPE"] = 'SEQ'
     kwargs = dict(backup_name=r"TMPHLQ\..")
     params = dict(insertafter="EOF", line="export ZOAU_ROOT", state="present", backup=True, tmp_hlq="TMPHLQ")
-    hosts = ansible_zos_module
     test_name = "DST12"
     TEMP_FILE = "/tmp/" + test_name
     TEMP_FILE = TEST_ENV["TEST_DIR"] + test_name
@@ -788,8 +838,8 @@ def test_ds_tmp_hlq_option(ansible_zos_module):
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", NS_DS_TYPE)
 def test_ds_not_supported(ansible_zos_module, dstype):
-    TEST_ENV["DS_TYPE"] = dstype
     hosts = ansible_zos_module
+    TEST_ENV["DS_TYPE"] = dstype
     params = dict(path="", regexp="ZOAU_ROOT=", line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present")
     test_name = "DST13"
     try:
@@ -814,8 +864,8 @@ def test_ds_not_supported(ansible_zos_module, dstype):
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", DS_TYPE)
 def test_ds_line_force(ansible_zos_module, dstype):
-    TEST_ENV["DS_TYPE"] = dstype
     hosts = ansible_zos_module
+    TEST_ENV["DS_TYPE"] = dstype
     params = dict(path="", regexp="ZOAU_ROOT=", line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present", force="True")
     MEMBER_1, MEMBER_2 = "MEM1", "MEM2"
     TEMP_FILE = "/tmp/{0}".format(MEMBER_2)
@@ -884,13 +934,13 @@ export _BPXK_AUTOCVT"""
 @pytest.mark.ds
 @pytest.mark.parametrize("dstype", ["PDS","PDSE"])
 def test_ds_line_force_fail(ansible_zos_module, dstype):
+    hosts = ansible_zos_module
     TEST_ENV["DS_TYPE"] = dstype
     params = dict(path="", regexp="ZOAU_ROOT=", line="ZOAU_ROOT=/mvsutil-develop_dsed", state="present", force="False")
     MEMBER_1, MEMBER_2 = "MEM1", "MEM2"
     TEMP_FILE = "/tmp/{0}".format(MEMBER_2)
     TEST_ENV["DS_NAME"] = DEFAULT_DATA_SET_NAME+"({0})".format(MEMBER_2)
     params["path"] = DEFAULT_DATA_SET_NAME+"({0})".format(MEMBER_2)
-    hosts = ansible_zos_module
     try:
         # set up:
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="present", type=TEST_ENV["DS_TYPE"], replace=True)

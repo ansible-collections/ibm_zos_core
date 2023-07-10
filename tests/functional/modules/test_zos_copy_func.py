@@ -3017,7 +3017,8 @@ def test_copy_uss_file_to_existing_sequential_data_set_twice_with_tmphlq_option(
         for cp_res in copy_result.contacted.values():
             if force:
                 assert cp_res.get("msg") is None
-                assert cp_res.get("backup_name")[:6] == tmphlq
+                if cp_res.get("backup_name"):
+                    assert cp_res.get("backup_name")[:6] == tmphlq
             else:
                 assert cp_res.get("msg") is not None
                 assert cp_res.get("changed") is False

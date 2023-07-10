@@ -310,6 +310,12 @@ jobs:
         Integer of the position within the job queue where this jobs resided.
       type: int
       sample: 3
+    program_name:
+      description:
+        Name of the program, as per the job card.
+      type: str
+      sample: "IEBGENER"
+
   sample:
      [
           {
@@ -526,10 +532,12 @@ jobs:
               "job_class": "K",
               "svc_class": "?",
               "priority": 1,
+              "program_name": "IEBGENER",
               "asid": 0,
               "creation_datetime": "20230503T121300",
               "queue_position": 3,
-              "subsystem": "STL1"
+              "subsystem": "STL1",
+              "system": "STL1"
           }
      ]
 message:

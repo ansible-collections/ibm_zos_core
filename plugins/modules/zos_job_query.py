@@ -196,19 +196,9 @@ jobs:
       sample: 0
     creation_datetime:
       description:
-        Date and time, local to the target system, when the job was created. Zoau 1.2.3 only.
+        Date and time, local to the target system, when the job was created.
       type: str
       sample: 20230504T141500
-    creation_date:
-      description:
-        Date, local to the target system, when the job was created. Zoau 1.2.4 and later.
-      type: str
-      sample: 20230504
-    creation_time:
-      description:
-        Time, local to the target system, when the job was created. Zoau 1.2.4 and later.
-      type: str
-      sample: 141500
     queue_position:
       description:
         Integer of the position within the job queue where this jobs resided.
@@ -218,7 +208,7 @@ jobs:
       description:
         Name of the program, as per the job card.
       type: str
-      sample: "HELLO"
+      sample: "IEBGENER"
 
   sample:
     [
@@ -293,7 +283,7 @@ def run_module():
     module.exit_json(**result)
 
 
-# validate_arguments rturns a tuple, so we don't have to rebuild the job_name string
+# validate_arguments returns a tuple, so we don't have to rebuild the job_name string
 def validate_arguments(params):
     job_name_in = params.get("job_name")
 
@@ -418,6 +408,7 @@ def parsing_jobs(jobs_raw):
             "asid": job.get("asid"),
             "creation_datetime": job.get("creation_datetime"),
             "queue_position": job.get("queue_position"),
+            "program_name": job.get("program_name"),
         }
         jobs.append(job_dict)
     return jobs

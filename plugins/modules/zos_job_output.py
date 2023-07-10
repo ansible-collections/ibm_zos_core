@@ -116,6 +116,11 @@ jobs:
          Type of address space.
       type: str
       sample: JOB
+    creation_datetime:
+      description:
+        Date and time, local to the target system, when the job was created.
+      type: str
+      sample: 20230504T141500
     ddnames:
       description:
          Data definition names.
@@ -175,6 +180,41 @@ jobs:
                "         6 //SYSUT2   DD SYSOUT=*                                                          ",
                "         7 //                                                                              "
              ]
+    job_class:
+      description:
+        Letter indicating job class for this job.
+      type: str
+      sample: A
+    svc_class:
+      description:
+        Character indicating service class for this job.
+      type: str
+      sample: C
+    priority:
+      description:
+        A numeric indicator of the job priority assigned through JES.
+      type: int
+      sample: 4
+    asid:
+      description:
+        An identifier created by JES.
+      type: int
+      sample: 0
+    creation_datetime:
+      description:
+        Date and time, local to the target system, when the job was created.
+      type: str
+      sample: 20230504T141500
+    queue_position:
+      description:
+        Integer of the position within the job queue where this jobs resided.
+      type: int
+      sample: 3
+    program_name:
+      description:
+        Name of the program, as per the job card.
+      type: str
+      sample: "IEBGENER"
     ret_code:
       description:
          Return code output collected from job log.
@@ -341,8 +381,13 @@ jobs:
             "stepname": "STEP0001"
           }
         ],
+        "duration": 0,
+        "job_class": "R",
         "job_id": "JOB00134",
         "job_name": "HELLO",
+        "priority": "1",
+        "program_name": "IEBGENER",
+        "queue_position": "58",
         "owner": "OMVSADM",
         "ret_code": {
           "code": 0,

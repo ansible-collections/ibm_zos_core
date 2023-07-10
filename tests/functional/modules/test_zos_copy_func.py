@@ -22,6 +22,7 @@ import tempfile
 from tempfile import mkstemp
 import subprocess
 
+
 __metaclass__ = type
 
 
@@ -52,6 +53,38 @@ DUMMY_DATA_BINARY_ESCAPED = "\\xFD\\xFD\\xFD\\xFD"
 VSAM_RECORDS = """00000001A record
 00000002A record
 00000003A record
+"""
+
+TEMPLATE_CONTENT = """
+This is a Jinja2 test: {{ var }}
+
+{# This is a comment. #}
+
+If:
+{% if if_var is divisibleby 5 %}
+Condition is true.
+{% endif %}
+
+Inside a loop:
+{% for i in array %}
+Current element: {{ i }}
+{% endfor %}
+"""
+
+TEMPLATE_CONTENT_NON_DEFAULT_MARKERS = """
+This is a Jinja2 test: (( var ))
+
+#% This is a comment. %#
+
+If:
+{% if if_var is divisibleby 5 %}
+Condition is true.
+{% endif %}
+
+Inside a loop:
+{% for i in array %}
+Current element: (( i ))
+{% endfor %}
 """
 
 # SHELL_EXECUTABLE = "/usr/lpp/rsusr/ported/bin/bash"
@@ -117,10 +150,44 @@ LINK_JCL = """
 
 """
 
+c_pgm="""#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+int main(int argc, char** argv)
+{
+    char dsname[ strlen(argv[1]) + 4];
+    sprintf(dsname, "//'%s'", argv[1]);
+    FILE* member;
+    member = fopen(dsname, "rb,type=record");
+    sleep(300);
+    fclose(member);
+    return 0;
+}
+"""
+
+call_c_jcl="""//PDSELOCK JOB MSGCLASS=A,MSGLEVEL=(1,1),NOTIFY=&SYSUID,REGION=0M
+//LOCKMEM  EXEC PGM=BPXBATCH
+//STDPARM DD *
+SH /tmp/disp_shr/pdse-lock '{0}({1})'
+//STDIN  DD DUMMY
+//STDOUT DD SYSOUT=*
+//STDERR DD SYSOUT=*
+//"""
+
 def populate_dir(dir_path):
     for i in range(5):
         with open(dir_path + "/" + "file" + str(i + 1), "w") as infile:
             infile.write(DUMMY_DATA)
+
+
+def create_template_file(dir_path, use_default_markers=True, encoding="utf-8"):
+    content = TEMPLATE_CONTENT if use_default_markers else TEMPLATE_CONTENT_NON_DEFAULT_MARKERS
+    template_path = os.path.join(dir_path, "template")
+
+    with open(template_path, "w", encoding=encoding) as infile:
+        infile.write(content)
+
+    return template_path
 
 
 def populate_dir_crlf_endings(dir_path):
@@ -1176,6 +1243,264 @@ def test_copy_non_existent_file_fails(ansible_zos_module, is_remote):
 
 
 @pytest.mark.uss
+@pytest.mark.template
+@pytest.mark.parametrize("encoding", ["utf-8", "iso8859-1"])
+def test_copy_template_file(ansible_zos_module, encoding):
+    hosts = ansible_zos_module
+    dest_path = "/tmp/new_dir"
+    temp_dir = tempfile.mkdtemp()
+
+    try:
+        temp_template = create_template_file(
+            temp_dir,
+            use_default_markers=True,
+            encoding=encoding
+        )
+        dest_template = os.path.join(dest_path, os.path.basename(temp_template))
+
+        hosts.all.file(path=dest_path, state="directory")
+
+        # Adding the template vars to each host.
+        template_vars = dict(
+            var="This should be rendered",
+            if_var=5,
+            array=[1, 2, 3]
+        )
+        for host in hosts["options"]["inventory_manager"]._inventory.hosts.values():
+            host.vars.update(template_vars)
+
+        copy_result = hosts.all.zos_copy(
+            src=temp_template,
+            dest=dest_path,
+            use_template=True,
+            encoding={
+                "from": encoding,
+                "to": "IBM-1047"
+            }
+        )
+
+        verify_copy = hosts.all.shell(
+            cmd="cat {0}".format(dest_template),
+            executable=SHELL_EXECUTABLE,
+        )
+
+        for cp_res in copy_result.contacted.values():
+            assert cp_res.get("msg") is None
+            assert cp_res.get("changed") is True
+            assert cp_res.get("dest") == dest_template
+        for v_cp in verify_copy.contacted.values():
+            assert v_cp.get("rc") == 0
+            # Checking that all markers got replaced.
+            assert "{{" not in v_cp.get("stdout")
+            assert "{%" not in v_cp.get("stdout")
+            # Checking comments didn't get rendered.
+            assert "{#" not in v_cp.get("stdout")
+            # Checking that the vars where substituted.
+            assert template_vars["var"] in v_cp.get("stdout")
+            assert "Condition is true." in v_cp.get("stdout")
+            assert "Current element: 2" in v_cp.get("stdout")
+    finally:
+        hosts.all.file(path=dest_path, state="absent")
+        shutil.rmtree(temp_dir)
+
+
+@pytest.mark.uss
+@pytest.mark.template
+def test_copy_template_dir(ansible_zos_module):
+    hosts = ansible_zos_module
+    dest_path = "/tmp/new_dir"
+
+    # Ensuring there's a traling slash to copy the contents of the directory.
+    temp_dir = os.path.normpath(tempfile.mkdtemp())
+    temp_dir = "{0}/".format(temp_dir)
+
+    temp_subdir_a = os.path.join(temp_dir, "subdir_a")
+    temp_subdir_b = os.path.join(temp_dir, "subdir_b")
+    os.makedirs(temp_subdir_a)
+    os.makedirs(temp_subdir_b)
+
+    try:
+        temp_template_a = create_template_file(temp_subdir_a, use_default_markers=True)
+        temp_template_b = create_template_file(temp_subdir_b, use_default_markers=True)
+        dest_template_a = os.path.join(
+            dest_path,
+            "subdir_a",
+            os.path.basename(temp_template_a)
+        )
+        dest_template_b = os.path.join(
+            dest_path,
+            "subdir_b",
+            os.path.basename(temp_template_b)
+        )
+
+        hosts.all.file(path=dest_path, state="directory")
+
+        # Adding the template vars to each host.
+        template_vars = dict(
+            var="This should be rendered",
+            if_var=5,
+            array=[1, 2, 3]
+        )
+        for host in hosts["options"]["inventory_manager"]._inventory.hosts.values():
+            host.vars.update(template_vars)
+
+        copy_result = hosts.all.zos_copy(
+            src=temp_dir,
+            dest=dest_path,
+            use_template=True,
+            force=True
+        )
+
+        verify_copy_a = hosts.all.shell(
+            cmd="cat {0}".format(dest_template_a),
+            executable=SHELL_EXECUTABLE,
+        )
+        verify_copy_b = hosts.all.shell(
+            cmd="cat {0}".format(dest_template_b),
+            executable=SHELL_EXECUTABLE,
+        )
+
+        for cp_res in copy_result.contacted.values():
+            assert cp_res.get("msg") is None
+            assert cp_res.get("changed") is True
+            assert cp_res.get("dest") == dest_path
+        for v_cp in verify_copy_a.contacted.values():
+            assert v_cp.get("rc") == 0
+            # Checking that all markers got replaced.
+            assert "{{" not in v_cp.get("stdout")
+            assert "{%" not in v_cp.get("stdout")
+            # Checking comments didn't get rendered.
+            assert "{#" not in v_cp.get("stdout")
+            # Checking that the vars where substituted.
+            assert template_vars["var"] in v_cp.get("stdout")
+            assert "Condition is true." in v_cp.get("stdout")
+            assert "Current element: 2" in v_cp.get("stdout")
+        for v_cp in verify_copy_b.contacted.values():
+            assert v_cp.get("rc") == 0
+            # Checking that all markers got replaced.
+            assert "{{" not in v_cp.get("stdout")
+            assert "{%" not in v_cp.get("stdout")
+            # Checking comments didn't get rendered.
+            assert "{#" not in v_cp.get("stdout")
+            # Checking that the vars where substituted.
+            assert template_vars["var"] in v_cp.get("stdout")
+            assert "Condition is true." in v_cp.get("stdout")
+            assert "Current element: 2" in v_cp.get("stdout")
+    finally:
+        hosts.all.file(path=dest_path, state="absent")
+        shutil.rmtree(temp_dir)
+
+
+@pytest.mark.uss
+@pytest.mark.template
+def test_copy_template_file_with_non_default_markers(ansible_zos_module):
+    hosts = ansible_zos_module
+    dest_path = "/tmp/new_dir"
+    temp_dir = tempfile.mkdtemp()
+
+    try:
+        temp_template = create_template_file(temp_dir, use_default_markers=False)
+        dest_template = os.path.join(dest_path, os.path.basename(temp_template))
+
+        hosts.all.file(path=dest_path, state="directory")
+
+        # Adding the template vars to each host.
+        template_vars = dict(
+            var="This should be rendered",
+            if_var=5,
+            array=[1, 2, 3]
+        )
+        for host in hosts["options"]["inventory_manager"]._inventory.hosts.values():
+            host.vars.update(template_vars)
+
+        copy_result = hosts.all.zos_copy(
+            src=temp_template,
+            dest=dest_path,
+            use_template=True,
+            template_parameters=dict(
+                variable_start_string="((",
+                variable_end_string="))",
+                comment_start_string="#%",
+                comment_end_string="%#"
+            )
+        )
+
+        verify_copy = hosts.all.shell(
+            cmd="cat {0}".format(dest_template),
+            executable=SHELL_EXECUTABLE,
+        )
+
+        for cp_res in copy_result.contacted.values():
+            assert cp_res.get("msg") is None
+            assert cp_res.get("changed") is True
+            assert cp_res.get("dest") == dest_template
+        for v_cp in verify_copy.contacted.values():
+            assert v_cp.get("rc") == 0
+            # Checking that all markers got replaced.
+            assert "((" not in v_cp.get("stdout")
+            assert "{%" not in v_cp.get("stdout")
+            # Checking comments didn't get rendered.
+            assert "#%" not in v_cp.get("stdout")
+            # Checking that the vars where substituted.
+            assert template_vars["var"] in v_cp.get("stdout")
+            assert "Condition is true." in v_cp.get("stdout")
+            assert "Current element: 2" in v_cp.get("stdout")
+    finally:
+        hosts.all.file(path=dest_path, state="absent")
+        shutil.rmtree(temp_dir)
+
+
+@pytest.mark.seq
+@pytest.mark.pdse
+@pytest.mark.template
+def test_copy_template_file_to_dataset(ansible_zos_module):
+    hosts = ansible_zos_module
+    dest_dataset = "USER.TEST.TEMPLATE"
+    temp_dir = tempfile.mkdtemp()
+
+    try:
+        temp_template = create_template_file(temp_dir, use_default_markers=True)
+
+        # Adding the template vars to each host.
+        template_vars = dict(
+            var="This should be rendered",
+            if_var=5,
+            array=[1, 2, 3]
+        )
+        for host in hosts["options"]["inventory_manager"]._inventory.hosts.values():
+            host.vars.update(template_vars)
+
+        copy_result = hosts.all.zos_copy(
+            src=temp_template,
+            dest=dest_dataset,
+            use_template=True
+        )
+
+        verify_copy = hosts.all.shell(
+            cmd="cat \"//'{0}'\"".format(dest_dataset),
+            executable=SHELL_EXECUTABLE,
+        )
+
+        for cp_res in copy_result.contacted.values():
+            assert cp_res.get("msg") is None
+            assert cp_res.get("changed") is True
+            assert cp_res.get("dest") == dest_dataset
+        for v_cp in verify_copy.contacted.values():
+            assert v_cp.get("rc") == 0
+            # Checking that all markers got replaced.
+            assert "{{" not in v_cp.get("stdout")
+            assert "{%" not in v_cp.get("stdout")
+            # Checking comments didn't get rendered.
+            assert "{#" not in v_cp.get("stdout")
+            # Checking that the vars where substituted.
+            assert template_vars["var"] in v_cp.get("stdout")
+            assert "Condition is true." in v_cp.get("stdout")
+            assert "Current element: 2" in v_cp.get("stdout")
+    finally:
+        hosts.all.zos_data_set(name=dest_dataset, state="absent")
+        shutil.rmtree(temp_dir)
+
+
 @pytest.mark.parametrize("src", [
     dict(src="/etc/profile", is_remote=False),
     dict(src="/etc/profile", is_remote=True),])
@@ -1207,6 +1532,54 @@ def test_ensure_copy_file_does_not_change_permission_on_dest(ansible_zos_module,
             assert over.get("stat").get("mode") == mode_overwrite
     finally:
         hosts.all.file(path=dest_path, state="absent")
+
+
+@pytest.mark.seq
+def test_copy_dest_lock(ansible_zos_module):
+    DATASET_1 = "USER.PRIVATE.TESTDS"
+    DATASET_2 = "ADMI.PRIVATE.TESTDS"
+    MEMBER_1 = "MEM1"
+    try:
+        hosts = ansible_zos_module
+        hosts.all.zos_data_set(name=DATASET_1, state="present", type="pdse", replace=True)
+        hosts.all.zos_data_set(name=DATASET_2, state="present", type="pdse", replace=True)
+        hosts.all.zos_data_set(name=DATASET_1 + "({0})".format(MEMBER_1), state="present", type="member", replace=True)
+        hosts.all.zos_data_set(name=DATASET_2 + "({0})".format(MEMBER_1), state="present", type="member", replace=True)
+        # copy text_in source
+        hosts.all.shell(cmd="echo \"{0}\" > {1}".format(DUMMY_DATA, DATASET_2+"({0})".format(MEMBER_1)))
+        # copy/compile c program and copy jcl to hold data set lock for n seconds in background(&)
+        hosts.all.zos_copy(content=c_pgm, dest='/tmp/disp_shr/pdse-lock.c', force=True)
+        hosts.all.zos_copy(
+            content=call_c_jcl.format(DATASET_1, MEMBER_1),
+            dest='/tmp/disp_shr/call_c_pgm.jcl',
+            force=True
+        )
+        hosts.all.shell(cmd="xlc -o pdse-lock pdse-lock.c", chdir="/tmp/disp_shr/")
+        # submit jcl
+        hosts.all.shell(cmd="submit call_c_pgm.jcl", chdir="/tmp/disp_shr/")
+        # pause to ensure c code acquires lock
+        time.sleep(5)
+        results = hosts.all.zos_copy(
+            src = DATASET_2 + "({0})".format(MEMBER_1),
+            dest = DATASET_1 + "({0})".format(MEMBER_1),
+            remote_src = True,
+            force = True
+        )
+        for result in results.contacted.values():
+            print(result)
+            assert result.get("changed") == False
+            assert result.get("msg") is not None
+    finally:
+        # extract pid
+        ps_list_res = hosts.all.shell(cmd="ps -e | grep -i 'pdse-lock'")
+        # kill process - release lock - this also seems to end the job
+        pid = list(ps_list_res.contacted.values())[0].get('stdout').strip().split(' ')[0]
+        hosts.all.shell(cmd="kill 9 {0}".format(pid.strip()))
+        # clean up c code/object/executable files, jcl
+        hosts.all.shell(cmd='rm -r /tmp/disp_shr')
+        # remove pdse
+        hosts.all.zos_data_set(name=DATASET_1, state="absent")
+        hosts.all.zos_data_set(name=DATASET_2, state="absent")
 
 
 @pytest.mark.uss
@@ -3029,6 +3402,7 @@ def test_copy_uss_file_to_existing_sequential_data_set_twice_with_tmphlq_option(
         hosts.all.zos_data_set(name=dest, state="absent")
 
 
+
 @pytest.mark.parametrize("options", [
     dict(src="/etc/profile", dest="/tmp/zos_copy_test_profile",
          force=True, is_remote=False, verbosity="-vvvvv", verbosity_level=5),
@@ -3064,3 +3438,4 @@ def test_display_verbosity_in_zos_copy_plugin(ansible_zos_module, options):
 
     finally:
         hosts.all.file(path=options["dest"], state="absent")
+

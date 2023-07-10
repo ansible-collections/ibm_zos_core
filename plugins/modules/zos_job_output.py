@@ -200,11 +200,6 @@ jobs:
         An identifier created by JES.
       type: int
       sample: 0
-    creation_datetime:
-      description:
-        Date and time, local to the target system, when the job was created.
-      type: str
-      sample: 20230504T141500
     queue_position:
       description:
         Integer of the position within the job queue where this jobs resided.

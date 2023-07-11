@@ -19,8 +19,8 @@ from shellescape import quote
 import tempfile
 import pytest
 import re
+import os
 from pprint import pprint
-
 
 
 # ##############################################################################
@@ -118,9 +118,49 @@ JCL_FILE_CONTENTS_RC_8 = """//RCBADJCL JOB MSGCLASS=A,MSGLEVEL=(1,1),NOTIFY=&SYS
 /*
 """
 
+JCL_TEMPLATES = {
+    "Default": """//{{ pgm_name }}    JOB (T043JM,JM00,1,0,0,0),'HELLO WORLD - JRM',CLASS=R,
+//             MSGCLASS=X,MSGLEVEL=1,NOTIFY=S0JM
+{# This comment should not be part of the JCL #}
+//STEP0001 EXEC PGM=IEBGENER
+//SYSIN    DD {{ input_dataset }}
+//SYSPRINT DD SYSOUT=*
+//SYSUT1   DD *
+{{ message  }}
+/*
+//SYSUT2   DD SYSOUT=*
+//
+""",
+
+    "Custom": """//(( pgm_name ))    JOB (T043JM,JM00,1,0,0,0),'HELLO WORLD - JRM',CLASS=R,
+//             MSGCLASS=X,MSGLEVEL=1,NOTIFY=S0JM
+//STEP0001 EXEC PGM=IEBGENER
+(# This comment should not be part of the JCL #)
+//SYSIN    DD (( input_dataset ))
+//SYSPRINT DD SYSOUT=*
+//SYSUT1   DD *
+(( message  ))
+/*
+//SYSUT2   DD SYSOUT=*
+//
+""",
+
+    "Loop": """//JINJA    JOB (T043JM,JM00,1,0,0,0),'HELLO WORLD - JRM',CLASS=R,
+//             MSGCLASS=X,MSGLEVEL=1,NOTIFY=S0JM
+//STEP0001 EXEC PGM=IEFBR14
+{% for item in steps %}
+//SYS{{ item.step_name }}    DD {{ item.dd }}
+{% endfor %}
+Hello, world!
+/*
+//SYSUT2   DD SYSOUT=*
+//
+"""
+}
+
 JCL_FILE_CONTENTS_NO_DSN = """//*
 //******************************************************************************
-//* Job containing a non existent DSN that will force an error. 
+//* Job containing a non existent DSN that will force an error.
 //* Returns:
 //*   ret_code->(code=null, msg=JCLERR ?, msg_text=JCLERR, msg_code=?)
 //*   msg --> The JCL submitted with job id JOB00532 but there was an error,
@@ -152,11 +192,10 @@ JCL_FILE_CONTENTS_NO_DSN = """//*
 # //
 # """
 
-
 JCL_FILE_CONTENTS_JCL_ERROR_INT = """//*
 //******************************************************************************
 //* Another job containing no job card resulting in a JCLERROR with an value. It
-//* won't always be 952, it will increment. 
+//* won't always be 952, it will increment.
 //* Returns:
 //*   ret_code->(code=null, msg=JCL ERROR  952, msg_text=JCLERR, msg_code=null)
 //*   msg --> The JCL submitted with job id JOB00728 but there was an error,
@@ -192,7 +231,6 @@ HELLO, WORLD
 //
 """
 
-
 JCL_FILE_CONTENTS_TYPRUN_SCAN = """//*
 //******************************************************************************
 //* Job containing a TYPRUN=SCAN that will cause JES to run a syntax check and
@@ -215,7 +253,6 @@ HELLO, WORLD
 //SYSUT2   DD SYSOUT=*
 //
 """
-
 
 TEMP_PATH = "/tmp/jcl"
 DATA_SET_NAME = "imstestl.ims1.test05"
@@ -513,6 +550,68 @@ def test_job_submit_max_rc(ansible_zos_module, args):
         hosts.all.file(path=tmp_file.name, state="absent")
 
 
+@pytest.mark.template
+@pytest.mark.parametrize("args", [
+    dict(
+        template="Default",
+        options=dict(
+            keep_trailing_newline=False
+        )
+    ),
+    dict(
+        template="Custom",
+        options=dict(
+            keep_trailing_newline=False,
+            variable_start_string="((",
+            variable_end_string="))",
+            comment_start_string="(#",
+            comment_end_string="#)"
+        )
+    ),
+    dict(
+        template="Loop",
+        options=dict(
+            keep_trailing_newline=False
+        )
+    )
+])
+def test_job_submit_jinja_template(ansible_zos_module, args):
+    try:
+        hosts = ansible_zos_module
+
+        tmp_file = tempfile.NamedTemporaryFile(delete=False)
+        with open(tmp_file.name, "w") as f:
+            f.write(JCL_TEMPLATES[args["template"]])
+
+        template_vars = dict(
+            pgm_name="HELLO",
+            input_dataset="DUMMY",
+            message="Hello, world",
+            steps=[
+                dict(step_name="IN", dd="DUMMY"),
+                dict(step_name="PRINT", dd="SYSOUT=*"),
+                dict(step_name="UT1", dd="*")
+            ]
+        )
+        for host in hosts["options"]["inventory_manager"]._inventory.hosts.values():
+            host.vars.update(template_vars)
+
+        results = hosts.all.zos_job_submit(
+            src=tmp_file.name,
+            location="LOCAL",
+            use_template=True,
+            template_parameters=args["options"]
+        )
+
+        for result in results.contacted.values():
+            assert result.get('changed') is True
+            assert result.get("jobs")[0].get("ret_code").get("msg_code") == "0000"
+            assert result.get("jobs")[0].get("ret_code").get("code") == 0
+
+    finally:
+        os.remove(tmp_file.name)
+
+
 def test_negative_job_submit_local_jcl_no_dsn(ansible_zos_module):
     tmp_file = tempfile.NamedTemporaryFile(delete=True)
     with open(tmp_file.name, "w") as f:
@@ -540,6 +639,7 @@ def test_negative_job_submit_local_jcl_invalid_user(ansible_zos_module):
         assert re.search(r'error SEC', repr(result.get("msg")))
         assert result.get("jobs")[0].get("job_id") is not None
         assert re.search(r'SEC', repr(result.get("jobs")[0].get("ret_code").get("msg_text")))
+
 
 def test_negative_job_submit_local_jcl_typrun_scan(ansible_zos_module):
     tmp_file = tempfile.NamedTemporaryFile(delete=True)

@@ -1,0 +1,6 @@
+bugfixes:
+  - zos_copy - Reported a false positive such that the response would have
+    `changed=true` when copying from a source (src) or destination (dest)
+    data set that was in use (DISP=SHR). This change now displays an appropriate
+    error message and returns `changed=false`.
+    (https://github.com/ansible-collections/ibm_zos_core/pull/794).

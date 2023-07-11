@@ -767,7 +767,7 @@ class XMITArchive(MVSArchive):
             # If we don't use a adrdssu container we cannot pack multiple data sets
             if len(self.paths) > 1:
                 self.module.fail_json(
-                    msg="You cannot archive multiple source data sets without using adrdssu")
+                    msg="To archive multiple source data sets, you must use option 'use_adrdssu=True'.")
             source = self.paths[0]
         dest = self.create_dest_ds(self.dest)
         self.add(source, dest)

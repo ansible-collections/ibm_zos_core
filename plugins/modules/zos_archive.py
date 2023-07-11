@@ -69,8 +69,8 @@ options:
             choices:
               - PACK
               - SPACK
-          xmit_log_dataset:
-            description: Provide a name of data set to use for xmit log.
+          xmit_log_data_set:
+            description: Provide a name of a data set to store xmit log output.
             type: str
           use_adrdssu:
             description:
@@ -704,7 +704,7 @@ class AMATerseArchive(MVSArchive):
 class XMITArchive(MVSArchive):
     def __init__(self, module):
         super(XMITArchive, self).__init__(module)
-        self.xmit_log_dataset = module.params.get("format").get("format_options").get("xmit_log_dataset")
+        self.xmit_log_data_set = module.params.get("format").get("format_options").get("xmit_log_data_set")
 
     def add(self, path, archive):
         """
@@ -713,7 +713,7 @@ class XMITArchive(MVSArchive):
             path: {str}
             archive: {str}
         """
-        log_option = "LOGDSNAME({0})".format(self.xmit_log_dataset) if self.xmit_log_dataset else "NOLOG"
+        log_option = "LOGDSNAME({0})".format(self.xmit_log_data_set) if self.xmit_log_data_set else "NOLOG"
         xmit_cmd = """ XMIT A.B -
         FILE(SYSUT1) OUTFILE(SYSUT2) -
         {0} -
@@ -772,7 +772,7 @@ def run_module():
                                 type='str',
                                 choices=['PACK', 'SPACK'],
                             ),
-                            xmit_log_dataset=dict(
+                            xmit_log_data_set=dict(
                                 type='str',
                             ),
                             use_adrdssu=dict(
@@ -815,7 +815,7 @@ def run_module():
                             required=False,
                             choices=['PACK', 'SPACK'],
                         ),
-                        xmit_log_dataset=dict(
+                        xmit_log_data_set=dict(
                             type='str',
                             required=False,
                         ),
@@ -826,7 +826,7 @@ def run_module():
                     ),
                     default=dict(
                         terse_pack="SPACK",
-                        xmit_log_dataset="",
+                        xmit_log_data_set="",
                         use_adrdssu=False),
                 ),
             ),
@@ -834,7 +834,7 @@ def run_module():
                 name="",
                 format_options=dict(
                     terse_pack="SPACK",
-                    xmit_log_dataset="",
+                    xmit_log_data_set="",
                     use_adrdssu=False
                 )
             ),

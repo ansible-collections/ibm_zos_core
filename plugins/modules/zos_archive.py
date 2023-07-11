@@ -103,7 +103,20 @@ options:
     required: false
   mode:
     description:
-      - The permissions the resulting filesystem object should have.
+      - The permission of the destination file or directory.
+      - If C(dest) is USS, this will act as Unix file mode, otherwise ignored.
+      - It should be noted that modes are octal numbers.
+        The user must either add a leading zero so that Ansible's YAML parser
+        knows it is an octal number (like C(0644) or C(01777))or quote it
+        (like C('644') or C('1777')) so Ansible receives a string and can do its
+        own conversion from string into number. Giving Ansible a number without
+        following one of these rules will end up with a decimal number which
+        will have unexpected results.
+      - The mode may also be specified as a symbolic mode
+        (for example, ``u+rwx`` or ``u=rw,g=r,o=r``) or a special
+        string `preserve`.
+      - I(mode=preserve) means that the file will be given the same permissions as
+        the source file.
     type: str
     required: false
   owner:

@@ -513,7 +513,7 @@ class ZipArchive(USSArchive):
             file = zipfile.ZipFile(path, 'w', zipfile.ZIP_DEFLATED, True)
         except zipfile.BadZipFile:
             self.module.fail_json(
-                msg="Bad zip file error when trying to open file {0} ".format(path)
+                msg="Improperly compressed zip file, unable to to open file {0}  ".format(path)
             )
         return file
 

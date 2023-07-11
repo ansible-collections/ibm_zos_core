@@ -134,11 +134,12 @@ options:
     required: false
   remove:
     description:
-      - Remove any added source files and trees after adding to archive.
+      - Remove any added source files , trees or data sets after module
+      L(zos_archive,./zos_archive.html) adds them to the archive.
+      Source files, trees and data sets are identified with option I(path).
     type: bool
     required: false
     default: false
-  tmp_hlq:
   tmp_hlq:
     description:
       - Override the default high level qualifier (HLQ) for temporary data sets.
@@ -147,7 +148,6 @@ options:
         used.
     required: false
     type: str
-    required: false
   force:
     description:
       - Create the dest archive file even if it already exists.

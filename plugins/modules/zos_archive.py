@@ -167,7 +167,7 @@ seealso:
 
 EXAMPLES = r'''
 # Simple archive
-- name: Archive file into tar
+- name: Archive file into a tar
   zos_archive:
     path: /tmp/archive/foo.txt
     dest: /tmp/archive/foo_archive_test.tar
@@ -175,7 +175,7 @@ EXAMPLES = r'''
       name: tar
 
 # Archive multiple files
-- name: Compress list of files into zip
+- name: Compress list of files into a zip
   zos_archive:
     path:
       - /tmp/archive/foo.txt
@@ -185,7 +185,7 @@ EXAMPLES = r'''
     name: zip
 
 # Archive one data set into terse
-- name: Compress data set into terse
+- name: Compress data set into a terse
   zos_archive:
     path: "USER.ARCHIVE.TEST"
     dest: "USER.ARCHIVE.RESULT.TRS"
@@ -193,7 +193,7 @@ EXAMPLES = r'''
       name: terse
 
 # Usae terse with different options
-- name: Compress data set into terse, specify pack algorithm and use adrdssu
+- name: Compress data set into a terse, specify pack algorithm and use adrdssu
   zos_archive:
     path: "USER.ARCHIVE.TEST"
     dest: "USER.ARCHIVE.RESULT.TRS"

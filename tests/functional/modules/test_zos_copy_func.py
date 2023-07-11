@@ -125,7 +125,7 @@ int main()
 }
 """
 
-call_c_jcl="""//PDSELOCK JOB MSGCLASS=A,MSGLEVEL=(1,1),NOTIFY=&SYSUID,REGION=0M
+call_c_hello_jcl="""//PDSELOCK JOB MSGCLASS=A,MSGLEVEL=(1,1),NOTIFY=&SYSUID,REGION=0M
 //LOCKMEM  EXEC PGM=BPXBATCH
 //STDPARM DD *
 SH /tmp/c/hello_world
@@ -2269,7 +2269,7 @@ def test_copy_executables_uss_to_member(ansible_zos_module, is_created):
     member = "HELLOSRC"
     try:
         hosts.all.zos_copy(content=hello_world, dest=src, force=True)
-        hosts.all.zos_copy(content=call_c_jcl, dest=src_jcl_call, force=True)
+        hosts.all.zos_copy(content=call_c_hello_jcl, dest=src_jcl_call, force=True)
         hosts.all.shell(cmd="xlc -o hello_world hello_world.c", chdir="/tmp/c/")
         hosts.all.shell(cmd="submit {0}".format(src_jcl_call))
         verify_exe_src = hosts.all.shell(cmd="/tmp/c/hello_world")

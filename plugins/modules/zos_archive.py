@@ -192,7 +192,7 @@ EXAMPLES = r'''
     format:
       name: terse
 
-# Usae terse with different options
+# Use terse with different options
 - name: Compress data set into a terse, specify pack algorithm and use adrdssu
   zos_archive:
     path: "USER.ARCHIVE.TEST"
@@ -221,7 +221,7 @@ state:
     returned: always
 dest_state:
     description:
-      - The state of the I(dest) file.
+      - The state of the I(dest) file or data set.
       - C(absent) when the file does not exist.
       - C(archive) when the file is an archive.
       - C(compress) when the file is compressed, but not an archive.
@@ -241,7 +241,7 @@ arcroot:
     type: str
     returned: always
 expanded_paths:
-    description: The list of matching paths from paths argument.
+    description: The list of matching paths from the src option.
     type: list
     returned: always
 expanded_exclude_paths:

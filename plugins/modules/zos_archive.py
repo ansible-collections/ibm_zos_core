@@ -747,7 +747,7 @@ class XMITArchive(MVSArchive):
         # rc, out, err = self.module.run_command(tso_cmd)
         if rc != 0:
             self.module.fail_json(
-                msg="Failed executing TSO XMIT to archive {0} into {1}".format(path, archive),
+                msg="An error occurred while executing 'TSO XMIT' to archive {0} into {1}".format(path, archive),
                 stdout=out,
                 stderr=err,
                 rc=rc,

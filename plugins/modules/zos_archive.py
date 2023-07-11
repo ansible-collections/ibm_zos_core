@@ -139,8 +139,13 @@ options:
     required: false
     default: false
   tmp_hlq:
+  tmp_hlq:
     description:
-      - High Level Qualifier used for temporary datasets.
+      - Override the default high level qualifier (HLQ) for temporary data sets.
+      - The default HLQ is the Ansible user used to execute the module and if
+        that is not available, then the environment variable value C(TMPHLQ) is
+        used.
+    required: false
     type: str
     required: false
   force:

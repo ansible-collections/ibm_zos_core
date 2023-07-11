@@ -45,7 +45,7 @@ options:
     suboptions:
       name:
         description:
-          - The name of the format to use.
+          - The compression format to use.
         type: str
         required: false
         default: gz
@@ -59,7 +59,7 @@ options:
           - pax
       format_options:
         description:
-          - Options specific to each format.
+          - Options specific to a compression format.
         type: dict
         required: false
         suboptions:

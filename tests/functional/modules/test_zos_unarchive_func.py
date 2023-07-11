@@ -101,7 +101,7 @@ def test_uss_unarchive(ansible_zos_module, format):
         hosts.all.file(path=USS_TEMP_DIR, state="directory")
         set_uss_test_env(hosts, USS_TEST_FILES)
         dest = f"{USS_TEMP_DIR}/archive.{format}"
-        archive_result = hosts.all.zos_archive( path=list(USS_TEST_FILES.keys()),
+        archive_result = hosts.all.zos_archive(src=list(USS_TEST_FILES.keys()),
                                         dest=dest,
                                         format=dict(
                                             name=format
@@ -110,12 +110,13 @@ def test_uss_unarchive(ansible_zos_module, format):
         for file in USS_TEST_FILES.keys():
             hosts.all.file(path=file, state="absent")
         unarchive_result = hosts.all.zos_unarchive(
-            path=dest,
+            src=dest,
             format=dict(
                 name=format
             ),
             remote_src=True,
         )
+        hosts.all.shell(cmd=f"ls {USS_TEMP_DIR}")
 
         for result in unarchive_result.contacted.values():
             assert result.get("failed", False) is False
@@ -137,7 +138,7 @@ def test_uss_unarchive_include(ansible_zos_module, format):
         hosts.all.file(path=USS_TEMP_DIR, state="directory")
         set_uss_test_env(hosts, USS_TEST_FILES)
         dest = f"{USS_TEMP_DIR}/archive.{format}"
-        archive_result = hosts.all.zos_archive( path=list(USS_TEST_FILES.keys()),
+        archive_result = hosts.all.zos_archive(src=list(USS_TEST_FILES.keys()),
                                         dest=dest,
                                         format=dict(
                                             name=format
@@ -148,7 +149,7 @@ def test_uss_unarchive_include(ansible_zos_module, format):
         for file in USS_TEST_FILES.keys():
             hosts.all.file(path=file, state="absent")
         unarchive_result = hosts.all.zos_unarchive(
-            path=dest,
+            src=dest,
             format=dict(
                 name=format
             ),
@@ -179,7 +180,7 @@ def test_uss_unarchive_exclude(ansible_zos_module, format):
         hosts.all.file(path=USS_TEMP_DIR, state="directory")
         set_uss_test_env(hosts, USS_TEST_FILES)
         dest = f"{USS_TEMP_DIR}/archive.{format}"
-        archive_result = hosts.all.zos_archive( path=list(USS_TEST_FILES.keys()),
+        archive_result = hosts.all.zos_archive(src=list(USS_TEST_FILES.keys()),
                                         dest=dest,
                                         format=dict(
                                             name=format
@@ -190,7 +191,7 @@ def test_uss_unarchive_exclude(ansible_zos_module, format):
         for file in USS_TEST_FILES.keys():
             hosts.all.file(path=file, state="absent")
         unarchive_result = hosts.all.zos_unarchive(
-            path=dest,
+            src=dest,
             format=dict(
                 name=format
             ),
@@ -220,7 +221,7 @@ def test_uss_unarchive_list(ansible_zos_module, format):
         hosts.all.file(path=USS_TEMP_DIR, state="directory")
         set_uss_test_env(hosts, USS_TEST_FILES)
         dest = f"{USS_TEMP_DIR}/archive.{format}"
-        archive_result = hosts.all.zos_archive( path=list(USS_TEST_FILES.keys()),
+        archive_result = hosts.all.zos_archive(src=list(USS_TEST_FILES.keys()),
                                         dest=dest,
                                         format=dict(
                                             name=format
@@ -229,7 +230,7 @@ def test_uss_unarchive_list(ansible_zos_module, format):
         for file in USS_TEST_FILES.keys():
             hosts.all.file(path=file, state="absent")
         unarchive_result = hosts.all.zos_unarchive(
-            path=dest,
+            src=dest,
             format=dict(
                 name=format
             ),
@@ -255,7 +256,7 @@ def test_uss_single_archive_with_mode(ansible_zos_module, format):
         set_uss_test_env(hosts, USS_TEST_FILES)
         dest = f"{USS_TEMP_DIR}/archive.{format}"
         dest_mode = "0755"
-        archive_result = hosts.all.zos_archive(path=list(USS_TEST_FILES.keys()),
+        archive_result = hosts.all.zos_archive(src=list(USS_TEST_FILES.keys()),
                                         dest=dest,
                                         format=dict(
                                             name=format
@@ -263,7 +264,7 @@ def test_uss_single_archive_with_mode(ansible_zos_module, format):
         for file in list(USS_TEST_FILES.keys()):
             hosts.all.file(path=file, state="absent")
         unarchive_result = hosts.all.zos_unarchive(
-            path=dest,
+            src=dest,
             format=dict(
                 name=format
             ),
@@ -357,7 +358,7 @@ def test_mvs_unarchive_single_dataset(ansible_zos_module, format, data_set, reco
         if format == "terse":
             format_dict["format_options"] = dict(terse_pack="SPACK")
         archive_result = hosts.all.zos_archive(
-            path=data_set.get("name"),
+            src=data_set.get("name"),
             dest=MVS_DEST_ARCHIVE,
             format=format_dict,
         )
@@ -376,7 +377,7 @@ def test_mvs_unarchive_single_dataset(ansible_zos_module, format, data_set, reco
             del format_dict["format_options"]["terse_pack"]
         # Unarchive action
         unarchive_result = hosts.all.zos_unarchive(
-            path=MVS_DEST_ARCHIVE,
+            src=MVS_DEST_ARCHIVE,
             format=format_dict,
             remote_src=True,
             dest_data_set=dict(name=data_set.get("name"),
@@ -453,7 +454,7 @@ def test_mvs_unarchive_single_dataset_use_adrdssu(ansible_zos_module, format, da
         if format == "terse":
             format_dict["format_options"].update(terse_pack="SPACK")
         archive_result = hosts.all.zos_archive(
-            path=data_set.get("name"),
+            src=data_set.get("name"),
             dest=MVS_DEST_ARCHIVE,
             format=format_dict,
         )
@@ -472,7 +473,7 @@ def test_mvs_unarchive_single_dataset_use_adrdssu(ansible_zos_module, format, da
             del format_dict["format_options"]["terse_pack"]
         # Unarchive action
         unarchive_result = hosts.all.zos_unarchive(
-            path=MVS_DEST_ARCHIVE,
+            src=MVS_DEST_ARCHIVE,
             format=format_dict,
             remote_src=True
         )
@@ -532,7 +533,7 @@ def test_mvs_unarchive_multiple_dataset_use_adrdssu(ansible_zos_module, format, 
             format_dict["format_options"].update(terse_pack="SPACK")
         format_dict["format_options"].update(use_adrdssu=True)
         archive_result = hosts.all.zos_archive(
-            path="{0}*".format(data_set.get("name")),
+            src="{0}*".format(data_set.get("name")),
             dest=MVS_DEST_ARCHIVE,
             format=format_dict,
         )
@@ -544,7 +545,7 @@ def test_mvs_unarchive_multiple_dataset_use_adrdssu(ansible_zos_module, format, 
             del format_dict["format_options"]["terse_pack"]
         # Unarchive action
         unarchive_result = hosts.all.zos_unarchive(
-            path=MVS_DEST_ARCHIVE,
+            src=MVS_DEST_ARCHIVE,
             format=format_dict,
             remote_src=True,
             force=True
@@ -606,7 +607,7 @@ def test_mvs_unarchive_multiple_dataset_use_adrdssu_include(ansible_zos_module, 
             format_dict["format_options"].update(terse_pack="SPACK")
         format_dict["format_options"].update(use_adrdssu=True)
         archive_result = hosts.all.zos_archive(
-            path="{0}*".format(data_set.get("name")),
+            src="{0}*".format(data_set.get("name")),
             dest=MVS_DEST_ARCHIVE,
             format=format_dict,
         )
@@ -619,7 +620,7 @@ def test_mvs_unarchive_multiple_dataset_use_adrdssu_include(ansible_zos_module, 
         # Unarchive action
         include_ds = "{0}0".format(data_set.get("name"))
         unarchive_result = hosts.all.zos_unarchive(
-            path=MVS_DEST_ARCHIVE,
+            src=MVS_DEST_ARCHIVE,
             format=format_dict,
             remote_src=True,
             include=[include_ds],
@@ -686,7 +687,7 @@ def test_mvs_unarchive_multiple_dataset_use_adrdssu_exclude(ansible_zos_module, 
             format_dict["format_options"].update(terse_pack="SPACK")
         format_dict["format_options"].update(use_adrdssu=True)
         archive_result = hosts.all.zos_archive(
-            path="{0}*".format(data_set.get("name")),
+            src="{0}*".format(data_set.get("name")),
             dest=MVS_DEST_ARCHIVE,
             format=format_dict,
         )
@@ -699,7 +700,7 @@ def test_mvs_unarchive_multiple_dataset_use_adrdssu_exclude(ansible_zos_module, 
         # Unarchive action
         exclude_ds = "{0}0".format(data_set.get("name"))
         unarchive_result = hosts.all.zos_unarchive(
-            path=MVS_DEST_ARCHIVE,
+            src=MVS_DEST_ARCHIVE,
             format=format_dict,
             remote_src=True,
             exclude=[exclude_ds],
@@ -765,7 +766,7 @@ def test_mvs_unarchive_multiple_dataset_list(ansible_zos_module, format, data_se
             format_dict["format_options"].update(terse_pack="SPACK")
         format_dict["format_options"].update(use_adrdssu=True)
         archive_result = hosts.all.zos_archive(
-            path="{0}*".format(data_set.get("name")),
+            src="{0}*".format(data_set.get("name")),
             dest=MVS_DEST_ARCHIVE,
             format=format_dict,
         )
@@ -777,7 +778,7 @@ def test_mvs_unarchive_multiple_dataset_list(ansible_zos_module, format, data_se
             del format_dict["format_options"]["terse_pack"]
         # Unarchive action
         unarchive_result = hosts.all.zos_unarchive(
-            path=MVS_DEST_ARCHIVE,
+            src=MVS_DEST_ARCHIVE,
             format=format_dict,
             remote_src=True,
             list=True
@@ -849,7 +850,7 @@ def test_mvs_unarchive_multiple_dataset_use_adrdssu_force(ansible_zos_module, fo
             format_dict["format_options"].update(terse_pack="SPACK")
         format_dict["format_options"].update(use_adrdssu=True)
         hosts.all.zos_archive(
-            path="{0}*".format(data_set.get("name")),
+            src="{0}*".format(data_set.get("name")),
             dest=MVS_DEST_ARCHIVE,
             format=format_dict,
         )
@@ -858,7 +859,7 @@ def test_mvs_unarchive_multiple_dataset_use_adrdssu_force(ansible_zos_module, fo
             del format_dict["format_options"]["terse_pack"]
         # Unarchive action
         unarchive_result = hosts.all.zos_unarchive(
-            path=MVS_DEST_ARCHIVE,
+            src=MVS_DEST_ARCHIVE,
             format=format_dict,
             remote_src=True,
             force=force
@@ -939,7 +940,7 @@ def test_mvs_unarchive_single_dataset_remote_src(ansible_zos_module, format, dat
         if format == "terse":
             format_dict["format_options"].update(terse_pack="SPACK")
         archive_result = hosts.all.zos_archive(
-            path=data_set.get("name"),
+            src=data_set.get("name"),
             dest=MVS_DEST_ARCHIVE,
             format=format_dict,
         )
@@ -963,7 +964,7 @@ def test_mvs_unarchive_single_dataset_remote_src(ansible_zos_module, format, dat
             del format_dict["format_options"]["terse_pack"]
         # Unarchive action
         unarchive_result = hosts.all.zos_unarchive(
-            path=source_path,
+            src=source_path,
             format=format_dict,
             remote_src=False
         )

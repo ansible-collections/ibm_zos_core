@@ -26,7 +26,7 @@ description:
   - The C(zos_unarchive) module unpacks an archive after optionally transferring it to the remote system.
 
 options:
-  path:
+  src:
     description:
       - Local or remote absolute path or data set name of the archive to be unpacked on the remote.
     type: str
@@ -349,7 +349,7 @@ AMATERSE_RECORD_LENGTH = 1024
 class Unarchive():
     def __init__(self, module):
         self.module = module
-        self.path = module.params.get("path")
+        self.src = module.params.get("src")
         self.dest = module.params.get("dest")
         self.format = module.params.get("format").get("name")
         self.format_options = module.params.get("format").get("format_options")
@@ -362,18 +362,18 @@ class Unarchive():
         self.changed = False
         self.missing = list()
         if self.dest == '':
-            self.dest = os.path.dirname(self.path)
+            self.dest = os.path.dirname(self.src)
 
     @abc.abstractmethod
-    def extract_path(self):
+    def extract_src(self):
         pass
 
     @abc.abstractmethod
     def _list_content(self):
         pass
 
-    def path_exists(self):
-        return self.path and os.path.exists(self.path)
+    def src_exists(self):
+        return self.src and os.path.exists(self.src)
 
     def dest_type(self):
         return "USS"
@@ -393,7 +393,7 @@ class Unarchive():
     @property
     def result(self):
         return {
-            'path': self.path,
+            'path': self.src,
             'dest_path': self.dest,
             'changed': self.changed,
             'targets': self.targets,
@@ -425,7 +425,7 @@ class TarUnarchive(Unarchive):
         return file
 
     def list_archive_content(self, path):
-        self.targets = self._list_content(self.path)
+        self.targets = self._list_content(self.src)
 
     def _list_content(self, path):
         """Returns a list of members in an archive.
@@ -441,7 +441,7 @@ class TarUnarchive(Unarchive):
         self.file.close()
         return members
 
-    def extract_path(self):
+    def extract_src(self):
         """Unpacks the contents of the archive stored in path into dest folder.
 
         """
@@ -449,7 +449,7 @@ class TarUnarchive(Unarchive):
         # The function gets relative paths, so it changes the current working
         # directory to the root of src.
         os.chdir(self.dest)
-        self.file = self.open(self.path)
+        self.file = self.open(self.src)
 
         files_in_archive = self.file.getnames()
         if self.include:
@@ -491,7 +491,7 @@ class ZipUnarchive(Unarchive):
         return file
 
     def list_archive_content(self):
-        self.targets = self._list_content(self.path)
+        self.targets = self._list_content(self.src)
 
     def _list_content(self, path):
         """Returns a list of members in an archive.
@@ -507,7 +507,7 @@ class ZipUnarchive(Unarchive):
         self.file.close()
         return members
 
-    def extract_path(self):
+    def extract_src(self):
         """Returns a list of members in an archive.
 
         Arguments:
@@ -520,7 +520,7 @@ class ZipUnarchive(Unarchive):
         # The function gets relative paths, so it changes the current working
         # directory to the root of src.
         os.chdir(self.dest)
-        self.file = self.open(self.path)
+        self.file = self.open(self.src)
 
         files_in_archive = self.file.namelist()
         if self.include:
@@ -669,8 +669,8 @@ class MVSUnarchive(Unarchive):
             )
         return rc
 
-    def path_exists(self):
-        return data_set.DataSet.data_set_exists(self.path)
+    def src_exists(self):
+        return data_set.DataSet.data_set_exists(self.src)
 
     def _get_restored_datasets(self, output):
         ds_list = list()
@@ -692,23 +692,23 @@ class MVSUnarchive(Unarchive):
     def unpack(self):
         pass
 
-    def extract_path(self):
+    def extract_src(self):
         """Extract the MVS path contents.
 
         """
         temp_ds = ""
         if not self.use_adrdssu:
             temp_ds, rc = self._create_dest_data_set(**self.dest_data_set)
-            rc = self.unpack(self.path, temp_ds)
+            rc = self.unpack(self.src, temp_ds)
         else:
             temp_ds, rc = self._create_dest_data_set(type="SEQ", record_format="U", record_length=0, tmp_hlq=self.tmphlq, replace=True)
-            self.unpack(self.path, temp_ds)
+            self.unpack(self.src, temp_ds)
             rc = self._restore(temp_ds)
             datasets.delete(temp_ds)
         self.changed = not rc
 
         if not self.module.params.get("remote_src"):
-            datasets.delete(self.path)
+            datasets.delete(self.src)
         return
 
     def _list_content(self, source):
@@ -719,11 +719,11 @@ class MVSUnarchive(Unarchive):
 
     def list_archive_content(self):
         temp_ds, rc = self._create_dest_data_set(type="SEQ", record_format="U", record_length=0, tmp_hlq=self.tmphlq, replace=True)
-        self.unpack(self.path, temp_ds)
+        self.unpack(self.src, temp_ds)
         self._list_content(temp_ds)
         datasets.delete(temp_ds)
         if not self.module.params.get("remote_src"):
-            datasets.delete(self.path)
+            datasets.delete(self.src)
 
     def clean_environment(self, data_sets=None, uss_files=None, remove_targets=False):
         """Removes any allocated data sets that won't be needed after module termination.
@@ -747,16 +747,16 @@ class AMATerseUnarchive(MVSUnarchive):
     def __init__(self, module):
         super(AMATerseUnarchive, self).__init__(module)
 
-    def unpack(self, path, dest):
+    def unpack(self, src, dest):
         """
         Unpacks using AMATerse, assumes the data set has only been packed once.
         """
-        dds = {'args': 'UNPACK', 'sysut1': path, 'sysut2': dest}
+        dds = {'args': 'UNPACK', 'sysut1': src, 'sysut2': dest}
         rc, out, err = mvs_cmd.amaterse(cmd="", dds=dds)
         if rc != 0:
             self.clean_environment(data_sets=[dest], uss_files=[], remove_targets=True)
             self.module.fail_json(
-                msg="Failed executing AMATERSE to restore {0} into {1}".format(path, dest),
+                msg="Failed executing AMATERSE to restore {0} into {1}".format(src, dest),
                 stdout=out,
                 stderr=err,
                 rc=rc,
@@ -768,22 +768,22 @@ class XMITUnarchive(MVSUnarchive):
     def __init__(self, module):
         super(XMITUnarchive, self).__init__(module)
 
-    def unpack(self, path, dest):
+    def unpack(self, src, dest):
         """
         Unpacks using XMIT.
 
-        path is the archive
+        src is the archive
         dest is the destination dataset
         """
         unpack_cmd = """
         PROFILE NOPROMPT
         RECEIVE INDSN('{0}')
         DA('{1}')
-        """.format(path, dest)
+        """.format(src, dest)
         rc, out, err = mvs_cmd.ikjeft01(cmd=unpack_cmd, authorized=True)
         if rc != 0:
             self.module.fail_json(
-                msg="Failed executing RECEIVE to restore {0} into {1}".format(path, dest),
+                msg="Failed executing RECEIVE to restore {0} into {1}".format(src, dest),
                 stdout=out,
                 stderr=err,
                 rc=rc,
@@ -878,7 +878,7 @@ class LinkOutsideDestinationError(Exception):
 def run_module():
     module = AnsibleModule(
         argument_spec=dict(
-            path=dict(type='str', required=True),
+            src=dict(type='str', required=True),
             dest=dict(type='str'),
             include=dict(type='list', elements='str'),
             exclude=dict(type='list', elements='str'),
@@ -964,7 +964,7 @@ def run_module():
     )
 
     arg_defs = dict(
-        path=dict(type='str', required=True, aliases=['src']),
+        src=dict(type='str', required=True),
         dest=dict(type='str', required=False, default=''),
         include=dict(type='list', elements='str'),
         exclude=dict(type='list', elements='str'),
@@ -1047,10 +1047,10 @@ def run_module():
         unarchive.list_archive_content()
         module.exit_json(**unarchive.result)
 
-    if not unarchive.path_exists():
-        module.fail_json(msg="{0} does not exists, please provide a valid path.".format(module.params.get("path")))
+    if not unarchive.src_exists():
+        module.fail_json(msg="{0} does not exists, please provide a valid src.".format(module.params.get("src")))
 
-    unarchive.extract_path()
+    unarchive.extract_src()
 
     if unarchive.dest_unarchived() and unarchive.dest_type() == "USS":
         unarchive.update_permissions()

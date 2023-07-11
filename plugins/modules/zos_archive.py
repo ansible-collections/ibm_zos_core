@@ -334,7 +334,7 @@ class Archive():
         self.archived = []
         self.not_found = []
         self.force = module.params['force']
-        self.paths = module.params['path']
+        self.paths = module.params['src']
         self.arcroot = ""
         self.expanded_paths = ""
         self.expanded_exclude_paths = ""
@@ -687,18 +687,18 @@ class AMATerseArchive(MVSArchive):
         if self.pack_arg is None:
             self.pack_arg = "SPACK"
 
-    def add(self, path, archive):
+    def add(self, src, archive):
         """
-        Archive path into archive using AMATERSE program.
+        Archive src into archive using AMATERSE program.
         Arguments:
-            path: {str}
+            src: {str}
             archive: {str}
         """
-        dds = {'args': self.pack_arg, 'sysut1': path, 'sysut2': archive}
+        dds = {'args': self.pack_arg, 'sysut1': src, 'sysut2': archive}
         rc, out, err = mvs_cmd.amaterse(cmd="", dds=dds)
         if rc != 0:
             self.module.fail_json(
-                msg="Failed executing AMATERSE to archive {0} into {1}".format(path, archive),
+                msg="Failed executing AMATERSE to archive {0} into {1}".format(src, archive),
                 stdout=out,
                 stderr=err,
                 rc=rc,
@@ -730,11 +730,11 @@ class XMITArchive(MVSArchive):
         super(XMITArchive, self).__init__(module)
         self.xmit_log_data_set = module.params.get("format").get("format_options").get("xmit_log_data_set")
 
-    def add(self, path, archive):
+    def add(self, src, archive):
         """
-        Archive path into archive using TSO XMIT.
+        Archive src into archive using TSO XMIT.
         Arguments:
-            path: {str}
+            src: {str}
             archive: {str}
         """
         log_option = "LOGDSNAME({0})".format(self.xmit_log_data_set) if self.xmit_log_data_set else "NOLOG"
@@ -742,12 +742,12 @@ class XMITArchive(MVSArchive):
         FILE(SYSUT1) OUTFILE(SYSUT2) -
         {0} -
         """.format(log_option)
-        dds = {"SYSUT1": "{0},shr".format(path), "SYSUT2": archive}
+        dds = {"SYSUT1": "{0},shr".format(src), "SYSUT2": archive}
         rc, out, err = mvs_cmd.ikjeft01(cmd=xmit_cmd, authorized=True, dds=dds)
         # rc, out, err = self.module.run_command(tso_cmd)
         if rc != 0:
             self.module.fail_json(
-                msg="An error occurred while executing 'TSO XMIT' to archive {0} into {1}".format(path, archive),
+                msg="An error occurred while executing 'TSO XMIT' to archive {0} into {1}".format(src, archive),
                 stdout=out,
                 stderr=err,
                 rc=rc,
@@ -777,7 +777,7 @@ class XMITArchive(MVSArchive):
 def run_module():
     module = AnsibleModule(
         argument_spec=dict(
-            path=dict(type='list', elements='str', required=True),
+            src=dict(type='list', elements='str', required=True),
             dest=dict(type='str'),
             exclude_path=dict(type='list', elements='str'),
             format=dict(
@@ -819,7 +819,7 @@ def run_module():
     )
 
     arg_defs = dict(
-        path=dict(type='list', elements='str', required=True, alias='src'),
+        src=dict(type='list', elements='str', required=True),
         dest=dict(type='str', required=False),
         exclude_path=dict(type='list', elements='str', default=[]),
         format=dict(

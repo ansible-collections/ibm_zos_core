@@ -125,7 +125,7 @@ def test_uss_single_archive(ansible_zos_module, format):
         hosts.all.file(path=USS_TEMP_DIR, state="directory")
         set_uss_test_env(hosts, USS_TEST_FILES)
         dest = f"{USS_TEMP_DIR}/archive.{format}"
-        archive_result = hosts.all.zos_archive( path=list(USS_TEST_FILES.keys()),
+        archive_result = hosts.all.zos_archive(src=list(USS_TEST_FILES.keys()),
                                         dest=dest,
                                         format=dict(
                                             name=format
@@ -154,7 +154,7 @@ def test_uss_single_archive_with_mode(ansible_zos_module, format):
         set_uss_test_env(hosts, USS_TEST_FILES)
         dest = f"{USS_TEMP_DIR}/archive.{format}"
         dest_mode = "0755"
-        archive_result = hosts.all.zos_archive( path=list(USS_TEST_FILES.keys()),
+        archive_result = hosts.all.zos_archive(src=list(USS_TEST_FILES.keys()),
                                         dest=dest,
                                         format=dict(
                                             name=format
@@ -181,7 +181,7 @@ def test_uss_single_archive_with_force_option(ansible_zos_module, format):
         hosts.all.file(path=USS_TEMP_DIR, state="directory")
         set_uss_test_env(hosts, USS_TEST_FILES)
         dest = f"{USS_TEMP_DIR}/archive.{format}"
-        archive_result = hosts.all.zos_archive( path=list(USS_TEST_FILES.keys()),
+        archive_result = hosts.all.zos_archive(src=list(USS_TEST_FILES.keys()),
                                         dest=dest,
                                         format=dict(
                                             name=format
@@ -191,7 +191,7 @@ def test_uss_single_archive_with_force_option(ansible_zos_module, format):
             assert result.get("failed", False) is False
             assert result.get("changed") is True
 
-        archive_result = hosts.all.zos_archive( path=list(USS_TEST_FILES.keys()),
+        archive_result = hosts.all.zos_archive(src=list(USS_TEST_FILES.keys()),
                                         dest=dest,
                                         format=dict(
                                             name=format
@@ -202,7 +202,7 @@ def test_uss_single_archive_with_force_option(ansible_zos_module, format):
             assert result.get("changed") is False
 
         set_uss_test_env(hosts, USS_TEST_FILES)
-        archive_result = hosts.all.zos_archive( path=list(USS_TEST_FILES.keys()),
+        archive_result = hosts.all.zos_archive(src=list(USS_TEST_FILES.keys()),
                                         dest=dest,
                                         format=dict(
                                             name=format
@@ -232,7 +232,7 @@ def test_uss_archive_multiple_files(ansible_zos_module, format, path):
         hosts.all.file(path=USS_TEMP_DIR, state="directory")
         set_uss_test_env(hosts, USS_TEST_FILES)
         dest = f"{USS_TEMP_DIR}/archive.{format}"
-        archive_result = hosts.all.zos_archive( path=path.get("files"),
+        archive_result = hosts.all.zos_archive(src=path.get("files"),
                                         dest=dest,
                                         format=dict(name=format),)
 
@@ -265,7 +265,7 @@ def test_uss_archive_multiple_files_with_exclude_path(ansible_zos_module, format
         hosts.all.file(path=USS_TEMP_DIR, state="directory")
         set_uss_test_env(hosts, USS_TEST_FILES)
         dest = f"{USS_TEMP_DIR}/archive.{format}"
-        archive_result = hosts.all.zos_archive( path=path.get("files"),
+        archive_result = hosts.all.zos_archive(src=path.get("files"),
                                         dest=dest,
                                         format=dict(name=format),
                                         exclude_path=path.get("exclude_path"))
@@ -296,7 +296,7 @@ def test_uss_archive_remove_targets(ansible_zos_module, format):
         set_uss_test_env(hosts, USS_TEST_FILES)
         dest = f"{USS_TEMP_DIR}/archive.{format}"
         paths = list(USS_TEST_FILES.keys())
-        archive_result = hosts.all.zos_archive( path=paths,
+        archive_result = hosts.all.zos_archive(src=paths,
                                         dest=dest,
                                         format=dict(name=format),
                                         remove=True)
@@ -387,7 +387,7 @@ def test_mvs_archive_single_dataset(ansible_zos_module, format, data_set, record
         if format == "terse":
             format_dict["format_options"] = dict(terse_pack="SPACK")
         archive_result = hosts.all.zos_archive(
-            path=data_set.get("name"),
+            src=data_set.get("name"),
             dest=MVS_DEST_ARCHIVE,
             format=format_dict,
         )
@@ -461,7 +461,7 @@ def test_mvs_archive_single_dataset_use_adrdssu(ansible_zos_module, format, data
         if format == "terse":
             format_dict["format_options"].update(terse_pack="SPACK")
         archive_result = hosts.all.zos_archive(
-            path=data_set.get("name"),
+            src=data_set.get("name"),
             dest=MVS_DEST_ARCHIVE,
             format=format_dict,
         )
@@ -532,7 +532,7 @@ def test_mvs_archive_single_data_set_remove_target(ansible_zos_module, format, d
         if format == "terse":
             format_dict["format_options"] = dict(terse_pack="SPACK")
         archive_result = hosts.all.zos_archive(
-            path=data_set.get("name"),
+            src=data_set.get("name"),
             dest=MVS_DEST_ARCHIVE,
             format=format_dict,
             remove=True,
@@ -593,7 +593,7 @@ def test_mvs_archive_multiple_data_sets(ansible_zos_module, format, data_set ):
             format_dict["format_options"].update(terse_pack="SPACK")
         format_dict["format_options"].update(use_adrdssu=True)
         archive_result = hosts.all.zos_archive(
-            path="{0}*".format(data_set.get("name")),
+            src="{0}*".format(data_set.get("name")),
             dest=MVS_DEST_ARCHIVE,
             format=format_dict,
         )
@@ -655,7 +655,7 @@ def test_mvs_archive_multiple_data_sets_with_exclusion(ansible_zos_module, forma
         format_dict["format_options"].update(use_adrdssu=True)
         exclude = "{0}1".format(data_set.get("name"))
         archive_result = hosts.all.zos_archive(
-            path="{0}*".format(data_set.get("name")),
+            src="{0}*".format(data_set.get("name")),
             dest=MVS_DEST_ARCHIVE,
             format=format_dict,
             exclude_path=exclude,
@@ -720,7 +720,7 @@ def test_mvs_archive_multiple_data_sets_and_remove(ansible_zos_module, format, d
             format_dict["format_options"].update(terse_pack="SPACK")
         format_dict["format_options"].update(use_adrdssu=True)
         archive_result = hosts.all.zos_archive(
-            path="{0}*".format(data_set.get("name")),
+            src="{0}*".format(data_set.get("name")),
             dest=MVS_DEST_ARCHIVE,
             format=format_dict,
             remove=True,
@@ -788,7 +788,7 @@ def test_mvs_archive_multiple_data_sets_with_missing(ansible_zos_module, format,
             format_dict["format_options"].update(terse_pack="SPACK")
         format_dict["format_options"].update(use_adrdssu=True)
         archive_result = hosts.all.zos_archive(
-            path=path_list,
+            src=path_list,
             dest=MVS_DEST_ARCHIVE,
             format=format_dict,
         )
@@ -874,7 +874,7 @@ def test_mvs_archive_single_dataset_force_lock(ansible_zos_module, format, data_
         time.sleep(5)
 
         archive_result = hosts.all.zos_archive(
-            path=data_set.get("name"),
+            src=data_set.get("name"),
             dest=MVS_DEST_ARCHIVE,
             format=format_dict,
         )

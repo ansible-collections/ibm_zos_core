@@ -229,23 +229,24 @@ dest_state:
     type: str
     returned: success
 missing:
-    description: Any files that were missing from the source.
+    description: Any files or data sets that were missing from the source.
     type: list
     returned: success
 archived:
-    description: Any files that were compressed or added to the archive.
+    description: Any files or data sets that were compressed or added to the archive.
     type: list
     returned: success
 arcroot:
-    description: The archive root.
+    description: If C(src) is a list of USS files, this returns the top most parent
+    folder of the list of files, otherwise is empty.
     type: str
     returned: always
-expanded_paths:
+  :
     description: The list of matching paths from the src option.
     type: list
     returned: always
 expanded_exclude_paths:
-    description: The list of matching exclude paths from the exclude_path argument.
+    description: The list of matching exclude paths from the exclude_path option.
     type: list
     returned: always
 '''

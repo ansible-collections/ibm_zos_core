@@ -117,6 +117,23 @@ LINK_JCL = """
 
 """
 
+hello_world = """#include <stdio.h>
+int main()
+{
+   printf("Hello World!");
+   return 0;
+}
+"""
+
+call_c_jcl="""//PDSELOCK JOB MSGCLASS=A,MSGLEVEL=(1,1),NOTIFY=&SYSUID,REGION=0M
+//LOCKMEM  EXEC PGM=BPXBATCH
+//STDPARM DD *
+SH /tmp/c/hello_world
+//STDIN  DD DUMMY
+//STDOUT DD SYSOUT=*
+//STDERR DD SYSOUT=*
+//"""
+
 def populate_dir(dir_path):
     for i in range(5):
         with open(dir_path + "/" + "file" + str(i + 1), "w") as infile:
@@ -2190,10 +2207,10 @@ def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module, is_cr
             assert result.get("rc") == 0
 
         copy_res = hosts.all.zos_copy(
-            src="{0}({1})".format(src, member), 
-            dest="{0}({1})".format(dest, "MEM1"), 
+            src="{0}({1})".format(src, member),
+            dest="{0}({1})".format(dest, "MEM1"),
             remote_src=True,
-            is_executable=True)
+            executable=True)
 
         verify_copy = hosts.all.shell(
             cmd="mls {0}".format(dest),
@@ -2204,8 +2221,9 @@ def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module, is_cr
             src="{0}({1})".format(dest, "MEM1"),
             dest=uss_dest,
             remote_src=True,
-            is_executable=True,
-            force=True)
+            executable=True,
+            force=True
+        )
 
         verify_exe_uss = hosts.all.shell(
             cmd="{0}".format(uss_dest)
@@ -2237,6 +2255,76 @@ def test_copy_pds_loadlib_member_to_pds_loadlib_member(ansible_zos_module, is_cr
         hosts.all.zos_data_set(name=src, state="absent")
         hosts.all.zos_data_set(name=cobol_pds, state="absent")
         hosts.all.file(name=uss_dest, state="absent")
+
+
+@pytest.mark.pdse
+@pytest.mark.uss
+@pytest.mark.parametrize("is_created", ["true", "false"])
+def test_copy_executables_uss_to_member(ansible_zos_module, is_created):
+    hosts= ansible_zos_module
+    src= "/tmp/c/hello_world.c"
+    src_jcl_call= "/tmp/c/call_hw_pgm.jcl"
+    dest_uss="/tmp/c/hello_world_2"
+    dest = "USER.LOAD.DEST"
+    member = "HELLOSRC"
+    try:
+        hosts.all.zos_copy(content=hello_world, dest=src, force=True)
+        hosts.all.zos_copy(content=call_c_jcl, dest=src_jcl_call, force=True)
+        hosts.all.shell(cmd="xlc -o hello_world hello_world.c", chdir="/tmp/c/")
+        hosts.all.shell(cmd="submit {0}".format(src_jcl_call))
+        verify_exe_src = hosts.all.shell(cmd="/tmp/c/hello_world")
+        for res in verify_exe_src.contacted.values():
+            assert res.get("rc") == 0
+            stdout = res.get("stdout")
+            assert  "Hello World" in str(stdout)
+        copy_uss_res = hosts.all.zos_copy(
+            src="/tmp/c/hello_world",
+            dest=dest_uss,
+            remote_src=True,
+            executable=True,
+            force=True
+        )
+        verify_exe_dst = hosts.all.shell(cmd="/tmp/c/hello_world_2")
+        for result in copy_uss_res.contacted.values():
+            assert result.get("msg") is None
+            assert result.get("changed") is True
+        for res in verify_exe_dst.contacted.values():
+            assert res.get("rc") == 0
+            stdout = res.get("stdout")
+            assert  "Hello World" in str(stdout)
+        if is_created:
+            hosts.all.zos_data_set(
+                name=dest,
+                state="present",
+                type="pdse",
+                record_format="U",
+                record_length=0,
+                block_size=32760,
+                space_primary=2,
+                space_type="M",
+                replace=True
+            )
+        copy_uss_to_mvs_res = hosts.all.zos_copy(
+            src="/tmp/c/hello_world",
+            dest="{0}({1})".format(dest, member),
+            remote_src=True,
+            executable=True,
+            force=True
+        )
+        cmd = "mvscmd --pgm={0}  --steplib={1} --sysprint=* --stderr=* --stdout=*"
+        exec_res = hosts.all.shell(
+            cmd=cmd.format(member, dest)
+        )
+        for result in copy_uss_to_mvs_res.contacted.values():
+            assert result.get("msg") is None
+            assert result.get("changed") is True
+        for res in exec_res.contacted.values():
+            assert res.get("rc") == 0
+            stdout = res.get("stdout")
+            assert  "Hello World" in str(stdout)
+    finally:
+        hosts.all.shell(cmd='rm -r /tmp/c')
+        hosts.all.zos_data_set(name=dest, state="absent")
 
 
 @pytest.mark.pdse

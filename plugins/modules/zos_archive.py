@@ -64,7 +64,11 @@ options:
         required: false
         suboptions:
           terse_pack:
-            description: Pack option to use for terse format.
+            description:
+              - Compression option for use with the terse format, I(name=terse).
+              - Pack will compress records in a data set so that the output results in lossless data compression.
+              - Spack will compress records in a data set so the output results in complex data compression.
+              - Spack will produce smaller output and take approximately 3 times longer than pack compression.
             type: str
             choices:
               - PACK

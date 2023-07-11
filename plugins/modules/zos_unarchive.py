@@ -21,9 +21,9 @@ module: zos_unarchive
 version_added: "1.7.0"
 author:
   - Oscar Fernando Flores Garcia (@fernandofloresg)
-short_description: Unarchive a dataset or file in z/OS.
+short_description: Unarchive files and data sets in z/OS.
 description:
-  - The C(zos_unarchive) module unpacks an archive after optionally sending it to the remote.
+  - The C(zos_unarchive) module unpacks an archive after optionally transferring it to the remote system.
 
 options:
   path:

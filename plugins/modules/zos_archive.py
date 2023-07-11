@@ -39,7 +39,7 @@ options:
     elements: str
   format:
     description:
-      - The type of compression to use.
+      - The compression type and corresponding options to use when archiving data.
     type: dict
     required: false
     suboptions:
@@ -74,8 +74,9 @@ options:
             type: str
           use_adrdssu:
             description:
-              - If set to true, after unpacking a data set in C(xmit) or C(terse) format
-                it will perform a single DFSMSdss ADRDSSU DUMP step.
+              - If set to true, the C(zos_archive) module will use Data Facility Storage Management Subsystem
+              data set services (DFSMSdss) program ADRDSSU to compress data sets into a portable format before
+              using C(xmit) or C(terse).
             type: bool
             default: False
   dest:

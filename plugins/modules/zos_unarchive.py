@@ -129,7 +129,10 @@ options:
     required: false
   list:
     description:
-      - Set to true to only list the archive content without unpacking.
+      - Will list- Override the default high level qualifier (HLQ) for temporary data sets.
+      - The default HLQ is the Ansible user used to execute the module and if
+        that is not available, then the environment variable value C(TMPHLQ) is
+        used. the contents of the archive without unpacking.
     type: bool
     required: false
     default: false
@@ -256,7 +259,10 @@ options:
         required: false
   tmp_hlq:
     description:
-      - High Level Qualifier used for temporary datasets created during the module execution.
+      - Override the default high level qualifier (HLQ) for temporary data sets.
+      - The default HLQ is the Ansible user used to execute the module and if
+        that is not available, then the environment variable value C(TMPHLQ) is
+        used.
     type: str
     required: false
   force:

@@ -24,9 +24,11 @@ author:
 short_description: Archive files and data sets on z/OS.
 
 description:
-  - Creates or extends an archive.
-  - The source and archive are on the remote host,
-    and the archive is not copied to the local host.
+  - Create or extend an archive on a remote z/OS system.
+  - Sources for archiving must be on the remote z/OS system.
+  - Supported sources are USS (UNIX System Services) or z/OS data sets.
+  - The archive remains on the remote z/OS system.
+  - For supported archive formats, see option C(format).
 
 options:
   src:

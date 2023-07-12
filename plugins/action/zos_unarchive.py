@@ -55,7 +55,7 @@ class ActionModule(ActionBase):
                 )
             )
         else:
-            source = module_args.get("path") if module_args.get("path") is not None else module_args.get("src")
+            source = module_args.get("src")
             force = _process_boolean(module_args.get("force"))
             format = self._task.args.get("format")
             format_name = format.get("name")
@@ -107,7 +107,7 @@ class ActionModule(ActionBase):
                                                          shared_loader_obj=self._shared_loader_obj)
             result.update(zos_copy_action_module.run(task_vars=task_vars))
 
-            module_args["path"] = dest
+            module_args["src"] = dest
             display.vvv(u"Copy args {0}".format(result), host=self._play_context.remote_addr)
 
             result.update(

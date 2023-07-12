@@ -23,7 +23,11 @@ author:
   - Oscar Fernando Flores Garcia (@fernandofloresg)
 short_description: Unarchive files and data sets in z/OS.
 description:
-  - The C(zos_unarchive) module unpacks an archive after optionally transferring it to the remote system.
+  - The C(zos_unarchive) module unpacks an archive after optionally
+    transferring it to the remote system.
+  - For supported archive formats, see option C(format).
+  - Supported sources are USS (UNIX System Services) or z/OS data sets.
+
 
 options:
   src:
@@ -273,6 +277,12 @@ options:
     type: bool
     required: false
     default: false
+
+notes:
+  - VSAMs are not supported.
+
+seealso:
+  - module: zos_unarchive
 '''
 
 EXAMPLES = r'''

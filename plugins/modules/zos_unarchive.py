@@ -847,19 +847,13 @@ def sanitize_members(members, dest, format):
 
 class AbsolutePathError(Exception):
     def __init__(self, tarinfo):
-        self.msg = "member {0} has an absolute path".format(tarinfo.name)
+        self.msg = "Unable to extract {0} as the files extracted can not contain an absolute path".format(tarinfo.name)
         super().__init__(self.msg)
 
 
 class OutsideDestinationError(Exception):
     def __init__(self, tarinfo, path):
-        self.msg = '{0} would be extracted to {1}, which is outside the destination'.format(tarinfo.name, path)
-        super().__init__(self.msg)
-
-
-class SpecialFileError(Exception):
-    def __init__(self, tarinfo):
-        self.msg = '{0} is a special file'.format(tarinfo.name)
+        self.msg = 'Unable to extract {0} to {1}, which is outside the designated destination'.format(tarinfo.name, path)
         super().__init__(self.msg)
 
 
@@ -871,7 +865,7 @@ class AbsoluteLinkError(Exception):
 
 class LinkOutsideDestinationError(Exception):
     def __init__(self, tarinfo, path):
-        self.msg = '{0} would link to {1}, which is outside the destination'.format(tarinfo.name, path)
+        self.msg = 'Unable to extract {0} it would link to {1}, which is outside the designated destination'.format(tarinfo.name, path)
         super().__init__()
 
 

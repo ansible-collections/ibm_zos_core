@@ -393,7 +393,7 @@ class Unarchive():
     @property
     def result(self):
         return {
-            'path': self.src,
+            'src': self.src,
             'dest_path': self.dest,
             'changed': self.changed,
             'targets': self.targets,

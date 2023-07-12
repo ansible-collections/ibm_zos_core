@@ -79,8 +79,8 @@ options:
           use_adrdssu:
             description:
               - If set to true, the C(zos_archive) module will use Data Facility Storage Management Subsystem
-              data set services (DFSMSdss) program ADRDSSU to compress data sets into a portable format before
-              using C(xmit) or C(terse).
+                data set services (DFSMSdss) program ADRDSSU to compress data sets into a portable format before
+                using C(xmit) or C(terse).
             type: bool
             default: False
   dest:
@@ -135,8 +135,8 @@ options:
   remove:
     description:
       - Remove any added source files , trees or data sets after module
-      L(zos_archive,./zos_archive.html) adds them to the archive.
-      Source files, trees and data sets are identified with option I(path).
+        L(zos_archive,./zos_archive.html) adds them to the archive.
+        Source files, trees and data sets are identified with option I(path).
     type: bool
     required: false
     default: false
@@ -237,11 +237,12 @@ archived:
     type: list
     returned: success
 arcroot:
-    description: If C(src) is a list of USS files, this returns the top most parent
-    folder of the list of files, otherwise is empty.
+    description:
+      - If C(src) is a list of USS files, this returns the top most parent
+        folder of the list of files, otherwise is empty.
     type: str
     returned: always
-  :
+expanded_paths:
     description: The list of matching paths from the src option.
     type: list
     returned: always

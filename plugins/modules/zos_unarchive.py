@@ -114,8 +114,8 @@ options:
     required: false
   include:
     description:
-      - List of directory and file or data set names that you would like to extract from the archive.
-      - If include is not empty, only files listed here will be extracted.
+      - A list of directories, files or data set names to extract from the archive.
+      - When C(include) is set, only those files will we be extracted leaving the remaining files in the archive.
       - Mutually exclusive with exclude.
     type: list
     elements: str

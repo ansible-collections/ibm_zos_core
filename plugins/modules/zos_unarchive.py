@@ -28,18 +28,19 @@ description:
 options:
   src:
     description:
-      - Local or remote absolute path or data set name of the archive to be unpacked on the remote.
+      - Local or remote absolute path or data set name of the archive to be uncompressed on the remote.
+      - USS file paths should be absolute paths.
     type: str
     required: true
   format:
     description:
-      - The type of compression to use.
+      - The compression type and corresponding options to use when archiving data.
     type: dict
     required: true
     suboptions:
       name:
           description:
-            - The name of the format to use.
+            - The compression format to use.
           type: str
           required: true
           choices:
@@ -52,7 +53,7 @@ options:
             - pax
       format_options:
           description:
-            - Options specific to each format.
+            - Options specific to a compression format.
           type: dict
           required: false
           suboptions:
@@ -61,8 +62,9 @@ options:
               type: str
             use_adrdssu:
               description:
-                - If set to true, after unpacking a data set in C(xmit) or C(terse) format
-                  it will perform a single DFSMSdss ADRDSSU RESTORE step.
+                - If set to true, the C(zos_archive) module will use Data Facility Storage Management Subsystem
+                  data set services (DFSMSdss) program ADRDSSU to uncompress data sets from a portable format after
+                  using C(xmit) or C(terse).
               type: bool
               default: False
             dest_volumes:

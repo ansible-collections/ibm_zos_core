@@ -554,7 +554,7 @@ def test_mvs_unarchive_multiple_dataset_use_adrdssu(ansible_zos_module, format, 
         for result in unarchive_result.contacted.values():
             assert result.get("changed") is True
             assert result.get("failed", False) is False
-            assert result.get("path") == MVS_DEST_ARCHIVE
+            assert result.get("src") == MVS_DEST_ARCHIVE
 
             cmd_result = hosts.all.shell(cmd="dls {0}.*".format(HLQ))
             for c_result in cmd_result.contacted.values():
@@ -630,7 +630,7 @@ def test_mvs_unarchive_multiple_dataset_use_adrdssu_include(ansible_zos_module, 
         for result in unarchive_result.contacted.values():
             assert result.get("changed") is True
             assert result.get("failed", False) is False
-            assert result.get("path") == MVS_DEST_ARCHIVE
+            assert result.get("src") == MVS_DEST_ARCHIVE
 
             cmd_result = hosts.all.shell(cmd="dls {0}.*".format(HLQ))
             for c_result in cmd_result.contacted.values():
@@ -709,7 +709,7 @@ def test_mvs_unarchive_multiple_dataset_use_adrdssu_exclude(ansible_zos_module, 
         for result in unarchive_result.contacted.values():
             assert result.get("changed") is True
             assert result.get("failed", False) is False
-            assert result.get("path") == MVS_DEST_ARCHIVE
+            assert result.get("src") == MVS_DEST_ARCHIVE
 
             cmd_result = hosts.all.shell(cmd="dls {0}.*".format(HLQ))
             for c_result in cmd_result.contacted.values():
@@ -787,7 +787,7 @@ def test_mvs_unarchive_multiple_dataset_list(ansible_zos_module, format, data_se
         for result in unarchive_result.contacted.values():
             assert result.get("changed") is False
             assert result.get("failed", False) is False
-            assert result.get("path") == MVS_DEST_ARCHIVE
+            assert result.get("src") == MVS_DEST_ARCHIVE
 
             cmd_result = hosts.all.shell(cmd="dls {0}.*".format(HLQ))
             for c_result in cmd_result.contacted.values():
@@ -869,7 +869,7 @@ def test_mvs_unarchive_multiple_dataset_use_adrdssu_force(ansible_zos_module, fo
             if force:
                 assert result.get("changed") is True
                 assert result.get("failed", False) is False
-                assert result.get("path") == MVS_DEST_ARCHIVE
+                assert result.get("src") == MVS_DEST_ARCHIVE
 
                 cmd_result = hosts.all.shell(cmd="dls {0}.*".format(HLQ))
                 for c_result in cmd_result.contacted.values():

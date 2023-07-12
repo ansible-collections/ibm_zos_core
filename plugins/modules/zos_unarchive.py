@@ -58,7 +58,7 @@ options:
           required: false
           suboptions:
             xmit_log_dataset:
-              description: Provide a name of data set to store xmit log output.
+              description: Provide a name of a data set to store xmit log output.
               type: str
             use_adrdssu:
               description:
@@ -995,7 +995,7 @@ def run_module():
                     default=dict(xmit_log_dataset=""),
                 )
             ),
-            default=dict(name="", supotions=dict(xmit_log_dataset="")),
+            default=dict(name="", format_options=dict(xmit_log_dataset="")),
         ),
         dest_data_set=dict(
             arg_type='dict',

@@ -323,7 +323,7 @@ List of tests:
     # "record_format", ["FB", "VB", "FBA", "VBA", "U"],
     "record_format", ["FB", "VB",],
 )
-def test_mvs_unarchive_single_dataset(ansible_zos_module, format, data_set, record_length, record_format):
+def test_mvs_unarchive_single_data_set(ansible_zos_module, format, data_set, record_length, record_format):
     try:
         hosts = ansible_zos_module
         # Clean env
@@ -380,6 +380,10 @@ def test_mvs_unarchive_single_dataset(ansible_zos_module, format, data_set, reco
             src=MVS_DEST_ARCHIVE,
             format=format_dict,
             remote_src=True,
+            dest_data_set=dict(name=data_set.get("name"),
+                               type=data_set.get("dstype"),
+                               record_format=record_format,
+                               record_length=record_length),
         )
         # assert response is positive
         for result in unarchive_result.contacted.values():
@@ -414,7 +418,7 @@ def test_mvs_unarchive_single_dataset(ansible_zos_module, format, data_set, reco
     # "record_format", ["FB", "VB", "FBA", "VBA", "U"],
     "record_format", ["FB", "VB",],
 )
-def test_mvs_unarchive_single_dataset_use_adrdssu(ansible_zos_module, format, data_set, record_length, record_format):
+def test_mvs_unarchive_single_data_set_use_adrdssu(ansible_zos_module, format, data_set, record_length, record_format):
     try:
         hosts = ansible_zos_module
         # Clean env
@@ -500,7 +504,7 @@ def test_mvs_unarchive_single_dataset_use_adrdssu(ansible_zos_module, format, da
         dict(name=TEST_PDS, dstype="PDSE"),
         ]
 )
-def test_mvs_unarchive_multiple_dataset_use_adrdssu(ansible_zos_module, format, data_set):
+def test_mvs_unarchive_multiple_data_set_use_adrdssu(ansible_zos_module, format, data_set):
     try:
         hosts = ansible_zos_module
         target_ds_list = create_multiple_data_sets(ansible_zos_module=hosts,
@@ -534,7 +538,7 @@ def test_mvs_unarchive_multiple_dataset_use_adrdssu(ansible_zos_module, format, 
             format=format_dict,
         )
 
-        # remote datasets from host
+        # remote data_sets from host
         hosts.all.shell(cmd="drm {0}*".format(data_set.get("name")))
 
         if format == "terse":
@@ -574,7 +578,7 @@ def test_mvs_unarchive_multiple_dataset_use_adrdssu(ansible_zos_module, format, 
         dict(name=TEST_PDS, dstype="PDSE"),
         ]
 )
-def test_mvs_unarchive_multiple_dataset_use_adrdssu_include(ansible_zos_module, format, data_set):
+def test_mvs_unarchive_multiple_data_set_use_adrdssu_include(ansible_zos_module, format, data_set):
     try:
         hosts = ansible_zos_module
         target_ds_list = create_multiple_data_sets(ansible_zos_module=hosts,
@@ -608,7 +612,7 @@ def test_mvs_unarchive_multiple_dataset_use_adrdssu_include(ansible_zos_module, 
             format=format_dict,
         )
 
-        # remote datasets from host
+        # remote data_sets from host
         hosts.all.shell(cmd="drm {0}*".format(data_set.get("name")))
 
         if format == "terse":
@@ -654,7 +658,7 @@ def test_mvs_unarchive_multiple_dataset_use_adrdssu_include(ansible_zos_module, 
         dict(name=TEST_PDS, dstype="PDSE"),
         ]
 )
-def test_mvs_unarchive_multiple_dataset_use_adrdssu_exclude(ansible_zos_module, format, data_set):
+def test_mvs_unarchive_multiple_data_set_use_adrdssu_exclude(ansible_zos_module, format, data_set):
     try:
         hosts = ansible_zos_module
         target_ds_list = create_multiple_data_sets(ansible_zos_module=hosts,
@@ -688,7 +692,7 @@ def test_mvs_unarchive_multiple_dataset_use_adrdssu_exclude(ansible_zos_module, 
             format=format_dict,
         )
 
-        # remote datasets from host
+        # remote data_sets from host
         hosts.all.shell(cmd="drm {0}*".format(data_set.get("name")))
 
         if format == "terse":
@@ -733,7 +737,7 @@ def test_mvs_unarchive_multiple_dataset_use_adrdssu_exclude(ansible_zos_module, 
         dict(name=TEST_PDS, dstype="PDSE"),
         ]
 )
-def test_mvs_unarchive_multiple_dataset_list(ansible_zos_module, format, data_set):
+def test_mvs_unarchive_multiple_data_set_list(ansible_zos_module, format, data_set):
     try:
         hosts = ansible_zos_module
         target_ds_list = create_multiple_data_sets(ansible_zos_module=hosts,
@@ -767,7 +771,7 @@ def test_mvs_unarchive_multiple_dataset_list(ansible_zos_module, format, data_se
             format=format_dict,
         )
 
-        # remote datasets from host
+        # remote data_sets from host
         hosts.all.shell(cmd="drm {0}*".format(data_set.get("name")))
 
         if format == "terse":
@@ -812,7 +816,7 @@ def test_mvs_unarchive_multiple_dataset_list(ansible_zos_module, format, data_se
         True,
         False,
         ])
-def test_mvs_unarchive_multiple_dataset_use_adrdssu_force(ansible_zos_module, format, data_set, force):
+def test_mvs_unarchive_multiple_data_set_use_adrdssu_force(ansible_zos_module, format, data_set, force):
     """
     This force test creates some data sets and attempt to extract using force flag as
     True and False, when True no issues are expected, as False proper error message should
@@ -896,10 +900,12 @@ def test_mvs_unarchive_multiple_dataset_use_adrdssu_force(ansible_zos_module, fo
     "record_length", [80, 120, 1024]
 )
 @pytest.mark.parametrize(
-    # "record_format", ["FB", "VB", "FBA", "VBA", "U"],
     "record_format", ["FB", "VB",],
 )
-def test_mvs_unarchive_single_dataset_remote_src(ansible_zos_module, format, data_set, record_length, record_format):
+@pytest.mark.parametrize(
+    "is_binary", [True, False],
+)
+def test_mvs_unarchive_single_data_set_remote_src(ansible_zos_module, format, data_set, record_length, record_format, is_binary):
     try:
         hosts = ansible_zos_module
         tmp_folder = tempfile.TemporaryDirectory(prefix="tmpfetch")

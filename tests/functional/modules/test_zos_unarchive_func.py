@@ -338,7 +338,7 @@ def test_mvs_unarchive_single_dataset(ansible_zos_module, format, data_set, reco
             record_format=record_format,
         )
         # Create members if needed
-        if data_set.get("dstype") in ["pds", "pdse"]:
+        if data_set.get("dstype") in ["PDS", "PDSE"]:
             for member in data_set.get("members"):
                 hosts.all.zos_data_set(
                     name=f"{data_set.get('name')}({member})",
@@ -380,10 +380,6 @@ def test_mvs_unarchive_single_dataset(ansible_zos_module, format, data_set, reco
             src=MVS_DEST_ARCHIVE,
             format=format_dict,
             remote_src=True,
-            dest_data_set=dict(name=data_set.get("name"),
-                               type=data_set.get("dstype"),
-                               record_format=record_format,
-                               record_length=record_length)
         )
         # assert response is positive
         for result in unarchive_result.contacted.values():
@@ -433,7 +429,7 @@ def test_mvs_unarchive_single_dataset_use_adrdssu(ansible_zos_module, format, da
             record_format=record_format,
         )
         # Create members if needed
-        if data_set.get("dstype") in ["pds", "pdse"]:
+        if data_set.get("dstype") in ["PDS", "PDSE"]:
             for member in data_set.get("members"):
                 hosts.all.zos_data_set(
                     name=f"{data_set.get('name')}({member})",
@@ -818,7 +814,7 @@ def test_mvs_unarchive_multiple_dataset_list(ansible_zos_module, format, data_se
         ])
 def test_mvs_unarchive_multiple_dataset_use_adrdssu_force(ansible_zos_module, format, data_set, force):
     """
-    This force test creates some data sets and attempt to extract using force flag as 
+    This force test creates some data sets and attempt to extract using force flag as
     True and False, when True no issues are expected, as False proper error message should
     be displayed.
     """
@@ -919,7 +915,7 @@ def test_mvs_unarchive_single_dataset_remote_src(ansible_zos_module, format, dat
             record_format=record_format,
         )
         # Create members if needed
-        if data_set.get("dstype") in ["pds", "pdse"]:
+        if data_set.get("dstype") in ["PDS", "PDSE"]:
             for member in data_set.get("members"):
                 hosts.all.zos_data_set(
                     name=f"{data_set.get('name')}({member})",
@@ -955,7 +951,7 @@ def test_mvs_unarchive_single_dataset_remote_src(ansible_zos_module, format, dat
         hosts.all.zos_data_set(name=data_set.get("name"), state="absent")
 
         # fetch archive data set into tmp folder
-        fetch_result = hosts.all.zos_fetch(src=MVS_DEST_ARCHIVE, dest=tmp_folder.name)
+        fetch_result = hosts.all.zos_fetch(src=MVS_DEST_ARCHIVE, dest=tmp_folder.name, is_binary=True)
 
         for res in fetch_result.contacted.values():
             source_path = res.get("dest")
@@ -966,7 +962,12 @@ def test_mvs_unarchive_single_dataset_remote_src(ansible_zos_module, format, dat
         unarchive_result = hosts.all.zos_unarchive(
             src=source_path,
             format=format_dict,
-            remote_src=False
+            remote_src=False,
+            is_binary=True,
+            dest_data_set=dict(name=data_set.get("name"),
+                               type=data_set.get("dstype"),
+                               record_format=record_format,
+                               record_length=record_length),
         )
 
         for result in unarchive_result.contacted.values():

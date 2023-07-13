@@ -62,6 +62,7 @@ class ActionModule(ActionBase):
             copy_module_args = dict()
             dest_data_set = dict()
             dest = ""
+            is_binary = module_args.get("is_binary")
             if source.startswith('~'):
                 source = os.path.expanduser(source)
             source = os.path.realpath(source)
@@ -94,7 +95,7 @@ class ActionModule(ActionBase):
                     dest=dest,
                     dest_data_set=dest_data_set,
                     force=force,
-                    # is_binary=True,
+                    is_binary=is_binary,
                 )
             )
             copy_task = copy.deepcopy(self._task)

@@ -620,7 +620,6 @@ class MVSUnarchive(Unarchive):
             source_size = int(source_size * 1.5)
         return source_size
 
-
     def _create_dest_data_set(
             self,
             name=None,
@@ -769,10 +768,10 @@ class MVSUnarchive(Unarchive):
             rc = self.unpack(self.src, temp_ds)
         else:
             temp_ds, rc = self._create_dest_data_set(type="SEQ",
-                                                        record_format="U",
-                                                        record_length=0,
-                                                        tmp_hlq=self.tmphlq,
-                                                        replace=True)
+                                                     record_format="U",
+                                                     record_length=0,
+                                                     tmp_hlq=self.tmphlq,
+                                                     replace=True)
             self.unpack(self.src, temp_ds)
             rc = self._restore(temp_ds)
             datasets.delete(temp_ds)

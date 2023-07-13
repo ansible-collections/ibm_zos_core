@@ -393,6 +393,7 @@ class Unarchive():
         self.list = module.params.get("list")
         self.changed = False
         self.missing = list()
+        self.remote_src = module.params.get("remote_src")
         if self.dest == '':
             self.dest = os.path.dirname(self.src)
 
@@ -584,9 +585,41 @@ class MVSUnarchive(Unarchive):
         self.use_adrdssu = self.format_options.get("use_adrdssu")
         self.dest_data_set = module.params.get("dest_data_set")
         self.dest_data_set = dict() if self.dest_data_set is None else self.dest_data_set
+        self.source_size = 0
 
     def dest_type(self):
         return "MVS"
+
+    def _compute_dest_data_set_size(self):
+        """
+        Computes the attributes that the destination data set or temporary destination
+        data set should have in terms of size, record_length, etc.
+        """
+
+        """
+        - Size of temporary DS for archive handling.
+
+        If remote_src then we can get the source_size from archive on the system.
+
+        If not remote_src then we can get the source_size from temporary_ds.
+        Both are named src so no problemo.
+
+        If format is xmit, dest_data_set size is the same as source_size.
+
+        If format is terse, dest_data_set size is different than the source_size, has to be greater,
+        but how much? In this case we can add dest_data_set option.
+
+        Apparently the only problem is when format name is terse.
+        """
+
+        # Get the size from the system
+        src_attributes = datasets.listing(self.src)[0]
+        # The size returned by listing is in bytes.
+        source_size = int(src_attributes.total_space)
+        if self.format == 'terse':
+            source_size = int(source_size * 1.5)
+        return source_size
+
 
     def _create_dest_data_set(
             self,
@@ -633,6 +666,8 @@ class MVSUnarchive(Unarchive):
             arguments.update(record_length=80)
         if type is None:
             arguments.update(type="SEQ")
+        if space_primary is None:
+            arguments.update(space_primary=self._compute_dest_data_set_size())
         arguments.pop("self")
         changed = data_set.DataSet.ensure_present(**arguments)
         return arguments["name"], changed
@@ -733,13 +768,17 @@ class MVSUnarchive(Unarchive):
             temp_ds, rc = self._create_dest_data_set(**self.dest_data_set)
             rc = self.unpack(self.src, temp_ds)
         else:
-            temp_ds, rc = self._create_dest_data_set(type="SEQ", record_format="U", record_length=0, tmp_hlq=self.tmphlq, replace=True)
+            temp_ds, rc = self._create_dest_data_set(type="SEQ",
+                                                        record_format="U",
+                                                        record_length=0,
+                                                        tmp_hlq=self.tmphlq,
+                                                        replace=True)
             self.unpack(self.src, temp_ds)
             rc = self._restore(temp_ds)
             datasets.delete(temp_ds)
         self.changed = not rc
 
-        if not self.module.params.get("remote_src"):
+        if not self.remote_src:
             datasets.delete(self.src)
         return
 
@@ -754,7 +793,7 @@ class MVSUnarchive(Unarchive):
         self.unpack(self.src, temp_ds)
         self._list_content(temp_ds)
         datasets.delete(temp_ds)
-        if not self.module.params.get("remote_src"):
+        if not self.remote_src:
             datasets.delete(self.src)
 
     def clean_environment(self, data_sets=None, uss_files=None, remove_targets=False):

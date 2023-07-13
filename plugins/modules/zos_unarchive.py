@@ -273,7 +273,8 @@ options:
     default: false
   remote_src:
     description:
-      - Set to true to indicate the archive file is already on the remote system and not local to the Ansible controller.
+      - If set to true, C(zos_unarchive) retrieves the archive from the remote system.
+      - If set to false, C(zos_unarchive) searches the local machine (Ansible controller) for the archive.
     type: bool
     required: false
     default: false
@@ -293,14 +294,14 @@ seealso:
 
 EXAMPLES = r'''
 # Simple extract
-- name: Send tar file and unpack in managed node
+- name: Copy local tar file and unpack it on the managed z/OS node.
   zos_unarchive:
     path: "./files/archive_folder_test.tar"
     format:
       name: tar
 
 # use include
-- name: List content from TRS
+- name: Unarchive a bzip file selecting only a file to unpack.
   zos_unarchive:
     path: "/tmp/test.bz2"
     format:
@@ -309,7 +310,7 @@ EXAMPLES = r'''
       - 'foo.txt'
 
 # Use exclude
-- name: Unarchive from terse data set excluding some from unpacking
+- name: Unarchive a terse data set and excluding data sets from unpacking.
   zos_unarchive:
     path: "USER.ARCHIVE.RESULT.TRS"
     format:

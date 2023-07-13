@@ -320,7 +320,6 @@ List of tests:
     "record_length", [80, 120]
 )
 @pytest.mark.parametrize(
-    # "record_format", ["FB", "VB", "FBA", "VBA", "U"],
     "record_format", ["FB", "VB",],
 )
 def test_mvs_unarchive_single_data_set(ansible_zos_module, format, data_set, record_length, record_format):
@@ -415,7 +414,6 @@ def test_mvs_unarchive_single_data_set(ansible_zos_module, format, data_set, rec
     "record_length", [80, 120, 1024]
 )
 @pytest.mark.parametrize(
-    # "record_format", ["FB", "VB", "FBA", "VBA", "U"],
     "record_format", ["FB", "VB",],
 )
 def test_mvs_unarchive_single_data_set_use_adrdssu(ansible_zos_module, format, data_set, record_length, record_format):
@@ -985,7 +983,7 @@ def test_mvs_unarchive_single_data_set_remote_src(ansible_zos_module, format, da
             for c_result in cmd_result.contacted.values():
                 assert data_set.get("name") in c_result.get("stdout")
     finally:
-        hosts.all.zos_data_set(name=data_set.get("name"), state="absent")
+        hosts.all.shell(cmd="drm {0}*".format(data_set.get("name")))
         hosts.all.zos_data_set(name=MVS_DEST_ARCHIVE, state="absent")
         tmp_folder.cleanup()
 

@@ -267,7 +267,7 @@ options:
     required: false
   force:
     description:
-      - Replace existing files or data sets if files or data sets to unarchive have conflicting paths.
+      - If set to true and the remote file or data set dest exists, the dest will be deleted.
     type: bool
     required: false
     default: false

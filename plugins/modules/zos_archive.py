@@ -231,6 +231,11 @@ EXAMPLES = r'''
 '''
 
 RETURN = r'''
+state:
+    description:
+        The state of the input C(path).
+    type: str
+    returned: always
 dest_state:
     description:
       - The state of the I(dest) file or data set.

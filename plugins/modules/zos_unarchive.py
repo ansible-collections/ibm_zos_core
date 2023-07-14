@@ -33,14 +33,16 @@ description:
 options:
   src:
     description:
-      - The remote absolute path or data set of the archive to be uncompressed on the remote.
-        src can be a USS file or MVS data set name.
+      - The remote absolute path or data set of the archive to be uncompressed
+        on the remote.
+      - Src can be a USS file or MVS data set.
       - USS file paths should be absolute paths.
     type: str
     required: true
   format:
     description:
-      - The compression type and corresponding options to use when archiving data.
+      - The compression type and corresponding options to use when archiving
+        data.
     type: dict
     required: true
     suboptions:
@@ -66,33 +68,42 @@ options:
             xmit_log_data_set:
               description:
                 - Provide a name of a data set to store xmit log output.
-                - If the data set provided does not exists, system will create it.
-                - If the data set provided exists, it needs to have The log data sets have
-                  the following DCB attributes: LRECL=255, BLKSIZE=3120, and RECFM=VB.
-                - When providing a xmit_log_data_set name make sure it has enough space.
+                - If the data set provided does not exists, system will create
+                  it.
+                - If the data set provided exists, it needs to have The log
+                  data sets have the following DCB attributes: LRECL=255,
+                  BLKSIZE=3120, and RECFM=VB.
+                - When providing a xmit_log_data_set name make sure it has
+                  enough space.
               type: str
             use_adrdssu:
               description:
-                - If set to true, the C(zos_archive) module will use Data Facility Storage Management Subsystem
-                  data set services (DFSMSdss) program ADRDSSU to uncompress data sets from a portable format after
-                  using C(xmit) or C(terse).
+                - If set to true, the C(zos_archive) module will use Data
+                  Facility Storage Management Subsystem data set services
+                  (DFSMSdss) program ADRDSSU to uncompress data sets from
+                  a portable format after using C(xmit) or C(terse).
               type: bool
               default: False
             dest_volumes:
-              description: When using ADRDSSU select on which volume the datasets will be placed first.
+              description:
+                - When using ADRDSSU select on which volume the datasets
+                  will be placed first.
               type: list
               elements: str
   dest:
     description:
-    - The remote absolute path or data set where the content should be unarchived to.
+    - The remote absolute path or data set where the content should be
+      unarchived to.
     - dest can be a USS file, directory or MVS data set name.
     - If dest has missing parent directories, they will not be created.
     type: str
     required: false
   group:
     description:
-      - Name of the group that should own the filesystem object, as would be passed to the chown command.
-      - When left unspecified, it uses the current group of the current user unless you are root,
+      - Name of the group that should own the filesystem object, as would
+        be passed to the chown command.
+      - When left unspecified, it uses the current group of the current user
+        unless you are root,
         in which case it can preserve the previous ownership.
     type: str
     required: false
@@ -103,34 +114,40 @@ options:
       - It should be noted that modes are octal numbers.
         The user must either add a leading zero so that Ansible's YAML parser
         knows it is an octal number (like C(0644) or C(01777))or quote it
-        (like C('644') or C('1777')) so Ansible receives a string and can do its
-        own conversion from string into number. Giving Ansible a number without
-        following one of these rules will end up with a decimal number which
-        will have unexpected results.
+        (like C('644') or C('1777')) so Ansible receives a string and can do
+        its own conversion from string into number. Giving Ansible a number
+        without following one of these rules will end up with a decimal number
+        which will have unexpected results.
       - The mode may also be specified as a symbolic mode
         (for example, ``u+rwx`` or ``u=rw,g=r,o=r``) or a special
         string `preserve`.
-      - I(mode=preserve) means that the file will be given the same permissions as
+      - I(mode=preserve) means that the file will be given the same permissions
+        as
         the source file.
     type: str
     required: false
   owner:
     description:
-      - Name of the user that should own the filesystem object, as would be passed to the chown command.
-      - When left unspecified, it uses the current user unless you are root, in which case it can preserve the previous ownership.
+      - Name of the user that should own the filesystem object, as would be
+        passed to the chown command.
+      - When left unspecified, it uses the current user unless you are root,
+        in which case it can preserve the previous ownership.
     type: str
     required: false
   include:
     description:
-      - A list of directories, files or data set names to extract from the archive.
-      - When C(include) is set, only those files will we be extracted leaving the remaining files in the archive.
+      - A list of directories, files or data set names to extract from the
+        archive.
+      - When C(include) is set, only those files will we be extracted leaving
+        the remaining files in the archive.
       - Mutually exclusive with exclude.
     type: list
     elements: str
     required: false
   exclude:
     description:
-      - List the directory and file or data set names that you would like to exclude from the unarchive action.
+      - List the directory and file or data set names that you would like to
+        exclude from the unarchive action.
       - Mutually exclusive with include.
     type: list
     elements: str
@@ -191,7 +208,8 @@ options:
         required: false
       record_format:
         description:
-          - If the destination data set does not exist, this sets the format of the
+          - If the destination data set does not exist, this sets the format of
+            the
             data set. (e.g C(FB))
           - Choices are case-insensitive.
         required: false
@@ -205,8 +223,10 @@ options:
       record_length:
         description:
           - The length of each record in the data set, in bytes.
-          - For variable data sets, the length must include the 4-byte prefix area.
-          - "Defaults vary depending on format: If FB/FBA 80, if VB/VBA 137, if U 0."
+          - For variable data sets, the length must include the 4-byte prefix
+            area.
+          - "Defaults vary depending on format: If FB/FBA 80, if VB/VBA 137,
+            if U 0."
         type: int
         required: false
       block_size:
@@ -259,7 +279,8 @@ options:
         required: false
   tmp_hlq:
     description:
-      - Override the default high level qualifier (HLQ) for temporary data sets.
+      - Override the default high level qualifier (HLQ) for temporary data
+        sets.
       - The default HLQ is the Ansible user used to execute the module and if
         that is not available, then the environment variable value C(TMPHLQ) is
         used.
@@ -267,20 +288,24 @@ options:
     required: false
   force:
     description:
-      - If set to true and the remote file or data set dest exists, the dest will be deleted.
+      - If set to true and the remote file or data set dest exists, the dest
+        will be deleted.
     type: bool
     required: false
     default: false
   remote_src:
     description:
-      - If set to true, C(zos_unarchive) retrieves the archive from the remote system.
-      - If set to false, C(zos_unarchive) searches the local machine (Ansible controller) for the archive.
+      - If set to true, C(zos_unarchive) retrieves the archive from the remote
+        system.
+      - If set to false, C(zos_unarchive) searches the local machine (Ansible
+        controller) for the archive.
     type: bool
     required: false
     default: false
   is_binary:
     description:
-      - Set to true if archive file is to be treated as binary when sending to remote.
+      - Set to true if archive file is to be treated as binary when sending to
+        remote.
     type: bool
     required: false
     default: false

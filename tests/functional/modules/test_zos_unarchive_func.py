@@ -900,10 +900,7 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu_force(ansible_zos_module, f
 @pytest.mark.parametrize(
     "record_format", ["FB", "VB",],
 )
-@pytest.mark.parametrize(
-    "is_binary", [True, False],
-)
-def test_mvs_unarchive_single_data_set_remote_src(ansible_zos_module, format, data_set, record_length, record_format, is_binary):
+def test_mvs_unarchive_single_data_set_remote_src(ansible_zos_module, format, data_set, record_length, record_format):
     try:
         hosts = ansible_zos_module
         tmp_folder = tempfile.TemporaryDirectory(prefix="tmpfetch")

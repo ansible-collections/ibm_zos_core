@@ -723,11 +723,11 @@ class MVSUnarchive(Unarchive):
 
         if rc != 0:
             # AdrddssuRestoreError
-            unrestore_data_sets = self._get_unrestored_datasets(out)
-            unrestore_data_sets = ", ".join(unrestore_data_sets)
+            unrestored_data_sets = self._get_unrestored_datasets(out)
+            unrestored_data_sets = ", ".join(unrestored_data_sets)
             self.clean_environment(data_sets=[source], uss_files=[], remove_targets=True)
             self.module.fail_json(
-                msg="Failed executing ADRDSSU to archive {0}. List of data sets not restored : {1}".format(source, unrestore_data_sets),
+                msg="Failed executing ADRDSSU to unarchive {0}. List of data sets not restored : {1}".format(source, unrestored_data_sets),
                 stdout=out,
                 stderr=err,
                 stdout_lines=restore_cmd,

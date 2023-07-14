@@ -16,10 +16,12 @@ from shellescape import quote
 import time
 import re
 import pytest
+import inspect
 
 __metaclass__ = type
 
 DEFAULT_DATA_SET_NAME = "USER.PRIVATE.TESTDS"
+TEST_FOLDER_BLOCKINFILE = "/tmp/ansible-core-tests/zos_blockinfile/"
 
 c_pgm="""#include <stdio.h>
 #include <stdlib.h>
@@ -105,6 +107,326 @@ sleep 30;
 /*
 //"""
 
+EXPECTED_INSERTAFTER_REGEX = """if [ -z STEPLIB ] && tty -s;
+then
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+TZ=PST8PDT
+export TZ
+export MAIL
+umask 022
+ZOAU_ROOT=/usr/lpp/zoautil/v100
+# BEGIN ANSIBLE MANAGED BLOCK
+ZOAU_ROOT=/mvsutil-develop_dsed
+ZOAU_HOME=$ZOAU_ROOT
+ZOAU_DIR=$ZOAU_ROOT
+# END ANSIBLE MANAGED BLOCK
+PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
+PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
+export ZOAU_ROOT"""
+
+EXPECTED_INSERTBEFORE_REGEX = """if [ -z STEPLIB ] && tty -s;
+then
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+TZ=PST8PDT
+export TZ
+export MAIL
+umask 022
+# BEGIN ANSIBLE MANAGED BLOCK
+unset ZOAU_ROOT
+unset ZOAU_HOME
+unset ZOAU_DIR
+# END ANSIBLE MANAGED BLOCK
+ZOAU_ROOT=/usr/lpp/zoautil/v100
+PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
+PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
+export ZOAU_ROOT"""
+
+EXPECTED_INSERTAFTER_EOF = """if [ -z STEPLIB ] && tty -s;
+then
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+TZ=PST8PDT
+export TZ
+export MAIL
+umask 022
+ZOAU_ROOT=/usr/lpp/zoautil/v100
+PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
+PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
+export ZOAU_ROOT
+# BEGIN ANSIBLE MANAGED BLOCK
+export ZOAU_ROOT
+export ZOAU_HOME
+export ZOAU_DIR
+# END ANSIBLE MANAGED BLOCK"""
+
+EXPECTED_INSERTBEFORE_BOF = """# BEGIN ANSIBLE MANAGED BLOCK
+# this is file is for setting env vars
+# END ANSIBLE MANAGED BLOCK
+if [ -z STEPLIB ] && tty -s;
+then
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+TZ=PST8PDT
+export TZ
+export MAIL
+umask 022
+ZOAU_ROOT=/usr/lpp/zoautil/v100
+PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
+PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
+export ZOAU_ROOT"""
+
+EXPECTED_INSERTAFTER_REGEX_CUSTOM = """if [ -z STEPLIB ] && tty -s;
+then
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+TZ=PST8PDT
+export TZ
+export MAIL
+umask 022
+ZOAU_ROOT=/usr/lpp/zoautil/v100
+# OPEN IBM MANAGED BLOCK
+ZOAU_ROOT=/mvsutil-develop_dsed
+ZOAU_HOME=$ZOAU_ROOT
+ZOAU_DIR=$ZOAU_ROOT
+# CLOSE IBM MANAGED BLOCK
+PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
+PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
+export ZOAU_ROOT"""
+
+EXPECTED_INSERTBEFORE_REGEX_CUSTOM = """if [ -z STEPLIB ] && tty -s;
+then
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+TZ=PST8PDT
+export TZ
+export MAIL
+umask 022
+# OPEN IBM MANAGED BLOCK
+unset ZOAU_ROOT
+unset ZOAU_HOME
+unset ZOAU_DIR
+# CLOSE IBM MANAGED BLOCK
+ZOAU_ROOT=/usr/lpp/zoautil/v100
+PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
+PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
+export ZOAU_ROOT"""
+
+EXPECTED_INSERTAFTER_EOF_CUSTOM = """if [ -z STEPLIB ] && tty -s;
+then
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+TZ=PST8PDT
+export TZ
+export MAIL
+umask 022
+ZOAU_ROOT=/usr/lpp/zoautil/v100
+PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
+PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
+export ZOAU_ROOT
+# OPEN IBM MANAGED BLOCK
+export ZOAU_ROOT
+export ZOAU_HOME
+export ZOAU_DIR
+# CLOSE IBM MANAGED BLOCK"""
+
+EXPECTED_INSERTBEFORE_BOF_CUSTOM = """# OPEN IBM MANAGED BLOCK
+# this is file is for setting env vars
+# CLOSE IBM MANAGED BLOCK
+if [ -z STEPLIB ] && tty -s;
+then
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+TZ=PST8PDT
+export TZ
+export MAIL
+umask 022
+ZOAU_ROOT=/usr/lpp/zoautil/v100
+PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
+PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
+export ZOAU_ROOT"""
+
+EXPECTED_ABSENT = """if [ -z STEPLIB ] && tty -s;
+then
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+TZ=PST8PDT
+export TZ
+export MAIL
+umask 022
+ZOAU_ROOT=/usr/lpp/zoautil/v100
+PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
+PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
+export ZOAU_ROOT"""
+
+EXPECTED_INSERT_WITH_INDENTATION = """if [ -z STEPLIB ] && tty -s;
+then
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+TZ=PST8PDT
+export TZ
+export MAIL
+umask 022
+ZOAU_ROOT=/usr/lpp/zoautil/v100
+PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
+PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
+export ZOAU_ROOT
+# BEGIN ANSIBLE MANAGED BLOCK
+                export ZOAU_ROOT
+                export ZOAU_HOME
+                export ZOAU_DIR
+# END ANSIBLE MANAGED BLOCK"""
+
+EXPECTED_REPLACE_INSERTAFTER = """if [ -z STEPLIB ] && tty -s;
+then
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+TZ=PST8PDT
+export TZ
+export MAIL
+umask 022
+ZOAU_ROOT=/usr/lpp/zoautil/v100
+PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
+PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
+# BEGIN ANSIBLE MANAGED BLOCK
+ZOAU_ROOT=/mvsutil-develop_dsed
+ZOAU_HOME=$ZOAU_ROOT
+ZOAU_DIR=$ZOAU_ROOT
+# END ANSIBLE MANAGED BLOCK
+export ZOAU_ROOT"""
+
+EXPECTED_REPLACE_INSERTBEFORE = """if [ -z STEPLIB ] && tty -s;
+then
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+TZ=PST8PDT
+export TZ
+export MAIL
+umask 022
+ZOAU_ROOT=/usr/lpp/zoautil/v100
+PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
+# BEGIN ANSIBLE MANAGED BLOCK
+unset ZOAU_ROOT
+unset ZOAU_HOME
+unset ZOAU_DIR
+# END ANSIBLE MANAGED BLOCK
+PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
+export ZOAU_ROOT"""
+
+EXPECTED_REPLACE_EOF_CUSTOM = """if [ -z STEPLIB ] && tty -s;
+then
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+TZ=PST8PDT
+export TZ
+export MAIL
+umask 022
+ZOAU_ROOT=/usr/lpp/zoautil/v100
+PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
+PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
+export ZOAU_ROOT
+# BEGIN ANSIBLE MANAGED BLOCK
+export ZOAU_ROOT
+export ZOAU_HOME
+export ZOAU_DIR
+# END ANSIBLE MANAGED BLOCK"""
+
+EXPECTED_REPLACE_BOF_CUSTOM = """# BEGIN ANSIBLE MANAGED BLOCK
+# this is file is for setting env vars
+# END ANSIBLE MANAGED BLOCK
+if [ -z STEPLIB ] && tty -s;
+then
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+TZ=PST8PDT
+export TZ
+export MAIL
+umask 022
+ZOAU_ROOT=/usr/lpp/zoautil/v100
+PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
+PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
+export ZOAU_ROOT"""
+
+EXPECTED_REPLACE_EOF_REGEX_CUSTOM = """if [ -z STEPLIB ] && tty -s;
+then
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+TZ=PST8PDT
+export TZ
+export MAIL
+umask 022
+ZOAU_ROOT=/usr/lpp/zoautil/v100
+PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
+PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
+# OPEN IBM MANAGED BLOCK
+ZOAU_ROOT=/mvsutil-develop_dsed
+ZOAU_HOME=$ZOAU_ROOT
+ZOAU_DIR=$ZOAU_ROOT
+# CLOSE IBM MANAGED BLOCK
+export ZOAU_ROOT"""
+
+EXPECTED_REPLACE_BOF_REGEX_CUSTOM = """if [ -z STEPLIB ] && tty -s;
+then
+    export STEPLIB=none
+    exec -a 0 SHELL
+fi
+TZ=PST8PDT
+export TZ
+export MAIL
+umask 022
+ZOAU_ROOT=/usr/lpp/zoautil/v100
+PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
+# OPEN IBM MANAGED BLOCK
+unset ZOAU_ROOT
+unset ZOAU_HOME
+unset ZOAU_DIR
+# CLOSE IBM MANAGED BLOCK
+PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
+export ZOAU_ROOT"""
+
+EXPECTED_DOUBLE_QUOTES = """//BPXSLEEP JOB MSGCLASS=A,MSGLEVEL=(1,1),NOTIFY=&SYSUID,REGION=0M
+//USSCMD EXEC PGM=BPXBATCH
+//STDERR  DD SYSOUT=*
+//STDOUT  DD SYSOUT=*
+//STDPARM DD *
+SH ls -la /;
+sleep 30;
+// BEGIN ANSIBLE MANAGED BLOCK
+cat "//OMVSADMI.CAT"
+cat "//OMVSADM.COPYMEM.TESTS" > test.txt
+// END ANSIBLE MANAGED BLOCK
+/*
+//"""
+
+EXPECTED_ENCODING = """SIMPLE LINE TO VERIFY
+# BEGIN ANSIBLE MANAGED BLOCK
+0000000000      5468    6973    2069    7320    6669    6C65    206F    6E65
+0000000020      2E0A 0000000022
+# END ANSIBLE MANAGED BLOCK"""
+
+"""
+Note: zos_encode module uses USS cp command for copying from USS file to MVS data set which only supports IBM-1047 charset.
+I had to develop and use a new tool for converting and copying to data set in order to set up environment for tests to publish results on Jira.
+Until the issue be addressed I disable related tests.
+"""
+ENCODING = ['IBM-1047', 'ISO8859-1', 'UTF-8']
+
 # supported data set types
 DS_TYPE = ['SEQ', 'PDS', 'PDSE']
 
@@ -114,16 +436,15 @@ NS_DS_TYPE = ['ESDS', 'RRDS', 'LDS']
 USS_BACKUP_FILE = "/tmp/backup.tmp"
 BACKUP_OPTIONS = [None, "BLOCKIF.TEST.BACKUP", "BLOCKIF.TEST.BACKUP(BACKUP)"]
 
-def set_uss_environment(ansible_zos_module, CONTENT, TEST_FILE, FILE):
+def set_uss_environment(ansible_zos_module, CONTENT, FILE):
     hosts = ansible_zos_module
-    FULL_PATH=TEST_FILE+"/"+FILE
-    hosts.all.shell(cmd="mkdir -p {0}".format(TEST_FILE))
-    hosts.all.file(path=FULL_PATH, state="touch")
-    hosts.all.shell(cmd="echo \"{0}\" > {1}".format(CONTENT, FULL_PATH))
+    hosts.all.shell(cmd="mkdir -p {0}".format(TEST_FOLDER_BLOCKINFILE))
+    hosts.all.file(path=FILE, state="touch")
+    hosts.all.shell(cmd="echo \"{0}\" > {1}".format(CONTENT, FILE))
 
-def remove_uss_environment(ansible_zos_module, TEST_FILE):
+def remove_uss_environment(ansible_zos_module):
     hosts = ansible_zos_module
-    hosts.all.shell(cmd="rm -rf " + TEST_FILE)
+    hosts.all.shell(cmd="rm -rf" + TEST_FOLDER_BLOCKINFILE)
 
 def set_ds_environment(ansible_zos_module, TEMP_FILE, DS_NAME, DS_TYPE, CONTENT):
     hosts = ansible_zos_module
@@ -153,150 +474,76 @@ def remove_ds_environment(ansible_zos_module, DS_NAME):
 def test_uss_block_insertafter_regex_defaultmarker(ansible_zos_module):
     hosts = ansible_zos_module
     params = dict(insertafter="ZOAU_ROOT=", block="ZOAU_ROOT=/mvsutil-develop_dsed\nZOAU_HOME=\\$ZOAU_ROOT\nZOAU_DIR=\\$ZOAU_ROOT", state="present")
-    test_name = "test_uss_block_insertafter_regex_defaultmarker"
-    test_folder = "/tmp/zos_blockinfile"
-    full_path= test_folder + "/" + test_name
+    full_path = TEST_FOLDER_BLOCKINFILE + inspect.stack()[0][3]
     content = TEST_CONTENT
     try:
-        set_uss_environment(ansible_zos_module, content, test_folder, test_name)
+        set_uss_environment(ansible_zos_module, content, full_path)
         params["path"] = full_path
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
         results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
-            assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
-then
-    export STEPLIB=none
-    exec -a 0 SHELL
-fi
-TZ=PST8PDT
-export TZ
-export MAIL
-umask 022
-ZOAU_ROOT=/usr/lpp/zoautil/v100
-# BEGIN ANSIBLE MANAGED BLOCK
-ZOAU_ROOT=/mvsutil-develop_dsed
-ZOAU_HOME=$ZOAU_ROOT
-ZOAU_DIR=$ZOAU_ROOT
-# END ANSIBLE MANAGED BLOCK
-PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
-PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
-export ZOAU_ROOT"""
+            assert result.get("stdout") == EXPECTED_INSERTAFTER_REGEX
     finally:
-        remove_uss_environment(ansible_zos_module, test_folder)
+        remove_uss_environment(ansible_zos_module)
 
 
 @pytest.mark.uss
 def test_uss_block_insertbefore_regex_defaultmarker(ansible_zos_module):
     hosts = ansible_zos_module
     params = dict(insertbefore="ZOAU_ROOT=", block="unset ZOAU_ROOT\nunset ZOAU_HOME\nunset ZOAU_DIR", state="present")
-    test_name = "test_uss_block_insertbefore_regex_defaultmarker"
-    test_folder = "/tmp/zos_blockinfile"
-    full_path= test_folder + "/" + test_name
+    full_path = TEST_FOLDER_BLOCKINFILE + inspect.stack()[0][3]
     content = TEST_CONTENT
     try:
-        set_uss_environment(ansible_zos_module, content, test_folder, test_name)
+        set_uss_environment(ansible_zos_module, content, full_path)
         params["path"] = full_path
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
         results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
-            assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
-then
-    export STEPLIB=none
-    exec -a 0 SHELL
-fi
-TZ=PST8PDT
-export TZ
-export MAIL
-umask 022
-# BEGIN ANSIBLE MANAGED BLOCK
-unset ZOAU_ROOT
-unset ZOAU_HOME
-unset ZOAU_DIR
-# END ANSIBLE MANAGED BLOCK
-ZOAU_ROOT=/usr/lpp/zoautil/v100
-PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
-PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
-export ZOAU_ROOT"""
+            assert result.get("stdout") == EXPECTED_INSERTBEFORE_REGEX
     finally:
-        remove_uss_environment(ansible_zos_module, test_folder)
+        remove_uss_environment(ansible_zos_module)
 
 
 @pytest.mark.uss
 def test_uss_block_insertafter_eof_defaultmarker(ansible_zos_module):
     hosts = ansible_zos_module
     params = dict(insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present")
-    test_name = "test_uss_block_insertafter_eof_defaultmarker"
-    test_folder = "/tmp/zos_blockinfile"
-    full_path= test_folder + "/" + test_name
+    full_path = TEST_FOLDER_BLOCKINFILE + inspect.stack()[0][3]
     content = TEST_CONTENT
     try:
-        set_uss_environment(ansible_zos_module, content, test_folder, test_name)
+        set_uss_environment(ansible_zos_module, content, full_path)
         params["path"] = full_path
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
         results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
-            assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
-then
-    export STEPLIB=none
-    exec -a 0 SHELL
-fi
-TZ=PST8PDT
-export TZ
-export MAIL
-umask 022
-ZOAU_ROOT=/usr/lpp/zoautil/v100
-PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
-PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
-export ZOAU_ROOT
-# BEGIN ANSIBLE MANAGED BLOCK
-export ZOAU_ROOT
-export ZOAU_HOME
-export ZOAU_DIR
-# END ANSIBLE MANAGED BLOCK"""
+            assert result.get("stdout") == EXPECTED_INSERTAFTER_EOF
     finally:
-        remove_uss_environment(ansible_zos_module, test_folder)
+        remove_uss_environment(ansible_zos_module)
 
 
 @pytest.mark.uss
 def test_uss_block_insertbefore_bof_defaultmarker(ansible_zos_module):
     hosts = ansible_zos_module
     params = dict(insertbefore="BOF", block="# this is file is for setting env vars", state="present")
-    test_name = "test_uss_block_insertbefore_bof_defaultmarker"
-    test_folder = "/tmp/zos_blockinfile"
-    full_path= test_folder + "/" + test_name
+    full_path = TEST_FOLDER_BLOCKINFILE + inspect.stack()[0][3]
     content = TEST_CONTENT
     try:
-        set_uss_environment(ansible_zos_module, content, test_folder, test_name)
+        set_uss_environment(ansible_zos_module, content, full_path)
         params["path"] = full_path
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
         results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
-            assert result.get("stdout") == """# BEGIN ANSIBLE MANAGED BLOCK
-# this is file is for setting env vars
-# END ANSIBLE MANAGED BLOCK
-if [ -z STEPLIB ] && tty -s;
-then
-    export STEPLIB=none
-    exec -a 0 SHELL
-fi
-TZ=PST8PDT
-export TZ
-export MAIL
-umask 022
-ZOAU_ROOT=/usr/lpp/zoautil/v100
-PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
-PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
-export ZOAU_ROOT"""
+            assert result.get("stdout") == EXPECTED_INSERTBEFORE_BOF
     finally:
-        remove_uss_environment(ansible_zos_module, test_folder)
+        remove_uss_environment(ansible_zos_module)
 
 
 @pytest.mark.uss
@@ -307,38 +554,19 @@ def test_uss_block_insertafter_regex_custommarker(ansible_zos_module):
     params["marker"] = '# {mark} IBM MANAGED BLOCK'
     params["marker_begin"] = 'OPEN'
     params["marker_end"] = 'CLOSE'
-    test_name = "test_uss_block_insertafter_regex_custommarker"
-    test_folder = "/tmp/zos_blockinfile"
-    full_path= test_folder + "/" + test_name
+    full_path = TEST_FOLDER_BLOCKINFILE + inspect.stack()[0][3]
     content = TEST_CONTENT
     try:
-        set_uss_environment(ansible_zos_module, content, test_folder, test_name)
+        set_uss_environment(ansible_zos_module, content, full_path)
         params["path"] = full_path
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
         results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
-            assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
-then
-    export STEPLIB=none
-    exec -a 0 SHELL
-fi
-TZ=PST8PDT
-export TZ
-export MAIL
-umask 022
-ZOAU_ROOT=/usr/lpp/zoautil/v100
-# OPEN IBM MANAGED BLOCK
-ZOAU_ROOT=/mvsutil-develop_dsed
-ZOAU_HOME=$ZOAU_ROOT
-ZOAU_DIR=$ZOAU_ROOT
-# CLOSE IBM MANAGED BLOCK
-PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
-PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
-export ZOAU_ROOT"""
+            assert result.get("stdout") == EXPECTED_INSERTAFTER_REGEX_CUSTOM
     finally:
-        remove_uss_environment(ansible_zos_module, test_folder)
+        remove_uss_environment(ansible_zos_module)
 
 
 
@@ -350,38 +578,19 @@ def test_uss_block_insertbefore_regex_custommarker(ansible_zos_module):
     params["marker"] = '# {mark} IBM MANAGED BLOCK'
     params["marker_begin"] = 'OPEN'
     params["marker_end"] = 'CLOSE'
-    test_name = "test_uss_block_insertbefore_regex_custommarker"
-    test_folder = "/tmp/zos_blockinfile"
-    full_path= test_folder + "/" + test_name
+    full_path = TEST_FOLDER_BLOCKINFILE + inspect.stack()[0][3]
     content = TEST_CONTENT
     try:
-        set_uss_environment(ansible_zos_module, content, test_folder, test_name)
+        set_uss_environment(ansible_zos_module, content, full_path)
         params["path"] = full_path
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
         results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
-            assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
-then
-    export STEPLIB=none
-    exec -a 0 SHELL
-fi
-TZ=PST8PDT
-export TZ
-export MAIL
-umask 022
-# OPEN IBM MANAGED BLOCK
-unset ZOAU_ROOT
-unset ZOAU_HOME
-unset ZOAU_DIR
-# CLOSE IBM MANAGED BLOCK
-ZOAU_ROOT=/usr/lpp/zoautil/v100
-PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
-PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
-export ZOAU_ROOT"""
+            assert result.get("stdout") == EXPECTED_INSERTBEFORE_REGEX_CUSTOM
     finally:
-        remove_uss_environment(ansible_zos_module, test_folder)
+        remove_uss_environment(ansible_zos_module)
 
 
 @pytest.mark.uss
@@ -392,38 +601,19 @@ def test_uss_block_insertafter_eof_custommarker(ansible_zos_module):
     params["marker"] = '# {mark} IBM MANAGED BLOCK'
     params["marker_begin"] = 'OPEN'
     params["marker_end"] = 'CLOSE'
-    test_name = "test_uss_block_insertafter_eof_custommarker"
-    test_folder = "/tmp/zos_blockinfile"
-    full_path= test_folder + "/" + test_name
+    full_path = TEST_FOLDER_BLOCKINFILE + inspect.stack()[0][3]
     content = TEST_CONTENT
     try:
-        set_uss_environment(ansible_zos_module, content, test_folder, test_name)
+        set_uss_environment(ansible_zos_module, content, full_path)
         params["path"] = full_path
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
         results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
-            assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
-then
-    export STEPLIB=none
-    exec -a 0 SHELL
-fi
-TZ=PST8PDT
-export TZ
-export MAIL
-umask 022
-ZOAU_ROOT=/usr/lpp/zoautil/v100
-PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
-PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
-export ZOAU_ROOT
-# OPEN IBM MANAGED BLOCK
-export ZOAU_ROOT
-export ZOAU_HOME
-export ZOAU_DIR
-# CLOSE IBM MANAGED BLOCK"""
+            assert result.get("stdout") == EXPECTED_INSERTAFTER_EOF_CUSTOM
     finally:
-        remove_uss_environment(ansible_zos_module, test_folder)
+        remove_uss_environment(ansible_zos_module)
 
 
 @pytest.mark.uss
@@ -434,69 +624,38 @@ def test_uss_block_insertbefore_bof_custommarker(ansible_zos_module):
     params["marker"] = '# {mark} IBM MANAGED BLOCK'
     params["marker_begin"] = 'OPEN'
     params["marker_end"] = 'CLOSE'
-    test_name = "test_uss_block_insertbefore_bof_custommarker"
-    test_folder = "/tmp/zos_blockinfile"
-    full_path= test_folder + "/" + test_name
+    full_path = TEST_FOLDER_BLOCKINFILE + inspect.stack()[0][3]
     content = TEST_CONTENT
     try:
-        set_uss_environment(ansible_zos_module, content, test_folder, test_name)
+        set_uss_environment(ansible_zos_module, content, full_path)
         params["path"] = full_path
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
         results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
-            assert result.get("stdout") == """# OPEN IBM MANAGED BLOCK
-# this is file is for setting env vars
-# CLOSE IBM MANAGED BLOCK
-if [ -z STEPLIB ] && tty -s;
-then
-    export STEPLIB=none
-    exec -a 0 SHELL
-fi
-TZ=PST8PDT
-export TZ
-export MAIL
-umask 022
-ZOAU_ROOT=/usr/lpp/zoautil/v100
-PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
-PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
-export ZOAU_ROOT"""
+            assert result.get("stdout") == EXPECTED_INSERTBEFORE_BOF_CUSTOM
     finally:
-        remove_uss_environment(ansible_zos_module, test_folder)
+        remove_uss_environment(ansible_zos_module)
 
 
 @pytest.mark.uss
 def test_uss_block_absent_defaultmarker(ansible_zos_module):
     hosts = ansible_zos_module
     params = dict(block="", state="absent")
-    test_name = "test_uss_block_absent_defaultmarker"
-    test_folder = "/tmp/zos_blockinfile"
-    full_path= test_folder + "/" + test_name
+    full_path = TEST_FOLDER_BLOCKINFILE + inspect.stack()[0][3]
     content = TEST_CONTENT_DEFAULTMARKER
     try:
-        set_uss_environment(ansible_zos_module, content, test_folder, test_name)
+        set_uss_environment(ansible_zos_module, content, full_path)
         params["path"] = full_path
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
         results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
-            assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
-then
-    export STEPLIB=none
-    exec -a 0 SHELL
-fi
-TZ=PST8PDT
-export TZ
-export MAIL
-umask 022
-ZOAU_ROOT=/usr/lpp/zoautil/v100
-PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
-PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
-export ZOAU_ROOT"""
+            assert result.get("stdout") == EXPECTED_ABSENT
     finally:
-        remove_uss_environment(ansible_zos_module, test_folder)
+        remove_uss_environment(ansible_zos_module)
 
 
 @pytest.mark.uss
@@ -506,183 +665,95 @@ def test_uss_block_absent_custommarker(ansible_zos_module):
     params["marker"] = '# {mark} IBM MANAGED BLOCK'
     params["marker_begin"] = 'OPEN'
     params["marker_end"] = 'CLOSE'
-    test_name = "test_uss_block_absent_custommarker"
-    test_folder = "/tmp/zos_blockinfile"
-    full_path= test_folder + "/" + test_name
+    full_path = TEST_FOLDER_BLOCKINFILE + inspect.stack()[0][3]
     content = TEST_CONTENT_CUSTOMMARKER
     try:
-        set_uss_environment(ansible_zos_module, content, test_folder, test_name)
+        set_uss_environment(ansible_zos_module, content, full_path)
         params["path"] = full_path
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
         results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
-            assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
-then
-    export STEPLIB=none
-    exec -a 0 SHELL
-fi
-TZ=PST8PDT
-export TZ
-export MAIL
-umask 022
-ZOAU_ROOT=/usr/lpp/zoautil/v100
-PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
-PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
-export ZOAU_ROOT"""
+            assert result.get("stdout") == EXPECTED_ABSENT
     finally:
-        remove_uss_environment(ansible_zos_module, test_folder)
+        remove_uss_environment(ansible_zos_module)
 
 
 @pytest.mark.uss
 def test_uss_block_replace_insertafter_regex_defaultmarker(ansible_zos_module):
     hosts = ansible_zos_module
     params = dict(insertafter="PYTHON_HOME=", block="ZOAU_ROOT=/mvsutil-develop_dsed\nZOAU_HOME=\\$ZOAU_ROOT\nZOAU_DIR=\\$ZOAU_ROOT", state="present")
-    test_name = "test_uss_block_replace_insertafter_regex_defaultmarker"
-    test_folder = "/tmp/zos_blockinfile"
-    full_path= test_folder + "/" + test_name
+    full_path = TEST_FOLDER_BLOCKINFILE + inspect.stack()[0][3]
     content = TEST_CONTENT_DEFAULTMARKER
     try:
-        set_uss_environment(ansible_zos_module, content, test_folder, test_name)
+        set_uss_environment(ansible_zos_module, content, full_path)
         params["path"] = full_path
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
         results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
-            assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
-then
-    export STEPLIB=none
-    exec -a 0 SHELL
-fi
-TZ=PST8PDT
-export TZ
-export MAIL
-umask 022
-ZOAU_ROOT=/usr/lpp/zoautil/v100
-PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
-PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
-# BEGIN ANSIBLE MANAGED BLOCK
-ZOAU_ROOT=/mvsutil-develop_dsed
-ZOAU_HOME=$ZOAU_ROOT
-ZOAU_DIR=$ZOAU_ROOT
-# END ANSIBLE MANAGED BLOCK
-export ZOAU_ROOT"""
+            assert result.get("stdout") == EXPECTED_REPLACE_INSERTAFTER
     finally:
-        remove_uss_environment(ansible_zos_module, test_folder)
+        remove_uss_environment(ansible_zos_module)
 
 
 @pytest.mark.uss
 def test_uss_block_replace_insertbefore_regex_defaultmarker(ansible_zos_module):
     hosts = ansible_zos_module
     params = dict(insertbefore="PYTHON_HOME=", block="unset ZOAU_ROOT\nunset ZOAU_HOME\nunset ZOAU_DIR", state="present")
-    test_name = "test_uss_block_replace_insertbefore_regex_defaultmarker"
-    test_folder = "/tmp/zos_blockinfile"
-    full_path= test_folder + "/" + test_name
+    full_path = TEST_FOLDER_BLOCKINFILE + inspect.stack()[0][3]
     content = TEST_CONTENT_DEFAULTMARKER
     try:
-        set_uss_environment(ansible_zos_module, content, test_folder, test_name)
+        set_uss_environment(ansible_zos_module, content, full_path)
         params["path"] = full_path
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
         results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
-            assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
-then
-    export STEPLIB=none
-    exec -a 0 SHELL
-fi
-TZ=PST8PDT
-export TZ
-export MAIL
-umask 022
-ZOAU_ROOT=/usr/lpp/zoautil/v100
-PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
-# BEGIN ANSIBLE MANAGED BLOCK
-unset ZOAU_ROOT
-unset ZOAU_HOME
-unset ZOAU_DIR
-# END ANSIBLE MANAGED BLOCK
-PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
-export ZOAU_ROOT"""
+            assert result.get("stdout") == EXPECTED_REPLACE_INSERTBEFORE
     finally:
-        remove_uss_environment(ansible_zos_module, test_folder)
+        remove_uss_environment(ansible_zos_module)
 
 
 @pytest.mark.uss
 def test_uss_block_replace_insertafter_eof_defaultmarker(ansible_zos_module):
     hosts = ansible_zos_module
     params = dict(insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present")
-    test_name = "test_uss_block_replace_insertafter_eof_defaultmarker"
-    test_folder = "/tmp/zos_blockinfile"
-    full_path= test_folder + "/" + test_name
+    full_path = TEST_FOLDER_BLOCKINFILE + inspect.stack()[0][3]
     content = TEST_CONTENT_DEFAULTMARKER
     try:
-        set_uss_environment(ansible_zos_module, content, test_folder, test_name)
+        set_uss_environment(ansible_zos_module, content, full_path)
         params["path"] = full_path
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
         results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
-            assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
-then
-    export STEPLIB=none
-    exec -a 0 SHELL
-fi
-TZ=PST8PDT
-export TZ
-export MAIL
-umask 022
-ZOAU_ROOT=/usr/lpp/zoautil/v100
-PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
-PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
-export ZOAU_ROOT
-# BEGIN ANSIBLE MANAGED BLOCK
-export ZOAU_ROOT
-export ZOAU_HOME
-export ZOAU_DIR
-# END ANSIBLE MANAGED BLOCK"""
+            assert result.get("stdout") == EXPECTED_REPLACE_EOF_CUSTOM
     finally:
-        remove_uss_environment(ansible_zos_module, test_folder)
+        remove_uss_environment(ansible_zos_module)
 
 
 @pytest.mark.uss
 def test_uss_block_replace_insertbefore_bof_defaultmarker(ansible_zos_module):
     hosts = ansible_zos_module
     params = dict(insertbefore="BOF", block="# this is file is for setting env vars", state="present")
-    test_name = "test_uss_block_replace_insertbefore_bof_defaultmarker"
-    test_folder = "/tmp/zos_blockinfile"
-    full_path= test_folder + "/" + test_name
+    full_path = TEST_FOLDER_BLOCKINFILE + inspect.stack()[0][3]
     content = TEST_CONTENT_DEFAULTMARKER
     try:
-        set_uss_environment(ansible_zos_module, content, test_folder, test_name)
+        set_uss_environment(ansible_zos_module, content, full_path)
         params["path"] = full_path
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
         results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
-            assert result.get("stdout") == """# BEGIN ANSIBLE MANAGED BLOCK
-# this is file is for setting env vars
-# END ANSIBLE MANAGED BLOCK
-if [ -z STEPLIB ] && tty -s;
-then
-    export STEPLIB=none
-    exec -a 0 SHELL
-fi
-TZ=PST8PDT
-export TZ
-export MAIL
-umask 022
-ZOAU_ROOT=/usr/lpp/zoautil/v100
-PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
-PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
-export ZOAU_ROOT"""
+            assert result.get("stdout") == EXPECTED_REPLACE_BOF_CUSTOM
     finally:
-        remove_uss_environment(ansible_zos_module, test_folder)
+        remove_uss_environment(ansible_zos_module)
 
 
 @pytest.mark.uss
@@ -692,38 +763,19 @@ def test_uss_block_replace_insertafter_regex_custommarker(ansible_zos_module):
     params["marker"] = '# {mark} IBM MANAGED BLOCK'
     params["marker_begin"] = 'OPEN'
     params["marker_end"] = 'CLOSE'
-    test_name = "test_uss_block_replace_insertafter_regex_custommarker"
-    test_folder = "/tmp/zos_blockinfile"
-    full_path= test_folder + "/" + test_name
+    full_path = TEST_FOLDER_BLOCKINFILE + inspect.stack()[0][3]
     content = TEST_CONTENT
     try:
-        set_uss_environment(ansible_zos_module, content, test_folder, test_name)
+        set_uss_environment(ansible_zos_module, content, full_path)
         params["path"] = full_path
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
         results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
-            assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
-then
-    export STEPLIB=none
-    exec -a 0 SHELL
-fi
-TZ=PST8PDT
-export TZ
-export MAIL
-umask 022
-ZOAU_ROOT=/usr/lpp/zoautil/v100
-PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
-PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
-# OPEN IBM MANAGED BLOCK
-ZOAU_ROOT=/mvsutil-develop_dsed
-ZOAU_HOME=$ZOAU_ROOT
-ZOAU_DIR=$ZOAU_ROOT
-# CLOSE IBM MANAGED BLOCK
-export ZOAU_ROOT"""
+            assert result.get("stdout") == EXPECTED_REPLACE_EOF_REGEX_CUSTOM
     finally:
-        remove_uss_environment(ansible_zos_module, test_folder)
+        remove_uss_environment(ansible_zos_module)
 
 
 @pytest.mark.uss
@@ -733,38 +785,19 @@ def test_uss_block_replace_insertbefore_regex_custommarker(ansible_zos_module):
     params["marker"] = '# {mark} IBM MANAGED BLOCK'
     params["marker_begin"] = 'OPEN'
     params["marker_end"] = 'CLOSE'
-    test_name = "test_uss_block_replace_insertbefore_regex_custommarker"
-    test_folder = "/tmp/zos_blockinfile"
-    full_path= test_folder + "/" + test_name
+    full_path = TEST_FOLDER_BLOCKINFILE + inspect.stack()[0][3]
     content = TEST_CONTENT_CUSTOMMARKER
     try:
-        set_uss_environment(ansible_zos_module, content, test_folder, test_name)
+        set_uss_environment(ansible_zos_module, content, full_path)
         params["path"] = full_path
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
         results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
-            assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
-then
-    export STEPLIB=none
-    exec -a 0 SHELL
-fi
-TZ=PST8PDT
-export TZ
-export MAIL
-umask 022
-ZOAU_ROOT=/usr/lpp/zoautil/v100
-PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
-# OPEN IBM MANAGED BLOCK
-unset ZOAU_ROOT
-unset ZOAU_HOME
-unset ZOAU_DIR
-# CLOSE IBM MANAGED BLOCK
-PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
-export ZOAU_ROOT"""
+            assert result.get("stdout") == EXPECTED_REPLACE_BOF_REGEX_CUSTOM
     finally:
-        remove_uss_environment(ansible_zos_module, test_folder)
+        remove_uss_environment(ansible_zos_module)
 
 
 @pytest.mark.uss
@@ -774,38 +807,19 @@ def test_uss_block_replace_insertafter_eof_custommarker(ansible_zos_module):
     params["marker"] = '# {mark} IBM MANAGED BLOCK'
     params["marker_begin"] = 'OPEN'
     params["marker_end"] = 'CLOSE'
-    test_name = "test_uss_block_replace_insertafter_eof_custommarker"
-    test_folder = "/tmp/zos_blockinfile"
-    full_path= test_folder + "/" + test_name
+    full_path = TEST_FOLDER_BLOCKINFILE + inspect.stack()[0][3]
     content = TEST_CONTENT_CUSTOMMARKER
     try:
-        set_uss_environment(ansible_zos_module, content, test_folder, test_name)
+        set_uss_environment(ansible_zos_module, content, full_path)
         params["path"] = full_path
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
         results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
-            assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
-then
-    export STEPLIB=none
-    exec -a 0 SHELL
-fi
-TZ=PST8PDT
-export TZ
-export MAIL
-umask 022
-ZOAU_ROOT=/usr/lpp/zoautil/v100
-PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
-PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
-export ZOAU_ROOT
-# OPEN IBM MANAGED BLOCK
-export ZOAU_ROOT
-export ZOAU_HOME
-export ZOAU_DIR
-# CLOSE IBM MANAGED BLOCK"""
+            assert result.get("stdout") == EXPECTED_INSERTAFTER_EOF_CUSTOM
     finally:
-        remove_uss_environment(ansible_zos_module, test_folder)
+        remove_uss_environment(ansible_zos_module)
 
 
 @pytest.mark.uss
@@ -815,119 +829,67 @@ def test_uss_block_replace_insertbefore_bof_custommarker(ansible_zos_module):
     params["marker"] = '# {mark} IBM MANAGED BLOCK'
     params["marker_begin"] = 'OPEN'
     params["marker_end"] = 'CLOSE'
-    test_name = "test_uss_block_replace_insertbefore_bof_custommarker"
-    test_folder = "/tmp/zos_blockinfile"
-    full_path= test_folder + "/" + test_name
+    full_path = TEST_FOLDER_BLOCKINFILE + inspect.stack()[0][3]
     content = TEST_CONTENT_CUSTOMMARKER
     try:
-        set_uss_environment(ansible_zos_module, content, test_folder, test_name)
+        set_uss_environment(ansible_zos_module, content, full_path)
         params["path"] = full_path
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
         results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
-            assert result.get("stdout") == """# OPEN IBM MANAGED BLOCK
-# this is file is for setting env vars
-# CLOSE IBM MANAGED BLOCK
-if [ -z STEPLIB ] && tty -s;
-then
-    export STEPLIB=none
-    exec -a 0 SHELL
-fi
-TZ=PST8PDT
-export TZ
-export MAIL
-umask 022
-ZOAU_ROOT=/usr/lpp/zoautil/v100
-PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
-PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
-export ZOAU_ROOT"""
+            assert result.get("stdout") == EXPECTED_INSERTBEFORE_BOF_CUSTOM
     finally:
-        remove_uss_environment(ansible_zos_module, test_folder)
+        remove_uss_environment(ansible_zos_module)
 
 
 @pytest.mark.uss
 def test_uss_block_insert_with_indentation_level_specified(ansible_zos_module):
     hosts = ansible_zos_module
     params = dict(insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present", indentation=16)
-    test_name = "test_uss_block_insert_with_indentation_level_specified"
-    test_folder = "/tmp/zos_blockinfile"
-    full_path= test_folder + "/" + test_name
+    full_path = TEST_FOLDER_BLOCKINFILE + inspect.stack()[0][3]
     content = TEST_CONTENT
     try:
-        set_uss_environment(ansible_zos_module, content, test_folder, test_name)
+        set_uss_environment(ansible_zos_module, content, full_path)
         params["path"] = full_path
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
         results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
-            assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
-then
-    export STEPLIB=none
-    exec -a 0 SHELL
-fi
-TZ=PST8PDT
-export TZ
-export MAIL
-umask 022
-ZOAU_ROOT=/usr/lpp/zoautil/v100
-PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
-PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
-export ZOAU_ROOT
-# BEGIN ANSIBLE MANAGED BLOCK
-                export ZOAU_ROOT
-                export ZOAU_HOME
-                export ZOAU_DIR
-# END ANSIBLE MANAGED BLOCK"""
+            assert result.get("stdout") == EXPECTED_INSERT_WITH_INDENTATION
     finally:
-        remove_uss_environment(ansible_zos_module, test_folder)
+        remove_uss_environment(ansible_zos_module)
 
 
 @pytest.mark.uss
 def test_uss_block_insert_with_doublequotes(ansible_zos_module):
     hosts = ansible_zos_module
     params = dict(insertafter="sleep 30;", block='cat \"//OMVSADMI.CAT\"\ncat \"//OMVSADM.COPYMEM.TESTS\" > test.txt', marker="// {mark} ANSIBLE MANAGED BLOCK", state="present")
-    test_name = "test_uss_block_insert_with_doublequotes"
-    test_folder = "/tmp/zos_blockinfile"
-    full_path= test_folder + "/" + test_name
+    full_path = TEST_FOLDER_BLOCKINFILE + inspect.stack()[0][3]
     content = TEST_CONTENT_DOUBLEQUOTES
     try:
-        set_uss_environment(ansible_zos_module, content, test_folder, test_name)
+        set_uss_environment(ansible_zos_module, content, full_path)
         params["path"] = full_path
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
             assert result.get("changed") == 1
         results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
-            assert result.get("stdout") == """//BPXSLEEP JOB MSGCLASS=A,MSGLEVEL=(1,1),NOTIFY=&SYSUID,REGION=0M
-//USSCMD EXEC PGM=BPXBATCH
-//STDERR  DD SYSOUT=*
-//STDOUT  DD SYSOUT=*
-//STDPARM DD *
-SH ls -la /;
-sleep 30;
-// BEGIN ANSIBLE MANAGED BLOCK
-cat "//OMVSADMI.CAT"
-cat "//OMVSADM.COPYMEM.TESTS" > test.txt
-// END ANSIBLE MANAGED BLOCK
-/*
-//"""
+            assert result.get("stdout") == EXPECTED_DOUBLE_QUOTES
     finally:
-        remove_uss_environment(ansible_zos_module, test_folder)
+        remove_uss_environment(ansible_zos_module)
 
 
 @pytest.mark.uss
 def test_uss_block_insertafter_eof_with_backup(ansible_zos_module):
     hosts = ansible_zos_module
     params = dict(insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present", backup=True)
-    test_name = "test_uss_block_insertafter_eof_with_backup"
-    test_folder = "/tmp/zos_blockinfile"
-    full_path= test_folder + "/" + test_name
+    full_path = TEST_FOLDER_BLOCKINFILE + inspect.stack()[0][3]
     content = TEST_CONTENT
     try:
-        set_uss_environment(ansible_zos_module, content, test_folder, test_name)
+        set_uss_environment(ansible_zos_module, content, full_path)
         params["path"] = full_path
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
@@ -936,39 +898,20 @@ def test_uss_block_insertafter_eof_with_backup(ansible_zos_module):
             assert backup_name is not None
         results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
-            assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
-then
-    export STEPLIB=none
-    exec -a 0 SHELL
-fi
-TZ=PST8PDT
-export TZ
-export MAIL
-umask 022
-ZOAU_ROOT=/usr/lpp/zoautil/v100
-PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
-PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
-export ZOAU_ROOT
-# BEGIN ANSIBLE MANAGED BLOCK
-export ZOAU_ROOT
-export ZOAU_HOME
-export ZOAU_DIR
-# END ANSIBLE MANAGED BLOCK"""
+            assert result.get("stdout") == EXPECTED_INSERTAFTER_EOF
     finally:
         ansible_zos_module.all.file(path=backup_name, state="absent")
-        remove_uss_environment(ansible_zos_module, test_folder)
+        remove_uss_environment(ansible_zos_module)
 
 
 @pytest.mark.uss
 def test_uss_block_insertafter_eof_with_backup_name(ansible_zos_module):
     hosts = ansible_zos_module
     params = dict(insertafter="EOF", block="export ZOAU_ROOT\nexport ZOAU_HOME\nexport ZOAU_DIR", state="present", backup=True, backup_name=USS_BACKUP_FILE)
-    test_name = "test_uss_block_insertafter_eof_with_backup_name"
-    test_folder = "/tmp/zos_blockinfile"
-    full_path= test_folder + "/" + test_name
+    full_path = TEST_FOLDER_BLOCKINFILE + inspect.stack()[0][3]
     content = TEST_CONTENT
     try:
-        set_uss_environment(ansible_zos_module, content, test_folder, test_name)
+        set_uss_environment(ansible_zos_module, content, full_path)
         params["path"] = full_path
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
@@ -980,27 +923,10 @@ def test_uss_block_insertafter_eof_with_backup_name(ansible_zos_module):
             assert result.get("stdout") == TEST_CONTENT
         results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
         for result in results.contacted.values():
-            assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
-then
-    export STEPLIB=none
-    exec -a 0 SHELL
-fi
-TZ=PST8PDT
-export TZ
-export MAIL
-umask 022
-ZOAU_ROOT=/usr/lpp/zoautil/v100
-PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
-PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
-export ZOAU_ROOT
-# BEGIN ANSIBLE MANAGED BLOCK
-export ZOAU_ROOT
-export ZOAU_HOME
-export ZOAU_DIR
-# END ANSIBLE MANAGED BLOCK"""
+            assert result.get("stdout") == EXPECTED_INSERTAFTER_EOF
     finally:
         ansible_zos_module.all.file(path=USS_BACKUP_FILE, state="absent")
-        remove_uss_environment(ansible_zos_module, test_folder)
+        remove_uss_environment(ansible_zos_module)
 
 
 #########################
@@ -1026,24 +952,7 @@ def test_ds_block_insertafter_regex(ansible_zos_module, dstype):
             assert result.get("changed") == 1
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
         for result in results.contacted.values():
-            assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
-then
-    export STEPLIB=none
-    exec -a 0 SHELL
-fi
-TZ=PST8PDT
-export TZ
-export MAIL
-umask 022
-ZOAU_ROOT=/usr/lpp/zoautil/v100
-# BEGIN ANSIBLE MANAGED BLOCK
-ZOAU_ROOT=/mvsutil-develop_dsed
-ZOAU_HOME=$ZOAU_ROOT
-ZOAU_DIR=$ZOAU_ROOT
-# END ANSIBLE MANAGED BLOCK
-PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
-PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
-export ZOAU_ROOT"""
+            assert result.get("stdout") == EXPECTED_INSERTAFTER_REGEX
     finally:
         remove_ds_environment(ansible_zos_module, ds_name)
 
@@ -1066,24 +975,7 @@ def test_ds_block_insertbefore_regex(ansible_zos_module, dstype):
             assert result.get("changed") == 1
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
         for result in results.contacted.values():
-            assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
-then
-    export STEPLIB=none
-    exec -a 0 SHELL
-fi
-TZ=PST8PDT
-export TZ
-export MAIL
-umask 022
-# BEGIN ANSIBLE MANAGED BLOCK
-unset ZOAU_ROOT
-unset ZOAU_HOME
-unset ZOAU_DIR
-# END ANSIBLE MANAGED BLOCK
-ZOAU_ROOT=/usr/lpp/zoautil/v100
-PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
-PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
-export ZOAU_ROOT"""
+            assert result.get("stdout") == EXPECTED_INSERTBEFORE_REGEX
     finally:
         remove_ds_environment(ansible_zos_module, ds_name)
 
@@ -1106,24 +998,7 @@ def test_ds_block_insertafter_eof(ansible_zos_module, dstype):
             assert result.get("changed") == 1
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
         for result in results.contacted.values():
-            assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
-then
-    export STEPLIB=none
-    exec -a 0 SHELL
-fi
-TZ=PST8PDT
-export TZ
-export MAIL
-umask 022
-ZOAU_ROOT=/usr/lpp/zoautil/v100
-PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
-PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
-export ZOAU_ROOT
-# BEGIN ANSIBLE MANAGED BLOCK
-export ZOAU_ROOT
-export ZOAU_HOME
-export ZOAU_DIR
-# END ANSIBLE MANAGED BLOCK"""
+            assert result.get("stdout") == EXPECTED_INSERTAFTER_EOF
     finally:
         remove_ds_environment(ansible_zos_module, ds_name)
 
@@ -1146,22 +1021,7 @@ def test_ds_block_insertbefore_bof(ansible_zos_module, dstype):
             assert result.get("changed") == 1
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
         for result in results.contacted.values():
-            assert result.get("stdout") == """# BEGIN ANSIBLE MANAGED BLOCK
-# this is file is for setting env vars
-# END ANSIBLE MANAGED BLOCK
-if [ -z STEPLIB ] && tty -s;
-then
-    export STEPLIB=none
-    exec -a 0 SHELL
-fi
-TZ=PST8PDT
-export TZ
-export MAIL
-umask 022
-ZOAU_ROOT=/usr/lpp/zoautil/v100
-PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
-PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
-export ZOAU_ROOT"""
+            assert result.get("stdout") == EXPECTED_INSERTBEFORE_BOF
     finally:
         remove_ds_environment(ansible_zos_module, ds_name)
 
@@ -1184,24 +1044,7 @@ def test_ds_block_replace_insertafter_regex(ansible_zos_module, dstype):
             assert result.get("changed") == 1
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
         for result in results.contacted.values():
-            assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
-then
-    export STEPLIB=none
-    exec -a 0 SHELL
-fi
-TZ=PST8PDT
-export TZ
-export MAIL
-umask 022
-ZOAU_ROOT=/usr/lpp/zoautil/v100
-PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
-PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
-# BEGIN ANSIBLE MANAGED BLOCK
-ZOAU_ROOT=/mvsutil-develop_dsed
-ZOAU_HOME=$ZOAU_ROOT
-ZOAU_DIR=$ZOAU_ROOT
-# END ANSIBLE MANAGED BLOCK
-export ZOAU_ROOT"""
+            assert result.get("stdout") == EXPECTED_REPLACE_INSERTAFTER
     finally:
         remove_ds_environment(ansible_zos_module, ds_name)
 
@@ -1224,24 +1067,7 @@ def test_ds_block_replace_insertbefore_regex(ansible_zos_module, dstype):
             assert result.get("changed") == 1
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
         for result in results.contacted.values():
-            assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
-then
-    export STEPLIB=none
-    exec -a 0 SHELL
-fi
-TZ=PST8PDT
-export TZ
-export MAIL
-umask 022
-ZOAU_ROOT=/usr/lpp/zoautil/v100
-PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
-# BEGIN ANSIBLE MANAGED BLOCK
-unset ZOAU_ROOT
-unset ZOAU_HOME
-unset ZOAU_DIR
-# END ANSIBLE MANAGED BLOCK
-PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
-export ZOAU_ROOT"""
+            assert result.get("stdout") == EXPECTED_REPLACE_INSERTBEFORE
     finally:
         remove_ds_environment(ansible_zos_module, ds_name)
 
@@ -1264,24 +1090,7 @@ def test_ds_block_replace_insertafter_eof(ansible_zos_module, dstype):
             assert result.get("changed") == 1
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
         for result in results.contacted.values():
-            assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
-then
-    export STEPLIB=none
-    exec -a 0 SHELL
-fi
-TZ=PST8PDT
-export TZ
-export MAIL
-umask 022
-ZOAU_ROOT=/usr/lpp/zoautil/v100
-PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
-PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
-export ZOAU_ROOT
-# BEGIN ANSIBLE MANAGED BLOCK
-export ZOAU_ROOT
-export ZOAU_HOME
-export ZOAU_DIR
-# END ANSIBLE MANAGED BLOCK"""
+            assert result.get("stdout") == EXPECTED_INSERTAFTER_EOF
     finally:
         remove_ds_environment(ansible_zos_module, ds_name)
 
@@ -1304,22 +1113,7 @@ def test_ds_block_replace_insertbefore_bof(ansible_zos_module, dstype):
             assert result.get("changed") == 1
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
         for result in results.contacted.values():
-            assert result.get("stdout") == """# BEGIN ANSIBLE MANAGED BLOCK
-# this is file is for setting env vars
-# END ANSIBLE MANAGED BLOCK
-if [ -z STEPLIB ] && tty -s;
-then
-    export STEPLIB=none
-    exec -a 0 SHELL
-fi
-TZ=PST8PDT
-export TZ
-export MAIL
-umask 022
-ZOAU_ROOT=/usr/lpp/zoautil/v100
-PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
-PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
-export ZOAU_ROOT"""
+            assert result.get("stdout") == EXPECTED_INSERTBEFORE_BOF
     finally:
         remove_ds_environment(ansible_zos_module, ds_name)
 
@@ -1342,19 +1136,7 @@ def test_ds_block_absent(ansible_zos_module, dstype):
             assert result.get("changed") == 1
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
         for result in results.contacted.values():
-            assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
-then
-    export STEPLIB=none
-    exec -a 0 SHELL
-fi
-TZ=PST8PDT
-export TZ
-export MAIL
-umask 022
-ZOAU_ROOT=/usr/lpp/zoautil/v100
-PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
-PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
-export ZOAU_ROOT"""
+            assert result.get("stdout") == EXPECTED_ABSENT
     finally:
         remove_ds_environment(ansible_zos_module, ds_name)
 
@@ -1413,24 +1195,7 @@ def test_ds_block_insert_with_indentation_level_specified(ansible_zos_module, ds
             assert result.get("changed") == 1
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
         for result in results.contacted.values():
-            assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
-then
-    export STEPLIB=none
-    exec -a 0 SHELL
-fi
-TZ=PST8PDT
-export TZ
-export MAIL
-umask 022
-ZOAU_ROOT=/usr/lpp/zoautil/v100
-PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
-PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
-export ZOAU_ROOT
-# BEGIN ANSIBLE MANAGED BLOCK
-                export ZOAU_ROOT
-                export ZOAU_HOME
-                export ZOAU_DIR
-# END ANSIBLE MANAGED BLOCK"""
+            assert result.get("stdout") == EXPECTED_INSERT_WITH_INDENTATION
     finally:
         remove_ds_environment(ansible_zos_module, ds_name)
 
@@ -1462,24 +1227,7 @@ def test_ds_block_insertafter_eof_with_backup(ansible_zos_module, dstype, backup
                 assert backup_ds_name is not None
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
         for result in results.contacted.values():
-            assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
-then
-    export STEPLIB=none
-    exec -a 0 SHELL
-fi
-TZ=PST8PDT
-export TZ
-export MAIL
-umask 022
-ZOAU_ROOT=/usr/lpp/zoautil/v100
-PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
-PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
-export ZOAU_ROOT
-# BEGIN ANSIBLE MANAGED BLOCK
-export ZOAU_ROOT
-export ZOAU_HOME
-export ZOAU_DIR
-# END ANSIBLE MANAGED BLOCK"""
+            assert result.get("stdout") == EXPECTED_INSERTAFTER_EOF
     finally:
         remove_ds_environment(ansible_zos_module, ds_name)
         if backup_name:
@@ -1540,24 +1288,7 @@ def test_ds_block_insertafter_regex_force(ansible_zos_module, dstype):
             assert result.get("changed") == True
         results = hosts.all.shell(cmd=r"""cat "//'{0}'" """.format(params["path"]))
         for result in results.contacted.values():
-            assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
-then
-    export STEPLIB=none
-    exec -a 0 SHELL
-fi
-TZ=PST8PDT
-export TZ
-export MAIL
-umask 022
-ZOAU_ROOT=/usr/lpp/zoautil/v100
-# BEGIN ANSIBLE MANAGED BLOCK
-ZOAU_ROOT=/mvsutil-develop_dsed
-ZOAU_HOME=$ZOAU_ROOT
-ZOAU_DIR=$ZOAU_ROOT
-# END ANSIBLE MANAGED BLOCK
-PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
-PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
-export ZOAU_ROOT"""
+            assert result.get("stdout") == EXPECTED_INSERTAFTER_REGEX
     finally:
         hosts.all.shell(cmd="rm -rf " + TEMP_FILE)
         ps_list_res = hosts.all.shell(cmd="ps -e | grep -i 'pdse-lock'")
@@ -1566,6 +1297,33 @@ export ZOAU_ROOT"""
         hosts.all.shell(cmd='rm -r /tmp/disp_shr')
         hosts.all.zos_data_set(name=DEFAULT_DATA_SET_NAME, state="absent")
 
+#########################
+# Encoding tests
+#########################
+
+@pytest.mark.uss
+@pytest.mark.parametrize("encoding", ENCODING)
+def test_uss_encoding(ansible_zos_module, encoding):
+    hosts = ansible_zos_module
+    str_hexa = """0000000000      5468    6973    2069    7320    6669    6C65    206F    6E65
+0000000020      2E0A 0000000022"""
+    params = dict(insertafter="SIMPLE", block=str_hexa, state="present")
+    params["encoding"] = encoding
+    full_path = TEST_FOLDER_BLOCKINFILE + inspect.stack()[0][3]
+    content = "SIMPLE LINE TO VERIFY"
+    try:
+        hosts.all.shell(cmd="mkdir -p {0}".format(TEST_FOLDER_BLOCKINFILE))
+        hosts.all.file(path=full_path, state="touch")
+        hosts.all.shell(cmd="echo \"{0}\" > {1}".format(content, full_path))
+        params["path"] = full_path
+        results = hosts.all.zos_blockinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == EXPECTED_ENCODING
+    finally:
+        remove_uss_environment(ansible_zos_module)
 
 #########################
 # Negative tests
@@ -1600,24 +1358,7 @@ def test_ds_block_insertafter_nomatch_eof_insert(ansible_zos_module):
             assert result.get("changed") == 1
         results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
         for result in results.contacted.values():
-            assert result.get("stdout") == """if [ -z STEPLIB ] && tty -s;
-then
-    export STEPLIB=none
-    exec -a 0 SHELL
-fi
-TZ=PST8PDT
-export TZ
-export MAIL
-umask 022
-ZOAU_ROOT=/usr/lpp/zoautil/v100
-PKG_CONFIG_PATH=/usr/lpp/izoda/v110/anaconda/lib/pkgconfig
-PYTHON_HOME=/usr/lpp/izoda/v110/anaconda
-export ZOAU_ROOT
-# BEGIN ANSIBLE MANAGED BLOCK
-export ZOAU_ROOT
-export ZOAU_HOME
-export ZOAU_DIR
-# END ANSIBLE MANAGED BLOCK"""
+            assert result.get("stdout") == EXPECTED_INSERTAFTER_EOF
     finally:
         remove_ds_environment(ansible_zos_module, ds_name)
 

@@ -76,7 +76,12 @@ options:
               - PACK
               - SPACK
           xmit_log_data_set:
-            description: Provide a name of a data set to store xmit log output.
+            description:
+              - Provide a name of a data set to store xmit log output.
+              - If the data set provided does not exists, system will create it.
+              - If the data set provided exists, it needs to have The log data sets have
+                the following DCB attributes: LRECL=255, BLKSIZE=3120, and RECFM=VB.
+              - When providing a xmit_log_data_set name make sure it has enough space.
             type: str
           use_adrdssu:
             description:

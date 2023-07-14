@@ -61,8 +61,13 @@ options:
           type: dict
           required: false
           suboptions:
-            xmit_log_dataset:
-              description: Provide a name of a data set to store xmit log output.
+            xmit_log_data_set:
+              description:
+                - Provide a name of a data set to store xmit log output.
+                - If the data set provided does not exists, system will create it.
+                - If the data set provided exists, it needs to have The log data sets have
+                  the following DCB attributes: LRECL=255, BLKSIZE=3120, and RECFM=VB.
+                - When providing a xmit_log_data_set name make sure it has enough space.
               type: str
             use_adrdssu:
               description:
@@ -960,7 +965,7 @@ def run_module():
                         type='dict',
                         required=False,
                         options=dict(
-                            xmit_log_dataset=dict(
+                            xmit_log_data_set=dict(
                                 type='str',
                                 required=False,
                             ),
@@ -1047,7 +1052,7 @@ def run_module():
                     type='dict',
                     required=False,
                     options=dict(
-                        xmit_log_dataset=dict(
+                        xmit_log_data_set=dict(
                             type='str',
                             required=False,
                         ),
@@ -1060,10 +1065,10 @@ def run_module():
                             default=False,
                         ),
                     ),
-                    default=dict(xmit_log_dataset=""),
+                    default=dict(xmit_log_data_set=""),
                 )
             ),
-            default=dict(name="", format_options=dict(xmit_log_dataset="")),
+            default=dict(name="", format_options=dict(xmit_log_data_set="")),
         ),
         dest_data_set=dict(
             arg_type='dict',

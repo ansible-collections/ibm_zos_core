@@ -112,6 +112,7 @@ options:
       - Name of the group that should own the filesystem object, as would be fed to chown.
       - When left unspecified, it uses the current group of the current user unless you are root,
         in which case it can preserve the previous ownership.
+      - This option is only applicable if C(dest) is USS, otherwise ignored.
     type: str
     required: false
   mode:
@@ -137,6 +138,7 @@ options:
       - Name of the user that should own the filesystem object, as would be passed to the chown command.
       - When left unspecified, it uses the current user unless you are root,
         in which case it can preserve the previous ownership.
+      - This option is only applicable if C(dest) is USS, otherwise ignored.
     type: str
     required: false
   exclusion_patterns:

@@ -33,7 +33,8 @@ description:
 options:
   src:
     description:
-      - List of names or globs of UNIX System Services (USS) files, PS (sequential data sets), PDS, PDSE to compress or archive.
+      - List of names or globs of UNIX System Services (USS) files,
+        PS (sequential data sets), PDS, PDSE to compress or archive.
       - USS file paths should be absolute paths.
       - MVS data sets supported types are: C(SEQ), C(PDS), C(PDSE).
       - VSAMs are not supported.
@@ -42,7 +43,8 @@ options:
     elements: str
   format:
     description:
-      - The compression type and corresponding options to use when archiving data.
+      - The compression type and corresponding options to use when archiving
+        data.
     type: dict
     required: false
     suboptions:
@@ -68,10 +70,14 @@ options:
         suboptions:
           terse_pack:
             description:
-              - Compression option for use with the terse format, I(name=terse).
-              - Pack will compress records in a data set so that the output results in lossless data compression.
-              - Spack will compress records in a data set so the output results in complex data compression.
-              - Spack will produce smaller output and take approximately 3 times longer than pack compression.
+              - Compression option for use with the terse format,
+                I(name=terse).
+              - Pack will compress records in a data set so that the output
+                results in lossless data compression.
+              - Spack will compress records in a data set so the output results
+                in complex data compression.
+              - Spack will produce smaller output and take approximately 3
+                times longer than pack compression.
             type: str
             choices:
               - PACK
@@ -79,64 +85,74 @@ options:
           xmit_log_data_set:
             description:
               - Provide a name of a data set to store xmit log output.
-              - If the data set provided does not exists, system will create it.
-              - If the data set provided exists, it needs to have The log data sets have
-                the following DCB attributes: LRECL=255, BLKSIZE=3120, and RECFM=VB.
-              - When providing a xmit_log_data_set name make sure it has enough space.
+              - If the data set provided does not exists, system will create
+                it.
+              - If the data set provided exists, it needs to have The log data
+                sets have the following DCB attributes: LRECL=255,
+                BLKSIZE=3120, and RECFM=VB.
+              - When providing a xmit_log_data_set name make sure it has enough
+                space.
             type: str
           use_adrdssu:
             description:
-              - If set to true, the C(zos_archive) module will use Data Facility Storage Management Subsystem
-                data set services (DFSMSdss) program ADRDSSU to compress data sets into a portable format before
-                using C(xmit) or C(terse).
+              - If set to true, the C(zos_archive) module will use Data
+                Facility Storage Management Subsystem data set services
+                (DFSMSdss) program ADRDSSU to compress data sets into a
+                portable format before using C(xmit) or C(terse).
             type: bool
             default: False
   dest:
     description:
-      - The remote absolute path or data set where the content should be copied to.
-        dest can be a USS file or MVS data set name.
+      - The remote absolute path or data set where the content should be
+        copied to. Dest can be a USS file or MVS data set name.
       - If dest has missing parent directories, they will be created.
       - If dest is a nonexistent USS file, it will be created.
-      - The module will default the size of destination file and destination data set.
+      - The module will default the size of destination file an
+        destination data set.
       - Destination data set attributes can be set using I(dest_data_set).
     type: str
     required: false
   exclude:
     description:
-        - Remote absolute path, glob, or list of paths, globs or data set name patterns for the file,
+        - Remote absolute path, glob, or list of paths, globs or data set
+          name patterns for the file,
           files or data sets to exclude from path list and glob expansion.
     type: list
     required: false
     elements: str
   group:
     description:
-      - Name of the group that should own the filesystem object, as would be as would be passed the chown command.
-      - When left unspecified, it uses the current group of the current user unless you are root,
-        in which case it can preserve the previous ownership.
+      - Name of the group that should own the filesystem object, as would be
+        as would be passed the chown command.
+      - When left unspecified, it uses the current group of the current user
+        unless you are root, in which case it can preserve the previous
+        ownership.
       - This option is only applicable if C(dest) is USS, otherwise ignored.
     type: str
     required: false
   mode:
     description:
       - The permission of the destination file or directory.
-      - If C(dest) is USS, this will act as Unix file mode, otherwise ignored.
+      - If C(dest) is USS, this will act as Unix file mode, otherwise
+        ignored.
       - It should be noted that modes are octal numbers.
-        The user must either add a leading zero so that Ansible's YAML parser
-        knows it is an octal number (like C(0644) or C(01777))or quote it
-        (like C('644') or C('1777')) so Ansible receives a string and can do its
-        own conversion from string into number. Giving Ansible a number without
-        following one of these rules will end up with a decimal number which
-        will have unexpected results.
+        The user must either add a leading zero so that Ansible's YAML
+        parser knows it is an octal number (like C(0644) or C(01777))or
+        quote it (like C('644') or C('1777')) so Ansible receives a string
+        and can do its own conversion from string into number. Giving Ansible
+        a number without following one of these rules will end up with a
+        decimal number which will have unexpected results.
       - The mode may also be specified as a symbolic mode
         (for example, ``u+rwx`` or ``u=rw,g=r,o=r``) or a special
         string `preserve`.
-      - I(mode=preserve) means that the file will be given the same permissions as
-        the source file.
+      - I(mode=preserve) means that the file will be given the same permissions
+        as the source file.
     type: str
     required: false
   owner:
     description:
-      - Name of the user that should own the filesystem object, as would be passed to the chown command.
+      - Name of the user that should own the filesystem object, as would be
+        passed to the chown command.
       - When left unspecified, it uses the current user unless you are root,
         in which case it can preserve the previous ownership.
       - This option is only applicable if C(dest) is USS, otherwise ignored.
@@ -144,7 +160,8 @@ options:
     required: false
   exclusion_patterns:
     description:
-      - Glob style patterns to exclude files or directories from the resulting archive.
+      - Glob style patterns to exclude files or directories from the resulting
+        archive.
       - Option I(exclusion_patterns) differs from I(exclude), where I(exclude)
         applies only to UNIX source paths and data sets.
     type: list
@@ -160,10 +177,11 @@ options:
     default: false
   tmp_hlq:
     description:
-      - Override the default high level qualifier (HLQ) for temporary data sets.
-      - The default HLQ is the Ansible user used to execute the module and if
-        that is not available, then the environment variable value C(TMPHLQ) is
-        used.
+      - Override the default high level qualifier (HLQ) for temporary data
+        sets.
+      - The default HLQ is the Ansible user used to execute the module and
+        if that is not available, then the environment variable value
+        C(TMPHLQ) is used.
     required: false
     type: str
   force:
@@ -173,10 +191,11 @@ options:
     required: false
     default: false
 notes:
-  - This module does not perform a send or transmit operation to a remote node.
-    If you want to transport the archive you can use zos_fetch to retrieve to the controller
-    and then zos_copy or zos_unarchive for copying to a remote or send to the remote and
-    then unpack the archive respectively.
+  - This module does not perform a send or transmit operation to a remote
+    node. If you want to transport the archive you can use zos_fetch to
+    retrieve to the controller and then zos_copy or zos_unarchive for
+    copying to a remote or send to the remote and then unpack the archive
+    respectively.
 
 seealso:
   - module: zos_fetch
@@ -243,7 +262,8 @@ dest_state:
       - C(absent) when the file does not exist.
       - C(archive) when the file is an archive.
       - C(compress) when the file is compressed, but not an archive.
-      - C(incomplete) when the file is an archive, but some files under I(path) were not found.
+      - C(incomplete) when the file is an archive, but some files under
+        I(path) were not found.
     type: str
     returned: success
 missing:
@@ -251,7 +271,9 @@ missing:
     type: list
     returned: success
 archived:
-    description: Any files or data sets that were compressed or added to the archive.
+    description:
+    - Any files or data sets that were compressed or added to the
+      archive.
     type: list
     returned: success
 arcroot:

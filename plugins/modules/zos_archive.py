@@ -260,7 +260,7 @@ arcroot:
         folder of the list of files, otherwise is empty.
     type: str
     returned: always
-expanded_paths:
+expanded_sources:
     description: The list of matching paths from the src option.
     type: list
     returned: always
@@ -353,9 +353,9 @@ class Archive():
         self.archived = []
         self.not_found = []
         self.force = module.params['force']
-        self.paths = module.params['src']
+        self.sources = module.params['src']
         self.arcroot = ""
-        self.expanded_paths = ""
+        self.expanded_sources = ""
         self.expanded_exclude_sources = ""
         self.dest_state = STATE_ABSENT
 
@@ -403,7 +403,7 @@ class Archive():
             'dest_state': self.dest_state,
             'changed': self.changed,
             'missing': self.not_found,
-            'expanded_paths': list(self.expanded_paths),
+            'expanded_sources': list(self.expanded_sources),
             'expanded_exclude_sources': list(self.expanded_exclude_sources),
         }
 
@@ -412,15 +412,15 @@ class USSArchive(Archive):
     def __init__(self, module):
         super(USSArchive, self).__init__(module)
         self.original_checksums = self.dest_checksums()
-        if len(self.paths) == 1:
-            self.arcroot = os.path.dirname(os.path.commonpath(self.paths))
+        if len(self.sources) == 1:
+            self.arcroot = os.path.dirname(os.path.commonpath(self.sources))
         else:
-            self.arcroot = os.path.commonpath(self.paths)
-        self.expanded_paths = expand_paths(self.paths)
+            self.arcroot = os.path.commonpath(self.sources)
+        self.expanded_sources = expand_paths(self.sources)
         self.expanded_exclude_sources = expand_paths(module.params['exclude'])
         self.expanded_exclude_sources = "" if len(self.expanded_exclude_sources) == 0 else self.expanded_exclude_sources
 
-        self.paths = sorted(set(self.expanded_paths) - set(self.expanded_exclude_sources))
+        self.sources = sorted(set(self.expanded_sources) - set(self.expanded_exclude_sources))
 
     def dest_exists(self):
         return os.path.exists(self.dest)
@@ -433,7 +433,7 @@ class USSArchive(Archive):
         self.changed = self.module.set_fs_attributes_if_different(file_args, self.changed)
 
     def find_targets(self):
-        for path in self.paths:
+        for path in self.sources:
             if os.path.exists(path):
                 self.targets.append(path)
             else:
@@ -532,7 +532,7 @@ class ZipArchive(USSArchive):
             file = zipfile.ZipFile(path, 'w', zipfile.ZIP_DEFLATED, True)
         except zipfile.BadZipFile:
             self.module.fail_json(
-                msg="Improperly compressed zip file, unable to to open file {0}  ".format(path)
+                msg="Improperly compressed zip file, unable to to open file {0} ".format(path)
             )
         return file
 
@@ -545,9 +545,9 @@ class MVSArchive(Archive):
         super(MVSArchive, self).__init__(module)
         self.original_checksums = self.dest_checksums()
         self.use_adrdssu = module.params.get("format").get("format_options").get("use_adrdssu")
-        self.expanded_paths = self.expand_mvs_paths(self.paths)
+        self.expanded_sources = self.expand_mvs_paths(self.sources)
         self.expanded_exclude_sources = self.expand_mvs_paths(module.params['exclude'])
-        self.paths = sorted(set(self.expanded_paths) - set(self.expanded_exclude_sources))
+        self.sources = sorted(set(self.expanded_sources) - set(self.expanded_exclude_sources))
         self.tmp_data_sets = list()
 
     def open(self):
@@ -560,7 +560,7 @@ class MVSArchive(Archive):
         """
         Finds target datasets in host.
         """
-        for path in self.paths:
+        for path in self.sources:
             if data_set.DataSet.data_set_exists(path):
                 self.targets.append(path)
             else:
@@ -784,10 +784,10 @@ class XMITArchive(MVSArchive):
             self.tmp_data_sets.append(source)
         else:
             # If we don't use a adrdssu container we cannot pack multiple data sets
-            if len(self.paths) > 1:
+            if len(self.sources) > 1:
                 self.module.fail_json(
                     msg="To archive multiple source data sets, you must use option 'use_adrdssu=True'.")
-            source = self.paths[0]
+            source = self.sources[0]
         dest = self.create_dest_ds(self.dest)
         self.add(source, dest)
         self.clean_environment(data_sets=self.tmp_data_sets)

@@ -36,7 +36,6 @@ options:
       - The remote absolute path or data set of the archive to be uncompressed on the remote.
         src can be a USS file or MVS data set name.
       - USS file paths should be absolute paths.
-      - MVS data sets supported types are: C(SEQ), C(PDS), C(PDSE).
     type: str
     required: true
   format:
@@ -520,7 +519,7 @@ class ZipUnarchive(Unarchive):
             file = zipfile.ZipFile(path, 'r', zipfile.ZIP_DEFLATED, True)
         except zipfile.BadZipFile:
             self.module.fail_json(
-                msg="Bad zip file error when trying to open file {0} ".format(path)
+                msg="Improperly compressed zip file, unable to to open file {0} ".format(path)
             )
         return file
 

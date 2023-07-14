@@ -35,6 +35,7 @@ options:
     description:
       - List of names or globs of UNIX System Services (USS) files, PS (sequential data sets), PDS, PDSE to compress or archive.
       - USS file paths should be absolute paths.
+      - MVS data sets supported types are: C(SEQ), C(PDS), C(PDSE).
       - VSAMs are not supported.
     type: list
     required: true
@@ -93,7 +94,7 @@ options:
   dest:
     description:
       - The remote absolute path or data set where the content should be copied to.
-        dest can be a USS file, directory or MVS data set name.
+        dest can be a USS file or MVS data set name.
       - If dest has missing parent directories, they will be created.
       - If dest is a nonexistent USS file, it will be created.
       - The module will default the size of destination file and destination data set.

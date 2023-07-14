@@ -27,13 +27,16 @@ description:
     transferring it to the remote system.
   - For supported archive formats, see option C(format).
   - Supported sources are USS (UNIX System Services) or z/OS data sets.
+  - Mixing MVS data sets with USS files for unarchiving is not supported.
 
 
 options:
   src:
     description:
-      - Local or remote absolute path or data set name of the archive to be uncompressed on the remote.
+      - The remote absolute path or data set of the archive to be uncompressed on the remote.
+        src can be a USS file or MVS data set name.
       - USS file paths should be absolute paths.
+      - MVS data sets supported types are: C(SEQ), C(PDS), C(PDSE).
     type: str
     required: true
   format:
@@ -82,8 +85,9 @@ options:
               elements: str
   dest:
     description:
-    - Remote absolute path where the archive should be unpacked.
-    - The given path must exist. Base directory is not created by this module.
+    - The remote absolute path or data set where the content should be unarchived to.
+    - dest can be a USS file, directory or MVS data set name.
+    - If dest has missing parent directories, they will not be created.
     type: str
     required: false
   group:

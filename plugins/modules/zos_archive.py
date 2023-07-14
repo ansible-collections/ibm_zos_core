@@ -92,15 +92,18 @@ options:
             default: False
   dest:
     description:
-      - The file or data set name of the dest archive.
+      - The remote absolute path or data set where the content should be copied to.
+        dest can be a USS file, directory or MVS data set name.
+      - If dest has missing parent directories, they will be created.
+      - If dest is a nonexistent USS file, it will be created.
       - The module will default the size of destination file and destination data set.
-      - Destination data set attributes can be set using dest_data_set.
+      - Destination data set attributes can be set using I(dest_data_set).
     type: str
     required: false
   exclude_path:
     description:
-        - Remote absolute path, glob, or list of paths, globs or data set name patterns for the file, files or data sets to exclude
-           from path list and glob expansion.
+        - Remote absolute path, glob, or list of paths, globs or data set name patterns for the file,
+          files or data sets to exclude from path list and glob expansion.
     type: list
     required: false
     elements: str
@@ -131,14 +134,15 @@ options:
     required: false
   owner:
     description:
-      - Name of the user that should own the filesystem object, as would be fed to chown.
-      - When left unspecified, it uses the current user unless you are root, in which case it can preserve the previous ownership.
+      - Name of the user that should own the filesystem object, as would be passed to the chown command.
+      - When left unspecified, it uses the current user unless you are root,
+        in which case it can preserve the previous ownership.
     type: str
     required: false
   exclusion_patterns:
     description:
       - Glob style patterns to exclude files or directories from the resulting archive.
-      - This differs from I(exclude_path) which applies only to the source paths from I(path).
+      - This differs from I(exclude_path) which applies only to the source paths from I(src).
     type: list
     elements: str
     required: false

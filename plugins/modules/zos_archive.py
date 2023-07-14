@@ -109,7 +109,7 @@ options:
     elements: str
   group:
     description:
-      - Name of the group that should own the filesystem object, as would be fed to chown.
+      - Name of the group that should own the filesystem object, as would be as would be passed the chown command.
       - When left unspecified, it uses the current group of the current user unless you are root,
         in which case it can preserve the previous ownership.
       - This option is only applicable if C(dest) is USS, otherwise ignored.

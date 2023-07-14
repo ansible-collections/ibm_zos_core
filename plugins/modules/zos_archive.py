@@ -91,7 +91,10 @@ options:
             type: bool
             default: False
   dest:
-    description: The file name of the dest archive.
+    description:
+      - The file or data set name of the dest archive.
+      - The module will default the size of destination file and destination data set.
+      - Destination data set attributes can be set using dest_data_set.
     type: str
     required: false
   exclude_path:

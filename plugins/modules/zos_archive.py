@@ -144,7 +144,8 @@ options:
   exclusion_patterns:
     description:
       - Glob style patterns to exclude files or directories from the resulting archive.
-      - This differs from I(exclude_path) which applies only to the source paths from I(src).
+      - Option I(exclusion_patterns) differs from I(exclude_path), where I(exclude_path)
+        applies only to UNIX source paths and data sets.
     type: list
     elements: str
     required: false

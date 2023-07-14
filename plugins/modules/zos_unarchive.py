@@ -134,10 +134,7 @@ options:
     required: false
   list:
     description:
-      - Will list- Override the default high level qualifier (HLQ) for temporary data sets.
-      - The default HLQ is the Ansible user used to execute the module and if
-        that is not available, then the environment variable value C(TMPHLQ) is
-        used. the contents of the archive without unpacking.
+      - Will list the contents of the archive without unpacking.
     type: bool
     required: false
     default: false
@@ -158,15 +155,10 @@ options:
         type: str
         required: true
         choices:
-          - KSDS
-          - ESDS
-          - RRDS
-          - LDS
           - SEQ
           - PDS
           - PDSE
           - MEMBER
-          - BASIC
       space_primary:
         description:
           - If the destination I(dest) data set does not exist , this sets the

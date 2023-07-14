@@ -100,7 +100,7 @@ options:
       - Destination data set attributes can be set using I(dest_data_set).
     type: str
     required: false
-  exclude_path:
+  exclude:
     description:
         - Remote absolute path, glob, or list of paths, globs or data set name patterns for the file,
           files or data sets to exclude from path list and glob expansion.
@@ -144,7 +144,7 @@ options:
   exclusion_patterns:
     description:
       - Glob style patterns to exclude files or directories from the resulting archive.
-      - Option I(exclusion_patterns) differs from I(exclude_path), where I(exclude_path)
+      - Option I(exclusion_patterns) differs from I(exclude), where I(exclude)
         applies only to UNIX source paths and data sets.
     type: list
     elements: str
@@ -224,7 +224,7 @@ EXAMPLES = r'''
 - name: Compress data set pattern using xmit
   zos_archive:
     path: "USER.ARCHIVE.*"
-    exclude_paths: "USER.ARCHIVE.EXCLUDE.*"
+    exclude_sources: "USER.ARCHIVE.EXCLUDE.*"
     dest: "USER.ARCHIVE.RESULT.XMIT"
     format:
       name: xmit
@@ -263,8 +263,8 @@ expanded_paths:
     description: The list of matching paths from the src option.
     type: list
     returned: always
-expanded_exclude_paths:
-    description: The list of matching exclude paths from the exclude_path option.
+expanded_exclude_sources:
+    description: The list of matching exclude paths from the exclude option.
     type: list
     returned: always
 '''
@@ -355,7 +355,7 @@ class Archive():
         self.paths = module.params['src']
         self.arcroot = ""
         self.expanded_paths = ""
-        self.expanded_exclude_paths = ""
+        self.expanded_exclude_sources = ""
         self.dest_state = STATE_ABSENT
 
     def targets_exist(self):
@@ -403,7 +403,7 @@ class Archive():
             'changed': self.changed,
             'missing': self.not_found,
             'expanded_paths': list(self.expanded_paths),
-            'expanded_exclude_paths': list(self.expanded_exclude_paths),
+            'expanded_exclude_sources': list(self.expanded_exclude_sources),
         }
 
 
@@ -416,10 +416,10 @@ class USSArchive(Archive):
         else:
             self.arcroot = os.path.commonpath(self.paths)
         self.expanded_paths = expand_paths(self.paths)
-        self.expanded_exclude_paths = expand_paths(module.params['exclude_path'])
-        self.expanded_exclude_paths = "" if len(self.expanded_exclude_paths) == 0 else self.expanded_exclude_paths
+        self.expanded_exclude_sources = expand_paths(module.params['exclude'])
+        self.expanded_exclude_sources = "" if len(self.expanded_exclude_sources) == 0 else self.expanded_exclude_sources
 
-        self.paths = sorted(set(self.expanded_paths) - set(self.expanded_exclude_paths))
+        self.paths = sorted(set(self.expanded_paths) - set(self.expanded_exclude_sources))
 
     def dest_exists(self):
         return os.path.exists(self.dest)
@@ -545,8 +545,8 @@ class MVSArchive(Archive):
         self.original_checksums = self.dest_checksums()
         self.use_adrdssu = module.params.get("format").get("format_options").get("use_adrdssu")
         self.expanded_paths = self.expand_mvs_paths(self.paths)
-        self.expanded_exclude_paths = self.expand_mvs_paths(module.params['exclude_path'])
-        self.paths = sorted(set(self.expanded_paths) - set(self.expanded_exclude_paths))
+        self.expanded_exclude_sources = self.expand_mvs_paths(module.params['exclude'])
+        self.paths = sorted(set(self.expanded_paths) - set(self.expanded_exclude_sources))
         self.tmp_data_sets = list()
 
     def open(self):
@@ -797,7 +797,7 @@ def run_module():
         argument_spec=dict(
             src=dict(type='list', elements='str', required=True),
             dest=dict(type='str'),
-            exclude_path=dict(type='list', elements='str'),
+            exclude=dict(type='list', elements='str'),
             format=dict(
                 type='dict',
                 options=dict(
@@ -839,7 +839,7 @@ def run_module():
     arg_defs = dict(
         src=dict(type='list', elements='str', required=True),
         dest=dict(type='str', required=False),
-        exclude_path=dict(type='list', elements='str', default=[]),
+        exclude=dict(type='list', elements='str', default=[]),
         format=dict(
             type='dict',
             options=dict(

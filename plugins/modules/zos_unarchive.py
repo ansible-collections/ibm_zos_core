@@ -70,9 +70,9 @@ options:
                 - Provide a name of a data set to store xmit log output.
                 - If the data set provided does not exists, system will create
                   it.
-                - If the data set provided exists, it needs to have The log
+                - 'If the data set provided exists, it needs to have The log
                   data sets have the following DCB attributes: LRECL=255,
-                  BLKSIZE=3120, and RECFM=VB.
+                  BLKSIZE=3120, and RECFM=VB.'
                 - When providing a xmit_log_data_set name make sure it has
                   enough space.
               type: str
@@ -178,7 +178,6 @@ options:
           - SEQ
           - PDS
           - PDSE
-          - MEMBER
       space_primary:
         description:
           - If the destination I(dest) data set does not exist , this sets the
@@ -1013,8 +1012,7 @@ def run_module():
                     ),
                     type=dict(
                         type='str',
-                        choices=['BASIC', 'KSDS', 'ESDS', 'RRDS',
-                                 'LDS', 'SEQ', 'PDS', 'PDSE', 'MEMBER'],
+                        choices=['SEQ', 'PDS', 'PDSE'],
                         required=True,
                     ),
                     space_primary=dict(

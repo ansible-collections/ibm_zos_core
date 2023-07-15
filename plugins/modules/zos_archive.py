@@ -36,7 +36,7 @@ options:
       - List of names or globs of UNIX System Services (USS) files,
         PS (sequential data sets), PDS, PDSE to compress or archive.
       - USS file paths should be absolute paths.
-      - MVS data sets supported types are: C(SEQ), C(PDS), C(PDSE).
+      - 'MVS data sets supported types are: C(SEQ), C(PDS), C(PDSE).'
       - VSAMs are not supported.
     type: list
     required: true
@@ -87,9 +87,9 @@ options:
               - Provide a name of a data set to store xmit log output.
               - If the data set provided does not exists, system will create
                 it.
-              - If the data set provided exists, it needs to have The log data
+              - 'If the data set provided exists, it needs to have The log data
                 sets have the following DCB attributes: LRECL=255,
-                BLKSIZE=3120, and RECFM=VB.
+                BLKSIZE=3120, and RECFM=VB.'
               - When providing a xmit_log_data_set name make sure it has enough
                 space.
             type: str
@@ -175,6 +175,124 @@ options:
     type: bool
     required: false
     default: false
+  dest_data_set:
+    description:
+      - Data set attributes to customize a C(dest) data set to be copied into.
+    required: false
+    type: dict
+    suboptions:
+      name:
+        description:
+          - Desired name for destination dataset.
+        type: str
+        required: false
+      type:
+        description:
+          - Organization of the destination
+        type: str
+        required: true
+        choices:
+          - SEQ
+          - PDS
+          - PDSE
+      space_primary:
+        description:
+          - If the destination I(dest) data set does not exist , this sets the
+            primary space allocated for the data set.
+          - The unit of space used is set using I(space_type).
+        type: int
+        required: false
+      space_secondary:
+        description:
+          - If the destination I(dest) data set does not exist , this sets the
+            secondary space allocated for the data set.
+          - The unit of space used is set using I(space_type).
+        type: int
+        required: false
+      space_type:
+        description:
+          - If the destination data set does not exist, this sets the unit of
+            measurement to use when defining primary and secondary space.
+          - Valid units of size are C(K), C(M), C(G), C(CYL), and C(TRK).
+        type: str
+        choices:
+          - K
+          - M
+          - G
+          - CYL
+          - TRK
+        required: false
+      record_format:
+        description:
+          - If the destination data set does not exist, this sets the format of
+            the
+            data set. (e.g C(FB))
+          - Choices are case-insensitive.
+        required: false
+        choices:
+          - FB
+          - VB
+          - FBA
+          - VBA
+          - U
+        type: str
+      record_length:
+        description:
+          - The length of each record in the data set, in bytes.
+          - For variable data sets, the length must include the 4-byte prefix
+            area.
+          - "Defaults vary depending on format: If FB/FBA 80, if VB/VBA 137,
+            if U 0."
+        type: int
+        required: false
+      block_size:
+        description:
+          - The block size to use for the data set.
+        type: int
+        required: false
+      directory_blocks:
+        description:
+          - The number of directory blocks to allocate to the data set.
+        type: int
+        required: false
+      key_offset:
+        description:
+          - The key offset to use when creating a KSDS data set.
+          - I(key_offset) is required when I(type=KSDS).
+          - I(key_offset) should only be provided when I(type=KSDS)
+        type: int
+        required: false
+      key_length:
+        description:
+          - The key length to use when creating a KSDS data set.
+          - I(key_length) is required when I(type=KSDS).
+          - I(key_length) should only be provided when I(type=KSDS)
+        type: int
+        required: false
+      sms_storage_class:
+        description:
+          - The storage class for an SMS-managed dataset.
+          - Required for SMS-managed datasets that do not match an SMS-rule.
+          - Not valid for datasets that are not SMS-managed.
+          - Note that all non-linear VSAM datasets are SMS-managed.
+        type: str
+        required: false
+      sms_data_class:
+        description:
+          - The data class for an SMS-managed dataset.
+          - Optional for SMS-managed datasets that do not match an SMS-rule.
+          - Not valid for datasets that are not SMS-managed.
+          - Note that all non-linear VSAM datasets are SMS-managed.
+        type: str
+        required: false
+      sms_management_class:
+        description:
+          - The management class for an SMS-managed dataset.
+          - Optional for SMS-managed datasets that do not match an SMS-rule.
+          - Not valid for datasets that are not SMS-managed.
+          - Note that all non-linear VSAM datasets are SMS-managed.
+        type: str
+        required: false
   tmp_hlq:
     description:
       - Override the default high level qualifier (HLQ) for temporary data
@@ -501,7 +619,7 @@ class USSArchive(Archive):
                 else:
                     self.add(target, strip_prefix(self.arcroot, target))
         except Exception as e:
-            self.state = STATE_INCOMPLETE
+            self.dest_state = STATE_INCOMPLETE
             if self.format == 'tar':
                 archive_format = self.format
             else:
@@ -571,6 +689,8 @@ class MVSArchive(Archive):
         self.expanded_exclude_sources = self.expand_mvs_paths(module.params['exclude'])
         self.sources = sorted(set(self.expanded_sources) - set(self.expanded_exclude_sources))
         self.tmp_data_sets = list()
+        self.dest_data_set = module.params.get("dest_data_set")
+        self.dest_data_set = dict() if self.dest_data_set is None else self.dest_data_set
 
     def open(self):
         pass
@@ -852,6 +972,42 @@ def run_module():
             mode=dict(type='str'),
             owner=dict(type='str'),
             remove=dict(type='bool', default=False),
+            dest_data_set=dict(
+                type='dict',
+                required=False,
+                options=dict(
+                    name=dict(
+                        type='str', required=False,
+                    ),
+                    type=dict(
+                        type='str',
+                        choices=['SEQ', 'PDS', 'PDSE'],
+                        required=True,
+                    ),
+                    space_primary=dict(
+                        type='int', required=False),
+                    space_secondary=dict(
+                        type='int', required=False),
+                    space_type=dict(
+                        type='str',
+                        choices=['K', 'M', 'G', 'CYL', 'TRK'],
+                        required=False,
+                    ),
+                    record_format=dict(
+                        type='str',
+                        choices=["FB", "VB", "FBA", "VBA", "U"],
+                        required=False
+                    ),
+                    record_length=dict(type='int', required=False),
+                    block_size=dict(type='int', required=False),
+                    directory_blocks=dict(type="int", required=False),
+                    key_offset=dict(type="int", required=False, no_log=False),
+                    key_length=dict(type="int", required=False, no_log=False),
+                    sms_storage_class=dict(type="str", required=False),
+                    sms_data_class=dict(type="str", required=False),
+                    sms_management_class=dict(type="str", required=False),
+                )
+            ),
             exclusion_patterns=dict(type='list', elements='str'),
             tmp_hlq=dict(type='str'),
             force=dict(type='bool', default=False)
@@ -908,6 +1064,28 @@ def run_module():
         mode=dict(type='str'),
         owner=dict(type='str'),
         remove=dict(type='bool', default=False),
+        dest_data_set=dict(
+            arg_type='dict',
+            required=False,
+            options=dict(
+                name=dict(arg_type='str', required=False),
+                type=dict(arg_type='str', required=True),
+                space_primary=dict(arg_type='int', required=False),
+                space_secondary=dict(
+                    arg_type='int', required=False),
+                space_type=dict(arg_type='str', required=False),
+                record_format=dict(
+                    arg_type='str', required=False),
+                record_length=dict(type='int', required=False),
+                block_size=dict(arg_type='int', required=False),
+                directory_blocks=dict(arg_type="int", required=False),
+                key_offset=dict(arg_type="int", required=False),
+                key_length=dict(arg_type="int", required=False),
+                sms_storage_class=dict(arg_type="str", required=False),
+                sms_data_class=dict(arg_type="str", required=False),
+                sms_management_class=dict(arg_type="str", required=False),
+            )
+        ),
         exclusion_patterns=dict(type='list', elements='str'),
         tmp_hlq=dict(type='qualifier_or_empty', default=''),
         force=dict(type='bool', default=False)

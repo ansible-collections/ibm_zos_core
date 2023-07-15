@@ -109,7 +109,7 @@ List of tests:
 - test_uss_single_archive_with_mode
 - test_uss_single_archive_with_force_option
 - test_uss_archive_multiple_files
-- test_uss_archive_multiple_files_with_exclude_path
+- test_uss_archive_multiple_files_with_exclude
 - test_uss_archive_remove_targets
 """
 
@@ -255,10 +255,10 @@ def test_uss_archive_multiple_files(ansible_zos_module, format, path):
 @pytest.mark.uss
 @pytest.mark.parametrize("format", USS_FORMATS)
 @pytest.mark.parametrize("path", [
-    dict(files=list(USS_TEST_FILES.keys()),  size=len(USS_TEST_FILES) - 1, exclude_path=[f'{USS_TEMP_DIR}/foo.txt']),
-    dict(files= f"{USS_TEMP_DIR}/" , size=len(USS_TEST_FILES) + 1, exclude_path=[]),
+    dict(files=list(USS_TEST_FILES.keys()),  size=len(USS_TEST_FILES) - 1, exclude=[f'{USS_TEMP_DIR}/foo.txt']),
+    dict(files= f"{USS_TEMP_DIR}/" , size=len(USS_TEST_FILES) + 1, exclude=[]),
     ])
-def test_uss_archive_multiple_files_with_exclude_path(ansible_zos_module, format, path):
+def test_uss_archive_multiple_files_with_exclude(ansible_zos_module, format, path):
     try:
         hosts = ansible_zos_module
         hosts.all.file(path=USS_TEMP_DIR, state="absent")
@@ -268,7 +268,7 @@ def test_uss_archive_multiple_files_with_exclude_path(ansible_zos_module, format
         archive_result = hosts.all.zos_archive(src=path.get("files"),
                                         dest=dest,
                                         format=dict(name=format),
-                                        exclude_path=path.get("exclude_path"))
+                                        exclude=path.get("exclude"))
 
         # resulting archived tag varies in size when a folder is archived using zip.
         size = path.get("size")
@@ -331,7 +331,6 @@ List of tests:
 - test_mvs_archive_multiple_data_sets_with_missing
 
 """
-
 @pytest.mark.parametrize(
     "format", [
         "terse",
@@ -658,7 +657,7 @@ def test_mvs_archive_multiple_data_sets_with_exclusion(ansible_zos_module, forma
             src="{0}*".format(data_set.get("name")),
             dest=MVS_DEST_ARCHIVE,
             format=format_dict,
-            exclude_path=exclude,
+            exclude=exclude,
         )
 
         # assert response is positive

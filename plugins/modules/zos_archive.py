@@ -485,7 +485,6 @@ class Archive():
         self.exclusion_patterns = module.params['exclusion_patterns'] or []
         self.format = module.params.get("format").get("name")
         self.remove = module.params['remove']
-        self.tmp_hlq = module.params['tmp_hlq']
         self.changed = False
         self.errors = []
         self.found = []
@@ -691,6 +690,7 @@ class MVSArchive(Archive):
         self.tmp_data_sets = list()
         self.dest_data_set = module.params.get("dest_data_set")
         self.dest_data_set = dict() if self.dest_data_set is None else self.dest_data_set
+        self.tmphlq = module.params.get("tmp_hlq")
 
     def open(self):
         pass
@@ -708,22 +708,84 @@ class MVSArchive(Archive):
             else:
                 self.not_found.append(path)
 
-    def prepare_temp_ds(self, tmphlq):
+    def _compute_dest_data_set_size(self):
         """
-        Creates a temporary sequential dataset.
+        Computes the attributes that the destination data set or temporary destination
+        data set should have in terms of size, record_length, etc.
+        """
+
+        """
+        - Size of temporary DS for archive handling.
+
+        If remote_src then we can get the source_size from archive on the system.
+
+        If not remote_src then we can get the source_size from temporary_ds.
+        Both are named src so no problemo.
+
+        If format is xmit, dest_data_set size is the same as source_size.
+
+        If format is terse, dest_data_set size is different than the source_size, has to be greater,
+        but how much? In this case we can add dest_data_set option.
+
+        Apparently the only problem is when format name is terse.
+        """
+
+        # Get the size from the system
+        default_size = 5
+        dest_size = int(default_size)
+        return dest_size
+
+    def _create_dest_data_set(
+            self,
+            name=None,
+            replace=None,
+            type=None,
+            space_primary=None,
+            space_secondary=None,
+            space_type=None,
+            record_format=None,
+            record_length=None,
+            block_size=None,
+            directory_blocks=None,
+            key_length=None,
+            key_offset=None,
+            sms_storage_class=None,
+            sms_data_class=None,
+            sms_management_class=None,
+            volumes=None,
+            tmp_hlq=None,
+            force=None,
+    ):
+        """Create a temporary data set.
+
         Arguments:
-            tmphlq: {str}
+            tmp_hlq(str): A HLQ specified by the user for temporary data sets.
+
+        Returns:
+            str: Name of the temporary data set created.
         """
-        if tmphlq:
-            hlq = tmphlq
-        else:
-            rc, hlq, err = self.module.run_command("hlq")
-            hlq = hlq.replace('\n', '')
-        cmd = "mvstmphelper {0}.DZIP".format(hlq)
-        rc, temp_ds, err = self.module.run_command(cmd)
-        temp_ds = temp_ds.replace('\n', '')
-        changed = data_set.DataSet.ensure_present(name=temp_ds, replace=True, type='SEQ', record_format='U')
-        return temp_ds
+        arguments = locals()
+        if name is None:
+            if tmp_hlq:
+                hlq = tmp_hlq
+            else:
+                rc, hlq, err = self.module.run_command("hlq")
+                hlq = hlq.replace('\n', '')
+            cmd = "mvstmphelper {0}.DZIP".format(hlq)
+            rc, temp_ds, err = self.module.run_command(cmd)
+            arguments.update(name=temp_ds.replace('\n', ''))
+
+        if record_format is None:
+            arguments.update(record_format="FB")
+        if record_length is None:
+            arguments.update(record_length=80)
+        if type is None:
+            arguments.update(type="SEQ")
+        if space_primary is None:
+            arguments.update(space_primary=self._compute_dest_data_set_size())
+        arguments.pop("self")
+        changed = data_set.DataSet.ensure_present(**arguments)
+        return arguments["name"], changed
 
     def create_dest_ds(self, name):
         """
@@ -872,7 +934,7 @@ class AMATerseArchive(MVSArchive):
         Add MVS Datasets to the AMATERSE Archive by creating a temporary dataset and dumping the source datasets into it.
         """
         if self.use_adrdssu:
-            source = self.prepare_temp_ds(self.module.params.get("tmp_hlq"))
+            source, changed = self._create_dest_data_set(type="SEQ", record_format="U", record_length=0, tmp_hlq=self.tmphlq, replace=True)
             self.dump_into_temp_ds(source)
             self.tmp_data_sets.append(source)
         else:
@@ -881,7 +943,9 @@ class AMATerseArchive(MVSArchive):
                 self.module.fail_json(
                     msg="To archive multiple source data sets, you must use option 'use_adrdssu=True'.")
             source = self.targets[0]
-        dest = self.create_dest_ds(self.dest)
+        # dest = self.create_dest_ds(self.dest)
+        dest, changed = self._create_dest_data_set(name=self.dest, replace=True, type='SEQ', record_format='FB', record_length=AMATERSE_RECORD_LENGTH)
+        self.changed = self.changed or changed
         self.add(source, dest)
         self.clean_environment(data_sets=self.tmp_data_sets)
 
@@ -905,7 +969,6 @@ class XMITArchive(MVSArchive):
         """.format(log_option)
         dds = {"SYSUT1": "{0},shr".format(src), "SYSUT2": archive}
         rc, out, err = mvs_cmd.ikjeft01(cmd=xmit_cmd, authorized=True, dds=dds)
-        # rc, out, err = self.module.run_command(tso_cmd)
         if rc != 0:
             self.module.fail_json(
                 msg="An error occurred while executing 'TSO XMIT' to archive {0} into {1}".format(src, archive),
@@ -921,7 +984,7 @@ class XMITArchive(MVSArchive):
         Adds MVS Datasets to the TSO XMIT Archive by creating a temporary dataset and dumping the source datasets into it.
         """
         if self.use_adrdssu:
-            source = self.prepare_temp_ds(self.module.params.get("tmp_hlq"))
+            source, changed = self._create_dest_data_set(type="SEQ", record_format="U", record_length=0, tmp_hlq=self.tmphlq, replace=True)
             self.dump_into_temp_ds(source)
             self.tmp_data_sets.append(source)
         else:
@@ -930,7 +993,9 @@ class XMITArchive(MVSArchive):
                 self.module.fail_json(
                     msg="To archive multiple source data sets, you must use option 'use_adrdssu=True'.")
             source = self.sources[0]
-        dest = self.create_dest_ds(self.dest)
+        # dest = self.create_dest_ds(self.dest)
+        dest, changed = self._create_dest_data_set(name=self.dest, replace=True, type='SEQ', record_format='FB', record_length=XMIT_RECORD_LENGTH)
+        self.changed = self.changed or changed
         self.add(source, dest)
         self.clean_environment(data_sets=self.tmp_data_sets)
 

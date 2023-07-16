@@ -192,7 +192,7 @@ options:
         type: str
         required: true
         choices:
-          - SEQs
+          - SEQ
       space_primary:
         description:
           - If the destination I(dest) data set does not exist , this sets the
@@ -731,8 +731,6 @@ class MVSArchive(Archive):
             record_length=None,
             block_size=None,
             directory_blocks=None,
-            key_length=None,
-            key_offset=None,
             sms_storage_class=None,
             sms_data_class=None,
             sms_management_class=None,
@@ -919,13 +917,13 @@ class AMATerseArchive(MVSArchive):
         """
         if self.use_adrdssu:
             source, changed = self._create_dest_data_set(
-                                                        type="SEQ",
-                                                        record_format="U",
-                                                        record_length=0,
-                                                        tmp_hlq=self.tmphlq,
-                                                        replace=True,
-                                                        space_primary=self.dest_data_set.get("space_primary"),
-                                                        space_type=self.dest_data_set.get("space_type"))
+                type="SEQ",
+                record_format="U",
+                record_length=0,
+                tmp_hlq=self.tmphlq,
+                replace=True,
+                space_primary=self.dest_data_set.get("space_primary"),
+                space_type=self.dest_data_set.get("space_type"))
             self.dump_into_temp_ds(source)
             self.tmp_data_sets.append(source)
         else:
@@ -935,7 +933,14 @@ class AMATerseArchive(MVSArchive):
                     msg="To archive multiple source data sets, you must use option 'use_adrdssu=True'.")
             source = self.targets[0]
         # dest = self.create_dest_ds(self.dest)
-        dest, changed = self._create_dest_data_set(name=self.dest, replace=True, type='SEQ', record_format='FB', record_length=AMATERSE_RECORD_LENGTH,  space_primary=self.dest_data_set.get("space_primary"), space_type=self.dest_data_set.get("space_type"))
+        dest, changed = self._create_dest_data_set(
+            name=self.dest,
+            replace=True,
+            type='SEQ',
+            record_format='FB',
+            record_length=AMATERSE_RECORD_LENGTH,
+            space_primary=self.dest_data_set.get("space_primary"),
+            space_type=self.dest_data_set.get("space_type"))
         self.changed = self.changed or changed
         self.add(source, dest)
         self.clean_environment(data_sets=self.tmp_data_sets)
@@ -976,13 +981,13 @@ class XMITArchive(MVSArchive):
         """
         if self.use_adrdssu:
             source, changed = self._create_dest_data_set(
-                                                        type="SEQ",
-                                                        record_format="U",
-                                                        record_length=0,
-                                                        tmp_hlq=self.tmphlq,
-                                                        replace=True,
-                                                        space_primary=self.dest_data_set.get("space_primary"),
-                                                        space_type=self.dest_data_set.get("space_type"))
+                type="SEQ",
+                record_format="U",
+                record_length=0,
+                tmp_hlq=self.tmphlq,
+                replace=True,
+                space_primary=self.dest_data_set.get("space_primary"),
+                space_type=self.dest_data_set.get("space_type"))
             self.dump_into_temp_ds(source)
             self.tmp_data_sets.append(source)
         else:
@@ -992,7 +997,14 @@ class XMITArchive(MVSArchive):
                     msg="To archive multiple source data sets, you must use option 'use_adrdssu=True'.")
             source = self.sources[0]
         # dest = self.create_dest_ds(self.dest)
-        dest, changed = self._create_dest_data_set(name=self.dest, replace=True, type='SEQ', record_format='FB', record_length=XMIT_RECORD_LENGTH,  space_primary=self.dest_data_set.get("space_primary"), space_type=self.dest_data_set.get("space_type"))
+        dest, changed = self._create_dest_data_set(
+            name=self.dest,
+            replace=True,
+            type='SEQ',
+            record_format='FB',
+            record_length=XMIT_RECORD_LENGTH,
+            space_primary=self.dest_data_set.get("space_primary"),
+            space_type=self.dest_data_set.get("space_type"))
         self.changed = self.changed or changed
         self.add(source, dest)
         self.clean_environment(data_sets=self.tmp_data_sets)
@@ -1044,7 +1056,7 @@ def run_module():
                     ),
                     type=dict(
                         type='str',
-                        choices=['SEQ', 'PDS', 'PDSE'],
+                        choices=['SEQ'],
                         required=True,
                     ),
                     space_primary=dict(
@@ -1064,8 +1076,6 @@ def run_module():
                     record_length=dict(type='int', required=False),
                     block_size=dict(type='int', required=False),
                     directory_blocks=dict(type="int", required=False),
-                    key_offset=dict(type="int", required=False, no_log=False),
-                    key_length=dict(type="int", required=False, no_log=False),
                     sms_storage_class=dict(type="str", required=False),
                     sms_data_class=dict(type="str", required=False),
                     sms_management_class=dict(type="str", required=False),
@@ -1142,8 +1152,6 @@ def run_module():
                 record_length=dict(type='int', required=False),
                 block_size=dict(arg_type='int', required=False),
                 directory_blocks=dict(arg_type="int", required=False),
-                key_offset=dict(arg_type="int", required=False),
-                key_length=dict(arg_type="int", required=False),
                 sms_storage_class=dict(arg_type="str", required=False),
                 sms_data_class=dict(arg_type="str", required=False),
                 sms_management_class=dict(arg_type="str", required=False),

@@ -103,7 +103,8 @@ options:
             default: False
   dest:
     description:
-      - The remote absolute path or data set where the archive should be created.
+      - The remote absolute path or data set where the archive should be
+        created.
       - I(dest) can be a USS file or MVS data set name.
       - If I(dest) has missing parent directories, they will be created.
       - If I(dest) is a nonexistent USS file, it will be created.
@@ -124,12 +125,11 @@ options:
     elements: str
   group:
     description:
-      - Name of the group that will own the file system objects.
-      - When left unspecified, it uses the current group of the current
-        user unless you are root, in which case it can preserve the
-        previous ownership.
-      - This option is only applicable if C(dest) is USS, otherwise
-        ignored.
+      - Name of the group that will own the archive file.
+      - When left unspecified, it uses the current group of the current use
+        unless you are root, in which case it can preserve the previous
+        ownership.
+      - This option is only applicable if C(dest) is USS, otherwise ignored.
     type: str
     required: false
   mode:

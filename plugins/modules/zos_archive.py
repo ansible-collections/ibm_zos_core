@@ -103,12 +103,10 @@ options:
             default: False
   dest:
     description:
-      - The remote absolute path or data set where the content should be
-        copied to. Dest can be a USS file or MVS data set name.
-      - If dest has missing parent directories, they will be created.
-      - If dest is a nonexistent USS file, it will be created.
-      - The module will default the size of destination file an
-        destination data set.
+      - The remote absolute path or data set where the archive should be created.
+      - I(dest) can be a USS file or MVS data set name.
+      - If I(dest) has missing parent directories, they will be created.
+      - If I(dest) is a nonexistent USS file, it will be created.
       - Destination data set attributes can be set using I(dest_data_set).
     type: str
     required: false

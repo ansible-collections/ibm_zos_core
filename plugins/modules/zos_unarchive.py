@@ -28,6 +28,7 @@ description:
   - For supported archive formats, see option C(format).
   - Supported sources are USS (UNIX System Services) or z/OS data sets.
   - Mixing MVS data sets with USS files for unarchiving is not supported.
+  - The archive is sent to the remote as binary, so no encoding is performed.
 
 
 options:

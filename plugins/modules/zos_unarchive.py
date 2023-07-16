@@ -34,10 +34,10 @@ description:
 options:
   src:
     description:
-      - The remote absolute path or data set of the archive to be uncompressed
-        on the remote.
-      - Src can be a USS file or MVS data set.
+      - The remote absolute path or data set of the archive to be uncompressed.
+      - I(src) can be a USS file or MVS data set name.
       - USS file paths should be absolute paths.
+      - MVS data sets supported types are: C(SEQ), C(PDS), C(PDSE).
     type: str
     required: true
   format:

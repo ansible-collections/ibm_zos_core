@@ -153,7 +153,7 @@ options:
     required: false
   owner:
     description:
-      - Name of the user that should own the filesystem object, as would be
+      - Name of the user that should own the archive file, as would be
         passed to the chown command.
       - When left unspecified, it uses the current user unless you are root,
         in which case it can preserve the previous ownership.

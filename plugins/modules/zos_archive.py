@@ -355,7 +355,11 @@ EXAMPLES = r'''
 RETURN = r'''
 state:
     description:
-        The state of the input C(path).
+        - The state of the input C(src).
+        - C(absent) when the source files or data sets were removed.
+        - C(present) when the source files or data sets were not removed.
+        - C(incomplete) when C(remove) was true and the source files or
+          data sets were not removed.
     type: str
     returned: always
 dest_state:

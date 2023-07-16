@@ -934,7 +934,14 @@ class AMATerseArchive(MVSArchive):
         Add MVS Datasets to the AMATERSE Archive by creating a temporary dataset and dumping the source datasets into it.
         """
         if self.use_adrdssu:
-            source, changed = self._create_dest_data_set(type="SEQ", record_format="U", record_length=0, tmp_hlq=self.tmphlq, replace=True)
+            source, changed = self._create_dest_data_set(
+                                                        type="SEQ",
+                                                        record_format="U",
+                                                        record_length=0,
+                                                        tmp_hlq=self.tmphlq,
+                                                        replace=True,
+                                                        space_primary=self.dest_data_set.get("space_primary"),
+                                                        space_type=self.dest_data_set.get("space_type"))
             self.dump_into_temp_ds(source)
             self.tmp_data_sets.append(source)
         else:
@@ -944,7 +951,7 @@ class AMATerseArchive(MVSArchive):
                     msg="To archive multiple source data sets, you must use option 'use_adrdssu=True'.")
             source = self.targets[0]
         # dest = self.create_dest_ds(self.dest)
-        dest, changed = self._create_dest_data_set(name=self.dest, replace=True, type='SEQ', record_format='FB', record_length=AMATERSE_RECORD_LENGTH)
+        dest, changed = self._create_dest_data_set(name=self.dest, replace=True, type='SEQ', record_format='FB', record_length=AMATERSE_RECORD_LENGTH,  space_primary=self.dest_data_set.get("space_primary"), space_type=self.dest_data_set.get("space_type"))
         self.changed = self.changed or changed
         self.add(source, dest)
         self.clean_environment(data_sets=self.tmp_data_sets)
@@ -984,7 +991,14 @@ class XMITArchive(MVSArchive):
         Adds MVS Datasets to the TSO XMIT Archive by creating a temporary dataset and dumping the source datasets into it.
         """
         if self.use_adrdssu:
-            source, changed = self._create_dest_data_set(type="SEQ", record_format="U", record_length=0, tmp_hlq=self.tmphlq, replace=True)
+            source, changed = self._create_dest_data_set(
+                                                        type="SEQ",
+                                                        record_format="U",
+                                                        record_length=0,
+                                                        tmp_hlq=self.tmphlq,
+                                                        replace=True,
+                                                        space_primary=self.dest_data_set.get("space_primary"),
+                                                        space_type=self.dest_data_set.get("space_type"))
             self.dump_into_temp_ds(source)
             self.tmp_data_sets.append(source)
         else:
@@ -994,7 +1008,7 @@ class XMITArchive(MVSArchive):
                     msg="To archive multiple source data sets, you must use option 'use_adrdssu=True'.")
             source = self.sources[0]
         # dest = self.create_dest_ds(self.dest)
-        dest, changed = self._create_dest_data_set(name=self.dest, replace=True, type='SEQ', record_format='FB', record_length=XMIT_RECORD_LENGTH)
+        dest, changed = self._create_dest_data_set(name=self.dest, replace=True, type='SEQ', record_format='FB', record_length=XMIT_RECORD_LENGTH,  space_primary=self.dest_data_set.get("space_primary"), space_type=self.dest_data_set.get("space_type"))
         self.changed = self.changed or changed
         self.add(source, dest)
         self.clean_environment(data_sets=self.tmp_data_sets)

@@ -160,15 +160,6 @@ options:
       - This option is only applicable if C(dest) is USS, otherwise ignored.
     type: str
     required: false
-  exclusion_patterns:
-    description:
-      - Glob style patterns to exclude files or directories from the resulting
-        archive.
-      - Option I(exclusion_patterns) differs from I(exclude), where I(exclude)
-        applies only to UNIX source paths and data sets.
-    type: list
-    elements: str
-    required: false
   remove:
     description:
       - Remove any added source files , trees or data sets after module
@@ -475,7 +466,6 @@ class Archive():
     def __init__(self, module):
         self.module = module
         self.dest = module.params['dest']
-        self.exclusion_patterns = module.params['exclusion_patterns'] or []
         self.format = module.params.get("format").get("name")
         self.remove = module.params['remove']
         self.changed = False
@@ -1090,7 +1080,6 @@ def run_module():
                     sms_management_class=dict(type="str", required=False),
                 )
             ),
-            exclusion_patterns=dict(type='list', elements='str'),
             tmp_hlq=dict(type='str'),
             force=dict(type='bool', default=False)
         ),
@@ -1166,7 +1155,6 @@ def run_module():
                 sms_management_class=dict(arg_type="str", required=False),
             )
         ),
-        exclusion_patterns=dict(type='list', elements='str'),
         tmp_hlq=dict(type='qualifier_or_empty', default=''),
         force=dict(type='bool', default=False)
     )

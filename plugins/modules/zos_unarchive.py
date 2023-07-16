@@ -101,19 +101,18 @@ options:
               elements: str
   dest:
     description:
-    - The remote absolute path or data set where the content should be
-      unarchived to.
-    - dest can be a USS file, directory or MVS data set name.
-    - If dest has missing parent directories, they will not be created.
+      - The remote absolute path or data set where the content should be unarchived to.
+      - I(dest) can be a USS file, directory or MVS data set name.
+      - If dest has missing parent directories, they will not be created.
     type: str
     required: false
   group:
     description:
-      - Name of the group that should own the filesystem object, as would
-        be passed to the chown command.
+      - Name of the group that will own the file system objects.
       - When left unspecified, it uses the current group of the current user
-        unless you are root,
-        in which case it can preserve the previous ownership.
+        unless you are root, in which case it can preserve the previous
+        ownership.
+      - This option is only applicable if C(dest) is USS, otherwise ignored.
     type: str
     required: false
   mode:

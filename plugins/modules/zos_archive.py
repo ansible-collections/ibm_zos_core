@@ -114,9 +114,13 @@ options:
     required: false
   exclude:
     description:
-        - Remote absolute path, glob, or list of paths, globs or data set
-          name patterns for the file,
-          files or data sets to exclude from path list and glob expansion.
+    - Remote absolute path, glob, or list of paths, globs or data set name
+      patterns for the file, files or data sets to exclude from path list
+      and glob expansion.
+    - Patterns (wildcards) can contain one of the following: '?', '*', [seq]'
+        - '*' matches everything
+        - '?' matches any single character.
+        - '[seq]' matches any character in seq.
     type: list
     required: false
     elements: str

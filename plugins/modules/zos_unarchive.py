@@ -370,7 +370,8 @@ dest_path:
 targets:
   description:
     List of files or data sets in the archive.
-  type: str
+  type: list
+  elements: str
   returned: success
 missing:
   description:

@@ -286,12 +286,19 @@ options:
         C(TMPHLQ) is used.
     required: false
     type: str
-  force:
-    description:
-      - Create the dest archive file even if it already exists.
+    force:
+      description:
+        - If set to C(true) and the remote file or data set C(dest) will be deleted. <this is the part i don't know, how do you recreate the data set>
+        attributes, otherwise it will be recreated with the C(dest) data set
+        attributes.
+        - If set to C(false), the file or data set will only be copied if the
+        destination does not exist.
+        - If set to C(false) and destination exists, the module exits with a note to
+        the user. <zos_copy will send back a msg, will zos_archive? >
     type: bool
-    required: false
     default: false
+    required: false
+
 notes:
   - This module does not perform a send or transmit operation to a remote
     node. If you want to transport the archive you can use zos_fetch to

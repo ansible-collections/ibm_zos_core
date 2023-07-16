@@ -109,7 +109,7 @@ options:
       - If I(dest) is a nonexistent USS file, it will be created.
       - Destination data set attributes can be set using I(dest_data_set).
     type: str
-    required: false
+    required: true
   exclude:
     description:
     - Remote absolute path, glob, or list of paths, globs or data set name
@@ -1023,7 +1023,7 @@ def run_module():
     module = AnsibleModule(
         argument_spec=dict(
             src=dict(type='list', elements='str', required=True),
-            dest=dict(type='str'),
+            dest=dict(type='str', required=True),
             exclude=dict(type='list', elements='str'),
             format=dict(
                 type='dict',
@@ -1099,7 +1099,7 @@ def run_module():
 
     arg_defs = dict(
         src=dict(type='list', elements='str', required=True),
-        dest=dict(type='str', required=False),
+        dest=dict(type='str', required=True),
         exclude=dict(type='list', elements='str', default=[]),
         format=dict(
             type='dict',

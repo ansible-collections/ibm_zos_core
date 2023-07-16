@@ -134,7 +134,7 @@ options:
     required: false
   mode:
     description:
-      - The permission of the destination file or directory.
+      - The permission of the destination archive file.
       - If C(dest) is USS, this will act as Unix file mode, otherwise
         ignored.
       - It should be noted that modes are octal numbers.

@@ -972,7 +972,6 @@ def test_mvs_unarchive_single_data_set_remote_src(ansible_zos_module, format, da
             src=source_path,
             format=format_dict,
             remote_src=False,
-            is_binary=True,
         )
 
         for result in unarchive_result.contacted.values():

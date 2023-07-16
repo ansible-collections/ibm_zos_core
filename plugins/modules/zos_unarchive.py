@@ -86,8 +86,17 @@ options:
               default: False
             dest_volumes:
               description:
-                - When using ADRDSSU select on which volume the datasets
-                  will be placed first.
+                - When I(use_adrdssu=True), specify the volume the data sets
+                  will be written to.
+                - If no volume is specified, storage management rules will be
+                  used to determine the volume where the file will be
+                  unarchived.
+                - If the storage administrator has specified a system default
+                  unit name and you do not set a volume name for
+                  non-system-managed data sets, then the system uses the
+                  volumes associated with the default unit name. Check with
+                  your storage administrator to determine whether a default
+                  unit name has been specified.
               type: list
               elements: str
   dest:

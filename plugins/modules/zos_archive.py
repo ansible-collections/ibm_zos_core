@@ -288,13 +288,13 @@ options:
     type: str
     force:
       description:
-        - If set to C(true) and the remote file or data set C(dest) will be deleted. <this is the part i don't know, how do you recreate the data set>
-        attributes, otherwise it will be recreated with the C(dest) data set
-        attributes.
+        - If set to C(true) and the remote file or data set C(dest) will be
+          deleted. Otherwise it will be created with the C(dest_data_set)
+          attributes or default values if C(dest_data_set) is not specified.
         - If set to C(false), the file or data set will only be copied if the
-        destination does not exist.
-        - If set to C(false) and destination exists, the module exits with a note to
-        the user. <zos_copy will send back a msg, will zos_archive? >
+          destination does not exist.
+        - If set to C(false) and destination exists, the module exits with a
+          note to the user.
     type: bool
     default: false
     required: false

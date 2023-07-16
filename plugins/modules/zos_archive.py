@@ -192,9 +192,7 @@ options:
         type: str
         required: true
         choices:
-          - SEQ
-          - PDS
-          - PDSE
+          - SEQs
       space_primary:
         description:
           - If the destination I(dest) data set does not exist , this sets the
@@ -253,20 +251,6 @@ options:
       directory_blocks:
         description:
           - The number of directory blocks to allocate to the data set.
-        type: int
-        required: false
-      key_offset:
-        description:
-          - The key offset to use when creating a KSDS data set.
-          - I(key_offset) is required when I(type=KSDS).
-          - I(key_offset) should only be provided when I(type=KSDS)
-        type: int
-        required: false
-      key_length:
-        description:
-          - The key length to use when creating a KSDS data set.
-          - I(key_length) is required when I(type=KSDS).
-          - I(key_length) should only be provided when I(type=KSDS)
         type: int
         required: false
       sms_storage_class:

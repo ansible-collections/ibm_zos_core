@@ -254,14 +254,18 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, duration=
                 job["svc_class"] = entry.svc_class
                 job["priority"] = entry.priority
                 job["asid"] = entry.asid
-                job["creation_datetime"] = entry.creation_datetime
+                # job["creation_datetime"] = entry.creation_datetime
+                job["creation_date"] = entry.creation_datetime[0:10]
+                job["creation_time"] = entry.creation_datetime[12:]
                 job["queue_position"] = entry.queue_position
             elif ZOAU_API_VERSION >= "1.2.4":
                 job["job_class"] = entry.job_class
                 job["svc_class"] = entry.svc_class
                 job["priority"] = entry.priority
                 job["asid"] = entry.asid
-                job["creation_datetime"] = entry.creation_datetime
+                # job["creation_datetime"] = entry.creation_datetime
+                job["creation_date"] = entry.creation_datetime[0:10]
+                job["creation_time"] = entry.creation_datetime[12:]
                 job["queue_position"] = entry.queue_position
                 job["program_name"] = entry.program_name
 

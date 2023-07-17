@@ -282,12 +282,12 @@ jobs:
         }
     job_class:
       description:
-        Letter indicating job class for this job.
+        Job class for this job.
       type: str
       sample: A
     svc_class:
       description:
-        Character indicating service class for this job.
+        Service class for this job.
       type: str
       sample: C
     priority:
@@ -297,22 +297,28 @@ jobs:
       sample: 4
     asid:
       description:
-        An identifier created by JES.
+        The address Space Identifier (ASID) that is a unique descriptor for the job address space.
+        Zero if not active.
       type: int
       sample: 0
-    creation_datetime:
+    creation_date:
       description:
-        Date and time, local to the target system, when the job was created.
+        Date, local to the target system, when the job was created.
       type: str
-      sample: 20230504T141500
+      sample: 2023-05-04
+    creation_time:
+      description:
+        Time, local to the target system, when the job was created.
+      type: str
+      sample: 14:15:00
     queue_position:
       description:
-        Integer of the position within the job queue where this jobs resided.
+        The position within the job queue where the jobs resides.
       type: int
       sample: 3
     program_name:
       description:
-        Name of the program, as per the job card.
+        The name of the program found in the job's last completed step found in the PGM parameter.
       type: str
       sample: "IEBGENER"
 
@@ -534,7 +540,8 @@ jobs:
               "priority": 1,
               "program_name": "IEBGENER",
               "asid": 0,
-              "creation_datetime": "20230503T121300",
+              "creation_date": "2023-05-03",
+              "creation_time": "12:13:00",
               "queue_position": 3,
               "subsystem": "STL1",
               "system": "STL1"

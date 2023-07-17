@@ -949,7 +949,6 @@ def test_ds_line_force_fail(ansible_zos_module, dstype):
 #########################
 
 @pytest.mark.uss
-@pytest.mark.encoding
 @pytest.mark.parametrize("encoding", ENCODING)
 def test_uss_encoding(ansible_zos_module, encoding):
     hosts = ansible_zos_module
@@ -972,7 +971,6 @@ def test_uss_encoding(ansible_zos_module, encoding):
 
 
 @pytest.mark.ds
-@pytest.mark.encoding
 @pytest.mark.parametrize("encoding", ["IBM-1047"])
 def test_ds_encoding(ansible_zos_module, encoding):
     hosts = ansible_zos_module

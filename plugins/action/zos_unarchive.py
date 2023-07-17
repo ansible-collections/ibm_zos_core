@@ -60,7 +60,7 @@ class ActionModule(ActionBase):
             format = self._task.args.get("format")
             format_name = format.get("name")
             copy_module_args = dict()
-            dest_data_set = dict()
+            dest_data_set = format.get("dest_data_set")
             dest = ""
             if source.startswith('~'):
                 source = os.path.expanduser(source)
@@ -80,10 +80,11 @@ class ActionModule(ActionBase):
                     task_vars=task_vars,
                 )
                 dest = cmd_res.get("stdout")
-                if format_name == 'terse':
-                    dest_data_set = dict(type='SEQ', record_format='FB', record_length=1024)
-                if format_name == 'xmit':
-                    dest_data_set = dict(type='SEQ', record_format='FB', record_length=80)
+                if dest_data_set is None:
+                    if format_name == 'terse':
+                        dest_data_set = dict(type='SEQ', record_format='FB', record_length=1024)
+                    if format_name == 'xmit':
+                        dest_data_set = dict(type='SEQ', record_format='FB', record_length=80)
             else:
                 # Raise unsupported format name
                 None

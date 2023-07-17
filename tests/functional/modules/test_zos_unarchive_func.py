@@ -575,8 +575,8 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu(ansible_zos_module, format,
         ])
 @pytest.mark.parametrize(
     "data_set", [
-        # dict(name=TEST_PS, dstype="SEQ"),
-        # dict(name=TEST_PDS, dstype="PDS"),
+        dict(name=TEST_PS, dstype="SEQ"),
+        dict(name=TEST_PDS, dstype="PDS"),
         dict(name=TEST_PDS, dstype="PDSE"),
         ]
 )
@@ -612,7 +612,6 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu_include(ansible_zos_module,
             src="{0}*".format(data_set.get("name")),
             dest=MVS_DEST_ARCHIVE,
             format=format_dict,
-            dest_data_set=dict(space_primary=1, type='SEQ', space_type='K'),
         )
         for result in archive_result.contacted.values():
             assert result.get("changed") is True

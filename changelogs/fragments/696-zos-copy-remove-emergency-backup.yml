@@ -1,0 +1,5 @@
+enhancements:
+- zos_copy - Previously automatically generated backup with force was false.
+  This led to volume full issues.  This change only causes a backup when backup is
+  True, or a backup name was provided.
+  (https://github.com/ansible-collections/ibm_zos_core/pull/)

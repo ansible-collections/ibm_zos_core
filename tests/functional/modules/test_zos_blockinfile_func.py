@@ -416,8 +416,7 @@ cat "//OMVSADM.COPYMEM.TESTS" > test.txt
 
 EXPECTED_ENCODING = """SIMPLE LINE TO VERIFY
 # BEGIN ANSIBLE MANAGED BLOCK
-0000000000      5468    6973    2069    7320    6669    6C65    206F    6E65
-0000000020      2E0A 0000000022
+Insert this string
 # END ANSIBLE MANAGED BLOCK"""
 
 """
@@ -1300,14 +1299,12 @@ def test_ds_block_insertafter_regex_force(ansible_zos_module, dstype):
 #########################
 # Encoding tests
 #########################
-
 @pytest.mark.uss
 @pytest.mark.parametrize("encoding", ENCODING)
 def test_uss_encoding(ansible_zos_module, encoding):
     hosts = ansible_zos_module
-    str_hexa = """0000000000      5468    6973    2069    7320    6669    6C65    206F    6E65
-0000000020      2E0A 0000000022"""
-    params = dict(insertafter="SIMPLE", block=str_hexa, state="present")
+    insert_data = "Insert this string"
+    params = dict(insertafter="SIMPLE", block=insert_data, state="present")
     params["encoding"] = encoding
     full_path = TEST_FOLDER_BLOCKINFILE + inspect.stack()[0][3]
     content = "SIMPLE LINE TO VERIFY"
@@ -1315,6 +1312,7 @@ def test_uss_encoding(ansible_zos_module, encoding):
         hosts.all.shell(cmd="mkdir -p {0}".format(TEST_FOLDER_BLOCKINFILE))
         hosts.all.file(path=full_path, state="touch")
         hosts.all.shell(cmd="echo \"{0}\" > {1}".format(content, full_path))
+        hosts.all.zos_encode(src=full_path, dest=full_path, from_encoding="IBM-1047", to_encoding=params["encoding"])
         params["path"] = full_path
         results = hosts.all.zos_blockinfile(**params)
         for result in results.contacted.values():
@@ -1324,6 +1322,33 @@ def test_uss_encoding(ansible_zos_module, encoding):
             assert result.get("stdout") == EXPECTED_ENCODING
     finally:
         remove_uss_environment(ansible_zos_module)
+
+
+@pytest.mark.ds
+@pytest.mark.parametrize("dstype", DS_TYPE)
+@pytest.mark.parametrize("encoding", "IBM-1047")
+def test_ds_encoding(ansible_zos_module, encoding, dstype):
+    hosts = ansible_zos_module
+    ds_type = dstype
+    insert_data = "Insert this string"
+    params = dict(insertafter="SIMPLE",block=insert_data, state="present")
+    params["encoding"] = encoding
+    test_name = "DST13"
+    temp_file = "/tmp/{0}".format(test_name)
+    ds_name = test_name.upper() + "." + ds_type
+    content = "SIMPLE LINE TO VERIFY"
+    try:
+        ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
+        params["path"] = ds_full_name
+        hosts.all.zos_encode(src=ds_full_name, dest=ds_full_name, from_encoding="IBM-1047", to_encoding=params["encoding"])
+        results = hosts.all.zos_blockinfile(**params)
+        for result in results.contacted.values():
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == EXPECTED_ENCODING
+    finally:
+        remove_ds_environment(ansible_zos_module, ds_name)
 
 #########################
 # Negative tests

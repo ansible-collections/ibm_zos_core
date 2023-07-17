@@ -170,7 +170,7 @@ options:
     default: false
   dest_data_set:
     description:
-      - Data set attributes to customize a C(dest) data set to be copied into.
+      - Data set attributes to customize a C(dest) data set to be archived into.
     required: false
     type: dict
     suboptions:
@@ -183,7 +183,7 @@ options:
         description:
           - Organization of the destination
         type: str
-        required: true
+        required: false
         choices:
           - SEQ
       space_primary:
@@ -1068,7 +1068,8 @@ def run_module():
                     type=dict(
                         type='str',
                         choices=['SEQ'],
-                        required=True,
+                        required=False,
+                        default="SEQ",
                     ),
                     space_primary=dict(
                         type='int', required=False),
@@ -1152,7 +1153,7 @@ def run_module():
             required=False,
             options=dict(
                 name=dict(arg_type='str', required=False),
-                type=dict(arg_type='str', required=True),
+                type=dict(arg_type='str', required=False, default="SEQ"),
                 space_primary=dict(arg_type='int', required=False),
                 space_secondary=dict(
                     arg_type='int', required=False),

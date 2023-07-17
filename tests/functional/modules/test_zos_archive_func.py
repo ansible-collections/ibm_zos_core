@@ -576,7 +576,7 @@ def test_mvs_archive_multiple_data_sets(ansible_zos_module, format, data_set ):
             for ds in target_ds_list:
                 target_member_list.extend(
                     create_multiple_members(ansible_zos_module=hosts,
-                                        pds_name=ds.get("type"),
+                                        pds_name=ds.get("name"),
                                         member_base_name="MEM",
                                         n=3
                     )
@@ -637,7 +637,7 @@ def test_mvs_archive_multiple_data_sets_with_exclusion(ansible_zos_module, forma
             for ds in target_ds_list:
                 target_member_list.extend(
                     create_multiple_members(ansible_zos_module=hosts,
-                                        pds_name=ds.get("type"),
+                                        pds_name=ds.get("name"),
                                         member_base_name="MEM",
                                         n=3
                     )
@@ -703,7 +703,7 @@ def test_mvs_archive_multiple_data_sets_and_remove(ansible_zos_module, format, d
             for ds in target_ds_list:
                 target_member_list.extend(
                     create_multiple_members(ansible_zos_module=hosts,
-                                        pds_name=ds.get("type"),
+                                        pds_name=ds.get("name"),
                                         member_base_name="MEM",
                                         n=3
                     )
@@ -766,7 +766,7 @@ def test_mvs_archive_multiple_data_sets_with_missing(ansible_zos_module, format,
             for ds in target_ds_list:
                 target_member_list.extend(
                     create_multiple_members(ansible_zos_module=hosts,
-                                        pds_name=ds.get("type"),
+                                        pds_name=ds.get("name"),
                                         member_base_name="MEM",
                                         n=3
                     )

@@ -36,7 +36,7 @@ options:
       - List of names or globs of UNIX System Services (USS) files,
         PS (sequential data sets), PDS, PDSE to compress or archive.
       - USS file paths should be absolute paths.
-      - 'MVS data sets supported types are: C(SEQ), C(PDS), C(PDSE).'
+      - "MVS data sets supported types are: C(SEQ), C(PDS), C(PDSE)."
       - VSAMs are not supported.
     type: list
     required: true
@@ -79,18 +79,19 @@ options:
               - Spack will produce smaller output and take approximately 3
                 times longer than pack compression.
             type: str
+            required: false
             choices:
               - PACK
               - SPACK
           xmit_log_data_set:
             description:
               - Provide the name of a data set to store xmit log output.
-            - If the data set provided does not exist, the program
+              - If the data set provided does not exist, the program
                 will create it.
-            - 'If the data set provided exists, the data set must have
+              - "If the data set provided exists, the data set must have
                 the following attributes: LRECL=255, BLKSIZE=3120, and
-                RECFM=VB'
-            - When providing the I(xmit_log_data_set) name, ensure there
+                RECFM=VB"
+              - When providing the I(xmit_log_data_set) name, ensure there
                 is adequate space.
             type: str
           use_adrdssu:
@@ -100,7 +101,7 @@ options:
                 (DFSMSdss) program ADRDSSU to compress data sets into a
                 portable format before using C(xmit) or C(terse).
             type: bool
-            default: False
+            default: false
   dest:
     description:
       - The remote absolute path or data set where the archive should be
@@ -113,13 +114,12 @@ options:
     required: true
   exclude:
     description:
-    - Remote absolute path, glob, or list of paths, globs or data set name
-      patterns for the file, files or data sets to exclude from path list
-      and glob expansion.
-    - Patterns (wildcards) can contain one of the following: '?', '*', [seq]'
-        - '*' matches everything
-        - '?' matches any single character.
-        - '[seq]' matches any character in seq.
+      - Remote absolute path, glob, or list of paths, globs or data set name
+        patterns for the file, files or data sets to exclude from path list
+        and glob expansion.
+      - "Patterns (wildcards) can contain one of the following: ?, *."
+      - "* matches everything."
+      - "? matches any single character."
     type: list
     required: false
     elements: str
@@ -145,8 +145,8 @@ options:
         a number without following one of these rules will end up with a
         decimal number which will have unexpected results.
       - The mode may also be specified as a symbolic mode
-        (for example, ``u+rwx`` or ``u=rw,g=r,o=r``) or a special
-        string `preserve`.
+        (for example, 'u+rwx' or 'u=rw,g=r,o=r') or a special
+        string 'preserve'.
       - I(mode=preserve) means that the file will be given the same permissions
         as the source file.
     type: str
@@ -279,15 +279,15 @@ options:
         C(TMPHLQ) is used.
     required: false
     type: str
-    force:
-      description:
-        - If set to C(true) and the remote file or data set C(dest) will be
-          deleted. Otherwise it will be created with the C(dest_data_set)
-          attributes or default values if C(dest_data_set) is not specified.
-        - If set to C(false), the file or data set will only be copied if the
-          destination does not exist.
-        - If set to C(false) and destination exists, the module exits with a
-          note to the user.
+  force:
+    description:
+      - If set to C(true) and the remote file or data set C(dest) will be
+        deleted. Otherwise it will be created with the C(dest_data_set)
+        attributes or default values if C(dest_data_set) is not specified.
+      - If set to C(false), the file or data set will only be copied if the
+        destination does not exist.
+      - If set to C(false) and destination exists, the module exits with a
+        note to the user.
     type: bool
     default: false
     required: false

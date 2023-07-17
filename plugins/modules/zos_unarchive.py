@@ -37,7 +37,7 @@ options:
       - The remote absolute path or data set of the archive to be uncompressed.
       - I(src) can be a USS file or MVS data set name.
       - USS file paths should be absolute paths.
-      - MVS data sets supported types are: C(SEQ), C(PDS), C(PDSE).
+      - MVS data sets supported types are C(SEQ), C(PDS), C(PDSE).
     type: str
     required: true
   format:
@@ -48,58 +48,58 @@ options:
     required: true
     suboptions:
       name:
-          description:
-            - The compression format to use.
-          type: str
-          required: true
-          choices:
-            - bz2
-            - gz
-            - tar
-            - zip
-            - terse
-            - xmit
-            - pax
+        description:
+          - The compression format to use.
+        type: str
+        required: true
+        choices:
+          - bz2
+          - gz
+          - tar
+          - zip
+          - terse
+          - xmit
+          - pax
       format_options:
-          description:
-            - Options specific to a compression format.
-          type: dict
-          required: false
-          suboptions:
-            xmit_log_data_set:
-              description:
-                - Provide the name of a data set to store xmit log output.
-                - If the data set provided does not exist, the program
-                  will create it.
-                - 'If the data set provided exists, the data set must have
-                  the following attributes: LRECL=255, BLKSIZE=3120, and
-                  RECFM=VB'
-                - When providing the I(xmit_log_data_set) name, ensure there
-                  is adequate space.
-                type: str
-            use_adrdssu:
-              description:
-                - If set to true, the C(zos_archive) module will use Data
-                  Facility Storage Management Subsystem data set services
-                  (DFSMSdss) program ADRDSSU to uncompress data sets from
-                  a portable format after using C(xmit) or C(terse).
-              type: bool
-              default: False
-            dest_volumes:
-              description:
-                - When I(use_adrdssu=True), specify the volume the data sets
-                  will be written to.
-                - If no volume is specified, storage management rules will be
-                  used to determine the volume where the file will be
-                  unarchived.
-                - If the storage administrator has specified a system default
-                  unit name and you do not set a volume name for
-                  non-system-managed data sets, then the system uses the
-                  volumes associated with the default unit name. Check with
-                  your storage administrator to determine whether a default
-                  unit name has been specified.
-              type: list
-              elements: str
+        description:
+          - Options specific to a compression format.
+        type: dict
+        required: false
+        suboptions:
+          xmit_log_data_set:
+            description:
+              - Provide the name of a data set to store xmit log output.
+              - If the data set provided does not exist, the program
+                will create it.
+              - 'If the data set provided exists, the data set must have
+                the following attributes: LRECL=255, BLKSIZE=3120, and
+                RECFM=VB'
+              - When providing the I(xmit_log_data_set) name, ensure there
+                is adequate space.
+            type: str
+          use_adrdssu:
+            description:
+              - If set to true, the C(zos_archive) module will use Data
+                Facility Storage Management Subsystem data set services
+                (DFSMSdss) program ADRDSSU to uncompress data sets from
+                a portable format after using C(xmit) or C(terse).
+            type: bool
+            default: False
+          dest_volumes:
+            description:
+              - When I(use_adrdssu=True), specify the volume the data sets
+                will be written to.
+              - If no volume is specified, storage management rules will be
+                used to determine the volume where the file will be
+                unarchived.
+              - If the storage administrator has specified a system default
+                unit name and you do not set a volume name for
+                non-system-managed data sets, then the system uses the
+                volumes associated with the default unit name. Check with
+                your storage administrator to determine whether a default
+                unit name has been specified.
+            type: list
+            elements: str
   dest:
     description:
       - The remote absolute path or data set where the content should be unarchived to.

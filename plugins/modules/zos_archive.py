@@ -184,6 +184,7 @@ options:
           - Organization of the destination
         type: str
         required: false
+        default: SEQ
         choices:
           - SEQ
       space_primary:

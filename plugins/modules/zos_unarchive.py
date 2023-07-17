@@ -170,7 +170,6 @@ options:
   dest_data_set:
     description:
       - Data set attributes to customize a C(dest) data set that the archive will be copied into.
-      -
     required: false
     type: dict
     suboptions:
@@ -184,6 +183,7 @@ options:
           - Organization of the destination
         type: str
         required: false
+        default: SEQ
         choices:
           - SEQ
       space_primary:
@@ -1014,7 +1014,7 @@ def run_module():
                     ),
                     type=dict(
                         type='str',
-                        choices=['SEQ', 'PDS', 'PDSE'],
+                        choices=['SEQ'],
                         required=False,
                         default='SEQ',
                     ),

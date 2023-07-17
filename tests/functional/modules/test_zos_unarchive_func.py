@@ -361,7 +361,7 @@ def test_mvs_unarchive_single_data_set(ansible_zos_module, format, data_set, rec
             dest=MVS_DEST_ARCHIVE,
             format=format_dict,
             dest_data_set=dict(name=data_set.get("name"),
-                               type=data_set.get("dstype"),
+                               type="SEQ",
                                record_format=record_format,
                                record_length=record_length),
         )

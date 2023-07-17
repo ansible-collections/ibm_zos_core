@@ -298,6 +298,9 @@ notes:
     retrieve to the controller and then zos_copy or zos_unarchive for
     copying to a remote or send to the remote and then unpack the archive
     respectively.
+  - When packing and using C(use_adrdssu) flag the module will take up to two
+    times the space indicated in C(dest_data_set).
+
 
 seealso:
   - module: zos_fetch
@@ -719,8 +722,9 @@ class MVSArchive(Archive):
 
         # Get the size from the system
         default_size = 5
-        dest_size = int(default_size)
-        return dest_size
+        dest_space_type = 'M'
+        dest_primary_space = int(default_size)
+        return dest_primary_space, dest_space_type
 
     def _create_dest_data_set(
             self,
@@ -767,7 +771,11 @@ class MVSArchive(Archive):
         if type is None:
             arguments.update(type="SEQ")
         if space_primary is None:
-            arguments.update(space_primary=self._compute_dest_data_set_size())
+            arguments.update(space_primary=5)
+        if space_secondary is None:
+            arguments.update(space_secondary=3)
+        if space_type is None:
+            arguments.update(space_type="M")
         arguments.pop("self")
         changed = data_set.DataSet.ensure_present(**arguments)
         return arguments["name"], changed

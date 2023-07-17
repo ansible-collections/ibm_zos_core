@@ -338,9 +338,9 @@ List of tests:
         ])
 @pytest.mark.parametrize(
     "data_set", [
-        dict(name=TEST_PS, dstype="seq", members=[""]),
-        dict(name=TEST_PDS, dstype="pds", members=["MEM1", "MEM2", "MEM3"]),
-        dict(name=TEST_PDS, dstype="pdse", members=["MEM1", "MEM2", "MEM3"]),
+        dict(name=TEST_PS, dstype="SEQ", members=[""]),
+        dict(name=TEST_PDS, dstype="PDS", members=["MEM1", "MEM2", "MEM3"]),
+        dict(name=TEST_PDS, dstype="PDSE", members=["MEM1", "MEM2", "MEM3"]),
         ]
 )
 @pytest.mark.parametrize(
@@ -366,7 +366,7 @@ def test_mvs_archive_single_dataset(ansible_zos_module, format, data_set, record
             replace=True,
         )
         # Create members if needed
-        if data_set.get("dstype") in ["pds", "pdse"]:
+        if data_set.get("dstype") in ["PDS", "PDSE"]:
             for member in data_set.get("members"):
                 hosts.all.zos_data_set(
                     name=f"{data_set.get('name')}({member})",
@@ -411,9 +411,9 @@ def test_mvs_archive_single_dataset(ansible_zos_module, format, data_set, record
         ])
 @pytest.mark.parametrize(
     "data_set", [
-        dict(name=TEST_PS, dstype="seq", members=[""]),
-        dict(name=TEST_PDS, dstype="pds", members=["MEM1", "MEM2", "MEM3"]),
-        dict(name=TEST_PDS, dstype="pdse", members=["MEM1", "MEM2", "MEM3"]),
+        dict(name=TEST_PS, dstype="SEQ", members=[""]),
+        dict(name=TEST_PDS, dstype="PDS", members=["MEM1", "MEM2", "MEM3"]),
+        dict(name=TEST_PDS, dstype="PDSE", members=["MEM1", "MEM2", "MEM3"]),
         ]
 )
 @pytest.mark.parametrize(
@@ -439,7 +439,7 @@ def test_mvs_archive_single_dataset_use_adrdssu(ansible_zos_module, format, data
             replace=True,
         )
         # Create members if needed
-        if data_set.get("dstype") in ["pds", "pdse"]:
+        if data_set.get("dstype") in ["PDS", "PDSE"]:
             for member in data_set.get("members"):
                 hosts.all.zos_data_set(
                     name=f"{data_set.get('name')}({member})",
@@ -484,9 +484,9 @@ def test_mvs_archive_single_dataset_use_adrdssu(ansible_zos_module, format, data
         ])
 @pytest.mark.parametrize(
     "data_set", [
-        dict(name=TEST_PS, dstype="seq", members=[""]),
-        dict(name=TEST_PDS, dstype="pds", members=["MEM1", "MEM2", "MEM3"]),
-        dict(name=TEST_PDS, dstype="pdse", members=["MEM1", "MEM2", "MEM3"]),
+        dict(name=TEST_PS, dstype="SEQ", members=[""]),
+        dict(name=TEST_PDS, dstype="PDS", members=["MEM1", "MEM2", "MEM3"]),
+        dict(name=TEST_PDS, dstype="PDSE", members=["MEM1", "MEM2", "MEM3"]),
         ]
 )
 @pytest.mark.parametrize(
@@ -511,7 +511,7 @@ def test_mvs_archive_single_data_set_remove_target(ansible_zos_module, format, d
             replace=True,
         )
         # Create members if needed
-        if data_set.get("dstype") in ["pds", "pdse"]:
+        if data_set.get("dstype") in ["PDS", "PDSE"]:
             for member in data_set.get("members"):
                 hosts.all.zos_data_set(
                     name=f"{data_set.get('name')}({member})",
@@ -571,7 +571,7 @@ def test_mvs_archive_multiple_data_sets(ansible_zos_module, format, data_set ):
                                   n=3,
                                   type=data_set.get("dstype"))
         ds_to_write = target_ds_list
-        if data_set.get("dstype") in ["pds", "pdse"]:
+        if data_set.get("dstype") in ["PDS", "PDSE"]:
             target_member_list = []
             for ds in target_ds_list:
                 target_member_list.extend(
@@ -618,9 +618,9 @@ def test_mvs_archive_multiple_data_sets(ansible_zos_module, format, data_set ):
         ])
 @pytest.mark.parametrize(
     "data_set", [
-        dict(name=TEST_PS, dstype="seq"),
-        dict(name=TEST_PDS, dstype="pds"),
-        dict(name=TEST_PDS, dstype="pdse"),
+        dict(name=TEST_PS, dstype="SEQ"),
+        dict(name=TEST_PDS, dstype="PDS"),
+        dict(name=TEST_PDS, dstype="PDSE"),
         ]
 )
 def test_mvs_archive_multiple_data_sets_with_exclusion(ansible_zos_module, format, data_set ):
@@ -632,7 +632,7 @@ def test_mvs_archive_multiple_data_sets_with_exclusion(ansible_zos_module, forma
                                   n=3,
                                   type=data_set.get("dstype"))
         ds_to_write = target_ds_list
-        if data_set.get("dstype") in ["pds", "pdse"]:
+        if data_set.get("dstype") in ["PDS", "PDSE"]:
             target_member_list = []
             for ds in target_ds_list:
                 target_member_list.extend(
@@ -684,9 +684,9 @@ def test_mvs_archive_multiple_data_sets_with_exclusion(ansible_zos_module, forma
         ])
 @pytest.mark.parametrize(
     "data_set", [
-        dict(name=TEST_PS, dstype="seq"),
-        dict(name=TEST_PDS, dstype="pds"),
-        dict(name=TEST_PDS, dstype="pdse"),
+        dict(name=TEST_PS, dstype="SEQ"),
+        dict(name=TEST_PDS, dstype="PDS"),
+        dict(name=TEST_PDS, dstype="PDSE"),
         ]
 )
 def test_mvs_archive_multiple_data_sets_and_remove(ansible_zos_module, format, data_set ):
@@ -698,7 +698,7 @@ def test_mvs_archive_multiple_data_sets_and_remove(ansible_zos_module, format, d
                                   n=3,
                                   type=data_set.get("dstype"))
         ds_to_write = target_ds_list
-        if data_set.get("dstype") in ["pds", "pdse"]:
+        if data_set.get("dstype") in ["PDS", "PDSE"]:
             target_member_list = []
             for ds in target_ds_list:
                 target_member_list.extend(
@@ -747,9 +747,9 @@ def test_mvs_archive_multiple_data_sets_and_remove(ansible_zos_module, format, d
         ])
 @pytest.mark.parametrize(
     "data_set", [
-        dict(name=TEST_PS, dstype="seq"),
-        dict(name=TEST_PDS, dstype="pds"),
-        dict(name=TEST_PDS, dstype="pdse"),
+        dict(name=TEST_PS, dstype="SEQ"),
+        dict(name=TEST_PDS, dstype="PDS"),
+        dict(name=TEST_PDS, dstype="PDSE"),
         ]
 )
 def test_mvs_archive_multiple_data_sets_with_missing(ansible_zos_module, format, data_set ):
@@ -761,7 +761,7 @@ def test_mvs_archive_multiple_data_sets_with_missing(ansible_zos_module, format,
                                   n=3,
                                   type=data_set.get("dstype"))
         ds_to_write = target_ds_list
-        if data_set.get("dstype") in ["pds", "pdse"]:
+        if data_set.get("dstype") in ["PDS", "PDSE"]:
             target_member_list = []
             for ds in target_ds_list:
                 target_member_list.extend(
@@ -818,9 +818,9 @@ def test_mvs_archive_multiple_data_sets_with_missing(ansible_zos_module, format,
         ])
 @pytest.mark.parametrize(
     "data_set", [
-        dict(name=TEST_PS, dstype="seq", members=[""]),
-        dict(name=TEST_PDS, dstype="pds", members=["MEM1", "MEM2"]),
-        dict(name=TEST_PDS, dstype="pdse", members=["MEM1", "MEM2"]),
+        dict(name=TEST_PS, dstype="SEQ", members=[""]),
+        dict(name=TEST_PDS, dstype="PDS", members=["MEM1", "MEM2"]),
+        dict(name=TEST_PDS, dstype="PDSE", members=["MEM1", "MEM2"]),
         ]
 )
 def test_mvs_archive_single_dataset_force_lock(ansible_zos_module, format, data_set,):
@@ -837,7 +837,7 @@ def test_mvs_archive_single_dataset_force_lock(ansible_zos_module, format, data_
             replace=True,
         )
         # Create members if needed
-        if data_set.get("dstype") in ["pds", "pdse"]:
+        if data_set.get("dstype") in ["PDS", "PDSE"]:
             for member in data_set.get("members"):
                 hosts.all.zos_data_set(
                     name=f"{data_set.get('name')}({member})",

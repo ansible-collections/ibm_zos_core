@@ -305,12 +305,12 @@ jobs:
       description:
         Date, local to the target system, when the job was created.
       type: str
-      sample: 2023-05-04
+      sample: "2023-05-04"
     creation_time:
       description:
         Time, local to the target system, when the job was created.
       type: str
-      sample: 14:15:00
+      sample: "14:15:00"
     queue_position:
       description:
         The position within the job queue where the jobs resides.

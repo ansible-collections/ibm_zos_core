@@ -1,4 +1,4 @@
-bugfix:
+trivial:
 - zos_tso_command - Test cases were running in a specific sequence to validated.
   Change summary the sequence into one test case.
   (https://github.com/ansible-collections/ibm_zos_core/pull/895)

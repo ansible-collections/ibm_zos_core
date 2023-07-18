@@ -63,13 +63,13 @@ def test_zos_tso_command_allocate_listing_delete(ansible_zos_module):
         for item in result.get("output"):
             assert item.get("rc") == 0
         assert result.get("changed") is True
-    # Validate listds auth of a dataset with commands
+    # Validate listds of datasets and validate LISTDS using alias param 'command'
     results = hosts.all.zos_tso_command(commands=["LISTDS '{0}'".format(DEFAULT_TEMP_DATASET)])
     for result in results.contacted.values():
         for item in result.get("output"):
             assert item.get("rc") == 0
         assert result.get("changed") is True
-    # Validate listds auth single command
+    # Validate LISTDS using alias param 'command'
     results = hosts.all.zos_tso_command(command="LISTDS '{0}'".format(DEFAULT_TEMP_DATASET))
     for result in results.contacted.values():
         for item in result.get("output"):
@@ -89,7 +89,8 @@ def test_zos_tso_command_allocate_listing_delete(ansible_zos_module):
         for item in result.get("output"):
             assert item.get("rc") == 0
         assert result.get("changed") is True
-    # Validate already was remove
+    # Expect the tso_command to fail here because the previous command will have already deleted the data set
+    # Validate data set was removed by previous call
     results = hosts.all.zos_tso_command(commands=["delete '{0}'".format(DEFAULT_TEMP_DATASET)])
     for result in results.contacted.values():
         for item in result.get("output"):
@@ -127,7 +128,10 @@ def test_zos_tso_command_multiple_commands(ansible_zos_module):
     results = hosts.all.zos_tso_command(commands=commands_list)
     for result in results.contacted.values():
         for item in result.get("output"):
-            assert item.get("rc") == 0
+            if result.get("command") == "LU omvsadm":
+                assert item.get("rc") == 0
+            if result.get("command") == "LISTGRP":
+                assert item.get("rc") == 0
         assert result.get("changed") is True
 
 

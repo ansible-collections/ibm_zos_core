@@ -4,8 +4,8 @@
 .. _zos_unarchive_module:
 
 
-zos_unarchive -- Unarchive a dataset or file in z/OS.
-=====================================================
+zos_unarchive -- Unarchive files and data sets in z/OS.
+=======================================================
 
 
 
@@ -16,7 +16,11 @@ zos_unarchive -- Unarchive a dataset or file in z/OS.
 
 Synopsis
 --------
-- The ``zos_unarchive`` module unpacks an archive after optionally sending it to the remote.
+- The ``zos_unarchive`` module unpacks an archive after optionally transferring it to the remote system.
+- For supported archive formats, see option ``format``.
+- Supported sources are USS (UNIX System Services) or z/OS data sets.
+- Mixing MVS data sets with USS files for unarchiving is not supported.
+- The archive is sent to the remote as binary, so no encoding is performed.
 
 
 
@@ -27,22 +31,28 @@ Parameters
 ----------
 
 
-path
-  Local or remote absolute path or data set name of the archive to be unpacked on the remote.
+src
+  The remote absolute path or data set of the archive to be uncompressed.
+
+  *src* can be a USS file or MVS data set name.
+
+  USS file paths should be absolute paths.
+
+  MVS data sets supported types are ``SEQ``, ``PDS``, ``PDSE``.
 
   | **required**: True
   | **type**: str
 
 
 format
-  The type of compression to use.
+  The compression type and corresponding options to use when archiving data.
 
   | **required**: True
   | **type**: dict
 
 
   name
-    The name of the format to use.
+    The compression format to use.
 
     | **required**: True
     | **type**: str
@@ -50,28 +60,38 @@ format
 
 
   format_options
-    Options specific to each format.
+    Options specific to a compression format.
 
     | **required**: False
     | **type**: dict
 
 
-    xmit_log_dataset
-      Provide a name of data set to store xmit log output.
+    xmit_log_data_set
+      Provide the name of a data set to store xmit log output.
+
+      If the data set provided does not exist, the program will create it.
+
+      If the data set provided exists, the data set must have the following attributes: LRECL=255, BLKSIZE=3120, and RECFM=VB
+
+      When providing the *xmit_log_data_set* name, ensure there is adequate space.
 
       | **required**: False
       | **type**: str
 
 
     use_adrdssu
-      If set to true, after unpacking a data set in ``xmit`` or ``terse`` format it will perform a single DFSMSdss ADRDSSU RESTORE step.
+      If set to true, the ``zos_archive`` module will use Data Facility Storage Management Subsystem data set services (DFSMSdss) program ADRDSSU to uncompress data sets from a portable format after using ``xmit`` or ``terse``.
 
       | **required**: False
       | **type**: bool
 
 
     dest_volumes
-      When using ADRDSSU select on which volume the datasets will be placed first.
+      When *use_adrdssu=True*, specify the volume the data sets will be written to.
+
+      If no volume is specified, storage management rules will be used to determine the volume where the file will be unarchived.
+
+      If the storage administrator has specified a system default unit name and you do not set a volume name for non-system-managed data sets, then the system uses the volumes associated with the default unit name. Check with your storage administrator to determine whether a default unit name has been specified.
 
       | **required**: False
       | **type**: list
@@ -81,32 +101,44 @@ format
 
 
 dest
-  Remote absolute path where the archive should be unpacked.
+  The remote absolute path or data set where the content should be unarchived to.
 
-  The given path must exist. Base directory is not created by this module.
+  *dest* can be a USS file, directory or MVS data set name.
+
+  If dest has missing parent directories, they will not be created.
 
   | **required**: False
   | **type**: str
 
 
 group
-  Name of the group that should own the filesystem object, as would be fed to chown.
+  Name of the group that will own the file system objects.
 
   When left unspecified, it uses the current group of the current user unless you are root, in which case it can preserve the previous ownership.
+
+  This option is only applicable if ``dest`` is USS, otherwise ignored.
 
   | **required**: False
   | **type**: str
 
 
 mode
-  The permissions the resulting filesystem object should have.
+  The permission of the uncompressed files.
+
+  If ``dest`` is USS, this will act as Unix file mode, otherwise ignored.
+
+  It should be noted that modes are octal numbers. The user must either add a leading zero so that Ansible's YAML parser knows it is an octal number (like ``0644`` or ``01777``)or quote it (like ``'644'`` or ``'1777'``) so Ansible receives a string and can do its own conversion from string into number. Giving Ansible a number without following one of these rules will end up with a decimal number which will have unexpected results.
+
+  The mode may also be specified as a symbolic mode (for example, ``u+rwx`` or ``u=rw,g=r,o=r``) or a special string `preserve`.
+
+  *mode=preserve* means that the file will be given the same permissions as the source file.
 
   | **required**: False
   | **type**: str
 
 
 owner
-  Name of the user that should own the filesystem object, as would be fed to chown.
+  Name of the user that should own the filesystem object, as would be passed to the chown command.
 
   When left unspecified, it uses the current user unless you are root, in which case it can preserve the previous ownership.
 
@@ -115,9 +147,9 @@ owner
 
 
 include
-  List of directory and file or data set names that you would like to extract from the archive.
+  A list of directories, files or data set names to extract from the archive.
 
-  If include is not empty, only files listed here will be extracted.
+  When ``include`` is set, only those files will we be extracted leaving the remaining files in the archive.
 
   Mutually exclusive with exclude.
 
@@ -137,14 +169,14 @@ exclude
 
 
 list
-  Set to true to only list the archive content without unpacking.
+  Will list the contents of the archive without unpacking.
 
   | **required**: False
   | **type**: bool
 
 
 dest_data_set
-  Data set attributes to customize a ``dest`` data set to be copied into.
+  Data set attributes to customize a ``dest`` data set that the archive will be copied into.
 
   | **required**: False
   | **type**: dict
@@ -160,9 +192,10 @@ dest_data_set
   type
     Organization of the destination
 
-    | **required**: True
+    | **required**: False
     | **type**: str
-    | **choices**: KSDS, ESDS, RRDS, LDS, SEQ, PDS, PDSE, MEMBER, BASIC
+    | **default**: SEQ
+    | **choices**: SEQ, PDS, PDSE
 
 
   space_primary
@@ -291,28 +324,25 @@ dest_data_set
 
 
 tmp_hlq
-  High Level Qualifier used for temporary datasets created during the module execution.
+  Override the default high level qualifier (HLQ) for temporary data sets.
+
+  The default HLQ is the Ansible user used to execute the module and if that is not available, then the environment variable value ``TMPHLQ`` is used.
 
   | **required**: False
   | **type**: str
 
 
 force
-  Replace existing files or data sets if files or data sets to unarchive have conflicting paths.
+  If set to true and the remote file or data set dest exists, the dest will be deleted.
 
   | **required**: False
   | **type**: bool
 
 
 remote_src
-  Set to true to indicate the archive file is already on the remote system and not local to the Ansible controller.
+  If set to true, ``zos_unarchive`` retrieves the archive from the remote system.
 
-  | **required**: False
-  | **type**: bool
-
-
-is_binary
-  Set to true if archive file is to be treated as binary when sending to remote.
+  If set to false, ``zos_unarchive`` searches the local machine (Ansible controller) for the archive.
 
   | **required**: False
   | **type**: bool
@@ -327,14 +357,14 @@ Examples
 
    
    # Simple extract
-   - name: Send tar file and unpack in managed node
+   - name: Copy local tar file and unpack it on the managed z/OS node.
      zos_unarchive:
        path: "./files/archive_folder_test.tar"
        format:
          name: tar
 
    # use include
-   - name: List content from TRS
+   - name: Unarchive a bzip file selecting only a file to unpack.
      zos_unarchive:
        path: "/tmp/test.bz2"
        format:
@@ -343,30 +373,42 @@ Examples
          - 'foo.txt'
 
    # Use exclude
-   - name: Unarchive from terse data set excluding some from unpacking
-       zos_unarchive:
-         path: "USER.ARCHIVE.RESULT.TRS"
-         format:
-           name: terse
-         exclude:
-           - USER.ARCHIVE.TEST1
-           - USER.ARCHIVE.TEST2
+   - name: Unarchive a terse data set and excluding data sets from unpacking.
+     zos_unarchive:
+       path: "USER.ARCHIVE.RESULT.TRS"
+       format:
+         name: terse
+       exclude:
+         - USER.ARCHIVE.TEST1
+         - USER.ARCHIVE.TEST2
 
    # List option
    - name: List content from XMIT
-       zos_unarchive:
-         path: "USER.ARCHIVE.RESULT.XMIT"
-         format:
-           name: xmit
-           format_options:
-             use_adrdssu: True
-         list: True
+     zos_unarchive:
+       path: "USER.ARCHIVE.RESULT.XMIT"
+       format:
+         name: xmit
+         format_options:
+           use_adrdssu: True
+       list: True
 
 
 
 
+Notes
+-----
+
+.. note::
+   VSAMs are not supported.
 
 
+
+See Also
+--------
+
+.. seealso::
+
+   - :ref:`zos_unarchive_module`
 
 
 
@@ -391,7 +433,8 @@ targets
   List of files or data sets in the archive.
 
   | **returned**: success
-  | **type**: str
+  | **type**: list
+  | **elements**: str
 
 missing
   Any files or data sets not found during extraction.

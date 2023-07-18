@@ -1,0 +1,10 @@
+minor_changes:
+- zos_job_query - zoau added 'program_name' to their field output
+  starting with v1.2.4.  This enhancement checks for that version and passes the extra column through.
+  (https://github.com/ansible-collections/ibm_zos_core/pull/841)
+- zos_job_submit - zoau added 'program_name' to their field output
+  starting with v1.2.4.  This enhancement checks for that version and passes the extra column through.
+  (https://github.com/ansible-collections/ibm_zos_core/pull/841)
+- zos_job_output - zoau added 'program_name' to their field output
+  starting with v1.2.4.  This enhancement checks for that version and passes the extra column through.
+  (https://github.com/ansible-collections/ibm_zos_core/pull/841)

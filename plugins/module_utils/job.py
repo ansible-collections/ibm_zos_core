@@ -207,7 +207,8 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, duration=
     # listing(job_id, owner) in 1.2.0 has owner param, 1.1 does not
     # jls output has expanded in zoau 1.2.3 and later: jls -l -v shows headers
     # jobclass=job[5] serviceclass=job[6] priority=job[7] asid=job[8]
-    # creationdate=job[9] creationtime=job[10] queueposition=job[11]
+    # creationdatetime=job[9] queueposition=job[10]
+    # starting in zoau 1.2.4, program_name[11] was added.
 
     final_entries = []
     entries = listing(job_id=job_id_temp)
@@ -246,17 +247,27 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, duration=
                     job["ret_code"]["code"] = int(entry.rc)
             job["ret_code"]["msg_text"] = entry.status
 
-            # this section only works on zoau 1.2.3 vvv
+            # this section only works on zoau 1.2.3/+ vvv
 
-            if ZOAU_API_VERSION > "1.2.2":
+            if ZOAU_API_VERSION > "1.2.2" and ZOAU_API_VERSION < "1.2.4":
                 job["job_class"] = entry.job_class
                 job["svc_class"] = entry.svc_class
                 job["priority"] = entry.priority
                 job["asid"] = entry.asid
-                job["creation_datetime"] = entry.creation_datetime
+                job["creation_date"] = str(entry.creation_datetime)[0:10]
+                job["creation_time"] = str(entry.creation_datetime)[12:]
                 job["queue_position"] = entry.queue_position
+            elif ZOAU_API_VERSION >= "1.2.4":
+                job["job_class"] = entry.job_class
+                job["svc_class"] = entry.svc_class
+                job["priority"] = entry.priority
+                job["asid"] = entry.asid
+                job["creation_date"] = str(entry.creation_datetime)[0:10]
+                job["creation_time"] = str(entry.creation_datetime)[12:]
+                job["queue_position"] = entry.queue_position
+                job["program_name"] = entry.program_name
 
-            # this section only works on zoau 1.2.3 ^^^
+            # this section only works on zoau 1.2.3/+ ^^^
 
             job["class"] = ""
             job["content_type"] = ""

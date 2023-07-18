@@ -116,6 +116,16 @@ jobs:
          Type of address space.
       type: str
       sample: JOB
+    creation_date:
+      description:
+        Date, local to the target system, when the job was created.
+      type: str
+      sample: "2023-05-04"
+    creation_time:
+      description:
+        Time, local to the target system, when the job was created.
+      type: str
+      sample: "14:15:00"
     ddnames:
       description:
          Data definition names.
@@ -175,6 +185,37 @@ jobs:
                "         6 //SYSUT2   DD SYSOUT=*                                                          ",
                "         7 //                                                                              "
              ]
+    job_class:
+      description:
+        Job class for this job.
+      type: str
+      sample: A
+    svc_class:
+      description:
+        Service class for this job.
+      type: str
+      sample: C
+    priority:
+      description:
+        A numeric indicator of the job priority assigned through JES.
+      type: int
+      sample: 4
+    asid:
+      description:
+        The address Space Identifier (ASID) that is a unique descriptor for the job address space.
+        Zero if not active.
+      type: int
+      sample: 0
+    queue_position:
+      description:
+        The position within the job queue where the jobs resides.
+      type: int
+      sample: 3
+    program_name:
+      description:
+        The name of the program found in the job's last completed step found in the PGM parameter.
+      type: str
+      sample: "IEBGENER"
     ret_code:
       description:
          Return code output collected from job log.
@@ -341,8 +382,13 @@ jobs:
             "stepname": "STEP0001"
           }
         ],
+        "duration": 0,
+        "job_class": "R",
         "job_id": "JOB00134",
         "job_name": "HELLO",
+        "priority": "1",
+        "program_name": "IEBGENER",
+        "queue_position": "58",
         "owner": "OMVSADM",
         "ret_code": {
           "code": 0,

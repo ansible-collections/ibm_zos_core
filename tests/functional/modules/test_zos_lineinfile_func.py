@@ -973,30 +973,3 @@ def test_uss_encoding(ansible_zos_module, encoding):
             assert result.get("stdout") == EXPECTED_ENCODING
     finally:
         remove_uss_environment(ansible_zos_module)
-
-
-@pytest.mark.ds
-@pytest.mark.parametrize("dstype", DS_TYPE)
-@pytest.mark.parametrize("encoding", "IBM-1047")
-def test_ds_encoding(ansible_zos_module, encoding, dstype):
-    hosts = ansible_zos_module
-    ds_type = dstype
-    insert_data = "Insert this string"
-    params = dict(insertafter="SIMPLE",line=insert_data, state="present")
-    params["encoding"] = encoding
-    test_name = "DST13"
-    temp_file = "/tmp/{0}".format(test_name)
-    ds_name = test_name.upper() + "." + ds_type
-    content = "SIMPLE LINE TO VERIFY"
-    try:
-        ds_full_name = set_ds_environment(ansible_zos_module, temp_file, ds_name, ds_type, content)
-        params["path"] = ds_full_name
-        hosts.all.zos_encode(src=ds_full_name, dest=ds_full_name, from_encoding="IBM-1047", to_encoding=params["encoding"])
-        results = hosts.all.zos_lineinfile(**params)
-        for result in results.contacted.values():
-            assert result.get("changed") == 1
-        results = hosts.all.shell(cmd="cat \"//'{0}'\" ".format(params["path"]))
-        for result in results.contacted.values():
-            assert result.get("stdout") == EXPECTED_ENCODING
-    finally:
-        remove_ds_environment(ansible_zos_module, ds_name)

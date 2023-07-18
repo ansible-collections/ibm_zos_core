@@ -70,7 +70,7 @@ def test_zos_tso_command_allocate_listing_delete(ansible_zos_module):
         for item in result.get("output"):
             assert item.get("rc") == 0
         assert result.get("changed") is True
-    # Validate LISTCAT comand and an unauth command
+    # Validate LISTCAT command and an unauth command
     results = hosts.all.zos_tso_command(
         commands=["LISTCAT ENT('{0}')".format(DEFAULT_TEMP_DATASET)]
     )

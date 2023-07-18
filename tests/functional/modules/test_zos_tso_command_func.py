@@ -58,7 +58,7 @@ def test_zos_tso_command_allocate_listing_delete(ansible_zos_module):
         for item in result.get("output"):
             assert item.get("rc") == 0
         assert result.get("changed") is True
-    # Validate listds of datasets and validate LISTDS using alias param 'command'
+    # Validate listds of datasets and validate LISTDS using alias param 'command' of auth command
     results = hosts.all.zos_tso_command(commands=["LISTDS '{0}'".format(DEFAULT_TEMP_DATASET)])
     for result in results.contacted.values():
         for item in result.get("output"):
@@ -70,7 +70,7 @@ def test_zos_tso_command_allocate_listing_delete(ansible_zos_module):
         for item in result.get("output"):
             assert item.get("rc") == 0
         assert result.get("changed") is True
-    # Validate LISTCAT comand
+    # Validate LISTCAT comand and an unauth command
     results = hosts.all.zos_tso_command(
         commands=["LISTCAT ENT('{0}')".format(DEFAULT_TEMP_DATASET)]
     )

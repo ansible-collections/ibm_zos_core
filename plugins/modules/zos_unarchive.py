@@ -186,6 +186,8 @@ options:
         default: SEQ
         choices:
           - SEQ
+          - PDS
+          - PDSE
       space_primary:
         description:
           - If the destination I(dest) data set does not exist , this sets the
@@ -1014,7 +1016,7 @@ def run_module():
                     ),
                     type=dict(
                         type='str',
-                        choices=['SEQ'],
+                        choices=['SEQ', 'PDS', 'PDSE'],
                         required=False,
                         default='SEQ',
                     ),

@@ -15,14 +15,9 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-import os
-import sys
-import warnings
-
 import ansible.constants
 import ansible.errors
 import ansible.utils
-import pytest
 
 DEFAULT_TEMP_DATASET="imstestl.ims1.temp.ps"
 

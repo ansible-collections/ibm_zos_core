@@ -176,12 +176,12 @@ jobs:
         }
     job_class:
       description:
-        Letter indicating job class for this job.
+        Job class for this job.
       type: str
       sample: A
     svc_class:
       description:
-        Character indicating service class for this job.
+        Service class for this job.
       type: str
       sample: C
     priority:
@@ -191,19 +191,31 @@ jobs:
       sample: 4
     asid:
       description:
-        An identifier created by JES.
+        The address Space Identifier (ASID) that is a unique descriptor for the job address space.
+        Zero if not active.
       type: int
       sample: 0
-    creation_datetime:
+    creation_date:
       description:
-        Date and time, local to the target system, when the job was created.
+        Date, local to the target system, when the job was created.
       type: str
-      sample: 20230504T141500
+      sample: "2023-05-04"
+    creation_time:
+      description:
+        Time, local to the target system, when the job was created.
+      type: str
+      sample: "14:15:00"
     queue_position:
       description:
-        Integer of the position within the job queue where this jobs resided.
+        The position within the job queue where the jobs resides.
       type: int
       sample: 3
+    program_name:
+      description:
+        The name of the program found in the job's last completed step found in the PGM parameter.
+      type: str
+      sample: "IEBGENER"
+
   sample:
     [
         {
@@ -215,7 +227,8 @@ jobs:
             "svc_class": "?",
             "priority": 1,
             "asid": 0,
-            "creation_datetime": "20230503T121300",
+            "creation_date": "2023-05-03",
+            "creation_time": "12:13:00",
             "queue_position": 3,
         },
         {
@@ -227,7 +240,8 @@ jobs:
             "svc_class": "E",
             "priority": 0,
             "asid": 4,
-            "creation_datetime": "20230503T121400",
+            "creation_date": "2023-05-03",
+            "creation_time": "12:14:00",
             "queue_position": 0,
         },
     ]
@@ -277,7 +291,7 @@ def run_module():
     module.exit_json(**result)
 
 
-# validate_arguments rturns a tuple, so we don't have to rebuild the job_name string
+# validate_arguments returns a tuple, so we don't have to rebuild the job_name string
 def validate_arguments(params):
     job_name_in = params.get("job_name")
 
@@ -400,8 +414,10 @@ def parsing_jobs(jobs_raw):
             "svc_class": job.get("svc_class"),
             "priority": job.get("priority"),
             "asid": job.get("asid"),
-            "creation_datetime": job.get("creation_datetime"),
+            "creation_date": job.get("creation_date"),
+            "creation_time": job.get("creation_time"),
             "queue_position": job.get("queue_position"),
+            "program_name": job.get("program_name"),
         }
         jobs.append(job_dict)
     return jobs

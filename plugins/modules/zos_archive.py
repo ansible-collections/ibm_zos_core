@@ -403,6 +403,7 @@ expanded_exclude_sources:
 '''
 
 from ansible.module_utils.basic import AnsibleModule
+from ansible.module_utils._text import to_bytes
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
     better_arg_parser,
     data_set,
@@ -416,6 +417,7 @@ import zipfile
 import abc
 import glob
 import re
+from hashlib import sha256
 
 
 try:
@@ -569,11 +571,35 @@ class USSArchive(Archive):
             else:
                 self.not_found.append(path)
 
-    def _get_checksums(self, path):
-        md5_cmd = "md5 -r \"{0}\"".format(path)
-        rc, out, err = self.module.run_command(md5_cmd)
-        checksums = out.split(" ")[0]
-        return checksums
+    def _get_checksums(src):
+        """Calculate SHA256 hash for a given file
+
+        Arguments:
+            src {str} -- The absolute path of the file
+
+        Returns:
+            str -- The SHA256 hash of the contents of input file
+        """
+        b_src = to_bytes(src)
+        if not os.path.exists(b_src) or os.path.isdir(b_src):
+            return None
+        blksize = 64 * 1024
+        hash_digest = sha256()
+        try:
+            with open(to_bytes(src, errors="surrogate_or_strict"), "rb") as infile:
+                block = infile.read(blksize)
+                while block:
+                    hash_digest.update(block)
+                    block = infile.read(blksize)
+        except Exception:
+            raise
+        return hash_digest.hexdigest()
+
+    # def _get_checksums(self, path):
+    #     md5_cmd = "md5 -r \"{0}\"".format(path)
+    #     rc, out, err = self.module.run_command(md5_cmd)
+    #     checksums = out.split(" ")[0]
+    #     return checksums
 
     def dest_checksums(self):
         if self.dest_exists():

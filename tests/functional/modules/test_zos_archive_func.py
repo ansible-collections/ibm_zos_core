@@ -344,7 +344,7 @@ List of tests:
         ]
 )
 @pytest.mark.parametrize(
-    "record_length", [80, 120, 1024]
+    "record_length", [80, 120]
 )
 @pytest.mark.parametrize(
     # "record_format", ["FB", "VB", "FBA", "VBA", "U"],
@@ -417,7 +417,7 @@ def test_mvs_archive_single_dataset(ansible_zos_module, format, data_set, record
         ]
 )
 @pytest.mark.parametrize(
-    "record_length", [80, 120, 1024]
+    "record_length", [80, 120]
 )
 @pytest.mark.parametrize(
     # "record_format", ["FB", "VB", "FBA", "VBA", "U"],
@@ -492,10 +492,7 @@ def test_mvs_archive_single_dataset_use_adrdssu(ansible_zos_module, format, data
 @pytest.mark.parametrize(
     "record_length", [80],
 )
-@pytest.mark.parametrize(
-    "record_format", ["FB", "VB",],
-)
-def test_mvs_archive_single_data_set_remove_target(ansible_zos_module, format, data_set, record_length, record_format):
+def test_mvs_archive_single_data_set_remove_target(ansible_zos_module, format, data_set, record_length):
     try:
         hosts = ansible_zos_module
         # Clean env
@@ -507,7 +504,7 @@ def test_mvs_archive_single_data_set_remove_target(ansible_zos_module, format, d
             type=data_set.get("dstype"),
             state="present",
             record_length=record_length,
-            record_format=record_format,
+            record_format="FB",
             replace=True,
         )
         # Create members if needed

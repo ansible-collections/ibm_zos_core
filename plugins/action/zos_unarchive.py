@@ -61,6 +61,8 @@ class ActionModule(ActionBase):
             format_name = format.get("name")
             copy_module_args = dict()
             dest_data_set = format.get("dest_data_set")
+            if dest_data_set is None:
+                dest_data_set = dict()
             dest = ""
             if source.startswith('~'):
                 source = os.path.expanduser(source)
@@ -80,14 +82,12 @@ class ActionModule(ActionBase):
                     task_vars=task_vars,
                 )
                 dest = cmd_res.get("stdout")
-                if dest_data_set is None:
-                    if format_name == 'terse':
-                        dest_data_set = dict(type='SEQ', record_format='FB', record_length=1024)
-                    if format_name == 'xmit':
-                        dest_data_set = dict(type='SEQ', record_format='FB', record_length=80)
-            else:
-                # Raise unsupported format name
-                None
+                if dest_data_set.get("space_primary") is None:
+                    dest_data_set.update(space_primary=5, space_type="M")
+                if format_name == 'terse':
+                    dest_data_set.update(type='SEQ', record_format='FB', record_length=1024)
+                if format_name == 'xmit':
+                    dest_data_set.update(type='SEQ', record_format='FB', record_length=80)
 
             copy_module_args.update(
                 dict(
@@ -107,15 +107,15 @@ class ActionModule(ActionBase):
                                                          templar=self._templar,
                                                          shared_loader_obj=self._shared_loader_obj)
             result.update(zos_copy_action_module.run(task_vars=task_vars))
+            display.vvv(u"Copy result {0}".format(result), host=self._play_context.remote_addr)
+            if result.get("msg") is None:
+                module_args["src"] = dest
 
-            module_args["src"] = dest
-            display.vvv(u"Copy args {0}".format(result), host=self._play_context.remote_addr)
-
-            result.update(
-                self._execute_module(
-                    module_name="ibm.ibm_zos_core.zos_unarchive",
-                    module_args=module_args,
-                    task_vars=task_vars,
+                result.update(
+                    self._execute_module(
+                        module_name="ibm.ibm_zos_core.zos_unarchive",
+                        module_args=module_args,
+                        task_vars=task_vars,
+                    )
                 )
-            )
         return result

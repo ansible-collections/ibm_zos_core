@@ -211,7 +211,13 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, duration=
     # starting in zoau 1.2.4, program_name[11] was added.
 
     final_entries = []
-    entries = listing(job_id=job_id_temp)
+    # TESTING the -o to eliminate the program_name field in the request ##
+    kwargs = {
+        "job_id": job_id_temp,
+        "options": "-oowner,name,id,status,ccode,jobclass,serviceclass,priority,asid,creationdate,creationtime,queueposition"
+    }
+    # entries = listing(job_id=job_id_temp, **kwargs)
+    entries = listing( **kwargs )
 
     while ((entries is None or len(entries) == 0) and duration <= timeout):
         current_time = timer()

@@ -595,12 +595,6 @@ class USSArchive(Archive):
             raise
         return hash_digest.hexdigest()
 
-    # def _get_checksums(self, path):
-    #     md5_cmd = "md5 -r \"{0}\"".format(path)
-    #     rc, out, err = self.module.run_command(md5_cmd)
-    #     checksums = out.split(" ")[0]
-    #     return checksums
-
     def dest_checksums(self):
         if self.dest_exists():
             return self._get_checksums(self.dest)
@@ -858,11 +852,13 @@ class MVSArchive(Archive):
             )
         return rc
 
-    # def _get_checksums(self, src):
-    #     md5_cmd = "md5 -r \"//'{0}'\"".format(src)
-    #     rc, out, err = self.module.run_command(md5_cmd)
-    #     checksums = out.split(" ")[0]
-    #     return checksums
+    def _get_checksums(self, src):
+        sha256_cmd = "sha256 \"//'{0}'\"".format(src)
+        rc, out, err = self.module.run_command(sha256_cmd)
+        checksums = out.split("= ")
+        if len(checksums) > 0:
+            return checksums[1]
+        return None
 
     def dest_checksums(self):
         if self.dest_exists():

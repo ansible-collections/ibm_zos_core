@@ -128,9 +128,11 @@ persistent
 
     ``{mark}`` length may not exceed 72 characters.
 
+    The timestamp (<timestamp>) used in the default marker follows the '+%Y%m%d-%H%M%S' date format
+
     | **required**: False
     | **type**: str
-    | **default**: /* {mark} ANSIBLE MANAGED BLOCK <timestamp> */
+    | **default**: /* {mark} ANSIBLE MANAGED BLOCK <timestamp> \*/
 
 
   backup

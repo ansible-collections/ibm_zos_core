@@ -511,7 +511,7 @@ class Archive():
         pass
 
     @abc.abstractmethod
-    def _get_checksums(self, path):
+    def _get_checksums(self, src):
         pass
 
     @abc.abstractmethod
@@ -571,7 +571,7 @@ class USSArchive(Archive):
             else:
                 self.not_found.append(path)
 
-    def _get_checksums(src):
+    def _get_checksums(self, src):
         """Calculate SHA256 hash for a given file
 
         Arguments:
@@ -858,11 +858,11 @@ class MVSArchive(Archive):
             )
         return rc
 
-    def _get_checksums(self, path):
-        md5_cmd = "md5 -r \"//'{0}'\"".format(path)
-        rc, out, err = self.module.run_command(md5_cmd)
-        checksums = out.split(" ")[0]
-        return checksums
+    # def _get_checksums(self, src):
+    #     md5_cmd = "md5 -r \"//'{0}'\"".format(src)
+    #     rc, out, err = self.module.run_command(md5_cmd)
+    #     checksums = out.split(" ")[0]
+    #     return checksums
 
     def dest_checksums(self):
         if self.dest_exists():

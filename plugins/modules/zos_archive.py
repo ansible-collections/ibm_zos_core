@@ -301,6 +301,10 @@ notes:
     respectively.
   - When packing and using C(use_adrdssu) flag the module will take up to two
     times the space indicated in C(dest_data_set).
+  - tar, zip, bz2 and pax are archived using python C(tarfile) library which
+    uses the latest version available for each format, for compatibility when
+    opening from system make sure to use the latest available version for the
+    intended format.
 
 
 seealso:

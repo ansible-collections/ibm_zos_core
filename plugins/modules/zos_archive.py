@@ -613,11 +613,12 @@ class USSArchive(Archive):
         return True
 
     def remove_targets(self):
+        self.state = STATE_ABSENT
         for target in self.archived:
             if os.path.isdir(target):
                 try:
                     os.removedirs(target)
-                except:
+                except Exception:
                     self.state = STATE_INCOMPLETE
             else:
                 try:
@@ -890,10 +891,13 @@ class MVSArchive(Archive):
         return data_set.DataSet.data_set_exists(self.dest)
 
     def remove_targets(self):
+        self.state = STATE_ABSENT
         for target in self.archived:
             try:
-                data_set.DataSet.ensure_absent(target)
-            except:
+                changed = data_set.DataSet.ensure_absent(target)
+            except Exception:
+                self.state = STATE_INCOMPLETE
+            if not changed:
                 self.state = STATE_INCOMPLETE
         return
 

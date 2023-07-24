@@ -433,6 +433,7 @@ XMIT_RECORD_LENGTH = 80
 AMATERSE_RECORD_LENGTH = 1024
 
 STATE_ABSENT = 'absent'
+STATE_PRESENT = 'present'
 STATE_ARCHIVE = 'archive'
 STATE_COMPRESSED = 'compressed'
 STATE_INCOMPLETE = 'incomplete'
@@ -494,6 +495,7 @@ class Archive():
         self.expanded_sources = ""
         self.expanded_exclude_sources = ""
         self.dest_state = STATE_ABSENT
+        self.state = STATE_PRESENT
 
     def targets_exist(self):
         return bool(self.targets)
@@ -535,6 +537,7 @@ class Archive():
         return {
             'archived': self.archived,
             'dest': self.dest,
+            'state': self.state,
             'arcroot': self.arcroot,
             'dest_state': self.dest_state,
             'changed': self.changed,
@@ -612,9 +615,15 @@ class USSArchive(Archive):
     def remove_targets(self):
         for target in self.archived:
             if os.path.isdir(target):
-                os.removedirs(target)
+                try:
+                    os.removedirs(target)
+                except:
+                    self.state = STATE_INCOMPLETE
             else:
-                os.remove(target)
+                try:
+                    os.remove(target)
+                except PermissionError:
+                    self.state = STATE_INCOMPLETE
 
     def archive_targets(self):
         self.file = self.open(self.dest)
@@ -882,7 +891,10 @@ class MVSArchive(Archive):
 
     def remove_targets(self):
         for target in self.archived:
-            data_set.DataSet.ensure_absent(target)
+            try:
+                data_set.DataSet.ensure_absent(target)
+            except:
+                self.state = STATE_INCOMPLETE
         return
 
     def expand_mvs_paths(self, paths):
@@ -917,10 +929,12 @@ class MVSArchive(Archive):
                 data_set.DataSet.ensure_absent(ds)
         if uss_files is not None:
             for file in uss_files:
-                os.remove(file)
+                try:
+                    os.remove(file)
+                except PermissionError:
+                    self.state = STATE_INCOMPLETE
         if remove_targets:
-            for target in self.targets:
-                data_set.DataSet.ensure_absent(target)
+            self.remove_targets()
 
 
 class AMATerseArchive(MVSArchive):

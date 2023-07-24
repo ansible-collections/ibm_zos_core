@@ -358,7 +358,7 @@ EXAMPLES = r'''
 '''
 
 RETURN = r'''
-path:
+source:
   description:
     File path or data set name unarchived.
   type: str
@@ -454,7 +454,7 @@ class Unarchive():
     @property
     def result(self):
         return {
-            'src': self.src,
+            'source': self.src,
             'dest_path': self.dest,
             'changed': self.changed,
             'targets': self.targets,

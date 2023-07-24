@@ -115,7 +115,7 @@ options:
   exclude:
     description:
       - Remote absolute path, glob, or list of paths, globs or data set name
-        patterns for the file, files or data sets to exclude from path list
+        patterns for the file, files or data sets to exclude from src list
         and glob expansion.
       - "Patterns (wildcards) can contain one of the following: ?, *."
       - "* matches everything."
@@ -148,7 +148,7 @@ options:
         (for example, 'u+rwx' or 'u=rw,g=r,o=r') or a special
         string 'preserve'.
       - I(mode=preserve) means that the file will be given the same permissions
-        as the source file.
+        as the src file.
     type: str
     required: false
   owner:
@@ -164,7 +164,7 @@ options:
     description:
       - Remove any added source files , trees or data sets after module
         L(zos_archive,./zos_archive.html) adds them to the archive.
-        Source files, trees and data sets are identified with option I(path).
+        Source files, trees and data sets are identified with option I(src).
     type: bool
     required: false
     default: false
@@ -377,7 +377,7 @@ dest_state:
       - C(archive) when the file is an archive.
       - C(compress) when the file is compressed, but not an archive.
       - C(incomplete) when the file is an archive, but some files under
-        I(path) were not found.
+        I(source) were not found.
     type: str
     returned: success
 missing:

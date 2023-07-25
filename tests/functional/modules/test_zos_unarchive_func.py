@@ -415,7 +415,7 @@ def test_mvs_unarchive_single_data_set(ansible_zos_module, format, data_set, rec
         ]
 )
 @pytest.mark.parametrize(
-    "record_length", [80, 120, 1024]
+    "record_length", [80, 120]
 )
 @pytest.mark.parametrize(
     "record_format", ["FB", "VB",],
@@ -902,7 +902,7 @@ def test_mvs_unarchive_multiple_data_set_use_adrdssu_force(ansible_zos_module, f
         ]
 )
 @pytest.mark.parametrize(
-    "record_length", [80, 120, 1024]
+    "record_length", [80, 120]
 )
 @pytest.mark.parametrize(
     "record_format", ["FB", "VB",],

@@ -221,7 +221,7 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, duration=
         current_time = timer()
         duration = round(current_time - start_time)
         sleep(1)
-        entries = listing(job_id=job_id_temp)
+        entries = listing( **kwargs )
 
     if entries:
         for entry in entries:

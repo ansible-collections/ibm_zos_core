@@ -161,13 +161,13 @@ def job_status(job_id=None, owner=None, job_name=None, dd_name=None):
     job_name = parsed_args.get("job_name") or "*"
     owner = parsed_args.get("owner") or "*"
 
-    job_status_result = _get_job_status( job_id=job_id, owner=owner, job_name=job_name, no_dd_scan=True)
+    job_status_result = _get_job_status(job_id=job_id, owner=owner, job_name=job_name, no_dd_scan=True)
 
     if len(job_status_result) == 0:
         job_id = "" if job_id == "*" else job_id
         job_name = "" if job_name == "*" else job_name
         owner = "" if owner == "*" else owner
-        job_status_result = _get_job_status( job_id=job_id, owner=owner, job_name=job_name, no_dd_scan=True)
+        job_status_result = _get_job_status(job_id=job_id, owner=owner, job_name=job_name, no_dd_scan=True)
 
     return job_status_result
 
@@ -217,13 +217,13 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, no_dd_sca
     kwargs = {
         "job_id": job_id_temp,
     }
-    entries = listing( **kwargs )
+    entries = listing(**kwargs)
 
     while ((entries is None or len(entries) == 0) and duration <= timeout):
         current_time = timer()
         duration = round(current_time - start_time)
         sleep(1)
-        entries = listing( **kwargs )
+        entries = listing(**kwargs)
 
     if entries:
         for entry in entries:

@@ -30,8 +30,10 @@ VSAM_NAMES = [
     "TEST.FIND.VSAM.FUNCTEST.FIRST"
 ]
 
+VOLUME_000000 = "000000"
+VOLUME_222222 = "222222"
 
-def create_vsam_ksds(ds_name, ansible_zos_module, volume="000000"):
+def create_vsam_ksds(ds_name, ansible_zos_module, volume=VOLUME_000000):
     hosts = ansible_zos_module
     alloc_cmd = """     DEFINE CLUSTER (NAME({0})  -
     INDEXED                 -
@@ -267,10 +269,10 @@ def test_find_vsam_in_volume(ansible_zos_module):
     alternate_vsam = "TEST.FIND.ALTER.VSAM"
     try:
         for vsam in VSAM_NAMES:
-            create_vsam_ksds(vsam, hosts, volume="222222")
-        create_vsam_ksds(alternate_vsam, hosts, volume="000000")
+            create_vsam_ksds(vsam, hosts, volume=VOLUME_222222)
+        create_vsam_ksds(alternate_vsam, hosts, volume=VOLUME_000000)
         find_res = hosts.all.zos_find(
-            patterns=['TEST.FIND.*.*.*'], volumes=['222222'], resource_type='cluster'
+            patterns=['TEST.FIND.*.*.*'], volumes=[VOLUME_222222], resource_type='cluster'
         )
         for val in find_res.contacted.values():
             assert len(val.get('data_sets')) == 1

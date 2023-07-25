@@ -174,6 +174,8 @@ SH /tmp/disp_shr/pdse-lock '{0}({1})'
 //STDERR DD SYSOUT=*
 //"""
 
+VOLUME='000000'
+
 def populate_dir(dir_path):
     for i in range(5):
         with open(dir_path + "/" + "file" + str(i + 1), "w") as infile:
@@ -3069,7 +3071,7 @@ def test_copy_data_set_to_volume(ansible_zos_module, src_type):
             src=source,
             dest=dest,
             remote_src=True,
-            volume='000000'
+            volume=VOLUME
         )
 
         for cp in copy_res.contacted.values():
@@ -3084,7 +3086,7 @@ def test_copy_data_set_to_volume(ansible_zos_module, src_type):
 
         for cv in check_vol.contacted.values():
             assert cv.get('rc') == 0
-            assert "000000" in cv.get('stdout')
+            assert VOLUME in cv.get('stdout')
     finally:
         hosts.all.zos_data_set(name=source, state='absent')
         hosts.all.zos_data_set(name=dest, state='absent')
@@ -3212,7 +3214,7 @@ def test_copy_ksds_to_volume(ansible_zos_module):
             src=src_ds,
             dest=dest_ds,
             remote_src=True,
-            volume="000000"
+            volume=VOLUME
         )
         verify_copy = get_listcat_information(hosts, dest_ds, "ksds")
 
@@ -3236,7 +3238,7 @@ def test_dest_data_set_parameters(ansible_zos_module):
     hosts = ansible_zos_module
     src = "/etc/profile"
     dest = "USER.TEST.DEST"
-    volume = "000000"
+    volume = VOLUME
     space_primary = 3
     space_secondary = 2
     space_type = "K"

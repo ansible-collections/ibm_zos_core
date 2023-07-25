@@ -125,12 +125,10 @@ def test_add_del(ansible_zos_module):
     test_info = TEST_INFO['test_add_del']
     set_test_env(hosts, test_info)
     results = hosts.all.zos_apf(**test_info)
-    pprint(vars(results))
     for result in results.contacted.values():
         assert result.get("rc") == 0
     test_info['state'] = 'absent'
     results = hosts.all.zos_apf(**test_info)
-    pprint(vars(results))
     for result in results.contacted.values():
         assert result.get("rc") == 0
     clean_test_env(hosts, test_info)

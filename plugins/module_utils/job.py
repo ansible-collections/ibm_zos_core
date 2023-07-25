@@ -137,6 +137,8 @@ def job_status(job_id=None, owner=None, job_name=None, dd_name=None):
         owner {str} -- The owner of the job (default: {None})
         job_name {str} -- The job name search for (default: {None})
         dd_name {str} -- If populated, return ONLY this DD in the job list (default: {None})
+            note: no routines call job_status with dd_name, so we are speeding this routine with
+            'no_dd_scan=True'
 
     Returns:
         list[dict] -- The status information for a list of jobs matching search criteria.
@@ -148,26 +150,24 @@ def job_status(job_id=None, owner=None, job_name=None, dd_name=None):
         job_id=dict(arg_type="str"),
         owner=dict(arg_type="qualifier_pattern"),
         job_name=dict(arg_type="str"),
-        dd_name=dict(arg_type="str"),
     )
 
     parser = BetterArgParser(arg_defs)
     parsed_args = parser.parse_args(
-        {"job_id": job_id, "owner": owner, "job_name": job_name, "dd_name": dd_name}
+        {"job_id": job_id, "owner": owner, "job_name": job_name}
     )
 
     job_id = parsed_args.get("job_id") or "*"
     job_name = parsed_args.get("job_name") or "*"
     owner = parsed_args.get("owner") or "*"
-    dd_name = parsed_args.get("dd_name")
 
-    job_status_result = _get_job_status(job_id, owner, job_name, dd_name)
+    job_status_result = _get_job_status( job_id=job_id, owner=owner, job_name=job_name, no_dd_scan=True)
 
     if len(job_status_result) == 0:
         job_id = "" if job_id == "*" else job_id
         job_name = "" if job_name == "*" else job_name
         owner = "" if owner == "*" else owner
-        job_status_result = _get_job_status(job_id, owner, job_name, dd_name)
+        job_status_result = _get_job_status( job_id=job_id, owner=owner, job_name=job_name, no_dd_scan=True)
 
     return job_status_result
 
@@ -195,7 +195,7 @@ def _parse_steps(job_str):
     return stp
 
 
-def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, duration=0, timeout=0, start_time=timer()):
+def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, no_dd_scan=False, duration=0, timeout=0, start_time=timer()):
     if job_id == "*":
         job_id_temp = None
     else:
@@ -210,10 +210,12 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, duration=
     # creationdatetime=job[9] queueposition=job[10]
     # starting in zoau 1.2.4, program_name[11] was added.
 
+    # Testing has shown that the program_name impact is minor, so we're removing that option
+    # This will also help maintain compatibility with 1.2.3
+
     final_entries = []
     kwargs = {
         "job_id": job_id_temp,
-        "options": "-oowner,name,id,status,ccode,jobclass,serviceclass,priority,asid,creationdate,creationtime,queueposition"
     }
     entries = listing( **kwargs )
 
@@ -278,93 +280,95 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, duration=
             job["ret_code"]["steps"] = []
             job["ddnames"] = []
 
-            list_of_dds = list_dds(entry.id)
-            while ((list_of_dds is None or len(list_of_dds) == 0) and duration <= timeout):
-                current_time = timer()
-                duration = round(current_time - start_time)
-                sleep(1)
+            if not no_dd_scan:
                 list_of_dds = list_dds(entry.id)
+                while ((list_of_dds is None or len(list_of_dds) == 0) and duration <= timeout):
+                    current_time = timer()
+                    duration = round(current_time - start_time)
+                    sleep(1)
+                    list_of_dds = list_dds(entry.id)
 
-            for single_dd in list_of_dds:
-                dd = {}
+                for single_dd in list_of_dds:
+                    dd = {}
 
-                # If dd_name not None, only that specific dd_name should be returned
-                if dd_name is not None:
-                    if dd_name not in single_dd["dataset"]:
+                    # If dd_name not None, only that specific dd_name should be returned
+                    if dd_name is not None:
+                        if dd_name not in single_dd["dataset"]:
+                            continue
+                        else:
+                            dd["ddname"] = single_dd["dataset"]
+
+                    if "dataset" not in single_dd:
                         continue
+
+                    if "recnum" in single_dd:
+                        dd["record_count"] = single_dd["recnum"]
                     else:
-                        dd["ddname"] = single_dd["dataset"]
+                        dd["record_count"] = None
 
-                if "dataset" not in single_dd:
-                    continue
+                    if "dsid" in single_dd:
+                        dd["id"] = single_dd["dsid"]
+                    else:
+                        dd["id"] = "?"
 
-                if "recnum" in single_dd:
-                    dd["record_count"] = single_dd["recnum"]
-                else:
-                    dd["record_count"] = None
+                    if "stepname" in single_dd:
+                        dd["stepname"] = single_dd["stepname"]
+                    else:
+                        dd["stepname"] = None
 
-                if "dsid" in single_dd:
-                    dd["id"] = single_dd["dsid"]
-                else:
-                    dd["id"] = "?"
+                    if "procstep" in single_dd:
+                        dd["procstep"] = single_dd["procstep"]
+                    else:
+                        dd["proctep"] = None
 
-                if "stepname" in single_dd:
-                    dd["stepname"] = single_dd["stepname"]
-                else:
-                    dd["stepname"] = None
+                    if "length" in single_dd:
+                        dd["byte_count"] = single_dd["length"]
+                    else:
+                        dd["byte_count"] = 0
 
-                if "procstep" in single_dd:
-                    dd["procstep"] = single_dd["procstep"]
-                else:
-                    dd["proctep"] = None
+                    tmpcont = None
+                    if "stepname" in single_dd:
+                        if "dataset" in single_dd:
+                            tmpcont = read_output(
+                                entry.id, single_dd["stepname"], single_dd["dataset"])
 
-                if "length" in single_dd:
-                    dd["byte_count"] = single_dd["length"]
-                else:
-                    dd["byte_count"] = 0
+                    dd["content"] = tmpcont.split("\n")
+                    job["ret_code"]["steps"].extend(_parse_steps(tmpcont))
 
-                tmpcont = None
-                if "stepname" in single_dd:
-                    if "dataset" in single_dd:
-                        tmpcont = read_output(
-                            entry.id, single_dd["stepname"], single_dd["dataset"])
+                    job["ddnames"].append(dd)
+                    if len(job["class"]) < 1:
+                        if "- CLASS " in tmpcont:
+                            tmptext = tmpcont.split("- CLASS ")[1]
+                            job["class"] = tmptext.split(" ")[0]
 
-                dd["content"] = tmpcont.split("\n")
-                job["ret_code"]["steps"].extend(_parse_steps(tmpcont))
+                    if len(job["system"]) < 1:
+                        if "--  S Y S T E M  " in tmpcont:
+                            tmptext = tmpcont.split("--  S Y S T E M  ")[1]
+                            job["system"] = (tmptext.split(
+                                "--", 1)[0]).replace(" ", "")
 
-                job["ddnames"].append(dd)
-                if len(job["class"]) < 1:
-                    if "- CLASS " in tmpcont:
-                        tmptext = tmpcont.split("- CLASS ")[1]
-                        job["class"] = tmptext.split(" ")[0]
+                    if len(job["subsystem"]) < 1:
+                        if "--  N O D E " in tmpcont:
+                            tmptext = tmpcont.split("--  N O D E ")[1]
+                            job["subsystem"] = (tmptext.split("\n")[
+                                                0]).replace(" ", "")
 
-                if len(job["system"]) < 1:
-                    if "--  S Y S T E M  " in tmpcont:
-                        tmptext = tmpcont.split("--  S Y S T E M  ")[1]
-                        job["system"] = (tmptext.split(
-                            "--", 1)[0]).replace(" ", "")
+                    # Extract similar: "19.49.44 JOB06848 IEFC452I DOCEASYT - JOB NOT RUN - JCL ERROR 029 "
+                    # then further reduce down to: 'JCL ERROR 029'
+                    if job["ret_code"]["msg_code"] == "?":
+                        if "JOB NOT RUN -" in tmpcont:
+                            tmptext = tmpcont.split(
+                                "JOB NOT RUN -")[1].split("\n")[0]
+                            job["ret_code"]["msg"] = tmptext.strip()
+                            job["ret_code"]["msg_code"] = None
+                            job["ret_code"]["code"] = None
+                if len(list_of_dds) > 0:
+                    # The duration should really only be returned for job submit but the code
+                    # is used job_output as well, for now we can ignore this point unless
+                    # we want to offer a wait_time_s for job output which might be reasonable.
+                    job["duration"] = duration
 
-                if len(job["subsystem"]) < 1:
-                    if "--  N O D E " in tmpcont:
-                        tmptext = tmpcont.split("--  N O D E ")[1]
-                        job["subsystem"] = (tmptext.split("\n")[
-                                            0]).replace(" ", "")
-
-                # Extract similar: "19.49.44 JOB06848 IEFC452I DOCEASYT - JOB NOT RUN - JCL ERROR 029 "
-                # then further reduce down to: 'JCL ERROR 029'
-                if job["ret_code"]["msg_code"] == "?":
-                    if "JOB NOT RUN -" in tmpcont:
-                        tmptext = tmpcont.split(
-                            "JOB NOT RUN -")[1].split("\n")[0]
-                        job["ret_code"]["msg"] = tmptext.strip()
-                        job["ret_code"]["msg_code"] = None
-                        job["ret_code"]["code"] = None
-            if len(list_of_dds) > 0:
-                # The duration should really only be returned for job submit but the code
-                # is used job_output as well, for now we can ignore this point unless
-                # we want to offer a wait_time_s for job output which might be reasonable.
-                job["duration"] = duration
-                final_entries.append(job)
+            final_entries.append(job)
     if not final_entries:
         final_entries = _job_not_found(job_id, owner, job_name, "unavailable")
     return final_entries

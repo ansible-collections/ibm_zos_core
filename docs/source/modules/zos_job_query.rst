@@ -288,7 +288,7 @@ jobs
     | **sample**: 3
 
   program_name
-    The name of the program found in the job's last completed step found in the PGM parameter.
+    The name of the program found in the job's last completed step found in the PGM parameter. Returned when Z Open Automation Utilities (ZOAU) is 1.2.4 or later.
 
     | **type**: str
     | **sample**: IEBGENER

@@ -138,7 +138,7 @@ def job_status(job_id=None, owner=None, job_name=None, dd_name=None):
         job_name {str} -- The job name search for (default: {None})
         dd_name {str} -- If populated, return ONLY this DD in the job list (default: {None})
             note: no routines call job_status with dd_name, so we are speeding this routine with
-            'no_dd_scan=True'
+            'dd_scan=False'
 
     Returns:
         list[dict] -- The status information for a list of jobs matching search criteria.
@@ -161,13 +161,13 @@ def job_status(job_id=None, owner=None, job_name=None, dd_name=None):
     job_name = parsed_args.get("job_name") or "*"
     owner = parsed_args.get("owner") or "*"
 
-    job_status_result = _get_job_status(job_id=job_id, owner=owner, job_name=job_name, no_dd_scan=True)
+    job_status_result = _get_job_status(job_id=job_id, owner=owner, job_name=job_name, dd_scan=False)
 
     if len(job_status_result) == 0:
         job_id = "" if job_id == "*" else job_id
         job_name = "" if job_name == "*" else job_name
         owner = "" if owner == "*" else owner
-        job_status_result = _get_job_status(job_id=job_id, owner=owner, job_name=job_name, no_dd_scan=True)
+        job_status_result = _get_job_status(job_id=job_id, owner=owner, job_name=job_name, dd_scan=False)
 
     return job_status_result
 
@@ -195,7 +195,7 @@ def _parse_steps(job_str):
     return stp
 
 
-def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, no_dd_scan=False, duration=0, timeout=0, start_time=timer()):
+def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, dd_scan=True, duration=0, timeout=0, start_time=timer()):
     if job_id == "*":
         job_id_temp = None
     else:
@@ -255,7 +255,7 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, no_dd_sca
 
             # this section only works on zoau 1.2.3/+ vvv
 
-            if ZOAU_API_VERSION > "1.2.2" and ZOAU_API_VERSION < "1.2.4":
+            if ZOAU_API_VERSION > "1.2.2":
                 job["job_class"] = entry.job_class
                 job["svc_class"] = entry.svc_class
                 job["priority"] = entry.priority
@@ -263,14 +263,7 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, no_dd_sca
                 job["creation_date"] = str(entry.creation_datetime)[0:10]
                 job["creation_time"] = str(entry.creation_datetime)[12:]
                 job["queue_position"] = entry.queue_position
-            elif ZOAU_API_VERSION >= "1.2.4":
-                job["job_class"] = entry.job_class
-                job["svc_class"] = entry.svc_class
-                job["priority"] = entry.priority
-                job["asid"] = entry.asid
-                job["creation_date"] = str(entry.creation_datetime)[0:10]
-                job["creation_time"] = str(entry.creation_datetime)[12:]
-                job["queue_position"] = entry.queue_position
+            if ZOAU_API_VERSION >= "1.2.4":
                 job["program_name"] = entry.program_name
 
             # this section only works on zoau 1.2.3/+ ^^^
@@ -280,7 +273,7 @@ def _get_job_status(job_id="*", owner="*", job_name="*", dd_name=None, no_dd_sca
             job["ret_code"]["steps"] = []
             job["ddnames"] = []
 
-            if not no_dd_scan:
+            if dd_scan:
                 list_of_dds = list_dds(entry.id)
                 while ((list_of_dds is None or len(list_of_dds) == 0) and duration <= timeout):
                     current_time = timer()

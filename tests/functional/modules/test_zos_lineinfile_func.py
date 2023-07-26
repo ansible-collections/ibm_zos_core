@@ -103,7 +103,7 @@ export PATH
 ZOAU_ROOT=/usr/lpp/zoautil/v100
 export ZOAU_ROOT
 export _BPXK_AUTOCVT
-export ZOAU_ROOT"""
+export 'ZOAU_ROOT'"""
 
 EXPECTED_INSERTBEFORE_BOF="""# this is file is for setting env vars
 if [ -z STEPLIB ] && tty -s;
@@ -310,7 +310,7 @@ def test_uss_line_insertbefore_regex(ansible_zos_module):
 @pytest.mark.uss
 def test_uss_line_insertafter_eof(ansible_zos_module):
     hosts = ansible_zos_module
-    params = dict(insertafter="EOF", line="export ZOAU_ROOT", state="present")
+    params = dict(insertafter="EOF", line="export 'ZOAU_ROOT'", state="present")
     full_path = TEST_FOLDER_LINEINFILE + inspect.stack()[0][3]
     content = TEST_CONTENT
     try:
@@ -595,7 +595,7 @@ def test_ds_line_insertbefore_regex(ansible_zos_module, dstype):
 def test_ds_line_insertafter_eof(ansible_zos_module, dstype):
     hosts = ansible_zos_module
     ds_type = dstype
-    params = dict(insertafter="EOF", line="export ZOAU_ROOT", state="present")
+    params = dict(insertafter="EOF", line="export 'ZOAU_ROOT'", state="present")
     test_name = "DST3"
     temp_file = "/tmp/{0}".format(test_name)
     ds_name = test_name.upper() + "." + ds_type

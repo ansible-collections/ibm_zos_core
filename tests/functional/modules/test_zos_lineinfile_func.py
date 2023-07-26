@@ -515,6 +515,28 @@ def test_uss_line_replace_quoted_not_escaped(ansible_zos_module):
     finally:
         remove_uss_environment(ansible_zos_module)
 
+@pytest.mark.uss
+def test_uss_line_does_not_insert_repeated(ansible_zos_module):
+    hosts = ansible_zos_module
+    params = dict(path="", line='ZOAU_ROOT=/mvsutil-develop_dsed', state="present")
+    full_path = TEST_FOLDER_LINEINFILE + inspect.stack()[0][3]
+    try:
+        hosts.all.shell(cmd="mkdir -p {0}".format(TEST_FOLDER_LINEINFILE))
+        hosts.all.file(path=full_path, state="touch")
+        params["path"] = full_path
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            print(result)
+            assert result.get("changed") == 1
+        results = hosts.all.zos_lineinfile(**params)
+        for result in results.contacted.values():
+            print(result)
+            assert result.get("changed") == 1
+        results = hosts.all.shell(cmd="cat {0}".format(params["path"]))
+        for result in results.contacted.values():
+            assert result.get("stdout") == 'ZOAU_ROOT=/mvsutil-develop_dsed'
+    finally:
+        remove_uss_environment(ansible_zos_module)
 
 #########################
 # Dataset test cases

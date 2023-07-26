@@ -1,4 +1,4 @@
-enhancements:
+major_changes:
 - zos_copy - Previously, backups were taken when force was set to false;
   whether or not a user specified this operation which caused allocation issues
   with space and permissions. This removes the automatic backup performed and

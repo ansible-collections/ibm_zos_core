@@ -27,8 +27,13 @@ import tempfile
 # Make sure job list * returns something
 def test_zos_job_query_func(ansible_zos_module):
     hosts = ansible_zos_module
-    results = hosts.all.zos_job_query(job_name="*", owner="*")
-    pprint(vars(results))
+    user = hosts.all.shell(cmd='hlq')
+    for res in user.contacted.values():
+        hlq = res.get("stdout")
+    if len(hlq) > 8:
+        hlq = hlq[:8]
+    owner = hlq
+    results = hosts.all.zos_job_query(job_name="*", owner=owner)
     for result in results.contacted.values():
         assert result.get("changed") is False
         assert result.get("jobs") is not None

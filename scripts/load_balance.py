@@ -88,13 +88,10 @@ def get_all_test_cases(collection_root):
 def get_jobs_as_dictionary(python=None, zoau=None, cmd_prefix="", local_test=None):
     """Build a dictionary of job objects representing the test cases to be executed.
     Args:
-        collection_root (str): The path to the root of the collection
-    Returns:
-        list[tests]: A list of test cases.
-    Examples:
-        tests = get_jobs_as_dictionary(python="3.11", zoau="1.2.2")
-        for test in tests:
-            print("Count: " + str(test.id) + " command: " + test.get_command())
+        python
+        zoau
+        cmd_prefix - for when run out of project root, meaning load balancer needs to know where to find ./ac
+        local_test instructs the balancer not to pull all the test suites and only pick one
     """
 
     nodes = get_active_nodes_as_list()
@@ -655,7 +652,7 @@ def run(key, jobs, nodes, completed):
     #    B) If failures == 3
     #       - Assign the job to a new z/OS host to run on, there is a chance it
     #        succeed on another node. After the assigning of a new new, do nothing
-    #        else, it will fall through and be run by the thread. 
+    #        else, it will fall through and be run by the thread.
     #    c) If (failures >3  && <= 6) or (failures <3)
     #       - There is no need to check the failures match, this is simply the
     #         else case and the job will be run by a thread.
@@ -670,16 +667,18 @@ def run(key, jobs, nodes, completed):
         completed.update(job.get_id(), job)
         return job_rc
     elif job_rc > 0:
-        print("RUN:: RC >0 " + str(0))
+        print("Test case rc is = " + str(job_rc))
         job_failures = job.get_failures()
 
         if job_failures >= 6:
-            print("RUN:: RC >= " + str(0))
+            #print("Test case rc is = " + str(job_rc))
             #jobs.update(job.get_id(), job)
+            print("Job no longer eligible for execution = " + str(job) + " returned with rc = " + str(job_rc))
             return job_rc
         else:
             if job_failures == 3:
-                print("RUN:: RC == " + str(0))
+                #print("Test case rc is = " + str(job_rc))
+                print("Job is being rebalanced = " + str(job) + " returned with rc = " + str(job_rc))
                 assign_new_node_to_job(job)
 
     # ----------------
@@ -797,35 +796,43 @@ def main(argv):
         time_in_seconds= ((time.time() - start_time)/60)
         jobs_completed_after = completed.len() - job_completed_before
         #print("Thread pool iteration " + str(count) + " completed " + str(jobs_completed_after) + " job(s) in " + str(round(time_in_seconds,2)) + " seconds.")
-        iterations_result += "Thread pool iteration " + str(count) + " completed " + str(jobs_completed_after) + " job(s) in " + str(round(time_in_seconds,2)) + " seconds.\n"
+        iterations_result += "Thread pool iteration " + str(count) + " completed " + str(jobs_completed_after) + " job(s) in " + str(round(time_in_seconds,2)) + " seconds \n" 
+        # seconds and had " + str(failures) + "\n"
         count +=1
+        #failures = 0
 
     time_in_seconds=((time.time() - start_time_full_run)/60)
-    print("All " + str(count - 1) + " thread pool iterations completed in " +  str(round(time_in_seconds,2)) + " seconds.")
-    print(iterations_result)
-    print("Number of jobs that completed: " + str(jobs.len()))
-
     fail_gt_eq_to_six=0
     fail_less_than_six=0
     total_failed=0
     total_balanced=0
     for key, job in jobs.items():
-
         fails=job.get_failures()
         bal = job.get_all_hosts()
         if fails >= 6:
             fail_gt_eq_to_six+=1
+            total_failed+=1
         if fails != 0 and fails <6:
             fail_less_than_six+=1
-        total_failed+=fails
+            total_failed+=1
 
         if len(bal) > 1:
             total_balanced+=1
 
-    print("Number of jobs that failed with 6 or greater = " + str(fail_gt_eq_to_six))
-    print("Number of jobs that failed with 6 or less = " + str(fail_less_than_six))
+    print("All " + str(count - 1) + " thread pool iterations completed in " +  str(round(time_in_seconds,2)) + " seconds.")
+    print(iterations_result)
+    print("Number of jobs queued to be run = " + str(jobs.len()))
+    print("Number of jobs that run successfully = " + str(completed.len()))
     print("Total number of jobs that failed = " + str(total_failed))
+    print("Number of jobs that failed 6 times = " + str(fail_gt_eq_to_six))
+    print("Number of jobs that failed less than 6 times = " + str(fail_less_than_six))
     print("Number of jobs that had nodes rebalanced = " + str(total_balanced))
 
 if __name__ == '__main__':
      main(sys.argv[1:])
+
+
+USAGE:
+#./ac --venv-start
+#cd /Users/ddimatos/git/github/ibm_zos_core/scripts
+#python load_balance.py --python "3.9" --zoau "1.2.2" --itr 10 --prefix "cd /Users/ddimatos/git/github/ibm_zos_core;" --local-test "test_load_balance_full.py"

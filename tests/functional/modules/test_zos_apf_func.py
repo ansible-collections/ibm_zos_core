@@ -20,6 +20,37 @@ import pytest
 
 __metaclass__ = type
 
+
+TEST_INFO = dict(
+    test_add_del=dict(
+        library="", state="present", force_dynamic=True
+    ),
+    test_add_del_with_tmp_hlq_option=dict(
+        library="", state="present", force_dynamic=True, tmp_hlq="", persistent=dict(
+            data_set_name="", backup=True
+        )
+    ),
+    test_add_del_volume=dict(
+        library="", volume=" ", state="present", force_dynamic=True
+    ),
+    test_add_del_persist=dict(
+        library="", persistent=dict(data_set_name="", marker="/* {mark} BLOCK */"), state="present", force_dynamic=True
+    ),
+    test_add_del_volume_persist=dict(
+        library="", volume=" ", persistent=dict(data_set_name="", marker="/* {mark} BLOCK */"), state="present", force_dynamic=True
+    ),
+    test_batch_add_del=dict(
+        batch=[dict(library="", volume=" "), dict(library="", volume=" "), dict(library="", volume=" ")],
+        persistent=dict(data_set_name="", marker="/* {mark} BLOCK */"), state="present", force_dynamic=True
+    ),
+    test_operation_list=dict(
+        operation="list"
+    ),
+    test_operation_list_with_filter=dict(
+        operation="list", library=""
+    )
+)
+
 add_expected = """/*BEGINAPFLIST*/
 /*BEGINBLOCK*/
 APFADDDSNAME({0})VOLUME({1})
@@ -44,48 +75,62 @@ del_expected = """/*BEGINAPFLIST*/
 /*ENDAPFLIST*/"""
 
 
-def get_stdout(hosts, cmdStr):
+def run_shell_cmd(hosts, cmdStr):
     results = hosts.all.shell(cmd=cmdStr)
+    pprint(vars(results))
     for result in results.contacted.values():
         out = result.get("stdout")
     return out
 
 
+def persistds_create(hosts):
+    cmdStr = "mvstmp APFTEST.PRST"
+    prstds = run_shell_cmd(hosts, cmdStr)[:30]
+    cmdStr = "dtouch -tseq {0}".format(prstds)
+    run_shell_cmd(hosts, cmdStr)
+    return prstds
+
+
+def persistds_delele(hosts, ds):
+    cmdStr = "drm {0}".format(ds)
+    run_shell_cmd(hosts, cmdStr)
+
+
 def set_test_env(hosts, test_info):
+    # results = hosts.all.zos_data_set(name=ds, type="SEQ")
     cmdStr = "mvstmp APFTEST"
-    ds = get_stdout(hosts, cmdStr)[:25]
+    ds = run_shell_cmd(hosts, cmdStr)[:25]
     cmdStr = "dtouch -tseq {0}".format(ds)
-    hosts.all.shell(cmd=cmdStr)
+    run_shell_cmd(hosts, cmdStr)
     test_info['library'] = ds
-    if test_info.get('volume') is not None:
+    if test_info.get('volume'):
         cmdStr = "dls -l " + ds + " | awk '{print $5}' "
-        vol = get_stdout(hosts, cmdStr)
+        vol = run_shell_cmd(hosts, cmdStr)
         test_info['volume'] = vol
     if test_info.get('persistent'):
-        cmdStr = "mvstmp APFTEST.PRST"
-        prstds = get_stdout(hosts, cmdStr)[:30]
-        cmdStr = "dtouch -tseq {0}".format(prstds)
-        hosts.all.shell(cmd=cmdStr)
-        test_info['persistent']['data_set_name'] = prstds
+        test_info['persistent']['data_set_name'] = persistds_create(hosts)
 
 
 def clean_test_env(hosts, test_info):
+    # hosts.all.zos_data_set(name=test_info['library'], state='absent')
     cmdStr = "drm {0}".format(test_info['library'])
-    hosts.all.shell(cmd=cmdStr)
+    run_shell_cmd(hosts, cmdStr)
     if test_info.get('persistent'):
-        cmdStr = "drm {0}".format(test_info['persistent']['data_set_name'])
-        hosts.all.shell(cmd=cmdStr)
+        # hosts.all.zos_data_set(name=test_info['persistent']['data_set_name'], state='absent')
+        persistds_delele(hosts, test_info['persistent']['data_set_name'])
 
 
 def test_add_del(ansible_zos_module):
     hosts = ansible_zos_module
-    test_info = dict(library="", state="present", force_dynamic=True)
+    test_info = TEST_INFO['test_add_del']
     set_test_env(hosts, test_info)
     results = hosts.all.zos_apf(**test_info)
+    pprint(vars(results))
     for result in results.contacted.values():
         assert result.get("rc") == 0
     test_info['state'] = 'absent'
     results = hosts.all.zos_apf(**test_info)
+    pprint(vars(results))
     for result in results.contacted.values():
         assert result.get("rc") == 0
     clean_test_env(hosts, test_info)
@@ -94,15 +139,17 @@ def test_add_del(ansible_zos_module):
 def test_add_del_with_tmp_hlq_option(ansible_zos_module):
     hosts = ansible_zos_module
     tmphlq = "TMPHLQ"
-    test_info = dict(library="", state="present", force_dynamic=True, tmp_hlq="", persistent=dict(data_set_name="", backup=True))
+    test_info = TEST_INFO['test_add_del_with_tmp_hlq_option']
     test_info['tmp_hlq'] = tmphlq
     set_test_env(hosts, test_info)
     results = hosts.all.zos_apf(**test_info)
+    pprint(vars(results))
     for result in results.contacted.values():
         assert result.get("rc") == 0
         assert result.get("backup_name")[:6] == tmphlq
     test_info['state'] = 'absent'
     results = hosts.all.zos_apf(**test_info)
+    pprint(vars(results))
     for result in results.contacted.values():
         assert result.get("rc") == 0
     clean_test_env(hosts, test_info)
@@ -110,13 +157,15 @@ def test_add_del_with_tmp_hlq_option(ansible_zos_module):
 
 def test_add_del_volume(ansible_zos_module):
     hosts = ansible_zos_module
-    test_info = dict(library="", volume="", state="present", force_dynamic=True)
+    test_info = TEST_INFO['test_add_del_volume']
     set_test_env(hosts, test_info)
     results = hosts.all.zos_apf(**test_info)
+    pprint(vars(results))
     for result in results.contacted.values():
         assert result.get("rc") == 0
     test_info['state'] = 'absent'
     results = hosts.all.zos_apf(**test_info)
+    pprint(vars(results))
     for result in results.contacted.values():
         assert result.get("rc") == 0
     clean_test_env(hosts, test_info)
@@ -151,40 +200,37 @@ def test_add_del_persist(ansible_zos_module):
 
 def test_add_del_volume_persist(ansible_zos_module):
     hosts = ansible_zos_module
-    test_info = dict(library="", persistent=dict(data_set_name="", marker="/* {mark} BLOCK */"), state="present", force_dynamic=True)
+    test_info = TEST_INFO['test_add_del_volume_persist']
     set_test_env(hosts, test_info)
     results = hosts.all.zos_apf(**test_info)
+    pprint(vars(results))
     for result in results.contacted.values():
         assert result.get("rc") == 0
     add_exptd = add_expected.format(test_info['library'], test_info['volume'])
     add_exptd = add_exptd.replace(" ", "")
     cmdStr = "cat \"//'{0}'\" ".format(test_info['persistent']['data_set_name'])
-    actual = get_stdout(hosts, cmdStr).replace(" ", "")
+    actual = run_shell_cmd(hosts, cmdStr).replace(" ", "")
     assert actual == add_exptd
     test_info['state'] = 'absent'
     results = hosts.all.zos_apf(**test_info)
+    pprint(vars(results))
     for result in results.contacted.values():
         assert result.get("rc") == 0
     del_exptd = del_expected.replace(" ", "")
     cmdStr = "cat \"//'{0}'\" ".format(test_info['persistent']['data_set_name'])
-    actual = get_stdout(hosts, cmdStr).replace(" ", "")
+    actual = run_shell_cmd(hosts, cmdStr).replace(" ", "")
     assert actual == del_exptd
     clean_test_env(hosts, test_info)
 
 
 def test_batch_add_del(ansible_zos_module):
     hosts = ansible_zos_module
-    test_info = dict(
-        batch=[dict(library="", volume=""), dict(library="", volume=""), dict(library="", volume="")],
-        persistent=dict(data_set_name="", marker="/* {mark} BLOCK */"), state="present", force_dynamic=True)
+    test_info = TEST_INFO['test_batch_add_del']
     for item in test_info['batch']:
         set_test_env(hosts, item)
-    cmdStr = "mvstmp APFTEST.PRST"
-    prstds = get_stdout(hosts, cmdStr)[:30]
-    cmdStr = "dtouch -tseq {0}".format(prstds)
-    hosts.all.shell(cmd=cmdStr)
-    test_info['persistent']['data_set_name'] = prstds
+    test_info['persistent']['data_set_name'] = persistds_create(hosts)
     results = hosts.all.zos_apf(**test_info)
+    pprint(vars(results))
     for result in results.contacted.values():
         assert result.get("rc") == 0
     add_exptd = add_batch_expected.format(test_info['batch'][0]['library'], test_info['batch'][0]['volume'],
@@ -192,26 +238,27 @@ def test_batch_add_del(ansible_zos_module):
                                           test_info['batch'][2]['library'], test_info['batch'][2]['volume'])
     add_exptd = add_exptd.replace(" ", "")
     cmdStr = "cat \"//'{0}'\" ".format(test_info['persistent']['data_set_name'])
-    actual = get_stdout(hosts, cmdStr).replace(" ", "")
+    actual = run_shell_cmd(hosts, cmdStr).replace(" ", "")
     assert actual == add_exptd
     test_info['state'] = 'absent'
     results = hosts.all.zos_apf(**test_info)
+    pprint(vars(results))
     for result in results.contacted.values():
         assert result.get("rc") == 0
     del_exptd = del_expected.replace(" ", "")
     cmdStr = "cat \"//'{0}'\" ".format(test_info['persistent']['data_set_name'])
-    actual = get_stdout(hosts, cmdStr).replace(" ", "")
+    actual = run_shell_cmd(hosts, cmdStr).replace(" ", "")
     assert actual == del_exptd
     for item in test_info['batch']:
         clean_test_env(hosts, item)
-    cmdStr = "drm {0}".format(test_info['persistent']['data_set_name'])
-    hosts.all.shell(cmd=cmdStr)
+    persistds_delele(hosts, test_info['persistent']['data_set_name'])
 
 
 def test_operation_list(ansible_zos_module):
     hosts = ansible_zos_module
-    test_info = dict(operation="list")
+    test_info = TEST_INFO['test_operation_list']
     results = hosts.all.zos_apf(**test_info)
+    pprint(vars(results))
     for result in results.contacted.values():
         listJson = result.get("stdout")
     import json
@@ -222,13 +269,14 @@ def test_operation_list(ansible_zos_module):
 
 def test_operation_list_with_filter(ansible_zos_module):
     hosts = ansible_zos_module
-    test_info = dict(library="", state="present", force_dynamic=True)
+    test_info = TEST_INFO['test_add_del']
     test_info['state'] = 'present'
     set_test_env(hosts, test_info)
     hosts.all.zos_apf(**test_info)
-    ti = dict(operation="list", library="")
+    ti = TEST_INFO['test_operation_list_with_filter']
     ti['library'] = "APFTEST.*"
     results = hosts.all.zos_apf(**ti)
+    pprint(vars(results))
     for result in results.contacted.values():
         listFiltered = result.get("stdout")
     assert test_info['library'] in listFiltered
@@ -243,13 +291,15 @@ def test_operation_list_with_filter(ansible_zos_module):
 
 def test_add_already_present(ansible_zos_module):
     hosts = ansible_zos_module
-    test_info = dict(library="", state="present", force_dynamic=True)
+    test_info = TEST_INFO['test_add_del']
     test_info['state'] = 'present'
     set_test_env(hosts, test_info)
     results = hosts.all.zos_apf(**test_info)
+    pprint(vars(results))
     for result in results.contacted.values():
         assert result.get("rc") == 0
     results = hosts.all.zos_apf(**test_info)
+    pprint(vars(results))
     for result in results.contacted.values():
         # Return code 16 if ZOAU < 1.2.0 and RC is 8 if ZOAU >= 1.2.0
         assert result.get("rc") == 16 or result.get("rc") == 8
@@ -260,10 +310,11 @@ def test_add_already_present(ansible_zos_module):
 
 def test_del_not_present(ansible_zos_module):
     hosts = ansible_zos_module
-    test_info = dict(library="", state="present", force_dynamic=True)
+    test_info = TEST_INFO['test_add_del']
     set_test_env(hosts, test_info)
     test_info['state'] = 'absent'
     results = hosts.all.zos_apf(**test_info)
+    pprint(vars(results))
     for result in results.contacted.values():
         # Return code 16 if ZOAU < 1.2.0 and RC is 8 if ZOAU >= 1.2.0
         assert result.get("rc") == 16 or result.get("rc") == 8
@@ -272,9 +323,10 @@ def test_del_not_present(ansible_zos_module):
 
 def test_add_not_found(ansible_zos_module):
     hosts = ansible_zos_module
-    test_info = dict(library="", state="present", force_dynamic=True)
+    test_info = TEST_INFO['test_add_del']
     test_info['library'] = 'APFTEST.FOO.BAR'
     results = hosts.all.zos_apf(**test_info)
+    pprint(vars(results))
     for result in results.contacted.values():
         # Return code 16 if ZOAU < 1.2.0 and RC is 8 if ZOAU >= 1.2.0
         assert result.get("rc") == 16 or result.get("rc") == 8
@@ -282,11 +334,12 @@ def test_add_not_found(ansible_zos_module):
 
 def test_add_with_wrong_volume(ansible_zos_module):
     hosts = ansible_zos_module
-    test_info = dict(library="", volume="", state="present", force_dynamic=True)
+    test_info = TEST_INFO['test_add_del_volume']
     test_info['state'] = 'present'
     set_test_env(hosts, test_info)
     test_info['volume'] = 'T12345'
     results = hosts.all.zos_apf(**test_info)
+    pprint(vars(results))
     for result in results.contacted.values():
         # Return code 16 if ZOAU < 1.2.0 and RC is 8 if ZOAU >= 1.2.0
         assert result.get("rc") == 16 or result.get("rc") == 8
@@ -295,12 +348,13 @@ def test_add_with_wrong_volume(ansible_zos_module):
 
 def test_persist_invalid_ds_format(ansible_zos_module):
     hosts = ansible_zos_module
-    test_info = dict(library="", persistent=dict(data_set_name="", marker="/* {mark} BLOCK */"), state="present", force_dynamic=True)
+    test_info = TEST_INFO['test_add_del_persist']
     test_info['state'] = 'present'
     set_test_env(hosts, test_info)
     cmdStr = "decho \"some text to test persistent data_set format validattion.\" \"{0}\"".format(test_info['persistent']['data_set_name'])
-    hosts.all.shell(cmd=cmdStr)
+    run_shell_cmd(hosts, cmdStr)
     results = hosts.all.zos_apf(**test_info)
+    pprint(vars(results))
     for result in results.contacted.values():
         assert result.get("rc") == 8
     clean_test_env(hosts, test_info)
@@ -308,11 +362,12 @@ def test_persist_invalid_ds_format(ansible_zos_module):
 
 def test_persist_invalid_marker(ansible_zos_module):
     hosts = ansible_zos_module
-    test_info = dict(library="", persistent=dict(data_set_name="", marker="/* {mark} BLOCK */"), state="present", force_dynamic=True)
+    test_info = TEST_INFO['test_add_del_persist']
     test_info['state'] = 'present'
     set_test_env(hosts, test_info)
     test_info['persistent']['marker'] = "# Invalid marker format"
     results = hosts.all.zos_apf(**test_info)
+    pprint(vars(results))
     for result in results.contacted.values():
         assert result.get("rc") == 4
     clean_test_env(hosts, test_info)
@@ -320,11 +375,12 @@ def test_persist_invalid_marker(ansible_zos_module):
 
 def test_persist_invalid_marker_len(ansible_zos_module):
     hosts = ansible_zos_module
-    test_info = dict(library="", persistent=dict(data_set_name="", marker="/* {mark} BLOCK */"), state="present", force_dynamic=True)
+    test_info = TEST_INFO['test_add_del_persist']
     test_info['state'] = 'present'
     set_test_env(hosts, test_info)
     test_info['persistent']['marker'] = "/* {mark} This is a awfully lo%70sng marker */" % ("o")
     results = hosts.all.zos_apf(**test_info)
+    pprint(vars(results))
     for result in results.contacted.values():
         assert result.get("msg") == 'marker length may not exceed 72 characters'
     clean_test_env(hosts, test_info)

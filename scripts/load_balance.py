@@ -832,7 +832,6 @@ if __name__ == '__main__':
      main(sys.argv[1:])
 
 
-USAGE:
 #./ac --venv-start
 #cd /Users/ddimatos/git/github/ibm_zos_core/scripts
 #python load_balance.py --python "3.9" --zoau "1.2.2" --itr 10 --prefix "cd /Users/ddimatos/git/github/ibm_zos_core;" --local-test "test_load_balance_full.py"

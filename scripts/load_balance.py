@@ -1,4 +1,4 @@
-# download document files concurrently and save the files locally concurrently
+# Download document files concurrently and save the files locally concurrently
 import os
 import sys, getopt
 import subprocess

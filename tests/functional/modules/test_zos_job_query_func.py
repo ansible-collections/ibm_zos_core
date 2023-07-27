@@ -27,13 +27,8 @@ import tempfile
 # Make sure job list * returns something
 def test_zos_job_query_func(ansible_zos_module):
     hosts = ansible_zos_module
-    user = hosts.all.shell(cmd='hlq')
-    for res in user.contacted.values():
-        hlq = res.get("stdout")
-    if len(hlq) > 8:
-        hlq = hlq[:8]
-    owner = hlq
-    results = hosts.all.zos_job_query(job_name="*", owner=owner)
+    results = hosts.all.zos_job_query(job_name="*", owner="*")
+    pprint(vars(results))
     for result in results.contacted.values():
         assert result.get("changed") is False
         assert result.get("jobs") is not None
@@ -53,7 +48,7 @@ HELLO, WORLD
 TEMP_PATH = "/tmp/jcl"
 JDATA_SET_NAME = "imstestl.ims1.testq1"
 NDATA_SET_NAME = "imstestl.ims1.testq2"
-#DEFAULT_VOLUME = "000000"
+DEFAULT_VOLUME = "000000"
 
 # test to show multi wildcard in Job_id query won't crash the search
 def test_zos_job_id_query_multi_wildcards_func(ansible_zos_module):

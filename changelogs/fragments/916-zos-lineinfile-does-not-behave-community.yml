@@ -1,0 +1,4 @@
+bugfix:
+- zos_lineinfile - Module duplicate entries if the line was already in the document.
+  Release now ensures if there is the same line as the entry do not be added.
+  (https://github.com/ansible-collections/ibm_zos_core/pull/840)

@@ -151,7 +151,7 @@ def test_add_del_persist(ansible_zos_module):
 
 def test_add_del_volume_persist(ansible_zos_module):
     hosts = ansible_zos_module
-    test_info = dict(library="", persistent=dict(data_set_name="", marker="/* {mark} BLOCK */"), state="present", force_dynamic=True)
+    test_info = dict(library="", volume="", persistent=dict(data_set_name="", marker="/* {mark} BLOCK */"), state="present", force_dynamic=True)
     set_test_env(hosts, test_info)
     results = hosts.all.zos_apf(**test_info)
     for result in results.contacted.values():

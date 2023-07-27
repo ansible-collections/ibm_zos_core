@@ -19,8 +19,11 @@ import pytest
 from re import search, IGNORECASE, MULTILINE
 import string
 import random
+from ibm_zos_core.tests.common.volumes import Volumes
 
-VOLUME = "222222"
+EC_VOLUMES = Volumes.EC_33012
+
+VOLUME = EC_VOLUMES["VOLUME_2"]
 DATA_SET_NAME = "USER.PRIVATE.TESTDS"
 DATA_SET_NAME2 = "USER.PRIVATE.TESTDS2"
 DATA_SET_PATTERN = "USER.PRIVATE.*"

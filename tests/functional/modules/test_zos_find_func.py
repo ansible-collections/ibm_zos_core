@@ -14,6 +14,10 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
+from ibm_zos_core.tests.common.volumes import Volumes
+
+EC_VOLUMES = Volumes.EC_33012
+
 SEQ_NAMES = [
     "TEST.FIND.SEQ.FUNCTEST.FIRST",
     "TEST.FIND.SEQ.FUNCTEST.SECOND",
@@ -30,8 +34,8 @@ VSAM_NAMES = [
     "TEST.FIND.VSAM.FUNCTEST.FIRST"
 ]
 
-VOLUME_000000 = "000000"
-VOLUME_222222 = "222222"
+VOLUME_000000 = EC_VOLUMES["VOLUME_1"]
+VOLUME_222222 = EC_VOLUMES["VOLUME_2"]
 
 def create_vsam_ksds(ds_name, ansible_zos_module, volume=VOLUME_000000):
     hosts = ansible_zos_module

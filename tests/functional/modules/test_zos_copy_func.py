@@ -21,7 +21,9 @@ import time
 import tempfile
 from tempfile import mkstemp
 import subprocess
+from ibm_zos_core.tests.common.volumes import Volumes
 
+EC_VOLUMES = Volumes.EC_33012
 
 __metaclass__ = type
 
@@ -174,7 +176,7 @@ SH /tmp/disp_shr/pdse-lock '{0}({1})'
 //STDERR DD SYSOUT=*
 //"""
 
-VOLUME='000000'
+VOLUME=EC_VOLUMES["VOLUME_1"]
 
 def populate_dir(dir_path):
     for i in range(5):

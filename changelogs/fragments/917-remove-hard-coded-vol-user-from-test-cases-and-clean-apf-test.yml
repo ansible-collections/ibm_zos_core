@@ -1,0 +1,7 @@
+trivial:
+- zos_apf - Test suite was hard to follow. Change made easy to follow.
+- zos_backup_restore - Remove hard coded volumes in test.
+- zos_copy - Remove hard coded volumes in test.
+- zos_find - Remove hard coded volumes in test.
+- zos_query - Remove hard coded volumes in test.
+  (https://github.com/ansible-collections/ibm_zos_core/pull/917)

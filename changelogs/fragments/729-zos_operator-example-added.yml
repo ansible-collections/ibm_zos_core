@@ -1,4 +1,0 @@
-trivial:
-- zos_operator - had a need for more command examples. This change adds the
-  D SYMBOLS example.
-  (https://github.com/ansible-collections/ibm_zos_core/pull/730)

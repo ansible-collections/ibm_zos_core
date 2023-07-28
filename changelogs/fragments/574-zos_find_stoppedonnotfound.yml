@@ -1,4 +1,0 @@
-bugfixes:
-  - zos_find - fixes a bug where find result values stopped being returned after
-    first value in a list was 'not found'.
-    (https://github.com/ansible-collections/ibm_zos_core/pull/668)

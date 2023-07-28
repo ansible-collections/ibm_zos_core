@@ -26,7 +26,6 @@ Synopsis
 
 
 
-
 Parameters
 ----------
 
@@ -122,7 +121,7 @@ dest
 exclude
   Remote absolute path, glob, or list of paths, globs or data set name patterns for the file, files or data sets to exclude from path list and glob expansion.
 
-  Patterns (wildcards) can contain one of the following: ?, *.
+  Patterns (wildcards) can contain one of the following, `?`, `*`.
 
   * matches everything.
 
